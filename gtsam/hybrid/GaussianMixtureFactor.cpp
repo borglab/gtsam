@@ -84,11 +84,11 @@ GaussianMixtureFactor::sharedFactor GaussianMixtureFactor::operator()(
 /* *******************************************************************************/
 GaussianFactorGraphTree GaussianMixtureFactor::add(
     const GaussianFactorGraphTree &sum) const {
-  using Y = GraphAndConstant;
+  using Y = GaussianFactorGraph;
   auto add = [](const Y &graph1, const Y &graph2) {
-    auto result = graph1.graph;
-    result.push_back(graph2.graph);
-    return Y(result, graph1.constant + graph2.constant);
+    auto result = graph1;
+    result.push_back(graph2);
+    return result;
   };
   const auto tree = asGaussianFactorGraphTree();
   return sum.empty() ? tree : sum.apply(tree, add);
@@ -97,11 +97,7 @@ GaussianFactorGraphTree GaussianMixtureFactor::add(
 /* *******************************************************************************/
 GaussianFactorGraphTree GaussianMixtureFactor::asGaussianFactorGraphTree()
     const {
-  auto wrap = [](const sharedFactor &gf) {
-    GaussianFactorGraph result;
-    result.push_back(gf);
-    return GraphAndConstant(result, 0.0);
-  };
+  auto wrap = [](const sharedFactor &gf) { return GaussianFactorGraph{gf}; };
   return {factors_, wrap};
 }
 

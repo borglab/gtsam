@@ -640,9 +640,8 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   // Expected decision tree with two factor graphs:
   // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
   GaussianFactorGraphTree expected{
-      M(0),
-      {GaussianFactorGraph(std::vector<GF>{(*mixture)(d0), prior}), 0.0},
-      {GaussianFactorGraph(std::vector<GF>{(*mixture)(d1), prior}), 0.0}};
+      M(0), GaussianFactorGraph(std::vector<GF>{(*mixture)(d0), prior}),
+      GaussianFactorGraph(std::vector<GF>{(*mixture)(d1), prior})};
 
   EXPECT(assert_equal(expected(d0), actual(d0), 1e-5));
   EXPECT(assert_equal(expected(d1), actual(d1), 1e-5));
@@ -700,7 +699,6 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
   const VectorValues measurements{{Z(0), Vector1(5.0)}};
   auto bn = tiny::createHybridBayesNet(num_measurements);
   auto fg = bn.toFactorGraph(measurements);
-  GTSAM_PRINT(bn);
   EXPECT_LONGS_EQUAL(3, fg.size());
 
   EXPECT(ratioTest(bn, measurements, fg));
@@ -724,7 +722,6 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
   // Test elimination
   const auto posterior = fg.eliminateSequential();
   EXPECT(assert_equal(expectedBayesNet, *posterior, 0.01));
-  GTSAM_PRINT(*posterior);
 
   EXPECT(ratioTest(bn, measurements, *posterior));
 }
@@ -847,7 +844,6 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
 
   // Do elimination:
   const HybridBayesNet::shared_ptr posterior = fg.eliminateSequential(ordering);
-  // GTSAM_PRINT(*posterior);
 
   // Test resulting posterior Bayes net has correct size:
   EXPECT_LONGS_EQUAL(8, posterior->size());

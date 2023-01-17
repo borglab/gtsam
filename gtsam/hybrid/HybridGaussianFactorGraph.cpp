@@ -82,14 +82,13 @@ static GaussianFactorGraphTree addGaussian(
     const GaussianFactor::shared_ptr &factor) {
   // If the decision tree is not initialized, then initialize it.
   if (gfgTree.empty()) {
-    GaussianFactorGraph result;
-    result.push_back(factor);
-    return GaussianFactorGraphTree(GraphAndConstant(result, 0.0));
+    GaussianFactorGraph result{factor};
+    return GaussianFactorGraphTree(result);
   } else {
-    auto add = [&factor](const GraphAndConstant &graph_z) {
-      auto result = graph_z.graph;
+    auto add = [&factor](const GaussianFactorGraph &graph) {
+      auto result = graph;
       result.push_back(factor);
-      return GraphAndConstant(result, graph_z.constant);
+      return result;
     };
     return gfgTree.apply(add);
   }
@@ -190,12 +189,13 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
 // If any GaussianFactorGraph in the decision tree contains a nullptr, convert
 // that leaf to an empty GaussianFactorGraph. Needed since the DecisionTree will
 // otherwise create a GFG with a single (null) factor.
+// TODO(dellaert): still a mystery to me why this is needed.
 GaussianFactorGraphTree removeEmpty(const GaussianFactorGraphTree &sum) {
-  auto emptyGaussian = [](const GraphAndConstant &graph_z) {
+  auto emptyGaussian = [](const GaussianFactorGraph &graph) {
     bool hasNull =
-        std::any_of(graph_z.graph.begin(), graph_z.graph.end(),
+        std::any_of(graph.begin(), graph.end(),
                     [](const GaussianFactor::shared_ptr &ptr) { return !ptr; });
-    return hasNull ? GraphAndConstant{GaussianFactorGraph(), 0.0} : graph_z;
+    return hasNull ? GaussianFactorGraph() : graph;
   };
   return GaussianFactorGraphTree(sum, emptyGaussian);
 }
@@ -224,8 +224,9 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
                                     GaussianMixtureFactor::sharedFactor>;
 
   // This is the elimination method on the leaf nodes
-  auto eliminateFunc = [&](const GraphAndConstant &graph_z) -> EliminationPair {
-    if (graph_z.graph.empty()) {
+  auto eliminateFunc =
+      [&](const GaussianFactorGraph &graph) -> EliminationPair {
+    if (graph.empty()) {
       return {nullptr, nullptr};
     }
 
@@ -236,12 +237,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     boost::shared_ptr<GaussianConditional> conditional;
     boost::shared_ptr<GaussianFactor> newFactor;
     boost::tie(conditional, newFactor) =
-        EliminatePreferCholesky(graph_z.graph, frontalKeys);
-
-    // Get the log of the log normalization constant inverse and
-    // add it to the previous constant.
-    // const double logZ =
-    //     graph_z.constant - conditional->logNormalizationConstant();
+        EliminatePreferCholesky(graph, frontalKeys);
 
 #ifdef HYBRID_TIMING
     gttoc_(hybrid_eliminate);
@@ -271,15 +267,18 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // If there are no more continuous parents, then we should create a
   // DiscreteFactor here, with the error for each discrete choice.
   if (continuousSeparator.empty()) {
-    auto probPrime = [&](const GaussianMixtureFactor::sharedFactor &factor) {
+    auto probPrime = [&](const EliminationPair &pair) {
       // This is the unnormalized probability q(μ) at the mean.
       // The factor has no keys, just contains the residual.
       static const VectorValues kEmpty;
-      return factor? exp(-factor->error(kEmpty)) : 1.0;
+      return pair.second ? exp(-pair.second->error(kEmpty)) /
+                               pair.first->normalizationConstant()
+                         : 1.0;
     };
 
     const auto discreteFactor = boost::make_shared<DecisionTreeFactor>(
-        discreteSeparator, DecisionTree<Key, double>(newFactors, probPrime));
+        discreteSeparator,
+        DecisionTree<Key, double>(eliminationResults, probPrime));
 
     return {boost::make_shared<HybridConditional>(gaussianMixture),
             discreteFactor};
