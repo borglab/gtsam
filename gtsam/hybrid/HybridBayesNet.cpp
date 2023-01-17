@@ -347,8 +347,6 @@ HybridGaussianFactorGraph HybridBayesNet::toFactorGraph(
         fg.push_back(gc->likelihood(measurements));
       } else if (auto gm = conditional->asMixture()) {
         fg.push_back(gm->likelihood(measurements));
-        const auto constantsFactor = gm->normalizationConstants();
-        if (constantsFactor) fg.push_back(constantsFactor);
       } else {
         throw std::runtime_error("Unknown conditional type");
       }
