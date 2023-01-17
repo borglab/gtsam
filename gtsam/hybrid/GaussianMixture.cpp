@@ -41,8 +41,10 @@ GaussianMixture::GaussianMixture(
   logConstant_ = -std::numeric_limits<double>::infinity();
   conditionals_.visit(
       [this](const GaussianConditional::shared_ptr &conditional) {
-        this->logConstant_ = std::max(this->logConstant_,
-                                      conditional->logNormalizationConstant());
+        if (conditional) {
+          this->logConstant_ = std::max(
+              this->logConstant_, conditional->logNormalizationConstant());
+        }
       });
 }
 
