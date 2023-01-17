@@ -38,7 +38,6 @@
 
 #include <boost/none.hpp>
 #include <boost/serialization/nvp.hpp>
-#include <boost/smart_ptr/shared_ptr.hpp>
 #include <iostream>
 #include <string>
 

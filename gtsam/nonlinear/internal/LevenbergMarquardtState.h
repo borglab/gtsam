@@ -27,8 +27,6 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 
-#include <boost/shared_ptr.hpp>
-
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>

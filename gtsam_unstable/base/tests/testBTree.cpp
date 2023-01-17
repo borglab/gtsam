@@ -16,8 +16,6 @@
  * @author Frank Dellaert
  */
 
-#include <boost/shared_ptr.hpp>
-
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/base/BTree.h>
 

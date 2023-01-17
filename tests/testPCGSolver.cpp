@@ -26,8 +26,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/shared_ptr.hpp>
-
 #include <iostream>
 #include <fstream>
 
