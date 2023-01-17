@@ -143,7 +143,6 @@ TEST(GaussianMixture, Likelihood) {
   std::vector<double> ratio(2);
   for (size_t mode : {0, 1}) {
     const HybridValues hv{vv, {{M(0), mode}}};
-    // Print error of mixture and likelihood:
     ratio[mode] = std::exp(-likelihood->error(hv)) / mixture.evaluate(hv);
   }
   EXPECT_DOUBLES_EQUAL(ratio[0], ratio[1], 1e-8);
@@ -193,28 +192,44 @@ TEST(GaussianMixture, Likelihood2) {
   // Compute likelihood
   auto likelihood = mixture.likelihood(vv);
 
-  GTSAM_PRINT(mixture);
-  GTSAM_PRINT(*likelihood);
-
-  // Check that the mixture error and the likelihood error are the same.
+  // Check that the mixture error and the likelihood error are as expected,
+  // this invariant is the same as the equal noise case:
   EXPECT_DOUBLES_EQUAL(mixture.error(hv0), likelihood->error(hv0), 1e-8);
   EXPECT_DOUBLES_EQUAL(mixture.error(hv1), likelihood->error(hv1), 1e-8);
 
-  // Check that likelihood error is as expected, i.e., just the errors of the
-  // individual likelihoods, in the `equal_constants` case.
-  std::vector<DiscreteKey> discrete_keys = {mode};
-  std::vector<double> leaves = {conditionals[0]->likelihood(vv)->error(vv),
-                                conditionals[1]->likelihood(vv)->error(vv)};
-  AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
-  EXPECT(assert_equal(expected, likelihood->error(vv), 1e-6));
+  // Check the detailed JacobianFactor calculation for mode==1.
+  {
+    // We have a JacobianFactor
+    const auto gf1 = (*likelihood)(assignment1);
+    const auto jf1 = boost::dynamic_pointer_cast<JacobianFactor>(gf1);
+    CHECK(jf1);
+
+    // It has 2 rows, not 1!
+    CHECK(jf1->rows() == 2);
+
+    // Check that the constant C1 is properly encoded in the JacobianFactor.
+    const double C1 = mixture.logNormalizationConstant() -
+                      conditionals[1]->logNormalizationConstant();
+    const double c1 = std::sqrt(2.0 * C1);
+    Vector expected_unwhitened(2);
+    expected_unwhitened << 4.9 - 5.0, -c1;
+    Vector actual_unwhitened = jf1->unweighted_error(vv);
+    EXPECT(assert_equal(expected_unwhitened, actual_unwhitened));
+
+    // Make sure the noise model does not touch it.
+    Vector expected_whitened(2);
+    expected_whitened << (4.9 - 5.0) / 3.0, -c1;
+    Vector actual_whitened = jf1->error_vector(vv);
+    EXPECT(assert_equal(expected_whitened, actual_whitened));
+
+    // Check that the error is equal to the mixture error:
+    EXPECT_DOUBLES_EQUAL(mixture.error(hv1), jf1->error(hv1), 1e-8);
+  }
 
   // Check that the ratio of probPrime to evaluate is the same for all modes.
   std::vector<double> ratio(2);
   for (size_t mode : {0, 1}) {
     const HybridValues hv{vv, {{M(0), mode}}};
-    // Print error of mixture and likelihood:
-    std::cout << "mode " << mode << " mixture: " << mixture.error(hv)
-              << " likelihood: " << likelihood->error(hv) << std::endl;
     ratio[mode] = std::exp(-likelihood->error(hv)) / mixture.evaluate(hv);
   }
   EXPECT_DOUBLES_EQUAL(ratio[0], ratio[1], 1e-8);
