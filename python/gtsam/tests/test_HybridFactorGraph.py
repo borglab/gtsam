@@ -22,6 +22,8 @@ from gtsam import (DiscreteConditional, DiscreteKeys, GaussianConditional,
                    HybridGaussianFactorGraph, HybridValues, JacobianFactor,
                    Ordering, noiseModel)
 
+DEBUG_MARGINALS = False
+
 
 class TestHybridGaussianFactorGraph(GtsamTestCase):
     """Unit tests for HybridGaussianFactorGraph."""
@@ -153,23 +155,6 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         return measurements
 
     @classmethod
-    def factor_graph_from_bayes_net(cls, bayesNet: HybridBayesNet,
-                                    sample: HybridValues):
-        """Create a factor graph from the Bayes net with sampled measurements.
-            The factor graph is `P(x)P(n) ϕ(x, n; z0) ϕ(x, n; z1) ...`
-            and thus represents the same joint probability as the Bayes net.
-        """
-        fg = HybridGaussianFactorGraph()
-        num_measurements = bayesNet.size() - 2
-        for i in range(num_measurements):
-            conditional = bayesNet.at(i).asMixture()
-            factor = conditional.likelihood(cls.measurements(sample, [i]))
-            fg.push_back(factor)
-        fg.push_back(bayesNet.at(num_measurements).asGaussian())
-        fg.push_back(bayesNet.at(num_measurements+1).asDiscrete())
-        return fg
-
-    @classmethod
     def estimate_marginals(cls,
                            target,
                            proposal_density: HybridBayesNet,
@@ -182,10 +167,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         for s in range(N):
             proposed = proposal_density.sample()  # sample from proposal
             target_proposed = target(proposed)  # evaluate target
-            # print(target_proposed, proposal_density.evaluate(proposed))
             weight = target_proposed / proposal_density.evaluate(proposed)
-            # print weight:
-            # print(f"weight: {weight}")
             marginals[proposed.atDiscrete(M(0))] += weight
 
         # print marginals:
@@ -194,7 +176,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
 
     def test_tiny(self):
         """Test a tiny two variable hybrid model."""
-        # P(x0)P(mode)P(z0|x0,mode)
+        # Create P(x0)P(mode)P(z0|x0,mode)
         prior_sigma = 0.5
         bayesNet = self.tiny(prior_sigma=prior_sigma)
 
@@ -202,12 +184,13 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         values = HybridValues()
         values.insert(X(0), [5.0])
         values.insert(M(0), 0)  # low-noise, standard deviation 0.5
-        z0: float = 5.0
-        values.insert(Z(0), [z0])
+        measurements = gtsam.VectorValues()
+        measurements.insert(Z(0), [5.0])
+        values.insert(measurements)
 
         def unnormalized_posterior(x):
             """Posterior is proportional to joint, centered at 5.0 as well."""
-            x.insert(Z(0), [z0])
+            x.insert(measurements)
             return bayesNet.evaluate(x)
 
         # Create proposal density on (x0, mode), making sure it has same mean:
@@ -220,31 +203,42 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         # Estimate marginals using importance sampling.
         marginals = self.estimate_marginals(target=unnormalized_posterior,
                                             proposal_density=proposal_density)
-        # print(f"True mode: {values.atDiscrete(M(0))}")
-        # print(f"P(mode=0; Z) = {marginals[0]}")
-        # print(f"P(mode=1; Z) = {marginals[1]}")
+        if DEBUG_MARGINALS:
+            print(f"True mode: {values.atDiscrete(M(0))}")
+            print(f"P(mode=0; Z) = {marginals[0]}")
+            print(f"P(mode=1; Z) = {marginals[1]}")
 
         # Check that the estimate is close to the true value.
         self.assertAlmostEqual(marginals[0], 0.74, delta=0.01)
         self.assertAlmostEqual(marginals[1], 0.26, delta=0.01)
 
-        fg = self.factor_graph_from_bayes_net(bayesNet, values)
+        # Convert to factor graph with given measurements.
+        fg = bayesNet.toFactorGraph(measurements)
         self.assertEqual(fg.size(), 3)
+
+        # Check ratio between unnormalized posterior and factor graph is the same for all modes:
+        for mode in [1, 0]:
+            values.insert_or_assign(M(0), mode)
+            self.assertAlmostEqual(bayesNet.evaluate(values) /
+                                   np.exp(-fg.error(values)),
+                                   0.6366197723675815)
+            self.assertAlmostEqual(bayesNet.error(values), fg.error(values))
 
         # Test elimination.
         posterior = fg.eliminateSequential()
 
         def true_posterior(x):
             """Posterior from elimination."""
-            x.insert(Z(0), [z0])
+            x.insert(measurements)
             return posterior.evaluate(x)
 
         # Estimate marginals using importance sampling.
         marginals = self.estimate_marginals(target=true_posterior,
                                             proposal_density=proposal_density)
-        # print(f"True mode: {values.atDiscrete(M(0))}")
-        # print(f"P(mode=0; z0) = {marginals[0]}")
-        # print(f"P(mode=1; z0) = {marginals[1]}")
+        if DEBUG_MARGINALS:
+            print(f"True mode: {values.atDiscrete(M(0))}")
+            print(f"P(mode=0; z0) = {marginals[0]}")
+            print(f"P(mode=1; z0) = {marginals[1]}")
 
         # Check that the estimate is close to the true value.
         self.assertAlmostEqual(marginals[0], 0.74, delta=0.01)
@@ -292,16 +286,17 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         # Estimate marginals using importance sampling.
         marginals = self.estimate_marginals(target=unnormalized_posterior,
                                             proposal_density=proposal_density)
-        # print(f"True mode: {values.atDiscrete(M(0))}")
-        # print(f"P(mode=0; Z) = {marginals[0]}")
-        # print(f"P(mode=1; Z) = {marginals[1]}")
+        if DEBUG_MARGINALS:
+            print(f"True mode: {values.atDiscrete(M(0))}")
+            print(f"P(mode=0; Z) = {marginals[0]}")
+            print(f"P(mode=1; Z) = {marginals[1]}")
 
         # Check that the estimate is close to the true value.
         self.assertAlmostEqual(marginals[0], 0.23, delta=0.01)
         self.assertAlmostEqual(marginals[1], 0.77, delta=0.01)
 
         # Convert to factor graph using measurements.
-        fg = self.factor_graph_from_bayes_net(bayesNet, values)
+        fg = bayesNet.toFactorGraph(measurements)
         self.assertEqual(fg.size(), 4)
 
         # Calculate ratio between Bayes net probability and the factor graph:

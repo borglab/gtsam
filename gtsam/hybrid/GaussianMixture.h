@@ -63,7 +63,8 @@ class GTSAM_EXPORT GaussianMixture
   using Conditionals = DecisionTree<Key, GaussianConditional::shared_ptr>;
 
  private:
-  Conditionals conditionals_;
+  Conditionals conditionals_;  ///< a decision tree of Gaussian conditionals.
+  double logConstant_;         ///< log of the normalization constant.
 
   /**
    * @brief Convert a DecisionTree of factors into a DT of Gaussian FGs.
@@ -155,10 +156,16 @@ class GTSAM_EXPORT GaussianMixture
   /// Returns the continuous keys among the parents.
   KeyVector continuousParents() const;
 
-  // Create a likelihood factor for a Gaussian mixture, return a Mixture factor
-  // on the parents.
+  /// The log normalization constant is max of the the individual
+  /// log-normalization constants.
+  double logNormalizationConstant() const override { return logConstant_; }
+
+  /**
+   * Create a likelihood factor for a Gaussian mixture, return a Mixture factor
+   * on the parents.
+   */
   boost::shared_ptr<GaussianMixtureFactor> likelihood(
-      const VectorValues &frontals) const;
+      const VectorValues &given) const;
 
   /// Getter for the underlying Conditionals DecisionTree
   const Conditionals &conditionals() const;
@@ -182,20 +189,32 @@ class GTSAM_EXPORT GaussianMixture
    *
    *    error(x;y,m) = K - log(probability(x;y,m))
    *
-   * For all x,y,m. But note that K, for the GaussianMixture, cannot depend on
-   * any arguments. Hence, we delegate to the underlying Gaussian
+   * For all x,y,m. But note that K, the (log) normalization constant defined
+   * in Conditional.h, should not depend on x, y, or m, only on the parameters
+   * of the density. Hence, we delegate to the underlying Gaussian
    * conditionals, indexed by m, which do satisfy:
-   * 
+   *
    *    log(probability_m(x;y)) = K_m - error_m(x;y)
-   * 
-   * We resolve by having K == 0.0 and
-   * 
-   *    error(x;y,m) = error_m(x;y) - K_m
+   *
+   * We resolve by having K == max(K_m) and
+   *
+   *    error(x;y,m) = error_m(x;y) + K - K_m
+   *
+   * which also makes error(x;y,m) >= 0 for all x,y,m.
    *
    * @param values Continuous values and discrete assignment.
    * @return double
    */
   double error(const HybridValues &values) const override;
+
+  /**
+   * @brief Compute error of the GaussianMixture as a tree.
+   *
+   * @param continuousValues The continuous VectorValues.
+   * @return AlgebraicDecisionTree<Key> A decision tree on the discrete keys
+   * only, with the leaf values as the error for each assignment.
+   */
+  AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
 
   /**
    * @brief Compute the logProbability of this Gaussian Mixture.
@@ -233,6 +252,9 @@ class GTSAM_EXPORT GaussianMixture
   /// @}
 
  private:
+  /// Check whether `given` has values for all frontal keys.
+  bool allFrontalsGiven(const VectorValues &given) const;
+
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>

@@ -89,8 +89,8 @@ TEST(GaussianMixtureFactor, Sum) {
   mode[m1.first] = 1;
   mode[m2.first] = 2;
   auto actual = sum(mode);
-  EXPECT(actual.graph.at(0) == f11);
-  EXPECT(actual.graph.at(1) == f22);
+  EXPECT(actual.at(0) == f11);
+  EXPECT(actual.at(1) == f22);
 }
 
 TEST(GaussianMixtureFactor, Printing) {

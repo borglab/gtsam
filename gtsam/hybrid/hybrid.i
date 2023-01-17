@@ -19,6 +19,9 @@ class HybridValues {
   void insert(gtsam::Key j, int value);
   void insert(gtsam::Key j, const gtsam::Vector& value);
   
+  void insert_or_assign(gtsam::Key j, const gtsam::Vector& value);
+  void insert_or_assign(gtsam::Key j, size_t value);
+
   void insert(const gtsam::VectorValues& values);
   void insert(const gtsam::DiscreteValues& values);
   void insert(const gtsam::HybridValues& values);
@@ -140,6 +143,10 @@ class HybridBayesNet {
   // Standard interface:
   double logProbability(const gtsam::HybridValues& values) const;
   double evaluate(const gtsam::HybridValues& values) const;
+  double error(const gtsam::HybridValues& values) const;
+
+  gtsam::HybridGaussianFactorGraph toFactorGraph(
+      const gtsam::VectorValues& measurements) const;
 
   gtsam::HybridValues optimize() const;
   gtsam::HybridValues sample(const gtsam::HybridValues &given) const;
