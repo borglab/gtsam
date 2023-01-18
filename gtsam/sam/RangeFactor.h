@@ -164,6 +164,7 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
   }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   /** Serialization function */
   template <typename ARCHIVE>
@@ -175,6 +176,7 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
     ar& boost::serialization::make_nvp(
         "Base", boost::serialization::base_object<Base>(*this));
   }
+#endif
 };  // \ RangeFactorWithTransform
 
 /// traits

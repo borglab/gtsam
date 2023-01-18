@@ -267,6 +267,7 @@ namespace gtsam {
       virtual Matrix covariance() const;
 
     private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
@@ -274,7 +275,7 @@ namespace gtsam {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
         ar & BOOST_SERIALIZATION_NVP(sqrt_information_);
       }
-
+#endif
     }; // Gaussian
 
     //---------------------------------------------------------------------------------------
@@ -362,6 +363,7 @@ namespace gtsam {
       }
 
     private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
@@ -370,6 +372,7 @@ namespace gtsam {
         ar & BOOST_SERIALIZATION_NVP(sigmas_);
         ar & BOOST_SERIALIZATION_NVP(invsigmas_);
       }
+#endif
     }; // Diagonal
 
     //---------------------------------------------------------------------------------------
@@ -517,6 +520,7 @@ namespace gtsam {
       shared_ptr unit() const;
 
     private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
@@ -524,6 +528,7 @@ namespace gtsam {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Diagonal);
         ar & BOOST_SERIALIZATION_NVP(mu_);
       }
+#endif
 
     }; // Constrained
 
@@ -585,6 +590,7 @@ namespace gtsam {
       inline double sigma() const { return sigma_; }
 
     private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
@@ -593,6 +599,7 @@ namespace gtsam {
         ar & BOOST_SERIALIZATION_NVP(sigma_);
         ar & BOOST_SERIALIZATION_NVP(invsigma_);
       }
+#endif
 
     };
 
@@ -634,12 +641,14 @@ namespace gtsam {
       void unwhitenInPlace(Eigen::Block<Vector>& /*v*/) const override {}
 
     private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Isotropic);
       }
+#endif
     };
 
     /**
@@ -727,6 +736,7 @@ namespace gtsam {
         const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise);
 
     private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
@@ -735,6 +745,7 @@ namespace gtsam {
         ar & boost::serialization::make_nvp("robust_", const_cast<RobustModel::shared_ptr&>(robust_));
         ar & boost::serialization::make_nvp("noise_", const_cast<NoiseModel::shared_ptr&>(noise_));
       }
+#endif
     };
 
     // Helper function

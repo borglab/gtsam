@@ -132,6 +132,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -142,6 +143,7 @@ private:
     ar & boost::serialization::make_nvp("AttitudeFactor",
         boost::serialization::base_object<AttitudeFactor>(*this));
   }
+#endif
 
 public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
@@ -215,6 +217,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -225,6 +228,7 @@ private:
     ar & boost::serialization::make_nvp("AttitudeFactor",
         boost::serialization::base_object<AttitudeFactor>(*this));
   }
+#endif
 
 public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW

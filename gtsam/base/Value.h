@@ -132,4 +132,6 @@ namespace gtsam {
 
 } /* namespace gtsam */
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(gtsam::Value)
+#endif

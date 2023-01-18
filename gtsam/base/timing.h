@@ -23,6 +23,7 @@
 
 #include <boost/version.hpp>
 
+#include <memory>
 #include <cstddef>
 #include <string>
 

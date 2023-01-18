@@ -78,6 +78,7 @@ GTSAM_EXPORT Matrix3 topLeft(const SO4 &Q, OptionalJacobian<9, 6> H = {});
  */
 GTSAM_EXPORT Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = {});
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 template <class Archive>
 /** Serialization function */
 void serialize(Archive &ar, SO4 &Q, const unsigned int /*version*/) {
@@ -102,6 +103,7 @@ void serialize(Archive &ar, SO4 &Q, const unsigned int /*version*/) {
   ar &boost::serialization::make_nvp("Q43", M(3, 2));
   ar &boost::serialization::make_nvp("Q44", M(3, 3));
 }
+#endif
 
 /*
  * Define the traits. internal::LieGroup provides both Lie group and Testable

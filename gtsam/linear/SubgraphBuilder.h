@@ -84,16 +84,18 @@ class GTSAM_EXPORT Subgraph {
   iterator end() { return edges_.end(); }
   const_iterator end() const { return edges_.end(); }
 
-  void save(const std::string &fn) const;
-  static Subgraph load(const std::string &fn);
   friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph);
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_NVP(edges_);
   }
+  void save(const std::string &fn) const;
+  static Subgraph load(const std::string &fn);
+#endif
 };
 
 /****************************************************************************/

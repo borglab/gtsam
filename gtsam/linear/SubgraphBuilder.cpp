@@ -93,6 +93,7 @@ vector<size_t> Subgraph::edgeIndices() const {
   return eid;
 }
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 /****************************************************************************/
 void Subgraph::save(const std::string &fn) const {
   std::ofstream os(fn.c_str());
@@ -110,6 +111,7 @@ Subgraph Subgraph::load(const std::string &fn) {
   is.close();
   return subgraph;
 }
+#endif
 
 /****************************************************************************/
 ostream &operator<<(ostream &os, const Subgraph::Edge &edge) {

@@ -210,6 +210,7 @@ namespace simulated2D {
     /// Default constructor
     GenericOdometry() { }
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -217,6 +218,7 @@ namespace simulated2D {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
+#endif
   };
 
   /**
@@ -259,6 +261,7 @@ namespace simulated2D {
     /// Default constructor
     GenericMeasurement() { }
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -266,6 +269,7 @@ namespace simulated2D {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
+#endif
   };
 
   /** Typedefs for regular use */

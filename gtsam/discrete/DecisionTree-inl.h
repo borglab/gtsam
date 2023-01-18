@@ -445,6 +445,7 @@ namespace gtsam {
    private:
     using Base = DecisionTree<L, Y>::Node;
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template <class ARCHIVE>
@@ -454,6 +455,7 @@ namespace gtsam {
       ar& BOOST_SERIALIZATION_NVP(branches_);
       ar& BOOST_SERIALIZATION_NVP(allSame_);
     }
+#endif
   };  // Choice
 
   /****************************************************************************/

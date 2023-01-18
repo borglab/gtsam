@@ -176,12 +176,14 @@ namespace gtsam {
   private:
 
     /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & boost::serialization::make_nvp("BetweenFactor",
           boost::serialization::base_object<BetweenFactor<VALUE> >(*this));
     }
+#endif
   }; // \class BetweenConstraint
 
   /// traits

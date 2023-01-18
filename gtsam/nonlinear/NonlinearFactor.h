@@ -717,6 +717,7 @@ protected:
     }
   }
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -724,6 +725,7 @@ protected:
     ar& boost::serialization::make_nvp(
         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
   }
+#endif
 
  public:
   /// @name Shortcut functions `key1()` -> `key<1>()`

@@ -231,6 +231,7 @@ class FunctorizedFactor2 : public NoiseModelFactorN<T1, T2> {
   /// @}
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -241,6 +242,7 @@ class FunctorizedFactor2 : public NoiseModelFactorN<T1, T2> {
     ar &BOOST_SERIALIZATION_NVP(measured_);
     ar &BOOST_SERIALIZATION_NVP(func_);
   }
+#endif
 };
 
 /// traits

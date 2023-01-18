@@ -139,8 +139,8 @@ public:
 
 private:
 
-  /// Serialization function
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
+  /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
@@ -271,6 +271,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   /// Serialization function
   template<class ARCHIVE>
@@ -279,6 +280,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
+#endif
 };
 
 } // \ namespace gtsam

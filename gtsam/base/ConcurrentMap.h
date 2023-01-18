@@ -113,7 +113,6 @@ private:
     std::copy(this->begin(), this->end(), map.begin());
     ar & BOOST_SERIALIZATION_NVP(map);
   }
-#endif
   template<class Archive>
   void load(Archive& ar, const unsigned int /*version*/)
   {
@@ -124,6 +123,7 @@ private:
     this->insert(map.begin(), map.end());
   }
   BOOST_SERIALIZATION_SPLIT_MEMBER()
+#endif
 };
 
 }

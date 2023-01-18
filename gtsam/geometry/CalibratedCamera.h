@@ -416,6 +416,7 @@ private:
   /// @name Advanced Interface
   /// @{
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -424,6 +425,7 @@ private:
         & boost::serialization::make_nvp("PinholeBase",
             boost::serialization::base_object<PinholeBase>(*this));
   }
+#endif
 
   /// @}
 };
