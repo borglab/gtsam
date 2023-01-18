@@ -147,8 +147,8 @@ public:
   /// @{
 
 private:
-  /// Serialization function
   template <class ARCHIVE>
+  /// Serialization function
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& boost::serialization::make_nvp("bearing", bearing_);
     ar& boost::serialization::make_nvp("range", range_);

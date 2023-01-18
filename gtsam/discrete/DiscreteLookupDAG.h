@@ -126,8 +126,8 @@ class GTSAM_EXPORT DiscreteLookupDAG : public BayesNet<DiscreteLookupTable> {
   /// @}
 
  private:
-  /** Serialization function */
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {

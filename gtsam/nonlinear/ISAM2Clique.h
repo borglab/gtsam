@@ -147,8 +147,8 @@ class GTSAM_EXPORT ISAM2Clique
   void restoreFromOriginals(const Vector& originalValues,
                             VectorValues* delta) const;
 
-  /** Serialization function */
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {

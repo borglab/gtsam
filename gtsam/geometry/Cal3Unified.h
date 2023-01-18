@@ -138,8 +138,8 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
   /// @}
 
  private:
-  /** Serialization function */
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {

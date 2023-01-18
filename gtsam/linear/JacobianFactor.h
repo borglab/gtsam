@@ -413,8 +413,8 @@ namespace gtsam {
     // be very selective on who can access these private methods:
     template<typename T> friend class ExpressionFactor;
 
-    /** Serialization function */
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+    /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void save(ARCHIVE & ar, const unsigned int version) const {

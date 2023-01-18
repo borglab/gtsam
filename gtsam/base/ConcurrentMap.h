@@ -100,8 +100,8 @@ public:
 #endif
 
 private:
-  /** Serialization function */
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
   void save(Archive& ar, const unsigned int /*version*/) const

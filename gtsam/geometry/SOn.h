@@ -377,8 +377,8 @@ template <>
 GTSAM_EXPORT
 typename SOn::VectorN2 SOn::vec(DynamicJacobian H) const;
 
-/** Serialization function */
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+/** Serialization function */
 template<class Archive>
 void serialize(
   Archive& ar, SOn& Q,

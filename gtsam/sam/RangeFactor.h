@@ -164,8 +164,8 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
   }
 
  private:
-  /** Serialization function */
   friend class boost::serialization::access;
+  /** Serialization function */
   template <typename ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     // **IMPORTANT** We need to (de)serialize parameters before the base class,

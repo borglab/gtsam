@@ -125,9 +125,9 @@ struct GTSAM_EXPORT SfmData {
   /// @name Serialization
   /// @{
 
-  /** Serialization function */
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
+  /** Serialization function */
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_NVP(cameras);

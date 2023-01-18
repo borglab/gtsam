@@ -213,8 +213,8 @@ namespace gtsam {
     // Cast to derived type (const) (casts down to derived conditional type, then up to factor type)
     const FACTOR& asFactor() const { return static_cast<const FACTOR&>(static_cast<const DERIVEDCONDITIONAL&>(*this)); }
 
-    /** Serialization function */
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+    /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {

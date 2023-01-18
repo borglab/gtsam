@@ -255,8 +255,8 @@ class GTSAM_EXPORT GaussianMixture
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;
 
-  /** Serialization function */
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive &ar, const unsigned int /*version*/) {

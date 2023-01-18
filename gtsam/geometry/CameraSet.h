@@ -465,8 +465,8 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
   }
 
  private:
-  /// Serialization function
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
+  /// Serialization function
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
