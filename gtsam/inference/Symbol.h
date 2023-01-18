@@ -21,7 +21,9 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 #include <cstdint>
 #include <functional>
 

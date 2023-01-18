@@ -30,7 +30,9 @@
 #include <gtsam/geometry/CameraSet.h>
 
 #include <optional>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/optional.hpp>
+#endif
 #include <vector>
 
 namespace gtsam {

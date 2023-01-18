@@ -48,8 +48,10 @@ using ConcurrentMapBase = gtsam::FastMap<KEY, VALUE>;
 
 #endif
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/split_member.hpp>
+#endif
 #include <boost/static_assert.hpp>
 
 #include <gtsam/base/FastVector.h>

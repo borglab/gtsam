@@ -28,7 +28,9 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/utilities.h>  // boost::index_sequence
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/base_object.hpp>
+#endif
 #include <cstddef>
 #include <type_traits>
 

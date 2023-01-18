@@ -23,7 +23,9 @@
 #include <gtsam/base/types.h>
 #include <gtsam/discrete/Assignment.h>
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 #include <memory>
 #include <functional>
 #include <iostream>

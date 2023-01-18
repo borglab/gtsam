@@ -19,7 +19,9 @@
 
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/std_optional_serialization.h>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 
 #include <optional>
 

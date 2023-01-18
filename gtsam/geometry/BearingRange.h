@@ -22,7 +22,9 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <boost/concept/assert.hpp>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 #include <iostream>
 
 namespace gtsam {
@@ -147,15 +149,16 @@ public:
   /// @{
 
 private:
-  template <class ARCHIVE>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /// Serialization function
+  template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& boost::serialization::make_nvp("bearing", bearing_);
     ar& boost::serialization::make_nvp("range", range_);
   }
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
+#endif
 
   /// @}
 
@@ -163,7 +166,6 @@ private:
   enum {
     NeedsToAlign = (sizeof(B) % 16) == 0 || (sizeof(R) % 16) == 0
   };
-#endif
 public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };

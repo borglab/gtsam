@@ -24,7 +24,9 @@
 #include <gtsam/dllexport.h>
 #include <Eigen/Core>
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 
 #include <iostream> // TODO(frank): how to avoid?
 #include <string>

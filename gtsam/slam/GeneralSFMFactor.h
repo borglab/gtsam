@@ -37,7 +37,9 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/none.hpp>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 #include <iostream>
 #include <string>
 
