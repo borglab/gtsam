@@ -59,6 +59,7 @@ public:
   const Values& linearizationPoint() const { return lin_points_; }
 
 private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -67,6 +68,7 @@ private:
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(lin_points_);
   }
+#endif
 
 };
 
@@ -146,8 +148,8 @@ public:
   Vector error_vector(const Values& c) const;
 
 private:
-  /** Serialization function */
   friend class boost::serialization::access;
+  /** Serialization function */
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("LinearizedJacobianFactor",

@@ -706,6 +706,7 @@ public:
     }
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -713,6 +714,7 @@ private:
     ar & boost::serialization::make_nvp("NonlinearFactor2",
         boost::serialization::base_object<Base>(*this));
   }
+#endif
 
 
 

@@ -101,6 +101,7 @@ namespace gtsam {
 
   private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -109,6 +110,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(prior_);
       ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
     }
+#endif
   };
 
 } /// namespace gtsam

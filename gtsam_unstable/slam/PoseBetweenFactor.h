@@ -119,6 +119,7 @@ namespace gtsam {
 
   private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -127,6 +128,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(measured_);
 
     }
+#endif
   }; // \class PoseBetweenFactor
 
 } /// namespace gtsam

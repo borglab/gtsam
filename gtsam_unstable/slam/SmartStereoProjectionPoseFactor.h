@@ -141,6 +141,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
   Base::Cameras cameras(const Values& values) const override;
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -148,6 +149,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(K_all_);
   }
+#endif
 
 };  // end of class declaration
 

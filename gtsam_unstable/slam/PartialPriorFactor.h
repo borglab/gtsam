@@ -140,6 +140,7 @@ namespace gtsam {
     const std::vector<size_t>& indices() const { return indices_; }
 
   private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -151,6 +152,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(indices_);
       // ar & BOOST_SERIALIZATION_NVP(H_);
     }
+#endif
   }; // \class PartialPriorFactor
 
 } /// namespace gtsam

@@ -172,6 +172,7 @@ private:
   /// @name Advanced Interface
   /// @{
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -179,6 +180,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(pose_);
     ar & BOOST_SERIALIZATION_NVP(k_);
   }
+#endif
   /// @}
 }; // \class InvDepthCamera
-} // \namesapce gtsam
+} // \namespace gtsam

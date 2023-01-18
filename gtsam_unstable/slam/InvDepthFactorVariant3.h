@@ -140,6 +140,7 @@ public:
 private:
 
   /// Serialization function
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
@@ -147,6 +148,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
+#endif
 };
 
 /**
@@ -269,8 +271,8 @@ public:
 
 private:
 
-  /// Serialization function
   friend class boost::serialization::access;
+  /// Serialization function
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
