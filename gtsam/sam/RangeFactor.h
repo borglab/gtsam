@@ -59,8 +59,9 @@ class RangeFactor : public ExpressionFactorN<T, A1, A2> {
     return Expression<T>(Range<A1, A2>(), a1_, a2_);
   }
 
-  Vector evaluateError(const A1& a1, const A2& a2, OptionalMatrixType H1 = OptionalNone,
-                               OptionalMatrixType H2 = OptionalNone) const {
+  Vector evaluateError(const A1& a1, const A2& a2, 
+      OptionalMatrixType H1 = OptionalNone,
+      OptionalMatrixType H2 = OptionalNone) const {
     std::vector<Matrix> Hs(2);
     const auto& keys = Factor::keys();
     const Vector error = Base::unwhitenedError(
