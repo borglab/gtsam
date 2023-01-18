@@ -107,7 +107,7 @@ class SmartRangeFactor: public NoiseModelFactor {
 
     Circle2 circle1 = circles.front();
     std::optional<Point2> best_fh;
-    auto bestCircle2 = boost::make_optional(false, circle1);  // fixes issue #38
+    std::optional<Circle2> bestCircle2 = std::nullopt;  // fixes issue #38
 
     // loop over all circles
     for (const Circle2& it : circles) {
