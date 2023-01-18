@@ -39,6 +39,7 @@ void HybridNonlinearISAM::update(const HybridNonlinearFactorGraph& newFactors,
   if (newFactors.size() > 0) {
     // Reorder and relinearize every reorderInterval updates
     if (reorderInterval_ > 0 && ++reorderCounter_ >= reorderInterval_) {
+      // TODO(Varun) Relinearization doesn't take into account pruning
       reorder_relinearize();
       reorderCounter_ = 0;
     }
