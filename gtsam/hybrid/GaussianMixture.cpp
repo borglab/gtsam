@@ -299,19 +299,19 @@ void GaussianMixture::prune(const DecisionTreeFactor &decisionTree) {
 /* *******************************************************************************/
 AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
     const VectorValues &continuousValues) const {
-  // functor to calculate to double logProbability value from
+  // functor to calculate (double) logProbability value from
   // GaussianConditional.
-  auto errorFunc =
+  auto probFunc =
       [continuousValues](const GaussianConditional::shared_ptr &conditional) {
         if (conditional) {
           return conditional->logProbability(continuousValues);
         } else {
-          // Return arbitrarily large logProbability if conditional is null
+          // Return arbitrarily small logProbability if conditional is null
           // Conditional is null if it is pruned out.
-          return 1e50;
+          return -1e20;
         }
       };
-  return DecisionTree<Key, double>(conditionals_, errorFunc);
+  return DecisionTree<Key, double>(conditionals_, probFunc);
 }
 
 /* *******************************************************************************/
