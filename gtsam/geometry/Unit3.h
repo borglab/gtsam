@@ -28,7 +28,6 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/dllexport.h>
 
-#include <boost/optional.hpp>
 
 #include <random>
 #include <string>

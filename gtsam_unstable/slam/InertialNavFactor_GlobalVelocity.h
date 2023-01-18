@@ -27,7 +27,6 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <boost/bind/bind.hpp>
-#include <boost/optional.hpp>
 
 #include <ostream>
 

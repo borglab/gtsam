@@ -23,7 +23,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_unstable/dllexport.h>
 
-#include <boost/optional.hpp>
 
 namespace gtsam {
 

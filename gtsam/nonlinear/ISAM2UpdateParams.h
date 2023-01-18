@@ -20,7 +20,6 @@
 #include <gtsam/dllexport.h>              // GTSAM_EXPORT
 #include <gtsam/inference/Key.h>          // Key, KeySet
 #include <gtsam/nonlinear/ISAM2Result.h>  //FactorIndices
-#include <boost/optional.hpp>
 
 namespace gtsam {
 

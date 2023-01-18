@@ -22,7 +22,6 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/PinholeCamera.h>
-#include <boost/optional.hpp>
 #include "gtsam/geometry/Cal3_S2.h"
 
 namespace gtsam {

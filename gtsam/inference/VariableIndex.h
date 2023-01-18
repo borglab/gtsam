@@ -23,7 +23,6 @@
 #include <gtsam/base/FastVector.h>
 #include <gtsam/dllexport.h>
 
-#include <boost/optional/optional.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 
 #include <cassert>

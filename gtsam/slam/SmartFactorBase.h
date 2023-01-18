@@ -29,7 +29,6 @@
 #include <gtsam/linear/RegularHessianFactor.h>
 #include <gtsam/geometry/CameraSet.h>
 
-#include <boost/optional.hpp>
 #include <optional>
 #include <boost/serialization/optional.hpp>
 #include <boost/make_shared.hpp>

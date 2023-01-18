@@ -12,7 +12,6 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/optional.hpp>
 #include <boost/format.hpp>
 
 #include <algorithm>

@@ -10,7 +10,6 @@
 
 #include <map>
 #include <vector>
-#include <boost/optional.hpp>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/Symbol.h>
 

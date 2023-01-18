@@ -23,7 +23,6 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphSolver.h>
-#include <boost/optional.hpp>
 #include <string>
 
 namespace gtsam {

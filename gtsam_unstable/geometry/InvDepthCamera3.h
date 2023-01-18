@@ -12,7 +12,6 @@
 #pragma once
 
 #include <cmath>
-#include <boost/optional.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
