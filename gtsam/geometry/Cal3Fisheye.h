@@ -185,6 +185,7 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @{
 
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
@@ -195,6 +196,7 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
     ar& BOOST_SERIALIZATION_NVP(k3_);
     ar& BOOST_SERIALIZATION_NVP(k4_);
   }
+#endif
 
   /// @}
 };

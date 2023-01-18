@@ -138,6 +138,7 @@ class GTSAM_EXPORT HybridFactor : public Factor {
 
  private:
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
@@ -148,6 +149,7 @@ class GTSAM_EXPORT HybridFactor : public Factor {
     ar &BOOST_SERIALIZATION_NVP(discreteKeys_);
     ar &BOOST_SERIALIZATION_NVP(continuousKeys_);
   }
+#endif
 };
 // HybridFactor
 

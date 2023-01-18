@@ -183,6 +183,7 @@ public:
 private:
 
   /// Serialization function
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
@@ -194,6 +195,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(allow_error_);
     ar & BOOST_SERIALIZATION_NVP(error_gain_);
   }
+#endif
 
 };
 // \class NonlinearEquality

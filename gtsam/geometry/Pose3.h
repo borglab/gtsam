@@ -393,12 +393,14 @@ public:
 
  private:
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(R_);
     ar & BOOST_SERIALIZATION_NVP(t_);
   }
+#endif
   /// @}
 
 #ifdef GTSAM_USE_QUATERNIONS

@@ -80,6 +80,7 @@ namespace gtsam {
     bool equals(const DiscreteKeys& other, double tol = 0) const;
 
     /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     friend class boost::serialization::access;
     template <class ARCHIVE>
     void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
@@ -87,6 +88,7 @@ namespace gtsam {
           "DiscreteKeys",
           boost::serialization::base_object<std::vector<DiscreteKey>>(*this));
     }
+#endif
 
   }; // DiscreteKeys
 

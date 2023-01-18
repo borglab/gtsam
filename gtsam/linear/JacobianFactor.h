@@ -414,6 +414,7 @@ namespace gtsam {
     template<typename T> friend class ExpressionFactor;
 
     /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void save(ARCHIVE & ar, const unsigned int version) const {
@@ -432,6 +433,7 @@ namespace gtsam {
         ar << BOOST_SERIALIZATION_NVP(model_);
       }
     }
+#endif
 
     template<class ARCHIVE>
     void load(ARCHIVE & ar, const unsigned int version) {

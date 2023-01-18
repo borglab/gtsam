@@ -107,6 +107,7 @@ namespace gtsam {
   private:
 
     /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
@@ -114,6 +115,7 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(factor_);
     }
+#endif
   }; // \class AntiFactor
 
 } /// namespace gtsam

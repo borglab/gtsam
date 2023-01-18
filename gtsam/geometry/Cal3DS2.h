@@ -105,12 +105,14 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
   /// @{
 
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
     ar& boost::serialization::make_nvp(
         "Cal3DS2", boost::serialization::base_object<Cal3DS2_Base>(*this));
   }
+#endif
 
   /// @}
 };

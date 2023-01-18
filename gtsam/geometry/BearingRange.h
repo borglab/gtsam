@@ -154,6 +154,7 @@ private:
     ar& boost::serialization::make_nvp("range", range_);
   }
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
 
   /// @}
@@ -162,6 +163,7 @@ private:
   enum {
     NeedsToAlign = (sizeof(B) % 16) == 0 || (sizeof(R) % 16) == 0
   };
+#endif
 public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };

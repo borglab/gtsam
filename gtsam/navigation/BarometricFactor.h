@@ -98,6 +98,7 @@ class GTSAM_EXPORT BarometricFactor : public NoiseModelFactorN<Pose3, double> {
 
    private:
     /// Serialization function
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     friend class boost::serialization::access;
     template <class ARCHIVE>
     void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
@@ -107,6 +108,7 @@ class GTSAM_EXPORT BarometricFactor : public NoiseModelFactorN<Pose3, double> {
             boost::serialization::base_object<Base>(*this));
         ar& BOOST_SERIALIZATION_NVP(nT_);
     }
+#endif
 };
 
 }  // namespace gtsam

@@ -353,6 +353,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
 
  private:
   /// Serialization function
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
@@ -361,6 +362,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     // ar& BOOST_SERIALIZATION_NVP(cameraRig_);
     // ar& BOOST_SERIALIZATION_NVP(cameraIds_);
   }
+#endif
 };
 // end of class declaration
 

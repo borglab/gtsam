@@ -64,12 +64,14 @@ public:
   }
 
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("nZ_",  nZ_);
     ar & boost::serialization::make_nvp("bRef_", bRef_);
   }
+#endif
 };
 
 /**

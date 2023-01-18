@@ -399,6 +399,7 @@ namespace gtsam {
 
   private:
     /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
@@ -410,6 +411,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
       ar & BOOST_SERIALIZATION_NVP(blockStart_);
     }
+#endif
   };
 
   /// Foward declare exception class

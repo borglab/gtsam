@@ -141,12 +141,14 @@ private:
   /// @{
 
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(biasAcc_);
     ar & BOOST_SERIALIZATION_NVP(biasGyro_);
   }
+#endif
 
 
 public:

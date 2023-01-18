@@ -157,6 +157,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   /// @{
 
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
@@ -166,6 +167,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
     ar& BOOST_SERIALIZATION_NVP(k2_);
     ar& BOOST_SERIALIZATION_NVP(tol_);
   }
+#endif
 
   /// @}
 };

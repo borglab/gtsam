@@ -174,6 +174,7 @@ class GTSAM_EXPORT PreintegrationBase {
 
  private:
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
@@ -181,6 +182,7 @@ class GTSAM_EXPORT PreintegrationBase {
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
     ar & BOOST_SERIALIZATION_NVP(deltaTij_);
   }
+#endif
 
  public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW

@@ -101,6 +101,7 @@ public:
 
 private:
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template<class Archive>
   void save(Archive& ar, const unsigned int /*version*/) const
@@ -110,6 +111,7 @@ private:
     std::copy(this->begin(), this->end(), map.begin());
     ar & BOOST_SERIALIZATION_NVP(map);
   }
+#endif
   template<class Archive>
   void load(Archive& ar, const unsigned int /*version*/)
   {

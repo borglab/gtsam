@@ -205,6 +205,7 @@ class GTSAM_EXPORT HybridConditional
 
  private:
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
@@ -225,6 +226,7 @@ class GTSAM_EXPORT HybridConditional
           static_cast<GaussianMixture*>(NULL), static_cast<Factor*>(NULL));
     }
   }
+#endif
 
 };  // HybridConditional
 

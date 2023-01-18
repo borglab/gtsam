@@ -152,6 +152,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   /// @}
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -159,6 +160,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(factors_);
   }
+#endif
 };
 
 // traits

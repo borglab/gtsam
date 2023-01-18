@@ -72,6 +72,7 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
 protected:
 
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
@@ -82,6 +83,7 @@ protected:
     ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
     ar & BOOST_SERIALIZATION_NVP(n_gravity);
   }
+#endif
 
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions

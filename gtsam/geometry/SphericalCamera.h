@@ -53,12 +53,14 @@ class GTSAM_EXPORT EmptyCal {
 
  private:
   /// Serialization function
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
     ar& boost::serialization::make_nvp(
         "EmptyCal", boost::serialization::base_object<EmptyCal>(*this));
   }
+#endif
 };
 
 /**

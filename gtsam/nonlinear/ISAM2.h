@@ -341,6 +341,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
 
  private:
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
@@ -357,6 +358,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
       ar & BOOST_SERIALIZATION_NVP(fixedVariables_);
       ar & BOOST_SERIALIZATION_NVP(update_count_);
   }
+#endif
 
 };  // ISAM2
 

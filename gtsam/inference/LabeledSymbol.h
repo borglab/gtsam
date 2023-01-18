@@ -113,6 +113,7 @@ public:
 private:
 
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
@@ -120,6 +121,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(label_);
     ar & BOOST_SERIALIZATION_NVP(j_);
   }
+#endif
 }; // \class LabeledSymbol
 
 /** Create a symbol key from a character, label and index, i.e. xA5. */

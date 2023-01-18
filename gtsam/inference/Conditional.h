@@ -214,11 +214,13 @@ namespace gtsam {
     const FACTOR& asFactor() const { return static_cast<const FACTOR&>(static_cast<const DERIVEDCONDITIONAL&>(*this)); }
 
     /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(nrFrontals_);
     }
+#endif
 
     /// @}
 

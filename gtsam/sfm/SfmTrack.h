@@ -162,6 +162,7 @@ struct GTSAM_EXPORT SfmTrack : SfmTrack2d {
   /// @{
 
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
@@ -172,6 +173,7 @@ struct GTSAM_EXPORT SfmTrack : SfmTrack2d {
     ar& BOOST_SERIALIZATION_NVP(measurements);
     ar& BOOST_SERIALIZATION_NVP(siftIndices);
   }
+#endif
   /// @}
 };
 

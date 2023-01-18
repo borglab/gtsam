@@ -49,12 +49,14 @@ class GTSAM_EXPORT Subgraph {
     friend std::ostream &operator<<(std::ostream &os, const Edge &edge);
 
    private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     friend class boost::serialization::access;
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /*version*/) {
       ar &BOOST_SERIALIZATION_NVP(index);
       ar &BOOST_SERIALIZATION_NVP(weight);
     }
+#endif
   };
 
   typedef std::vector<Edge> Edges;

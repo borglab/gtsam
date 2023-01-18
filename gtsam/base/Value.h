@@ -119,10 +119,12 @@ namespace gtsam {
      *       The last two links explain why these export lines have to be in the same source module that includes
      *       any of the archive class headers.
      * */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & /*ar*/, const unsigned int /*version*/) {
     }
+#endif
 
   };
 

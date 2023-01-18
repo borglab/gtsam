@@ -139,6 +139,7 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
 
  private:
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
@@ -146,6 +147,7 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
         "Cal3Unified", boost::serialization::base_object<Cal3DS2_Base>(*this));
     ar& BOOST_SERIALIZATION_NVP(xi_);
   }
+#endif
 };
 
 template <>

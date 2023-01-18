@@ -529,6 +529,7 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
 
    private:
     /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     friend class boost::serialization::access;
     template <class ARCHIVE>
     void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
@@ -550,6 +551,7 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
       ar& boost::serialization::make_nvp("z", quaternion_.z());
 #endif
     }
+#endif
 
 #ifdef GTSAM_USE_QUATERNIONS
   // only align if quaternion, Matrix3 has no alignment requirements
