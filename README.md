@@ -2,9 +2,9 @@
 
 **Important Note**
 
-As of Dec 2021, the `develop` branch is officially in "Pre 4.2" mode. A great new feature we will be adding in 4.2 is *hybrid inference* a la DCSLAM (Kevin Doherty et al) and we envision several API-breaking changes will happen in the discrete folder.
+**As of January 2023, the `develop` branch is officially in "Pre 4.3" mode. We envision several API-breaking changes as we switch to C++17 and away from boost.**
 
-In addition, features deprecated in 4.1 will be removed. Please use the last [4.1.1 release](https://github.com/borglab/gtsam/releases/tag/4.1.1) if you need those features. However, most (not all, unfortunately) are easily converted and can be tracked down (in 4.1.1) by disabling the cmake flag `GTSAM_ALLOW_DEPRECATED_SINCE_V42`.
+In addition, features deprecated in 4.2 will be removed. Please use the last [4.2 release](https://github.com/borglab/gtsam/releases/tag/4.2) if you need those features. However, most are easily converted and can be tracked down (in 4.2) by disabling the cmake flag `GTSAM_ALLOW_DEPRECATED_SINCE_V42`.
 
 ## What is GTSAM?
 
