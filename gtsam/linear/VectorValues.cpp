@@ -28,7 +28,6 @@ using namespace std;
 namespace gtsam {
 
   using boost::adaptors::transformed;
-  using boost::adaptors::map_values;
   using boost::accumulate;
 
   /* ************************************************************************ */
@@ -129,8 +128,9 @@ namespace gtsam {
   /* ************************************************************************ */
   void VectorValues::setZero()
   {
-    for(Vector& v: values_ | map_values)
-      v.setZero();
+    for(auto& [key, value] : *this) {
+      value.setZero();
+    }
   }
 
   /* ************************************************************************ */
@@ -178,14 +178,15 @@ namespace gtsam {
   Vector VectorValues::vector() const {
     // Count dimensions
     DenseIndex totalDim = 0;
-    for (const Vector& v : *this | map_values) totalDim += v.size();
+    for (const auto& [key, value] : *this)
+      totalDim += value.size();
 
     // Copy vectors
     Vector result(totalDim);
     DenseIndex pos = 0;
-    for (const Vector& v : *this | map_values) {
-      result.segment(pos, v.size()) = v;
-      pos += v.size();
+    for (const auto& [key, value] : *this) {
+      result.segment(pos, value.size()) = value;
+      pos += value.size();
     }
 
     return result;
@@ -196,7 +197,7 @@ namespace gtsam {
   {
     // Count dimensions
     DenseIndex totalDim = 0;
-    for(size_t dim: keys | map_values)
+    for (const auto& [key, dim] : keys)
       totalDim += dim;
     Vector result(totalDim);
     size_t j = 0;
@@ -236,8 +237,6 @@ namespace gtsam {
     if(this->size() != v.size())
       throw invalid_argument("VectorValues::dot called with a VectorValues of different structure");
     double result = 0.0;
-    typedef std::tuple<value_type, value_type> ValuePair;
-    using boost::adaptors::map_values;
     auto this_it = this->begin();
     auto v_it = v.begin();
     for(; this_it != this->end(); ++this_it, ++v_it) {
@@ -258,9 +257,9 @@ namespace gtsam {
   /* ************************************************************************ */
   double VectorValues::squaredNorm() const {
     double sumSquares = 0.0;
-    using boost::adaptors::map_values;
-    for(const Vector& v: *this | map_values)
-      sumSquares += v.squaredNorm();
+    for(const auto& [key, value]: *this) {
+      sumSquares += value.squaredNorm();
+    }
     return sumSquares;
   }
 
@@ -374,8 +373,9 @@ namespace gtsam {
   /* ************************************************************************ */
   VectorValues& VectorValues::operator*=(double alpha)
   {
-    for(Vector& v: *this | map_values)
-      v *= alpha;
+    for (auto& [key, value]: *this) {
+      value *= alpha;
+    }
     return *this;
   }
 

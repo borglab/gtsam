@@ -26,10 +26,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/range/adaptor/map.hpp>
-namespace br { using namespace boost::range; using namespace boost::adaptors; }
-
 #include <string.h>
 #include <iostream>
 
@@ -450,7 +446,7 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
   GaussianBayesTree actBT = *lfg.eliminateMultifrontal();
 
   // Check that all sigmas in an unconstrained bayes tree are set to one
-  for(const GaussianBayesTree::sharedClique& clique: actBT.nodes() | br::map_values) {
+  for (const auto& [key, clique]: actBT.nodes()) {
     GaussianConditional::shared_ptr conditional = clique->conditional();
     //size_t dim = conditional->rows();
     //EXPECT(assert_equal(gtsam::Vector::Ones(dim), conditional->get_model()->sigmas(), tol));

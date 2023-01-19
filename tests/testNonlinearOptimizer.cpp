@@ -31,8 +31,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/range/adaptor/map.hpp>
-using boost::adaptors::map_values;
 
 #include <iostream>
 #include <fstream>
@@ -302,7 +300,9 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
     GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
     VectorValues d = linear->hessianDiagonal();
     VectorValues sqrtHessianDiagonal = d;
-    for (Vector& v : sqrtHessianDiagonal | map_values) v = v.cwiseSqrt();
+    for (auto& [key, value] : sqrtHessianDiagonal) {
+      value = value.cwiseSqrt();
+    }
     GaussianFactorGraph damped = optimizer.buildDampedSystem(*linear, sqrtHessianDiagonal);
     VectorValues  expectedDiagonal = d + params.lambdaInitial * d;
     EXPECT(assert_equal(expectedDiagonal, damped.hessianDiagonal()));
