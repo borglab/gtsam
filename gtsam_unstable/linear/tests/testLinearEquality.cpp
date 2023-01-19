@@ -46,7 +46,7 @@ TEST(LinearEquality, constructors_and_accessors) {
   {
     // One term constructor
     LinearEquality expected(
-        boost::make_iterator_range(terms.begin(), terms.begin() + 1), b, 0);
+        std::vector(terms.begin(), terms.begin() + 1), b, 0);
     LinearEquality actual(terms[0].first, terms[0].second, b, 0);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[0].first, (long)actual.keys().back());
@@ -58,7 +58,7 @@ TEST(LinearEquality, constructors_and_accessors) {
   {
     // Two term constructor
     LinearEquality expected(
-        boost::make_iterator_range(terms.begin(), terms.begin() + 2), b, 0);
+        std::vector(terms.begin(), terms.begin() + 2), b, 0);
     LinearEquality actual(terms[0].first, terms[0].second, terms[1].first,
                           terms[1].second, b, 0);
     EXPECT(assert_equal(expected, actual));
@@ -71,7 +71,7 @@ TEST(LinearEquality, constructors_and_accessors) {
   {
     // Three term constructor
     LinearEquality expected(
-        boost::make_iterator_range(terms.begin(), terms.begin() + 3), b, 0);
+        std::vector(terms.begin(), terms.begin() + 3), b, 0);
     LinearEquality actual(terms[0].first, terms[0].second, terms[1].first,
                           terms[1].second, terms[2].first, terms[2].second, b,
                           0);

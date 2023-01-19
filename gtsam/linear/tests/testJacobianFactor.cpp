@@ -55,7 +55,7 @@ TEST(JacobianFactor, constructors_and_accessors)
   {
     // b vector only constructor
     JacobianFactor expected(
-      boost::make_iterator_range(terms.begin(), terms.begin()), b);
+      std::vector(terms.begin(), terms.begin()), b);
     JacobianFactor actual(b);
     EXPECT(assert_equal(expected, actual));
     EXPECT(assert_equal(b, expected.getb()));
@@ -66,7 +66,7 @@ TEST(JacobianFactor, constructors_and_accessors)
   {
     // One term constructor
     JacobianFactor expected(
-      boost::make_iterator_range(terms.begin(), terms.begin() + 1), b, noise);
+      std::vector(terms.begin(), terms.begin() + 1), b, noise);
     JacobianFactor actual(terms[0].first, terms[0].second, b, noise);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[0].first, (long)actual.keys().back());
@@ -79,7 +79,7 @@ TEST(JacobianFactor, constructors_and_accessors)
   {
     // Two term constructor
     JacobianFactor expected(
-      boost::make_iterator_range(terms.begin(), terms.begin() + 2), b, noise);
+      std::vector(terms.begin(), terms.begin() + 2), b, noise);
     JacobianFactor actual(terms[0].first, terms[0].second,
       terms[1].first, terms[1].second, b, noise);
     EXPECT(assert_equal(expected, actual));
@@ -93,7 +93,7 @@ TEST(JacobianFactor, constructors_and_accessors)
   {
     // Three term constructor
     JacobianFactor expected(
-      boost::make_iterator_range(terms.begin(), terms.begin() + 3), b, noise);
+      std::vector(terms.begin(), terms.begin() + 3), b, noise);
     JacobianFactor actual(terms[0].first, terms[0].second,
       terms[1].first, terms[1].second, terms[2].first, terms[2].second, b, noise);
     EXPECT(assert_equal(expected, actual));
@@ -107,7 +107,7 @@ TEST(JacobianFactor, constructors_and_accessors)
   {
     // Test three-term constructor with std::map
     JacobianFactor expected(
-      boost::make_iterator_range(terms.begin(), terms.begin() + 3), b, noise);
+      std::vector(terms.begin(), terms.begin() + 3), b, noise);
     map<Key,Matrix> mapTerms;
     // note order of insertion plays no role: order will be determined by keys
     mapTerms.insert(terms[2]);
@@ -125,7 +125,7 @@ TEST(JacobianFactor, constructors_and_accessors)
   {
     // VerticalBlockMatrix constructor
     JacobianFactor expected(
-      boost::make_iterator_range(terms.begin(), terms.begin() + 3), b, noise);
+      std::vector(terms.begin(), terms.begin() + 3), b, noise);
     VerticalBlockMatrix blockMatrix(Dims{3, 3, 3, 1}, 3);
     blockMatrix(0) = terms[0].second;
     blockMatrix(1) = terms[1].second;

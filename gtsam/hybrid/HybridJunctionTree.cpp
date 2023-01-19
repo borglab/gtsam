@@ -129,9 +129,9 @@ struct HybridConstructorTraversalData {
       // Check if we should merge the i^th child
       if (nrParents + nrFrontals == childConditionals[i]->nrParents()) {
         const bool myType =
-            data.discreteKeys.exists(conditional->frontals()[0]);
+            data.discreteKeys.exists(conditional->frontals().front());
         const bool theirType =
-            data.discreteKeys.exists(childConditionals[i]->frontals()[0]);
+            data.discreteKeys.exists(childConditionals[i]->frontals().front());
 
         if (myType == theirType) {
           // Increment number of frontal variables
