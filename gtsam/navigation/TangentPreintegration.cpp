@@ -112,7 +112,7 @@ void TangentPreintegration::update(const Vector3& measuredAcc,
   // Possibly correct for sensor pose by converting to body frame
   Matrix3 D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega;
   if (p().body_P_sensor)
-    boost::tie(acc, omega) = correctMeasurementsBySensorPose(acc, omega,
+    std::tie(acc, omega) = correctMeasurementsBySensorPose(acc, omega,
         D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega);
 
   // Do update

@@ -114,7 +114,7 @@ protected:
    * If there is a blocking constraint, the closest one will be added to the
    * working set and become active in the next iteration.
    */
-  boost::tuple<double, int> computeStepSize(
+  std::tuple<double, int> computeStepSize(
       const InequalityFactorGraph& workingSet, const VectorValues& xk,
       const VectorValues& p, const double& maxAlpha) const;
 

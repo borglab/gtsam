@@ -417,7 +417,7 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
   for (DenseIndex i = 0; i < (DenseIndex) size(); ++i) {
     bool didNotExist;
     VectorValues::iterator it;
-    boost::tie(it, didNotExist) = yvalues.tryInsert(keys_[i], Vector());
+    std::tie(it, didNotExist) = yvalues.tryInsert(keys_[i], Vector());
     if (didNotExist)
       it->second = alpha * y[i]; // init
     else

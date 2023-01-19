@@ -77,7 +77,7 @@ TEST(SymbolicFactor, EliminateSymbolic)
 
   SymbolicFactor::shared_ptr actualFactor;
   SymbolicConditional::shared_ptr actualConditional;
-  boost::tie(actualConditional, actualFactor) =
+  std::tie(actualConditional, actualFactor) =
       EliminateSymbolic(factors, Ordering{0, 1, 2, 3});
 
   CHECK(assert_equal(expectedConditional, *actualConditional));

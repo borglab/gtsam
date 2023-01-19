@@ -143,7 +143,7 @@ T Expression<T>::value(const Values& values,
     // Call private version that returns derivatives in H
     KeyVector keys;
     FastVector<int> dims;
-    boost::tie(keys, dims) = keysAndDims();
+    std::tie(keys, dims) = keysAndDims();
     return valueAndDerivatives(values, keys, dims, *H);
   } else
     // no derivatives needed, just return value

@@ -45,7 +45,7 @@ namespace gtsam {
  *
  * We want the minimum of all those alphas among all inactive inequality.
  */
-Template boost::tuple<double, int> This::computeStepSize(
+Template std::tuple<double, int> This::computeStepSize(
     const InequalityFactorGraph& workingSet, const VectorValues& xk,
     const VectorValues& p, const double& maxAlpha) const {
   double minAlpha = maxAlpha;
@@ -74,7 +74,7 @@ Template boost::tuple<double, int> This::computeStepSize(
       }
     }
   }
-  return boost::make_tuple(minAlpha, closestFactorIx);
+  return std::make_tuple(minAlpha, closestFactorIx);
 }
 
 /******************************************************************************/
@@ -222,7 +222,7 @@ Template typename This::State This::iterate(
     double alpha;
     int factorIx;
     VectorValues p = newValues - state.values;
-    boost::tie(alpha, factorIx) = // using 16.41
+    std::tie(alpha, factorIx) = // using 16.41
         computeStepSize(state.workingSet, state.values, p, POLICY::maxAlpha);
     // also add to the working set the one that complains the most
     InequalityFactorGraph newWorkingSet = state.workingSet;

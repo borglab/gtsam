@@ -73,7 +73,7 @@ TEST(LPInitSolver, InfiniteLoopSingleVar) {
   VectorValues starter;
   starter.insert(1, Vector3(0, 0, 2));
   VectorValues results, duals;
-  boost::tie(results, duals) = solver.optimize(starter);
+  std::tie(results, duals) = solver.optimize(starter);
   VectorValues expected;
   expected.insert(1, Vector3(13.5, 6.5, -6.5));
   CHECK(assert_equal(results, expected, 1e-7));
@@ -101,7 +101,7 @@ TEST(LPInitSolver, InfiniteLoopMultiVar) {
   starter.insert(Y, kZero);
   starter.insert(Z, Vector::Constant(1, 2.0));
   VectorValues results, duals;
-  boost::tie(results, duals) = solver.optimize(starter);
+  std::tie(results, duals) = solver.optimize(starter);
   VectorValues expected;
   expected.insert(X, Vector::Constant(1, 13.5));
   expected.insert(Y, Vector::Constant(1, 6.5));
@@ -201,7 +201,7 @@ TEST(LPSolver, SimpleTest1) {
   CHECK(assert_equal(expected_x1, x1, 1e-10));
 
   VectorValues result, duals;
-  boost::tie(result, duals) = lpSolver.optimize(init);
+  std::tie(result, duals) = lpSolver.optimize(init);
   VectorValues expectedResult;
   expectedResult.insert(1, Vector2(8. / 3., 2. / 3.));
   CHECK(assert_equal(expectedResult, result, 1e-10));
@@ -213,7 +213,7 @@ TEST(LPSolver, TestWithoutInitialValues) {
   LPSolver lpSolver(lp);
   VectorValues result, duals, expectedResult;
   expectedResult.insert(1, Vector2(8. / 3., 2. / 3.));
-  boost::tie(result, duals) = lpSolver.optimize();
+  std::tie(result, duals) = lpSolver.optimize();
   CHECK(assert_equal(expectedResult, result));
 }
 

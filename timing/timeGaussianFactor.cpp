@@ -106,7 +106,7 @@ int main()
   JacobianFactor::shared_ptr factor;
 
   for(int i = 0; i < n; i++)
-    boost::tie(conditional, factor) =
+    std::tie(conditional, factor) =
         JacobianFactor(combined).eliminate(Ordering{_x2_});
 
   long timeLog2 = clock();

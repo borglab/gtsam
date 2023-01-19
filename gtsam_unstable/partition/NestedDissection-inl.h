@@ -22,7 +22,7 @@ namespace gtsam { namespace partition {
   fg_(fg), ordering_(ordering){
     GenericUnaryGraph unaryFactors;
     GenericGraph gfg;
-    boost::tie(unaryFactors, gfg) = fg.createGenericGraph(ordering);
+    std::tie(unaryFactors, gfg) = fg.createGenericGraph(ordering);
 
     // build reverse mapping from integer to symbol
     int numNodes = ordering.size();
@@ -46,7 +46,7 @@ namespace gtsam { namespace partition {
       const NLG& fg, const Ordering& ordering, const std::shared_ptr<Cuts>& cuts, const bool verbose) : fg_(fg), ordering_(ordering){
     GenericUnaryGraph unaryFactors;
     GenericGraph gfg;
-    boost::tie(unaryFactors, gfg) = fg.createGenericGraph(ordering);
+    std::tie(unaryFactors, gfg) = fg.createGenericGraph(ordering);
 
     // build reverse mapping from integer to symbol
     int numNodes = ordering.size();

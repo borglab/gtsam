@@ -111,7 +111,7 @@ TEST(DiscreteFactorGraph, test) {
   frontalKeys += Key(0);
   DiscreteConditional::shared_ptr conditional;
   DecisionTreeFactor::shared_ptr newFactor;
-  boost::tie(conditional, newFactor) = EliminateDiscrete(graph, frontalKeys);
+  std::tie(conditional, newFactor) = EliminateDiscrete(graph, frontalKeys);
 
   // Check Conditional
   CHECK(conditional);
@@ -130,7 +130,7 @@ TEST(DiscreteFactorGraph, test) {
   DiscreteEliminationTree etree(graph, ordering);
   DiscreteBayesNet::shared_ptr actual;
   DiscreteFactorGraph::shared_ptr remainingGraph;
-  boost::tie(actual, remainingGraph) = etree.eliminate(&EliminateDiscrete);
+  std::tie(actual, remainingGraph) = etree.eliminate(&EliminateDiscrete);
 
   // Check Bayes net
   DiscreteBayesNet expectedBayesNet;

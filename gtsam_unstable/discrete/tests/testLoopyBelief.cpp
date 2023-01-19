@@ -102,7 +102,7 @@ class LoopyBelief {
         }
         if (debug) subGraph.print("------- Subgraph:");
         DiscreteFactor::shared_ptr message;
-        boost::tie(dummyCond, message) =
+        std::tie(dummyCond, message) =
             EliminateDiscrete(subGraph, Ordering{neighbor});
         // store the new factor into messages
         messages.insert(make_pair(neighbor, message));

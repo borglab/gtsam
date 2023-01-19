@@ -111,7 +111,7 @@ VariableSlots::VariableSlots(const FG& factorGraph)
       // the array entry for each factor that will indicate the factor
       // does not involve the variable.
       iterator thisVarSlots; bool inserted;
-        boost::tie(thisVarSlots, inserted) = this->insert(std::make_pair(involvedVariable, FastVector<size_t>()));
+        std::tie(thisVarSlots, inserted) = this->insert(std::make_pair(involvedVariable, FastVector<size_t>()));
       if(inserted)
         thisVarSlots->second.resize(factorGraph.nrFactors(), Empty);
       thisVarSlots->second[jointFactorPos] = factorVarSlot;

@@ -361,7 +361,7 @@ namespace gtsam {
         }
         // Factor into C1\B | B.
         sharedFactorGraph temp_remaining;
-        boost::tie(p_C1_B, temp_remaining) =
+        std::tie(p_C1_B, temp_remaining) =
           FactorGraphType(p_C1_Bred).eliminatePartialMultifrontal(Ordering(C1_minus_B), function);
       }
       std::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
@@ -373,7 +373,7 @@ namespace gtsam {
         }
         // Factor into C2\B | B.
         sharedFactorGraph temp_remaining;
-        boost::tie(p_C2_B, temp_remaining) =
+        std::tie(p_C2_B, temp_remaining) =
           FactorGraphType(p_C2_Bred).eliminatePartialMultifrontal(Ordering(C2_minus_B), function);
       }
       gttoc(Full_root_factoring);

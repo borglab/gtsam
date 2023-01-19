@@ -51,7 +51,7 @@ Vector4 triangulateHomogeneousDLT(
   int rank;
   double error;
   Vector v;
-  boost::tie(rank, error, v) = DLT(A, rank_tol);
+  std::tie(rank, error, v) = DLT(A, rank_tol);
 
   if (rank < 3) throw(TriangulationUnderconstrainedException());
 
@@ -82,7 +82,7 @@ Vector4 triangulateHomogeneousDLT(
   int rank;
   double error;
   Vector v;
-  boost::tie(rank, error, v) = DLT(A, rank_tol);
+  std::tie(rank, error, v) = DLT(A, rank_tol);
 
   if (rank < 3) throw(TriangulationUnderconstrainedException());
 

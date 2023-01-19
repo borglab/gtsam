@@ -75,7 +75,7 @@ namespace gtsam {
       EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
       std::shared_ptr<BayesNetType> bayesNet;
       std::shared_ptr<FactorGraphType> factorGraph;
-      boost::tie(bayesNet,factorGraph) = etree.eliminate(function);
+      std::tie(bayesNet,factorGraph) = etree.eliminate(function);
       // If any factors are remaining, the ordering was incomplete
       if(!factorGraph->empty())
         throw InconsistentEliminationRequested();
@@ -139,7 +139,7 @@ namespace gtsam {
       JunctionTreeType junctionTree(etree);
       std::shared_ptr<BayesTreeType> bayesTree;
       std::shared_ptr<FactorGraphType> factorGraph;
-      boost::tie(bayesTree,factorGraph) = junctionTree.eliminate(function);
+      std::tie(bayesTree,factorGraph) = junctionTree.eliminate(function);
       // If any factors are remaining, the ordering was incomplete
       if(!factorGraph->empty())
         throw InconsistentEliminationRequested();
@@ -277,7 +277,7 @@ namespace gtsam {
       // in the order requested.
       std::shared_ptr<BayesTreeType> bayesTree;
       std::shared_ptr<FactorGraphType> factorGraph;
-      boost::tie(bayesTree,factorGraph) =
+      std::tie(bayesTree,factorGraph) =
         eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
 
       if(const Ordering* varsAsOrdering = boost::get<const Ordering&>(&variables))
@@ -344,7 +344,7 @@ namespace gtsam {
       // in the order requested.
       std::shared_ptr<BayesTreeType> bayesTree;
       std::shared_ptr<FactorGraphType> factorGraph;
-      boost::tie(bayesTree,factorGraph) =
+      std::tie(bayesTree,factorGraph) =
         eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
 
       if(const Ordering* varsAsOrdering = boost::get<const Ordering&>(&variables))

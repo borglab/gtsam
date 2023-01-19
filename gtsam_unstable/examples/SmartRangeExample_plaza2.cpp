@@ -76,7 +76,7 @@ list<TimedOdometry> readOdometry() {
 
 // load the ranges from TD
 //    Time (sec)  Sender / Antenna ID Receiver Node ID  Range (m)
-typedef boost::tuple<double, size_t, double> RangeTriple;
+typedef std::tuple<double, size_t, double> RangeTriple;
 vector<RangeTriple> readTriples() {
   vector<RangeTriple> triples;
   string tdFile = findExampleDataFile("Plaza2_TD.txt");
@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
     //--------------------------------- odometry loop -----------------------------------------
     double t;
     Pose2 odometry;
-    boost::tie(t, odometry) = timedOdometry;
+    std::tie(t, odometry) = timedOdometry;
 
     // add odometry factor
     newFactors.push_back(

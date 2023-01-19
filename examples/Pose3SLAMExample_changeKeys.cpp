@@ -36,7 +36,7 @@ int main(const int argc, const char *argv[]) {
   NonlinearFactorGraph::shared_ptr graph;
   Values::shared_ptr initial;
   bool is3D = true;
-  boost::tie(graph, initial) = readG2o(g2oFile, is3D);
+  std::tie(graph, initial) = readG2o(g2oFile, is3D);
 
   bool add = false;
   Key firstKey = 8646911284551352320;

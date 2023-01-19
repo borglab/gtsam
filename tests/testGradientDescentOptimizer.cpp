@@ -26,7 +26,7 @@ using namespace std;
 using namespace gtsam;
 
 // Generate a small PoseSLAM problem
-boost::tuple<NonlinearFactorGraph, Values> generateProblem() {
+std::tuple<NonlinearFactorGraph, Values> generateProblem() {
 
   // 1. Create graph container and add factors to it
   NonlinearFactorGraph graph;
@@ -64,7 +64,7 @@ boost::tuple<NonlinearFactorGraph, Values> generateProblem() {
   Pose2 x5(2.1, 2.1, -M_PI_2);
   initialEstimate.insert(5, x5);
 
-  return boost::tie(graph, initialEstimate);
+  return std::tie(graph, initialEstimate);
 }
 
 /* ************************************************************************* */
@@ -73,7 +73,7 @@ TEST(NonlinearConjugateGradientOptimizer, Optimize) {
   NonlinearFactorGraph graph;
   Values initialEstimate;
 
-  boost::tie(graph, initialEstimate) = generateProblem();
+  std::tie(graph, initialEstimate) = generateProblem();
 //  cout << "initial error = " << graph.error(initialEstimate) << endl;
 
   NonlinearOptimizerParams param;

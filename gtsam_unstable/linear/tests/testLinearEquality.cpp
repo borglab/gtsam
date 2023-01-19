@@ -204,7 +204,7 @@ TEST(LinearEquality, operators) {
   // test gradient at zero
   Matrix A;
   Vector b2;
-  boost::tie(A, b2) = lf.jacobian();
+  std::tie(A, b2) = lf.jacobian();
   VectorValues expectedG;
   expectedG.insert(1, (Vector(2) << 0.2, -0.1).finished());
   expectedG.insert(2, (Vector(2) << -0.2, 0.1).finished());

@@ -51,7 +51,7 @@ namespace gtsam {
     for (const Pair& v : dims) {
       Key key;
       size_t n;
-      boost::tie(key, n) = v;
+      std::tie(key, n) = v;
 #ifdef TBB_GREATER_EQUAL_2020
       values_.emplace(key, x.segment(j, n));
 #else
@@ -215,11 +215,11 @@ namespace gtsam {
   /* ************************************************************************ */
   namespace internal
   {
-    bool structureCompareOp(const boost::tuple<VectorValues::value_type,
+    bool structureCompareOp(const std::tuple<VectorValues::value_type,
       VectorValues::value_type>& vv)
     {
-      return vv.get<0>().first == vv.get<1>().first
-        && vv.get<0>().second.size() == vv.get<1>().second.size();
+      return std::get<0>(vv).first == std::get<1>(vv).first
+        && std::get<0>(vv).second.size() == std::get<1>(vv).second.size();
     }
   }
 
@@ -236,7 +236,7 @@ namespace gtsam {
     if(this->size() != v.size())
       throw invalid_argument("VectorValues::dot called with a VectorValues of different structure");
     double result = 0.0;
-    typedef boost::tuple<value_type, value_type> ValuePair;
+    typedef std::tuple<value_type, value_type> ValuePair;
     using boost::adaptors::map_values;
     for(const ValuePair values: boost::combine(*this, v)) {
       assert_throw(values.get<0>().first == values.get<1>().first,

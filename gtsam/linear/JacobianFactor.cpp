@@ -102,7 +102,7 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor)
   // Do Cholesky to get a Jacobian
   size_t maxrank;
   bool success;
-  boost::tie(maxrank, success) = choleskyCareful(Ab_.matrix());
+  std::tie(maxrank, success) = choleskyCareful(Ab_.matrix());
 
   // Check that Cholesky succeeded OR it managed to factor the full Hessian.
   // THe latter case occurs with non-positive definite matrices arising from QP.
@@ -122,7 +122,7 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor)
 /* ************************************************************************* */
 // Helper functions for combine constructor
 namespace {
-boost::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
+std::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
     const FastVector<JacobianFactor::shared_ptr>& factors,
     const FastVector<VariableSlots::const_iterator>& variableSlots) {
   gttic(countDims);
@@ -188,7 +188,7 @@ boost::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
   }
 #endif
 
-  return boost::make_tuple(varDims, m, n);
+  return std::make_tuple(varDims, m, n);
 }
 
 /* ************************************************************************* */
@@ -221,7 +221,7 @@ void JacobianFactor::JacobianFactorHelper(const GaussianFactorGraph& graph,
   // Count dimensions
   FastVector<DenseIndex> varDims;
   DenseIndex m, n;
-  boost::tie(varDims, m, n) = _countDims(jacobians, orderedSlots);
+  std::tie(varDims, m, n) = _countDims(jacobians, orderedSlots);
 
   // Allocate matrix and copy keys in order
   gttic(allocate);

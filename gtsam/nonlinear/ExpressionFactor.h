@@ -180,7 +180,7 @@ protected:
    if (keys_.empty()) {
      // This is the case when called in ExpressionFactor Constructor.
      // We then take the keys from the expression in sorted order.
-     boost::tie(keys_, dims_) = expression_.keysAndDims();
+     std::tie(keys_, dims_) = expression_.keysAndDims();
    } else {
      // This happens with classes derived from BinaryExpressionFactor etc.
      // In that case, the keys_ are already defined and we just need to grab

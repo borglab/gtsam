@@ -92,7 +92,7 @@ std::list<TimedOdometry> readOdometry() {
 
 // load the ranges from TD
 //    Time (sec)  Sender / Antenna ID Receiver Node ID  Range (m)
-using RangeTriple = boost::tuple<double, size_t, double>;
+using RangeTriple = std::tuple<double, size_t, double>;
 std::vector<RangeTriple> readTriples() {
   std::vector<RangeTriple> triples;
   std::string data_file = gtsam::findExampleDataFile("Plaza2_TD.txt");
@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
     //--------------------------------- odometry loop --------------------------
     double t;
     Pose2 odometry;
-    boost::tie(t, odometry) = timedOdometry;
+    std::tie(t, odometry) = timedOdometry;
 
     // add odometry factor
     newFactors.emplace_shared<gtsam::BetweenFactor<Pose2>>(i - 1, i, odometry,
