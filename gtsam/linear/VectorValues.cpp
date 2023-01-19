@@ -20,15 +20,10 @@
 
 #include <boost/bind/bind.hpp>
 #include <boost/range/numeric.hpp>
-#include <boost/range/adaptor/transformed.hpp>
-#include <boost/range/adaptor/map.hpp>
 
 using namespace std;
 
 namespace gtsam {
-
-  using boost::adaptors::transformed;
-  using boost::accumulate;
 
   /* ************************************************************************ */
   VectorValues::VectorValues(const VectorValues& first, const VectorValues& second)

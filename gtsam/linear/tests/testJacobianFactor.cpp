@@ -26,7 +26,6 @@
 #include <gtsam/linear/VectorValues.h>
 
 #include <boost/range/iterator_range.hpp>
-#include <boost/range/adaptor/map.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -131,7 +130,11 @@ TEST(JacobianFactor, constructors_and_accessors)
     blockMatrix(1) = terms[1].second;
     blockMatrix(2) = terms[2].second;
     blockMatrix(3) = b;
-    JacobianFactor actual(terms | boost::adaptors::map_keys, blockMatrix, noise);
+    // get a vector of keys from the terms
+    vector<Key> keys;
+    for (const auto& term : terms)
+      keys.push_back(term.first);
+    JacobianFactor actual(keys, blockMatrix, noise);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[2].first, (long)actual.keys().back());
     EXPECT(assert_equal(terms[2].second, actual.getA(actual.end() - 1)));

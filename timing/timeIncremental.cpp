@@ -27,7 +27,6 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/export.hpp>
-#include <boost/range/adaptor/reversed.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -225,9 +224,14 @@ int main(int argc, char *argv[]) {
   try {
     Marginals marginals(graph, values);
     int i=0;
-    for (Key key1: boost::adaptors::reverse(values.keys())) {
+    // Assign the keyvector to a named variable
+    auto keys = values.keys();
+    // Iterate over it in reverse
+    for (auto it1 = keys.rbegin(); it1 != keys.rend(); ++it1) {
+      Key key1 = *it1;
       int j=0;
-      for (Key key2: boost::adaptors::reverse(values.keys())) {
+      for (auto it2 = keys.rbegin(); it2 != keys.rend(); ++it2) {
+        Key key2 = *it2;
         if(i != j) {
           gttic_(jointMarginalInformation);
           KeyVector keys(2);

@@ -31,18 +31,12 @@
 
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <boost/range/adaptor/transformed.hpp>
-#include <boost/range/adaptor/map.hpp>
-#include <boost/range/algorithm/copy.hpp>
 
 #include <sstream>
 #include <limits>
+#include "gtsam/base/Vector.h"
 
 using namespace std;
-namespace br {
-using namespace boost::range;
-using namespace boost::adaptors;
-}
 
 namespace gtsam {
 
@@ -144,12 +138,20 @@ namespace {
 DenseIndex _getSizeHF(const Vector& m) {
   return m.size();
 }
+
+std::vector<DenseIndex> _getSizeHFVec(const std::vector<Vector>& m) {
+  std::vector<DenseIndex> dims;
+  for (const Vector& v : m) {
+    dims.push_back(v.size());
+  }
+  return dims;
+}
 }
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const KeyVector& js,
     const std::vector<Matrix>& Gs, const std::vector<Vector>& gs, double f) :
-    GaussianFactor(js), info_(gs | br::transformed(&_getSizeHF), true) {
+    GaussianFactor(js), info_(_getSizeHFVec(gs), true) {
   // Get the number of variables
   size_t variable_count = js.size();
 

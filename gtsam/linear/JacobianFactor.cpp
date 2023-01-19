@@ -32,10 +32,6 @@
 #include <gtsam/base/cholesky.h>
 
 #include <boost/format.hpp>
-#include <boost/array.hpp>
-#include <boost/range/algorithm/copy.hpp>
-#include <boost/range/adaptor/indirected.hpp>
-#include <boost/range/adaptor/map.hpp>
 
 #include <cmath>
 #include <sstream>
@@ -227,10 +223,10 @@ void JacobianFactor::JacobianFactorHelper(const GaussianFactorGraph& graph,
   gttic(allocate);
   Ab_ = VerticalBlockMatrix(varDims, m, true); // Allocate augmented matrix
   Base::keys_.resize(orderedSlots.size());
-  boost::range::copy(
-      // Get variable keys
-      orderedSlots | boost::adaptors::indirected | boost::adaptors::map_keys,
-      Base::keys_.begin());
+  // Copy keys in order
+  std::transform(orderedSlots.begin(), orderedSlots.end(),
+      Base::keys_.begin(),
+      [](const VariableSlots::const_iterator& it) {return it->first;});
   gttoc(allocate);
 
   // Loop over slots in combined factor and copy blocks from source factors

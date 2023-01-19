@@ -28,13 +28,6 @@
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
 
-#include <boost/range/adaptors.hpp>
-#include <boost/range/algorithm/copy.hpp>
-namespace br {
-using namespace boost::range;
-using namespace boost::adaptors;
-}  // namespace br
-
 #include <algorithm>
 #include <limits>
 #include <string>

@@ -179,9 +179,9 @@ int main(int argc, char** argv) {
     landmarkEstimates.insert(i, predictedPose);
 
     // Check if there are range factors to be added
-    while (k < K && t >= boost::get<0>(triples[k])) {
-      size_t j = boost::get<1>(triples[k]);
-      double range = boost::get<2>(triples[k]);
+    while (k < K && t >= std::get<0>(triples[k])) {
+      size_t j = std::get<1>(triples[k]);
+      double range = std::get<2>(triples[k]);
       if (i > start) {
         if (smart && totalCount < minK) {
           try {

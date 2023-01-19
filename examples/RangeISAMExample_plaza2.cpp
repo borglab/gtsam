@@ -178,10 +178,10 @@ int main(int argc, char** argv) {
     initial.insert(i, predictedPose);
 
     // Check if there are range factors to be added
-    while (k < K && t >= boost::get<0>(triples[k])) {
-      size_t j = boost::get<1>(triples[k]);
+    while (k < K && t >= std::get<0>(triples[k])) {
+      size_t j = std::get<1>(triples[k]);
       Symbol landmark_key('L', j);
-      double range = boost::get<2>(triples[k]);
+      double range = std::get<2>(triples[k]);
       newFactors.emplace_shared<gtsam::RangeFactor<Pose2, Point2>>(
           i, landmark_key, range, rangeNoise);
       if (initializedLandmarks.count(landmark_key) == 0) {
