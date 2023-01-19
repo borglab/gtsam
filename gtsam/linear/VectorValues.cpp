@@ -19,7 +19,6 @@
 #include <gtsam/linear/VectorValues.h>
 
 #include <boost/bind/bind.hpp>
-#include <boost/range/combine.hpp>
 #include <boost/range/numeric.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/adaptor/map.hpp>
@@ -28,7 +27,6 @@ using namespace std;
 
 namespace gtsam {
 
-  using boost::combine;
   using boost::adaptors::transformed;
   using boost::adaptors::map_values;
   using boost::accumulate;
@@ -166,9 +164,11 @@ namespace gtsam {
   bool VectorValues::equals(const VectorValues& x, double tol) const {
     if(this->size() != x.size())
       return false;
-    for(const auto values: boost::combine(*this, x)) {
-      if(values.get<0>().first != values.get<1>().first ||
-        !equal_with_abs_tol(values.get<0>().second, values.get<1>().second, tol))
+    auto this_it = this->begin();
+    auto x_it = x.begin();
+    for(; this_it != this->end(); ++this_it, ++x_it) {
+      if(this_it->first != x_it->first || 
+          !equal_with_abs_tol(this_it->second, x_it->second, tol))
         return false;
     }
     return true;
@@ -215,19 +215,19 @@ namespace gtsam {
   /* ************************************************************************ */
   namespace internal
   {
-    bool structureCompareOp(const std::tuple<VectorValues::value_type,
-      VectorValues::value_type>& vv)
+    bool structureCompareOp(const VectorValues::value_type& a, const VectorValues::value_type& b)
     {
-      return std::get<0>(vv).first == std::get<1>(vv).first
-        && std::get<0>(vv).second.size() == std::get<1>(vv).second.size();
+      return a.first == b.first && a.second.size() == b.second.size();
     }
   }
 
   /* ************************************************************************ */
   bool VectorValues::hasSameStructure(const VectorValues other) const
   {
-    return accumulate(combine(*this, other)
-      | transformed(internal::structureCompareOp), true, logical_and<bool>());
+    // compare the "other" container with this one, using the structureCompareOp
+    // and then return true if all elements are compared as equal
+    return std::equal(this->begin(), this->end(), other.begin(), other.end(),
+      internal::structureCompareOp);
   }
 
   /* ************************************************************************ */
@@ -238,12 +238,14 @@ namespace gtsam {
     double result = 0.0;
     typedef std::tuple<value_type, value_type> ValuePair;
     using boost::adaptors::map_values;
-    for(const ValuePair values: boost::combine(*this, v)) {
-      assert_throw(values.get<0>().first == values.get<1>().first,
-        invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
-      assert_throw(values.get<0>().second.size() == values.get<1>().second.size(),
-        invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
-      result += values.get<0>().second.dot(values.get<1>().second);
+    auto this_it = this->begin();
+    auto v_it = v.begin();
+    for(; this_it != this->end(); ++this_it, ++v_it) {
+      assert_throw(this_it->first == v_it->first, 
+          invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
+      assert_throw(this_it->second.size() == v_it->second.size(), 
+          invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
+      result += this_it->second.dot(v_it->second);
     }
     return result;
   }
