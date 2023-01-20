@@ -20,7 +20,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/tuple/tuple.hpp>
 
 using namespace std;
 using namespace gtsam;

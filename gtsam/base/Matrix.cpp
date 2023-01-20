@@ -23,7 +23,6 @@
 #include <Eigen/SVD>
 #include <Eigen/LU>
 
-#include <boost/tuple/tuple.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/format.hpp>
 

@@ -14,7 +14,6 @@
 #include <iostream>
 #include <vector>
 #include <optional>
-#include <boost/tuple/tuple.hpp>
 #include <boost/shared_array.hpp>
 
 #include <gtsam/base/timing.h>

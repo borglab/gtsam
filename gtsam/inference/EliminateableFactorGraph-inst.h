@@ -20,7 +20,6 @@
 
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/inferenceExceptions.h>
-#include <boost/tuple/tuple.hpp>
 
 namespace gtsam {
 

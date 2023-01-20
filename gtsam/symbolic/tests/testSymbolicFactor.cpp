@@ -21,7 +21,6 @@
 #include <gtsam/symbolic/SymbolicConditional.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 
-#include <boost/tuple/tuple.hpp>
 
 using namespace std;
 using namespace gtsam;

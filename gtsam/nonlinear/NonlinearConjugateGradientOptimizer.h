@@ -20,7 +20,6 @@
 
 #include <gtsam/base/Manifold.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <boost/tuple/tuple.hpp>
 
 namespace gtsam {
 

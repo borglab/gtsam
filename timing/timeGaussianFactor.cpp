@@ -21,7 +21,6 @@
 #include <iostream>
 using namespace std;
 
-#include <boost/tuple/tuple.hpp>
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/JacobianFactor.h>

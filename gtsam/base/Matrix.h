@@ -26,7 +26,6 @@
 
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
-#include <boost/tuple/tuple.hpp>
 
 #include <vector>
 

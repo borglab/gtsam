@@ -24,7 +24,6 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Testable.h>
 
-#include <boost/tuple/tuple.hpp>
 
 #include <iostream>
 #include <string>

@@ -19,7 +19,6 @@
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/testLie.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/tuple/tuple.hpp>
 #include <iostream>
 
 using namespace std;
