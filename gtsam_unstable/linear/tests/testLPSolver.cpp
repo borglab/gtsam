@@ -30,9 +30,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/foreach.hpp>
-#include <boost/range/adaptor/map.hpp>
-
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;

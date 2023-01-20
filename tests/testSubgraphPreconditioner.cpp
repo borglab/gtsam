@@ -29,9 +29,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/range/adaptor/reversed.hpp>
-#include <boost/tuple/tuple.hpp>
-
 #include <fstream>
 
 using namespace std;

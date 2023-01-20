@@ -20,7 +20,6 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam_unstable/linear/InequalityFactorGraph.h>
-#include <boost/range/adaptor/map.hpp>
 
 namespace gtsam {
 

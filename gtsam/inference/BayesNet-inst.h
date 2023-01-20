@@ -21,7 +21,6 @@
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 
-#include <boost/range/adaptor/reversed.hpp>
 #include <fstream>
 #include <string>
 

@@ -21,11 +21,6 @@
 
 #include <gtsam/nonlinear/internal/ExpressionNode.h>
 
-#include <boost/bind/bind.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/range/adaptor/map.hpp>
-#include <boost/range/algorithm.hpp>
-
 namespace gtsam {
 
 template<typename T>
