@@ -42,20 +42,13 @@ class GTSAM_EXPORT NonlinearOptimizerParams {
     SILENT, TERMINATION, ERROR, VALUES, DELTA, LINEAR
   };
 
-  size_t maxIterations; ///< The maximum iterations to stop iterating (default 100)
-  double relativeErrorTol; ///< The maximum relative error decrease to stop iterating (default 1e-5)
-  double absoluteErrorTol; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
-  double errorTol; ///< The maximum total error to stop iterating (default 0.0)
-  Verbosity verbosity; ///< The printing verbosity during optimization (default SILENT)
+  size_t maxIterations = 100; ///< The maximum iterations to stop iterating (default 100)
+  double relativeErrorTol = 1e-5; ///< The maximum relative error decrease to stop iterating (default 1e-5)
+  double absoluteErrorTol = 1e-5; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
+  double errorTol = 0.0; ///< The maximum total error to stop iterating (default 0.0)
+  Verbosity verbosity = SILENT; ///< The printing verbosity during optimization (default SILENT)
 
-  NonlinearOptimizerParams()
-      : maxIterations(100),
-        relativeErrorTol(1e-5),
-        absoluteErrorTol(1e-5),
-        errorTol(0.0),
-        verbosity(SILENT) {}
-
-  // copy constructor
+    // copy constructor
   NonlinearOptimizerParams(const NonlinearOptimizerParams& other)
       : maxIterations(other.maxIterations),
         relativeErrorTol(other.relativeErrorTol),
@@ -75,24 +68,14 @@ class GTSAM_EXPORT NonlinearOptimizerParams {
 
   // copy assignment
   NonlinearOptimizerParams& operator=(const NonlinearOptimizerParams& other) {
-    return *this = NonlinearOptimizerParams(other);
-  }
-
-  // move assignment
-  NonlinearOptimizerParams& operator=(
-      NonlinearOptimizerParams&& other) noexcept {
-    maxIterations = other.maxIterations;
-    relativeErrorTol = other.relativeErrorTol;
-    absoluteErrorTol = other.absoluteErrorTol;
-    errorTol = other.errorTol;
-    verbosity = other.verbosity;
-    std::swap(linearSolverParams, other.linearSolverParams);
+    maxIterations = (other.maxIterations);
+    relativeErrorTol = (other.relativeErrorTol);
+    absoluteErrorTol = (other.absoluteErrorTol);
+    errorTol = (other.errorTol);
+    verbosity = (other.verbosity);
+    linearSolverParams = (std::move(other.linearSolverParams));
     return *this;
   }
-
-  virtual ~NonlinearOptimizerParams() {
-  }
-  virtual void print(const std::string& str = "") const;
 
   size_t getMaxIterations() const { return maxIterations; }
   double getRelativeErrorTol() const { return relativeErrorTol; }
