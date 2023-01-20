@@ -27,7 +27,7 @@
 namespace gtsam {
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * Parameters for ISAM2 using Gauss-Newton optimization.  Either this class or
  * ISAM2DoglegParams should be specified as the optimizationParams in
  * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
@@ -59,7 +59,7 @@ struct GTSAM_EXPORT ISAM2GaussNewtonParams {
 };
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * Parameters for ISAM2 using Dogleg optimization.  Either this class or
  * ISAM2GaussNewtonParams should be specified as the optimizationParams in
  * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
@@ -126,7 +126,7 @@ struct GTSAM_EXPORT ISAM2DoglegParams {
 };
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * Parameters for the ISAM2 algorithm.  Default parameter values are listed
  * below.
  */
@@ -300,18 +300,10 @@ struct GTSAM_EXPORT ISAM2Params {
   RelinearizationThreshold getRelinearizeThreshold() const {
     return relinearizeThreshold;
   }
-  int getRelinearizeSkip() const { return relinearizeSkip; }
-  bool isEnableRelinearization() const { return enableRelinearization; }
-  bool isEvaluateNonlinearError() const { return evaluateNonlinearError; }
   std::string getFactorization() const {
     return factorizationTranslator(factorization);
   }
-  bool isCacheLinearizedFactors() const { return cacheLinearizedFactors; }
   KeyFormatter getKeyFormatter() const { return keyFormatter; }
-  bool isEnableDetailedResults() const { return enableDetailedResults; }
-  bool isEnablePartialRelinearizationCheck() const {
-    return enablePartialRelinearizationCheck;
-  }
 
   void setOptimizationParams(OptimizationParams optimizationParams) {
     this->optimizationParams = optimizationParams;
@@ -319,30 +311,11 @@ struct GTSAM_EXPORT ISAM2Params {
   void setRelinearizeThreshold(RelinearizationThreshold relinearizeThreshold) {
     this->relinearizeThreshold = relinearizeThreshold;
   }
-  void setRelinearizeSkip(int relinearizeSkip) {
-    this->relinearizeSkip = relinearizeSkip;
-  }
-  void setEnableRelinearization(bool enableRelinearization) {
-    this->enableRelinearization = enableRelinearization;
-  }
-  void setEvaluateNonlinearError(bool evaluateNonlinearError) {
-    this->evaluateNonlinearError = evaluateNonlinearError;
-  }
   void setFactorization(const std::string& factorization) {
     this->factorization = factorizationTranslator(factorization);
   }
-  void setCacheLinearizedFactors(bool cacheLinearizedFactors) {
-    this->cacheLinearizedFactors = cacheLinearizedFactors;
-  }
   void setKeyFormatter(KeyFormatter keyFormatter) {
     this->keyFormatter = keyFormatter;
-  }
-  void setEnableDetailedResults(bool enableDetailedResults) {
-    this->enableDetailedResults = enableDetailedResults;
-  }
-  void setEnablePartialRelinearizationCheck(
-      bool enablePartialRelinearizationCheck) {
-    this->enablePartialRelinearizationCheck = enablePartialRelinearizationCheck;
   }
 
   GaussianFactorGraph::Eliminate getEliminationFunction() const {

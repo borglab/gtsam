@@ -24,16 +24,39 @@
 
 namespace gtsam {
 
+  class HybridValues;  // forward declaration.
+
   /**
-   * TODO: Update comments. The following comments are out of date!!!
+   * This is the base class for all conditional distributions/densities, 
+   * which are implemented as specialized factors.  This class does not store any
+   * data other than its keys.  Derived classes store data such as matrices and
+   * probability tables.
    *
-   * Base class for conditional densities, templated on KEY type.  This class
-   * provides storage for the keys involved in a conditional, and iterators and
-   * access to the frontal and separator keys.
+   * The `evaluate` method is used to evaluate the factor, and together with 
+   * `logProbability` is the main methods that need to be implemented in derived
+   * classes. These two methods relate to the `error` method in the factor by:
+   *   probability(x) = k exp(-error(x))
+   * where k is a normalization constant making \int probability(x) == 1.0, and
+   *   logProbability(x) = K - error(x)
+   * i.e., K = log(K). The normalization constant K is assumed to *not* depend
+   * on any argument, only (possibly) on the conditional parameters.
+   * This class provides a default logNormalizationConstant() == 0.0.
+   * 
+   * There are four broad classes of conditionals that derive from Conditional:
+   *
+   * - \b Gaussian conditionals, implemented in \class GaussianConditional, a 
+   *   Gaussian density over a set of continuous variables.
+   * - \b Discrete conditionals, implemented in \class DiscreteConditional, which
+   *   represent a discrete conditional distribution over discrete variables.
+   * - \b Hybrid conditional densities, such as \class GaussianMixture, which is 
+   *   a density over continuous variables given discrete/continuous parents.
+   * - \b Symbolic factors, used to represent a graph structure, implemented in 
+   *   \class SymbolicConditional. Only used for symbolic elimination etc.
    *
    * Derived classes *must* redefine the Factor and shared_ptr typedefs to refer
    * to the associated factor type and shared_ptr type of the derived class.  See
-   * IndexConditional and GaussianConditional for examples.
+   * SymbolicConditional and GaussianConditional for examples.
+   * 
    * \nosubgrouping
    */
   template<class FACTOR, class DERIVEDCONDITIONAL>
@@ -81,6 +104,8 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
+    virtual ~Conditional() {}
+
     /** return the number of frontals */
     size_t nrFrontals() const { return nrFrontals_; }
 
@@ -101,6 +126,36 @@ namespace gtsam {
     /** return a view of the parent keys */
     Parents parents() const { return boost::make_iterator_range(beginParents(), endParents()); }
 
+    /**
+     * All conditional types need to implement a `logProbability` function, for which
+     *   exp(logProbability(x)) = evaluate(x).
+     */
+    virtual double logProbability(const HybridValues& c) const;
+
+    /**
+     * All conditional types need to implement an `evaluate` function, that yields
+     * a true probability. The default implementation just exponentiates logProbability.
+     */
+    virtual double evaluate(const HybridValues& c) const;
+
+    /// Evaluate probability density, sugar.
+    double operator()(const HybridValues& x) const {
+      return evaluate(x);
+    }
+
+    /**
+     * All conditional types need to implement a log normalization constant to
+     * make it such that error>=0.
+     */
+    virtual double logNormalizationConstant() const;
+
+    /** Non-virtual, exponentiate logNormalizationConstant. */
+    double normalizationConstant() const;
+
+    /// @}
+    /// @name Advanced Interface
+    /// @{
+
     /** Iterator pointing to first frontal key. */
     typename FACTOR::const_iterator beginFrontals() const { return asFactor().begin(); }
 
@@ -112,10 +167,6 @@ namespace gtsam {
 
     /** Iterator pointing past the last parent key. */
     typename FACTOR::const_iterator endParents() const { return asFactor().end(); }
-
-    /// @}
-    /// @name Advanced Interface
-    /// @{
 
     /** Mutable version of nrFrontals */
     size_t& nrFrontals() { return nrFrontals_; }
@@ -132,7 +183,30 @@ namespace gtsam {
     /** Mutable iterator pointing past the last parent key. */
     typename FACTOR::iterator endParents() { return asFactor().end(); }
 
+    /**
+     * Check invariants of this conditional, given the values `x`.
+     * It tests:
+     *  - evaluate >= 0.0
+     *  - evaluate(x) == conditional(x)
+     *  - exp(logProbability(x)) == evaluate(x)
+     *  - logNormalizationConstant() = log(normalizationConstant())
+     *  - error >= 0.0
+     *  - logProbability(x) == logNormalizationConstant() - error(x)
+     *
+     * @param conditional The conditional to test, as a reference to the derived type.
+     * @tparam VALUES HybridValues, or a more narrow type like DiscreteValues.
+    */
+    template <class VALUES>
+    static bool CheckInvariants(const DERIVEDCONDITIONAL& conditional,
+                                const VALUES& x);
+
+    /// @}
+
   private:
+
+    /// @name Serialization
+    /// @{
+
     // Cast to factor type (non-const) (casts down to derived conditional type, then up to factor type)
     FACTOR& asFactor() { return static_cast<FACTOR&>(static_cast<DERIVEDCONDITIONAL&>(*this)); }
 

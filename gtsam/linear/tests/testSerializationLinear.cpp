@@ -22,9 +22,6 @@
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/NoiseModel.h>
 
-#include <boost/assign/list_of.hpp>
-using namespace boost::assign;
-
 #include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
 
@@ -39,14 +36,14 @@ using namespace gtsam::serializationTestHelpers;
 /* ************************************************************************* */
 // Export Noisemodels
 // See http://www.boost.org/doc/libs/1_32_0/libs/serialization/doc/special.html
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic")
 
-BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
-BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel")
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal")
 
 /* ************************************************************************* */
 // example noise models
@@ -129,9 +126,9 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
 
 /* Create GUIDs for factors */
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor");
-BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactor , "gtsam::HessianFactor");
-BOOST_CLASS_EXPORT_GUID(gtsam::GaussianConditional , "gtsam::GaussianConditional");
+BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor")
+BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactor , "gtsam::HessianFactor")
+BOOST_CLASS_EXPORT_GUID(gtsam::GaussianConditional , "gtsam::GaussianConditional")
 
 /* ************************************************************************* */
 TEST (Serialization, linear_factors) {
@@ -198,16 +195,43 @@ TEST (Serialization, gaussian_factor_graph) {
   EXPECT(equalsBinary(graph));
 }
 
+/* ****************************************************************************/
+TEST(Serialization, gaussian_bayes_net) {
+  // Create an arbitrary Bayes Net
+  GaussianBayesNet gbn;
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
+      0, Vector2(1.0, 2.0), (Matrix2() << 3.0, 4.0, 0.0, 6.0).finished(), 3,
+      (Matrix2() << 7.0, 8.0, 9.0, 10.0).finished(), 4,
+      (Matrix2() << 11.0, 12.0, 13.0, 14.0).finished()));
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
+      1, Vector2(15.0, 16.0), (Matrix2() << 17.0, 18.0, 0.0, 20.0).finished(),
+      2, (Matrix2() << 21.0, 22.0, 23.0, 24.0).finished(), 4,
+      (Matrix2() << 25.0, 26.0, 27.0, 28.0).finished()));
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
+      2, Vector2(29.0, 30.0), (Matrix2() << 31.0, 32.0, 0.0, 34.0).finished(),
+      3, (Matrix2() << 35.0, 36.0, 37.0, 38.0).finished()));
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
+      3, Vector2(39.0, 40.0), (Matrix2() << 41.0, 42.0, 0.0, 44.0).finished(),
+      4, (Matrix2() << 45.0, 46.0, 47.0, 48.0).finished()));
+  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
+      4, Vector2(49.0, 50.0), (Matrix2() << 51.0, 52.0, 0.0, 54.0).finished()));
+
+  std::string serialized = serialize(gbn);
+  GaussianBayesNet actual;
+  deserialize(serialized, actual);
+  EXPECT(assert_equal(gbn, actual));
+}
+
 /* ************************************************************************* */
 TEST (Serialization, gaussian_bayes_tree) {
   const Key x1=1, x2=2, x3=3, x4=4;
-  const Ordering chainOrdering = Ordering(list_of(x2)(x1)(x3)(x4));
+  const Ordering chainOrdering {x2, x1, x3, x4};
   const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
-  const GaussianFactorGraph chain = list_of
-    (JacobianFactor(x2, (Matrix(1, 1) << 1.).finished(), x1, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise))
-    (JacobianFactor(x2, (Matrix(1, 1) << 1.).finished(), x3, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise))
-    (JacobianFactor(x3, (Matrix(1, 1) << 1.).finished(), x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise))
-    (JacobianFactor(x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise));
+  const GaussianFactorGraph chain = {
+    boost::make_shared<JacobianFactor>(x2, (Matrix(1, 1) << 1.).finished(), x1, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
+    boost::make_shared<JacobianFactor>(x2, (Matrix(1, 1) << 1.).finished(), x3, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
+    boost::make_shared<JacobianFactor>(x3, (Matrix(1, 1) << 1.).finished(), x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
+    boost::make_shared<JacobianFactor>(x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise)};
 
   GaussianBayesTree init = *chain.eliminateMultifrontal(chainOrdering);
   GaussianBayesTree expected = *chain.eliminateMultifrontal(chainOrdering);

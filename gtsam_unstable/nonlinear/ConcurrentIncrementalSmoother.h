@@ -54,7 +54,7 @@ public:
   ConcurrentIncrementalSmoother(const ISAM2Params& parameters = ISAM2Params()) : isam2_(parameters) {};
 
   /** Default destructor */
-  virtual ~ConcurrentIncrementalSmoother() {};
+  ~ConcurrentIncrementalSmoother() override {};
 
   /** Implement a GTSAM standard 'print' function */
   void print(const std::string& s = "Concurrent Incremental Smoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;

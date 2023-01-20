@@ -25,7 +25,7 @@ public:
   QPSParserException() {
   }
 
-  virtual ~QPSParserException() noexcept {
+  ~QPSParserException() noexcept override {
   }
 
   const char *what() const noexcept override {

@@ -31,18 +31,9 @@
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/cholesky.h>
 
-#include <boost/assign/list_of.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/array.hpp>
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#endif
-#include <boost/bind.hpp>
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 #include <boost/range/algorithm/copy.hpp>
 #include <boost/range/adaptor/indirected.hpp>
 #include <boost/range/adaptor/map.hpp>
@@ -52,13 +43,16 @@
 #include <stdexcept>
 
 using namespace std;
-using namespace boost::assign;
 
 namespace gtsam {
 
+// Typedefs used in constructors below.
+using Dims = std::vector<Eigen::Index>;
+using Pairs = std::vector<std::pair<Eigen::Index, Matrix>>;
+
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor() :
-    Ab_(cref_list_of<1>(1), 0) {
+    Ab_(Dims{1}, 0) {
   getb().setZero();
 }
 
@@ -76,29 +70,27 @@ JacobianFactor::JacobianFactor(const GaussianFactor& gf) {
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const Vector& b_in) :
-    Ab_(cref_list_of<1>(1), b_in.size()) {
+    Ab_(Dims{1}, b_in.size()) {
   getb() = b_in;
 }
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(Key i1, const Matrix& A1, const Vector& b,
     const SharedDiagonal& model) {
-  fillTerms(cref_list_of<1>(make_pair(i1, A1)), b, model);
+  fillTerms(Pairs{{i1, A1}}, b, model);
 }
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
     const Matrix& A2, const Vector& b, const SharedDiagonal& model) {
-  fillTerms(cref_list_of<2>(make_pair(i1, A1))(make_pair(i2, A2)), b, model);
+  fillTerms(Pairs{{i1, A1}, {i2, A2}}, b, model);
 }
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
     const Matrix& A2, Key i3, const Matrix& A3, const Vector& b,
     const SharedDiagonal& model) {
-  fillTerms(
-      cref_list_of<3>(make_pair(i1, A1))(make_pair(i2, A2))(make_pair(i3, A3)),
-      b, model);
+  fillTerms(Pairs{{i1, A1}, {i2, A2}, {i3, A3}}, b, model);
 }
 
 /* ************************************************************************* */

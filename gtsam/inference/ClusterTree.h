@@ -1,5 +1,5 @@
 /**
- * @file EliminatableClusterTree.h
+ * @file ClusterTree.h
  * @date Oct 8, 2013
  * @author Kai Ni
  * @author Richard Roberts
@@ -110,7 +110,7 @@ class ClusterTree {
   typedef sharedCluster sharedNode;
 
   /** concept check */
-  GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
+  GTSAM_CONCEPT_TESTABLE_TYPE(FactorType)
 
  protected:
   FastVector<sharedNode> roots_;
@@ -139,7 +139,6 @@ class ClusterTree {
              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /// @}
-
   /// @name Advanced Interface
   /// @{
 
@@ -169,6 +168,7 @@ class ClusterTree {
 
  protected:
   /// @name Details
+  /// @{
 
   /// Assignment operator - makes a deep copy of the tree structure, but only pointers to factors
   /// are copied, factors are not cloned.
@@ -236,6 +236,7 @@ class EliminatableClusterTree : public ClusterTree<GRAPH> {
 
  protected:
   /// @name Details
+  /// @{
 
   /// Assignment operator - makes a deep copy of the tree structure, but only pointers to factors
   /// are copied, factors are not cloned.

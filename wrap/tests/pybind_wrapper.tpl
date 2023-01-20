@@ -3,6 +3,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/operators.h>
 #include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 
 {includes}
@@ -11,7 +12,7 @@
 
 {boost_class_export}
 
-{hoder_type}
+{holder_type}
 
 using namespace std;
 

@@ -11,7 +11,7 @@
 
 /**
  * @file ProjectionFactor.h
- * @brief Basic bearing factor from 2D measurement
+ * @brief Reprojection of a LANDMARK to a 2D point.
  * @author Chris Beall
  * @author Richard Roberts
  * @author Frank Dellaert
@@ -22,18 +22,22 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <boost/optional.hpp>
 
 namespace gtsam {
 
   /**
-   * Non-linear factor for a constraint derived from a 2D measurement. The calibration is known here.
-   * i.e. the main building block for visual SLAM.
-   * @addtogroup SLAM
+   * Non-linear factor for a constraint derived from a 2D measurement. 
+   * The calibration is known here.
+   * The main building block for visual SLAM.
+   * @ingroup slam
    */
-  template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
-  class GenericProjectionFactor: public NoiseModelFactor2<POSE, LANDMARK> {
+  template <class POSE = Pose3, class LANDMARK = Point3,
+            class CALIBRATION = Cal3_S2>
+  class GenericProjectionFactor: public NoiseModelFactorN<POSE, LANDMARK> {
   protected:
 
     // Keep a copy of measurement and calibration for I/O
@@ -48,7 +52,7 @@ namespace gtsam {
   public:
 
     /// shorthand for base class type
-    typedef NoiseModelFactor2<POSE, LANDMARK> Base;
+    typedef NoiseModelFactorN<POSE, LANDMARK> Base;
 
     /// shorthand for this class
     typedef GenericProjectionFactor<POSE, LANDMARK, CALIBRATION> This;
@@ -57,9 +61,9 @@ namespace gtsam {
     typedef boost::shared_ptr<This> shared_ptr;
 
     /// Default constructor
-  GenericProjectionFactor() :
-      measured_(0, 0), throwCheirality_(false), verboseCheirality_(false) {
-  }
+    GenericProjectionFactor() :
+        measured_(0, 0), throwCheirality_(false), verboseCheirality_(false) {
+    }
 
     /**
      * Constructor
@@ -97,7 +101,7 @@ namespace gtsam {
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
     /** Virtual destructor */
-    virtual ~GenericProjectionFactor() {}
+    ~GenericProjectionFactor() override {}
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -164,8 +168,13 @@ namespace gtsam {
     }
 
     /** return the calibration object */
-    inline const boost::shared_ptr<CALIBRATION> calibration() const {
+    const boost::shared_ptr<CALIBRATION> calibration() const {
       return K_;
+    }
+
+    /** return the (optional) sensor pose with respect to the vehicle frame */
+    const boost::optional<POSE>& body_P_sensor() const {
+      return body_P_sensor_;
     }
 
     /** return verbosity */

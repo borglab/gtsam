@@ -53,7 +53,7 @@ public:
    */
   LinearizedGaussianFactor(const GaussianFactor::shared_ptr& gaussian, const Values& lin_points);
 
-  virtual ~LinearizedGaussianFactor() {};
+  ~LinearizedGaussianFactor() override {};
 
   // access functions
   const Values& linearizationPoint() const { return lin_points_; }
@@ -109,7 +109,7 @@ public:
    */
   LinearizedJacobianFactor(const JacobianFactor::shared_ptr& jacobian, const Values& lin_points);
 
-  virtual ~LinearizedJacobianFactor() {}
+  ~LinearizedJacobianFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -199,7 +199,7 @@ public:
    */
   LinearizedHessianFactor(const HessianFactor::shared_ptr& hessian, const Values& lin_points);
 
-  virtual ~LinearizedHessianFactor() {}
+  ~LinearizedHessianFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -236,7 +236,7 @@ public:
     return info_.aboveDiagonalRange(0, size(), size(), size() + 1).col(0);
   }
 
-  /** Return a copy of the block at (j1,j2) of the <emph>upper-triangular part</emph> of the
+  /** Return a copy of the block at (j1,j2) of the <em>upper-triangular part</em> of the
    * squared term \f$ H \f$, no data is copied.  See HessianFactor class documentation
    * above to explain that only the upper-triangular part of the information matrix is stored
    * and returned by this function.
@@ -252,7 +252,7 @@ public:
     return info_.block(J1, J2);
   }
 
-  /** Return the <emph>upper-triangular part</emph> of the full squared term, as described above.
+  /** Return the <em>upper-triangular part</em> of the full squared term, as described above.
    * See HessianFactor class documentation above to explain that only the
    * upper-triangular part of the information matrix is stored and returned by this function.
    */

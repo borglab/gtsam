@@ -25,14 +25,12 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/assign/std/list.hpp> // for operator +=
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/list_of.hpp>
-using namespace boost::assign;
+#include <boost/bind/bind.hpp>
 #include <stdexcept>
 #include <limits>
 #include <type_traits>
 
+using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
@@ -170,15 +168,32 @@ TEST( Values, update_element )
   CHECK(assert_equal((Vector)v2, cfg.at<Vector3>(key1)));
 }
 
+TEST(Values, InsertOrAssign) {
+  Values values;
+  Key X(0);
+  double x = 1;
+  
+  CHECK(values.size() == 0);
+  // This should perform an insert.
+  values.insert_or_assign(X, x);
+  EXPECT(assert_equal(values.at<double>(X), x));
+
+  // This should perform an update.
+  double y = 2;
+  values.insert_or_assign(X, y);
+  EXPECT(assert_equal(values.at<double>(X), y));
+}
+
 /* ************************************************************************* */
 TEST(Values, basic_functions)
 {
   Values values;
   const Values& values_c = values;
-  values.insert(2, Vector3());
-  values.insert(4, Vector3());
-  values.insert(6, Matrix23());
-  values.insert(8, Matrix23());
+  Matrix23 M1 = Matrix23::Zero(), M2 = Matrix23::Zero();
+  values.insert(2, Vector3(0, 0, 0));
+  values.insert(4, Vector3(0, 0, 0));
+  values.insert(6, M1);
+  values.insert(8, M2);
 
   // find
   EXPECT_LONGS_EQUAL(4, values.find(4)->key);
@@ -205,9 +220,8 @@ TEST(Values, retract_full)
   config0.insert(key1, Vector3(1.0, 2.0, 3.0));
   config0.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues delta = pair_list_of<Key, Vector>
-    (key1, Vector3(1.0, 1.1, 1.2))
-    (key2, Vector3(1.3, 1.4, 1.5));
+  VectorValues delta {{key1, Vector3(1.0, 1.1, 1.2)},
+                      {key2, Vector3(1.3, 1.4, 1.5)}};
 
   Values expected;
   expected.insert(key1, Vector3(2.0, 3.1, 4.2));
@@ -224,8 +238,7 @@ TEST(Values, retract_partial)
   config0.insert(key1, Vector3(1.0, 2.0, 3.0));
   config0.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues delta = pair_list_of<Key, Vector>
-    (key2, Vector3(1.3, 1.4, 1.5));
+  VectorValues delta {{key2, Vector3(1.3, 1.4, 1.5)}};
 
   Values expected;
   expected.insert(key1, Vector3(1.0, 2.0, 3.0));
@@ -260,9 +273,8 @@ TEST(Values, localCoordinates)
   valuesA.insert(key1, Vector3(1.0, 2.0, 3.0));
   valuesA.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues expDelta = pair_list_of<Key, Vector>
-    (key1, Vector3(0.1, 0.2, 0.3))
-    (key2, Vector3(0.4, 0.5, 0.6));
+  VectorValues expDelta{{key1, Vector3(0.1, 0.2, 0.3)},
+                        {key2, Vector3(0.4, 0.5, 0.6)}};
 
   Values valuesB = valuesA.retract(expDelta);
 
@@ -333,9 +345,9 @@ TEST(Values, filter) {
 
   // Filter by key
   int i = 0;
-  Values::Filtered<Value> filtered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
+  Values::Filtered<Value> filtered = values.filter(std::bind(std::greater_equal<Key>(), std::placeholders::_1, 2));
   EXPECT_LONGS_EQUAL(2, (long)filtered.size());
-  for(const Values::Filtered<>::KeyValuePair& key_value: filtered) {
+  for(const auto key_value: filtered) {
     if(i == 0) {
       LONGS_EQUAL(2, (long)key_value.key);
       try {key_value.value.cast<Pose2>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose2");}
@@ -361,7 +373,7 @@ TEST(Values, filter) {
   EXPECT(assert_equal(expectedSubValues1, actualSubValues1));
 
   // ConstFilter by Key
-  Values::ConstFiltered<Value> constfiltered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
+  Values::ConstFiltered<Value> constfiltered = values.filter(std::bind(std::greater_equal<Key>(), std::placeholders::_1, 2));
   EXPECT_LONGS_EQUAL(2, (long)constfiltered.size());
   Values fromconstfiltered(constfiltered);
   EXPECT(assert_equal(expectedSubValues1, fromconstfiltered));
@@ -370,7 +382,7 @@ TEST(Values, filter) {
   i = 0;
   Values::ConstFiltered<Pose3> pose_filtered = values.filter<Pose3>();
   EXPECT_LONGS_EQUAL(2, (long)pose_filtered.size());
-  for(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value: pose_filtered) {
+  for(const auto key_value: pose_filtered) {
     if(i == 0) {
       EXPECT_LONGS_EQUAL(1, (long)key_value.key);
       EXPECT(assert_equal(pose1, key_value.value));
@@ -408,7 +420,7 @@ TEST(Values, Symbol_filter) {
   values.insert(Symbol('y', 3), pose3);
 
   int i = 0;
-  for(const Values::Filtered<Value>::KeyValuePair& key_value: values.filter(Symbol::ChrTest('y'))) {
+  for(const auto key_value: values.filter(Symbol::ChrTest('y'))) {
     if(i == 0) {
       LONGS_EQUAL(Symbol('y', 1), (long)key_value.key);
       EXPECT(assert_equal(pose1, key_value.value.cast<Pose3>()));
@@ -595,15 +607,7 @@ TEST(Values, Demangle) {
   values.insert(key1, v);
   string expected = "Values with 1 values:\nValue v1: (Eigen::Matrix<double, 1, 3, 1, 1, 3>)\n[\n	5, 6, 7\n]\n\n";
 
-  stringstream buffer;
-  streambuf * old = cout.rdbuf(buffer.rdbuf());
-
-  values.print();
-
-  string actual = buffer.str();
-  cout.rdbuf(old);
-
-  EXPECT(assert_equal(expected, actual));
+  EXPECT(assert_print_equal(expected, values));
 }
 
 /* ************************************************************************* */

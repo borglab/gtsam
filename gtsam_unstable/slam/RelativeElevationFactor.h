@@ -25,13 +25,13 @@ namespace gtsam {
  *
  * TODO: enable use of a Pose3 for the target as well
  */
-class GTSAM_UNSTABLE_EXPORT RelativeElevationFactor: public NoiseModelFactor2<Pose3, Point3> {
+class GTSAM_UNSTABLE_EXPORT RelativeElevationFactor: public NoiseModelFactorN<Pose3, Point3> {
 private:
 
   double measured_; /** measurement */
 
   typedef RelativeElevationFactor This;
-  typedef NoiseModelFactor2<Pose3, Point3> Base;
+  typedef NoiseModelFactorN<Pose3, Point3> Base;
 
 public:
 
@@ -40,7 +40,7 @@ public:
   RelativeElevationFactor(Key poseKey, Key pointKey, double measured,
       const SharedNoiseModel& model);
 
-  virtual ~RelativeElevationFactor() {}
+  ~RelativeElevationFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -66,6 +66,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor2",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);

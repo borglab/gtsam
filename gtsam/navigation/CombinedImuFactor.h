@@ -51,6 +51,7 @@ typedef ManifoldPreintegration PreintegrationType;
  *     TRO, 28(1):61-76, 2012.
  * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor:
  *     Computation of the Jacobian Matrices", Tech. Report, 2013.
+ *     Available in this repo as "PreintegratedIMUJacobians.pdf".
  * [4] C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza, IMU Preintegration on
  *     Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation,
  *     Robotics: Science and Systems (RSS), 2015.
@@ -61,7 +62,7 @@ typedef ManifoldPreintegration PreintegrationType;
 struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
   Matrix3 biasAccCovariance;    ///< continuous-time "Covariance" describing accelerometer bias random walk
   Matrix3 biasOmegaCovariance;  ///< continuous-time "Covariance" describing gyroscope bias random walk
-  Matrix6 biasAccOmegaInt;     ///< covariance of bias used for pre-integration
+  Matrix6 biasAccOmegaInt;     ///< covariance of bias used as initial estimate.
 
   /// Default constructor makes uninitialized params struct.
   /// Used for serialization.
@@ -92,11 +93,11 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
 
   void setBiasAccCovariance(const Matrix3& cov) { biasAccCovariance=cov; }
   void setBiasOmegaCovariance(const Matrix3& cov) { biasOmegaCovariance=cov; }
-  void setBiasAccOmegaInt(const Matrix6& cov) { biasAccOmegaInt=cov; }
+  void setBiasAccOmegaInit(const Matrix6& cov) { biasAccOmegaInt=cov; }
   
   const Matrix3& getBiasAccCovariance() const { return biasAccCovariance; }
   const Matrix3& getBiasOmegaCovariance() const { return biasOmegaCovariance; }
-  const Matrix6& getBiasAccOmegaInt() const { return biasAccOmegaInt; }
+  const Matrix6& getBiasAccOmegaInit() const { return biasAccOmegaInt; }
   
 private:
 
@@ -123,7 +124,7 @@ public:
  * it is received from the IMU) so as to avoid costly integration at time of
  * factor construction.
  *
- * @addtogroup SLAM
+ * @ingroup navigation
  */
 class GTSAM_EXPORT PreintegratedCombinedMeasurements : public PreintegrationType {
 
@@ -173,7 +174,7 @@ public:
   }
 
   /// Virtual destructor
-  virtual ~PreintegratedCombinedMeasurements() {}
+  ~PreintegratedCombinedMeasurements() override {}
 
   /// @}
 
@@ -208,12 +209,13 @@ public:
 
   /**
    * Add a single IMU measurement to the preintegration.
-   * @param measuredAcc Measured acceleration (in body frame, as given by the
-   * sensor)
+   * Both accelerometer and gyroscope measurements are taken to be in the sensor
+   * frame and conversion to the body frame is handled by `body_P_sensor` in
+   * `PreintegrationParams`.
+   *
+   * @param measuredAcc Measured acceleration (as given by the sensor)
    * @param measuredOmega Measured angular velocity (as given by the sensor)
-   * @param deltaT Time interval between two consecutive IMU measurements
-   * @param body_P_sensor Optional sensor frame (pose of the IMU in the body
-   * frame)
+   * @param dt Time interval between two consecutive IMU measurements
    */
   void integrateMeasurement(const Vector3& measuredAcc,
       const Vector3& measuredOmega, const double dt) override;
@@ -251,16 +253,16 @@ public:
  *    the correlation between the bias uncertainty and the preintegrated
  *    measurements uncertainty.
  *
- * @addtogroup SLAM
+ * @ingroup navigation
  */
-class GTSAM_EXPORT CombinedImuFactor: public NoiseModelFactor6<Pose3, Vector3, Pose3,
+class GTSAM_EXPORT CombinedImuFactor: public NoiseModelFactorN<Pose3, Vector3, Pose3,
     Vector3, imuBias::ConstantBias, imuBias::ConstantBias> {
 public:
 
 private:
 
   typedef CombinedImuFactor This;
-  typedef NoiseModelFactor6<Pose3, Vector3, Pose3, Vector3,
+  typedef NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
       imuBias::ConstantBias, imuBias::ConstantBias> Base;
 
   PreintegratedCombinedMeasurements _PIM_;
@@ -291,7 +293,7 @@ public:
       Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
       const PreintegratedCombinedMeasurements& preintegratedMeasurements);
 
-  virtual ~CombinedImuFactor() {}
+  ~CombinedImuFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override;
@@ -332,7 +334,9 @@ public:
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(NoiseModelFactor6);
+    // NoiseModelFactor6 instead of NoiseModelFactorN for backward compatibility
+    ar& boost::serialization::make_nvp(
+        "NoiseModelFactor6", boost::serialization::base_object<Base>(*this));
     ar& BOOST_SERIALIZATION_NVP(_PIM_);
   }
 
@@ -353,6 +357,3 @@ template <>
 struct traits<CombinedImuFactor> : public Testable<CombinedImuFactor> {};
 
 }  // namespace gtsam
-
-/// Add Boost serialization export key (declaration) for derived class
-BOOST_CLASS_EXPORT_KEY(gtsam::PreintegrationCombinedParams);

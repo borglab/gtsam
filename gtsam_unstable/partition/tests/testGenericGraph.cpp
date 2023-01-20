@@ -10,10 +10,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/list.hpp> // for operator +=
-#include <boost/assign/std/set.hpp> // for operator +=
-#include <boost/assign/std/vector.hpp> // for operator +=
-using namespace boost::assign;
 #include <boost/make_shared.hpp>
 
 #include <map>
@@ -44,13 +40,13 @@ TEST ( GenerciGraph, findIslands )
   graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 5, NODE_POSE_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(5, NODE_POSE_2D, 6, NODE_POSE_2D));
-  std::vector<size_t> keys; keys += 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  std::vector<size_t> keys{1, 2, 3, 4, 5, 6, 7, 8, 9};
 
   WorkSpace workspace(10); // from 0 to 9
   list<vector<size_t> > islands = findIslands(graph, keys, workspace, 7, 2);
   LONGS_EQUAL(2, islands.size());
-  vector<size_t> island1; island1 += 1, 2, 3, 7, 8;
-  vector<size_t> island2; island2 += 4, 5, 6, 9;
+  vector<size_t> island1{1, 2, 3, 7, 8};
+  vector<size_t> island2{4, 5, 6, 9};
   CHECK(island1 == islands.front());
   CHECK(island2 == islands.back());
 }
@@ -77,12 +73,12 @@ TEST( GenerciGraph, findIslands2 )
   graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 5, NODE_POSE_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(5, NODE_POSE_2D, 6, NODE_POSE_2D));
-  std::vector<size_t> keys; keys += 1, 2, 3, 4, 5, 6, 7, 8;
+  std::vector<size_t> keys{1, 2, 3, 4, 5, 6, 7, 8};
 
   WorkSpace workspace(15); // from 0 to 8, but testing over-allocation here
   list<vector<size_t> > islands = findIslands(graph, keys, workspace, 7, 2);
   LONGS_EQUAL(1, islands.size());
-  vector<size_t> island1; island1 += 1, 2, 3, 4, 5, 6, 7, 8;
+  vector<size_t> island1{1, 2, 3, 4, 5, 6, 7, 8};
   CHECK(island1 == islands.front());
 }
 
@@ -99,13 +95,13 @@ TEST ( GenerciGraph, findIslands3 )
 
   graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 4, NODE_POSE_2D));
-  std::vector<size_t> keys; keys += 1, 2, 3, 4, 5, 6;
+  std::vector<size_t> keys{1, 2, 3, 4, 5, 6};
 
   WorkSpace workspace(7); // from 0 to 9
   list<vector<size_t> > islands = findIslands(graph, keys, workspace, 7, 2);
   LONGS_EQUAL(2, islands.size());
-  vector<size_t> island1; island1 += 1, 5;
-  vector<size_t> island2; island2 += 2, 3, 4, 6;
+  vector<size_t> island1{1, 5};
+  vector<size_t> island2{2, 3, 4, 6};
   CHECK(island1 == islands.front());
   CHECK(island2 == islands.back());
 }
@@ -119,13 +115,13 @@ TEST ( GenerciGraph, findIslands4 )
   GenericGraph2D graph;
   graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 4, NODE_LANDMARK_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(7, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
-  std::vector<size_t> keys; keys += 3, 4, 7;
+  std::vector<size_t> keys{3, 4, 7};
 
   WorkSpace workspace(8); // from 0 to 7
   list<vector<size_t> > islands = findIslands(graph, keys, workspace, 7, 2);
   LONGS_EQUAL(2, islands.size());
-  vector<size_t> island1; island1 += 3, 4;
-  vector<size_t> island2; island2 += 7;
+  vector<size_t> island1{3, 4};
+  vector<size_t> island2{7};
   CHECK(island1 == islands.front());
   CHECK(island2 == islands.back());
 }
@@ -147,13 +143,13 @@ TEST ( GenerciGraph, findIslands5 )
   graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 3, NODE_POSE_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 4, NODE_POSE_2D));
 
-  std::vector<size_t> keys; keys += 1, 2, 3, 4, 5;
+  std::vector<size_t> keys{1, 2, 3, 4, 5};
 
   WorkSpace workspace(6); // from 0 to 5
   list<vector<size_t> > islands = findIslands(graph, keys, workspace, 7, 2);
   LONGS_EQUAL(2, islands.size());
-  vector<size_t> island1; island1 += 1, 3, 5;
-  vector<size_t> island2; island2 += 2, 4;
+  vector<size_t> island1{1, 3, 5};
+  vector<size_t> island2{2, 4};
   CHECK(island1 == islands.front());
   CHECK(island2 == islands.back());
 }
@@ -235,8 +231,8 @@ TEST ( GenericGraph, reduceGenericGraph2 )
 /* ************************************************************************* */
 TEST ( GenerciGraph, hasCommonCamera )
 {
-  std::set<size_t> cameras1;   cameras1 += 1, 2, 3, 4, 5;
-  std::set<size_t> cameras2;   cameras2 += 8, 7, 6, 5;
+  std::set<size_t> cameras1{1, 2, 3, 4, 5};
+  std::set<size_t> cameras2{8, 7, 6, 5};
   bool actual = hasCommonCamera(cameras1, cameras2);
   CHECK(actual);
 }
@@ -244,8 +240,8 @@ TEST ( GenerciGraph, hasCommonCamera )
 /* ************************************************************************* */
 TEST ( GenerciGraph, hasCommonCamera2 )
 {
-  std::set<size_t> cameras1;   cameras1 += 1, 3, 5, 7;
-  std::set<size_t> cameras2;   cameras2 += 2, 4, 6, 8, 10;
+  std::set<size_t> cameras1{1, 3, 5, 7};
+  std::set<size_t> cameras2{2, 4, 6, 8, 10};
   bool actual = hasCommonCamera(cameras1, cameras2);
   CHECK(!actual);
 }

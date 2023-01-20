@@ -29,10 +29,10 @@ namespace gtsam {
   /**
    * A class for a measurement predicted by "between(config[key1],config[key2])"
    * @tparam VALUE the Value type
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   template<class VALUE>
-  class TransformBtwRobotsUnaryFactor: public NonlinearFactor { // TODO why not NoiseModelFactor1 ?
+  class TransformBtwRobotsUnaryFactor: public NonlinearFactor { // TODO why not NoiseModelFactorN ?
 
   public:
 
@@ -70,14 +70,14 @@ namespace gtsam {
     TransformBtwRobotsUnaryFactor(Key key, const VALUE& measured, Key keyA, Key keyB,
         const gtsam::Values& valA, const gtsam::Values& valB,
         const SharedGaussian& model) :
-          Base(cref_list_of<1>(key)), key_(key), measured_(measured), keyA_(keyA), keyB_(keyB),
+          Base(KeyVector{key}), key_(key), measured_(measured), keyA_(keyA), keyB_(keyB),
           model_(model){
 
       setValAValB(valA, valB);
 
     }
 
-    virtual ~TransformBtwRobotsUnaryFactor() {}
+    ~TransformBtwRobotsUnaryFactor() override {}
 
 
     /** Clone */

@@ -29,10 +29,6 @@
 #undef CHECK
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/list_of.hpp>
-using boost::assign::list_of;
-using boost::assign::map_list_of;
-
 using namespace std;
 using namespace gtsam;
 
@@ -139,7 +135,7 @@ TEST(Manifold, DefaultChart) {
 
   Vector v3(3);
   v3 << 1, 1, 1;
-  Rot3 I = Rot3::identity();
+  Rot3 I = Rot3::Identity();
   Rot3 R = I.retract(v3);
   //DefaultChart<Rot3> chart5;
   EXPECT(assert_equal(v3, traits<Rot3>::Local(I, R)));

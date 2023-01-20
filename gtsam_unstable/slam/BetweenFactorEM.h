@@ -28,7 +28,7 @@ namespace gtsam {
 /**
  * A class for a measurement predicted by "between(config[key1],config[key2])"
  * @tparam VALUE the Value type
- * @addtogroup SLAM
+ * @ingroup slam
  */
 template<class VALUE>
 class BetweenFactorEM: public NonlinearFactor {
@@ -56,7 +56,8 @@ private:
   bool flag_bump_up_near_zero_probs_;
 
   /** concept check by type */
-  GTSAM_CONCEPT_LIE_TYPE(T)GTSAM_CONCEPT_TESTABLE_TYPE(T)
+  GTSAM_CONCEPT_LIE_TYPE(T)
+  GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
 public:
 
@@ -72,13 +73,13 @@ public:
       const SharedGaussian& model_inlier, const SharedGaussian& model_outlier,
       const double prior_inlier, const double prior_outlier,
       const bool flag_bump_up_near_zero_probs = false) :
-      Base(cref_list_of<2>(key1)(key2)), key1_(key1), key2_(key2), measured_(
+      Base(KeyVector{key1, key2}), key1_(key1), key2_(key2), measured_(
           measured), model_inlier_(model_inlier), model_outlier_(model_outlier), prior_inlier_(
           prior_inlier), prior_outlier_(prior_outlier), flag_bump_up_near_zero_probs_(
           flag_bump_up_near_zero_probs) {
   }
 
-  virtual ~BetweenFactorEM() {
+  ~BetweenFactorEM() override {
   }
 
   /** implement functions needed for Testable */
@@ -419,5 +420,9 @@ private:
   }
 };
 // \class BetweenFactorEM
+
+/// traits
+template<class VALUE>
+struct traits<BetweenFactorEM<VALUE> > : public Testable<BetweenFactorEM<VALUE> > {};
 
 }  // namespace gtsam

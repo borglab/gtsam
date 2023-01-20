@@ -23,15 +23,15 @@ namespace gtsam {
 
   /**
    * A class for a soft prior on any Value type
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   template<class POSE>
-  class PosePriorFactor: public NoiseModelFactor1<POSE> {
+  class PosePriorFactor: public NoiseModelFactorN<POSE> {
 
   private:
 
     typedef PosePriorFactor<POSE> This;
-    typedef NoiseModelFactor1<POSE> Base;
+    typedef NoiseModelFactorN<POSE> Base;
 
     POSE prior_; /** The measurement */
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
@@ -47,7 +47,7 @@ namespace gtsam {
     /** default constructor - only use for serialization */
     PosePriorFactor() {}
 
-    virtual ~PosePriorFactor() {}
+    ~PosePriorFactor() override {}
 
     /** Constructor */
     PosePriorFactor(Key key, const POSE& prior, const SharedNoiseModel& model,

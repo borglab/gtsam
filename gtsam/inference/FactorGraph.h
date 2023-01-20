@@ -22,14 +22,14 @@
 
 #pragma once
 
+#include <gtsam/inference/DotWriter.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/inference/Key.h>
 
 #include <Eigen/Core>  // for Eigen::aligned_allocator
 
 #include <boost/assign/list_inserter.hpp>
-#include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/vector.hpp>
@@ -37,6 +37,7 @@
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <iosfwd>
 
 namespace gtsam {
 /// Define collection type:
@@ -45,6 +46,8 @@ typedef FastVector<FactorIndex> FactorIndices;
 // Forward declarations
 template <class CLIQUE>
 class BayesTree;
+
+class HybridValues;
 
 /** Helper */
 template <class C>
@@ -115,7 +118,7 @@ class FactorGraph {
   using HasDerivedValueType = typename std::enable_if<
       std::is_base_of<FactorType, typename T::value_type>::value>::type;
 
-  /// Check if T has a value_type derived from FactorType.
+  /// Check if T has a pointer type derived from FactorType.
   template <typename T>
   using HasDerivedElementType = typename std::enable_if<std::is_base_of<
       FactorType, typename T::value_type::element_type>::value>::type;
@@ -126,6 +129,11 @@ class FactorGraph {
 
   /** Collection of factors */
   FastVector<sharedFactor> factors_;
+
+  /// Check exact equality of the factor pointers. Useful for derived ==.
+  bool isEqual(const FactorGraph& other) const {
+    return factors_ == other.factors_;
+  }
 
   /// @name Standard Constructors
   /// @{
@@ -148,6 +156,22 @@ class FactorGraph {
   /// @}
 
  public:
+  /// @name Constructors
+  /// @{
+
+  /// Default destructor
+  /// Public and virtual so boost serialization can call it.
+  virtual ~FactorGraph() = default;
+
+  /**
+   * Constructor that takes an initializer list of shared pointers.
+   *  FactorGraph fg = {make_shared<MyFactor>(), ...};
+   */
+  template <class DERIVEDFACTOR, typename = IsDerived<DERIVEDFACTOR>>
+  FactorGraph(std::initializer_list<boost::shared_ptr<DERIVEDFACTOR>> sharedFactors)
+      : factors_(sharedFactors) {}
+
+  /// @}
   /// @name Adding Single Factors
   /// @{
 
@@ -285,11 +309,11 @@ class FactorGraph {
   /// @name Testable
   /// @{
 
-  /** print out graph */
-  void print(const std::string& s = "FactorGraph",
-             const KeyFormatter& formatter = DefaultKeyFormatter) const;
+  /// Print out graph to std::cout, with optional key formatter.
+  virtual void print(const std::string& s = "FactorGraph",
+                     const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
-  /** Check equality */
+  /// Check equality up to tolerance.
   bool equals(const This& fg, double tol = 1e-9) const;
   /// @}
 
@@ -337,6 +361,9 @@ class FactorGraph {
   /** Get the last factor */
   sharedFactor back() const { return factors_.back(); }
 
+  /** Add error for all factors. */
+  double error(const HybridValues &values) const;
+
   /// @}
   /// @name Modifying Factor Graphs (imperative, discouraged)
   /// @{
@@ -351,11 +378,11 @@ class FactorGraph {
    * less than the original, factors at the end will be removed.  If the new
    * size is larger than the original, null factors will be appended.
    */
-  void resize(size_t size) { factors_.resize(size); }
+  virtual void resize(size_t size) { factors_.resize(size); }
 
   /** delete factor without re-arranging indexes by inserting a nullptr pointer
    */
-  void remove(size_t i) { factors_[i].reset(); }
+  void remove(size_t i) { factors_.at(i).reset(); }
 
   /** replace a factor by index */
   void replace(size_t index, sharedFactor factor) { at(index) = factor; }
@@ -367,6 +394,24 @@ class FactorGraph {
   iterator erase(iterator first, iterator last) {
     return factors_.erase(first, last);
   }
+
+  /// @}
+  /// @name Graph Display
+  /// @{
+
+  /// Output to graphviz format, stream version.
+  void dot(std::ostream& os,
+           const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+           const DotWriter& writer = DotWriter()) const;
+
+  /// Output to graphviz format string.
+  std::string dot(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                  const DotWriter& writer = DotWriter()) const;
+
+  /// output to file with graphviz format.
+  void saveGraph(const std::string& filename,
+                 const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                 const DotWriter& writer = DotWriter()) const;
 
   /// @}
   /// @name Advanced Interface

@@ -24,21 +24,19 @@
 #include <gtsam/slam/PoseTranslationPrior.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/StereoFactor.h>
-#include <boost/assign/std/vector.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
 using namespace std;
-using namespace boost::assign;
 using namespace gtsam;
 
+namespace {
 // make a realistic calibration matrix
 static double b = 1;
 
 static Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(fov, w, h, b));
-static Cal3_S2Stereo::shared_ptr K2(
-    new Cal3_S2Stereo(1500, 1200, 0, 640, 480, b));
-
+static Cal3_S2Stereo::shared_ptr K2(new Cal3_S2Stereo(1500, 1200, 0, 640, 480,
+                                                      b));
 
 static SmartStereoProjectionParams params;
 
@@ -47,8 +45,8 @@ static SmartStereoProjectionParams params;
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(3, 0.1));
 
 // Convenience for named keys
-using symbol_shorthand::X;
 using symbol_shorthand::L;
+using symbol_shorthand::X;
 
 // tests data
 static Symbol x1('X', 1);
@@ -56,15 +54,17 @@ static Symbol x2('X', 2);
 static Symbol x3('X', 3);
 
 static Key poseKey1(x1);
-static StereoPoint2 measurement1(323.0, 300.0, 240.0); //potentially use more reasonable measurement value?
+static StereoPoint2 measurement1(
+    323.0, 300.0, 240.0);  // potentially use more reasonable measurement value?
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
-    Point3(0.25, -0.10, 1.0));
+                            Point3(0.25, -0.10, 1.0));
 
 static double missing_uR = std::numeric_limits<double>::quiet_NaN();
 
 vector<StereoPoint2> stereo_projectToMultipleCameras(const StereoCamera& cam1,
-    const StereoCamera& cam2, const StereoCamera& cam3, Point3 landmark) {
-
+                                                     const StereoCamera& cam2,
+                                                     const StereoCamera& cam3,
+                                                     Point3 landmark) {
   vector<StereoPoint2> measurements_cam;
 
   StereoPoint2 cam1_uv1 = cam1.project(landmark);
@@ -78,6 +78,7 @@ vector<StereoPoint2> stereo_projectToMultipleCameras(const StereoCamera& cam1,
 }
 
 LevenbergMarquardtParams lm_params;
+}  // namespace
 
 /* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, params) {
@@ -217,9 +218,7 @@ TEST( SmartProjectionPoseFactor, noiselessWithMissingMeasurements ) {
    double actualError2 = factor1.totalReprojectionError(cameras);
    EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
 
-   CameraSet<StereoCamera> cams;
-   cams += level_camera;
-   cams += level_camera_right;
+   CameraSet<StereoCamera> cams{level_camera, level_camera_right};
    TriangulationResult result = factor1.triangulateSafe(cams);
    CHECK(result);
    EXPECT(assert_equal(landmark, *result, 1e-7));

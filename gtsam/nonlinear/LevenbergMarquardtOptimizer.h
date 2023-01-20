@@ -69,7 +69,7 @@ public:
                               const LevenbergMarquardtParams& params = LevenbergMarquardtParams());
 
   /** Virtual destructor */
-  virtual ~LevenbergMarquardtOptimizer() {
+  ~LevenbergMarquardtOptimizer() override {
   }
 
   /// @}

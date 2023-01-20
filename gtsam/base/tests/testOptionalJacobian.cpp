@@ -24,40 +24,33 @@ using namespace std;
 using namespace gtsam;
 
 //******************************************************************************
+#define TEST_CONSTRUCTOR(DIM1, DIM2, X, TRUTHY) \
+  {                                             \
+    OptionalJacobian<DIM1, DIM2> H(X);          \
+    EXPECT(H == TRUTHY);                        \
+  }
 TEST( OptionalJacobian, Constructors ) {
   Matrix23 fixed;
-
-  OptionalJacobian<2, 3> H1;
-  EXPECT(!H1);
-
-  OptionalJacobian<2, 3> H2(fixed);
-  EXPECT(H2);
-
-  OptionalJacobian<2, 3> H3(&fixed);
-  EXPECT(H3);
-
   Matrix dynamic;
-  OptionalJacobian<2, 3> H4(dynamic);
-  EXPECT(H4);
-
-  OptionalJacobian<2, 3> H5(boost::none);
-  EXPECT(!H5);
-
   boost::optional<Matrix&> optional(dynamic);
-  OptionalJacobian<2, 3> H6(optional);
-  EXPECT(H6);
 
+  OptionalJacobian<2, 3> H;
+  EXPECT(!H);
+
+  TEST_CONSTRUCTOR(2, 3, fixed, true);
+  TEST_CONSTRUCTOR(2, 3, &fixed, true);
+  TEST_CONSTRUCTOR(2, 3, dynamic, true);
+  TEST_CONSTRUCTOR(2, 3, &dynamic, true);
+  TEST_CONSTRUCTOR(2, 3, boost::none, false);
+  TEST_CONSTRUCTOR(2, 3, optional, true);
+
+  // Test dynamic
   OptionalJacobian<-1, -1> H7;
   EXPECT(!H7);
 
-  OptionalJacobian<-1, -1> H8(dynamic);
-  EXPECT(H8);
-
-  OptionalJacobian<-1, -1> H9(boost::none);
-  EXPECT(!H9);
-
-  OptionalJacobian<-1, -1> H10(optional);
-  EXPECT(H10);
+  TEST_CONSTRUCTOR(-1, -1, dynamic, true);
+  TEST_CONSTRUCTOR(-1, -1, boost::none, false);
+  TEST_CONSTRUCTOR(-1, -1, optional, true);
 }
 
 //******************************************************************************
@@ -101,6 +94,25 @@ TEST( OptionalJacobian, Fixed) {
   dynamic2.setOnes();
   test(dynamic2);
   EXPECT(assert_equal(kTestMatrix, dynamic2));
+
+  {  // Dynamic pointer
+    // Passing in an empty matrix means we want it resized
+    Matrix dynamic0;
+    test(&dynamic0);
+    EXPECT(assert_equal(kTestMatrix, dynamic0));
+
+    // Dynamic wrong size
+    Matrix dynamic1(3, 5);
+    dynamic1.setOnes();
+    test(&dynamic1);
+    EXPECT(assert_equal(kTestMatrix, dynamic1));
+
+    // Dynamic right size
+    Matrix dynamic2(2, 5);
+    dynamic2.setOnes();
+    test(&dynamic2);
+    EXPECT(assert_equal(kTestMatrix, dynamic2));
+  }
 }
 
 //******************************************************************************

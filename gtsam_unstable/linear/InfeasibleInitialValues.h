@@ -29,7 +29,7 @@ public:
   InfeasibleInitialValues() {
   }
 
-  virtual ~InfeasibleInitialValues() noexcept {
+  ~InfeasibleInitialValues() noexcept override {
   }
 
   const char *what() const noexcept override {

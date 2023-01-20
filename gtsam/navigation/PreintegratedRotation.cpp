@@ -26,7 +26,7 @@ using namespace std;
 namespace gtsam {
 
 void PreintegratedRotationParams::print(const string& s) const {
-  cout << (s == "" ? s : s + "\n") << endl;
+  cout << (s.empty() ? s : s + "\n") << endl;
   cout << "gyroscopeCovariance:\n[\n" << gyroscopeCovariance << "\n]" << endl;
   if (omegaCoriolis)
     cout << "omegaCoriolis = (" << omegaCoriolis->transpose() << ")" << endl;

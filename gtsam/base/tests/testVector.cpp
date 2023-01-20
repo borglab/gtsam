@@ -220,8 +220,8 @@ TEST(Vector, axpy )
   Vector x = Vector3(10., 20., 30.);
   Vector y0 = Vector3(2.0, 5.0, 6.0);
   Vector y1 = y0, y2 = y0;
-  axpy(0.1,x,y1);
-  axpy(0.1,x,y2.head(3));
+  y1 += 0.1 * x;
+  y2.head(3) += 0.1 * x;
   Vector expected = Vector3(3.0, 7.0, 9.0);
   EXPECT(assert_equal(expected,y1));
   EXPECT(assert_equal(expected,Vector(y2)));

@@ -17,6 +17,7 @@
  */
 
 #include <SymEigsSolver.h>
+#include <cmath>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
@@ -54,7 +55,9 @@ ShonanAveragingParameters<d>::ShonanAveragingParameters(
       optimalityThreshold(optimalityThreshold),
       alpha(alpha),
       beta(beta),
-      gamma(gamma) {
+      gamma(gamma),
+      useHuber(false),
+      certifyOptimality(true) {
   // By default, we will do conjugate gradient
   lm.linearSolverType = LevenbergMarquardtParams::Iterative;
 
@@ -141,25 +144,23 @@ template <size_t d>
 NonlinearFactorGraph ShonanAveraging<d>::buildGraphAt(size_t p) const {
   NonlinearFactorGraph graph;
   auto G = boost::make_shared<Matrix>(SO<-1>::VectorizedGenerators(p));
+
   for (const auto &measurement : measurements_) {
     const auto &keys = measurement.keys();
     const auto &Rij = measurement.measured();
     const auto &model = measurement.noiseModel();
     graph.emplace_shared<ShonanFactor<d>>(keys[0], keys[1], Rij, p, model, G);
   }
-
   // Possibly add Karcher prior
   if (parameters_.beta > 0) {
     const size_t dim = SOn::Dimension(p);
     graph.emplace_shared<KarcherMeanFactor<SOn>>(graph.keys(), dim);
   }
-
   // Possibly add gauge factors - they are probably useless as gradient is zero
   if (parameters_.gamma > 0 && p > d + 1) {
     for (auto key : graph.keys())
       graph.emplace_shared<ShonanGaugeFactor>(key, p, d, parameters_.gamma);
   }
-
   return graph;
 }
 
@@ -187,7 +188,6 @@ ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
     graph.emplace_shared<PriorFactor<SOn>>(i, SOn::Lift(p, value.matrix()),
                                            model);
   }
-
   // Optimize
   return boost::make_shared<LevenbergMarquardtOptimizer>(graph, initial,
                                                          parameters_.lm);
@@ -335,15 +335,33 @@ double ShonanAveraging<d>::cost(const Values &values) const {
 
 /* ************************************************************************* */
 // Get kappa from noise model
-template <typename T>
-static double Kappa(const BinaryMeasurement<T> &measurement) {
+template <typename T, size_t d>
+static double Kappa(const BinaryMeasurement<T> &measurement,
+                    const ShonanAveragingParameters<d> &parameters) {
   const auto &isotropic = boost::dynamic_pointer_cast<noiseModel::Isotropic>(
       measurement.noiseModel());
-  if (!isotropic) {
-    throw std::invalid_argument(
-        "Shonan averaging noise models must be isotropic.");
+  double sigma;
+  if (isotropic) {
+    sigma = isotropic->sigma();
+  } else {
+    const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
+        measurement.noiseModel());
+    // Check if noise model is robust
+    if (robust) {
+      // If robust, check if optimality certificate is expected
+      if (parameters.getCertifyOptimality()) {
+        throw std::invalid_argument(
+            "Certification of optimality does not work with robust cost.");
+      } else {
+        // Optimality certificate not required, so setting default sigma
+        sigma = 1;
+      }
+    } else {
+      throw std::invalid_argument(
+          "Shonan averaging noise models must be isotropic (but robust losses "
+          "are allowed).");
+    }
   }
-  const double sigma = isotropic->sigma();
   return 1.0 / (sigma * sigma);
 }
 
@@ -363,7 +381,7 @@ Sparse ShonanAveraging<d>::buildD() const {
     const auto &keys = measurement.keys();
 
     // Get kappa from noise model
-    double kappa = Kappa<Rot>(measurement);
+    double kappa = Kappa<Rot, d>(measurement, parameters_);
 
     const size_t di = d * keys[0], dj = d * keys[1];
     for (size_t k = 0; k < d; k++) {
@@ -401,7 +419,7 @@ Sparse ShonanAveraging<d>::buildQ() const {
     const auto Rij = measurement.measured().matrix();
 
     // Get kappa from noise model
-    double kappa = Kappa<Rot>(measurement);
+    double kappa = Kappa<Rot, d>(measurement, parameters_);
 
     const size_t di = d * keys[0], dj = d * keys[1];
     for (size_t r = 0; r < d; r++) {
@@ -472,7 +490,87 @@ Sparse ShonanAveraging<d>::computeA(const Values &values) const {
 }
 
 /* ************************************************************************* */
+template <size_t d>
+Sparse ShonanAveraging<d>::computeA(const Matrix &S) const {
+  auto Lambda = computeLambda(S);
+  return Lambda - Q_;
+}
+
+/* ************************************************************************* */
+// Perturb the initial initialVector by adding a spherically-uniformly
+// distributed random vector with 0.03*||initialVector||_2 magnitude to
+// initialVector
+// ref : Part III. C, Rosen, D. and Carlone, L., 2017, September. Computational
+// enhancements for certifiably correct SLAM. In Proceedings of the
+// International Conference on Intelligent Robots and Systems.
+static Vector perturb(const Vector &initialVector) {
+  // generate a 0.03*||x_0||_2 as stated in David's paper
+  int n = initialVector.rows();
+  Vector disturb = Vector::Random(n);
+  disturb.normalize();
+
+  double magnitude = initialVector.norm();
+  Vector perturbedVector = initialVector + 0.03 * magnitude * disturb;
+  perturbedVector.normalize();
+  return perturbedVector;
+}
+
+/* ************************************************************************* */
 /// MINIMUM EIGENVALUE COMPUTATIONS
+// Alg.6 from paper Distributed Certifiably Correct Pose-Graph Optimization,
+// it takes in the certificate matrix A as input, the maxIterations and the
+// minEigenvalueNonnegativityTolerance is set to 1000 and 10e-4 ad default,
+// there are two parts
+// in this algorithm:
+// (1) compute the maximum eigenpair (\lamda_dom, \vect{v}_dom) of A by power
+// method. if \lamda_dom is less than zero, then return the eigenpair. (2)
+// compute the maximum eigenpair (\theta, \vect{v}) of C = \lamda_dom * I - A by
+// accelerated power method. Then return (\lamda_dom - \theta, \vect{v}).
+static bool PowerMinimumEigenValue(
+    const Sparse &A, const Matrix &S, double &minEigenValue,
+    Vector *minEigenVector = 0, size_t *numIterations = 0,
+    size_t maxIterations = 1000,
+    double minEigenvalueNonnegativityTolerance = 10e-4) {
+
+  // a. Compute dominant eigenpair of S using power method
+  PowerMethod<Sparse> pmOperator(A);
+
+  const bool pmConverged = pmOperator.compute(
+      maxIterations, 1e-5);
+
+  // Check convergence and bail out if necessary
+  if (!pmConverged) return false;
+
+  const double pmEigenValue = pmOperator.eigenvalue();
+
+  if (pmEigenValue < 0) {
+    // The largest-magnitude eigenvalue is negative, and therefore also the
+    // minimum eigenvalue, so just return this solution
+    minEigenValue = pmEigenValue;
+    if (minEigenVector) {
+      *minEigenVector = pmOperator.eigenvector();
+      minEigenVector->normalize();  // Ensure that this is a unit vector
+    }
+    return true;
+  }
+
+  const Sparse C = pmEigenValue * Matrix::Identity(A.rows(), A.cols()).sparseView() - A;
+  const boost::optional<Vector> initial = perturb(S.row(0));
+  AcceleratedPowerMethod<Sparse> apmShiftedOperator(C, initial);
+
+  const bool minConverged = apmShiftedOperator.compute(
+      maxIterations, minEigenvalueNonnegativityTolerance / pmEigenValue);
+
+  if (!minConverged) return false;
+
+  minEigenValue = pmEigenValue - apmShiftedOperator.eigenvalue();
+  if (minEigenVector) {
+    *minEigenVector = apmShiftedOperator.eigenvector();
+    minEigenVector->normalize();  // Ensure that this is a unit vector
+  }
+  if (numIterations) *numIterations = apmShiftedOperator.nrIterations();
+  return true;
+}
 
 /** This is a lightweight struct used in conjunction with Spectra to compute
  * the minimum eigenvalue and eigenvector of a sparse matrix A; it has a single
@@ -620,13 +718,6 @@ static bool SparseMinimumEigenValue(
 
 /* ************************************************************************* */
 template <size_t d>
-Sparse ShonanAveraging<d>::computeA(const Matrix &S) const {
-  auto Lambda = computeLambda(S);
-  return Lambda - Q_;
-}
-
-/* ************************************************************************* */
-template <size_t d>
 double ShonanAveraging<d>::computeMinEigenValue(const Values &values,
                                                 Vector *minEigenVector) const {
   assert(values.size() == nrUnknowns());
@@ -638,6 +729,23 @@ double ShonanAveraging<d>::computeMinEigenValue(const Values &values,
   if (!success) {
     throw std::runtime_error(
         "SparseMinimumEigenValue failed to compute minimum eigenvalue.");
+  }
+  return minEigenValue;
+}
+
+/* ************************************************************************* */
+template <size_t d>
+double ShonanAveraging<d>::computeMinEigenValueAP(const Values &values,
+                                                Vector *minEigenVector) const {
+  assert(values.size() == nrUnknowns());
+  const Matrix S = StiefelElementMatrix(values);
+  auto A = computeA(S);
+
+  double minEigenValue = 0;
+  bool success = PowerMinimumEigenValue(A, S, minEigenValue, minEigenVector);
+  if (!success) {
+    throw std::runtime_error(
+        "PowerMinimumEigenValue failed to compute minimum eigenvalue.");
   }
   return minEigenValue;
 }
@@ -794,21 +902,30 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
   for (size_t p = pMin; p <= pMax; p++) {
     // Optimize until convergence at this level
     Qstar = tryOptimizingAt(p, initialSOp);
-
-    // Check certificate of global optimzality
-    Vector minEigenVector;
-    double minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
-    if (minEigenValue > parameters_.optimalityThreshold) {
-      // If at global optimum, round and return solution
+    if (parameters_.getUseHuber() || !parameters_.getCertifyOptimality()) {
+      // in this case, there is no optimality certification
+      if (pMin != pMax) {
+        throw std::runtime_error(
+            "When using robust norm, Shonan only tests a single rank. Set pMin = pMax");
+      }
       const Values SO3Values = roundSolution(Qstar);
-      return std::make_pair(SO3Values, minEigenValue);
-    }
+      return std::make_pair(SO3Values, 0);
+    } else {
+      // Check certificate of global optimality
+      Vector minEigenVector;
+      double minEigenValue = computeMinEigenValue(Qstar, &minEigenVector);
+      if (minEigenValue > parameters_.optimalityThreshold) {
+        // If at global optimum, round and return solution
+        const Values SO3Values = roundSolution(Qstar);
+        return std::make_pair(SO3Values, minEigenValue);
+      }
 
-    // Not at global optimimum yet, so check whether we will go to next level
-    if (p != pMax) {
-      // Calculate initial estimate for next level by following minEigenVector
-      initialSOp =
-          initializeWithDescent(p + 1, Qstar, minEigenVector, minEigenValue);
+      // Not at global optimimum yet, so check whether we will go to next level
+      if (p != pMax) {
+        // Calculate initial estimate for next level by following minEigenVector
+        initialSOp =
+            initializeWithDescent(p + 1, Qstar, minEigenVector, minEigenValue);
+      }
     }
   }
   throw std::runtime_error("Shonan::run did not converge for given pMax");
@@ -820,20 +937,59 @@ template class ShonanAveraging<2>;
 
 ShonanAveraging2::ShonanAveraging2(const Measurements &measurements,
                                    const Parameters &parameters)
-    : ShonanAveraging<2>(measurements, parameters) {}
-ShonanAveraging2::ShonanAveraging2(string g2oFile, const Parameters &parameters)
-    : ShonanAveraging<2>(parseMeasurements<Rot2>(g2oFile), parameters) {}
+    : ShonanAveraging<2>(maybeRobust(measurements, parameters.getUseHuber()),
+                         parameters) {}
 
+ShonanAveraging2::ShonanAveraging2(string g2oFile, const Parameters &parameters)
+    : ShonanAveraging<2>(maybeRobust(parseMeasurements<Rot2>(g2oFile),
+                                     parameters.getUseHuber()),
+                         parameters) {}
+
+// Extract Rot2 measurement from Pose2 betweenfactors
+// Modeled after similar function in dataset.cpp
+static BinaryMeasurement<Rot2> convertPose2ToBinaryMeasurementRot2(
+    const BetweenFactor<Pose2>::shared_ptr &f) {
+  auto gaussian =
+      boost::dynamic_pointer_cast<noiseModel::Gaussian>(f->noiseModel());
+  if (!gaussian)
+    throw std::invalid_argument(
+        "parseMeasurements<Rot2> can only convert Pose2 measurements "
+        "with Gaussian noise models.");
+  const Matrix3 M = gaussian->covariance();
+  // the (2,2) entry of Pose2's covariance corresponds to Rot2's covariance
+  // because the tangent space of Pose2 is ordered as (vx, vy, w)
+  auto model = noiseModel::Isotropic::Variance(1, M(2, 2));
+  return BinaryMeasurement<Rot2>(f->key<1>(), f->key<2>(), f->measured().rotation(),
+                                 model);
+}
+    
+static ShonanAveraging2::Measurements extractRot2Measurements(
+    const BetweenFactorPose2s &factors) {
+  ShonanAveraging2::Measurements result;
+  result.reserve(factors.size());
+  for (auto f : factors) result.push_back(convertPose2ToBinaryMeasurementRot2(f));
+  return result;
+}
+
+ShonanAveraging2::ShonanAveraging2(const BetweenFactorPose2s &factors,
+                                   const Parameters &parameters)
+    : ShonanAveraging<2>(maybeRobust(extractRot2Measurements(factors),
+                                     parameters.getUseHuber()),
+                         parameters) {}    
+    
 /* ************************************************************************* */
 // Explicit instantiation for d=3
 template class ShonanAveraging<3>;
 
 ShonanAveraging3::ShonanAveraging3(const Measurements &measurements,
                                    const Parameters &parameters)
-    : ShonanAveraging<3>(measurements, parameters) {}
+    : ShonanAveraging<3>(maybeRobust(measurements, parameters.getUseHuber()),
+                         parameters) {}
 
 ShonanAveraging3::ShonanAveraging3(string g2oFile, const Parameters &parameters)
-    : ShonanAveraging<3>(parseMeasurements<Rot3>(g2oFile), parameters) {}
+    : ShonanAveraging<3>(maybeRobust(parseMeasurements<Rot3>(g2oFile),
+                                     parameters.getUseHuber()),
+                         parameters) {}
 
 // TODO(frank): Deprecate after we land pybind wrapper
 
@@ -848,9 +1004,11 @@ static BinaryMeasurement<Rot3> convert(
         "parseMeasurements<Rot3> can only convert Pose3 measurements "
         "with Gaussian noise models.");
   const Matrix6 M = gaussian->covariance();
-  return BinaryMeasurement<Rot3>(
-      f->key1(), f->key2(), f->measured().rotation(),
-      noiseModel::Gaussian::Covariance(M.block<3, 3>(3, 3), true));
+  // the upper-left 3x3 sub-block of Pose3's covariance corresponds to Rot3's covariance
+  // because the tangent space of Pose3 is ordered as (w,T) where w and T are both Vector3's
+  auto model = noiseModel::Gaussian::Covariance(M.block<3, 3>(0, 0));
+  return BinaryMeasurement<Rot3>(f->key<1>(), f->key<2>(), f->measured().rotation(),
+                                 model);
 }
 
 static ShonanAveraging3::Measurements extractRot3Measurements(
@@ -863,7 +1021,9 @@ static ShonanAveraging3::Measurements extractRot3Measurements(
 
 ShonanAveraging3::ShonanAveraging3(const BetweenFactorPose3s &factors,
                                    const Parameters &parameters)
-    : ShonanAveraging<3>(extractRot3Measurements(factors), parameters) {}
+    : ShonanAveraging<3>(maybeRobust(extractRot3Measurements(factors),
+                                     parameters.getUseHuber()),
+                         parameters) {}
 
 /* ************************************************************************* */
 }  // namespace gtsam

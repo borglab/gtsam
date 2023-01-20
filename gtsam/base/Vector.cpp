@@ -39,7 +39,7 @@ namespace gtsam {
  * 1. https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
  * 2. https://floating-point-gui.de/errors/comparison/
  * ************************************************************************* */
-bool fpEqual(double a, double b, double tol) {
+bool fpEqual(double a, double b, double tol, bool check_relative_also) {
   using std::abs;
   using std::isnan;
   using std::isinf;
@@ -48,7 +48,7 @@ bool fpEqual(double a, double b, double tol) {
   double larger = (abs(b) > abs(a)) ? abs(b) : abs(a);
 
   // handle NaNs
-  if(std::isnan(a) || isnan(b)) {
+  if(isnan(a) || isnan(b)) {
     return isnan(a) && isnan(b);
   }
   // handle inf
@@ -60,13 +60,15 @@ bool fpEqual(double a, double b, double tol) {
   else if(a == 0 || b == 0 || (abs(a) + abs(b)) < DOUBLE_MIN_NORMAL) {
     return abs(a-b) <= tol * DOUBLE_MIN_NORMAL;
   }
-  // Check if the numbers are really close
-  // Needed when comparing numbers near zero or tol is in vicinity
-  else if(abs(a-b) <= tol) {
+  // Check if the numbers are really close.
+  // Needed when comparing numbers near zero or tol is in vicinity.
+  else if (abs(a - b) <= tol) {
     return true;
   }
-  // Use relative error
-  else if(abs(a-b) <= tol * min(larger, std::numeric_limits<double>::max())) {
+  // Check for relative error
+  else if (abs(a - b) <=
+               tol * min(larger, std::numeric_limits<double>::max()) &&
+           check_relative_also) {
     return true;
   }
 
@@ -297,17 +299,14 @@ weightedPseudoinverse(const Vector& a, const Vector& weights) {
 }
 
 /* ************************************************************************* */
-Vector concatVectors(const std::list<Vector>& vs)
-{
+Vector concatVectors(const std::list<Vector>& vs) {
   size_t dim = 0;
-  for(Vector v: vs)
-  dim += v.size();
+  for (const Vector& v : vs) dim += v.size();
 
   Vector A(dim);
   size_t index = 0;
-  for(Vector v: vs) {
-    for(int d = 0; d < v.size(); d++)
-      A(d+index) = v(d);
+  for (const Vector& v : vs) {
+    for (int d = 0; d < v.size(); d++) A(d + index) = v(d);
     index += v.size();
   }
 

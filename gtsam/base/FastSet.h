@@ -18,6 +18,10 @@
 
 #pragma once
 
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 107400
+#include <boost/serialization/library_version_type.hpp>
+#endif
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/set.hpp>
 #include <gtsam/base/FastDefaultAllocator.h>
@@ -39,7 +43,7 @@ namespace gtsam {
  * fast_pool_allocator instead of the default STL allocator.  This is just a
  * convenience to avoid having lengthy types in the code.  Through timing,
  * we've seen that the fast_pool_allocator can lead to speedups of several %.
- * @addtogroup base
+ * @ingroup base
  */
 template<typename VALUE>
 class FastSet: public std::set<VALUE, std::less<VALUE>,
@@ -52,15 +56,9 @@ public:
   typedef std::set<VALUE, std::less<VALUE>,
   typename internal::FastDefaultAllocator<VALUE>::type> Base;
 
-  /** Default constructor */
-  FastSet() {
-  }
+  using Base::Base;  // Inherit the set constructors
 
-  /** Constructor from a range, passes through to base class */
-  template<typename INPUTITERATOR>
-  explicit FastSet(INPUTITERATOR first, INPUTITERATOR last) :
-  Base(first, last) {
-  }
+  FastSet() = default; ///< Default constructor
 
   /** Constructor from a iterable container, passes through to base class */
   template<typename INPUTCONTAINER>

@@ -5,16 +5,18 @@ project(gtsam LANGUAGES CXX)
 # The following variable is the master list of subdirs to add
 set (gtsam_subdirs
     base
+    basis
     geometry
     inference
     symbolic
     discrete
+    hybrid
     linear
     nonlinear
     sam
     sfm
     slam
-	  navigation
+    navigation
 )
 
 set(gtsam_srcs)
@@ -87,8 +89,9 @@ configure_file("${GTSAM_SOURCE_DIR}/cmake/dllexport.h.in" "dllexport.h")
 list(APPEND gtsam_srcs "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/dllexport.h")
 install(FILES "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/dllexport.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam)
 
-if(GTSAM_SUPPORT_NESTED_DISSECTION AND NOT GTSAM_USE_SUITESPARSE)  # SuiteSparse comes with its own version of METIS
-    list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis-gtsam)
+if(GTSAM_SUPPORT_NESTED_DISSECTION AND NOT GTSAM_USE_SUITESPARSE)
+    # target metis-gtsam-if is defined in both cases: embedded metis or system version:
+    list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis-gtsam-if)
 endif()
 
 # Versions
@@ -114,12 +117,10 @@ set_target_properties(gtsam PROPERTIES
     VERSION             ${gtsam_version}
     SOVERSION           ${gtsam_soversion})
 
-# Append Eigen include path, set in top-level CMakeLists.txt to either
+# Append Eigen include path to either
 # system-eigen, or GTSAM eigen path
-target_include_directories(gtsam PUBLIC
-  $<BUILD_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_BUILD}>
-  $<INSTALL_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_INSTALL}>
-)
+target_link_libraries(gtsam PUBLIC Eigen3::Eigen)
+
 # MKL include dir:
 if (GTSAM_USE_EIGEN_MKL)
   target_include_directories(gtsam PUBLIC ${MKL_INCLUDE_DIR})
@@ -143,15 +144,15 @@ endif()
 # of any previously installed GTSAM headers.
 target_include_directories(gtsam BEFORE PUBLIC
   # main gtsam includes:
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include/>
   # config.h
-  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+  $<BUILD_INTERFACE:${GTSAM_BINARY_DIR}>
   # unit tests:
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/CppUnitLite>
+  $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/CppUnitLite>
 )
 # 3rdparty libraries: use the "system" flag so they are included via "-isystem"
-# and warnings (and warnings-considered-errors) in those headers are not 
+# and warnings (and warnings-considered-errors) in those headers are not
 # reported as warnings/errors in our targets:
 target_include_directories(gtsam SYSTEM BEFORE PUBLIC
   # SuiteSparse_config
@@ -163,16 +164,6 @@ target_include_directories(gtsam SYSTEM BEFORE PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Include>
   $<INSTALL_INTERFACE:include/gtsam/3rdparty/CCOLAMD>
 )
-if(GTSAM_SUPPORT_NESTED_DISSECTION)
-  target_include_directories(gtsam BEFORE PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/include>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib>
-    $<INSTALL_INTERFACE:include/gtsam/3rdparty/metis/>
-  )
-endif()
-
-
 
 if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
 	if (NOT BUILD_SHARED_LIBS)
@@ -208,23 +199,8 @@ if(WIN32)
 else()
   if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     # Suppress all warnings from 3rd party sources.
-    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w")
+    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w -Wno-everything")
   else()
     set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-Wno-error")
   endif()
 endif()
-
-# Create the matlab toolbox for the gtsam library
-if (GTSAM_INSTALL_MATLAB_TOOLBOX)
-    # Set up codegen
-    include(GtsamMatlabWrap)
-
-    # Generate, build and install toolbox
-    set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-        if(NOT BUILD_SHARED_LIBS)
-                list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
-        endif()
-
-    # Wrap
-    wrap_and_install_library(gtsam.i "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
-endif ()

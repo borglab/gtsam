@@ -61,15 +61,17 @@ protected:
   /// @name Caching triangulation
   /// @{
   mutable TriangulationResult result_; ///< result from triangulateSafe
-  mutable std::vector<Pose3, Eigen::aligned_allocator<Pose3> > cameraPosesTriangulation_; ///< current triangulation poses
+  mutable std::vector<Pose3, Eigen::aligned_allocator<Pose3> >
+      cameraPosesTriangulation_;  ///< current triangulation poses
   /// @}
 
-public:
+ public:
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
 
   /// shorthand for a set of cameras
+  typedef CAMERA Camera;
   typedef CameraSet<CAMERA> Cameras;
 
   /**
@@ -90,7 +92,7 @@ public:
         result_(TriangulationResult::Degenerate()) {}
 
   /** Virtual destructor */
-  virtual ~SmartProjectionFactor() {
+  ~SmartProjectionFactor() override {
   }
 
   /**
@@ -101,7 +103,7 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const override {
     std::cout << s << "SmartProjectionFactor\n";
-    std::cout << "linearizationMode:\n" << params_.linearizationMode
+    std::cout << "linearizationMode: " << params_.linearizationMode
         << std::endl;
     std::cout << "triangulationParameters:\n" << params_.triangulation
         << std::endl;
@@ -116,21 +118,31 @@ public:
         && Base::equals(p, tol);
   }
 
-  /// Check if the new linearization point is the same as the one used for previous triangulation
+  /**
+   * @brief Check if the new linearization point is the same as the one used for
+   * previous triangulation.
+   *
+   * @param cameras
+   * @return true if we need to re-triangulate.
+   */
   bool decideIfTriangulate(const Cameras& cameras) const {
-    // several calls to linearize will be done from the same linearization point, hence it is not needed to re-triangulate
-    // Note that this is not yet "selecting linearization", that will come later, and we only check if the
-    // current linearization is the "same" (up to tolerance) w.r.t. the last time we triangulated the point
+    // Several calls to linearize will be done from the same linearization
+    // point, hence it is not needed to re-triangulate. Note that this is not
+    // yet "selecting linearization", that will come later, and we only check if
+    // the current linearization is the "same" (up to tolerance) w.r.t. the last
+    // time we triangulated the point.
 
     size_t m = cameras.size();
 
     bool retriangulate = false;
 
-    // if we do not have a previous linearization point or the new linearization point includes more poses
+    // Definitely true if we do not have a previous linearization point or the
+    // new linearization point includes more poses.
     if (cameraPosesTriangulation_.empty()
         || cameras.size() != cameraPosesTriangulation_.size())
       retriangulate = true;
 
+    // Otherwise, check poses against cache.
     if (!retriangulate) {
       for (size_t i = 0; i < cameras.size(); i++) {
         if (!cameras[i].pose().equals(cameraPosesTriangulation_[i],
@@ -141,7 +153,8 @@ public:
       }
     }
 
-    if (retriangulate) { // we store the current poses used for triangulation
+    // Store the current poses used for triangulation if we will re-triangulate.
+    if (retriangulate) { 
       cameraPosesTriangulation_.clear();
       cameraPosesTriangulation_.reserve(m);
       for (size_t i = 0; i < m; i++)
@@ -149,10 +162,15 @@ public:
         cameraPosesTriangulation_.push_back(cameras[i].pose());
     }
 
-    return retriangulate; // if we arrive to this point all poses are the same and we don't need re-triangulation
+    return retriangulate;
   }
 
-  /// triangulateSafe
+  /**
+   * @brief Call gtsam::triangulateSafe iff we need to re-triangulate.
+   * 
+   * @param cameras 
+   * @return TriangulationResult 
+   */
   TriangulationResult triangulateSafe(const Cameras& cameras) const {
 
     size_t m = cameras.size();
@@ -166,17 +184,21 @@ public:
     return result_;
   }
 
-  /// triangulate
+  /**
+   * @brief Possibly re-triangulate before calculating Jacobians.
+   * 
+   * @param cameras 
+   * @return true if we could safely triangulate
+   */
   bool triangulateForLinearize(const Cameras& cameras) const {
     triangulateSafe(cameras); // imperative, might reset result_
     return bool(result_);
   }
 
-  /// linearize returns a Hessianfactor that is an approximation of error(p)
+  /// Create a Hessianfactor that is an approximation of error(p).
   boost::shared_ptr<RegularHessianFactor<Base::Dim> > createHessianFactor(
-      const Cameras& cameras, const double lambda = 0.0, bool diagonalDamping =
-          false) const {
-
+      const Cameras& cameras, const double lambda = 0.0,
+      bool diagonalDamping = false) const {
     size_t numKeys = this->keys_.size();
     // Create structures for Hessian Factors
     KeyVector js;
@@ -184,39 +206,38 @@ public:
     std::vector<Vector> gs(numKeys);
 
     if (this->measured_.size() != cameras.size())
-      throw std::runtime_error("SmartProjectionHessianFactor: this->measured_"
-                               ".size() inconsistent with input");
+      throw std::runtime_error(
+          "SmartProjectionHessianFactor: this->measured_"
+          ".size() inconsistent with input");
 
     triangulateSafe(cameras);
 
     if (params_.degeneracyMode == ZERO_ON_DEGENERACY && !result_) {
       // failed: return"empty" Hessian
-      for(Matrix& m: Gs)
-        m = Matrix::Zero(Base::Dim, Base::Dim);
-      for(Vector& v: gs)
-        v = Vector::Zero(Base::Dim);
+      for (Matrix& m : Gs) m = Matrix::Zero(Base::Dim, Base::Dim);
+      for (Vector& v : gs) v = Vector::Zero(Base::Dim);
       return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
-          Gs, gs, 0.0);
+                                                                  Gs, gs, 0.0);
     }
 
     // Jacobian could be 3D Point3 OR 2D Unit3, difference is E.cols().
-    std::vector<typename Base::MatrixZD, Eigen::aligned_allocator<typename Base::MatrixZD> > Fblocks;
+    typename Base::FBlocks Fs;
     Matrix E;
     Vector b;
-    computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
+    computeJacobiansWithTriangulatedPoint(Fs, E, b, cameras);
 
     // Whiten using noise model
-    Base::whitenJacobians(Fblocks, E, b);
+    Base::whitenJacobians(Fs, E, b);
 
     // build augmented hessian
-    SymmetricBlockMatrix augmentedHessian = //
-        Cameras::SchurComplement(Fblocks, E, b, lambda, diagonalDamping);
+    SymmetricBlockMatrix augmentedHessian =  //
+        Cameras::SchurComplement(Fs, E, b, lambda, diagonalDamping);
 
-    return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
-        augmentedHessian);
+    return boost::make_shared<RegularHessianFactor<Base::Dim> >(
+        this->keys_, augmentedHessian);
   }
 
-  // create factor
+  // Create RegularImplicitSchurFactor factor.
   boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> > createRegularImplicitSchurFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
@@ -226,7 +247,7 @@ public:
       return boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> >();
   }
 
-  /// create factor
+  /// Create JacobianFactorQ factor.
   boost::shared_ptr<JacobianFactorQ<Base::Dim, 2> > createJacobianQFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
@@ -236,13 +257,13 @@ public:
       return boost::make_shared<JacobianFactorQ<Base::Dim, 2> >(this->keys_);
   }
 
-  /// Create a factor, takes values
+  /// Create JacobianFactorQ factor, takes values.
   boost::shared_ptr<JacobianFactorQ<Base::Dim, 2> > createJacobianQFactor(
       const Values& values, double lambda) const {
     return createJacobianQFactor(this->cameras(values), lambda);
   }
 
-  /// different (faster) way to compute Jacobian factor
+  /// Different (faster) way to compute a JacobianFactorSVD factor.
   boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
@@ -252,19 +273,19 @@ public:
       return boost::make_shared<JacobianFactorSVD<Base::Dim, 2> >(this->keys_);
   }
 
-  /// linearize to a Hessianfactor
+  /// Linearize to a Hessianfactor.
   virtual boost::shared_ptr<RegularHessianFactor<Base::Dim> > linearizeToHessian(
       const Values& values, double lambda = 0.0) const {
     return createHessianFactor(this->cameras(values), lambda);
   }
 
-  /// linearize to an Implicit Schur factor
+  /// Linearize to an Implicit Schur factor.
   virtual boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> > linearizeToImplicit(
       const Values& values, double lambda = 0.0) const {
     return createRegularImplicitSchurFactor(this->cameras(values), lambda);
   }
 
-  /// linearize to a JacobianfactorQ
+  /// Linearize to a JacobianfactorQ.
   virtual boost::shared_ptr<JacobianFactorQ<Base::Dim, 2> > linearizeToJacobian(
       const Values& values, double lambda = 0.0) const {
     return createJacobianQFactor(this->cameras(values), lambda);
@@ -334,7 +355,7 @@ public:
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
   void computeJacobiansWithTriangulatedPoint(
-      std::vector<typename Base::MatrixZD, Eigen::aligned_allocator<typename Base::MatrixZD> >& Fblocks, Matrix& E, Vector& b,
+      typename Base::FBlocks& Fs, Matrix& E, Vector& b,
       const Cameras& cameras) const {
 
     if (!result_) {
@@ -342,32 +363,32 @@ public:
       // TODO check flag whether we should do this
       Unit3 backProjected = cameras[0].backprojectPointAtInfinity(
           this->measured_.at(0));
-      Base::computeJacobians(Fblocks, E, b, cameras, backProjected);
+      Base::computeJacobians(Fs, E, b, cameras, backProjected);
     } else {
       // valid result: just return Base version
-      Base::computeJacobians(Fblocks, E, b, cameras, *result_);
+      Base::computeJacobians(Fs, E, b, cameras, *result_);
     }
   }
 
   /// Version that takes values, and creates the point
   bool triangulateAndComputeJacobians(
-      std::vector<typename Base::MatrixZD, Eigen::aligned_allocator<typename Base::MatrixZD> >& Fblocks, Matrix& E, Vector& b,
+      typename Base::FBlocks& Fs, Matrix& E, Vector& b,
       const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
     if (nonDegenerate)
-      computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
+      computeJacobiansWithTriangulatedPoint(Fs, E, b, cameras);
     return nonDegenerate;
   }
 
   /// takes values
   bool triangulateAndComputeJacobiansSVD(
-      std::vector<typename Base::MatrixZD, Eigen::aligned_allocator<typename Base::MatrixZD> >& Fblocks, Matrix& Enull, Vector& b,
+      typename Base::FBlocks& Fs, Matrix& Enull, Vector& b,
       const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
     if (nonDegenerate)
-      Base::computeJacobiansSVD(Fblocks, Enull, b, cameras, *result_);
+      Base::computeJacobiansSVD(Fs, Enull, b, cameras, *result_);
     return nonDegenerate;
   }
 

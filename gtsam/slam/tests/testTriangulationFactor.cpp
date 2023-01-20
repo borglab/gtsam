@@ -25,12 +25,11 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign.hpp>
-#include <boost/assign/std/vector.hpp>
+#include <boost/bind/bind.hpp>
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
+using namespace std::placeholders;
 
 // Some common constants
 static const boost::shared_ptr<Cal3_S2> sharedCal = //
@@ -60,7 +59,7 @@ TEST( triangulation, TriangulationFactor ) {
   factor.evaluateError(landmark, HActual);
 
   Matrix HExpected = numericalDerivative11<Vector,Point3>(
-      boost::bind(&Factor::evaluateError, &factor, _1, boost::none), landmark);
+      std::bind(&Factor::evaluateError, &factor, std::placeholders::_1, boost::none), landmark);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(HExpected, HActual, 1e-3));
@@ -84,13 +83,15 @@ TEST( triangulation, TriangulationFactorStereo ) {
   factor.evaluateError(landmark, HActual);
 
   Matrix HExpected = numericalDerivative11<Vector,Point3>(
-      boost::bind(&Factor::evaluateError, &factor, _1, boost::none), landmark);
+      std::bind(&Factor::evaluateError, &factor, std::placeholders::_1, boost::none), landmark);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(HExpected, HActual, 1e-3));
 
   // compare same problem against expression factor
-  Expression<StereoPoint2>::UnaryFunction<Point3>::type f = boost::bind(&StereoCamera::project2, camera2, _1, boost::none, _2);
+  Expression<StereoPoint2>::UnaryFunction<Point3>::type f =
+      std::bind(&StereoCamera::project2, camera2, std::placeholders::_1,
+                boost::none, std::placeholders::_2);
   Expression<Point3> point_(pointKey);
   Expression<StereoPoint2> project2_(f, point_);
 

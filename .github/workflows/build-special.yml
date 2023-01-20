@@ -12,6 +12,7 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ON
+      BOOST_VERSION: 1.67.0
 
     strategy:
       fail-fast: false
@@ -31,48 +32,51 @@ jobs:
 
         include:
           - name: ubuntu-gcc-deprecated
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             compiler: gcc
             version: "9"
             flag: deprecated
 
           - name: ubuntu-gcc-quaternions
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             compiler: gcc
             version: "9"
             flag: quaternions
 
           - name: ubuntu-gcc-tbb
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             compiler: gcc
             version: "9"
             flag: tbb
 
           - name: ubuntu-cayleymap
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             compiler: gcc
             version: "9"
             flag: cayley
 
+          - name: ubuntu-system-libs
+            os: ubuntu-20.04
+            compiler: gcc
+            version: "9"
+            flag: system-libs
+
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
 
       - name: Install (Linux)
         if: runner.os == 'Linux'
         run: |
           # LLVM 9 is not in Bionic's repositories so we add the official LLVM repository.
           if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
-            gpg --keyserver pool.sks-keyservers.net --recv-key 15CF4D18AF4F7421
+            gpg --keyserver keyserver.ubuntu.com --recv-key $LLVM_KEY || gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key $LLVM_KEY
             gpg -a --export 15CF4D18AF4F7421 | sudo apt-key add -
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
           fi
+
           sudo apt-get -y update
-
-          sudo apt install cmake build-essential pkg-config libpython-dev python-numpy
-
-          echo "BOOST_ROOT=$(echo $BOOST_ROOT_1_72_0)" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=$(echo $BOOST_ROOT_1_72_0/lib)" >> $GITHUB_ENV
+          sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libicu-dev
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
@@ -83,6 +87,11 @@ jobs:
             echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
             echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
           fi
+
+      - name: Install Boost
+        if: runner.os == 'Linux'
+        run: |
+          bash .github/scripts/boost.sh
 
       - name: Install (macOS)
         if: runner.os == 'macOS'
@@ -101,7 +110,7 @@ jobs:
       - name: Set Allow Deprecated Flag
         if: matrix.flag == 'deprecated'
         run: |
-          echo "GTSAM_ALLOW_DEPRECATED_SINCE_V41=ON" >> $GITHUB_ENV
+          echo "GTSAM_ALLOW_DEPRECATED_SINCE_V42=ON" >> $GITHUB_ENV
           echo "Allow deprecated since version 4.1"
 
       - name: Set Use Quaternions Flag
@@ -122,6 +131,12 @@ jobs:
           echo "GTSAM_POSE3_EXPMAP=OFF" >> $GITHUB_ENV
           echo "GTSAM_ROT3_EXPMAP=OFF" >> $GITHUB_ENV
           echo "GTSAM Uses Cayley map for Rot3"
+
+      - name: Use system versions of 3rd party libraries
+        if: matrix.flag == 'system'
+        run: |
+          echo "GTSAM_USE_SYSTEM_EIGEN=ON" >> $GITHUB_ENV
+          echo "GTSAM_USE_SYSTEM_METIS=ON" >> $GITHUB_ENV
 
       - name: Build & Test
         run: |

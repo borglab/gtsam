@@ -22,6 +22,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <boost/concept/assert.hpp>
+#include <boost/serialization/nvp.hpp>
 #include <iostream>
 
 namespace gtsam {

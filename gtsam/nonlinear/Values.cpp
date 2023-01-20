@@ -25,14 +25,6 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/VectorValues.h>
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#endif
-#include <boost/bind.hpp>
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 #include <boost/iterator/transform_iterator.hpp>
 
 #include <list>
@@ -75,7 +67,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void Values::print(const string& str, const KeyFormatter& keyFormatter) const {
-    cout << str << (str == "" ? "" : "\n");
+    cout << str << (str.empty() ? "" : "\n");
     cout << "Values with " << size() << " values:\n";
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
       cout << "Value " << keyFormatter(key_value->key) << ": ";
@@ -179,6 +171,25 @@ namespace gtsam {
     }
   }
 
+  /* ************************************************************************ */
+  void Values::insert_or_assign(Key j, const Value& val) {
+    if (this->exists(j)) {
+      // If key already exists, perform an update.
+      this->update(j, val);
+    } else {
+      // If key does not exist, perform an insert.
+      this->insert(j, val);
+    }
+  }
+
+  /* ************************************************************************ */
+  void Values::insert_or_assign(const Values& values) {
+    for (const_iterator key_value = values.begin(); key_value != values.end();
+         ++key_value) {
+      this->insert_or_assign(key_value->key, key_value->value);
+    }
+  }
+
   /* ************************************************************************* */
   void Values::erase(Key j) {
     KeyValueMap::iterator item = values_.find(j);
@@ -206,7 +217,7 @@ namespace gtsam {
   /* ************************************************************************* */
   size_t Values::dim() const {
     size_t result = 0;
-    for(const ConstKeyValuePair& key_value: *this) {
+    for(const auto key_value: *this) {
       result += key_value.value.dim();
     }
     return result;
@@ -215,7 +226,7 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues Values::zeroVectors() const {
     VectorValues result;
-    for(const ConstKeyValuePair& key_value: *this)
+    for(const auto key_value: *this)
       result.insert(key_value.key, Vector::Zero(key_value.value.dim()));
     return result;
   }

@@ -1,8 +1,18 @@
-/*
- * testInvDepthFactor.cpp
+/* ----------------------------------------------------------------------------
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+ * See LICENSE for the license information
+ * -------------------------------------------------------------------------- */
+
+/**
+ *  @file  testInvDepthFactor3.cpp
+ *  @brief Unit tests inverse depth parametrization
  *
- *  Created on: Apr 13, 2012
- *      Author: cbeall3
+ *  @author cbeall3
+ *  @author Dominik Van Opdenbosch
+ *  @date   Apr 13, 2012
  */
 
 #include <CppUnitLite/TestHarness.h>
@@ -12,6 +22,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/base/numericalDerivative.h>
 
 #include <gtsam_unstable/slam/InvDepthFactor3.h>
 
@@ -27,6 +38,11 @@ PinholeCamera<Cal3_S2> level_camera(level_pose, *K);
 
 typedef InvDepthFactor3<Pose3, Vector5, double> InverseDepthFactor;
 typedef NonlinearEquality<Pose3> PoseConstraint;
+
+Matrix factorError(const Pose3& pose, const Vector5& point, double invDepth,
+                     const InverseDepthFactor& factor) {
+  return factor.evaluateError(pose, point, invDepth);
+}
 
 /* ************************************************************************* */
 TEST( InvDepthFactor, optimize) {
@@ -91,6 +107,55 @@ TEST( InvDepthFactor, optimize) {
   //      NonlinearOptimizationParameters(),MULTIFRONTAL, GN);
 }
 
+
+/* ************************************************************************* */
+TEST( InvDepthFactor, Jacobian3D ) {
+
+  // landmark 5 meters infront of camera (camera center at (0,0,1))
+  Point3 landmark(5, 0, 1);
+
+  // get expected projection using pinhole camera
+  Point2 expected_uv = level_camera.project(landmark);
+
+  // get expected landmark representation using backprojection
+  double inv_depth;
+  Vector5 inv_landmark;
+  InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
+  std::tie(inv_landmark, inv_depth) = inv_camera.backproject(expected_uv, 5);
+  Vector5 expected_inv_landmark((Vector(5) << 0., 0., 1., 0., 0.).finished());
+
+  CHECK(assert_equal(expected_inv_landmark, inv_landmark, 1e-6));
+  CHECK(assert_equal(inv_depth, 1./5, 1e-6));
+
+  Symbol poseKey('x',1);
+  Symbol pointKey('l',1);
+  Symbol invDepthKey('d',1);
+  InverseDepthFactor factor(expected_uv, sigma, poseKey, pointKey, invDepthKey, K);
+
+  std::vector<Matrix> actualHs(3);
+  factor.unwhitenedError({{poseKey, genericValue(level_pose)},
+                          {pointKey, genericValue(inv_landmark)},
+                          {invDepthKey,genericValue(inv_depth)}},
+                         actualHs);
+
+  const Matrix& H1Actual = actualHs.at(0);
+  const Matrix& H2Actual = actualHs.at(1);
+  const Matrix& H3Actual = actualHs.at(2);
+
+  // Use numerical derivatives to verify the Jacobians
+  Matrix H1Expected, H2Expected, H3Expected;
+
+  std::function<Matrix(const Pose3 &, const Vector5 &, const double &)>
+      func = std::bind(&factorError, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, factor);
+  H1Expected = numericalDerivative31(func, level_pose, inv_landmark, inv_depth);
+  H2Expected = numericalDerivative32(func, level_pose, inv_landmark, inv_depth);
+  H3Expected = numericalDerivative33(func, level_pose, inv_landmark, inv_depth);
+
+  // Verify the Jacobians
+  CHECK(assert_equal(H1Expected, H1Actual, 1e-6))
+  CHECK(assert_equal(H2Expected, H2Actual, 1e-6))
+  CHECK(assert_equal(H3Expected, H3Actual, 1e-6))
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

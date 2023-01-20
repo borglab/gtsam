@@ -124,7 +124,7 @@ Values InitializePose3::computeOrientationsGradient(
   // this works on the inverse rotations, according to Tron&Vidal,2011
   Values inverseRot;
   inverseRot.insert(initialize::kAnchorKey, Rot3());
-  for(const auto& key_value: givenGuess) {
+  for(const auto key_value: givenGuess) {
     Key key = key_value.key;
     const Pose3& pose = givenGuess.at<Pose3>(key);
     inverseRot.insert(key, pose.rotation().inverse());
@@ -139,7 +139,7 @@ Values InitializePose3::computeOrientationsGradient(
   // calculate max node degree & allocate gradient
   size_t maxNodeDeg = 0;
   VectorValues grad;
-  for(const auto& key_value: inverseRot) {
+  for(const auto key_value: inverseRot) {
     Key key = key_value.key;
     grad.insert(key,Z_3x1);
     size_t currNodeDeg = (adjEdgesMap.at(key)).size();
@@ -162,7 +162,7 @@ Values InitializePose3::computeOrientationsGradient(
     //////////////////////////////////////////////////////////////////////////
     // compute the gradient at each node
     maxGrad = 0;
-    for (const auto& key_value : inverseRot) {
+    for (const auto key_value : inverseRot) {
       Key key = key_value.key;
       Vector gradKey = Z_3x1;
       // collect the gradient for each edge incident on key
@@ -203,7 +203,7 @@ Values InitializePose3::computeOrientationsGradient(
   // Return correct rotations
   const Rot3& Rref = inverseRot.at<Rot3>(initialize::kAnchorKey); // This will be set to the identity as so far we included no prior
   Values estimateRot;
-  for(const auto& key_value: inverseRot) {
+  for(const auto key_value: inverseRot) {
     Key key = key_value.key;
     if (key != initialize::kAnchorKey) {
       const Rot3& R = inverseRot.at<Rot3>(key);
@@ -228,7 +228,7 @@ void InitializePose3::createSymbolicGraph(
       Rot3 Rij = pose3Between->measured().rotation();
       factorId2RotMap->emplace(factorId, Rij);
 
-      Key key1 = pose3Between->key1();
+      Key key1 = pose3Between->key<1>();
       if (adjEdgesMap->find(key1) != adjEdgesMap->end()) {  // key is already in
         adjEdgesMap->at(key1).push_back(factorId);
       } else {
@@ -236,7 +236,7 @@ void InitializePose3::createSymbolicGraph(
         edge_id.push_back(factorId);
         adjEdgesMap->emplace(key1, edge_id);
       }
-      Key key2 = pose3Between->key2();
+      Key key2 = pose3Between->key<2>();
       if (adjEdgesMap->find(key2) != adjEdgesMap->end()) {  // key is already in
         adjEdgesMap->at(key2).push_back(factorId);
       } else {

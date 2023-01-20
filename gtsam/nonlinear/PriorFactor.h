@@ -24,17 +24,17 @@ namespace gtsam {
 
   /**
    * A class for a soft prior on any Value type
-   * @addtogroup SLAM
+   * @ingroup nonlinear
    */
   template<class VALUE>
-  class PriorFactor: public NoiseModelFactor1<VALUE> {
+  class PriorFactor: public NoiseModelFactorN<VALUE> {
 
   public:
     typedef VALUE T;
 
   private:
 
-    typedef NoiseModelFactor1<VALUE> Base;
+    typedef NoiseModelFactorN<VALUE> Base;
 
     VALUE prior_; /** The measurement */
 
@@ -52,7 +52,7 @@ namespace gtsam {
     /** default constructor - only use for serialization */
     PriorFactor() {}
 
-    virtual ~PriorFactor() {}
+    ~PriorFactor() override {}
 
     /** Constructor */
     PriorFactor(Key key, const VALUE& prior, const SharedNoiseModel& model = nullptr) :
@@ -94,7 +94,6 @@ namespace gtsam {
     Vector evaluateError(const T& x, boost::optional<Matrix&> H = boost::none) const override {
       if (H) (*H) = Matrix::Identity(traits<T>::GetDimension(x),traits<T>::GetDimension(x));
       // manifold equivalent of z-x -> Local(x,z)
-      // TODO(ASL) Add Jacobians.
       return -traits<T>::Local(x, prior_);
     }
 
@@ -106,6 +105,7 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
       ar & boost::serialization::make_nvp("NoiseModelFactor1",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);

@@ -22,8 +22,6 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
-#include <boost/assign/list_of.hpp>
-
 namespace gtsam {
 /**
  * The ShonanGaugeFactor creates a constraint on a single SO(n) to avoid moving
@@ -59,7 +57,7 @@ public:
    */
   ShonanGaugeFactor(Key key, size_t p, size_t d = 3,
                     boost::optional<double> gamma = boost::none)
-      : NonlinearFactor(boost::assign::cref_list_of<1>(key)) {
+      : NonlinearFactor(KeyVector{key}) {
     if (p < d) {
       throw std::invalid_argument("ShonanGaugeFactor must have p>=d.");
     }
@@ -90,7 +88,7 @@ public:
   }
 
   /// Destructor
-  virtual ~ShonanGaugeFactor() {}
+  ~ShonanGaugeFactor() override {}
 
   /// Calculate the error of the factor: always zero
   double error(const Values &c) const override { return 0; }

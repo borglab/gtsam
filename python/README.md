@@ -4,8 +4,11 @@
 
 This is the Python wrapper around the GTSAM C++ library. We use our custom [wrap library](https://github.com/borglab/wrap) to generate the bindings to the underlying C++ code.
 
+For instructions on updating the version of the [wrap library](https://github.com/borglab/wrap) included in GTSAM to the latest version, please refer to the [wrap README](https://github.com/borglab/wrap/blob/master/README.md#git-subtree-and-contributing)
+
 ## Requirements
 
+- Cmake >= 3.15
 - If you want to build the GTSAM python library for a specific python version (eg 3.6),
   use the `-DGTSAM_PYTHON_VERSION=3.6` option when running `cmake` otherwise the default interpreter will be used.
 - If the interpreter is inside an environment (such as an anaconda environment or virtualenv environment),
@@ -22,6 +25,7 @@ This is the Python wrapper around the GTSAM C++ library. We use our custom [wrap
   ```bash
   cmake .. -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=3.6.10
   ```
+  If you do not have TBB installed, you should also provide the argument `-DGTSAM_WITH_TBB=OFF`.
 - Build GTSAM and the wrapper with `make` (or `ninja` if you use `-GNinja`).
 
 - To install, simply run `make python-install` (`ninja python-install`).
@@ -33,12 +37,8 @@ This is the Python wrapper around the GTSAM C++ library. We use our custom [wrap
 ## Unit Tests
 
 The Python toolbox also has a small set of unit tests located in the
-test directory. To run them:
-
-  ```bash
-  cd <GTSAM_SOURCE_DIRECTORY>/python/gtsam/tests
-  python -m unittest discover
-  ```
+test directory.
+To run them, use `make python-test`.
 
 ## Utils
 

@@ -173,7 +173,7 @@ TEST(Matrix, stack )
 {
   Matrix A = (Matrix(2, 2) << -5.0, 3.0, 00.0, -5.0).finished();
   Matrix B = (Matrix(3, 2) << -0.5, 2.1, 1.1, 3.4, 2.6, 7.1).finished();
-  Matrix AB = stack(2, &A, &B);
+  Matrix AB = gtsam::stack(2, &A, &B);
   Matrix C(5, 2);
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
@@ -187,7 +187,7 @@ TEST(Matrix, stack )
   std::vector<gtsam::Matrix> matrices;
   matrices.push_back(A);
   matrices.push_back(B);
-  Matrix AB2 = stack(matrices);
+  Matrix AB2 = gtsam::stack(matrices);
   EQUALITY(C,AB2);
 }
 
@@ -1161,6 +1161,19 @@ TEST(Matrix , IsVectorSpace) {
   typedef Eigen::Matrix<double,1,-1> RowVector;
   BOOST_CONCEPT_ASSERT((IsVectorSpace<RowVector>));
   BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector5>));
+}
+
+TEST(Matrix, AbsoluteError) {
+  double a = 2000, b = 1997, tol = 1e-1;
+  bool isEqual;
+
+  // Test only absolute error
+  isEqual = fpEqual(a, b, tol, false);
+  EXPECT(!isEqual);
+
+  // Test relative error as well
+  isEqual = fpEqual(a, b, tol);
+  EXPECT(isEqual);
 }
 
 /* ************************************************************************* */

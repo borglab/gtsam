@@ -16,11 +16,11 @@
 namespace gtsam {
 
 template<class POSE>
-class PoseRotationPrior : public NoiseModelFactor1<POSE> {
+class PoseRotationPrior : public NoiseModelFactorN<POSE> {
 public:
 
   typedef PoseRotationPrior<POSE> This;
-  typedef NoiseModelFactor1<POSE> Base;
+  typedef NoiseModelFactorN<POSE> Base;
   typedef POSE Pose;
   typedef typename POSE::Translation Translation;
   typedef typename POSE::Rotation Rotation;
@@ -39,6 +39,9 @@ protected:
 
 public:
 
+  /** default constructor - only use for serialization */
+  PoseRotationPrior() {}
+
   /** standard constructor */
   PoseRotationPrior(Key key, const Rotation& rot_z, const SharedNoiseModel& model)
   : Base(model, key), measured_(rot_z) {}
@@ -47,7 +50,7 @@ public:
   PoseRotationPrior(Key key, const POSE& pose_z, const SharedNoiseModel& model)
   : Base(model, key), measured_(pose_z.rotation()) {}
 
-  virtual ~PoseRotationPrior() {}
+  ~PoseRotationPrior() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -89,6 +92,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor1",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);

@@ -16,6 +16,8 @@
  * @date    April 2016
  */
 
+#pragma once
+
 #include "NonlinearOptimizerState.h"
 
 #include <gtsam/nonlinear/Values.h>
@@ -126,7 +128,7 @@ struct LevenbergMarquardtState : public NonlinearOptimizerState {
     noiseModelCache.resize(0);
     // for each of the variables, add a prior
     damped.reserve(damped.size() + values.size());
-    for (const auto& key_value : values) {
+    for (const auto key_value : values) {
       const Key key = key_value.key;
       const size_t dim = key_value.value.dim();
       const CachedModel* item = getCachedModel(dim);

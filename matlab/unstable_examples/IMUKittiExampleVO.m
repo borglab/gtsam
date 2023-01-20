@@ -46,7 +46,7 @@ clear logposes relposes
 
 %% Get initial conditions for the estimated trajectory
 currentPoseGlobal = Pose3;
-currentVelocityGlobal = LieVector([0;0;0]); % the vehicle is stationary at the beginning
+currentVelocityGlobal = [0;0;0]; % the vehicle is stationary at the beginning
 currentBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
 sigma_init_x = noiseModel.Isotropic.Sigmas([ 1.0; 1.0; 0.01; 0.01; 0.01; 0.01 ]);
 sigma_init_v = noiseModel.Isotropic.Sigma(3, 1000.0);
@@ -58,7 +58,7 @@ w_coriolis = [0;0;0];
 %% Solver object
 isamParams = ISAM2Params;
 isamParams.setFactorization('CHOLESKY');
-isamParams.setRelinearizeSkip(10);
+isamParams.relinearizeSkip = 10;
 isam = gtsam.ISAM2(isamParams);
 newFactors = NonlinearFactorGraph;
 newValues = Values;
@@ -88,7 +88,7 @@ for measurementIndex = 1:length(timestamps)
     newValues.insert(currentVelKey, currentVelocityGlobal);
     newValues.insert(currentBiasKey, currentBias);
     newFactors.add(PriorFactorPose3(currentPoseKey, currentPoseGlobal, sigma_init_x));
-    newFactors.add(PriorFactorLieVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
+    newFactors.add(PriorFactorVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
     newFactors.add(PriorFactorConstantBias(currentBiasKey, currentBias, sigma_init_b));
   else
     t_previous = timestamps(measurementIndex-1, 1);

@@ -29,7 +29,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 
 static Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x', 3);
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(6, 0.1));
@@ -75,8 +74,15 @@ NonlinearFactorGraph graph2() {
   g.add(BetweenFactor<Pose3>(x0, x1, pose0.between(pose1), noiseModel::Isotropic::Precision(6, 1.0)));
   g.add(BetweenFactor<Pose3>(x1, x2, pose1.between(pose2), noiseModel::Isotropic::Precision(6, 1.0)));
   g.add(BetweenFactor<Pose3>(x2, x3, pose2.between(pose3), noiseModel::Isotropic::Precision(6, 1.0)));
-  g.add(BetweenFactor<Pose3>(x2, x0, Pose3(Rot3::Ypr(0.1,0,0.1), Point3()), noiseModel::Isotropic::Precision(6, 0.0))); // random pose, but zero information
-  g.add(BetweenFactor<Pose3>(x0, x3, Pose3(Rot3::Ypr(0.5,-0.2,0.2), Point3(10,20,30)), noiseModel::Isotropic::Precision(6, 0.0))); // random pose, but zero informatoin
+  // random pose, but zero information
+  auto noise_zero_info = noiseModel::Isotropic::Precision(6, 0.0);
+  g.add(BetweenFactor<Pose3>(
+      x2, x0, Pose3(Rot3::Ypr(0.1, 0.0, 0.1), Point3(0.0, 0.0, 0.0)),
+      noise_zero_info));
+  // random pose, but zero information
+  g.add(BetweenFactor<Pose3>(
+      x0, x3, Pose3(Rot3::Ypr(0.5, -0.2, 0.2), Point3(10, 20, 30)),
+      noise_zero_info));
   g.addPrior(x0, pose0, model);
   return g;
 }
@@ -149,7 +155,7 @@ TEST( InitializePose3, orientationsGradientSymbolicGraph ) {
 /* *************************************************************************** */
 TEST( InitializePose3, singleGradient ) {
   Rot3 R1 = Rot3();
-  Matrix M = Matrix3::Zero();
+  Matrix M = Z_3x3;
   M(0,1) = -1; M(1,0) = 1; M(2,2) = 1;
   Rot3 R2 = Rot3(M);
   double a = 6.010534238540223;

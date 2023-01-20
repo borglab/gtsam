@@ -27,10 +27,6 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/tuple/tuple.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
-#include <boost/assign/std/set.hpp> // for operator +=
-#include <boost/assign/std/vector.hpp> // for operator +=
-using namespace boost::assign;
 #include <boost/range/adaptor/map.hpp>
 namespace br { using namespace boost::range; using namespace boost::adaptors; }
 
@@ -73,7 +69,7 @@ TEST(GaussianFactorGraph, eliminateOne_x1) {
   GaussianFactorGraph fg = createGaussianFactorGraph();
 
   GaussianConditional::shared_ptr conditional;
-  auto result = fg.eliminatePartialSequential(Ordering(list_of(X(1))));
+  auto result = fg.eliminatePartialSequential(Ordering{X(1)});
   conditional = result.first->front();
 
   // create expected Conditional Gaussian
@@ -89,7 +85,7 @@ TEST(GaussianFactorGraph, eliminateOne_x2) {
   Ordering ordering;
   ordering += X(2), L(1), X(1);
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  auto actual = EliminateQR(fg, Ordering(list_of(X(2)))).first;
+  auto actual = EliminateQR(fg, Ordering{X(2)}).first;
 
   // create expected Conditional Gaussian
   double sigma = 0.0894427;
@@ -105,7 +101,7 @@ TEST(GaussianFactorGraph, eliminateOne_l1) {
   Ordering ordering;
   ordering += L(1), X(1), X(2);
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  auto actual = EliminateQR(fg, Ordering(list_of(L(1)))).first;
+  auto actual = EliminateQR(fg, Ordering{L(1)}).first;
 
   // create expected Conditional Gaussian
   double sigma = sqrt(2.0) / 10.;
@@ -121,7 +117,7 @@ TEST(GaussianFactorGraph, eliminateOne_x1_fast) {
   GaussianFactorGraph fg = createGaussianFactorGraph();
   GaussianConditional::shared_ptr conditional;
   JacobianFactor::shared_ptr remaining;
-  boost::tie(conditional, remaining) = EliminateQR(fg, Ordering(list_of(X(1))));
+  boost::tie(conditional, remaining) = EliminateQR(fg, Ordering{X(1)});
 
   // create expected Conditional Gaussian
   Matrix I = 15 * I_2x2, R11 = I, S12 = -0.111111 * I, S13 = -0.444444 * I;
@@ -144,7 +140,7 @@ TEST(GaussianFactorGraph, eliminateOne_x1_fast) {
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_x2_fast) {
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  auto actual = EliminateQR(fg, Ordering(list_of(X(2)))).first;
+  auto actual = EliminateQR(fg, Ordering{X(2)}).first;
 
   // create expected Conditional Gaussian
   double sigma = 0.0894427;
@@ -158,7 +154,7 @@ TEST(GaussianFactorGraph, eliminateOne_x2_fast) {
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_l1_fast) {
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  auto actual = EliminateQR(fg, Ordering(list_of(L(1)))).first;
+  auto actual = EliminateQR(fg, Ordering{L(1)}).first;
 
   // create expected Conditional Gaussian
   double sigma = sqrt(2.0) / 10.;
@@ -272,10 +268,10 @@ TEST(GaussianFactorGraph, multiplication) {
   VectorValues x = createCorrectDelta();
   Errors actual = A * x;
   Errors expected;
-  expected += Vector2(-1.0, -1.0);
-  expected += Vector2(2.0, -1.0);
-  expected += Vector2(0.0, 1.0);
-  expected += Vector2(-1.0, 1.5);
+  expected.push_back(Vector2(-1.0, -1.0));
+  expected.push_back(Vector2(2.0, -1.0));
+  expected.push_back(Vector2(0.0, 1.0));
+  expected.push_back(Vector2(-1.0, 1.5));
   EXPECT(assert_equal(expected, actual));
 }
 
@@ -287,9 +283,9 @@ TEST(GaussianFactorGraph, elimination) {
   Matrix Ap = I_1x1, An = I_1x1 * -1;
   Vector b = (Vector(1) << 0.0).finished();
   SharedDiagonal sigma = noiseModel::Isotropic::Sigma(1, 2.0);
-  fg += JacobianFactor(X(1), An, X(2), Ap, b, sigma);
-  fg += JacobianFactor(X(1), Ap, b, sigma);
-  fg += JacobianFactor(X(2), Ap, b, sigma);
+  fg.emplace_shared<JacobianFactor>(X(1), An, X(2), Ap, b, sigma);
+  fg.emplace_shared<JacobianFactor>(X(1), Ap, b, sigma);
+  fg.emplace_shared<JacobianFactor>(X(2), Ap, b, sigma);
 
   // Eliminate
   Ordering ordering;

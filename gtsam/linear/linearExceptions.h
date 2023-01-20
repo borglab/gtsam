@@ -95,7 +95,7 @@ namespace gtsam {
     Key j_;
   public:
     IndeterminantLinearSystemException(Key j) noexcept : j_(j) {}
-    virtual ~IndeterminantLinearSystemException() noexcept {}
+    ~IndeterminantLinearSystemException() noexcept override {}
     Key nearbyVariable() const { return j_; }
     const char* what() const noexcept override;
   };
@@ -110,7 +110,7 @@ namespace gtsam {
 
     InvalidNoiseModel(DenseIndex factorDims, DenseIndex noiseModelDims) :
       factorDims(factorDims), noiseModelDims(noiseModelDims) {}
-    virtual ~InvalidNoiseModel() noexcept {}
+    ~InvalidNoiseModel() noexcept override {}
 
     const char* what() const noexcept override;
 
@@ -128,7 +128,7 @@ namespace gtsam {
 
     InvalidMatrixBlock(DenseIndex factorRows, DenseIndex blockRows) :
       factorRows(factorRows), blockRows(blockRows) {}
-    virtual ~InvalidMatrixBlock() noexcept {}
+    ~InvalidMatrixBlock() noexcept override {}
 
     const char* what() const noexcept override;
 

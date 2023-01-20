@@ -10,11 +10,11 @@
 
 namespace gtsam {
 
-class VelocityConstraint3 : public NoiseModelFactor3<double, double, double> {
+class VelocityConstraint3 : public NoiseModelFactorN<double, double, double> {
 public:
 
 protected:
-  typedef NoiseModelFactor3<double, double, double> Base;
+  typedef NoiseModelFactorN<double, double, double> Base;
 
   /** default constructor to allow for serialization */
   VelocityConstraint3() {}
@@ -28,7 +28,7 @@ public:
   ///TODO: comment
   VelocityConstraint3(Key key1, Key key2, Key velKey, double dt, double mu = 1000.0)
   : Base(noiseModel::Constrained::All(1, std::abs(mu)), key1, key2, velKey), dt_(dt) {}
-  virtual ~VelocityConstraint3() {}
+  ~VelocityConstraint3() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -53,6 +53,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor3 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor3",
         boost::serialization::base_object<Base>(*this));
   }

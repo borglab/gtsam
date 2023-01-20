@@ -20,9 +20,10 @@
 
 #include "FindSeparator.h"
 
-extern "C" {
 #include <metis.h>
-#include "metislib.h"
+
+extern "C" {
+#include <metislib.h>
 }
 
 

@@ -52,7 +52,7 @@ void saveResult(string name, const Values& values) {
     myfile.open("shonan_result_of_" + name + ".dat");
     size_t nrSO3 = values.count<SO3>();
     myfile << "#Type SO3 Number " << nrSO3 << "\n";
-    for (int i = 0; i < nrSO3; ++i) {
+    for (size_t i = 0; i < nrSO3; ++i) {
         Matrix R = values.at<SO3>(i).matrix();
         // Check if the result of R.Transpose*R satisfy orthogonal constraint
         checkR(R);
@@ -72,16 +72,16 @@ void saveG2oResult(string name, const Values& values, std::map<Key, Pose3> poses
     ofstream myfile;
     myfile.open("shonan_result_of_" + name + ".g2o");
     size_t nrSO3 = values.count<SO3>();
-    for (int i = 0; i < nrSO3; ++i) {
+    for (size_t i = 0; i < nrSO3; ++i) {
         Matrix R = values.at<SO3>(i).matrix();
         // Check if the result of R.Transpose*R satisfy orthogonal constraint
         checkR(R);
         myfile << "VERTEX_SE3:QUAT" << " ";
         myfile << i << " ";
         myfile << poses[i].x() << " " << poses[i].y() << " " << poses[i].z() << " ";
-        Vector quaternion = Rot3(R).quaternion();
-        myfile << quaternion(3) << " " << quaternion(2) << " " << quaternion(1)
-               << " " << quaternion(0);
+        Quaternion quaternion = Rot3(R).toQuaternion();
+        myfile << quaternion.x() << " " << quaternion.y() << " " << quaternion.z()
+               << " " << quaternion.w();
         myfile << "\n";
     }
     myfile.close();
@@ -92,7 +92,7 @@ void saveResultQuat(const Values& values) {
     ofstream myfile;
     myfile.open("shonan_result.dat");
     size_t nrSOn = values.count<SOn>();
-    for (int i = 0; i < nrSOn; ++i) {
+    for (size_t i = 0; i < nrSOn; ++i) {
         GTSAM_PRINT(values.at<SOn>(i));
         Rot3 R = Rot3(values.at<SOn>(i).matrix());
         float x = R.toQuaternion().x();

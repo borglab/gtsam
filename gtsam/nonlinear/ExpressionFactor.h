@@ -71,7 +71,7 @@ protected:
   }
 
   /// Destructor
-  virtual ~ExpressionFactor() {}
+  ~ExpressionFactor() override {}
 
   /** return the measurement */
   const T& measured() const { return measured_; }
@@ -245,7 +245,7 @@ public:
   using ArrayNKeys = std::array<Key, NARY_EXPRESSION_SIZE>;
 
   /// Destructor
-  virtual ~ExpressionFactorN() = default;
+  ~ExpressionFactorN() override = default;
 
   // Don't provide backward compatible evaluateVector(), due to its problematic
   // variable length of optional Jacobian arguments. Vector evaluateError(const
@@ -295,17 +295,17 @@ struct traits<ExpressionFactorN<T, Args...>>
 // ExpressionFactorN
 
 
-#if defined(GTSAM_ALLOW_DEPRECATED_SINCE_V41)
+#if defined(GTSAM_ALLOW_DEPRECATED_SINCE_V42)
 /**
  * Binary specialization of ExpressionFactor meant as a base class for binary
  * factors. Enforces an 'expression' method with two keys, and provides
  * 'evaluateError'. Derived class (a binary factor!) needs to call 'initialize'.
  *
  * \sa ExpressionFactorN
- * \deprecated Prefer the more general ExpressionFactorN<>.
+ * @deprecated Prefer the more general ExpressionFactorN<>.
  */
 template <typename T, typename A1, typename A2>
-class ExpressionFactor2 : public ExpressionFactorN<T, A1, A2> {
+class GTSAM_DEPRECATED ExpressionFactor2 : public ExpressionFactorN<T, A1, A2> {
 public:
   /// Destructor
   ~ExpressionFactor2() override {}
@@ -330,7 +330,7 @@ public:
     throw std::runtime_error(
         "ExpressionFactor2::expression not provided: cannot deserialize.");
   }
-  virtual Expression<T>
+  Expression<T>
   expression(const typename ExpressionFactorN<T, A1, A2>::ArrayNKeys &keys)
       const override {
     return expression(keys[0], keys[1]);

@@ -29,30 +29,26 @@ namespace gtsam {
    *
    * The prior vector used in this factor is stored in compressed form, such that
    * it only contains values for measurements that are to be compared, and they are in
-   * the same order as VALUE::Logmap().  The mask will determine which components to extract
-   * in the error function.
+   * the same order as VALUE::Logmap(). The provided indices will determine which components to
+   * extract in the error function.
    *
-   * For practical use, it would be good to subclass this factor and have the class type
-   * construct the mask.
    * @tparam VALUE is the type of variable the prior effects
    */
   template<class VALUE>
-  class PartialPriorFactor: public NoiseModelFactor1<VALUE> {
+  class PartialPriorFactor: public NoiseModelFactorN<VALUE> {
 
   public:
     typedef VALUE T;
 
   protected:
-
     // Concept checks on the variable type - currently requires Lie
     GTSAM_CONCEPT_LIE_TYPE(VALUE)
 
-    typedef NoiseModelFactor1<VALUE> Base;
+    typedef NoiseModelFactorN<VALUE> Base;
     typedef PartialPriorFactor<VALUE> This;
 
-    Vector prior_;             ///< measurement on tangent space parameters, in compressed form
-    std::vector<size_t> mask_; ///< indices of values to constrain in compressed prior vector
-    Matrix H_;                  ///< Constant Jacobian - computed at creation
+    Vector prior_;                 ///< Measurement on tangent space parameters, in compressed form.
+    std::vector<size_t> indices_;  ///< Indices of the measured tangent space parameters.
 
     /** default constructor - only use for serialization */
     PartialPriorFactor() {}
@@ -66,22 +62,24 @@ namespace gtsam {
 
   public:
 
-    virtual ~PartialPriorFactor() {}
+    ~PartialPriorFactor() override {}
 
-    /** Single Element Constructor: acts on a single parameter specified by idx */
+    /** Single Element Constructor: Prior on a single parameter at index 'idx' in the tangent vector.*/
     PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
-      Base(model, key), prior_((Vector(1) << prior).finished()), mask_(1, idx), H_(Matrix::Zero(1, T::dimension)) {
+      Base(model, key),
+      prior_((Vector(1) << prior).finished()),
+      indices_(1, idx) {
       assert(model->dim() == 1);
-      this->fillH();
     }
 
-    /** Indices Constructor: specify the mask with a set of indices */
-    PartialPriorFactor(Key key, const std::vector<size_t>& mask, const Vector& prior,
+    /** Indices Constructor: Specify the relevant measured indices in the tangent vector.*/
+    PartialPriorFactor(Key key, const std::vector<size_t>& indices, const Vector& prior,
         const SharedNoiseModel& model) :
-      Base(model, key), prior_(prior), mask_(mask), H_(Matrix::Zero(mask.size(), T::dimension)) {
-      assert((size_t)prior_.size() == mask.size());
-      assert(model->dim() == (size_t) prior.size());
-      this->fillH();
+        Base(model, key),
+        prior_(prior),
+        indices_(indices) {
+      assert((size_t)prior_.size() == indices_.size());
+      assert(model->dim() == (size_t)prior.size());
     }
 
     /// @return a deep copy of this factor
@@ -102,46 +100,53 @@ namespace gtsam {
       const This *e = dynamic_cast<const This*> (&expected);
       return e != nullptr && Base::equals(*e, tol) &&
           gtsam::equal_with_abs_tol(this->prior_, e->prior_, tol) &&
-          this->mask_ == e->mask_;
+          this->indices_ == e->indices_;
     }
 
     /** implement functions needed to derive from Factor */
 
-    /** vector of errors */
+    /** Returns a vector of errors for the measured tangent parameters.  */
     Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const override {
-      if (H) (*H) = H_;
-      // FIXME: this was originally the generic retraction - may not produce same results
-      Vector full_logmap = T::Logmap(p);
-//      Vector full_logmap = T::identity().localCoordinates(p); // Alternate implementation
-      Vector masked_logmap = Vector::Zero(this->dim());
-      for (size_t i=0; i<mask_.size(); ++i)
-        masked_logmap(i) = full_logmap(mask_[i]);
-      return masked_logmap - prior_;
+      Eigen::Matrix<double, T::dimension, T::dimension> H_local;
+
+      // If the Rot3 Cayley map is used, Rot3::LocalCoordinates will throw a runtime error
+      // when asked to compute the Jacobian matrix (see Rot3M.cpp).
+      #ifdef GTSAM_ROT3_EXPMAP
+      const Vector full_tangent = T::LocalCoordinates(p, H ? &H_local : nullptr);
+      #else
+      const Vector full_tangent = T::Logmap(p, H ? &H_local : nullptr);
+      #endif
+
+      if (H) {
+        (*H) = Matrix::Zero(indices_.size(), T::dimension);
+        for (size_t i = 0; i < indices_.size(); ++i) {
+          (*H).row(i) = H_local.row(indices_.at(i));
+        }
+      }
+      // Select relevant parameters from the tangent vector.
+      Vector partial_tangent = Vector::Zero(indices_.size());
+      for (size_t i = 0; i < indices_.size(); ++i) {
+        partial_tangent(i) = full_tangent(indices_.at(i));
+      }
+
+      return partial_tangent - prior_;
     }
 
     // access
     const Vector& prior() const { return prior_; }
-    const std::vector<size_t>& mask() const { return  mask_; }
-    const Matrix& H() const { return H_; }
-
-  protected:
-
-    /** Constructs the jacobian matrix in place */
-    void fillH() {
-      for (size_t i=0; i<mask_.size(); ++i)
-        H_(i, mask_[i]) = 1.0;
-    }
+    const std::vector<size_t>& indices() const { return indices_; }
 
   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
       ar & boost::serialization::make_nvp("NoiseModelFactor1",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);
-      ar & BOOST_SERIALIZATION_NVP(mask_);
-      ar & BOOST_SERIALIZATION_NVP(H_);
+      ar & BOOST_SERIALIZATION_NVP(indices_);
+      // ar & BOOST_SERIALIZATION_NVP(H_);
     }
   }; // \class PartialPriorFactor
 

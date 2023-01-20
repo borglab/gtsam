@@ -16,11 +16,22 @@
  * @author  Richard Roberts
  */
 
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <boost/make_shared.hpp>
 #include <boost/format.hpp>
 
 namespace gtsam {
+
+/* ************************************************************************* */
+double NonlinearFactor::error(const Values& c) const {
+  throw std::runtime_error("NonlinearFactor::error is not implemented");
+}
+
+/* ************************************************************************* */
+double NonlinearFactor::error(const HybridValues& c) const {
+  return this->error(c.nonlinear());
+}
 
 /* ************************************************************************* */
 void NonlinearFactor::print(const std::string& s,
@@ -77,6 +88,14 @@ bool NoiseModelFactor::equals(const NonlinearFactor& f, double tol) const {
 }
 
 /* ************************************************************************* */
+NoiseModelFactor::shared_ptr NoiseModelFactor::cloneWithNewNoiseModel(
+    const SharedNoiseModel newNoise) const {
+  NoiseModelFactor::shared_ptr new_factor = boost::dynamic_pointer_cast<NoiseModelFactor>(clone());
+  new_factor->noiseModel_ = newNoise;
+  return new_factor;
+}
+
+/* ************************************************************************* */
 static void check(const SharedNoiseModel& noiseModel, size_t m) {
   if (noiseModel && m != noiseModel->dim())
     throw std::invalid_argument(
@@ -106,7 +125,7 @@ double NoiseModelFactor::weight(const Values& c) const {
     if (noiseModel_) {
       const Vector b = unwhitenedError(c);
       check(noiseModel_, b.size());
-      return 0.5 * noiseModel_->weight(b);
+      return noiseModel_->weight(b);
     }
     else
       return 1.0;
@@ -159,8 +178,9 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
     return GaussianFactor::shared_ptr(
         new JacobianFactor(terms, b,
             boost::static_pointer_cast<Constrained>(noiseModel_)->unit()));
-  else
+  else {
     return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
+  }
 }
 
 /* ************************************************************************* */

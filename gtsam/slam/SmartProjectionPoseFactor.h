@@ -24,7 +24,7 @@
 namespace gtsam {
 /**
  *
- * @addtogroup SLAM
+ * @ingroup slam
  *
  * If you are using the factor, please cite:
  * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating conditionally
@@ -39,13 +39,12 @@ namespace gtsam {
  * The factor only constrains poses (variable dimension is 6).
  * This factor requires that values contains the involved poses (Pose3).
  * If the calibration should be optimized, as well, use SmartProjectionFactor instead!
- * @addtogroup SLAM
+ * @ingroup slam
  */
-template<class CALIBRATION>
-class SmartProjectionPoseFactor: public SmartProjectionFactor<
-    PinholePose<CALIBRATION> > {
-
-private:
+template <class CALIBRATION>
+class SmartProjectionPoseFactor
+    : public SmartProjectionFactor<PinholePose<CALIBRATION> > {
+ private:
   typedef PinholePose<CALIBRATION> Camera;
   typedef SmartProjectionFactor<Camera> Base;
   typedef SmartProjectionPoseFactor<CALIBRATION> This;
@@ -94,7 +93,7 @@ public:
   }
 
   /** Virtual destructor */
-  virtual ~SmartProjectionPoseFactor() {
+  ~SmartProjectionPoseFactor() override {
   }
 
   /**
@@ -156,7 +155,6 @@ public:
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
-
 };
 // end of class declaration
 

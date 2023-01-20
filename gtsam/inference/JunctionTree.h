@@ -43,7 +43,7 @@ namespace gtsam {
    * The tree structure and elimination method are exactly analagous to the EliminationTree,
    * except that in the JunctionTree, at each node multiple variables are eliminated at a time.
    *
-   * \addtogroup Multifrontal
+   * \ingroup Multifrontal
    * \nosubgrouping
    */
   template<class BAYESTREE, class GRAPH>
@@ -70,7 +70,7 @@ namespace gtsam {
 
     /// @}
 
-  private:
+  protected:
 
     // Private default constructor (used in static construction methods)
     JunctionTree() {}

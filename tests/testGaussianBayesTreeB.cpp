@@ -26,9 +26,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-
 using namespace std;
 using namespace gtsam;
 using namespace example;
@@ -112,54 +109,50 @@ TEST( GaussianBayesTree, linear_smoother_shortcuts )
    C4      x7 : x6
 
 ************************************************************************* */
-TEST( GaussianBayesTree, balanced_smoother_marginals )
-{
+TEST(GaussianBayesTree, balanced_smoother_marginals) {
   // Create smoother with 7 nodes
   GaussianFactorGraph smoother = createSmoother(7);
 
   // Create the Bayes tree
   Ordering ordering;
-  ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
+  ordering += X(1), X(3), X(5), X(7), X(2), X(6), X(4);
   GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal(ordering);
 
   VectorValues actualSolution = bayesTree.optimize();
   VectorValues expectedSolution = VectorValues::Zero(actualSolution);
-  EXPECT(assert_equal(expectedSolution,actualSolution,tol));
+  EXPECT(assert_equal(expectedSolution, actualSolution, tol));
 
-  LONGS_EQUAL(4, (long)bayesTree.size());
+  LONGS_EQUAL(4, bayesTree.size());
 
-  double tol=1e-5;
+  double tol = 1e-5;
 
   // Check marginal on x1
-  JacobianFactor expected1 = GaussianDensity::FromMeanAndStddev(X(1), Z_2x1, sigmax1);
   JacobianFactor actual1 = *bayesTree.marginalFactor(X(1));
-  Matrix expectedCovarianceX1 = I_2x2 * (sigmax1 * sigmax1);
-  Matrix actualCovarianceX1;
-  GaussianFactor::shared_ptr m = bayesTree.marginalFactor(X(1), EliminateCholesky);
-  actualCovarianceX1 = bayesTree.marginalFactor(X(1), EliminateCholesky)->information().inverse();
-  EXPECT(assert_equal(expectedCovarianceX1, actualCovarianceX1, tol));
-  EXPECT(assert_equal(expected1,actual1,tol));
+  Matrix expectedCovX1 = I_2x2 * (sigmax1 * sigmax1);
+  auto m = bayesTree.marginalFactor(X(1), EliminateCholesky);
+  Matrix actualCovarianceX1 = m->information().inverse();
+  EXPECT(assert_equal(expectedCovX1, actualCovarianceX1, tol));
 
   // Check marginal on x2
-  double sigx2 = 0.68712938; // FIXME: this should be corrected analytically
-  JacobianFactor expected2 = GaussianDensity::FromMeanAndStddev(X(2), Z_2x1, sigx2);
+  double sigmax2 = 0.68712938;  // FIXME: this should be corrected analytically
   JacobianFactor actual2 = *bayesTree.marginalFactor(X(2));
-  EXPECT(assert_equal(expected2,actual2,tol));
+  Matrix expectedCovX2 = I_2x2 * (sigmax2 * sigmax2);
+  EXPECT(assert_equal(expectedCovX2, actual2.information().inverse(), tol));
 
   // Check marginal on x3
-  JacobianFactor expected3 = GaussianDensity::FromMeanAndStddev(X(3), Z_2x1, sigmax3);
   JacobianFactor actual3 = *bayesTree.marginalFactor(X(3));
-  EXPECT(assert_equal(expected3,actual3,tol));
+  Matrix expectedCovX3 = I_2x2 * (sigmax3 * sigmax3);
+  EXPECT(assert_equal(expectedCovX3, actual3.information().inverse(), tol));
 
   // Check marginal on x4
-  JacobianFactor expected4 = GaussianDensity::FromMeanAndStddev(X(4), Z_2x1, sigmax4);
   JacobianFactor actual4 = *bayesTree.marginalFactor(X(4));
-  EXPECT(assert_equal(expected4,actual4,tol));
+  Matrix expectedCovX4 = I_2x2 * (sigmax4 * sigmax4);
+  EXPECT(assert_equal(expectedCovX4, actual4.information().inverse(), tol));
 
   // Check marginal on x7 (should be equal to x1)
-  JacobianFactor expected7 = GaussianDensity::FromMeanAndStddev(X(7), Z_2x1, sigmax7);
   JacobianFactor actual7 = *bayesTree.marginalFactor(X(7));
-  EXPECT(assert_equal(expected7,actual7,tol));
+  Matrix expectedCovX7 = I_2x2 * (sigmax7 * sigmax7);
+  EXPECT(assert_equal(expectedCovX7, actual7.information().inverse(), tol));
 }
 
 /* ************************************************************************* */
@@ -245,10 +238,10 @@ TEST( GaussianBayesTree, balanced_smoother_joint )
   const Matrix I = I_2x2, A = -0.00429185*I;
 
   // Check the joint density P(x1,x7) factored as P(x1|x7)P(x7)
-  GaussianBayesNet expected1 = list_of
+  GaussianBayesNet expected1;
     // Why does the sign get flipped on the prior?
-    (GaussianConditional(X(1), Z_2x1, I/sigmax7, X(7), A/sigmax7))
-    (GaussianConditional(X(7), Z_2x1, -1*I/sigmax7));
+  expected1.emplace_shared<GaussianConditional>(X(1), Z_2x1, I/sigmax7, X(7), A/sigmax7);
+  expected1.emplace_shared<GaussianConditional>(X(7), Z_2x1, -1*I/sigmax7);
   GaussianBayesNet actual1 = *bayesTree.jointBayesNet(X(1),X(7));
   EXPECT(assert_equal(expected1, actual1, tol));
 
@@ -264,9 +257,9 @@ TEST( GaussianBayesTree, balanced_smoother_joint )
   // Check the joint density P(x1,x4), i.e. with a root variable
   double sig14 = 0.784465;
   Matrix A14 = -0.0769231*I;
-  GaussianBayesNet expected3 = list_of
-    (GaussianConditional(X(1), Z_2x1, I/sig14, X(4), A14/sig14))
-    (GaussianConditional(X(4), Z_2x1, I/sigmax4));
+  GaussianBayesNet expected3;
+  expected3.emplace_shared<GaussianConditional>(X(1), Z_2x1, I/sig14, X(4), A14/sig14);
+  expected3.emplace_shared<GaussianConditional>(X(4), Z_2x1, I/sigmax4);
   GaussianBayesNet actual3 = *bayesTree.jointBayesNet(X(1),X(4));
   EXPECT(assert_equal(expected3,actual3,tol));
 

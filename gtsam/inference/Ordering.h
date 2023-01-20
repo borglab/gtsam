@@ -50,16 +50,12 @@ public:
   Ordering() {
   }
 
+  using KeyVector::KeyVector;  // Inherit the KeyVector's constructors
+
   /// Create from a container
   template<typename KEYS>
   explicit Ordering(const KEYS& keys) :
       Base(keys.begin(), keys.end()) {
-  }
-
-  /// Create an ordering using iterators over keys
-  template<typename ITERATOR>
-  Ordering(ITERATOR firstKey, ITERATOR lastKey) :
-      Base(firstKey, lastKey) {
   }
 
   /// Add new variables to the ordering as ordering += key1, key2, ...  Equivalent to calling
@@ -70,10 +66,27 @@ public:
         boost::assign_detail::call_push_back<This>(*this))(key);
   }
 
-  /// Invert (not reverse) the ordering - returns a map from key to order position
+  /**
+   * @brief Append new keys to the ordering as `ordering += keys`.
+   *
+   * @param keys The key vector to append to this ordering.
+   * @return The ordering variable with appended keys.
+   */
+  This& operator+=(KeyVector& keys);
+
+  /// Check if key exists in ordering.
+  bool contains(const Key& key) const;
+
+  /**
+   * @brief Invert (not reverse) the ordering - returns a map from key to order
+   * position.
+   *
+   * @return FastMap<Key, size_t>
+   */
   FastMap<Key, size_t> invert() const;
 
-  /// @name Fill-reducing Orderings @{
+  /// @name Fill-reducing Orderings
+  /// @{
 
   /// Compute a fill-reducing ordering using COLAMD from a factor graph (see details for note on
   /// performance). This internally builds a VariableIndex so if you already have a VariableIndex,
@@ -178,7 +191,7 @@ public:
     KeySet src = fg.keys();
     KeyVector keys(src.begin(), src.end());
     std::stable_sort(keys.begin(), keys.end());
-    return Ordering(keys);
+    return Ordering(keys.begin(), keys.end());
   }
 
   /// METIS Formatting function
@@ -199,7 +212,8 @@ public:
 
   /// @}
 
-  /// @name Named Constructors @{
+  /// @name Named Constructors
+  /// @{
 
   template<class FACTOR_GRAPH>
   static Ordering Create(OrderingType orderingType,
@@ -225,7 +239,8 @@ public:
 
   /// @}
 
-  /// @name Testable @{
+  /// @name Testable
+  /// @{
 
   GTSAM_EXPORT
   void print(const std::string& str = "", const KeyFormatter& keyFormatter =

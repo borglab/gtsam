@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixSerialization.h>
 #include <gtsam/base/FastVector.h>
 
 namespace gtsam {
@@ -37,7 +38,7 @@ namespace gtsam {
    * row for all operations.  To include all rows, rowEnd() should be set to the number of rows in
    * the matrix (i.e. one after the last true row index).
    *
-   * @addtogroup base */
+   * @ingroup base */
   class GTSAM_EXPORT VerticalBlockMatrix
   {
   public:

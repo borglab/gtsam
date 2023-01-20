@@ -25,6 +25,7 @@
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
+#include <gtsam/base/VectorSerialization.h>
 #include <boost/serialization/nvp.hpp>
 #include <numeric>
 
@@ -33,10 +34,13 @@ namespace gtsam {
 /// As of GTSAM 4, in order to make GTSAM more lean,
 /// it is now possible to just typedef Point3 to Vector3
 typedef Vector3 Point3;
+typedef std::vector<Point3, Eigen::aligned_allocator<Point3> > Point3Vector;
 
 // Convenience typedef
-typedef std::pair<Point3, Point3> Point3Pair;
+using Point3Pair = std::pair<Point3, Point3>;
 GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const gtsam::Point3Pair &p);
+
+using Point3Pairs = std::vector<Point3Pair>;
 
 /// distance between two points
 GTSAM_EXPORT double distance3(const Point3& p1, const Point3& q,
@@ -61,7 +65,7 @@ GTSAM_EXPORT double dot(const Point3& p, const Point3& q,
 
 /// mean
 template <class CONTAINER>
-GTSAM_EXPORT Point3 mean(const CONTAINER& points) {
+Point3 mean(const CONTAINER& points) {
   if (points.size() == 0) throw std::invalid_argument("Point3::mean input container is empty");
   Point3 sum(0, 0, 0);
   sum = std::accumulate(points.begin(), points.end(), sum);

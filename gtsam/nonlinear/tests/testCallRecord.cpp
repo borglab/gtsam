@@ -77,7 +77,7 @@ template<> struct traits<CallConfig> : public Testable<CallConfig> {};
 
 struct Record: public internal::CallRecordImplementor<Record, Cols> {
   Record() : cc(0, 0) {}
-  virtual ~Record() {
+  ~Record() override {
   }
   void print(const std::string& indent) const {
   }
@@ -153,7 +153,7 @@ TEST(CallRecord, virtualReverseAdDispatching) {
   }
   {
     const int Rows = 6;
-    record.CallRecord::reverseAD2(Eigen::Matrix<double, Rows, Cols>(), NJM);
+    record.CallRecord::reverseAD2(Eigen::Matrix<double, Rows, Cols>::Zero(), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Rows, Cols))));
     record.CallRecord::reverseAD2(DynRowMat(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Cols, Rows, Cols))));
@@ -168,4 +168,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

@@ -27,9 +27,7 @@
 #include <gtsam/base/Testable.h>
 
 #include <boost/make_shared.hpp>
-#include <boost/assign/list_of.hpp>
 
-using namespace boost::assign;
 using namespace std;
 
 namespace gtsam {

@@ -47,8 +47,9 @@ void updateAb(MATRIX& Ab, int j, const Vector& a, const Vector& rd) {
 
 /* ************************************************************************* */
 // check *above the diagonal* for non-zero entries
-boost::optional<Vector> checkIfDiagonal(const Matrix M) {
+boost::optional<Vector> checkIfDiagonal(const Matrix& M) {
   size_t m = M.rows(), n = M.cols();
+  assert(m > 0);
   // check all non-diagonal entries
   bool full = false;
   size_t i, j;
@@ -92,7 +93,7 @@ Gaussian::shared_ptr Gaussian::SqrtInformation(const Matrix& R, bool smart) {
       return Diagonal::Sigmas(diagonal->array().inverse(), true);
   }
   // NOTE(frank): only reaches here if !(smart && diagonal)
-  return shared_ptr(new Gaussian(R.rows(), R));
+  return boost::make_shared<Gaussian>(R.rows(), R);
 }
 
 /* ************************************************************************* */
@@ -108,7 +109,7 @@ Gaussian::shared_ptr Gaussian::Information(const Matrix& information, bool smart
   else {
     Eigen::LLT<Matrix> llt(information);
     Matrix R = llt.matrixU();
-    return shared_ptr(new Gaussian(n, R));
+    return boost::make_shared<Gaussian>(n, R);
   }
 }
 
@@ -134,7 +135,7 @@ Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance,
 
 /* ************************************************************************* */
 void Gaussian::print(const string& name) const {
-  gtsam::print(thisR(), name + "Gaussian");
+  gtsam::print(thisR(), name + "Gaussian ");
 }
 
 /* ************************************************************************* */
@@ -285,7 +286,7 @@ Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
 
 /* ************************************************************************* */
 void Diagonal::print(const string& name) const {
-  gtsam::print(sigmas_, name + "diagonal sigmas");
+  gtsam::print(sigmas_, name + "diagonal sigmas ");
 }
 
 /* ************************************************************************* */
@@ -355,8 +356,8 @@ bool Constrained::constrained(size_t i) const {
 
 /* ************************************************************************* */
 void Constrained::print(const std::string& name) const {
-  gtsam::print(sigmas_, name + "constrained sigmas");
-  gtsam::print(mu_, name + "constrained mu");
+  gtsam::print(sigmas_, name + "constrained sigmas ");
+  gtsam::print(mu_, name + "constrained mu ");
 }
 
 /* ************************************************************************* */

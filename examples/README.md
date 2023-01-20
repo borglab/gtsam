@@ -33,7 +33,6 @@ The following examples illustrate some concepts from Georgia Tech's research pap
 ## 2D Pose SLAM 
 
 * **LocalizationExample.cpp**: modeling robot motion
-* **LocalizationExample2.cpp**: example with GPS like measurements
 * **Pose2SLAMExample**: A 2D Pose SLAM example using the predefined typedefs in gtsam/slam/pose2SLAM.h
 * **Pose2SLAMExample_advanced**: same, but uses an Optimizer object
 * **Pose2SLAMwSPCG**: solve a simple 3 by 3 grid of Pose2 SLAM problem by using easy SPCG interface
@@ -51,13 +50,13 @@ The directory **vSLAMexample** includes 2 simple examples using GTSAM:
 
 See the separate README file there.
 
-##Undirected Graphical Models (UGM)
+## Undirected Graphical Models (UGM)
 The best representation for a Markov Random Field is a factor graph :-) This is illustrated with some discrete examples from the UGM MATLAB toolbox, which
 can be found at <http://www.di.ens.fr/~mschmidt/Software/UGM>
 
 
-##Building and Running
-To build, cd into the directory and do:
+## Building and Running
+To build, cd into the top-level gtsam directory and do:
 
 ```
 mkdir build

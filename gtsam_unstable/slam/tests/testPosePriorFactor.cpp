@@ -21,8 +21,10 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
+
 #include <CppUnitLite/TestHarness.h>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -185,7 +187,10 @@ TEST( PosePriorFactor, Jacobian ) {
   Pose3 pose(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(-5.0, 8.0, -11.0));
 
   // Calculate numerical derivatives
-  Matrix expectedH1 = numericalDerivative11<Vector,Pose3>(boost::bind(&TestPosePriorFactor::evaluateError, &factor, _1, boost::none), pose);
+  Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
+      std::bind(&TestPosePriorFactor::evaluateError, &factor,
+                std::placeholders::_1, boost::none),
+      pose);
 
   // Use the factor to calculate the derivative
   Matrix actualH1;
@@ -209,7 +214,10 @@ TEST( PosePriorFactor, JacobianWithTransform ) {
              Point3(-4.74767676, 7.67044942, -11.00985));
 
   // Calculate numerical derivatives
-  Matrix expectedH1 = numericalDerivative11<Vector,Pose3>(boost::bind(&TestPosePriorFactor::evaluateError, &factor, _1, boost::none), pose);
+  Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
+      std::bind(&TestPosePriorFactor::evaluateError, &factor,
+                std::placeholders::_1, boost::none),
+      pose);
 
   // Use the factor to calculate the derivative
   Matrix actualH1;

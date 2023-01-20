@@ -6,10 +6,6 @@
  *  Description: unit tests for NestedDissection
  */
 
-#include <boost/assign/std/list.hpp> // for operator +=
-#include <boost/assign/std/set.hpp> // for operator +=
-#include <boost/assign/std/vector.hpp> // for operator +=
-using namespace boost::assign;
 #include <boost/make_shared.hpp>
 #include <CppUnitLite/TestHarness.h>
 

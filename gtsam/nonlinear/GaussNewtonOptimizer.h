@@ -28,6 +28,8 @@ class GaussNewtonOptimizer;
  * NonlinearOptimizationParams.
  */
 class GTSAM_EXPORT GaussNewtonParams : public NonlinearOptimizerParams {
+public:
+  using OptimizerType = GaussNewtonOptimizer;
 };
 
 /**
@@ -68,7 +70,7 @@ public:
   /// @{
 
   /** Virtual destructor */
-  virtual ~GaussNewtonOptimizer() {}
+  ~GaussNewtonOptimizer() override {}
 
   /** 
    * Perform a single iteration, returning GaussianFactorGraph corresponding to 

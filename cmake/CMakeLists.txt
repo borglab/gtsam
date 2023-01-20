@@ -16,11 +16,8 @@ install(FILES
   dllexport.h.in
   GtsamBuildTypes.cmake
   GtsamMakeConfigFile.cmake
-  GtsamMatlabWrap.cmake
   GtsamTesting.cmake
   GtsamPrinting.cmake
   FindNumPy.cmake
   README.html
   DESTINATION "${SCRIPT_INSTALL_DIR}/GTSAMCMakeTools")
-
-

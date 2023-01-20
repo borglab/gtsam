@@ -45,11 +45,15 @@ private:
   T measured_;                  ///< The measurement
   SharedNoiseModel noiseModel_; ///< Noise model
 
-public:
+ public:
   BinaryMeasurement(Key key1, Key key2, const T &measured,
                     const SharedNoiseModel &model = nullptr)
-      : Factor(std::vector<Key>({key1, key2})), measured_(measured),
+      : Factor(std::vector<Key>({key1, key2})),
+        measured_(measured),
         noiseModel_(model) {}
+
+  /// Destructor
+  virtual ~BinaryMeasurement() {}
 
   /// @name Standard Interface
   /// @{
@@ -63,8 +67,8 @@ public:
   /// @name Testable
   /// @{
 
-  void print(const std::string &s,
-             const KeyFormatter &keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string &s, const KeyFormatter &keyFormatter =
+                                       DefaultKeyFormatter) const override {
     std::cout << s << "BinaryMeasurement(" << keyFormatter(this->key1()) << ","
               << keyFormatter(this->key2()) << ")\n";
     traits<T>::Print(measured_, "  measured: ");

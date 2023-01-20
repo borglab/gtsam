@@ -30,10 +30,10 @@ double f(const Vector2& x) {
 /* ************************************************************************* */
 //
 TEST(testNumericalDerivative, numericalGradient) {
-  Vector2 x(1, 1);
+  Vector2 x(1, 1.1);
 
   Vector expected(2);
-  expected << cos(x(1)), -sin(x(0));
+  expected << cos(x(0)), -sin(x(1));
 
   Vector actual = numericalGradient<Vector2>(f, x);
 
@@ -42,7 +42,7 @@ TEST(testNumericalDerivative, numericalGradient) {
 
 /* ************************************************************************* */
 TEST(testNumericalDerivative, numericalHessian) {
-  Vector2 x(1, 1);
+  Vector2 x(1, 1.1);
 
   Matrix expected(2, 2);
   expected << -sin(x(0)), 0.0, 0.0, -cos(x(1));

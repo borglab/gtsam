@@ -2,7 +2,7 @@
  * OrientedPlane3Factor.cpp
  *
  *  Created on: Jan 29, 2014
- *      Author: Natesh Srinivasan
+ *  Author: Natesh Srinivasan
  */
 
 #include "OrientedPlane3Factor.h"
@@ -14,15 +14,42 @@ namespace gtsam {
 //***************************************************************************
 void OrientedPlane3Factor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  cout << "OrientedPlane3Factor Factor on " << landmarkKey_ << "\n";
+  cout << s << (s == "" ? "" : "\n");
+  cout << "OrientedPlane3Factor Factor (" << keyFormatter(key<1>()) << ", "
+       << keyFormatter(key<2>()) << ")\n";
   measured_p_.print("Measured Plane");
   this->noiseModel_->print("  noise model: ");
 }
 
 //***************************************************************************
+Vector OrientedPlane3Factor::evaluateError(const Pose3& pose,
+    const OrientedPlane3& plane, boost::optional<Matrix&> H1,
+    boost::optional<Matrix&> H2) const {
+  Matrix36 predicted_H_pose;
+  Matrix33 predicted_H_plane, error_H_predicted;
+
+  OrientedPlane3 predicted_plane = plane.transform(pose,
+    H2 ? &predicted_H_plane : nullptr, H1 ? &predicted_H_pose  : nullptr);
+
+  Vector3 err = predicted_plane.errorVector(
+      measured_p_, (H1 || H2) ? &error_H_predicted : nullptr);
+
+  // Apply the chain rule to calculate the derivatives.
+  if (H1) {
+    *H1 = error_H_predicted * predicted_H_pose;
+  }
+  if (H2) {
+    *H2 = error_H_predicted * predicted_H_plane;
+  }
+
+  return err;
+}
+
+//***************************************************************************
 void OrientedPlane3DirectionPrior::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  cout << "Prior Factor on " << landmarkKey_ << "\n";
+  cout << s << (s == "" ? "" : "\n");
+  cout << s << "Prior Factor on " << keyFormatter(key()) << "\n";
   measured_p_.print("Measured Plane");
   this->noiseModel_->print("  noise model: ");
 }
@@ -36,26 +63,17 @@ bool OrientedPlane3DirectionPrior::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-
-Vector OrientedPlane3DirectionPrior::evaluateError(const OrientedPlane3& plane,
-    boost::optional<Matrix&> H) const {
-
+Vector OrientedPlane3DirectionPrior::evaluateError(
+    const OrientedPlane3& plane, boost::optional<Matrix&> H) const {
+  Unit3 n_hat_p = measured_p_.normal();
+  Unit3 n_hat_q = plane.normal();
+  Matrix2 H_p;
+  Vector e = n_hat_p.error(n_hat_q, H ? &H_p : nullptr);
   if (H) {
-    Matrix H_p;
-    Unit3 n_hat_p = measured_p_.normal();
-    Unit3 n_hat_q = plane.normal();
-    Vector e = n_hat_p.error(n_hat_q, H_p);
     H->resize(2, 3);
-    H->block<2, 2>(0, 0) << H_p;
-    H->block<2, 1>(0, 2) << Z_2x1;
-    return e;
-  } else {
-    Unit3 n_hat_p = measured_p_.normal();
-    Unit3 n_hat_q = plane.normal();
-    Vector e = n_hat_p.error(n_hat_q);
-    return e;
+    *H << H_p, Z_2x1;
   }
-
+  return e;
 }
-}
 
+}  // namespace gtsam

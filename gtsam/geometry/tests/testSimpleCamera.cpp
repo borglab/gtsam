@@ -26,6 +26,8 @@
 using namespace std;
 using namespace gtsam;
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+
 static const Cal3_S2 K(625, 625, 0, 0, 0);
 
 static const Pose3 pose1(Rot3(Vector3(1, -1, -1).asDiagonal()),
@@ -148,6 +150,8 @@ TEST( SimpleCamera, simpleCamera)
   // Note precision of numbers given in book
   CHECK(assert_equal(expected, actual,1e-1));
 }
+
+#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

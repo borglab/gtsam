@@ -17,18 +17,15 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/inference/LabeledSymbol.h>
+#include <gtsam/inference/Symbol.h>
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/list_of.hpp>
 #include <boost/range/adaptor/map.hpp>
 
 #include <sstream>
 
 using namespace std;
-using namespace boost::assign;
 using boost::adaptors::map_keys;
 using namespace gtsam;
 
@@ -71,6 +68,22 @@ TEST(VectorValues, basics)
   // Check exceptions
   CHECK_EXCEPTION(actual.insert(1, Vector()), invalid_argument);
   CHECK_EXCEPTION(actual.dim(3), out_of_range);
+}
+
+/* ************************************************************************* */
+
+static const VectorValues kExample = {{99, Vector2(2, 3)}};
+
+// Check insert
+TEST(VectorValues, Insert) {
+  VectorValues actual;
+  EXPECT(assert_equal(kExample, actual.insert(kExample)));
+}
+
+// Check update.
+TEST(VectorValues, Update) {
+  VectorValues actual(kExample);
+  EXPECT(assert_equal(kExample, actual.update(kExample)));
 }
 
 /* ************************************************************************* */
@@ -246,6 +259,33 @@ TEST(VectorValues, print)
   stringstream actual;
   actual << vv;
   EXPECT(expected == actual.str());
+}
+
+/* ************************************************************************* */
+// Check html representation.
+TEST(VectorValues, html) {
+  VectorValues vv;
+  using symbol_shorthand::X;
+  vv.insert(X(1), Vector2(2, 3.1));
+  vv.insert(X(2), Vector2(4, 5.2));
+  vv.insert(X(5), Vector2(6, 7.3));
+  vv.insert(X(7), Vector2(8, 9.4));
+  string expected =
+      "<div>\n"
+      "<table class='VectorValues'>\n"
+      "  <thead>\n"
+      "    <tr><th>Variable</th><th>value</th></tr>\n"
+      "  </thead>\n"
+      "  <tbody>\n"
+      "    <tr><th>x1</th><td>  2 3.1</td></tr>\n"
+      "    <tr><th>x2</th><td>  4 5.2</td></tr>\n"
+      "    <tr><th>x5</th><td>  6 7.3</td></tr>\n"
+      "    <tr><th>x7</th><td>  8 9.4</td></tr>\n"
+      "  </tbody>\n"
+      "</table>\n"
+      "</div>";
+  string actual = vv.html();
+  EXPECT(actual == expected);
 }
 
 /* ************************************************************************* */

@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file     QPParser.cpp
+ * @file     QPSParser.cpp
  * @author   Ivan Dario Jimenez
  * @date     3/5/16
  */
@@ -39,6 +39,7 @@
 #include <vector>
 
 using boost::fusion::at_c;
+using namespace std::placeholders;
 using namespace std;
 
 namespace bf = boost::fusion;
@@ -81,7 +82,7 @@ class QPSVisitor {
       varname_to_key;  // Variable QPS string name to key
   std::unordered_map<Key, std::unordered_map<Key, Matrix11>>
       H;                 // H from hessian
-  double f;              // Constant term of quadratic cost
+  double f = 0;          // Constant term of quadratic cost
   std::string obj_name;  // the objective function has a name in the QPS
   std::string name_;     // the quadratic program has a name in the QPS
   std::unordered_map<Key, double>
@@ -175,10 +176,11 @@ class QPSVisitor {
     string var_ = fromChars<1>(vars);
     string row_ = fromChars<3>(vars);
     double coefficient = at_c<5>(vars);
-    if (row_ == obj_name)
+    if (row_ == obj_name) {
       f = -coefficient;
-    else
+    } else {
       b[row_] = coefficient;
+    }
 
     if (debug) {
       cout << "Added RHS for Var: " << var_ << " Row: " << row_
@@ -194,15 +196,17 @@ class QPSVisitor {
     string row2_ = fromChars<7>(vars);
     double coefficient1 = at_c<5>(vars);
     double coefficient2 = at_c<9>(vars);
-    if (row1_ == obj_name)
+    if (row1_ == obj_name) {
       f = -coefficient1;
-    else
+    } else {
       b[row1_] = coefficient1;
+    }
 
-    if (row2_ == obj_name)
+    if (row2_ == obj_name) {
       f = -coefficient2;
-    else
+    } else {
       b[row2_] = coefficient2;
+    }
 
     if (debug) {
       cout << "Added RHS for Var: " << var_ << " Row: " << row1_
@@ -407,50 +411,50 @@ typedef qi::grammar<boost::spirit::basic_istream_iterator<char>> base_grammar;
 struct QPSParser::MPSGrammar : base_grammar {
   typedef std::vector<char> Chars;
   QPSVisitor *rqp_;
-  boost::function<void(bf::vector<Chars, Chars, Chars> const &)> setName;
-  boost::function<void(bf::vector<Chars, char, Chars, Chars, Chars> const &)>
+  std::function<void(bf::vector<Chars, Chars, Chars> const &)> setName;
+  std::function<void(bf::vector<Chars, char, Chars, Chars, Chars> const &)>
       addRow;
-  boost::function<void(
+  std::function<void(
       bf::vector<Chars, Chars, Chars, Chars, Chars, double, Chars> const &)>
       rhsSingle;
-  boost::function<void(bf::vector<Chars, Chars, Chars, Chars, Chars, double,
+  std::function<void(bf::vector<Chars, Chars, Chars, Chars, Chars, double,
                                   Chars, Chars, Chars, double>)>
       rhsDouble;
-  boost::function<void(
+  std::function<void(
       bf::vector<Chars, Chars, Chars, Chars, Chars, double, Chars> const &)>
       rangeSingle;
-  boost::function<void(bf::vector<Chars, Chars, Chars, Chars, Chars, double,
+  std::function<void(bf::vector<Chars, Chars, Chars, Chars, Chars, double,
                                   Chars, Chars, Chars, double>)>
       rangeDouble;
-  boost::function<void(
+  std::function<void(
       bf::vector<Chars, Chars, Chars, Chars, Chars, double, Chars>)>
       colSingle;
-  boost::function<void(bf::vector<Chars, Chars, Chars, Chars, double, Chars,
+  std::function<void(bf::vector<Chars, Chars, Chars, Chars, double, Chars,
                                   Chars, Chars, double> const &)>
       colDouble;
-  boost::function<void(
+  std::function<void(
       bf::vector<Chars, Chars, Chars, Chars, Chars, double, Chars> const &)>
       addQuadTerm;
-  boost::function<void(bf::vector<Chars, Chars, Chars, Chars, Chars, Chars,
+  std::function<void(bf::vector<Chars, Chars, Chars, Chars, Chars, Chars,
                                   Chars, double> const &)>
       addBound;
-  boost::function<void(
+  std::function<void(
       bf::vector<Chars, Chars, Chars, Chars, Chars, Chars, Chars> const &)>
       addFreeBound;
   MPSGrammar(QPSVisitor *rqp)
       : base_grammar(start),
         rqp_(rqp),
-        setName(boost::bind(&QPSVisitor::setName, rqp, ::_1)),
-        addRow(boost::bind(&QPSVisitor::addRow, rqp, ::_1)),
-        rhsSingle(boost::bind(&QPSVisitor::addRHS, rqp, ::_1)),
-        rhsDouble(boost::bind(&QPSVisitor::addRHSDouble, rqp, ::_1)),
-        rangeSingle(boost::bind(&QPSVisitor::addRangeSingle, rqp, ::_1)),
-        rangeDouble(boost::bind(&QPSVisitor::addRangeDouble, rqp, ::_1)),
-        colSingle(boost::bind(&QPSVisitor::addColumn, rqp, ::_1)),
-        colDouble(boost::bind(&QPSVisitor::addColumnDouble, rqp, ::_1)),
-        addQuadTerm(boost::bind(&QPSVisitor::addQuadTerm, rqp, ::_1)),
-        addBound(boost::bind(&QPSVisitor::addBound, rqp, ::_1)),
-        addFreeBound(boost::bind(&QPSVisitor::addFreeBound, rqp, ::_1)) {
+        setName(std::bind(&QPSVisitor::setName, rqp, std::placeholders::_1)),
+        addRow(std::bind(&QPSVisitor::addRow, rqp, std::placeholders::_1)),
+        rhsSingle(std::bind(&QPSVisitor::addRHS, rqp, std::placeholders::_1)),
+        rhsDouble(std::bind(&QPSVisitor::addRHSDouble, rqp, std::placeholders::_1)),
+        rangeSingle(std::bind(&QPSVisitor::addRangeSingle, rqp, std::placeholders::_1)),
+        rangeDouble(std::bind(&QPSVisitor::addRangeDouble, rqp, std::placeholders::_1)),
+        colSingle(std::bind(&QPSVisitor::addColumn, rqp, std::placeholders::_1)),
+        colDouble(std::bind(&QPSVisitor::addColumnDouble, rqp, std::placeholders::_1)),
+        addQuadTerm(std::bind(&QPSVisitor::addQuadTerm, rqp, std::placeholders::_1)),
+        addBound(std::bind(&QPSVisitor::addBound, rqp, std::placeholders::_1)),
+        addFreeBound(std::bind(&QPSVisitor::addFreeBound, rqp, std::placeholders::_1)) {
     using namespace boost::spirit;
     using namespace boost::spirit::qi;
     character = lexeme[alnum | '_' | '-' | '.'];

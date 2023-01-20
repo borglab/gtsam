@@ -139,7 +139,7 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFacto
   // Add the new variables to theta
   theta_.insert(newTheta);
   // Add new variables to the end of the ordering
-  for(const Values::ConstKeyValuePair& key_value: newTheta) {
+  for(const auto key_value: newTheta) {
     ordering_.push_back(key_value.key);
   }
   // Augment Delta
@@ -222,7 +222,7 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& smootherSumm
 
   // Find the set of new separator keys
   KeySet newSeparatorKeys;
-  for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
+  for(const auto key_value: separatorValues_) {
     newSeparatorKeys.insert(key_value.key);
   }
 
@@ -236,7 +236,7 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& smootherSumm
     graph.push_back(smootherShortcut_);
     Values values;
     values.insert(smootherSummarizationValues);
-    for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
+    for(const auto key_value: separatorValues_) {
       if(!values.exists(key_value.key)) {
         values.insert(key_value.key, key_value.value);
       }
@@ -471,7 +471,7 @@ void ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values
           // Put the linearization points and deltas back for specific variables
           if(linearValues.size() > 0) {
             theta.update(linearValues);
-            for(const Values::ConstKeyValuePair& key_value: linearValues) {
+            for(const auto key_value: linearValues) {
               delta.at(key_value.key) = newDelta.at(key_value.key);
             }
           }
@@ -574,7 +574,7 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
 
   // Calculate the set of new separator keys: AffectedKeys + PreviousSeparatorKeys - KeysToMove
   KeySet newSeparatorKeys = removedFactors.keys();
-  for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
+  for(const auto key_value: separatorValues_) {
     newSeparatorKeys.insert(key_value.key);
   }
   for(Key key: keysToMove) {

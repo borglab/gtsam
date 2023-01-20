@@ -15,8 +15,6 @@
  * @author  Frank Dellaert
  */
 
-#include <boost/assign/list_of.hpp>
-using namespace boost::assign;
 #include <boost/make_shared.hpp>
 
 #include <CppUnitLite/TestHarness.h>
@@ -69,8 +67,7 @@ TEST( SymbolicConditional, threeParents )
 /* ************************************************************************* */
 TEST( SymbolicConditional, fourParents )
 {
-  SymbolicConditional c0 = SymbolicConditional::FromKeys(
-    list_of(0)(1)(2)(3)(4), 1);
+  auto c0 = SymbolicConditional::FromKeys(KeyVector{0, 1, 2, 3, 4}, 1);
   LONGS_EQUAL(1, (long)c0.nrFrontals());
   LONGS_EQUAL(4, (long)c0.nrParents());
 }
@@ -78,9 +75,8 @@ TEST( SymbolicConditional, fourParents )
 /* ************************************************************************* */
 TEST( SymbolicConditional, FromRange )
 {
-  SymbolicConditional::shared_ptr c0 =
-    boost::make_shared<SymbolicConditional>(
-    SymbolicConditional::FromKeys(list_of(1)(2)(3)(4)(5), 2));
+  auto c0 = boost::make_shared<SymbolicConditional>(
+      SymbolicConditional::FromKeys(KeyVector{1, 2, 3, 4, 5}, 2));
   LONGS_EQUAL(2, (long)c0->nrFrontals());
   LONGS_EQUAL(3, (long)c0->nrParents());
 }

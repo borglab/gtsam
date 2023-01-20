@@ -12,41 +12,42 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+      BOOST_VERSION: 1.67.0
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          ubuntu-18.04-gcc-5,
-          ubuntu-18.04-gcc-9,
-          ubuntu-18.04-clang-9,
+          ubuntu-20.04-gcc-7,
+          ubuntu-20.04-gcc-9,
+          ubuntu-20.04-clang-9,
         ]
 
         build_type: [Debug, Release]
         build_unstable: [ON]
         include:
-          - name: ubuntu-18.04-gcc-5
-            os: ubuntu-18.04
+          - name: ubuntu-20.04-gcc-7
+            os: ubuntu-20.04
             compiler: gcc
-            version: "5"
+            version: "7"
 
-          - name: ubuntu-18.04-gcc-9
-            os: ubuntu-18.04
+          - name: ubuntu-20.04-gcc-9
+            os: ubuntu-20.04
             compiler: gcc
             version: "9"
 
-          - name: ubuntu-18.04-clang-9
-            os: ubuntu-18.04
+          - name: ubuntu-20.04-clang-9
+            os: ubuntu-20.04
             compiler: clang
             version: "9"
 
     steps:
       - name: Checkout
-        uses: actions/checkout@master
-      - name: Install (Linux)
-        if: runner.os == 'Linux'
+        uses: actions/checkout@v2
+
+      - name: Install Dependencies
         run: |
           # LLVM (clang) 9 is not in Bionic's repositories so we add the official LLVM repository.
           if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
@@ -55,17 +56,14 @@ jobs:
             # 15CF4D18AF4F7421 is the GPG key for the LLVM apt repository
             # This key is not in the keystore by default for Ubuntu so we need to add it.
             LLVM_KEY=15CF4D18AF4F7421
-            gpg --keyserver ipv4.pool.sks-keyservers.net --recv-key $LLVM_KEY || gpg --keyserver ha.pool.sks-keyservers.net --recv-key $LLVM_KEY
+            gpg --keyserver keyserver.ubuntu.com --recv-key $LLVM_KEY || gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key $LLVM_KEY
             gpg -a --export $LLVM_KEY | sudo apt-key add -
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
           fi
-          sudo apt-get -y update
 
-          sudo apt install cmake build-essential pkg-config libpython-dev python-numpy
-          
-          echo "BOOST_ROOT=$(echo $BOOST_ROOT_1_72_0)" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=$(echo $BOOST_ROOT_1_72_0/lib)" >> $GITHUB_ENV
-          
+          sudo apt-get -y update
+          sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libicu-dev
+
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
             echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
@@ -75,11 +73,10 @@ jobs:
             echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
             echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
           fi
-      - name: Check Boost version
-        if: runner.os == 'Linux'
+
+      - name: Install Boost
         run: |
-          echo "BOOST_ROOT = $BOOST_ROOT"
-      - name: Build and Test (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          bash .github/scripts/unix.sh -t
+          bash .github/scripts/boost.sh
+
+      - name: Build and Test
+        run: bash .github/scripts/unix.sh -t

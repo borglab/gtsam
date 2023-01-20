@@ -9,8 +9,10 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/slam/BiasedGPSFactor.h>
+
 #include <CppUnitLite/TestHarness.h>
 
+using namespace std::placeholders;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 using namespace gtsam::noiseModel;
@@ -65,15 +67,17 @@ TEST(BiasedGPSFactor, jacobian) {
   factor.evaluateError(pose,bias, actualH1, actualH2);
 
   Matrix numericalH1 = numericalDerivative21(
-      boost::function<Vector(const Pose3&, const Point3&)>(boost::bind(
-          &BiasedGPSFactor::evaluateError, factor, _1, _2, boost::none,
-          boost::none)), pose, bias, 1e-5);
+      std::function<Vector(const Pose3&, const Point3&)>(std::bind(
+          &BiasedGPSFactor::evaluateError, factor, std::placeholders::_1,
+          std::placeholders::_2, boost::none, boost::none)),
+      pose, bias, 1e-5);
   EXPECT(assert_equal(numericalH1,actualH1, 1E-5));
 
   Matrix numericalH2 = numericalDerivative22(
-      boost::function<Vector(const Pose3&, const Point3&)>(boost::bind(
-          &BiasedGPSFactor::evaluateError, factor, _1, _2, boost::none,
-          boost::none)), pose, bias, 1e-5);
+      std::function<Vector(const Pose3&, const Point3&)>(std::bind(
+          &BiasedGPSFactor::evaluateError, factor, std::placeholders::_1,
+          std::placeholders::_2, boost::none, boost::none)),
+      pose, bias, 1e-5);
   EXPECT(assert_equal(numericalH2,actualH2, 1E-5));
 }
 

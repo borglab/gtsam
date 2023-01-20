@@ -19,14 +19,25 @@
 #pragma once
 
 #include <gtsam/geometry/BearingRange.h>
-#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3Fisheye.h>
+#include <gtsam/geometry/Cal3Unified.h>
+#include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/PinholeCamera.h>
 
 namespace gtsam {
 
-  /// A simple camera class with a Cal3_S2 calibration
-typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
+  /// Convenient aliases for Pinhole camera classes with different calibrations.
+  /// Also needed as forward declarations in the wrapper.
+  using PinholeCameraCal3_S2 = gtsam::PinholeCamera<gtsam::Cal3_S2>;
+  using PinholeCameraCal3Bundler = gtsam::PinholeCamera<gtsam::Cal3Bundler>;
+  using PinholeCameraCal3DS2 = gtsam::PinholeCamera<gtsam::Cal3DS2>;
+  using PinholeCameraCal3Unified = gtsam::PinholeCamera<gtsam::Cal3Unified>;
+  using PinholeCameraCal3Fisheye = gtsam::PinholeCamera<gtsam::Cal3Fisheye>;
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 /**
  * @deprecated: SimpleCamera for backwards compatability with GTSAM 3.x
  * Use PinholeCameraCal3_S2 instead
@@ -139,5 +150,7 @@ struct traits<const SimpleCamera> : public internal::Manifold<SimpleCamera> {};
 // range traits, used in RangeFactor
 template <typename T>
 struct Range<SimpleCamera, T> : HasRange<SimpleCamera, T, double> {};
+
+#endif
 
 }  // namespace gtsam

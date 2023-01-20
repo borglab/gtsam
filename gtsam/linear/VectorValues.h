@@ -34,7 +34,7 @@
 namespace gtsam {
 
   /**
-   * This class represents a collection of vector-valued variables associated
+   * VectorValues represents a collection of vector-valued variables associated
    * each with a unique integer index.  It is typically used to store the variables
    * of a GaussianFactorGraph.  Optimizing a GaussianFactorGraph or GaussianBayesNet
    * returns this class.
@@ -69,7 +69,7 @@ namespace gtsam {
    * which is a view on the underlying data structure.
    *
    * This class is additionally used in gradient descent and dog leg to store the gradient.
-   * \nosubgrouping
+   * @ingroup linear
    */
   class GTSAM_EXPORT VectorValues {
    protected:
@@ -88,10 +88,12 @@ namespace gtsam {
     /// @name Standard Constructors
     /// @{
 
-    /**
-     * Default constructor creates an empty VectorValues.
-     */
+    /// Default constructor creates an empty VectorValues.
     VectorValues() {}
+
+    /// Construct from initializer list.
+    VectorValues(std::initializer_list<std::pair<Key, Vector>> init)
+        : values_(init.begin(), init.end()) {}
 
     /** Merge two VectorValues into one, this is more efficient than inserting
      * elements one by one. */
@@ -167,7 +169,7 @@ namespace gtsam {
     /** For all key/value pairs in \c values, replace values with corresponding keys in this class
     *   with those in \c values.  Throws std::out_of_range if any keys in \c values are not present
     *   in this class. */
-    void update(const VectorValues& values);
+    VectorValues& update(const VectorValues& values);
 
     /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
      *  j is already used.
@@ -198,7 +200,7 @@ namespace gtsam {
 
     /** Insert all values from \c values.  Throws an invalid_argument exception if any keys to be
      *  inserted are already used. */
-    void insert(const VectorValues& values);
+    VectorValues& insert(const VectorValues& values);
 
     /** insert that mimics the STL map insert - if the value already exists, the map is not modified
      *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
@@ -210,6 +212,14 @@ namespace gtsam {
 #else
       return values_.insert(std::make_pair(j, value));
 #endif
+    }
+
+    /// insert_or_assign that mimics the STL map insert_or_assign - if the value already exists, the
+    /// map is updated, otherwise a new value is inserted at j.
+    void insert_or_assign(Key j, const Vector& value) {
+      if (!tryInsert(j, value).second) {
+        (*this)[j] = value;
+      }
     }
 
     /** Erase the vector with the given key, or throw std::out_of_range if it does not exist */
@@ -344,11 +354,16 @@ namespace gtsam {
 
     /// @}
 
-    /// @}
-    /// @name Matlab syntactic sugar for linear algebra operations
+    /// @name Wrapper support
     /// @{
 
-    //inline VectorValues scale(const double a, const VectorValues& c) const { return a * (*this); }
+    /**
+     * @brief Output as a html table.
+     *
+     * @param keyFormatter function that formats keys.
+     */
+    std::string html(
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /// @}
 

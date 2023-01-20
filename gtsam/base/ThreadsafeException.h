@@ -14,7 +14,7 @@
  * @brief    Base exception type that uses tbb_allocator if GTSAM is compiled with TBB
  * @author   Richard Roberts
  * @date     Aug 21, 2010
- * @addtogroup base
+ * @ingroup base
  */
 
 #pragma once
@@ -72,7 +72,7 @@ protected:
   }
 
   /// Default destructor doesn't have the noexcept
-  virtual ~ThreadsafeException() noexcept {
+  ~ThreadsafeException() noexcept override {
   }
 
 public:
@@ -114,7 +114,7 @@ class CholeskyFailed : public gtsam::ThreadsafeException<CholeskyFailed>
 {
 public:
   CholeskyFailed() noexcept {}
-  virtual ~CholeskyFailed() noexcept {}
+  ~CholeskyFailed() noexcept override {}
 };
 
 } // namespace gtsam

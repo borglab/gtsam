@@ -25,4 +25,4 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME "gtsam-${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION
 
 # Deb-package specific cpack
 set(CPACK_DEBIAN_PACKAGE_NAME "libgtsam-dev")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev (>= 1.58)") #Example: "libc6 (>= 2.3.1-6), libgcc1 (>= 1:3.4.2-12)")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev (>= 1.65)") #Example: "libc6 (>= 2.3.1-6), libgcc1 (>= 1:3.4.2-12)")
