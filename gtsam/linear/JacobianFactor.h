@@ -24,7 +24,6 @@
 #include <gtsam/global_includes.h>
 #include <gtsam/inference/VariableSlots.h>
 
-#include <boost/make_shared.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/split_member.hpp>
 

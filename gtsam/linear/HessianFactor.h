@@ -23,7 +23,6 @@
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastVector.h>
 
-#include <boost/make_shared.hpp>
 
 namespace gtsam {
 

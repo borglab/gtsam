@@ -20,7 +20,6 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
-#include <boost/make_shared.hpp>
 
 using namespace gtsam;
 using namespace gtsam::noiseModel;

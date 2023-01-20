@@ -17,7 +17,6 @@
 */
 #pragma once
 
-#include <boost/make_shared.hpp>
 #include <stack>
 
 #include <gtsam/base/timing.h>

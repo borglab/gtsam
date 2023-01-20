@@ -19,7 +19,6 @@
 #include <gtsam/global_includes.h>
 
 #include <memory>
-#include <boost/make_shared.hpp>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/task_group.h>         // tbb::task_group

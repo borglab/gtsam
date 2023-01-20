@@ -28,7 +28,6 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include <boost/make_shared.hpp>
 
 namespace gtsam {
 

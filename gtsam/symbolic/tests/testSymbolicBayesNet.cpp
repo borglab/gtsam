@@ -24,7 +24,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/make_shared.hpp>
 
 using namespace std;
 using namespace gtsam;

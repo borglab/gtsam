@@ -24,7 +24,6 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/VectorSpace.h>
 
-#include <boost/make_shared.hpp>
 #include <map>
 
 // Forward declare tests

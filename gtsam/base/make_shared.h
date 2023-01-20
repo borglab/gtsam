@@ -21,7 +21,6 @@
 
 #include <Eigen/Core>
 
-#include <boost/make_shared.hpp>
 
 #include <type_traits>
 

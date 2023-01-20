@@ -6,7 +6,6 @@
  *  Description: unit tests for NestedDissection
  */
 
-#include <boost/make_shared.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 #include "SubmapPlanarSLAM.h"

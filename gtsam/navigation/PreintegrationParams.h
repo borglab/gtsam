@@ -17,7 +17,6 @@
 #pragma once
 
 #include <gtsam/navigation/PreintegratedRotation.h>
-#include <boost/make_shared.hpp>
 
 namespace gtsam {
 

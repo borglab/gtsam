@@ -30,7 +30,6 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/format.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/adaptor/map.hpp>

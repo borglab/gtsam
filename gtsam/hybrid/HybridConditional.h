@@ -25,7 +25,6 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianConditional.h>
 
-#include <boost/make_shared.hpp>
 #include <memory>
 #include <stdexcept>
 #include <string>

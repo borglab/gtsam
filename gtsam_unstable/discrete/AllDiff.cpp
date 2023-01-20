@@ -9,7 +9,6 @@
 #include <gtsam_unstable/discrete/AllDiff.h>
 #include <gtsam_unstable/discrete/Domain.h>
 
-#include <boost/make_shared.hpp>
 #include <optional>
 
 namespace gtsam {

@@ -24,7 +24,6 @@
 #include <gtsam/base/timing.h>
 
 #include <memory>
-#include <boost/make_shared.hpp>
 
 #include <utility>
 

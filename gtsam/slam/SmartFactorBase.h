@@ -31,7 +31,6 @@
 
 #include <optional>
 #include <boost/serialization/optional.hpp>
-#include <boost/make_shared.hpp>
 #include <vector>
 
 namespace gtsam {

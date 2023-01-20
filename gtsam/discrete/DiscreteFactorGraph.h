@@ -25,7 +25,6 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/FastSet.h>
 
-#include <boost/make_shared.hpp>
 #include <string>
 #include <utility>
 #include <vector>

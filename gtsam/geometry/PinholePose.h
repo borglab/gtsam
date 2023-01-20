@@ -21,7 +21,6 @@
 
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/Point2.h>
-#include <boost/make_shared.hpp>
 
 namespace gtsam {
 

@@ -23,7 +23,6 @@
 
 #include <algorithm>
 #include <boost/format.hpp>
-#include <boost/make_shared.hpp>
 
 #include <cmath>
 #include <fstream>

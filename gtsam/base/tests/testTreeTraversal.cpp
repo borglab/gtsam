@@ -22,7 +22,6 @@
 #include <vector>
 #include <list>
 #include <memory>
-#include <boost/make_shared.hpp>
 
 using namespace gtsam;
 

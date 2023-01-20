@@ -26,7 +26,6 @@
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/base/Testable.h>
 
-#include <boost/make_shared.hpp>
 
 using namespace std;
 

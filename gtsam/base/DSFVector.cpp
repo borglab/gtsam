@@ -17,8 +17,8 @@
  */
 
 #include <gtsam/base/DSFVector.h>
-#include <boost/make_shared.hpp>
 #include <algorithm>
+#include <cassert>
 
 using namespace std;
 

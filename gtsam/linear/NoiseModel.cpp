@@ -20,7 +20,6 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/format.hpp>
-#include <boost/make_shared.hpp>
 
 #include <cmath>
 #include <iostream>

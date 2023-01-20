@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <boost/make_shared.hpp>
 
 #include "partition/FindSeparator-inl.h"
 #include "OrderedSymbols.h"

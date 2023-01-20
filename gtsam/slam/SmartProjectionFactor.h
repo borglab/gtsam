@@ -27,7 +27,6 @@
 #include <gtsam/slam/dataset.h>
 
 #include <optional>
-#include <boost/make_shared.hpp>
 #include <vector>
 
 namespace gtsam {

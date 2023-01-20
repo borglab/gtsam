@@ -6,7 +6,6 @@
  *  Description: unit tests for FindSeparator
  */
 
-#include <boost/make_shared.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam_unstable/partition/FindSeparator-inl.h>

@@ -19,7 +19,6 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/CalibratedCamera.h>
-#include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 
 namespace gtsam {

@@ -17,7 +17,6 @@
 
 #include "TangentPreintegration.h"
 #include <gtsam/base/numericalDerivative.h>
-#include <boost/make_shared.hpp>
 
 using namespace std;
 

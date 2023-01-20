@@ -22,7 +22,6 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/Signature.h>
 
-#include <boost/make_shared.hpp>
 #include <memory>
 #include <string>
 #include <vector>

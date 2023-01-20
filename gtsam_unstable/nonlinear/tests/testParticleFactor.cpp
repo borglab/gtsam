@@ -17,7 +17,6 @@
  */
 
 #include <gtsam/linear/NoiseModel.h>
-#include <boost/make_shared.hpp>
 
 namespace gtsam {
 

@@ -10,7 +10,6 @@
 #include <gtsam_unstable/discrete/Domain.h>
 #include <gtsam_unstable/discrete/SingleValue.h>
 
-#include <boost/make_shared.hpp>
 
 namespace gtsam {
 

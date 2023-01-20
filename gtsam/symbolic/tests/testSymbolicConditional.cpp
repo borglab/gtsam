@@ -15,7 +15,6 @@
  * @author  Frank Dellaert
  */
 
-#include <boost/make_shared.hpp>
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>

@@ -32,7 +32,6 @@
 #include <gtsam/base/cholesky.h>
 
 #include <boost/format.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/array.hpp>
 #include <boost/range/algorithm/copy.hpp>
 #include <boost/range/adaptor/indirected.hpp>

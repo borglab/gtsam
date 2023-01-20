@@ -23,7 +23,6 @@
 #include <gtsam/hybrid/HybridValues.h>
 
 #include <algorithm>
-#include <boost/make_shared.hpp>
 #include <random>
 #include <set>
 #include <stdexcept>

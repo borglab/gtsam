@@ -15,7 +15,6 @@
  * @author Frank Dellaert
  */
 
-#include <boost/make_shared.hpp>
 
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>

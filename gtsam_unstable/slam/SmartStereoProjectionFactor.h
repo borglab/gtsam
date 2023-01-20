@@ -30,7 +30,6 @@
 #include <gtsam/slam/dataset.h>
 #include <gtsam_unstable/dllexport.h>
 
-#include <boost/make_shared.hpp>
 #include <boost/serialization/optional.hpp>
 #include <optional>
 #include <vector>

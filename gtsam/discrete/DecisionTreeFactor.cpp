@@ -22,7 +22,6 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 
-#include <boost/make_shared.hpp>
 #include <boost/format.hpp>
 #include <utility>
 

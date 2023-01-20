@@ -20,7 +20,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/make_shared.hpp>
 
 #include <iostream>
 #include <set>
