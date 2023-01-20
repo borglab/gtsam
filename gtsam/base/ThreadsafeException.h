@@ -46,9 +46,11 @@ private:
 protected:
   typedef std::basic_string<char, std::char_traits<char>,
       tbb::tbb_allocator<char> > String;
+  typedef tbb::tbb_allocator<char> Allocator;
 #else
 protected:
   typedef std::string String;
+  typedef std::allocator<char> Allocator;
 #endif
 
 protected:

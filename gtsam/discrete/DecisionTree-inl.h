@@ -22,7 +22,6 @@
 #include <gtsam/discrete/DecisionTree.h>
 
 #include <algorithm>
-#include <boost/format.hpp>
 
 #include <cmath>
 #include <fstream>
@@ -33,6 +32,7 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include <cassert>
 
 namespace gtsam {
 
@@ -192,8 +192,8 @@ namespace gtsam {
 
     ~Choice() override {
 #ifdef DT_DEBUG_MEMORY
-      std::std::cout << Node::nrNodes << " destructing (Choice) " << this->id()
-                     << std::std::endl;
+      std::cout << Node::nrNodes << " destructing (Choice) " << this->id()
+                     << std::endl;
 #endif
     }
 
@@ -282,9 +282,9 @@ namespace gtsam {
                const ValueFormatter& valueFormatter) const override {
       std::cout << s << " Choice(";
       std::cout << labelFormatter(label_) << ") " << std::endl;
-      for (size_t i = 0; i < branches_.size(); i++)
-        branches_[i]->print((boost::format("%s %d") % s % i).str(),
-                            labelFormatter, valueFormatter);
+      for (size_t i = 0; i < branches_.size(); i++) {
+        branches_[i]->print(s + " " + std::to_string(i), labelFormatter, valueFormatter);
+      }
     }
 
     /** output to graphviz (as a a graph) */
@@ -643,11 +643,8 @@ namespace gtsam {
       // Create a simple choice node with values as leaves.
       if (size != nrChoices) {
         std::cout << "Trying to create DD on " << begin->first << std::endl;
-        std::cout << boost::format(
-                         "DecisionTree::create: expected %d values but got %d "
-                         "instead") %
-                         nrChoices % size
-                  << std::endl;
+        std::cout << "DecisionTree::create: expected " << nrChoices
+                  << " values but got " << size << " instead" << std::endl;
         throw std::invalid_argument("DecisionTree::create invalid argument");
       }
       auto choice = std::make_shared<Choice>(begin->first, endY - beginY);

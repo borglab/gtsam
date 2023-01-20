@@ -19,8 +19,6 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/format.hpp>
-
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -606,7 +604,7 @@ Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smar
 
 /* ************************************************************************* */
 void Isotropic::print(const string& name) const {
-  cout << boost::format("isotropic dim=%1% sigma=%2%") % dim() % sigma_ << endl;
+  cout << "isotropic dim=" << dim() << " sigma=" << sigma_ << endl;
 }
 
 /* ************************************************************************* */

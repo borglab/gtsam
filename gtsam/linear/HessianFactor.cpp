@@ -29,8 +29,6 @@
 #include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/format.hpp>
-
 #include <sstream>
 #include <limits>
 #include "gtsam/base/Vector.h"

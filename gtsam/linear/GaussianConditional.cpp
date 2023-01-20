@@ -21,13 +21,10 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/hybrid/HybridValues.h>
 
-#include <boost/format.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
@@ -104,22 +101,20 @@ namespace gtsam {
   void GaussianConditional::print(const string &s, const KeyFormatter& formatter) const {
     cout << s << " p(";
     for (const_iterator it = beginFrontals(); it != endFrontals(); ++it) {
-      cout << (boost::format("%1%") % (formatter(*it))).str()
-           << (nrFrontals() > 1 ? " " : "");
+      cout << formatter(*it) << (nrFrontals() > 1 ? " " : "");
     }
 
     if (nrParents()) {
       cout << " |";
       for (const_iterator it = beginParents(); it != endParents(); ++it) {
-        cout << " " << (boost::format("%1%") % (formatter(*it))).str();
+        cout << " " << formatter(*it);
       }
     }
     cout << ")" << endl;
 
     cout << formatMatrixIndented("  R = ", R()) << endl;
     for (const_iterator it = beginParents() ; it != endParents() ; ++it) {
-      cout << formatMatrixIndented((boost::format("  S[%1%] = ")%(formatter(*it))).str(), getA(it))
-        << endl;
+      cout << formatMatrixIndented("  S[" + formatter(*it) + "] = ", getA(it)) << endl;
     }
     cout << formatMatrixIndented("  d = ", getb(), true) << "\n";
     if (nrParents() == 0) {

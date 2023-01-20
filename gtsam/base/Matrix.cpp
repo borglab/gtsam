@@ -23,9 +23,6 @@
 #include <Eigen/SVD>
 #include <Eigen/LU>
 
-#include <boost/tokenizer.hpp>
-#include <boost/format.hpp>
-
 #include <cstdarg>
 #include <cstring>
 #include <iomanip>
@@ -128,8 +125,10 @@ bool linear_dependent(const Matrix& A, const Matrix& B, double tol) {
 
 /* ************************************************************************* */
 Vector operator^(const Matrix& A, const Vector & v) {
-  if (A.rows()!=v.size()) throw std::invalid_argument(
-      boost::str(boost::format("Matrix operator^ : A.m(%d)!=v.size(%d)") % A.rows() % v.size()));
+  if (A.rows()!=v.size()) {
+    throw std::invalid_argument("Matrix operator^ : A.m(" + std::to_string(A.rows()) + ")!=v.size(" +
+                                std::to_string(v.size()) + ")");
+  }
 //  Vector vt = v.transpose();
 //  Vector vtA = vt * A;
 //  return vtA.transpose();
@@ -612,11 +611,12 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
     else
       matrixPrinted << matrix;
     const std::string matrixStr = matrixPrinted.str();
-    boost::tokenizer<boost::char_separator<char> > tok(matrixStr, boost::char_separator<char>("\n"));
 
+    // Split the matrix string into lines and indent them
+    std::string line;
+    std::istringstream iss(matrixStr);
     DenseIndex row = 0;
-    for(const std::string& line: tok)
-    {
+    while (std::getline(iss, line)) {
       assert(row < effectiveRows);
       if(row > 0)
         ss << padding;
@@ -625,6 +625,7 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
         ss << "\n";
       ++ row;
     }
+
   } else {
     ss << "Empty (" << matrix.rows() << "x" << matrix.cols() << ")";
   }

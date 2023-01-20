@@ -22,7 +22,6 @@
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/FactorGraph.h>
 
-#include <boost/format.hpp>
 #include <unordered_map>
 
 namespace gtsam {

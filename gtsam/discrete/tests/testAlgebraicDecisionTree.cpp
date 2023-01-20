@@ -25,8 +25,6 @@
 #include <gtsam/discrete/DecisionTree-inl.h>  // for convert only
 #define DISABLE_TIMING
 
-#include <boost/tokenizer.hpp>
-
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/discrete/Signature.h>
@@ -81,9 +79,9 @@ void resetCounts() {
 }
 void printCounts(const string& s) {
 #ifndef DISABLE_TIMING
-  cout << boost::format("%s: %3d muls, %3d adds, %g ms.") % s % muls % adds %
-              (1000 * elapsed)
-       << endl;
+cout << s << ": " << std::setw(3) << muls << " muls, " << 
+  std::setw(3) << adds << " adds, " << 1000 * elapsed << " ms."
+     << endl;
 #endif
   resetCounts();
 }
@@ -133,7 +131,9 @@ ADT create(const Signature& signature) {
   ADT p(signature.discreteKeys(), signature.cpt());
   static size_t count = 0;
   const DiscreteKey& key = signature.key();
-  string DOTfile = (boost::format("CPT-%03d-%d") % ++count % key.first).str();
+  std::stringstream ss;
+  ss << "CPT-" << std::setw(3) << std::setfill('0') << ++count << "-" << key.first;
+  string DOTfile = ss.str();
   dot(p, DOTfile);
   return p;
 }

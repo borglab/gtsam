@@ -19,9 +19,6 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/algorithm/string/replace.hpp>
-#include <boost/format.hpp>
-
 #include <cmath>
 #include <cstddef>
 #include <cassert>
@@ -78,7 +75,7 @@ size_t TimingOutline::time() const {
 /* ************************************************************************* */
 void TimingOutline::print(const std::string& outline) const {
   std::string formattedLabel = label_;
-  boost::replace_all(formattedLabel, "_", " ");
+  std::replace(formattedLabel.begin(), formattedLabel.end(), '_', ' ');
   std::cout << outline << "-" << formattedLabel << ": " << self() << " CPU ("
       << n_ << " times, " << wall() << " wall, " << secs() << " children, min: "
       << min() << " max: " << max() << ")\n";
@@ -248,16 +245,14 @@ void toc(size_t id, const char *label) {
   if (id != current->id_) {
     gTimingRoot->print();
     throw std::invalid_argument(
-        (boost::format(
-            "gtsam timing:  Mismatched tic/toc: gttoc(\"%s\") called when last tic was \"%s\".")
-            % label % current->label_).str());
+        "gtsam timing:  Mismatched tic/toc: gttoc(\"" + std::string(label) +
+        "\") called when last tic was \"" + current->label_ + "\".");
   }
   if (!current->parent_.lock()) {
     gTimingRoot->print();
     throw std::invalid_argument(
-        (boost::format(
-            "gtsam timing:  Mismatched tic/toc: extra gttoc(\"%s\"), already at the root")
-            % label).str());
+        "gtsam timing:  Mismatched tic/toc: extra gttoc(\"" + std::string(label) +
+        "\"), already at the root");
   }
   current->toc();
   gCurrentTimer = current->parent_;

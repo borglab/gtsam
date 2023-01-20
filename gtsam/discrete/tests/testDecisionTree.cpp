@@ -26,6 +26,8 @@
 #include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/discrete/Signature.h>
 
+#include <iomanip>
+
 using std::vector;
 using std::string;
 using std::map;
@@ -50,7 +52,9 @@ struct CrazyDecisionTree : public DecisionTree<string, Crazy> {
   void print(const std::string& s = "") const {
     auto keyFormatter = [](const std::string& s) { return s; };
     auto valueFormatter = [](const Crazy& v) {
-      return (boost::format("{%d,%4.2g}") % v.a % v.b).str();
+      std::stringstream ss;
+      ss << "{" << v.a << "," << std::setw(4) << std::setprecision(2) << v.b << "}";
+      return ss.str();
     };
     DecisionTree<string, Crazy>::print("", keyFormatter, valueFormatter);
   }
@@ -86,7 +90,7 @@ struct DT : public DecisionTree<string, int> {
   void print(const std::string& s = "") const {
     auto keyFormatter = [](const std::string& s) { return s; };
     auto valueFormatter = [](const int& v) {
-      return (boost::format("%d") % v).str();
+      return std::to_string(v);
     };
     std::cout << s;
     Base::print("", keyFormatter, valueFormatter);

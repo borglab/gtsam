@@ -28,11 +28,10 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/format.hpp>
-
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <limits>
 #include <string>
 
@@ -218,12 +217,12 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
 #else
     double iterationTime = lamda_iteration_timer.elapsed();
 #endif
-    if (currentState->iterations == 0)
+    if (currentState->iterations == 0) {
       cout << "iter      cost      cost_change    lambda  success iter_time" << endl;
-
-    cout << boost::format("% 4d % 8e   % 3.2e   % 3.2e  % 4d   % 3.2e") % currentState->iterations %
-                newError % costChange % currentState->lambda % systemSolvedSuccessfully %
-                iterationTime << endl;
+    }
+    cout << setw(4) << currentState->iterations << " " << setw(8) << newError << " " << setw(3) << setprecision(2)
+         << costChange << " " << setw(3) << setprecision(2) << currentState->lambda << " " << setw(4)
+         << systemSolvedSuccessfully << " " << setw(3) << setprecision(2) << iterationTime << endl;
   }
 
   if (step_is_successful) {

@@ -18,12 +18,10 @@
 
 #include <gtsam/inference/Symbol.h>
 
-#include <boost/bind/bind.hpp>
-#include <boost/format.hpp>
-
 #include <limits.h>
 #include <list>
 #include <iostream>
+#include <sstream>
 
 namespace gtsam {
 
@@ -40,8 +38,8 @@ Symbol::Symbol(Key key) :
 
 Key Symbol::key() const {
   if (j_ > indexMask) {
-    boost::format msg("Symbol index is too large, j=%d, indexMask=%d");
-    msg % j_ % indexMask;
+    std::stringstream msg;
+    msg << "Symbol index is too large, j=" << j_ << ", indexMask=" << indexMask;
     throw std::invalid_argument(msg.str());
   }
   Key key = (Key(c_) << indexBits) | j_;
@@ -57,7 +55,9 @@ bool Symbol::equals(const Symbol& expected, double tol) const {
 }
 
 Symbol::operator std::string() const {
-  return str(boost::format("%c%d") % c_ % j_);
+  char buf[10];
+  sprintf(buf, "%c%zu", c_, j_);
+  return std::string(buf);
 }
 
 static Symbol make(gtsam::Key key) { return Symbol(key);}
