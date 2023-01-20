@@ -29,9 +29,11 @@
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/inference/Key.h>
 #include <boost/iterator/transform_iterator.hpp>
-#include <boost/iterator/filter_iterator.hpp>
 #include <boost/ptr_container/serialize_ptr_map.hpp>
 #include <boost/shared_ptr.hpp>
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+#include <boost/iterator/filter_iterator.hpp>
+#endif
 
 #include <string>
 #include <utility>
@@ -126,14 +128,6 @@ namespace gtsam {
 
     typedef KeyValuePair value_type;
 
-    /** A filtered view of a Values, returned from Values::filter. */
-    template<class ValueType = Value>
-    class Filtered;
-
-    /** A filtered view of a const Values, returned from Values::filter. */
-    template<class ValueType = Value>
-    class ConstFiltered;
-
     /** Default constructor creates an empty Values class */
     Values() {}
 
@@ -152,14 +146,6 @@ namespace gtsam {
 
     /** Construct from a Values and an update vector: identical to other.retract(delta) */
     Values(const Values& other, const VectorValues& delta);
-
-    /** Constructor from a Filtered view copies out all values */
-    template<class ValueType>
-    Values(const Filtered<ValueType>& view);
-
-    /** Constructor from a Filtered or ConstFiltered view */
-    template<class ValueType>
-    Values(const ConstFiltered<ValueType>& view);
 
     /// @name Testable
     /// @{
@@ -322,83 +308,6 @@ namespace gtsam {
     /** Return a VectorValues of zero vectors for each variable in this Values */
     VectorValues zeroVectors() const;
 
-    /**
-     * Return a filtered view of this Values class, without copying any data.
-     * When iterating over the filtered view, only the key-value pairs
-     * with a key causing \c filterFcn to return \c true are visited.  Because
-     * the object Filtered<Value> returned from filter() is only a
-     * <em>view</em> the original Values object must not be deallocated or
-     * go out of scope as long as the view is needed.
-     * @param filterFcn The function that determines which key-value pairs are
-     * included in the filtered view, for which this function returns \c true
-     * on their keys.
-     * @return A filtered view of the original Values class, which references
-     * the original Values class.
-     */
-    Filtered<Value>
-    filter(const std::function<bool(Key)>& filterFcn);
-
-    /**
-     * Return a filtered view of this Values class, without copying any data.
-     * In this templated version, only key-value pairs whose value matches the
-     * template argument \c ValueType and whose key causes the function argument
-     * \c filterFcn to return true are visited when iterating over the filtered
-     * view.  Because the object Filtered<Value> returned from filter() is only
-     * a <em>view</em> the original Values object must not be deallocated or
-     * go out of scope as long as the view is needed.
-     * @tparam ValueType The type that the value in a key-value pair must match
-     * to be included in the filtered view.  Currently, base classes are not
-     * resolved so the type must match exactly, except if ValueType = Value, in
-     * which case no type filtering is done.
-     * @param filterFcn The function that determines which key-value pairs are
-     * included in the filtered view, for which this function returns \c true
-     * on their keys (default:  always return true so that filter() only
-     * filters by type, matching \c ValueType).
-     * @return A filtered view of the original Values class, which references
-     * the original Values class.
-     */
-    template<class ValueType>
-    Filtered<ValueType>
-    filter(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>);
-
-    /**
-     * Return a filtered view of this Values class, without copying any data.
-     * When iterating over the filtered view, only the key-value pairs
-     * with a key causing \c filterFcn to return \c true are visited.  Because
-     * the object Filtered<Value> returned from filter() is only a
-     * <em>view</em> the original Values object must not be deallocated or
-     * go out of scope as long as the view is needed.
-     * @param filterFcn The function that determines which key-value pairs are
-     * included in the filtered view, for which this function returns \c true
-     * on their keys.
-     * @return A filtered view of the original Values class, which references
-     * the original Values class.
-     */
-    ConstFiltered<Value>
-    filter(const std::function<bool(Key)>& filterFcn) const;
-
-    /**
-     * Return a filtered view of this Values class, without copying any data.
-     * In this templated version, only key-value pairs whose value matches the
-     * template argument \c ValueType and whose key causes the function argument
-     * \c filterFcn to return true are visited when iterating over the filtered
-     * view.  Because the object Filtered<Value> returned from filter() is only
-     * a <em>view</em> the original Values object must not be deallocated or
-     * go out of scope as long as the view is needed.
-     * @tparam ValueType The type that the value in a key-value pair must match
-     * to be included in the filtered view.  Currently, base classes are not
-     * resolved so the type must match exactly, except if ValueType = Value, in
-     * which case no type filtering is done.
-     * @param filterFcn The function that determines which key-value pairs are
-     * included in the filtered view, for which this function returns \c true
-     * on their keys.
-     * @return A filtered view of the original Values class, which references
-     * the original Values class.
-     */
-    template<class ValueType>
-    ConstFiltered<ValueType>
-    filter(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
-
     // Count values of given type \c ValueType
     template<class ValueType>
     size_t count() const {
@@ -409,6 +318,65 @@ namespace gtsam {
       }
       return i;
     }
+
+    /**
+     * Extract a subset of values of the given type \c ValueType.
+     * 
+     * In this templated version, only key-value pairs whose value matches the
+     * template argument \c ValueType and whose key causes the function argument
+     * \c filterFcn to return true are visited when iterating over the filtered
+     * view. This replaces the fancier but very boost-dependent \c filter methods
+     * that were previously available up to GTSAM 4.2.
+     * 
+     * @tparam ValueType The type that the value in a key-value pair must match
+     * to be included in the filtered view.  Currently, base classes are not
+     * resolved so the type must match exactly, except if ValueType = Value, in
+     * which case no type filtering is done.
+     * @param filterFcn The function that determines which key-value pairs are
+     * included in the filtered view, for which this function returns \c true
+     * on their keys (default:  always return true so that filter() only
+     * filters by type, matching \c ValueType).
+     * @return An Eigen aligned map on Key with the filtered values.
+     */
+    template <class ValueType>
+    std::map<Key, ValueType> // , std::less<Key>, Eigen::aligned_allocator<ValueType>
+    extract(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+    /** A filtered view of a Values, returned from Values::filter. */
+    template <class ValueType = Value>
+    class Filtered;
+
+    /** A filtered view of a const Values, returned from Values::filter. */
+    template <class ValueType = Value>
+    class ConstFiltered;
+
+    /** Constructor from a Filtered view copies out all values */
+    template <class ValueType>
+    Values(const Filtered<ValueType>& view);
+
+    /** Constructor from a Filtered or ConstFiltered view */
+    template <class ValueType>
+    Values(const ConstFiltered<ValueType>& view);
+
+    /// A filtered view of the original Values class.
+    Filtered<Value> GTSAM_DEPRECATED
+    filter(const std::function<bool(Key)>& filterFcn);
+
+    /// A filtered view of the original Values class, also filter on type.
+    template <class ValueType>
+    Filtered<ValueType> GTSAM_DEPRECATED
+    filter(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>);
+
+    /// A filtered view of the original Values class, const version.
+    ConstFiltered<Value> GTSAM_DEPRECATED
+    filter(const std::function<bool(Key)>& filterFcn) const;
+
+    /// A filtered view of the original Values class, also on type, const.
+    template <class ValueType>
+    ConstFiltered<ValueType> GTSAM_DEPRECATED filter(
+        const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
+#endif
 
   private:
     // Filters based on ValueType (if not Value) and also based on the user-
