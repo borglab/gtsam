@@ -17,17 +17,27 @@
  * @brief unit tests for FunctorizedFactor class
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/FunctorizedFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/factorTesting.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
 
+// Key for FunctorizedFactor
 Key key = Symbol('X', 0);
+
+// Keys for FunctorizedFactor2
+Key keyA = Symbol('A', 0);
+Key keyx = Symbol('x', 0);
+
 auto model = noiseModel::Isotropic::Sigma(9, 1);
+auto model2 = noiseModel::Isotropic::Sigma(3, 1);
 
 /// Functor that takes a matrix and multiplies every element by m
 class MultiplyFunctor {
@@ -40,6 +50,21 @@ class MultiplyFunctor {
                     OptionalJacobian<-1, -1> H = boost::none) const {
     if (H) *H = m_ * Matrix::Identity(X.rows() * X.cols(), X.rows() * X.cols());
     return m_ * X;
+  }
+};
+
+/// Functor that performs Ax where A is a matrix and x is a vector.
+class ProjectionFunctor {
+ public:
+  Vector operator()(const Matrix &A, const Vector &x,
+                    OptionalJacobian<-1, -1> H1 = boost::none,
+                    OptionalJacobian<-1, -1> H2 = boost::none) const {
+    if (H1) {
+      H1->resize(x.size(), A.size());
+      *H1 << I_3x3, I_3x3, I_3x3;
+    }
+    if (H2) *H2 = A;
+    return A * x;
   }
 };
 
@@ -87,7 +112,7 @@ TEST(FunctorizedFactor, Equality) {
   EXPECT(factor1.equals(factor2));
 }
 
-/* *************************************************************************** */
+/* ************************************************************************* */
 // Test Jacobians of FunctorizedFactor.
 TEST(FunctorizedFactor, Jacobians) {
   Matrix X = Matrix::Identity(3, 3);
@@ -115,16 +140,6 @@ TEST(FunctorizedFactor, Print) {
   auto factor =
       MakeFunctorizedFactor<Matrix>(key, X, model, MultiplyFunctor(multiplier));
 
-  // redirect output to buffer so we can compare
-  stringstream buffer;
-  streambuf *old = cout.rdbuf(buffer.rdbuf());
-
-  factor.print();
-
-  // get output string and reset stdout
-  string actual = buffer.str();
-  cout.rdbuf(old);
-
   string expected =
       "  keys = { X0 }\n"
       "  noise model: unit (9) \n"
@@ -135,7 +150,7 @@ TEST(FunctorizedFactor, Print) {
       "]\n"
       "  noise model sigmas: 1 1 1 1 1 1 1 1 1\n";
 
-  CHECK_EQUAL(expected, actual);
+  EXPECT(assert_print_equal(expected, factor));
 }
 
 /* ************************************************************************* */
@@ -175,6 +190,84 @@ TEST(FunctorizedFactor, Lambda) {
   Vector error = factor.evaluateError(X);
 
   EXPECT(assert_equal(Vector::Zero(9), error, 1e-9));
+}
+
+/* ************************************************************************* */
+// Test identity operation for FunctorizedFactor2.
+TEST(FunctorizedFactor, Identity2) {
+  // x = Ax since A is I_3x3
+  Matrix A = Matrix::Identity(3, 3);
+  Vector x = Vector::Ones(3);
+
+  auto functor = ProjectionFunctor();
+  auto factor =
+      MakeFunctorizedFactor2<Matrix, Vector>(keyA, keyx, x, model2, functor);
+
+  Vector error = factor.evaluateError(A, x);
+
+  EXPECT(assert_equal(Vector::Zero(3), error, 1e-9));
+}
+
+/* ************************************************************************* */
+// Test Jacobians of FunctorizedFactor2.
+TEST(FunctorizedFactor, Jacobians2) {
+  Matrix A = Matrix::Identity(3, 3);
+  Vector x = Vector::Ones(3);
+  Matrix actualH1, actualH2;
+
+  auto factor = MakeFunctorizedFactor2<Matrix, Vector>(keyA, keyx, x, model2,
+                                                       ProjectionFunctor());
+
+  Values values;
+  values.insert<Matrix>(keyA, A);
+  values.insert<Vector>(keyx, x);
+
+  // Check Jacobians
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+// Test FunctorizedFactor2 using a std::function type.
+TEST(FunctorizedFactor, Functional2) {
+  Matrix A = Matrix::Identity(3, 3);
+  Vector3 x(1, 2, 3);
+  Vector measurement = A * x;
+
+  std::function<Matrix(Matrix, Matrix, boost::optional<Matrix &>,
+                       boost::optional<Matrix &>)>
+      functional = ProjectionFunctor();
+  auto factor = MakeFunctorizedFactor2<Matrix, Vector>(keyA, keyx, measurement,
+                                                       model2, functional);
+
+  Vector error = factor.evaluateError(A, x);
+
+  EXPECT(assert_equal(Vector::Zero(3), error, 1e-9));
+}
+
+/* ************************************************************************* */
+// Test FunctorizedFactor2 with a lambda function.
+TEST(FunctorizedFactor, Lambda2) {
+  Matrix A = Matrix::Identity(3, 3);
+  Vector3 x = Vector3(1, 2, 3);
+  Matrix measurement = A * x;
+
+  auto lambda = [](const Matrix &A, const Vector &x,
+                   OptionalJacobian<-1, -1> H1 = boost::none,
+                   OptionalJacobian<-1, -1> H2 = boost::none) {
+    if (H1) {
+      H1->resize(x.size(), A.size());
+      *H1 << I_3x3, I_3x3, I_3x3;
+    }
+    if (H2) *H2 = A;
+    return A * x;
+  };
+  // FunctorizedFactor<Matrix> factor(key, measurement, model, lambda);
+  auto factor = MakeFunctorizedFactor2<Matrix, Vector>(keyA, keyx, measurement,
+                                                       model2, lambda);
+
+  Vector error = factor.evaluateError(A, x);
+
+  EXPECT(assert_equal(Vector::Zero(3), error, 1e-9));
 }
 
 /* ************************************************************************* */

@@ -48,7 +48,7 @@ public:
   /// @name Group
   /// @{
   typedef multiplicative_group_tag group_flavor;
-  static ProductLieGroup identity() {return ProductLieGroup();}
+  static ProductLieGroup Identity() {return ProductLieGroup();}
 
   ProductLieGroup operator*(const ProductLieGroup& other) const {
     return ProductLieGroup(traits<G>::Compose(this->first,other.first),
@@ -160,6 +160,9 @@ public:
       Hp->template bottomRightCorner<dimension2,dimension2>() = D_h_second;
     }
     return v;
+  }
+  static TangentVector LocalCoordinates(const ProductLieGroup& p, ChartJacobian Hp = boost::none) {
+    return Logmap(p, Hp);
   }
   ProductLieGroup expmap(const TangentVector& v) const {
     return compose(ProductLieGroup::Expmap(v));

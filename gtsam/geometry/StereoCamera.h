@@ -42,7 +42,7 @@ private:
 
 /**
  * A stereo camera class, parameterize by left camera pose and stereo calibration
- * @addtogroup geometry
+ * @ingroup geometry
  */
 class GTSAM_EXPORT StereoCamera {
 
@@ -169,6 +169,11 @@ public:
   StereoPoint2 project(const Point3& point, OptionalJacobian<3, 6> H1,
       OptionalJacobian<3, 3> H2 = boost::none, OptionalJacobian<3, 0> H3 =
           boost::none) const;
+
+  /// for Nonlinear Triangulation
+  Vector defaultErrorWhenTriangulatingBehindCamera() const {
+    return Eigen::Matrix<double,traits<Measurement>::dimension,1>::Constant(2.0 * K_->fx());;
+  }
 
   /// @}
 

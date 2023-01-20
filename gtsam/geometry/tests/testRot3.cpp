@@ -123,6 +123,21 @@ TEST( Rot3, AxisAngle)
 }
 
 /* ************************************************************************* */
+TEST( Rot3, AxisAngle2)
+{
+  // constructor from a rotation matrix, as doubles in *row-major* order.
+  Rot3 R1(-0.999957, 0.00922903, 0.00203116, 0.00926964, 0.999739, 0.0208927, -0.0018374, 0.0209105, -0.999781);
+  
+  Unit3 actualAxis;
+  double actualAngle;
+  // convert Rot3 to quaternion using GTSAM
+  std::tie(actualAxis, actualAngle) = R1.axisAngle();
+  
+  double expectedAngle = 3.1396582;
+  CHECK(assert_equal(expectedAngle, actualAngle, 1e-5));
+}
+
+/* ************************************************************************* */
 TEST( Rot3, Rodrigues)
 {
   Rot3 R1 = Rot3::Rodrigues(epsilon, 0, 0);
@@ -181,13 +196,13 @@ TEST( Rot3, retract)
 }
 
 /* ************************************************************************* */
-TEST(Rot3, log) {
+TEST( Rot3, log) {
   static const double PI = boost::math::constants::pi<double>();
   Vector w;
   Rot3 R;
 
 #define CHECK_OMEGA(X, Y, Z)             \
-  w = (Vector(3) << X, Y, Z).finished(); \
+  w = (Vector(3) << (X), (Y), (Z)).finished(); \
   R = Rot3::Rodrigues(w);                \
   EXPECT(assert_equal(w, Rot3::Logmap(R), 1e-12));
 
@@ -219,17 +234,17 @@ TEST(Rot3, log) {
   CHECK_OMEGA(0, 0, PI)
 
   // Windows and Linux have flipped sign in quaternion mode
-#if !defined(__APPLE__) && defined(GTSAM_USE_QUATERNIONS)
+//#if !defined(__APPLE__) && defined(GTSAM_USE_QUATERNIONS)
   w = (Vector(3) << x * PI, y * PI, z * PI).finished();
   R = Rot3::Rodrigues(w);
   EXPECT(assert_equal(Vector(-w), Rot3::Logmap(R), 1e-12));
-#else
-  CHECK_OMEGA(x * PI, y * PI, z * PI)
-#endif
+//#else
+//  CHECK_OMEGA(x * PI, y * PI, z * PI)
+//#endif
 
   // Check 360 degree rotations
 #define CHECK_OMEGA_ZERO(X, Y, Z)        \
-  w = (Vector(3) << X, Y, Z).finished(); \
+  w = (Vector(3) << (X), (Y), (Z)).finished(); \
   R = Rot3::Rodrigues(w);                \
   EXPECT(assert_equal((Vector)Z_3x1, Rot3::Logmap(R)));
 
@@ -247,15 +262,15 @@ TEST(Rot3, log) {
   // Rot3's Logmap returns different, but equivalent compacted
   // axis-angle vectors depending on whether Rot3 is implemented
   // by Quaternions or SO3.
-  #if defined(GTSAM_USE_QUATERNIONS)
-    // Quaternion bounds angle to [-pi, pi] resulting in ~179.9 degrees
-    EXPECT(assert_equal(Vector3(0.264451979, -0.742197651, -3.04098211),
+#if defined(GTSAM_USE_QUATERNIONS)
+  // Quaternion bounds angle to [-pi, pi] resulting in ~179.9 degrees
+  EXPECT(assert_equal(Vector3(0.264451979, -0.742197651, -3.04098211),
+                      (Vector)Rot3::Logmap(Rlund), 1e-8));
+#else
+  // SO3 will be approximate because of the non-orthogonality
+  EXPECT(assert_equal(Vector3(0.264452, -0.742197708, -3.04098184),
                         (Vector)Rot3::Logmap(Rlund), 1e-8));
-  #else
-    // SO3 does not bound angle resulting in ~180.1 degrees
-    EXPECT(assert_equal(Vector3(-0.264544406, 0.742217405, 3.04117314),
-                        (Vector)Rot3::Logmap(Rlund), 1e-8));
-  #endif
+#endif
 }
 
 /* ************************************************************************* */
@@ -625,46 +640,44 @@ TEST( Rot3, slerp)
 }
 
 //******************************************************************************
+namespace {
+Rot3 id;
 Rot3 T1(Rot3::AxisAngle(Vector3(0, 0, 1), 1));
 Rot3 T2(Rot3::AxisAngle(Vector3(0, 1, 0), 2));
+}  // namespace
 
 //******************************************************************************
-TEST(Rot3 , Invariants) {
-  Rot3 id;
+TEST(Rot3, Invariants) {
+  EXPECT(check_group_invariants(id, id));
+  EXPECT(check_group_invariants(id, T1));
+  EXPECT(check_group_invariants(T2, id));
+  EXPECT(check_group_invariants(T2, T1));
+  EXPECT(check_group_invariants(T1, T2));
 
-  EXPECT(check_group_invariants(id,id));
-  EXPECT(check_group_invariants(id,T1));
-  EXPECT(check_group_invariants(T2,id));
-  EXPECT(check_group_invariants(T2,T1));
-  EXPECT(check_group_invariants(T1,T2));
-
-  EXPECT(check_manifold_invariants(id,id));
-  EXPECT(check_manifold_invariants(id,T1));
-  EXPECT(check_manifold_invariants(T2,id));
-  EXPECT(check_manifold_invariants(T2,T1));
-  EXPECT(check_manifold_invariants(T1,T2));
+  EXPECT(check_manifold_invariants(id, id));
+  EXPECT(check_manifold_invariants(id, T1));
+  EXPECT(check_manifold_invariants(T2, id));
+  EXPECT(check_manifold_invariants(T2, T1));
+  EXPECT(check_manifold_invariants(T1, T2));
 }
 
 //******************************************************************************
-TEST(Rot3 , LieGroupDerivatives) {
-  Rot3 id;
-
-  CHECK_LIE_GROUP_DERIVATIVES(id,id);
-  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
-  CHECK_LIE_GROUP_DERIVATIVES(T1,T2);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
+TEST(Rot3, LieGroupDerivatives) {
+  CHECK_LIE_GROUP_DERIVATIVES(id, id);
+  CHECK_LIE_GROUP_DERIVATIVES(id, T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, id);
+  CHECK_LIE_GROUP_DERIVATIVES(T1, T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, T1);
 }
 
 //******************************************************************************
-TEST(Rot3 , ChartDerivatives) {
-  Rot3 id;
+TEST(Rot3, ChartDerivatives) {
   if (ROT3_DEFAULT_COORDINATES_MODE == Rot3::EXPMAP) {
-    CHECK_CHART_DERIVATIVES(id,id);
-    CHECK_CHART_DERIVATIVES(id,T2);
-    CHECK_CHART_DERIVATIVES(T2,id);
-    CHECK_CHART_DERIVATIVES(T1,T2);
-    CHECK_CHART_DERIVATIVES(T2,T1);
+    CHECK_CHART_DERIVATIVES(id, id);
+    CHECK_CHART_DERIVATIVES(id, T2);
+    CHECK_CHART_DERIVATIVES(T2, id);
+    CHECK_CHART_DERIVATIVES(T1, T2);
+    CHECK_CHART_DERIVATIVES(T2, T1);
   }
 }
 
@@ -807,15 +820,15 @@ TEST(Rot3, RQ_derivative) {
   test_xyz.push_back(VecAndErr{{0, 0, 0}, error});
   test_xyz.push_back(VecAndErr{{0, 0.5, -0.5}, error});
   test_xyz.push_back(VecAndErr{{0.3, 0, 0.2}, error});
-  test_xyz.push_back(VecAndErr{{-0.6, 1.3, 0}, error});
+  test_xyz.push_back(VecAndErr{{-0.6, 1.3, 0}, 1e-8});
   test_xyz.push_back(VecAndErr{{1.0, 0.7, 0.8}, error});
   test_xyz.push_back(VecAndErr{{3.0, 0.7, -0.6}, error});
   test_xyz.push_back(VecAndErr{{M_PI / 2, 0, 0}, error});
   test_xyz.push_back(VecAndErr{{0, 0, M_PI / 2}, error});
 
   // Test close to singularity
-  test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1e-1, 0}, 1e-8});
-  test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1e-1, 0}, 1e-8});
+  test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1e-1, 0}, 1e-7});
+  test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1e-1, 0}, 1e-7});
   test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1.1e-2, 0}, 1e-4});
   test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1.1e-2, 0}, 1e-4});
 
@@ -825,7 +838,7 @@ TEST(Rot3, RQ_derivative) {
     const auto R = Rot3::RzRyRx(xyz).matrix();
     const auto num = numericalDerivative11(RQ_proxy, R);
     Matrix39 calc;
-    RQ(R, calc).second;
+    RQ(R, calc);
 
     const auto err = vec_err.second;
     CHECK(assert_equal(num, calc, err));

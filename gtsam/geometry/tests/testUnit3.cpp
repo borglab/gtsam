@@ -31,13 +31,10 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/bind.hpp>
-#include <boost/assign/std/vector.hpp>
-
 #include <cmath>
 #include <random>
 
-using namespace boost::assign;
+using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;
 using gtsam::symbol_shorthand::U;
@@ -51,9 +48,8 @@ Point3 point3_(const Unit3& p) {
 }
 
 TEST(Unit3, point3) {
-  vector<Point3> ps;
-  ps += Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1), Point3(1, 1, 0)
-      / sqrt(2.0);
+  const vector<Point3> ps{Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1),
+                          Point3(1, 1, 0) / sqrt(2.0)};
   Matrix actualH, expectedH;
   for(Point3 p: ps) {
     Unit3 s(p);
@@ -126,8 +122,9 @@ TEST(Unit3, dot) {
 
   // Use numerical derivatives to calculate the expected Jacobians
   Matrix H1, H2;
-  boost::function<double(const Unit3&, const Unit3&)> f = boost::bind(&Unit3::dot, _1, _2,  //
-                                                                      boost::none, boost::none);
+  std::function<double(const Unit3&, const Unit3&)> f =
+      std::bind(&Unit3::dot, std::placeholders::_1, std::placeholders::_2,  //
+                boost::none, boost::none);
   {
     p.dot(q, H1, H2);
     EXPECT(assert_equal(numericalDerivative21<double,Unit3>(f, p, q), H1, 1e-5));
@@ -157,13 +154,13 @@ TEST(Unit3, error) {
   // Use numerical derivatives to calculate the expected Jacobian
   {
     expected = numericalDerivative11<Vector2,Unit3>(
-        boost::bind(&Unit3::error, &p, _1, boost::none), q);
+        std::bind(&Unit3::error, &p, std::placeholders::_1, boost::none), q);
     p.error(q, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-5));
   }
   {
     expected = numericalDerivative11<Vector2,Unit3>(
-        boost::bind(&Unit3::error, &p, _1, boost::none), r);
+        std::bind(&Unit3::error, &p, std::placeholders::_1, boost::none), r);
     p.error(r, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-5));
   }
@@ -184,25 +181,33 @@ TEST(Unit3, error2) {
   // Use numerical derivatives to calculate the expected Jacobian
   {
     expected = numericalDerivative21<Vector2, Unit3, Unit3>(
-        boost::bind(&Unit3::errorVector, _1, _2, boost::none, boost::none), p, q);
+        std::bind(&Unit3::errorVector, std::placeholders::_1,
+                  std::placeholders::_2, boost::none, boost::none),
+        p, q);
     p.errorVector(q, actual, boost::none);
     EXPECT(assert_equal(expected, actual, 1e-5));
   }
   {
     expected = numericalDerivative21<Vector2, Unit3, Unit3>(
-        boost::bind(&Unit3::errorVector, _1, _2, boost::none, boost::none), p, r);
+        std::bind(&Unit3::errorVector, std::placeholders::_1,
+                  std::placeholders::_2, boost::none, boost::none),
+        p, r);
     p.errorVector(r, actual, boost::none);
     EXPECT(assert_equal(expected, actual, 1e-5));
   }
   {
     expected = numericalDerivative22<Vector2, Unit3, Unit3>(
-        boost::bind(&Unit3::errorVector, _1, _2, boost::none, boost::none), p, q);
+        std::bind(&Unit3::errorVector, std::placeholders::_1,
+                  std::placeholders::_2, boost::none, boost::none),
+        p, q);
     p.errorVector(q, boost::none, actual);
     EXPECT(assert_equal(expected, actual, 1e-5));
   }
   {
     expected = numericalDerivative22<Vector2, Unit3, Unit3>(
-        boost::bind(&Unit3::errorVector, _1, _2, boost::none, boost::none), p, r);
+        std::bind(&Unit3::errorVector, std::placeholders::_1,
+                  std::placeholders::_2, boost::none, boost::none),
+        p, r);
     p.errorVector(r, boost::none, actual);
     EXPECT(assert_equal(expected, actual, 1e-5));
   }
@@ -220,13 +225,13 @@ TEST(Unit3, distance) {
   // Use numerical derivatives to calculate the expected Jacobian
   {
     expected = numericalGradient<Unit3>(
-        boost::bind(&Unit3::distance, &p, _1, boost::none), q);
+        std::bind(&Unit3::distance, &p, std::placeholders::_1, boost::none), q);
     p.distance(q, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-5));
   }
   {
     expected = numericalGradient<Unit3>(
-        boost::bind(&Unit3::distance, &p, _1, boost::none), r);
+        std::bind(&Unit3::distance, &p, std::placeholders::_1, boost::none), r);
     p.distance(r, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-5));
   }
@@ -318,7 +323,7 @@ TEST(Unit3, basis) {
 
   Matrix62 actualH;
   Matrix62 expectedH = numericalDerivative11<Vector6, Unit3>(
-      boost::bind(BasisTest, _1, boost::none), p);
+      std::bind(BasisTest, std::placeholders::_1, boost::none), p);
 
   // without H, first time
   EXPECT(assert_equal(expected, p.basis(), 1e-6));
@@ -347,7 +352,7 @@ TEST(Unit3, basis_derivatives) {
     p.basis(actualH);
 
     Matrix62 expectedH = numericalDerivative11<Vector6, Unit3>(
-                           boost::bind(BasisTest, _1, boost::none), p);
+        std::bind(BasisTest, std::placeholders::_1, boost::none), p);
     EXPECT(assert_equal(expectedH, actualH, 1e-5));
   }
 }
@@ -375,8 +380,8 @@ TEST(Unit3, retract) {
 TEST (Unit3, jacobian_retract) {
   Matrix22 H;
   Unit3 p;
-  boost::function<Unit3(const Vector2&)> f =
-      boost::bind(&Unit3::retract, p, _1, boost::none);
+  std::function<Unit3(const Vector2&)> f =
+      std::bind(&Unit3::retract, p, std::placeholders::_1, boost::none);
   {
       Vector2 v (-0.2, 0.1);
       p.retract(v, H);
@@ -439,7 +444,7 @@ TEST (Unit3, FromPoint3) {
   Unit3 expected(point);
   EXPECT(assert_equal(expected, Unit3::FromPoint3(point, actualH), 1e-5));
   Matrix expectedH = numericalDerivative11<Unit3, Point3>(
-      boost::bind(Unit3::FromPoint3, _1, boost::none), point);
+      std::bind(Unit3::FromPoint3, std::placeholders::_1, boost::none), point);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
@@ -500,6 +505,7 @@ TEST(actualH, Serialization) {
   EXPECT(serializationTestHelpers::equalsXML(p));
   EXPECT(serializationTestHelpers::equalsBinary(p));
 }
+
 
 /* ************************************************************************* */
 int main() {

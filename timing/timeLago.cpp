@@ -41,11 +41,11 @@ int main(int argc, char *argv[]) {
 
   // add noise to create initial estimate
   Values initial;
-  Sampler sampler(42u);
   Values::ConstFiltered<Pose2> poses = solution->filter<Pose2>();
   SharedDiagonal noise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.5, 0.5, 15.0 * M_PI / 180.0).finished());
+  Sampler sampler(noise);
   for(const Values::ConstFiltered<Pose2>::KeyValuePair& it: poses)
-    initial.insert(it.key, it.value.retract(sampler.sampleNewModel(noise)));
+    initial.insert(it.key, it.value.retract(sampler.sample()));
 
   // Add prior on the pose having index (key) = 0
   noiseModel::Diagonal::shared_ptr priorModel = //

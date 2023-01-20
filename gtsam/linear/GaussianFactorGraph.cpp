@@ -19,7 +19,6 @@
  */
 
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
@@ -66,6 +65,22 @@ namespace gtsam {
       }
     }
     return spec;
+  }
+
+  /* ************************************************************************* */
+  double GaussianFactorGraph::error(const VectorValues& x) const {
+    double total_error = 0.;
+    for(const sharedFactor& factor: *this){
+      if(factor)
+        total_error += factor->error(x);
+    }
+    return total_error;
+  }
+
+  /* ************************************************************************* */
+  double GaussianFactorGraph::probPrime(const VectorValues& c) const {
+    // NOTE the 0.5 constant is handled by the factor error.
+    return exp(-error(c));
   }
 
   /* ************************************************************************* */
@@ -198,20 +213,20 @@ namespace gtsam {
         if (hessian)
           jacobianFactor.reset(new JacobianFactor(*hessian));
         else
-          throw invalid_argument(
-              "GaussianFactorGraph contains a factor that is neither a JacobianFactor nor a HessianFactor.");
+          throw std::invalid_argument(
+              "GaussianFactorGraph contains a factor that is neither a "
+              "JacobianFactor nor a HessianFactor.");
       }
 
       // Whiten the factor and add entries for it
       // iterate over all variables in the factor
       const JacobianFactor whitened(jacobianFactor->whiten());
-      for (JacobianFactor::const_iterator key = whitened.begin();
-          key < whitened.end(); ++key) {
+      for (auto key = whitened.begin(); key < whitened.end(); ++key) {
         JacobianFactor::constABlock whitenedA = whitened.getA(key);
         // find first column index for this key
         size_t column_start = columnIndices[*key];
-        for (size_t i = 0; i < (size_t) whitenedA.rows(); i++)
-          for (size_t j = 0; j < (size_t) whitenedA.cols(); j++) {
+        for (size_t i = 0; i < (size_t)whitenedA.rows(); i++)
+          for (size_t j = 0; j < (size_t)whitenedA.cols(); j++) {
             double s = whitenedA(i, j);
             if (std::abs(s) > 1e-12)
               entries.emplace_back(row + i, column_start + j, s);
@@ -227,7 +242,7 @@ namespace gtsam {
       }
 
       // Increment row index
-      row += jacobianFactor->rows();
+      nrows += jacobianFactor->rows();
     }
 
     return std::make_tuple(row, currentColIndex+1, entries);
@@ -325,10 +340,11 @@ namespace gtsam {
     return blocks;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues GaussianFactorGraph::optimize(const Eliminate& function) const {
     gttic(GaussianFactorGraph_optimize);
-    return BaseEliminateable::eliminateMultifrontal(function)->optimize();
+    return BaseEliminateable::eliminateMultifrontal(Ordering::COLAMD, function)
+        ->optimize();
   }
 
   /* ************************************************************************* */
@@ -414,7 +430,7 @@ namespace gtsam {
 
     gttic(Compute_minimizing_step_size);
     // Compute minimizing step size
-    double step = -gradientSqNorm / dot(Rg, Rg);
+    double step = -gradientSqNorm / gtsam::dot(Rg, Rg);
     gttoc(Compute_minimizing_step_size);
 
     gttic(Compute_point);
@@ -537,4 +553,34 @@ namespace gtsam {
     }
     return e;
   }
+
+  /* ************************************************************************* */
+  void GaussianFactorGraph::printErrors(
+      const VectorValues& values, const std::string& str,
+      const KeyFormatter& keyFormatter,
+      const std::function<bool(const Factor* /*factor*/,
+                               double /*whitenedError*/, size_t /*index*/)>&
+          printCondition) const {
+    cout << str << "size: " << size() << endl << endl;
+    for (size_t i = 0; i < (*this).size(); i++) {
+      const sharedFactor& factor = (*this)[i];
+      const double errorValue =
+          (factor != nullptr ? (*this)[i]->error(values) : .0);
+      if (!printCondition(factor.get(), errorValue, i))
+        continue;  // User-provided filter did not pass
+
+      stringstream ss;
+      ss << "Factor " << i << ": ";
+      if (factor == nullptr) {
+        cout << "nullptr"
+             << "\n";
+      } else {
+        factor->print(ss.str(), keyFormatter);
+        cout << "error = " << errorValue << "\n";
+      }
+      cout << endl;  // only one "endl" at end might be faster, \n for each
+                     // factor
+    }
+  }
+
 } // namespace gtsam

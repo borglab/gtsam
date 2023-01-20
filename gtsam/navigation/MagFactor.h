@@ -16,6 +16,8 @@
  * @date   January 29, 2014
  */
 
+#pragma once
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
@@ -28,7 +30,7 @@ namespace gtsam {
  * and assumes scale, direction, and the bias are given.
  * Rotation is around negative Z axis, i.e. positive is yaw to right!
  */
-class MagFactor: public NoiseModelFactor1<Rot2> {
+class MagFactor: public NoiseModelFactorN<Rot2> {
 
   const Point3 measured_; ///< The measured magnetometer values
   const Point3 nM_; ///< Local magnetic field (mag output units)
@@ -48,7 +50,7 @@ public:
   MagFactor(Key key, const Point3& measured, double scale,
       const Unit3& direction, const Point3& bias,
       const SharedNoiseModel& model) :
-      NoiseModelFactor1<Rot2>(model, key), //
+      NoiseModelFactorN<Rot2>(model, key), //
       measured_(measured), nM_(scale * direction), bias_(bias) {
   }
 
@@ -85,7 +87,7 @@ public:
  * This version uses model measured bM = scale * bRn * direction + bias
  * and assumes scale, direction, and the bias are given
  */
-class MagFactor1: public NoiseModelFactor1<Rot3> {
+class MagFactor1: public NoiseModelFactorN<Rot3> {
 
   const Point3 measured_; ///< The measured magnetometer values
   const Point3 nM_; ///< Local magnetic field (mag output units)
@@ -97,7 +99,7 @@ public:
   MagFactor1(Key key, const Point3& measured, double scale,
       const Unit3& direction, const Point3& bias,
       const SharedNoiseModel& model) :
-      NoiseModelFactor1<Rot3>(model, key), //
+      NoiseModelFactorN<Rot3>(model, key), //
       measured_(measured), nM_(scale * direction), bias_(bias) {
   }
 
@@ -123,7 +125,7 @@ public:
  * This version uses model measured bM = bRn * nM + bias
  * and optimizes for both nM and the bias, where nM is in units defined by magnetometer
  */
-class MagFactor2: public NoiseModelFactor2<Point3, Point3> {
+class MagFactor2: public NoiseModelFactorN<Point3, Point3> {
 
   const Point3 measured_; ///< The measured magnetometer values
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
@@ -133,7 +135,7 @@ public:
   /** Constructor */
   MagFactor2(Key key1, Key key2, const Point3& measured, const Rot3& nRb,
       const SharedNoiseModel& model) :
-      NoiseModelFactor2<Point3, Point3>(model, key1, key2), //
+      NoiseModelFactorN<Point3, Point3>(model, key1, key2), //
       measured_(measured), bRn_(nRb.inverse()) {
   }
 
@@ -164,7 +166,7 @@ public:
  * This version uses model measured bM = scale * bRn * direction + bias
  * and optimizes for both scale, direction, and the bias.
  */
-class MagFactor3: public NoiseModelFactor3<double, Unit3, Point3> {
+class MagFactor3: public NoiseModelFactorN<double, Unit3, Point3> {
 
   const Point3 measured_; ///< The measured magnetometer values
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
@@ -174,7 +176,7 @@ public:
   /** Constructor */
   MagFactor3(Key key1, Key key2, Key key3, const Point3& measured,
       const Rot3& nRb, const SharedNoiseModel& model) :
-      NoiseModelFactor3<double, Unit3, Point3>(model, key1, key2, key3), //
+      NoiseModelFactorN<double, Unit3, Point3>(model, key1, key2, key3), //
       measured_(measured), bRn_(nRb.inverse()) {
   }
 

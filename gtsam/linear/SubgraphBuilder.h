@@ -21,6 +21,7 @@
 #include <gtsam/base/types.h>
 #include <gtsam/dllexport.h>
 
+#include <boost/serialization/version.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -171,12 +172,13 @@ class GTSAM_EXPORT SubgraphBuilder {
 };
 
 /** Select the factors in a factor graph according to the subgraph. */
-boost::shared_ptr<GaussianFactorGraph> buildFactorSubgraph(
-    const GaussianFactorGraph &gfg, const Subgraph &subgraph, const bool clone);
+GaussianFactorGraph buildFactorSubgraph(const GaussianFactorGraph &gfg,
+                                        const Subgraph &subgraph,
+                                        const bool clone);
 
 /** Split the graph into a subgraph and the remaining edges. 
  * Note that the remaining factorgraph has null factors. */
-std::pair<boost::shared_ptr<GaussianFactorGraph>, boost::shared_ptr<GaussianFactorGraph> > 
-splitFactorGraph(const GaussianFactorGraph &factorGraph, const Subgraph &subgraph);
+std::pair<GaussianFactorGraph, GaussianFactorGraph> splitFactorGraph(
+    const GaussianFactorGraph &factorGraph, const Subgraph &subgraph);
 
 }  // namespace gtsam

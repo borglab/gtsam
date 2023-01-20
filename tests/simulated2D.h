@@ -124,9 +124,9 @@ namespace simulated2D {
    *  Unary factor encoding a soft prior on a vector
    */
   template<class VALUE = Point2>
-  class GenericPrior: public NoiseModelFactor1<VALUE> {
+  class GenericPrior: public NoiseModelFactorN<VALUE> {
   public:
-    typedef NoiseModelFactor1<VALUE> Base;  ///< base class
+    typedef NoiseModelFactorN<VALUE> Base;  ///< base class
     typedef GenericPrior<VALUE> This;
     typedef boost::shared_ptr<GenericPrior<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
@@ -143,7 +143,7 @@ namespace simulated2D {
       return (prior(x, H) - measured_);
     }
 
-    virtual ~GenericPrior() {}
+    ~GenericPrior() override {}
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -168,9 +168,9 @@ namespace simulated2D {
    * Binary factor simulating "odometry" between two Vectors
    */
   template<class VALUE = Point2>
-  class GenericOdometry: public NoiseModelFactor2<VALUE, VALUE> {
+  class GenericOdometry: public NoiseModelFactorN<VALUE, VALUE> {
   public:
-    typedef NoiseModelFactor2<VALUE, VALUE> Base; ///< base class
+    typedef NoiseModelFactorN<VALUE, VALUE> Base; ///< base class
     typedef GenericOdometry<VALUE> This;
     typedef boost::shared_ptr<GenericOdometry<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
@@ -189,7 +189,7 @@ namespace simulated2D {
       return (odo(x1, x2, H1, H2) - measured_);
     }
 
-    virtual ~GenericOdometry() {}
+    ~GenericOdometry() override {}
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -214,9 +214,9 @@ namespace simulated2D {
    * Binary factor simulating "measurement" between two Vectors
    */
   template<class POSE, class LANDMARK>
-  class GenericMeasurement: public NoiseModelFactor2<POSE, LANDMARK> {
+  class GenericMeasurement: public NoiseModelFactorN<POSE, LANDMARK> {
   public:
-    typedef NoiseModelFactor2<POSE, LANDMARK> Base;  ///< base class
+    typedef NoiseModelFactorN<POSE, LANDMARK> Base;  ///< base class
     typedef GenericMeasurement<POSE, LANDMARK> This;
     typedef boost::shared_ptr<GenericMeasurement<POSE, LANDMARK> > shared_ptr;
     typedef POSE Pose; ///< shortcut to Pose type
@@ -236,7 +236,7 @@ namespace simulated2D {
       return (mea(x1, x2, H1, H2) - measured_);
     }
 
-    virtual ~GenericMeasurement() {}
+    ~GenericMeasurement() override {}
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {

@@ -18,8 +18,10 @@
 
 #include <gtsam_unstable/slam/TSAMFactors.h>
 #include <gtsam/base/numericalDerivative.h>
+
 #include <CppUnitLite/TestHarness.h>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -45,10 +47,10 @@ TEST( DeltaFactor, all ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector2, Pose2>(
-      boost::bind(&DeltaFactor::evaluateError, &factor, _1, point, boost::none,
+      std::bind(&DeltaFactor::evaluateError, &factor, std::placeholders::_1, point, boost::none,
           boost::none), pose);
   H2Expected = numericalDerivative11<Vector2, Point2>(
-      boost::bind(&DeltaFactor::evaluateError, &factor, pose, _1, boost::none,
+      std::bind(&DeltaFactor::evaluateError, &factor, pose, std::placeholders::_1, boost::none,
           boost::none), point);
 
   // Verify the Jacobians are correct
@@ -79,17 +81,17 @@ TEST( DeltaFactorBase, all ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected, H3Expected, H4Expected;
   H1Expected = numericalDerivative11<Vector2, Pose2>(
-      boost::bind(&DeltaFactorBase::evaluateError, &factor, _1, pose, base2,
+      std::bind(&DeltaFactorBase::evaluateError, &factor, std::placeholders::_1, pose, base2,
           point, boost::none, boost::none, boost::none, boost::none), base1);
   H2Expected = numericalDerivative11<Vector2, Pose2>(
-      boost::bind(&DeltaFactorBase::evaluateError, &factor, base1, _1, base2,
+      std::bind(&DeltaFactorBase::evaluateError, &factor, base1, std::placeholders::_1, base2,
           point, boost::none, boost::none, boost::none, boost::none), pose);
   H3Expected = numericalDerivative11<Vector2, Pose2>(
-      boost::bind(&DeltaFactorBase::evaluateError, &factor, base1, pose, _1,
+      std::bind(&DeltaFactorBase::evaluateError, &factor, base1, pose, std::placeholders::_1,
           point, boost::none, boost::none, boost::none, boost::none), base2);
   H4Expected = numericalDerivative11<Vector2, Point2>(
-      boost::bind(&DeltaFactorBase::evaluateError, &factor, base1, pose, base2,
-          _1, boost::none, boost::none, boost::none, boost::none), point);
+      std::bind(&DeltaFactorBase::evaluateError, &factor, base1, pose, base2,
+          std::placeholders::_1, boost::none, boost::none, boost::none, boost::none), point);
 
   // Verify the Jacobians are correct
   EXPECT(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -120,17 +122,17 @@ TEST( OdometryFactorBase, all ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected, H3Expected, H4Expected;
   H1Expected = numericalDerivative11<Vector3, Pose2>(
-      boost::bind(&OdometryFactorBase::evaluateError, &factor, _1, pose1, base2,
+      std::bind(&OdometryFactorBase::evaluateError, &factor, std::placeholders::_1, pose1, base2,
           pose2, boost::none, boost::none, boost::none, boost::none), base1);
   H2Expected = numericalDerivative11<Vector3, Pose2>(
-      boost::bind(&OdometryFactorBase::evaluateError, &factor, base1, _1, base2,
+      std::bind(&OdometryFactorBase::evaluateError, &factor, base1, std::placeholders::_1, base2,
           pose2, boost::none, boost::none, boost::none, boost::none), pose1);
   H3Expected = numericalDerivative11<Vector3, Pose2>(
-      boost::bind(&OdometryFactorBase::evaluateError, &factor, base1, pose1, _1,
+      std::bind(&OdometryFactorBase::evaluateError, &factor, base1, pose1, std::placeholders::_1,
           pose2, boost::none, boost::none, boost::none, boost::none), base2);
   H4Expected = numericalDerivative11<Vector3, Pose2>(
-      boost::bind(&OdometryFactorBase::evaluateError, &factor, base1, pose1,
-          base2, _1, boost::none, boost::none, boost::none, boost::none),
+      std::bind(&OdometryFactorBase::evaluateError, &factor, base1, pose1,
+          base2, std::placeholders::_1, boost::none, boost::none, boost::none, boost::none),
       pose2);
 
   // Verify the Jacobians are correct

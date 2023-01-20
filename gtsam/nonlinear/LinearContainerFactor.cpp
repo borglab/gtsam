@@ -165,6 +165,48 @@ NonlinearFactor::shared_ptr LinearContainerFactor::negateToNonlinear() const {
 }
 
 /* ************************************************************************* */
+NonlinearFactor::shared_ptr LinearContainerFactor::rekey(
+    const std::map<Key, Key>& rekey_mapping) const {
+  auto rekeyed_base_factor = Base::rekey(rekey_mapping);
+  // Update the keys to the properties as well
+  // Downncast so we have access to members
+  auto new_factor = boost::static_pointer_cast<LinearContainerFactor>(rekeyed_base_factor);
+  // Create a new Values to assign later
+  Values newLinearizationPoint;
+  for (size_t i = 0; i < factor_->size(); ++i) {
+    auto mapping = rekey_mapping.find(factor_->keys()[i]);
+    if (mapping != rekey_mapping.end()) {
+      new_factor->factor_->keys()[i] = mapping->second;
+      newLinearizationPoint.insert(mapping->second, linearizationPoint_->at(mapping->first));
+    }
+  }
+  new_factor->linearizationPoint_ = newLinearizationPoint;
+
+  // upcast back and return
+  return boost::static_pointer_cast<NonlinearFactor>(new_factor);
+}
+
+/* ************************************************************************* */
+NonlinearFactor::shared_ptr LinearContainerFactor::rekey(
+    const KeyVector& new_keys) const {
+  auto rekeyed_base_factor = Base::rekey(new_keys);
+  // Update the keys to the properties as well
+  // Downncast so we have access to members
+  auto new_factor = boost::static_pointer_cast<LinearContainerFactor>(rekeyed_base_factor);
+  new_factor->factor_->keys() = new_factor->keys();
+  // Create a new Values to assign later
+  Values newLinearizationPoint;
+  for(size_t i=0; i<new_keys.size(); ++i) {
+    Key cur_key = linearizationPoint_->keys()[i];
+    newLinearizationPoint.insert(new_keys[i], linearizationPoint_->at(cur_key));
+  }
+  new_factor->linearizationPoint_ = newLinearizationPoint;
+
+  // upcast back and return
+  return boost::static_pointer_cast<NonlinearFactor>(new_factor);
+}
+
+/* ************************************************************************* */
 NonlinearFactorGraph LinearContainerFactor::ConvertLinearGraph(
     const GaussianFactorGraph& linear_graph, const Values& linearizationPoint) {
   NonlinearFactorGraph result;

@@ -27,6 +27,11 @@ using namespace std;
 namespace gtsam {
 
   /* ************************************************************************* */
+  double SymbolicFactor::error(const HybridValues& c) const {
+    throw std::runtime_error("SymbolicFactor::error is not implemented");
+  }
+
+  /* ************************************************************************* */
   std::pair<boost::shared_ptr<SymbolicConditional>, boost::shared_ptr<SymbolicFactor> >
     EliminateSymbolic(const SymbolicFactorGraph& factors, const Ordering& keys)
   {

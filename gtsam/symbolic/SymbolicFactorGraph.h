@@ -46,6 +46,12 @@ namespace gtsam {
     static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
       DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
         return EliminateSymbolic(factors, keys); }
+    /// The default ordering generation function
+    static Ordering DefaultOrderingFunc(
+        const FactorGraphType& graph,
+        boost::optional<const VariableIndex&> variableIndex) {
+      return Ordering::Colamd(*variableIndex);
+    }
   };
 
   /* ************************************************************************* */
@@ -81,12 +87,46 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     SymbolicFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
+    /**
+     * Constructor that takes an initializer list of shared pointers.
+     *  FactorGraph fg = {make_shared<MyFactor>(), ...};
+     */
+    SymbolicFactorGraph(
+        std::initializer_list<boost::shared_ptr<SymbolicFactor>> sharedFactors)
+        : Base(sharedFactors) {}
+
+    /// Construct from a single factor
+    SymbolicFactorGraph(SymbolicFactor&& c) {
+        push_back(boost::make_shared<SymbolicFactor>(c));
+    }
+
+    /**
+     * @brief Add a single factor and return a reference.
+     * This allows for chaining, e.g.,
+     *   SymbolicFactorGraph bn =
+     *     SymbolicFactorGraph(SymbolicFactor(...))(SymbolicFactor(...));
+     */
+    SymbolicFactorGraph& operator()(SymbolicFactor&& c) {
+        push_back(boost::make_shared<SymbolicFactor>(c));
+        return *this;
+    }
+
+    /// Destructor
+    virtual ~SymbolicFactorGraph() {}
+
     /// @}
 
     /// @name Testable
     /// @{
 
     bool equals(const This& fg, double tol = 1e-9) const;
+
+    /// print
+    void print(
+        const std::string& s = "SymbolicFactorGraph",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+      Base::print(s, formatter);
+    }
 
     /// @}
 

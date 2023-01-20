@@ -95,7 +95,7 @@ template<class Class>
 struct MultiplicativeGroupTraits {
   typedef group_tag structure_category;
   typedef multiplicative_group_tag group_flavor;
-  static Class Identity() { return Class::identity(); }
+  static Class Identity() { return Class::Identity(); }
   static Class Compose(const Class &g, const Class & h) { return g * h;}
   static Class Between(const Class &g, const Class & h) { return g.inverse() * h;}
   static Class Inverse(const Class &g) { return g.inverse();}
@@ -111,7 +111,7 @@ template<class Class>
 struct AdditiveGroupTraits {
   typedef group_tag structure_category;
   typedef additive_group_tag group_flavor;
-  static Class Identity() { return Class::identity(); }
+  static Class Identity() { return Class::Identity(); }
   static Class Compose(const Class &g, const Class & h) { return g + h;}
   static Class Between(const Class &g, const Class & h) { return h - g;}
   static Class Inverse(const Class &g) { return -g;}
@@ -147,7 +147,7 @@ public:
   DirectProduct(const G& g, const H& h):std::pair<G,H>(g,h) {}
 
   // identity
-  static DirectProduct identity() { return DirectProduct(); }
+  static DirectProduct Identity() { return DirectProduct(); }
 
   DirectProduct operator*(const DirectProduct& other) const {
     return DirectProduct(traits<G>::Compose(this->first, other.first),
@@ -181,7 +181,7 @@ public:
   DirectSum(const G& g, const H& h):std::pair<G,H>(g,h) {}
 
   // identity
-  static DirectSum identity() { return DirectSum(); }
+  static DirectSum Identity() { return DirectSum(); }
 
   DirectSum operator+(const DirectSum& other) const {
     return DirectSum(g()+other.g(), h()+other.h());

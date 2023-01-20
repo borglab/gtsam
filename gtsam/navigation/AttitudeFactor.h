@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file   Pose3AttitudeFactor.h
+ *  @file   AttitudeFactor.h
  *  @author Frank Dellaert
  *  @brief  Header file for Attitude factor
  *  @date   January 28, 2014
@@ -29,7 +29,7 @@ namespace gtsam {
  * - measurement is direction of gravity in body frame bF
  * - reference is direction of gravity in navigation frame nG
  * This factor will give zero error if nRb * bF == nG
- * @addtogroup Navigation
+ * @ingroup navigation
  */
 class AttitudeFactor {
 
@@ -74,11 +74,11 @@ public:
 
 /**
  * Version of AttitudeFactor for Rot3
- * @addtogroup Navigation
+ * @ingroup navigation
  */
-class GTSAM_EXPORT Rot3AttitudeFactor: public NoiseModelFactor1<Rot3>, public AttitudeFactor {
+class GTSAM_EXPORT Rot3AttitudeFactor: public NoiseModelFactorN<Rot3>, public AttitudeFactor {
 
-  typedef NoiseModelFactor1<Rot3> Base;
+  typedef NoiseModelFactorN<Rot3> Base;
 
 public:
 
@@ -92,7 +92,7 @@ public:
   Rot3AttitudeFactor() {
   }
 
-  virtual ~Rot3AttitudeFactor() {
+  ~Rot3AttitudeFactor() override {
   }
 
   /**
@@ -114,8 +114,8 @@ public:
   }
 
   /** print */
-  void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const override;
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
 
   /** equals */
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
@@ -132,6 +132,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor1",
         boost::serialization::base_object<Base>(*this));
     ar & boost::serialization::make_nvp("AttitudeFactor",
@@ -147,12 +148,12 @@ template<> struct traits<Rot3AttitudeFactor> : public Testable<Rot3AttitudeFacto
 
 /**
  * Version of AttitudeFactor for Pose3
- * @addtogroup Navigation
+ * @ingroup navigation
  */
-class GTSAM_EXPORT Pose3AttitudeFactor: public NoiseModelFactor1<Pose3>,
+class GTSAM_EXPORT Pose3AttitudeFactor: public NoiseModelFactorN<Pose3>,
     public AttitudeFactor {
 
-  typedef NoiseModelFactor1<Pose3> Base;
+  typedef NoiseModelFactorN<Pose3> Base;
 
 public:
 
@@ -166,7 +167,7 @@ public:
   Pose3AttitudeFactor() {
   }
 
-  virtual ~Pose3AttitudeFactor() {
+  ~Pose3AttitudeFactor() override {
   }
 
   /**
@@ -188,8 +189,8 @@ public:
   }
 
   /** print */
-  void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const override;
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
 
   /** equals */
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
@@ -212,6 +213,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor1",
         boost::serialization::base_object<Base>(*this));
     ar & boost::serialization::make_nvp("AttitudeFactor",

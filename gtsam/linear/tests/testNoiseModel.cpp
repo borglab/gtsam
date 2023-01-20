@@ -22,20 +22,17 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/vector.hpp>
-
 #include <iostream>
 #include <limits>
 
 using namespace std;
 using namespace gtsam;
 using namespace noiseModel;
-using namespace boost::assign;
 
 static const double kSigma = 2, kInverseSigma = 1.0 / kSigma,
                     kVariance = kSigma * kSigma, prc = 1.0 / kVariance;
-static const Matrix R = Matrix3::Identity() * kInverseSigma;
-static const Matrix kCovariance = Matrix3::Identity() * kVariance;
+static const Matrix R = I_3x3 * kInverseSigma;
+static const Matrix kCovariance = I_3x3 * kVariance;
 static const Vector3 kSigmas(kSigma, kSigma, kSigma);
 
 /* ************************************************************************* */
@@ -661,26 +658,16 @@ TEST(NoiseModel, robustNoiseDCS)
 TEST(NoiseModel, robustNoiseL2WithDeadZone)
 {
   double dead_zone_size = 1.0;
-  SharedNoiseModel robust = noiseModel::Robust::Create(
-    noiseModel::mEstimator::L2WithDeadZone::Create(dead_zone_size),
-    Unit::Create(3));
+  auto robust = noiseModel::Robust::Create(
+      noiseModel::mEstimator::L2WithDeadZone::Create(dead_zone_size),
+      Unit::Create(3));
 
-/*
- * TODO(mike): There is currently a bug in GTSAM, where none of the mEstimator classes
- * implement a loss function, and GTSAM calls the weight function to evaluate the
- * total penalty, rather than calling the loss function. The weight function should be
- * used during iteratively reweighted least squares optimization, but should not be used to
- * evaluate the total penalty. The long-term solution is for all mEstimators to implement
- * both a weight and a loss function, and for GTSAM to call the loss function when
- * evaluating the total penalty. This bug causes the test below to fail, so I'm leaving it
- * commented out until the underlying bug in GTSAM is fixed.
- *
- * for (int i = 0; i < 5; i++) {
- *   Vector3 error = Vector3(i, 0, 0);
- *   DOUBLES_EQUAL(0.5*max(0,i-1)*max(0,i-1), robust->distance(error), 1e-8);
- * }
- */
-
+  for (int i = 0; i < 5; i++) {
+    Vector error = Vector3(i, 0, 0);
+    robust->WhitenSystem(error);
+    DOUBLES_EQUAL(std::fmax(0, i - dead_zone_size) * i,
+                  robust->squaredMahalanobisDistance(error), 1e-8);
+  }
 }
 
 TEST(NoiseModel, lossFunctionAtZero)
@@ -707,9 +694,9 @@ TEST(NoiseModel, lossFunctionAtZero)
   auto dcs = mEstimator::DCS::Create(k);
   DOUBLES_EQUAL(dcs->loss(0), 0, 1e-8);
   DOUBLES_EQUAL(dcs->weight(0), 1, 1e-8);
-  // auto lsdz = mEstimator::L2WithDeadZone::Create(k);
-  // DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
-  // DOUBLES_EQUAL(lsdz->weight(0), 1, 1e-8);
+  auto lsdz = mEstimator::L2WithDeadZone::Create(k);
+  DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
 }
 
 
@@ -733,7 +720,7 @@ TEST(NoiseModel, NonDiagonalGaussian)
   const Matrix3 info = R.transpose() * R;
   const Matrix3 cov = info.inverse();
   const Vector3 e(1, 1, 1), white = R * e;
-  Matrix I = Matrix3::Identity();
+  Matrix I = I_3x3;
 
 
   {

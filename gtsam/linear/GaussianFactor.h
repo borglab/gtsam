@@ -54,14 +54,29 @@ namespace gtsam {
     virtual ~GaussianFactor() {}
 
     // Implementing Testable interface
-    virtual void print(const std::string& s = "",
-        const KeyFormatter& formatter = DefaultKeyFormatter) const = 0;
+
+    /// print
+    void print(
+        const std::string& s = "",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override = 0;
 
     /** Equals for testable */
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const = 0;
 
-    /** Print for testable */
-    virtual double error(const VectorValues& c) const = 0; /**  0.5*(A*x-b)'*D*(A*x-b) */
+    /**
+     * In Gaussian factors, the error function returns either the negative log-likelihood, e.g.,
+     *   0.5*(A*x-b)'*D*(A*x-b) 
+     * for a \class JacobianFactor, or the negative log-density, e.g.,
+     *   0.5*(A*x-b)'*D*(A*x-b) - log(k)
+     * for a \class GaussianConditional, where k is the normalization constant.
+     */
+    virtual double error(const VectorValues& c) const;
+
+    /**
+     * The Factor::error simply extracts the \class VectorValues from the
+     * \class HybridValues and calculates the error.
+     */
+    double error(const HybridValues& c) const override;
 
     /** Return the dimension of the variable pointed to by the given key iterator */
     virtual DenseIndex getDim(const_iterator variable) const = 0;
@@ -113,9 +128,6 @@ namespace gtsam {
 
     /** Clone a factor (make a deep copy) */
     virtual GaussianFactor::shared_ptr clone() const = 0;
-
-    /** Test whether the factor is empty */
-    virtual bool empty() const = 0;
 
     /**
      * Construct the corresponding anti-factor to negate information

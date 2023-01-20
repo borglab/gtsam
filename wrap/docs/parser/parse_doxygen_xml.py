@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 from docs.docs import ClassDoc, Doc, Docs, FreeDoc
 
-DOXYGEN_CONF = 'conf_doxygen.py'
+DOXYGEN_CONF = 'doxygen.conf'
 
 
 class ParseDoxygenXML():

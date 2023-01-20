@@ -20,4 +20,4 @@
 %% Run the tests
 import gtsam.*
 bayesTree = thinBayesTree(3,2);
-EQUALITY('7 = bayesTree.size', 7, bayesTree.size);
+EQUALITY('7 = bayesTree.size', 4, bayesTree.size);

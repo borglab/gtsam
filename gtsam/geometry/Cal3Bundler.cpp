@@ -15,28 +15,19 @@
  * @author ydjian
  */
 
-#include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Cal3Bundler.h>
 
 namespace gtsam {
 
 /* ************************************************************************* */
-Cal3Bundler::Cal3Bundler() :
-    f_(1), k1_(0), k2_(0), u0_(0), v0_(0), tol_(1e-5) {
-}
-
-/* ************************************************************************* */
-Cal3Bundler::Cal3Bundler(double f, double k1, double k2, double u0, double v0,
-                         double tol)
-    : f_(f), k1_(k1), k2_(k2), u0_(u0), v0_(v0), tol_(tol) {}
-
-/* ************************************************************************* */
 Matrix3 Cal3Bundler::K() const {
+  // This function is needed to ensure skew = 0;
   Matrix3 K;
-  K << f_, 0, u0_, 0, f_, v0_, 0, 0, 1;
+  K << fx_, 0, u0_, 0, fy_, v0_, 0, 0, 1.0;
   return K;
 }
 
@@ -48,34 +39,41 @@ Vector4 Cal3Bundler::k() const {
 }
 
 /* ************************************************************************* */
-Vector3 Cal3Bundler::vector() const {
-  return Vector3(f_, k1_, k2_);
+Vector3 Cal3Bundler::vector() const { return Vector3(fx_, k1_, k2_); }
+
+/* ************************************************************************* */
+std::ostream& operator<<(std::ostream& os, const Cal3Bundler& cal) {
+  os << "f: " << cal.fx() << ", k1: " << cal.k1() << ", k2: " << cal.k2()
+     << ", px: " << cal.px() << ", py: " << cal.py();
+  return os;
 }
 
 /* ************************************************************************* */
 void Cal3Bundler::print(const std::string& s) const {
-  gtsam::print((Vector)(Vector(5) << f_, k1_, k2_, u0_, v0_).finished(), s + ".K");
+  gtsam::print((Vector)(Vector(5) << fx_, k1_, k2_, u0_, v0_).finished(),
+               s + ".K");
 }
 
 /* ************************************************************************* */
 bool Cal3Bundler::equals(const Cal3Bundler& K, double tol) const {
-  if (std::abs(f_ - K.f_) > tol || std::abs(k1_ - K.k1_) > tol
-      || std::abs(k2_ - K.k2_) > tol || std::abs(u0_ - K.u0_) > tol
-      || std::abs(v0_ - K.v0_) > tol)
-    return false;
-  return true;
+  const Cal3* base = dynamic_cast<const Cal3*>(&K);
+  return (Cal3::equals(*base, tol) && std::fabs(k1_ - K.k1_) < tol &&
+          std::fabs(k2_ - K.k2_) < tol && std::fabs(u0_ - K.u0_) < tol &&
+          std::fabs(v0_ - K.v0_) < tol);
 }
 
 /* ************************************************************************* */
-Point2 Cal3Bundler::uncalibrate(const Point2& p, //
-    OptionalJacobian<2, 3> Dcal, OptionalJacobian<2, 2> Dp) const {
-  //  r = x^2 + y^2;
-  //  g = (1 + k(1)*r + k(2)*r^2);
+Point2 Cal3Bundler::uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal,
+                                OptionalJacobian<2, 2> Dp) const {
+  //  r = x² + y²;
+  //  g = (1 + k(1)*r + k(2)*r²);
   //  pi(:,i) = g * pn(:,i)
   const double x = p.x(), y = p.y();
   const double r = x * x + y * y;
   const double g = 1. + (k1_ + k2_ * r) * r;
   const double u = g * x, v = g * y;
+
+  const double f_ = fx_;
 
   // Derivatives make use of intermediate variables above
   if (Dcal) {
@@ -94,51 +92,38 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p, //
 }
 
 /* ************************************************************************* */
-Point2 Cal3Bundler::calibrate(const Point2& pi,
-                              OptionalJacobian<2, 3> Dcal,
+Point2 Cal3Bundler::calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal,
                               OptionalJacobian<2, 2> Dp) const {
-  // Copied from Cal3DS2 :-(
-  // but specialized with k1,k2 non-zero only and fx=fy and s=0
-  double x = (pi.x() - u0_)/f_, y = (pi.y() - v0_)/f_;
-  const Point2 invKPi(x, y);
-
-  // initialize by ignoring the distortion at all, might be problematic for pixels around boundary
-  Point2 pn(x, y);
+  // Copied from Cal3DS2
+  // but specialized with k1, k2 non-zero only and fx=fy and s=0
+  double px = (pi.x() - u0_) / fx_, py = (pi.y() - v0_) / fx_;
+  const Point2 invKPi(px, py);
+  Point2 pn;
 
   // iterate until the uncalibrate is close to the actual pixel coordinate
   const int maxIterations = 10;
-  int iteration;
-  for (iteration = 0; iteration < maxIterations; ++iteration) {
-    if (distance2(uncalibrate(pn), pi) <= tol_)
-      break;
-    const double px = pn.x(), py = pn.y(), xx = px * px, yy = py * py;
-    const double rr = xx + yy;
+  int iteration = 0;
+  do {
+    // initialize pn with distortion included
+    const double rr = (px * px) + (py * py);
     const double g = (1 + k1_ * rr + k2_ * rr * rr);
     pn = invKPi / g;
-  }
+
+    if (distance2(uncalibrate(pn), pi) <= tol_) break;
+
+    // Set px and py using intrinsic coordinates since that is where radial
+    // distortion correction is done.
+    px = pn.x(), py = pn.y();
+    iteration++;
+
+  } while (iteration < maxIterations);
 
   if (iteration >= maxIterations)
     throw std::runtime_error(
-        "Cal3Bundler::calibrate fails to converge. need a better initialization");
+        "Cal3Bundler::calibrate fails to converge. need a better "
+        "initialization");
 
-  // We make use of the Implicit Function Theorem to compute the Jacobians from uncalibrate
-  // Given f(pi, pn) = uncalibrate(pn) - pi, and g(pi) = calibrate, we can easily compute the Jacobians
-  // df/pi = -I (pn and pi are independent args)
-  // Dcal = -inv(H_uncal_pn) * df/pi = -inv(H_uncal_pn) * (-I) = inv(H_uncal_pn)
-  // Dp = -inv(H_uncal_pn) * df/K = -inv(H_uncal_pn) * H_uncal_K
-  Matrix23 H_uncal_K;
-  Matrix22 H_uncal_pn, H_uncal_pn_inv;
-
-  if (Dcal || Dp) {
-    // Compute uncalibrate Jacobians
-    uncalibrate(pn, Dcal ? &H_uncal_K : nullptr, H_uncal_pn);
-
-    H_uncal_pn_inv = H_uncal_pn.inverse();
-
-    if (Dp) *Dp = H_uncal_pn_inv;
-    if (Dcal) *Dcal = -H_uncal_pn_inv * H_uncal_K;
-
-  }
+  calibrateJacobians<Cal3Bundler, dimension>(*this, pn, Dcal, Dp);
 
   return pn;
 }
@@ -167,14 +152,4 @@ Matrix25 Cal3Bundler::D2d_intrinsic_calibration(const Point2& p) const {
   return H;
 }
 
-/* ************************************************************************* */
-Cal3Bundler Cal3Bundler::retract(const Vector& d) const {
-  return Cal3Bundler(f_ + d(0), k1_ + d(1), k2_ + d(2), u0_, v0_);
-}
-
-/* ************************************************************************* */
-Vector3 Cal3Bundler::localCoordinates(const Cal3Bundler& T2) const {
-  return T2.vector() - vector();
-}
-
-}
+}  // namespace gtsam

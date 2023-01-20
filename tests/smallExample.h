@@ -26,7 +26,6 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <boost/assign/list_of.hpp>
 
 namespace gtsam {
 namespace example {
@@ -223,10 +222,9 @@ inline Values createValues() {
 /* ************************************************************************* */
 inline VectorValues createVectorValues() {
   using namespace impl;
-  VectorValues c = boost::assign::pair_list_of<Key, Vector>
-    (_l1_, Vector2(0.0, -1.0))
-    (_x1_, Vector2(0.0, 0.0))
-    (_x2_, Vector2(1.5, 0.0));
+  VectorValues c {{_l1_, Vector2(0.0, -1.0)},
+                  {_x1_, Vector2(0.0, 0.0)},
+                  {_x2_, Vector2(1.5, 0.0)}};
   return c;
 }
 
@@ -329,12 +327,12 @@ inline Matrix H(const Point2& v) {
       0.0, cos(v.y())).finished();
 }
 
-struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
+struct UnaryFactor: public gtsam::NoiseModelFactorN<Point2> {
 
   Point2 z_;
 
   UnaryFactor(const Point2& z, const SharedNoiseModel& model, Key key) :
-    gtsam::NoiseModelFactor1<Point2>(model, key), z_(z) {
+    gtsam::NoiseModelFactorN<Point2>(model, key), z_(z) {
   }
 
   Vector evaluateError(const Point2& x, boost::optional<Matrix&> A = boost::none) const override {
@@ -342,13 +340,27 @@ struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
     return (h(x) - z_);
   }
 
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+        return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+            gtsam::NonlinearFactor::shared_ptr(new UnaryFactor(*this))); }
 };
 
 }
 
 /* ************************************************************************* */
-inline boost::shared_ptr<const NonlinearFactorGraph>
-sharedReallyNonlinearFactorGraph() {
+inline NonlinearFactorGraph nonlinearFactorGraphWithGivenSigma(const double sigma) {
+  using symbol_shorthand::X;
+  using symbol_shorthand::L;
+  boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
+  Point2 z(1.0, 0.0);
+  boost::shared_ptr<smallOptimize::UnaryFactor> factor(
+      new smallOptimize::UnaryFactor(z, noiseModel::Isotropic::Sigma(2,sigma), X(1)));
+  fg->push_back(factor);
+  return *fg;
+}
+
+/* ************************************************************************* */
+inline boost::shared_ptr<const NonlinearFactorGraph> sharedReallyNonlinearFactorGraph() {
   using symbol_shorthand::X;
   auto fg = boost::make_shared<NonlinearFactorGraph>();
   Point2 z(1.0, 0.0);
@@ -361,6 +373,54 @@ sharedReallyNonlinearFactorGraph() {
 inline NonlinearFactorGraph createReallyNonlinearFactorGraph() {
   return *sharedReallyNonlinearFactorGraph();
 }
+
+/* ************************************************************************* */
+inline NonlinearFactorGraph sharedNonRobustFactorGraphWithOutliers() {
+  using symbol_shorthand::X;
+  boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
+  Point2 z(0.0, 0.0);
+  double sigma = 0.1;
+
+  boost::shared_ptr<PriorFactor<Point2>> factor(
+      new PriorFactor<Point2>(X(1), z, noiseModel::Isotropic::Sigma(2,sigma)));
+  // 3 noiseless inliers
+  fg->push_back(factor);
+  fg->push_back(factor);
+  fg->push_back(factor);
+
+  // 1 outlier
+  Point2 z_out(1.0, 0.0);
+  boost::shared_ptr<PriorFactor<Point2>> factor_out(
+      new PriorFactor<Point2>(X(1), z_out, noiseModel::Isotropic::Sigma(2,sigma)));
+  fg->push_back(factor_out);
+
+  return *fg;
+}
+
+/* ************************************************************************* */
+inline NonlinearFactorGraph sharedRobustFactorGraphWithOutliers() {
+  using symbol_shorthand::X;
+  boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
+  Point2 z(0.0, 0.0);
+  double sigma = 0.1;
+  auto gmNoise = noiseModel::Robust::Create(
+            noiseModel::mEstimator::GemanMcClure::Create(1.0), noiseModel::Isotropic::Sigma(2,sigma));
+  boost::shared_ptr<PriorFactor<Point2>> factor(
+      new PriorFactor<Point2>(X(1), z, gmNoise));
+  // 3 noiseless inliers
+  fg->push_back(factor);
+  fg->push_back(factor);
+  fg->push_back(factor);
+
+  // 1 outlier
+  Point2 z_out(1.0, 0.0);
+  boost::shared_ptr<PriorFactor<Point2>> factor_out(
+      new PriorFactor<Point2>(X(1), z_out, gmNoise));
+  fg->push_back(factor_out);
+
+  return *fg;
+}
+
 
 /* ************************************************************************* */
 inline std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T) {
@@ -483,9 +543,7 @@ inline GaussianFactorGraph createSingleConstraintGraph() {
 /* ************************************************************************* */
 inline VectorValues createSingleConstraintValues() {
   using namespace impl;
-  VectorValues config = boost::assign::pair_list_of<Key, Vector>
-    (_x_, Vector2(1.0, -1.0))
-    (_y_, Vector2(0.2, 0.1));
+  VectorValues config{{_x_, Vector2(1.0, -1.0)}, {_y_, Vector2(0.2, 0.1)}};
   return config;
 }
 
@@ -547,10 +605,9 @@ inline GaussianFactorGraph createMultiConstraintGraph() {
 /* ************************************************************************* */
 inline VectorValues createMultiConstraintValues() {
   using namespace impl;
-  VectorValues config = boost::assign::pair_list_of<Key, Vector>
-    (_x_, Vector2(-2.0, 2.0))
-    (_y_, Vector2(-0.1, 0.4))
-    (_z_, Vector2(-4.0, 5.0));
+  VectorValues config{{_x_, Vector2(-2.0, 2.0)},
+                      {_y_, Vector2(-0.1, 0.4)},
+                      {_z_, Vector2(-4.0, 5.0)}};
   return config;
 }
 
@@ -615,26 +672,25 @@ inline Ordering planarOrdering(size_t N) {
 }
 
 /* ************************************************************************* */
-inline std::pair<GaussianFactorGraph::shared_ptr, GaussianFactorGraph::shared_ptr > splitOffPlanarTree(size_t N,
-    const GaussianFactorGraph& original) {
-  auto T = boost::make_shared<GaussianFactorGraph>(), C= boost::make_shared<GaussianFactorGraph>();
+inline std::pair<GaussianFactorGraph, GaussianFactorGraph> splitOffPlanarTree(
+    size_t N, const GaussianFactorGraph& original) {
+  GaussianFactorGraph T, C;
 
   // Add the x11 constraint to the tree
-  T->push_back(original[0]);
+  T.push_back(original[0]);
 
   // Add all horizontal constraints to the tree
   size_t i = 1;
   for (size_t x = 1; x < N; x++)
-    for (size_t y = 1; y <= N; y++, i++)
-      T->push_back(original[i]);
+    for (size_t y = 1; y <= N; y++, i++) T.push_back(original[i]);
 
   // Add first vertical column of constraints to T, others to C
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y < N; y++, i++)
       if (x == 1)
-        T->push_back(original[i]);
+        T.push_back(original[i]);
       else
-        C->push_back(original[i]);
+        C.push_back(original[i]);
 
   return std::make_pair(T, C);
 }

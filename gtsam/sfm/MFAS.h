@@ -46,9 +46,9 @@ namespace gtsam {
   i.e w_aZb is the unit translation from a to b expressed in the world
   coordinate frame. The weights for the edges are obtained by projecting the
   unit translations in a projection direction.
-  @addtogroup SFM
+  @ingroup sfm
 */
-class MFAS {
+class GTSAM_EXPORT MFAS {
  public:
   // used to represent edges between two nodes in the graph. When used in
   // translation averaging for global SfM
@@ -84,7 +84,7 @@ class MFAS {
    * @brief Computes the 1D MFAS ordering of nodes in the graph
    * @return orderedNodes: vector of nodes in the obtained order
    */
-  std::vector<Key> computeOrdering() const;
+  KeyVector computeOrdering() const;
 
   /**
    * @brief Computes the outlier weights of the graph. We define the outlier

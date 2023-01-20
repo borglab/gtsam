@@ -55,7 +55,7 @@ int main(const int argc, const char *argv[]) {
     std::cout << "Rewriting input to file: " << inputFileRewritten << std::endl;
     // Additional: rewrite input with simplified keys 0,1,...
     Values simpleInitial;
-    for(const Values::ConstKeyValuePair& key_value: *initial) {
+    for(const auto key_value: *initial) {
       Key key;
       if(add)
         key = key_value.key + firstKey;
@@ -71,11 +71,11 @@ int main(const int argc, const char *argv[]) {
       if (pose3Between){
         Key key1, key2;
         if(add){
-          key1 = pose3Between->key1() + firstKey;
-          key2 = pose3Between->key2() + firstKey;
+          key1 = pose3Between->key<1>() + firstKey;
+          key2 = pose3Between->key<2>() + firstKey;
         }else{
-          key1 = pose3Between->key1() - firstKey;
-          key2 = pose3Between->key2() - firstKey;
+          key1 = pose3Between->key<1>() - firstKey;
+          key2 = pose3Between->key<2>() - firstKey;
         }
         NonlinearFactor::shared_ptr simpleFactor(
             new BetweenFactor<Pose3>(key1, key2, pose3Between->measured(), pose3Between->noiseModel()));

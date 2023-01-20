@@ -23,16 +23,13 @@
 #include <list>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/assign/std/list.hpp>
 
-using boost::assign::operator+=;
-using namespace std;
 using namespace gtsam;
 
 struct TestNode {
   typedef boost::shared_ptr<TestNode> shared_ptr;
   int data;
-  vector<shared_ptr> children;
+  std::vector<shared_ptr> children;
   TestNode() : data(-1) {}
   TestNode(int data) : data(data) {}
 };
@@ -110,10 +107,8 @@ TEST(treeTraversal, DepthFirst)
   TestForest testForest = makeTestForest();
 
   // Expected visit order
-  std::list<int> preOrderExpected;
-  preOrderExpected += 0, 2, 3, 4, 1;
-  std::list<int> postOrderExpected;
-  postOrderExpected += 2, 4, 3, 0, 1;
+  const std::list<int> preOrderExpected{0, 2, 3, 4, 1};
+  const std::list<int> postOrderExpected{2, 4, 3, 0, 1};
 
   // Actual visit order
   PreOrderVisitor preVisitor;
@@ -135,8 +130,7 @@ TEST(treeTraversal, CloneForest)
   testForest2.roots_ = treeTraversal::CloneForest(testForest1);
 
   // Check that the original and clone both are expected
-  std::list<int> preOrder1Expected;
-  preOrder1Expected += 0, 2, 3, 4, 1;
+  const std::list<int> preOrder1Expected{0, 2, 3, 4, 1};
   std::list<int> preOrder1Actual = getPreorder(testForest1);
   std::list<int> preOrder2Actual = getPreorder(testForest2);
   EXPECT(assert_container_equality(preOrder1Expected, preOrder1Actual));
@@ -144,8 +138,7 @@ TEST(treeTraversal, CloneForest)
 
   // Modify clone - should not modify original
   testForest2.roots_[0]->children[1]->data = 10;
-  std::list<int> preOrderModifiedExpected;
-  preOrderModifiedExpected += 0, 2, 10, 4, 1;
+  const std::list<int> preOrderModifiedExpected{0, 2, 10, 4, 1};
 
   // Check that original is the same and only the clone is modified
   std::list<int> preOrder1ModActual = getPreorder(testForest1);

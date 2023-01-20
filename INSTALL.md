@@ -13,16 +13,18 @@ $ make install
 ## Important Installation Notes
 
 1. GTSAM requires the following libraries to be installed on your system:
-    - BOOST version 1.58 or greater (install through Linux repositories or MacPorts)
+    - BOOST version 1.65 or greater (install through Linux repositories or MacPorts). Please see [Boost Notes](#boost-notes) for version recommendations based on your compiler.
+
     - Cmake version 3.0 or higher
     - Support for XCode 4.3 command line tools on Mac requires CMake 2.8.8 or higher
 
     Optional dependent libraries:
      - If TBB is installed and detectable by CMake GTSAM will use it automatically.
        Ensure that CMake prints "Use Intel TBB : Yes".  To disable the use of TBB,
-       disable the CMake flag GTSAM_WITH_TBB (enabled by default).  On Ubuntu, TBB
-       may be installed from the Ubuntu repositories, and for other platforms it
-       may be downloaded from https://www.threadingbuildingblocks.org/
+       disable the CMake flag `GTSAM_WITH_TBB` (enabled by default) by providing
+       the argument `-DGTSAM_WITH_TBB=OFF` to `cmake`.  On Ubuntu, TBB may be
+       installed from the Ubuntu repositories, and for other platforms it may be
+       downloaded from https://www.threadingbuildingblocks.org/
      - GTSAM may be configured to use MKL by toggling `GTSAM_WITH_EIGEN_MKL` and
        `GTSAM_WITH_EIGEN_MKL_OPENMP` to `ON`; however, best performance is usually
        achieved with MKL disabled. We therefore advise you to benchmark your problem 
@@ -43,11 +45,6 @@ $ make install
     - MacOS 10.6 - 10.14
     - Windows 7, 8, 8.1, 10
 
-    Known issues:
-
-    - MSVC 2013 is not yet supported because it cannot build the serialization module
-      of Boost 1.55 (or earlier).
-
 2. GTSAM makes extensive use of debug assertions, and we highly recommend you work
 in Debug mode while developing (enabled by default). Likewise, it is imperative
 that you switch to release mode when running finished code and for timing. GTSAM
@@ -55,7 +52,7 @@ will run up to 10x faster in Release mode! See the end of this document for
 additional debugging tips.
 
 3. GTSAM has Doxygen documentation. To generate, run 'make doc' from your
-build directory.
+build directory after setting the `GTSAM_BUILD_DOCS` and `GTSAM_BUILD_[HTML|LATEX]` cmake flags.
 
 4. The instructions below install the library to the default system install path and
 build all components. From a terminal, starting in the root library folder,
@@ -72,7 +69,45 @@ execute commands as follows for an out-of-source build:
   This will build the library and unit tests, run all of the unit tests,
   and then install the library itself.
 
-## CMake Configuration Options and Details
+## Boost Notes
+
+Versions of Boost prior to 1.65 have a known bug that prevents proper "deep" serialization of objects, which means that objects encapsulated inside other objects don't get serialized.
+This is particularly seen when using `clang` as the C++ compiler.
+
+For this reason we recommend Boost>=1.65, and recommend installing it through alternative channels when it is not available through your operating system's primary package manager.
+
+## Known Issues
+
+- MSVC 2013 is not yet supported because it cannot build the serialization module of Boost 1.55 (or earlier).
+
+# Windows Installation
+
+This section details how to build a GTSAM `.sln` file using Visual Studio.
+
+### Prerequisites
+
+- Visual Studio with C++ CMake tools for Windows
+- All the other pre-requisites listed above.
+
+### Steps
+
+1. Open Visual Studio.
+2. Select `Open a local folder` and select the GTSAM source directory.
+3. Go to `Project -> CMake Settings`.
+  - (Optional) Set `Configuration name`.
+  - (Optional) Set `Configuration type`.
+  - Set the `Toolset` to `msvc_x64_x64`. If you know what toolset you require, then skip this step.
+  - Update the `Build root` to `${projectDir}\build\${name}`.
+  - You can optionally create a new configuration for a `Release` build.
+  - Set the necessary CMake variables for your use case.
+  - Click on `Show advanced settings`.
+  - For `CMake generator`, select a version which matches `Visual Studio <Version> <Year> Win64`, e.g. `Visual Studio 16 2019 Win64`.
+  - Save the settings (Ctrl + S).
+4. Click on `Project -> Generate Cache`. This will generate the CMake build files (as seen in the Output window).
+5. The last step will generate a `GTSAM.sln` file in the `build` directory. At this point, GTSAM can be used as a regular Visual Studio project.
+
+
+# CMake Configuration Options and Details
 
 GTSAM has a number of options that can be configured, which is best done with
 one of the following:
@@ -80,7 +115,7 @@ one of the following:
   - ccmake      the curses GUI for cmake
   - cmake-gui   a real GUI for cmake
 
-### Important Options:
+## Important Options:
 
 #### CMAKE_BUILD_TYPE
 We support several build configurations for GTSAM (case insensitive)

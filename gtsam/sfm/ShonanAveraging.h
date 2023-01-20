@@ -26,6 +26,8 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/sfm/BinaryMeasurement.h>
+#include <gtsam/linear/PowerMethod.h>
+#include <gtsam/linear/AcceleratedPowerMethod.h>
 #include <gtsam/slam/dataset.h>
 
 #include <Eigen/Sparse>
@@ -46,13 +48,17 @@ struct GTSAM_EXPORT ShonanAveragingParameters {
   using Rot = typename std::conditional<d == 2, Rot2, Rot3>::type;
   using Anchor = std::pair<size_t, Rot>;
 
-  // Paremeters themselves:
-  LevenbergMarquardtParams lm;  // LM parameters
-  double optimalityThreshold;   // threshold used in checkOptimality
-  Anchor anchor;                // pose to use as anchor if not Karcher
-  double alpha;                 // weight of anchor-based prior (default 0)
-  double beta;                  // weight of Karcher-based prior (default 1)
-  double gamma;                 // weight of gauge-fixing factors (default 0)
+  // Parameters themselves:
+  LevenbergMarquardtParams lm;  ///< LM parameters
+  double optimalityThreshold;   ///< threshold used in checkOptimality
+  Anchor anchor;                ///< pose to use as anchor if not Karcher
+  double alpha;                 ///< weight of anchor-based prior (default 0)
+  double beta;                  ///< weight of Karcher-based prior (default 1)
+  double gamma;                 ///< weight of gauge-fixing factors (default 0)
+  /// if enabled, the Huber loss is used (default false)
+  bool useHuber;
+  /// if enabled solution optimality is certified (default true)
+  bool certifyOptimality;
 
   ShonanAveragingParameters(const LevenbergMarquardtParams &lm =
                                 LevenbergMarquardtParams::CeresDefaults(),
@@ -67,16 +73,32 @@ struct GTSAM_EXPORT ShonanAveragingParameters {
   double getOptimalityThreshold() const { return optimalityThreshold; }
 
   void setAnchor(size_t index, const Rot &value) { anchor = {index, value}; }
-  std::pair<size_t, Rot> getAnchor() { return anchor; }
+  std::pair<size_t, Rot> getAnchor() const { return anchor; }
 
   void setAnchorWeight(double value) { alpha = value; }
-  double getAnchorWeight() { return alpha; }
+  double getAnchorWeight() const { return alpha; }
 
   void setKarcherWeight(double value) { beta = value; }
-  double getKarcherWeight() { return beta; }
+  double getKarcherWeight() const { return beta; }
 
   void setGaugesWeight(double value) { gamma = value; }
-  double getGaugesWeight() { return gamma; }
+  double getGaugesWeight() const { return gamma; }
+
+  void setUseHuber(bool value) { useHuber = value; }
+  bool getUseHuber() const { return useHuber; }
+
+  void setCertifyOptimality(bool value) { certifyOptimality = value; }
+  bool getCertifyOptimality() const { return certifyOptimality; }
+
+  /// Print the parameters and flags used for rotation averaging.
+  void print(const std::string &s = "") const {
+    std::cout << (s.empty() ? s : s + " ");
+    std::cout << " ShonanAveragingParameters: " << std::endl;
+    std::cout << " alpha: " << alpha << std::endl;
+    std::cout << " beta: " << beta << std::endl;
+    std::cout << " gamma: " << gamma << std::endl;
+    std::cout << " useHuber: " << useHuber << std::endl;
+  }
 };
 
 using ShonanAveragingParameters2 = ShonanAveragingParameters<2>;
@@ -107,7 +129,6 @@ class GTSAM_EXPORT ShonanAveraging {
   using Rot = typename Parameters::Rot;
 
   // We store SO(d) BetweenFactors to get noise model
-  // TODO(frank): use BinaryMeasurement?
   using Measurements = std::vector<BinaryMeasurement<Rot>>;
 
  private:
@@ -144,11 +165,41 @@ class GTSAM_EXPORT ShonanAveraging {
   size_t nrUnknowns() const { return nrUnknowns_; }
 
   /// Return number of measurements
-  size_t nrMeasurements() const { return measurements_.size(); }
+  size_t numberMeasurements() const { return measurements_.size(); }
 
   /// k^th binary measurement
   const BinaryMeasurement<Rot> &measurement(size_t k) const {
     return measurements_[k];
+  }
+
+  /**
+   * Update factors to use robust Huber loss.
+   *
+   * @param measurements Vector of BinaryMeasurements.
+   * @param k Huber noise model threshold.
+   */
+  Measurements makeNoiseModelRobust(const Measurements &measurements,
+                                    double k = 1.345) const {
+    Measurements robustMeasurements;
+    for (auto &measurement : measurements) {
+      auto model = measurement.noiseModel();
+      const auto &robust =
+          boost::dynamic_pointer_cast<noiseModel::Robust>(model);
+
+      SharedNoiseModel robust_model;
+      // Check if the noise model is already robust
+      if (robust) {
+        robust_model = model;
+      } else {
+        // make robust
+        robust_model = noiseModel::Robust::Create(
+            noiseModel::mEstimator::Huber::Create(k), model);
+      }
+      BinaryMeasurement<Rot> meas(measurement.key1(), measurement.key2(),
+                                  measurement.measured(), robust_model);
+      robustMeasurements.push_back(meas);
+    }
+    return robustMeasurements;
   }
 
   /// k^th measurement, as a Rot.
@@ -202,6 +253,13 @@ class GTSAM_EXPORT ShonanAveraging {
   double computeMinEigenValue(const Values &values,
                               Vector *minEigenVector = nullptr) const;
 
+  /**
+   * Compute minimum eigenvalue with accelerated power method.
+   * @param values: should be of type SOn
+   */
+  double computeMinEigenValueAP(const Values &values,
+                                Vector *minEigenVector = nullptr) const;
+
   /// Project pxdN Stiefel manifold matrix S to Rot3^N
   Values roundSolutionS(const Matrix &S) const;
 
@@ -242,6 +300,7 @@ class GTSAM_EXPORT ShonanAveraging {
   /**
    * Create initial Values of type SO(p)
    * @param p the dimensionality of the rotation manifold
+   * @param rng random number generator
    */
   Values initializeRandomlyAt(size_t p, std::mt19937 &rng) const;
 
@@ -345,24 +404,42 @@ class GTSAM_EXPORT ShonanAveraging {
   std::pair<Values, double> run(const Values &initialEstimate, size_t pMin = d,
                                 size_t pMax = 10) const;
   /// @}
+
+  /**
+   * Helper function to convert measurements to robust noise model
+   * if flag is set.
+   *
+   * @tparam T the type of measurement, e.g. Rot3.
+   * @param measurements vector of BinaryMeasurements of type T.
+   * @param useRobustModel flag indicating whether use robust noise model
+   * instead.
+   */
+  template <typename T>
+  inline std::vector<BinaryMeasurement<T>> maybeRobust(
+      const std::vector<BinaryMeasurement<T>> &measurements,
+      bool useRobustModel = false) const {
+    return useRobustModel ? makeNoiseModelRobust(measurements) : measurements;
+  }
 };
 
 // Subclasses for d=2 and d=3 that explicitly instantiate, as well as provide a
 // convenience interface with file access.
 
-class ShonanAveraging2 : public ShonanAveraging<2> {
+class GTSAM_EXPORT ShonanAveraging2 : public ShonanAveraging<2> {
  public:
   ShonanAveraging2(const Measurements &measurements,
                    const Parameters &parameters = Parameters());
-  explicit ShonanAveraging2(string g2oFile,
+  explicit ShonanAveraging2(std::string g2oFile,
                             const Parameters &parameters = Parameters());
+  ShonanAveraging2(const BetweenFactorPose2s &factors,
+                   const Parameters &parameters = Parameters());
 };
 
-class ShonanAveraging3 : public ShonanAveraging<3> {
+class GTSAM_EXPORT ShonanAveraging3 : public ShonanAveraging<3> {
  public:
   ShonanAveraging3(const Measurements &measurements,
                    const Parameters &parameters = Parameters());
-  explicit ShonanAveraging3(string g2oFile,
+  explicit ShonanAveraging3(std::string g2oFile,
                             const Parameters &parameters = Parameters());
 
   // TODO(frank): Deprecate after we land pybind wrapper

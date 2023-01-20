@@ -44,15 +44,15 @@ public:
   }
 
   /** destructor */
-  virtual ~IncrementalFixedLagSmoother() {
+  ~IncrementalFixedLagSmoother() override {
   }
 
   /** Print the factor for debugging and testing (implementing Testable) */
-  virtual void print(const std::string& s = "IncrementalFixedLagSmoother:\n",
+  void print(const std::string& s = "IncrementalFixedLagSmoother:\n",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /** Check if two IncrementalFixedLagSmoother Objects are equal */
-  virtual bool equals(const FixedLagSmoother& rhs, double tol = 1e-9) const override;
+  bool equals(const FixedLagSmoother& rhs, double tol = 1e-9) const override;
 
   /**
    * Add new factors, updating the solution and re-linearizing as needed.
@@ -112,6 +112,9 @@ public:
 
   /// Get results of latest isam2 update
   const ISAM2Result& getISAM2Result() const{ return isamResult_; }
+
+  /// Get the iSAM2 object which is used for the inference internally
+  const ISAM2& getISAM2() const { return isam_; }
 
 protected:
 

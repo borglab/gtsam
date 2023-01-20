@@ -13,6 +13,7 @@
  * @file   SmartStereoProjectionPoseFactor.h
  * @brief  Smart stereo factor on poses, assuming camera calibration is fixed
  * @author Luca Carlone
+ * @author Antoni Rosinol
  * @author Chris Beall
  * @author Zsolt Kira
  * @author Frank Dellaert
@@ -25,11 +26,12 @@
 namespace gtsam {
 /**
  *
- * @addtogroup SLAM
+ * @ingroup slam
  *
  * If you are using the factor, please cite:
- * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating conditionally
- * independent sets in factor graphs: a unifying perspective based on smart factors,
+ * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert,
+ * Eliminating conditionally independent sets in factor graphs:
+ * a unifying perspective based on smart factors,
  * Int. Conf. on Robotics and Automation (ICRA), 2014.
  *
  */
@@ -39,16 +41,15 @@ namespace gtsam {
  * has its own calibration.
  * The factor only constrains poses (variable dimension is 6).
  * This factor requires that values contains the involved poses (Pose3).
- * @addtogroup SLAM
+ * @ingroup slam
  */
-class SmartStereoProjectionPoseFactor: public SmartStereoProjectionFactor {
+class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
+    : public SmartStereoProjectionFactor {
+ protected:
+  /// shared pointer to calibration object (one for each camera)
+  std::vector<boost::shared_ptr<Cal3_S2Stereo>> K_all_;
 
-protected:
-
-  std::vector<boost::shared_ptr<Cal3_S2Stereo> > K_all_; ///< shared pointer to calibration object (one for each camera)
-
-public:
-
+ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// shorthand for base class type
@@ -65,54 +66,49 @@ public:
    * @param Isotropic measurement noise
    * @param params internal parameters of the smart factors
    */
-  SmartStereoProjectionPoseFactor(const SharedNoiseModel& sharedNoiseModel,
+  SmartStereoProjectionPoseFactor(
+      const SharedNoiseModel& sharedNoiseModel,
       const SmartStereoProjectionParams& params = SmartStereoProjectionParams(),
-      const boost::optional<Pose3> body_P_sensor = boost::none) :
-      Base(sharedNoiseModel, params, body_P_sensor) {
-  }
+      const boost::optional<Pose3>& body_P_sensor = boost::none);
 
   /** Virtual destructor */
-  virtual ~SmartStereoProjectionPoseFactor() {}
+  ~SmartStereoProjectionPoseFactor() override = default;
 
   /**
    * add a new measurement and pose key
-   * @param measured is the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
-   * @param poseKey is key corresponding to the camera observing the same landmark
+   * @param measured is the 2m dimensional location of the projection of a
+   * single landmark in the m view (the measurement)
+   * @param poseKey is key corresponding to the camera observing the same
+   * landmark
    * @param K is the (fixed) camera calibration
    */
-  void add(const StereoPoint2 measured, const Key poseKey,
-      const boost::shared_ptr<Cal3_S2Stereo> K) {
-    Base::add(measured, poseKey);
-    K_all_.push_back(K);
-  }
+  void add(const StereoPoint2& measured, const Key& poseKey,
+           const boost::shared_ptr<Cal3_S2Stereo>& K);
 
   /**
    *  Variant of the previous one in which we include a set of measurements
-   * @param measurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
-   * @param poseKeys vector of keys corresponding to the camera observing the same landmark
+   * @param measurements vector of the 2m dimensional location of the projection
+   * of a single landmark in the m view (the measurement)
+   * @param poseKeys vector of keys corresponding to the camera observing
+   * the same landmark
    * @param Ks vector of calibration objects
    */
-  void add(std::vector<StereoPoint2> measurements, KeyVector poseKeys,
-      std::vector<boost::shared_ptr<Cal3_S2Stereo> > Ks) {
-    Base::add(measurements, poseKeys);
-    for (size_t i = 0; i < measurements.size(); i++) {
-      K_all_.push_back(Ks.at(i));
-    }
-  }
+  void add(const std::vector<StereoPoint2>& measurements,
+           const KeyVector& poseKeys,
+           const std::vector<boost::shared_ptr<Cal3_S2Stereo>>& Ks);
 
   /**
-   * Variant of the previous one in which we include a set of measurements with the same noise and calibration
-   * @param measurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
-   * @param poseKeys vector of keys corresponding to the camera observing the same landmark
+   * Variant of the previous one in which we include a set of measurements with
+   * the same noise and calibration
+   * @param measurements vector of the 2m dimensional location of the projection
+   * of a single landmark in the m view (the measurement)
+   * @param poseKeys vector of keys corresponding to the camera observing the
+   * same landmark
    * @param K the (known) camera calibration (same for all measurements)
    */
-  void add(std::vector<StereoPoint2> measurements, KeyVector poseKeys,
-      const boost::shared_ptr<Cal3_S2Stereo> K) {
-    for (size_t i = 0; i < measurements.size(); i++) {
-      Base::add(measurements.at(i), poseKeys.at(i));
-      K_all_.push_back(K);
-    }
-  }
+  void add(const std::vector<StereoPoint2>& measurements,
+           const KeyVector& poseKeys,
+           const boost::shared_ptr<Cal3_S2Stereo>& K);
 
   /**
    * print
@@ -120,74 +116,44 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const override {
-    std::cout << s << "SmartStereoProjectionPoseFactor, z = \n ";
-    for(const boost::shared_ptr<Cal3_S2Stereo>& K: K_all_)
-    K->print("calibration = ");
-    Base::print("", keyFormatter);
-  }
+                                            DefaultKeyFormatter) const override;
 
   /// equals
-  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
-    const SmartStereoProjectionPoseFactor *e =
-        dynamic_cast<const SmartStereoProjectionPoseFactor*>(&p);
-
-    return e && Base::equals(p, tol);
-  }
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override;
 
   /**
    * error calculates the error of the factor.
    */
-  double error(const Values& values) const override {
-    if (this->active(values)) {
-      return this->totalReprojectionError(cameras(values));
-    } else { // else of active flag
-      return 0.0;
-    }
-  }
+  double error(const Values& values) const override;
 
   /** return the calibration object */
-  inline const std::vector<boost::shared_ptr<Cal3_S2Stereo> > calibration() const {
+  inline std::vector<boost::shared_ptr<Cal3_S2Stereo>> calibration() const {
     return K_all_;
   }
 
   /**
    * Collect all cameras involved in this factor
-   * @param values Values structure which must contain camera poses corresponding
+   * @param values Values structure which must contain camera poses
+   * corresponding
    * to keys involved in this factor
    * @return vector of Values
    */
-   Base::Cameras cameras(const Values& values) const override {
-    Base::Cameras cameras;
-    size_t i=0;
-    for(const Key& k: this->keys_) {
-      Pose3 pose = values.at<Pose3>(k);
+  Base::Cameras cameras(const Values& values) const override;
 
-      if (Base::body_P_sensor_)
-    	  pose = pose.compose(*(Base::body_P_sensor_));
-
-      StereoCamera camera(pose, K_all_[i++]);
-      cameras.push_back(camera);
-    }
-    return cameras;
-  }
-
-private:
-
+ private:
   /// Serialization function
   friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(K_all_);
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar& BOOST_SERIALIZATION_NVP(K_all_);
   }
 
-}; // end of class declaration
+};  // end of class declaration
 
 /// traits
-template<>
-struct traits<SmartStereoProjectionPoseFactor> : public Testable<
-    SmartStereoProjectionPoseFactor> {
-};
+template <>
+struct traits<SmartStereoProjectionPoseFactor>
+    : public Testable<SmartStereoProjectionPoseFactor> {};
 
-} // \ namespace gtsam
+}  // namespace gtsam

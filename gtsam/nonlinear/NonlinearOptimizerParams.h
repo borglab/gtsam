@@ -149,6 +149,23 @@ class GTSAM_EXPORT NonlinearOptimizerParams {
   boost::shared_ptr<IterativeOptimizationParameters>& iterativeParams{
       linearSolverParams.iterativeParams};
 
+  NonlinearOptimizerParams() = default;
+  virtual ~NonlinearOptimizerParams() {
+  }
+
+  virtual void print(const std::string& str = "") const;
+
+  bool equals(const NonlinearOptimizerParams& other, double tol = 1e-9) const {
+    return maxIterations == other.getMaxIterations()
+        && std::abs(relativeErrorTol - other.getRelativeErrorTol()) <= tol
+        && std::abs(absoluteErrorTol - other.getAbsoluteErrorTol()) <= tol
+        && std::abs(errorTol - other.getErrorTol()) <= tol
+        && verbosityTranslator(verbosity) == other.getVerbosity();
+    //  && orderingType.equals(other.getOrderingType()_;
+    // && linearSolverType == other.getLinearSolverType();
+    // TODO: check ordering, iterativeParams, and iterationsHook
+  }
+
   inline bool isMultifrontal() const {
     return linearSolverParams.isMultifrontal();
   }

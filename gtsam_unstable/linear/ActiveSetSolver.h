@@ -102,7 +102,7 @@ protected:
   /**
    * Compute minimum step size alpha to move from the current point @p xk to the
    * next feasible point along a direction @p p:  x' = xk + alpha*p,
-   * where alpha \in [0,maxAlpha].
+   * where alpha \f$\in\f$ [0,maxAlpha].
    *
    * For QP, maxAlpha = 1. For LP: maxAlpha = Inf.
    *

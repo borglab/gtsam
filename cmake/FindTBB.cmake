@@ -99,11 +99,8 @@ if(NOT TBB_FOUND)
   ##################################
 
   if(NOT DEFINED TBB_USE_DEBUG_BUILD)
-    if(CMAKE_BUILD_TYPE MATCHES "(Debug|DEBUG|debug)")
-      set(TBB_BUILD_TYPE DEBUG)
-    else()
-      set(TBB_BUILD_TYPE RELEASE)
-    endif()
+    # Set build type to RELEASE by default for optimization.
+    set(TBB_BUILD_TYPE RELEASE)
   elseif(TBB_USE_DEBUG_BUILD)
     set(TBB_BUILD_TYPE DEBUG)
   else()
@@ -147,7 +144,8 @@ if(NOT TBB_FOUND)
 
   elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     # OS X
-    set(TBB_DEFAULT_SEARCH_DIR "/opt/intel/tbb")
+    set(TBB_DEFAULT_SEARCH_DIR "/opt/intel/tbb"
+                               "/usr/local/opt/tbb")
 
     # TODO: Check to see which C++ library is being used by the compiler.
     if(NOT ${CMAKE_SYSTEM_VERSION} VERSION_LESS 13.0)
@@ -184,7 +182,18 @@ if(NOT TBB_FOUND)
   ##################################
 
   if(TBB_INCLUDE_DIRS)
-    file(READ "${TBB_INCLUDE_DIRS}/tbb/tbb_stddef.h" _tbb_version_file)
+    set(_tbb_version_file_prior_to_tbb_2021_1 "${TBB_INCLUDE_DIRS}/tbb/tbb_stddef.h")
+    set(_tbb_version_file_after_tbb_2021_1 "${TBB_INCLUDE_DIRS}/oneapi/tbb/version.h")
+
+    if (EXISTS "${_tbb_version_file_prior_to_tbb_2021_1}")
+      file(READ "${_tbb_version_file_prior_to_tbb_2021_1}" _tbb_version_file )
+    elseif (EXISTS "${_tbb_version_file_after_tbb_2021_1}")
+      file(READ "${_tbb_version_file_after_tbb_2021_1}" _tbb_version_file )
+    else()
+        message(FATAL_ERROR "Found TBB installation: ${TBB_INCLUDE_DIRS} "
+      "missing version header.")
+    endif()
+
     string(REGEX REPLACE ".*#define TBB_VERSION_MAJOR ([0-9]+).*" "\\1"
         TBB_VERSION_MAJOR "${_tbb_version_file}")
     string(REGEX REPLACE ".*#define TBB_VERSION_MINOR ([0-9]+).*" "\\1"

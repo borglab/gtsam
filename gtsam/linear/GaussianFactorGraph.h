@@ -21,12 +21,13 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/linear/Errors.h>  // Included here instead of fw-declared so we can use Errors::iterator
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/Errors.h> // Included here instead of fw-declared so we can use Errors::iterator
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
@@ -53,6 +54,12 @@ namespace gtsam {
     static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
       DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
         return EliminatePreferCholesky(factors, keys); }
+    /// The default ordering generation function
+    static Ordering DefaultOrderingFunc(
+        const FactorGraphType& graph,
+        boost::optional<const VariableIndex&> variableIndex) {
+      return Ordering::Colamd(*variableIndex);
+    }
   };
 
   /* ************************************************************************* */
@@ -73,8 +80,19 @@ namespace gtsam {
     typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
     typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
+    /// @name Constructors
+    /// @{
+    
     /** Default constructor */
     GaussianFactorGraph() {}
+
+    /**
+     * Construct from an initializer lists of GaussianFactor shared pointers.
+     * Example:
+     *   GaussianFactorGraph graph = { factor1, factor2, factor3 };
+     */
+    GaussianFactorGraph(std::initializer_list<sharedFactor> factors) : Base(factors) {}
+    
 
     /** Construct from iterator over factors */
     template<typename ITERATOR>
@@ -91,12 +109,19 @@ namespace gtsam {
     /** Virtual destructor */
     virtual ~GaussianFactorGraph() {}
 
+    /// @}
     /// @name Testable
     /// @{
 
     bool equals(const This& fg, double tol = 1e-9) const;
 
     /// @}
+
+    /// Check exact equality.
+    friend bool operator==(const GaussianFactorGraph& lhs,
+                            const GaussianFactorGraph& rhs) {
+      return lhs.isEqual(rhs);
+    }
 
     /** Add a factor by value - makes a copy */
     void add(const GaussianFactor& factor) { push_back(factor.clone()); }
@@ -142,19 +167,10 @@ namespace gtsam {
     std::map<Key, size_t> getKeyDimMap() const;
 
     /** unnormalized error */
-    double error(const VectorValues& x) const {
-      double total_error = 0.;
-      for(const sharedFactor& factor: *this){
-        if(factor)
-          total_error += factor->error(x);
-      }
-      return total_error;
-    }
+    double error(const VectorValues& x) const;
 
     /** Unnormalized probability. O(n) */
-    double probPrime(const VectorValues& c) const {
-      return exp(-0.5 * error(c));
-    }
+    double probPrime(const VectorValues& c) const;
 
     /**
      * Clone() performs a deep-copy of the graph, including all of the factors.
@@ -393,6 +409,14 @@ namespace gtsam {
     /** In-place version e <- A*x that takes an iterator. */
     void multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const;
 
+    void printErrors(
+        const VectorValues& x,
+        const std::string& str = "GaussianFactorGraph: ",
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+        const std::function<bool(const Factor* /*factor*/,
+                                 double /*whitenedError*/, size_t /*index*/)>&
+            printCondition =
+                [](const Factor*, double, size_t) { return true; }) const;
     /// @}
 
   private:
@@ -405,9 +429,14 @@ namespace gtsam {
 
   public:
 
-    /** \deprecated */
-    VectorValues optimize(boost::none_t,
-      const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+   /** @deprecated */
+   VectorValues GTSAM_DEPRECATED
+   optimize(boost::none_t, const Eliminate& function =
+                               EliminationTraitsType::DefaultEliminate) const {
+     return optimize(function);
+   }
+#endif
 
   };
 
@@ -417,7 +446,7 @@ namespace gtsam {
    */
   GTSAM_EXPORT bool hasConstraints(const GaussianFactorGraph& factors);
 
-  /****** Linear Algebra Opeations ******/
+  /****** Linear Algebra Operations ******/
 
   ///* matrix-vector operations */
   //GTSAM_EXPORT void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);

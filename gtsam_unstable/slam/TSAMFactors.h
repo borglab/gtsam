@@ -26,11 +26,11 @@ namespace gtsam {
 /**
  * DeltaFactor: relative 2D measurement between Pose2 and Point2
  */
-class DeltaFactor: public NoiseModelFactor2<Pose2, Point2> {
+class DeltaFactor: public NoiseModelFactorN<Pose2, Point2> {
 
 public:
   typedef DeltaFactor This;
-  typedef NoiseModelFactor2<Pose2, Point2> Base;
+  typedef NoiseModelFactorN<Pose2, Point2> Base;
   typedef boost::shared_ptr<This> shared_ptr;
 
 private:
@@ -55,11 +55,11 @@ public:
 /**
  * DeltaFactorBase: relative 2D measurement between Pose2 and Point2, with Basenodes
  */
-class DeltaFactorBase: public NoiseModelFactor4<Pose2, Pose2, Pose2, Point2> {
+class DeltaFactorBase: public NoiseModelFactorN<Pose2, Pose2, Pose2, Point2> {
 
 public:
   typedef DeltaFactorBase This;
-  typedef NoiseModelFactor4<Pose2, Pose2, Pose2, Point2> Base;
+  typedef NoiseModelFactorN<Pose2, Pose2, Pose2, Point2> Base;
   typedef boost::shared_ptr<This> shared_ptr;
 
 private:
@@ -110,11 +110,11 @@ public:
 /**
  * OdometryFactorBase: Pose2 odometry, with Basenodes
  */
-class OdometryFactorBase: public NoiseModelFactor4<Pose2, Pose2, Pose2, Pose2> {
+class OdometryFactorBase: public NoiseModelFactorN<Pose2, Pose2, Pose2, Pose2> {
 
 public:
   typedef OdometryFactorBase This;
-  typedef NoiseModelFactor4<Pose2, Pose2, Pose2, Pose2> Base;
+  typedef NoiseModelFactorN<Pose2, Pose2, Pose2, Pose2> Base;
   typedef boost::shared_ptr<This> shared_ptr;
 
 private:

@@ -29,7 +29,7 @@ namespace gtsam {
   /**
    * Non-linear factor for a constraint derived from a 2D measurement. The calibration is known here.
    * i.e. the main building block for visual SLAM.
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
   class MultiProjectionFactor: public NoiseModelFactor {
@@ -98,7 +98,7 @@ namespace gtsam {
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
     /** Virtual destructor */
-    virtual ~MultiProjectionFactor() {}
+    ~MultiProjectionFactor() override {}
 
     /// @return a deep copy of this factor
     NonlinearFactor::shared_ptr clone() const override {
@@ -187,8 +187,8 @@ namespace gtsam {
         if (H1) *H1 = Matrix::Zero(2,6);
         if (H2) *H2 = Matrix::Zero(2,3);
         if (verboseCheirality_)
-          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
-              " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->keys_.at(1)) <<
+              " moved behind camera " << DefaultKeyFormatter(this->keys_.at(0)) << std::endl;
         if (throwCheirality_)
           throw e;
       }

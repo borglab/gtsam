@@ -16,8 +16,6 @@
 
 #include <iostream>
 
-#include <boost/bind.hpp>
-
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/base/Testable.h>
@@ -32,6 +30,7 @@
 
 using namespace std;
 using namespace boost;
+using namespace std::placeholders;
 using namespace gtsam;
 
 typedef gtsam::ReferenceFrameFactor<gtsam::Point2, gtsam::Pose2> PointReferenceFrameFactor;
@@ -69,13 +68,13 @@ TEST( ReferenceFrameFactor, jacobians ) {
 
   Matrix numericalDT, numericalDL, numericalDF;
   numericalDF = numericalDerivative31<Vector,Point2,Pose2,Point2>(
-      boost::bind(evaluateError_, tc, _1, _2, _3),
+      std::bind(evaluateError_, tc, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
       global, trans, local, 1e-5);
   numericalDT = numericalDerivative32<Vector,Point2,Pose2,Point2>(
-      boost::bind(evaluateError_, tc, _1, _2, _3),
+      std::bind(evaluateError_, tc, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
       global, trans, local, 1e-5);
   numericalDL = numericalDerivative33<Vector,Point2,Pose2,Point2>(
-      boost::bind(evaluateError_, tc, _1, _2, _3),
+      std::bind(evaluateError_, tc, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
       global, trans, local, 1e-5);
 
   EXPECT(assert_equal(numericalDF, actualDF));
@@ -101,13 +100,13 @@ TEST( ReferenceFrameFactor, jacobians_zero ) {
 
   Matrix numericalDT, numericalDL, numericalDF;
   numericalDF = numericalDerivative31<Vector,Point2,Pose2,Point2>(
-      boost::bind(evaluateError_, tc, _1, _2, _3),
+      std::bind(evaluateError_, tc, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
       global, trans, local, 1e-5);
   numericalDT = numericalDerivative32<Vector,Point2,Pose2,Point2>(
-      boost::bind(evaluateError_, tc, _1, _2, _3),
+      std::bind(evaluateError_, tc, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
       global, trans, local, 1e-5);
   numericalDL = numericalDerivative33<Vector,Point2,Pose2,Point2>(
-      boost::bind(evaluateError_, tc, _1, _2, _3),
+      std::bind(evaluateError_, tc, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
       global, trans, local, 1e-5);
 
   EXPECT(assert_equal(numericalDF, actualDF));

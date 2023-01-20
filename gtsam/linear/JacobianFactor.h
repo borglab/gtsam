@@ -183,7 +183,7 @@ namespace gtsam {
       const VariableSlots& p_variableSlots);
 
     /** Virtual destructor */
-    virtual ~JacobianFactor() {}
+    ~JacobianFactor() override {}
 
     /** Clone this JacobianFactor */
     GaussianFactor::shared_ptr clone() const override {
@@ -198,7 +198,12 @@ namespace gtsam {
 
     Vector unweighted_error(const VectorValues& c) const; /** (A*x-b) */
     Vector error_vector(const VectorValues& c) const; /** (A*x-b)/sigma */
-    double error(const VectorValues& c) const override; /**  0.5*(A*x-b)'*D*(A*x-b) */
+
+    /// HybridValues simply extracts the \class VectorValues and calls error.
+    using GaussianFactor::error;
+
+    //// 0.5*(A*x-b)'*D*(A*x-b).
+    double error(const VectorValues& c) const override; 
 
     /** Return the augmented information matrix represented by this GaussianFactor.
      * The augmented information matrix contains the information matrix with an
@@ -259,9 +264,6 @@ namespace gtsam {
      * @return a HessianFactor with negated Hessian matrices
      */
     GaussianFactor::shared_ptr negate() const override;
-
-    /** Check if the factor is empty.  TODO: How should this be defined? */
-    bool empty() const override { return size() == 0 /*|| rows() == 0*/; }
 
     /** is noise model constrained ? */
     bool isConstrained() const {
@@ -368,7 +370,7 @@ namespace gtsam {
      * @param keys The variables to eliminate in the order as specified here in \c keys
      * @return The conditional and remaining factor
      *
-     * \addtogroup LinearSolving */
+     * \ingroup LinearSolving */
     friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
       EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys);
 

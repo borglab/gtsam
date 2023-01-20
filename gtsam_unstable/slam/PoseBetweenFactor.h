@@ -26,15 +26,15 @@ namespace gtsam {
   /**
    * A class for a measurement predicted by "between(config[key1],config[key2])"
    * @tparam POSE the Pose type
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   template<class POSE>
-  class PoseBetweenFactor: public NoiseModelFactor2<POSE, POSE> {
+  class PoseBetweenFactor: public NoiseModelFactorN<POSE, POSE> {
 
   private:
 
     typedef PoseBetweenFactor<POSE> This;
-    typedef NoiseModelFactor2<POSE, POSE> Base;
+    typedef NoiseModelFactorN<POSE, POSE> Base;
 
     POSE measured_; /** The measurement */
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
@@ -56,7 +56,7 @@ namespace gtsam {
       Base(model, key1, key2), measured_(measured), body_P_sensor_(body_P_sensor) {
     }
 
-    virtual ~PoseBetweenFactor() {}
+    ~PoseBetweenFactor() override {}
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {

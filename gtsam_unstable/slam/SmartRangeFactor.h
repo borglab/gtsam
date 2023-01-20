@@ -24,7 +24,7 @@ namespace gtsam {
 
 /**
  * Smart factor for range SLAM
- * @addtogroup SLAM
+ * @ingroup slam
  */
 class SmartRangeFactor: public NoiseModelFactor {
  protected:
@@ -54,7 +54,7 @@ class SmartRangeFactor: public NoiseModelFactor {
       NoiseModelFactor(noiseModel::Isotropic::Sigma(1, s)), variance_(s * s) {
   }
 
-  virtual ~SmartRangeFactor() {
+  ~SmartRangeFactor() override {
   }
 
   /// Add a range measurement to a pose with given key.

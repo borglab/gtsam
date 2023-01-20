@@ -54,13 +54,13 @@ namespace gtsam {
 /**
  * Non-linear factor for a constraint derived from a 2D measurement.
  * The calibration is unknown here compared to GenericProjectionFactor
- * @addtogroup SLAM
+ * @ingroup slam
  */
 template<class CAMERA, class LANDMARK>
-class GeneralSFMFactor: public NoiseModelFactor2<CAMERA, LANDMARK> {
+class GeneralSFMFactor: public NoiseModelFactorN<CAMERA, LANDMARK> {
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(CAMERA);
-  GTSAM_CONCEPT_MANIFOLD_TYPE(LANDMARK);
+  GTSAM_CONCEPT_MANIFOLD_TYPE(CAMERA)
+  GTSAM_CONCEPT_MANIFOLD_TYPE(LANDMARK)
 
   static const int DimC = FixedDimension<CAMERA>::value;
   static const int DimL = FixedDimension<LANDMARK>::value;
@@ -74,7 +74,7 @@ protected:
 public:
 
   typedef GeneralSFMFactor<CAMERA, LANDMARK> This;///< typedef for this object
-  typedef NoiseModelFactor2<CAMERA, LANDMARK> Base;///< typedef for the base class
+  typedef NoiseModelFactorN<CAMERA, LANDMARK> Base;///< typedef for the base class
 
   // shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -86,14 +86,17 @@ public:
    * @param cameraKey is the index of the camera
    * @param landmarkKey is the index of the landmark
    */
-  GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model, Key cameraKey, Key landmarkKey) :
-  Base(model, cameraKey, landmarkKey), measured_(measured) {}
+  GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model,
+                   Key cameraKey, Key landmarkKey)
+      : Base(model, cameraKey, landmarkKey), measured_(measured) {}
 
-  GeneralSFMFactor():measured_(0.0,0.0) {} ///< default constructor
-  GeneralSFMFactor(const Point2 & p):measured_(p) {} ///< constructor that takes a Point2
-  GeneralSFMFactor(double x, double y):measured_(x,y) {} ///< constructor that takes doubles x,y to make a Point2
+  GeneralSFMFactor() : measured_(0.0, 0.0) {}  ///< default constructor
+  ///< constructor that takes a Point2
+  GeneralSFMFactor(const Point2& p) : measured_(p) {}
+  ///< constructor that takes doubles x,y to make a Point2
+  GeneralSFMFactor(double x, double y) : measured_(x, y) {}
 
-  virtual ~GeneralSFMFactor() {} ///< destructor
+  ~GeneralSFMFactor() override {} ///< destructor
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -127,7 +130,7 @@ public:
     catch( CheiralityException& e) {
       if (H1) *H1 = JacobianC::Zero();
       if (H2) *H2 = JacobianL::Zero();
-      // TODO warn if verbose output asked for
+      //TODO Print the exception via logging
       return Z_2x1;
     }
   }
@@ -149,7 +152,7 @@ public:
       H1.setZero();
       H2.setZero();
       b.setZero();
-      // TODO warn if verbose output asked for
+      //TODO Print the exception via logging
     }
 
     // Whiten the system if needed
@@ -181,6 +184,7 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor2",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);
@@ -197,9 +201,9 @@ struct traits<GeneralSFMFactor<CAMERA, LANDMARK> > : Testable<
  * Compared to GeneralSFMFactor, it is a ternary-factor because the calibration is isolated from camera..
  */
 template<class CALIBRATION>
-class GeneralSFMFactor2: public NoiseModelFactor3<Pose3, Point3, CALIBRATION> {
+class GeneralSFMFactor2: public NoiseModelFactorN<Pose3, Point3, CALIBRATION> {
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION);
+  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
   static const int DimK = FixedDimension<CALIBRATION>::value;
 
 protected:
@@ -210,7 +214,7 @@ public:
 
   typedef GeneralSFMFactor2<CALIBRATION> This;
   typedef PinholeCamera<CALIBRATION> Camera;///< typedef for camera type
-  typedef NoiseModelFactor3<Pose3, Point3, CALIBRATION> Base;///< typedef for the base class
+  typedef NoiseModelFactorN<Pose3, Point3, CALIBRATION> Base;///< typedef for the base class
 
   // shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -227,7 +231,7 @@ public:
   Base(model, poseKey, landmarkKey, calibKey), measured_(measured) {}
   GeneralSFMFactor2():measured_(0.0,0.0) {} ///< default constructor
 
-  virtual ~GeneralSFMFactor2() {} ///< destructor
+  ~GeneralSFMFactor2() override {} ///< destructor
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -282,6 +286,7 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor3 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor3",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);

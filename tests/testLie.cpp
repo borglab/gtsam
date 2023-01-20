@@ -129,6 +129,46 @@ TEST( testProduct, Logmap ) {
   EXPECT(assert_equal(numericH, actH, tol));
 }
 
+/* ************************************************************************* */
+Product interpolate_proxy(const Product& x, const Product& y, double t) {
+  return interpolate<Product>(x, y, t);
+}
+
+TEST(Lie, Interpolate) {
+  Product x(Point2(1, 2), Pose2(3, 4, 5));
+  Product y(Point2(6, 7), Pose2(8, 9, 0));
+
+  double t;
+  Matrix actH1, numericH1, actH2, numericH2;
+
+  t = 0.0;
+  interpolate<Product>(x, y, t, actH1, actH2);
+  numericH1 = numericalDerivative31<Product, Product, Product, double>(
+      interpolate_proxy, x, y, t);
+  EXPECT(assert_equal(numericH1, actH1, tol));
+  numericH2 = numericalDerivative32<Product, Product, Product, double>(
+      interpolate_proxy, x, y, t);
+  EXPECT(assert_equal(numericH2, actH2, tol));
+
+  t = 0.5;
+  interpolate<Product>(x, y, t, actH1, actH2);
+  numericH1 = numericalDerivative31<Product, Product, Product, double>(
+      interpolate_proxy, x, y, t);
+  EXPECT(assert_equal(numericH1, actH1, tol));
+  numericH2 = numericalDerivative32<Product, Product, Product, double>(
+      interpolate_proxy, x, y, t);
+  EXPECT(assert_equal(numericH2, actH2, tol));
+
+  t = 1.0;
+  interpolate<Product>(x, y, t, actH1, actH2);
+  numericH1 = numericalDerivative31<Product, Product, Product, double>(
+      interpolate_proxy, x, y, t);
+  EXPECT(assert_equal(numericH1, actH1, tol));
+  numericH2 = numericalDerivative32<Product, Product, Product, double>(
+      interpolate_proxy, x, y, t);
+  EXPECT(assert_equal(numericH2, actH2, tol));
+}
+
 //******************************************************************************
 int main() {
   TestResult tr;

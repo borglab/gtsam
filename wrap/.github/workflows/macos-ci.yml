@@ -1,0 +1,40 @@
+name: Wrap CI for macOS
+
+on: [pull_request]
+
+jobs:
+  build:
+    name: Tests for 🐍 ${{ matrix.python-version }}
+    runs-on: macos-10.15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.6, 3.7, 3.8, 3.9]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Dependencies
+        run: |
+          brew install cmake ninja boost
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Python Dependencies
+        run: |
+          pip3 install -U pip setuptools
+          pip3 install -r requirements.txt
+
+      - name: Build and Test
+        run: |
+          # Build
+          cmake .
+          cd tests
+          # Use Pytest to run all the tests.
+          pytest
+

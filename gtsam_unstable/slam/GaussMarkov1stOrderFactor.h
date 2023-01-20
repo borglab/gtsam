@@ -42,12 +42,12 @@ namespace gtsam {
  * T is the measurement type, by default the same
  */
 template<class VALUE>
-class GaussMarkov1stOrderFactor: public NoiseModelFactor2<VALUE, VALUE> {
+class GaussMarkov1stOrderFactor: public NoiseModelFactorN<VALUE, VALUE> {
 
 private:
 
   typedef GaussMarkov1stOrderFactor<VALUE> This;
-  typedef NoiseModelFactor2<VALUE, VALUE> Base;
+  typedef NoiseModelFactorN<VALUE, VALUE> Base;
 
   double dt_;
   Vector tau_;
@@ -66,7 +66,7 @@ public:
         Base(calcDiscreteNoiseModel(model, delta_t), key1, key2), dt_(delta_t), tau_(tau) {
   }
 
-  virtual ~GaussMarkov1stOrderFactor() {}
+  ~GaussMarkov1stOrderFactor() override {}
 
   /** implement functions needed for Testable */
 

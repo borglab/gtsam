@@ -97,7 +97,7 @@ Pose2 Pose2betweenOptimized(const Pose2& r1, const Pose2& r2,
       s,  -c,  dt2,
       0.0, 0.0,-1.0;
   }
-  if (H2) *H2 = Matrix3::Identity();
+  if (H2) *H2 = I_3x3;
 
   return Pose2(R,t);
 }

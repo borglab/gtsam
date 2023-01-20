@@ -59,7 +59,7 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   // Add the new variables to theta
   theta_.insert(newTheta);
   // Add new variables to the end of the ordering
-  for (const auto& key_value : newTheta) {
+  for (const auto key_value : newTheta) {
     ordering_.push_back(key_value.key);
   }
   // Augment Delta
@@ -267,7 +267,7 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
           // Put the linearization points and deltas back for specific variables
           if (enforceConsistency_ && (linearKeys_.size() > 0)) {
             theta_.update(linearKeys_);
-            for(const auto& key_value: linearKeys_) {
+            for(const auto key_value: linearKeys_) {
               delta_.at(key_value.key) = newDelta.at(key_value.key);
             }
           }
@@ -282,9 +282,12 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
           // Reject this change
           if (lambda >= lambdaUpperBound) {
             // The maximum lambda has been used. Print a warning and end the search.
-            cout
+            if(parameters_.verbosity >= NonlinearOptimizerParams::TERMINATION
+               || parameters_.verbosityLM == LevenbergMarquardtParams::SUMMARY) {
+              cout
                 << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda"
                 << endl;
+            }
             break;
           } else {
             // Increase lambda and continue searching

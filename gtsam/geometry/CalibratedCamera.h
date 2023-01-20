@@ -46,7 +46,7 @@ private:
 
 /**
  * A pinhole camera class that has a Pose3, functions as base class for all pinhole cameras
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT PinholeBase {
@@ -119,22 +119,20 @@ public:
   /// @name Standard Constructors
   /// @{
 
-  /** default constructor */
-  PinholeBase() {
-  }
+  /// Default constructor
+  PinholeBase() {}
 
-  /** constructor with pose */
-  explicit PinholeBase(const Pose3& pose) :
-      pose_(pose) {
-  }
+  /// Constructor with pose
+  explicit PinholeBase(const Pose3& pose) : pose_(pose) {}
 
   /// @}
   /// @name Advanced Constructors
   /// @{
 
-  explicit PinholeBase(const Vector &v) :
-      pose_(Pose3::Expmap(v)) {
-  }
+  explicit PinholeBase(const Vector& v) : pose_(Pose3::Expmap(v)) {}
+
+  /// Default destructor
+  virtual ~PinholeBase() = default;
 
   /// @}
   /// @name Testable
@@ -144,7 +142,7 @@ public:
   bool equals(const PinholeBase &camera, double tol = 1e-9) const;
 
   /// print
-  void print(const std::string& s = "PinholeBase") const;
+  virtual void print(const std::string& s = "PinholeBase") const;
 
   /// @}
   /// @name Standard Interface
@@ -243,7 +241,7 @@ private:
  * A Calibrated camera class [R|-R't], calibration K=I.
  * If calibration is known, it is more computationally efficient
  * to calibrate the measurements rather than try to predict in pixels.
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT CalibratedCamera: public PinholeBase {
@@ -323,6 +321,11 @@ public:
 
   /// Return canonical coordinate
   Vector localCoordinates(const CalibratedCamera& T2) const;
+
+  /// print
+  void print(const std::string& s = "CalibratedCamera") const override {
+    PinholeBase::print(s);
+  }
 
   /// @deprecated
   inline size_t dim() const {

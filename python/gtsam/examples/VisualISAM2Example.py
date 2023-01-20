@@ -33,7 +33,10 @@ def visual_ISAM2_plot(result):
     fignum = 0
 
     fig = plt.figure(fignum)
-    axes = fig.gca(projection='3d')
+    if not fig.axes:
+        axes = fig.add_subplot(projection='3d')
+    else:
+        axes = fig.axes[0]
     plt.cla()
 
     # Plot points
@@ -81,7 +84,7 @@ def visual_ISAM2_example():
     # will approach the batch result.
     parameters = gtsam.ISAM2Params()
     parameters.setRelinearizeThreshold(0.01)
-    parameters.setRelinearizeSkip(1)
+    parameters.relinearizeSkip = 1
     isam = gtsam.ISAM2(parameters)
 
     # Create a Factor Graph and Values to hold the new data

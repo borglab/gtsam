@@ -23,6 +23,7 @@
 #include <boost/optional.hpp>
 #include <map>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 namespace gtsam {
@@ -79,12 +80,13 @@ bool assert_equal(const V& expected, const boost::optional<const V&>& actual, do
   return assert_equal(expected, *actual, tol);
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 /**
  * Version of assert_equals to work with vectors
- * \deprecated: use container equals instead
+ * @deprecated: use container equals instead
  */
 template<class V>
-bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, double tol = 1e-9) {
+bool GTSAM_DEPRECATED assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, double tol = 1e-9) {
   bool match = true;
   if (expected.size() != actual.size())
     match = false;
@@ -107,6 +109,7 @@ bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, 
   }
   return true;
 }
+#endif
 
 /**
  * Function for comparing maps of testable->testable
@@ -347,6 +350,49 @@ bool assert_inequal(const V& expected, const V& actual, double tol = 1e-9) {
   expected.print("expected");
   actual.print("actual");
   return false;
+}
+
+/**
+ * Capture std out via cout stream and compare against string.
+ */
+template<class V>
+bool assert_stdout_equal(const std::string& expected, const V& actual) {
+  // Redirect output to buffer so we can compare
+  std::stringstream buffer;
+  // Save the original output stream so we can reset later
+  std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
+
+  // We test against actual std::cout for faithful reproduction
+  std::cout << actual;
+
+  // Get output string and reset stdout
+  std::string actual_ = buffer.str();
+  std::cout.rdbuf(old);
+
+  return assert_equal(expected, actual_);
+}
+
+/**
+ * Capture print function output and compare against string.
+ *
+ * @param s: Optional string to pass to the print() method.
+ */
+template <class V>
+bool assert_print_equal(const std::string& expected, const V& actual,
+                        const std::string& s = "") {
+  // Redirect output to buffer so we can compare
+  std::stringstream buffer;
+  // Save the original output stream so we can reset later
+  std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
+
+  // We test against actual std::cout for faithful reproduction
+  actual.print(s);
+
+  // Get output string and reset stdout
+  std::string actual_ = buffer.str();
+  std::cout.rdbuf(old);
+
+  return assert_equal(expected, actual_);
 }
 
 } // \namespace gtsam

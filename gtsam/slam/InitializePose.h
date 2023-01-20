@@ -62,7 +62,7 @@ static Values computePoses(const Values& initialRot,
 
   // Upgrade rotations to full poses
   Values initialPose;
-  for (const auto& key_value : initialRot) {
+  for (const auto key_value : initialRot) {
     Key key = key_value.key;
     const auto& rot = initialRot.at<typename Pose::Rotation>(key);
     Pose initializedPose = Pose(rot, origin);
@@ -86,7 +86,7 @@ static Values computePoses(const Values& initialRot,
 
   // put into Values structure
   Values estimate;
-  for (const auto& key_value : GNresult) {
+  for (const auto key_value : GNresult) {
     Key key = key_value.key;
     if (key != kAnchorKey) {
       const Pose& pose = GNresult.at<Pose>(key);

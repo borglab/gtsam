@@ -80,6 +80,7 @@ public:
   using Base::Dim;
   using Base::retract;
   using Base::localCoordinates;
+  using Base::LocalCoordinates;
   /// @}
 
   /// @name measurement functions

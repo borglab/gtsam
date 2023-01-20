@@ -37,8 +37,9 @@ public:
   typedef boost::shared_ptr<InequalityFactorGraph> shared_ptr;
 
   /** print */
-  void print(const std::string& str, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
+  void print(
+      const std::string& str = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(str, keyFormatter);
   }
 

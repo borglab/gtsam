@@ -6,7 +6,7 @@
 get_filename_component(OUR_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 if(EXISTS "${OUR_CMAKE_DIR}/CMakeCache.txt")
   # In build tree
-  set(@PACKAGE_NAME@_INCLUDE_DIR @CMAKE_SOURCE_DIR@ CACHE PATH "@PACKAGE_NAME@ include directory")
+  set(@PACKAGE_NAME@_INCLUDE_DIR @GTSAM_SOURCE_DIR@ CACHE PATH "@PACKAGE_NAME@ include directory")
 else()
   # Find installed library
   set(@PACKAGE_NAME@_INCLUDE_DIR "${OUR_CMAKE_DIR}/@CONF_REL_INCLUDE_DIR@" CACHE PATH "@PACKAGE_NAME@ include directory")
@@ -15,10 +15,14 @@ endif()
 # Find dependencies, required by cmake exported targets:
 include(CMakeFindDependencyMacro)
 # Allow using cmake < 3.8
-if(${CMAKE_VERSION} VERSION_LESS "3.8.0") 
+if(${CMAKE_VERSION} VERSION_LESS "3.8.0")
 find_package(Boost @BOOST_FIND_MINIMUM_VERSION@ COMPONENTS @BOOST_FIND_MINIMUM_COMPONENTS@)
 else()
 find_dependency(Boost @BOOST_FIND_MINIMUM_VERSION@ COMPONENTS @BOOST_FIND_MINIMUM_COMPONENTS@)
+endif()
+
+if(@GTSAM_USE_SYSTEM_EIGEN@)
+find_dependency(Eigen3 REQUIRED)
 endif()
 
 # Load exports

@@ -8,6 +8,7 @@ See LICENSE for the license information
 TestCase class with GTSAM assert utils.
 Author: Frank Dellaert
 """
+import pickle
 import unittest
 
 
@@ -29,3 +30,14 @@ class GtsamTestCase(unittest.TestCase):
         if not equal:
             raise self.failureException(
                 "Values are not equal:\n{}!={}".format(actual, expected))
+
+    def assertEqualityOnPickleRoundtrip(self, obj: object, tol=1e-9) -> None:
+        """ Performs a round-trip using pickle and asserts equality.
+
+            Usage:
+                self.assertEqualityOnPickleRoundtrip(obj)
+            Keyword Arguments:
+                tol {float} -- tolerance passed to 'equals', default 1e-9
+        """
+        roundTripObj = pickle.loads(pickle.dumps(obj))
+        self.gtsamAssertEquals(roundTripObj, obj)

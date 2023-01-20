@@ -21,11 +21,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/list.hpp> // for operator +=
-
 #include <sstream>
 
-using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
@@ -57,6 +54,12 @@ TEST(Key, SymbolGenerator) {
   EXPECT(assert_equal(x1, z1));
   EXPECT(assert_equal(v1, dz1));
   EXPECT(assert_equal(a1, ddz1));
+}
+
+/* ************************************************************************* */
+TEST(Key, SymbolGeneratorConstexpr) {
+  constexpr auto Z = gtsam::SymbolGenerator('x');
+  EXPECT(assert_equal(Z.chr(), 'x'));
 }
 
 /* ************************************************************************* */

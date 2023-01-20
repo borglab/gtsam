@@ -64,11 +64,14 @@ function configure()
       -DGTSAM_BUILD_UNSTABLE=${GTSAM_BUILD_UNSTABLE:-ON} \
       -DGTSAM_WITH_TBB=${GTSAM_WITH_TBB:-OFF} \
       -DGTSAM_BUILD_EXAMPLES_ALWAYS=${GTSAM_BUILD_EXAMPLES_ALWAYS:-ON} \
-      -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=${GTSAM_ALLOW_DEPRECATED_SINCE_V41:-OFF} \
+      -DGTSAM_ALLOW_DEPRECATED_SINCE_V42=${GTSAM_ALLOW_DEPRECATED_SINCE_V42:-OFF} \
       -DGTSAM_USE_QUATERNIONS=${GTSAM_USE_QUATERNIONS:-OFF} \
       -DGTSAM_ROT3_EXPMAP=${GTSAM_ROT3_EXPMAP:-ON} \
       -DGTSAM_POSE3_EXPMAP=${GTSAM_POSE3_EXPMAP:-ON} \
+      -DGTSAM_USE_SYSTEM_EIGEN=${GTSAM_USE_SYSTEM_EIGEN:-OFF} \
+      -DGTSAM_USE_SYSTEM_METIS=${GTSAM_USE_SYSTEM_METIS:-OFF} \
       -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+      -DGTSAM_SINGLE_TEST_EXE=ON \
       -DBOOST_ROOT=$BOOST_ROOT \
       -DBoost_NO_SYSTEM_PATHS=ON \
       -DBoost_ARCHITECTURE=-x64
@@ -92,7 +95,15 @@ function build ()
 
   configure
 
-  make -j2
+  if [ "$(uname)" == "Linux" ]; then
+    if (($(nproc) > 2)); then
+      make -j$(nproc)
+    else
+      make -j2
+    fi
+  elif [ "$(uname)" == "Darwin" ]; then
+    make -j$(sysctl -n hw.physicalcpu)
+  fi
 
   finish
 }
@@ -105,8 +116,16 @@ function test ()
 
   configure
 
-  # Actual build:
-  make -j2 check
+  # Actual testing
+  if [ "$(uname)" == "Linux" ]; then
+    if (($(nproc) > 2)); then
+      make -j$(nproc) check
+    else
+      make -j2 check
+    fi
+  elif [ "$(uname)" == "Darwin" ]; then
+    make -j$(sysctl -n hw.physicalcpu) check
+  fi
 
   finish
 }
