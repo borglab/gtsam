@@ -343,6 +343,7 @@ TEST(Values, filter) {
   values.insert(2, pose2);
   values.insert(3, pose3);
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   // Filter by key
   int i = 0;
   Values::Filtered<Value> filtered = values.filter(std::bind(std::greater_equal<Key>(), std::placeholders::_1, 2));
@@ -395,8 +396,6 @@ TEST(Values, filter) {
     ++ i;
   }
   EXPECT_LONGS_EQUAL(2, (long)i);
-  EXPECT_LONGS_EQUAL(2, (long)values.count<Pose3>());
-  EXPECT_LONGS_EQUAL(2, (long)values.count<Pose2>());
 
   // construct a values with the view
   Values actualSubValues2(pose_filtered);
@@ -404,6 +403,16 @@ TEST(Values, filter) {
   expectedSubValues2.insert(1, pose1);
   expectedSubValues2.insert(3, pose3);
   EXPECT(assert_equal(expectedSubValues2, actualSubValues2));
+#endif
+
+  // Test counting by type.
+  EXPECT_LONGS_EQUAL(2, (long)values.count<Pose3>());
+  EXPECT_LONGS_EQUAL(2, (long)values.count<Pose2>());
+
+  // Filter by type using extract.
+  auto extracted_pose3s = values.extract<Pose3>();
+  EXPECT_LONGS_EQUAL(2, (long)extracted_pose3s.size());
+
 }
 
 /* ************************************************************************* */
@@ -419,6 +428,7 @@ TEST(Values, Symbol_filter) {
   values.insert(X(2), pose2);
   values.insert(Symbol('y', 3), pose3);
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   int i = 0;
   for(const auto key_value: values.filter(Symbol::ChrTest('y'))) {
     if(i == 0) {
@@ -433,6 +443,12 @@ TEST(Values, Symbol_filter) {
     ++ i;
   }
   LONGS_EQUAL(2, (long)i);
+#endif
+
+// Test extract with filter on symbol:
+  auto extracted_pose3s = values.extract<Pose3>(Symbol::ChrTest('y'));
+  EXPECT_LONGS_EQUAL(2, (long)extracted_pose3s.size());
+
 }
 
 /* ************************************************************************* */
