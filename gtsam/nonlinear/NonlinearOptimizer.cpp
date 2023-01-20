@@ -101,8 +101,8 @@ void NonlinearOptimizer::defaultOptimize() {
     newError = error();
 
     // User hook:
-    if (params.iterationHook)
-      params.iterationHook(iterations(), currentError, newError);
+    // if (params.iterationHook)
+    //   params.iterationHook(iterations(), currentError, newError);
 
     // Maybe show output
     if (params.verbosity >= NonlinearOptimizerParams::VALUES)

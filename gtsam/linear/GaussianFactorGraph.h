@@ -197,37 +197,25 @@ namespace gtsam {
     ///@{
 
     /**
-     * Generates an m-by-n sparse Jacobian matrix, where i(k) and j(k) are the
-     * base 0 row and column indices, s(k) a double. Column ordering is taken as
-     * default.  The return type is a sparse matrix representation templated
-     * type which may be:
-     *  1. vector<boost::tuple<size_t, size_t, double>> is a vector of 3-tuples
-     * (i, j, s)
-     *  2. vector<Eigen::Triplet<double>> is a vector of Eigen-triples (i, j, s)
-     *  3. Eigen::SparseMatrix<double> is an Eigen format sparse matrix
-     *  4. Matrix (i/j will be 1-indexed instead of 0-indexed, for matlab) is a
-     * 3xK matrix [I;J;S]
+     * Returns a sparse augmented Jacbian matrix as a vector of i, j, and s,
+     * where i(k) and j(k) are the base 0 row and column indices, and s(k) is
+     * the entry as a double.
      * The standard deviations are baked into A and b
-     * @return 3-tuple with the dimensions of the Jacobian as the first 2
-     * elements and the sparse matrix in one of the 4 form above as the 3rd
-     * element.
+     * @return the sparse matrix as a std::vector of std::tuples
+     * @param ordering the column ordering
+     * @param[out] nrows The number of rows in the augmented Jacobian
+     * @param[out] ncols The number of columns in the augmented Jacobian
      */
-    template <typename Entries>
-    std::tuple<size_t, size_t, Entries> sparseJacobian() const {
-      Ordering ord(this->keys());
-      return sparseJacobian<Entries>(ord);
-    }
+    std::vector<std::tuple<int, int, double> > sparseJacobian(
+        const Ordering& ordering, size_t& nrows, size_t& ncols) const;
+
+    /** Returns a sparse augmented Jacobian matrix with default ordering */
+    std::vector<std::tuple<int, int, double> > sparseJacobian() const;
 
     /**
-     * Generates an m-by-n sparse Jacobian matrix, where i(k) and j(k) are the
-     * base 0 row and column indices, s(k) a double. The return type is a sparse
-     * matrix representation templated type which may be:
-     *  1. vector<boost::tuple<size_t, size_t, double>> is a vector of 3-tuples
-     * (i, j, s)
-     *  2. vector<Eigen::Triplet<double>> is a vector of Eigen-triples (i, j, s)
-     *  3. Eigen::SparseMatrix<double> is an Eigen format sparse matrix
-     *  4. Matrix (i/j will be 1-indexed instead of 0-indexed, for matlab) is a
-     * 3xK matrix [I;J;S]
+     * Matrix version of sparseJacobian: generates a 3*m matrix with [i,j,s]
+     * entries such that S(i(k),j(k)) = s(k), which can be given to MATLAB's
+     * sparse.  Note: i, j are 1-indexed.
      * The standard deviations are baked into A and b
      * @param ordering the column ordering
      * @return 3-tuple with the dimensions of the Jacobian as the first 2
@@ -238,6 +226,14 @@ namespace gtsam {
     std::tuple<size_t, size_t, Entries> sparseJacobian(
         const Ordering& ordering) const;
 
+    /**
+     * Matrix version of sparseJacobian: generates a 3*m matrix with [i,j,s]
+     * entries such that S(i(k),j(k)) = s(k), which can be given to MATLAB's
+     * sparse.  Note: i, j are 1-indexed.
+     * The standard deviations are baked into A and b
+     */
+    Matrix sparseJacobian_() const;
+    
     /**
      * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$
      * Jacobian matrix, augmented with b with the noise models baked
