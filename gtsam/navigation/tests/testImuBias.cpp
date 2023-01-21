@@ -47,58 +47,6 @@ TEST(ImuBias, Constructor) {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-TEST(ImuBias, inverse) {
-  Bias biasActual = bias1.inverse();
-  Bias biasExpected = Bias(-biasAcc1, -biasGyro1);
-  EXPECT(assert_equal(biasExpected, biasActual));
-}
-
-TEST(ImuBias, compose) {
-  Bias biasActual = bias2.compose(bias1);
-  Bias biasExpected = Bias(biasAcc1 + biasAcc2, biasGyro1 + biasGyro2);
-  EXPECT(assert_equal(biasExpected, biasActual));
-}
-
-TEST(ImuBias, between) {
-  // p.between(q) == q - p
-  Bias biasActual = bias2.between(bias1);
-  Bias biasExpected = Bias(biasAcc1 - biasAcc2, biasGyro1 - biasGyro2);
-  EXPECT(assert_equal(biasExpected, biasActual));
-}
-
-TEST(ImuBias, localCoordinates) {
-  Vector deltaActual = Vector(bias2.localCoordinates(bias1));
-  Vector deltaExpected =
-      (Bias(biasAcc1 - biasAcc2, biasGyro1 - biasGyro2)).vector();
-  EXPECT(assert_equal(deltaExpected, deltaActual));
-}
-
-TEST(ImuBias, retract) {
-  Vector6 delta;
-  delta << 0.1, 0.2, -0.3, 0.1, -0.1, 0.2;
-  Bias biasActual = bias2.retract(delta);
-  Bias biasExpected = Bias(biasAcc2 + delta.block<3, 1>(0, 0),
-                           biasGyro2 + delta.block<3, 1>(3, 0));
-  EXPECT(assert_equal(biasExpected, biasActual));
-}
-
-TEST(ImuBias, Logmap) {
-  Vector deltaActual = bias2.Logmap(bias1);
-  Vector deltaExpected = bias1.vector();
-  EXPECT(assert_equal(deltaExpected, deltaActual));
-}
-
-TEST(ImuBias, Expmap) {
-  Vector6 delta;
-  delta << 0.1, 0.2, -0.3, 0.1, -0.1, 0.2;
-  Bias biasActual = bias2.Expmap(delta);
-  Bias biasExpected = Bias(delta);
-  EXPECT(assert_equal(biasExpected, biasActual));
-}
-#endif
-
-/* ************************************************************************* */
 TEST(ImuBias, operatorSub) {
   Bias biasActual = -bias1;
   Bias biasExpected(-biasAcc1, -biasGyro1);

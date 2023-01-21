@@ -142,17 +142,14 @@ endif()
 if (NOT CMAKE_VERSION VERSION_LESS 3.8)
     set(GTSAM_COMPILE_FEATURES_PUBLIC "cxx_std_17" CACHE STRING "CMake compile features property for all gtsam targets.")
     # See: https://cmake.org/cmake/help/latest/prop_tgt/CXX_EXTENSIONS.html
-    # TODO(dellaert): is following line still needed or was that only for c++11?
     set(CMAKE_CXX_EXTENSIONS OFF)
     if (MSVC)
       # NOTE(jlblanco): seems to be required in addition to the cxx_std_17 above?
-      # TODO(dellaert): is this the right syntax below?
       list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC /std:c++latest)
     endif()
 else()
   # Old cmake versions:
   if (NOT MSVC)
-    # TODO(dellaert): I just changed 11 to 17 below, hopefully that works
     list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
   endif()
 endif()

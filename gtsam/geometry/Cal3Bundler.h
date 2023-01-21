@@ -100,14 +100,6 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
 
   Vector3 vector() const;
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  /// get parameter u0
-  inline double GTSAM_DEPRECATED u0() const { return u0_; }
-
-  /// get parameter v0
-  inline double GTSAM_DEPRECATED v0() const { return v0_; }
-#endif
-
   /**
    * @brief: convert intrinsic coordinates xy to image coordinates uv
    * Version of uncalibrate with derivatives

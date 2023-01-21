@@ -343,68 +343,6 @@ TEST(Values, filter) {
   values.insert(2, pose2);
   values.insert(3, pose3);
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  // Filter by key
-  int i = 0;
-  Values::Filtered<Value> filtered = values.filter(std::bind(std::greater_equal<Key>(), std::placeholders::_1, 2));
-  EXPECT_LONGS_EQUAL(2, (long)filtered.size());
-  for(const auto key_value: filtered) {
-    if(i == 0) {
-      LONGS_EQUAL(2, (long)key_value.key);
-      try {key_value.value.cast<Pose2>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose2");}
-      THROWS_EXCEPTION(key_value.value.cast<Pose3>());
-      EXPECT(assert_equal(pose2, key_value.value.cast<Pose2>()));
-    } else if(i == 1) {
-      LONGS_EQUAL(3, (long)key_value.key);
-      try {key_value.value.cast<Pose3>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose3");}
-      THROWS_EXCEPTION(key_value.value.cast<Pose2>());
-      EXPECT(assert_equal(pose3, key_value.value.cast<Pose3>()));
-    } else {
-      EXPECT(false);
-    }
-    ++ i;
-  }
-  EXPECT_LONGS_EQUAL(2, (long)i);
-
-  // construct a values with the view
-  Values actualSubValues1(filtered);
-  Values expectedSubValues1;
-  expectedSubValues1.insert(2, pose2);
-  expectedSubValues1.insert(3, pose3);
-  EXPECT(assert_equal(expectedSubValues1, actualSubValues1));
-
-  // ConstFilter by Key
-  Values::ConstFiltered<Value> constfiltered = values.filter(std::bind(std::greater_equal<Key>(), std::placeholders::_1, 2));
-  EXPECT_LONGS_EQUAL(2, (long)constfiltered.size());
-  Values fromconstfiltered(constfiltered);
-  EXPECT(assert_equal(expectedSubValues1, fromconstfiltered));
-
-  // Filter by type
-  i = 0;
-  Values::ConstFiltered<Pose3> pose_filtered = values.filter<Pose3>();
-  EXPECT_LONGS_EQUAL(2, (long)pose_filtered.size());
-  for(const auto key_value: pose_filtered) {
-    if(i == 0) {
-      EXPECT_LONGS_EQUAL(1, (long)key_value.key);
-      EXPECT(assert_equal(pose1, key_value.value));
-    } else if(i == 1) {
-      EXPECT_LONGS_EQUAL(3, (long)key_value.key);
-      EXPECT(assert_equal(pose3, key_value.value));
-    } else {
-      EXPECT(false);
-    }
-    ++ i;
-  }
-  EXPECT_LONGS_EQUAL(2, (long)i);
-
-  // construct a values with the view
-  Values actualSubValues2(pose_filtered);
-  Values expectedSubValues2;
-  expectedSubValues2.insert(1, pose1);
-  expectedSubValues2.insert(3, pose3);
-  EXPECT(assert_equal(expectedSubValues2, actualSubValues2));
-#endif
-
   // Test counting by type.
   EXPECT_LONGS_EQUAL(2, (long)values.count<Pose3>());
   EXPECT_LONGS_EQUAL(2, (long)values.count<Pose2>());
@@ -412,7 +350,6 @@ TEST(Values, filter) {
   // Filter by type using extract.
   auto extracted_pose3s = values.extract<Pose3>();
   EXPECT_LONGS_EQUAL(2, (long)extracted_pose3s.size());
-
 }
 
 /* ************************************************************************* */
@@ -428,27 +365,9 @@ TEST(Values, Symbol_filter) {
   values.insert(X(2), pose2);
   values.insert(Symbol('y', 3), pose3);
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  int i = 0;
-  for(const auto key_value: values.filter(Symbol::ChrTest('y'))) {
-    if(i == 0) {
-      LONGS_EQUAL(Symbol('y', 1), (long)key_value.key);
-      EXPECT(assert_equal(pose1, key_value.value.cast<Pose3>()));
-    } else if(i == 1) {
-      LONGS_EQUAL(Symbol('y', 3), (long)key_value.key);
-      EXPECT(assert_equal(pose3, key_value.value.cast<Pose3>()));
-    } else {
-      EXPECT(false);
-    }
-    ++ i;
-  }
-  LONGS_EQUAL(2, (long)i);
-#endif
-
-// Test extract with filter on symbol:
+  // Test extract with filter on symbol:
   auto extracted_pose3s = values.extract<Pose3>(Symbol::ChrTest('y'));
   EXPECT_LONGS_EQUAL(2, (long)extracted_pose3s.size());
-
 }
 
 /* ************************************************************************* */

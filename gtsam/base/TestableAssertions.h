@@ -72,37 +72,6 @@ bool assert_equal(const V& expected, const std::optional<V>& actual, double tol 
 }
 
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-/**
- * Version of assert_equals to work with vectors
- * @deprecated: use container equals instead
- */
-template<class V>
-bool GTSAM_DEPRECATED assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, double tol = 1e-9) {
-  bool match = true;
-  if (expected.size() != actual.size())
-    match = false;
-  if(match) {
-    size_t i = 0;
-    for(const V& a: expected) {
-      if (!assert_equal(a, actual[i++], tol)) {
-        match = false;
-        break;
-      }
-    }
-  }
-  if(!match) {
-    std::cout << "expected: " << std::endl;
-    for(const V& a: expected) { std::cout << a << " "; }
-    std::cout << "\nactual: " << std::endl;
-    for(const V& a: actual) { std::cout << a << " "; }
-    std::cout << std::endl;
-    return false;
-  }
-  return true;
-}
-#endif
-
 /**
  * Function for comparing maps of testable->testable
  * TODO: replace with more generalized version

@@ -263,14 +263,6 @@ class GTSAM_EXPORT DiscreteConditional
 
   /// @}
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  /// @name Deprecated functionality
-  /// @{
-  size_t GTSAM_DEPRECATED solve(const DiscreteValues& parentsValues) const;
-  void GTSAM_DEPRECATED solveInPlace(DiscreteValues* parentsValues) const;
-  /// @}
-#endif
-
  protected:
   /// Internal version of choose
   DiscreteConditional::ADT choose(const DiscreteValues& given,

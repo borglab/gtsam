@@ -228,19 +228,6 @@ double Rot3::yaw(OptionalJacobian<1, 3> H) const {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-Vector Rot3::quaternion() const {
-  gtsam::Quaternion q = toQuaternion();
-  Vector v(4);
-  v(0) = q.w();
-  v(1) = q.x();
-  v(2) = q.y();
-  v(3) = q.z();
-  return v;
-}
-#endif
-
-/* ************************************************************************* */
 pair<Unit3, double> Rot3::axisAngle() const {
   const Vector3 omega = Rot3::Logmap(*this);
   return std::pair<Unit3, double>(Unit3(omega), omega.norm());

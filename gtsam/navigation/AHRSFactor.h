@@ -204,12 +204,6 @@ public:
       const PreintegratedAhrsMeasurements& pim, const Vector3& omegaCoriolis,
       const std::optional<Pose3>& body_P_sensor = {});
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  /// @deprecated name
-  typedef PreintegratedAhrsMeasurements PreintegratedMeasurements;
-
-#endif
-
 private:
 
   /** Serialization function */

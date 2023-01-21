@@ -962,15 +962,4 @@ parse3DFactors(const std::string &filename,
   return parseFactors<Pose3>(filename, model, maxIndex);
 }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-std::map<size_t, Pose3> GTSAM_DEPRECATED
-parse3DPoses(const std::string &filename, size_t maxIndex) {
-  return parseVariables<Pose3>(filename, maxIndex);
-}
-
-std::map<size_t, Point3> GTSAM_DEPRECATED
-parse3DLandmarks(const std::string &filename, size_t maxIndex) {
-  return parseVariables<Point3>(filename, maxIndex);
-}
-#endif
 } // namespace gtsam

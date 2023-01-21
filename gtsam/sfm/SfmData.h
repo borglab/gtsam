@@ -122,17 +122,6 @@ struct GTSAM_EXPORT SfmData {
   bool equals(const SfmData& sfmData, double tol = 1e-9) const;
 
   /// @}
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  /// @name Deprecated
-  /// @{
-  void GTSAM_DEPRECATED add_track(const SfmTrack& t) { tracks.push_back(t); }
-  void GTSAM_DEPRECATED add_camera(const SfmCamera& cam) {
-    cameras.push_back(cam);
-  }
-  size_t GTSAM_DEPRECATED number_tracks() const { return tracks.size(); }
-  size_t GTSAM_DEPRECATED number_cameras() const { return cameras.size(); }
-  /// @}
-#endif
   /// @name Serialization
   /// @{
 
@@ -150,13 +139,6 @@ struct GTSAM_EXPORT SfmData {
 /// traits
 template <>
 struct traits<SfmData> : public Testable<SfmData> {};
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-GTSAM_EXPORT bool GTSAM_DEPRECATED readBundler(const std::string& filename,
-                                               SfmData& data);
-GTSAM_EXPORT bool GTSAM_DEPRECATED readBAL(const std::string& filename,
-                                           SfmData& data);
-#endif
 
 /**
  * @brief This function parses a "Bundle Adjustment in the Large" (BAL) file and

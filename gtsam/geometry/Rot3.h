@@ -515,17 +515,6 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
      */
     gtsam::Quaternion toQuaternion() const;
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-    /**
-     * Converts to a generic matrix to allow for use with matlab
-     * In format: w x y z
-     * @deprecated: use Rot3::toQuaternion() instead.
-     * If still using this API, remind that in the returned Vector `V`,
-     * `V.x()` denotes the actual `qw`, `V.y()` denotes 'qx', `V.z()` denotes `qy`, and `V.w()` denotes 'qz'.
-     */
-    Vector GTSAM_DEPRECATED quaternion() const;
-#endif
-
     /**
      * @brief Spherical Linear intERPolation between *this and other
      * @param t a value between 0 and 1

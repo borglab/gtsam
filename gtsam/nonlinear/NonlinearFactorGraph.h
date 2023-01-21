@@ -261,39 +261,6 @@ namespace gtsam {
       ar & boost::serialization::make_nvp("NonlinearFactorGraph",
                 boost::serialization::base_object<Base>(*this));
     }
-
-  public:
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-    /// @name Deprecated
-    /// @{
-    /** @deprecated */
-    boost::shared_ptr<HessianFactor> GTSAM_DEPRECATED linearizeToHessianFactor(
-        const Values& values, std::nullptr_t, const Dampen& dampen = nullptr) const
-      {return linearizeToHessianFactor(values, dampen);}
-
-    /** @deprecated */
-    Values GTSAM_DEPRECATED updateCholesky(const Values& values, std::nullptr_t,
-                          const Dampen& dampen = nullptr) const
-      {return updateCholesky(values, dampen);}
-
-    /** @deprecated */
-    void GTSAM_DEPRECATED saveGraph(
-        std::ostream& os, const Values& values = Values(),
-        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      dot(os, values, keyFormatter, graphvizFormatting);
-    }
-    /** @deprecated */
-    void GTSAM_DEPRECATED
-    saveGraph(const std::string& filename, const Values& values,
-              const GraphvizFormatting& graphvizFormatting,
-              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      saveGraph(filename, values, keyFormatter, graphvizFormatting);
-    }
-    /// @}
-#endif
-
   };
 
 /// traits

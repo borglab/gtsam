@@ -346,16 +346,6 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
   return Matrix(Pose2::wedge(xi(0),xi(1),xi(2))).eval();
 }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-/**
- * @deprecated Use static constructor (with reversed pairs!)
- * Calculate pose between a vector of 2D point correspondences (p,q)
- * where q = Pose2::transformFrom(p) = t + R*p
- */
-GTSAM_EXPORT std::optional<Pose2> 
-GTSAM_DEPRECATED align(const Point2Pairs& pairs);
-#endif
-
 // Convenience typedef
 using Pose2Pair = std::pair<Pose2, Pose2>;
 using Pose2Pairs = std::vector<Pose2Pair>;
