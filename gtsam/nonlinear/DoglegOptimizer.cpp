@@ -24,13 +24,13 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <boost/algorithm/string.hpp>
-
 namespace gtsam {
 
 /* ************************************************************************* */
 DoglegParams::VerbosityDL DoglegParams::verbosityDLTranslator(const std::string &verbosityDL) const {
-  std::string s = verbosityDL;  boost::algorithm::to_upper(s);
+  std::string s = verbosityDL;
+  // convert to upper case
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   if (s == "SILENT") return DoglegParams::SILENT;
   if (s == "VERBOSE") return DoglegParams::VERBOSE;
 
