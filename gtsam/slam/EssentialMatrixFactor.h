@@ -304,10 +304,8 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
       // Version with derivatives
       Matrix D_e_cameraE, D_cameraE_E;  // 2*5, 5*5
       EssentialMatrix cameraE = E.rotate(cRb_, D_cameraE_E);
-	  // Had to do this since the only overloaded function EssentialMatrixFactor2
-	  // uses the type OptionalMatrixType. Which would be a pointer when we are
-	  // not using boost. There is no way to redirect that call to the top (NoiseModelFactorN)
-	  // dereference it and bring it back to the Base (EssentialMatrixFactor2)
+      // Using the pointer version of evaluateError since the Base class (EssentialMatrixFactor2)
+      // does not have the matrix reference version of evaluateError
       Vector e = Base::evaluateError(cameraE, d, &D_e_cameraE, Dd);
       *DE = D_e_cameraE * D_cameraE_E;  // (2*5) * (5*5)
       return e;
