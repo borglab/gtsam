@@ -234,27 +234,27 @@ namespace gtsam {
 
 #if (_MSC_VER < 1800)
 
-#include <boost/math/special_functions/fpclassify.hpp>
+#include <cmath>
 namespace std {
   template<typename T> inline int isfinite(T a) {
-    return (int)boost::math::isfinite(a); }
+    return (int)std::isfinite(a); }
   template<typename T> inline int isnan(T a) {
-    return (int)boost::math::isnan(a); }
+    return (int)std::isnan(a); }
   template<typename T> inline int isinf(T a) {
-    return (int)boost::math::isinf(a); }
+    return (int)std::isinf(a); }
 }
 
 #endif
 
-#include <boost/math/constants/constants.hpp>
+#include <cmath>
 #ifndef M_PI
-#define M_PI (boost::math::constants::pi<double>())
+#define M_PI (3.14159265358979323846)
 #endif
 #ifndef M_PI_2
-#define M_PI_2 (boost::math::constants::pi<double>() / 2.0)
+#define M_PI_2 (M_PI / 2.0)
 #endif
 #ifndef M_PI_4
-#define M_PI_4 (boost::math::constants::pi<double>() / 4.0)
+#define M_PI_4 (M_PI / 4.0)
 #endif
 
 #endif

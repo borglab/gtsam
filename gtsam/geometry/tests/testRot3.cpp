@@ -24,8 +24,6 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
 
-#include <boost/math/constants/constants.hpp>
-
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -197,7 +195,7 @@ TEST( Rot3, retract)
 
 /* ************************************************************************* */
 TEST( Rot3, log) {
-  static const double PI = boost::math::constants::pi<double>();
+  static const double PI = std::acos(-1.0);
   Vector w;
   Rot3 R;
 
