@@ -20,6 +20,7 @@
 #include <gtsam/dllexport.h>              // GTSAM_EXPORT
 #include <gtsam/inference/Key.h>          // Key, KeySet
 #include <gtsam/nonlinear/ISAM2Result.h>  //FactorIndices
+#include <optional>
 
 namespace gtsam {
 
@@ -36,16 +37,16 @@ struct ISAM2UpdateParams {
 
   /** An optional map of keys to group labels, such that a variable can be
    * constrained to a particular grouping in the BayesTree */
-  std::optional<FastMap<Key, int>> constrainedKeys{{}};
+  std::optional<FastMap<Key, int>> constrainedKeys{std::nullopt};
 
   /** An optional set of nonlinear keys that iSAM2 will hold at a constant
    * linearization point, regardless of the size of the linear delta */
-  std::optional<FastList<Key>> noRelinKeys{{}};
+  std::optional<FastList<Key>> noRelinKeys{std::nullopt};
 
   /** An optional set of nonlinear keys that iSAM2 will re-eliminate, regardless
    * of the size of the linear delta. This allows the provided keys to be
    * reordered. */
-  std::optional<FastList<Key>> extraReelimKeys{{}};
+  std::optional<FastList<Key>> extraReelimKeys{std::nullopt};
 
   /** Relinearize any variables whose delta magnitude is sufficiently large
    * (Params::relinearizeThreshold), regardless of the relinearization
@@ -62,7 +63,7 @@ struct ISAM2UpdateParams {
    *    depend on Keys `X(2)`, `X(3)`. Next call to ISAM2::update() must include
    *    its `newAffectedKeys` field with the map `13 -> {X(2), X(3)}`.
    */
-  std::optional<FastMap<FactorIndex, KeySet>> newAffectedKeys{{}};
+  std::optional<FastMap<FactorIndex, KeySet>> newAffectedKeys{std::nullopt};
 
   /** By default, iSAM2 uses a wildfire update scheme that stops updating when
    * the deltas become too small down in the tree. This flagg forces a full
