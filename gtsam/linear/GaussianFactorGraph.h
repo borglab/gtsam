@@ -58,8 +58,8 @@ namespace gtsam {
     /// The default ordering generation function
     static Ordering DefaultOrderingFunc(
         const FactorGraphType& graph,
-        const VariableIndex& variableIndex) {
-      return Ordering::Colamd(variableIndex);
+        std::optional<std::reference_wrapper<const VariableIndex>> variableIndex) {
+      return Ordering::Colamd((*variableIndex).get());
     }
   };
 

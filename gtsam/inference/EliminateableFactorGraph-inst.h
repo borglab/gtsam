@@ -52,7 +52,7 @@ namespace gtsam {
         return eliminateSequential(computedOrdering, function, variableIndex);
       } else {
         Ordering computedOrdering = EliminationTraitsType::DefaultOrderingFunc(
-            asDerived(), (*variableIndex).get());
+            asDerived(), *variableIndex);
         return eliminateSequential(computedOrdering, function, variableIndex);
       }
     }
@@ -115,7 +115,7 @@ namespace gtsam {
         return eliminateMultifrontal(computedOrdering, function, variableIndex);
       } else {
         Ordering computedOrdering = EliminationTraitsType::DefaultOrderingFunc(
-            asDerived(), (*variableIndex).get());
+            asDerived(), *variableIndex);
         return eliminateMultifrontal(computedOrdering, function, variableIndex);
       }
     }

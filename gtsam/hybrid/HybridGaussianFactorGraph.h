@@ -27,6 +27,7 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 
+#include <functional>
 #include <optional>
 
 namespace gtsam {
@@ -87,7 +88,7 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
   /// The default ordering generation function
   static Ordering DefaultOrderingFunc(
       const FactorGraphType& graph,
-      const VariableIndex&) {
+      std::optional<std::reference_wrapper<const VariableIndex>>) {
     return HybridOrdering(graph);
   }
 };
