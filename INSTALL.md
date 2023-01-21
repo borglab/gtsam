@@ -29,6 +29,8 @@ $ make install
        `GTSAM_WITH_EIGEN_MKL_OPENMP` to `ON`; however, best performance is usually
        achieved with MKL disabled. We therefore advise you to benchmark your problem 
        before using MKL.
+     - SuiteSparse is an alternate sparse matrix solver, but it is rarely faster than GTSAM's default variable elimination implementation.  Once enabled by toggling `GTSAM_WITH_SUITESPARSE`, it can be specified as the solver with `LinearSolverParams::linearSolverType`.
+     - cuSPARSE is the CUDA (GPU-accelerated) sparse matrix solver but is also rarely faster than GTSAM's default variable elimination implementation.  Once enabled by toggling `GTSAM_WITH_CUSPARSE`, it can be specified as the solver with `LinearSolverParams::linearSolverType`.
 
     Tested compilers:
 

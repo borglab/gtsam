@@ -26,7 +26,12 @@
 
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
+
+#include <Eigen/Sparse>
+
 #include <boost/tuple/tuple.hpp>
+
+#include <vector>
 
 #include <vector>
 
@@ -69,6 +74,12 @@ GTSAM_MAKE_MATRIX_DEFS(9)
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
+
+// Sparse Matrix Formats
+typedef std::vector<boost::tuple<size_t, size_t, double>>
+    SparseMatrixBoostTriplets;
+typedef std::vector<Eigen::Triplet<double>> SparseMatrixEigenTriplets;
+typedef Eigen::SparseMatrix<double, Eigen::ColMajor> SparseMatrixEigen;
 
 // Matrix formatting arguments when printing.
 // Akin to Matlab style.

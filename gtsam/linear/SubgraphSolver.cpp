@@ -74,7 +74,7 @@ VectorValues SubgraphSolver::optimize() const {
 
 VectorValues SubgraphSolver::optimize(const GaussianFactorGraph &gfg,
     const KeyInfo &keyInfo, const map<Key, Vector> &lambda,
-    const VectorValues &initial) {
+    const VectorValues &initial) const {
   return VectorValues();
 }
 /**************************************************************************************************/

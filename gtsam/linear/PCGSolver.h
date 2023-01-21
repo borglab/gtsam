@@ -38,8 +38,10 @@ public:
   typedef ConjugateGradientParameters Base;
   typedef boost::shared_ptr<PCGSolverParameters> shared_ptr;
 
-  PCGSolverParameters() {
-  }
+  PCGSolverParameters() {}
+  PCGSolverParameters(
+      boost::shared_ptr<PreconditionerParameters> preconditioner)
+      : preconditioner_(preconditioner){};
 
   void print(std::ostream &os) const override;
 
@@ -72,14 +74,14 @@ protected:
 public:
   /* Interface to initialize a solver without a problem */
   PCGSolver(const PCGSolverParameters &p);
-  ~PCGSolver() override {
-  }
+  PCGSolver(const LinearSolverParams &p);
+  virtual ~PCGSolver() {}
 
   using IterativeSolver::optimize;
 
   VectorValues optimize(const GaussianFactorGraph &gfg,
       const KeyInfo &keyInfo, const std::map<Key, Vector> &lambda,
-      const VectorValues &initial) override;
+      const VectorValues &initial) const override;
 
 };
 

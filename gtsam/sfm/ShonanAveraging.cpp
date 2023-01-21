@@ -19,6 +19,7 @@
 #include <SymEigsSolver.h>
 #include <cmath>
 #include <gtsam/linear/PCGSolver.h>
+#include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>

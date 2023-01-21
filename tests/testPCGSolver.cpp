@@ -126,7 +126,7 @@ TEST( GaussianFactorGraphSystem, multiply_getb)
 // Test Dummy Preconditioner
 TEST(PCGSolver, dummy) {
   LevenbergMarquardtParams params;
-  params.linearSolverType = LevenbergMarquardtParams::Iterative;
+  params.linearSolverType = NonlinearOptimizerParams::Iterative;
   auto pcg = boost::make_shared<PCGSolverParameters>();
   pcg->preconditioner_ = boost::make_shared<DummyPreconditionerParameters>();
   params.iterativeParams = pcg;
@@ -146,7 +146,7 @@ TEST(PCGSolver, dummy) {
 // Test Block-Jacobi Precondioner
 TEST(PCGSolver, blockjacobi) {
   LevenbergMarquardtParams params;
-  params.linearSolverType = LevenbergMarquardtParams::Iterative;
+  params.linearSolverType = NonlinearOptimizerParams::Iterative;
   auto pcg = boost::make_shared<PCGSolverParameters>();
   pcg->preconditioner_ =
       boost::make_shared<BlockJacobiPreconditionerParameters>();
@@ -167,7 +167,7 @@ TEST(PCGSolver, blockjacobi) {
 // Test Incremental Subgraph PCG Solver
 TEST(PCGSolver, subgraph) {
   LevenbergMarquardtParams params;
-  params.linearSolverType = LevenbergMarquardtParams::Iterative;
+  params.linearSolverType = NonlinearOptimizerParams::Iterative;
   auto pcg = boost::make_shared<PCGSolverParameters>();
   pcg->preconditioner_ = boost::make_shared<SubgraphPreconditionerParameters>();
   params.iterativeParams = pcg;
@@ -188,4 +188,3 @@ int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
-

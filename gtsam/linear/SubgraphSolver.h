@@ -21,6 +21,9 @@
 
 #include <gtsam/linear/ConjugateGradientSolver.h>
 #include <gtsam/linear/SubgraphBuilder.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/LinearSolver.h>
+#include <gtsam/linear/LinearSolverParams.h>
 
 #include <map>
 #include <utility>  // pair
@@ -34,6 +37,7 @@ class SubgraphPreconditioner;
 
 struct GTSAM_EXPORT SubgraphSolverParameters
     : public ConjugateGradientParameters {
+  typedef boost::shared_ptr<SubgraphSolverParameters> shared_ptr;
   SubgraphBuilderParameters builderParams;
   explicit SubgraphSolverParameters(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
     : builderParams(p) {}
@@ -122,7 +126,7 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
   VectorValues optimize(const GaussianFactorGraph &gfg,
                         const KeyInfo &keyInfo,
                         const std::map<Key, Vector> &lambda,
-                        const VectorValues &initial) override;
+                        const VectorValues &initial) const override;
 
   /// @}
   /// @name Implement interface
@@ -133,6 +137,42 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
       const GaussianFactorGraph &gfg);
 
   /// @}
+};
+
+/**
+ * This class is a wrapper around SubgraphSolver to more cleanly satisfy the
+ * LinearSolver interface.  Specifically, rather than partitioning the
+ * subgraph during construction, instead the partitioning will occur during
+ * "solve" since the GaussianFactorGraph is needed to partition the graph.
+ * TODO(gerry): figure out a better IterativeSolver API solution
+ */
+class GTSAM_EXPORT SubgraphSolverWrapper : public LinearSolver {
+ public:
+  SubgraphSolverWrapper(const SubgraphSolverParameters &parameters,
+                        const Ordering &ordering)
+      : parameters_(parameters), ordering_(ordering) {};
+  SubgraphSolverWrapper(const LinearSolverParams &params) {
+    if (!params.iterativeParams)
+      throw std::runtime_error(
+          "SubgraphSolverWrapper::SubgraphSolverWrapper: iterative params has "
+          "to be assigned ...");
+    if (!params.ordering)
+      throw std::runtime_error(
+          "SubgraphSolverWrapper::SubgraphSolverWrapper: SubgraphSolver needs "
+          "an ordering");
+    parameters_ = *boost::static_pointer_cast<SubgraphSolverParameters>(
+        params.iterativeParams);
+    ordering_ = *params.ordering;
+  };
+
+  /// satisfies LinearSolver interface to solve the GaussianFactorGraph.
+  VectorValues solve(const GaussianFactorGraph &gfg) const override {
+    return SubgraphSolver(gfg, parameters_, ordering_).optimize();
+  };
+
+ protected:
+  SubgraphSolverParameters parameters_;
+  Ordering ordering_;
 };
 
 }  // namespace gtsam

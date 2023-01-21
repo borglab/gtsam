@@ -55,6 +55,12 @@
 // Whether Eigen with MKL will use OpenMP (if OpenMP was found, Eigen uses MKL, and GTSAM_WITH_EIGEN_MKL_OPENMP is enabled in CMake)
 #cmakedefine GTSAM_USE_EIGEN_MKL_OPENMP
 
+// Whether GTSAM will have the SuiteSparse solver
+#cmakedefine GTSAM_USE_SUITESPARSE
+
+// Whether GTSAM will have the SuiteSparse GPU solver
+#cmakedefine GTSAM_USE_CUSPARSE
+
 // Eigen library version (needed to avoid mixing versions, which often leads
 // to segfaults)
 #cmakedefine GTSAM_EIGEN_VERSION_WORLD @GTSAM_EIGEN_VERSION_WORLD@

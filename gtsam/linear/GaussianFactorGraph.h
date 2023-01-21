@@ -217,9 +217,23 @@ namespace gtsam {
      * entries such that S(i(k),j(k)) = s(k), which can be given to MATLAB's
      * sparse.  Note: i, j are 1-indexed.
      * The standard deviations are baked into A and b
+     * @param ordering the column ordering
+     * @return 3-tuple with the dimensions of the Jacobian as the first 2
+     * elements and the sparse matrix in one of the 4 form above as the 3rd
+     * element.
+     */
+    template <typename Entries>
+    std::tuple<size_t, size_t, Entries> sparseJacobian(
+        const Ordering& ordering) const;
+
+    /**
+     * Matrix version of sparseJacobian: generates a 3*m matrix with [i,j,s]
+     * entries such that S(i(k),j(k)) = s(k), which can be given to MATLAB's
+     * sparse.  Note: i, j are 1-indexed.
+     * The standard deviations are baked into A and b
      */
     Matrix sparseJacobian_() const;
-
+    
     /**
      * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$
      * Jacobian matrix, augmented with b with the noise models baked

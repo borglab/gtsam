@@ -24,6 +24,8 @@
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/LinearSolver.h>
+#include <gtsam/linear/SparseEigenSolver.h>
 
 #include <gtsam/inference/Ordering.h>
 
@@ -99,8 +101,8 @@ void NonlinearOptimizer::defaultOptimize() {
     newError = error();
 
     // User hook:
-    if (params.iterationHook)
-      params.iterationHook(iterations(), currentError, newError);
+    // if (params.iterationHook)
+    //   params.iterationHook(iterations(), currentError, newError);
 
     // Maybe show output
     if (params.verbosity >= NonlinearOptimizerParams::VALUES)
@@ -132,53 +134,12 @@ const Values& NonlinearOptimizer::optimizeSafely() {
 }
 
 /* ************************************************************************* */
-VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
-                                       const NonlinearOptimizerParams& params) const {
+VectorValues NonlinearOptimizer::solve(
+    const GaussianFactorGraph& gfg,
+    const NonlinearOptimizerParams& params) const {
   // solution of linear solver is an update to the linearization point
-  VectorValues delta;
-
-  // Check which solver we are using
-  if (params.isMultifrontal()) {
-    // Multifrontal QR or Cholesky (decided by params.getEliminationFunction())
-    if (params.ordering)
-      delta = gfg.optimize(*params.ordering, params.getEliminationFunction());
-    else
-      delta = gfg.optimize(params.getEliminationFunction());
-  } else if (params.isSequential()) {
-    // Sequential QR or Cholesky (decided by params.getEliminationFunction())
-    if (params.ordering)
-      delta = gfg.eliminateSequential(*params.ordering,
-                                      params.getEliminationFunction())
-                  ->optimize();
-    else
-      delta = gfg.eliminateSequential(params.orderingType,
-                                      params.getEliminationFunction())
-                  ->optimize();
-  } else if (params.isIterative()) {
-    // Conjugate Gradient -> needs params.iterativeParams
-    if (!params.iterativeParams)
-      throw std::runtime_error(
-          "NonlinearOptimizer::solve: cg parameter has to be assigned ...");
-
-    if (auto pcg = boost::dynamic_pointer_cast<PCGSolverParameters>(
-            params.iterativeParams)) {
-      delta = PCGSolver(*pcg).optimize(gfg);
-    } else if (auto spcg =
-                   boost::dynamic_pointer_cast<SubgraphSolverParameters>(
-                       params.iterativeParams)) {
-      if (!params.ordering)
-        throw std::runtime_error("SubgraphSolver needs an ordering");
-      delta = SubgraphSolver(gfg, *spcg, *params.ordering).optimize();
-    } else {
-      throw std::runtime_error(
-          "NonlinearOptimizer::solve: special cg parameter type is not handled in LM solver ...");
-    }
-  } else {
-    throw std::runtime_error("NonlinearOptimizer::solve: Optimization parameter is invalid");
-  }
-
-  // return update
-  return delta;
+  return LinearSolver::CreateFromParameters(params.linearSolverParams)
+      ->solve(gfg);
 }
 
 /* ************************************************************************* */

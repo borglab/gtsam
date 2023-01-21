@@ -66,12 +66,6 @@ std::string NonlinearOptimizerParams::verbosityTranslator(
 }
 
 /* ************************************************************************* */
-void NonlinearOptimizerParams::setIterativeParams(
-    const boost::shared_ptr<IterativeOptimizationParameters> params) {
-  iterativeParams = params;
-}
-
-/* ************************************************************************* */
 void NonlinearOptimizerParams::print(const std::string& str) const {
 
   //NonlinearOptimizerParams::print(str);
@@ -122,75 +116,5 @@ void NonlinearOptimizerParams::print(const std::string& str) const {
 
   std::cout.flush();
 }
-
-/* ************************************************************************* */
-std::string NonlinearOptimizerParams::linearSolverTranslator(
-    LinearSolverType linearSolverType) const {
-  switch (linearSolverType) {
-  case MULTIFRONTAL_CHOLESKY:
-    return "MULTIFRONTAL_CHOLESKY";
-  case MULTIFRONTAL_QR:
-    return "MULTIFRONTAL_QR";
-  case SEQUENTIAL_CHOLESKY:
-    return "SEQUENTIAL_CHOLESKY";
-  case SEQUENTIAL_QR:
-    return "SEQUENTIAL_QR";
-  case Iterative:
-    return "ITERATIVE";
-  case CHOLMOD:
-    return "CHOLMOD";
-  default:
-    throw std::invalid_argument(
-        "Unknown linear solver type in SuccessiveLinearizationOptimizer");
-  }
-}
-
-/* ************************************************************************* */
-NonlinearOptimizerParams::LinearSolverType NonlinearOptimizerParams::linearSolverTranslator(
-    const std::string& linearSolverType) const {
-  if (linearSolverType == "MULTIFRONTAL_CHOLESKY")
-    return MULTIFRONTAL_CHOLESKY;
-  if (linearSolverType == "MULTIFRONTAL_QR")
-    return MULTIFRONTAL_QR;
-  if (linearSolverType == "SEQUENTIAL_CHOLESKY")
-    return SEQUENTIAL_CHOLESKY;
-  if (linearSolverType == "SEQUENTIAL_QR")
-    return SEQUENTIAL_QR;
-  if (linearSolverType == "ITERATIVE")
-    return Iterative;
-  if (linearSolverType == "CHOLMOD")
-    return CHOLMOD;
-  throw std::invalid_argument(
-      "Unknown linear solver type in SuccessiveLinearizationOptimizer");
-}
-
-/* ************************************************************************* */
-std::string NonlinearOptimizerParams::orderingTypeTranslator(
-    Ordering::OrderingType type) const {
-  switch (type) {
-  case Ordering::METIS:
-    return "METIS";
-  case Ordering::COLAMD:
-    return "COLAMD";
-  default:
-    if (ordering)
-      return "CUSTOM";
-    else
-      throw std::invalid_argument(
-          "Invalid ordering type: You must provide an ordering for a custom ordering type. See setOrdering");
-  }
-}
-
-/* ************************************************************************* */
-Ordering::OrderingType NonlinearOptimizerParams::orderingTypeTranslator(
-    const std::string& type) const {
-  if (type == "METIS")
-    return Ordering::METIS;
-  if (type == "COLAMD")
-    return Ordering::COLAMD;
-  throw std::invalid_argument(
-      "Invalid ordering type: You must provide an ordering for a custom ordering type. See setOrdering");
-}
-
 
 } // namespace
