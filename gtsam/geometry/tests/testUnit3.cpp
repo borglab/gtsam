@@ -74,12 +74,12 @@ TEST(Unit3, rotate) {
   // Use numerical derivatives to calculate the expected Jacobian
   {
     expectedH = numericalDerivative21(rotate_, R, p);
-    R.rotate(p, actualH, nullptr);
+    R.rotate(p, actualH, {});
     EXPECT(assert_equal(expectedH, actualH, 1e-5));
   }
   {
     expectedH = numericalDerivative22(rotate_, R, p);
-    R.rotate(p, nullptr, actualH);
+    R.rotate(p, {}, actualH);
     EXPECT(assert_equal(expectedH, actualH, 1e-5));
   }
 }
@@ -100,12 +100,12 @@ TEST(Unit3, unrotate) {
   // Use numerical derivatives to calculate the expected Jacobian
   {
     expectedH = numericalDerivative21(unrotate_, R, p);
-    R.unrotate(p, actualH, nullptr);
+    R.unrotate(p, actualH, {});
     EXPECT(assert_equal(expectedH, actualH, 1e-5));
   }
   {
     expectedH = numericalDerivative22(unrotate_, R, p);
-    R.unrotate(p, nullptr, actualH);
+    R.unrotate(p, {}, actualH);
     EXPECT(assert_equal(expectedH, actualH, 1e-5));
   }
 }
@@ -184,7 +184,7 @@ TEST(Unit3, error2) {
         std::bind(&Unit3::errorVector, std::placeholders::_1,
                   std::placeholders::_2, nullptr, nullptr),
         p, q);
-    p.errorVector(q, actual, nullptr);
+    p.errorVector(q, actual, {});
     EXPECT(assert_equal(expected, actual, 1e-5));
   }
   {
@@ -192,7 +192,7 @@ TEST(Unit3, error2) {
         std::bind(&Unit3::errorVector, std::placeholders::_1,
                   std::placeholders::_2, nullptr, nullptr),
         p, r);
-    p.errorVector(r, actual, nullptr);
+    p.errorVector(r, actual, {});
     EXPECT(assert_equal(expected, actual, 1e-5));
   }
   {
@@ -200,7 +200,7 @@ TEST(Unit3, error2) {
         std::bind(&Unit3::errorVector, std::placeholders::_1,
                   std::placeholders::_2, nullptr, nullptr),
         p, q);
-    p.errorVector(q, nullptr, actual);
+    p.errorVector(q, {}, actual);
     EXPECT(assert_equal(expected, actual, 1e-5));
   }
   {
@@ -208,7 +208,7 @@ TEST(Unit3, error2) {
         std::bind(&Unit3::errorVector, std::placeholders::_1,
                   std::placeholders::_2, nullptr, nullptr),
         p, r);
-    p.errorVector(r, nullptr, actual);
+    p.errorVector(r, {}, actual);
     EXPECT(assert_equal(expected, actual, 1e-5));
   }
 }
