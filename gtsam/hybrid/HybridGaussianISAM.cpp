@@ -102,7 +102,7 @@ void HybridGaussianISAM::updateInternal(
 
   // eliminate all factors (top, added, orphans) into a new Bayes tree
   HybridBayesTree::shared_ptr bayesTree =
-      factors.eliminateMultifrontal(elimination_ordering, function, &index);
+      factors.eliminateMultifrontal(elimination_ordering, function, std::cref(index));
 
   if (maxNrLeaves) {
     bayesTree->prune(*maxNrLeaves);
