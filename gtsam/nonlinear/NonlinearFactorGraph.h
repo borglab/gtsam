@@ -21,7 +21,6 @@
 
 #pragma once
 
-#include <cstddef>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/GraphvizFormatting.h>

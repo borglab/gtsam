@@ -20,6 +20,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/global_includes.h>
 
+#include <functional>
 #include <optional>
 #include <map>
 #include <iostream>
@@ -71,6 +72,15 @@ bool assert_equal(const V& expected, const std::optional<V>& actual, double tol 
   return assert_equal(expected, *actual, tol);
 }
 
+template<class V>
+bool assert_equal(const V& expected, 
+    const std::optional<std::reference_wrapper<const V>>& actual, double tol = 1e-9) {
+  if (!actual) {
+    std::cout << "actual is std::nullopt" << std::endl;
+    return false;
+  }
+  return assert_equal(expected, *actual.get(), tol);
+}
 
 /**
  * Function for comparing maps of testable->testable

@@ -23,7 +23,9 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphSolver.h>
+
 #include <string>
+#include <optional>
 
 namespace gtsam {
 

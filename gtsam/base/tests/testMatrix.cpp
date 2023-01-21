@@ -23,6 +23,8 @@
 #include <boost/tuple/tuple.hpp>
 #include <iostream>
 #include <sstream>
+#include <optional>
+#include <functional>
 
 using namespace std;
 using namespace gtsam;
@@ -1174,6 +1176,17 @@ TEST(Matrix, AbsoluteError) {
   // Test relative error as well
   isEqual = fpEqual(a, b, tol);
   EXPECT(isEqual);
+}
+
+// A test to check if a matrix and an optional reference_wrapper to
+// a matrix are equal.
+TEST(Matrix, MatrixRef) {
+  Matrix A = Matrix::Random(3, 3);
+  Matrix B = Matrix::Random(3, 3);
+
+  EXPECT(assert_equal(A, A));
+  EXPECT(assert_equal(A, std::cref(A)));
+  EXPECT(!assert_equal(A, std::cref(B)));
 }
 
 /* ************************************************************************* */
