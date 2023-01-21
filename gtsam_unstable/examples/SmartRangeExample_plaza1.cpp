@@ -234,9 +234,8 @@ int main(int argc, char** argv) {
         }
       }
       countK = 0;
-      for(const auto it: result.filter<Point2>())
-        os2 << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t1"
-            << endl;
+      for (const auto& [key, point] : result.extract<Point2>())
+        os2 << key << "\t" << point.x() << "\t" << point.y() << "\t1" << endl;
       if (smart) {
         for(size_t jj: ids) {
           Point2 landmark = smartFactors[jj]->triangulate(result);
@@ -257,9 +256,8 @@ int main(int argc, char** argv) {
   // Write result to file
   Values result = isam.calculateEstimate();
   ofstream os("rangeResult.txt");
-  for(const auto it: result.filter<Pose2>())
-    os << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t"
-        << it.value.theta() << endl;
+  for (const auto& [key, pose] : result.extract<Pose2>())
+    os << key << "\t" << pose.x() << "\t" << pose.y() << "\t" << pose.theta() << endl;
   exit(0);
 }
 
