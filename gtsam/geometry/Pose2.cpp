@@ -371,15 +371,5 @@ boost::optional<Pose2> Pose2::Align(const Matrix& a, const Matrix& b) {
   return Pose2::Align(ab_pairs);
 }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-boost::optional<Pose2> align(const Point2Pairs& ba_pairs) {
-  Point2Pairs ab_pairs;
-  for (const Point2Pair &baPair : ba_pairs) {
-    ab_pairs.emplace_back(baPair.second, baPair.first);
-  }
-  return Pose2::Align(ab_pairs);
-}
-#endif
-
 /* ************************************************************************* */
 } // namespace gtsam

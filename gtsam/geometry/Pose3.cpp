@@ -478,16 +478,6 @@ boost::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
   return Pose3::Align(abPointPairs);
 }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
-  Point3Pairs abPointPairs;
-  for (const Point3Pair &baPair : baPointPairs) {
-    abPointPairs.emplace_back(baPair.second, baPair.first);
-  }
-  return Pose3::Align(abPointPairs);
-}
-#endif
-
 /* ************************************************************************* */
 Pose3 Pose3::slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx, OptionalJacobian<6, 6> Hy) const {
   return interpolate(*this, other, t, Hx, Hy);

@@ -158,18 +158,6 @@ struct GTSAM_EXPORT SfmTrack : SfmTrack2d {
   bool equals(const SfmTrack& sfmTrack, double tol = 1e-9) const;
 
   /// @}
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  /// @name Deprecated
-  /// @{
-  void GTSAM_DEPRECATED add_measurement(size_t idx, const gtsam::Point2& m) {
-    measurements.emplace_back(idx, m);
-  }
-
-  size_t GTSAM_DEPRECATED number_measurements() const {
-    return measurements.size();
-  }
-  /// @}
-#endif
   /// @name Serialization
   /// @{
 

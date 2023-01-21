@@ -236,57 +236,6 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
 }
 
 /* ************************************************************************** */
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
-  ADT pFS = choose(*values, true);  // P(F|S=parentsValues)
-
-  // Initialize
-  DiscreteValues mpe;
-  double maxP = 0;
-
-  // Get all Possible Configurations
-  const auto allPosbValues = frontalAssignments();
-
-  // Find the maximum
-  for (const auto& frontalVals : allPosbValues) {
-    double pValueS = pFS(frontalVals);  // P(F=value|S=parentsValues)
-    // Update maximum solution if better
-    if (pValueS > maxP) {
-      maxP = pValueS;
-      mpe = frontalVals;
-    }
-  }
-
-  // set values (inPlace) to maximum
-  for (Key j : frontals()) {
-    (*values)[j] = mpe[j];
-  }
-}
-
-/* ************************************************************************** */
-size_t DiscreteConditional::solve(const DiscreteValues& parentsValues) const {
-  ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
-
-  // Then, find the max over all remaining
-  size_t max = 0;
-  double maxP = 0;
-  DiscreteValues frontals;
-  assert(nrFrontals() == 1);
-  Key j = (firstFrontalKey());
-  for (size_t value = 0; value < cardinality(j); value++) {
-    frontals[j] = value;
-    double pValueS = pFS(frontals); // P(F=value|S=parentsValues)
-    // Update solution if better
-    if (pValueS > maxP) {
-      maxP = pValueS;
-      max = value;
-    }
-  }
-  return max;
-}
-#endif
-
-/* ************************************************************************** */
 size_t DiscreteConditional::argmax() const {
   size_t maxValue = 0;
   double maxP = 0;

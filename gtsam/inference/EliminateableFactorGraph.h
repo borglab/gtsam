@@ -286,61 +286,6 @@ namespace gtsam {
 
     // Access the derived factor graph class
     FactorGraphType& asDerived() { return static_cast<FactorGraphType&>(*this); }
-
-  public:
-  #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-    /** @deprecated ordering and orderingType shouldn't both be specified */
-    boost::shared_ptr<BayesNetType> GTSAM_DEPRECATED eliminateSequential(
-      const Ordering& ordering,
-      const Eliminate& function,
-      OptionalVariableIndex variableIndex,
-      OptionalOrderingType orderingType) const {
-        return eliminateSequential(ordering, function, variableIndex);
-      }
-    
-    /** @deprecated orderingType specified first for consistency */
-    boost::shared_ptr<BayesNetType> GTSAM_DEPRECATED eliminateSequential(
-      const Eliminate& function,
-      OptionalVariableIndex variableIndex = boost::none,
-      OptionalOrderingType orderingType = boost::none) const {
-        return eliminateSequential(orderingType, function, variableIndex);
-      }
-
-    /** @deprecated ordering and orderingType shouldn't both be specified */
-    boost::shared_ptr<BayesTreeType> GTSAM_DEPRECATED eliminateMultifrontal(
-      const Ordering& ordering,
-      const Eliminate& function,
-      OptionalVariableIndex variableIndex,
-      OptionalOrderingType orderingType) const {
-        return eliminateMultifrontal(ordering, function, variableIndex);
-      }
-
-    /** @deprecated orderingType specified first for consistency */
-    boost::shared_ptr<BayesTreeType> GTSAM_DEPRECATED eliminateMultifrontal(
-      const Eliminate& function,
-      OptionalVariableIndex variableIndex = boost::none,
-      OptionalOrderingType orderingType = boost::none) const {
-        return eliminateMultifrontal(orderingType, function, variableIndex);
-      }
-
-    /** @deprecated */
-    boost::shared_ptr<BayesNetType> GTSAM_DEPRECATED marginalMultifrontalBayesNet(
-      boost::variant<const Ordering&, const KeyVector&> variables,
-      boost::none_t,
-      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
-      OptionalVariableIndex variableIndex = boost::none) const {
-          return marginalMultifrontalBayesNet(variables, function, variableIndex);
-      }
-
-    /** @deprecated */
-    boost::shared_ptr<BayesTreeType> GTSAM_DEPRECATED marginalMultifrontalBayesTree(
-      boost::variant<const Ordering&, const KeyVector&> variables,
-      boost::none_t,
-      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
-      OptionalVariableIndex variableIndex = boost::none) const {
-          return marginalMultifrontalBayesTree(variables, function, variableIndex);
-      }
-  #endif
   };
 
 }

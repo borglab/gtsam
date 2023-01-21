@@ -31,9 +31,6 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/ptr_container/serialize_ptr_map.hpp>
 #include <boost/shared_ptr.hpp>
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-#include <boost/iterator/filter_iterator.hpp>
-#endif
 
 #include <string>
 #include <utility>
@@ -341,42 +338,6 @@ namespace gtsam {
     template <class ValueType>
     std::map<Key, ValueType> // , std::less<Key>, Eigen::aligned_allocator<ValueType>
     extract(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-    /** A filtered view of a Values, returned from Values::filter. */
-    template <class ValueType = Value>
-    class Filtered;
-
-    /** A filtered view of a const Values, returned from Values::filter. */
-    template <class ValueType = Value>
-    class ConstFiltered;
-
-    /** Constructor from a Filtered view copies out all values */
-    template <class ValueType>
-    Values(const Filtered<ValueType>& view);
-
-    /** Constructor from a Filtered or ConstFiltered view */
-    template <class ValueType>
-    Values(const ConstFiltered<ValueType>& view);
-
-    /// A filtered view of the original Values class.
-    Filtered<Value> GTSAM_DEPRECATED
-    filter(const std::function<bool(Key)>& filterFcn);
-
-    /// A filtered view of the original Values class, also filter on type.
-    template <class ValueType>
-    Filtered<ValueType> GTSAM_DEPRECATED
-    filter(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>);
-
-    /// A filtered view of the original Values class, const version.
-    ConstFiltered<Value> GTSAM_DEPRECATED
-    filter(const std::function<bool(Key)>& filterFcn) const;
-
-    /// A filtered view of the original Values class, also on type, const.
-    template <class ValueType>
-    ConstFiltered<ValueType> GTSAM_DEPRECATED filter(
-        const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
-#endif
 
   private:
     // Filters based on ValueType (if not Value) and also based on the user-

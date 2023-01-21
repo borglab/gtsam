@@ -408,18 +408,6 @@ namespace gtsam {
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
-
-  public:
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-   /** @deprecated */
-   VectorValues GTSAM_DEPRECATED
-   optimize(boost::none_t, const Eliminate& function =
-                               EliminationTraitsType::DefaultEliminate) const {
-     return optimize(function);
-   }
-#endif
-
   };
 
   /**
