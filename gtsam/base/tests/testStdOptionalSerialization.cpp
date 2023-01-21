@@ -60,6 +60,8 @@ public:
   TestOptionalStruct() = default;
   TestOptionalStruct(const int& opt)
       : opt(opt) {}
+  // A copy constructor is needed for serialization
+  TestOptionalStruct(const TestOptionalStruct& other) = default;
   bool operator==(const TestOptionalStruct& other) const {
     // check the values are equal
     return *opt == *other.opt;
