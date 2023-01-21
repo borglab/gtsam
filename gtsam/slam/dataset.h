@@ -225,21 +225,4 @@ parse3DFactors(const std::string &filename,
 using BinaryMeasurementsUnit3 = std::vector<BinaryMeasurement<Unit3>>;
 using BinaryMeasurementsPoint3 = std::vector<BinaryMeasurement<Point3>>;
 using BinaryMeasurementsRot3 = std::vector<BinaryMeasurement<Rot3>>;
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-inline boost::optional<IndexedPose> GTSAM_DEPRECATED
-parseVertex(std::istream& is, const std::string& tag) {
-  return parseVertexPose(is, tag);
-}
-
-GTSAM_EXPORT std::map<size_t, Pose3> GTSAM_DEPRECATED
-parse3DPoses(const std::string& filename, size_t maxIndex = 0);
-
-GTSAM_EXPORT std::map<size_t, Point3> GTSAM_DEPRECATED
-parse3DLandmarks(const std::string& filename, size_t maxIndex = 0);
-
-GTSAM_EXPORT GraphAndValues GTSAM_DEPRECATED
-load2D_robust(const std::string& filename,
-              const noiseModel::Base::shared_ptr& model, size_t maxIndex = 0);
-#endif
 }  // namespace gtsam

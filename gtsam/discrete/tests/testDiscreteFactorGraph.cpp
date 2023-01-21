@@ -209,13 +209,6 @@ TEST(DiscreteFactorGraph, marginalIsNotMPE) {
   auto actualMPE = graph.optimize();
   EXPECT(assert_equal(mpe, actualMPE));
   EXPECT_DOUBLES_EQUAL(0.315789, graph(mpe), 1e-5);  // regression
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  // Optimize on BayesNet maximizes marginal, then the conditional marginals:
-  auto notOptimal = bayesNet.optimize();
-  EXPECT(graph(notOptimal) < graph(mpe));
-  EXPECT_DOUBLES_EQUAL(0.263158, graph(notOptimal), 1e-5);  // regression
-#endif
 }
 
 /* ************************************************************************* */
@@ -246,10 +239,6 @@ TEST(DiscreteFactorGraph, testMPE_Darwiche09book_p244) {
   ordering += Key(0), Key(1), Key(2), Key(3), Key(4);
   auto chordal = graph.eliminateSequential(ordering);
   EXPECT_LONGS_EQUAL(5, chordal->size());
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  auto notOptimal = chordal->optimize();  // not MPE !
-  EXPECT(graph(notOptimal) < graph(mpe));
-#endif
 
   // Let us create the Bayes tree here, just for fun, because we don't use it
   DiscreteBayesTree::shared_ptr bayesTree =

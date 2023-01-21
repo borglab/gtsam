@@ -170,11 +170,6 @@ class GTSAM_EXPORT Cal3 {
     return K;
   }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  /** @deprecated The following function has been deprecated, use K above */
-  Matrix3 GTSAM_DEPRECATED matrix() const { return K(); }
-#endif
-
   /// Return inverted calibration matrix inv(K)
   Matrix3 inverse() const;
 

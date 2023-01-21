@@ -51,12 +51,6 @@ class ExtendedKalmanFilter {
   typedef boost::shared_ptr<ExtendedKalmanFilter<VALUE> > shared_ptr;
   typedef VALUE T;
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  //@deprecated: any NoiseModelFactor will do, as long as they have the right keys
-  typedef NoiseModelFactorN<VALUE, VALUE> MotionFactor;
-  typedef NoiseModelFactorN<VALUE> MeasurementFactor;
-#endif
-
  protected:
   T x_;                                     // linearization point
   JacobianFactor::shared_ptr priorFactor_;  // Gaussian density on x_

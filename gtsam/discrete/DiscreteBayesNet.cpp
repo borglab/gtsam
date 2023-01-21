@@ -52,26 +52,6 @@ double DiscreteBayesNet::evaluate(const DiscreteValues& values) const {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-DiscreteValues DiscreteBayesNet::optimize() const {
-  DiscreteValues result;
-  return optimize(result);
-}
-
-DiscreteValues DiscreteBayesNet::optimize(DiscreteValues result) const {
-  // solve each node in turn in topological sort order (parents first)
-#ifdef _MSC_VER
-#pragma message("DiscreteBayesNet::optimize (deprecated) does not compute MPE!")
-#else
-#warning "DiscreteBayesNet::optimize (deprecated) does not compute MPE!"
-#endif
-  for (auto conditional : boost::adaptors::reverse(*this))
-    conditional->solveInPlace(&result);
-  return result;
-}
-#endif
-
-/* ************************************************************************* */
 DiscreteValues DiscreteBayesNet::sample() const {
   DiscreteValues result;
   return sample(result);

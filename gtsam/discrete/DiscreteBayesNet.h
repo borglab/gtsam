@@ -149,15 +149,6 @@ class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional> {
 
     /// @}
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-    /// @name Deprecated functionality
-    /// @{
-
-    DiscreteValues GTSAM_DEPRECATED optimize() const;
-    DiscreteValues GTSAM_DEPRECATED optimize(DiscreteValues given) const;
-    /// @}
-#endif
-
  private:
     /** Serialization function */
     friend class boost::serialization::access;
