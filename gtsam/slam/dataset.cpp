@@ -41,17 +41,16 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/types.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 #include <optional>
 
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include <filesystem>
 
 using namespace std;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 using gtsam::symbol_shorthand::L;
 
 #define LINESIZE 81920
