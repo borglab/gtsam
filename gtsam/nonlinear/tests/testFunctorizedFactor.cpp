@@ -160,7 +160,7 @@ TEST(FunctorizedFactor, Functional) {
   Matrix X = Matrix::Identity(3, 3);
   Matrix measurement = multiplier * Matrix::Identity(3, 3);
 
-  std::function<Matrix(Matrix, boost::optional<Matrix &>)> functional =
+  std::function<Matrix(Matrix, OptionalMatrixType)> functional =
       MultiplyFunctor(multiplier);
   auto factor =
       MakeFunctorizedFactor<Matrix>(key, measurement, model, functional);
@@ -233,8 +233,7 @@ TEST(FunctorizedFactor, Functional2) {
   Vector3 x(1, 2, 3);
   Vector measurement = A * x;
 
-  std::function<Matrix(Matrix, Matrix, boost::optional<Matrix &>,
-                       boost::optional<Matrix &>)>
+  std::function<Matrix(Matrix, Matrix, OptionalMatrixType, OptionalMatrixType)>
       functional = ProjectionFunctor();
   auto factor = MakeFunctorizedFactor2<Matrix, Vector>(keyA, keyx, measurement,
                                                        model2, functional);

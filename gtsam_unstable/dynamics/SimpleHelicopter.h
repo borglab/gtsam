@@ -29,6 +29,10 @@ class Reconstruction : public NoiseModelFactorN<Pose3, Pose3, Vector6>  {
   double h_;  // time step
   typedef NoiseModelFactorN<Pose3, Pose3, Vector6> Base;
 public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   Reconstruction(Key gKey1, Key gKey, Key xiKey, double h, double mu = 1000.0) :
     Base(noiseModel::Constrained::All(6, std::abs(mu)), gKey1, gKey,
         xiKey), h_(h) {
@@ -42,9 +46,8 @@ public:
 
   /** \f$ log((g_k\exp(h\xi_k))^{-1}g_{k+1}) = 0 \f$, with optional derivatives */
   Vector evaluateError(const Pose3& gk1, const Pose3& gk, const Vector6& xik,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2,
+      OptionalMatrixType H3) const override {
 
     Matrix6 D_exphxi_xi;
     Pose3 exphxi = Pose3::Expmap(h_ * xik, H3 ? &D_exphxi_xi : 0);
@@ -89,6 +92,10 @@ class DiscreteEulerPoincareHelicopter : public NoiseModelFactorN<Vector6, Vector
   typedef NoiseModelFactorN<Vector6, Vector6, Pose3> Base;
 
 public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   DiscreteEulerPoincareHelicopter(Key xiKey1, Key xiKey_1, Key gKey,
       double h, const Matrix& Inertia, const Vector& Fu, double m,
       double mu = 1000.0) :
@@ -108,9 +115,8 @@ public:
    *       pk_1 = CT_TLN(-h*xi_k_1)*Inertia*xi_k_1
    * */
   Vector evaluateError(const Vector6& xik, const Vector6& xik_1, const Pose3& gk,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2,
+      OptionalMatrixType H3) const override {
 
     Vector muk = Inertia_*xik;
     Vector muk_1 = Inertia_*xik_1;
@@ -161,9 +167,8 @@ public:
   }
 
   Vector evaluateError(const Vector6& xik, const Vector6& xik_1, const Pose3& gk,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const {
+      OptionalMatrixType H1, OptionalMatrixType H2,
+      OptionalMatrixType H3) const {
     if (H1) {
       (*H1) = numericalDerivative31(
           std::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(

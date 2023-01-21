@@ -32,6 +32,10 @@ namespace gtsam {
   public:
     typedef VALUE T;
 
+    // Provide access to the Matrix& version of evaluateError:
+    using NoiseModelFactor1<VALUE>::evaluateError;
+
+
   private:
 
     typedef NoiseModelFactorN<VALUE> Base;
@@ -91,7 +95,7 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const T& x, boost::optional<Matrix&> H = boost::none) const override {
+    Vector evaluateError(const T& x, OptionalMatrixType H) const override {
       if (H) (*H) = Matrix::Identity(traits<T>::GetDimension(x),traits<T>::GetDimension(x));
       // manifold equivalent of z-x -> Local(x,z)
       return -traits<T>::Local(x, prior_);
@@ -111,10 +115,10 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(prior_);
     }
 
-	// Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-	enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
+  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+  enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
   public:
-	GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
   };
 
   /// traits

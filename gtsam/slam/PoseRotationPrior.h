@@ -25,6 +25,9 @@ public:
   typedef typename POSE::Translation Translation;
   typedef typename POSE::Rotation Rotation;
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   GTSAM_CONCEPT_POSE_TYPE(Pose)
   GTSAM_CONCEPT_GROUP_TYPE(Pose)
   GTSAM_CONCEPT_LIE_TYPE(Rotation)
@@ -75,7 +78,7 @@ public:
   }
 
   /** h(x)-z */
-  Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const override {
+  Vector evaluateError(const Pose& pose, OptionalMatrixType H) const override {
     const Rotation& newR = pose.rotation();
     if (H) {
       *H = Matrix::Zero(rDim, xDim);

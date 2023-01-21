@@ -34,7 +34,10 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactorN<Pose3, Vector3> Base;
+  typedef NoiseModelFactor2<Pose3, Vector3> Base;
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
   /// shorthand for this class
   typedef InvDepthFactorVariant3a This;
@@ -106,8 +109,7 @@ public:
 
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(const Pose3& pose, const Vector3& landmark,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
 
     if(H1) {
       (*H1) = numericalDerivative11<Vector, Pose3>(
@@ -232,9 +234,7 @@ public:
 
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(const Pose3& pose1, const Pose3& pose2, const Vector3& landmark,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none,
-      boost::optional<Matrix&> H3=boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3) const override {
 
     if(H1)
       (*H1) = numericalDerivative11<Vector, Pose3>(

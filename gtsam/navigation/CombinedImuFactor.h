@@ -269,6 +269,9 @@ private:
 
 public:
 
+  // Provide access to Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
   typedef typename boost::shared_ptr<CombinedImuFactor> shared_ptr;
@@ -324,10 +327,9 @@ public:
   Vector evaluateError(const Pose3& pose_i, const Vector3& vel_i,
       const Pose3& pose_j, const Vector3& vel_j,
       const imuBias::ConstantBias& bias_i, const imuBias::ConstantBias& bias_j,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none, boost::optional<Matrix&> H3 = boost::none,
-      boost::optional<Matrix&> H4 = boost::none, boost::optional<Matrix&> H5 =
-          boost::none, boost::optional<Matrix&> H6 = boost::none) const override;
+      OptionalMatrixType H1, OptionalMatrixType H2, 
+      OptionalMatrixType H3, OptionalMatrixType H4, 
+      OptionalMatrixType H5, OptionalMatrixType H6) const override;
 
  private:
   /** Serialization function */

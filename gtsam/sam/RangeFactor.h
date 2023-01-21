@@ -58,16 +58,15 @@ class RangeFactor : public ExpressionFactorN<T, A1, A2> {
     Expression<A2> a2_(keys[1]);
     return Expression<T>(Range<A1, A2>(), a1_, a2_);
   }
-  
-  Vector evaluateError(const A1& a1, const A2& a2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const
-  {
+
+  Vector evaluateError(const A1& a1, const A2& a2, 
+      OptionalMatrixType H1 = OptionalNone,
+      OptionalMatrixType H2 = OptionalNone) const {
     std::vector<Matrix> Hs(2);
-    const auto &keys = Factor::keys();
+    const auto& keys = Factor::keys();
     const Vector error = Base::unwhitenedError(
-      {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}}, 
-      Hs);
+        {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}},
+        Hs);
     if (H1) *H1 = Hs[0];
     if (H2) *H2 = Hs[1];
     return error;
@@ -137,9 +136,7 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
   }
 
   Vector evaluateError(const A1& a1, const A2& a2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const
-  {
+      OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 = OptionalNone) const {
     std::vector<Matrix> Hs(2);
     const auto &keys = Factor::keys();
     const Vector error = Base::unwhitenedError(
@@ -148,6 +145,12 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
     if (H1) *H1 = Hs[0];
     if (H2) *H2 = Hs[1];
     return error;
+  }
+
+  // An evaluateError overload to accept matrices (Matrix&) and pass it to the
+  // OptionalMatrixType evaluateError overload
+  Vector evaluateError(const A1& a1, const A2& a2, Matrix& H1, Matrix& H2) const {
+	return evaluateError(a1, a2, &H1, &H2);
   }
 
   /** print contents */

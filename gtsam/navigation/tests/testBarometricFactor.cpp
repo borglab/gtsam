@@ -58,15 +58,11 @@ TEST(BarometricFactor, Constructor) {
 
     // Calculate numerical derivatives
     Matrix expectedH = numericalDerivative21<Vector, Pose3, double>(
-        std::bind(&BarometricFactor::evaluateError, &factor,
-                  std::placeholders::_1, std::placeholders::_2, boost::none,
-                  boost::none),
-        T, baroBias);
+        [&factor](const Pose3& p, const double& d) {return factor.evaluateError(p, d);},
+		T, baroBias);
 
     Matrix expectedH2 = numericalDerivative22<Vector, Pose3, double>(
-        std::bind(&BarometricFactor::evaluateError, &factor,
-                  std::placeholders::_1, std::placeholders::_2, boost::none,
-                  boost::none),
+        [&factor](const Pose3& p, const double& d) {return factor.evaluateError(p, d);},
         T, baroBias);
 
     // Use the factor to calculate the derivative
@@ -99,15 +95,11 @@ TEST(BarometricFactor, nonZero) {
 
     // Calculate numerical derivatives
     Matrix expectedH = numericalDerivative21<Vector, Pose3, double>(
-        std::bind(&BarometricFactor::evaluateError, &factor,
-                  std::placeholders::_1, std::placeholders::_2, boost::none,
-                  boost::none),
+        [&factor](const Pose3& p, const double& d) {return factor.evaluateError(p, d);},
         T, baroBias);
 
     Matrix expectedH2 = numericalDerivative22<Vector, Pose3, double>(
-        std::bind(&BarometricFactor::evaluateError, &factor,
-                  std::placeholders::_1, std::placeholders::_2, boost::none,
-                  boost::none),
+        [&factor](const Pose3& p, const double& d) {return factor.evaluateError(p, d);},
         T, baroBias);
 
     // Use the factor to calculate the derivative and the error

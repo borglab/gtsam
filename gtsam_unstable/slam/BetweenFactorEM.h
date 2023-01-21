@@ -145,7 +145,7 @@ public:
 
   /* ************************************************************************* */
   Vector whitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
+      OptionalMatrixVecType H = nullptr) const {
 
     bool debug = true;
 
@@ -226,6 +226,12 @@ public:
     }
 
     return err_wh_eq;
+  }
+
+  // A function overload that takes a vector of matrices and passes it to the
+  // function above which uses a pointer to a vector instead.
+  Vector whitenedError(const Values& x, std::vector<Matrix>& H) const {
+	  return whitenedError(x, &H);
   }
 
   /* ************************************************************************* */

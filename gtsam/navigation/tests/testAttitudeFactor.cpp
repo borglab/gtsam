@@ -21,6 +21,8 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <boost/bind/bind.hpp>
+#include <functional>
+#include "gtsam/base/Matrix.h"
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std::placeholders;
@@ -47,11 +49,11 @@ TEST( Rot3AttitudeFactor, Constructor ) {
   Rot3 nRb;
   EXPECT(assert_equal((Vector) Z_2x1,factor.evaluateError(nRb),1e-5));
 
+  auto err_fn = [&factor](const Rot3& r){
+    return factor.evaluateError(r, OptionalNone);
+  };
   // Calculate numerical derivatives
-  Matrix expectedH = numericalDerivative11<Vector, Rot3>(
-      std::bind(&Rot3AttitudeFactor::evaluateError, &factor,
-                std::placeholders::_1, boost::none),
-      nRb);
+  Matrix expectedH = numericalDerivative11<Vector, Rot3>(err_fn, nRb);
 
   // Use the factor to calculate the derivative
   Matrix actualH;
@@ -98,10 +100,13 @@ TEST( Pose3AttitudeFactor, Constructor ) {
   Pose3 T(Rot3(), Point3(-5.0, 8.0, -11.0));
   EXPECT(assert_equal((Vector) Z_2x1,factor.evaluateError(T),1e-5));
 
+  Matrix actualH1;
+
+  auto err_fn = [&factor](const Pose3& p){
+    return factor.evaluateError(p, OptionalNone);
+  };
   // Calculate numerical derivatives
-  Matrix expectedH = numericalDerivative11<Vector,Pose3>(
-      std::bind(&Pose3AttitudeFactor::evaluateError, &factor, std::placeholders::_1,
-          boost::none), T);
+  Matrix expectedH = numericalDerivative11<Vector,Pose3>(err_fn, T);
 
   // Use the factor to calculate the derivative
   Matrix actualH;

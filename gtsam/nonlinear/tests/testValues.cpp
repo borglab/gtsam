@@ -308,7 +308,7 @@ TEST(Values, exists_)
   config0.insert(key1, 1.0);
   config0.insert(key2, 2.0);
 
-  boost::optional<const double&> v = config0.exists<double>(key1);
+  const double* v = config0.exists<double>(key1);
   DOUBLES_EQUAL(1.0,*v,1e-9);
 }
 

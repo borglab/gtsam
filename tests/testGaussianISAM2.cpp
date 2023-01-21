@@ -42,8 +42,8 @@ SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.1, M
 SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas((Vector(2) << M_PI/100.0, 0.1).finished());
 
 ISAM2 createSlamlikeISAM2(
-    boost::optional<Values&> init_values = boost::none,
-    boost::optional<NonlinearFactorGraph&> full_graph = boost::none,
+    Values* init_values = nullptr,
+    NonlinearFactorGraph* full_graph = nullptr,
     const ISAM2Params& params = ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0,
                                             0, false, true,
                                             ISAM2Params::CHOLESKY, true,
@@ -288,7 +288,7 @@ TEST(ISAM2, simple)
     // These variables will be reused and accumulate factors and values
     Values fullinit;
     NonlinearFactorGraph fullgraph;
-    ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false), i);
+    ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false), i);
 
     // Compare solutions
     EXPECT(isam_check(fullgraph, fullinit, isam, *this, result_));
@@ -301,7 +301,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
@@ -313,7 +313,7 @@ TEST(ISAM2, slamlike_solution_dogleg)
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false));
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false));
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
@@ -325,7 +325,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, false, ISAM2Params::QR));
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, false, ISAM2Params::QR));
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
@@ -337,7 +337,7 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false, false, ISAM2Params::QR));
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false, false, ISAM2Params::QR));
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
@@ -386,7 +386,7 @@ TEST(ISAM2, removeFactors)
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
 
   // Remove the 2nd measurement on landmark 0 (Key 100)
   FactorIndices toRemove;
@@ -406,7 +406,7 @@ TEST(ISAM2, removeVariables)
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
 
   // Remove the measurement on landmark 0 (Key 100)
   FactorIndices toRemove;
@@ -431,7 +431,7 @@ TEST(ISAM2, swapFactors)
 
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph);
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph);
 
   // Remove the measurement on landmark 0 and replace with a different one
   {
@@ -610,7 +610,7 @@ TEST(ISAM2, slamlike_solution_partial_relinearization_check)
   NonlinearFactorGraph fullgraph;
   ISAM2Params params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false);
   params.enablePartialRelinearizationCheck = true;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, params);
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, params);
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));

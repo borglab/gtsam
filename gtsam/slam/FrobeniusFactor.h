@@ -54,6 +54,10 @@ class FrobeniusPrior : public NoiseModelFactorN<Rot> {
   Eigen::Matrix<double, Dim, 1> vecM_;  ///< vectorized matrix to approximate
 
  public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using NoiseModelFactor1<Rot>::evaluateError;
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// Constructor
@@ -64,8 +68,7 @@ class FrobeniusPrior : public NoiseModelFactorN<Rot> {
   }
 
   /// Error is just Frobenius norm between Rot element and vectorized matrix M.
-  Vector evaluateError(const Rot& R,
-                       boost::optional<Matrix&> H = boost::none) const override {
+  Vector evaluateError(const Rot& R, OptionalMatrixType H) const override {
     return R.vec(H) - vecM_;  // Jacobian is computed only when needed.
   }
 };
@@ -79,6 +82,10 @@ class FrobeniusFactor : public NoiseModelFactorN<Rot, Rot> {
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using NoiseModelFactor2<Rot, Rot>::evaluateError;
+
   /// Constructor
   FrobeniusFactor(Key j1, Key j2, const SharedNoiseModel& model = nullptr)
       : NoiseModelFactorN<Rot, Rot>(ConvertNoiseModel(model, Dim), j1,
@@ -86,8 +93,7 @@ class FrobeniusFactor : public NoiseModelFactorN<Rot, Rot> {
 
   /// Error is just Frobenius norm between rotation matrices.
   Vector evaluateError(const Rot& R1, const Rot& R2,
-                       boost::optional<Matrix&> H1 = boost::none,
-                       boost::optional<Matrix&> H2 = boost::none) const override {
+                       OptionalMatrixType H1, OptionalMatrixType H2) const override {
     Vector error = R2.vec(H2) - R1.vec(H1);
     if (H1) *H1 = -*H1;
     return error;
@@ -108,6 +114,10 @@ class FrobeniusBetweenFactor : public NoiseModelFactorN<Rot, Rot> {
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using NoiseModelFactor2<Rot, Rot>::evaluateError;
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// @name Constructor
@@ -150,8 +160,7 @@ class FrobeniusBetweenFactor : public NoiseModelFactorN<Rot, Rot> {
 
   /// Error is Frobenius norm between R1*R12 and R2.
   Vector evaluateError(const Rot& R1, const Rot& R2,
-                       boost::optional<Matrix&> H1 = boost::none,
-                       boost::optional<Matrix&> H2 = boost::none) const override {
+                       OptionalMatrixType H1, OptionalMatrixType H2) const override {
     const Rot R2hat = R1.compose(R12_);
     Eigen::Matrix<double, Dim, Rot::dimension> vec_H_R2hat;
     Vector error = R2.vec(H2) - R2hat.vec(H1 ? &vec_H_R2hat : nullptr);

@@ -139,6 +139,10 @@ class TestDiscreteBayesNet(GtsamTestCase):
                                    math.log(fragment.at(i).evaluate(values)))
         self.assertAlmostEqual(fragment.logProbability(values),
                                math.log(fragment.evaluate(values)))
+        actual = fragment.sample(given)
+        # TODO(kartikarcot): Resolve the len function issue. Probably
+        # due to a use of initializer list which is not supported in CPP17
+        # self.assertEqual(len(actual), 5)
 
     def test_dot(self):
         """Check that dot works with position hints."""

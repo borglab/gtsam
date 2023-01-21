@@ -29,10 +29,34 @@
 #include <gtsam/base/utilities.h>  // boost::index_sequence
 
 #include <boost/serialization/base_object.hpp>
+#include <cstddef>
+#include <type_traits>
 
 namespace gtsam {
 
 /* ************************************************************************* */
+
+/** These typedefs and aliases will help with making the evaluateError interface
+ * independent of boost
+ * TODO(kartikarcot): Change this to OptionalMatrixNone
+ * This typedef is used to indicate that the Jacobian is not required
+ * and the default value used for optional matrix pointer arguments in evaluateError.
+ * Had to use the static_cast of a nullptr, because the compiler is not able to
+ * deduce the type of the nullptr when expanding the evaluateError templates.
+ */
+#define OptionalNone static_cast<Matrix*>(nullptr)
+
+/** This typedef will be used everywhere boost::optional<Matrix&> reference was used
+ * previously. This is used to indicate that the Jacobian is optional. In the future
+ * we will change this to OptionalJacobian
+ */
+using OptionalMatrixType = Matrix*;
+
+/** The OptionalMatrixVecType is a pointer to a vector of matrices. It will
+ * be used in situations where a vector of matrices is optional, like in 
+ * unwhitenedError.
+ */
+using OptionalMatrixVecType = std::vector<Matrix>*;
 
 /**
  * Nonlinear factor base class
@@ -206,7 +230,6 @@ protected:
   NoiseModelFactor(const SharedNoiseModel& noiseModel) : noiseModel_(noiseModel) {}
 
 public:
-
   /** Print */
   void print(const std::string& s = "",
     const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
@@ -230,8 +253,17 @@ public:
    * If the optional arguments is specified, it should compute
    * both the function evaluation and its derivative(s) in H.
    */
-  virtual Vector unwhitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const = 0;
+  virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const = 0;
+
+  /** support taking in the actual vector instead of the pointer as well
+   * to get access to this version of the function from derived classes
+   * one will need to use the "using" keyword and specify that like this:
+   * public:
+   *   using NoiseModelFactor::unwhitenedError;
+   */
+  Vector unwhitenedError(const Values& x, std::vector<Matrix>& H) const {
+    return unwhitenedError(x, &H);
+  }
 
   /**
    * Vector of errors, whitened
@@ -359,8 +391,8 @@ struct NoiseModelFactorAliases<T1, T2, T3, T4, T5, T6, TExtra...> {
  *
  *   Vector evaluateError(
  *       const Pose3& T, const Point3& p,
- *       boost::optional<Matrix&> H_T = boost::none,
- *       boost::optional<Matrix&> H_p = boost::none) const override {
+ *       OptionalMatrixType H_T = OptionalNone,
+ *       OptionalMatrixType H_p = OptionalNone) const override {
  *     Matrix36 t_H_T;  // partial derivative of translation w.r.t. pose T
  *
  *     // Only compute t_H_T if needed:
@@ -402,7 +434,9 @@ class NoiseModelFactorN
   /// N is the number of variables (N-way factor)
   enum { N = sizeof...(ValueTypes) };
 
- protected:
+  using NoiseModelFactor::unwhitenedError;
+
+protected:
   using Base = NoiseModelFactor;
   using This = NoiseModelFactorN<ValueTypes...>;
 
@@ -423,20 +457,49 @@ class NoiseModelFactorN
   template <typename Container>
   using IsContainerOfKeys = IsConvertible<ContainerElementType<Container>, Key>;
 
+  /** A helper alias to check if a list of args
+   * are all references to a matrix or not. It will be used
+   * to choose the right overload of evaluateError.
+   */
+  template <typename Ret, typename ...Args>
+  using AreAllMatrixRefs = std::enable_if_t<(... && 
+      std::is_convertible<Args, Matrix&>::value), Ret>;
+  
+  template<typename Arg>
+  using IsMatrixPointer = std::is_same<typename std::decay_t<Arg>, Matrix*>;
+
+  template<typename Arg>
+  using IsNullpointer = std::is_same<typename std::decay_t<Arg>, std::nullptr_t>;
+
+  /** A helper alias to check if a list of args
+   * are all pointers to a matrix or not. It will be used
+   * to choose the right overload of evaluateError.
+   */
+  template <typename Ret, typename ...Args>
+    using AreAllMatrixPtrs = std::enable_if_t<(... &&
+            (IsMatrixPointer<Args>::value || IsNullpointer<Args>::value)), Ret>;
+
   /// @}
 
-  /* Like std::void_t, except produces `boost::optional<Matrix&>` instead of
+  /* Like std::void_t, except produces `OptionalMatrixType` instead of
    * `void`. Used to expand fixed-type parameter-packs with same length as
    * ValueTypes. */
-  template <typename T>
-  using OptionalMatrix = boost::optional<Matrix&>;
+  template <typename T = void>
+  using OptionalMatrixTypeT = Matrix*;
 
   /* Like std::void_t, except produces `Key` instead of `void`. Used to expand
    * fixed-type parameter-packs with same length as ValueTypes. */
   template <typename T>
   using KeyType = Key;
 
- public:
+  /* Like std::void_t, except produces `Matrix` instead of
+   * `void`. Used to expand fixed-type parameter-packs with same length as
+   * ValueTypes. This helps in creating an evaluateError overload that accepts
+   * Matrices instead of pointers to matrices */
+  template <typename T = void>
+  using MatrixTypeT = Matrix;
+
+  public:
   /**
    * The type of the I'th template param can be obtained as ValueType<I>.
    * I is 1-indexed for backwards compatibility/consistency!  So for example,
@@ -541,7 +604,7 @@ class NoiseModelFactorN
    */
   Vector unwhitenedError(
       const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const override {
+      OptionalMatrixVecType H = nullptr) const override {
     return unwhitenedError(boost::mp11::index_sequence_for<ValueTypes...>{}, x,
                            H);
   }
@@ -560,8 +623,8 @@ class NoiseModelFactorN
    * ```
    * Vector evaluateError(
    *     const Pose3& x1, const Point3& x2,
-   *     boost::optional<Matrix&> H1 = boost::none,
-   *     boost::optional<Matrix&> H2 = boost::none) const override { ... }
+   *     OptionalMatrixType H1 = OptionalNone,
+   *     OptionalMatrixType H2 = OptionalNone) const override { ... }
    * ```
    *
    * If any of the optional Matrix reference arguments are specified, it should
@@ -573,10 +636,20 @@ class NoiseModelFactorN
    * @param[out] H The Jacobian with respect to each variable (optional).
    */
   virtual Vector evaluateError(const ValueTypes&... x,
-                               OptionalMatrix<ValueTypes>... H) const = 0;
+                               OptionalMatrixTypeT<ValueTypes>... H) const = 0;
+
+  /** If all the optional arguments are matrices then redirect the call to 
+   * the one which takes pointers.
+   * To get access to this version of the function from derived classes
+   * one will need to use the "using" keyword and specify that like this:
+   * public:
+   *   using NoiseModelFactorN<list the value types here>::evaluateError;
+   */
+  Vector evaluateError(const ValueTypes&... x, MatrixTypeT<ValueTypes>&... H) const {
+    return evaluateError(x..., (&H)...);
+  }
 
   /// @}
-
   /// @name Convenience method overloads
   /// @{
 
@@ -587,19 +660,31 @@ class NoiseModelFactorN
    * e.g. `const Vector error = factor.evaluateError(pose, point);`
    */
   inline Vector evaluateError(const ValueTypes&... x) const {
-    return evaluateError(x..., OptionalMatrix<ValueTypes>()...);
+    return evaluateError(x..., OptionalMatrixTypeT<ValueTypes>()...);
   }
 
   /** Some (but not all) optional Jacobians are omitted (function overload)
-   *
+   * and the jacobians are l-value references to matrices.
    * e.g. `const Vector error = factor.evaluateError(pose, point, Hpose);`
    */
-  template <typename... OptionalJacArgs,
-            typename = IndexIsValid<sizeof...(OptionalJacArgs) + 1>>
-  inline Vector evaluateError(const ValueTypes&... x,
-                              OptionalJacArgs&&... H) const {
-    return evaluateError(x..., std::forward<OptionalJacArgs>(H)...,
-                         boost::none);
+  template <typename... OptionalJacArgs, typename = IndexIsValid<sizeof...(OptionalJacArgs) + 1>>
+  inline AreAllMatrixRefs<Vector, OptionalJacArgs...> evaluateError(const ValueTypes&... x,
+                                                                  OptionalJacArgs&&... H) const {
+    return evaluateError(x..., (&H)...);
+  }
+
+  /** Some (but not all) optional Jacobians are omitted (function overload)
+   * and the jacobians are pointers to matrices.
+   * e.g. `const Vector error = factor.evaluateError(pose, point, &Hpose);`
+   */
+  template <typename... OptionalJacArgs, typename = IndexIsValid<sizeof...(OptionalJacArgs) + 1>>
+  inline AreAllMatrixPtrs<Vector, OptionalJacArgs...> evaluateError(const ValueTypes&... x,
+                                                                    OptionalJacArgs&&... H) const {
+    // If they are pointer version, ensure to cast them all to be Matrix* types
+    // This will ensure any arguments inferred as std::nonetype_t are cast to (Matrix*) nullptr
+    // This guides the compiler to the correct overload which is the one that takes pointers
+    return evaluateError(x..., 
+        std::forward<OptionalJacArgs>(H)..., static_cast<OptionalMatrixType>(OptionalNone));
   }
 
   /// @}
@@ -615,7 +700,7 @@ class NoiseModelFactorN
   inline Vector unwhitenedError(
       boost::mp11::index_sequence<Indices...>,  //
       const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
+      OptionalMatrixVecType H = nullptr) const {
     if (this->active(x)) {
       if (H) {
         return evaluateError(x.at<ValueTypes>(keys_[Indices])...,

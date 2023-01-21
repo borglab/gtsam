@@ -35,6 +35,9 @@ struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
   typedef NoiseModelFactorN<VALUE> Base;
   typedef boost::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than
 
@@ -54,8 +57,8 @@ struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
    * Must have optional argument for derivative with 1xN matrix, where
    * N = X::dim()
    */
-  virtual double value(const X& x, boost::optional<Matrix&> H =
-      boost::none) const = 0;
+  virtual double value(const X& x, OptionalMatrixType H =
+      OptionalNone) const = 0;
 
   /** active when constraint *NOT* met */
   bool active(const Values& c) const override {
@@ -64,10 +67,9 @@ struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
     return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
   }
 
-  Vector evaluateError(const X& x, boost::optional<Matrix&> H =
-      boost::none) const override {
+  Vector evaluateError(const X& x, OptionalMatrixType H) const override {
     Matrix D;
-    double error = value(x, D) - threshold_;
+    double error = value(x, &D) - threshold_;
     if (H) {
       if (isGreaterThan_) *H = D;
       else *H = -1.0 * D;
@@ -105,6 +107,9 @@ struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
   typedef NoiseModelFactorN<VALUE1, VALUE2> Base;
   typedef boost::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than
 
@@ -123,8 +128,8 @@ struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
    * Must have optional argument for derivatives)
    */
   virtual double value(const X1& x1, const X2& x2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const = 0;
+      OptionalMatrixType H1 = OptionalNone,
+      OptionalMatrixType H2 = OptionalNone) const = 0;
 
   /** active when constraint *NOT* met */
   bool active(const Values& c) const override {
@@ -134,10 +139,9 @@ struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
   }
 
   Vector evaluateError(const X1& x1, const X2& x2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     Matrix D1, D2;
-    double error = value(x1, x2, D1, D2) - threshold_;
+    double error = value(x1, x2, &D1, &D2) - threshold_;
     if (H1) {
       if (isGreaterThan_)  *H1 = D1;
       else *H1 = -1.0 * D1;

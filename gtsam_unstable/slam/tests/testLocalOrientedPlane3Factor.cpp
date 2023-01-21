@@ -23,6 +23,9 @@
 #include <gtsam/nonlinear/ISAM2.h>
 
 #include <CppUnitLite/TestHarness.h>
+#include "gtsam/base/Vector.h"
+#include "gtsam/geometry/OrientedPlane3.h"
+#include "gtsam/geometry/Pose3.h"
 
 using namespace std::placeholders;
 using namespace gtsam;
@@ -141,10 +144,10 @@ TEST(LocalOrientedPlane3Factor, Derivatives) {
   LocalOrientedPlane3Factor factor(p, noise, poseKey, anchorPoseKey, planeKey);
 
   // Calculate numerical derivatives
-  auto f =
-      std::bind(&LocalOrientedPlane3Factor::evaluateError, factor,
-                std::placeholders::_1, std::placeholders::_2,
-                std::placeholders::_3, boost::none, boost::none, boost::none);
+  auto f = [&factor] (const Pose3& p1, const Pose3& p2, const OrientedPlane3& a_plane) {
+	  return factor.evaluateError(p1, p2, a_plane);
+  };
+
   Matrix numericalH1 = numericalDerivative31<Vector3, Pose3, Pose3,
     OrientedPlane3>(f, poseLin, anchorPoseLin, pLin);
   Matrix numericalH2 = numericalDerivative32<Vector3, Pose3, Pose3,

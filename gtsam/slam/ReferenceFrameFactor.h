@@ -29,8 +29,8 @@ namespace gtsam {
 template<class T, class P>
 P transform_point(
     const T& trans, const P& global,
-    boost::optional<Matrix&> Dtrans,
-    boost::optional<Matrix&> Dglobal) {
+    OptionalMatrixType Dtrans,
+    OptionalMatrixType Dglobal) {
   return trans.transformFrom(global, Dtrans, Dglobal);
 }
 
@@ -62,6 +62,9 @@ protected:
 public:
   typedef NoiseModelFactorN<POINT, TRANSFORM, POINT> Base;
   typedef ReferenceFrameFactor<POINT, TRANSFORM> This;
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
   typedef POINT Point;
   typedef TRANSFORM Transform;
@@ -95,12 +98,12 @@ public:
 
   /** Combined cost and derivative function using boost::optional */
   Vector evaluateError(const Point& global, const Transform& trans, const Point& local,
-        boost::optional<Matrix&> Dforeign = boost::none,
-        boost::optional<Matrix&> Dtrans = boost::none,
-        boost::optional<Matrix&> Dlocal = boost::none) const override {
+        OptionalMatrixType Dforeign, OptionalMatrixType Dtrans,
+        OptionalMatrixType Dlocal) const override {
     Point newlocal = transform_point<Transform,Point>(trans, global, Dtrans, Dforeign);
-    if (Dlocal)
+    if (Dlocal) {
       *Dlocal = -1* Matrix::Identity(traits<Point>::dimension, traits<Point>::dimension);
+    }
     return traits<Point>::Local(local,newlocal);
   }
 

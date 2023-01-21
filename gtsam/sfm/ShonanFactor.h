@@ -42,6 +42,10 @@ class GTSAM_EXPORT ShonanFactor : public NoiseModelFactorN<SOn, SOn> {
   using Rot = typename std::conditional<d == 2, Rot2, Rot3>::type;
 
 public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using NoiseModelFactor2<SOn, SOn>::evaluateError;
+
   /// @name Constructor
   /// @{
 
@@ -71,17 +75,14 @@ public:
 
   /// Error is Frobenius norm between Q1*P*R12 and Q2*P, where P=[I_3x3;0]
   /// projects down from SO(p) to the Stiefel manifold of px3 matrices.
-  Vector
-  evaluateError(const SOn &Q1, const SOn &Q2,
-                boost::optional<Matrix &> H1 = boost::none,
-                boost::optional<Matrix &> H2 = boost::none) const override;
+  Vector evaluateError(const SOn& Q1, const SOn& Q2, OptionalMatrixType H1, OptionalMatrixType H2) const override;
   /// @}
 
 private:
   /// Calculate Jacobians if asked, Only implemented for d=2 and 3 in .cpp
   void fillJacobians(const Matrix &M1, const Matrix &M2,
-                     boost::optional<Matrix &> H1,
-                     boost::optional<Matrix &> H2) const;
+                     OptionalMatrixType H1,
+                     OptionalMatrixType H2) const;
 };
 
 // Explicit instantiation for d=2 and d=3 in .cpp file:

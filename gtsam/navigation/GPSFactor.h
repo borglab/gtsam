@@ -42,6 +42,9 @@ private:
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<GPSFactor> shared_ptr;
 
@@ -78,8 +81,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Pose3& p,
-      boost::optional<Matrix&> H = boost::none) const override;
+  Vector evaluateError(const Pose3& p, OptionalMatrixType H) const override;
 
   inline const Point3 & measurementIn() const {
     return nT_;
@@ -121,6 +123,9 @@ private:
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<GPSFactor2> shared_ptr;
 
@@ -151,8 +156,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const NavState& p,
-      boost::optional<Matrix&> H = boost::none) const override;
+  Vector evaluateError(const NavState& p, OptionalMatrixType H) const override;
 
   inline const Point3 & measurementIn() const {
     return nT_;

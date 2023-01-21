@@ -34,7 +34,10 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactorN<POSE, LANDMARK, INVDEPTH> Base;
+  typedef NoiseModelFactor3<POSE, LANDMARK, INVDEPTH> Base;
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
   /// shorthand for this class
   typedef InvDepthFactor3<POSE, LANDMARK, INVDEPTH> This;
@@ -83,9 +86,7 @@ public:
 
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(const POSE& pose, const Vector5& point, const INVDEPTH& invDepth,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none,
-      boost::optional<Matrix&> H3=boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3) const override {
     try {
       InvDepthCamera3<Cal3_S2> camera(pose, K_);
       return camera.project(point, invDepth, H1, H2, H3) - measured_;

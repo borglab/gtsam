@@ -179,8 +179,10 @@ namespace gtsam {
 
 
     /* ************************************************************************* */
-    Vector whitenedError(const Values& x,
-        boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    /** A function overload to accept a vector<matrix> instead of a pointer to
+     * the said type.
+     */
+    Vector whitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const {
 
       bool debug = true;
 
@@ -243,6 +245,11 @@ namespace gtsam {
 
 
       return err_wh_eq;
+    }
+    
+    /* ************************************************************************* */
+    Vector whitenedError(const Values& x, std::vector<Matrix>& H) const {
+      return whitenedError(x, &H);
     }
 
     /* ************************************************************************* */

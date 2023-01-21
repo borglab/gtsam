@@ -184,12 +184,12 @@ namespace gtsam {
      * exists. */
     bool exists(Key j) const;
 
-    /** Check if a value with key \c j exists, returns the value with type
-     * \c Value if the key does exist, or boost::none if it does not exist.
+    /** Check if a value with key \c j exists, returns a pointer to the const version of the value
+     * \c Value if the key does exist, or nullptr if it does not exist.
      * Throws DynamicValuesIncorrectType if the value type associated with the
      * requested key does not match the stored value type. */
     template<typename ValueType>
-    boost::optional<const ValueType&> exists(Key j) const;
+    const ValueType * exists(Key j) const;
 
     /** Find an element by key, returning an iterator, or end() if the key was
      * not found. */

@@ -40,8 +40,8 @@ namespace gtsam {
  * \tparam T Type for measurements.
  *
  */
-template<typename T>
-class ExpressionFactor: public NoiseModelFactor {
+template <typename T>
+class ExpressionFactor : public NoiseModelFactor {
   BOOST_CONCEPT_ASSERT((IsTestable<T>));
 
 protected:
@@ -55,6 +55,9 @@ protected:
 
 
  public:
+
+  // Provide access to the Matrix& version of unwhitenedError:
+  using NoiseModelFactor::unwhitenedError;
   typedef boost::shared_ptr<ExpressionFactor<T> > shared_ptr;
 
   /**
@@ -97,7 +100,7 @@ protected:
    * both the function evaluation and its derivative(s) in H.
    */
   Vector unwhitenedError(const Values& x,
-    boost::optional<std::vector<Matrix>&> H = boost::none) const override {
+    OptionalMatrixVecType H = nullptr) const override {
     if (H) {
       const T value = expression_.valueAndDerivatives(x, keys_, dims_, *H);
       // NOTE(hayk): Doing the reverse, AKA Local(measured_, value) is not correct here
@@ -243,6 +246,9 @@ class ExpressionFactorN : public ExpressionFactor<T> {
 public:
   static const std::size_t NARY_EXPRESSION_SIZE = sizeof...(Args);
   using ArrayNKeys = std::array<Key, NARY_EXPRESSION_SIZE>;
+    
+  // Provide access to the Matrix& version of unwhitenedError:
+  using ExpressionFactor<T>::unwhitenedError;
 
   /// Destructor
   ~ExpressionFactorN() override = default;
@@ -311,9 +317,8 @@ public:
   ~ExpressionFactor2() override {}
 
   /// Backwards compatible evaluateError, to make existing tests compile
-  Vector evaluateError(const A1 &a1, const A2 &a2,
-                       boost::optional<Matrix &> H1 = boost::none,
-                       boost::optional<Matrix &> H2 = boost::none) const {
+  Vector evaluateError(const A1& a1, const A2& a2, OptionalMatrixType H1 = OptionalNone,
+                               OptionalMatrixType H2 = OptionalNone) const {
     Values values;
     values.insert(this->keys_[0], a1);
     values.insert(this->keys_[1], a2);
@@ -324,15 +329,13 @@ public:
     return error;
   }
 
+
   /// Recreate expression from given keys_ and measured_, used in load
   /// Needed to deserialize a derived factor
   virtual Expression<T> expression(Key key1, Key key2) const {
-    throw std::runtime_error(
-        "ExpressionFactor2::expression not provided: cannot deserialize.");
+    throw std::runtime_error("ExpressionFactor2::expression not provided: cannot deserialize.");
   }
-  Expression<T>
-  expression(const typename ExpressionFactorN<T, A1, A2>::ArrayNKeys &keys)
-      const override {
+  Expression<T> expression(const typename ExpressionFactorN<T, A1, A2>::ArrayNKeys& keys) const override {
     return expression(keys[0], keys[1]);
   }
 
@@ -341,7 +344,7 @@ protected:
   ExpressionFactor2() {}
 
   /// Constructor takes care of keys, but still need to call initialize
-  ExpressionFactor2(Key key1, Key key2, const SharedNoiseModel &noiseModel,
+  ExpressionFactor2(Key key1, Key key2, const SharedNoiseModel& noiseModel,
                     const T &measurement)
       : ExpressionFactorN<T, A1, A2>({key1, key2}, noiseModel, measurement) {}
 };

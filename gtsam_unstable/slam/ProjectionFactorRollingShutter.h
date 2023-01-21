@@ -60,7 +60,11 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
 
  public:
   /// shorthand for base class type
-  typedef NoiseModelFactorN<Pose3, Pose3, Point3> Base;
+  typedef NoiseModelFactor3<Pose3, Pose3, Point3> Base;
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
 
   /// shorthand for this class
   typedef ProjectionFactorRollingShutter This;
@@ -173,9 +177,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(
       const Pose3& pose_a, const Pose3& pose_b, const Point3& point,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const override;
+      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3) const override;
 
   /** return the measurement */
   const Point2& measured() const { return measured_; }

@@ -222,9 +222,9 @@ bool CombinedImuFactor::equals(const NonlinearFactor& other, double tol) const {
 Vector CombinedImuFactor::evaluateError(const Pose3& pose_i,
     const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
     const imuBias::ConstantBias& bias_i, const imuBias::ConstantBias& bias_j,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
-    boost::optional<Matrix&> H3, boost::optional<Matrix&> H4,
-    boost::optional<Matrix&> H5, boost::optional<Matrix&> H6) const {
+    OptionalMatrixType H1, OptionalMatrixType H2,
+    OptionalMatrixType H3, OptionalMatrixType H4,
+    OptionalMatrixType H5, OptionalMatrixType H6) const {
 
   // error wrt bias evolution model (random walk)
   Matrix6 Hbias_i, Hbias_j;

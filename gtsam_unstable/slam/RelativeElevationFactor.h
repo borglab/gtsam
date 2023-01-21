@@ -35,6 +35,9 @@ private:
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   RelativeElevationFactor() : measured_(0.0) {} /* Default constructor */
 
   RelativeElevationFactor(Key poseKey, Key pointKey, double measured,
@@ -49,7 +52,7 @@ public:
 
   /** h(x)-z */
   Vector evaluateError(const Pose3& pose, const Point3& point,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const override;
+      OptionalMatrixType H1, OptionalMatrixType H2) const override;
 
   /** return the measured */
   inline double measured() const { return measured_; }

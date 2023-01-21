@@ -38,6 +38,9 @@ namespace gtsam {
 
   public:
 
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
+
     // shorthand for a smart pointer to a factor
     typedef boost::shared_ptr<BiasedGPSFactor> shared_ptr;
 
@@ -73,8 +76,7 @@ namespace gtsam {
 
     /** vector of errors */
     Vector evaluateError(const Pose3& pose, const Point3& bias,
-        boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-            boost::none) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2) const override {
 
       if (H1 || H2){
         H1->resize(3,6); // jacobian wrt pose

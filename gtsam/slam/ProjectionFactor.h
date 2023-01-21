@@ -54,6 +54,9 @@ namespace gtsam {
     /// shorthand for base class type
     typedef NoiseModelFactorN<POSE, LANDMARK> Base;
 
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
+
     /// shorthand for this class
     typedef GenericProjectionFactor<POSE, LANDMARK, CALIBRATION> This;
 
@@ -133,7 +136,7 @@ namespace gtsam {
 
     /// Evaluate error h(x)-z and optionally derivatives
     Vector evaluateError(const Pose3& pose, const Point3& point,
-        boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2) const override {
       try {
         if(body_P_sensor_) {
           if(H1) {

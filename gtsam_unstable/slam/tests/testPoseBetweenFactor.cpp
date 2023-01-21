@@ -199,13 +199,9 @@ TEST( PoseBetweenFactor, Jacobian ) {
 
   // Calculate numerical derivatives
   Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
-      std::bind(&TestPoseBetweenFactor::evaluateError, &factor,
-                std::placeholders::_1, pose2, boost::none, boost::none),
-      pose1);
+		  [&factor, &pose2](const Pose3& p) { return factor.evaluateError(p, pose2); }, pose1);
   Matrix expectedH2 = numericalDerivative11<Vector, Pose3>(
-      std::bind(&TestPoseBetweenFactor::evaluateError, &factor, pose1,
-                std::placeholders::_1, boost::none, boost::none),
-      pose2);
+		  [&factor, &pose1](const Pose3& p) { return factor.evaluateError(pose1, p); }, pose2);
 
   // Use the factor to calculate the derivative
   Matrix actualH1;
@@ -234,13 +230,9 @@ TEST( PoseBetweenFactor, JacobianWithTransform ) {
 
   // Calculate numerical derivatives
   Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
-      std::bind(&TestPoseBetweenFactor::evaluateError, &factor,
-                std::placeholders::_1, pose2, boost::none, boost::none),
-      pose1);
+		  [&factor, &pose2](const Pose3& p) { return factor.evaluateError(p, pose2); }, pose1);
   Matrix expectedH2 = numericalDerivative11<Vector, Pose3>(
-      std::bind(&TestPoseBetweenFactor::evaluateError, &factor, pose1,
-                std::placeholders::_1, boost::none, boost::none),
-      pose2);
+		  [&factor, &pose1](const Pose3& p) { return factor.evaluateError(pose1, p); }, pose2);
 
   // Use the factor to calculate the derivative
   Matrix actualH1;

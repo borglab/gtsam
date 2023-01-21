@@ -198,13 +198,16 @@ protected:
     }
   }
 
-  /// Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and
-  /// derivatives. This is the error before the noise model is applied.
+  /** Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and
+  * derivatives. This is the error before the noise model is applied.
+  * The templated version described above must finally get resolved to this
+  * function.
+  */
   template <class POINT>
   Vector unwhitenedError(
       const Cameras& cameras, const POINT& point,
-      boost::optional<typename Cameras::FBlocks&> Fs = boost::none,  //
-      boost::optional<Matrix&> E = boost::none) const {
+      typename Cameras::FBlocks* Fs = nullptr,  //
+      Matrix* E = nullptr) const {
     // Reproject, with optional derivatives.
     Vector error = cameras.reprojectionError(point, measured_, Fs, E);
 
@@ -233,6 +236,19 @@ protected:
     return error;
   }
 
+  /** 
+   * An overload of unwhitenedError. This allows
+   * end users to provide optional arguments that are l-value references
+   * to the matrices and vectors that will be used to store the results instead
+   * of pointers.
+   */
+  template<class POINT, class ...OptArgs>
+  Vector unwhitenedError(
+      const Cameras& cameras, const POINT& point,
+      OptArgs&&... optArgs) const {
+    return unwhitenedError(cameras, point, (&optArgs)...);
+  }
+
   /**
    * This corrects the Jacobians for the case in which some 2D measurement is
    * missing (nan). In practice, this does not do anything in the monocular
@@ -240,8 +256,21 @@ protected:
    */
   virtual void correctForMissingMeasurements(
       const Cameras& cameras, Vector& ue,
-      boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
-      boost::optional<Matrix&> E = boost::none) const {}
+      typename Cameras::FBlocks* Fs = nullptr,
+      Matrix* E = nullptr) const {}
+
+  /**
+   * An overload of correctForMissingMeasurements. This allows
+   * end users to provide optional arguments that are l-value references
+   * to the matrices and vectors that will be used to store the results instead
+   * of pointers.
+   */
+  template<class ...OptArgs>
+  void correctForMissingMeasurements(
+      const Cameras& cameras, Vector& ue,
+      OptArgs&&... optArgs) const {
+    correctForMissingMeasurements(cameras, ue, (&optArgs)...);
+  }
 
   /**
    * Calculate vector of re-projection errors [h(x)-z] = [cameras.project(p) -
@@ -288,7 +317,7 @@ protected:
     // As in expressionFactor, RHS vector b = - (h(x_bar) - z) = z-h(x_bar)
     // Indeed, nonlinear error |h(x_bar+dx)-z| ~ |h(x_bar) + A*dx - z|
     //                                         = |A*dx - (z-h(x_bar))|
-    b = -unwhitenedError(cameras, point, Fs, E);
+    b = -unwhitenedError(cameras, point, &Fs, &E);
   }
 
   /**

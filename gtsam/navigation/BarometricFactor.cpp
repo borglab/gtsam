@@ -43,8 +43,8 @@ bool BarometricFactor::equals(const NonlinearFactor& expected,
 
 //***************************************************************************
 Vector BarometricFactor::evaluateError(const Pose3& p, const double& bias,
-                                       boost::optional<Matrix&> H,
-                                       boost::optional<Matrix&> H2) const {
+                                       OptionalMatrixType H,
+                                       OptionalMatrixType H2) const {
     Matrix tH;
     Vector ret = (Vector(1) << (p.translation(tH).z() + bias - nT_)).finished();
     if (H) (*H) = tH.block<1, 6>(2, 0);

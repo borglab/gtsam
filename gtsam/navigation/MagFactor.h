@@ -38,6 +38,9 @@ class MagFactor: public NoiseModelFactorN<Rot2> {
 
 public:
 
+  // Provide access to Matrix& version of evaluateError:
+  using NoiseModelFactor1<Rot2>::evaluateError;
+
   /**
    * Constructor of factor that estimates nav to body rotation bRn
    * @param key of the unknown rotation bRn in the factor graph
@@ -61,7 +64,7 @@ public:
   }
 
   static Point3 unrotate(const Rot2& R, const Point3& p,
-      boost::optional<Matrix&> HR = boost::none) {
+      OptionalMatrixType HR = OptionalNone) {
     Point3 q = Rot3::Yaw(R.theta()).unrotate(p, HR, boost::none);
     if (HR) {
       // assign to temporary first to avoid error in Win-Debug mode
@@ -74,8 +77,7 @@ public:
   /**
    * @brief vector of errors
    */
-  Vector evaluateError(const Rot2& nRb,
-      boost::optional<Matrix&> H = boost::none) const override {
+  Vector evaluateError(const Rot2& nRb, OptionalMatrixType H) const override {
     // measured bM = nRb� * nM + b
     Point3 hx = unrotate(nRb, nM_, H) + bias_;
     return (hx - measured_);
@@ -95,6 +97,10 @@ class MagFactor1: public NoiseModelFactorN<Rot3> {
 
 public:
 
+  // Provide access to Matrix& version of evaluateError:
+  using NoiseModelFactor1<Rot3>::evaluateError;
+
+
   /** Constructor */
   MagFactor1(Key key, const Point3& measured, double scale,
       const Unit3& direction, const Point3& bias,
@@ -112,10 +118,9 @@ public:
   /**
    * @brief vector of errors
    */
-  Vector evaluateError(const Rot3& nRb,
-      boost::optional<Matrix&> H = boost::none) const override {
+  Vector evaluateError(const Rot3& nRb, OptionalMatrixType H) const override {
     // measured bM = nRb� * nM + b
-    Point3 hx = nRb.unrotate(nM_, H, boost::none) + bias_;
+    Point3 hx = nRb.unrotate(nM_, H, OptionalNone) + bias_;
     return (hx - measured_);
   }
 };
@@ -131,6 +136,10 @@ class MagFactor2: public NoiseModelFactorN<Point3, Point3> {
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
 
 public:
+
+  // Provide access to Matrix& version of evaluateError:
+  using NoiseModelFactor2<Point3, Point3>::evaluateError;
+
 
   /** Constructor */
   MagFactor2(Key key1, Key key2, const Point3& measured, const Rot3& nRb,
@@ -151,10 +160,9 @@ public:
    * @param bias (unknown) 3D bias
    */
   Vector evaluateError(const Point3& nM, const Point3& bias,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     // measured bM = nRb� * nM + b, where b is unknown bias
-    Point3 hx = bRn_.rotate(nM, boost::none, H1) + bias;
+    Point3 hx = bRn_.rotate(nM, OptionalNone, H1) + bias;
     if (H2)
       *H2 = I_3x3;
     return (hx - measured_);
@@ -172,6 +180,10 @@ class MagFactor3: public NoiseModelFactorN<double, Unit3, Point3> {
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
 
 public:
+
+  // Provide access to Matrix& version of evaluateError:
+  using NoiseModelFactor3<double, Unit3, Point3>::evaluateError;
+
 
   /** Constructor */
   MagFactor3(Key key1, Key key2, Key key3, const Point3& measured,
@@ -192,11 +204,10 @@ public:
    * @param bias (unknown) 3D bias
    */
   Vector evaluateError(const double& scale, const Unit3& direction,
-      const Point3& bias, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 =
-          boost::none) const override {
+      const Point3& bias, OptionalMatrixType H1,
+      OptionalMatrixType H2, OptionalMatrixType H3) const override {
     // measured bM = nRb� * nM + b, where b is unknown bias
-    Unit3 rotated = bRn_.rotate(direction, boost::none, H2);
+    Unit3 rotated = bRn_.rotate(direction, OptionalNone, H2);
     Point3 hx = scale * rotated.point3() + bias;
     if (H1)
       *H1 = rotated.point3();

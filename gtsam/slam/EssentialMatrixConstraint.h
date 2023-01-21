@@ -38,6 +38,9 @@ private:
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   // shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<EssentialMatrixConstraint> shared_ptr;
 
@@ -79,8 +82,7 @@ public:
 
   /** vector of errors */
   Vector evaluateError(const Pose3& p1, const Pose3& p2,
-      boost::optional<Matrix&> Hp1 = boost::none, //
-      boost::optional<Matrix&> Hp2 = boost::none) const override;
+      OptionalMatrixType Hp1, OptionalMatrixType Hp2) const override;
 
   /** return the measured */
   const EssentialMatrix& measured() const {

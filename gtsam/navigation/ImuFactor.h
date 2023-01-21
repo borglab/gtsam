@@ -180,6 +180,9 @@ private:
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
   typedef typename boost::shared_ptr<ImuFactor> shared_ptr;
@@ -228,10 +231,8 @@ public:
   /// vector of errors
   Vector evaluateError(const Pose3& pose_i, const Vector3& vel_i,
       const Pose3& pose_j, const Vector3& vel_j,
-      const imuBias::ConstantBias& bias_i, boost::optional<Matrix&> H1 =
-          boost::none, boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none, boost::optional<Matrix&> H4 =
-          boost::none, boost::optional<Matrix&> H5 = boost::none) const override;
+      const imuBias::ConstantBias& bias_i, OptionalMatrixType H1, OptionalMatrixType H2,
+      OptionalMatrixType H3, OptionalMatrixType H4, OptionalMatrixType H5) const override;
 
 #ifdef GTSAM_TANGENT_PREINTEGRATION
   /// Merge two pre-integrated measurement classes
@@ -270,6 +271,9 @@ private:
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   /** Default constructor - only use for serialization */
   ImuFactor2() {}
 
@@ -307,9 +311,8 @@ public:
   /// vector of errors
   Vector evaluateError(const NavState& state_i, const NavState& state_j,
                        const imuBias::ConstantBias& bias_i,  //
-                       boost::optional<Matrix&> H1 = boost::none,
-                       boost::optional<Matrix&> H2 = boost::none,
-                       boost::optional<Matrix&> H3 = boost::none) const override;
+                       OptionalMatrixType H1, OptionalMatrixType H2,
+                       OptionalMatrixType H3) const override;
 
 private:
 

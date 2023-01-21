@@ -19,6 +19,7 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
 
@@ -83,9 +84,9 @@ public:
    */
   inline gtsam::Point2 project(const Vector5& pw,
       double rho,
-      boost::optional<gtsam::Matrix&> H1 = boost::none,
-      boost::optional<gtsam::Matrix&> H2 = boost::none,
-      boost::optional<gtsam::Matrix&> H3 = boost::none) const {
+      OptionalJacobian<2,6> H1 = {},
+      OptionalJacobian<2,5> H2 = {},
+      OptionalJacobian<2,1> H3 = {}) const {
 
     gtsam::Point3 ray_base(pw.segment(0,3));
     double theta = pw(3), phi = pw(4);

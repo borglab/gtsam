@@ -94,7 +94,7 @@ TEST( InvDepthFactor, Dproject_pose)
   Matrix expected = numericalDerivative31(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
   Matrix actual;
-  inv_camera.project(landmark, inv_depth, actual, boost::none, boost::none);
+  inv_camera.project(landmark, inv_depth, actual, {}, {});
   EXPECT(assert_equal(expected,actual,1e-6));
 }
 
@@ -106,7 +106,7 @@ TEST( InvDepthFactor, Dproject_landmark)
   Matrix expected = numericalDerivative32(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
   Matrix actual;
-  inv_camera.project(landmark, inv_depth, boost::none, actual, boost::none);
+  inv_camera.project(landmark, inv_depth, {}, actual, {});
   EXPECT(assert_equal(expected,actual,1e-7));
 }
 
@@ -118,7 +118,7 @@ TEST( InvDepthFactor, Dproject_inv_depth)
   Matrix expected = numericalDerivative33(project_,level_pose, landmark, inv_depth);
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
   Matrix actual;
-  inv_camera.project(landmark, inv_depth, boost::none, boost::none, actual);
+  inv_camera.project(landmark, inv_depth, {}, {}, actual);
   EXPECT(assert_equal(expected,actual,1e-7));
 }
 

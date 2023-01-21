@@ -74,9 +74,7 @@ class BearingRangeFactor
   }
 
   Vector evaluateError(const A1& a1, const A2& a2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const
-  {
+      OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 = OptionalNone) const {
     std::vector<Matrix> Hs(2);
     const auto &keys = Factor::keys();
     const Vector error = this->unwhitenedError(

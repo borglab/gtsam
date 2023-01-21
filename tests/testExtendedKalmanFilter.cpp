@@ -101,6 +101,10 @@ protected:
   Matrix Q_invsqrt_;
 
 public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   NonlinearMotionModel(){}
 
   NonlinearMotionModel(const Symbol& TestKey1, const Symbol& TestKey2) :
@@ -213,8 +217,7 @@ public:
 
   /** vector of errors */
   Vector evaluateError(const Point2& p1, const Point2& p2,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
 
     // error = p2 - f(p1)
     // H1 = d error / d p1 = -d f/ d p1 = -F
@@ -245,6 +248,10 @@ protected:
   Matrix R_invsqrt_; /** The inv sqrt of the measurement error covariance */
 
 public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   NonlinearMeasurementModel(){}
 
   NonlinearMeasurementModel(const Symbol& TestKey, Vector z) :
@@ -339,7 +346,7 @@ public:
   }
 
   /** vector of errors */
-  Vector evaluateError(const Point2& p, boost::optional<Matrix&> H1 = boost::none) const override {
+  Vector evaluateError(const Point2& p, OptionalMatrixType H1) const override {
     // error = z - h(p)
     // H = d error / d p = -d h/ d p = -H
     Vector z_hat = h(p);

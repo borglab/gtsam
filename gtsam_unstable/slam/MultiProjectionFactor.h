@@ -23,6 +23,7 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <boost/optional.hpp>
+#include "gtsam/geometry/Cal3_S2.h"
 
 namespace gtsam {
 
@@ -129,7 +130,7 @@ namespace gtsam {
     }
 
     /// Evaluate error h(x)-z and optionally derivatives
-    Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const override {
+    Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override {
 
       Vector a;
       return a;
@@ -164,7 +165,7 @@ namespace gtsam {
 
 
     Vector evaluateError(const Pose3& pose, const Point3& point,
-        boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+        OptionalJacobian<2, 6> H1 = {}, OptionalJacobian<2,3> H2 = {}) const {
       try {
         if(body_P_sensor_) {
           if(H1) {

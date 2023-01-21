@@ -21,6 +21,7 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/geometry/Point2.h>
+#include "gtsam/base/OptionalJacobian.h"
 
 // \namespace
 
@@ -89,7 +90,7 @@ namespace simulated2D {
   }
 
   /// Prior on a single pose, optionally returns derivative
-  inline Point2 prior(const Point2& x, boost::optional<Matrix&> H = boost::none) {
+  inline Point2 prior(const Point2& x, OptionalJacobian<2,2> H = OptionalNone) {
     if (H) *H = I_2x2;
     return x;
   }
@@ -100,8 +101,9 @@ namespace simulated2D {
   }
 
   /// odometry between two poses, optionally returns derivative
-  inline Point2 odo(const Point2& x1, const Point2& x2, boost::optional<Matrix&> H1 =
-    boost::none, boost::optional<Matrix&> H2 = boost::none) {
+  inline Point2 odo(const Point2& x1, const Point2& x2, 
+		  OptionalJacobian<2,2> H1 = OptionalNone, 
+		  OptionalJacobian<2,2> H2 = OptionalNone) {
       if (H1) *H1 = -I_2x2;
       if (H2) *H2 = I_2x2;
       return x2 - x1;
@@ -113,8 +115,8 @@ namespace simulated2D {
   }
 
   /// measurement between landmark and pose, optionally returns derivative
-  inline Point2 mea(const Point2& x, const Point2& l, boost::optional<Matrix&> H1 =
-    boost::none, boost::optional<Matrix&> H2 = boost::none) {
+  inline Point2 mea(const Point2& x, const Point2& l, OptionalJacobian<2,2> H1 =
+    OptionalNone, OptionalMatrixType H2 = OptionalNone) {
       if (H1) *H1 = -I_2x2;
       if (H2) *H2 = I_2x2;
       return l - x;
@@ -130,6 +132,9 @@ namespace simulated2D {
     typedef GenericPrior<VALUE> This;
     typedef boost::shared_ptr<GenericPrior<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
+	
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
 
     Pose measured_; ///< prior mean
 
@@ -139,8 +144,8 @@ namespace simulated2D {
     }
 
     /// Return error and optional derivative
-    Vector evaluateError(const Pose& x, boost::optional<Matrix&> H = boost::none) const override {
-      return (prior(x, H) - measured_);
+    Vector evaluateError(const Pose& x, OptionalMatrixType H) const override {
+      return (simulated2D::prior(x, H) - measured_);
     }
 
     ~GenericPrior() override {}
@@ -175,6 +180,9 @@ namespace simulated2D {
     typedef boost::shared_ptr<GenericOdometry<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
 
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
+
     Pose measured_; ///< odometry measurement
 
     /// Create odometry
@@ -184,8 +192,7 @@ namespace simulated2D {
 
     /// Evaluate error and optionally return derivatives
     Vector evaluateError(const Pose& x1, const Pose& x2,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2) const override {
       return (odo(x1, x2, H1, H2) - measured_);
     }
 
@@ -222,6 +229,9 @@ namespace simulated2D {
     typedef POSE Pose; ///< shortcut to Pose type
     typedef LANDMARK Landmark; ///< shortcut to Landmark type
 
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
+
     Landmark measured_; ///< Measurement
 
     /// Create measurement factor
@@ -231,8 +241,7 @@ namespace simulated2D {
 
     /// Evaluate error and optionally return derivatives
     Vector evaluateError(const Pose& x1, const Landmark& x2,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2) const override {
       return (mea(x1, x2, H1, H2) - measured_);
     }
 

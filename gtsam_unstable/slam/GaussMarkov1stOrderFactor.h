@@ -54,6 +54,9 @@ private:
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   // shorthand for a smart pointer to a factor
   typedef typename boost::shared_ptr<GaussMarkov1stOrderFactor> shared_ptr;
 
@@ -88,8 +91,7 @@ public:
 
   /** vector of errors */
   Vector evaluateError(const VALUE& p1, const VALUE& p2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
 
     Vector v1( traits<VALUE>::Logmap(p1) );
     Vector v2( traits<VALUE>::Logmap(p2) );

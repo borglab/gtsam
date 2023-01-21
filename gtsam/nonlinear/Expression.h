@@ -155,8 +155,15 @@ public:
    * Notes: this is not terribly efficient, and H should have correct size.
    * The order of the Jacobians is same as keys in either keys() or dims()
    */
-  T value(const Values& values, boost::optional<std::vector<Matrix>&> H =
-      boost::none) const;
+  T value(const Values& values, std::vector<Matrix>* H = nullptr) const;
+
+  /**
+   * An overload of the value function to accept reference to vector of matrices instead of
+   * a pointer to vector of matrices.
+   */
+  T value(const Values& values, std::vector<Matrix>& H) const {
+    return value(values, &H);
+  }
 
   /**
    *  @return a "deep" copy of this Expression

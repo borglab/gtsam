@@ -44,7 +44,10 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
 
  public:
   /// shorthand for base class type
-  typedef NoiseModelFactorN<POSE, POSE, LANDMARK, CALIBRATION> Base;
+  typedef NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> Base;
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
   /// shorthand for this class
   typedef ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> This;
@@ -108,10 +111,8 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
 
     /// Evaluate error h(x)-z and optionally derivatives
     Vector evaluateError(const Pose3& pose, const Pose3& transform, const Point3& point, const CALIBRATION& K,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none,
-        boost::optional<Matrix&> H3 = boost::none,
-        boost::optional<Matrix&> H4 = boost::none) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3,
+        OptionalMatrixType H4) const override {
       try {
           if(H1 || H2 || H3 || H4) {
             Matrix H0, H02;

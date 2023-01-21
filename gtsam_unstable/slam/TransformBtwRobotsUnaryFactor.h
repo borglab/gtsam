@@ -156,8 +156,7 @@ namespace gtsam {
 
 
     /* ************************************************************************* */
-    gtsam::Vector whitenedError(const gtsam::Values& x,
-        boost::optional<std::vector<gtsam::Matrix>&> H = boost::none) const {
+    gtsam::Vector whitenedError(const gtsam::Values& x, OptionalMatrixVecType H = nullptr) const {
 
       T orgA_T_currA = valA_.at<T>(keyA_);
       T orgB_T_currB = valB_.at<T>(keyB_);
@@ -184,6 +183,14 @@ namespace gtsam {
         model_->whitenInPlace(error);
 
       return error;
+    }
+
+    /* ************************************************************************* */
+    /** A function overload to accept a vector<matrix> instead of a pointer to
+     * the said type.
+     */
+    gtsam::Vector whitenedError(const gtsam::Values& x, std::vector<Matrix>& H) const {
+	  return whitenedError(x, &H);
     }
 
 
