@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <map>
 #include <utility>
+#include <variant>
 
 using namespace std;
 
@@ -38,16 +39,18 @@ template class BayesTree<ISAM2Clique>;
 
 /* ************************************************************************* */
 ISAM2::ISAM2(const ISAM2Params& params) : params_(params), update_count_(0) {
-  if (params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
+  if (std::holds_alternative<ISAM2DoglegParams>(params_.optimizationParams)) {
     doglegDelta_ =
-        boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+        std::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+  }
 }
 
 /* ************************************************************************* */
 ISAM2::ISAM2() : update_count_(0) {
-  if (params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
+  if (std::holds_alternative<ISAM2DoglegParams>(params_.optimizationParams)) {
     doglegDelta_ =
-        boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+        std::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+  }
 }
 
 /* ************************************************************************* */
@@ -702,10 +705,10 @@ void ISAM2::marginalizeLeaves(
 // Marked const but actually changes mutable delta
 void ISAM2::updateDelta(bool forceFullSolve) const {
   gttic(updateDelta);
-  if (params_.optimizationParams.type() == typeid(ISAM2GaussNewtonParams)) {
+  if (std::holds_alternative<ISAM2GaussNewtonParams>(params_.optimizationParams)) {
     // If using Gauss-Newton, update with wildfireThreshold
     const ISAM2GaussNewtonParams& gaussNewtonParams =
-        boost::get<ISAM2GaussNewtonParams>(params_.optimizationParams);
+        std::get<ISAM2GaussNewtonParams>(params_.optimizationParams);
     const double effectiveWildfireThreshold =
         forceFullSolve ? 0.0 : gaussNewtonParams.wildfireThreshold;
     gttic(Wildfire_update);
@@ -713,11 +716,10 @@ void ISAM2::updateDelta(bool forceFullSolve) const {
                                       effectiveWildfireThreshold, &delta_);
     deltaReplacedMask_.clear();
     gttoc(Wildfire_update);
-
-  } else if (params_.optimizationParams.type() == typeid(ISAM2DoglegParams)) {
+  } else if (std::holds_alternative<ISAM2DoglegParams>(params_.optimizationParams)) {
     // If using Dogleg, do a Dogleg step
     const ISAM2DoglegParams& doglegParams =
-        boost::get<ISAM2DoglegParams>(params_.optimizationParams);
+        std::get<ISAM2DoglegParams>(params_.optimizationParams);
     const double effectiveWildfireThreshold =
         forceFullSolve ? 0.0 : doglegParams.wildfireThreshold;
 

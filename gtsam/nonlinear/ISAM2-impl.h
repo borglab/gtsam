@@ -32,6 +32,7 @@
 #include <limits>
 #include <string>
 #include <utility>
+#include <variant>
 
 namespace gtsam {
 
@@ -313,13 +314,14 @@ struct GTSAM_EXPORT UpdateImpl {
       const ISAM2Params::RelinearizationThreshold& relinearizeThreshold) {
     KeySet relinKeys;
     for (const ISAM2::sharedClique& root : roots) {
-      if (relinearizeThreshold.type() == typeid(double))
+      if (std::holds_alternative<double>(relinearizeThreshold)) {
         CheckRelinearizationRecursiveDouble(
-            boost::get<double>(relinearizeThreshold), delta, root, &relinKeys);
-      else if (relinearizeThreshold.type() == typeid(FastMap<char, Vector>))
+            std::get<double>(relinearizeThreshold), delta, root, &relinKeys);
+      } else if (std::holds_alternative<FastMap<char, Vector>>(relinearizeThreshold)) {
         CheckRelinearizationRecursiveMap(
-            boost::get<FastMap<char, Vector> >(relinearizeThreshold), delta,
+            std::get<FastMap<char, Vector> >(relinearizeThreshold), delta,
             root, &relinKeys);
+      }
     }
     return relinKeys;
   }
@@ -340,13 +342,13 @@ struct GTSAM_EXPORT UpdateImpl {
       const ISAM2Params::RelinearizationThreshold& relinearizeThreshold) {
     KeySet relinKeys;
 
-    if (const double* threshold = boost::get<double>(&relinearizeThreshold)) {
+    if (const double* threshold = std::get_if<double>(&relinearizeThreshold)) {
       for (const VectorValues::KeyValuePair& key_delta : delta) {
         double maxDelta = key_delta.second.lpNorm<Eigen::Infinity>();
         if (maxDelta >= *threshold) relinKeys.insert(key_delta.first);
       }
     } else if (const FastMap<char, Vector>* thresholds =
-                   boost::get<FastMap<char, Vector> >(&relinearizeThreshold)) {
+                   std::get_if<FastMap<char, Vector> >(&relinearizeThreshold)) {
       for (const VectorValues::KeyValuePair& key_delta : delta) {
         const Vector& threshold =
             thresholds->find(Symbol(key_delta.first).chr())->second;

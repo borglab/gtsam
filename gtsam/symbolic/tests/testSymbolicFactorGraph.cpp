@@ -129,8 +129,9 @@ TEST(SymbolicFactorGraph, marginalMultifrontalBayesNet) {
       SymbolicBayesNet(SymbolicConditional(0, 1, 2))(SymbolicConditional(
           1, 2, 3))(SymbolicConditional(2, 3))(SymbolicConditional(3));
 
+  auto ordering = Ordering{0,1,2,3};
   SymbolicBayesNet actual1 =
-      *simpleTestGraph2.marginalMultifrontalBayesNet(Ordering{0, 1, 2, 3});
+      *simpleTestGraph2.marginalMultifrontalBayesNet(std::cref(ordering));
   EXPECT(assert_equal(expectedBayesNet, actual1));
 }
 
