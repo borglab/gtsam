@@ -110,8 +110,8 @@ jobs:
       - name: Set Allow Deprecated Flag
         if: matrix.flag == 'deprecated'
         run: |
-          echo "GTSAM_ALLOW_DEPRECATED_SINCE_V42=ON" >> $GITHUB_ENV
-          echo "Allow deprecated since version 4.1"
+          echo "GTSAM_ALLOW_DEPRECATED_SINCE_V43=ON" >> $GITHUB_ENV
+          echo "Allow deprecated since version 4.3"
 
       - name: Set Use Quaternions Flag
         if: matrix.flag == 'quaternions'
