@@ -20,6 +20,9 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <CppUnitLite/TestHarness.h>
 
+#include <optional>
+#include <functional>
+
 using namespace std;
 using namespace gtsam;
 
@@ -32,6 +35,7 @@ using namespace gtsam;
 TEST( OptionalJacobian, Constructors ) {
   Matrix23 fixed;
   Matrix dynamic;
+  std::optional<std::reference_wrapper<Matrix>> optionalRef(std::ref(dynamic));
 
   OptionalJacobian<2, 3> H;
   EXPECT(!H);
@@ -40,12 +44,17 @@ TEST( OptionalJacobian, Constructors ) {
   TEST_CONSTRUCTOR(2, 3, &fixed, true);
   TEST_CONSTRUCTOR(2, 3, dynamic, true);
   TEST_CONSTRUCTOR(2, 3, &dynamic, true);
+  TEST_CONSTRUCTOR(2, 3, std::nullopt, false);
+  TEST_CONSTRUCTOR(2, 3, optionalRef, true);
 
   // Test dynamic
   OptionalJacobian<-1, -1> H7;
   EXPECT(!H7);
 
   TEST_CONSTRUCTOR(-1, -1, dynamic, true);
+  TEST_CONSTRUCTOR(-1, -1, std::nullopt, false);
+  TEST_CONSTRUCTOR(-1, -1, optionalRef, true);
+
 }
 
 //******************************************************************************

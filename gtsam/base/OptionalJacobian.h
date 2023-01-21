@@ -19,8 +19,10 @@
 
 #pragma once
 #include <cstddef>
+#include <functional>
 #include <gtsam/config.h>      // Configuration from CMake
 #include <Eigen/Dense>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -118,8 +120,21 @@ public:
                       "Expected: ") +
           "(" + std::to_string(Rows) + ", " + std::to_string(Cols) + ")");
     }
+  } 
+
+  /// Constructor with std::nullopt just makes empty
+  OptionalJacobian(std::nullopt_t /*none*/) :
+      map_(nullptr) {
   }
 
+  /// Constructor compatible with old-style derivatives
+  OptionalJacobian(const std::optional<std::reference_wrapper<Eigen::MatrixXd>> optional) :
+      map_(nullptr) {
+    if (optional) {
+      optional->get().resize(Rows, Cols);
+      usurp(optional->get().data());
+    }
+  }
   /// Constructor that will usurp data of a block expression
   /// TODO(frank): unfortunately using a Map makes usurping non-contiguous memory impossible
   //  template <typename Derived, bool InnerPanel>
@@ -184,7 +199,7 @@ private:
 
 public:
 
-  /// Default constructor acts like 
+  /// Default constructor 
   OptionalJacobian() :
     pointer_(nullptr) {
   }
@@ -194,6 +209,17 @@ public:
 
   /// Construct from refrence to dynamic matrix
   OptionalJacobian(Jacobian& dynamic) : pointer_(&dynamic) {}
+
+  /// Constructor with std::nullopt just makes empty
+  OptionalJacobian(std::nullopt_t /*none*/) :
+    pointer_(nullptr) {
+  }
+
+  /// Constructor for optional matrix reference
+  OptionalJacobian(const std::optional<std::reference_wrapper<Eigen::MatrixXd>> optional) :
+      pointer_(nullptr) {
+    if (optional) pointer_ = &((*optional).get());
+  }
 
   /// Return true if allocated, false if default constructor was used
   operator bool() const {
