@@ -185,7 +185,7 @@ TEST(GaussianMixture, Likelihood2) {
   {
     // We have a JacobianFactor
     const auto gf1 = (*likelihood)(assignment1);
-    const auto jf1 = boost::dynamic_pointer_cast<JacobianFactor>(gf1);
+    const auto jf1 = std::dynamic_pointer_cast<JacobianFactor>(gf1);
     CHECK(jf1);
 
     // It has 2 rows, not 1!

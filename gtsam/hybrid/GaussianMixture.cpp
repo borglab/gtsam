@@ -208,9 +208,9 @@ std::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
           gfg.push_back(likelihood_m);
           Vector c(1);
           c << std::sqrt(2.0 * Cgm_Kgcm);
-          auto constantFactor = boost::make_shared<JacobianFactor>(c);
+          auto constantFactor = std::make_shared<JacobianFactor>(c);
           gfg.push_back(constantFactor);
-          return boost::make_shared<JacobianFactor>(gfg);
+          return std::make_shared<JacobianFactor>(gfg);
         }
       });
   return std::make_shared<GaussianMixtureFactor>(

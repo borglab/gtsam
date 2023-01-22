@@ -74,7 +74,7 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
    * @param continuousValues: Dictionary of continuous values.
    * @return HybridGaussianFactorGraph::shared_ptr
    */
-  boost::shared_ptr<HybridGaussianFactorGraph> linearize(
+  std::shared_ptr<HybridGaussianFactorGraph> linearize(
       const Values& continuousValues) const;
   /// @}
 };
