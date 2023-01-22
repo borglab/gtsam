@@ -24,9 +24,9 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/Values.h>
-
 #include <utility>
+#include <boost/bind/bind.hpp>
+#include <gtsam/nonlinear/Values.h>
 
 namespace gtsam {
 

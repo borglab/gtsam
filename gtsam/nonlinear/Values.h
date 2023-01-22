@@ -306,12 +306,6 @@ namespace gtsam {
     typedef KeyValueMap::const_iterator::value_type ConstKeyValuePtrPair;
     typedef KeyValueMap::iterator::value_type KeyValuePtrPair;
 
-    /** insert that mimics the STL map insert - if the value already exists, the map is not modified
-     *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
-     *  exist, it is inserted and an iterator pointing to the new element, along with 'true', is
-     *  returned. */
-    std::pair<iterator, bool> tryInsert(Key j, const Value& value);
-
     /// Mutable forward iterator, with value type KeyValuePair
     typedef boost::transform_iterator<
         std::function<KeyValuePair(const KeyValuePtrPair&)>, KeyValueMap::iterator> iterator;
@@ -327,6 +321,12 @@ namespace gtsam {
     /// Const reverse iterator, with value type ConstKeyValuePair
     typedef boost::transform_iterator<
         std::function<ConstKeyValuePair(const ConstKeyValuePtrPair&)>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
+
+    /** insert that mimics the STL map insert - if the value already exists, the map is not modified
+     *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
+     *  exist, it is inserted and an iterator pointing to the new element, along with 'true', is
+     *  returned. */
+    std::pair<iterator, bool> tryInsert(Key j, const Value& value);
 
     static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
       return ConstKeyValuePair(key_value.first, *key_value.second); }
