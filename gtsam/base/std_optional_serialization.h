@@ -17,6 +17,19 @@
 #include <boost/type_traits/is_pointer.hpp>
 #include <boost/serialization/detail/stack_constructor.hpp>
 #include <boost/serialization/detail/is_default_constructible.hpp>
+
+//!!!!!!!!! I don't completely understand or know if this is correct but compilation works!!!!!!!!!!!
+#ifdef __GNUC__
+#if __GNUC__ >= 7 && __cplusplus >= 201703L
+namespace boost { namespace serialization { struct U; } }
+namespace std { template<> struct is_trivially_default_constructible<boost::serialization::U> : std::false_type {}; }
+namespace std { template<> struct is_trivially_copy_constructible<boost::serialization::U> : std::false_type {}; }
+namespace std { template<> struct is_trivially_move_constructible<boost::serialization::U> : std::false_type {}; }
+#endif
+#endif
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 // function specializations must be defined in the appropriate
 // namespace - boost::serialization
 namespace boost {
