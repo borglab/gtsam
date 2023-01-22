@@ -139,8 +139,8 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFacto
   // Add the new variables to theta
   theta_.insert(newTheta);
   // Add new variables to the end of the ordering
-  for(const auto key_value: newTheta) {
-    ordering_.push_back(key_value.key);
+  for (const auto key : newTheta.keys()) {
+    ordering_.push_back(key);
   }
   // Augment Delta
   delta_.insert(newTheta.zeroVectors());
@@ -221,10 +221,7 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& smootherSumm
   if(debug) { PrintNonlinearFactorGraph(smootherSummarization_, "ConcurrentBatchFilter::synchronize  ", "Updated Smoother Summarization:", DefaultKeyFormatter); }
 
   // Find the set of new separator keys
-  KeySet newSeparatorKeys;
-  for(const auto key_value: separatorValues_) {
-    newSeparatorKeys.insert(key_value.key);
-  }
+  const KeySet newSeparatorKeys = separatorValues_.keySet();
 
   if(debug) { PrintKeys(newSeparatorKeys, "ConcurrentBatchFilter::synchronize  ", "Current Separator Keys:"); }
 
@@ -236,9 +233,9 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& smootherSumm
     graph.push_back(smootherShortcut_);
     Values values;
     values.insert(smootherSummarizationValues);
-    for(const auto key_value: separatorValues_) {
-      if(!values.exists(key_value.key)) {
-        values.insert(key_value.key, key_value.value);
+    for(const auto key: newSeparatorKeys) {
+      if(!values.exists(key)) {
+        values.insert(key, separatorValues_.at(key));
       }
     }
     // Calculate the summarized factor on just the new separator keys
@@ -471,8 +468,8 @@ void ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values
           // Put the linearization points and deltas back for specific variables
           if(linearValues.size() > 0) {
             theta.update(linearValues);
-            for(const auto key_value: linearValues) {
-              delta.at(key_value.key) = newDelta.at(key_value.key);
+            for(const auto key: linearValues.keys()) {
+              delta.at(key) = newDelta.at(key);
             }
           }
 
@@ -574,9 +571,7 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
 
   // Calculate the set of new separator keys: AffectedKeys + PreviousSeparatorKeys - KeysToMove
   KeySet newSeparatorKeys = removedFactors.keys();
-  for(const auto key_value: separatorValues_) {
-    newSeparatorKeys.insert(key_value.key);
-  }
+  newSeparatorKeys.merge(separatorValues_.keySet());
   for(Key key: keysToMove) {
     newSeparatorKeys.erase(key);
   }

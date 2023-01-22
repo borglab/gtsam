@@ -285,8 +285,8 @@ static Scatter scatterFromValues(const Values& values) {
   scatter.reserve(values.size());
 
   // use "natural" ordering with keys taken from the initial values
-  for (const auto key_value : values) {
-    scatter.add(key_value.key, key_value.value.dim());
+  for (const auto& key_dim : values.dims()) {
+    scatter.add(key_dim.first, key_dim.second);
   }
 
   return scatter;
