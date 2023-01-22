@@ -18,7 +18,25 @@
 #include <boost/serialization/detail/stack_constructor.hpp>
 #include <boost/serialization/detail/is_default_constructible.hpp>
 
-//!!!!!!!!! I don't completely understand or know if this is correct but compilation works!!!!!!!!!!!
+/** A bunch of declarations to deal with gcc bug
+ * The compiler has a difficult time distinguisihing between:
+ *
+ * template<template <Archive, class U> class SPT> void load(Archive, SPT<U>&, const unsigned int) : <boost/serialization/shared_ptr.hpp>
+ *
+ * and
+ *
+ * template<T> void load(Archive, std::optional<T>&, const unsigned int) : <std_optional_serialization.h>
+ *
+ * The compiler will try to instantiate an object of the type of std::optional<boost::serialization::U> which is not valid since U is not a type and
+ * thus leading to a whole series of errros.
+ *
+ * This is a well known bug in gcc documented here: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=84075
+ * A minimal reproducible example here: https://godbolt.org/z/anj9YjnPY
+ *
+ * For std::optional the workaround is just provide the traits needed to make std::optional<boost::serialization::U> possible
+ * This is not an issue since there is no actual type boost::serialization::U and we are not falsely providing a specialization
+ * for std::optional<boost::serialization::U>
+ */
 #ifdef __GNUC__
 #if __GNUC__ >= 7 && __cplusplus >= 201703L
 namespace boost { namespace serialization { struct U; } }
@@ -27,7 +45,6 @@ namespace std { template<> struct is_trivially_copy_constructible<boost::seriali
 namespace std { template<> struct is_trivially_move_constructible<boost::serialization::U> : std::false_type {}; }
 #endif
 #endif
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 // function specializations must be defined in the appropriate
