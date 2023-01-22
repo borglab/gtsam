@@ -102,7 +102,7 @@ class GTSAM_EXPORT HybridValues {
 
   /// Check whether a variable with key \c j exists in values.
   bool existsNonlinear(Key j) {
-    return (nonlinear_.find(j) != nonlinear_.end());
+    return nonlinear_.exists(j);
   };
 
   /// Check whether a variable with key \c j exists.

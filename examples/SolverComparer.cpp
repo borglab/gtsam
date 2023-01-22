@@ -559,12 +559,12 @@ void runPerturb()
 
   // Perturb values
   VectorValues noise;
-  for(const Values::KeyValuePair key_val: initial)
+  for(const auto& key_dim: initial.dims())
   {
-    Vector noisev(key_val.value.dim());
+    Vector noisev(key_dim.second);
     for(Vector::Index i = 0; i < noisev.size(); ++i)
       noisev(i) = normal(rng);
-    noise.insert(key_val.key, noisev);
+    noise.insert(key_dim.first, noisev);
   }
   Values perturbed = initial.retract(noise);
 
