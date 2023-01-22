@@ -59,8 +59,8 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   // Add the new variables to theta
   theta_.insert(newTheta);
   // Add new variables to the end of the ordering
-  for (const auto key_value : newTheta) {
-    ordering_.push_back(key_value.key);
+  for (const auto key : newTheta.keys()) {
+    ordering_.push_back(key);
   }
   // Augment Delta
   delta_.insert(newTheta.zeroVectors());
@@ -161,8 +161,8 @@ void BatchFixedLagSmoother::eraseKeys(const KeyVector& keys) {
     factorIndex_.erase(key);
 
     // Erase the key from the set of linearized keys
-    if (linearKeys_.exists(key)) {
-      linearKeys_.erase(key);
+    if (linearValues_.exists(key)) {
+      linearValues_.erase(key);
     }
   }
 
@@ -186,8 +186,8 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
 
   // Create output result structure
   Result result;
-  result.nonlinearVariables = theta_.size() - linearKeys_.size();
-  result.linearVariables = linearKeys_.size();
+  result.nonlinearVariables = theta_.size() - linearValues_.size();
+  result.linearVariables = linearValues_.size();
 
   // Set optimization parameters
   double lambda = parameters_.lambdaInitial;
@@ -265,10 +265,10 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
           // Reset the deltas to zeros
           delta_.setZero();
           // Put the linearization points and deltas back for specific variables
-          if (enforceConsistency_ && (linearKeys_.size() > 0)) {
-            theta_.update(linearKeys_);
-            for(const auto key_value: linearKeys_) {
-              delta_.at(key_value.key) = newDelta.at(key_value.key);
+          if (enforceConsistency_ && (linearValues_.size() > 0)) {
+            theta_.update(linearValues_);
+            for(const auto key: linearValues_.keys()) {
+              delta_.at(key) = newDelta.at(key);
             }
           }
           // Decrease lambda for next time

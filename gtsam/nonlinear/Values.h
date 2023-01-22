@@ -28,10 +28,10 @@
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/inference/Key.h>
-#include <boost/iterator/transform_iterator.hpp>
 #include <boost/ptr_container/serialize_ptr_map.hpp>
 #include <boost/shared_ptr.hpp>
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+#include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/filter_iterator.hpp>
 #endif
 
@@ -81,10 +81,6 @@ namespace gtsam {
     // The member to store the values, see just above
     KeyValueMap values_;
 
-    // Types obtained by iterating
-    typedef KeyValueMap::const_iterator::value_type ConstKeyValuePtrPair;
-    typedef KeyValueMap::iterator::value_type KeyValuePtrPair;
-
   public:
 
     /// A shared_ptr to this class
@@ -109,22 +105,6 @@ namespace gtsam {
       ConstKeyValuePair(Key _key, const Value& _value) : key(_key), value(_value) {}
       ConstKeyValuePair(const KeyValuePair& kv) : key(kv.key), value(kv.value) {}
     };
-
-    /// Mutable forward iterator, with value type KeyValuePair
-    typedef boost::transform_iterator<
-        std::function<KeyValuePair(const KeyValuePtrPair&)>, KeyValueMap::iterator> iterator;
-
-    /// Const forward iterator, with value type ConstKeyValuePair
-    typedef boost::transform_iterator<
-        std::function<ConstKeyValuePair(const ConstKeyValuePtrPair&)>, KeyValueMap::const_iterator> const_iterator;
-
-    /// Mutable reverse iterator, with value type KeyValuePair
-    typedef boost::transform_iterator<
-        std::function<KeyValuePair(const KeyValuePtrPair&)>, KeyValueMap::reverse_iterator> reverse_iterator;
-
-    /// Const reverse iterator, with value type ConstKeyValuePair
-    typedef boost::transform_iterator<
-        std::function<ConstKeyValuePair(const ConstKeyValuePtrPair&)>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
 
     typedef KeyValuePair value_type;
 
@@ -191,46 +171,23 @@ namespace gtsam {
     template<typename ValueType>
     boost::optional<const ValueType&> exists(Key j) const;
 
-    /** Find an element by key, returning an iterator, or end() if the key was
-     * not found. */
-    iterator find(Key j) { return boost::make_transform_iterator(values_.find(j), &make_deref_pair); }
-
-    /** Find an element by key, returning an iterator, or end() if the key was
-     * not found. */
-    const_iterator find(Key j) const { return boost::make_transform_iterator(values_.find(j), &make_const_deref_pair); }
-
-    /** Find the element greater than or equal to the specified key. */
-    iterator lower_bound(Key j) { return boost::make_transform_iterator(values_.lower_bound(j), &make_deref_pair); }
-
-    /** Find the element greater than or equal to the specified key. */
-    const_iterator lower_bound(Key j) const { return boost::make_transform_iterator(values_.lower_bound(j), &make_const_deref_pair); }
-
-    /** Find the lowest-ordered element greater than the specified key. */
-    iterator upper_bound(Key j) { return boost::make_transform_iterator(values_.upper_bound(j), &make_deref_pair); }
-
-    /** Find the lowest-ordered element greater than the specified key. */
-    const_iterator upper_bound(Key j) const { return boost::make_transform_iterator(values_.upper_bound(j), &make_const_deref_pair); }
-
     /** The number of variables in this config */
     size_t size() const { return values_.size(); }
 
     /** whether the config is empty */
     bool empty() const { return values_.empty(); }
 
-    const_iterator begin() const { return boost::make_transform_iterator(values_.begin(), &make_const_deref_pair); }
-    const_iterator end() const { return boost::make_transform_iterator(values_.end(), &make_const_deref_pair); }
-    iterator begin() { return boost::make_transform_iterator(values_.begin(), &make_deref_pair); }
-    iterator end() { return boost::make_transform_iterator(values_.end(), &make_deref_pair); }
-    const_reverse_iterator rbegin() const { return boost::make_transform_iterator(values_.rbegin(), &make_const_deref_pair); }
-    const_reverse_iterator rend() const { return boost::make_transform_iterator(values_.rend(), &make_const_deref_pair); }
-    reverse_iterator rbegin() { return boost::make_transform_iterator(values_.rbegin(), &make_deref_pair); }
-    reverse_iterator rend() { return boost::make_transform_iterator(values_.rend(), &make_deref_pair); }
-
     /// @name Manifold Operations
     /// @{
 
     /** Add a delta config to current config and returns a new config */
     Values retract(const VectorValues& delta) const;
+
+    /**
+     * Retract, but only for Keys appearing in \c mask. In-place.
+     * \param mask Mask on Keys where to apply retract.
+     */
+    void retractMasked(const VectorValues& delta, const KeySet& mask);
 
     /** Get a delta config about a linearization point c0 (*this) */
     VectorValues localCoordinates(const Values& cp) const;
@@ -251,12 +208,6 @@ namespace gtsam {
 
     /// version for double
     void insertDouble(Key j, double c) { insert<double>(j,c); }
-
-    /** insert that mimics the STL map insert - if the value already exists, the map is not modified
-     *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
-     *  exist, it is inserted and an iterator pointing to the new element, along with 'true', is
-     *  returned. */
-    std::pair<iterator, bool> tryInsert(Key j, const Value& value);
 
     /** single element change of existing element */
     void update(Key j, const Value& val);
@@ -288,10 +239,15 @@ namespace gtsam {
     void erase(Key j);
 
     /**
-     * Returns a set of keys in the config
+     * Returns a vector of keys in the config.
      * Note: by construction, the list is ordered
      */
     KeyVector keys() const;
+
+    /**
+     * Returns a set of keys in the config.
+     */
+    KeySet keySet() const;
 
     /** Replace all keys and variables */
     Values& operator=(const Values& rhs);
@@ -305,6 +261,9 @@ namespace gtsam {
     /** Compute the total dimensionality of all values (\f$ O(n) \f$) */
     size_t dim() const;
 
+    /** Return all dimensions in a map (\f$ O(n log n) \f$) */
+    std::map<Key,size_t> dims() const;
+
     /** Return a VectorValues of zero vectors for each variable in this Values */
     VectorValues zeroVectors() const;
 
@@ -312,8 +271,8 @@ namespace gtsam {
     template<class ValueType>
     size_t count() const {
       size_t i = 0;
-      for (const auto key_value : *this) {
-        if (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value))
+      for (const auto key_value : values_) {
+        if (dynamic_cast<const GenericValue<ValueType>*>(key_value.second))
           ++i;
       }
       return i;
@@ -343,6 +302,67 @@ namespace gtsam {
     extract(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+    // Types obtained by iterating
+    typedef KeyValueMap::const_iterator::value_type ConstKeyValuePtrPair;
+    typedef KeyValueMap::iterator::value_type KeyValuePtrPair;
+
+    /// Mutable forward iterator, with value type KeyValuePair
+    typedef boost::transform_iterator<
+        std::function<KeyValuePair(const KeyValuePtrPair&)>, KeyValueMap::iterator> iterator;
+
+    /// Const forward iterator, with value type ConstKeyValuePair
+    typedef boost::transform_iterator<
+        std::function<ConstKeyValuePair(const ConstKeyValuePtrPair&)>, KeyValueMap::const_iterator> const_iterator;
+
+    /// Mutable reverse iterator, with value type KeyValuePair
+    typedef boost::transform_iterator<
+        std::function<KeyValuePair(const KeyValuePtrPair&)>, KeyValueMap::reverse_iterator> reverse_iterator;
+
+    /// Const reverse iterator, with value type ConstKeyValuePair
+    typedef boost::transform_iterator<
+        std::function<ConstKeyValuePair(const ConstKeyValuePtrPair&)>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
+
+    /** insert that mimics the STL map insert - if the value already exists, the map is not modified
+     *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
+     *  exist, it is inserted and an iterator pointing to the new element, along with 'true', is
+     *  returned. */
+    std::pair<iterator, bool> tryInsert(Key j, const Value& value);
+
+    static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
+      return ConstKeyValuePair(key_value.first, *key_value.second); }
+
+    static KeyValuePair make_deref_pair(const KeyValueMap::iterator::value_type& key_value) {
+      return KeyValuePair(key_value.first, *key_value.second); }
+
+    const_iterator begin() const { return boost::make_transform_iterator(values_.begin(), &make_const_deref_pair); }
+    const_iterator end() const { return boost::make_transform_iterator(values_.end(), &make_const_deref_pair); }
+    iterator begin() { return boost::make_transform_iterator(values_.begin(), &make_deref_pair); }
+    iterator end() { return boost::make_transform_iterator(values_.end(), &make_deref_pair); }
+    const_reverse_iterator rbegin() const { return boost::make_transform_iterator(values_.rbegin(), &make_const_deref_pair); }
+    const_reverse_iterator rend() const { return boost::make_transform_iterator(values_.rend(), &make_const_deref_pair); }
+    reverse_iterator rbegin() { return boost::make_transform_iterator(values_.rbegin(), &make_deref_pair); }
+    reverse_iterator rend() { return boost::make_transform_iterator(values_.rend(), &make_deref_pair); }
+
+    /** Find an element by key, returning an iterator, or end() if the key was
+     * not found. */
+    iterator find(Key j) { return boost::make_transform_iterator(values_.find(j), &make_deref_pair); }
+
+    /** Find an element by key, returning an iterator, or end() if the key was
+     * not found. */
+    const_iterator find(Key j) const { return boost::make_transform_iterator(values_.find(j), &make_const_deref_pair); }
+
+    /** Find the element greater than or equal to the specified key. */
+    iterator lower_bound(Key j) { return boost::make_transform_iterator(values_.lower_bound(j), &make_deref_pair); }
+
+    /** Find the element greater than or equal to the specified key. */
+    const_iterator lower_bound(Key j) const { return boost::make_transform_iterator(values_.lower_bound(j), &make_const_deref_pair); }
+
+    /** Find the lowest-ordered element greater than the specified key. */
+    iterator upper_bound(Key j) { return boost::make_transform_iterator(values_.upper_bound(j), &make_deref_pair); }
+
+    /** Find the lowest-ordered element greater than the specified key. */
+    const_iterator upper_bound(Key j) const { return boost::make_transform_iterator(values_.upper_bound(j), &make_const_deref_pair); }
+
     /** A filtered view of a Values, returned from Values::filter. */
     template <class ValueType = Value>
     class Filtered;
@@ -394,12 +414,6 @@ namespace gtsam {
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(values_);
     }
-
-    static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
-      return ConstKeyValuePair(key_value.first, *key_value.second); }
-
-    static KeyValuePair make_deref_pair(const KeyValueMap::iterator::value_type& key_value) {
-      return KeyValuePair(key_value.first, *key_value.second); }
 
   };
 

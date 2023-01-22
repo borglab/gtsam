@@ -25,10 +25,8 @@
 #pragma once
 
 #include <utility>
-
 #include <boost/bind/bind.hpp>
-
-#include <gtsam/nonlinear/Values.h> // Only so Eclipse finds class definition
+#include <gtsam/nonlinear/Values.h>
 
 namespace gtsam {
 
@@ -95,13 +93,13 @@ namespace gtsam {
   std::map<Key, ValueType>
   Values::extract(const std::function<bool(Key)>& filterFcn) const {
     std::map<Key, ValueType> result;
-    for (const auto& key_value : *this) {
+    for (const auto& key_value : values_) {
       // Check if key matches
-      if (filterFcn(key_value.key)) {
+      if (filterFcn(key_value.first)) {
         // Check if type matches (typically does as symbols matched with types)
         if (auto t =
-                dynamic_cast<const GenericValue<ValueType>*>(&key_value.value))
-          result[key_value.key] = t->value();
+                dynamic_cast<const GenericValue<ValueType>*>(key_value.second))
+          result[key_value.first] = t->value();
       }
     }
     return result;
@@ -109,6 +107,8 @@ namespace gtsam {
 
 /* ************************************************************************* */
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+#include <boost/bind/bind.hpp>
+
   template<class ValueType>
   class Values::Filtered {
   public:

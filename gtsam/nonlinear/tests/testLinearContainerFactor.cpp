@@ -350,8 +350,8 @@ TEST(TestLinearContainerFactor, Rekey) {
 
   // For extra fun lets try linearizing this LCF
   gtsam::Values linearization_pt_rekeyed;
-  for (auto key_val : linearization_pt) {
-    linearization_pt_rekeyed.insert(key_map.at(key_val.key), key_val.value);
+  for (auto key : linearization_pt.keys()) {
+    linearization_pt_rekeyed.insert(key_map.at(key), linearization_pt.at(key));
   }
 
   // Check independent values since we don't want to unnecessarily sort

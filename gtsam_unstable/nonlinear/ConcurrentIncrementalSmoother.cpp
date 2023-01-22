@@ -66,9 +66,9 @@ ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(cons
   // Also, mark the separator keys as fixed linearization points
   FastMap<Key,int> constrainedKeys;
   FastList<Key> noRelinKeys;
-  for(const auto key_value: separatorValues_) {
-    constrainedKeys[key_value.key] = 1;
-    noRelinKeys.push_back(key_value.key);
+  for (const auto key : separatorValues_.keys()) {
+    constrainedKeys[key] = 1;
+    noRelinKeys.push_back(key);
   }
 
   // Use iSAM2 to perform an update
@@ -82,14 +82,14 @@ ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(cons
       Values values(newTheta);
       // Unfortunately, we must be careful here, as some of the smoother values
       // and/or separator values may have been added previously
-      for(const auto key_value: smootherValues_) {
-        if(!isam2_.getLinearizationPoint().exists(key_value.key)) {
-          values.insert(key_value.key, smootherValues_.at(key_value.key));
+      for(const auto key: smootherValues_.keys()) {
+        if(!isam2_.getLinearizationPoint().exists(key)) {
+          values.insert(key, smootherValues_.at(key));
         }
       }
-      for(const auto key_value: separatorValues_) {
-        if(!isam2_.getLinearizationPoint().exists(key_value.key)) {
-          values.insert(key_value.key, separatorValues_.at(key_value.key));
+      for(const auto key: separatorValues_.keys()) {
+        if(!isam2_.getLinearizationPoint().exists(key)) {
+          values.insert(key, separatorValues_.at(key));
         }
       }
 
@@ -245,10 +245,7 @@ void ConcurrentIncrementalSmoother::updateSmootherSummarization() {
   }
 
   // Get the set of separator keys
-  KeySet separatorKeys;
-  for(const auto key_value: separatorValues_) {
-    separatorKeys.insert(key_value.key);
-  }
+  const KeySet separatorKeys = separatorValues_.keySet();
 
   // Calculate the marginal factors on the separator
   smootherSummarization_ = internal::calculateMarginalFactors(graph, isam2_.getLinearizationPoint(), separatorKeys,
