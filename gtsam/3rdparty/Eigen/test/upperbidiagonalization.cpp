@@ -12,8 +12,8 @@
 
 template<typename MatrixType> void upperbidiag(const MatrixType& m)
 {
-  const typename MatrixType::Index rows = m.rows();
-  const typename MatrixType::Index cols = m.cols();
+  const Index rows = m.rows();
+  const Index cols = m.cols();
 
   typedef Matrix<typename MatrixType::RealScalar, MatrixType::RowsAtCompileTime,  MatrixType::ColsAtCompileTime> RealMatrixType;
   typedef Matrix<typename MatrixType::Scalar, MatrixType::ColsAtCompileTime,  MatrixType::RowsAtCompileTime> TransposeMatrixType;
@@ -29,7 +29,7 @@ template<typename MatrixType> void upperbidiag(const MatrixType& m)
   VERIFY_IS_APPROX(a.adjoint(),d);
 }
 
-void test_upperbidiagonalization()
+EIGEN_DECLARE_TEST(upperbidiagonalization)
 {
   for(int i = 0; i < g_repeat; i++) {
    CALL_SUBTEST_1( upperbidiag(MatrixXf(3,3)) );

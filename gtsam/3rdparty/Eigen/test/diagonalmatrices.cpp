@@ -105,6 +105,13 @@ template<typename MatrixType> void diagonalmatrices(const MatrixType& m)
   sq_m2 = sq_m1 * sq_m2;
   VERIFY_IS_APPROX( (sq_m1*v1.asDiagonal()).col(i), sq_m2.col(i) );
   VERIFY_IS_APPROX( (sq_m1*v1.asDiagonal()).row(i), sq_m2.row(i) );
+
+  sq_m1 = v1.asDiagonal();
+  sq_m2 = v2.asDiagonal();
+  SquareMatrixType sq_m3 = v1.asDiagonal();
+  VERIFY_IS_APPROX( sq_m3 = v1.asDiagonal() + v2.asDiagonal(), sq_m1 + sq_m2);
+  VERIFY_IS_APPROX( sq_m3 = v1.asDiagonal() - v2.asDiagonal(), sq_m1 - sq_m2);
+  VERIFY_IS_APPROX( sq_m3 = v1.asDiagonal() - 2*v2.asDiagonal() + v1.asDiagonal(), sq_m1 - 2*sq_m2 + sq_m1);
 }
 
 template<typename MatrixType> void as_scalar_product(const MatrixType& m)
@@ -144,7 +151,7 @@ void bug987()
   VERIFY_IS_APPROX(( res1 = points.topLeftCorner<2,2>()*diag.asDiagonal()) , res2 = tmp2*diag.asDiagonal() );
 }
 
-void test_diagonalmatrices()
+EIGEN_DECLARE_TEST(diagonalmatrices)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( diagonalmatrices(Matrix<float, 1, 1>()) );

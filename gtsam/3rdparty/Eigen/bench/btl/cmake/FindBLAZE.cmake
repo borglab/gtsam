@@ -15,7 +15,7 @@ if (BLAZE_INCLUDE_DIR)
   # in cache already
   set(BLAZE_FOUND TRUE)
 
-else (BLAZE_INCLUDE_DIR)
+else ()
 
 find_path(BLAZE_INCLUDE_DIR NAMES blaze/Blaze.h
      PATHS
@@ -27,5 +27,5 @@ find_package_handle_standard_args(BLAZE DEFAULT_MSG BLAZE_INCLUDE_DIR)
 
 mark_as_advanced(BLAZE_INCLUDE_DIR)
 
-endif(BLAZE_INCLUDE_DIR)
+endif()
 

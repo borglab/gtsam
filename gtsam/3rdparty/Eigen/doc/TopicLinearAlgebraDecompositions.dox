@@ -72,7 +72,7 @@ To get an overview of the true relative speed of the different decompositions, c
         <td>Orthogonalization</td>
         <td>Yes</td>
         <td>Excellent</td>
-        <td><em>Soon: blocking</em></td>
+        <td><em>-</em></td>
     </tr>
 
     <tr>
@@ -88,6 +88,18 @@ To get an overview of the true relative speed of the different decompositions, c
     </tr>
 
     <tr class="alt">
+        <td>CompleteOrthogonalDecomposition</td>
+        <td>-</td>
+        <td>Fast</td>
+        <td>Good</td>
+        <td>Yes</td>
+        <td>Orthogonalization</td>
+        <td>Yes</td>
+        <td>Excellent</td>
+        <td><em>-</em></td>
+    </tr>
+
+    <tr>
         <td>LLT</td>
         <td>Positive definite</td>
         <td>Very fast</td>
@@ -99,7 +111,7 @@ To get an overview of the true relative speed of the different decompositions, c
         <td>Blocking</td>
     </tr>
 
-    <tr>
+    <tr class="alt">
         <td>LDLT</td>
         <td>Positive or negative semidefinite<sup><a href="#note1">1</a></sup></td>
         <td>Very fast</td>
@@ -260,7 +272,7 @@ To get an overview of the true relative speed of the different decompositions, c
   <dt><b>Blocking</b></dt>
     <dd>Means the algorithm can work per block, whence guaranteeing a good scaling of the performance for large matrices.</dd>
   <dt><b>Implicit Multi Threading (MT)</b></dt>
-    <dd>Means the algorithm can take advantage of multicore processors via OpenMP. "Implicit" means the algortihm itself is not parallelized, but that it relies on parallelized matrix-matrix product rountines.</dd>
+    <dd>Means the algorithm can take advantage of multicore processors via OpenMP. "Implicit" means the algortihm itself is not parallelized, but that it relies on parallelized matrix-matrix product routines.</dd>
   <dt><b>Explicit Multi Threading (MT)</b></dt>
     <dd>Means the algorithm is explicitly parallelized to take advantage of multicore processors via OpenMP.</dd>
   <dt><b>Meta-unroller</b></dt>
