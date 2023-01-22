@@ -103,16 +103,16 @@ namespace gtsam {
   /* ************************************************************************* */
   void Values::retractMasked(const VectorValues& delta, const KeySet& mask) {
     gttic(retractMasked);
-    assert(theta->size() == delta.size());
+    assert(this->size() == delta.size());
     auto key_value = values_.begin();
     VectorValues::const_iterator key_delta;
 #ifdef GTSAM_USE_TBB
     for (; key_value != values_.end(); ++key_value) {
-      key_delta = delta.find(key_value.first);
+      key_delta = delta.find(key_value->first);
 #else
     for (key_delta = delta.begin(); key_value != values_.end();
          ++key_value, ++key_delta) {
-      assert(key_value.first == key_delta->first);
+      assert(key_value->first == key_delta->first);
 #endif
       Key var = key_value->first;
       assert(static_cast<size_t>(delta[var].size()) == key_value->second->dim());

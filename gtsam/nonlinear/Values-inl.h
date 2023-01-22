@@ -25,6 +25,8 @@
 #pragma once
 
 #include <utility>
+#include <boost/bind/bind.hpp>
+#include <gtsam/nonlinear/Values.h>
 
 #include <boost/bind/bind.hpp>
 
