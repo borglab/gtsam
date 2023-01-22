@@ -45,7 +45,7 @@ typedef std::vector<Point2, Eigen::aligned_allocator<Point2> > Point2Vector;
 
 /// multiply with scalar
 inline Point2 operator*(double s, const Point2& p) {
-  return p * s;
+  return Point2(s * p.x(), s * p.y());
 }
 
 /*

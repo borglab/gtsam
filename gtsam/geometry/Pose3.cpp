@@ -159,6 +159,12 @@ bool Pose3::equals(const Pose3& pose, double tol) const {
 }
 
 /* ************************************************************************* */
+Pose3 Pose3::interpolateRt(const Pose3& T, double t) const {
+  return Pose3(interpolate<Rot3>(R_, T.R_, t),
+                interpolate<Point3>(t_, T.t_, t));
+}
+
+/* ************************************************************************* */
 /** Modified from Murray94book version (which assumes w and v normalized?) */
 Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   if (Hxi) *Hxi = ExpmapDerivative(xi);
