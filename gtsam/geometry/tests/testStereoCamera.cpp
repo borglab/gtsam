@@ -89,7 +89,7 @@ static Point3 landmark(0, 0, 5);
 
 /* ************************************************************************* */
 static StereoPoint2 project3(const Pose3& pose, const Point3& point, const Cal3_S2Stereo& K) {
-  return StereoCamera(pose, boost::make_shared<Cal3_S2Stereo>(K)).project(point);
+  return StereoCamera(pose, std::make_shared<Cal3_S2Stereo>(K)).project(point);
 }
 
 /* ************************************************************************* */
@@ -150,7 +150,7 @@ TEST( StereoCamera, backproject_case2)
 }
 
 static Point3 backproject3(const Pose3& pose, const StereoPoint2& point, const Cal3_S2Stereo& K) {
-  return StereoCamera(pose, boost::make_shared<Cal3_S2Stereo>(K)).backproject(point);
+  return StereoCamera(pose, std::make_shared<Cal3_S2Stereo>(K)).backproject(point);
 }
 
 /* ************************************************************************* */

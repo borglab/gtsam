@@ -114,7 +114,7 @@ public:
   using Base::evaluateError;
 
   // shorthand for a smart pointer to a factor
-  typedef typename boost::shared_ptr<EquivInertialNavFactor_GlobalVel> shared_ptr;
+  typedef typename std::shared_ptr<EquivInertialNavFactor_GlobalVel> shared_ptr;
 
   /** default constructor - only use for serialization */
   EquivInertialNavFactor_GlobalVel() {}

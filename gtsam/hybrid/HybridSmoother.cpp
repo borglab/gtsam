@@ -42,7 +42,7 @@ void HybridSmoother::update(HybridGaussianFactorGraph graph,
         bayesNetFragment->prune(*maxNrLeaves);
     // Set the bayes net fragment to the pruned version
     bayesNetFragment =
-        boost::make_shared<HybridBayesNet>(prunedBayesNetFragment);
+        std::make_shared<HybridBayesNet>(prunedBayesNetFragment);
   }
 
   // Add the partial bayes net to the posterior bayes net.

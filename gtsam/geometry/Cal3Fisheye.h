@@ -22,7 +22,7 @@
 #include <gtsam/geometry/Cal3.h>
 #include <gtsam/geometry/Point2.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <string>
 
@@ -57,7 +57,7 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
  public:
   enum { dimension = 9 };
   ///< shared pointer to fisheye calibration object
-  using shared_ptr = boost::shared_ptr<Cal3Fisheye>;
+  using shared_ptr = std::shared_ptr<Cal3Fisheye>;
 
   /// @name Standard Constructors
   /// @{
@@ -174,8 +174,8 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @{
 
   /// @return a deep copy of this object
-  virtual boost::shared_ptr<Cal3Fisheye> clone() const {
-    return boost::shared_ptr<Cal3Fisheye>(new Cal3Fisheye(*this));
+  virtual std::shared_ptr<Cal3Fisheye> clone() const {
+    return std::shared_ptr<Cal3Fisheye>(new Cal3Fisheye(*this));
   }
 
   /// @}

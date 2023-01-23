@@ -35,11 +35,11 @@ bool DummyFactor::equals(const NonlinearFactor& f, double tol) const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianFactor>
+std::shared_ptr<GaussianFactor>
 DummyFactor::linearize(const Values& c) const {
   // Only linearize if the factor is active
   if (!this->active(c))
-    return boost::shared_ptr<JacobianFactor>();
+    return std::shared_ptr<JacobianFactor>();
 
    // Fill in terms with zero matrices
   std::vector<std::pair<Key, Matrix> > terms(this->size());

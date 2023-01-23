@@ -31,7 +31,7 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT ConcurrentBatchFilter : public ConcurrentFilter {
 
 public:
-  typedef boost::shared_ptr<ConcurrentBatchFilter> shared_ptr;
+  typedef std::shared_ptr<ConcurrentBatchFilter> shared_ptr;
   typedef ConcurrentFilter Base; ///< typedef for base class
 
   /** Meta information returned about the update */

@@ -22,7 +22,7 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   std::set<size_t> values_;  /// allowed values
 
  public:
-  typedef boost::shared_ptr<Domain> shared_ptr;
+  typedef std::shared_ptr<Domain> shared_ptr;
 
   // Constructor on Discrete Key initializes an "all-allowed" domain
   Domain(const DiscreteKey& dkey)

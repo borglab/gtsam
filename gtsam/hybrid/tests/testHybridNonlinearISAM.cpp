@@ -218,7 +218,7 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
   DiscreteKeys discrete_keys = {{M(0), 2}, {M(1), 2}};
   vector<double> probs = {0.095292197, 0.31417524, 0.28275772, 0.30777485};
   auto expectedConditional =
-      boost::make_shared<DecisionTreeFactor>(discrete_keys, probs);
+      std::make_shared<DecisionTreeFactor>(discrete_keys, probs);
   EXPECT(assert_equal(*expectedConditional, *actualConditional, 1e-6));
 }
 
@@ -441,12 +441,12 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   Pose2 odometry(1.0, 0.0, 0.0);
   KeyVector contKeys = {W(0), W(1)};
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
-  auto still = boost::make_shared<PlanarMotionModel>(W(0), W(1), Pose2(0, 0, 0),
+  auto still = std::make_shared<PlanarMotionModel>(W(0), W(1), Pose2(0, 0, 0),
                                                      noise_model),
-       moving = boost::make_shared<PlanarMotionModel>(W(0), W(1), odometry,
+       moving = std::make_shared<PlanarMotionModel>(W(0), W(1), odometry,
                                                       noise_model);
   std::vector<PlanarMotionModel::shared_ptr> components = {moving, still};
-  auto mixtureFactor = boost::make_shared<MixtureFactor>(
+  auto mixtureFactor = std::make_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
   fg.push_back(mixtureFactor);
 
@@ -481,12 +481,12 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   /*************** Run Round 3 ***************/
   // Add odometry factor with discrete modes.
   contKeys = {W(1), W(2)};
-  still = boost::make_shared<PlanarMotionModel>(W(1), W(2), Pose2(0, 0, 0),
+  still = std::make_shared<PlanarMotionModel>(W(1), W(2), Pose2(0, 0, 0),
                                                 noise_model);
   moving =
-      boost::make_shared<PlanarMotionModel>(W(1), W(2), odometry, noise_model);
+      std::make_shared<PlanarMotionModel>(W(1), W(2), odometry, noise_model);
   components = {moving, still};
-  mixtureFactor = boost::make_shared<MixtureFactor>(
+  mixtureFactor = std::make_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(2), 2)}, components);
   fg.push_back(mixtureFactor);
 
@@ -524,12 +524,12 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   /*************** Run Round 4 ***************/
   // Add odometry factor with discrete modes.
   contKeys = {W(2), W(3)};
-  still = boost::make_shared<PlanarMotionModel>(W(2), W(3), Pose2(0, 0, 0),
+  still = std::make_shared<PlanarMotionModel>(W(2), W(3), Pose2(0, 0, 0),
                                                 noise_model);
   moving =
-      boost::make_shared<PlanarMotionModel>(W(2), W(3), odometry, noise_model);
+      std::make_shared<PlanarMotionModel>(W(2), W(3), odometry, noise_model);
   components = {moving, still};
-  mixtureFactor = boost::make_shared<MixtureFactor>(
+  mixtureFactor = std::make_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(3), 2)}, components);
   fg.push_back(mixtureFactor);
 

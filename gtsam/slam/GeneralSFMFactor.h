@@ -38,7 +38,6 @@
 
 #include <boost/none.hpp>
 #include <boost/serialization/nvp.hpp>
-#include <boost/smart_ptr/shared_ptr.hpp>
 #include <iostream>
 #include <string>
 
@@ -79,7 +78,7 @@ public:
   using Base::evaluateError;
 
   // shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /**
    * Constructor
@@ -102,7 +101,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));}
 
   /**
@@ -138,9 +137,9 @@ public:
   }
 
   /// Linearize using fixed-size matrices
-  boost::shared_ptr<GaussianFactor> linearize(const Values& values) const override {
+  std::shared_ptr<GaussianFactor> linearize(const Values& values) const override {
     // Only linearize if the factor is active
-    if (!this->active(values)) return boost::shared_ptr<JacobianFactor>();
+    if (!this->active(values)) return std::shared_ptr<JacobianFactor>();
 
     const Key key1 = this->key1(), key2 = this->key2();
     JacobianC H1;
@@ -170,10 +169,10 @@ public:
     // Create new (unit) noiseModel, preserving constraints if applicable
     SharedDiagonal model;
     if (noiseModel && noiseModel->isConstrained()) {
-      model = boost::static_pointer_cast<noiseModel::Constrained>(noiseModel)->unit();
+      model = std::static_pointer_cast<noiseModel::Constrained>(noiseModel)->unit();
     }
 
-    return boost::make_shared<BinaryJacobianFactor<2, DimC, DimL> >(key1, H1, key2, H2, b, model);
+    return std::make_shared<BinaryJacobianFactor<2, DimC, DimL> >(key1, H1, key2, H2, b, model);
   }
 
   /** return the measured */
@@ -219,7 +218,7 @@ public:
   typedef NoiseModelFactorN<Pose3, Point3, CALIBRATION> Base;///< typedef for the base class
 
   // shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /**
    * Constructor
@@ -237,7 +236,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));}
 
   /**

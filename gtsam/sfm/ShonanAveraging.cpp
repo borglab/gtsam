@@ -67,19 +67,19 @@ ShonanAveragingParameters<d>::ShonanAveragingParameters(
   builderParameters.augmentationWeight = SubgraphBuilderParameters::SKELETON;
   builderParameters.augmentationFactor = 0.0;
 
-  auto pcg = boost::make_shared<PCGSolverParameters>();
+  auto pcg = std::make_shared<PCGSolverParameters>();
 
   // Choose optimization method
   if (method == "SUBGRAPH") {
     lm.iterativeParams =
-        boost::make_shared<SubgraphSolverParameters>(builderParameters);
+        std::make_shared<SubgraphSolverParameters>(builderParameters);
   } else if (method == "SGPC") {
     pcg->preconditioner_ =
-        boost::make_shared<SubgraphPreconditionerParameters>(builderParameters);
+        std::make_shared<SubgraphPreconditionerParameters>(builderParameters);
     lm.iterativeParams = pcg;
   } else if (method == "JACOBI") {
     pcg->preconditioner_ =
-        boost::make_shared<BlockJacobiPreconditionerParameters>();
+        std::make_shared<BlockJacobiPreconditionerParameters>();
     lm.iterativeParams = pcg;
   } else if (method == "QR") {
     lm.setLinearSolverType("MULTIFRONTAL_QR");
@@ -142,7 +142,7 @@ ShonanAveraging<d>::ShonanAveraging(const Measurements &measurements,
 template <size_t d>
 NonlinearFactorGraph ShonanAveraging<d>::buildGraphAt(size_t p) const {
   NonlinearFactorGraph graph;
-  auto G = boost::make_shared<Matrix>(SO<-1>::VectorizedGenerators(p));
+  auto G = std::make_shared<Matrix>(SO<-1>::VectorizedGenerators(p));
 
   for (const auto &measurement : measurements_) {
     const auto &keys = measurement.keys();
@@ -172,7 +172,7 @@ double ShonanAveraging<d>::costAt(size_t p, const Values &values) const {
 
 /* ************************************************************************* */
 template <size_t d>
-boost::shared_ptr<LevenbergMarquardtOptimizer>
+std::shared_ptr<LevenbergMarquardtOptimizer>
 ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
   // Build graph
   NonlinearFactorGraph graph = buildGraphAt(p);
@@ -188,7 +188,7 @@ ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
                                            model);
   }
   // Optimize
-  return boost::make_shared<LevenbergMarquardtOptimizer>(graph, initial,
+  return std::make_shared<LevenbergMarquardtOptimizer>(graph, initial,
                                                          parameters_.lm);
 }
 
@@ -337,13 +337,13 @@ double ShonanAveraging<d>::cost(const Values &values) const {
 template <typename T, size_t d>
 static double Kappa(const BinaryMeasurement<T> &measurement,
                     const ShonanAveragingParameters<d> &parameters) {
-  const auto &isotropic = boost::dynamic_pointer_cast<noiseModel::Isotropic>(
+  const auto &isotropic = std::dynamic_pointer_cast<noiseModel::Isotropic>(
       measurement.noiseModel());
   double sigma;
   if (isotropic) {
     sigma = isotropic->sigma();
   } else {
-    const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
+    const auto &robust = std::dynamic_pointer_cast<noiseModel::Robust>(
         measurement.noiseModel());
     // Check if noise model is robust
     if (robust) {
@@ -949,7 +949,7 @@ ShonanAveraging2::ShonanAveraging2(string g2oFile, const Parameters &parameters)
 static BinaryMeasurement<Rot2> convertPose2ToBinaryMeasurementRot2(
     const BetweenFactor<Pose2>::shared_ptr &f) {
   auto gaussian =
-      boost::dynamic_pointer_cast<noiseModel::Gaussian>(f->noiseModel());
+      std::dynamic_pointer_cast<noiseModel::Gaussian>(f->noiseModel());
   if (!gaussian)
     throw std::invalid_argument(
         "parseMeasurements<Rot2> can only convert Pose2 measurements "
@@ -997,7 +997,7 @@ ShonanAveraging3::ShonanAveraging3(string g2oFile, const Parameters &parameters)
 static BinaryMeasurement<Rot3> convert(
     const BetweenFactor<Pose3>::shared_ptr &f) {
   auto gaussian =
-      boost::dynamic_pointer_cast<noiseModel::Gaussian>(f->noiseModel());
+      std::dynamic_pointer_cast<noiseModel::Gaussian>(f->noiseModel());
   if (!gaussian)
     throw std::invalid_argument(
         "parseMeasurements<Rot3> can only convert Pose3 measurements "

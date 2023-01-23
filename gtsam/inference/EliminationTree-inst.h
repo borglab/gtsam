@@ -17,7 +17,6 @@
 */
 #pragma once
 
-#include <boost/make_shared.hpp>
 #include <stack>
 
 #include <gtsam/base/timing.h>
@@ -33,7 +32,7 @@ namespace gtsam {
   template<class BAYESNET, class GRAPH>
   typename EliminationTree<BAYESNET,GRAPH>::sharedFactor
     EliminationTree<BAYESNET,GRAPH>::Node::eliminate(
-    const boost::shared_ptr<BayesNetType>& output,
+    const std::shared_ptr<BayesNetType>& output,
     const Eliminate& function, const FastVector<sharedFactor>& childrenResults) const
   {
     // This function eliminates one node (Node::eliminate) - see below eliminate for the whole tree.
@@ -98,7 +97,7 @@ namespace gtsam {
       {
         // Retrieve the factors involving this variable and create the current node
         const FactorIndices& factors = structure[order[j]];
-        const sharedNode node = boost::make_shared<Node>();
+        const sharedNode node = std::make_shared<Node>();
         node->key = order[j];
 
         // for row i \in Struct[A*j] do
@@ -183,18 +182,18 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class BAYESNET, class GRAPH>
-  std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<GRAPH> >
+  std::pair<std::shared_ptr<BAYESNET>, std::shared_ptr<GRAPH> >
     EliminationTree<BAYESNET,GRAPH>::eliminate(Eliminate function) const
   {
     gttic(EliminationTree_eliminate);
     // Allocate result
-    auto result = boost::make_shared<BayesNetType>();
+    auto result = std::make_shared<BayesNetType>();
 
     // Run tree elimination algorithm
     FastVector<sharedFactor> remainingFactors = inference::EliminateTree(result, *this, function);
 
     // Add remaining factors that were not involved with eliminated variables
-    auto allRemainingFactors = boost::make_shared<FactorGraphType>();
+    auto allRemainingFactors = std::make_shared<FactorGraphType>();
     allRemainingFactors->push_back(remainingFactors_.begin(), remainingFactors_.end());
     allRemainingFactors->push_back(remainingFactors.begin(), remainingFactors.end());
 

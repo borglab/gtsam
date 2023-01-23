@@ -34,7 +34,7 @@ namespace gtsam {
 template <size_t d>
 ShonanFactor<d>::ShonanFactor(Key j1, Key j2, const Rot &R12, size_t p,
                               const SharedNoiseModel &model,
-                              const boost::shared_ptr<Matrix> &G)
+                              const std::shared_ptr<Matrix> &G)
     : NoiseModelFactorN<SOn, SOn>(ConvertNoiseModel(model, p * d), j1, j2),
       M_(R12.matrix()), // d*d in all cases
       p_(p),            // 4 for SO(4)
@@ -44,7 +44,7 @@ ShonanFactor<d>::ShonanFactor(Key j1, Key j2, const Rot &R12, size_t p,
     throw std::invalid_argument(
         "ShonanFactor: model with incorrect dimension.");
   if (!G) {
-    G_ = boost::make_shared<Matrix>();
+    G_ = std::make_shared<Matrix>();
     *G_ = SOn::VectorizedGenerators(p); // expensive!
   }
   if (static_cast<size_t>(G_->rows()) != pp_ ||

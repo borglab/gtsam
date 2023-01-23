@@ -51,7 +51,7 @@ namespace gtsam {
     // and the key/index needs to be reset to 0, the first key in the next iteration.
     assert(marginal->nrFrontals() == 1);
     assert(marginal->nrParents() == 0);
-    *newPrior = boost::make_shared<JacobianFactor>(
+    *newPrior = std::make_shared<JacobianFactor>(
       marginal->keys().front(),
       marginal->getA(marginal->begin()),
       marginal->getb() - marginal->getA(marginal->begin()) * result[lastKey],

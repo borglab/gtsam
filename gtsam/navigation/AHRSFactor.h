@@ -51,7 +51,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
    *  Default constructor, initialize with no measurements
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  PreintegratedAhrsMeasurements(const boost::shared_ptr<Params>& p,
+  PreintegratedAhrsMeasurements(const std::shared_ptr<Params>& p,
       const Vector3& biasHat) :
       PreintegratedRotation(p), biasHat_(biasHat) {
     resetIntegration();
@@ -67,7 +67,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
    *  @param preint_meas_cov: Pre-integration covariance
    */
   PreintegratedAhrsMeasurements(
-      const boost::shared_ptr<Params>& p,
+      const std::shared_ptr<Params>& p,
       const Vector3& bias_hat,
       double deltaTij,
       const Rot3& deltaRij,
@@ -77,7 +77,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
       biasHat_(bias_hat),
       preintMeasCov_(preint_meas_cov) {}
 
-  Params& p() const { return *boost::static_pointer_cast<Params>(p_);}
+  Params& p() const { return *std::static_pointer_cast<Params>(p_);}
   const Vector3& biasHat() const { return biasHat_; }
   const Matrix3& preintMeasCov() const { return preintMeasCov_; }
 
@@ -113,7 +113,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
   /// @deprecated constructor, but used in tests.
   PreintegratedAhrsMeasurements(const Vector3& biasHat,
                                 const Matrix3& measuredOmegaCovariance)
-      : PreintegratedRotation(boost::make_shared<Params>()), biasHat_(biasHat) {
+      : PreintegratedRotation(std::make_shared<Params>()), biasHat_(biasHat) {
     p_->gyroscopeCovariance = measuredOmegaCovariance;
     resetIntegration();
   }
@@ -147,9 +147,9 @@ public:
 
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
-  typedef typename boost::shared_ptr<AHRSFactor> shared_ptr;
+  typedef typename std::shared_ptr<AHRSFactor> shared_ptr;
 #else
-  typedef boost::shared_ptr<AHRSFactor> shared_ptr;
+  typedef std::shared_ptr<AHRSFactor> shared_ptr;
 #endif
 
   /**

@@ -17,7 +17,6 @@
 #pragma once
 
 #include <gtsam/navigation/PreintegratedRotation.h>
-#include <boost/make_shared.hpp>
 
 namespace gtsam {
 
@@ -49,13 +48,13 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
         n_gravity(n_gravity) {}
 
   // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
-  static boost::shared_ptr<PreintegrationParams> MakeSharedD(double g = 9.81) {
-    return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, g)));
+  static std::shared_ptr<PreintegrationParams> MakeSharedD(double g = 9.81) {
+    return std::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, g)));
   }
 
   // Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
-  static boost::shared_ptr<PreintegrationParams> MakeSharedU(double g = 9.81) {
-    return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, -g)));
+  static std::shared_ptr<PreintegrationParams> MakeSharedU(double g = 9.81) {
+    return std::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, -g)));
   }
 
   void print(const std::string& s="") const override;

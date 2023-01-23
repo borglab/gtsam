@@ -32,7 +32,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::pair<boost::shared_ptr<SymbolicConditional>, boost::shared_ptr<SymbolicFactor> >
+  std::pair<std::shared_ptr<SymbolicConditional>, std::shared_ptr<SymbolicFactor> >
     EliminateSymbolic(const SymbolicFactorGraph& factors, const Ordering& keys)
   {
     return internal::EliminateSymbolic(factors, keys);
@@ -45,7 +45,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::pair<boost::shared_ptr<SymbolicConditional>, boost::shared_ptr<SymbolicFactor> >
+  std::pair<std::shared_ptr<SymbolicConditional>, std::shared_ptr<SymbolicFactor> >
     SymbolicFactor::eliminate(const Ordering& keys) const
   {
     SymbolicFactorGraph graph;

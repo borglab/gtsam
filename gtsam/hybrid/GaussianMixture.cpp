@@ -106,7 +106,7 @@ GaussianConditional::shared_ptr GaussianMixture::operator()(
     const DiscreteValues &discreteValues) const {
   auto &ptr = conditionals_(discreteValues);
   if (!ptr) return nullptr;
-  auto conditional = boost::dynamic_pointer_cast<GaussianConditional>(ptr);
+  auto conditional = std::dynamic_pointer_cast<GaussianConditional>(ptr);
   if (conditional)
     return conditional;
   else
@@ -185,7 +185,7 @@ bool GaussianMixture::allFrontalsGiven(const VectorValues &given) const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
+std::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
     const VectorValues &given) const {
   if (!allFrontalsGiven(given)) {
     throw std::runtime_error(
@@ -208,12 +208,12 @@ boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
           gfg.push_back(likelihood_m);
           Vector c(1);
           c << std::sqrt(2.0 * Cgm_Kgcm);
-          auto constantFactor = boost::make_shared<JacobianFactor>(c);
+          auto constantFactor = std::make_shared<JacobianFactor>(c);
           gfg.push_back(constantFactor);
-          return boost::make_shared<JacobianFactor>(gfg);
+          return std::make_shared<JacobianFactor>(gfg);
         }
       });
-  return boost::make_shared<GaussianMixtureFactor>(
+  return std::make_shared<GaussianMixtureFactor>(
       continuousParentKeys, discreteParentKeys, likelihoods);
 }
 
@@ -252,7 +252,7 @@ GaussianMixture::prunerFunc(const DecisionTreeFactor &decisionTree) {
     if (gaussianMixtureKeySet == decisionTreeKeySet) {
       if (decisionTree(values) == 0.0) {
         // empty aka null pointer
-        boost::shared_ptr<GaussianConditional> null;
+        std::shared_ptr<GaussianConditional> null;
         return null;
       } else {
         return conditional;

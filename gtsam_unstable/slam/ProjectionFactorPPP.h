@@ -35,7 +35,7 @@ namespace gtsam {
 
     // Keep a copy of measurement and calibration for I/O
     Point2 measured_;                    ///< 2D measurement
-    boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
+    std::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
 
     // verbosity handling for Cheirality Exceptions
     bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
@@ -53,7 +53,7 @@ namespace gtsam {
     typedef ProjectionFactorPPP<POSE, LANDMARK, CALIBRATION> This;
 
     /// shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
 
     /// Default constructor
   ProjectionFactorPPP() :
@@ -72,7 +72,7 @@ namespace gtsam {
      */
     ProjectionFactorPPP(const Point2& measured, const SharedNoiseModel& model,
         Key poseKey, Key transformKey,  Key pointKey,
-        const boost::shared_ptr<CALIBRATION>& K) :
+        const std::shared_ptr<CALIBRATION>& K) :
           Base(model, poseKey, transformKey, pointKey), measured_(measured), K_(K),
           throwCheirality_(false), verboseCheirality_(false) {}
 
@@ -89,7 +89,7 @@ namespace gtsam {
      */
     ProjectionFactorPPP(const Point2& measured, const SharedNoiseModel& model,
         Key poseKey, Key transformKey, Key pointKey,
-        const boost::shared_ptr<CALIBRATION>& K,
+        const std::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality) :
           Base(model, poseKey, transformKey, pointKey), measured_(measured), K_(K),
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
@@ -99,7 +99,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<NonlinearFactor>(
+      return std::static_pointer_cast<NonlinearFactor>(
           NonlinearFactor::shared_ptr(new This(*this))); }
 
     /**
@@ -159,7 +159,7 @@ namespace gtsam {
     }
 
     /** return the calibration object */
-    inline const boost::shared_ptr<CALIBRATION> calibration() const {
+    inline const std::shared_ptr<CALIBRATION> calibration() const {
       return K_;
     }
 

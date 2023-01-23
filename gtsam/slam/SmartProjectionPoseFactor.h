@@ -51,12 +51,12 @@ class SmartProjectionPoseFactor
 
 protected:
 
-  boost::shared_ptr<CALIBRATION> K_; ///< calibration object (one for all cameras)
+  std::shared_ptr<CALIBRATION> K_; ///< calibration object (one for all cameras)
 
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /**
    * Default constructor, only for serialization
@@ -71,7 +71,7 @@ public:
    */
   SmartProjectionPoseFactor(
       const SharedNoiseModel& sharedNoiseModel,
-      const boost::shared_ptr<CALIBRATION> K,
+      const std::shared_ptr<CALIBRATION> K,
       const SmartProjectionParams& params = SmartProjectionParams())
       : Base(sharedNoiseModel, params), K_(K) {
   }
@@ -85,7 +85,7 @@ public:
    */
   SmartProjectionPoseFactor(
       const SharedNoiseModel& sharedNoiseModel,
-      const boost::shared_ptr<CALIBRATION> K,
+      const std::shared_ptr<CALIBRATION> K,
       const std::optional<Pose3> body_P_sensor,
       const SmartProjectionParams& params = SmartProjectionParams())
       : SmartProjectionPoseFactor(sharedNoiseModel, K, params) {
@@ -125,7 +125,7 @@ public:
   }
 
   /** return calibration shared pointers */
-  inline const boost::shared_ptr<CALIBRATION> calibration() const {
+  inline const std::shared_ptr<CALIBRATION> calibration() const {
     return K_;
   }
 

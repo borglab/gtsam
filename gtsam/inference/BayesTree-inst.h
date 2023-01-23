@@ -155,7 +155,7 @@ namespace gtsam {
   struct _pushCliqueFunctor {
     _pushCliqueFunctor(FactorGraph<FACTOR>* graph_) : graph(graph_) {}
     FactorGraph<FACTOR>* graph;
-    int operator()(const boost::shared_ptr<CLIQUE>& clique, int dummy) {
+    int operator()(const std::shared_ptr<CLIQUE>& clique, int dummy) {
       graph->push_back(clique->conditional_);
       return 0;
     }
@@ -181,11 +181,11 @@ namespace gtsam {
   /* ************************************************************************* */
   namespace {
     template<typename NODE>
-    boost::shared_ptr<NODE>
-      BayesTreeCloneForestVisitorPre(const boost::shared_ptr<NODE>& node, const boost::shared_ptr<NODE>& parentPointer)
+    std::shared_ptr<NODE>
+      BayesTreeCloneForestVisitorPre(const std::shared_ptr<NODE>& node, const std::shared_ptr<NODE>& parentPointer)
     {
       // Clone the current node and add it to its cloned parent
-      boost::shared_ptr<NODE> clone = boost::make_shared<NODE>(*node);
+      std::shared_ptr<NODE> clone = std::make_shared<NODE>(*node);
       clone->children.clear();
       clone->parent_ = parentPointer;
       parentPointer->children.push_back(clone);
@@ -197,7 +197,7 @@ namespace gtsam {
   template<class CLIQUE>
   BayesTree<CLIQUE>& BayesTree<CLIQUE>::operator=(const This& other) {
     this->clear();
-    boost::shared_ptr<Clique> rootContainer = boost::make_shared<Clique>();
+    std::shared_ptr<Clique> rootContainer = std::make_shared<Clique>();
     treeTraversal::DepthFirstForest(other, rootContainer, BayesTreeCloneForestVisitorPre<Clique>);
     for(const sharedClique& root: rootContainer->children) {
       root->parent_ = typename Clique::weak_ptr(); // Reset the parent since it's set to the dummy clique
@@ -292,7 +292,7 @@ namespace gtsam {
     BayesTree<CLIQUE>::joint(Key j1, Key j2, const Eliminate& function) const
   {
     gttic(BayesTree_joint);
-    return boost::make_shared<FactorGraphType>(*jointBayesNet(j1, j2, function));
+    return std::make_shared<FactorGraphType>(*jointBayesNet(j1, j2, function));
   }
 
   /* ************************************************************************* */
@@ -352,7 +352,7 @@ namespace gtsam {
       // Factor the shortcuts to be conditioned on the full root
       // Get the set of variables to eliminate, which is C1\B.
       gttic(Full_root_factoring);
-      boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
+      std::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
         KeyVector C1_minus_B; {
           KeySet C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
           for(const Key j: *B->conditional()) {
@@ -364,7 +364,7 @@ namespace gtsam {
         boost::tie(p_C1_B, temp_remaining) =
           FactorGraphType(p_C1_Bred).eliminatePartialMultifrontal(Ordering(C1_minus_B), function);
       }
-      boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
+      std::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
         KeyVector C2_minus_B; {
           KeySet C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
           for(const Key j: *B->conditional()) {

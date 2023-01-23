@@ -43,7 +43,7 @@ namespace gtsam {
   {
   public:
     typedef GaussianConditional This; ///< Typedef to this class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
     typedef JacobianFactor BaseFactor; ///< Typedef to our factor base class
     typedef Conditional<BaseFactor, This> BaseConditional; ///< Typedef to our conditional base class
 
@@ -103,7 +103,7 @@ namespace gtsam {
     /// Create shared pointer by forwarding arguments to fromMeanAndStddev.
     template<typename... Args>
     static shared_ptr sharedMeanAndStddev(Args&&... args) {
-      return boost::make_shared<This>(FromMeanAndStddev(std::forward<Args>(args)...));
+      return std::make_shared<This>(FromMeanAndStddev(std::forward<Args>(args)...));
     }
 
     /** Combine several GaussianConditional into a single dense GC.  The conditionals enumerated by

@@ -184,7 +184,7 @@ class GTSAM_EXPORT ShonanAveraging {
     for (auto &measurement : measurements) {
       auto model = measurement.noiseModel();
       const auto &robust =
-          boost::dynamic_pointer_cast<noiseModel::Robust>(model);
+          std::dynamic_pointer_cast<noiseModel::Robust>(model);
 
       SharedNoiseModel robust_model;
       // Check if the noise model is already robust
@@ -339,7 +339,7 @@ class GTSAM_EXPORT ShonanAveraging {
    * @param initial initial SO(p) values
    * @return lm optimizer
    */
-  boost::shared_ptr<LevenbergMarquardtOptimizer> createOptimizerAt(
+  std::shared_ptr<LevenbergMarquardtOptimizer> createOptimizerAt(
       size_t p, const Values &initial) const;
 
   /**

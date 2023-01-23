@@ -290,7 +290,7 @@ void ISAM2::recalculateIncremental(const ISAM2UpdateParams& updateParams,
   // Add the orphaned subtrees
   for (const auto& orphan : *orphans)
     factors +=
-        boost::make_shared<BayesTreeOrphanWrapper<ISAM2::Clique> >(orphan);
+        std::make_shared<BayesTreeOrphanWrapper<ISAM2::Clique> >(orphan);
   gttoc(orphans);
 
   // 3. Re-order and eliminate the factor graph into a Bayes net (Algorithm
@@ -525,7 +525,7 @@ void ISAM2::marginalizeLeaves(
 
       // Traverse up the tree to find the root of the marginalized subtree
       sharedClique clique = nodes_[j];
-      while (!clique->parent_._empty()) {
+      while (clique->parent_.use_count() != 0) {
         // Check if parent contains a marginalized leaf variable.  Only need to
         // check the first variable because it is the closest to the leaves.
         sharedClique parent = clique->parent();
@@ -667,7 +667,7 @@ void ISAM2::marginalizeLeaves(
         if (marginalFactorsIndices)
           marginalFactorsIndices->push_back(nonlinearFactors_.size());
         nonlinearFactors_.push_back(
-            boost::make_shared<LinearContainerFactor>(factor));
+            std::make_shared<LinearContainerFactor>(factor));
         if (params_.cacheLinearizedFactors) linearFactors_.push_back(factor);
         for (Key factorKey : *factor) {
           fixedVariables_.insert(factorKey);

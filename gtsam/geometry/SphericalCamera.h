@@ -42,7 +42,7 @@ class GTSAM_EXPORT EmptyCal {
   enum { dimension = 0 };
   EmptyCal() {}
   virtual ~EmptyCal() = default;
-  using shared_ptr = boost::shared_ptr<EmptyCal>;
+  using shared_ptr = std::shared_ptr<EmptyCal>;
 
   /// return DOF, dimensionality of tangent space
   inline static size_t Dim() { return dimension; }
@@ -87,11 +87,11 @@ class GTSAM_EXPORT SphericalCamera {
 
   /// Default constructor
   SphericalCamera()
-      : pose_(Pose3()), emptyCal_(boost::make_shared<EmptyCal>()) {}
+      : pose_(Pose3()), emptyCal_(std::make_shared<EmptyCal>()) {}
 
   /// Constructor with pose
   explicit SphericalCamera(const Pose3& pose)
-      : pose_(pose), emptyCal_(boost::make_shared<EmptyCal>()) {}
+      : pose_(pose), emptyCal_(std::make_shared<EmptyCal>()) {}
 
   /// Constructor with empty intrinsics (needed for smart factors)
   explicit SphericalCamera(const Pose3& pose,

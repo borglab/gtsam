@@ -67,7 +67,7 @@ std::string NonlinearOptimizerParams::verbosityTranslator(
 
 /* ************************************************************************* */
 void NonlinearOptimizerParams::setIterativeParams(
-    const boost::shared_ptr<IterativeOptimizationParameters> params) {
+    const std::shared_ptr<IterativeOptimizationParameters> params) {
   iterativeParams = params;
 }
 

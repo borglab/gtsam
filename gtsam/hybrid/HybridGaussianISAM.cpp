@@ -89,7 +89,7 @@ void HybridGaussianISAM::updateInternal(
 
   // Add the orphaned subtrees
   for (const sharedClique& orphan : *orphans) {
-    factors += boost::make_shared<BayesTreeOrphanWrapper<Node>>(orphan);
+    factors += std::make_shared<BayesTreeOrphanWrapper<Node>>(orphan);
   }
 
   const VariableIndex index(factors);

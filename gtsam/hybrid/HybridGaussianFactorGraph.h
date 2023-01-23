@@ -52,7 +52,7 @@ class HybridValues;
  * @ingroup hybrid
  */
 GTSAM_EXPORT
-std::pair<boost::shared_ptr<HybridConditional>, boost::shared_ptr<Factor>>
+std::pair<std::shared_ptr<HybridConditional>, std::shared_ptr<Factor>>
 EliminateHybrid(const HybridGaussianFactorGraph& factors, const Ordering& keys);
 
 /**
@@ -80,8 +80,8 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
   typedef HybridBayesTree BayesTreeType;        ///< Type of Bayes tree
   typedef HybridJunctionTree JunctionTreeType;  ///< Type of Junction tree
   /// The default dense elimination function
-  static std::pair<boost::shared_ptr<ConditionalType>,
-                   boost::shared_ptr<FactorType>>
+  static std::pair<std::shared_ptr<ConditionalType>,
+                   std::shared_ptr<FactorType>>
   DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
     return EliminateHybrid(factors, keys);
   }
@@ -114,7 +114,7 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   using This = HybridGaussianFactorGraph;  ///< this class
   using BaseEliminateable =
       EliminateableFactorGraph<This>;          ///< for elimination
-  using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
+  using shared_ptr = std::shared_ptr<This>;  ///< shared_ptr to This
 
   using Values = gtsam::Values;  ///< backwards compatibility
   using Indices = KeyVector;     ///< map from keys to values

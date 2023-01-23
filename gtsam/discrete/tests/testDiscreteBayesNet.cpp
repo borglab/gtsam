@@ -42,13 +42,13 @@ TEST(DiscreteBayesNet, bayesNet) {
   DiscreteBayesNet bayesNet;
   DiscreteKey Parent(0, 2), Child(1, 2);
 
-  auto prior = boost::make_shared<DiscreteConditional>(Parent % "6/4");
+  auto prior = std::make_shared<DiscreteConditional>(Parent % "6/4");
   CHECK(assert_equal(ADT({Parent}, "0.6 0.4"),
                      (ADT)*prior));
   bayesNet.push_back(prior);
 
   auto conditional =
-      boost::make_shared<DiscreteConditional>(Child | Parent = "7/3 8/2");
+      std::make_shared<DiscreteConditional>(Child | Parent = "7/3 8/2");
   EXPECT_LONGS_EQUAL(1, *(conditional->beginFrontals()));
   ADT expected(Child & Parent, "0.7 0.8 0.3 0.2");
   CHECK(assert_equal(expected, (ADT)*conditional));

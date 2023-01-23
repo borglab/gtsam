@@ -114,13 +114,13 @@ struct HybridAssignmentData {
       conditional = hybrid_conditional->asGaussian();
     } else {
       // Discrete only conditional, so we set to empty gaussian conditional
-      conditional = boost::make_shared<GaussianConditional>();
+      conditional = std::make_shared<GaussianConditional>();
     }
 
     GaussianBayesTree::sharedNode clique;
     if (conditional) {
       // Create the GaussianClique for the current node
-      clique = boost::make_shared<GaussianBayesTree::Node>(conditional);
+      clique = std::make_shared<GaussianBayesTree::Node>(conditional);
       // Add the current clique to the GaussianBayesTree.
       parentData.gaussianbayesTree_->addClique(clique,
                                                parentData.parentClique_);

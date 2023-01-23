@@ -36,7 +36,7 @@ public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
-  typedef boost::shared_ptr<PendulumFactor1> shared_ptr;
+  typedef std::shared_ptr<PendulumFactor1> shared_ptr;
 
   ///Constructor.  k1: q_{k+1}, k: q_k, velKey: velocity variable depending on the chosen method, h: time step
   PendulumFactor1(Key k1, Key k, Key velKey, double h, double mu = 1000.0)
@@ -44,7 +44,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactor1(*this))); }
 
   /** q_k + h*v - q_k1 = 0, with optional derivatives */
@@ -86,7 +86,7 @@ public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
-  typedef boost::shared_ptr<PendulumFactor2 > shared_ptr;
+  typedef std::shared_ptr<PendulumFactor2 > shared_ptr;
 
   ///Constructor.  vk1: v_{k+1}, vk: v_k, qkey: q's key depending on the chosen method, h: time step
   PendulumFactor2(Key vk1, Key vk, Key qkey, double h, double r = 1.0, double g = 9.81, double mu = 1000.0)
@@ -94,7 +94,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactor2(*this))); }
 
   /**  v_k - h*g/L*sin(q) - v_k1 = 0, with optional derivatives */
@@ -137,7 +137,7 @@ public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
-  typedef boost::shared_ptr<PendulumFactorPk > shared_ptr;
+  typedef std::shared_ptr<PendulumFactorPk > shared_ptr;
 
   ///Constructor
   PendulumFactorPk(Key pKey, Key qKey, Key qKey1,
@@ -147,7 +147,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactorPk(*this))); }
 
   /**  1/h mr^2 (qk1-qk)+mgrh (1-a) sin((1-a)pk + a*pk1) - pk = 0, with optional derivatives */
@@ -195,7 +195,7 @@ public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
-  typedef boost::shared_ptr<PendulumFactorPk1 > shared_ptr;
+  typedef std::shared_ptr<PendulumFactorPk1 > shared_ptr;
 
   ///Constructor
   PendulumFactorPk1(Key pKey1, Key qKey, Key qKey1,
@@ -205,7 +205,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactorPk1(*this))); }
 
   /**  1/h mr^2 (qk1-qk) - mgrh a sin((1-a)pk + a*pk1) - pk1 = 0, with optional derivatives */

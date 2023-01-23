@@ -39,8 +39,8 @@ namespace gtsam {
     typedef BayesNet<GaussianConditional> Base;
     typedef GaussianBayesNet This;
     typedef GaussianConditional ConditionalType;
-    typedef boost::shared_ptr<This> shared_ptr;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef std::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<ConditionalType> sharedConditional;
 
     /// @name Standard Constructors
     /// @{
@@ -71,7 +71,7 @@ namespace gtsam {
      */
     template <class DERIVEDCONDITIONAL>
     GaussianBayesNet(
-        std::initializer_list<boost::shared_ptr<DERIVEDCONDITIONAL> > conditionals)
+        std::initializer_list<std::shared_ptr<DERIVEDCONDITIONAL> > conditionals)
         : Base(conditionals) {}
 
     /// Destructor

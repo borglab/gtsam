@@ -15,7 +15,6 @@
  * @author  Frank Dellaert
  */
 
-#include <boost/make_shared.hpp>
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -75,7 +74,7 @@ TEST( SymbolicConditional, fourParents )
 /* ************************************************************************* */
 TEST( SymbolicConditional, FromRange )
 {
-  auto c0 = boost::make_shared<SymbolicConditional>(
+  auto c0 = std::make_shared<SymbolicConditional>(
       SymbolicConditional::FromKeys(KeyVector{1, 2, 3, 4, 5}, 2));
   LONGS_EQUAL(2, (long)c0->nrFrontals());
   LONGS_EQUAL(3, (long)c0->nrParents());

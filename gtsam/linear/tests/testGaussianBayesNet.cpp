@@ -39,13 +39,13 @@ using symbol_shorthand::X;
 static const Key _x_ = 11, _y_ = 22, _z_ = 33;
 
 static GaussianBayesNet smallBayesNet = {
-    boost::make_shared<GaussianConditional>(_x_, Vector1::Constant(9), I_1x1, _y_, I_1x1),
-    boost::make_shared<GaussianConditional>(_y_, Vector1::Constant(5), I_1x1)};
+    std::make_shared<GaussianConditional>(_x_, Vector1::Constant(9), I_1x1, _y_, I_1x1),
+    std::make_shared<GaussianConditional>(_y_, Vector1::Constant(5), I_1x1)};
 
 static GaussianBayesNet noisyBayesNet = {
-    boost::make_shared<GaussianConditional>(_x_, Vector1::Constant(9), I_1x1, _y_, I_1x1,
+    std::make_shared<GaussianConditional>(_x_, Vector1::Constant(9), I_1x1, _y_, I_1x1,
                         noiseModel::Isotropic::Sigma(1, 2.0)),
-    boost::make_shared<GaussianConditional>(_y_, Vector1::Constant(5), I_1x1,
+    std::make_shared<GaussianConditional>(_y_, Vector1::Constant(5), I_1x1,
                         noiseModel::Isotropic::Sigma(1, 3.0))};
 
 /* ************************************************************************* */

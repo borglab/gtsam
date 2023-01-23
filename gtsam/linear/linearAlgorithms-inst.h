@@ -21,7 +21,7 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/base/treeTraversal-inst.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <optional>
 
@@ -52,7 +52,7 @@ namespace gtsam
         VectorValues collectedResult;
 
         OptimizeData operator()(
-          const boost::shared_ptr<CLIQUE>& clique,
+          const std::shared_ptr<CLIQUE>& clique,
           OptimizeData& parentData)
         {
           OptimizeData myData;

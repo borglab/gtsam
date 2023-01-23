@@ -30,7 +30,6 @@
 #include <Eigen/Core>  // for Eigen::aligned_allocator
 
 #include <boost/assign/list_inserter.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/vector.hpp>
 
@@ -97,7 +96,7 @@ template <class FACTOR>
 class FactorGraph {
  public:
   typedef FACTOR FactorType;  ///< factor type
-  typedef boost::shared_ptr<FACTOR>
+  typedef std::shared_ptr<FACTOR>
       sharedFactor;  ///< Shared pointer to a factor
   typedef sharedFactor value_type;
   typedef typename FastVector<sharedFactor>::iterator iterator;
@@ -105,7 +104,7 @@ class FactorGraph {
 
  private:
   typedef FactorGraph<FACTOR> This;  ///< Typedef for this class
-  typedef boost::shared_ptr<This>
+  typedef std::shared_ptr<This>
       shared_ptr;  ///< Shared pointer for this class
 
   /// Check if a DERIVEDFACTOR is in fact derived from FactorType.
@@ -168,7 +167,7 @@ class FactorGraph {
    *  FactorGraph fg = {make_shared<MyFactor>(), ...};
    */
   template <class DERIVEDFACTOR, typename = IsDerived<DERIVEDFACTOR>>
-  FactorGraph(std::initializer_list<boost::shared_ptr<DERIVEDFACTOR>> sharedFactors)
+  FactorGraph(std::initializer_list<std::shared_ptr<DERIVEDFACTOR>> sharedFactors)
       : factors_(sharedFactors) {}
 
   /// @}
@@ -183,14 +182,14 @@ class FactorGraph {
 
   /// Add a factor directly using a shared_ptr.
   template <class DERIVEDFACTOR>
-  IsDerived<DERIVEDFACTOR> push_back(boost::shared_ptr<DERIVEDFACTOR> factor) {
-    factors_.push_back(boost::shared_ptr<FACTOR>(factor));
+  IsDerived<DERIVEDFACTOR> push_back(std::shared_ptr<DERIVEDFACTOR> factor) {
+    factors_.push_back(std::shared_ptr<FACTOR>(factor));
   }
 
   /// Emplace a shared pointer to factor of given type.
   template <class DERIVEDFACTOR, class... Args>
   IsDerived<DERIVEDFACTOR> emplace_shared(Args&&... args) {
-    factors_.push_back(boost::allocate_shared<DERIVEDFACTOR>(
+    factors_.push_back(std::allocate_shared<DERIVEDFACTOR>(
         Eigen::aligned_allocator<DERIVEDFACTOR>(),
         std::forward<Args>(args)...));
   }
@@ -201,13 +200,13 @@ class FactorGraph {
    */
   template <class DERIVEDFACTOR>
   IsDerived<DERIVEDFACTOR> push_back(const DERIVEDFACTOR& factor) {
-    factors_.push_back(boost::allocate_shared<DERIVEDFACTOR>(
+    factors_.push_back(std::allocate_shared<DERIVEDFACTOR>(
         Eigen::aligned_allocator<DERIVEDFACTOR>(), factor));
   }
 
   /// `add` is a synonym for push_back.
   template <class DERIVEDFACTOR>
-  IsDerived<DERIVEDFACTOR> add(boost::shared_ptr<DERIVEDFACTOR> factor) {
+  IsDerived<DERIVEDFACTOR> add(std::shared_ptr<DERIVEDFACTOR> factor) {
     push_back(factor);
   }
 
@@ -216,7 +215,7 @@ class FactorGraph {
   typename std::enable_if<
       std::is_base_of<FactorType, DERIVEDFACTOR>::value,
       boost::assign::list_inserter<RefCallPushBack<This>>>::type
-  operator+=(boost::shared_ptr<DERIVEDFACTOR> factor) {
+  operator+=(std::shared_ptr<DERIVEDFACTOR> factor) {
     return boost::assign::make_list_inserter(RefCallPushBack<This>(*this))(
         factor);
   }

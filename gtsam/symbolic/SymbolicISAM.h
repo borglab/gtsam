@@ -28,7 +28,7 @@ namespace gtsam {
   public:
     typedef ISAM<SymbolicBayesTree> Base;
     typedef SymbolicISAM This;
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
 
     /// @name Standard Constructors
     /// @{

@@ -45,7 +45,7 @@ namespace gtsam {
     using Base::evaluateError;
 
     /// shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<PosePriorFactor<POSE> > shared_ptr;
+    typedef typename std::shared_ptr<PosePriorFactor<POSE> > shared_ptr;
 
     /** default constructor - only use for serialization */
     PosePriorFactor() {}
@@ -60,7 +60,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */

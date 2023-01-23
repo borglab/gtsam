@@ -41,7 +41,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new Reconstruction(*this))); }
 
   /** \f$ log((g_k\exp(h\xi_k))^{-1}g_{k+1}) = 0 \f$, with optional derivatives */
@@ -106,7 +106,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new DiscreteEulerPoincareHelicopter(*this))); }
 
   /** DEP, with optional derivatives

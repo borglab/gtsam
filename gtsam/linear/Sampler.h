@@ -37,7 +37,7 @@ class GTSAM_EXPORT Sampler {
   mutable std::mt19937_64 generator_;
 
  public:
-  typedef boost::shared_ptr<Sampler> shared_ptr;
+  typedef std::shared_ptr<Sampler> shared_ptr;
 
   /// @name constructors
   /// @{

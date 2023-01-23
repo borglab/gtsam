@@ -47,21 +47,21 @@ struct ConstructorTraversalData {
 
   // Pre-order visitor function
   static ConstructorTraversalData ConstructorTraversalVisitorPre(
-      const boost::shared_ptr<ETREE_NODE>& node,
+      const std::shared_ptr<ETREE_NODE>& node,
       ConstructorTraversalData& parentData) {
     // On the pre-order pass, before children have been visited, we just set up
     // a traversal data structure with its own JT node, and create a child
     // pointer in its parent.
     ConstructorTraversalData myData = ConstructorTraversalData(&parentData);
     myData.junctionTreeNode =
-        boost::make_shared<Node>(node->key, node->factors);
+        std::make_shared<Node>(node->key, node->factors);
     parentData.junctionTreeNode->addChild(myData.junctionTreeNode);
     return myData;
   }
 
   // Post-order visitor function
   static void ConstructorTraversalVisitorPostAlg2(
-      const boost::shared_ptr<ETREE_NODE>& ETreeNode,
+      const std::shared_ptr<ETREE_NODE>& ETreeNode,
       const ConstructorTraversalData& myData) {
     // In this post-order visitor, we combine the symbolic elimination results
     // from the elimination tree children and symbolically eliminate the current
@@ -140,7 +140,7 @@ JunctionTree<BAYESTREE, GRAPH>::JunctionTree(
   typedef ConstructorTraversalData<BAYESTREE, GRAPH, ETreeNode> Data;
   Data rootData(0);
   // Make a dummy node to gather the junction tree roots
-  rootData.junctionTreeNode = boost::make_shared<typename Base::Node>();
+  rootData.junctionTreeNode = std::make_shared<typename Base::Node>();
   treeTraversal::DepthFirstForest(eliminationTree, rootData,
       Data::ConstructorTraversalVisitorPre,
       Data::ConstructorTraversalVisitorPostAlg2);

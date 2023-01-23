@@ -31,7 +31,7 @@ class GTSAM_UNSTABLE_EXPORT BatchFixedLagSmoother : public FixedLagSmoother {
 public:
 
   /// Typedef for a shared pointer to an Incremental Fixed-Lag Smoother
-  typedef boost::shared_ptr<BatchFixedLagSmoother> shared_ptr;
+  typedef std::shared_ptr<BatchFixedLagSmoother> shared_ptr;
 
   /** default constructor */
   BatchFixedLagSmoother(double smootherLag = 0.0, const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams(), bool enforceConsistency = true) :

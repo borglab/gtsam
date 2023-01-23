@@ -27,7 +27,6 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/hybrid/HybridValues.h>
 
-#include <boost/make_shared.hpp>
 
 #include <iostream>
 #include <sstream>

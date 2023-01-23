@@ -41,7 +41,7 @@ public:
 
   // typedefs needed to play nice with gtsam
   typedef DiscreteFactor This; ///< This class
-  typedef boost::shared_ptr<DiscreteFactor> shared_ptr; ///< shared_ptr to this class
+  typedef std::shared_ptr<DiscreteFactor> shared_ptr; ///< shared_ptr to this class
   typedef Factor Base; ///< Our base class
 
   using Values = DiscreteValues; ///< backwards compatibility

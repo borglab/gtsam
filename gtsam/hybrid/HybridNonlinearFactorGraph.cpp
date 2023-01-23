@@ -43,10 +43,10 @@ void HybridNonlinearFactorGraph::print(const std::string& s,
 /* ************************************************************************* */
 HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
     const Values& continuousValues) const {
-  using boost::dynamic_pointer_cast;
+  using std::dynamic_pointer_cast;
 
   // create an empty linear FG
-  auto linearFG = boost::make_shared<HybridGaussianFactorGraph>();
+  auto linearFG = std::make_shared<HybridGaussianFactorGraph>();
 
   linearFG->reserve(size());
 

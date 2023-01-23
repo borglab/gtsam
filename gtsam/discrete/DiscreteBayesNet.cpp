@@ -20,7 +20,6 @@
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 
-#include <boost/make_shared.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 
 namespace gtsam {

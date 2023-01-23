@@ -47,7 +47,7 @@ class GTSAM_EXPORT ShonanGaugeFactor : public NonlinearFactor {
   size_t rows_;
 
   /// Constant Jacobian
-  boost::shared_ptr<JacobianFactor> whitenedJacobian_;
+  std::shared_ptr<JacobianFactor> whitenedJacobian_;
 
 public:
   /**
@@ -84,7 +84,7 @@ public:
     }
     // TODO(frank): assign the right one in the right columns
     whitenedJacobian_ =
-        boost::make_shared<JacobianFactor>(key, A, Vector::Zero(rows_));
+        std::make_shared<JacobianFactor>(key, A, Vector::Zero(rows_));
   }
 
   /// Destructor
@@ -97,7 +97,7 @@ public:
   size_t dim() const override { return rows_; }
 
   /// linearize to a GaussianFactor
-  boost::shared_ptr<GaussianFactor> linearize(const Values &c) const override {
+  std::shared_ptr<GaussianFactor> linearize(const Values &c) const override {
     return whitenedJacobian_;
   }
 };

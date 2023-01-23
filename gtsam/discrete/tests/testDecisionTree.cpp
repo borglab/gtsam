@@ -326,7 +326,7 @@ TEST(DecisionTree, NrAssignments) {
   const std::pair<string, size_t> A("A", 2), B("B", 2), C("C", 2);
   DT tree({A, B, C}, "1 1 1 1 1 1 1 1");
   EXPECT(tree.root_->isLeaf());
-  auto leaf = boost::dynamic_pointer_cast<const DT::Leaf>(tree.root_);
+  auto leaf = std::dynamic_pointer_cast<const DT::Leaf>(tree.root_);
   EXPECT_LONGS_EQUAL(8, leaf->nrAssignments());
 
   DT tree2({C, B, A}, "1 1 1 2 3 4 5 5");
@@ -344,20 +344,20 @@ TEST(DecisionTree, NrAssignments) {
     1 1 Leaf 5
   */
 
-  auto root = boost::dynamic_pointer_cast<const DT::Choice>(tree2.root_);
+  auto root = std::dynamic_pointer_cast<const DT::Choice>(tree2.root_);
   CHECK(root);
-  auto choice0 = boost::dynamic_pointer_cast<const DT::Choice>(root->branches()[0]);
+  auto choice0 = std::dynamic_pointer_cast<const DT::Choice>(root->branches()[0]);
   CHECK(choice0);
   EXPECT(choice0->branches()[0]->isLeaf());
-  auto choice00 = boost::dynamic_pointer_cast<const DT::Leaf>(choice0->branches()[0]);
+  auto choice00 = std::dynamic_pointer_cast<const DT::Leaf>(choice0->branches()[0]);
   CHECK(choice00);
   EXPECT_LONGS_EQUAL(2, choice00->nrAssignments());
 
-  auto choice1 = boost::dynamic_pointer_cast<const DT::Choice>(root->branches()[1]);
+  auto choice1 = std::dynamic_pointer_cast<const DT::Choice>(root->branches()[1]);
   CHECK(choice1);
-  auto choice10 = boost::dynamic_pointer_cast<const DT::Choice>(choice1->branches()[0]);
+  auto choice10 = std::dynamic_pointer_cast<const DT::Choice>(choice1->branches()[0]);
   CHECK(choice10);
-  auto choice11 = boost::dynamic_pointer_cast<const DT::Leaf>(choice1->branches()[1]);
+  auto choice11 = std::dynamic_pointer_cast<const DT::Leaf>(choice1->branches()[1]);
   CHECK(choice11);
   EXPECT(choice11->isLeaf());
   EXPECT_LONGS_EQUAL(2, choice11->nrAssignments());

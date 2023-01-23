@@ -26,7 +26,7 @@ public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
-  typedef boost::shared_ptr<VelocityConstraint3 > shared_ptr;
+  typedef std::shared_ptr<VelocityConstraint3 > shared_ptr;
 
   ///TODO: comment
   VelocityConstraint3(Key key1, Key key2, Key velKey, double dt, double mu = 1000.0)
@@ -35,7 +35,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new VelocityConstraint3(*this))); }
 
   /** x1 + v*dt - x2 = 0, with optional derivatives */

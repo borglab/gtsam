@@ -51,7 +51,7 @@ template <class T> class KarcherMeanFactor : public NonlinearFactor {
   size_t d_;
 
   /// Constant Jacobian made of d*d identity matrices
-  boost::shared_ptr<JacobianFactor> whitenedJacobian_;
+  std::shared_ptr<JacobianFactor> whitenedJacobian_;
 
 public:
   /**
@@ -73,7 +73,7 @@ public:
   size_t dim() const override { return d_; }
 
   /// linearize to a GaussianFactor
-  boost::shared_ptr<GaussianFactor> linearize(const Values &c) const override {
+  std::shared_ptr<GaussianFactor> linearize(const Values &c) const override {
     return whitenedJacobian_;
   }
 };

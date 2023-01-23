@@ -84,9 +84,9 @@ class StereoFactor : public SmartFactorBase<StereoCamera> {
   StereoFactor(const SharedNoiseModel& sharedNoiseModel)
       : Base(sharedNoiseModel) {}
   double error(const Values& values) const override { return 0.0; }
-  boost::shared_ptr<GaussianFactor> linearize(
+  std::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
-    return boost::shared_ptr<GaussianFactor>(new JacobianFactor());
+    return std::shared_ptr<GaussianFactor>(new JacobianFactor());
   }
 };
 

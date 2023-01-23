@@ -49,8 +49,8 @@ class MixtureFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
   using This = MixtureFactor;
-  using shared_ptr = boost::shared_ptr<MixtureFactor>;
-  using sharedFactor = boost::shared_ptr<NonlinearFactor>;
+  using shared_ptr = std::shared_ptr<MixtureFactor>;
+  using sharedFactor = std::shared_ptr<NonlinearFactor>;
 
   /**
    * @brief typedef for DecisionTree which has Keys as node labels and
@@ -97,7 +97,7 @@ class MixtureFactor : public HybridFactor {
    */
   template <typename FACTOR>
   MixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                const std::vector<boost::shared_ptr<FACTOR>>& factors,
+                const std::vector<std::shared_ptr<FACTOR>>& factors,
                 bool normalized = false)
       : Base(keys, discreteKeys), normalized_(normalized) {
     std::vector<NonlinearFactor::shared_ptr> nonlinear_factors;
@@ -108,7 +108,7 @@ class MixtureFactor : public HybridFactor {
       std::copy(f->keys().begin(), f->keys().end(),
                 std::inserter(factor_keys_set, factor_keys_set.end()));
 
-      if (auto nf = boost::dynamic_pointer_cast<NonlinearFactor>(f)) {
+      if (auto nf = std::dynamic_pointer_cast<NonlinearFactor>(f)) {
         nonlinear_factors.push_back(nf);
       } else {
         throw std::runtime_error(
@@ -237,7 +237,7 @@ class MixtureFactor : public HybridFactor {
   }
 
   /// Linearize all the continuous factors to get a GaussianMixtureFactor.
-  boost::shared_ptr<GaussianMixtureFactor> linearize(
+  std::shared_ptr<GaussianMixtureFactor> linearize(
       const Values& continuousValues) const {
     // functional to linearize each factor in the decision tree
     auto linearizeDT = [continuousValues](const sharedFactor& factor) {
@@ -247,7 +247,7 @@ class MixtureFactor : public HybridFactor {
     DecisionTree<Key, GaussianFactor::shared_ptr> linearized_factors(
         factors_, linearizeDT);
 
-    return boost::make_shared<GaussianMixtureFactor>(
+    return std::make_shared<GaussianMixtureFactor>(
         continuousKeys_, discreteKeys_, linearized_factors);
   }
 
@@ -266,13 +266,13 @@ class MixtureFactor : public HybridFactor {
     // If this is a NoiseModelFactor, we'll use its noiseModel to
     // otherwise noiseModelFactor will be nullptr
     if (auto noiseModelFactor =
-            boost::dynamic_pointer_cast<NoiseModelFactor>(factor)) {
+            std::dynamic_pointer_cast<NoiseModelFactor>(factor)) {
       // If dynamic cast to NoiseModelFactor succeeded, see if the noise model
       // is Gaussian
       auto noiseModel = noiseModelFactor->noiseModel();
 
       auto gaussianNoiseModel =
-          boost::dynamic_pointer_cast<noiseModel::Gaussian>(noiseModel);
+          std::dynamic_pointer_cast<noiseModel::Gaussian>(noiseModel);
       if (gaussianNoiseModel) {
         // If the noise model is Gaussian, retrieve the information matrix
         infoMat = gaussianNoiseModel->information();

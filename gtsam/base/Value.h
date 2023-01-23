@@ -21,7 +21,6 @@
 #include <gtsam/config.h>      // Configuration from CMake
 
 #include <gtsam/base/Vector.h>
-#include <boost/make_shared.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/assume_abstract.hpp>
 #include <memory>
@@ -45,7 +44,7 @@ namespace gtsam {
     virtual void deallocate_() const = 0;
 
     /** Clone this value (normal clone on the heap, delete with 'delete' operator) */
-    virtual boost::shared_ptr<Value> clone() const = 0;
+    virtual std::shared_ptr<Value> clone() const = 0;
 
     /** Compare this Value with another for equality. */
     virtual bool equals_(const Value& other, double tol = 1e-9) const = 0;

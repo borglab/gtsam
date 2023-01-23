@@ -20,7 +20,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/make_shared.hpp>
 
 #include <iostream>
 #include <set>
@@ -85,7 +84,7 @@ TEST(DSFBase, mergePairwiseMatches) {
 
 /* ************************************************************************* */
 TEST(DSFVector, merge2) {
-  boost::shared_ptr<DSFBase::V> v = boost::make_shared<DSFBase::V>(5);
+  std::shared_ptr<DSFBase::V> v = std::make_shared<DSFBase::V>(5);
   const std::vector<size_t> keys {1, 3};
   DSFVector dsf(v, keys);
   dsf.merge(1,3);

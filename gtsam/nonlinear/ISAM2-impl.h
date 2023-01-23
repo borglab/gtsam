@@ -49,7 +49,7 @@ class ISAM2BayesTree : public ISAM2::Base {
  public:
   typedef ISAM2::Base Base;
   typedef ISAM2BayesTree This;
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   ISAM2BayesTree() {}
 };
@@ -62,7 +62,7 @@ class ISAM2JunctionTree
  public:
   typedef JunctionTree<ISAM2BayesTree, GaussianFactorGraph> Base;
   typedef ISAM2JunctionTree This;
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   explicit ISAM2JunctionTree(const GaussianEliminationTree& eliminationTree)
       : Base(eliminationTree) {}

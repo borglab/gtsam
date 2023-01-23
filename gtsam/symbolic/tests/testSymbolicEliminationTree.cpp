@@ -21,7 +21,6 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/symbolic/SymbolicEliminationTree.h>
 
-#include <boost/make_shared.hpp>
 #include <vector>
 
 #include "symbolicExampleGraphs.h"

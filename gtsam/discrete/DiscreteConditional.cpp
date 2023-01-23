@@ -23,7 +23,6 @@
 #include <gtsam/hybrid/HybridValues.h>
 
 #include <algorithm>
-#include <boost/make_shared.hpp>
 #include <random>
 #include <set>
 #include <stdexcept>
@@ -195,7 +194,7 @@ DiscreteConditional::shared_ptr DiscreteConditional::choose(
       dKeys.emplace_back(j, this->cardinality(j));
     }
   }
-  return boost::make_shared<DiscreteConditional>(nrFrontals(), dKeys, adt);
+  return std::make_shared<DiscreteConditional>(nrFrontals(), dKeys, adt);
 }
 
 /* ************************************************************************** */
@@ -220,7 +219,7 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
   for (Key j : parents()) {
     discreteKeys.emplace_back(j, this->cardinality(j));
   }
-  return boost::make_shared<DecisionTreeFactor>(discreteKeys, adt);
+  return std::make_shared<DecisionTreeFactor>(discreteKeys, adt);
 }
 
 /* ****************************************************************************/

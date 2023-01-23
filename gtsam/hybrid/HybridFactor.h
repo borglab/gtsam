@@ -64,7 +64,7 @@ class GTSAM_EXPORT HybridFactor : public Factor {
  public:
   // typedefs needed to play nice with gtsam
   typedef HybridFactor This;  ///< This class
-  typedef boost::shared_ptr<HybridFactor>
+  typedef std::shared_ptr<HybridFactor>
       shared_ptr;       ///< shared_ptr to this class
   typedef Factor Base;  ///< Our base class
 

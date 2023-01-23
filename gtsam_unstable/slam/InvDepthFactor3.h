@@ -29,7 +29,7 @@ protected:
 
   // Keep a copy of measurement and calibration for I/O
   Point2 measured_;                ///< 2D measurement
-  boost::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
+  std::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
 
 public:
 
@@ -43,7 +43,7 @@ public:
   typedef InvDepthFactor3<POSE, LANDMARK, INVDEPTH> This;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// Default constructor
   InvDepthFactor3() :

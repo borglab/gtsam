@@ -55,7 +55,7 @@ class GTSAM_EXPORT GaussianMixture
       public Conditional<HybridFactor, GaussianMixture> {
  public:
   using This = GaussianMixture;
-  using shared_ptr = boost::shared_ptr<GaussianMixture>;
+  using shared_ptr = std::shared_ptr<GaussianMixture>;
   using BaseFactor = HybridFactor;
   using BaseConditional = Conditional<HybridFactor, GaussianMixture>;
 
@@ -164,7 +164,7 @@ class GTSAM_EXPORT GaussianMixture
    * Create a likelihood factor for a Gaussian mixture, return a Mixture factor
    * on the parents.
    */
-  boost::shared_ptr<GaussianMixtureFactor> likelihood(
+  std::shared_ptr<GaussianMixtureFactor> likelihood(
       const VectorValues &given) const;
 
   /// Getter for the underlying Conditionals DecisionTree

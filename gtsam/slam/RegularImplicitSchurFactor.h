@@ -40,7 +40,7 @@ class RegularImplicitSchurFactor: public GaussianFactor {
 
 public:
   typedef RegularImplicitSchurFactor This; ///< Typedef to this class
-  typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+  typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
 protected:
 
@@ -254,14 +254,14 @@ public:
   }
 
   GaussianFactor::shared_ptr clone() const override {
-    return boost::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
+    return std::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
         FBlocks_, PointCovariance_, E_, b_);
     throw std::runtime_error(
         "RegularImplicitSchurFactor::clone non implemented");
   }
 
   GaussianFactor::shared_ptr negate() const override {
-    return boost::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
+    return std::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
         FBlocks_, PointCovariance_, E_, b_);
     throw std::runtime_error(
         "RegularImplicitSchurFactor::negate non implemented");

@@ -21,7 +21,7 @@
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -40,7 +40,7 @@ class DiscreteBayesNet;
 class GTSAM_EXPORT DiscreteLookupTable : public DiscreteConditional {
  public:
   using This = DiscreteLookupTable;
-  using shared_ptr = boost::shared_ptr<This>;
+  using shared_ptr = std::shared_ptr<This>;
   using BaseConditional = Conditional<DecisionTreeFactor, This>;
 
   /**
@@ -78,7 +78,7 @@ class GTSAM_EXPORT DiscreteLookupDAG : public BayesNet<DiscreteLookupTable> {
  public:
   using Base = BayesNet<DiscreteLookupTable>;
   using This = DiscreteLookupDAG;
-  using shared_ptr = boost::shared_ptr<This>;
+  using shared_ptr = std::shared_ptr<This>;
 
   /// @name Standard Constructors
   /// @{

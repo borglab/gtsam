@@ -80,12 +80,12 @@ TEST(HybridNonlinearFactorGraph, Equals) {
   // Test empty factor graphs
   EXPECT(assert_equal(graph1, graph2));
 
-  auto f0 = boost::make_shared<PriorFactor<Pose2>>(
+  auto f0 = std::make_shared<PriorFactor<Pose2>>(
       1, Pose2(), noiseModel::Isotropic::Sigma(3, 0.001));
   graph1.push_back(f0);
   graph2.push_back(f0);
 
-  auto f1 = boost::make_shared<BetweenFactor<Pose2>>(
+  auto f1 = std::make_shared<BetweenFactor<Pose2>>(
       1, 2, Pose2(), noiseModel::Isotropic::Sigma(3, 0.1));
   graph1.push_back(f1);
   graph2.push_back(f1);
@@ -99,13 +99,13 @@ TEST(HybridNonlinearFactorGraph, Equals) {
  */
 TEST(HybridNonlinearFactorGraph, Resize) {
   HybridNonlinearFactorGraph fg;
-  auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>();
+  auto nonlinearFactor = std::make_shared<BetweenFactor<double>>();
   fg.push_back(nonlinearFactor);
 
-  auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
+  auto discreteFactor = std::make_shared<DecisionTreeFactor>();
   fg.push_back(discreteFactor);
 
-  auto dcFactor = boost::make_shared<MixtureFactor>();
+  auto dcFactor = std::make_shared<MixtureFactor>();
   fg.push_back(dcFactor);
 
   EXPECT_LONGS_EQUAL(fg.size(), 3);
@@ -120,19 +120,19 @@ TEST(HybridNonlinearFactorGraph, Resize) {
  */
 TEST(HybridGaussianFactorGraph, Resize) {
   HybridNonlinearFactorGraph nhfg;
-  auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>(
+  auto nonlinearFactor = std::make_shared<BetweenFactor<double>>(
       X(0), X(1), 0.0, Isotropic::Sigma(1, 0.1));
   nhfg.push_back(nonlinearFactor);
-  auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
+  auto discreteFactor = std::make_shared<DecisionTreeFactor>();
   nhfg.push_back(discreteFactor);
 
   KeyVector contKeys = {X(0), X(1)};
   auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
-  auto still = boost::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
-       moving = boost::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
+  auto still = std::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
+       moving = std::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
 
   std::vector<MotionModel::shared_ptr> components = {still, moving};
-  auto dcFactor = boost::make_shared<MixtureFactor>(
+  auto dcFactor = std::make_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
   nhfg.push_back(dcFactor);
 
@@ -154,24 +154,24 @@ TEST(HybridGaussianFactorGraph, Resize) {
  * keys provided do not match the keys in the factors.
  */
 TEST(HybridGaussianFactorGraph, MixtureFactor) {
-  auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>(
+  auto nonlinearFactor = std::make_shared<BetweenFactor<double>>(
       X(0), X(1), 0.0, Isotropic::Sigma(1, 0.1));
-  auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
+  auto discreteFactor = std::make_shared<DecisionTreeFactor>();
 
   auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
-  auto still = boost::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
-       moving = boost::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
+  auto still = std::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
+       moving = std::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
 
   std::vector<MotionModel::shared_ptr> components = {still, moving};
 
   // Check for exception when number of continuous keys are under-specified.
   KeyVector contKeys = {X(0)};
-  THROWS_EXCEPTION(boost::make_shared<MixtureFactor>(
+  THROWS_EXCEPTION(std::make_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components));
 
   // Check for exception when number of continuous keys are too many.
   contKeys = {X(0), X(1), X(2)};
-  THROWS_EXCEPTION(boost::make_shared<MixtureFactor>(
+  THROWS_EXCEPTION(std::make_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components));
 }
 
@@ -181,21 +181,21 @@ TEST(HybridGaussianFactorGraph, MixtureFactor) {
 TEST(HybridFactorGraph, PushBack) {
   HybridNonlinearFactorGraph fg;
 
-  auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>();
+  auto nonlinearFactor = std::make_shared<BetweenFactor<double>>();
   fg.push_back(nonlinearFactor);
 
   EXPECT_LONGS_EQUAL(fg.size(), 1);
 
   fg = HybridNonlinearFactorGraph();
 
-  auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
+  auto discreteFactor = std::make_shared<DecisionTreeFactor>();
   fg.push_back(discreteFactor);
 
   EXPECT_LONGS_EQUAL(fg.size(), 1);
 
   fg = HybridNonlinearFactorGraph();
 
-  auto dcFactor = boost::make_shared<MixtureFactor>();
+  auto dcFactor = std::make_shared<MixtureFactor>();
   fg.push_back(dcFactor);
 
   EXPECT_LONGS_EQUAL(fg.size(), 1);
@@ -203,7 +203,7 @@ TEST(HybridFactorGraph, PushBack) {
   // Now do the same with HybridGaussianFactorGraph
   HybridGaussianFactorGraph ghfg;
 
-  auto gaussianFactor = boost::make_shared<JacobianFactor>();
+  auto gaussianFactor = std::make_shared<JacobianFactor>();
   ghfg.push_back(gaussianFactor);
 
   EXPECT_LONGS_EQUAL(ghfg.size(), 1);
@@ -329,7 +329,7 @@ GaussianFactorGraph::shared_ptr batchGFG(double between,
   NonlinearFactorGraph graph;
   graph.addPrior<double>(X(0), 0, Isotropic::Sigma(1, 0.1));
 
-  auto between_x0_x1 = boost::make_shared<MotionModel>(
+  auto between_x0_x1 = std::make_shared<MotionModel>(
       X(0), X(1), between, Isotropic::Sigma(1, 1.0));
 
   graph.push_back(between_x0_x1);
@@ -351,7 +351,7 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   ordering += X(1);
 
   HybridConditional::shared_ptr hybridConditionalMixture;
-  boost::shared_ptr<Factor> factorOnModes;
+  std::shared_ptr<Factor> factorOnModes;
 
   std::tie(hybridConditionalMixture, factorOnModes) =
       EliminateHybrid(factors, ordering);
@@ -684,9 +684,9 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   Pose2 odometry(2.0, 0.0, 0.0);
   KeyVector contKeys = {X(0), X(1)};
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
-  auto still = boost::make_shared<PlanarMotionModel>(X(0), X(1), Pose2(0, 0, 0),
+  auto still = std::make_shared<PlanarMotionModel>(X(0), X(1), Pose2(0, 0, 0),
                                                      noise_model),
-       moving = boost::make_shared<PlanarMotionModel>(X(0), X(1), odometry,
+       moving = std::make_shared<PlanarMotionModel>(X(0), X(1), odometry,
                                                       noise_model);
   std::vector<PlanarMotionModel::shared_ptr> motion_models = {still, moving};
   fg.emplace_shared<MixtureFactor>(

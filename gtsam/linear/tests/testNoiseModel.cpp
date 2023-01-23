@@ -129,14 +129,14 @@ TEST(NoiseModel, equals)
 //TEST(NoiseModel, ConstrainedSmart )
 //{
 //  Gaussian::shared_ptr nonconstrained = Constrained::MixedSigmas((Vector3(sigma, 0.0, sigma), true);
-//  Diagonal::shared_ptr n1 = boost::dynamic_pointer_cast<Diagonal>(nonconstrained);
-//  Constrained::shared_ptr n2 = boost::dynamic_pointer_cast<Constrained>(nonconstrained);
+//  Diagonal::shared_ptr n1 = std::dynamic_pointer_cast<Diagonal>(nonconstrained);
+//  Constrained::shared_ptr n2 = std::dynamic_pointer_cast<Constrained>(nonconstrained);
 //  EXPECT(n1);
 //  EXPECT(!n2);
 //
 //  Gaussian::shared_ptr constrained = Constrained::MixedSigmas(zero(3), true);
-//  Diagonal::shared_ptr c1 = boost::dynamic_pointer_cast<Diagonal>(constrained);
-//  Constrained::shared_ptr c2 = boost::dynamic_pointer_cast<Constrained>(constrained);
+//  Diagonal::shared_ptr c1 = std::dynamic_pointer_cast<Diagonal>(constrained);
+//  Constrained::shared_ptr c2 = std::dynamic_pointer_cast<Constrained>(constrained);
 //  EXPECT(c1);
 //  EXPECT(c2);
 //}
