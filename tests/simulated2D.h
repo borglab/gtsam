@@ -40,7 +40,7 @@ namespace simulated2D {
 
   public:
     typedef gtsam::Values Base;  ///< base class
-    typedef boost::shared_ptr<Point2> sharedPoint;  ///< shortcut to shared Point type
+    typedef std::shared_ptr<Point2> sharedPoint;  ///< shortcut to shared Point type
 
     /// Constructor
     Values() : nrPoses_(0), nrPoints_(0) {
@@ -130,7 +130,7 @@ namespace simulated2D {
   public:
     typedef NoiseModelFactorN<VALUE> Base;  ///< base class
     typedef GenericPrior<VALUE> This;
-    typedef boost::shared_ptr<GenericPrior<VALUE> > shared_ptr;
+    typedef std::shared_ptr<GenericPrior<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
 	
     // Provide access to the Matrix& version of evaluateError:
@@ -152,7 +152,7 @@ namespace simulated2D {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
@@ -177,7 +177,7 @@ namespace simulated2D {
   public:
     typedef NoiseModelFactorN<VALUE, VALUE> Base; ///< base class
     typedef GenericOdometry<VALUE> This;
-    typedef boost::shared_ptr<GenericOdometry<VALUE> > shared_ptr;
+    typedef std::shared_ptr<GenericOdometry<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
 
     // Provide access to the Matrix& version of evaluateError:
@@ -200,7 +200,7 @@ namespace simulated2D {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
@@ -225,7 +225,7 @@ namespace simulated2D {
   public:
     typedef NoiseModelFactorN<POSE, LANDMARK> Base;  ///< base class
     typedef GenericMeasurement<POSE, LANDMARK> This;
-    typedef boost::shared_ptr<GenericMeasurement<POSE, LANDMARK> > shared_ptr;
+    typedef std::shared_ptr<GenericMeasurement<POSE, LANDMARK> > shared_ptr;
     typedef POSE Pose; ///< shortcut to Pose type
     typedef LANDMARK Landmark; ///< shortcut to Landmark type
 
@@ -249,7 +249,7 @@ namespace simulated2D {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:

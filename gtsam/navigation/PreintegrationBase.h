@@ -44,7 +44,7 @@ class GTSAM_EXPORT PreintegrationBase {
   typedef PreintegrationParams Params;
 
  protected:
-  boost::shared_ptr<Params> p_;
+  std::shared_ptr<Params> p_;
 
   /// Acceleration and gyro bias used for preintegration
   Bias biasHat_;
@@ -67,7 +67,7 @@ class GTSAM_EXPORT PreintegrationBase {
    *  @param p    Parameters, typically fixed in a single application
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  PreintegrationBase(const boost::shared_ptr<Params>& p,
+  PreintegrationBase(const std::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
   /// @}
@@ -88,7 +88,7 @@ class GTSAM_EXPORT PreintegrationBase {
   }
 
   /// shared pointer to params
-  const boost::shared_ptr<Params>& params() const {
+  const std::shared_ptr<Params>& params() const {
     return p_;
   }
 

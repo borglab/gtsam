@@ -22,7 +22,7 @@
 #pragma once
 
 #include <boost/serialization/nvp.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastVector.h>
@@ -70,7 +70,7 @@ namespace gtsam {
   private:
     // These typedefs are private because they must be overridden in derived classes.
     typedef Factor This; ///< This class
-    typedef boost::shared_ptr<Factor> shared_ptr; ///< A shared_ptr to this class.
+    typedef std::shared_ptr<Factor> shared_ptr; ///< A shared_ptr to this class.
 
   public:
     /// Iterator over keys

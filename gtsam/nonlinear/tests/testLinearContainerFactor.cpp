@@ -322,7 +322,7 @@ TEST(TestLinearContainerFactor, hessian_relinearize)
 TEST(TestLinearContainerFactor, Rekey) {
   // Make an example factor
   auto nonlinear_factor =
-      boost::make_shared<gtsam::BetweenFactor<gtsam::Point3>>(
+      std::make_shared<gtsam::BetweenFactor<gtsam::Point3>>(
           gtsam::Symbol('x', 0), gtsam::Symbol('l', 0), gtsam::Point3(0, 0, 0),
           gtsam::noiseModel::Isotropic::Sigma(3, 1));
 
@@ -345,7 +345,7 @@ TEST(TestLinearContainerFactor, Rekey) {
 
   // Cast back to LCF ptr
   LinearContainerFactor::shared_ptr lcf_factor_rekey_ptr =
-      boost::static_pointer_cast<LinearContainerFactor>(lcf_factor_rekeyed);
+      std::static_pointer_cast<LinearContainerFactor>(lcf_factor_rekeyed);
   CHECK(lcf_factor_rekey_ptr);
 
   // For extra fun lets try linearizing this LCF
@@ -364,7 +364,7 @@ TEST(TestLinearContainerFactor, Rekey) {
 TEST(TestLinearContainerFactor, Rekey2) {
   // Make an example factor
   auto nonlinear_factor =
-      boost::make_shared<gtsam::BetweenFactor<gtsam::Point3>>(
+      std::make_shared<gtsam::BetweenFactor<gtsam::Point3>>(
           gtsam::Symbol('x', 0), gtsam::Symbol('l', 0), gtsam::Point3(0, 0, 0),
           gtsam::noiseModel::Isotropic::Sigma(3, 1));
 
@@ -383,7 +383,7 @@ TEST(TestLinearContainerFactor, Rekey2) {
 
   // Cast back to LCF ptr
   LinearContainerFactor::shared_ptr lcf_factor_rekey_ptr =
-      boost::static_pointer_cast<LinearContainerFactor>(
+      std::static_pointer_cast<LinearContainerFactor>(
           lcf_factor.rekey(key_map));
   CHECK(lcf_factor_rekey_ptr);
 }

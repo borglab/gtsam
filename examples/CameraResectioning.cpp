@@ -20,7 +20,6 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
-#include <boost/make_shared.hpp>
 
 using namespace gtsam;
 using namespace gtsam::noiseModel;
@@ -70,7 +69,7 @@ int main(int argc, char* argv[]) {
   /* 2. add factors to the graph */
   // add measurement factors
   SharedDiagonal measurementNoise = Diagonal::Sigmas(Vector2(0.5, 0.5));
-  boost::shared_ptr<ResectioningFactor> factor;
+  std::shared_ptr<ResectioningFactor> factor;
   graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,
           Point2(55, 45), Point3(10, 10, 0));
   graph.emplace_shared<ResectioningFactor>(measurementNoise, X(1), calib,

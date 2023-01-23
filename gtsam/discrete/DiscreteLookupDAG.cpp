@@ -106,7 +106,7 @@ DiscreteLookupDAG DiscreteLookupDAG::FromBayesNet(
   DiscreteLookupDAG dag;
   for (auto&& conditional : bayesNet) {
     if (auto lookupTable =
-            boost::dynamic_pointer_cast<DiscreteLookupTable>(conditional)) {
+            std::dynamic_pointer_cast<DiscreteLookupTable>(conditional)) {
       dag.push_back(lookupTable);
     } else {
       throw std::runtime_error(

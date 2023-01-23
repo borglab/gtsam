@@ -123,7 +123,7 @@ GTSAM_EXPORT Point3 triangulateLOST(const std::vector<Pose3>& poses,
  */
 template<class CALIBRATION>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
-    const std::vector<Pose3>& poses, boost::shared_ptr<CALIBRATION> sharedCal,
+    const std::vector<Pose3>& poses, std::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, Key landmarkKey,
     const Point3& initialEstimate,
     const SharedNoiseModel& model = noiseModel::Unit::Create(2)) {
@@ -188,7 +188,7 @@ GTSAM_EXPORT Point3 optimize(const NonlinearFactorGraph& graph,
  */
 template<class CALIBRATION>
 Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
-    boost::shared_ptr<CALIBRATION> sharedCal,
+    std::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, const Point3& initialEstimate,
     const SharedNoiseModel& model = nullptr) {
 
@@ -236,7 +236,7 @@ projectionMatricesFromCameras(const CameraSet<CAMERA> &cameras) {
 // overload, assuming pinholePose
 template<class CALIBRATION>
 std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projectionMatricesFromPoses(
-        const std::vector<Pose3> &poses, boost::shared_ptr<CALIBRATION> sharedCal) {
+        const std::vector<Pose3> &poses, std::shared_ptr<CALIBRATION> sharedCal) {
   std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
   for (size_t i = 0; i < poses.size(); i++) {
     PinholePose<CALIBRATION> camera(poses.at(i), sharedCal);
@@ -422,7 +422,7 @@ inline Point3Vector calibrateMeasurements(
  */
 template <class CALIBRATION>
 Point3 triangulatePoint3(const std::vector<Pose3>& poses,
-                         boost::shared_ptr<CALIBRATION> sharedCal,
+                         std::shared_ptr<CALIBRATION> sharedCal,
                          const Point2Vector& measurements,
                          double rank_tol = 1e-9, bool optimize = false,
                          const SharedNoiseModel& model = nullptr,

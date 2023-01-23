@@ -189,21 +189,21 @@ Key keyX(10), keyY(8), keyZ(12);
 double sigma1 = 0.1;
 Matrix A11 = I_2x2;
 Vector2 b1(2, -1);
-auto factor1 = boost::make_shared<JacobianFactor>(
+auto factor1 = std::make_shared<JacobianFactor>(
     keyX, A11, b1, noiseModel::Isotropic::Sigma(2, sigma1));
 
 double sigma2 = 0.5;
 Matrix A21 = -2 * I_2x2;
 Matrix A22 = 3 * I_2x2;
 Vector2 b2(4, -5);
-auto factor2 = boost::make_shared<JacobianFactor>(
+auto factor2 = std::make_shared<JacobianFactor>(
     keyX, A21, keyY, A22, b2, noiseModel::Isotropic::Sigma(2, sigma2));
 
 double sigma3 = 1.0;
 Matrix A32 = -4 * I_2x2;
 Matrix A33 = 5 * I_2x2;
 Vector2 b3(3, -6);
-auto factor3 = boost::make_shared<JacobianFactor>(
+auto factor3 = std::make_shared<JacobianFactor>(
     keyY, A32, keyZ, A33, b3, noiseModel::Isotropic::Sigma(2, sigma3));
 
 const GaussianFactorGraph factors { factor1, factor2, factor3 };
@@ -438,11 +438,11 @@ TEST(JacobianFactor, eliminate)
 
   JacobianFactor combinedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
   GaussianFactorGraph::EliminationResult expected = combinedFactor.eliminate(Ordering{0});
-  JacobianFactor::shared_ptr expectedJacobian = boost::dynamic_pointer_cast<
+  JacobianFactor::shared_ptr expectedJacobian = std::dynamic_pointer_cast<
     JacobianFactor>(expected.second);
 
   GaussianFactorGraph::EliminationResult actual = EliminateQR(gfg, Ordering{0});
-  JacobianFactor::shared_ptr actualJacobian = boost::dynamic_pointer_cast<
+  JacobianFactor::shared_ptr actualJacobian = std::dynamic_pointer_cast<
     JacobianFactor>(actual.second);
 
   EXPECT(assert_equal(*expected.first, *actual.first));
@@ -541,10 +541,10 @@ TEST(JacobianFactor, EliminateQR)
   const SharedDiagonal sig_4D = noiseModel::Isotropic::Sigma(4, 0.5);
   const SharedDiagonal sig_2D = noiseModel::Isotropic::Sigma(2, 0.5);
   GaussianFactorGraph factors = {
-    boost::make_shared<JacobianFactor>(KeyVector{3, 5, 7, 9, 11}, VerticalBlockMatrix(Dims{2, 2, 2, 2, 2, 1}, Ab.block(0, 0, 4, 11)), sig_4D),
-    boost::make_shared<JacobianFactor>(KeyVector{5, 7, 9, 11}, VerticalBlockMatrix(Dims{2, 2, 2, 2, 1}, Ab.block(4, 2, 4, 9)), sig_4D),
-    boost::make_shared<JacobianFactor>(KeyVector{7, 9, 11}, VerticalBlockMatrix(Dims{2, 2, 2, 1}, Ab.block(8, 4, 4, 7)), sig_4D),
-    boost::make_shared<JacobianFactor>(KeyVector{11}, VerticalBlockMatrix(Dims{2, 1}, Ab.block(12, 8, 2, 3)), sig_2D)};
+    std::make_shared<JacobianFactor>(KeyVector{3, 5, 7, 9, 11}, VerticalBlockMatrix(Dims{2, 2, 2, 2, 2, 1}, Ab.block(0, 0, 4, 11)), sig_4D),
+    std::make_shared<JacobianFactor>(KeyVector{5, 7, 9, 11}, VerticalBlockMatrix(Dims{2, 2, 2, 2, 1}, Ab.block(4, 2, 4, 9)), sig_4D),
+    std::make_shared<JacobianFactor>(KeyVector{7, 9, 11}, VerticalBlockMatrix(Dims{2, 2, 2, 1}, Ab.block(8, 4, 4, 7)), sig_4D),
+    std::make_shared<JacobianFactor>(KeyVector{11}, VerticalBlockMatrix(Dims{2, 1}, Ab.block(12, 8, 2, 3)), sig_2D)};
 
   // extract the dense matrix for the graph
   Matrix actualDense = factors.augmentedJacobian();

@@ -58,11 +58,11 @@ TEST(GaussianMixtureFactor, Sum) {
   sigmas << 1, 2;
   auto model = noiseModel::Diagonal::Sigmas(sigmas, true);
 
-  auto f10 = boost::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
-  auto f11 = boost::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
-  auto f20 = boost::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
-  auto f21 = boost::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
-  auto f22 = boost::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
+  auto f10 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
+  auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
+  auto f20 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
+  auto f21 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
+  auto f22 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
   std::vector<GaussianFactor::shared_ptr> factorsA{f10, f11};
   std::vector<GaussianFactor::shared_ptr> factorsB{f20, f21, f22};
 
@@ -98,8 +98,8 @@ TEST(GaussianMixtureFactor, Printing) {
   auto A1 = Matrix::Zero(2, 1);
   auto A2 = Matrix::Zero(2, 2);
   auto b = Matrix::Zero(2, 1);
-  auto f10 = boost::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
-  auto f11 = boost::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
+  auto f10 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
+  auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
   std::vector<GaussianFactor::shared_ptr> factors{f10, f11};
 
   GaussianMixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
@@ -145,7 +145,7 @@ TEST(GaussianMixtureFactor, GaussianMixture) {
   dKeys.emplace_back(M(0), 2);
   dKeys.emplace_back(M(1), 2);
 
-  auto gaussians = boost::make_shared<GaussianConditional>();
+  auto gaussians = std::make_shared<GaussianConditional>();
   GaussianMixture::Conditionals conditionals(gaussians);
   GaussianMixture gm({}, keys, dKeys, conditionals);
 
@@ -165,8 +165,8 @@ TEST(GaussianMixtureFactor, Error) {
 
   auto b = Vector2::Zero();
 
-  auto f0 = boost::make_shared<JacobianFactor>(X(1), A01, X(2), A02, b);
-  auto f1 = boost::make_shared<JacobianFactor>(X(1), A11, X(2), A12, b);
+  auto f0 = std::make_shared<JacobianFactor>(X(1), A01, X(2), A02, b);
+  auto f1 = std::make_shared<JacobianFactor>(X(1), A11, X(2), A12, b);
   std::vector<GaussianFactor::shared_ptr> factors{f0, f1};
 
   GaussianMixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);

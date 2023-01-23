@@ -48,32 +48,32 @@ namespace gtsam {
     };
 
     const SymbolicFactorGraph simpleTestGraph1 {
-      boost::make_shared<SymbolicFactor>(0,1),
-      boost::make_shared<SymbolicFactor>(0,2),
-      boost::make_shared<SymbolicFactor>(1,4),
-      boost::make_shared<SymbolicFactor>(2,4),
-      boost::make_shared<SymbolicFactor>(3,4)};
+      std::make_shared<SymbolicFactor>(0,1),
+      std::make_shared<SymbolicFactor>(0,2),
+      std::make_shared<SymbolicFactor>(1,4),
+      std::make_shared<SymbolicFactor>(2,4),
+      std::make_shared<SymbolicFactor>(3,4)};
 
     const SymbolicBayesNet simpleTestGraph1BayesNet {
-      boost::make_shared<SymbolicConditional>(0,1,2),
-      boost::make_shared<SymbolicConditional>(1,2,4),
-      boost::make_shared<SymbolicConditional>(2,4),
-      boost::make_shared<SymbolicConditional>(3,4),
-      boost::make_shared<SymbolicConditional>(4)};
+      std::make_shared<SymbolicConditional>(0,1,2),
+      std::make_shared<SymbolicConditional>(1,2,4),
+      std::make_shared<SymbolicConditional>(2,4),
+      std::make_shared<SymbolicConditional>(3,4),
+      std::make_shared<SymbolicConditional>(4)};
 
     const SymbolicFactorGraph simpleTestGraph2 {
-      boost::make_shared<SymbolicFactor>(0,1),
-      boost::make_shared<SymbolicFactor>(0,2),
-      boost::make_shared<SymbolicFactor>(1,3),
-      boost::make_shared<SymbolicFactor>(1,4),
-      boost::make_shared<SymbolicFactor>(2,3),
-      boost::make_shared<SymbolicFactor>(4,5)};
+      std::make_shared<SymbolicFactor>(0,1),
+      std::make_shared<SymbolicFactor>(0,2),
+      std::make_shared<SymbolicFactor>(1,3),
+      std::make_shared<SymbolicFactor>(1,4),
+      std::make_shared<SymbolicFactor>(2,3),
+      std::make_shared<SymbolicFactor>(4,5)};
 
     /** 1 - 0 - 2 - 3 */
     const SymbolicFactorGraph simpleChain {
-      boost::make_shared<SymbolicFactor>(1,0),
-      boost::make_shared<SymbolicFactor>(0,2),
-      boost::make_shared<SymbolicFactor>(2,3)};
+      std::make_shared<SymbolicFactor>(1,0),
+      std::make_shared<SymbolicFactor>(0,2),
+      std::make_shared<SymbolicFactor>(2,3)};
 
     /* ************************************************************************* *
     * 2 3
@@ -81,11 +81,11 @@ namespace gtsam {
     ****************************************************************************/
     SymbolicBayesTree __simpleChainBayesTree() {
       SymbolicBayesTree result;
-      result.insertRoot(boost::make_shared<SymbolicBayesTreeClique>(
-          boost::make_shared<SymbolicConditional>(
+      result.insertRoot(std::make_shared<SymbolicBayesTreeClique>(
+          std::make_shared<SymbolicConditional>(
         SymbolicConditional::FromKeys(KeyVector{2,3}, 2))));
-      result.addClique(boost::make_shared<SymbolicBayesTreeClique>(
-              boost::make_shared<SymbolicConditional>(
+      result.addClique(std::make_shared<SymbolicBayesTreeClique>(
+              std::make_shared<SymbolicConditional>(
         SymbolicConditional::FromKeys(KeyVector{0,1,2}, 2))),
           result.roots().front());
       return result;
@@ -104,21 +104,21 @@ namespace gtsam {
 
     // Factor graph for Asia example
     const SymbolicFactorGraph asiaGraph = {
-      boost::make_shared<SymbolicFactor>(_T_),
-      boost::make_shared<SymbolicFactor>(_S_),
-      boost::make_shared<SymbolicFactor>(_T_, _E_, _L_),
-      boost::make_shared<SymbolicFactor>(_L_, _S_),
-      boost::make_shared<SymbolicFactor>(_S_, _B_),
-      boost::make_shared<SymbolicFactor>(_E_, _B_),
-      boost::make_shared<SymbolicFactor>(_E_, _X_)};
+      std::make_shared<SymbolicFactor>(_T_),
+      std::make_shared<SymbolicFactor>(_S_),
+      std::make_shared<SymbolicFactor>(_T_, _E_, _L_),
+      std::make_shared<SymbolicFactor>(_L_, _S_),
+      std::make_shared<SymbolicFactor>(_S_, _B_),
+      std::make_shared<SymbolicFactor>(_E_, _B_),
+      std::make_shared<SymbolicFactor>(_E_, _X_)};
 
     const SymbolicBayesNet asiaBayesNet = {
-      boost::make_shared<SymbolicConditional>(_T_, _E_, _L_),
-      boost::make_shared<SymbolicConditional>(_X_, _E_),
-      boost::make_shared<SymbolicConditional>(_E_, _B_, _L_),
-      boost::make_shared<SymbolicConditional>(_S_, _B_, _L_),
-      boost::make_shared<SymbolicConditional>(_L_, _B_),
-      boost::make_shared<SymbolicConditional>(_B_)};
+      std::make_shared<SymbolicConditional>(_T_, _E_, _L_),
+      std::make_shared<SymbolicConditional>(_X_, _E_),
+      std::make_shared<SymbolicConditional>(_E_, _B_, _L_),
+      std::make_shared<SymbolicConditional>(_S_, _B_, _L_),
+      std::make_shared<SymbolicConditional>(_L_, _B_),
+      std::make_shared<SymbolicConditional>(_B_)};
 
     /* ************************************************************************* */
     // Allow creating Cliques and Keys in `list_of` chaining style:
@@ -128,8 +128,8 @@ namespace gtsam {
 
     inline sharedClique LeafClique(const Keys::Result& keys,
                                    DenseIndex nrFrontals) {
-      return boost::make_shared<SymbolicBayesTreeClique>(
-          boost::make_shared<SymbolicConditional>(
+      return std::make_shared<SymbolicBayesTreeClique>(
+          std::make_shared<SymbolicConditional>(
               SymbolicConditional::FromKeys(keys, nrFrontals)));
     }
 

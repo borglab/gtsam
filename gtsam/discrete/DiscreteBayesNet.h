@@ -23,7 +23,7 @@
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <map>
 #include <string>
 #include <utility>
@@ -40,8 +40,8 @@ class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional> {
     typedef BayesNet<DiscreteConditional> Base;
     typedef DiscreteBayesNet This;
     typedef DiscreteConditional ConditionalType;
-    typedef boost::shared_ptr<This> shared_ptr;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef std::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<ConditionalType> sharedConditional;
 
     /// @name Standard Constructors
     /// @{

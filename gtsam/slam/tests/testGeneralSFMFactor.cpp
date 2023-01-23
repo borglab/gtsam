@@ -28,7 +28,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Testable.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <CppUnitLite/TestHarness.h>
 
 #include <iostream>
@@ -50,16 +50,16 @@ class Graph: public NonlinearFactorGraph {
 public:
   void addMeasurement(int i, int j, const Point2& z,
       const SharedNoiseModel& model) {
-    push_back(boost::make_shared<Projection>(z, model, X(i), L(j)));
+    push_back(std::make_shared<Projection>(z, model, X(i), L(j)));
   }
 
   void addCameraConstraint(int j, const GeneralCamera& p) {
-    boost::shared_ptr<CameraConstraint> factor(new CameraConstraint(X(j), p));
+    std::shared_ptr<CameraConstraint> factor(new CameraConstraint(X(j), p));
     push_back(factor);
   }
 
   void addPoint3Constraint(int j, const Point3& p) {
-    boost::shared_ptr<Point3Constraint> factor(new Point3Constraint(L(j), p));
+    std::shared_ptr<Point3Constraint> factor(new Point3Constraint(L(j), p));
     push_back(factor);
   }
 
@@ -115,9 +115,9 @@ static vector<GeneralCamera> genCameraVariableCalibration() {
   return X;
 }
 
-static boost::shared_ptr<Ordering> getOrdering(
+static std::shared_ptr<Ordering> getOrdering(
     const vector<GeneralCamera>& cameras, const vector<Point3>& landmarks) {
-  boost::shared_ptr<Ordering> ordering(new Ordering);
+  std::shared_ptr<Ordering> ordering(new Ordering);
   for (size_t i = 0; i < landmarks.size(); ++i)
     ordering->push_back(L(i));
   for (size_t i = 0; i < cameras.size(); ++i)
@@ -131,10 +131,10 @@ TEST( GeneralSFMFactor, equals ) {
   Point2 z(323., 240.);
   const Symbol cameraFrameNumber('x', 1), landmarkNumber('l', 1);
   const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
-  boost::shared_ptr<Projection> factor1(
+  std::shared_ptr<Projection> factor1(
       new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
 
-  boost::shared_ptr<Projection> factor2(
+  std::shared_ptr<Projection> factor2(
       new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
 
   EXPECT(assert_equal(*factor1, *factor2));
@@ -510,7 +510,7 @@ TEST( GeneralSFMFactor, BinaryJacobianFactor2 ) {
     for (size_t j = 0; j < landmarks.size(); ++j) {
       Point2 z = cameras[i].project(landmarks[j]);
       Projection::shared_ptr nonlinear = //
-          boost::make_shared<Projection>(z, sigma1, X(i), L(j));
+          std::make_shared<Projection>(z, sigma1, X(i), L(j));
       GaussianFactor::shared_ptr factor = nonlinear->linearize(values);
       HessianFactor hessian(*factor);
       JacobianFactor jacobian(hessian);

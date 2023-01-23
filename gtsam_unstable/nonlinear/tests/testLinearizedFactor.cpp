@@ -43,7 +43,7 @@ TEST( LinearizedFactor, equals_jacobian )
 
 
   // Create two identical factors and make sure they're equal
-  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
+  JacobianFactor::shared_ptr jf = std::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
   LinearizedJacobianFactor jacobian1(jf, values);
   LinearizedJacobianFactor jacobian2(jf, values);
 
@@ -65,13 +65,13 @@ TEST( LinearizedFactor, clone_jacobian )
   BetweenFactor<Point3> betweenFactor(x1, x2, measured, model);
 
   // Create one factor that is a clone of the other and make sure they're equal
-  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
+  JacobianFactor::shared_ptr jf = std::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
   LinearizedJacobianFactor jacobian1(jf, values);
-  LinearizedJacobianFactor::shared_ptr jacobian2 = boost::static_pointer_cast<LinearizedJacobianFactor>(jacobian1.clone());
+  LinearizedJacobianFactor::shared_ptr jacobian2 = std::static_pointer_cast<LinearizedJacobianFactor>(jacobian1.clone());
   CHECK(assert_equal(jacobian1, *jacobian2));
 
-  JacobianFactor::shared_ptr jf1 = boost::static_pointer_cast<JacobianFactor>(jacobian1.linearize(values));
-  JacobianFactor::shared_ptr jf2 = boost::static_pointer_cast<JacobianFactor>(jacobian2->linearize(values));
+  JacobianFactor::shared_ptr jf1 = std::static_pointer_cast<JacobianFactor>(jacobian1.linearize(values));
+  JacobianFactor::shared_ptr jf2 = std::static_pointer_cast<JacobianFactor>(jacobian2->linearize(values));
   CHECK(assert_equal(*jf1, *jf2));
 
   Matrix information1 = jf1->augmentedInformation();
@@ -94,7 +94,7 @@ TEST( LinearizedFactor, add_jacobian )
   BetweenFactor<Point3> betweenFactor(x1, x2, measured, model);
 
   // Create two factor graphs, one using 'push_back' and one using 'add' and make sure they're equal
-  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
+  JacobianFactor::shared_ptr jf = std::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
   LinearizedJacobianFactor::shared_ptr jacobian(new LinearizedJacobianFactor(jf, values));
   NonlinearFactorGraph graph1; graph1.push_back(jacobian);
   NonlinearFactorGraph graph2; graph2.push_back(*jacobian);
@@ -124,7 +124,7 @@ TEST( LinearizedFactor, add_jacobian )
 //
 //
 //  // Create a linearized jacobian factors
-//  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
+//  JacobianFactor::shared_ptr jf = std::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
 //  LinearizedJacobianFactor jacobian(jf, values);
 //
 //
@@ -176,7 +176,7 @@ TEST( LinearizedFactor, equals_hessian )
 
 
   // Create two identical factors and make sure they're equal
-  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
+  JacobianFactor::shared_ptr jf = std::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
   HessianFactor::shared_ptr hf(new HessianFactor(*jf));
   LinearizedHessianFactor hessian1(hf, values);
   LinearizedHessianFactor hessian2(hf, values);
@@ -200,10 +200,10 @@ TEST( LinearizedFactor, clone_hessian )
 
 
   // Create two identical factors and make sure they're equal
-  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
+  JacobianFactor::shared_ptr jf = std::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
   HessianFactor::shared_ptr hf(new HessianFactor(*jf));
   LinearizedHessianFactor hessian1(hf, values);
-  LinearizedHessianFactor::shared_ptr hessian2 = boost::static_pointer_cast<LinearizedHessianFactor>(hessian1.clone());
+  LinearizedHessianFactor::shared_ptr hessian2 = std::static_pointer_cast<LinearizedHessianFactor>(hessian1.clone());
 
   CHECK(assert_equal(hessian1, *hessian2));
 }
@@ -224,7 +224,7 @@ TEST( LinearizedFactor, add_hessian )
 
 
   // Create two identical factors and make sure they're equal
-  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
+  JacobianFactor::shared_ptr jf = std::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
   HessianFactor::shared_ptr hf(new HessianFactor(*jf));
   LinearizedHessianFactor::shared_ptr hessian(new LinearizedHessianFactor(hf, values));
   NonlinearFactorGraph graph1; graph1.push_back(hessian);
@@ -252,7 +252,7 @@ TEST( LinearizedFactor, add_hessian )
 //
 //
 //  // Create a linearized hessian factor
-//  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
+//  JacobianFactor::shared_ptr jf = std::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values));
 //  HessianFactor::shared_ptr hf(new HessianFactor(*jf));
 //  LinearizedHessianFactor hessian(hf, values);
 //

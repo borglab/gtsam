@@ -54,7 +54,7 @@ namespace gtsam {
   DiscreteKeys DiscreteFactorGraph::discreteKeys() const {
     DiscreteKeys result;
     for (auto&& factor : *this) {
-      if (auto p = boost::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
+      if (auto p = std::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
         DiscreteKeys factor_keys = p->discreteKeys();
         result.insert(result.end(), factor_keys.begin(), factor_keys.end());
       }
@@ -136,12 +136,12 @@ namespace gtsam {
     // Make lookup with product
     gttic(lookup);
     size_t nrFrontals = frontalKeys.size();
-    auto lookup = boost::make_shared<DiscreteLookupTable>(nrFrontals,
+    auto lookup = std::make_shared<DiscreteLookupTable>(nrFrontals,
                                                           orderedKeys, product);
     gttoc(lookup);
 
     return std::make_pair(
-        boost::dynamic_pointer_cast<DiscreteConditional>(lookup), max);
+        std::dynamic_pointer_cast<DiscreteConditional>(lookup), max);
   }
 
   /* ************************************************************************ */
@@ -220,7 +220,7 @@ namespace gtsam {
     // now divide product/sum to get conditional
     gttic(divide);
     auto conditional =
-        boost::make_shared<DiscreteConditional>(product, *sum, orderedKeys);
+        std::make_shared<DiscreteConditional>(product, *sum, orderedKeys);
     gttoc(divide);
 
     return std::make_pair(conditional, sum);

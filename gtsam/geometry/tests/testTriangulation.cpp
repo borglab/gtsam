@@ -35,8 +35,8 @@ using namespace gtsam;
 
 // Some common constants
 
-static const boost::shared_ptr<Cal3_S2> kSharedCal =  //
-    boost::make_shared<Cal3_S2>(1500, 1200, 0.1, 640, 480);
+static const std::shared_ptr<Cal3_S2> kSharedCal =  //
+    std::make_shared<Cal3_S2>(1500, 1200, 0.1, 640, 480);
 
 // Looking along X-axis, 1 meter above ground plane (x-y)
 static const Rot3 upright = Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2);
@@ -159,8 +159,8 @@ TEST(triangulation, twoCamerasLOSTvsDLT) {
 //******************************************************************************
 // Simple test with a well-behaved two camera situation with Cal3DS2 calibration.
 TEST(triangulation, twoPosesCal3DS2) {
-  static const boost::shared_ptr<Cal3DS2> sharedDistortedCal =  //
-      boost::make_shared<Cal3DS2>(1500, 1200, 0, 640, 480, -.3, 0.1, 0.0001,
+  static const std::shared_ptr<Cal3DS2> sharedDistortedCal =  //
+      std::make_shared<Cal3DS2>(1500, 1200, 0, 640, 480, -.3, 0.1, 0.0001,
                                   -0.0003);
 
   PinholeCamera<Cal3DS2> camera1Distorted(kPose1, *sharedDistortedCal);
@@ -212,8 +212,8 @@ TEST(triangulation, twoPosesCal3DS2) {
 // calibration.
 TEST(triangulation, twoPosesFisheye) {
   using Calibration = Cal3Fisheye;
-  static const boost::shared_ptr<Calibration> sharedDistortedCal =  //
-      boost::make_shared<Calibration>(1500, 1200, .1, 640, 480, -.3, 0.1,
+  static const std::shared_ptr<Calibration> sharedDistortedCal =  //
+      std::make_shared<Calibration>(1500, 1200, .1, 640, 480, -.3, 0.1,
                                       0.0001, -0.0003);
 
   PinholeCamera<Calibration> camera1Distorted(kPose1, *sharedDistortedCal);
@@ -263,8 +263,8 @@ TEST(triangulation, twoPosesFisheye) {
 //******************************************************************************
 // Similar, but now with Bundler calibration
 TEST(triangulation, twoPosesBundler) {
-  boost::shared_ptr<Cal3Bundler> bundlerCal =  //
-      boost::make_shared<Cal3Bundler>(1500, 0.1, 0.2, 640, 480);
+  std::shared_ptr<Cal3Bundler> bundlerCal =  //
+      std::make_shared<Cal3Bundler>(1500, 0.1, 0.2, 640, 480);
   PinholeCamera<Cal3Bundler> camera1(kPose1, *bundlerCal);
   PinholeCamera<Cal3Bundler> camera2(kPose2, *bundlerCal);
 
@@ -597,7 +597,7 @@ TEST(triangulation, onePose) {
 
 //******************************************************************************
 TEST(triangulation, StereoTriangulateNonlinear) {
-  auto stereoK = boost::make_shared<Cal3_S2Stereo>(1733.75, 1733.75, 0, 689.645,
+  auto stereoK = std::make_shared<Cal3_S2Stereo>(1733.75, 1733.75, 0, 689.645,
                                                    508.835, 0.0699612);
 
   // two camera kPoses m1, m2

@@ -30,7 +30,7 @@ namespace gtsam {
 class DiscreteFactor;
 class Ordering;
 
-using SharedFactor = boost::shared_ptr<Factor>;
+using SharedFactor = std::shared_ptr<Factor>;
 
 /**
  * Hybrid Factor Graph
@@ -40,7 +40,7 @@ class HybridFactorGraph : public FactorGraph<Factor> {
  public:
   using Base = FactorGraph<Factor>;
   using This = HybridFactorGraph;              ///< this class
-  using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
+  using shared_ptr = std::shared_ptr<This>;  ///< shared_ptr to This
 
   using Values = gtsam::Values;  ///< backwards compatibility
   using Indices = KeyVector;     ///> map from keys to values

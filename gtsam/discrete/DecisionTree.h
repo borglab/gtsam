@@ -24,7 +24,7 @@
 #include <gtsam/discrete/Assignment.h>
 
 #include <boost/serialization/nvp.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -70,7 +70,7 @@ namespace gtsam {
 
     /** ------------------------ Node base class --------------------------- */
     struct Node {
-      using Ptr = boost::shared_ptr<const Node>;
+      using Ptr = std::shared_ptr<const Node>;
 
 #ifdef DT_DEBUG_MEMORY
       static int nrNodes;

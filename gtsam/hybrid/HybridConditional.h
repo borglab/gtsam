@@ -25,8 +25,7 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianConditional.h>
 
-#include <boost/make_shared.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
@@ -63,14 +62,14 @@ class GTSAM_EXPORT HybridConditional
  public:
   // typedefs needed to play nice with gtsam
   typedef HybridConditional This;              ///< Typedef to this class
-  typedef boost::shared_ptr<This> shared_ptr;  ///< shared_ptr to this class
+  typedef std::shared_ptr<This> shared_ptr;  ///< shared_ptr to this class
   typedef HybridFactor BaseFactor;  ///< Typedef to our factor base class
   typedef Conditional<BaseFactor, This>
       BaseConditional;  ///< Typedef to our conditional base class
 
  protected:
   /// Type-erased pointer to the inner type
-  boost::shared_ptr<Factor> inner_;
+  std::shared_ptr<Factor> inner_;
 
  public:
   /// @name Standard Constructors
@@ -111,7 +110,7 @@ class GTSAM_EXPORT HybridConditional
    * HybridConditional.
    */
   HybridConditional(
-      const boost::shared_ptr<GaussianConditional>& continuousConditional);
+      const std::shared_ptr<GaussianConditional>& continuousConditional);
 
   /**
    * @brief Construct a new Hybrid Conditional object
@@ -120,7 +119,7 @@ class GTSAM_EXPORT HybridConditional
    * HybridConditional.
    */
   HybridConditional(
-      const boost::shared_ptr<DiscreteConditional>& discreteConditional);
+      const std::shared_ptr<DiscreteConditional>& discreteConditional);
 
   /**
    * @brief Construct a new Hybrid Conditional object
@@ -128,7 +127,7 @@ class GTSAM_EXPORT HybridConditional
    * @param gaussianMixture Gaussian Mixture Conditional used to create the
    * HybridConditional.
    */
-  HybridConditional(const boost::shared_ptr<GaussianMixture>& gaussianMixture);
+  HybridConditional(const std::shared_ptr<GaussianMixture>& gaussianMixture);
 
   /// @}
   /// @name Testable
@@ -152,7 +151,7 @@ class GTSAM_EXPORT HybridConditional
    * @return GaussianMixture::shared_ptr otherwise
    */
   GaussianMixture::shared_ptr asMixture() const {
-    return boost::dynamic_pointer_cast<GaussianMixture>(inner_);
+    return std::dynamic_pointer_cast<GaussianMixture>(inner_);
   }
 
   /**
@@ -161,7 +160,7 @@ class GTSAM_EXPORT HybridConditional
    * @return GaussianConditional::shared_ptr otherwise
    */
   GaussianConditional::shared_ptr asGaussian() const {
-    return boost::dynamic_pointer_cast<GaussianConditional>(inner_);
+    return std::dynamic_pointer_cast<GaussianConditional>(inner_);
   }
 
   /**
@@ -170,11 +169,11 @@ class GTSAM_EXPORT HybridConditional
    * @return DiscreteConditional::shared_ptr
    */
   DiscreteConditional::shared_ptr asDiscrete() const {
-    return boost::dynamic_pointer_cast<DiscreteConditional>(inner_);
+    return std::dynamic_pointer_cast<DiscreteConditional>(inner_);
   }
 
   /// Get the type-erased pointer to the inner type
-  boost::shared_ptr<Factor> inner() const { return inner_; }
+  std::shared_ptr<Factor> inner() const { return inner_; }
 
   /// Return the error of the underlying conditional.
   double error(const HybridValues& values) const override;

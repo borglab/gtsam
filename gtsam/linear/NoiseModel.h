@@ -55,7 +55,7 @@ namespace gtsam {
     class GTSAM_EXPORT Base {
 
     public:
-      typedef boost::shared_ptr<Base> shared_ptr;
+      typedef std::shared_ptr<Base> shared_ptr;
 
     protected:
 
@@ -182,7 +182,7 @@ namespace gtsam {
 
     public:
 
-      typedef boost::shared_ptr<Gaussian> shared_ptr;
+      typedef std::shared_ptr<Gaussian> shared_ptr;
 
       /** constructor takes square root information matrix */
       Gaussian(size_t dim = 1,
@@ -251,7 +251,7 @@ namespace gtsam {
        * @param Ab is the m*(n+1) augmented system matrix [A b]
        * @return Empty SharedDiagonal() noise model: R,d are whitened
        */
-      virtual boost::shared_ptr<Diagonal> QR(Matrix& Ab) const;
+      virtual std::shared_ptr<Diagonal> QR(Matrix& Ab) const;
 
       /// Return R itself, but note that Whiten(H) is cheaper than R*H
       virtual Matrix R() const { return thisR();}
@@ -299,7 +299,7 @@ namespace gtsam {
       /** constructor - no initializations, for serialization */
       Diagonal();
 
-      typedef boost::shared_ptr<Diagonal> shared_ptr;
+      typedef std::shared_ptr<Diagonal> shared_ptr;
 
       ~Diagonal() override {}
 
@@ -395,7 +395,7 @@ namespace gtsam {
 
     public:
 
-      typedef boost::shared_ptr<Constrained> shared_ptr;
+      typedef std::shared_ptr<Constrained> shared_ptr;
 
       /**
        * protected constructor takes sigmas.
@@ -530,7 +530,7 @@ namespace gtsam {
 
       ~Isotropic() override {}
 
-      typedef boost::shared_ptr<Isotropic> shared_ptr;
+      typedef std::shared_ptr<Isotropic> shared_ptr;
 
       /**
        * An isotropic noise model created by specifying a standard devation sigma
@@ -586,7 +586,7 @@ namespace gtsam {
     class GTSAM_EXPORT Unit : public Isotropic {
     public:
 
-      typedef boost::shared_ptr<Unit> shared_ptr;
+      typedef std::shared_ptr<Unit> shared_ptr;
 
       /** constructor for serialization */
       Unit(size_t dim=1): Isotropic(dim,1.0) {}
@@ -643,7 +643,7 @@ namespace gtsam {
      */
     class GTSAM_EXPORT Robust : public Base {
     public:
-      typedef boost::shared_ptr<Robust> shared_ptr;
+      typedef std::shared_ptr<Robust> shared_ptr;
 
     protected:
       typedef mEstimator::Base RobustModel;

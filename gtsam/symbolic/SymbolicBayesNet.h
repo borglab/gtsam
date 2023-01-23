@@ -34,8 +34,8 @@ namespace gtsam {
     typedef BayesNet<SymbolicConditional> Base;
     typedef SymbolicBayesNet This;
     typedef SymbolicConditional ConditionalType;
-    typedef boost::shared_ptr<This> shared_ptr;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef std::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<ConditionalType> sharedConditional;
 
     /// @name Standard Constructors
     /// @{
@@ -64,12 +64,12 @@ namespace gtsam {
      * Constructor that takes an initializer list of shared pointers.
      *  SymbolicBayesNet bn = {make_shared<SymbolicConditional>(), ...};
      */
-    SymbolicBayesNet(std::initializer_list<boost::shared_ptr<SymbolicConditional>> conditionals)
+    SymbolicBayesNet(std::initializer_list<std::shared_ptr<SymbolicConditional>> conditionals)
         : Base(conditionals) {}
 
     /// Construct from a single conditional
     SymbolicBayesNet(SymbolicConditional&& c) {
-      push_back(boost::make_shared<SymbolicConditional>(c));
+      push_back(std::make_shared<SymbolicConditional>(c));
     }
 
     /**
@@ -79,7 +79,7 @@ namespace gtsam {
      *     SymbolicBayesNet(SymbolicConditional(...))(SymbolicConditional(...));
      */
     SymbolicBayesNet& operator()(SymbolicConditional&& c) {
-      push_back(boost::make_shared<SymbolicConditional>(c));
+      push_back(std::make_shared<SymbolicConditional>(c));
       return *this;
     }
 

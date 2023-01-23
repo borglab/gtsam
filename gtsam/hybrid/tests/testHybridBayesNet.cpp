@@ -99,9 +99,9 @@ TEST(HybridBayesNet, evaluateHybrid) {
   const SharedDiagonal model0 = noiseModel::Diagonal::Sigmas(Vector1(2.0)),
                        model1 = noiseModel::Diagonal::Sigmas(Vector1(3.0));
 
-  const auto conditional0 = boost::make_shared<GaussianConditional>(
+  const auto conditional0 = std::make_shared<GaussianConditional>(
                  X(1), Vector1::Constant(5), I_1x1, model0),
-             conditional1 = boost::make_shared<GaussianConditional>(
+             conditional1 = std::make_shared<GaussianConditional>(
                  X(1), Vector1::Constant(2), I_1x1, model1);
 
   // Create hybrid Bayes net.
@@ -289,7 +289,7 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   size_t maxNrLeaves = 3;
   auto discreteConditionals = posterior->discreteConditionals();
   const DecisionTreeFactor::shared_ptr prunedDecisionTree =
-      boost::make_shared<DecisionTreeFactor>(
+      std::make_shared<DecisionTreeFactor>(
           discreteConditionals->prune(maxNrLeaves));
 
   EXPECT_LONGS_EQUAL(maxNrLeaves + 2 /*2 zero leaves*/,
@@ -317,7 +317,7 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   // Get the pruned discrete conditionals as an AlgebraicDecisionTree
   auto pruned_discrete_conditionals = posterior->at(4)->asDiscrete();
   auto discrete_conditional_tree =
-      boost::dynamic_pointer_cast<DecisionTreeFactor::ADT>(
+      std::dynamic_pointer_cast<DecisionTreeFactor::ADT>(
           pruned_discrete_conditionals);
 
   // The checker functor verifies the values for us.
@@ -331,9 +331,9 @@ TEST(HybridBayesNet, Sampling) {
 
   auto noise_model = noiseModel::Diagonal::Sigmas(Vector1(1.0));
   auto zero_motion =
-      boost::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
   auto one_motion =
-      boost::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
   std::vector<NonlinearFactor::shared_ptr> factors = {zero_motion, one_motion};
   nfg.emplace_shared<PriorFactor<double>>(X(0), 0.0, noise_model);
   nfg.emplace_shared<MixtureFactor>(

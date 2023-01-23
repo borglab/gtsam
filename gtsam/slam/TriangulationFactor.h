@@ -19,7 +19,6 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/CalibratedCamera.h>
-#include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 
 namespace gtsam {
@@ -60,7 +59,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// shorthand for a smart pointer to a factor
-  using shared_ptr = boost::shared_ptr<This>;
+  using shared_ptr = std::shared_ptr<This>;
 
   // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor1<Point3>::evaluateError;
@@ -97,7 +96,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -148,10 +147,10 @@ public:
    * \f$ Ax-b \approx h(x+\delta x)-z = h(x) + A \delta x - z \f$
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
+  std::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
     // Only linearize if the factor is active
     if (!this->active(x))
-      return boost::shared_ptr<JacobianFactor>();
+      return std::shared_ptr<JacobianFactor>();
 
     // Allocate memory for Jacobian factor, do only once
     if (Ab.rows() == 0) {
@@ -170,7 +169,7 @@ public:
     Ab(0) = A;
     Ab(1) = b;
 
-    return boost::make_shared<JacobianFactor>(this->keys_, Ab);
+    return std::make_shared<JacobianFactor>(this->keys_, Ab);
   }
 
   /** return the measurement */

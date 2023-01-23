@@ -36,7 +36,7 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
   enum { dimension = 5 };
 
   ///< shared pointer to calibration object
-  using shared_ptr = boost::shared_ptr<Cal3_S2>;
+  using shared_ptr = std::shared_ptr<Cal3_S2>;
 
   /// @name Standard Constructors
   /// @{

@@ -37,8 +37,8 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   using Base = BayesNet<HybridConditional>;
   using This = HybridBayesNet;
   using ConditionalType = HybridConditional;
-  using shared_ptr = boost::shared_ptr<HybridBayesNet>;
-  using sharedConditional = boost::shared_ptr<ConditionalType>;
+  using shared_ptr = std::shared_ptr<HybridBayesNet>;
+  using sharedConditional = std::shared_ptr<ConditionalType>;
 
   /// @name Standard Constructors
   /// @{
@@ -66,7 +66,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    *
    * This is the "native" push back, as this class stores hybrid conditionals.
    */
-  void push_back(boost::shared_ptr<HybridConditional> conditional) {
+  void push_back(std::shared_ptr<HybridConditional> conditional) {
     factors_.push_back(conditional);
   }
 
@@ -80,8 +80,8 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    */
   template <class Conditional>
   void emplace_back(Conditional *conditional) {
-    factors_.push_back(boost::make_shared<HybridConditional>(
-        boost::shared_ptr<Conditional>(conditional)));
+    factors_.push_back(std::make_shared<HybridConditional>(
+        std::shared_ptr<Conditional>(conditional)));
   }
 
   /**
@@ -93,12 +93,12 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    *
    * Example:
    *   auto shared_ptr_to_a_conditional =
-   *     boost::make_shared<GaussianMixture>(...);
+   *     std::make_shared<GaussianMixture>(...);
    *  hbn.push_back(shared_ptr_to_a_conditional);
    */
   void push_back(HybridConditional &&conditional) {
     factors_.push_back(
-        boost::make_shared<HybridConditional>(std::move(conditional)));
+        std::make_shared<HybridConditional>(std::move(conditional)));
   }
 
   /**

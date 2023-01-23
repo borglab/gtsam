@@ -43,7 +43,7 @@ namespace gtsam {
     typedef SymbolicBayesTree BayesTreeType;             ///< Type of Bayes tree
     typedef SymbolicJunctionTree JunctionTreeType;       ///< Type of Junction tree
     /// The default dense elimination function
-    static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
+    static std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType> >
       DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
         return EliminateSymbolic(factors, keys); }
     /// The default ordering generation function
@@ -67,7 +67,7 @@ namespace gtsam {
     typedef SymbolicFactorGraph This; ///< Typedef to this class
     typedef FactorGraph<SymbolicFactor> Base; ///< Typedef to base factor graph type
     typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
     /// @name Standard Constructors
     /// @{
@@ -92,12 +92,12 @@ namespace gtsam {
      *  FactorGraph fg = {make_shared<MyFactor>(), ...};
      */
     SymbolicFactorGraph(
-        std::initializer_list<boost::shared_ptr<SymbolicFactor>> sharedFactors)
+        std::initializer_list<std::shared_ptr<SymbolicFactor>> sharedFactors)
         : Base(sharedFactors) {}
 
     /// Construct from a single factor
     SymbolicFactorGraph(SymbolicFactor&& c) {
-        push_back(boost::make_shared<SymbolicFactor>(c));
+        push_back(std::make_shared<SymbolicFactor>(c));
     }
 
     /**
@@ -107,7 +107,7 @@ namespace gtsam {
      *     SymbolicFactorGraph(SymbolicFactor(...))(SymbolicFactor(...));
      */
     SymbolicFactorGraph& operator()(SymbolicFactor&& c) {
-        push_back(boost::make_shared<SymbolicFactor>(c));
+        push_back(std::make_shared<SymbolicFactor>(c));
         return *this;
     }
 

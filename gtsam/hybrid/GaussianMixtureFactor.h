@@ -48,9 +48,9 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
   using This = GaussianMixtureFactor;
-  using shared_ptr = boost::shared_ptr<This>;
+  using shared_ptr = std::shared_ptr<This>;
 
-  using sharedFactor = boost::shared_ptr<GaussianFactor>;
+  using sharedFactor = std::shared_ptr<GaussianFactor>;
 
   /// typedef for Decision Tree of Gaussian factors and log-constant.
   using Factors = DecisionTree<Key, sharedFactor>;

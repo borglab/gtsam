@@ -50,7 +50,7 @@ public:
    *  @param p    Parameters, typically fixed in a single application
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  TangentPreintegration(const boost::shared_ptr<Params>& p,
+  TangentPreintegration(const std::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
   /// Virtual destructor
@@ -120,8 +120,8 @@ public:
   /// @}
 
   /** Dummy clone for MATLAB */
-  virtual boost::shared_ptr<TangentPreintegration> clone() const {
-    return boost::shared_ptr<TangentPreintegration>();
+  virtual std::shared_ptr<TangentPreintegration> clone() const {
+    return std::shared_ptr<TangentPreintegration>();
   }
 
   /// @}

@@ -467,7 +467,7 @@ TEST(HessianFactor, combine) {
   Vector b = Vector2(2.23606798,-1.56524758);
   SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector::Ones(2));
   GaussianFactorGraph factors{
-      boost::make_shared<JacobianFactor>(0, A0, 1, A1, 2, A2, b, model)};
+      std::make_shared<JacobianFactor>(0, A0, 1, A1, 2, A2, b, model)};
 
   // Form Ab' * Ab
   HessianFactor actual(factors);

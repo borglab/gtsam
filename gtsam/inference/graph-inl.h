@@ -80,7 +80,7 @@ SDGraph<KEY> toBoostGraph(const G& graph) {
       continue;
 
     // Cast the factor to the user-specified factor type F
-    boost::shared_ptr<F> factor = boost::dynamic_pointer_cast<F>(*itFactor);
+    std::shared_ptr<F> factor = std::dynamic_pointer_cast<F>(*itFactor);
     // Ignore factors that are not of type F
     if (!factor) continue;
 
@@ -154,11 +154,11 @@ template <class V, class POSE, class KEY>
 class compose_key_visitor : public boost::default_bfs_visitor {
 
 private:
-  boost::shared_ptr<Values> config_;
+  std::shared_ptr<Values> config_;
 
 public:
 
-  compose_key_visitor(boost::shared_ptr<Values> config_in) {config_ = config_in;}
+  compose_key_visitor(std::shared_ptr<Values> config_in) {config_ = config_in;}
 
   template <typename Edge, typename Graph> void tree_edge(Edge edge, const Graph& g) const {
     KEY key_from = boost::get(boost::vertex_name, g, boost::source(edge, g));
@@ -171,7 +171,7 @@ public:
 
 /* ************************************************************************* */
 template<class G, class Factor, class POSE, class KEY>
-boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>& tree,
+std::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>& tree,
     const POSE& rootPose) {
 
   //TODO: change edge_weight_t to edge_pose_t
@@ -197,7 +197,7 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>
       throw std::invalid_argument("composePoses: only support factors with at most two keys");
 
     // e.g. in pose2graph, nonlinear factor needs to be converted to pose2factor
-    boost::shared_ptr<Factor> factor = boost::dynamic_pointer_cast<Factor>(nl_factor);
+    std::shared_ptr<Factor> factor = std::dynamic_pointer_cast<Factor>(nl_factor);
     if (!factor) continue;
 
     KEY key1 = factor->key1();
@@ -218,7 +218,7 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>
   }
 
   // compose poses
-  boost::shared_ptr<Values> config(new Values);
+  std::shared_ptr<Values> config(new Values);
   KEY rootKey = boost::get(boost::vertex_name, g, root);
   config->insert(rootKey, rootPose);
   compose_key_visitor<PoseVertex, POSE, KEY> vis(config);
@@ -266,7 +266,7 @@ void split(const G& g, const PredecessorMap<KEY>& tree, G& Ab1, G& Ab2) {
       continue;
     }
 
-    boost::shared_ptr<FACTOR2> factor2 = boost::dynamic_pointer_cast<
+    std::shared_ptr<FACTOR2> factor2 = std::dynamic_pointer_cast<
         FACTOR2>(factor);
     if (!factor2) continue;
 

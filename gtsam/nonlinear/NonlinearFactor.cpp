@@ -18,7 +18,6 @@
 
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <boost/make_shared.hpp>
 #include <boost/format.hpp>
 
 namespace gtsam {
@@ -90,7 +89,7 @@ bool NoiseModelFactor::equals(const NonlinearFactor& f, double tol) const {
 /* ************************************************************************* */
 NoiseModelFactor::shared_ptr NoiseModelFactor::cloneWithNewNoiseModel(
     const SharedNoiseModel newNoise) const {
-  NoiseModelFactor::shared_ptr new_factor = boost::dynamic_pointer_cast<NoiseModelFactor>(clone());
+  NoiseModelFactor::shared_ptr new_factor = std::dynamic_pointer_cast<NoiseModelFactor>(clone());
   new_factor->noiseModel_ = newNoise;
   return new_factor;
 }
@@ -149,12 +148,12 @@ double NoiseModelFactor::error(const Values& c) const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
+std::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
     const Values& x) const {
 
   // Only linearize if the factor is active
   if (!active(x))
-    return boost::shared_ptr<JacobianFactor>();
+    return std::shared_ptr<JacobianFactor>();
 
   // Call evaluate error to get Jacobians and RHS vector b
   std::vector<Matrix> A(size());
@@ -177,7 +176,7 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
   if (noiseModel_ && noiseModel_->isConstrained())
     return GaussianFactor::shared_ptr(
         new JacobianFactor(terms, b,
-            boost::static_pointer_cast<Constrained>(noiseModel_)->unit()));
+            std::static_pointer_cast<Constrained>(noiseModel_)->unit()));
   else {
     return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
   }

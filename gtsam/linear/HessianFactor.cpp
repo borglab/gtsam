@@ -30,7 +30,6 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/format.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/adaptor/map.hpp>
@@ -381,7 +380,7 @@ void HessianFactor::updateHessian(const KeyVector& infoKeys,
 
 /* ************************************************************************* */
 GaussianFactor::shared_ptr HessianFactor::negate() const {
-  shared_ptr result = boost::make_shared<This>(*this);
+  shared_ptr result = std::make_shared<This>(*this);
   // Negate the information matrix of the result
   result->info_.negate();
   return result;
@@ -464,7 +463,7 @@ Vector HessianFactor::gradient(Key key, const VectorValues& x) const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Ordering& keys) {
+std::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Ordering& keys) {
   gttic(HessianFactor_eliminateCholesky);
 
   GaussianConditional::shared_ptr conditional;
@@ -477,7 +476,7 @@ boost::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Or
 
     // TODO(frank): pre-allocate GaussianConditional and write into it
     const VerticalBlockMatrix Ab = info_.split(nFrontals);
-    conditional = boost::make_shared<GaussianConditional>(keys_, nFrontals, Ab);
+    conditional = std::make_shared<GaussianConditional>(keys_, nFrontals, Ab);
 
     // Erase the eliminated keys in this factor
     keys_.erase(begin(), begin() + nFrontals);
@@ -521,7 +520,7 @@ VectorValues HessianFactor::solve() {
 }
 
 /* ************************************************************************* */
-std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
+std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<HessianFactor> >
 EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys) {
   gttic(EliminateCholesky);
 
@@ -529,7 +528,7 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys) {
   HessianFactor::shared_ptr jointFactor;
   try {
     Scatter scatter(factors, keys);
-    jointFactor = boost::make_shared<HessianFactor>(factors, scatter);
+    jointFactor = std::make_shared<HessianFactor>(factors, scatter);
   } catch (std::invalid_argument&) {
     throw InvalidDenseElimination(
         "EliminateCholesky was called with a request to eliminate variables that are not\n"
@@ -544,8 +543,8 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys) {
 }
 
 /* ************************************************************************* */
-std::pair<boost::shared_ptr<GaussianConditional>,
-    boost::shared_ptr<GaussianFactor> > EliminatePreferCholesky(
+std::pair<std::shared_ptr<GaussianConditional>,
+    std::shared_ptr<GaussianFactor> > EliminatePreferCholesky(
     const GaussianFactorGraph& factors, const Ordering& keys) {
   gttic(EliminatePreferCholesky);
 

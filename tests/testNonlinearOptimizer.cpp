@@ -32,7 +32,6 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/range/adaptor/map.hpp>
-#include <boost/shared_ptr.hpp>
 using boost::adaptors::map_values;
 
 #include <iostream>

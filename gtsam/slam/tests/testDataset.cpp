@@ -101,7 +101,7 @@ TEST(dataSet, load2D) {
   BetweenFactor<Pose2> expected(1, 0, Pose2(-0.99879, 0.0417574, -0.00818381),
                                 model);
   BetweenFactor<Pose2>::shared_ptr actual =
-      boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(0));
+      std::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(0));
   EXPECT(assert_equal(expected, *actual));
 
   // Check binary measurements, Pose2
@@ -117,7 +117,7 @@ TEST(dataSet, load2D) {
   const auto actualFactors = parseFactors<Pose2>(filename);
   for (size_t i : {0, 1, 2, 3, 4, 5}) {
     EXPECT(assert_equal(
-        *boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(i)),
+        *std::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(i)),
         *actualFactors[i], 1e-5));
   }
 
@@ -201,7 +201,7 @@ TEST(dataSet, readG2o3D) {
   const auto actualFactors = parseFactors<Pose3>(g2oFile);
   for (size_t i : {0, 1, 2, 3, 4, 5}) {
     EXPECT(assert_equal(
-        *boost::dynamic_pointer_cast<BetweenFactor<Pose3>>(expectedGraph[i]),
+        *std::dynamic_pointer_cast<BetweenFactor<Pose3>>(expectedGraph[i]),
         *actualFactors[i], 1e-5));
   }
 

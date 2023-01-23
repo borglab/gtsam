@@ -348,7 +348,7 @@ TEST( SmartStereoProjectionFactorPP, noisy_error_multipleExtrinsics ) {
   measurements.push_back(cam1_uv);
   measurements.push_back(cam2_uv);
 
-  vector<boost::shared_ptr<Cal3_S2Stereo> > Ks; ///< shared pointer to calibration object (one for each camera)
+  vector<std::shared_ptr<Cal3_S2Stereo> > Ks; ///< shared pointer to calibration object (one for each camera)
   Ks.push_back(K);
   Ks.push_back(K);
 

@@ -94,7 +94,7 @@ class GTSAM_EXPORT PreintegratedRotation {
 
  protected:
   /// Parameters
-  boost::shared_ptr<Params> p_;
+  std::shared_ptr<Params> p_;
 
   double deltaTij_;           ///< Time interval from i to j
   Rot3 deltaRij_;             ///< Preintegrated relative orientation (in frame i)
@@ -108,12 +108,12 @@ class GTSAM_EXPORT PreintegratedRotation {
   /// @{
 
   /// Default constructor, resets integration to zero
-  explicit PreintegratedRotation(const boost::shared_ptr<Params>& p) : p_(p) {
+  explicit PreintegratedRotation(const std::shared_ptr<Params>& p) : p_(p) {
     resetIntegration();
   }
 
   /// Explicit initialization of all class members
-  PreintegratedRotation(const boost::shared_ptr<Params>& p,
+  PreintegratedRotation(const std::shared_ptr<Params>& p,
                         double deltaTij, const Rot3& deltaRij,
                         const Matrix3& delRdelBiasOmega)
       : p_(p), deltaTij_(deltaTij), deltaRij_(deltaRij), delRdelBiasOmega_(delRdelBiasOmega) {}
@@ -134,7 +134,7 @@ class GTSAM_EXPORT PreintegratedRotation {
 
   /// @name Access instance variables
   /// @{
-  const boost::shared_ptr<Params>& params() const {
+  const std::shared_ptr<Params>& params() const {
     return p_;
   }
   const double& deltaTij() const {

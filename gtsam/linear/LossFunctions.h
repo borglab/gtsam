@@ -65,7 +65,7 @@ class GTSAM_EXPORT Base {
   /** the rows can be weighted independently according to the error
    * or uniformly with the norm of the right hand side */
   enum ReweightScheme { Scalar, Block };
-  typedef boost::shared_ptr<Base> shared_ptr;
+  typedef std::shared_ptr<Base> shared_ptr;
 
  protected:
   /// Strategy for reweighting \sa ReweightScheme
@@ -145,7 +145,7 @@ class GTSAM_EXPORT Base {
  */
 class GTSAM_EXPORT Null : public Base {
  public:
-  typedef boost::shared_ptr<Null> shared_ptr;
+  typedef std::shared_ptr<Null> shared_ptr;
 
   Null(const ReweightScheme reweight = Block) : Base(reweight) {}
   ~Null() override {}
@@ -177,7 +177,7 @@ class GTSAM_EXPORT Fair : public Base {
   double c_;
 
  public:
-  typedef boost::shared_ptr<Fair> shared_ptr;
+  typedef std::shared_ptr<Fair> shared_ptr;
 
   Fair(double c = 1.3998, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -210,7 +210,7 @@ class GTSAM_EXPORT Huber : public Base {
   double k_;
 
  public:
-  typedef boost::shared_ptr<Huber> shared_ptr;
+  typedef std::shared_ptr<Huber> shared_ptr;
 
   Huber(double k = 1.345, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -248,7 +248,7 @@ class GTSAM_EXPORT Cauchy : public Base {
   double k_, ksquared_;
 
  public:
-  typedef boost::shared_ptr<Cauchy> shared_ptr;
+  typedef std::shared_ptr<Cauchy> shared_ptr;
 
   Cauchy(double k = 0.1, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -282,7 +282,7 @@ class GTSAM_EXPORT Tukey : public Base {
   double c_, csquared_;
 
  public:
-  typedef boost::shared_ptr<Tukey> shared_ptr;
+  typedef std::shared_ptr<Tukey> shared_ptr;
 
   Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -315,7 +315,7 @@ class GTSAM_EXPORT Welsch : public Base {
   double c_, csquared_;
 
  public:
-  typedef boost::shared_ptr<Welsch> shared_ptr;
+  typedef std::shared_ptr<Welsch> shared_ptr;
 
   Welsch(double c = 2.9846, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -348,7 +348,7 @@ class GTSAM_EXPORT Welsch : public Base {
  */
 class GTSAM_EXPORT GemanMcClure : public Base {
  public:
-  typedef boost::shared_ptr<GemanMcClure> shared_ptr;
+  typedef std::shared_ptr<GemanMcClure> shared_ptr;
 
   GemanMcClure(double c = 1.0, const ReweightScheme reweight = Block);
   ~GemanMcClure() override {}
@@ -386,7 +386,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
  */
 class GTSAM_EXPORT DCS : public Base {
  public:
-  typedef boost::shared_ptr<DCS> shared_ptr;
+  typedef std::shared_ptr<DCS> shared_ptr;
 
   DCS(double c = 1.0, const ReweightScheme reweight = Block);
   ~DCS() override {}
@@ -428,7 +428,7 @@ class GTSAM_EXPORT L2WithDeadZone : public Base {
   double k_;
 
  public:
-  typedef boost::shared_ptr<L2WithDeadZone> shared_ptr;
+  typedef std::shared_ptr<L2WithDeadZone> shared_ptr;
 
   L2WithDeadZone(double k = 1.0, const ReweightScheme reweight = Block);
   double weight(double distance) const override;

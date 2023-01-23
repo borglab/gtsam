@@ -6,7 +6,6 @@
  *  Description: unit tests for FindSeparator
  */
 
-#include <boost/make_shared.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam_unstable/partition/FindSeparator-inl.h>
@@ -22,10 +21,10 @@ using namespace gtsam::partition;
 TEST ( Partition, separatorPartitionByMetis )
 {
   GenericGraph2D graph;
-  graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 3, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 4, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 3, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 4, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
   std::vector<size_t> keys{0, 1, 2, 3, 4};
 
   WorkSpace workspace(5);
@@ -47,10 +46,10 @@ TEST ( Partition, separatorPartitionByMetis )
 TEST ( Partition, separatorPartitionByMetis2 )
 {
   GenericGraph2D graph;
-  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 6, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 6, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
   std::vector<size_t> keys{1, 2, 3, 5, 6};
 
   WorkSpace workspace(8);
@@ -71,9 +70,9 @@ TEST ( Partition, separatorPartitionByMetis2 )
 TEST ( Partition, edgePartitionByMetis )
 {
   GenericGraph3D graph;
-  graph.push_back(boost::make_shared<GenericFactor3D>(0, 1, 0, NODE_POSE_3D, NODE_POSE_3D));
-  graph.push_back(boost::make_shared<GenericFactor3D>(1, 2, 1, NODE_POSE_3D, NODE_POSE_3D));
-  graph.push_back(boost::make_shared<GenericFactor3D>(2, 3, 2, NODE_POSE_3D, NODE_POSE_3D));
+  graph.push_back(std::make_shared<GenericFactor3D>(0, 1, 0, NODE_POSE_3D, NODE_POSE_3D));
+  graph.push_back(std::make_shared<GenericFactor3D>(1, 2, 1, NODE_POSE_3D, NODE_POSE_3D));
+  graph.push_back(std::make_shared<GenericFactor3D>(2, 3, 2, NODE_POSE_3D, NODE_POSE_3D));
   std::vector<size_t> keys{0, 1, 2, 3};
 
   WorkSpace workspace(6);
@@ -101,10 +100,10 @@ TEST ( Partition, edgePartitionByMetis )
 TEST ( Partition, edgePartitionByMetis2 )
 {
   GenericGraph3D graph;
-  graph.push_back(boost::make_shared<GenericFactor3D>(0, 1, 0, NODE_POSE_3D, NODE_POSE_3D, 1));
-  graph.push_back(boost::make_shared<GenericFactor3D>(1, 2, 1, NODE_POSE_3D, NODE_POSE_3D, 1));
-  graph.push_back(boost::make_shared<GenericFactor3D>(2, 3, 2, NODE_POSE_3D, NODE_POSE_3D, 20));
-  graph.push_back(boost::make_shared<GenericFactor3D>(3, 4, 3, NODE_POSE_3D, NODE_POSE_3D, 1));
+  graph.push_back(std::make_shared<GenericFactor3D>(0, 1, 0, NODE_POSE_3D, NODE_POSE_3D, 1));
+  graph.push_back(std::make_shared<GenericFactor3D>(1, 2, 1, NODE_POSE_3D, NODE_POSE_3D, 1));
+  graph.push_back(std::make_shared<GenericFactor3D>(2, 3, 2, NODE_POSE_3D, NODE_POSE_3D, 20));
+  graph.push_back(std::make_shared<GenericFactor3D>(3, 4, 3, NODE_POSE_3D, NODE_POSE_3D, 1));
   std::vector<size_t> keys{0, 1, 2, 3, 4};
 
   WorkSpace workspace(6);
@@ -125,10 +124,10 @@ TEST ( Partition, edgePartitionByMetis2 )
 TEST ( Partition, findSeparator )
 {
   GenericGraph2D graph;
-  graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 3, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 4, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 3, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 4, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
   std::vector<size_t> keys{0, 1, 2, 3, 4};
 
   WorkSpace workspace(5);
@@ -151,10 +150,10 @@ TEST ( Partition, findSeparator )
 TEST ( Partition, findSeparator2 )
 {
   GenericGraph2D graph;
-  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 6, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 6, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
   std::vector<size_t> keys{1, 2, 3, 5, 6};
 
   WorkSpace workspace(8);
@@ -184,13 +183,13 @@ TEST ( Partition, findSeparator3_with_reduced_camera )
 {
   GenericGraph3D graph;
   for (int j=1; j<=8; j++)
-    graph.push_back(boost::make_shared<GenericFactor3D>(25, j));
+    graph.push_back(std::make_shared<GenericFactor3D>(25, j));
   for (int j=1; j<=16; j++)
-    graph.push_back(boost::make_shared<GenericFactor3D>(26, j));
+    graph.push_back(std::make_shared<GenericFactor3D>(26, j));
   for (int j=9; j<=24; j++)
-    graph.push_back(boost::make_shared<GenericFactor3D>(27, j));
+    graph.push_back(std::make_shared<GenericFactor3D>(27, j));
   for (int j=17; j<=24; j++)
-    graph.push_back(boost::make_shared<GenericFactor3D>(28, j));
+    graph.push_back(std::make_shared<GenericFactor3D>(28, j));
 
   std::vector<size_t> keys;
   for(int i=1; i<=28; i++)

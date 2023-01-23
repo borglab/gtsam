@@ -43,7 +43,7 @@ class GTSAM_EXPORT BarometricFactor : public NoiseModelFactorN<Pose3, double> {
     using Base::evaluateError;
 
     /// shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<BarometricFactor> shared_ptr;
+    typedef std::shared_ptr<BarometricFactor> shared_ptr;
 
     /// Typedef to this class
     typedef BarometricFactor This;
@@ -66,7 +66,7 @@ class GTSAM_EXPORT BarometricFactor : public NoiseModelFactorN<Pose3, double> {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-        return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        return std::static_pointer_cast<gtsam::NonlinearFactor>(
             gtsam::NonlinearFactor::shared_ptr(new This(*this)));
     }
 

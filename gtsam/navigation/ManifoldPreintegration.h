@@ -59,7 +59,7 @@ public:
    *  @param p    Parameters, typically fixed in a single application
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  ManifoldPreintegration(const boost::shared_ptr<Params>& p,
+  ManifoldPreintegration(const std::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
   /// @}
@@ -106,8 +106,8 @@ public:
       OptionalJacobian<9, 6> H = {}) const override;
 
   /** Dummy clone for MATLAB */
-  virtual boost::shared_ptr<ManifoldPreintegration> clone() const {
-    return boost::shared_ptr<ManifoldPreintegration>();
+  virtual std::shared_ptr<ManifoldPreintegration> clone() const {
+    return std::shared_ptr<ManifoldPreintegration>();
   }
 
   /// @}

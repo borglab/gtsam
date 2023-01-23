@@ -122,7 +122,7 @@ int main(int argc, char* argv[]) {
   Matrix errorsDLTOpt = Matrix::Zero(nrTrials, 3);
 
   double rank_tol = 1e-9;
-  boost::shared_ptr<Cal3_S2> calib = boost::make_shared<Cal3_S2>();
+  std::shared_ptr<Cal3_S2> calib = std::make_shared<Cal3_S2>();
   std::chrono::nanoseconds durationDLT;
   std::chrono::nanoseconds durationDLTOpt;
   std::chrono::nanoseconds durationLOST;

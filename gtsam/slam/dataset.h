@@ -34,7 +34,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/types.h>
 
-#include <boost/smart_ptr/shared_ptr.hpp>
 #include <string>
 #include <utility> // for pair
 #include <vector>

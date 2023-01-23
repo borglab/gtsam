@@ -42,7 +42,7 @@ SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab,
 
   auto Rc1 = *Ab1.eliminateSequential(ordering, EliminateQR);
   auto xbar = Rc1.optimize();
-  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
+  pc_ = std::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
 /**************************************************************************************************/
@@ -52,7 +52,7 @@ SubgraphSolver::SubgraphSolver(const GaussianBayesNet &Rc1,
                                const Parameters &parameters)
     : parameters_(parameters) {
   auto xbar = Rc1.optimize();
-  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
+  pc_ = std::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
 /**************************************************************************************************/

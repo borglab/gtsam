@@ -52,16 +52,16 @@ namespace gtsam {
     typedef BayesTreeCliqueBase<DERIVED, FACTORGRAPH> This;
     typedef DERIVED DerivedType;
     typedef EliminationTraits<FACTORGRAPH> EliminationTraitsType;
-    typedef boost::shared_ptr<This> shared_ptr;
-    typedef boost::weak_ptr<This> weak_ptr;
-    typedef boost::shared_ptr<DerivedType> derived_ptr;
-    typedef boost::weak_ptr<DerivedType> derived_weak_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
+    typedef std::weak_ptr<This> weak_ptr;
+    typedef std::shared_ptr<DerivedType> derived_ptr;
+    typedef std::weak_ptr<DerivedType> derived_weak_ptr;
 
   public:
     typedef FACTORGRAPH FactorGraphType;
     typedef typename EliminationTraitsType::BayesNetType BayesNetType;
     typedef typename BayesNetType::ConditionalType ConditionalType;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef std::shared_ptr<ConditionalType> sharedConditional;
     typedef typename FactorGraphType::FactorType FactorType;
     typedef typename FactorGraphType::Eliminate Eliminate;
 

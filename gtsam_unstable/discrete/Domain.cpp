@@ -9,7 +9,6 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam_unstable/discrete/Domain.h>
 
-#include <boost/make_shared.hpp>
 #include <sstream>
 namespace gtsam {
 
@@ -82,7 +81,7 @@ Constraint::shared_ptr Domain::partiallyApply(const DiscreteValues& values) cons
   DiscreteValues::const_iterator it = values.find(key());
   if (it != values.end() && !contains(it->second))
     throw runtime_error("Domain::partiallyApply: unsatisfiable");
-  return boost::make_shared<Domain>(*this);
+  return std::make_shared<Domain>(*this);
 }
 
 /* ************************************************************************* */
@@ -90,7 +89,7 @@ Constraint::shared_ptr Domain::partiallyApply(const Domains& domains) const {
   const Domain& Dk = domains.at(key());
   if (Dk.isSingleton() && !contains(*Dk.begin()))
     throw runtime_error("Domain::partiallyApply: unsatisfiable");
-  return boost::make_shared<Domain>(Dk);
+  return std::make_shared<Domain>(Dk);
 }
 
 /* ************************************************************************* */

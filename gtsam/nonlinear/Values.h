@@ -29,7 +29,7 @@
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/inference/Key.h>
 #include <boost/ptr_container/serialize_ptr_map.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <string>
 #include <utility>
@@ -80,10 +80,10 @@ namespace gtsam {
   public:
 
     /// A shared_ptr to this class
-    typedef boost::shared_ptr<Values> shared_ptr;
+    typedef std::shared_ptr<Values> shared_ptr;
 
     /// A const shared_ptr to this class
-    typedef boost::shared_ptr<const Values> const_shared_ptr;
+    typedef std::shared_ptr<const Values> const_shared_ptr;
 
     /// A key-value pair, which you get by dereferencing iterators
     struct GTSAM_EXPORT KeyValuePair {

@@ -32,7 +32,6 @@
 #include <gtsam/base/cholesky.h>
 
 #include <boost/format.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/array.hpp>
 #include <boost/range/algorithm/copy.hpp>
 #include <boost/range/adaptor/indirected.hpp>
@@ -200,11 +199,11 @@ FastVector<JacobianFactor::shared_ptr> _convertOrCastToJacobians(
   jacobians.reserve(factors.size());
   for(const GaussianFactor::shared_ptr& factor: factors) {
     if (factor) {
-      if (JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<
+      if (JacobianFactor::shared_ptr jf = std::dynamic_pointer_cast<
           JacobianFactor>(factor))
         jacobians.push_back(jf);
       else
-        jacobians.push_back(boost::make_shared<JacobianFactor>(*factor));
+        jacobians.push_back(std::make_shared<JacobianFactor>(*factor));
     }
   }
   return jacobians;
@@ -792,7 +791,7 @@ std::pair<GaussianConditional::shared_ptr, JacobianFactor::shared_ptr> Eliminate
   // Combine and sort variable blocks in elimination order
   JacobianFactor::shared_ptr jointFactor;
   try {
-    jointFactor = boost::make_shared<JacobianFactor>(factors, keys);
+    jointFactor = std::make_shared<JacobianFactor>(factors, keys);
   } catch (std::invalid_argument&) {
     throw InvalidDenseElimination(
         "EliminateQR was called with a request to eliminate variables that are not\n"
@@ -855,7 +854,7 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFronta
   conditionalNoiseModel =
       noiseModel::Diagonal::Sigmas(model_->sigmas().segment(Ab_.rowStart(), Ab_.rows()));
   GaussianConditional::shared_ptr conditional =
-      boost::make_shared<GaussianConditional>(Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
+      std::make_shared<GaussianConditional>(Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
 
   const DenseIndex maxRemainingRows =
       std::min(Ab_.cols(), originalRowEnd) - Ab_.rowStart() - frontalDim;

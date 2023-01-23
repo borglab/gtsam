@@ -385,7 +385,7 @@ void ConcurrentBatchSmoother::updateSmootherSummarization() {
 void ConcurrentBatchSmoother::PrintNonlinearFactor(const NonlinearFactor::shared_ptr& factor, const std::string& indent, const KeyFormatter& keyFormatter) {
   std::cout << indent;
   if(factor) {
-    if(boost::dynamic_pointer_cast<LinearContainerFactor>(factor)) {
+    if(std::dynamic_pointer_cast<LinearContainerFactor>(factor)) {
       std::cout << "l( ";
     } else {
       std::cout << "f( ";

@@ -45,7 +45,7 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
   static const int RotDim = traits<Rot>::dimension;
 
   /// Shorthand for a smart pointer to a factor.
-  using shared_ptr = boost::shared_ptr<MagPoseFactor<POSE>>;
+  using shared_ptr = std::shared_ptr<MagPoseFactor<POSE>>;
 
   /// Concept check by type.
   GTSAM_CONCEPT_TESTABLE_TYPE(POSE)
@@ -86,7 +86,7 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
 
   /// @return a deep copy of this factor.
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new This(*this)));
   }
 

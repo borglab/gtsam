@@ -151,7 +151,7 @@ T Expression<T>::value(const Values& values,
 }
 
 template<typename T>
-const boost::shared_ptr<internal::ExpressionNode<T> >& Expression<T>::root() const {
+const std::shared_ptr<internal::ExpressionNode<T> >& Expression<T>::root() const {
   return root_;
 }
 
@@ -284,16 +284,16 @@ std::vector<Expression<T> > createUnknowns(size_t n, char c, size_t start) {
 
 template <typename T>
 ScalarMultiplyExpression<T>::ScalarMultiplyExpression(double s, const Expression<T>& e)
-    : Expression<T>(boost::make_shared<internal::ScalarMultiplyNode<T>>(s, e)) {}
+    : Expression<T>(std::make_shared<internal::ScalarMultiplyNode<T>>(s, e)) {}
 
 
 template <typename T>
 BinarySumExpression<T>::BinarySumExpression(const Expression<T>& e1, const Expression<T>& e2)
-    : Expression<T>(boost::make_shared<internal::BinarySumNode<T>>(e1, e2)) {}
+    : Expression<T>(std::make_shared<internal::BinarySumNode<T>>(e1, e2)) {}
 
 template <typename T>
 Expression<T>& Expression<T>::operator+=(const Expression<T>& e) {
-  root_ = boost::make_shared<internal::BinarySumNode<T>>(*this, e);
+  root_ = std::make_shared<internal::BinarySumNode<T>>(*this, e);
   return *this;
 }
 

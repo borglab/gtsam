@@ -6,7 +6,6 @@
  *  Description: generic graph types used in partitioning
  */
 #include <iostream>
-#include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <gtsam/base/DSFVector.h>
@@ -396,7 +395,7 @@ namespace gtsam { namespace partition {
         hasOdometry =  cameraToCamera[camera1] == camera2;
         if (nrCommonLandmarks > 0 || hasOdometry) {
           nrTotalConstraints = 2 * nrCommonLandmarks + (hasOdometry ? 6 : 0);
-          reducedGraph.push_back(boost::make_shared<GenericFactor3D>(camera1, camera2,
+          reducedGraph.push_back(std::make_shared<GenericFactor3D>(camera1, camera2,
               factorIndex++, NODE_POSE_3D, NODE_POSE_3D, nrTotalConstraints));
         }
       }

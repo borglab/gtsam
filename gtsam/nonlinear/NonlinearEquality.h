@@ -172,7 +172,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -229,7 +229,7 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<NonlinearEquality1<VALUE> > shared_ptr;
+  typedef std::shared_ptr<NonlinearEquality1<VALUE> > shared_ptr;
 
   /**
    * Constructor
@@ -248,7 +248,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -307,7 +307,7 @@ class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
   NonlinearEquality2() {}
 
  public:
-  typedef boost::shared_ptr<NonlinearEquality2<T>> shared_ptr;
+  typedef std::shared_ptr<NonlinearEquality2<T>> shared_ptr;
 
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
@@ -326,7 +326,7 @@ class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 

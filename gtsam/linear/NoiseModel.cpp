@@ -20,7 +20,6 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/format.hpp>
-#include <boost/make_shared.hpp>
 
 #include <cmath>
 #include <iostream>
@@ -93,7 +92,7 @@ Gaussian::shared_ptr Gaussian::SqrtInformation(const Matrix& R, bool smart) {
       return Diagonal::Sigmas(diagonal->array().inverse(), true);
   }
   // NOTE(frank): only reaches here if !(smart && diagonal)
-  return boost::make_shared<Gaussian>(R.rows(), R);
+  return std::make_shared<Gaussian>(R.rows(), R);
 }
 
 /* ************************************************************************* */
@@ -109,7 +108,7 @@ Gaussian::shared_ptr Gaussian::Information(const Matrix& information, bool smart
   else {
     Eigen::LLT<Matrix> llt(information);
     Matrix R = llt.matrixU();
-    return boost::make_shared<Gaussian>(n, R);
+    return std::make_shared<Gaussian>(n, R);
   }
 }
 

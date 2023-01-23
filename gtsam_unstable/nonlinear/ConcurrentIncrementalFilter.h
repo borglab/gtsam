@@ -31,7 +31,7 @@ class GTSAM_UNSTABLE_EXPORT ConcurrentIncrementalFilter : public virtual Concurr
 
 public:
 
-  typedef boost::shared_ptr<ConcurrentIncrementalFilter> shared_ptr;
+  typedef std::shared_ptr<ConcurrentIncrementalFilter> shared_ptr;
   typedef ConcurrentFilter Base; ///< typedef for base class
 
   /** Meta information returned about the update */

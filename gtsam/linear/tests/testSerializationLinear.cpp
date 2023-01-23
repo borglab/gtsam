@@ -228,10 +228,10 @@ TEST (Serialization, gaussian_bayes_tree) {
   const Ordering chainOrdering {x2, x1, x3, x4};
   const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
   const GaussianFactorGraph chain = {
-    boost::make_shared<JacobianFactor>(x2, (Matrix(1, 1) << 1.).finished(), x1, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
-    boost::make_shared<JacobianFactor>(x2, (Matrix(1, 1) << 1.).finished(), x3, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
-    boost::make_shared<JacobianFactor>(x3, (Matrix(1, 1) << 1.).finished(), x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
-    boost::make_shared<JacobianFactor>(x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise)};
+    std::make_shared<JacobianFactor>(x2, (Matrix(1, 1) << 1.).finished(), x1, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
+    std::make_shared<JacobianFactor>(x2, (Matrix(1, 1) << 1.).finished(), x3, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
+    std::make_shared<JacobianFactor>(x3, (Matrix(1, 1) << 1.).finished(), x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
+    std::make_shared<JacobianFactor>(x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise)};
 
   GaussianBayesTree init = *chain.eliminateMultifrontal(chainOrdering);
   GaussianBayesTree expected = *chain.eliminateMultifrontal(chainOrdering);

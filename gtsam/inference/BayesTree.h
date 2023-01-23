@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/FastList.h>
@@ -67,21 +67,21 @@ namespace gtsam {
   {
   protected:
     typedef BayesTree<CLIQUE> This;
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
 
   public:
     typedef CLIQUE Clique; ///< The clique type, normally BayesTreeClique
-    typedef boost::shared_ptr<Clique> sharedClique; ///< Shared pointer to a clique
+    typedef std::shared_ptr<Clique> sharedClique; ///< Shared pointer to a clique
     typedef Clique Node; ///< Synonym for Clique (TODO: remove)
     typedef sharedClique sharedNode; ///< Synonym for sharedClique (TODO: remove)
     typedef typename CLIQUE::ConditionalType ConditionalType;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef std::shared_ptr<ConditionalType> sharedConditional;
     typedef typename CLIQUE::BayesNetType BayesNetType;
-    typedef boost::shared_ptr<BayesNetType> sharedBayesNet;
+    typedef std::shared_ptr<BayesNetType> sharedBayesNet;
     typedef typename CLIQUE::FactorType FactorType;
-    typedef boost::shared_ptr<FactorType> sharedFactor;
+    typedef std::shared_ptr<FactorType> sharedFactor;
     typedef typename CLIQUE::FactorGraphType FactorGraphType;
-    typedef boost::shared_ptr<FactorGraphType> sharedFactorGraph;
+    typedef std::shared_ptr<FactorGraphType> sharedFactorGraph;
     typedef typename FactorGraphType::Eliminate Eliminate;
     typedef typename CLIQUE::EliminationTraitsType EliminationTraitsType;
 
@@ -278,7 +278,7 @@ namespace gtsam {
     typedef CLIQUE CliqueType;
     typedef typename CLIQUE::ConditionalType Base;
 
-    boost::shared_ptr<CliqueType> clique;
+    std::shared_ptr<CliqueType> clique;
 
     /**
      * @brief Construct a new Bayes Tree Orphan Wrapper object
@@ -290,7 +290,7 @@ namespace gtsam {
      * @param clique Orphan clique to add for further consideration in
      * elimination.
      */
-    BayesTreeOrphanWrapper(const boost::shared_ptr<CliqueType>& clique)
+    BayesTreeOrphanWrapper(const std::shared_ptr<CliqueType>& clique)
         : clique(clique) {
       this->keys_.assign(clique->conditional()->beginParents(),
                          clique->conditional()->endParents());

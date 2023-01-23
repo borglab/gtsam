@@ -27,7 +27,6 @@
 #include <gtsam/slam/dataset.h>
 
 #include <optional>
-#include <boost/make_shared.hpp>
 #include <vector>
 
 namespace gtsam {
@@ -68,7 +67,7 @@ protected:
  public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// shorthand for a set of cameras
   typedef CAMERA Camera;
@@ -196,7 +195,7 @@ protected:
   }
 
   /// Create a Hessianfactor that is an approximation of error(p).
-  boost::shared_ptr<RegularHessianFactor<Base::Dim> > createHessianFactor(
+  std::shared_ptr<RegularHessianFactor<Base::Dim> > createHessianFactor(
       const Cameras& cameras, const double lambda = 0.0,
       bool diagonalDamping = false) const {
     size_t numKeys = this->keys_.size();
@@ -216,7 +215,7 @@ protected:
       // failed: return"empty" Hessian
       for (Matrix& m : Gs) m = Matrix::Zero(Base::Dim, Base::Dim);
       for (Vector& v : gs) v = Vector::Zero(Base::Dim);
-      return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
+      return std::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
                                                                   Gs, gs, 0.0);
     }
 
@@ -233,60 +232,60 @@ protected:
     SymmetricBlockMatrix augmentedHessian =  //
         Cameras::SchurComplement(Fs, E, b, lambda, diagonalDamping);
 
-    return boost::make_shared<RegularHessianFactor<Base::Dim> >(
+    return std::make_shared<RegularHessianFactor<Base::Dim> >(
         this->keys_, augmentedHessian);
   }
 
   // Create RegularImplicitSchurFactor factor.
-  boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> > createRegularImplicitSchurFactor(
+  std::shared_ptr<RegularImplicitSchurFactor<CAMERA> > createRegularImplicitSchurFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
       return Base::createRegularImplicitSchurFactor(cameras, *result_, lambda);
     else
       // failed: return empty
-      return boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> >();
+      return std::shared_ptr<RegularImplicitSchurFactor<CAMERA> >();
   }
 
   /// Create JacobianFactorQ factor.
-  boost::shared_ptr<JacobianFactorQ<Base::Dim, 2> > createJacobianQFactor(
+  std::shared_ptr<JacobianFactorQ<Base::Dim, 2> > createJacobianQFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
       return Base::createJacobianQFactor(cameras, *result_, lambda);
     else
       // failed: return empty
-      return boost::make_shared<JacobianFactorQ<Base::Dim, 2> >(this->keys_);
+      return std::make_shared<JacobianFactorQ<Base::Dim, 2> >(this->keys_);
   }
 
   /// Create JacobianFactorQ factor, takes values.
-  boost::shared_ptr<JacobianFactorQ<Base::Dim, 2> > createJacobianQFactor(
+  std::shared_ptr<JacobianFactorQ<Base::Dim, 2> > createJacobianQFactor(
       const Values& values, double lambda) const {
     return createJacobianQFactor(this->cameras(values), lambda);
   }
 
   /// Different (faster) way to compute a JacobianFactorSVD factor.
-  boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
+  std::shared_ptr<JacobianFactor> createJacobianSVDFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
       return Base::createJacobianSVDFactor(cameras, *result_, lambda);
     else
       // failed: return empty
-      return boost::make_shared<JacobianFactorSVD<Base::Dim, 2> >(this->keys_);
+      return std::make_shared<JacobianFactorSVD<Base::Dim, 2> >(this->keys_);
   }
 
   /// Linearize to a Hessianfactor.
-  virtual boost::shared_ptr<RegularHessianFactor<Base::Dim> > linearizeToHessian(
+  virtual std::shared_ptr<RegularHessianFactor<Base::Dim> > linearizeToHessian(
       const Values& values, double lambda = 0.0) const {
     return createHessianFactor(this->cameras(values), lambda);
   }
 
   /// Linearize to an Implicit Schur factor.
-  virtual boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> > linearizeToImplicit(
+  virtual std::shared_ptr<RegularImplicitSchurFactor<CAMERA> > linearizeToImplicit(
       const Values& values, double lambda = 0.0) const {
     return createRegularImplicitSchurFactor(this->cameras(values), lambda);
   }
 
   /// Linearize to a JacobianfactorQ.
-  virtual boost::shared_ptr<JacobianFactorQ<Base::Dim, 2> > linearizeToJacobian(
+  virtual std::shared_ptr<JacobianFactorQ<Base::Dim, 2> > linearizeToJacobian(
       const Values& values, double lambda = 0.0) const {
     return createJacobianQFactor(this->cameras(values), lambda);
   }
@@ -296,7 +295,7 @@ protected:
    * @param values Values structure which must contain camera poses for this factor
    * @return a Gaussian factor
    */
-  boost::shared_ptr<GaussianFactor> linearizeDamped(const Cameras& cameras,
+  std::shared_ptr<GaussianFactor> linearizeDamped(const Cameras& cameras,
       const double lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different linear factors
     switch (params_.linearizationMode) {
@@ -318,7 +317,7 @@ protected:
    * @param values Values structure which must contain camera poses for this factor
    * @return a Gaussian factor
    */
-  boost::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
+  std::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
       const double lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different linear factors
     Cameras cameras = this->cameras(values);
@@ -326,7 +325,7 @@ protected:
   }
 
   /// linearize
-  boost::shared_ptr<GaussianFactor> linearize(
+  std::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
     return linearizeDamped(values);
   }

@@ -1,6 +1,13 @@
-// Functionality to serialize std::optional<T> to boost::archive
-// Following this:
-// PR: https://github.com/boostorg/serialization/pull/148/files#
+/* ----------------------------------------------------------------------------
+* Use, modification and distribution is subject to the Boost Software
+* License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
+* http://www.boost.org/LICENSE_1_0.txt)
+
+* See http://www.boost.org for updates, documentation, and revision history.
+
+* Functionality to serialize std::optional<T> to boost::archive
+* Inspired from this PR: https://github.com/boostorg/serialization/pull/163
+* ---------------------------------------------------------------------------- */
 
 #pragma once
 #include <optional>
@@ -87,8 +94,6 @@ template <class Archive, class T>
 void serialize(Archive& ar, std::optional<T>& t, const unsigned int version) {
   boost::serialization::split_free(ar, t, version);
 }
-
-// derive boost::xml_archive_impl for archiving std::optional<T> with xml
 
 }  // namespace serialization
 }  // namespace boost

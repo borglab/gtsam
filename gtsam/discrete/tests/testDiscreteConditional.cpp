@@ -23,7 +23,6 @@
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/inference/Symbol.h>
 
-#include <boost/make_shared.hpp>
 
 using namespace std;
 using namespace gtsam;

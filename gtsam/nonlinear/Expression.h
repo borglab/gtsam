@@ -24,7 +24,6 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/VectorSpace.h>
 
-#include <boost/make_shared.hpp>
 #include <map>
 
 // Forward declare tests
@@ -55,10 +54,10 @@ public:
 protected:
 
   // Paul's trick shared pointer, polymorphic root of entire expression tree
-  boost::shared_ptr<internal::ExpressionNode<T> > root_;
+  std::shared_ptr<internal::ExpressionNode<T> > root_;
 
   /// Construct with a custom root
-  Expression(const boost::shared_ptr<internal::ExpressionNode<T> >& root) : root_(root) {}
+  Expression(const std::shared_ptr<internal::ExpressionNode<T> >& root) : root_(root) {}
 
 public:
 
@@ -170,12 +169,12 @@ public:
    *  "deep" is in quotes because the ExpressionNode hierarchy is *not* cloned.
    *  The intent is for derived classes to be copied using only a Base pointer.
    */
-  virtual boost::shared_ptr<Expression> clone() const {
-    return boost::make_shared<Expression>(*this);
+  virtual std::shared_ptr<Expression> clone() const {
+    return std::make_shared<Expression>(*this);
   }
 
   /// Return root
-  const boost::shared_ptr<internal::ExpressionNode<T> >& root() const;
+  const std::shared_ptr<internal::ExpressionNode<T> >& root() const;
 
   /// Return size needed for memory buffer in traceExecution
   size_t traceSize() const;

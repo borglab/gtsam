@@ -10,7 +10,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/make_shared.hpp>
 
 #include <map>
 
@@ -27,19 +26,19 @@ using namespace gtsam::partition;
 TEST ( GenerciGraph, findIslands )
 {
   GenericGraph2D graph;
-  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 8, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 8, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 9, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(5, NODE_POSE_2D, 9, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(6, NODE_POSE_2D, 9, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 8, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 8, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 9, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(5, NODE_POSE_2D, 9, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(6, NODE_POSE_2D, 9, NODE_LANDMARK_2D));
 
-  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 5, NODE_POSE_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(5, NODE_POSE_2D, 6, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 5, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(5, NODE_POSE_2D, 6, NODE_POSE_2D));
   std::vector<size_t> keys{1, 2, 3, 4, 5, 6, 7, 8, 9};
 
   WorkSpace workspace(10); // from 0 to 9
@@ -60,19 +59,19 @@ TEST ( GenerciGraph, findIslands )
 TEST( GenerciGraph, findIslands2 )
 {
   GenericGraph2D graph;
-  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 8, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 8, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(5, NODE_POSE_2D, 8, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(6, NODE_POSE_2D, 8, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 8, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 8, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(5, NODE_POSE_2D, 8, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(6, NODE_POSE_2D, 8, NODE_LANDMARK_2D));
 
-  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 5, NODE_POSE_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(5, NODE_POSE_2D, 6, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 5, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(5, NODE_POSE_2D, 6, NODE_POSE_2D));
   std::vector<size_t> keys{1, 2, 3, 4, 5, 6, 7, 8};
 
   WorkSpace workspace(15); // from 0 to 8, but testing over-allocation here
@@ -90,11 +89,11 @@ TEST( GenerciGraph, findIslands2 )
 TEST ( GenerciGraph, findIslands3 )
 {
   GenericGraph2D graph;
-  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 6, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 6, NODE_LANDMARK_2D));
 
-  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 4, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 4, NODE_POSE_2D));
   std::vector<size_t> keys{1, 2, 3, 4, 5, 6};
 
   WorkSpace workspace(7); // from 0 to 9
@@ -113,8 +112,8 @@ TEST ( GenerciGraph, findIslands3 )
 TEST ( GenerciGraph, findIslands4 )
 {
   GenericGraph2D graph;
-  graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 4, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(7, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 4, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(7, NODE_POSE_2D, 7, NODE_LANDMARK_2D));
   std::vector<size_t> keys{3, 4, 7};
 
   WorkSpace workspace(8); // from 0 to 7
@@ -135,13 +134,13 @@ TEST ( GenerciGraph, findIslands4 )
 TEST ( GenerciGraph, findIslands5 )
 {
   GenericGraph2D graph;
-  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(4, NODE_POSE_2D, 5, NODE_LANDMARK_2D));
 
-  graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 3, NODE_POSE_2D));
-  graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 4, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 3, NODE_POSE_2D));
+  graph.push_back(std::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 4, NODE_POSE_2D));
 
   std::vector<size_t> keys{1, 2, 3, 4, 5};
 
@@ -163,11 +162,11 @@ TEST ( GenerciGraph, findIslands5 )
 TEST ( GenerciGraph, reduceGenericGraph )
 {
   GenericGraph3D graph;
-  graph.push_back(boost::make_shared<GenericFactor3D>(1, 3));
-  graph.push_back(boost::make_shared<GenericFactor3D>(1, 4));
-  graph.push_back(boost::make_shared<GenericFactor3D>(1, 5));
-  graph.push_back(boost::make_shared<GenericFactor3D>(2, 5));
-  graph.push_back(boost::make_shared<GenericFactor3D>(2, 6));
+  graph.push_back(std::make_shared<GenericFactor3D>(1, 3));
+  graph.push_back(std::make_shared<GenericFactor3D>(1, 4));
+  graph.push_back(std::make_shared<GenericFactor3D>(1, 5));
+  graph.push_back(std::make_shared<GenericFactor3D>(2, 5));
+  graph.push_back(std::make_shared<GenericFactor3D>(2, 6));
 
   std::vector<size_t> cameraKeys, landmarkKeys;
   cameraKeys.push_back(1);
@@ -198,12 +197,12 @@ TEST ( GenerciGraph, reduceGenericGraph )
 TEST ( GenericGraph, reduceGenericGraph2 )
 {
   GenericGraph3D graph;
-  graph.push_back(boost::make_shared<GenericFactor3D>(1, 3, 0, NODE_POSE_3D, NODE_LANDMARK_3D));
-  graph.push_back(boost::make_shared<GenericFactor3D>(1, 4, 1, NODE_POSE_3D, NODE_LANDMARK_3D));
-  graph.push_back(boost::make_shared<GenericFactor3D>(1, 5, 2, NODE_POSE_3D, NODE_LANDMARK_3D));
-  graph.push_back(boost::make_shared<GenericFactor3D>(2, 5, 3, NODE_POSE_3D, NODE_LANDMARK_3D));
-  graph.push_back(boost::make_shared<GenericFactor3D>(2, 6, 4, NODE_POSE_3D, NODE_LANDMARK_3D));
-  graph.push_back(boost::make_shared<GenericFactor3D>(2, 7, 5, NODE_POSE_3D, NODE_POSE_3D));
+  graph.push_back(std::make_shared<GenericFactor3D>(1, 3, 0, NODE_POSE_3D, NODE_LANDMARK_3D));
+  graph.push_back(std::make_shared<GenericFactor3D>(1, 4, 1, NODE_POSE_3D, NODE_LANDMARK_3D));
+  graph.push_back(std::make_shared<GenericFactor3D>(1, 5, 2, NODE_POSE_3D, NODE_LANDMARK_3D));
+  graph.push_back(std::make_shared<GenericFactor3D>(2, 5, 3, NODE_POSE_3D, NODE_LANDMARK_3D));
+  graph.push_back(std::make_shared<GenericFactor3D>(2, 6, 4, NODE_POSE_3D, NODE_LANDMARK_3D));
+  graph.push_back(std::make_shared<GenericFactor3D>(2, 7, 5, NODE_POSE_3D, NODE_POSE_3D));
 
   std::vector<size_t> cameraKeys, landmarkKeys;
   cameraKeys.push_back(1);
