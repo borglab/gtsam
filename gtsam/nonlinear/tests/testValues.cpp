@@ -199,25 +199,6 @@ TEST(Values, basic_functions)
   EXPECT(values.exists(4));
   EXPECT(values.exists(6));
   EXPECT(values.exists(8));
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  // find
-  const Values& values_c = values;
-  EXPECT_LONGS_EQUAL(4, values.find(4)->key);
-  EXPECT_LONGS_EQUAL(4, values_c.find(4)->key);
-
-  // lower_bound
-  EXPECT_LONGS_EQUAL(4, values.lower_bound(4)->key);
-  EXPECT_LONGS_EQUAL(4, values_c.lower_bound(4)->key);
-  EXPECT_LONGS_EQUAL(4, values.lower_bound(3)->key);
-  EXPECT_LONGS_EQUAL(4, values_c.lower_bound(3)->key);
-
-  // upper_bound
-  EXPECT_LONGS_EQUAL(6, values.upper_bound(4)->key);
-  EXPECT_LONGS_EQUAL(6, values_c.upper_bound(4)->key);
-  EXPECT_LONGS_EQUAL(4, values.upper_bound(3)->key);
-  EXPECT_LONGS_EQUAL(4, values_c.upper_bound(3)->key);
-#endif
 }
 
 /* ************************************************************************* */

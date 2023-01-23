@@ -169,14 +169,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  std::pair<Values::iterator, bool> Values::tryInsert(Key j, const Value& value) {
-    std::pair<KeyValueMap::iterator, bool> result = values_.insert(j, value.clone_());
-    return std::make_pair(boost::make_transform_iterator(result.first, &make_deref_pair), result.second);
-  }
-#endif
-
-  /* ************************************************************************* */
   void Values::update(Key j, const Value& val) {
     // Find the value to update
     KeyValueMap::iterator item = values_.find(j);
