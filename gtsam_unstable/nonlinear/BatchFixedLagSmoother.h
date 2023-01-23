@@ -136,8 +136,8 @@ protected:
   /** The current linearization point **/
   Values theta_;
 
-  /** The set of keys involved in current linear factors. These keys should not be relinearized. **/
-  Values linearKeys_;
+  /** The set of values involved in current linear factors. **/
+  Values linearValues_;
 
   /** The current ordering */
   Ordering ordering_;

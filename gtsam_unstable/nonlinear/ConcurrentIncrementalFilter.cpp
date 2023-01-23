@@ -69,14 +69,14 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
     int group = 1;
     // Set all existing variables to Group1
     if(isam2_.getLinearizationPoint().size() > 0) {
-      for(const auto key_value: isam2_.getLinearizationPoint()) {
-        orderingConstraints->operator[](key_value.key) = group;
+      for(const auto key: isam2_.getLinearizationPoint().keys()) {
+        orderingConstraints->operator[](key) = group;
       }
       ++group;
     }
     // Assign new variables to the root
-    for(const auto key_value: newTheta) {
-      orderingConstraints->operator[](key_value.key) = group;
+    for(const auto key: newTheta.keys()) {
+      orderingConstraints->operator[](key) = group;
     }
     // Set marginalizable variables to Group0
     for(Key key: *keysToMove){
@@ -201,8 +201,8 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
 
   // Force iSAM2 not to relinearize anything during this iteration
   FastList<Key> noRelinKeys;
-  for(const auto key_value: isam2_.getLinearizationPoint()) {
-    noRelinKeys.push_back(key_value.key);
+  for(const auto key: isam2_.getLinearizationPoint().keys()) {
+    noRelinKeys.push_back(key);
   }
 
   // Calculate the summarized factor on just the new separator keys

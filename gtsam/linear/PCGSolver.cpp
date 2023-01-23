@@ -137,6 +137,17 @@ void GaussianFactorGraphSystem::rightPrecondition(const Vector &x,
 }
 
 /**********************************************************************************/
+void GaussianFactorGraphSystem::scal(const double alpha, Vector &x) const {
+  x *= alpha;
+}
+double GaussianFactorGraphSystem::dot(const Vector &x, const Vector &y) const {
+  return x.dot(y);
+}
+void GaussianFactorGraphSystem::axpy(const double alpha, const Vector &x,
+                                     Vector &y) const {
+  y += alpha * x;
+}
+/**********************************************************************************/
 VectorValues buildVectorValues(const Vector &v, const Ordering &ordering,
     const map<Key, size_t> & dimensions) {
   VectorValues result;

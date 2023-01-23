@@ -62,10 +62,10 @@ static Values computePoses(const Values& initialRot,
 
   // Upgrade rotations to full poses
   Values initialPose;
-  for (const auto key_value : initialRot) {
-    Key key = key_value.key;
-    const auto& rot = initialRot.at<typename Pose::Rotation>(key);
-    Pose initializedPose = Pose(rot, origin);
+  for (const auto& key_rot : initialRot.extract<typename Pose::Rotation>()) {
+    const Key& key = key_rot.first;
+    const auto& rot = key_rot.second;
+    const Pose initializedPose(rot, origin);
     initialPose.insert(key, initializedPose);
   }
 
@@ -82,14 +82,14 @@ static Values computePoses(const Values& initialRot,
     params.setVerbosity("TERMINATION");
   }
   GaussNewtonOptimizer optimizer(*posegraph, initialPose, params);
-  Values GNresult = optimizer.optimize();
+  const Values GNresult = optimizer.optimize();
 
   // put into Values structure
   Values estimate;
-  for (const auto key_value : GNresult) {
-    Key key = key_value.key;
+  for (const auto& key_pose : GNresult.extract<Pose>()) {
+    const Key& key = key_pose.first;
     if (key != kAnchorKey) {
-      const Pose& pose = GNresult.at<Pose>(key);
+      const Pose& pose = key_pose.second;
       estimate.insert(key, pose);
     }
   }

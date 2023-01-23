@@ -117,9 +117,7 @@ class GTSAM_EXPORT Base {
   Vector weight(const Vector &error) const;
 
   /** square root version of the weight function */
-  Vector sqrtWeight(const Vector &error) const {
-    return weight(error).cwiseSqrt();
-  }
+  Vector sqrtWeight(const Vector &error) const;
 
   /** reweight block matrices and a vector according to their weight
    * implementation */

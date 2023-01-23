@@ -238,6 +238,8 @@ void Gaussian::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const
   whitenInPlace(b);
 }
 
+Matrix Gaussian::information() const { return R().transpose() * R(); }
+
 /* ************************************************************************* */
 // Diagonal
 /* ************************************************************************* */
@@ -284,6 +286,11 @@ Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
 }
 
 /* ************************************************************************* */
+Diagonal::shared_ptr Diagonal::Precisions(const Vector& precisions,
+                                          bool smart) {
+  return Variances(precisions.array().inverse(), smart);
+}
+/* ************************************************************************* */
 void Diagonal::print(const string& name) const {
   gtsam::print(sigmas_, name + "diagonal sigmas ");
 }
@@ -293,22 +300,18 @@ Vector Diagonal::whiten(const Vector& v) const {
   return v.cwiseProduct(invsigmas_);
 }
 
-/* ************************************************************************* */
 Vector Diagonal::unwhiten(const Vector& v) const {
   return v.cwiseProduct(sigmas_);
 }
 
-/* ************************************************************************* */
 Matrix Diagonal::Whiten(const Matrix& H) const {
   return vector_scale(invsigmas(), H);
 }
 
-/* ************************************************************************* */
 void Diagonal::WhitenInPlace(Matrix& H) const {
   vector_scale_inplace(invsigmas(), H);
 }
 
-/* ************************************************************************* */
 void Diagonal::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H = invsigmas().asDiagonal() * H;
 }
@@ -374,6 +377,32 @@ Vector Constrained::whiten(const Vector& v) const {
     c(i) = (bi==0.0) ? ai : ai/bi; // NOTE: not ediv_()
   }
   return c;
+}
+
+/* ************************************************************************* */
+Constrained::shared_ptr Constrained::MixedSigmas(const Vector& sigmas) {
+  return MixedSigmas(Vector::Constant(sigmas.size(), 1000.0), sigmas);
+}
+
+Constrained::shared_ptr Constrained::MixedSigmas(double m,
+                                                 const Vector& sigmas) {
+  return MixedSigmas(Vector::Constant(sigmas.size(), m), sigmas);
+}
+
+Constrained::shared_ptr Constrained::MixedVariances(const Vector& mu,
+                                                    const Vector& variances) {
+  return shared_ptr(new Constrained(mu, variances.cwiseSqrt()));
+}
+Constrained::shared_ptr Constrained::MixedVariances(const Vector& variances) {
+  return shared_ptr(new Constrained(variances.cwiseSqrt()));
+}
+
+Constrained::shared_ptr Constrained::MixedPrecisions(const Vector& mu,
+                                                     const Vector& precisions) {
+  return MixedVariances(mu, precisions.array().inverse());
+}
+Constrained::shared_ptr Constrained::MixedPrecisions(const Vector& precisions) {
+  return MixedVariances(precisions.array().inverse());
 }
 
 /* ************************************************************************* */
@@ -623,6 +652,11 @@ void Unit::print(const std::string& name) const {
 }
 
 /* ************************************************************************* */
+double Unit::squaredMahalanobisDistance(const Vector& v) const {
+  return v.dot(v);
+}
+
+/* ************************************************************************* */
 // Robust
 /* ************************************************************************* */
 
@@ -660,6 +694,13 @@ void Robust::WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const {
 void Robust::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const{
   noise_->WhitenSystem(A1,A2,A3,b);
   robust_->reweight(A1,A2,A3,b);
+}
+
+Vector Robust::unweightedWhiten(const Vector& v) const {
+  return noise_->unweightedWhiten(v);
+}
+double Robust::weight(const Vector& v) const {
+  return robust_->weight(v.norm());
 }
 
 Robust::shared_ptr Robust::Create(

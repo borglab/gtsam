@@ -61,8 +61,8 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearF
     theta_.insert(newTheta);
 
     // Add new variables to the end of the ordering
-    for(const auto key_value: newTheta) {
-      ordering_.push_back(key_value.key);
+    for(const auto key: newTheta.keys()) {
+      ordering_.push_back(key);
     }
 
     // Augment Delta
@@ -135,26 +135,30 @@ void ConcurrentBatchSmoother::synchronize(const NonlinearFactorGraph& smootherFa
   removeFactors(filterSummarizationSlots_);
 
   // Insert new linpoints into the values, augment the ordering, and store new dims to augment delta
-  for(const auto key_value: smootherValues) {
-    std::pair<Values::iterator, bool> iter_inserted = theta_.tryInsert(key_value.key, key_value.value);
-    if(iter_inserted.second) {
-      // If the insert succeeded
-      ordering_.push_back(key_value.key);
-      delta_.insert(key_value.key, Vector::Zero(key_value.value.dim()));
+  for(const auto key: smootherValues.keys()) {
+    if(!theta_.exists(key)) {
+      // If this a new key for theta_, also add to ordering and delta.
+      const auto& value = smootherValues.at(key);
+      delta_.insert(key, Vector::Zero(value.dim()));
+      theta_.insert(key, value);
+      ordering_.push_back(key);
     } else {
-      // If the element already existed in theta_
-      iter_inserted.first->value = key_value.value;
+      // If the key already existed in theta_, just update.
+      const auto& value = smootherValues.at(key);
+      theta_.update(key, value);
     }
   }
-  for(const auto key_value: separatorValues) {
-    std::pair<Values::iterator, bool> iter_inserted = theta_.tryInsert(key_value.key, key_value.value);
-    if(iter_inserted.second) {
-      // If the insert succeeded
-      ordering_.push_back(key_value.key);
-      delta_.insert(key_value.key, Vector::Zero(key_value.value.dim()));
+  for(const auto key: separatorValues.keys()) {
+    if(!theta_.exists(key)) {
+      // If this a new key for theta_, also add to ordering and delta.
+      const auto& value = separatorValues.at(key);
+      delta_.insert(key, Vector::Zero(value.dim()));
+      theta_.insert(key, value);
+      ordering_.push_back(key);
     } else {
-      // If the element already existed in theta_
-      iter_inserted.first->value = key_value.value;
+      // If the key already existed in theta_, just update.
+      const auto& value = separatorValues.at(key);
+      theta_.update(key, value);
     }
   }
 
@@ -322,8 +326,8 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
           // Put the linearization points and deltas back for specific variables
           if(separatorValues_.size() > 0) {
             theta_.update(separatorValues_);
-            for(const auto key_value: separatorValues_) {
-              delta_.at(key_value.key) = newDelta.at(key_value.key);
+            for(const auto key: separatorValues_.keys()) {
+              delta_.at(key) = newDelta.at(key);
             }
           }
 
@@ -371,10 +375,7 @@ void ConcurrentBatchSmoother::updateSmootherSummarization() {
   }
 
   // Get the set of separator keys
-  gtsam::KeySet separatorKeys;
-  for(const auto key_value: separatorValues_) {
-    separatorKeys.insert(key_value.key);
-  }
+  const KeySet separatorKeys = separatorValues_.keySet();
 
   // Calculate the marginal factors on the separator
   smootherSummarization_ = internal::calculateMarginalFactors(graph, theta_, separatorKeys, parameters_.getEliminationFunction());
