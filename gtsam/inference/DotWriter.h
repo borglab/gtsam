@@ -25,6 +25,7 @@
 #include <iosfwd>
 #include <map>
 #include <set>
+#include <optional>
 
 namespace gtsam {
 
@@ -80,20 +81,20 @@ struct GTSAM_EXPORT DotWriter {
 
   /// Create a variable dot fragment.
   void drawVariable(Key key, const KeyFormatter& keyFormatter,
-                    const boost::optional<Vector2>& position,
+                    const std::optional<Vector2>& position,
                     std::ostream* os) const;
 
   /// Create factor dot.
-  static void DrawFactor(size_t i, const boost::optional<Vector2>& position,
+  static void DrawFactor(size_t i, const std::optional<Vector2>& position,
                          std::ostream* os);
 
   /// Return variable position or none
-  boost::optional<Vector2> variablePos(Key key) const;
+  std::optional<Vector2> variablePos(Key key) const;
 
   /// Draw a single factor, specified by its index i and its variable keys.
   void processFactor(size_t i, const KeyVector& keys,
                      const KeyFormatter& keyFormatter,
-                     const boost::optional<Vector2>& position,
+                     const std::optional<Vector2>& position,
                      std::ostream* os) const;
 };
 

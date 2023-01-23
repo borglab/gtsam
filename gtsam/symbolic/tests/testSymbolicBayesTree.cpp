@@ -213,7 +213,7 @@ TEST(BayesTree, shortcutCheck) {
   // Check if all the cached shortcuts are cleared
   rootClique->deleteCachedShortcuts();
   for (SymbolicBayesTree::sharedClique& clique : allCliques) {
-    bool notCleared = clique->cachedSeparatorMarginal().is_initialized();
+    bool notCleared = clique->cachedSeparatorMarginal().has_value();
     CHECK(notCleared == false);
   }
   EXPECT_LONGS_EQUAL(0, (long)rootClique->numCachedSeparatorMarginals());

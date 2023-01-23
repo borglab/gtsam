@@ -20,6 +20,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/std_optional_serialization.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/linear/LossFunctions.h>
 
@@ -27,7 +28,8 @@
 #include <boost/serialization/extended_type_info.hpp>
 #include <boost/serialization/singleton.hpp>
 #include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/optional.hpp>
+
+#include <optional>
 
 namespace gtsam {
 
@@ -164,7 +166,7 @@ namespace gtsam {
     protected:
 
       /** Matrix square root of information matrix (R) */
-      boost::optional<Matrix> sqrt_information_;
+      std::optional<Matrix> sqrt_information_;
 
     private:
 
@@ -184,7 +186,7 @@ namespace gtsam {
 
       /** constructor takes square root information matrix */
       Gaussian(size_t dim = 1,
-               const boost::optional<Matrix>& sqrt_information = boost::none)
+               const std::optional<Matrix>& sqrt_information = {})
           : Base(dim), sqrt_information_(sqrt_information) {}
 
       ~Gaussian() override {}
@@ -732,7 +734,7 @@ namespace gtsam {
     };
 
     // Helper function
-    GTSAM_EXPORT boost::optional<Vector> checkIfDiagonal(const Matrix& M);
+    GTSAM_EXPORT std::optional<Vector> checkIfDiagonal(const Matrix& M);
 
   } // namespace noiseModel
 

@@ -37,8 +37,8 @@ namespace gtsam {
  *   for a function with one relevant param and an optional derivative:
  *     Foo bar(const Obj& a, OptionalMatrixType H1)
  *   Use boost.bind to restructure:
- *     std::bind(bar, std::placeholders::_1, boost::none)
- *   This syntax will fix the optional argument to boost::none, while using the first argument provided
+ *     std::bind(bar, std::placeholders::_1, {})
+ *   This syntax will fix the optional argument to {}, while using the first argument provided
  *
  * For member functions, such as below, with an instantiated copy instanceOfSomeClass
  *     Foo SomeClass::bar(const Obj& a)

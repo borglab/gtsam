@@ -140,7 +140,7 @@ TEST( AHRSFactor, PreintegratedAhrsMeasurementsConstructor ) {
   EXPECT(assert_equal(gyroscopeCovariance,
       actualPim.p().getGyroscopeCovariance(), 1e-6));
   EXPECT(assert_equal(omegaCoriolis,
-      actualPim.p().getOmegaCoriolis().get(), 1e-6));
+      *(actualPim.p().getOmegaCoriolis()), 1e-6));
   EXPECT(assert_equal(bias, actualPim.biasHat(), 1e-6));
   DOUBLES_EQUAL(deltaTij, actualPim.deltaTij(), 1e-6);
   EXPECT(assert_equal(deltaRij, Rot3(actualPim.deltaRij()), 1e-6));
@@ -163,7 +163,7 @@ TEST(AHRSFactor, Error) {
   pim.integrateMeasurement(measuredOmega, deltaT);
 
   // Create factor
-  AHRSFactor factor(X(1), X(2), B(1), pim, kZeroOmegaCoriolis, boost::none);
+  AHRSFactor factor(X(1), X(2), B(1), pim, kZeroOmegaCoriolis, {});
 
   Vector3 errorActual = factor.evaluateError(x1, x2, bias);
 
@@ -458,8 +458,7 @@ TEST (AHRSFactor, predictTest) {
 
   // PreintegratedAhrsMeasurements::predict
   Matrix expectedH = numericalDerivative11<Vector3, Vector3>(
-      std::bind(&PreintegratedAhrsMeasurements::predict,
-          &pim, std::placeholders::_1, boost::none), bias);
+      [&pim](const Vector3& b) { return pim.predict(b, {}); }, bias);
 
   // Actual Jacobians
   Matrix H;

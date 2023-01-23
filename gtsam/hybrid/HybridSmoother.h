@@ -20,6 +20,8 @@
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 
+#include <optional>
+
 namespace gtsam {
 
 class HybridSmoother {
@@ -48,7 +50,7 @@ class HybridSmoother {
    * if applicable
    */
   void update(HybridGaussianFactorGraph graph, const Ordering& ordering,
-              boost::optional<size_t> maxNrLeaves = boost::none);
+              std::optional<size_t> maxNrLeaves = {});
 
   /**
    * @brief Add conditionals from previous timestep as part of liquefication.

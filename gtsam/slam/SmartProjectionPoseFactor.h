@@ -86,7 +86,7 @@ public:
   SmartProjectionPoseFactor(
       const SharedNoiseModel& sharedNoiseModel,
       const boost::shared_ptr<CALIBRATION> K,
-      const boost::optional<Pose3> body_P_sensor,
+      const std::optional<Pose3> body_P_sensor,
       const SmartProjectionParams& params = SmartProjectionParams())
       : SmartProjectionPoseFactor(sharedNoiseModel, K, params) {
     this->body_P_sensor_ = body_P_sensor;

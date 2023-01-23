@@ -64,8 +64,8 @@ class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 6> Dcal = boost::none,
-                     OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 6> Dcal = {},
+                     OptionalJacobian<2, 2> Dp = {}) const;
 
   /**
    * Convert image coordinates uv to intrinsic coordinates xy
@@ -74,8 +74,8 @@ class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in intrinsic coordinates
    */
-  Point2 calibrate(const Point2& p, OptionalJacobian<2, 6> Dcal = boost::none,
-                   OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 6> Dcal = {},
+                   OptionalJacobian<2, 2> Dp = {}) const;
 
   /**
    * Convert homogeneous image coordinates to intrinsic coordinates

@@ -61,7 +61,7 @@ bool Domain::ensureArcConsistency(Key j, Domains* domains) const {
 }
 
 /* ************************************************************************* */
-boost::optional<Domain> Domain::checkAllDiff(const KeyVector keys,
+std::optional<Domain> Domain::checkAllDiff(const KeyVector keys,
                                              const Domains& domains) const {
   Key j = key();
   // for all values in this domain
@@ -74,7 +74,7 @@ boost::optional<Domain> Domain::checkAllDiff(const KeyVector keys,
     return Domain(this->discreteKey(), value);
   found:;
   }
-  return boost::none;  // we did not change it
+  return {};  // we did not change it
 }
 
 /* ************************************************************************* */

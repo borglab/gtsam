@@ -43,13 +43,13 @@ struct Keypoints {
 
   // Optional scale of the detections, of shape N.
   // Note: gtsam::Vector is typedef'd for Eigen::VectorXd.
-  boost::optional<gtsam::Vector> scales;
+  std::optional<gtsam::Vector> scales;
 
   /// Optional confidences/responses for each detection, of shape N.
-  boost::optional<gtsam::Vector> responses;
+  std::optional<gtsam::Vector> responses;
 
   Keypoints(const Eigen::MatrixX2d& coordinates)
-      : coordinates(coordinates){};  // boost::none
+      : coordinates(coordinates){};  // std::nullopt
 };
 
 using KeypointsVector = std::vector<Keypoints>;

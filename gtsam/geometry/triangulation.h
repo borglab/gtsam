@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "gtsam/geometry/Point3.h"
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Cal3Unified.h>
@@ -32,6 +33,8 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/TriangulationFactor.h>
+
+#include <optional>
 
 namespace gtsam {
 
@@ -260,7 +263,7 @@ Cal3_S2 createPinholeCalibration(const CALIBRATION& cal) {
 template <class CALIBRATION, class MEASUREMENT>
 MEASUREMENT undistortMeasurementInternal(
     const CALIBRATION& cal, const MEASUREMENT& measurement,
-    boost::optional<Cal3_S2> pinholeCal = boost::none) {
+    std::optional<Cal3_S2> pinholeCal = {}) {
   if (!pinholeCal) {
     pinholeCal = createPinholeCalibration(cal);
   }
@@ -623,7 +626,7 @@ private:
  * TriangulationResult is an optional point, along with the reasons why it is
  * invalid.
  */
-class TriangulationResult : public boost::optional<Point3> {
+class TriangulationResult : public std::optional<Point3> {
  public:
   enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
   Status status;
@@ -640,7 +643,7 @@ class TriangulationResult : public boost::optional<Point3> {
   /**
    * Constructor
    */
-  TriangulationResult(const Point3& p) : status(VALID) { reset(p); }
+  TriangulationResult(const Point3& p) : status(VALID) { emplace(p); }
   static TriangulationResult Degenerate() {
     return TriangulationResult(DEGENERATE);
   }
@@ -656,6 +659,10 @@ class TriangulationResult : public boost::optional<Point3> {
   bool outlier() const { return status == OUTLIER; }
   bool farPoint() const { return status == FAR_POINT; }
   bool behindCamera() const { return status == BEHIND_CAMERA; }
+  const gtsam::Point3& get() const {
+    if (!has_value()) throw std::runtime_error("TriangulationResult has no value");
+    return value();
+  }
   // stream to output
   friend std::ostream& operator<<(std::ostream& os,
                                   const TriangulationResult& result) {

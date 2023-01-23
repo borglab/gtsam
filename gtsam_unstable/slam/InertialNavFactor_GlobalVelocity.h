@@ -27,7 +27,6 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <boost/bind/bind.hpp>
-#include <boost/optional.hpp>
 
 #include <ostream>
 
@@ -92,7 +91,7 @@ private:
   Vector world_rho_;
   Vector world_omega_earth_;
 
-  boost::optional<POSE> body_P_sensor_; // The pose of the sensor in the body frame
+  std::optional<POSE> body_P_sensor_; // The pose of the sensor in the body frame
 
 public:
 
@@ -108,7 +107,7 @@ public:
   /** Constructor */
   InertialNavFactor_GlobalVelocity(const Key& Pose1, const Key& Vel1, const Key& IMUBias1, const Key& Pose2, const Key& Vel2,
       const Vector& measurement_acc, const Vector& measurement_gyro, const double measurement_dt, const Vector world_g, const Vector world_rho,
-      const Vector& world_omega_earth, const noiseModel::Gaussian::shared_ptr& model_continuous, boost::optional<POSE> body_P_sensor = boost::none) :
+      const Vector& world_omega_earth, const noiseModel::Gaussian::shared_ptr& model_continuous, std::optional<POSE> body_P_sensor = {}) :
         Base(calc_descrete_noise_model(model_continuous, measurement_dt ),
             Pose1, Vel1, IMUBias1, Pose2, Vel2), measurement_acc_(measurement_acc), measurement_gyro_(measurement_gyro),
             dt_(measurement_dt), world_g_(world_g), world_rho_(world_rho), world_omega_earth_(world_omega_earth), body_P_sensor_(body_P_sensor) {  }

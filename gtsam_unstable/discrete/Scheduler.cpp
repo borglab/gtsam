@@ -79,7 +79,7 @@ void Scheduler::addStudent(const string& studentName, const string& area1,
 
 /** get key for student and area, 0 is time slot itself */
 const DiscreteKey& Scheduler::key(size_t s,
-                                  boost::optional<size_t> area) const {
+                                  std::optional<size_t> area) const {
   return area ? students_[s].keys_[*area] : students_[s].key_;
 }
 
@@ -100,7 +100,7 @@ const string& Scheduler::studentArea(size_t i, size_t area) const {
 
 /** Add student-specific constraints to the graph */
 void Scheduler::addStudentSpecificConstraints(size_t i,
-                                              boost::optional<size_t> slot) {
+                                              std::optional<size_t> slot) {
   bool debug = ISDEBUG("Scheduler::buildGraph");
 
   assert(i < nrStudents());

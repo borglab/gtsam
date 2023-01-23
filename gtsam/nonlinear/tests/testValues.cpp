@@ -60,13 +60,13 @@ public:
   bool equals(const TestValue& other, double tol = 1e-9) const { return true; }
   size_t dim() const { return 0; }
   TestValue retract(const Vector&,
-                    OptionalJacobian<dimension,dimension> H1=boost::none,
-                    OptionalJacobian<dimension,dimension> H2=boost::none) const {
+                    OptionalJacobian<dimension,dimension> H1={},
+                    OptionalJacobian<dimension,dimension> H2={}) const {
     return TestValue();
   }
   Vector localCoordinates(const TestValue&,
-                          OptionalJacobian<dimension,dimension> H1=boost::none,
-                          OptionalJacobian<dimension,dimension> H2=boost::none) const {
+                          OptionalJacobian<dimension,dimension> H1={},
+                          OptionalJacobian<dimension,dimension> H2={}) const {
     return Vector();
   }
 };

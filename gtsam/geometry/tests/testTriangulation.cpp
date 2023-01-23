@@ -67,13 +67,13 @@ TEST(triangulation, twoPoses) {
 
   // 1. Test simple DLT, perfect in no noise situation
   bool optimize = false;
-  boost::optional<Point3> actual1 =  //
+  std::optional<Point3> actual1 =  //
       triangulatePoint3<Cal3_S2>(kPoses, kSharedCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(kLandmark, *actual1, 1e-7));
 
   // 2. test with optimization on, same answer
   optimize = true;
-  boost::optional<Point3> actual2 =  //
+  std::optional<Point3> actual2 =  //
       triangulatePoint3<Cal3_S2>(kPoses, kSharedCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(kLandmark, *actual2, 1e-7));
 
@@ -82,13 +82,13 @@ TEST(triangulation, twoPoses) {
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
   optimize = false;
-  boost::optional<Point3> actual3 =  //
+  std::optional<Point3> actual3 =  //
       triangulatePoint3<Cal3_S2>(kPoses, kSharedCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual3, 1e-4));
 
   // 4. Now with optimization on
   optimize = true;
-  boost::optional<Point3> actual4 =  //
+  std::optional<Point3> actual4 =  //
       triangulatePoint3<Cal3_S2>(kPoses, kSharedCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual4, 1e-4));
 }
@@ -103,7 +103,7 @@ TEST(triangulation, twoCamerasUsingLOST) {
   double rank_tol = 1e-9;
 
   // 1. Test simple triangulation, perfect in no noise situation
-  boost::optional<Point3> actual1 =  //
+  std::optional<Point3> actual1 =  //
       triangulatePoint3<PinholeCamera<Cal3_S2>>(cameras, measurements, rank_tol,
                                                 /*optimize=*/false,
                                                 measurementNoise,
@@ -114,7 +114,7 @@ TEST(triangulation, twoCamerasUsingLOST) {
   // 0.499167, 1.19814)
   measurements[0] += Point2(0.1, 0.5);
   measurements[1] += Point2(-0.2, 0.3);
-  boost::optional<Point3> actual2 =  //
+  std::optional<Point3> actual2 =  //
       triangulatePoint3<PinholeCamera<Cal3_S2>>(
           cameras, measurements, rank_tol,
           /*optimize=*/false, measurementNoise,
@@ -140,7 +140,7 @@ TEST(triangulation, twoCamerasLOSTvsDLT) {
   const double rank_tol = 1e-9;
   SharedNoiseModel measurementNoise = noiseModel::Isotropic::Sigma(2, 1e-2);
 
-  boost::optional<Point3> estimateLOST =  //
+  std::optional<Point3> estimateLOST =  //
       triangulatePoint3<PinholeCamera<Cal3_S2>>(cameras, measurements, rank_tol,
                                                 /*optimize=*/false,
                                                 measurementNoise,
@@ -149,7 +149,7 @@ TEST(triangulation, twoCamerasLOSTvsDLT) {
   // These values are from a MATLAB implementation.
   EXPECT(assert_equal(Point3(0.007, 0.011, 0.945), *estimateLOST, 1e-3));
 
-  boost::optional<Point3> estimateDLT =
+  std::optional<Point3> estimateDLT =
       triangulatePoint3<Cal3_S2>(cameras, measurements, rank_tol, false);
 
   // The LOST estimate should have a smaller error.
@@ -177,14 +177,14 @@ TEST(triangulation, twoPosesCal3DS2) {
 
   // 1. Test simple DLT, perfect in no noise situation
   bool optimize = false;
-  boost::optional<Point3> actual1 =  //
+  std::optional<Point3> actual1 =  //
       triangulatePoint3<Cal3DS2>(kPoses, sharedDistortedCal, measurements,
                                  rank_tol, optimize);
   EXPECT(assert_equal(kLandmark, *actual1, 1e-7));
 
   // 2. test with optimization on, same answer
   optimize = true;
-  boost::optional<Point3> actual2 =  //
+  std::optional<Point3> actual2 =  //
       triangulatePoint3<Cal3DS2>(kPoses, sharedDistortedCal, measurements,
                                  rank_tol, optimize);
   EXPECT(assert_equal(kLandmark, *actual2, 1e-7));
@@ -194,14 +194,14 @@ TEST(triangulation, twoPosesCal3DS2) {
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
   optimize = false;
-  boost::optional<Point3> actual3 =  //
+  std::optional<Point3> actual3 =  //
       triangulatePoint3<Cal3DS2>(kPoses, sharedDistortedCal, measurements,
                                  rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual3, 1e-3));
 
   // 4. Now with optimization on
   optimize = true;
-  boost::optional<Point3> actual4 =  //
+  std::optional<Point3> actual4 =  //
       triangulatePoint3<Cal3DS2>(kPoses, sharedDistortedCal, measurements,
                                  rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual4, 1e-3));
@@ -230,14 +230,14 @@ TEST(triangulation, twoPosesFisheye) {
 
   // 1. Test simple DLT, perfect in no noise situation
   bool optimize = false;
-  boost::optional<Point3> actual1 =  //
+  std::optional<Point3> actual1 =  //
       triangulatePoint3<Calibration>(kPoses, sharedDistortedCal, measurements,
                                      rank_tol, optimize);
   EXPECT(assert_equal(kLandmark, *actual1, 1e-7));
 
   // 2. test with optimization on, same answer
   optimize = true;
-  boost::optional<Point3> actual2 =  //
+  std::optional<Point3> actual2 =  //
       triangulatePoint3<Calibration>(kPoses, sharedDistortedCal, measurements,
                                      rank_tol, optimize);
   EXPECT(assert_equal(kLandmark, *actual2, 1e-7));
@@ -247,14 +247,14 @@ TEST(triangulation, twoPosesFisheye) {
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
   optimize = false;
-  boost::optional<Point3> actual3 =  //
+  std::optional<Point3> actual3 =  //
       triangulatePoint3<Calibration>(kPoses, sharedDistortedCal, measurements,
                                      rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual3, 1e-3));
 
   // 4. Now with optimization on
   optimize = true;
-  boost::optional<Point3> actual4 =  //
+  std::optional<Point3> actual4 =  //
       triangulatePoint3<Calibration>(kPoses, sharedDistortedCal, measurements,
                                      rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual4, 1e-3));
@@ -277,7 +277,7 @@ TEST(triangulation, twoPosesBundler) {
   bool optimize = true;
   double rank_tol = 1e-9;
 
-  boost::optional<Point3> actual =  //
+  std::optional<Point3> actual =  //
       triangulatePoint3<Cal3Bundler>(kPoses, bundlerCal, measurements, rank_tol,
                                      optimize);
   EXPECT(assert_equal(kLandmark, *actual, 1e-7));
@@ -286,7 +286,7 @@ TEST(triangulation, twoPosesBundler) {
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
 
-  boost::optional<Point3> actual2 =  //
+  std::optional<Point3> actual2 =  //
       triangulatePoint3<Cal3Bundler>(kPoses, bundlerCal, measurements, rank_tol,
                                      optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19847), *actual2, 1e-3));
@@ -296,7 +296,7 @@ TEST(triangulation, twoPosesBundler) {
 TEST(triangulation, fourPoses) {
   Pose3Vector poses = kPoses;
   Point2Vector measurements = kMeasurements;
-  boost::optional<Point3> actual =
+  std::optional<Point3> actual =
       triangulatePoint3<Cal3_S2>(poses, kSharedCal, measurements);
   EXPECT(assert_equal(kLandmark, *actual, 1e-2));
 
@@ -305,7 +305,7 @@ TEST(triangulation, fourPoses) {
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
 
-  boost::optional<Point3> actual2 =  //
+  std::optional<Point3> actual2 =  //
       triangulatePoint3<Cal3_S2>(poses, kSharedCal, measurements);
   EXPECT(assert_equal(kLandmark, *actual2, 1e-2));
 
@@ -317,12 +317,12 @@ TEST(triangulation, fourPoses) {
   poses.push_back(pose3);
   measurements.push_back(z3 + Point2(0.1, -0.1));
 
-  boost::optional<Point3> triangulated_3cameras =  //
+  std::optional<Point3> triangulated_3cameras =  //
       triangulatePoint3<Cal3_S2>(poses, kSharedCal, measurements);
   EXPECT(assert_equal(kLandmark, *triangulated_3cameras, 1e-2));
 
   // Again with nonlinear optimization
-  boost::optional<Point3> triangulated_3cameras_opt =
+  std::optional<Point3> triangulated_3cameras_opt =
       triangulatePoint3<Cal3_S2>(poses, kSharedCal, measurements, 1e-9, true);
   EXPECT(assert_equal(kLandmark, *triangulated_3cameras_opt, 1e-2));
 
@@ -352,7 +352,7 @@ TEST(triangulation, threePoses_robustNoiseModel) {
   Point2Vector measurements{kZ1, kZ2, z3};
 
   // noise free, so should give exactly the landmark
-  boost::optional<Point3> actual =
+  std::optional<Point3> actual =
       triangulatePoint3<Cal3_S2>(poses, kSharedCal, measurements);
   EXPECT(assert_equal(kLandmark, *actual, 1e-2));
 
@@ -360,14 +360,14 @@ TEST(triangulation, threePoses_robustNoiseModel) {
   measurements.at(0) += Point2(100, 120); // very large pixel noise!
 
   // now estimate does not match landmark
-  boost::optional<Point3> actual2 =  //
+  std::optional<Point3> actual2 =  //
       triangulatePoint3<Cal3_S2>(poses, kSharedCal, measurements);
   // DLT is surprisingly robust, but still off (actual error is around 0.26m):
   EXPECT( (kLandmark - *actual2).norm() >= 0.2);
   EXPECT( (kLandmark - *actual2).norm() <= 0.5);
 
   // Again with nonlinear optimization
-  boost::optional<Point3> actual3 =
+  std::optional<Point3> actual3 =
       triangulatePoint3<Cal3_S2>(poses, kSharedCal, measurements, 1e-9, true);
   // result from nonlinear (but non-robust optimization) is close to DLT and still off
   EXPECT(assert_equal(*actual2, *actual3, 0.1));
@@ -375,7 +375,7 @@ TEST(triangulation, threePoses_robustNoiseModel) {
   // Again with nonlinear optimization, this time with robust loss
   auto model = noiseModel::Robust::Create(
         noiseModel::mEstimator::Huber::Create(1.345), noiseModel::Unit::Create(2));
-  boost::optional<Point3> actual4 = triangulatePoint3<Cal3_S2>(
+  std::optional<Point3> actual4 = triangulatePoint3<Cal3_S2>(
       poses, kSharedCal, measurements, 1e-9, true, model);
   // using the Huber loss we now have a quite small error!! nice!
   EXPECT(assert_equal(kLandmark, *actual4, 0.05));
@@ -393,7 +393,7 @@ TEST(triangulation, fourPoses_robustNoiseModel) {
   Point2Vector measurements{kZ1, kZ1, kZ2, z3};
 
   // noise free, so should give exactly the landmark
-  boost::optional<Point3> actual =
+  std::optional<Point3> actual =
       triangulatePoint3<Cal3_S2>(poses, kSharedCal, measurements);
   EXPECT(assert_equal(kLandmark, *actual, 1e-2));
 
@@ -405,14 +405,14 @@ TEST(triangulation, fourPoses_robustNoiseModel) {
   measurements.at(3) += Point2(0.3, 0.1);
 
   // now estimate does not match landmark
-  boost::optional<Point3> actual2 =  //
+  std::optional<Point3> actual2 =  //
       triangulatePoint3<Cal3_S2>(poses, kSharedCal, measurements);
   // DLT is surprisingly robust, but still off (actual error is around 0.17m):
   EXPECT( (kLandmark - *actual2).norm() >= 0.1);
   EXPECT( (kLandmark - *actual2).norm() <= 0.5);
 
   // Again with nonlinear optimization
-  boost::optional<Point3> actual3 =
+  std::optional<Point3> actual3 =
       triangulatePoint3<Cal3_S2>(poses, kSharedCal, measurements, 1e-9, true);
   // result from nonlinear (but non-robust optimization) is close to DLT and still off
   EXPECT(assert_equal(*actual2, *actual3, 0.1));
@@ -420,7 +420,7 @@ TEST(triangulation, fourPoses_robustNoiseModel) {
   // Again with nonlinear optimization, this time with robust loss
   auto model = noiseModel::Robust::Create(
         noiseModel::mEstimator::Huber::Create(1.345), noiseModel::Unit::Create(2));
-  boost::optional<Point3> actual4 = triangulatePoint3<Cal3_S2>(
+  std::optional<Point3> actual4 = triangulatePoint3<Cal3_S2>(
       poses, kSharedCal, measurements, 1e-9, true, model);
   // using the Huber loss we now have a quite small error!! nice!
   EXPECT(assert_equal(kLandmark, *actual4, 0.05));
@@ -443,7 +443,7 @@ TEST(triangulation, fourPoses_distinct_Ks) {
   CameraSet<PinholeCamera<Cal3_S2>> cameras{camera1, camera2};
   Point2Vector measurements{z1, z2};
 
-  boost::optional<Point3> actual =  //
+  std::optional<Point3> actual =  //
       triangulatePoint3<Cal3_S2>(cameras, measurements);
   EXPECT(assert_equal(kLandmark, *actual, 1e-2));
 
@@ -452,7 +452,7 @@ TEST(triangulation, fourPoses_distinct_Ks) {
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
 
-  boost::optional<Point3> actual2 =  //
+  std::optional<Point3> actual2 =  //
       triangulatePoint3<Cal3_S2>(cameras, measurements);
   EXPECT(assert_equal(kLandmark, *actual2, 1e-2));
 
@@ -465,12 +465,12 @@ TEST(triangulation, fourPoses_distinct_Ks) {
   cameras.push_back(camera3);
   measurements.push_back(z3 + Point2(0.1, -0.1));
 
-  boost::optional<Point3> triangulated_3cameras =  //
+  std::optional<Point3> triangulated_3cameras =  //
       triangulatePoint3<Cal3_S2>(cameras, measurements);
   EXPECT(assert_equal(kLandmark, *triangulated_3cameras, 1e-2));
 
   // Again with nonlinear optimization
-  boost::optional<Point3> triangulated_3cameras_opt =
+  std::optional<Point3> triangulated_3cameras_opt =
       triangulatePoint3<Cal3_S2>(cameras, measurements, 1e-9, true);
   EXPECT(assert_equal(kLandmark, *triangulated_3cameras_opt, 1e-2));
 
@@ -506,7 +506,7 @@ TEST(triangulation, fourPoses_distinct_Ks_distortion) {
   const CameraSet<PinholeCamera<Cal3DS2>> cameras{camera1, camera2};
   const Point2Vector measurements{z1, z2};
 
-  boost::optional<Point3> actual =  //
+  std::optional<Point3> actual =  //
           triangulatePoint3<Cal3DS2>(cameras, measurements);
   EXPECT(assert_equal(kLandmark, *actual, 1e-2));
 }
@@ -727,14 +727,14 @@ TEST(triangulation, twoPoses_sphericalCamera) {
 
   // 3. Test simple DLT, now within triangulatePoint3
   bool optimize = false;
-  boost::optional<Point3> actual1 =  //
+  std::optional<Point3> actual1 =  //
       triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol,
                                          optimize);
   EXPECT(assert_equal(kLandmark, *actual1, 1e-7));
 
   // 4. test with optimization on, same answer
   optimize = true;
-  boost::optional<Point3> actual2 =  //
+  std::optional<Point3> actual2 =  //
       triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol,
                                          optimize);
   EXPECT(assert_equal(kLandmark, *actual2, 1e-7));
@@ -745,14 +745,14 @@ TEST(triangulation, twoPoses_sphericalCamera) {
       u1.retract(Vector2(0.01, 0.05));  // note: perturbation smaller for Unit3
   measurements.at(1) = u2.retract(Vector2(-0.02, 0.03));
   optimize = false;
-  boost::optional<Point3> actual3 =  //
+  std::optional<Point3> actual3 =  //
       triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol,
                                          optimize);
   EXPECT(assert_equal(Point3(5.9432, 0.654319, 1.48192), *actual3, 1e-3));
 
   // 6. Now with optimization on
   optimize = true;
-  boost::optional<Point3> actual4 =  //
+  std::optional<Point3> actual4 =  //
       triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol,
                                          optimize);
   EXPECT(assert_equal(Point3(5.9432, 0.654334, 1.48192), *actual4, 1e-3));
@@ -795,7 +795,7 @@ TEST(triangulation, twoPoses_sphericalCamera_extremeFOV) {
                                                        rank_tol, optimize),
                     TriangulationCheiralityException);
 #else  // otherwise project should not throw the exception
-    boost::optional<Point3> actual1 =  //
+    std::optional<Point3> actual1 =  //
         triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol,
                                            optimize);
     EXPECT(assert_equal(landmarkL, *actual1, 1e-7));
@@ -809,7 +809,7 @@ TEST(triangulation, twoPoses_sphericalCamera_extremeFOV) {
                                                        rank_tol, optimize),
                     TriangulationCheiralityException);
 #else  // otherwise project should not throw the exception
-    boost::optional<Point3> actual1 =  //
+    std::optional<Point3> actual1 =  //
         triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol,
                                            optimize);
     EXPECT(assert_equal(landmarkL, *actual1, 1e-7));

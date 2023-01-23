@@ -40,6 +40,7 @@
 #include <vector>
 #include <iosfwd>
 #include <map>
+#include <optional>
 
 namespace gtsam {
 
@@ -118,7 +119,7 @@ typedef std::pair<std::pair<size_t, size_t>, Pose2> IndexedEdge;
  * @param is input stream
  * @param tag string parsed from input stream, will only parse if vertex type
  */
-GTSAM_EXPORT boost::optional<IndexedPose> parseVertexPose(std::istream& is,
+GTSAM_EXPORT std::optional<IndexedPose> parseVertexPose(std::istream& is,
     const std::string& tag);
 
 /**
@@ -126,7 +127,7 @@ GTSAM_EXPORT boost::optional<IndexedPose> parseVertexPose(std::istream& is,
  * @param is input stream
  * @param tag string parsed from input stream, will only parse if vertex type
  */
-GTSAM_EXPORT boost::optional<IndexedLandmark> parseVertexLandmark(std::istream& is,
+GTSAM_EXPORT std::optional<IndexedLandmark> parseVertexLandmark(std::istream& is,
     const std::string& tag);
 
 /**
@@ -134,7 +135,7 @@ GTSAM_EXPORT boost::optional<IndexedLandmark> parseVertexLandmark(std::istream& 
  * @param is input stream
  * @param tag string parsed from input stream, will only parse if edge type
  */
-GTSAM_EXPORT boost::optional<IndexedEdge> parseEdge(std::istream& is,
+GTSAM_EXPORT std::optional<IndexedEdge> parseEdge(std::istream& is,
     const std::string& tag);
 
 /// Return type for load functions, which return a graph and initial values. For

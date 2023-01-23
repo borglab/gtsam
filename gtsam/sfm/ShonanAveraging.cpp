@@ -554,7 +554,7 @@ static bool PowerMinimumEigenValue(
   }
 
   const Sparse C = pmEigenValue * Matrix::Identity(A.rows(), A.cols()).sparseView() - A;
-  const boost::optional<Vector> initial = perturb(S.row(0));
+  const std::optional<Vector> initial = perturb(S.row(0));
   AcceleratedPowerMethod<Sparse> apmShiftedOperator(C, initial);
 
   const bool minConverged = apmShiftedOperator.compute(

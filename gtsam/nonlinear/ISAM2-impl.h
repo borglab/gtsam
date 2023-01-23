@@ -78,7 +78,7 @@ struct GTSAM_EXPORT DeltaImpl {
     size_t nFullSystemVars;
     enum { /*AS_ADDED,*/ COLAMD } algorithm;
     enum { NO_CONSTRAINT, CONSTRAIN_LAST } constrain;
-    boost::optional<FastMap<Key, int> > constrainedKeys;
+    std::optional<FastMap<Key, int> > constrainedKeys;
   };
 
   /**
@@ -195,9 +195,9 @@ struct GTSAM_EXPORT UpdateImpl {
 
   // Calculate nonlinear error
   void error(const NonlinearFactorGraph& nonlinearFactors,
-             const Values& estimate, boost::optional<double>* result) const {
+             const Values& estimate, std::optional<double>* result) const {
     gttic(error);
-    result->reset(nonlinearFactors.error(estimate));
+    *result = nonlinearFactors.error(estimate);
   }
 
   // Mark linear update

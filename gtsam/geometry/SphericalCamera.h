@@ -152,16 +152,16 @@ class GTSAM_EXPORT SphericalCamera {
    * @param point 3D point in world coordinates
    * @return the intrinsic coordinates of the projected point
    */
-  Unit3 project2(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
-                 OptionalJacobian<2, 3> Dpoint = boost::none) const;
+  Unit3 project2(const Point3& pw, OptionalJacobian<2, 6> Dpose = {},
+                 OptionalJacobian<2, 3> Dpoint = {}) const;
 
   /** Project point into the image
    * (note: there is no CheiralityException for a spherical camera)
    * @param point 3D direction in world coordinates
    * @return the intrinsic coordinates of the projected point
    */
-  Unit3 project2(const Unit3& pwu, OptionalJacobian<2, 6> Dpose = boost::none,
-                 OptionalJacobian<2, 2> Dpoint = boost::none) const;
+  Unit3 project2(const Unit3& pwu, OptionalJacobian<2, 6> Dpose = {},
+                 OptionalJacobian<2, 2> Dpoint = {}) const;
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   Point3 backproject(const Unit3& p, const double depth) const;
@@ -174,16 +174,16 @@ class GTSAM_EXPORT SphericalCamera {
    * @param point 3D point in world coordinates
    * @return the intrinsic coordinates of the projected point
    */
-  Unit3 project(const Point3& point, OptionalJacobian<2, 6> Dpose = boost::none,
-                OptionalJacobian<2, 3> Dpoint = boost::none) const;
+  Unit3 project(const Point3& point, OptionalJacobian<2, 6> Dpose = {},
+                OptionalJacobian<2, 3> Dpoint = {}) const;
 
   /** Compute reprojection error for a given 3D point in world coordinates
    * @param point 3D point in world coordinates
    * @return the tangent space error between the projection and the measurement
    */
   Vector2 reprojectionError(const Point3& point, const Unit3& measured,
-                            OptionalJacobian<2, 6> Dpose = boost::none,
-                            OptionalJacobian<2, 3> Dpoint = boost::none) const;
+                            OptionalJacobian<2, 6> Dpose = {},
+                            OptionalJacobian<2, 3> Dpoint = {}) const;
   /// @}
 
   /// move a cameras according to d

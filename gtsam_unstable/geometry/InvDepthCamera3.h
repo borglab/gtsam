@@ -12,7 +12,6 @@
 #pragma once
 
 #include <cmath>
-#include <boost/optional.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
@@ -101,7 +100,7 @@ public:
     }
     else {
       gtsam::Matrix J2;
-      gtsam::Point2 uv= camera.project(landmark,H1, J2, boost::none);
+      gtsam::Point2 uv= camera.project(landmark,H1, J2, {});
       if (H1) {
         *H1 = (*H1) * I_6x6;
       }

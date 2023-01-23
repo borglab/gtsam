@@ -22,7 +22,6 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/PinholeCamera.h>
-#include <boost/optional.hpp>
 #include "gtsam/geometry/Cal3_S2.h"
 
 namespace gtsam {
@@ -39,7 +38,7 @@ namespace gtsam {
     // Keep a copy of measurement and calibration for I/O
     Vector measured_;                    ///< 2D measurement for each of the n views
     boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
-    boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
+    std::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
 
     // verbosity handling for Cheirality Exceptions
@@ -72,7 +71,7 @@ namespace gtsam {
      */
     MultiProjectionFactor(const Vector& measured, const SharedNoiseModel& model,
         KeySet poseKeys, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
-        boost::optional<POSE> body_P_sensor = boost::none) :
+        std::optional<POSE> body_P_sensor = {}) :
           Base(model), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
           throwCheirality_(false), verboseCheirality_(false) {
       keys_.assign(poseKeys.begin(), poseKeys.end());
@@ -94,7 +93,7 @@ namespace gtsam {
     MultiProjectionFactor(const Vector& measured, const SharedNoiseModel& model,
         KeySet poseKeys, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality,
-        boost::optional<POSE> body_P_sensor = boost::none) :
+        std::optional<POSE> body_P_sensor = {}) :
           Base(model), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 

@@ -23,7 +23,6 @@
 
 using namespace std::placeholders;
 using namespace gtsam;
-using boost::none;
 
 GTSAM_CONCEPT_TESTABLE_INST(OrientedPlane3)
 GTSAM_CONCEPT_MANIFOLD_INST(OrientedPlane3)
@@ -57,17 +56,17 @@ TEST(OrientedPlane3, transform) {
                     gtsam::Point3(2.0, 3.0, 4.0));
   OrientedPlane3 plane(-1, 0, 0, 5);
   OrientedPlane3 expectedPlane(-sqrt(2.0) / 2.0, -sqrt(2.0) / 2.0, 0.0, 3);
-  OrientedPlane3 transformedPlane = plane.transform(pose, none, none);
+  OrientedPlane3 transformedPlane = plane.transform(pose, {}, {});
   EXPECT(assert_equal(expectedPlane, transformedPlane, 1e-5));
 
   // Test the jacobians of transform
   Matrix actualH1, expectedH1, actualH2, expectedH2;
   expectedH1 = numericalDerivative21(transform_, plane, pose);
-  plane.transform(pose, actualH1, none);
+  plane.transform(pose, actualH1, {});
   EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
 
   expectedH2 = numericalDerivative22(transform_, plane, pose);
-  plane.transform(pose, none, actualH2);
+  plane.transform(pose, {}, actualH2);
   EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
 }
 
@@ -135,8 +134,9 @@ TEST(OrientedPlane3, errorVector) {
   EXPECT(assert_equal(plane1.distance() - plane2.distance(), actual[2]));
 
   std::function<Vector3(const OrientedPlane3&, const OrientedPlane3&)> f =
-      std::bind(&OrientedPlane3::errorVector, std::placeholders::_1,
-                std::placeholders::_2, boost::none, boost::none);
+    [](const OrientedPlane3& p1, const OrientedPlane3& p2) {
+      return p1.errorVector(p2);
+    };
   expectedH1 = numericalDerivative21(f, plane1, plane2);
   expectedH2 = numericalDerivative22(f, plane1, plane2);
   EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
@@ -147,8 +147,10 @@ TEST(OrientedPlane3, errorVector) {
 TEST(OrientedPlane3, jacobian_retract) {
   OrientedPlane3 plane(-1, 0.1, 0.2, 5);
   Matrix33 H_actual;
-  std::function<OrientedPlane3(const Vector3&)> f = std::bind(
-      &OrientedPlane3::retract, plane, std::placeholders::_1, boost::none);
+  std::function<OrientedPlane3(const Vector3&)> f = [&plane](const Vector3& v) {
+    return plane.retract(v);
+  };
+
   {
       Vector3 v(-0.1, 0.2, 0.3);
       plane.retract(v, H_actual);
@@ -168,8 +170,9 @@ TEST(OrientedPlane3, jacobian_normal) {
   Matrix23 H_actual, H_expected;
   OrientedPlane3 plane(-1, 0.1, 0.2, 5);
 
-  std::function<Unit3(const OrientedPlane3&)> f = std::bind(
-      &OrientedPlane3::normal, std::placeholders::_1, boost::none);
+  std::function<Unit3(const OrientedPlane3&)> f = [](const OrientedPlane3& p) {
+    return p.normal();
+  };
 
   H_expected = numericalDerivative11(f, plane);
   plane.normal(H_actual);
@@ -181,8 +184,9 @@ TEST(OrientedPlane3, jacobian_distance) {
   Matrix13 H_actual, H_expected;
   OrientedPlane3 plane(-1, 0.1, 0.2, 5);
 
-  std::function<double(const OrientedPlane3&)> f = std::bind(
-      &OrientedPlane3::distance, std::placeholders::_1, boost::none);
+  std::function<double(const OrientedPlane3&)> f = [](const OrientedPlane3& p) {
+    return p.distance();
+  };
 
   H_expected = numericalDerivative11(f, plane);
   plane.distance(H_actual);

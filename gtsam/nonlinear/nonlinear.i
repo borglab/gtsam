@@ -392,7 +392,7 @@ virtual class LinearContainerFactor : gtsam::NonlinearFactor {
   LinearContainerFactor(gtsam::GaussianFactor* factor);
 
   gtsam::GaussianFactor* factor() const;
-  //  const boost::optional<Values>& linearizationPoint() const;
+  //  const std::optional<Values>& linearizationPoint() const;
 
   bool isJacobian() const;
   gtsam::JacobianFactor* toJacobian() const;

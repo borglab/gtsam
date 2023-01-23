@@ -50,6 +50,7 @@
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/serializationTestHelpers.h>
+#include <gtsam/base/std_optional_serialization.h>
 
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/export.hpp>

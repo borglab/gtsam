@@ -131,14 +131,14 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal,
 /* ************************************************************************* */
 Matrix2 Cal3Bundler::D2d_intrinsic(const Point2& p) const {
   Matrix2 Dp;
-  uncalibrate(p, boost::none, Dp);
+  uncalibrate(p, {}, Dp);
   return Dp;
 }
 
 /* ************************************************************************* */
 Matrix23 Cal3Bundler::D2d_calibration(const Point2& p) const {
   Matrix23 Dcal;
-  uncalibrate(p, Dcal, boost::none);
+  uncalibrate(p, Dcal, {});
   return Dcal;
 }
 

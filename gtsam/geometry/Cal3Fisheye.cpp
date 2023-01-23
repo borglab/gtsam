@@ -134,7 +134,7 @@ Point2 Cal3Fisheye::calibrate(const Point2& uv, OptionalJacobian<2, 9> Dcal,
     Matrix2 jac;
 
     // Calculate the current estimate (uv_hat) and the jacobian
-    const Point2 uv_hat = uncalibrate(pi, boost::none, jac);
+    const Point2 uv_hat = uncalibrate(pi, {}, jac);
 
     // Test convergence
     if ((uv_hat - uv).norm() < tol_) break;

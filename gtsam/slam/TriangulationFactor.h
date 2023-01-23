@@ -163,7 +163,7 @@ public:
 
     // Would be even better if we could pass blocks to project
     const Point3& point = x.at<Point3>(key());
-    b = traits<Measurement>::Local(camera_.project2(point, boost::none, A), measured_);
+    b = traits<Measurement>::Local(camera_.project2(point, {}, A), measured_);
     if (noiseModel_)
       this->noiseModel_->WhitenSystem(A, b);
 

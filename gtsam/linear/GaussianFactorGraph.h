@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/Errors.h>  // Included here instead of fw-declared so we can use Errors::iterator
@@ -57,8 +58,8 @@ namespace gtsam {
     /// The default ordering generation function
     static Ordering DefaultOrderingFunc(
         const FactorGraphType& graph,
-        boost::optional<const VariableIndex&> variableIndex) {
-      return Ordering::Colamd(*variableIndex);
+        std::optional<std::reference_wrapper<const VariableIndex>> variableIndex) {
+      return Ordering::Colamd((*variableIndex).get());
     }
   };
 

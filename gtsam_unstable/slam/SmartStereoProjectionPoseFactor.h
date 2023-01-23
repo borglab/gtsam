@@ -69,7 +69,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
   SmartStereoProjectionPoseFactor(
       const SharedNoiseModel& sharedNoiseModel,
       const SmartStereoProjectionParams& params = SmartStereoProjectionParams(),
-      const boost::optional<Pose3>& body_P_sensor = boost::none);
+      const std::optional<Pose3>& body_P_sensor = {});
 
   /** Virtual destructor */
   ~SmartStereoProjectionPoseFactor() override = default;

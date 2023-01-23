@@ -137,14 +137,14 @@ namespace gtsam {
   }
 
   Signature& Signature::operator=(const string& spec) {
-    spec_.reset(spec);
+    spec_ = spec;
     Table table;
     parser::It f = spec.begin(), l = spec.end();
     bool success =
         qi::phrase_parse(f, l, parser::grammar.table, qi::space, table);
     if (success) {
       for (Row& row : table) normalize(row);
-      table_.reset(table);
+      table_ = table;
     }
     return *this;
   }
@@ -153,7 +153,7 @@ namespace gtsam {
     Table table = t;
     for(Row& row: table)
       normalize(row);
-    table_.reset(table);
+    table_ = table;
     return *this;
   }
 

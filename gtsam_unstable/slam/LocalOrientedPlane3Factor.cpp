@@ -43,7 +43,7 @@ Vector LocalOrientedPlane3Factor::evaluateError(const Pose3& wTwi,
 
   // Calculate the error between measured and estimated planes in sensor frame.
   const Vector3 err = measured_p_.errorVector(i_plane,
-    boost::none, (H1 || H2 || H3) ? &error_H_predicted : nullptr);
+    {}, (H1 || H2 || H3) ? &error_H_predicted : nullptr);
 
   // Apply the chain rule to calculate the derivatives.
   if (H1) {

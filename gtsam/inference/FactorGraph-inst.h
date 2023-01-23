@@ -155,7 +155,7 @@ void FactorGraph<FACTOR>::dot(std::ostream& os,
     const auto& factor = at(i);
     if (factor) {
       const KeyVector& factorKeys = factor->keys();
-      writer.processFactor(i, factorKeys, keyFormatter, boost::none, &os);
+      writer.processFactor(i, factorKeys, keyFormatter, {}, &os);
     }
   }
 

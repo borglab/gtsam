@@ -28,7 +28,6 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <boost/bind/bind.hpp>
-#include <boost/optional.hpp>
 
 #include <ostream>
 
@@ -106,8 +105,8 @@ private:
 
   Matrix Jacobian_wrt_t0_Overall_;
 
-  boost::optional<IMUBIAS> Bias_initial_; // Bias used when pre-integrating IMU measurements
-  boost::optional<POSE> body_P_sensor_;   // The pose of the sensor in the body frame
+  std::optional<IMUBIAS> Bias_initial_; // Bias used when pre-integrating IMU measurements
+  std::optional<POSE> body_P_sensor_;   // The pose of the sensor in the body frame
 
 public:
 	
@@ -126,7 +125,7 @@ public:
       double dt12, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const noiseModel::Gaussian::shared_ptr& model_equivalent,
       const Matrix& Jacobian_wrt_t0_Overall,
-      boost::optional<IMUBIAS> Bias_initial = boost::none, boost::optional<POSE> body_P_sensor = boost::none) :
+      std::optional<IMUBIAS> Bias_initial = {}, std::optional<POSE> body_P_sensor = {}) :
         Base(model_equivalent, Pose1, Vel1, IMUBias1, Pose2, Vel2),
         delta_pos_in_t0_(delta_pos_in_t0), delta_vel_in_t0_(delta_vel_in_t0), delta_angles_(delta_angles),
         dt12_(dt12), world_g_(world_g), world_rho_(world_rho), world_omega_earth_(world_omega_earth), Jacobian_wrt_t0_Overall_(Jacobian_wrt_t0_Overall),
@@ -385,7 +384,7 @@ public:
       const Vector& delta_pos_in_t0, const Vector3& delta_angles,
       double dt12, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const Matrix& Jacobian_wrt_t0_Overall,
-      const boost::optional<IMUBIAS>& Bias_initial = boost::none) {
+      const std::optional<IMUBIAS>& Bias_initial = {}) {
 
 
     // Correct delta_pos_in_t0_ using (Bias1 - Bias_t0)
@@ -414,7 +413,7 @@ public:
   static inline VELOCITY PredictVelocityFromPreIntegration(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1,
       const Vector& delta_vel_in_t0, double dt12, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const Matrix& Jacobian_wrt_t0_Overall,
-      const boost::optional<IMUBIAS>& Bias_initial = boost::none) {
+      const std::optional<IMUBIAS>& Bias_initial = {}) {
 
     // Correct delta_vel_in_t0_ using (Bias1 - Bias_t0)
     Vector delta_BiasAcc  = Bias1.accelerometer();
@@ -436,7 +435,7 @@ public:
       const Vector& delta_pos_in_t0, const Vector& delta_vel_in_t0, const Vector3& delta_angles,
       double dt12, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const Matrix& Jacobian_wrt_t0_Overall,
-      const boost::optional<IMUBIAS>& Bias_initial = boost::none) {
+      const std::optional<IMUBIAS>& Bias_initial = {}) {
 
     Pose2 = PredictPoseFromPreIntegration(Pose1, Vel1, Bias1, delta_pos_in_t0, delta_angles, dt12, world_g, world_rho, world_omega_earth, Jacobian_wrt_t0_Overall, Bias_initial);
     Vel2  = PredictVelocityFromPreIntegration(Pose1, Vel1, Bias1, delta_vel_in_t0, dt12, world_g, world_rho, world_omega_earth, Jacobian_wrt_t0_Overall, Bias_initial);
@@ -447,7 +446,7 @@ public:
       Vector& delta_pos_in_t0, Vector3& delta_angles, Vector& delta_vel_in_t0, double& delta_t,
       const noiseModel::Gaussian::shared_ptr& model_continuous_overall,
       Matrix& EquivCov_Overall, Matrix& Jacobian_wrt_t0_Overall, const IMUBIAS Bias_t0 = IMUBIAS(),
-      boost::optional<POSE> p_body_P_sensor = boost::none){
+      std::optional<POSE> p_body_P_sensor = {}){
     // Note: all delta terms refer to an IMU\sensor system at t0
     // Note: Earth-related terms are not accounted here but are incorporated in predict functions.
 

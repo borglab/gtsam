@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
     Values currentEstimate = isam.calculateEstimate();
     currentEstimate.print("Current estimate: ");
 
-    boost::optional<Point3> pointEstimate = smartFactor->point(currentEstimate);
+    auto pointEstimate = smartFactor->point(currentEstimate);
     if (pointEstimate) {
       cout << *pointEstimate << endl;
     } else {

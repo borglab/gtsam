@@ -21,11 +21,11 @@
 
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
-#include <boost/optional/optional.hpp>
 #include <gtsam/dllexport.h>
 #include <string>
 #include <typeinfo>
 #include <exception>
+#include <optional>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/tbb_allocator.h>
@@ -53,7 +53,7 @@ protected:
 
 protected:
   bool dynamic_; ///< Whether this object was moved
-  mutable boost::optional<String> description_; ///< Optional description
+  mutable std::optional<String> description_; ///< Optional description
 
   /// Default constructor is protected - may only be created from derived classes
   ThreadsafeException() :

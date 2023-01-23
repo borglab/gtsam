@@ -29,10 +29,10 @@ TEST ( Partition, separatorPartitionByMetis )
   std::vector<size_t> keys{0, 1, 2, 3, 4};
 
   WorkSpace workspace(5);
-  boost::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys,
+  std::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys,
    workspace, true);
 
-  CHECK(actual.is_initialized());
+  CHECK(actual.has_value());
   vector<size_t> A_expected{0, 3}; // frontal
   vector<size_t> B_expected{2, 4}; // frontal
   vector<size_t> C_expected{1};    // separator
@@ -54,10 +54,10 @@ TEST ( Partition, separatorPartitionByMetis2 )
   std::vector<size_t> keys{1, 2, 3, 5, 6};
 
   WorkSpace workspace(8);
-  boost::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys,
+  std::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys,
    workspace, true);
 
-  CHECK(actual.is_initialized());
+  CHECK(actual.has_value());
   vector<size_t> A_expected{1, 5}; // frontal
   vector<size_t> B_expected{3, 6}; // frontal
   vector<size_t> C_expected{2};    // separator
@@ -77,10 +77,10 @@ TEST ( Partition, edgePartitionByMetis )
   std::vector<size_t> keys{0, 1, 2, 3};
 
   WorkSpace workspace(6);
-  boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys,
+  std::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys,
    workspace, true);
 
-  CHECK(actual.is_initialized());
+  CHECK(actual.has_value());
   vector<size_t> A_expected{0, 1}; // frontal
   vector<size_t> B_expected{2, 3}; // frontal
   vector<size_t> C_expected;    // separator
@@ -108,9 +108,9 @@ TEST ( Partition, edgePartitionByMetis2 )
   std::vector<size_t> keys{0, 1, 2, 3, 4};
 
   WorkSpace workspace(6);
-  boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys,
+  std::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys,
    workspace, true);
-  CHECK(actual.is_initialized());
+  CHECK(actual.has_value());
   vector<size_t> A_expected{0, 1}; // frontal
   vector<size_t> B_expected{2, 3, 4}; // frontal
   vector<size_t> C_expected;    // separator
@@ -135,7 +135,7 @@ TEST ( Partition, findSeparator )
   int minNodesPerMap = -1;
   bool reduceGraph = false;
   int numSubmaps = findSeparator<GenericGraph2D>(graph, keys, minNodesPerMap, workspace,
-    false, boost::none, reduceGraph, 0, 0);
+    false, {}, reduceGraph, 0, 0);
   LONGS_EQUAL(2, numSubmaps);
   LONGS_EQUAL(5, workspace.partitionTable.size());
   LONGS_EQUAL(1, workspace.partitionTable[0]);
@@ -161,7 +161,7 @@ TEST ( Partition, findSeparator2 )
   int minNodesPerMap = -1;
   bool reduceGraph = false;
   int numSubmaps = findSeparator<GenericGraph2D>(graph, keys, minNodesPerMap, workspace,
-    false, boost::none, reduceGraph, 0, 0);
+    false, {}, reduceGraph, 0, 0);
   LONGS_EQUAL(2, numSubmaps);
   LONGS_EQUAL(8, workspace.partitionTable.size());
   LONGS_EQUAL(-1,workspace.partitionTable[0]);

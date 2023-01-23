@@ -106,12 +106,12 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
    * @return point in image coordinates
    */
   Point2 uncalibrate(const Point2& p,
-                     OptionalJacobian<2, 10> Dcal = boost::none,
-                     OptionalJacobian<2, 2> Dp = boost::none) const;
+                     OptionalJacobian<2, 10> Dcal = {},
+                     OptionalJacobian<2, 2> Dp = {}) const;
 
   /// Conver a pixel coordinate to ideal coordinate
-  Point2 calibrate(const Point2& p, OptionalJacobian<2, 10> Dcal = boost::none,
-                   OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 10> Dcal = {},
+                   OptionalJacobian<2, 2> Dp = {}) const;
 
   /// Convert a 3D point to normalized unit plane
   Point2 spaceToNPlane(const Point2& p) const;

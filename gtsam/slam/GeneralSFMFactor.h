@@ -37,7 +37,6 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/none.hpp>
-#include <boost/optional/optional.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <iostream>

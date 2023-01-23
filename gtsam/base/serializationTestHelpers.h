@@ -24,6 +24,7 @@
 #include <string>
 
 #include <gtsam/base/serialization.h>
+#include <gtsam/base/TestableAssertions.h>
 
 #include <boost/serialization/serialization.hpp>
 #include <boost/filesystem.hpp>

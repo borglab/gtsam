@@ -17,6 +17,7 @@
  *        methods
  */
 
+#include <cstddef>
 #include <gtsam/basis/Chebyshev2.h>
 #include <gtsam/basis/FitBasis.h>
 #include <gtsam/geometry/Pose2.h>
@@ -119,7 +120,7 @@ TEST(Chebyshev2, InterpolateVector) {
 
   // Check derivative
   std::function<Vector2(ParameterMatrix<2>)> f = boost::bind(
-      &Chebyshev2::VectorEvaluationFunctor<2>::operator(), fx, _1, boost::none);
+      &Chebyshev2::VectorEvaluationFunctor<2>::operator(), fx, _1, nullptr);
   Matrix numericalH =
       numericalDerivative11<Vector2, ParameterMatrix<2>, 2 * N>(f, X);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
@@ -377,7 +378,7 @@ TEST(Chebyshev2, VectorDerivativeFunctor) {
 
   // Test Jacobian
   Matrix expectedH = numericalDerivative11<Vector2, ParameterMatrix<M>, M * N>(
-      boost::bind(&VecD::operator(), fx, _1, boost::none), X);
+      boost::bind(&VecD::operator(), fx, _1, nullptr), X);
   EXPECT(assert_equal(expectedH, actualH, 1e-7));
 }
 
@@ -409,7 +410,7 @@ TEST(Chebyshev2, VectorDerivativeFunctor2) {
   VecD vecd(N, points(0), 0, T);
   vecd(X, actualH);
   Matrix expectedH = numericalDerivative11<Vector1, ParameterMatrix<M>, M * N>(
-      boost::bind(&VecD::operator(), vecd, _1, boost::none), X);
+      boost::bind(&VecD::operator(), vecd, _1, nullptr), X);
   EXPECT(assert_equal(expectedH, actualH, 1e-6));
 }
 
@@ -426,7 +427,7 @@ TEST(Chebyshev2, ComponentDerivativeFunctor) {
   EXPECT_DOUBLES_EQUAL(0, fx(X, actualH), 1e-8);
 
   Matrix expectedH = numericalDerivative11<double, ParameterMatrix<M>, M * N>(
-      boost::bind(&CompFunc::operator(), fx, _1, boost::none), X);
+      boost::bind(&CompFunc::operator(), fx, _1, nullptr), X);
   EXPECT(assert_equal(expectedH, actualH, 1e-7));
 }
 

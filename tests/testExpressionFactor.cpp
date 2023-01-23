@@ -204,7 +204,7 @@ TEST(ExpressionFactor, Binary) {
   expected22 << 1, 0, 0, 1;
 
   // Check matrices
-  boost::optional<Binary::Record*> r = trace.record<Binary::Record>();
+  std::optional<Binary::Record*> r = trace.record<Binary::Record>();
   CHECK(r);
   EXPECT(assert_equal(expected25, (Matrix ) (*r)->dTdA1, 1e-9));
   EXPECT(assert_equal(expected22, (Matrix ) (*r)->dTdA2, 1e-9));
@@ -257,7 +257,7 @@ TEST(ExpressionFactor, Shallow) {
   expected23 << 1, 0, 0, 0, 1, 0;
 
   // Check matrices
-  boost::optional<Unary::Record*> r = trace.record<Unary::Record>();
+  std::optional<Unary::Record*> r = trace.record<Unary::Record>();
   CHECK(r);
   EXPECT(assert_equal(expected23, (Matrix)(*r)->dTdA1, 1e-9));
 
@@ -623,7 +623,7 @@ TEST(ExpressionFactor, MultiplyWithInverseFunction) {
   CHECK(assert_equal(A * b, Ab));
   CHECK(assert_equal(
       numericalDerivative11<Vector3, Point2>(
-          std::bind(f, std::placeholders::_1, b, boost::none, boost::none), a),
+        [&](const Point2& a) { return f(a, b, {}, {}); }, a),
       H1));
 
   Values values;

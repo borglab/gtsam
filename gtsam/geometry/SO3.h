@@ -121,7 +121,7 @@ namespace so3 {
  * We only provide the 9*9 derivative in the first argument M.
  */
 GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
-                OptionalJacobian<9, 9> H = boost::none);
+                OptionalJacobian<9, 9> H = {});
 
 /// (constant) Jacobian of compose wrpt M
 GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
@@ -170,13 +170,13 @@ class DexpFunctor : public ExpmapFunctor {
   const Matrix3& dexp() const { return dexp_; }
 
   /// Multiplies with dexp(), with optional derivatives
-  GTSAM_EXPORT Vector3 applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
-                    OptionalJacobian<3, 3> H2 = boost::none) const;
+  GTSAM_EXPORT Vector3 applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
+                    OptionalJacobian<3, 3> H2 = {}) const;
 
   /// Multiplies with dexp().inverse(), with optional derivatives
   GTSAM_EXPORT Vector3 applyInvDexp(const Vector3& v,
-                       OptionalJacobian<3, 3> H1 = boost::none,
-                       OptionalJacobian<3, 3> H2 = boost::none) const;
+                       OptionalJacobian<3, 3> H1 = {},
+                       OptionalJacobian<3, 3> H2 = {}) const;
 };
 }  //  namespace so3
 

@@ -31,7 +31,7 @@ Vector ProjectionFactorRollingShutter::evaluateError(
         gtsam::Matrix HbodySensor;
         PinholeCamera<Cal3_S2> camera(
             pose.compose(*body_P_sensor_, HbodySensor), *K_);
-        Point2 reprojectionError(camera.project(point, Hprj, H3, boost::none) -
+        Point2 reprojectionError(camera.project(point, Hprj, H3, {}) -
                                  measured_);
         if (H1) *H1 = Hprj * HbodySensor * (*H1);
         if (H2) *H2 = Hprj * HbodySensor * (*H2);
@@ -42,7 +42,7 @@ Vector ProjectionFactorRollingShutter::evaluateError(
       }
     } else {
       PinholeCamera<Cal3_S2> camera(pose, *K_);
-      Point2 reprojectionError(camera.project(point, Hprj, H3, boost::none) -
+      Point2 reprojectionError(camera.project(point, Hprj, H3, {}) -
                                measured_);
       if (H1) *H1 = Hprj * (*H1);
       if (H2) *H2 = Hprj * (*H2);

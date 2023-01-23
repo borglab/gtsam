@@ -36,7 +36,7 @@ namespace gtsam {
       // no Ordering is provided.  When removing optional from VariableIndex, create VariableIndex
       // before creating ordering.
       VariableIndex computedVariableIndex(asDerived());
-      return eliminateSequential(orderingType, function, computedVariableIndex);
+      return eliminateSequential(orderingType, function, std::cref(computedVariableIndex));
     }
     else {
       // Compute an ordering and call this function again.  We are guaranteed to have a 
@@ -45,14 +45,14 @@ namespace gtsam {
         Ordering computedOrdering = Ordering::Metis(asDerived());
         return eliminateSequential(computedOrdering, function, variableIndex);
       } else if (orderingType == Ordering::COLAMD) {
-        Ordering computedOrdering = Ordering::Colamd(*variableIndex);
+        Ordering computedOrdering = Ordering::Colamd((*variableIndex).get());
         return eliminateSequential(computedOrdering, function, variableIndex);
       } else if (orderingType == Ordering::NATURAL) {
         Ordering computedOrdering = Ordering::Natural(asDerived());
         return eliminateSequential(computedOrdering, function, variableIndex);
       } else {
         Ordering computedOrdering = EliminationTraitsType::DefaultOrderingFunc(
-            asDerived(), variableIndex);
+            asDerived(), *variableIndex);
         return eliminateSequential(computedOrdering, function, variableIndex);
       }
     }
@@ -68,11 +68,11 @@ namespace gtsam {
     if(!variableIndex) {
       // If no VariableIndex provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminateSequential(ordering, function, computedVariableIndex);
+      return eliminateSequential(ordering, function, std::cref(computedVariableIndex));
     } else {
       gttic(eliminateSequential);
       // Do elimination
-      EliminationTreeType etree(asDerived(), *variableIndex, ordering);
+      EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
       boost::shared_ptr<BayesNetType> bayesNet;
       boost::shared_ptr<FactorGraphType> factorGraph;
       boost::tie(bayesNet,factorGraph) = etree.eliminate(function);
@@ -99,7 +99,7 @@ namespace gtsam {
       // creating ordering.
       VariableIndex computedVariableIndex(asDerived());
       return eliminateMultifrontal(orderingType, function,
-                                   computedVariableIndex);
+                                   std::cref(computedVariableIndex));
     } else {
       // Compute an ordering and call this function again.  We are guaranteed to
       // have a VariableIndex already here because we computed one if needed in
@@ -108,14 +108,14 @@ namespace gtsam {
         Ordering computedOrdering = Ordering::Metis(asDerived());
         return eliminateMultifrontal(computedOrdering, function, variableIndex);
       } else if (orderingType == Ordering::COLAMD) {
-        Ordering computedOrdering = Ordering::Colamd(*variableIndex);
+        Ordering computedOrdering = Ordering::Colamd((*variableIndex).get());
         return eliminateMultifrontal(computedOrdering, function, variableIndex);
       } else if (orderingType == Ordering::NATURAL) {
         Ordering computedOrdering = Ordering::Natural(asDerived());
         return eliminateMultifrontal(computedOrdering, function, variableIndex);
       } else {
         Ordering computedOrdering = EliminationTraitsType::DefaultOrderingFunc(
-            asDerived(), variableIndex);
+            asDerived(), *variableIndex);
         return eliminateMultifrontal(computedOrdering, function, variableIndex);
       }
     }
@@ -131,11 +131,11 @@ namespace gtsam {
     if(!variableIndex) {
       // If no VariableIndex provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminateMultifrontal(ordering, function, computedVariableIndex);
+      return eliminateMultifrontal(ordering, function, std::cref(computedVariableIndex));
     } else {
       gttic(eliminateMultifrontal);
       // Do elimination with given ordering
-      EliminationTreeType etree(asDerived(), *variableIndex, ordering);
+      EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
       JunctionTreeType junctionTree(etree);
       boost::shared_ptr<BayesTreeType> bayesTree;
       boost::shared_ptr<FactorGraphType> factorGraph;
@@ -157,12 +157,12 @@ namespace gtsam {
     if(variableIndex) {
       gttic(eliminatePartialSequential);
       // Do elimination
-      EliminationTreeType etree(asDerived(), *variableIndex, ordering);
+      EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
       return etree.eliminate(function);
     } else {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminatePartialSequential(ordering, function, computedVariableIndex);
+      return eliminatePartialSequential(ordering, function, std::cref(computedVariableIndex));
     }
   }
 
@@ -175,7 +175,7 @@ namespace gtsam {
     if(variableIndex) {
       gttic(eliminatePartialSequential);
       // Compute full ordering
-      Ordering fullOrdering = Ordering::ColamdConstrainedFirst(*variableIndex, variables);
+      Ordering fullOrdering = Ordering::ColamdConstrainedFirst((*variableIndex).get(), variables);
 
       // Split off the part of the ordering for the variables being eliminated
       Ordering ordering(fullOrdering.begin(), fullOrdering.begin() + variables.size());
@@ -183,7 +183,7 @@ namespace gtsam {
     } else {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminatePartialSequential(variables, function, computedVariableIndex);
+      return eliminatePartialSequential(variables, function, std::cref(computedVariableIndex));
     }
   }
 
@@ -196,13 +196,13 @@ namespace gtsam {
     if(variableIndex) {
       gttic(eliminatePartialMultifrontal);
       // Do elimination
-      EliminationTreeType etree(asDerived(), *variableIndex, ordering);
+      EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
       JunctionTreeType junctionTree(etree);
       return junctionTree.eliminate(function);
     } else {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminatePartialMultifrontal(ordering, function, computedVariableIndex);
+      return eliminatePartialMultifrontal(ordering, function, std::cref(computedVariableIndex));
     }
   }
 
@@ -215,7 +215,7 @@ namespace gtsam {
     if(variableIndex) {
       gttic(eliminatePartialMultifrontal);
       // Compute full ordering
-      Ordering fullOrdering = Ordering::ColamdConstrainedFirst(*variableIndex, variables);
+      Ordering fullOrdering = Ordering::ColamdConstrainedFirst((*variableIndex).get(), variables);
 
       // Split off the part of the ordering for the variables being eliminated
       Ordering ordering(fullOrdering.begin(), fullOrdering.begin() + variables.size());
@@ -223,7 +223,7 @@ namespace gtsam {
     } else {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminatePartialMultifrontal(variables, function, computedVariableIndex);
+      return eliminatePartialMultifrontal(variables, function, std::cref(computedVariableIndex));
     }
   }
 
@@ -237,7 +237,7 @@ namespace gtsam {
     if(!variableIndex) {
       // If no variable index is provided, compute one and call this function again
       VariableIndex index(asDerived());
-      return marginalMultifrontalBayesNet(variables, function, index);
+      return marginalMultifrontalBayesNet(variables, function, std::cref(index));
     } else {
       // No ordering was provided for the marginalized variables, so order them using constrained
       // COLAMD.
@@ -247,7 +247,7 @@ namespace gtsam {
         boost::get<const Ordering&>(&variables) : boost::get<const KeyVector&>(&variables);
 
       Ordering totalOrdering =
-        Ordering::ColamdConstrainedLast(*variableIndex, *variablesOrOrdering, unmarginalizedAreOrdered);
+        Ordering::ColamdConstrainedLast((*variableIndex).get(), *variablesOrOrdering, unmarginalizedAreOrdered);
 
       // Split up ordering
       const size_t nVars = variablesOrOrdering->size();
@@ -255,7 +255,7 @@ namespace gtsam {
       Ordering marginalVarsOrdering(totalOrdering.end() - nVars, totalOrdering.end());
 
       // Call this function again with the computed orderings
-      return marginalMultifrontalBayesNet(marginalVarsOrdering, marginalizationOrdering, function, *variableIndex);
+      return marginalMultifrontalBayesNet(marginalVarsOrdering, marginalizationOrdering, function, variableIndex);
     }
   }
 
@@ -278,7 +278,7 @@ namespace gtsam {
       boost::shared_ptr<BayesTreeType> bayesTree;
       boost::shared_ptr<FactorGraphType> factorGraph;
       boost::tie(bayesTree,factorGraph) =
-        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, *variableIndex);
+        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
 
       if(const Ordering* varsAsOrdering = boost::get<const Ordering&>(&variables))
       {
@@ -304,7 +304,7 @@ namespace gtsam {
     if(!variableIndex) {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return marginalMultifrontalBayesTree(variables, function, computedVariableIndex);
+      return marginalMultifrontalBayesTree(variables, function, std::cref(computedVariableIndex));
     } else {
       // No ordering was provided for the marginalized variables, so order them using constrained
       // COLAMD.
@@ -314,7 +314,7 @@ namespace gtsam {
         boost::get<const Ordering&>(&variables) : boost::get<const KeyVector&>(&variables);
 
       Ordering totalOrdering =
-        Ordering::ColamdConstrainedLast(*variableIndex, *variablesOrOrdering, unmarginalizedAreOrdered);
+        Ordering::ColamdConstrainedLast((*variableIndex).get(), *variablesOrOrdering, unmarginalizedAreOrdered);
 
       // Split up ordering
       const size_t nVars = variablesOrOrdering->size();
@@ -322,7 +322,7 @@ namespace gtsam {
       Ordering marginalVarsOrdering(totalOrdering.end() - nVars, totalOrdering.end());
 
       // Call this function again with the computed orderings
-      return marginalMultifrontalBayesTree(marginalVarsOrdering, marginalizationOrdering, function, *variableIndex);
+      return marginalMultifrontalBayesTree(marginalVarsOrdering, marginalizationOrdering, function, variableIndex);
     }
   }
 
@@ -337,7 +337,7 @@ namespace gtsam {
     if(!variableIndex) {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, computedVariableIndex);
+      return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, std::cref(computedVariableIndex));
     } else {
       gttic(marginalMultifrontalBayesTree);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
@@ -345,7 +345,7 @@ namespace gtsam {
       boost::shared_ptr<BayesTreeType> bayesTree;
       boost::shared_ptr<FactorGraphType> factorGraph;
       boost::tie(bayesTree,factorGraph) =
-        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, *variableIndex);
+        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
 
       if(const Ordering* varsAsOrdering = boost::get<const Ordering&>(&variables))
       {
@@ -371,19 +371,19 @@ namespace gtsam {
     if(variableIndex)
     {
       // Compute a total ordering for all variables
-      Ordering totalOrdering = Ordering::ColamdConstrainedLast(*variableIndex, variables);
+      Ordering totalOrdering = Ordering::ColamdConstrainedLast((*variableIndex).get(), variables);
 
       // Split out the part for the marginalized variables
       Ordering marginalizationOrdering(totalOrdering.begin(), totalOrdering.end() - variables.size());
 
       // Eliminate and return the remaining factor graph
-      return eliminatePartialMultifrontal(marginalizationOrdering, function, *variableIndex).second;
+      return eliminatePartialMultifrontal(marginalizationOrdering, function, variableIndex).second;
     }
     else
     {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return marginal(variables, function, computedVariableIndex);
+      return marginal(variables, function, std::cref(computedVariableIndex));
     }
   }
 

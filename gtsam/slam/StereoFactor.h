@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <optional>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/StereoCamera.h>
 
@@ -34,7 +35,7 @@ private:
   // Keep a copy of measurement and calibration for I/O
   StereoPoint2 measured_;                      ///< the measurement
   Cal3_S2Stereo::shared_ptr K_;                ///< shared pointer to calibration
-  boost::optional<POSE> body_P_sensor_;        ///< The pose of the sensor in the body frame
+  std::optional<POSE> body_P_sensor_;        ///< The pose of the sensor in the body frame
 
   // verbosity handling for Cheirality Exceptions
   bool throwCheirality_;                       ///< If true, rethrows Cheirality exceptions (default: false)
@@ -68,7 +69,7 @@ public:
    */
   GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model,
       Key poseKey, Key landmarkKey, const Cal3_S2Stereo::shared_ptr& K,
-      boost::optional<POSE> body_P_sensor = boost::none) :
+      std::optional<POSE> body_P_sensor = {}) :
     Base(model, poseKey, landmarkKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
     throwCheirality_(false), verboseCheirality_(false) {}
 
@@ -86,7 +87,7 @@ public:
   GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model,
       Key poseKey, Key landmarkKey, const Cal3_S2Stereo::shared_ptr& K,
       bool throwCheirality, bool verboseCheirality,
-      boost::optional<POSE> body_P_sensor = boost::none) :
+      std::optional<POSE> body_P_sensor = {}) :
     Base(model, poseKey, landmarkKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
     throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 

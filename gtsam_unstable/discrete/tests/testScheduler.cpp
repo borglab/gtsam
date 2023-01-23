@@ -10,7 +10,6 @@
 #include <gtsam/base/timing.h>
 #include <gtsam_unstable/discrete/Scheduler.h>
 
-#include <boost/optional.hpp>
 
 using namespace std;
 using namespace gtsam;

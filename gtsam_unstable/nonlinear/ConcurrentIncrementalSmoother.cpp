@@ -45,7 +45,7 @@ bool ConcurrentIncrementalSmoother::equals(const ConcurrentSmoother& rhs, double
 
 /* ************************************************************************* */
 ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const boost::optional<FactorIndices>& removeFactorIndices) {
+    const std::optional<FactorIndices>& removeFactorIndices) {
 
   gttic(update);
 

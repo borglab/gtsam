@@ -24,7 +24,6 @@
 #include <algorithm>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/optional.hpp>
 
 #include <cmath>
 #include <fstream>
@@ -34,6 +33,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <optional>
 
 namespace gtsam {
 
@@ -563,7 +563,7 @@ namespace gtsam {
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::compose(
       Iterator begin, Iterator end, const L& label) const {
     // find highest label among branches
-    boost::optional<L> highestLabel;
+    std::optional<L> highestLabel;
     size_t nrChoices = 0;
     for (Iterator it = begin; it != end; it++) {
       if (it->root_->isLeaf())
@@ -571,7 +571,7 @@ namespace gtsam {
       boost::shared_ptr<const Choice> c =
           boost::dynamic_pointer_cast<const Choice>(it->root_);
       if (!highestLabel || c->label() > *highestLabel) {
-        highestLabel.reset(c->label());
+        highestLabel = c->label();
         nrChoices = c->nrChoices();
       }
     }

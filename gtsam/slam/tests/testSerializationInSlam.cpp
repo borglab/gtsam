@@ -22,6 +22,7 @@
 #include <gtsam/slam/SmartProjectionFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/base/serializationTestHelpers.h>
+#include <gtsam/base/std_optional_serialization.h>
 
 #include <CppUnitLite/TestHarness.h>
 

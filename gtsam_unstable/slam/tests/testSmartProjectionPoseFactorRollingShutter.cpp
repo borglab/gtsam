@@ -664,7 +664,7 @@ TEST(SmartProjectionPoseFactorRollingShutter, hessian_simple_2poses) {
   EXPECT(smartFactor1->triangulateSafe(cameras));
   EXPECT(!smartFactor1->isDegenerate());
   EXPECT(!smartFactor1->isPointBehindCamera());
-  boost::optional<Point3> p = smartFactor1->point();
+  std::optional<Point3> p = smartFactor1->point();
   EXPECT(p);
   EXPECT(assert_equal(landmark1, *p));
 

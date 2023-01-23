@@ -47,7 +47,7 @@ bool ConcurrentBatchSmoother::equals(const ConcurrentSmoother& rhs, double tol) 
 
 /* ************************************************************************* */
 ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const boost::optional< std::vector<size_t> >& removeFactorIndices) {
+    const std::optional< std::vector<size_t> >& removeFactorIndices) {
 
   gttic(update);
 

@@ -31,7 +31,8 @@
 #include <gtsam_unstable/dllexport.h>
 
 #include <boost/make_shared.hpp>
-#include <boost/optional.hpp>
+#include <boost/serialization/optional.hpp>
+#include <optional>
 #include <vector>
 
 namespace gtsam {
@@ -87,7 +88,7 @@ public:
    */
   SmartStereoProjectionFactor(const SharedNoiseModel& sharedNoiseModel,
       const SmartStereoProjectionParams& params = SmartStereoProjectionParams(),
-      const boost::optional<Pose3> body_P_sensor = boost::none) :
+      const std::optional<Pose3> body_P_sensor = {}) :
       Base(sharedNoiseModel, body_P_sensor), //
       params_(params), //
       result_(TriangulationResult::Degenerate()) {
@@ -415,7 +416,7 @@ public:
    * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
    */
   double totalReprojectionError(const Cameras& cameras,
-      boost::optional<Point3> externalPoint = boost::none) const {
+      std::optional<Point3> externalPoint = {}) const {
 
     if (externalPoint)
       result_ = TriangulationResult(*externalPoint);

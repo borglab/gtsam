@@ -73,7 +73,7 @@ TEST(ImuBias, Correct1) {
   const Vector3 measurement(1, 2, 3);
   std::function<Vector3(const Bias&, const Vector3&)> f =
       std::bind(&Bias::correctAccelerometer, std::placeholders::_1,
-                std::placeholders::_2, boost::none, boost::none);
+                std::placeholders::_2, nullptr, nullptr);
   bias1.correctAccelerometer(measurement, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(f, bias1, measurement), aH1));
   EXPECT(assert_equal(numericalDerivative22(f, bias1, measurement), aH2));
@@ -85,7 +85,7 @@ TEST(ImuBias, Correct2) {
   const Vector3 measurement(1, 2, 3);
   std::function<Vector3(const Bias&, const Vector3&)> f =
       std::bind(&Bias::correctGyroscope, std::placeholders::_1,
-                std::placeholders::_2, boost::none, boost::none);
+                std::placeholders::_2, nullptr, nullptr);
   bias1.correctGyroscope(measurement, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(f, bias1, measurement), aH1));
   EXPECT(assert_equal(numericalDerivative22(f, bias1, measurement), aH2));
