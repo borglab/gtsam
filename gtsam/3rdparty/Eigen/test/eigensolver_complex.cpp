@@ -47,7 +47,7 @@ template<typename MatrixType> bool find_pivot(typename MatrixType::Scalar tol, M
   return false;
 }
 
-/* Check that two column vectors are approximately equal upto permutations.
+/* Check that two column vectors are approximately equal up to permutations.
  * Initially, this method checked that the k-th power sums are equal for all k = 1, ..., vec1.rows(),
  * however this strategy is numerically inacurate because of numerical cancellation issues.
  */
@@ -152,7 +152,7 @@ template<typename MatrixType> void eigensolver_verify_assert(const MatrixType& m
   VERIFY_RAISES_ASSERT(eig.eigenvectors());
 }
 
-void test_eigensolver_complex()
+EIGEN_DECLARE_TEST(eigensolver_complex)
 {
   int s = 0;
   for(int i = 0; i < g_repeat; i++) {

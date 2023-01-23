@@ -7,8 +7,34 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#ifdef EIGEN_TEST_PART_100
+#  define EIGEN_NO_DEPRECATED_WARNING
+#endif
+
 #include "main.h"
 
+
+template<typename MatrixType> void triangular_deprecated(const MatrixType &m)
+{
+  Index rows = m.rows();
+  Index cols = m.cols();
+  MatrixType m1, m2, m3, m4;
+  m1.setRandom(rows,cols);
+  m2.setRandom(rows,cols);
+  m3 = m1; m4 = m2;
+  // deprecated method:
+  m1.template triangularView<Eigen::Upper>().swap(m2);
+  // use this method instead:
+  m3.template triangularView<Eigen::Upper>().swap(m4.template triangularView<Eigen::Upper>());
+  VERIFY_IS_APPROX(m1,m3);
+  VERIFY_IS_APPROX(m2,m4);
+  // deprecated method:
+  m1.template triangularView<Eigen::Lower>().swap(m4);
+  // use this method instead:
+  m3.template triangularView<Eigen::Lower>().swap(m2.template triangularView<Eigen::Lower>());
+  VERIFY_IS_APPROX(m1,m3);
+  VERIFY_IS_APPROX(m2,m4);
+}
 
 
 template<typename MatrixType> void triangular_square(const MatrixType& m)
@@ -19,8 +45,8 @@ template<typename MatrixType> void triangular_square(const MatrixType& m)
 
   RealScalar largerEps = 10*test_precision<RealScalar>();
 
-  typename MatrixType::Index rows = m.rows();
-  typename MatrixType::Index cols = m.cols();
+  Index rows = m.rows();
+  Index cols = m.cols();
 
   MatrixType m1 = MatrixType::Random(rows, cols),
              m2 = MatrixType::Random(rows, cols),
@@ -68,7 +94,7 @@ template<typename MatrixType> void triangular_square(const MatrixType& m)
     while (numext::abs2(m1(i,i))<RealScalar(1e-1)) m1(i,i) = internal::random<Scalar>();
 
   Transpose<MatrixType> trm4(m4);
-  // test back and forward subsitution with a vector as the rhs
+  // test back and forward substitution with a vector as the rhs
   m3 = m1.template triangularView<Upper>();
   VERIFY(v2.isApprox(m3.adjoint() * (m1.adjoint().template triangularView<Lower>().solve(v2)), largerEps));
   m3 = m1.template triangularView<Lower>();
@@ -109,11 +135,12 @@ template<typename MatrixType> void triangular_square(const MatrixType& m)
   // test swap
   m1.setOnes();
   m2.setZero();
-  m2.template triangularView<Upper>().swap(m1);
+  m2.template triangularView<Upper>().swap(m1.template triangularView<Eigen::Upper>());
   m3.setZero();
   m3.template triangularView<Upper>().setOnes();
   VERIFY_IS_APPROX(m2,m3);
-  
+  VERIFY_RAISES_STATIC_ASSERT(m1.template triangularView<Eigen::Lower>().swap(m2.template triangularView<Eigen::Upper>()));
+
   m1.setRandom();
   m3 = m1.template triangularView<Upper>();
   Matrix<Scalar, MatrixType::ColsAtCompileTime, Dynamic> m5(cols, internal::random<int>(1,20));  m5.setRandom();
@@ -128,6 +155,22 @@ template<typename MatrixType> void triangular_square(const MatrixType& m)
   VERIFY_IS_APPROX(m1up.template selfadjointView<Upper>().template triangularView<Lower>().toDenseMatrix(), m1up.adjoint());
 
   VERIFY_IS_APPROX(m1.template selfadjointView<Upper>().diagonal(), m1.diagonal());
+
+  m3.setRandom();
+  const MatrixType& m3c(m3);
+  VERIFY( is_same_type(m3c.template triangularView<Lower>(),m3.template triangularView<Lower>().template conjugateIf<false>()) );
+  VERIFY( is_same_type(m3c.template triangularView<Lower>().conjugate(),m3.template triangularView<Lower>().template conjugateIf<true>()) );
+  VERIFY_IS_APPROX(m3.template triangularView<Lower>().template conjugateIf<true>().toDenseMatrix(),
+                   m3.conjugate().template triangularView<Lower>().toDenseMatrix());
+  VERIFY_IS_APPROX(m3.template triangularView<Lower>().template conjugateIf<false>().toDenseMatrix(),
+                   m3.template triangularView<Lower>().toDenseMatrix());
+
+  VERIFY( is_same_type(m3c.template selfadjointView<Lower>(),m3.template selfadjointView<Lower>().template conjugateIf<false>()) );
+  VERIFY( is_same_type(m3c.template selfadjointView<Lower>().conjugate(),m3.template selfadjointView<Lower>().template conjugateIf<true>()) );
+  VERIFY_IS_APPROX(m3.template selfadjointView<Lower>().template conjugateIf<true>().toDenseMatrix(),
+                   m3.conjugate().template selfadjointView<Lower>().toDenseMatrix());
+  VERIFY_IS_APPROX(m3.template selfadjointView<Lower>().template conjugateIf<false>().toDenseMatrix(),
+                   m3.template selfadjointView<Lower>().toDenseMatrix());
 
 }
 
@@ -208,7 +251,7 @@ template<typename MatrixType> void triangular_rect(const MatrixType& m)
   // test swap
   m1.setOnes();
   m2.setZero();
-  m2.template triangularView<Upper>().swap(m1);
+  m2.template triangularView<Upper>().swap(m1.template triangularView<Eigen::Upper>());
   m3.setZero();
   m3.template triangularView<Upper>().setOnes();
   VERIFY_IS_APPROX(m2,m3);
@@ -220,7 +263,7 @@ void bug_159()
   EIGEN_UNUSED_VARIABLE(m)
 }
 
-void test_triangular()
+EIGEN_DECLARE_TEST(triangular)
 {
   int maxsize = (std::min)(EIGEN_TEST_MAX_SIZE,20);
   for(int i = 0; i < g_repeat ; i++)
@@ -240,6 +283,9 @@ void test_triangular()
     CALL_SUBTEST_9( triangular_rect(MatrixXcf(r, c)) );
     CALL_SUBTEST_5( triangular_rect(MatrixXcd(r, c)) );
     CALL_SUBTEST_6( triangular_rect(Matrix<float,Dynamic,Dynamic,RowMajor>(r, c)) );
+
+    CALL_SUBTEST_100( triangular_deprecated(Matrix<float, 5, 7>()) );
+    CALL_SUBTEST_100( triangular_deprecated(MatrixXd(r,c)) );
   }
   
   CALL_SUBTEST_1( bug_159() );

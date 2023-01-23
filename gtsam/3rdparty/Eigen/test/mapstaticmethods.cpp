@@ -9,8 +9,12 @@
 
 #include "main.h"
 
+// GCC<=4.8 has spurious shadow warnings, because `ptr` re-appears inside template instantiations
+// workaround: put these in an anonymous namespace
+namespace {
 float *ptr;
 const float *const_ptr;
+}
 
 template<typename PlainObjectType,
          bool IsDynamicSize = PlainObjectType::SizeAtCompileTime == Dynamic,
@@ -143,7 +147,7 @@ void mapstaticmethods(const PlainObjectType& m)
   VERIFY(true); // just to avoid 'unused function' warning
 }
 
-void test_mapstaticmethods()
+EIGEN_DECLARE_TEST(mapstaticmethods)
 {
   ptr = internal::aligned_new<float>(1000);
   for(int i = 0; i < 1000; i++) ptr[i] = float(i);

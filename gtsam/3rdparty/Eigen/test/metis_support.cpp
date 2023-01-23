@@ -19,7 +19,7 @@ template<typename T> void test_metis_T()
   check_sparse_square_solving(sparselu_metis); 
 }
 
-void test_metis_support()
+EIGEN_DECLARE_TEST(metis_support)
 {
   CALL_SUBTEST_1(test_metis_T<double>());
 }

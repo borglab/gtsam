@@ -48,7 +48,7 @@ int main()
   bench<Action_rot<blas_interface<REAL_TYPE> > >(MIN_AXPY,MAX_AXPY,NB_POINT);
 
   bench<Action_matrix_matrix_product<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
-//   bench<Action_ata_product<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
+  bench<Action_ata_product<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
   bench<Action_aat_product<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
 
   bench<Action_trisolve<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);

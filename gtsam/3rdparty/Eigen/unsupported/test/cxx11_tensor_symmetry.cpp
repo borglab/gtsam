@@ -801,7 +801,7 @@ static void test_tensor_randacc()
   }
 }
 
-void test_cxx11_tensor_symmetry()
+EIGEN_DECLARE_TEST(cxx11_tensor_symmetry)
 {
   CALL_SUBTEST(test_symgroups_static());
   CALL_SUBTEST(test_symgroups_dynamic());
