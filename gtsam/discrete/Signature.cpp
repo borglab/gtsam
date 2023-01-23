@@ -16,55 +16,15 @@
  * @date Feb 27, 2011
  */
 
-#include <sstream>
-
+#include "gtsam/discrete/SignatureParser.h"
 #include "Signature.h"
 
-#include <boost/spirit/include/qi.hpp> // for parsing
-#include <boost/spirit/include/phoenix.hpp> // for qi::_val
+#include <sstream>
+#include <cassert>
 
 namespace gtsam {
 
   using namespace std;
-
-  namespace qi = boost::spirit::qi;
-  namespace ph = boost::phoenix;
-
-  // parser for strings of form "99/1 80/20" etc...
-  namespace parser {
-    typedef string::const_iterator It;
-    using boost::phoenix::val;
-    using boost::phoenix::ref;
-    using boost::phoenix::push_back;
-
-    // Special rows, true and false
-    Signature::Row F{1, 0}, T{0, 1};  
-
-    // Special tables (inefficient, but do we care for user input?)
-    Signature::Table logic(bool ff, bool ft, bool tf, bool tt) {
-      Signature::Table t(4);
-      t[0] = ff ? T : F;
-      t[1] = ft ? T : F;
-      t[2] = tf ? T : F;
-      t[3] = tt ? T : F;
-      return t;
-    }
-
-    struct Grammar {
-      qi::rule<It, qi::space_type, Signature::Table()> table, or_, and_, rows;
-      qi::rule<It, Signature::Row()> true_, false_, row;
-      Grammar() {
-        table = or_ | and_ | rows;
-        or_ = qi::lit("OR")[qi::_val = logic(false, true, true, true)];
-        and_ = qi::lit("AND")[qi::_val = logic(false, false, false, true)];
-        rows = +(row | true_ | false_);
-        row = qi::double_ >> +("/" >> qi::double_);
-        true_ = qi::lit("T")[qi::_val = T];
-        false_ = qi::lit("F")[qi::_val = F];
-      }
-    } grammar;
-
-  } // \namespace parser
 
   ostream& operator <<(ostream &os, const Signature::Row &row) {
     os << row[0];
@@ -139,9 +99,7 @@ namespace gtsam {
   Signature& Signature::operator=(const string& spec) {
     spec_ = spec;
     Table table;
-    parser::It f = spec.begin(), l = spec.end();
-    bool success =
-        qi::phrase_parse(f, l, parser::grammar.table, qi::space, table);
+    bool success = gtsam::SignatureParser::parse(spec, table);
     if (success) {
       for (Row& row : table) normalize(row);
       table_ = table;
