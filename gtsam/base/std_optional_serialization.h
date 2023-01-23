@@ -95,8 +95,6 @@ void serialize(Archive& ar, std::optional<T>& t, const unsigned int version) {
   boost::serialization::split_free(ar, t, version);
 }
 
-// derive boost::xml_archive_impl for archiving std::optional<T> with xml
-
 }  // namespace serialization
 }  // namespace boost
 
