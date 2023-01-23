@@ -102,15 +102,9 @@ public:
   void multiply(const Vector &x, Vector& y) const;
   void leftPrecondition(const Vector &x, Vector &y) const;
   void rightPrecondition(const Vector &x, Vector &y) const;
-  inline void scal(const double alpha, Vector &x) const {
-    x *= alpha;
-  }
-  inline double dot(const Vector &x, const Vector &y) const {
-    return x.dot(y);
-  }
-  inline void axpy(const double alpha, const Vector &x, Vector &y) const {
-    y += alpha * x;
-  }
+  void scal(const double alpha, Vector &x) const;
+  double dot(const Vector &x, const Vector &y) const;
+  void axpy(const double alpha, const Vector &x, Vector &y) const;
 
   void getb(Vector &b) const;
 };

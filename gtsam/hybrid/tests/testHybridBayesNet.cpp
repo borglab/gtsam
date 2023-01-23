@@ -129,10 +129,7 @@ TEST(HybridBayesNet, evaluateHybrid) {
 TEST(HybridBayesNet, Choose) {
   Switching s(4);
 
-  Ordering ordering;
-  for (auto&& kvp : s.linearizationPoint) {
-    ordering += kvp.key;
-  }
+  const Ordering ordering(s.linearizationPoint.keys());
 
   HybridBayesNet::shared_ptr hybridBayesNet;
   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
@@ -163,10 +160,7 @@ TEST(HybridBayesNet, Choose) {
 TEST(HybridBayesNet, OptimizeAssignment) {
   Switching s(4);
 
-  Ordering ordering;
-  for (auto&& kvp : s.linearizationPoint) {
-    ordering += kvp.key;
-  }
+  const Ordering ordering(s.linearizationPoint.keys());
 
   HybridBayesNet::shared_ptr hybridBayesNet;
   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;

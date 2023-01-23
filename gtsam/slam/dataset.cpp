@@ -586,9 +586,9 @@ void save2D(const NonlinearFactorGraph &graph, const Values &config,
   fstream stream(filename.c_str(), fstream::out);
 
   // save poses
-  for (const auto key_value : config) {
-    const Pose2 &pose = key_value.value.cast<Pose2>();
-    stream << "VERTEX2 " << key_value.key << " " << pose.x() << " " << pose.y()
+  for (const auto &key_pose : config.extract<Pose2>()) {
+    const Pose2 &pose = key_pose.second;
+    stream << "VERTEX2 " << key_pose.first << " " << pose.x() << " " << pose.y()
            << " " << pose.theta() << endl;
   }
 
@@ -635,45 +635,33 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
   auto index = [](gtsam::Key key) { return Symbol(key).index(); };
 
   // save 2D poses
-  for (const auto key_value : estimate) {
-    auto p = dynamic_cast<const GenericValue<Pose2> *>(&key_value.value);
-    if (!p)
-      continue;
-    const Pose2 &pose = p->value();
-    stream << "VERTEX_SE2 " << index(key_value.key) << " " << pose.x() << " "
+  for (const auto &pair : estimate.extract<Pose2>()) {
+    const Pose2 &pose = pair.second;
+    stream << "VERTEX_SE2 " << index(pair.first) << " " << pose.x() << " "
            << pose.y() << " " << pose.theta() << endl;
   }
 
   // save 3D poses
-  for (const auto key_value : estimate) {
-    auto p = dynamic_cast<const GenericValue<Pose3> *>(&key_value.value);
-    if (!p)
-      continue;
-    const Pose3 &pose = p->value();
+  for (const auto &pair : estimate.extract<Pose3>()) {
+    const Pose3 &pose = pair.second;
     const Point3 t = pose.translation();
     const auto q = pose.rotation().toQuaternion();
-    stream << "VERTEX_SE3:QUAT " << index(key_value.key) << " " << t.x() << " "
+    stream << "VERTEX_SE3:QUAT " << index(pair.first) << " " << t.x() << " "
            << t.y() << " " << t.z() << " " << q.x() << " " << q.y() << " "
            << q.z() << " " << q.w() << endl;
   }
 
   // save 2D landmarks
-  for (const auto key_value : estimate) {
-    auto p = dynamic_cast<const GenericValue<Point2> *>(&key_value.value);
-    if (!p)
-      continue;
-    const Point2 &point = p->value();
-    stream << "VERTEX_XY " << index(key_value.key) << " " << point.x() << " "
+  for (const auto &pair : estimate.extract<Point2>()) {
+    const Point2 &point = pair.second;
+    stream << "VERTEX_XY " << index(pair.first) << " " << point.x() << " "
            << point.y() << endl;
   }
 
   // save 3D landmarks
-  for (const auto key_value : estimate) {
-    auto p = dynamic_cast<const GenericValue<Point3> *>(&key_value.value);
-    if (!p)
-      continue;
-    const Point3 &point = p->value();
-    stream << "VERTEX_TRACKXYZ " << index(key_value.key) << " " << point.x()
+  for (const auto &pair : estimate.extract<Point3>()) {
+    const Point3 &point = pair.second;
+    stream << "VERTEX_TRACKXYZ " << index(pair.first) << " " << point.x()
            << " " << point.y() << " " << point.z() << endl;
   }
 

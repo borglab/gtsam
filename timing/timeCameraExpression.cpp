@@ -34,7 +34,7 @@ std::shared_ptr<Cal3_S2> fixedK(new Cal3_S2());
 Point2 myProject(const Pose3& pose, const Point3& point,
     OptionalJacobian<2,6> H1, OptionalJacobian<2,3> H2) {
   PinholeCamera<Cal3_S2> camera(pose, *fixedK);
-  return camera.project(point, H1, H2, boost::none);
+  return camera.project(point, H1, H2, {});
 }
 
 int main() {
@@ -99,7 +99,6 @@ int main() {
   // ExpressionFactor, optimized
   // Oct 3, 2014, Macbook Air
   // 9.0 musecs/call
-  typedef PinholeCamera<Cal3_S2> Camera;
   NonlinearFactor::shared_ptr g3 =
       std::make_shared<ExpressionFactor<Point2> >(model, z,
           Point2_(myProject, x, p));

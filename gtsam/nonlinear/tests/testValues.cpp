@@ -188,29 +188,17 @@ TEST(Values, InsertOrAssign) {
 TEST(Values, basic_functions)
 {
   Values values;
-  const Values& values_c = values;
   Matrix23 M1 = Matrix23::Zero(), M2 = Matrix23::Zero();
   values.insert(2, Vector3(0, 0, 0));
   values.insert(4, Vector3(0, 0, 0));
   values.insert(6, M1);
   values.insert(8, M2);
 
-  // find
-  EXPECT_LONGS_EQUAL(4, values.find(4)->key);
-  EXPECT_LONGS_EQUAL(4, values_c.find(4)->key);
-
-  // lower_bound
-  EXPECT_LONGS_EQUAL(4, values.lower_bound(4)->key);
-  EXPECT_LONGS_EQUAL(4, values_c.lower_bound(4)->key);
-  EXPECT_LONGS_EQUAL(4, values.lower_bound(3)->key);
-  EXPECT_LONGS_EQUAL(4, values_c.lower_bound(3)->key);
-
-  // upper_bound
-  EXPECT_LONGS_EQUAL(6, values.upper_bound(4)->key);
-  EXPECT_LONGS_EQUAL(6, values_c.upper_bound(4)->key);
-  EXPECT_LONGS_EQUAL(4, values.upper_bound(3)->key);
-  EXPECT_LONGS_EQUAL(4, values_c.upper_bound(3)->key);
-
+  EXPECT(!values.exists(1));
+  EXPECT(values.exists(2));
+  EXPECT(values.exists(4));
+  EXPECT(values.exists(6));
+  EXPECT(values.exists(8));
 }
 
 /* ************************************************************************* */
@@ -220,8 +208,8 @@ TEST(Values, retract_full)
   config0.insert(key1, Vector3(1.0, 2.0, 3.0));
   config0.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues delta {{key1, Vector3(1.0, 1.1, 1.2)},
-                      {key2, Vector3(1.3, 1.4, 1.5)}};
+  const VectorValues delta{{key1, Vector3(1.0, 1.1, 1.2)},
+                           {key2, Vector3(1.3, 1.4, 1.5)}};
 
   Values expected;
   expected.insert(key1, Vector3(2.0, 3.1, 4.2));
@@ -238,7 +226,7 @@ TEST(Values, retract_partial)
   config0.insert(key1, Vector3(1.0, 2.0, 3.0));
   config0.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues delta {{key2, Vector3(1.3, 1.4, 1.5)}};
+  const VectorValues delta{{key2, Vector3(1.3, 1.4, 1.5)}};
 
   Values expected;
   expected.insert(key1, Vector3(1.0, 2.0, 3.0));
@@ -246,6 +234,24 @@ TEST(Values, retract_partial)
 
   CHECK(assert_equal(expected, config0.retract(delta)));
   CHECK(assert_equal(expected, Values(config0, delta)));
+}
+
+/* ************************************************************************* */
+TEST(Values, retract_masked)
+{
+  Values config0;
+  config0.insert(key1, Vector3(1.0, 2.0, 3.0));
+  config0.insert(key2, Vector3(5.0, 6.0, 7.0));
+
+  const VectorValues delta{{key1, Vector3(1.0, 1.1, 1.2)},
+                           {key2, Vector3(1.3, 1.4, 1.5)}};
+
+  Values expected;
+  expected.insert(key1, Vector3(1.0, 2.0, 3.0));
+  expected.insert(key2, Vector3(6.3, 7.4, 8.5));
+
+  config0.retractMasked(delta, {key2});
+  CHECK(assert_equal(expected, config0));
 }
 
 /* ************************************************************************* */
