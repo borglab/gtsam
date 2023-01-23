@@ -17,4 +17,5 @@ if (NOT GTSAM_USE_BOOST)
       SolverComparer.cpp
       )
 endif()
+
 gtsamAddExamplesGlob("*.cpp" "${excluded_examples}" "gtsam;gtsam_unstable;${Boost_PROGRAM_OPTIONS_LIBRARY}")
