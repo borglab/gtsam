@@ -7,4 +7,4 @@ else()
   set(EXCLUDE_TESTS "")
 endif()
 
-gtsamAddTestsGlob(discrete "test*.cpp" "${EXCLUDE_TESTS}" "gtsam")
+gtsamAddTestsGlob(slam "test*.cpp" "${EXCLUDE_TESTS}" "gtsam")
