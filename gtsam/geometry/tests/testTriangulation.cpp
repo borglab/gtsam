@@ -824,7 +824,7 @@ TEST(triangulation, reprojectionError_cameraComparison) {
       Point3(0.0, 0.0, 0.0));  // with z pointing along x axis of global frame
   Point3 landmarkL(5.0, 0.0, 0.0);  // 1m in front of poseA
   SphericalCamera sphericalCamera(poseA);
-  Unit3 u = sphericalCamera.project(landmarkL);
+  // TODO(dellaert): check Unit3 u = sphericalCamera.project(landmarkL);
 
   static Cal3_S2::shared_ptr sharedK(new Cal3_S2(60, 640, 480));
   PinholePose<Cal3_S2> pinholeCamera(poseA, sharedK);

@@ -188,15 +188,21 @@ TEST(Values, InsertOrAssign) {
 TEST(Values, basic_functions)
 {
   Values values;
-  const Values& values_c = values;
   Matrix23 M1 = Matrix23::Zero(), M2 = Matrix23::Zero();
   values.insert(2, Vector3(0, 0, 0));
   values.insert(4, Vector3(0, 0, 0));
   values.insert(6, M1);
   values.insert(8, M2);
 
+  EXPECT(!values.exists(1));
+  EXPECT(values.exists(2));
+  EXPECT(values.exists(4));
+  EXPECT(values.exists(6));
+  EXPECT(values.exists(8));
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   // find
+  const Values& values_c = values;
   EXPECT_LONGS_EQUAL(4, values.find(4)->key);
   EXPECT_LONGS_EQUAL(4, values_c.find(4)->key);
 
