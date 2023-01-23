@@ -48,14 +48,6 @@ if(${GTSAM_SOURCE_DIR} STREQUAL ${GTSAM_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
 
-# TODO(kartikarcot): Determine a proper home for this option
-# a flag to enable or disable serialization with GTSAM_ENABLE_BOOST_SERIALIZATION
-option(GTSAM_ENABLE_BOOST_SERIALIZATION "Enable Boost serialization" ON)
-# set a compiler flag to enable or disable serialization with GTSAM_DISABLE_BOOST_SERIALIZATION
-if(GTSAM_ENABLE_BOOST_SERIALIZATION)
-  add_definitions(-DGTSAM_ENABLE_BOOST_SERIALIZATION)
-endif()
-
 include(cmake/HandleGeneralOptions.cmake)   # CMake build options
 
 # Libraries:

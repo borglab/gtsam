@@ -83,3 +83,6 @@
 
 // Toggle switch for BetweenFactor jacobian computation
 #cmakedefine GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+
+// Toggle Boost serialization definitions
+#cmakedefine GTSAM_ENABLE_BOOST_SERIALIZATION
