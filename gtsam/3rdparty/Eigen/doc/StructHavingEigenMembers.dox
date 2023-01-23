@@ -6,7 +6,12 @@ namespace Eigen {
 
 \section StructHavingEigenMembers_summary Executive Summary
 
-If you define a structure having members of \ref TopicFixedSizeVectorizable "fixed-size vectorizable Eigen types", you must overload its "operator new" so that it generates 16-bytes-aligned pointers. Fortunately, %Eigen provides you with a macro EIGEN_MAKE_ALIGNED_OPERATOR_NEW that does that for you.
+
+If you define a structure having members of \ref TopicFixedSizeVectorizable "fixed-size vectorizable Eigen types", you must ensure that calling operator new on it allocates properly aligned buffers.
+If you're compiling in \cpp17 mode only with a sufficiently recent compiler (e.g., GCC>=7, clang>=5, MSVC>=19.12), then everything is taken care by the compiler and you can stop reading.
+
+Otherwise, you have to overload its `operator new` so that it generates properly aligned pointers (e.g., 32-bytes-aligned for Vector4d and AVX).
+Fortunately, %Eigen provides you with a macro `EIGEN_MAKE_ALIGNED_OPERATOR_NEW` that does that for you.
 
 \section StructHavingEigenMembers_what What kind of code needs to be changed?
 
@@ -29,13 +34,13 @@ In other words: you have a class that has as a member a \ref TopicFixedSizeVecto
 
 \section StructHavingEigenMembers_how How should such code be modified?
 
-Very easy, you just need to put a EIGEN_MAKE_ALIGNED_OPERATOR_NEW macro in a public part of your class, like this:
+Very easy, you just need to put a `EIGEN_MAKE_ALIGNED_OPERATOR_NEW` macro in a public part of your class, like this:
 
 \code
 class Foo
 {
   ...
-  Eigen::Vector2d v;
+  Eigen::Vector4d v;
   ...
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -46,7 +51,9 @@ public:
 Foo *foo = new Foo;
 \endcode
 
-This macro makes "new Foo" always return an aligned pointer.
+This macro makes `new Foo` always return an aligned pointer.
+
+In \cpp17, this macro is empty.
 
 If this approach is too intrusive, see also the \ref StructHavingEigenMembers_othersolutions "other solutions".
 
@@ -58,7 +65,7 @@ OK let's say that your code looks like this:
 class Foo
 {
   ...
-  Eigen::Vector2d v;
+  Eigen::Vector4d v;
   ...
 };
 
@@ -67,45 +74,59 @@ class Foo
 Foo *foo = new Foo;
 \endcode
 
-A Eigen::Vector2d consists of 2 doubles, which is 128 bits. Which is exactly the size of a SSE packet, which makes it possible to use SSE for all sorts of operations on this vector. But SSE instructions (at least the ones that %Eigen uses, which are the fast ones) require 128-bit alignment. Otherwise you get a segmentation fault.
+A Eigen::Vector4d consists of 4 doubles, which is 256 bits.
+This is exactly the size of an AVX register, which makes it possible to use AVX for all sorts of operations on this vector.
+But AVX instructions (at least the ones that %Eigen uses, which are the fast ones) require 256-bit alignment.
+Otherwise you get a segmentation fault.
 
-For this reason, Eigen takes care by itself to require 128-bit alignment for Eigen::Vector2d, by doing two things:
-\li Eigen requires 128-bit alignment for the Eigen::Vector2d's array (of 2 doubles). With GCC, this is done with a __attribute__ ((aligned(16))).
-\li Eigen overloads the "operator new" of Eigen::Vector2d so it will always return 128-bit aligned pointers.
+For this reason, %Eigen takes care by itself to require 256-bit alignment for Eigen::Vector4d, by doing two things:
+\li %Eigen requires 256-bit alignment for the Eigen::Vector4d's array (of 4 doubles). With \cpp11 this is done with the <a href="https://en.cppreference.com/w/cpp/keyword/alignas">alignas</a> keyword, or compiler's extensions for c++98/03.
+\li %Eigen overloads the `operator new` of Eigen::Vector4d so it will always return 256-bit aligned pointers. (removed in \cpp17)
 
-Thus, normally, you don't have to worry about anything, Eigen handles alignment for you...
+Thus, normally, you don't have to worry about anything, %Eigen handles alignment of operator new for you...
 
-... except in one case. When you have a class Foo like above, and you dynamically allocate a new Foo as above, then, since Foo doesn't have aligned "operator new", the returned pointer foo is not necessarily 128-bit aligned.
+... except in one case. When you have a `class Foo` like above, and you dynamically allocate a new `Foo` as above, then, since `Foo` doesn't have aligned `operator new`, the returned pointer foo is not necessarily 256-bit aligned.
 
-The alignment attribute of the member v is then relative to the start of the class, foo. If the foo pointer wasn't aligned, then foo->v won't be aligned either!
+The alignment attribute of the member `v` is then relative to the start of the class `Foo`. If the `foo` pointer wasn't aligned, then `foo->v` won't be aligned either!
 
-The solution is to let class Foo have an aligned "operator new", as we showed in the previous section.
+The solution is to let `class Foo` have an aligned `operator new`, as we showed in the previous section.
+
+This explanation also holds for SSE/NEON/MSA/Altivec/VSX targets, which require 16-bytes alignment, and AVX512 which requires 64-bytes alignment for fixed-size objects multiple of 64 bytes (e.g., Eigen::Matrix4d).
 
 \section StructHavingEigenMembers_movetotop Should I then put all the members of Eigen types at the beginning of my class?
 
-That's not required. Since Eigen takes care of declaring 128-bit alignment, all members that need it are automatically 128-bit aligned relatively to the class. So code like this works fine:
+That's not required. Since %Eigen takes care of declaring adequate alignment, all members that need it are automatically aligned relatively to the class. So code like this works fine:
 
 \code
 class Foo
 {
   double x;
-  Eigen::Vector2d v;
+  Eigen::Vector4d v;
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 \endcode
 
+That said, as usual, it is recommended to sort the members so that alignment does not waste memory.
+In the above example, with AVX, the compiler will have to reserve 24 empty bytes between `x` and `v`.
+
+
 \section StructHavingEigenMembers_dynamicsize What about dynamic-size matrices and vectors?
 
 Dynamic-size matrices and vectors, such as Eigen::VectorXd, allocate dynamically their own array of coefficients, so they take care of requiring absolute alignment automatically. So they don't cause this issue. The issue discussed here is only with \ref TopicFixedSizeVectorizable  "fixed-size vectorizable matrices and vectors".
 
+
 \section StructHavingEigenMembers_bugineigen So is this a bug in Eigen?
 
-No, it's not our bug. It's more like an inherent problem of the C++98 language specification, and seems to be taken care of in the upcoming language revision: <a href="http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2341.pdf">see this document</a>.
+No, it's not our bug. It's more like an inherent problem of the c++ language specification that has been solved in c++17 through the feature known as <a href="http://wg21.link/p0035r4">dynamic memory allocation for over-aligned data</a>.
 
-\section StructHavingEigenMembers_conditional What if I want to do this conditionnally (depending on template parameters) ?
 
-For this situation, we offer the macro EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign). It will generate aligned operators like EIGEN_MAKE_ALIGNED_OPERATOR_NEW if NeedsToAlign is true. It will generate operators with the default alignment if NeedsToAlign is false.
+\section StructHavingEigenMembers_conditional What if I want to do this conditionally (depending on template parameters) ?
+
+For this situation, we offer the macro `EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)`.
+It will generate aligned operators like `EIGEN_MAKE_ALIGNED_OPERATOR_NEW` if `NeedsToAlign` is true.
+It will generate operators with the default alignment if `NeedsToAlign` is false.
+In \cpp17, this macro is empty.
 
 Example:
 
@@ -130,7 +151,7 @@ Foo<3> *foo3 = new Foo<3>; // foo3 has only the system default alignment guarant
 
 \section StructHavingEigenMembers_othersolutions Other solutions
 
-In case putting the EIGEN_MAKE_ALIGNED_OPERATOR_NEW macro everywhere is too intrusive, there exists at least two other solutions.
+In case putting the `EIGEN_MAKE_ALIGNED_OPERATOR_NEW` macro everywhere is too intrusive, there exists at least two other solutions.
 
 \subsection othersolutions1 Disabling alignment
 
@@ -139,22 +160,13 @@ The first is to disable alignment requirement for the fixed size members:
 class Foo
 {
   ...
-  Eigen::Matrix<double,2,1,Eigen::DontAlign> v;
+  Eigen::Matrix<double,4,1,Eigen::DontAlign> v;
   ...
 };
 \endcode
-This has for effect to disable vectorization when using \c v.
-If a function of Foo uses it several times, then it still possible to re-enable vectorization by copying it into an aligned temporary vector:
-\code
-void Foo::bar()
-{
-  Eigen::Vector2d av(v);
-  // use av instead of v
-  ...
-  // if av changed, then do:
-  v = av;
-}
-\endcode
+This `v` is fully compatible with aligned Eigen::Vector4d.
+This has only for effect to make load/stores to `v` more expensive (usually slightly, but that's hardware dependent).
+
 
 \subsection othersolutions2 Private structure
 
@@ -164,7 +176,7 @@ The second consist in storing the fixed-size objects into a private struct which
 struct Foo_d
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  Vector2d v;
+  Vector4d v;
   ...
 };
 
@@ -183,7 +195,8 @@ private:
 };
 \endcode
 
-The clear advantage here is that the class Foo remains unchanged regarding alignment issues. The drawback is that a heap allocation will be required whatsoever.
+The clear advantage here is that the class `Foo` remains unchanged regarding alignment issues.
+The drawback is that an additional heap allocation will be required whatsoever.
 
 */
 

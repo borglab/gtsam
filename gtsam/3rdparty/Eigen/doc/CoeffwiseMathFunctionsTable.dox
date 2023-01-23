@@ -74,6 +74,20 @@ This also means that, unless specified, if the function \c std::foo is available
   <td>All engines (fc,fd)</td>
 </tr>
 <tr>
+  <td class="code">
+  \anchor cwisetable_arg
+  a.\link ArrayBase::arg arg\endlink(); \n
+  \link Eigen::arg arg\endlink(a); \n
+  m.\link MatrixBase::cwiseArg cwiseArg\endlink();
+  </td>
+  <td>phase angle of complex number</td>
+  <td class="code">
+  using <a href="http://en.cppreference.com/w/cpp/numeric/complex/arg">std::arg</a>; \n
+  arg(a[i]);
+  </td>
+  <td>All engines (fc,fd)</td>
+</tr>
+<tr>
 <th colspan="4">Exponential functions</th>
 </tr>
 <tr>
@@ -321,6 +335,42 @@ This also means that, unless specified, if the function \c std::foo is available
   <td></td>
 </tr>
 <tr>
+  <td class="code">
+  \anchor cwisetable_asinh
+  a.\link ArrayBase::asinh asinh\endlink(); \n
+  \link Eigen::asinh asinh\endlink(a);
+  </td>
+  <td>computes inverse hyperbolic sine</td>
+  <td class="code">
+  using <a href="http://en.cppreference.com/w/cpp/numeric/math/asinh">std::asinh</a>; \n
+  asinh(a[i]);</td>
+  <td></td>
+</tr>
+<tr>
+  <td class="code">
+  \anchor cwisetable_acosh
+  a.\link ArrayBase::acosh cohs\endlink(); \n
+  \link Eigen::acosh acosh\endlink(a);
+  </td>
+  <td>computes hyperbolic cosine</td>
+  <td class="code">
+  using <a href="http://en.cppreference.com/w/cpp/numeric/math/acosh">std::acosh</a>; \n
+  acosh(a[i]);</td>
+  <td></td>
+</tr>
+<tr>
+  <td class="code">
+  \anchor cwisetable_atanh
+  a.\link ArrayBase::atanh atanh\endlink(); \n
+  \link Eigen::atanh atanh\endlink(a);
+  </td>
+  <td>computes hyperbolic tangent</td>
+  <td class="code">
+  using <a href="http://en.cppreference.com/w/cpp/numeric/math/atanh">std::atanh</a>; \n
+  atanh(a[i]);</td>
+  <td></td>
+</tr>
+<tr>
 <th colspan="4">Nearest integer floating point operations</th>
 </tr>
 <tr>
@@ -357,6 +407,17 @@ This also means that, unless specified, if the function \c std::foo is available
   <td>built-in generic implementation \n based on \c floor and \c ceil,\n
   plus \c using <a href="http://en.cppreference.com/w/cpp/numeric/math/round">\c std::round </a>; \cpp11</td>
   <td>SSE4,AVX,ZVector (f,d)</td>
+</tr>
+<tr>
+  <td class="code">
+  \anchor cwisetable_rint
+  a.\link ArrayBase::rint rint\endlink(); \n
+  \link Eigen::rint rint\endlink(a);
+  </td>
+  <td>nearest integer, \n rounding to nearest even in halfway cases</td>
+  <td>built-in generic implementation using <a href="http://en.cppreference.com/w/cpp/numeric/math/rint">\c std::rint </a>; \cpp11
+  or <a href="http://en.cppreference.com/w/c/numeric/math/rint">\c rintf </a>; </td>
+  <td>SSE4,AVX (f,d)</td>
 </tr>
 <tr>
 <th colspan="4">Floating point manipulation functions</th>
@@ -507,10 +568,23 @@ This also means that, unless specified, if the function \c std::foo is available
 <tr>
   <td class="code">
   \anchor cwisetable_zeta
-  \link Eigen::zeta zeta\endlink(a,b);
+  \link Eigen::zeta zeta\endlink(a,b); \n
+  a.\link ArrayBase::zeta zeta\endlink(b);
   </td>
   <td><a href="https://en.wikipedia.org/wiki/Hurwitz_zeta_function">Hurwitz zeta function</a>
   \n \f$ \zeta(a_i,b_i)=\sum_{k=0}^{\infty}(b_i+k)^{\text{-}a_i} \f$</td>
+  <td>
+  built-in for float and double
+  </td>
+  <td></td>
+</tr>
+<tr>
+  <td class="code">
+  \anchor cwisetable_ndtri
+  a.\link ArrayBase::ndtri ndtri\endlink(); \n
+  \link Eigen::ndtri ndtri\endlink(a);
+  </td>
+  <td>Inverse of the CDF of the Normal distribution function</td>
   <td>
   built-in for float and double
   </td>

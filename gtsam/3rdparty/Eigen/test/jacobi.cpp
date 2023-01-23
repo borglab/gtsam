@@ -57,7 +57,7 @@ void jacobi(const MatrixType& m = MatrixType())
   }
 }
 
-void test_jacobi()
+EIGEN_DECLARE_TEST(jacobi)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1(( jacobi<Matrix3f, float>() ));

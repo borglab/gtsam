@@ -52,7 +52,7 @@ template<typename MatrixType> void eigen2support(const MatrixType& m)
   m1.minor(0,0);
 }
 
-void test_eigen2support()
+EIGEN_DECLARE_TEST(eigen2support)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( eigen2support(Matrix<double,1,1>()) );

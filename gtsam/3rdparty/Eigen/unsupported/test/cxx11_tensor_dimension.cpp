@@ -60,10 +60,29 @@ static void test_rank_zero()
   VERIFY_IS_EQUAL((int)dscalar.rank(), 0);
 }
 
-void test_cxx11_tensor_dimension()
+static void test_index_type_promotion() {
+  Eigen::DSizes<int, 3> src0(1, 2, 3);
+  Eigen::array<int, 3> src1;
+  src1[0] = 4;
+  src1[1] = 5;
+  src1[2] = 6;
+
+  Eigen::DSizes<long, 3> dst0(src0);
+  Eigen::DSizes<long, 3> dst1(src1);
+
+  VERIFY_IS_EQUAL(dst0[0], 1L);
+  VERIFY_IS_EQUAL(dst0[1], 2L);
+  VERIFY_IS_EQUAL(dst0[2], 3L);
+  VERIFY_IS_EQUAL(dst1[0], 4L);
+  VERIFY_IS_EQUAL(dst1[1], 5L);
+  VERIFY_IS_EQUAL(dst1[2], 6L);
+}
+
+EIGEN_DECLARE_TEST(cxx11_tensor_dimension)
 {
   CALL_SUBTEST(test_dynamic_size());
   CALL_SUBTEST(test_fixed_size());
   CALL_SUBTEST(test_match());
   CALL_SUBTEST(test_rank_zero());
+  CALL_SUBTEST(test_index_type_promotion());
 }
