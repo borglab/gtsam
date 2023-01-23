@@ -26,7 +26,7 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/inference/Factor.h>
 #include <gtsam/base/OptionalJacobian.h>
-#include <gtsam/base/utilities.h>  // boost::index_sequence
+#include <gtsam/base/utilities.h>
 
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/base_object.hpp>
@@ -609,7 +609,7 @@ protected:
   Vector unwhitenedError(
       const Values& x,
       OptionalMatrixVecType H = nullptr) const override {
-    return unwhitenedError(boost::mp11::index_sequence_for<ValueTypes...>{}, x,
+    return unwhitenedError(gtsam::index_sequence_for<ValueTypes...>{}, x,
                            H);
   }
 
@@ -702,7 +702,7 @@ protected:
    */
   template <std::size_t... Indices>
   inline Vector unwhitenedError(
-      boost::mp11::index_sequence<Indices...>,  //
+      gtsam::index_sequence<Indices...>,  //
       const Values& x,
       OptionalMatrixVecType H = nullptr) const {
     if (this->active(x)) {
