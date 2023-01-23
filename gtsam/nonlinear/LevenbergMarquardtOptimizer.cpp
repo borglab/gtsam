@@ -61,7 +61,8 @@ LevenbergMarquardtOptimizer::LevenbergMarquardtOptimizer(const NonlinearFactorGr
 
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::initTime() {
-  startTime_ = boost::posix_time::microsec_clock::universal_time();
+  // use chrono to measure time in microseconds
+  startTime_ = std::chrono::high_resolution_clock::now();
 }
 
 /* ************************************************************************* */
@@ -103,9 +104,12 @@ inline void LevenbergMarquardtOptimizer::writeLogFile(double currentError){
 
   if (!params_.logFile.empty()) {
     ofstream os(params_.logFile.c_str(), ios::app);
-    boost::posix_time::ptime currentTime = boost::posix_time::microsec_clock::universal_time();
+    // use chrono to measure time in microseconds
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    // Get the time spent in seconds and print it
+    double timeSpent = std::chrono::duration_cast<std::chrono::microseconds>(currentTime - startTime_).count() / 1e6;
     os << /*inner iterations*/ currentState->totalNumberInnerIterations << ","
-        << 1e-6 * (currentTime - startTime_).total_microseconds() << ","
+        << timeSpent << ","
         << /*current error*/ currentError << "," << currentState->lambda << ","
         << /*outer iterations*/ currentState->iterations << endl;
   }
