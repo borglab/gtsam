@@ -1192,7 +1192,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             shared_obj = 'pairResult.' + pair_value
 
             if not (return_type.is_shared_ptr or return_type.is_ptr):
-                shared_obj = 'std::make_shared<{name}>({shared_obj})' \
+                shared_obj = 'boost::make_shared<{name}>({shared_obj})' \
                     .format(name=self._format_type_name(return_type.typename),
                             shared_obj='pairResult.' + pair_value)
 
@@ -1230,7 +1230,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                     obj=obj, method_name_sep=sep_method_name('.'))
             else:
                 method_name_sep_dot = sep_method_name('.')
-                shared_obj_template = 'std::make_shared<{method_name_sep_col}>({obj}),' \
+                shared_obj_template = 'boost::make_shared<{method_name_sep_col}>({obj}),' \
                                         '"{method_name_sep_dot}"'
                 shared_obj = shared_obj_template \
                     .format(method_name_sep_col=sep_method_name(),
@@ -1351,7 +1351,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             if collector_func[2] == 'collectorInsertAndMakeBase':
                 body += textwrap.indent(textwrap.dedent('''\
                     mexAtExit(&_deleteAllObjects);
-                    typedef std::shared_ptr<{class_name_sep}> Shared;\n
+                    typedef boost::shared_ptr<{class_name_sep}> Shared;\n
                     Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
                     collector_{class_name}.insert(self);
                 ''').format(class_name_sep=class_name_separated,
@@ -1360,7 +1360,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
                 if collector_func[1].parent_class:
                     body += textwrap.indent(textwrap.dedent('''
-                        typedef std::shared_ptr<{}> SharedBase;
+                        typedef boost::shared_ptr<{}> SharedBase;
                         out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
                         *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
                     ''').format(collector_func[1].parent_class),
@@ -1373,7 +1373,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
                 if collector_func[1].parent_class:
                     base += textwrap.indent(textwrap.dedent('''
-                        typedef std::shared_ptr<{}> SharedBase;
+                        typedef boost::shared_ptr<{}> SharedBase;
                         out[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
                         *reinterpret_cast<SharedBase**>(mxGetData(out[1])) = new SharedBase(*self);
                     ''').format(collector_func[1].parent_class),
@@ -1381,7 +1381,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
                 body += textwrap.dedent('''\
                       mexAtExit(&_deleteAllObjects);
-                      typedef std::shared_ptr<{class_name_sep}> Shared;\n
+                      typedef boost::shared_ptr<{class_name_sep}> Shared;\n
                     {body_args}  Shared *self = new Shared(new {class_name_sep}({params}));
                       collector_{class_name}.insert(self);
                       out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
@@ -1394,7 +1394,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
             elif collector_func[2] == 'deconstructor':
                 body += textwrap.indent(textwrap.dedent('''\
-                    typedef std::shared_ptr<{class_name_sep}> Shared;
+                    typedef boost::shared_ptr<{class_name_sep}> Shared;
                     checkArguments("delete_{class_name}",nargout,nargin,1);
                     Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
                     Collector_{class_name}::iterator item;

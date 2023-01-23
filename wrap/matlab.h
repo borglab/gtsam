@@ -39,7 +39,7 @@ extern "C" {
 
 #include <boost/cstdint.hpp>
 #include <boost/make_shared.hpp>
-#include <memory>
+#include <boost/shared_ptr.hpp>
 
 #include <list>
 #include <set>
@@ -453,28 +453,28 @@ mxArray* create_object(const std::string& classname, void *pointer, bool isVirtu
  class to matlab.
 */
 template <typename Class>
-mxArray* wrap_shared_ptr(std::shared_ptr< Class > shared_ptr, const std::string& matlabName, bool isVirtual) {
+mxArray* wrap_shared_ptr(boost::shared_ptr< Class > shared_ptr, const std::string& matlabName, bool isVirtual) {
   // Create actual class object from out pointer
   mxArray* result;
   if(isVirtual) {
-    std::shared_ptr<void> void_ptr(shared_ptr);
+    boost::shared_ptr<void> void_ptr(shared_ptr);
     result = create_object(matlabName, &void_ptr, isVirtual, typeid(*shared_ptr).name());
   } else {
-    std::shared_ptr<Class> *heapPtr = new std::shared_ptr<Class>(shared_ptr);
+    boost::shared_ptr<Class> *heapPtr = new boost::shared_ptr<Class>(shared_ptr);
     result = create_object(matlabName, heapPtr, isVirtual, "");
   }
   return result;
 }
 
 template <typename Class>
-std::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& propertyName) {
+boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& propertyName) {
 
   mxArray* mxh = mxGetProperty(obj,0, propertyName.c_str());
   if (mxGetClassID(mxh) != mxUINT32OR64_CLASS || mxIsComplex(mxh)
     || mxGetM(mxh) != 1 || mxGetN(mxh) != 1) error(
     "Parameter is not an Shared type.");
 
-  std::shared_ptr<Class>* spp = *reinterpret_cast<std::shared_ptr<Class>**> (mxGetData(mxh));
+  boost::shared_ptr<Class>* spp = *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetData(mxh));
   return *spp;
 }
 

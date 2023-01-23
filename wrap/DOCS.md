@@ -15,8 +15,8 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
     - Eigen types: `Matrix`, `Vector`.
     - C/C++ basic types: `string`, `bool`, `size_t`, `int`, `double`, `char`, `unsigned char`.
     - `void`
-    - Any class with which be copied with `std::make_shared()`.
-    - `std::shared_ptr` of any object type.
+    - Any class with which be copied with `boost::make_shared()`.
+    - `boost::shared_ptr` of any object type.
 
 - Constructors
     - Overloads are supported, but arguments of different types *have* to have different names.
@@ -37,8 +37,8 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
     - Eigen types: `Matrix`, `Vector`.
     - Eigen types and classes as an optionally const reference.
     - C/C++ basic types: `string`, `bool`, `size_t`, `size_t`, `double`, `char`, `unsigned char`.
-    - Any class with which be copied with `std::make_shared()` (except Eigen).
-    - `std::shared_ptr` of any object type (except Eigen).
+    - Any class with which be copied with `boost::make_shared()` (except Eigen).
+    - `boost::shared_ptr` of any object type (except Eigen).
 
 - Properties or Variables
     - You can specify class variables in the interface file as long as they are in the `public` scope, e.g.
@@ -142,7 +142,7 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
     - Signature of clone function - `clone()` will be called virtually, so must appear at least at the top of the inheritance tree
 
         ```cpp
-        virtual std::shared_ptr<CLASS_NAME> clone() const;
+        virtual boost::shared_ptr<CLASS_NAME> clone() const;
         ```
 
 - Templates

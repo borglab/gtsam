@@ -91,7 +91,7 @@ class TestInterfaceParser(unittest.TestCase):
         self.assertTrue(t.is_shared_ptr)
         self.assertEqual("std::shared_ptr<gtsam::Pose3>",
                          t.to_cpp(use_boost=False))
-        self.assertEqual("std::shared_ptr<gtsam::Pose3>",
+        self.assertEqual("boost::shared_ptr<gtsam::Pose3>",
                          t.to_cpp(use_boost=True))
 
         # Check raw pointer
@@ -179,7 +179,7 @@ class TestInterfaceParser(unittest.TestCase):
                          args_list[0].ctype.to_cpp(False))
         self.assertEqual("vector<std::shared_ptr<T>>",
                          args_list[1].ctype.to_cpp(False))
-        self.assertEqual("vector<std::shared_ptr<T>>",
+        self.assertEqual("vector<boost::shared_ptr<T>>",
                          args_list[1].ctype.to_cpp(True))
 
     def test_default_arguments(self):
