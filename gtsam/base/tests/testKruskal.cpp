@@ -55,8 +55,6 @@ gtsam::NonlinearFactorGraph makeTestNonlinearFactorGraph()
     using namespace symbol_shorthand;
 
     NonlinearFactorGraph nfg;
-    Matrix I = I_2x2;
-    Vector2 b(0, 0);
     const SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.5));
     nfg += BetweenFactor(X(1), X(2), Rot3(), model);
     nfg += BetweenFactor(X(1), X(3), Rot3(), model);
