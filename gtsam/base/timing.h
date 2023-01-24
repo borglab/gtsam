@@ -21,7 +21,9 @@
 #include <gtsam/dllexport.h>
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
+#ifdef GTSAM_USE_BOOST
 #include <boost/version.hpp>
+#endif
 
 #include <memory>
 #include <cstddef>
@@ -105,6 +107,7 @@
 //   have matching gttic/gttoc statments.  You may want to consider reorganizing your timing
 //   outline to match the scope of your code.
 
+#ifdef GTSAM_USE_BOOST
 // Automatically use the new Boost timers if version is recent enough.
 #if BOOST_VERSION >= 104800
 #  ifndef GTSAM_DISABLE_NEW_TIMERS
@@ -117,6 +120,7 @@
 #else
 #  include <boost/timer.hpp>
 #  include <gtsam/base/types.h>
+#endif
 #endif
 
 #ifdef GTSAM_USE_TBB
@@ -160,6 +164,8 @@ namespace gtsam {
       typedef FastMap<size_t, std::shared_ptr<TimingOutline> > ChildMap;
       ChildMap children_; ///< subtrees
 
+// disable all timers if not using boost
+#ifdef GTSAM_USE_BOOST
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
       boost::timer::cpu_timer timer_;
 #else
@@ -169,6 +175,7 @@ namespace gtsam {
 #ifdef GTSAM_USE_TBB
       tbb::tick_count tbbTimer_;
 #endif
+#endif
       void add(size_t usecs, size_t usecsWall);
 
     public:
@@ -176,11 +183,20 @@ namespace gtsam {
       GTSAM_EXPORT TimingOutline(const std::string& label, size_t myId);
       GTSAM_EXPORT size_t time() const; ///< time taken, including children
       double secs() const { return double(time()) / 1000000.0;} ///< time taken, in seconds, including children
+#ifdef GTSAM_USE_BOOST
       double self() const { return double(t_)     / 1000000.0;} ///< self time only, in seconds
       double wall() const { return double(tWall_) / 1000000.0;} ///< wall time, in seconds
       double min()  const { return double(tMin_)  / 1000000.0;} ///< min time, in seconds
       double max()  const { return double(tMax_)  / 1000000.0;} ///< max time, in seconds
       double mean() const { return self() / double(n_); } ///< mean self time, in seconds
+#else
+      // make them no-ops if not using boost
+      double self() const { return -1.; } ///< self time only, in seconds
+      double wall() const { return -1.; } ///< wall time, in seconds
+      double min()  const { return -1.; } ///< min time, in seconds
+      double max()  const { return -1.; } ///< max time, in seconds
+      double mean() const { return -1.; } ///< mean self time, in seconds
+#endif
       GTSAM_EXPORT void print(const std::string& outline = "") const;
       GTSAM_EXPORT void print2(const std::string& outline = "", const double parentTotal = -1.0) const;
       GTSAM_EXPORT const std::shared_ptr<TimingOutline>&

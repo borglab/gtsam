@@ -26,7 +26,9 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/Vector.h>
+#ifdef GTSAM_USE_BOOST
 #include <gtsam/base/timing.h>
+#endif
 
 #include <cmath>
 #include <fstream>
@@ -121,12 +123,16 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
   auto currentState = static_cast<const State*>(state_.get());
   bool verbose = (params_.verbosityLM >= LevenbergMarquardtParams::TRYLAMBDA);
 
+#ifdef GTSAM_USE_BOOST
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
   boost::timer::cpu_timer lamda_iteration_timer;
   lamda_iteration_timer.start();
 #else
   boost::timer lamda_iteration_timer;
   lamda_iteration_timer.restart();
+#endif
+#else
+  auto start = std::chrono::high_resolution_clock::now();
 #endif
 
   if (verbose)
@@ -215,11 +221,16 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
   } // if (systemSolvedSuccessfully)
 
   if (params_.verbosityLM == LevenbergMarquardtParams::SUMMARY) {
+#ifdef GTSAM_USE_BOOST
 // do timing
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
     double iterationTime = 1e-9 * lamda_iteration_timer.elapsed().wall;
 #else
     double iterationTime = lamda_iteration_timer.elapsed();
+#endif
+#else
+    auto end = std::chrono::high_resolution_clock::now();
+    double iterationTime = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1e6;
 #endif
     if (currentState->iterations == 0) {
       cout << "iter      cost      cost_change    lambda  success iter_time" << endl;
@@ -228,7 +239,6 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
          << costChange << " " << setw(3) << setprecision(2) << currentState->lambda << " " << setw(4)
          << systemSolvedSuccessfully << " " << setw(3) << setprecision(2) << iterationTime << endl;
   }
-
   if (step_is_successful) {
     // we have successfully decreased the cost and we have good modelFidelity
     // NOTE(frank): As we return immediately after this, we move the newValues
