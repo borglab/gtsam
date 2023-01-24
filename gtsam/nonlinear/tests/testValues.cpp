@@ -474,13 +474,13 @@ TEST(Values, std_move) {
       EXPECT_LONGS_EQUAL(2, (long)TestValueData::DestructorCount);
       EXPECT_LONGS_EQUAL(2, values.size());
       TestValues moved(std::move(values));   // Move happens here !
-      EXPECT_LONGS_EQUAL(2, values.size());  // Uh oh! Should be 0 !
+      EXPECT_LONGS_EQUAL(0, values.size());  // Should be 0 !
       EXPECT_LONGS_EQUAL(2, moved.size());
-      EXPECT_LONGS_EQUAL(8, (long)TestValueData::ConstructorCount);  // Uh oh! Should be 6 :-(
+      EXPECT_LONGS_EQUAL(6, (long)TestValueData::ConstructorCount);  // Should be 6 :-)
       EXPECT_LONGS_EQUAL(2, (long)TestValueData::DestructorCount);   // extra insert copies
     }
-    EXPECT_LONGS_EQUAL(8, (long)TestValueData::ConstructorCount);
-    EXPECT_LONGS_EQUAL(8, (long)TestValueData::DestructorCount);
+    EXPECT_LONGS_EQUAL(6, (long)TestValueData::ConstructorCount);
+    EXPECT_LONGS_EQUAL(6, (long)TestValueData::DestructorCount);
   }
 }
 

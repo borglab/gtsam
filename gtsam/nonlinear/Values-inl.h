@@ -92,18 +92,28 @@ namespace gtsam {
     }
   };
 
-/* ************************************************************************* */
+  /* ************************************************************************* */
+  template <class ValueType>
+  size_t Values::count() const {
+    size_t i = 0;
+    for (const auto& [_, value] : values_) {
+      if (dynamic_cast<const GenericValue<ValueType>*>(value.get())) ++i;
+    }
+    return i;
+  }
+
+  /* ************************************************************************* */
   template <class ValueType>
   std::map<Key, ValueType>
   Values::extract(const std::function<bool(Key)>& filterFcn) const {
     std::map<Key, ValueType> result;
-    for (const auto& key_value : values_) {
+    for (const auto& [key,value] : values_) {
       // Check if key matches
-      if (filterFcn(key_value.first)) {
+      if (filterFcn(key)) {
         // Check if type matches (typically does as symbols matched with types)
         if (auto t =
-                dynamic_cast<const GenericValue<ValueType>*>(key_value.second))
-          result[key_value.first] = t->value();
+                dynamic_cast<const GenericValue<ValueType>*>(value.get()))
+          result[key] = t->value();
       }
     }
     return result;
@@ -204,7 +214,7 @@ namespace gtsam {
      // Check the type and throw exception if incorrect
      // h() split in two lines to avoid internal compiler error (MSVC2017)
      auto h = internal::handle<ValueType>();
-     return h(j, item->second);
+     return h(j, item->second.get());
   }
 
   /* ************************************************************************* */
@@ -214,13 +224,13 @@ namespace gtsam {
     KeyValueMap::const_iterator item = values_.find(j);
 
     if(item != values_.end()) {
+      const Value* value = item->second.get();
       // dynamic cast the type and throw exception if incorrect
-      auto ptr = dynamic_cast<const GenericValue<ValueType>*>(item->second);
+      auto ptr = dynamic_cast<const GenericValue<ValueType>*>(value);
       if (ptr) {
         return &ptr->value();
       } else {
         // NOTE(abe): clang warns about potential side effects if done in typeid
-        const Value* value = item->second;
         throw ValuesIncorrectType(j, typeid(*value), typeid(ValueType));
       }
      } else {

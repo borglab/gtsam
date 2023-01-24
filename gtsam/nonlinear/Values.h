@@ -24,13 +24,17 @@
 
 #pragma once
 
+#include <gtsam/inference/Key.h>
 #include <gtsam/base/FastDefaultAllocator.h>
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/VectorSpace.h>
-#include <gtsam/inference/Key.h>
-#include <boost/ptr_container/serialize_ptr_map.hpp>
-#include <memory>
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/unique_ptr.hpp>
+#endif
+
+
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -67,12 +71,9 @@ namespace gtsam {
     // user defines the allocation details (i.e. optimize for memory pool/arenas
     // concurrency).
     typedef internal::FastDefaultAllocator<typename std::pair<const Key, void*>>::type KeyValuePtrPairAllocator;
-    typedef boost::ptr_map<
-        Key,
-        Value,
-        std::less<Key>,
-        ValueCloneAllocator,
-        KeyValuePtrPairAllocator > KeyValueMap;
+    using KeyValueMap =
+        std::map<Key, std::unique_ptr<Value>, std::less<Key>,
+                 std::allocator<std::pair<const Key, std::unique_ptr<Value>>>>;
 
     // The member to store the values, see just above
     KeyValueMap values_;
@@ -264,15 +265,8 @@ namespace gtsam {
     VectorValues zeroVectors() const;
 
     // Count values of given type \c ValueType
-    template<class ValueType>
-    size_t count() const {
-      size_t i = 0;
-      for (const auto key_value : values_) {
-        if (dynamic_cast<const GenericValue<ValueType>*>(key_value.second))
-          ++i;
-      }
-      return i;
-    }
+    template <class ValueType>
+    size_t count() const;
 
     /**
      * Extract a subset of values of the given type \c ValueType.
