@@ -48,6 +48,13 @@ else()
     set(excluded_sources ${excluded_sources} "${CMAKE_CURRENT_SOURCE_DIR}/geometry/Rot3Q.cpp")
 endif()
 
+# if GTSAM_USE_BOOST_FEATURES is not set, then we need to exclude the following:
+if(NOT GTSAM_USE_BOOST_FEATURES)
+    list (APPEND excluded_sources ${excluded_sources}
+        "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/GncOptimizer.h"
+    )
+endif()
+ 
 # Common headers
 file(GLOB gtsam_core_headers "*.h")
 install(FILES ${gtsam_core_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam)

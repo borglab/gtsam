@@ -7,6 +7,10 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") # might not be best test - Richar
 	list (APPEND tests_exclude "testSerializationSlam.cpp") 
 endif()
 
+if (NOT GTSAM_USE_BOOST_FEATURES)
+	list(APPEND tests_exclude "testGncOptimizer.cpp")
+endif()
+
 # Build tests
 gtsamAddTestsGlob(tests "test*.cpp" "${tests_exclude}" "gtsam")
 
