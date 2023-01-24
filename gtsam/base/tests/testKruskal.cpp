@@ -78,22 +78,6 @@ TEST(kruskal, GaussianFactorGraph)
 
     const auto mstEdgeIndices = utils::kruskal(g, forward_ordering, weights);
 
-    // auto PrintMst = [](const auto &graph, const auto &mst_edge_indices)
-    // {
-    //     std::cout << "MST Edge indices are: \n";
-    //     for (const auto &edge : mst_edge_indices)
-    //     {
-    //         std::cout << edge << " : ";
-    //         for (const auto &key : graph[edge]->keys())
-    //         {
-    //             std::cout << gtsam::DefaultKeyFormatter(gtsam::Symbol(key)) << ", ";
-    //         }
-    //         std::cout << "\n";
-    //     }
-    // };
-
-    // PrintMst(g, mstEdgeIndices);
-
     EXPECT(mstEdgeIndices[0] == 0);
     EXPECT(mstEdgeIndices[1] == 1);
     EXPECT(mstEdgeIndices[2] == 2);
@@ -110,22 +94,6 @@ TEST(kruskal, NonlinearFactorGraph)
     const auto weights = std::vector<double>(g.size(), 1.0);
 
     const auto mstEdgeIndices = utils::kruskal(g, forward_ordering, weights);
-
-    // auto PrintMst = [](const auto &graph, const auto &mst_edge_indices)
-    // {
-    //     std::cout << "MST Edge indices are: \n";
-    //     for (const auto &edge : mst_edge_indices)
-    //     {
-    //         std::cout << edge << " : ";
-    //         for (const auto &key : graph[edge]->keys())
-    //         {
-    //             std::cout << gtsam::DefaultKeyFormatter(gtsam::Symbol(key)) << ", ";
-    //         }
-    //         std::cout << "\n";
-    //     }
-    // };
-
-    // PrintMst(g, mstEdgeIndices);
 
     EXPECT(mstEdgeIndices[0] == 0);
     EXPECT(mstEdgeIndices[1] == 1);
