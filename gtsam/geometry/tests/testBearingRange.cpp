@@ -25,7 +25,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace serializationTestHelpers;
 
 typedef BearingRange<Pose2, Point2> BearingRange2D;
 BearingRange2D br2D(1, 2);
@@ -45,13 +44,6 @@ TEST(BearingRange, 2D) {
   EXPECT(assert_equal(expected, actual));
 }
 
-/* ************************************************************************* */
-TEST(BearingRange, Serialization2D) {
-  EXPECT(equalsObj<BearingRange2D>(br2D));
-  EXPECT(equalsXML<BearingRange2D>(br2D));
-  EXPECT(equalsBinary<BearingRange2D>(br2D));
-}
-
 //******************************************************************************
 TEST(BearingRange3D, Concept) {
   BOOST_CONCEPT_ASSERT((IsManifold<BearingRange3D>));
@@ -64,12 +56,22 @@ TEST(BearingRange, 3D) {
   EXPECT(assert_equal(expected, actual));
 }
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+using namespace serializationTestHelpers;
+/* ************************************************************************* */
+TEST(BearingRange, Serialization2D) {
+  EXPECT(equalsObj<BearingRange2D>(br2D));
+  EXPECT(equalsXML<BearingRange2D>(br2D));
+  EXPECT(equalsBinary<BearingRange2D>(br2D));
+}
+
 /* ************************************************************************* */
 TEST(BearingRange, Serialization3D) {
   EXPECT(equalsObj<BearingRange3D>(br3D));
   EXPECT(equalsXML<BearingRange3D>(br3D));
   EXPECT(equalsBinary<BearingRange3D>(br3D));
 }
+#endif
 
 /* ************************************************************************* */
 int main() {

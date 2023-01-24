@@ -23,7 +23,9 @@
 #include <gtsam/base/types.h>
 #include <gtsam/discrete/Assignment.h>
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 #include <memory>
 #include <functional>
 #include <iostream>
@@ -117,10 +119,12 @@ namespace gtsam {
       virtual bool isLeaf() const = 0;
 
      private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
       template <class ARCHIVE>
       void serialize(ARCHIVE& ar, const unsigned int /*version*/) {}
+#endif
     };
     /** ------------------------ Node base class --------------------------- */
 
@@ -374,12 +378,14 @@ namespace gtsam {
     /// @}
 
    private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template <class ARCHIVE>
     void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
       ar& BOOST_SERIALIZATION_NVP(root_);
     }
+#endif
   };  // DecisionTree
 
   template <class L, class Y>

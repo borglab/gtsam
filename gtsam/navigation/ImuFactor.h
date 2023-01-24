@@ -146,6 +146,7 @@ public:
 #endif
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -154,6 +155,7 @@ public:
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
     ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
   }
+#endif
 };
 
 /**
@@ -246,6 +248,7 @@ public:
 
  private:
   /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
@@ -254,6 +257,7 @@ public:
          boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(_PIM_);
   }
+#endif
 };
 // class ImuFactor
 

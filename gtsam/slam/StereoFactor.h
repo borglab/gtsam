@@ -170,6 +170,7 @@ public:
   inline bool throwCheirality() const { return throwCheirality_; }
 
 private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -183,6 +184,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
     ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
   }
+#endif
 };
 
 /// traits

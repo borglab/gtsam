@@ -17,6 +17,7 @@
  * @date Feb 7, 2012
  */
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #pragma once
 
 #include <iostream>
@@ -175,3 +176,4 @@ bool equalsDereferencedBinary(const T& input = T()) {
 
 } // \namespace serializationTestHelpers
 } // \namespace gtsam
+#endif

@@ -30,7 +30,9 @@
 #include <gtsam/geometry/CameraSet.h>
 
 #include <optional>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/optional.hpp>
+#endif
 #include <vector>
 
 namespace gtsam {
@@ -443,6 +445,7 @@ protected:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION///
 /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -452,6 +455,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
+#endif
 };
 // end class SmartFactorBase
 

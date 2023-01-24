@@ -253,6 +253,7 @@ namespace gtsam {
   /// @}
 
    private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template <class ARCHIVE>
@@ -261,6 +262,7 @@ namespace gtsam {
       ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(ADT);
       ar& BOOST_SERIALIZATION_NVP(cardinalities_);
     }
+#endif
   };
 
 // traits

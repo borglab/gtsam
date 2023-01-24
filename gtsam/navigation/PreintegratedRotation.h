@@ -60,6 +60,7 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
   std::optional<Pose3>   getBodyPSensor()   const { return body_P_sensor; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -75,6 +76,7 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
       ar & BOOST_SERIALIZATION_NVP(*omegaCoriolis);
     }
   }
+#endif
 
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions
@@ -179,6 +181,7 @@ class GTSAM_EXPORT PreintegratedRotation {
   /// @}
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -188,6 +191,7 @@ class GTSAM_EXPORT PreintegratedRotation {
     ar& BOOST_SERIALIZATION_NVP(deltaRij_);
     ar& BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
   }
+#endif
 
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions

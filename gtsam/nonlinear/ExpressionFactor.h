@@ -198,6 +198,7 @@ protected:
  }
 
 private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
  /// Save to an archive: just saves the base class
  template <class Archive>
  void save(Archive& ar, const unsigned int /*version*/) const {
@@ -218,6 +219,7 @@ private:
  BOOST_SERIALIZATION_SPLIT_MEMBER()
 
  friend class boost::serialization::access;
+#endif
 
  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
  enum { NeedsToAlign = (sizeof(T) % 16) == 0 };

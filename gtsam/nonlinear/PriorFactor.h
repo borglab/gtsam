@@ -105,6 +105,7 @@ namespace gtsam {
 
   private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -114,6 +115,7 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);
     }
+#endif
 
   // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
   enum { NeedsToAlign = (sizeof(T) % 16) == 0 };

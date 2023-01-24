@@ -180,6 +180,7 @@ class EssentialMatrix {
   /// @name Advanced Interface
   /// @{
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -197,6 +198,7 @@ class EssentialMatrix {
       ar & boost::serialization::make_nvp("E32", E_(2, 1));
       ar & boost::serialization::make_nvp("E33", E_(2, 2));
     }
+#endif
 
   /// @}
 

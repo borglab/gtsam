@@ -28,7 +28,9 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/utilities.h>  // boost::index_sequence
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/base_object.hpp>
+#endif
 #include <cstddef>
 #include <type_traits>
 
@@ -303,6 +305,7 @@ public:
   shared_ptr cloneWithNewNoiseModel(const SharedNoiseModel newNoise) const;
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -311,6 +314,7 @@ public:
          boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(noiseModel_);
   }
+#endif
 
 }; // \class NoiseModelFactor
 
@@ -713,6 +717,7 @@ protected:
     }
   }
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -720,6 +725,7 @@ protected:
     ar& boost::serialization::make_nvp(
         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
   }
+#endif
 
  public:
   /// @name Shortcut functions `key1()` -> `key<1>()`

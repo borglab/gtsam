@@ -173,6 +173,7 @@ class GTSAM_EXPORT PreintegrationBase {
       OptionalJacobian<9, 6> H5 = {}) const;
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -181,6 +182,7 @@ class GTSAM_EXPORT PreintegrationBase {
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
     ar & BOOST_SERIALIZATION_NVP(deltaTij_);
   }
+#endif
 
  public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW

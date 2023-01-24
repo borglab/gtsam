@@ -340,6 +340,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   void updateDelta(bool forceFullSolve = false) const;
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -357,6 +358,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
       ar & BOOST_SERIALIZATION_NVP(fixedVariables_);
       ar & BOOST_SERIALIZATION_NVP(update_count_);
   }
+#endif
 
 };  // ISAM2
 

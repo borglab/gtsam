@@ -120,6 +120,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -128,6 +129,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(p_);
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
   }
+#endif
 };
 
 class GTSAM_EXPORT AHRSFactor: public NoiseModelFactorN<Rot3, Rot3, Vector3> {
@@ -206,6 +208,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -216,6 +219,7 @@ private:
             boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(_PIM_);
   }
+#endif
 
 };
 // AHRSFactor

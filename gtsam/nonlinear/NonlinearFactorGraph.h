@@ -253,6 +253,7 @@ namespace gtsam {
     std::shared_ptr<HessianFactor> linearizeToHessianFactor(
         const Values& values, const Scatter& scatter, const Dampen& dampen = nullptr) const;
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -260,6 +261,7 @@ namespace gtsam {
       ar & boost::serialization::make_nvp("NonlinearFactorGraph",
                 boost::serialization::base_object<Base>(*this));
     }
+#endif
   };
 
 /// traits

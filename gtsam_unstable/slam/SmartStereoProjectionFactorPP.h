@@ -288,6 +288,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
   }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -295,6 +296,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(K_all_);
   }
+#endif
 };
 // end of class declaration
 

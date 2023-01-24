@@ -25,7 +25,9 @@
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/dllexport.h>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 
 namespace gtsam {
 
@@ -228,12 +230,14 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(pose_);
   }
+#endif
 };
 // end of class PinholeBase
 
@@ -412,6 +416,7 @@ private:
   /// @name Advanced Interface
   /// @{
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -420,6 +425,7 @@ private:
         & boost::serialization::make_nvp("PinholeBase",
             boost::serialization::base_object<PinholeBase>(*this));
   }
+#endif
 
   /// @}
 };

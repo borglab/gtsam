@@ -213,6 +213,7 @@ namespace gtsam {
     static Rot2 ClosestTo(const Matrix2& M);
 
   private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -220,6 +221,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(c_);
       ar & BOOST_SERIALIZATION_NVP(s_);
     }
+#endif
 
   };
 

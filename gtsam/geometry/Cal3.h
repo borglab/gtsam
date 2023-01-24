@@ -184,6 +184,7 @@ class GTSAM_EXPORT Cal3 {
   /// @{
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template <class Archive>
@@ -194,6 +195,7 @@ class GTSAM_EXPORT Cal3 {
     ar& BOOST_SERIALIZATION_NVP(u0_);
     ar& BOOST_SERIALIZATION_NVP(v0_);
   }
+#endif
 
   /// @}
 };

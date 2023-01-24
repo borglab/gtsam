@@ -26,7 +26,9 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/base/VectorSerialization.h>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 #include <numeric>
 
 namespace gtsam {

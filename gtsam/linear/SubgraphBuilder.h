@@ -21,8 +21,10 @@
 #include <gtsam/base/types.h>
 #include <gtsam/dllexport.h>
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/nvp.hpp>
+#endif
 #include <memory>
 
 #include <vector>
@@ -49,12 +51,14 @@ class GTSAM_EXPORT Subgraph {
     friend std::ostream &operator<<(std::ostream &os, const Edge &edge);
 
    private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     friend class boost::serialization::access;
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /*version*/) {
       ar &BOOST_SERIALIZATION_NVP(index);
       ar &BOOST_SERIALIZATION_NVP(weight);
     }
+#endif
   };
 
   typedef std::vector<Edge> Edges;
@@ -80,16 +84,18 @@ class GTSAM_EXPORT Subgraph {
   iterator end() { return edges_.end(); }
   const_iterator end() const { return edges_.end(); }
 
-  void save(const std::string &fn) const;
-  static Subgraph load(const std::string &fn);
   friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph);
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_NVP(edges_);
   }
+  void save(const std::string &fn) const;
+  static Subgraph load(const std::string &fn);
+#endif
 };
 
 /****************************************************************************/

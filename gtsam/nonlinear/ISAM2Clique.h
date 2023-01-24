@@ -147,6 +147,7 @@ class GTSAM_EXPORT ISAM2Clique
   void restoreFromOriginals(const Vector& originalValues,
                             VectorValues* delta) const;
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -155,6 +156,7 @@ class GTSAM_EXPORT ISAM2Clique
     ar& BOOST_SERIALIZATION_NVP(cachedFactor_);
     ar& BOOST_SERIALIZATION_NVP(gradientContribution_);
   }
+#endif
 };  // \struct ISAM2Clique
 
 /**

@@ -499,12 +499,14 @@ TEST(Unit3, CopyAssign) {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 TEST(actualH, Serialization) {
   Unit3 p(0, 1, 0);
   EXPECT(serializationTestHelpers::equalsObj(p));
   EXPECT(serializationTestHelpers::equalsXML(p));
   EXPECT(serializationTestHelpers::equalsBinary(p));
 }
+#endif
 
 
 /* ************************************************************************* */

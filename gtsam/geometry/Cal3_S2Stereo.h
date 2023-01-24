@@ -143,6 +143,7 @@ class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
   /// @{
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
@@ -151,6 +152,7 @@ class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
         "Cal3_S2", boost::serialization::base_object<Cal3_S2>(*this));
     ar& BOOST_SERIALIZATION_NVP(b_);
   }
+#endif
   /// @}
 };
 

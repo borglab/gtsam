@@ -21,7 +21,9 @@
  **/
 
 #include <gtsam/navigation/CombinedImuFactor.h>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/export.hpp>
+#endif
 
 /* External or standard includes */
 #include <ostream>

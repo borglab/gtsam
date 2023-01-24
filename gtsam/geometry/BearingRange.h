@@ -22,7 +22,9 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <boost/concept/assert.hpp>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 #include <iostream>
 
 namespace gtsam {
@@ -147,6 +149,7 @@ public:
   /// @{
 
 private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /// Serialization function
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
@@ -155,6 +158,7 @@ private:
   }
 
   friend class boost::serialization::access;
+#endif
 
   /// @}
 

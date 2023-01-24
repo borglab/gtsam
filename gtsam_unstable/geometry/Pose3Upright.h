@@ -130,6 +130,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  //
   // Serialization function
   friend class boost::serialization::access;
   template<class Archive>
@@ -137,6 +138,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(T_);
     ar & BOOST_SERIALIZATION_NVP(z_);
   }
+#endif
 
 }; // \class Pose3Upright
 

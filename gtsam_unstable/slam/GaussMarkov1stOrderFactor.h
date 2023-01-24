@@ -113,6 +113,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -121,6 +122,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(dt_);
     ar & BOOST_SERIALIZATION_NVP(tau_);
   }
+#endif
 
   SharedGaussian calcDiscreteNoiseModel(const SharedGaussian& model, double delta_t){
     /* Q_d (approx)= Q * delta_t */

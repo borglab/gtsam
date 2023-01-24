@@ -132,6 +132,7 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
   }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function.
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -144,6 +145,7 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
     ar & BOOST_SERIALIZATION_NVP(bias_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
+#endif
 };  // \class MagPoseFactor
 
 } /// namespace gtsam

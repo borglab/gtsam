@@ -326,6 +326,7 @@ public:
 
  private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  //
   // Serialization function
   friend class boost::serialization::access;
   template<class Archive>
@@ -333,6 +334,7 @@ public:
     ar & BOOST_SERIALIZATION_NVP(t_);
     ar & BOOST_SERIALIZATION_NVP(r_);
   }
+#endif
 
 public:
   // Align for Point2, which is either derived from, or is typedef, of Vector2

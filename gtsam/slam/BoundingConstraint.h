@@ -83,6 +83,7 @@ struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -93,6 +94,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(threshold_);
     ar & BOOST_SERIALIZATION_NVP(isGreaterThan_);
   }
+#endif
 };
 
 /**
@@ -159,6 +161,7 @@ struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -169,6 +172,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(threshold_);
     ar & BOOST_SERIALIZATION_NVP(isGreaterThan_);
   }
+#endif
 };
 
 } // \namespace gtsam

@@ -204,6 +204,7 @@ class GTSAM_EXPORT HybridConditional
   /// @}
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
@@ -225,6 +226,7 @@ class GTSAM_EXPORT HybridConditional
           static_cast<GaussianMixture*>(NULL), static_cast<Factor*>(NULL));
     }
   }
+#endif
 
 };  // HybridConditional
 

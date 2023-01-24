@@ -151,6 +151,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
 
   private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -160,6 +161,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
       ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
+#endif
 };
 
   /// traits

@@ -21,7 +21,9 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/types.h>
 #include <gtsam/dllexport.h>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 #include <cassert>
 #include <stdexcept>
 #include <array>
@@ -384,6 +386,7 @@ namespace gtsam {
     template<typename SymmetricBlockMatrixType> friend class SymmetricBlockMatrixBlockExpr;
 
   private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -396,6 +399,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
       ar & BOOST_SERIALIZATION_NVP(blockStart_);
     }
+#endif
   };
 
   /// Foward declare exception class

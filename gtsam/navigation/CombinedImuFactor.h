@@ -101,6 +101,7 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
   
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -111,6 +112,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(biasOmegaCovariance);
     ar & BOOST_SERIALIZATION_NVP(biasAccOmegaInt);
   }
+#endif
 
 public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
@@ -223,6 +225,7 @@ public:
   /// @}
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -231,6 +234,7 @@ public:
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
     ar& BOOST_SERIALIZATION_NVP(preintMeasCov_);
   }
+#endif
 
 public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW

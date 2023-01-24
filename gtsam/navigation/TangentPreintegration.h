@@ -127,6 +127,7 @@ public:
   /// @}
 
 private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -137,6 +138,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(preintegrated_H_biasAcc_);
     ar & BOOST_SERIALIZATION_NVP(preintegrated_H_biasOmega_);
   }
+#endif
 
 public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW

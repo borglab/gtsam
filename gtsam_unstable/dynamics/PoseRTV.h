@@ -157,6 +157,7 @@ public:
   /// @}
 
 private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -164,6 +165,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(first);
     ar & BOOST_SERIALIZATION_NVP(second);
   }
+#endif
 };
 
 

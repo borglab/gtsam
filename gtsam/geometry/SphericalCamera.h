@@ -26,7 +26,9 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Unit3.h>
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 
 namespace gtsam {
 
@@ -52,6 +54,7 @@ class GTSAM_EXPORT EmptyCal {
   }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template <class Archive>
@@ -59,6 +62,7 @@ class GTSAM_EXPORT EmptyCal {
     ar& boost::serialization::make_nvp(
         "EmptyCal", boost::serialization::base_object<EmptyCal>(*this));
   }
+#endif
 };
 
 /**
@@ -219,12 +223,14 @@ class GTSAM_EXPORT SphericalCamera {
   static size_t Dim() { return 6; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_NVP(pose_);
   }
+#endif
 
  public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW

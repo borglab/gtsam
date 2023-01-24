@@ -163,6 +163,7 @@ public:
   void initializeLinearizationPoint(const Values& linearizationPoint);
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -172,6 +173,7 @@ public:
     ar & BOOST_SERIALIZATION_NVP(factor_);
     ar & BOOST_SERIALIZATION_NVP(linearizationPoint_);
   }
+#endif
 
 }; // \class LinearContainerFactor
 

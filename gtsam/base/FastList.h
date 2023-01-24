@@ -21,10 +21,11 @@
 #include <gtsam/base/FastDefaultAllocator.h>
 #include <list>
 #include <boost/utility/enable_if.hpp>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/version.hpp>
-#include <boost/serialization/optional.hpp>
 #include <boost/serialization/list.hpp>
+#endif
 
 namespace gtsam {
 
@@ -76,12 +77,14 @@ public:
   }
 
 private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
+#endif
 
 };
 

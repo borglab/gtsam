@@ -175,6 +175,7 @@ public:
 
   private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -183,6 +184,7 @@ public:
               boost::serialization::base_object<Value>(*this));
       ar & boost::serialization::make_nvp("value", value_);
 	}
+#endif
 
 
   // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html

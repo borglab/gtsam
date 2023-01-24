@@ -99,8 +99,9 @@ template <>
 GTSAM_EXPORT
 Vector9 SO3::vec(OptionalJacobian<9, 3> H) const;
 
-/** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 template <class Archive>
+/** Serialization function */
 void serialize(Archive& ar, SO3& R, const unsigned int /*version*/) {
   Matrix3& M = R.matrix_;
   ar& boost::serialization::make_nvp("R11", M(0, 0));
@@ -113,6 +114,7 @@ void serialize(Archive& ar, SO3& R, const unsigned int /*version*/) {
   ar& boost::serialization::make_nvp("R32", M(2, 1));
   ar& boost::serialization::make_nvp("R33", M(2, 2));
 }
+#endif
 
 namespace so3 {
 

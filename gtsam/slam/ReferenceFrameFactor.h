@@ -122,6 +122,7 @@ public:
   Key local_key() const { return this->key3(); }
 
 private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -129,6 +130,7 @@ private:
     ar & boost::serialization::make_nvp("NonlinearFactor3",
         boost::serialization::base_object<Base>(*this));
   }
+#endif
 };
 
 /// traits

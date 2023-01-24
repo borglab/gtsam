@@ -466,6 +466,7 @@ protected:
 
  private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -475,6 +476,7 @@ protected:
     ar & BOOST_SERIALIZATION_NVP(result_);
     ar & BOOST_SERIALIZATION_NVP(cameraPosesTriangulation_);
   }
+#endif
 }
 ;
 

@@ -24,8 +24,10 @@
 #include <gtsam/global_includes.h>
 #include <gtsam/inference/VariableSlots.h>
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/split_member.hpp>
+#endif
 
 namespace gtsam {
 
@@ -413,6 +415,7 @@ namespace gtsam {
     // be very selective on who can access these private methods:
     template<typename T> friend class ExpressionFactor;
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -450,6 +453,7 @@ namespace gtsam {
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
+#endif
   }; // JacobianFactor
 /// traits
 template<>
@@ -458,7 +462,9 @@ struct traits<JacobianFactor> : public Testable<JacobianFactor> {
 
 } // \ namespace gtsam
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 BOOST_CLASS_VERSION(gtsam::JacobianFactor, 1)
+#endif
 
 #include <gtsam/linear/JacobianFactor-inl.h>
 

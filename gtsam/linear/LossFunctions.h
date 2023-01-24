@@ -23,12 +23,14 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/dllexport.h>
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/extended_type_info.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/optional.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/singleton.hpp>
+#endif
 
 namespace gtsam {
 namespace noiseModel {
@@ -126,12 +128,14 @@ class GTSAM_EXPORT Base {
   void reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const;
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_NVP(reweight_);
   }
+#endif
 };
 
 /** "Null" robust loss function, equivalent to a Gaussian pdf noise model, or
@@ -156,12 +160,14 @@ class GTSAM_EXPORT Null : public Base {
   static shared_ptr Create();
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
+#endif
 };
 
 /** Implementation of the "Fair" robust error model (Zhang97ivc)
@@ -188,6 +194,7 @@ class GTSAM_EXPORT Fair : public Base {
   double modelParameter() const { return c_; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -195,6 +202,7 @@ class GTSAM_EXPORT Fair : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
   }
+#endif
 };
 
 /** The "Huber" robust error model (Zhang97ivc).
@@ -221,6 +229,7 @@ class GTSAM_EXPORT Huber : public Base {
   double modelParameter() const { return k_; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -228,6 +237,7 @@ class GTSAM_EXPORT Huber : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(k_);
   }
+#endif
 };
 
 /** Implementation of the "Cauchy" robust error model (Lee2013IROS).
@@ -259,6 +269,7 @@ class GTSAM_EXPORT Cauchy : public Base {
   double modelParameter() const { return k_; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -267,6 +278,7 @@ class GTSAM_EXPORT Cauchy : public Base {
     ar &BOOST_SERIALIZATION_NVP(k_);
     ar &BOOST_SERIALIZATION_NVP(ksquared_);
   }
+#endif
 };
 
 /** Implementation of the "Tukey" robust error model (Zhang97ivc).
@@ -293,6 +305,7 @@ class GTSAM_EXPORT Tukey : public Base {
   double modelParameter() const { return c_; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -300,6 +313,7 @@ class GTSAM_EXPORT Tukey : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
   }
+#endif
 };
 
 /** Implementation of the "Welsch" robust error model (Zhang97ivc).
@@ -326,6 +340,7 @@ class GTSAM_EXPORT Welsch : public Base {
   double modelParameter() const { return c_; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -334,6 +349,7 @@ class GTSAM_EXPORT Welsch : public Base {
     ar &BOOST_SERIALIZATION_NVP(c_);
     ar &BOOST_SERIALIZATION_NVP(csquared_);
   }
+#endif
 };
 
 /** Implementation of the "Geman-McClure" robust error model (Zhang97ivc).
@@ -363,6 +379,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
   double c_;
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -370,6 +387,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
   }
+#endif
 };
 
 /** DCS implements the Dynamic Covariance Scaling robust error model
@@ -401,6 +419,7 @@ class GTSAM_EXPORT DCS : public Base {
   double c_;
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -408,6 +427,7 @@ class GTSAM_EXPORT DCS : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
   }
+#endif
 };
 
 /** L2WithDeadZone implements a standard L2 penalty, but with a dead zone of
@@ -439,6 +459,7 @@ class GTSAM_EXPORT L2WithDeadZone : public Base {
   double modelParameter() const { return k_; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -446,6 +467,7 @@ class GTSAM_EXPORT L2WithDeadZone : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(k_);
   }
+#endif
 };
 
 }  // namespace mEstimator

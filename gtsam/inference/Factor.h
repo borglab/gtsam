@@ -21,7 +21,9 @@
 
 #pragma once
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 #include <memory>
 
 #include <gtsam/base/types.h>
@@ -190,16 +192,16 @@ namespace gtsam {
     /// @}
 
   private:
-
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /// @name Serialization
     /// @{
-
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(keys_);
     }
+#endif
 
     /// @}
 

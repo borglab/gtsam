@@ -27,7 +27,9 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/vector.hpp>
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -91,6 +93,7 @@ vector<size_t> Subgraph::edgeIndices() const {
   return eid;
 }
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 /****************************************************************************/
 void Subgraph::save(const std::string &fn) const {
   std::ofstream os(fn.c_str());
@@ -108,6 +111,7 @@ Subgraph Subgraph::load(const std::string &fn) {
   is.close();
   return subgraph;
 }
+#endif
 
 /****************************************************************************/
 ostream &operator<<(ostream &os, const Subgraph::Edge &edge) {

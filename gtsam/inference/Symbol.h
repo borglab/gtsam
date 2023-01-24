@@ -21,7 +21,9 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 #include <cstdint>
 #include <functional>
 
@@ -122,6 +124,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -129,6 +132,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(c_);
     ar & BOOST_SERIALIZATION_NVP(j_);
   }
+#endif
 };
 
 /** Create a symbol key from a character and index, i.e. x5. */

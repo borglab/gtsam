@@ -30,8 +30,10 @@
 #include <Eigen/Core>  // for Eigen::aligned_allocator
 
 #include <boost/assign/list_inserter.hpp>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/vector.hpp>
+#endif
 
 #include <string>
 #include <type_traits>
@@ -433,12 +435,14 @@ class FactorGraph {
   inline bool exists(size_t idx) const { return idx < size() && at(idx); }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_NVP(factors_);
   }
+#endif
 
   /// @}
 };  // FactorGraph

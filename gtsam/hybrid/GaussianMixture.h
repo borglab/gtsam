@@ -255,6 +255,7 @@ class GTSAM_EXPORT GaussianMixture
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
@@ -263,6 +264,7 @@ class GTSAM_EXPORT GaussianMixture
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
     ar &BOOST_SERIALIZATION_NVP(conditionals_);
   }
+#endif
 };
 
 /// Return the DiscreteKey vector as a set.
