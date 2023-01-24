@@ -153,33 +153,7 @@ namespace gtsam {
     operator T() const { return value; }
   };
 
-  /* ************************************************************************* */
-  /** A helper class that behaves as a container with one element, and works with
-   * boost::range */
-  template<typename T>
-  class ListOfOneContainer {
-    T element_;
-  public:
-    typedef T value_type;
-    typedef const T* const_iterator;
-    typedef T* iterator;
-    ListOfOneContainer(const T& element) : element_(element) {}
-    const T* begin() const { return &element_; }
-    const T* end() const { return &element_ + 1; }
-    T* begin() { return &element_; }
-    T* end() { return &element_ + 1; }
-    size_t size() const { return 1; }
-  };
-
-  BOOST_CONCEPT_ASSERT((boost::RandomAccessRangeConcept<ListOfOneContainer<int> >));
-
-  /** Factory function for ListOfOneContainer to enable ListOfOne(e) syntax. */
-  template<typename T>
-  ListOfOneContainer<T> ListOfOne(const T& element) {
-    return ListOfOneContainer<T>(element);
-  }
-
-  /* ************************************************************************* */
+    /* ************************************************************************* */
 #ifdef __clang__
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wunused-private-field" // Clang complains that previousOpenMPThreads is unused in the #else case below
