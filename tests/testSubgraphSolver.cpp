@@ -129,55 +129,6 @@ TEST( SubgraphSolver, constructor3 )
   DOUBLES_EQUAL(0.0, error(Ab, optimized), 1e-5);
 }
 
-/* ************************************************************************* */
-TEST(SubgraphBuilder, utilsAssignWeights)
-{
-  const auto [g, _] = example::planarGraph(N); // A*x-b
-  const auto weights = utils::assignWeights(g, gtsam::SubgraphBuilderParameters::SkeletonWeight::EQUAL);
-
-  EXPECT(weights.size() == g.size());
-  for (const auto &i : weights)
-  {
-    EXPECT_DOUBLES_EQUAL(weights[i], 1.0, 1e-12);
-  }
-}
-
-/* ************************************************************************* */
-TEST(SubgraphBuilder, utilsKruskal)
-{
-
-  const auto [g, _] = example::planarGraph(N); // A*x-b
-
-  const FastMap<Key, size_t> forward_ordering = Ordering::Natural(g).invert();
-  const auto weights = utils::assignWeights(g, gtsam::SubgraphBuilderParameters::SkeletonWeight::EQUAL);
-
-  const auto mstEdgeIndices = utils::kruskal(g, forward_ordering, weights);
-
-  // auto PrintMst = [](const auto &graph, const auto &mst_edge_indices)
-  // {
-  //   std::cout << "MST Edge indices are: \n";
-  //   for (const auto &edge : mst_edge_indices)
-  //   {
-  //     std::cout << edge << " : ";
-  //     for (const auto &key : graph[edge]->keys())
-  //     {
-  //       std::cout << gtsam::DefaultKeyFormatter(gtsam::Symbol(key)) << ", ";
-  //     }
-  //     std::cout << "\n";
-  //   }
-  // };
-
-  // PrintMst(g, mstEdgeIndices);
-
-  EXPECT(mstEdgeIndices[0] == 1);
-  EXPECT(mstEdgeIndices[1] == 2);
-  EXPECT(mstEdgeIndices[2] == 3);
-  EXPECT(mstEdgeIndices[3] == 4);
-  EXPECT(mstEdgeIndices[4] == 5);
-  EXPECT(mstEdgeIndices[5] == 6);
-  EXPECT(mstEdgeIndices[6] == 7);
-  EXPECT(mstEdgeIndices[7] == 8);
-}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

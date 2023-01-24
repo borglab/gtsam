@@ -234,7 +234,7 @@ PredecessorMap<KEY> findMinimumSpanningTree(const G& fg) {
   // Convert to a graph that boost understands
   SDGraph<KEY> g = gtsam::toBoostGraph<G, FACTOR2, KEY>(fg);
 
-  // find minimum spanning tree
+  // // find minimum spanning tree
   std::vector<typename SDGraph<KEY>::Vertex> p_map(boost::num_vertices(g));
   prim_minimum_spanning_tree(g, &p_map[0]);
 
