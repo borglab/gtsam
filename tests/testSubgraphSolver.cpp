@@ -130,6 +130,19 @@ TEST( SubgraphSolver, constructor3 )
 }
 
 /* ************************************************************************* */
+TEST(SubgraphBuilder, utilsAssignWeights)
+{
+  const auto [g, _] = example::planarGraph(N); // A*x-b
+  const auto weights = utils::assignWeights(g, gtsam::SubgraphBuilderParameters::SkeletonWeight::EQUAL);
+
+  EXPECT(weights.size() == g.size());
+  for (const auto &i : weights)
+  {
+    EXPECT_DOUBLES_EQUAL(weights[i], 1.0, 1e-12);
+  }
+}
+
+/* ************************************************************************* */
 TEST(SubgraphBuilder, utilsKruskal)
 {
 
