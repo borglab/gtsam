@@ -239,6 +239,101 @@ std::string SubgraphBuilderParameters::augmentationWeightTranslator(
 }
 
 /****************************************************************/
+std::vector<double> utils::assignWeights(const GaussianFactorGraph &gfg, const SubgraphBuilderParameters::SkeletonWeight &skeletonWeight)
+{
+  using Weights = std::vector<double>;
+
+  const size_t m = gfg.size();
+  Weights weights;
+  weights.reserve(m);
+
+  for (const GaussianFactor::shared_ptr &gf : gfg)
+  {
+    switch (skeletonWeight)
+    {
+    case SubgraphBuilderParameters::EQUAL:
+      weights.push_back(1.0);
+      break;
+    case SubgraphBuilderParameters::RHS_2NORM:
+    {
+      if (JacobianFactor::shared_ptr jf =
+              std::dynamic_pointer_cast<JacobianFactor>(gf))
+      {
+        weights.push_back(jf->getb().norm());
+      }
+      else if (HessianFactor::shared_ptr hf =
+                   std::dynamic_pointer_cast<HessianFactor>(gf))
+      {
+        weights.push_back(hf->linearTerm().norm());
+      }
+    }
+    break;
+    case SubgraphBuilderParameters::LHS_FNORM:
+    {
+      if (JacobianFactor::shared_ptr jf =
+              std::dynamic_pointer_cast<JacobianFactor>(gf))
+      {
+        weights.push_back(std::sqrt(jf->getA().squaredNorm()));
+      }
+      else if (HessianFactor::shared_ptr hf =
+                   std::dynamic_pointer_cast<HessianFactor>(gf))
+      {
+        weights.push_back(std::sqrt(hf->information().squaredNorm()));
+      }
+    }
+    break;
+
+    case SubgraphBuilderParameters::RANDOM:
+      weights.push_back(std::rand() % 100 + 1.0);
+      break;
+
+    default:
+      throw std::invalid_argument(
+          "utils::assign_weights: undefined weight scheme ");
+      break;
+    }
+  }
+  return weights;
+}
+
+
+/****************************************************************/
+std::vector<size_t> utils::kruskal(const GaussianFactorGraph &gfg,
+                            const FastMap<Key, size_t> &ordering,
+                            const std::vector<double> &weights)
+{
+  const VariableIndex variableIndex(gfg);
+  const size_t n = variableIndex.size();
+  const vector<size_t> sortedIndices = sort_idx(weights);
+
+  /* initialize buffer */
+  vector<size_t> treeIndices;
+  treeIndices.reserve(n - 1);
+
+  // container for acsendingly sorted edges
+  DSFVector dsf(n);
+
+  size_t count = 0;
+  for (const size_t index : sortedIndices)
+  {
+    const GaussianFactor &gf = *gfg[index];
+    const auto keys = gf.keys();
+    if (keys.size() != 2)
+      continue;
+    const size_t u = ordering.find(keys[0])->second,
+                 v = ordering.find(keys[1])->second;
+    if (dsf.find(u) != dsf.find(v))
+    {
+      dsf.merge(u, v);
+      treeIndices.push_back(index);
+      if (++count == n - 1)
+        break;
+    }
+  }
+  return treeIndices;
+}
+
+/****************************************************************/
 vector<size_t> SubgraphBuilder::buildTree(const GaussianFactorGraph &gfg,
                                           const FastMap<Key, size_t> &ordering,
                                           const vector<double> &weights) const {
@@ -329,31 +424,7 @@ vector<size_t> SubgraphBuilder::bfs(const GaussianFactorGraph &gfg) const {
 vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
                                         const FastMap<Key, size_t> &ordering,
                                         const vector<double> &weights) const {
-  const VariableIndex variableIndex(gfg);
-  const size_t n = variableIndex.size();
-  const vector<size_t> sortedIndices = sort_idx(weights);
-
-  /* initialize buffer */
-  vector<size_t> treeIndices;
-  treeIndices.reserve(n - 1);
-
-  // container for acsendingly sorted edges
-  DSFVector dsf(n);
-
-  size_t count = 0;
-  for (const size_t index : sortedIndices) {
-    const GaussianFactor &gf = *gfg[index];
-    const auto keys = gf.keys();
-    if (keys.size() != 2) continue;
-    const size_t u = ordering.find(keys[0])->second,
-                 v = ordering.find(keys[1])->second;
-    if (dsf.find(u) != dsf.find(v)) {
-      dsf.merge(u, v);
-      treeIndices.push_back(index);
-      if (++count == n - 1) break;
-    }
-  }
-  return treeIndices;
+  return utils::kruskal(gfg, ordering, weights);
 }
 
 /****************************************************************/
@@ -406,45 +477,7 @@ Subgraph SubgraphBuilder::operator()(const GaussianFactorGraph &gfg) const {
 /****************************************************************/
 SubgraphBuilder::Weights SubgraphBuilder::weights(
     const GaussianFactorGraph &gfg) const {
-  const size_t m = gfg.size();
-  Weights weight;
-  weight.reserve(m);
-
-  for (const GaussianFactor::shared_ptr &gf : gfg) {
-    switch (parameters_.skeletonWeight) {
-      case SubgraphBuilderParameters::EQUAL:
-        weight.push_back(1.0);
-        break;
-      case SubgraphBuilderParameters::RHS_2NORM: {
-        if (JacobianFactor::shared_ptr jf =
-                std::dynamic_pointer_cast<JacobianFactor>(gf)) {
-          weight.push_back(jf->getb().norm());
-        } else if (HessianFactor::shared_ptr hf =
-                       std::dynamic_pointer_cast<HessianFactor>(gf)) {
-          weight.push_back(hf->linearTerm().norm());
-        }
-      } break;
-      case SubgraphBuilderParameters::LHS_FNORM: {
-        if (JacobianFactor::shared_ptr jf =
-                std::dynamic_pointer_cast<JacobianFactor>(gf)) {
-          weight.push_back(std::sqrt(jf->getA().squaredNorm()));
-        } else if (HessianFactor::shared_ptr hf =
-                       std::dynamic_pointer_cast<HessianFactor>(gf)) {
-          weight.push_back(std::sqrt(hf->information().squaredNorm()));
-        }
-      } break;
-
-      case SubgraphBuilderParameters::RANDOM:
-        weight.push_back(std::rand() % 100 + 1.0);
-        break;
-
-      default:
-        throw std::invalid_argument(
-            "SubgraphBuilder::weights: undefined weight scheme ");
-        break;
-    }
-  }
-  return weight;
+    return utils::assignWeights(gfg, parameters_.skeletonWeight);
 }
 
 /*****************************************************************************/

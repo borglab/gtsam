@@ -149,6 +149,16 @@ struct GTSAM_EXPORT SubgraphBuilderParameters {
   static std::string augmentationWeightTranslator(AugmentationWeight w);
 };
 
+namespace utils
+{
+
+  std::vector<double> assignWeights(const GaussianFactorGraph &gfg,
+                                    const SubgraphBuilderParameters::SkeletonWeight &skeleton_weight);
+  std::vector<size_t> kruskal(const GaussianFactorGraph &gfg,
+                              const FastMap<Key, size_t> &ordering,
+                              const std::vector<double> &weights);
+}
+
 /*****************************************************************************/
 class GTSAM_EXPORT SubgraphBuilder {
  public:
@@ -161,6 +171,8 @@ class GTSAM_EXPORT SubgraphBuilder {
   virtual ~SubgraphBuilder() {}
   virtual Subgraph operator()(const GaussianFactorGraph &jfg) const;
 
+public:
+
  private:
   std::vector<size_t> buildTree(const GaussianFactorGraph &gfg,
                                 const FastMap<Key, size_t> &ordering,
@@ -168,12 +180,13 @@ class GTSAM_EXPORT SubgraphBuilder {
   std::vector<size_t> unary(const GaussianFactorGraph &gfg) const;
   std::vector<size_t> natural_chain(const GaussianFactorGraph &gfg) const;
   std::vector<size_t> bfs(const GaussianFactorGraph &gfg) const;
+  std::vector<size_t> sample(const std::vector<double> &weights,
+                             const size_t t) const;
   std::vector<size_t> kruskal(const GaussianFactorGraph &gfg,
                               const FastMap<Key, size_t> &ordering,
                               const std::vector<double> &weights) const;
-  std::vector<size_t> sample(const std::vector<double> &weights,
-                             const size_t t) const;
-  Weights weights(const GaussianFactorGraph &gfg) const;
+  Weights weights(const GaussianFactorGraph &gfg) const ;
+
   SubgraphBuilderParameters parameters_;
 };
 
