@@ -21,7 +21,7 @@
 #include <gtsam/dllexport.h>
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
-#ifdef GTSAM_USE_BOOST
+#ifdef GTSAM_USE_BOOST_FEATURES
 #include <boost/version.hpp>
 #endif
 
@@ -107,7 +107,7 @@
 //   have matching gttic/gttoc statments.  You may want to consider reorganizing your timing
 //   outline to match the scope of your code.
 
-#ifdef GTSAM_USE_BOOST
+#ifdef GTSAM_USE_BOOST_FEATURES
 // Automatically use the new Boost timers if version is recent enough.
 #if BOOST_VERSION >= 104800
 #  ifndef GTSAM_DISABLE_NEW_TIMERS
@@ -165,7 +165,7 @@ namespace gtsam {
       ChildMap children_; ///< subtrees
 
 // disable all timers if not using boost
-#ifdef GTSAM_USE_BOOST
+#ifdef GTSAM_USE_BOOST_FEATURES
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
       boost::timer::cpu_timer timer_;
 #else
@@ -183,7 +183,7 @@ namespace gtsam {
       GTSAM_EXPORT TimingOutline(const std::string& label, size_t myId);
       GTSAM_EXPORT size_t time() const; ///< time taken, including children
       double secs() const { return double(time()) / 1000000.0;} ///< time taken, in seconds, including children
-#ifdef GTSAM_USE_BOOST
+#ifdef GTSAM_USE_BOOST_FEATURES
       double self() const { return double(t_)     / 1000000.0;} ///< self time only, in seconds
       double wall() const { return double(tWall_) / 1000000.0;} ///< wall time, in seconds
       double min()  const { return double(tMin_)  / 1000000.0;} ///< min time, in seconds
