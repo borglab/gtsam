@@ -19,6 +19,13 @@
 
 #pragma once
 
+// The MSVC compiler workaround for the unsupported variable length array
+// utilizes the std::unique_ptr<> custom deleter.
+// See Expression<T>::valueAndJacobianMap() below.
+#ifdef _MSC_VER
+#include <memory>
+#endif
+
 #include <gtsam/nonlinear/internal/ExpressionNode.h>
 
 #include <boost/bind/bind.hpp>
@@ -207,7 +214,10 @@ T Expression<T>::valueAndJacobianMap(const Values& values,
   // allocated on Visual Studio. For more information see the issue below
   // https://bitbucket.org/gtborg/gtsam/issue/178/vlas-unsupported-in-visual-studio
 #ifdef _MSC_VER
-  auto traceStorage = static_cast<internal::ExecutionTraceStorage*>(_aligned_malloc(size, internal::TraceAlignment));
+  std::unique_ptr<void, void(*)(void*)> traceStorageDeleter(
+    _aligned_malloc(size, internal::TraceAlignment),
+    [](void *ptr){ _aligned_free(ptr); });
+  auto traceStorage = static_cast<internal::ExecutionTraceStorage*>(traceStorageDeleter.get());
 #else
   internal::ExecutionTraceStorage traceStorage[size];
 #endif
@@ -215,10 +225,6 @@ T Expression<T>::valueAndJacobianMap(const Values& values,
   internal::ExecutionTrace<T> trace;
   T value(this->traceExecution(values, trace, traceStorage));
   trace.startReverseAD1(jacobians);
-
-#ifdef _MSC_VER
-  _aligned_free(traceStorage);
-#endif
 
   return value;
 }
