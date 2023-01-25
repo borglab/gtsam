@@ -38,12 +38,8 @@ namespace gtsam {
 
   /* ************************************************************************ */
   VectorValues::VectorValues(const Vector& x, const Dims& dims) {
-    using Pair = pair<const Key, size_t>;
     size_t j = 0;
-    for (const Pair& v : dims) {
-      Key key;
-      size_t n;
-      std::tie(key, n) = v;
+    for (const auto& [key,n] : dims)  {
 #ifdef TBB_GREATER_EQUAL_2020
       values_.emplace(key, x.segment(j, n));
 #else
@@ -70,11 +66,11 @@ namespace gtsam {
   VectorValues VectorValues::Zero(const VectorValues& other)
   {
     VectorValues result;
-    for(const KeyValuePair& v: other)
+    for(const auto& [key,value]: other)
 #ifdef TBB_GREATER_EQUAL_2020
-      result.values_.emplace(v.first, Vector::Zero(v.second.size()));
+      result.values_.emplace(key, Vector::Zero(value.size()));
 #else
-      result.values_.insert(std::make_pair(v.first, Vector::Zero(v.second.size())));
+      result.values_.insert(std::make_pair(key, Vector::Zero(value.size())));
 #endif
     return result;
   }
@@ -92,18 +88,18 @@ namespace gtsam {
   /* ************************************************************************ */
   VectorValues& VectorValues::update(const VectorValues& values) {
     iterator hint = begin();
-    for (const KeyValuePair& key_value : values) {
+    for (const auto& [key,value] : values) {
       // Use this trick to find the value using a hint, since we are inserting
       // from another sorted map
       size_t oldSize = values_.size();
-      hint = values_.insert(hint, key_value);
+      hint = values_.emplace_hint(hint, key, value);
       if (values_.size() > oldSize) {
         values_.unsafe_erase(hint);
         throw out_of_range(
             "Requested to update a VectorValues with another VectorValues that "
             "contains keys not present in the first.");
       } else {
-        hint->second = key_value.second;
+        hint->second = value;
       }
     }
     return *this;
@@ -133,16 +129,15 @@ namespace gtsam {
     // Change print depending on whether we are using TBB
 #ifdef GTSAM_USE_TBB
     map<Key, Vector> sorted;
-    for (const auto& key_value : v) {
-      sorted.emplace(key_value.first, key_value.second);
+    for (const auto& [key,value] : v) {
+      sorted.emplace(key, value);
     }
-    for (const auto& key_value : sorted)
+    for (const auto& [key,value] : sorted)
 #else
-    for (const auto& key_value : v)
+    for (const auto& [key,value] : v)
 #endif
     {
-      os << "  " << StreamedKey(key_value.first) << ": " << key_value.second.transpose()
-         << "\n";
+      os << "  " << StreamedKey(key) << ": " << value.transpose() << "\n";
     }
     return os;
   }
