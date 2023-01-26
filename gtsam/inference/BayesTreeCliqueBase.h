@@ -25,8 +25,7 @@
 #include <string>
 #include <mutex>
 #include <optional>
-#include <queue>
-#include <deque>
+
 
 namespace gtsam {
 
@@ -99,28 +98,7 @@ namespace gtsam {
     }
 
     // Virtual destructor.
-    virtual ~BayesTreeCliqueBase() {
-      // default destructor will cause stack overflow for deletion of large trees
-      // so we delete the tree explicitly by first BFSing the tree to determine the topological order
-      // and then clearing the children of each node in topological order
-      // Only work in single threaded mode
-      std::queue<This*> bfs_queue;
-      std::deque<This*> topological_order;
-      bfs_queue.push(this);
-      while (!bfs_queue.empty()) {
-        auto node = bfs_queue.front();
-        bfs_queue.pop();
-        topological_order.push_front(node);
-        for (auto& child : node->children) {
-          if (child.use_count() == 1) {
-            bfs_queue.push(child.get());
-          }
-        }
-      }
-      for (auto node : topological_order) {
-        node->children.clear();
-      }
-    }
+    virtual ~BayesTreeCliqueBase() {}
 
     /// @}
 

@@ -27,6 +27,8 @@
 #include <gtsam/base/FastVector.h>
 
 #include <string>
+#include <queue>
+#include <deque>
 
 namespace gtsam {
 
@@ -110,6 +112,25 @@ namespace gtsam {
 
     /** Copy constructor */
     BayesTree(const This& other);
+
+    ~BayesTree() {
+      for (auto&& root: roots_) {
+        std::queue<Clique*> bfs_queue;
+        std::deque<Clique*> topological_order;
+        bfs_queue.push(root.get());
+        while (!bfs_queue.empty()) {
+          Clique* current = bfs_queue.front();
+          bfs_queue.pop();
+          topological_order.push_front(current);
+          for (auto&& child: current->children) {
+            bfs_queue.push(child.get());
+          }
+        }
+        for (auto&& clique: topological_order) {
+          clique->children.clear();
+        }
+      }
+    }
 
     /// @}
 
