@@ -194,11 +194,31 @@ TEST(Values, basic_functions)
   values.insert(6, M1);
   values.insert(8, M2);
 
+
   EXPECT(!values.exists(1));
   EXPECT(values.exists(2));
   EXPECT(values.exists(4));
   EXPECT(values.exists(6));
   EXPECT(values.exists(8));
+
+  size_t count = 0;
+  for (const auto& [key, value] : values) {
+    count += 1;
+    if (key == 2 || key == 4) EXPECT_LONGS_EQUAL(3, value.dim());
+    if (key == 6 || key == 8) EXPECT_LONGS_EQUAL(6, value.dim());
+  }
+  EXPECT_LONGS_EQUAL(4, count);
+
+  // find
+  EXPECT_LONGS_EQUAL(4, values.find(4)->key);
+
+  // lower_bound
+  EXPECT_LONGS_EQUAL(4, values.lower_bound(4)->key);
+  EXPECT_LONGS_EQUAL(4, values.lower_bound(3)->key);
+
+  // upper_bound
+  EXPECT_LONGS_EQUAL(6, values.upper_bound(4)->key);
+  EXPECT_LONGS_EQUAL(4, values.upper_bound(3)->key);
 }
 
 /* ************************************************************************* */
