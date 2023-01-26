@@ -203,7 +203,6 @@ TEST(Values, basic_functions)
   }
   EXPECT_LONGS_EQUAL(4, count);
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   // find
   EXPECT_LONGS_EQUAL(4, values.find(4)->key);
   EXPECT_LONGS_EQUAL(4, values_c.find(4)->key);
@@ -219,7 +218,6 @@ TEST(Values, basic_functions)
   EXPECT_LONGS_EQUAL(6, values_c.upper_bound(4)->key);
   EXPECT_LONGS_EQUAL(4, values.upper_bound(3)->key);
   EXPECT_LONGS_EQUAL(4, values_c.upper_bound(3)->key);
-#endif
 }
 
 /* ************************************************************************* */
