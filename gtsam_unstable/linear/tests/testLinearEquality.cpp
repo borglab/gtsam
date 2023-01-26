@@ -29,8 +29,9 @@ GTSAM_CONCEPT_TESTABLE_INST(LinearEquality)
 namespace {
 namespace simple {
 // Terms we'll use
-const vector<pair<Key, Matrix> > terms{
-    make_pair(5, I_3x3), make_pair(10, 2 * I_3x3), make_pair(15, 3 * I_3x3)};
+using Terms = vector<pair<Key, Matrix> >;
+const Terms terms{make_pair(5, I_3x3), make_pair(10, 2 * I_3x3),
+                  make_pair(15, 3 * I_3x3)};
 
 // RHS and sigmas
 const Vector b = (Vector(3) << 1., 2., 3.).finished();
@@ -45,7 +46,7 @@ TEST(LinearEquality, constructors_and_accessors) {
   // Test for using different numbers of terms
   {
     // One term constructor
-    LinearEquality expected(terms.begin(), terms.begin() + 1, b, 0);
+    LinearEquality expected(Terms(terms.begin(), terms.begin() + 1), b, 0);
     LinearEquality actual(terms[0].first, terms[0].second, b, 0);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[0].first, (long)actual.keys().back());
@@ -56,7 +57,7 @@ TEST(LinearEquality, constructors_and_accessors) {
   }
   {
     // Two term constructor
-    LinearEquality expected(terms.begin(), terms.begin() + 2, b, 0);
+    LinearEquality expected(Terms(terms.begin(), terms.begin() + 2), b, 0);
     LinearEquality actual(terms[0].first, terms[0].second, terms[1].first,
                           terms[1].second, b, 0);
     EXPECT(assert_equal(expected, actual));
@@ -68,7 +69,7 @@ TEST(LinearEquality, constructors_and_accessors) {
   }
   {
     // Three term constructor
-    LinearEquality expected(terms.begin(), terms.begin() + 3, b, 0);
+    LinearEquality expected(Terms(terms.begin(), terms.begin() + 3), b, 0);
     LinearEquality actual(terms[0].first, terms[0].second, terms[1].first,
                           terms[1].second, terms[2].first, terms[2].second, b,
                           0);

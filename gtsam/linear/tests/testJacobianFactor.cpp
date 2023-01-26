@@ -35,8 +35,8 @@ using Dims = std::vector<Eigen::Index>;  // For constructing block matrices
 namespace {
   namespace simple {
     // Terms we'll use
-  const vector<pair<Key, Matrix> > terms{
-      {5, I_3x3}, {10, 2 * I_3x3}, {15, 3 * I_3x3}};
+  using Terms = vector<pair<Key, Matrix> >;
+  const Terms terms{{5, I_3x3}, {10, 2 * I_3x3}, {15, 3 * I_3x3}};
 
   // RHS and sigmas
   const Vector b = Vector3(1., 2., 3.);
@@ -53,8 +53,7 @@ TEST(JacobianFactor, constructors_and_accessors)
   // Test for using different numbers of terms
   {
     // b vector only constructor
-    JacobianFactor expected(
-      std::vector(terms.begin(), terms.begin()), b);
+    JacobianFactor expected(Terms{}, b);
     JacobianFactor actual(b);
     EXPECT(assert_equal(expected, actual));
     EXPECT(assert_equal(b, expected.getb()));
@@ -64,8 +63,7 @@ TEST(JacobianFactor, constructors_and_accessors)
   }
   {
     // One term constructor
-    JacobianFactor expected(
-      std::vector(terms.begin(), terms.begin() + 1), b, noise);
+    JacobianFactor expected(Terms{terms[0]}, b, noise);
     JacobianFactor actual(terms[0].first, terms[0].second, b, noise);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[0].first, (long)actual.keys().back());
@@ -77,8 +75,7 @@ TEST(JacobianFactor, constructors_and_accessors)
   }
   {
     // Two term constructor
-    JacobianFactor expected(
-      std::vector(terms.begin(), terms.begin() + 2), b, noise);
+    JacobianFactor expected(Terms{terms[0], terms[1]}, b, noise);
     JacobianFactor actual(terms[0].first, terms[0].second,
       terms[1].first, terms[1].second, b, noise);
     EXPECT(assert_equal(expected, actual));
@@ -91,8 +88,7 @@ TEST(JacobianFactor, constructors_and_accessors)
   }
   {
     // Three term constructor
-    JacobianFactor expected(
-      std::vector(terms.begin(), terms.begin() + 3), b, noise);
+    JacobianFactor expected(Terms{terms[0], terms[1], terms[2]}, b, noise);
     JacobianFactor actual(terms[0].first, terms[0].second,
       terms[1].first, terms[1].second, terms[2].first, terms[2].second, b, noise);
     EXPECT(assert_equal(expected, actual));
@@ -105,8 +101,7 @@ TEST(JacobianFactor, constructors_and_accessors)
   }
   {
     // Test three-term constructor with std::map
-    JacobianFactor expected(
-      std::vector(terms.begin(), terms.begin() + 3), b, noise);
+    JacobianFactor expected(Terms{terms[0], terms[1], terms[2]}, b, noise);
     map<Key,Matrix> mapTerms;
     // note order of insertion plays no role: order will be determined by keys
     mapTerms.insert(terms[2]);
@@ -123,8 +118,7 @@ TEST(JacobianFactor, constructors_and_accessors)
   }
   {
     // VerticalBlockMatrix constructor
-    JacobianFactor expected(
-      std::vector(terms.begin(), terms.begin() + 3), b, noise);
+    JacobianFactor expected(Terms{terms[0], terms[1], terms[2]}, b, noise);
     VerticalBlockMatrix blockMatrix(Dims{3, 3, 3, 1}, 3);
     blockMatrix(0) = terms[0].second;
     blockMatrix(1) = terms[1].second;
