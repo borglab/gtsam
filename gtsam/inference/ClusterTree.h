@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <deque>
+#include <queue>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Ordering.h>
@@ -46,7 +48,8 @@ class ClusterTree {
 
     Cluster() : problemSize_(0) {}
 
-    virtual ~Cluster() {}
+    virtual ~Cluster() {
+    }
 
     const Cluster& operator[](size_t i) const {
       return *(children[i]);
@@ -162,6 +165,27 @@ class ClusterTree {
 
   const Cluster& operator[](size_t i) const {
     return *(roots_[i]);
+  }
+
+  virtual ~ClusterTree() {
+    // use default destructor which recursively deletes all nodes with shared_ptr causes stack overflow.
+    // so for each tree, we do a BFS to get sequence of nodes to delete, and clear their children first.
+    for (auto&& root : roots_) {
+      std::queue<Cluster*> q;
+      std::deque<Cluster*> nodes;
+      q.push(root.get());
+      while (!q.empty()) {
+        auto node = q.front();
+        nodes.push_front(node);
+        q.pop();
+        for (auto&& child : node->children) {
+          q.push(child.get());
+        }
+      }
+      for (auto&& node : nodes) {
+        node->children.clear();
+      }
+    }
   }
 
   /// @}

@@ -19,6 +19,8 @@
 
 #include <utility>
 #include <memory>
+#include <deque>
+#include <queue>
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastVector.h>
@@ -118,6 +120,27 @@ namespace gtsam {
     /// @}
 
   public:
+    ~EliminationTree() {
+      // default destructor will cause stack overflow for deletion of large trees
+      // so we delete the tree explicitly by first BFSing the tree to determine the topological order
+      // and then clearing the children of each node in topological order
+      for (auto&& root : roots_) {
+        std::queue<Node*> bfs_queue;
+        std::deque<Node*> topological_order;
+        bfs_queue.push(root.get());
+        while (!bfs_queue.empty()) {
+          Node* node = bfs_queue.front();
+          bfs_queue.pop();
+          topological_order.push_front(node);
+          for (auto&& child : node->children) {
+            bfs_queue.push(child.get());
+          }
+        }
+        for (auto&& node : topological_order) {
+          node->children.clear();
+        }
+      }
+    }
     /// @name Standard Interface
     /// @{
 
@@ -155,6 +178,7 @@ namespace gtsam {
 
     /** Swap the data of this tree with another one, this operation is very fast. */
     void swap(This& other);
+
 
   protected:
     /// Protected default constructor
