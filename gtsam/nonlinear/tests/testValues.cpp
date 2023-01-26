@@ -196,10 +196,10 @@ TEST(Values, basic_functions)
   values.insert(8, M2);
 
   size_t count = 0;
-  for (const auto& [key, value] : values) {
+  for (const auto& it : values) {
     count += 1;
-    if (key == 2 || key == 4) EXPECT_LONGS_EQUAL(3, value.dim());
-    if (key == 6 || key == 8) EXPECT_LONGS_EQUAL(6, value.dim());
+    if (it.key == 2 || it.key == 4) EXPECT_LONGS_EQUAL(3, it.value.dim());
+    if (it.key == 6 || it.key == 8) EXPECT_LONGS_EQUAL(6, it.value.dim());
   }
   EXPECT_LONGS_EQUAL(4, count);
 
