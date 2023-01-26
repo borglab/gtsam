@@ -510,7 +510,7 @@ TEST( Rot3, RQ)
   // Try RQ on a pure rotation
   Matrix actualK;
   Vector actual;
-  boost::tie(actualK, actual) = RQ(R.matrix());
+  std::tie(actualK, actual) = RQ(R.matrix());
   Vector expected = Vector3(0.14715, 0.385821, 0.231671);
   CHECK(assert_equal(I_3x3,actualK));
   CHECK(assert_equal(expected,actual,1e-6));
@@ -531,7 +531,7 @@ TEST( Rot3, RQ)
   // Try RQ to recover calibration from 3*3 sub-block of projection matrix
   Matrix K = (Matrix(3, 3) << 500.0, 0.0, 320.0, 0.0, 500.0, 240.0, 0.0, 0.0, 1.0).finished();
   Matrix A = K * R.matrix();
-  boost::tie(actualK, actual) = RQ(A);
+  std::tie(actualK, actual) = RQ(A);
   CHECK(assert_equal(K,actualK));
   CHECK(assert_equal(expected,actual,1e-6));
 }

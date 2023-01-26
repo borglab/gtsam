@@ -74,7 +74,7 @@ TEST (AHRS, Mechanization_integrate) {
   AHRS ahrs = AHRS(stationaryU,stationaryF,g_e);
   Mechanization_bRn2 mech;
   KalmanFilter::State state;
-//  boost::tie(mech,state) = ahrs.initialize(g_e);
+//  std::tie(mech,state) = ahrs.initialize(g_e);
 //  Vector u = Vector3(0.05,0.0,0.0);
 //  double dt = 2;
 //  Rot3 expected;

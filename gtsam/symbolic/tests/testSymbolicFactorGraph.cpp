@@ -67,7 +67,7 @@ TEST(SymbolicFactorGraph, eliminatePartialSequential) {
 
   SymbolicBayesNet::shared_ptr actualBayesNet;
   SymbolicFactorGraph::shared_ptr actualSfg;
-  boost::tie(actualBayesNet, actualSfg) =
+  std::tie(actualBayesNet, actualSfg) =
       simpleTestGraph2.eliminatePartialSequential(Ordering{0, 1});
 
   EXPECT(assert_equal(expectedSfg, *actualSfg));
@@ -75,7 +75,7 @@ TEST(SymbolicFactorGraph, eliminatePartialSequential) {
 
   SymbolicBayesNet::shared_ptr actualBayesNet2;
   SymbolicFactorGraph::shared_ptr actualSfg2;
-  boost::tie(actualBayesNet2, actualSfg2) =
+  std::tie(actualBayesNet2, actualSfg2) =
       simpleTestGraph2.eliminatePartialSequential(Ordering{0, 1});
 
   EXPECT(assert_equal(expectedSfg, *actualSfg2));
@@ -108,7 +108,7 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal) {
 
   SymbolicBayesTree::shared_ptr actualBayesTree;
   SymbolicFactorGraph::shared_ptr actualFactorGraph;
-  boost::tie(actualBayesTree, actualFactorGraph) =
+  std::tie(actualBayesTree, actualFactorGraph) =
       simpleTestGraph2.eliminatePartialMultifrontal(Ordering{4, 5});
 
   EXPECT(assert_equal(expectedFactorGraph, *actualFactorGraph));
@@ -124,7 +124,7 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal) {
 
   SymbolicBayesTree::shared_ptr actualBayesTree2;
   SymbolicFactorGraph::shared_ptr actualFactorGraph2;
-  boost::tie(actualBayesTree2, actualFactorGraph2) =
+  std::tie(actualBayesTree2, actualFactorGraph2) =
       simpleTestGraph2.eliminatePartialMultifrontal(KeyVector{4, 5});
 
   EXPECT(assert_equal(expectedFactorGraph, *actualFactorGraph2));

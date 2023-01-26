@@ -25,7 +25,6 @@
 #include <gtsam/base/Vector.h>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/range/adaptor/reversed.hpp>
 
 #include <stdexcept>
 
@@ -205,7 +204,8 @@ void SubgraphPreconditioner::solve(const Vector &y, Vector &x) const {
   assert(x.size() == y.size());
 
   /* back substitute */
-  for (const auto &cg : boost::adaptors::reverse(Rc1_)) {
+  for (auto it = std::make_reverse_iterator(Rc1_.end()); it != std::make_reverse_iterator(Rc1_.begin()); ++it) {
+    auto& cg = *it;
     /* collect a subvector of x that consists of the parents of cg (S) */
     const KeyVector parentKeys(cg->beginParents(), cg->endParents());
     const KeyVector frontalKeys(cg->beginFrontals(), cg->endFrontals());

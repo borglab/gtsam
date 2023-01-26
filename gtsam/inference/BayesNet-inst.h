@@ -21,7 +21,6 @@
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 
-#include <boost/range/adaptor/reversed.hpp>
 #include <fstream>
 #include <string>
 
@@ -56,7 +55,9 @@ void BayesNet<CONDITIONAL>::dot(std::ostream& os,
   os << "\n";
 
   // Reverse order as typically Bayes nets stored in reverse topological sort.
-  for (auto conditional : boost::adaptors::reverse(*this)) {
+  for (auto it = std::make_reverse_iterator(this->end()); 
+      it != std::make_reverse_iterator(this->begin()); ++it) {
+    const auto& conditional = *it;
     auto frontals = conditional->frontals();
     const Key me = frontals.front();
     auto parents = conditional->parents();

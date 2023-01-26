@@ -28,11 +28,6 @@
 
 #include <gtsam/nonlinear/internal/ExpressionNode.h>
 
-#include <boost/bind/bind.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/range/adaptor/map.hpp>
-#include <boost/range/algorithm.hpp>
-
 namespace gtsam {
 
 template<typename T>
@@ -150,7 +145,7 @@ T Expression<T>::value(const Values& values,
     // Call private version that returns derivatives in H
     KeyVector keys;
     FastVector<int> dims;
-    boost::tie(keys, dims) = keysAndDims();
+    std::tie(keys, dims) = keysAndDims();
     return valueAndDerivatives(values, keys, dims, *H);
   } else
     // no derivatives needed, just return value
@@ -235,8 +230,13 @@ typename Expression<T>::KeysAndDims Expression<T>::keysAndDims() const {
   dims(map);
   size_t n = map.size();
   KeysAndDims pair = std::make_pair(KeyVector(n), FastVector<int>(n));
-  boost::copy(map | boost::adaptors::map_keys, pair.first.begin());
-  boost::copy(map | boost::adaptors::map_values, pair.second.begin());
+  // Copy map into pair of vectors
+  auto key_it = pair.first.begin();
+  auto dim_it = pair.second.begin();
+  for (const auto& [key, value] : map) {
+    *key_it++ = key;
+    *dim_it++ = value;
+  }
   return pair;
 }
 

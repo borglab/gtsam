@@ -21,7 +21,6 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/Vector.h>
 
-#include <boost/tuple/tuple.hpp>
 #include <memory>
 
 #include <iosfwd>

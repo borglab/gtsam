@@ -62,7 +62,7 @@ TEST( Iterative, conjugateGradientDescent )
   Matrix A;
   Vector b;
   Vector x0 = Z_6x1;
-  boost::tie(A, b) = fg.jacobian();
+  std::tie(A, b) = fg.jacobian();
   Vector expectedX = (Vector(6) << -0.1, 0.1, -0.1, -0.1, 0.1, -0.2).finished();
 
   // Do conjugate gradient descent, System version

@@ -20,7 +20,6 @@
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/testLie.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/tuple/tuple.hpp>
 #include <iostream>
 #include <sstream>
 #include <optional>
@@ -859,7 +858,7 @@ TEST(Matrix, qr )
       7.4536, 0, 00, 0, 0, 10.9545, 00, 0, 0, 0, 00, 0, 0, 0).finished();
 
   Matrix Q, R;
-  boost::tie(Q, R) = qr(A);
+  std::tie(Q, R) = qr(A);
   EXPECT(assert_equal(expectedQ, Q, 1e-4));
   EXPECT(assert_equal(expectedR, R, 1e-4));
   EXPECT(assert_equal(A, Q*R, 1e-14));
@@ -911,7 +910,7 @@ TEST(Matrix, weighted_elimination )
   // perform elimination
   Matrix A1 = A;
   Vector b1 = b;
-  std::list<boost::tuple<Vector, double, double> > solution =
+  std::list<std::tuple<Vector, double, double> > solution =
       weighted_eliminate(A1, b1, sigmas);
 
   // unpack and verify
@@ -919,7 +918,7 @@ TEST(Matrix, weighted_elimination )
   for (const auto& tuple : solution) {
     Vector r;
     double di, sigma;
-    boost::tie(r, di, sigma) = tuple;
+    std::tie(r, di, sigma) = tuple;
     EXPECT(assert_equal(r, expectedR.row(i))); // verify r
     DOUBLES_EQUAL(d(i), di, 1e-8); // verify d
     DOUBLES_EQUAL(newSigmas(i), sigma, 1e-5); // verify sigma
@@ -1146,7 +1145,7 @@ TEST(Matrix, DLT )
   int rank;
   double error;
   Vector actual;
-  boost::tie(rank,error,actual) = DLT(A);
+  std::tie(rank,error,actual) = DLT(A);
   Vector expected = (Vector(9) << -0.0, 0.2357, 0.4714, -0.2357, 0.0, - 0.4714,-0.4714, 0.4714, 0.0).finished();
   EXPECT_LONGS_EQUAL(8,rank);
   EXPECT_DOUBLES_EQUAL(0,error,1e-8);

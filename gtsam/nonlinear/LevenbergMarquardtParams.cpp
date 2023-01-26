@@ -20,7 +20,6 @@
 
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <boost/algorithm/string/case_conv.hpp>
-#include <boost/range/adaptor/map.hpp>
 #include <iostream>
 #include <string>
 

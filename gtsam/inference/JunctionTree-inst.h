@@ -85,7 +85,7 @@ struct ConstructorTraversalData {
     keyAsOrdering.push_back(ETreeNode->key);
     SymbolicConditional::shared_ptr myConditional;
     SymbolicFactor::shared_ptr mySeparatorFactor;
-    boost::tie(myConditional, mySeparatorFactor) = internal::EliminateSymbolic(
+    std::tie(myConditional, mySeparatorFactor) = internal::EliminateSymbolic(
         symbolicFactors, keyAsOrdering);
 
     // Store symbolic elimination results in the parent

@@ -17,7 +17,6 @@
 
 #include <gtsam/discrete/DiscreteValues.h>
 
-#include <boost/range/combine.hpp>
 #include <sstream>
 
 using std::cout;
@@ -39,8 +38,10 @@ void DiscreteValues::print(const string& s,
 /* ************************************************************************ */
 bool DiscreteValues::equals(const DiscreteValues& x, double tol) const {
   if (this->size() != x.size()) return false;
-  for (const auto values : boost::combine(*this, x)) {
-    if (values.get<0>() != values.get<1>()) return false;
+  auto it1 = x.begin();
+  auto it2 = this->begin();
+  for (; it1 != x.end(); ++it1, ++it2) {
+    if (it1->first != it2->first || it1->second != it2->second) return false;
   }
   return true;
 }

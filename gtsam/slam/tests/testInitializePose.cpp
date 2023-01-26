@@ -36,7 +36,7 @@ TEST(InitializePose3, computePoses2D) {
   NonlinearFactorGraph::shared_ptr inputGraph;
   Values::shared_ptr posesInFile;
   bool is3D = false;
-  boost::tie(inputGraph, posesInFile) = readG2o(g2oFile, is3D);
+  std::tie(inputGraph, posesInFile) = readG2o(g2oFile, is3D);
 
   auto priorModel = noiseModel::Unit::Create(3);
   inputGraph->addPrior(0, posesInFile->at<Pose2>(0), priorModel);
@@ -59,7 +59,7 @@ TEST(InitializePose3, computePoses3D) {
   NonlinearFactorGraph::shared_ptr inputGraph;
   Values::shared_ptr posesInFile;
   bool is3D = true;
-  boost::tie(inputGraph, posesInFile) = readG2o(g2oFile, is3D);
+  std::tie(inputGraph, posesInFile) = readG2o(g2oFile, is3D);
 
   auto priorModel = noiseModel::Unit::Create(6);
   inputGraph->addPrior(0, posesInFile->at<Pose3>(0), priorModel);

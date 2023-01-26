@@ -29,7 +29,6 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/format.hpp>
-#include <boost/range/adaptor/map.hpp>
 
 #include <cmath>
 #include <fstream>
@@ -41,7 +40,6 @@ using namespace std;
 
 namespace gtsam {
 
-using boost::adaptors::map_values;
 typedef internal::LevenbergMarquardtState State;
 
 /* ************************************************************************* */
@@ -281,8 +279,8 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::iterate() {
   VectorValues sqrtHessianDiagonal;
   if (params_.diagonalDamping) {
     sqrtHessianDiagonal = linear->hessianDiagonal();
-    for (Vector& v : sqrtHessianDiagonal | map_values) {
-      v = v.cwiseMax(params_.minDiagonal).cwiseMin(params_.maxDiagonal).cwiseSqrt();
+    for (auto& [key, value] : sqrtHessianDiagonal) {
+      value = value.cwiseMax(params_.minDiagonal).cwiseMin(params_.maxDiagonal).cwiseSqrt();
     }
   }
 

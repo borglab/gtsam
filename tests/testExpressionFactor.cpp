@@ -235,7 +235,7 @@ TEST(ExpressionFactor, Shallow) {
   // Get and check keys and dims
   KeyVector keys;
   FastVector<int> dims;
-  boost::tie(keys, dims) = expression.keysAndDims();
+  std::tie(keys, dims) = expression.keysAndDims();
   LONGS_EQUAL(2,keys.size());
   LONGS_EQUAL(2,dims.size());
   LONGS_EQUAL(1,keys[0]);

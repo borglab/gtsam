@@ -83,7 +83,7 @@ namespace gtsam {
    * V = Vertex type
    */
   template<class G, class V, class KEY>
-  boost::tuple<G, V, std::map<KEY,V> >  predecessorMap2Graph(const PredecessorMap<KEY>& p_map);
+  std::tuple<G, V, std::map<KEY,V> >  predecessorMap2Graph(const PredecessorMap<KEY>& p_map);
 
   /**
    * Compose the poses by following the chain specified by the spanning tree
