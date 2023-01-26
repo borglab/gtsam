@@ -26,10 +26,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/range/adaptor/map.hpp>
-namespace br { using namespace boost::range; using namespace boost::adaptors; }
-
 #include <string.h>
 #include <iostream>
 
@@ -117,7 +113,7 @@ TEST(GaussianFactorGraph, eliminateOne_x1_fast) {
   GaussianFactorGraph fg = createGaussianFactorGraph();
   GaussianConditional::shared_ptr conditional;
   JacobianFactor::shared_ptr remaining;
-  boost::tie(conditional, remaining) = EliminateQR(fg, Ordering{X(1)});
+  std::tie(conditional, remaining) = EliminateQR(fg, Ordering{X(1)});
 
   // create expected Conditional Gaussian
   Matrix I = 15 * I_2x2, R11 = I, S12 = -0.111111 * I, S13 = -0.444444 * I;
@@ -295,7 +291,7 @@ TEST(GaussianFactorGraph, elimination) {
   // Check matrix
   Matrix R;
   Vector d;
-  boost::tie(R, d) = bayesNet.matrix();
+  std::tie(R, d) = bayesNet.matrix();
   Matrix expected =
       (Matrix(2, 2) << 0.707107, -0.353553, 0.0, 0.612372).finished();
   Matrix expected2 =
@@ -450,7 +446,7 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
   GaussianBayesTree actBT = *lfg.eliminateMultifrontal();
 
   // Check that all sigmas in an unconstrained bayes tree are set to one
-  for(const GaussianBayesTree::sharedClique& clique: actBT.nodes() | br::map_values) {
+  for (const auto& [key, clique]: actBT.nodes()) {
     GaussianConditional::shared_ptr conditional = clique->conditional();
     //size_t dim = conditional->rows();
     //EXPECT(assert_equal(gtsam::Vector::Ones(dim), conditional->get_model()->sigmas(), tol));

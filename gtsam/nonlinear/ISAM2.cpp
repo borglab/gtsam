@@ -176,9 +176,11 @@ void ISAM2::recalculateBatch(const ISAM2UpdateParams& updateParams,
   gttic(recalculateBatch);
 
   gttic(add_keys);
-  br::copy(variableIndex_ | br::map_keys,
-           std::inserter(*affectedKeysSet, affectedKeysSet->end()));
 
+  // copy the keys from the variableIndex_ to the affectedKeysSet
+  for (const auto& [key, _] : variableIndex_) {
+    affectedKeysSet->insert(key);
+  }
   // Removed unused keys:
   VariableIndex affectedFactorsVarIndex = variableIndex_;
 

@@ -94,7 +94,7 @@ TEST(dataSet, load2D) {
   const string filename = findExampleDataFile("w100.graph");
   NonlinearFactorGraph::shared_ptr graph;
   Values::shared_ptr initial;
-  boost::tie(graph, initial) = load2D(filename);
+  std::tie(graph, initial) = load2D(filename);
   EXPECT_LONGS_EQUAL(300, graph->size());
   EXPECT_LONGS_EQUAL(100, initial->size());
   auto model = noiseModel::Unit::Create(3);
@@ -139,13 +139,13 @@ TEST(dataSet, load2DVictoriaPark) {
   Values::shared_ptr initial;
 
   // Load all
-  boost::tie(graph, initial) = load2D(filename);
+  std::tie(graph, initial) = load2D(filename);
   EXPECT_LONGS_EQUAL(10608, graph->size());
   EXPECT_LONGS_EQUAL(7120, initial->size());
 
   // Restrict keys
   size_t maxIndex = 5;
-  boost::tie(graph, initial) = load2D(filename, nullptr, maxIndex);
+  std::tie(graph, initial) = load2D(filename, nullptr, maxIndex);
   EXPECT_LONGS_EQUAL(5, graph->size());
   EXPECT_LONGS_EQUAL(6, initial->size()); // file has 0 as well
   EXPECT_LONGS_EQUAL(L(5), graph->at(4)->keys()[1]);
@@ -221,7 +221,7 @@ TEST(dataSet, readG2o3D) {
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
   bool is3D = true;
-  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D);
+  std::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D);
   EXPECT(assert_equal(expectedGraph, *actualGraph, 1e-5));
   for (size_t j : {0, 1, 2, 3, 4}) {
     EXPECT(assert_equal(poses[j], actualValues->at<Pose3>(j), 1e-5));
@@ -235,7 +235,7 @@ TEST( dataSet, readG2o3DNonDiagonalNoise)
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
   bool is3D = true;
-  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D);
+  std::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D);
 
   Values expectedValues;
   Rot3 R0 = Rot3::Quaternion(1.000000, 0.000000, 0.000000, 0.000000 );
@@ -329,7 +329,7 @@ TEST(dataSet, readG2o) {
   const string g2oFile = findExampleDataFile("pose2example");
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
-  boost::tie(actualGraph, actualValues) = readG2o(g2oFile);
+  std::tie(actualGraph, actualValues) = readG2o(g2oFile);
 
   auto model = noiseModel::Diagonal::Precisions(
       Vector3(44.721360, 44.721360, 30.901699));
@@ -356,7 +356,7 @@ TEST(dataSet, readG2oHuber) {
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
   bool is3D = false;
-  boost::tie(actualGraph, actualValues) =
+  std::tie(actualGraph, actualValues) =
       readG2o(g2oFile, is3D, KernelFunctionTypeHUBER);
 
   auto baseModel = noiseModel::Diagonal::Precisions(
@@ -373,7 +373,7 @@ TEST(dataSet, readG2oTukey) {
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
   bool is3D = false;
-  boost::tie(actualGraph, actualValues) =
+  std::tie(actualGraph, actualValues) =
       readG2o(g2oFile, is3D, KernelFunctionTypeTUKEY);
 
   auto baseModel = noiseModel::Diagonal::Precisions(
@@ -390,14 +390,14 @@ TEST( dataSet, writeG2o)
   const string g2oFile = findExampleDataFile("pose2example");
   NonlinearFactorGraph::shared_ptr expectedGraph;
   Values::shared_ptr expectedValues;
-  boost::tie(expectedGraph, expectedValues) = readG2o(g2oFile);
+  std::tie(expectedGraph, expectedValues) = readG2o(g2oFile);
 
   const string filenameToWrite = createRewrittenFileName(g2oFile);
   writeG2o(*expectedGraph, *expectedValues, filenameToWrite);
 
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
-  boost::tie(actualGraph, actualValues) = readG2o(filenameToWrite);
+  std::tie(actualGraph, actualValues) = readG2o(filenameToWrite);
   EXPECT(assert_equal(*expectedValues,*actualValues,1e-5));
   EXPECT(assert_equal(*expectedGraph,*actualGraph,1e-5));
 }
@@ -409,14 +409,14 @@ TEST( dataSet, writeG2o3D)
   NonlinearFactorGraph::shared_ptr expectedGraph;
   Values::shared_ptr expectedValues;
   bool is3D = true;
-  boost::tie(expectedGraph, expectedValues) = readG2o(g2oFile, is3D);
+  std::tie(expectedGraph, expectedValues) = readG2o(g2oFile, is3D);
 
   const string filenameToWrite = createRewrittenFileName(g2oFile);
   writeG2o(*expectedGraph, *expectedValues, filenameToWrite);
 
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
-  boost::tie(actualGraph, actualValues) = readG2o(filenameToWrite, is3D);
+  std::tie(actualGraph, actualValues) = readG2o(filenameToWrite, is3D);
   EXPECT(assert_equal(*expectedValues,*actualValues,1e-4));
   EXPECT(assert_equal(*expectedGraph,*actualGraph,1e-4));
 }
@@ -428,14 +428,14 @@ TEST( dataSet, writeG2o3DNonDiagonalNoise)
   NonlinearFactorGraph::shared_ptr expectedGraph;
   Values::shared_ptr expectedValues;
   bool is3D = true;
-  boost::tie(expectedGraph, expectedValues) = readG2o(g2oFile, is3D);
+  std::tie(expectedGraph, expectedValues) = readG2o(g2oFile, is3D);
 
   const string filenameToWrite = createRewrittenFileName(g2oFile);
   writeG2o(*expectedGraph, *expectedValues, filenameToWrite);
 
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
-  boost::tie(actualGraph, actualValues) = readG2o(filenameToWrite, is3D);
+  std::tie(actualGraph, actualValues) = readG2o(filenameToWrite, is3D);
   EXPECT(assert_equal(*expectedValues,*actualValues,1e-4));
   EXPECT(assert_equal(*expectedGraph,*actualGraph,1e-4));
 }

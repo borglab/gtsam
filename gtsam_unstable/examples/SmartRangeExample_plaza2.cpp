@@ -76,7 +76,7 @@ list<TimedOdometry> readOdometry() {
 
 // load the ranges from TD
 //    Time (sec)  Sender / Antenna ID Receiver Node ID  Range (m)
-typedef boost::tuple<double, size_t, double> RangeTriple;
+typedef std::tuple<double, size_t, double> RangeTriple;
 vector<RangeTriple> readTriples() {
   vector<RangeTriple> triples;
   string tdFile = findExampleDataFile("Plaza2_TD.txt");
@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
     //--------------------------------- odometry loop -----------------------------------------
     double t;
     Pose2 odometry;
-    boost::tie(t, odometry) = timedOdometry;
+    std::tie(t, odometry) = timedOdometry;
 
     // add odometry factor
     newFactors.push_back(
@@ -160,9 +160,9 @@ int main(int argc, char** argv) {
     landmarkEstimates.insert(i, predictedPose);
 
     // Check if there are range factors to be added
-    while (k < K && t >= boost::get<0>(triples[k])) {
-      size_t j = boost::get<1>(triples[k]);
-      double range = boost::get<2>(triples[k]);
+    while (k < K && t >= std::get<0>(triples[k])) {
+      size_t j = std::get<1>(triples[k]);
+      double range = std::get<2>(triples[k]);
       RangeFactor<Pose2, Point2> factor(i, symbol('L', j), range, rangeNoise);
       // Throw out obvious outliers based on current landmark estimates
       Vector error = factor.unwhitenedError(landmarkEstimates);

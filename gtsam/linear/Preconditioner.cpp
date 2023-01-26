@@ -14,7 +14,6 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <memory>
 #include <boost/algorithm/string.hpp>
-#include <boost/range/adaptor/map.hpp>
 #include <iostream>
 #include <vector>
 
@@ -145,8 +144,9 @@ void BlockJacobiPreconditioner::build(
 
   /* getting the block diagonals over the factors */
   std::map<Key, Matrix> hessianMap =gfg.hessianBlockDiagonal();
-  for (const Matrix& hessian: hessianMap | boost::adaptors::map_values)
+  for (const auto& [key, hessian]: hessianMap) {
     blocks.push_back(hessian);
+  }
 
   /* if necessary, allocating the memory for cacheing the factorization results */
   if ( nnz > bufferSize_ ) {

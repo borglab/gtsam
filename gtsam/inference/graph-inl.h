@@ -54,7 +54,7 @@ std::list<KEY> predecessorMap2Keys(const PredecessorMap<KEY>& p_map) {
   SGraph<KEY> g;
   SVertex root;
   std::map<KEY, SVertex> key2vertex;
-  boost::tie(g, root, key2vertex) = gtsam::predecessorMap2Graph<SGraph<KEY>, SVertex, KEY>(p_map);
+  std::tie(g, root, key2vertex) = gtsam::predecessorMap2Graph<SGraph<KEY>, SVertex, KEY>(p_map);
 
   // breadth first visit on the graph
   std::list<KEY> keys;
@@ -114,7 +114,7 @@ SDGraph<KEY> toBoostGraph(const G& graph) {
 
 /* ************************************************************************* */
 template<class G, class V, class KEY>
-boost::tuple<G, V, std::map<KEY,V> >
+std::tuple<G, V, std::map<KEY,V> >
 predecessorMap2Graph(const PredecessorMap<KEY>& p_map) {
 
   G g;
@@ -146,7 +146,7 @@ predecessorMap2Graph(const PredecessorMap<KEY>& p_map) {
   if (!foundRoot)
     throw std::invalid_argument("predecessorMap2Graph: invalid predecessor map!");
   else
-    return boost::tuple<G, V, std::map<KEY, V> >(g, root, key2vertex);
+    return std::tuple<G, V, std::map<KEY, V> >(g, root, key2vertex);
 }
 
 /* ************************************************************************* */
@@ -185,7 +185,7 @@ std::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>& 
   PoseGraph g;
   PoseVertex root;
   std::map<KEY, PoseVertex> key2vertex;
-  boost::tie(g, root, key2vertex) =
+  std::tie(g, root, key2vertex) =
       predecessorMap2Graph<PoseGraph, PoseVertex, KEY>(tree);
 
   // attach the relative poses to the edges
@@ -207,8 +207,8 @@ std::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>& 
     PoseVertex v2 = key2vertex.find(key2)->second;
 
     POSE l1Xl2 = factor->measured();
-    boost::tie(edge12, found1) = boost::edge(v1, v2, g);
-    boost::tie(edge21, found2) = boost::edge(v2, v1, g);
+    std::tie(edge12, found1) = boost::edge(v1, v2, g);
+    std::tie(edge21, found2) = boost::edge(v2, v1, g);
     if (found1 && found2) throw std::invalid_argument ("composePoses: invalid spanning tree");
     if (!found1 && !found2) continue;
     if (found1)

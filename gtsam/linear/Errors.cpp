@@ -17,7 +17,6 @@
  * @author  Christian Potthast
  */
 
-#include <boost/range/adaptor/map.hpp>
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/VectorValues.h>
 
@@ -28,7 +27,7 @@ namespace gtsam {
 /* ************************************************************************* */
 Errors createErrors(const VectorValues& V) {
   Errors result;
-  for (const Vector& e : V | boost::adaptors::map_values) {
+  for (const auto& [key, e] : V) {
     result.push_back(e);
   }
   return result;

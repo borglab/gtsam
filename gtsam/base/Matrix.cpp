@@ -23,7 +23,6 @@
 #include <Eigen/SVD>
 #include <Eigen/LU>
 
-#include <boost/tuple/tuple.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/format.hpp>
 
@@ -251,7 +250,7 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
 
     // calculate the Householder vector v
     double beta; Vector vjm;
-    boost::tie(beta,vjm) = house(xjm);
+    std::tie(beta,vjm) = house(xjm);
 
     // pad with zeros to get m-dimensional vector v
     for(size_t k = 0 ; k < m; k++)
@@ -269,13 +268,13 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
 }
 
 /* ************************************************************************* */
-list<boost::tuple<Vector, double, double> >
+list<std::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
   size_t m = A.rows(), n = A.cols(); // get size(A)
   size_t maxRank = min(m,n);
 
   // create list
-  list<boost::tuple<Vector, double, double> > results;
+  list<std::tuple<Vector, double, double> > results;
 
   Vector pseudo(m); // allocate storage for pseudo-inverse
   Vector weights = sigmas.array().square().inverse(); // calculate weights once
@@ -304,7 +303,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 
     // construct solution (r, d, sigma)
     // TODO: avoid sqrt, store precision or at least variance
-    results.push_back(boost::make_tuple(r, d, 1./sqrt(precision)));
+    results.push_back(std::make_tuple(r, d, 1./sqrt(precision)));
 
     // exit after rank exhausted
     if (results.size()>=maxRank) break;
@@ -565,7 +564,7 @@ void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V) {
 }
 
 /* ************************************************************************* */
-boost::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
+std::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
 
   // Check size of A
   size_t n = A.rows(), p = A.cols(), m = min(n,p);
@@ -582,7 +581,7 @@ boost::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
 
   // Return rank, error, and corresponding column of V
   double error = m<p ? 0 : s(m-1);
-  return boost::tuple<int, double, Vector>((int)rank, error, Vector(column(V, p-1)));
+  return std::tuple<int, double, Vector>((int)rank, error, Vector(column(V, p-1)));
 }
 
 /* ************************************************************************* */

@@ -21,12 +21,9 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/range/adaptor/map.hpp>
-
 #include <sstream>
 
 using namespace std;
-using boost::adaptors::map_keys;
 using namespace gtsam;
 
 /* ************************************************************************* */

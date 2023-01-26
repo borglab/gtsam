@@ -68,7 +68,7 @@ TEST( Graph, predecessorMap2Graph )
   p_map.insert(1, 2);
   p_map.insert(2, 2);
   p_map.insert(3, 2);
-  boost::tie(graph, root, key2vertex) = predecessorMap2Graph<SGraph<Key>, SVertex, Key>(p_map);
+  std::tie(graph, root, key2vertex) = predecessorMap2Graph<SGraph<Key>, SVertex, Key>(p_map);
 
   LONGS_EQUAL(3, (long)boost::num_vertices(graph));
   CHECK(root == key2vertex[2]);
@@ -174,7 +174,7 @@ TEST( GaussianFactorGraph, findMinimumSpanningTree )
 //  G.push_factor("x3", "x4");
 //
 //  SymbolicFactorGraph T, C;
-//  boost::tie(T, C) = G.splitMinimumSpanningTree();
+//  std::tie(T, C) = G.splitMinimumSpanningTree();
 //
 //  SymbolicFactorGraph expectedT, expectedC;
 //  expectedT.push_factor("x1", "x2");
@@ -207,7 +207,7 @@ TEST( GaussianFactorGraph, findMinimumSpanningTree )
 //
 //  SymbolicFactorGraph singletonGraph;
 //  set<Symbol> singletons;
-//  boost::tie(singletonGraph, singletons) = G.removeSingletons();
+//  std::tie(singletonGraph, singletons) = G.removeSingletons();
 //
 //  set<Symbol> singletons_excepted; singletons_excepted += "x1", "x2", "x5", "l1", "l3";
 //  CHECK(singletons_excepted == singletons);

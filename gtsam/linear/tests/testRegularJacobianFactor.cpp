@@ -24,9 +24,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/range/iterator_range.hpp>
-#include <boost/range/adaptor/map.hpp>
-
 using namespace std;
 using namespace gtsam;
 

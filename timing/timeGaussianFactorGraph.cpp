@@ -63,7 +63,7 @@ double timePlanarSmootherEliminate(int N, bool old = true) {
 //double timePlanarSmootherJoinAug(int N, size_t reps) {
 //  GaussianFactorGraph fgBase;
 //  VectorValues config;
-//  boost::tie(fgBase,config) = planarGraph(N);
+//  std::tie(fgBase,config) = planarGraph(N);
 //  Ordering ordering = fgBase.getOrdering();
 //  Symbol key = ordering.front();
 //
@@ -96,7 +96,7 @@ double timePlanarSmootherEliminate(int N, bool old = true) {
 //double timePlanarSmootherCombined(int N, size_t reps) {
 //  GaussianFactorGraph fgBase;
 //  VectorValues config;
-//  boost::tie(fgBase,config) = planarGraph(N);
+//  std::tie(fgBase,config) = planarGraph(N);
 //  Ordering ordering = fgBase.getOrdering();
 //  Symbol key = ordering.front();
 //

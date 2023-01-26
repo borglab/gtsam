@@ -132,7 +132,7 @@ TEST(InvDepthFactor, backproject)
 
   Vector5 actual_vec;
   double actual_inv;
-  boost::tie(actual_vec, actual_inv) = inv_camera.backproject(z, 4);
+  std::tie(actual_vec, actual_inv) = inv_camera.backproject(z, 4);
   EXPECT(assert_equal(expected,actual_vec,1e-7));
   EXPECT_DOUBLES_EQUAL(inv_depth,actual_inv,1e-7);
 }
@@ -148,7 +148,7 @@ TEST(InvDepthFactor, backproject2)
 
   Vector5 actual_vec;
   double actual_inv;
-  boost::tie(actual_vec, actual_inv) = inv_camera.backproject(z, 10);
+  std::tie(actual_vec, actual_inv) = inv_camera.backproject(z, 10);
   EXPECT(assert_equal(expected,actual_vec,1e-7));
   EXPECT_DOUBLES_EQUAL(inv_depth,actual_inv,1e-7);
 }

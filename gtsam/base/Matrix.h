@@ -26,7 +26,6 @@
 
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
-#include <boost/tuple/tuple.hpp>
 
 #include <vector>
 
@@ -307,7 +306,7 @@ GTSAM_EXPORT void inplace_QR(Matrix& A);
  * @param sigmas is a vector of the measurement standard deviation
  * @return list of r vectors, d  and sigma
  */
-GTSAM_EXPORT std::list<boost::tuple<Vector, double, double> >
+GTSAM_EXPORT std::list<std::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas);
 
 /**
@@ -434,7 +433,7 @@ GTSAM_EXPORT void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V);
  * Returns rank of A, minimum error (singular value),
  * and corresponding eigenvector (column of V, with A=U*S*V')
  */
-GTSAM_EXPORT boost::tuple<int, double, Vector>
+GTSAM_EXPORT std::tuple<int, double, Vector>
 DLT(const Matrix& A, double rank_tol = 1e-9);
 
 /**

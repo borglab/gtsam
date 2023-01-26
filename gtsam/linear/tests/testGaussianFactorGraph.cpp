@@ -157,7 +157,7 @@ TEST(GaussianFactorGraph, matrices) {
   Vector b = Ab.col(Ab.cols() - 1);
   Matrix actualA;
   Vector actualb;
-  boost::tie(actualA, actualb) = gfg.jacobian();
+  std::tie(actualA, actualb) = gfg.jacobian();
   EXPECT(assert_equal(A, actualA));
   EXPECT(assert_equal(b, actualb));
 
@@ -166,7 +166,7 @@ TEST(GaussianFactorGraph, matrices) {
   Vector eta = A.transpose() * b;
   Matrix actualL;
   Vector actualeta;
-  boost::tie(actualL, actualeta) = gfg.hessian();
+  std::tie(actualL, actualeta) = gfg.hessian();
   EXPECT(assert_equal(L, actualL));
   EXPECT(assert_equal(eta, actualeta));
 
@@ -247,7 +247,7 @@ TEST(GaussianFactorGraph, eliminate_empty) {
   gfg.add(JacobianFactor());
   GaussianBayesNet::shared_ptr actualBN;
   GaussianFactorGraph::shared_ptr remainingGFG;
-  boost::tie(actualBN, remainingGFG) = gfg.eliminatePartialSequential(Ordering());
+  std::tie(actualBN, remainingGFG) = gfg.eliminatePartialSequential(Ordering());
 
   // expected Bayes net is empty
   GaussianBayesNet expectedBN;
@@ -265,10 +265,10 @@ TEST(GaussianFactorGraph, matrices2) {
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
   Matrix A;
   Vector b;
-  boost::tie(A, b) = gfg.jacobian();
+  std::tie(A, b) = gfg.jacobian();
   Matrix AtA;
   Vector eta;
-  boost::tie(AtA, eta) = gfg.hessian();
+  std::tie(AtA, eta) = gfg.hessian();
   EXPECT(assert_equal(A.transpose() * A, AtA));
   EXPECT(assert_equal(A.transpose() * b, eta));
   Matrix expectedAtA(6, 6);
@@ -316,7 +316,7 @@ TEST(GaussianFactorGraph, multiplyHessianAdd2) {
   // brute force
   Matrix AtA;
   Vector eta;
-  boost::tie(AtA, eta) = gfg.hessian();
+  std::tie(AtA, eta) = gfg.hessian();
   Vector X(6);
   X << 1, 2, 3, 4, 5, 6;
   Vector Y(6);
@@ -343,10 +343,10 @@ TEST(GaussianFactorGraph, matricesMixed) {
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
   Matrix A;
   Vector b;
-  boost::tie(A, b) = gfg.jacobian();  // incorrect !
+  std::tie(A, b) = gfg.jacobian();  // incorrect !
   Matrix AtA;
   Vector eta;
-  boost::tie(AtA, eta) = gfg.hessian();  // correct
+  std::tie(AtA, eta) = gfg.hessian();  // correct
   EXPECT(assert_equal(A.transpose() * A, AtA));
   Vector expected = -(Vector(6) << -25, 17.5, 5, -13.5, 29, 4).finished();
   EXPECT(assert_equal(expected, eta));

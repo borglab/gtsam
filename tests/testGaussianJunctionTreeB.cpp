@@ -67,7 +67,7 @@ TEST( GaussianJunctionTreeB, constructor2 ) {
   // create a graph
   NonlinearFactorGraph nlfg;
   Values values;
-  boost::tie(nlfg, values) = createNonlinearSmoother(7);
+  std::tie(nlfg, values) = createNonlinearSmoother(7);
   SymbolicFactorGraph::shared_ptr symbolic = nlfg.symbolic();
 
   // linearize
@@ -130,7 +130,7 @@ TEST( GaussianJunctionTreeB, constructor2 ) {
 //  // create a graph
 //  GaussianFactorGraph fg;
 //  Ordering ordering;
-//  boost::tie(fg,ordering) = createSmoother(7);
+//  std::tie(fg,ordering) = createSmoother(7);
 //
 //  // optimize the graph
 //  GaussianJunctionTree tree(fg);

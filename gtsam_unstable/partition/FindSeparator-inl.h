@@ -14,7 +14,6 @@
 #include <iostream>
 #include <vector>
 #include <optional>
-#include <boost/tuple/tuple.hpp>
 #include <boost/shared_array.hpp>
 
 #include <gtsam/base/timing.h>
@@ -252,7 +251,7 @@ namespace gtsam { namespace partition {
     // run ND on the graph
     size_t sepsize;
     sharedInts part;
-    boost::tie(sepsize, part) = separatorMetis(numKeys, xadj, adjncy, adjwgt, verbose);
+    std::tie(sepsize, part) = separatorMetis(numKeys, xadj, adjncy, adjwgt, verbose);
     if (!sepsize)  return std::optional<MetisResult>();
 
     // convert the 0-1-2 from Metis to 1-2-0, so that the separator is 0, as later
@@ -312,7 +311,7 @@ namespace gtsam { namespace partition {
     // run metis on the graph
     int edgecut;
     sharedInts part;
-    boost::tie(edgecut, part) = edgeMetis(numKeys, xadj, adjncy, adjwgt, verbose);
+    std::tie(edgecut, part) = edgeMetis(numKeys, xadj, adjncy, adjwgt, verbose);
 
     // convert the 0-1-2 from Metis to 1-2-0, so that the separator is 0, as later we will have more submaps
     MetisResult result;

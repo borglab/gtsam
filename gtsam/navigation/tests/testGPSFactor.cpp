@@ -125,7 +125,7 @@ TEST(GPSData, init) {
   // Estimate initial state
   Pose3 T;
   Vector3 nV;
-  boost::tie(T, nV) = GPSFactor::EstimateState(t1, NED1, t2, NED2, 84831.0796);
+  std::tie(T, nV) = GPSFactor::EstimateState(t1, NED1, t2, NED2, 84831.0796);
 
   // Check values values
   EXPECT(assert_equal((Vector )Vector3(29.9575, -29.0564, -1.95993), nV, 1e-4));

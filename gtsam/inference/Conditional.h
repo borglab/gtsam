@@ -70,12 +70,33 @@ namespace gtsam {
     /// Typedef to this class
     typedef Conditional<FACTOR,DERIVEDCONDITIONAL> This;
 
+
   public:
+    /** A mini implementation of an iterator range, to share const
+     * views of frontals and parents. */
+    typedef std::pair<typename FACTOR::const_iterator, typename FACTOR::const_iterator> ConstFactorRange;
+    struct ConstFactorRangeIterator {
+      ConstFactorRange range_;
+      // Delete default constructor
+      ConstFactorRangeIterator() = delete;
+      ConstFactorRangeIterator(ConstFactorRange const& x) : range_(x) {}
+      // Implement begin and end for iteration
+      typename FACTOR::const_iterator begin() const { return range_.first; }
+      typename FACTOR::const_iterator end() const { return range_.second; }
+      size_t size() const { return std::distance(range_.first, range_.second); }
+      const auto& front() const { return *begin(); }
+      // == operator overload for comparison with another iterator
+      template<class OTHER>
+      bool operator==(const OTHER& rhs) const {
+        return std::equal(begin(), end(), rhs.begin());
+      }
+    };
+
     /** View of the frontal keys (call frontals()) */
-    typedef boost::iterator_range<typename FACTOR::const_iterator> Frontals;
+    typedef ConstFactorRangeIterator Frontals;
 
     /** View of the separator keys (call parents()) */
-    typedef boost::iterator_range<typename FACTOR::const_iterator> Parents;
+    typedef ConstFactorRangeIterator Parents;
 
   protected:
     /// @name Standard Constructors
@@ -121,10 +142,10 @@ namespace gtsam {
     }
 
     /** return a view of the frontal keys */
-    Frontals frontals() const { return boost::make_iterator_range(beginFrontals(), endFrontals()); }
+    Frontals frontals() const { return ConstFactorRangeIterator({beginFrontals(), endFrontals()});}
 
     /** return a view of the parent keys */
-    Parents parents() const { return boost::make_iterator_range(beginParents(), endParents()); }
+    Parents parents() const { return ConstFactorRangeIterator({beginParents(), endParents()}); }
 
     /**
      * All conditional types need to implement a `logProbability` function, for which

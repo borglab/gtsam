@@ -24,8 +24,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/range/adaptor/map.hpp>
-namespace br { using namespace boost::adaptors; using namespace boost::range; }
 
 using namespace std;
 using namespace gtsam;
@@ -249,7 +247,7 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
   // Check gradient at each node
   bool nodeGradientsOk = true;
   typedef ISAM2::sharedClique sharedClique;
-  for(const sharedClique& clique: isam.nodes() | br::map_values) {
+  for (const auto& [key, clique] : isam.nodes()) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
     jfg += clique->conditional();
@@ -453,7 +451,7 @@ TEST(ISAM2, swapFactors)
 
   // Check gradient at each node
   typedef ISAM2::sharedClique sharedClique;
-  for(const sharedClique& clique: isam.nodes() | br::map_values) {
+  for (const auto& [key, clique]: isam.nodes()) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
     jfg += clique->conditional();
@@ -578,7 +576,7 @@ TEST(ISAM2, constrained_ordering)
 
   // Check gradient at each node
   typedef ISAM2::sharedClique sharedClique;
-  for(const sharedClique& clique: isam.nodes() | br::map_values) {
+  for (const auto& [key, clique]: isam.nodes()) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
     jfg += clique->conditional();
@@ -620,9 +618,11 @@ namespace {
   bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
     Matrix expectedAugmentedHessian, expected3AugmentedHessian;
     KeyVector toKeep;
-    for(Key j: isam.getDelta() | br::map_keys)
-      if(find(leafKeys.begin(), leafKeys.end(), j) == leafKeys.end())
-        toKeep.push_back(j);
+    for (const auto& [key, clique]: isam.getDelta()) {
+      if(find(leafKeys.begin(), leafKeys.end(), key) == leafKeys.end()) {
+        toKeep.push_back(key);
+      }
+    }
 
     // Calculate expected marginal from iSAM2 tree
     expectedAugmentedHessian = GaussianFactorGraph(isam).marginal(toKeep, EliminateQR)->augmentedHessian();
