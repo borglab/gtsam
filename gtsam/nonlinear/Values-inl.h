@@ -163,14 +163,14 @@ namespace gtsam {
                 &ValuesCastHelper<ValueType, KeyValuePair, Values::KeyValuePair>::cast)), constBegin_(
             boost::make_transform_iterator(
                 boost::make_filter_iterator(filter,
-                    ((const Values&) values).begin(),
-                    ((const Values&) values).end()),
+                    values._begin(),
+                    values._end()),
                 &ValuesCastHelper<ValueType, ConstKeyValuePair,
                     Values::ConstKeyValuePair>::cast)), constEnd_(
             boost::make_transform_iterator(
                 boost::make_filter_iterator(filter,
-                    ((const Values&) values).end(),
-                    ((const Values&) values).end()),
+                    values._end(),
+                    values._end()),
                 &ValuesCastHelper<ValueType, ConstKeyValuePair,
                     Values::ConstKeyValuePair>::cast)) {
     }
