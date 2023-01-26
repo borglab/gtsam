@@ -108,8 +108,11 @@ namespace gtsam {
 
     typedef KeyValuePair value_type;
 
+    /// @name Constructors
+    /// @{
+
     /** Default constructor creates an empty Values class */
-    Values() {}
+    Values() = default;
 
     /** Copy constructor duplicates all keys and values */
     Values(const Values& other);
@@ -127,6 +130,7 @@ namespace gtsam {
     /** Construct from a Values and an update vector: identical to other.retract(delta) */
     Values(const Values& other, const VectorValues& delta);
 
+    /// @}
     /// @name Testable
     /// @{
 
@@ -137,6 +141,8 @@ namespace gtsam {
     bool equals(const Values& other, double tol=1e-9) const;
 
     /// @}
+    /// @name Standard Interface
+    /// @{
 
     /** Retrieve a variable by key \c j.  The type of the value associated with
      * this key is supplied as a template argument to this function.
@@ -177,6 +183,29 @@ namespace gtsam {
     /** whether the config is empty */
     bool empty() const { return values_.empty(); }
 
+    /// @}
+    /// @name Iterator
+    /// @{
+
+    struct const_iterator {
+      using const_iterator_type = typename KeyValueMap::const_iterator;
+      const_iterator_type it_;
+      const_iterator(const_iterator_type it) : it_(it) {}
+      std::pair<size_t, const Value&> operator*() const {
+        return {it_->first, *(it_->second)};
+      }
+      bool operator==(const const_iterator& other) const { return it_ == other.it_; }
+      bool operator!=(const const_iterator& other) const { return it_ != other.it_; }
+      const_iterator& operator++() {
+        ++it_;
+        return *this;
+      }
+    };
+
+    const_iterator begin() { return const_iterator(values_.begin()); }
+    const_iterator end() { return const_iterator(values_.end()); }
+
+    /// @}
     /// @name Manifold Operations
     /// @{
 

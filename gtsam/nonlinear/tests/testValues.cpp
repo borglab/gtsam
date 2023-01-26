@@ -195,6 +195,14 @@ TEST(Values, basic_functions)
   values.insert(6, M1);
   values.insert(8, M2);
 
+  size_t count = 0;
+  for (const auto& [key, value] : values) {
+    count += 1;
+    if (key == 2 || key == 4) EXPECT_LONGS_EQUAL(3, value.dim());
+    if (key == 6 || key == 8) EXPECT_LONGS_EQUAL(6, value.dim());
+  }
+  EXPECT_LONGS_EQUAL(4, count);
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   // find
   EXPECT_LONGS_EQUAL(4, values.find(4)->key);
