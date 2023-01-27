@@ -153,7 +153,7 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
    * full matrices and vectors and pass it to the pointer
    * version of the function
    */
-  template <class POINT, class... OptArgs>
+  template <class POINT, class... OptArgs, typename = std::enable_if_t<sizeof...(OptArgs)!=0>>
   Vector reprojectionError(const POINT& point, const ZVector& measured,
                            OptArgs&... args) const {
     // pass it to the pointer version of the function
