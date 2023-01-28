@@ -209,7 +209,7 @@ Values InitializePose3::computeOrientationsGradient(
   for (const auto& key_R : inverseRot) {
     const Key& key = key_R.first;
     if (key != initialize::kAnchorKey) {
-      const Rot3& R = inverseRot.at(key);
+      const Rot3& R = key_R.second;
       if (setRefFrame)
         estimateRot.insert(key, Rref.compose(R.inverse()));
       else
