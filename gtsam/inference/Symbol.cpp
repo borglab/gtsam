@@ -22,6 +22,7 @@
 #include <list>
 #include <iostream>
 #include <sstream>
+#include <cstdio>
 
 namespace gtsam {
 
@@ -55,9 +56,9 @@ bool Symbol::equals(const Symbol& expected, double tol) const {
 }
 
 Symbol::operator std::string() const {
-  char buf[10];
-  sprintf(buf, "%c%zu", c_, j_);
-  return std::string(buf);
+  char buffer[10];
+  snprintf(buffer, 10, "%c%llu", c_, j_);
+  return std::string(buffer);
 }
 
 static Symbol make(gtsam::Key key) { return Symbol(key);}
