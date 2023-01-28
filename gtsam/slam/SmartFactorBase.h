@@ -243,7 +243,7 @@ protected:
    * to the matrices and vectors that will be used to store the results instead
    * of pointers.
    */
-  template<class POINT, class ...OptArgs>
+  template<class POINT, class ...OptArgs, typename = std::enable_if_t<sizeof...(OptArgs)!=0>>
   Vector unwhitenedError(
       const Cameras& cameras, const POINT& point,
       OptArgs&&... optArgs) const {
