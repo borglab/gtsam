@@ -206,11 +206,11 @@ Values InitializePose3::computeOrientationsGradient(
   // Return correct rotations
   const Rot3& Rref = inverseRot.at(initialize::kAnchorKey); // This will be set to the identity as so far we included no prior
   Values estimateRot;
-    for (const auto& key_R : inverseRot) {
+  for (const auto& key_R : inverseRot) {
     const Key& key = key_R.first;
     if (key != initialize::kAnchorKey) {
       const Rot3& R = key_R.second;
-      if(setRefFrame)
+      if (setRefFrame)
         estimateRot.insert(key, Rref.compose(R.inverse()));
       else
         estimateRot.insert(key, R.inverse());
