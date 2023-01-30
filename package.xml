@@ -7,6 +7,10 @@
 
   <maintainer email="gtsam@lists.gatech.edu">Frank Dellaert</maintainer>
   <license>BSD</license>
+  
+  <!-- Maintainers of the ROS packaging -->
+  <maintainer email="fan.jiang@gatech.edu">Fan Jiang</maintainer>
+  <maintainer email="jlblanco@ual.es">José Luis Blanco-Claraco</maintainer>
 
   <buildtool_depend>cmake</buildtool_depend>
 
