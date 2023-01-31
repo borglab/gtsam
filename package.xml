@@ -11,7 +11,7 @@
   <license>BSD-3-Clause</license>
   <!-- 3rd party libraries -->
   <license file="gtsam/3rdparty/CCOLAMD/Doc/License.txt">BSD-3-Clause</license>
-  <license file="gtsam/3rdparty/ceres/jet.h">BSD</license>
+  <license file="gtsam/3rdparty/ceres/jet.h">BSD-3-Clause</license>
   <license file="gtsam/3rdparty/Eigen/COPYING.README">MPL2</license>
   <license file="gtsam/3rdparty/GeographicLib/LICENSE.txt">MIT</license>
   <license file="gtsam/3rdparty/metis/LICENSE.txt">Apache-2.0</license>
