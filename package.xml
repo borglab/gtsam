@@ -15,7 +15,7 @@
   <license file="gtsam/3rdparty/Eigen/COPYING.README">MPL-2.0</license>
   <license file="gtsam/3rdparty/GeographicLib/LICENSE.txt">MIT</license>
   <license file="gtsam/3rdparty/metis/LICENSE.txt">Apache-2.0</license>
-  <license file="gtsam/3rdparty/Spectra/GenEigsSolver.h">MPL2</license>
+  <license file="gtsam/3rdparty/Spectra/GenEigsSolver.h">MPL-2.0</license>
 
   <!-- Maintainers of the ROS packaging -->
   <maintainer email="fan.jiang@gatech.edu">Fan Jiang</maintainer>
