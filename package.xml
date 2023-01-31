@@ -8,7 +8,7 @@
   <maintainer email="gtsam@lists.gatech.edu">Frank Dellaert</maintainer>
 
   <!-- Main License for GTSAM sources -->
-  <license>BSD</license>
+  <license>BSD-3-Clause</license>
   <!-- 3rd party libraries -->
   <license file="gtsam/3rdparty/CCOLAMD/Doc/License.txt">BSD</license>
   <license file="gtsam/3rdparty/ceres/jet.h">BSD</license>
