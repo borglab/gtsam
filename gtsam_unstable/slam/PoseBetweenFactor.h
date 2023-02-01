@@ -29,12 +29,12 @@ namespace gtsam {
    * @ingroup slam
    */
   template<class POSE>
-  class PoseBetweenFactor: public NoiseModelFactor2<POSE, POSE> {
+  class PoseBetweenFactor: public NoiseModelFactorN<POSE, POSE> {
 
   private:
 
     typedef PoseBetweenFactor<POSE> This;
-    typedef NoiseModelFactor2<POSE, POSE> Base;
+    typedef NoiseModelFactorN<POSE, POSE> Base;
 
     POSE measured_; /** The measurement */
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame

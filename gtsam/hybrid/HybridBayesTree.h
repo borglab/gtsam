@@ -24,6 +24,7 @@
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/BayesTreeCliqueBase.h>
 #include <gtsam/inference/Conditional.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 
 #include <string>
 
@@ -50,9 +51,12 @@ class GTSAM_EXPORT HybridBayesTreeClique
   typedef boost::shared_ptr<This> shared_ptr;
   typedef boost::weak_ptr<This> weak_ptr;
   HybridBayesTreeClique() {}
-  virtual ~HybridBayesTreeClique() {}
   HybridBayesTreeClique(const boost::shared_ptr<HybridConditional>& conditional)
       : Base(conditional) {}
+  ///< Copy constructor
+  HybridBayesTreeClique(const HybridBayesTreeClique& clique) : Base(clique) {}
+
+  virtual ~HybridBayesTreeClique() {}
 };
 
 /* ************************************************************************* */
@@ -72,6 +76,15 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
 
   /** Check equality */
   bool equals(const This& other, double tol = 1e-9) const;
+
+  /**
+   * @brief Get the Gaussian Bayes Tree which corresponds to a specific discrete
+   * value assignment.
+   *
+   * @param assignment The discrete value assignment for the discrete keys.
+   * @return GaussianBayesTree
+   */
+  GaussianBayesTree choose(const DiscreteValues& assignment) const;
 
   /**
    * @brief Optimize the hybrid Bayes tree by computing the MPE for the current
@@ -119,18 +132,15 @@ struct traits<HybridBayesTree> : public Testable<HybridBayesTree> {};
  * This object stores parent keys in our base type factor so that
  * eliminating those parent keys will pull this subtree into the
  * elimination.
- * This does special stuff for the hybrid case.
  *
- * @tparam CLIQUE
+ * This is a template instantiation for hybrid Bayes tree cliques, storing both
+ * the regular keys *and* discrete keys in the HybridConditional.
  */
-template <class CLIQUE>
-class BayesTreeOrphanWrapper<
-    CLIQUE, typename std::enable_if<
-                boost::is_same<CLIQUE, HybridBayesTreeClique>::value> >
-    : public CLIQUE::ConditionalType {
+template <>
+class BayesTreeOrphanWrapper<HybridBayesTreeClique> : public HybridConditional {
  public:
-  typedef CLIQUE CliqueType;
-  typedef typename CLIQUE::ConditionalType Base;
+  typedef HybridBayesTreeClique CliqueType;
+  typedef HybridConditional Base;
 
   boost::shared_ptr<CliqueType> clique;
 

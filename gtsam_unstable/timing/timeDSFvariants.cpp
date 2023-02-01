@@ -22,7 +22,6 @@
 #include <gtsam/base/DSFMap.h>
 
 #include <boost/format.hpp>
-#include <boost/assign/std/vector.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -32,7 +31,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 using boost::format;
 
 int main(int argc, char* argv[]) {
@@ -42,8 +40,7 @@ int main(int argc, char* argv[]) {
   os << "images,points,matches,Base,Map,BTree" << endl;
 
   // loop over number of images
-  vector<size_t> ms;
-  ms += 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000;
+  vector<size_t> ms {10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000};
   for(size_t m: ms) {
     // We use volatile here to make these appear to the optimizing compiler as
     // if their values are only known at run-time.

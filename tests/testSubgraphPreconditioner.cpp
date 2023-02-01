@@ -29,10 +29,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/list.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/tuple/tuple.hpp>
-using namespace boost::assign;
 
 #include <fstream>
 
@@ -170,8 +168,8 @@ TEST(SubgraphPreconditioner, system) {
   const double alpha = 0.5;
   Errors e1, e2;
   for (size_t i = 0; i < 13; i++) {
-    e1 += i < 9 ? Vector2(1, 1) : Vector2(0, 0);
-    e2 += i >= 9 ? Vector2(1, 1) : Vector2(0, 0);
+    e1.push_back(i < 9 ? Vector2(1, 1) : Vector2(0, 0));
+    e2.push_back(i >= 9 ? Vector2(1, 1) : Vector2(0, 0));
   }
   Vector ee1(13 * 2), ee2(13 * 2);
   ee1 << Vector::Ones(9 * 2), Vector::Zero(4 * 2);

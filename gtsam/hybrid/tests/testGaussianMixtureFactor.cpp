@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    GaussianMixtureFactor.cpp
+ * @file    testGaussianMixtureFactor.cpp
  * @brief   Unit tests for GaussianMixtureFactor
  * @author  Varun Agrawal
  * @author  Fan Jiang
@@ -22,6 +22,7 @@
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
@@ -79,7 +80,7 @@ TEST(GaussianMixtureFactor, Sum) {
 
   // Create sum of two mixture factors: it will be a decision tree now on both
   // discrete variables m1 and m2:
-  GaussianMixtureFactor::Sum sum;
+  GaussianFactorGraphTree sum;
   sum += mixtureFactorA;
   sum += mixtureFactorB;
 
@@ -135,7 +136,7 @@ TEST(GaussianMixtureFactor, Printing) {
   EXPECT(assert_print_equal(expected, mixtureFactor));
 }
 
-TEST_UNSAFE(GaussianMixtureFactor, GaussianMixture) {
+TEST(GaussianMixtureFactor, GaussianMixture) {
   KeyVector keys;
   keys.push_back(X(0));
   keys.push_back(X(1));
@@ -149,6 +150,47 @@ TEST_UNSAFE(GaussianMixtureFactor, GaussianMixture) {
   GaussianMixture gm({}, keys, dKeys, conditionals);
 
   EXPECT_LONGS_EQUAL(2, gm.discreteKeys().size());
+}
+
+/* ************************************************************************* */
+// Test the error of the GaussianMixtureFactor
+TEST(GaussianMixtureFactor, Error) {
+  DiscreteKey m1(1, 2);
+
+  auto A01 = Matrix2::Identity();
+  auto A02 = Matrix2::Identity();
+
+  auto A11 = Matrix2::Identity();
+  auto A12 = Matrix2::Identity() * 2;
+
+  auto b = Vector2::Zero();
+
+  auto f0 = boost::make_shared<JacobianFactor>(X(1), A01, X(2), A02, b);
+  auto f1 = boost::make_shared<JacobianFactor>(X(1), A11, X(2), A12, b);
+  std::vector<GaussianFactor::shared_ptr> factors{f0, f1};
+
+  GaussianMixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+
+  VectorValues continuousValues;
+  continuousValues.insert(X(1), Vector2(0, 0));
+  continuousValues.insert(X(2), Vector2(1, 1));
+
+  // error should return a tree of errors, with nodes for each discrete value.
+  AlgebraicDecisionTree<Key> error_tree = mixtureFactor.error(continuousValues);
+
+  std::vector<DiscreteKey> discrete_keys = {m1};
+  // Error values for regression test
+  std::vector<double> errors = {1, 4};
+  AlgebraicDecisionTree<Key> expected_error(discrete_keys, errors);
+
+  EXPECT(assert_equal(expected_error, error_tree));
+
+  // Test for single leaf given discrete assignment P(X|M,Z).
+  DiscreteValues discreteValues;
+  discreteValues[m1.first] = 1;
+  EXPECT_DOUBLES_EQUAL(
+      4.0, mixtureFactor.error({continuousValues, discreteValues}),
+      1e-9);
 }
 
 /* ************************************************************************* */

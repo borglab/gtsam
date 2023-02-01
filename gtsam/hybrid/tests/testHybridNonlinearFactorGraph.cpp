@@ -54,18 +54,20 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   HybridNonlinearFactorGraph fg;
 
   // Add a simple prior factor to the nonlinear factor graph
-  fg.emplace_nonlinear<PriorFactor<double>>(X(0), 0, Isotropic::Sigma(1, 0.1));
+  fg.emplace_shared<PriorFactor<double>>(X(0), 0, Isotropic::Sigma(1, 0.1));
 
   // Linearization point
   Values linearizationPoint;
   linearizationPoint.insert<double>(X(0), 0);
 
+  // Linearize the factor graph.
   HybridGaussianFactorGraph ghfg = *fg.linearize(linearizationPoint);
+  EXPECT_LONGS_EQUAL(1, ghfg.size());
 
-  // Add a factor to the GaussianFactorGraph
-  ghfg.add(JacobianFactor(X(0), I_1x1, Vector1(5)));
-
-  EXPECT_LONGS_EQUAL(2, ghfg.size());
+  // Check that the error is the same for the nonlinear values.
+  const VectorValues zero{{X(0), Vector1(0)}};
+  const HybridValues hybridValues{zero, {}, linearizationPoint};
+  EXPECT_DOUBLES_EQUAL(fg.error(hybridValues), ghfg.error(hybridValues), 1e-9);
 }
 
 /***************************************************************************
@@ -311,8 +313,7 @@ TEST(HybridsGaussianElimination, Eliminate_x1) {
   Ordering ordering;
   ordering += X(1);
 
-  std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr> result =
-      EliminateHybrid(factors, ordering);
+  auto result = EliminateHybrid(factors, ordering);
   CHECK(result.first);
   EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
   CHECK(result.second);
@@ -350,7 +351,7 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   ordering += X(1);
 
   HybridConditional::shared_ptr hybridConditionalMixture;
-  HybridFactor::shared_ptr factorOnModes;
+  boost::shared_ptr<Factor> factorOnModes;
 
   std::tie(hybridConditionalMixture, factorOnModes) =
       EliminateHybrid(factors, ordering);
@@ -364,17 +365,11 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   // 1 parent, which is the mode
   EXPECT_LONGS_EQUAL(1, gaussianConditionalMixture->nrParents());
 
-  // This is now a HybridDiscreteFactor
-  auto hybridDiscreteFactor =
-      dynamic_pointer_cast<HybridDiscreteFactor>(factorOnModes);
-  // Access the type-erased inner object and convert to DecisionTreeFactor
-  auto discreteFactor =
-      dynamic_pointer_cast<DecisionTreeFactor>(hybridDiscreteFactor->inner());
+  // This is now a discreteFactor
+  auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(factorOnModes);
   CHECK(discreteFactor);
   EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
   EXPECT(discreteFactor->root_->isLeaf() == false);
-
-  // TODO(Varun) Test emplace_discrete
 }
 
 /****************************************************************************
@@ -385,11 +380,11 @@ TEST(HybridFactorGraph, Partial_Elimination) {
 
   auto linearizedFactorGraph = self.linearizedFactorGraph;
 
-  // Create ordering.
+  // Create ordering of only continuous variables.
   Ordering ordering;
   for (size_t k = 0; k < self.K; k++) ordering += X(k);
 
-  // Eliminate partially.
+  // Eliminate partially i.e. only continuous part.
   HybridBayesNet::shared_ptr hybridBayesNet;
   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
   std::tie(hybridBayesNet, remainingFactorGraph) =
@@ -435,14 +430,16 @@ TEST(HybridFactorGraph, Full_Elimination) {
 
     DiscreteFactorGraph discrete_fg;
     // TODO(Varun) Make this a function of HybridGaussianFactorGraph?
-    for (HybridFactor::shared_ptr& factor : (*remainingFactorGraph_partial)) {
-      auto df = dynamic_pointer_cast<HybridDiscreteFactor>(factor);
-      discrete_fg.push_back(df->inner());
+    for (auto& factor : (*remainingFactorGraph_partial)) {
+      auto df = dynamic_pointer_cast<DecisionTreeFactor>(factor);
+      assert(df);
+      discrete_fg.push_back(df);
     }
+
     ordering.clear();
     for (size_t k = 0; k < self.K - 1; k++) ordering += M(k);
     discreteBayesNet =
-        *discrete_fg.eliminateSequential(ordering, EliminateForMPE);
+        *discrete_fg.eliminateSequential(ordering, EliminateDiscrete);
   }
 
   // Create ordering.
@@ -499,14 +496,14 @@ TEST(HybridFactorGraph, Printing) {
 
   string expected_hybridFactorGraph = R"(
 size: 7
-factor 0: Continuous [x0]
-
+factor 0: 
   A[x0] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 1: Hybrid [x0 x1; m0]{
+factor 1: 
+Hybrid [x0 x1; m0]{
  Choice(m0) 
  0 Leaf :
   A[x0] = [
@@ -529,7 +526,8 @@ factor 1: Hybrid [x0 x1; m0]{
   No noise model
 
 }
-factor 2: Hybrid [x1 x2; m1]{
+factor 2: 
+Hybrid [x1 x2; m1]{
  Choice(m1) 
  0 Leaf :
   A[x1] = [
@@ -552,26 +550,22 @@ factor 2: Hybrid [x1 x2; m1]{
   No noise model
 
 }
-factor 3: Continuous [x1]
-
+factor 3: 
   A[x1] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 4: Continuous [x2]
-
+factor 4: 
   A[x2] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 5: Discrete [m0]
- P( m0 ):
+factor 5:  P( m0 ):
  Leaf  0.5
 
-factor 6: Discrete [m1 m0]
- P( m1 | m0 ):
+factor 6:  P( m1 | m0 ):
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf 0.33333333
@@ -586,7 +580,7 @@ factor 6: Discrete [m1 m0]
   // Expected output for hybridBayesNet.
   string expected_hybridBayesNet = R"(
 size: 3
-factor 0: Hybrid  P( x0 | x1 m0)
+conditional 0: Hybrid  P( x0 | x1 m0)
  Discrete Keys = (m0, 2), 
  Choice(m0) 
  0 Leaf  p(x0 | x1)
@@ -601,7 +595,7 @@ factor 0: Hybrid  P( x0 | x1 m0)
   d = [ -9.95037 ]
   No noise model
 
-factor 1: Hybrid  P( x1 | x2 m0 m1)
+conditional 1: Hybrid  P( x1 | x2 m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
  Choice(m1) 
  0 Choice(m0) 
@@ -630,29 +624,37 @@ factor 1: Hybrid  P( x1 | x2 m0 m1)
   d = [ -10 ]
   No noise model
 
-factor 2: Hybrid  P( x2 | m0 m1)
+conditional 2: Hybrid  P( x2 | m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf  p(x2)
   R = [ 10.0494 ]
   d = [ -10.1489 ]
+  mean: 1 elements
+  x2: -1.0099
   No noise model
 
  0 1 Leaf  p(x2)
   R = [ 10.0494 ]
   d = [ -10.1479 ]
+  mean: 1 elements
+  x2: -1.0098
   No noise model
 
  1 Choice(m0) 
  1 0 Leaf  p(x2)
   R = [ 10.0494 ]
   d = [ -10.0504 ]
+  mean: 1 elements
+  x2: -1.0001
   No noise model
 
  1 1 Leaf  p(x2)
   R = [ 10.0494 ]
   d = [ -10.0494 ]
+  mean: 1 elements
+  x2: -1
   No noise model
 
 )";
@@ -674,7 +676,7 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
   auto priorNoise = noiseModel::Diagonal::Sigmas(
       Vector3(0.3, 0.3, 0.1));  // 30cm std on x,y, 0.1 rad on theta
-  fg.emplace_nonlinear<PriorFactor<Pose2>>(X(0), prior, priorNoise);
+  fg.emplace_shared<PriorFactor<Pose2>>(X(0), prior, priorNoise);
 
   using PlanarMotionModel = BetweenFactor<Pose2>;
 
@@ -687,7 +689,7 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
        moving = boost::make_shared<PlanarMotionModel>(X(0), X(1), odometry,
                                                       noise_model);
   std::vector<PlanarMotionModel::shared_ptr> motion_models = {still, moving};
-  fg.emplace_hybrid<MixtureFactor>(
+  fg.emplace_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, motion_models);
 
   // Add Range-Bearing measurements to from X0 to L0 and X1 to L1.
@@ -699,9 +701,9 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   double range11 = std::sqrt(4.0 + 4.0), range22 = 2.0;
 
   // Add Bearing-Range factors
-  fg.emplace_nonlinear<BearingRangeFactor<Pose2, Point2>>(
+  fg.emplace_shared<BearingRangeFactor<Pose2, Point2>>(
       X(0), L(0), bearing11, range11, measurementNoise);
-  fg.emplace_nonlinear<BearingRangeFactor<Pose2, Point2>>(
+  fg.emplace_shared<BearingRangeFactor<Pose2, Point2>>(
       X(1), L(1), bearing22, range22, measurementNoise);
 
   // Create (deliberately inaccurate) initial estimate

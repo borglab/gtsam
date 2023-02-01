@@ -39,6 +39,7 @@ void HybridNonlinearISAM::update(const HybridNonlinearFactorGraph& newFactors,
   if (newFactors.size() > 0) {
     // Reorder and relinearize every reorderInterval updates
     if (reorderInterval_ > 0 && ++reorderCounter_ >= reorderInterval_) {
+      // TODO(Varun) Relinearization doesn't take into account pruning
       reorder_relinearize();
       reorderCounter_ = 0;
     }
@@ -99,9 +100,11 @@ void HybridNonlinearISAM::print(const string& s,
                                 const KeyFormatter& keyFormatter) const {
   cout << s << "ReorderInterval: " << reorderInterval_
        << " Current Count: " << reorderCounter_ << endl;
-  isam_.print("HybridGaussianISAM:\n", keyFormatter);
+  std::cout << "HybridGaussianISAM:" << std::endl;
+  isam_.print("", keyFormatter);
   linPoint_.print("Linearization Point:\n", keyFormatter);
-  factors_.print("Nonlinear Graph:\n", keyFormatter);
+  std::cout << "Nonlinear Graph:" << std::endl;
+  factors_.print("", keyFormatter);
 }
 
 /* ************************************************************************* */

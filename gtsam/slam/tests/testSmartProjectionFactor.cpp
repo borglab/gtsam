@@ -23,10 +23,7 @@
 #include <gtsam/slam/SmartProjectionFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/assign/std/map.hpp>
 #include <iostream>
-
-using namespace boost::assign;
 
 namespace {
 static const bool isDebugTest = false;
@@ -802,9 +799,9 @@ TEST(SmartProjectionFactor, implicitJacobianFactor ) {
   Implicit9& implicitSchurFactor =
       dynamic_cast<Implicit9&>(*gaussianImplicitSchurFactor);
 
-  VectorValues x = map_list_of(c1,
-      (Vector(9) << 1, 2, 3, 4, 5, 6, 7, 8, 9).finished())(c2,
-      (Vector(9) << 11, 12, 13, 14, 15, 16, 17, 18, 19).finished());
+  VectorValues x{
+      {c1, (Vector(9) << 1, 2, 3, 4, 5, 6, 7, 8, 9).finished()},
+      {c2, (Vector(9) << 11, 12, 13, 14, 15, 16, 17, 18, 19).finished()}};
 
   VectorValues yExpected, yActual;
   double alpha = 1.0;

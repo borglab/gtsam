@@ -34,6 +34,7 @@
 namespace gtsam {
 
   class DiscreteConditional;
+  class HybridValues;
 
   /**
    * A discrete probabilistic factor.
@@ -97,10 +98,19 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
-    /// Value is just look up in AlgebraicDecisonTree
+    /// Calculate probability for given values `x`, 
+    /// is just look up in AlgebraicDecisionTree.
+    double evaluate(const DiscreteValues& values) const  {
+      return ADT::operator()(values);
+    }
+
+    /// Evaluate probability density, sugar.
     double operator()(const DiscreteValues& values) const override {
       return ADT::operator()(values);
     }
+
+    /// Calculate error for DiscreteValues `x`, is -log(probability).
+    double error(const DiscreteValues& values) const;
 
     /// multiply two factors
     DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override {
@@ -230,7 +240,27 @@ namespace gtsam {
     std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                     const Names& names = {}) const override;
 
-    /// @}
+  /// @}
+  /// @name HybridValues methods.
+  /// @{
+
+  /**
+   * Calculate error for HybridValues `x`, is -log(probability)
+   * Simply dispatches to DiscreteValues version.
+   */
+  double error(const HybridValues& values) const override;
+
+  /// @}
+
+   private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+      ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(ADT);
+      ar& BOOST_SERIALIZATION_NVP(cardinalities_);
+    }
   };
 
 // traits

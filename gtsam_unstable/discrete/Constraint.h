@@ -21,7 +21,6 @@
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam_unstable/dllexport.h>
 
-#include <boost/assign.hpp>
 #include <boost/format.hpp>
 #include <map>
 
@@ -40,11 +39,10 @@ class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
 
  protected:
   /// Construct unary constraint factor.
-  Constraint(Key j) : DiscreteFactor(boost::assign::cref_list_of<1>(j)) {}
+  Constraint(Key j) : DiscreteFactor(KeyVector{j}) {}
 
   /// Construct binary constraint factor.
-  Constraint(Key j1, Key j2)
-      : DiscreteFactor(boost::assign::cref_list_of<2>(j1)(j2)) {}
+  Constraint(Key j1, Key j2) : DiscreteFactor(KeyVector{j1, j2}) {}
 
   /// Construct n-way constraint factor.
   Constraint(const KeyVector& js) : DiscreteFactor(js) {}

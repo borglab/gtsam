@@ -42,7 +42,7 @@ namespace gtsam {
  */
 
 class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
-    : public NoiseModelFactor3<Pose3, Pose3, Point3> {
+    : public NoiseModelFactorN<Pose3, Pose3, Point3> {
  protected:
   // Keep a copy of measurement and calibration for I/O
   Point2 measured_;  ///< 2D measurement
@@ -60,7 +60,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
 
  public:
   /// shorthand for base class type
-  typedef NoiseModelFactor3<Pose3, Pose3, Point3> Base;
+  typedef NoiseModelFactorN<Pose3, Pose3, Point3> Base;
 
   /// shorthand for this class
   typedef ProjectionFactorRollingShutter This;

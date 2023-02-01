@@ -88,12 +88,12 @@ namespace gtsam {
  */
 
 template<class POSE, class VELOCITY, class IMUBIAS>
-class EquivInertialNavFactor_GlobalVel : public NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
+class EquivInertialNavFactor_GlobalVel : public NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
 
 private:
 
   typedef EquivInertialNavFactor_GlobalVel<POSE, VELOCITY, IMUBIAS> This;
-  typedef NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
+  typedef NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
 
   Vector delta_pos_in_t0_;
   Vector delta_vel_in_t0_;

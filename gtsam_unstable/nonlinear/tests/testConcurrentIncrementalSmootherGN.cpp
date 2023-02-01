@@ -513,8 +513,8 @@ TEST( ConcurrentIncrementalSmootherGN, synchronize_2 )
 //  Values expectedLinearizationPoint = BatchOptimize(allFactors, allValues, 1);
   Values expectedLinearizationPoint = filterSeparatorValues;
   Values actualLinearizationPoint;
-  for(const auto key_value: filterSeparatorValues) {
-    actualLinearizationPoint.insert(key_value.key, smoother.getLinearizationPoint().at(key_value.key));
+  for(const auto key: filterSeparatorValues.keys()) {
+    actualLinearizationPoint.insert(key, smoother.getLinearizationPoint().at(key));
   }
   CHECK(assert_equal(expectedLinearizationPoint, actualLinearizationPoint, 1e-6));
 }
@@ -582,8 +582,7 @@ TEST( ConcurrentIncrementalSmootherGN, synchronize_3 )
 //  GaussianBayesNet::shared_ptr GBNsptr = GSS.eliminate();
 
   KeySet allkeys = LinFactorGraph->keys();
-  for(const auto key_value: filterSeparatorValues)
-    allkeys.erase(key_value.key);
+  for (const auto key : filterSeparatorValues.keys()) allkeys.erase(key);
   KeyVector variables(allkeys.begin(), allkeys.end());
   std::pair<GaussianBayesNet::shared_ptr, GaussianFactorGraph::shared_ptr> result = LinFactorGraph->eliminatePartialSequential(variables, EliminateCholesky);
 

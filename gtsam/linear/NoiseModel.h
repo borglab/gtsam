@@ -255,7 +255,7 @@ namespace gtsam {
       virtual Matrix R() const { return thisR();}
 
       /// Compute information matrix
-      virtual Matrix information() const { return R().transpose() * R(); }
+      virtual Matrix information() const;
 
       /// Compute covariance matrix
       virtual Matrix covariance() const;
@@ -319,9 +319,7 @@ namespace gtsam {
        * A diagonal noise model created by specifying a Vector of precisions, i.e.
        * i.e. the diagonal of the information matrix, i.e., weights
        */
-      static shared_ptr Precisions(const Vector& precisions, bool smart = true) {
-        return Variances(precisions.array().inverse(), smart);
-      }
+      static shared_ptr Precisions(const Vector& precisions, bool smart = true);
 
       void print(const std::string& name) const override;
       Vector sigmas() const override { return sigmas_; }
@@ -426,39 +424,27 @@ namespace gtsam {
        * A diagonal noise model created by specifying a Vector of
        * standard devations, some of which might be zero
        */
-      static shared_ptr MixedSigmas(const Vector& sigmas) {
-        return MixedSigmas(Vector::Constant(sigmas.size(), 1000.0), sigmas);
-      }
+      static shared_ptr MixedSigmas(const Vector& sigmas);
 
       /**
        * A diagonal noise model created by specifying a Vector of
        * standard devations, some of which might be zero
        */
-      static shared_ptr MixedSigmas(double m, const Vector& sigmas) {
-        return MixedSigmas(Vector::Constant(sigmas.size(), m), sigmas);
-      }
+      static shared_ptr MixedSigmas(double m, const Vector& sigmas);
 
       /**
        * A diagonal noise model created by specifying a Vector of
        * standard devations, some of which might be zero
        */
-      static shared_ptr MixedVariances(const Vector& mu, const Vector& variances) {
-        return shared_ptr(new Constrained(mu, variances.cwiseSqrt()));
-      }
-      static shared_ptr MixedVariances(const Vector& variances) {
-        return shared_ptr(new Constrained(variances.cwiseSqrt()));
-      }
+      static shared_ptr MixedVariances(const Vector& mu, const Vector& variances);
+      static shared_ptr MixedVariances(const Vector& variances);
 
       /**
        * A diagonal noise model created by specifying a Vector of
        * precisions, some of which might be inf
        */
-      static shared_ptr MixedPrecisions(const Vector& mu, const Vector& precisions) {
-        return MixedVariances(mu, precisions.array().inverse());
-      }
-      static shared_ptr MixedPrecisions(const Vector& precisions) {
-        return MixedVariances(precisions.array().inverse());
-      }
+      static shared_ptr MixedPrecisions(const Vector& mu, const Vector& precisions);
+      static shared_ptr MixedPrecisions(const Vector& precisions);
 
       /**
        * The squaredMahalanobisDistance function for a constrained noisemodel,
@@ -616,7 +602,7 @@ namespace gtsam {
       bool isUnit() const override { return true; }
 
       void print(const std::string& name) const override;
-      double squaredMahalanobisDistance(const Vector& v) const override {return v.dot(v); }
+      double squaredMahalanobisDistance(const Vector& v) const override;
       Vector whiten(const Vector& v) const override { return v; }
       Vector unwhiten(const Vector& v) const override { return v; }
       Matrix Whiten(const Matrix& H) const override { return H; }
@@ -710,12 +696,8 @@ namespace gtsam {
       void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const override;
       void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const override;
 
-      Vector unweightedWhiten(const Vector& v) const override {
-        return noise_->unweightedWhiten(v);
-      }
-      double weight(const Vector& v) const override {
-        return robust_->weight(v.norm());
-      }
+      Vector unweightedWhiten(const Vector& v) const override;
+      double weight(const Vector& v) const override;
 
       static shared_ptr Create(
         const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise);
@@ -732,7 +714,7 @@ namespace gtsam {
     };
 
     // Helper function
-    GTSAM_EXPORT boost::optional<Vector> checkIfDiagonal(const Matrix M);
+    GTSAM_EXPORT boost::optional<Vector> checkIfDiagonal(const Matrix& M);
 
   } // namespace noiseModel
 

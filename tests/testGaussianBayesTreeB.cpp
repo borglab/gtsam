@@ -26,9 +26,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-
 using namespace std;
 using namespace gtsam;
 using namespace example;
@@ -241,10 +238,10 @@ TEST( GaussianBayesTree, balanced_smoother_joint )
   const Matrix I = I_2x2, A = -0.00429185*I;
 
   // Check the joint density P(x1,x7) factored as P(x1|x7)P(x7)
-  GaussianBayesNet expected1 = list_of
+  GaussianBayesNet expected1;
     // Why does the sign get flipped on the prior?
-    (GaussianConditional(X(1), Z_2x1, I/sigmax7, X(7), A/sigmax7))
-    (GaussianConditional(X(7), Z_2x1, -1*I/sigmax7));
+  expected1.emplace_shared<GaussianConditional>(X(1), Z_2x1, I/sigmax7, X(7), A/sigmax7);
+  expected1.emplace_shared<GaussianConditional>(X(7), Z_2x1, -1*I/sigmax7);
   GaussianBayesNet actual1 = *bayesTree.jointBayesNet(X(1),X(7));
   EXPECT(assert_equal(expected1, actual1, tol));
 
@@ -260,9 +257,9 @@ TEST( GaussianBayesTree, balanced_smoother_joint )
   // Check the joint density P(x1,x4), i.e. with a root variable
   double sig14 = 0.784465;
   Matrix A14 = -0.0769231*I;
-  GaussianBayesNet expected3 = list_of
-    (GaussianConditional(X(1), Z_2x1, I/sig14, X(4), A14/sig14))
-    (GaussianConditional(X(4), Z_2x1, I/sigmax4));
+  GaussianBayesNet expected3;
+  expected3.emplace_shared<GaussianConditional>(X(1), Z_2x1, I/sig14, X(4), A14/sig14);
+  expected3.emplace_shared<GaussianConditional>(X(4), Z_2x1, I/sigmax4);
   GaussianBayesNet actual3 = *bayesTree.jointBayesNet(X(1),X(4));
   EXPECT(assert_equal(expected3,actual3,tol));
 

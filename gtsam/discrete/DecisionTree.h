@@ -19,9 +19,11 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/types.h>
 #include <gtsam/discrete/Assignment.h>
 
+#include <boost/serialization/nvp.hpp>
 #include <boost/shared_ptr.hpp>
 #include <functional>
 #include <iostream>
@@ -113,6 +115,12 @@ namespace gtsam {
       virtual Ptr apply_g_op_fC(const Choice&, const Binary&) const = 0;
       virtual Ptr choose(const L& label, size_t index) const = 0;
       virtual bool isLeaf() const = 0;
+
+     private:
+      /** Serialization function */
+      friend class boost::serialization::access;
+      template <class ARCHIVE>
+      void serialize(ARCHIVE& ar, const unsigned int /*version*/) {}
     };
     /** ------------------------ Node base class --------------------------- */
 
@@ -236,7 +244,7 @@ namespace gtsam {
     /**
      * @brief Visit all leaves in depth-first fashion.
      *
-     * @param f (side-effect) Function taking a value.
+     * @param f (side-effect) Function taking the value of the leaf node.
      *
      * @note Due to pruning, the number of leaves may not be the same as the
      * number of assignments. E.g. if we have a tree on 2 binary variables with
@@ -245,7 +253,7 @@ namespace gtsam {
      * Example:
      *   int sum = 0;
      *   auto visitor = [&](int y) { sum += y; };
-     *   tree.visitWith(visitor);
+     *   tree.visit(visitor);
      */
     template <typename Func>
     void visit(Func f) const;
@@ -261,8 +269,8 @@ namespace gtsam {
      *
      * Example:
      *   int sum = 0;
-     *   auto visitor = [&](int y) { sum += y; };
-     *   tree.visitWith(visitor);
+     *   auto visitor = [&](const Leaf& leaf) { sum += leaf.constant(); };
+     *   tree.visitLeaf(visitor);
      */
     template <typename Func>
     void visitLeaf(Func f) const;
@@ -364,7 +372,18 @@ namespace gtsam {
     compose(Iterator begin, Iterator end, const L& label) const;
 
     /// @}
+
+   private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+      ar& BOOST_SERIALIZATION_NVP(root_);
+    }
   };  // DecisionTree
+
+  template <class L, class Y>
+  struct traits<DecisionTree<L, Y>> : public Testable<DecisionTree<L, Y>> {};
 
   /** free versions of apply */
 

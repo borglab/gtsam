@@ -16,11 +16,22 @@
  * @author  Richard Roberts
  */
 
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <boost/make_shared.hpp>
 #include <boost/format.hpp>
 
 namespace gtsam {
+
+/* ************************************************************************* */
+double NonlinearFactor::error(const Values& c) const {
+  throw std::runtime_error("NonlinearFactor::error is not implemented");
+}
+
+/* ************************************************************************* */
+double NonlinearFactor::error(const HybridValues& c) const {
+  return this->error(c.nonlinear());
+}
 
 /* ************************************************************************* */
 void NonlinearFactor::print(const std::string& s,

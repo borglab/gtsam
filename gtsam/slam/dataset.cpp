@@ -41,7 +41,6 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/types.h>
 
-#include <boost/assign/list_inserter.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/optional.hpp>
@@ -535,7 +534,7 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model,
       graph->push_back(*f);
 
       // Insert vertices if pure odometry file
-      Key key1 = (*f)->key1(), key2 = (*f)->key2();
+      Key key1 = (*f)->key<1>(), key2 = (*f)->key<2>();
       if (!initial->exists(key1))
         initial->insert(key1, Pose2());
       if (!initial->exists(key2))
@@ -587,9 +586,9 @@ void save2D(const NonlinearFactorGraph &graph, const Values &config,
   fstream stream(filename.c_str(), fstream::out);
 
   // save poses
-  for (const auto key_value : config) {
-    const Pose2 &pose = key_value.value.cast<Pose2>();
-    stream << "VERTEX2 " << key_value.key << " " << pose.x() << " " << pose.y()
+  for (const auto &key_pose : config.extract<Pose2>()) {
+    const Pose2 &pose = key_pose.second;
+    stream << "VERTEX2 " << key_pose.first << " " << pose.x() << " " << pose.y()
            << " " << pose.theta() << endl;
   }
 
@@ -603,7 +602,7 @@ void save2D(const NonlinearFactorGraph &graph, const Values &config,
       continue;
 
     const Pose2 pose = factor->measured().inverse();
-    stream << "EDGE2 " << factor->key2() << " " << factor->key1() << " "
+    stream << "EDGE2 " << factor->key<2>() << " " << factor->key<1>() << " "
            << pose.x() << " " << pose.y() << " " << pose.theta() << " "
            << RR(0, 0) << " " << RR(0, 1) << " " << RR(1, 1) << " " << RR(2, 2)
            << " " << RR(0, 2) << " " << RR(1, 2) << endl;
@@ -636,45 +635,33 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
   auto index = [](gtsam::Key key) { return Symbol(key).index(); };
 
   // save 2D poses
-  for (const auto key_value : estimate) {
-    auto p = dynamic_cast<const GenericValue<Pose2> *>(&key_value.value);
-    if (!p)
-      continue;
-    const Pose2 &pose = p->value();
-    stream << "VERTEX_SE2 " << index(key_value.key) << " " << pose.x() << " "
+  for (const auto &pair : estimate.extract<Pose2>()) {
+    const Pose2 &pose = pair.second;
+    stream << "VERTEX_SE2 " << index(pair.first) << " " << pose.x() << " "
            << pose.y() << " " << pose.theta() << endl;
   }
 
   // save 3D poses
-  for (const auto key_value : estimate) {
-    auto p = dynamic_cast<const GenericValue<Pose3> *>(&key_value.value);
-    if (!p)
-      continue;
-    const Pose3 &pose = p->value();
+  for (const auto &pair : estimate.extract<Pose3>()) {
+    const Pose3 &pose = pair.second;
     const Point3 t = pose.translation();
     const auto q = pose.rotation().toQuaternion();
-    stream << "VERTEX_SE3:QUAT " << index(key_value.key) << " " << t.x() << " "
+    stream << "VERTEX_SE3:QUAT " << index(pair.first) << " " << t.x() << " "
            << t.y() << " " << t.z() << " " << q.x() << " " << q.y() << " "
            << q.z() << " " << q.w() << endl;
   }
 
   // save 2D landmarks
-  for (const auto key_value : estimate) {
-    auto p = dynamic_cast<const GenericValue<Point2> *>(&key_value.value);
-    if (!p)
-      continue;
-    const Point2 &point = p->value();
-    stream << "VERTEX_XY " << index(key_value.key) << " " << point.x() << " "
+  for (const auto &pair : estimate.extract<Point2>()) {
+    const Point2 &point = pair.second;
+    stream << "VERTEX_XY " << index(pair.first) << " " << point.x() << " "
            << point.y() << endl;
   }
 
   // save 3D landmarks
-  for (const auto key_value : estimate) {
-    auto p = dynamic_cast<const GenericValue<Point3> *>(&key_value.value);
-    if (!p)
-      continue;
-    const Point3 &point = p->value();
-    stream << "VERTEX_TRACKXYZ " << index(key_value.key) << " " << point.x()
+  for (const auto &pair : estimate.extract<Point3>()) {
+    const Point3 &point = pair.second;
+    stream << "VERTEX_TRACKXYZ " << index(pair.first) << " " << point.x()
            << " " << point.y() << " " << point.z() << endl;
   }
 
@@ -691,8 +678,8 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
       }
       Matrix3 Info = gaussianModel->R().transpose() * gaussianModel->R();
       Pose2 pose = factor->measured(); //.inverse();
-      stream << "EDGE_SE2 " << index(factor->key1()) << " "
-             << index(factor->key2()) << " " << pose.x() << " " << pose.y()
+      stream << "EDGE_SE2 " << index(factor->key<1>()) << " "
+             << index(factor->key<2>()) << " " << pose.x() << " " << pose.y()
              << " " << pose.theta();
       for (size_t i = 0; i < 3; i++) {
         for (size_t j = i; j < 3; j++) {
@@ -717,8 +704,8 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
       const Pose3 pose3D = factor3D->measured();
       const Point3 p = pose3D.translation();
       const auto q = pose3D.rotation().toQuaternion();
-      stream << "EDGE_SE3:QUAT " << index(factor3D->key1()) << " "
-             << index(factor3D->key2()) << " " << p.x() << " " << p.y() << " "
+      stream << "EDGE_SE3:QUAT " << index(factor3D->key<1>()) << " "
+             << index(factor3D->key<2>()) << " " << p.x() << " " << p.y() << " "
              << p.z() << " " << q.x() << " " << q.y() << " " << q.z() << " "
              << q.w();
 

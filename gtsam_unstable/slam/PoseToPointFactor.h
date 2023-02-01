@@ -21,10 +21,10 @@ namespace gtsam {
  * @ingroup slam
  */
 template<typename POSE = Pose3, typename POINT = Point3>
-class PoseToPointFactor : public NoiseModelFactor2<POSE, POINT> {
+class PoseToPointFactor : public NoiseModelFactorN<POSE, POINT> {
  private:
   typedef PoseToPointFactor This;
-  typedef NoiseModelFactor2<POSE, POINT> Base;
+  typedef NoiseModelFactorN<POSE, POINT> Base;
 
   POINT measured_; /** the point measurement in local coordinates */
 
@@ -47,7 +47,8 @@ class PoseToPointFactor : public NoiseModelFactor2<POSE, POINT> {
   /** print */
   void print(const std::string& s, const KeyFormatter& keyFormatter =
                                        DefaultKeyFormatter) const override {
-    std::cout << s << "PoseToPointFactor(" << keyFormatter(this->key1()) << ","
+    std::cout << s << "PoseToPointFactor("
+              << keyFormatter(this->key1()) << ","
               << keyFormatter(this->key2()) << ")\n"
               << "  measured: " << measured_.transpose() << std::endl;
     this->noiseModel_->print("  noise model: ");
@@ -91,8 +92,10 @@ class PoseToPointFactor : public NoiseModelFactor2<POSE, POINT> {
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
     ar& boost::serialization::make_nvp(
-        "NoiseModelFactor2", boost::serialization::base_object<Base>(*this));
+        "NoiseModelFactor2",
+        boost::serialization::base_object<Base>(*this));
     ar& BOOST_SERIALIZATION_NVP(measured_);
   }
 

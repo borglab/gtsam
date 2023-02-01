@@ -47,6 +47,8 @@ typedef FastVector<FactorIndex> FactorIndices;
 template <class CLIQUE>
 class BayesTree;
 
+class HybridValues;
+
 /** Helper */
 template <class C>
 class CRefCallPushBack {
@@ -154,10 +156,22 @@ class FactorGraph {
   /// @}
 
  public:
+  /// @name Constructors
+  /// @{
+
   /// Default destructor
-  // Public and virtual so boost serialization can call it.
+  /// Public and virtual so boost serialization can call it.
   virtual ~FactorGraph() = default;
 
+  /**
+   * Constructor that takes an initializer list of shared pointers.
+   *  FactorGraph fg = {make_shared<MyFactor>(), ...};
+   */
+  template <class DERIVEDFACTOR, typename = IsDerived<DERIVEDFACTOR>>
+  FactorGraph(std::initializer_list<boost::shared_ptr<DERIVEDFACTOR>> sharedFactors)
+      : factors_(sharedFactors) {}
+
+  /// @}
   /// @name Adding Single Factors
   /// @{
 
@@ -346,6 +360,9 @@ class FactorGraph {
 
   /** Get the last factor */
   sharedFactor back() const { return factors_.back(); }
+
+  /** Add error for all factors. */
+  double error(const HybridValues &values) const;
 
   /// @}
   /// @name Modifying Factor Graphs (imperative, discouraged)

@@ -20,12 +20,9 @@
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/assign/std/vector.hpp>
 
-using namespace boost::assign;
 using namespace std::placeholders;
 using namespace gtsam;
-using namespace std;
 using boost::none;
 
 GTSAM_CONCEPT_TESTABLE_INST(OrientedPlane3)
@@ -164,6 +161,48 @@ TEST(OrientedPlane3, jacobian_retract) {
       Matrix H_expected_numerical = numericalDerivative11(f, v);
       EXPECT(assert_equal(H_expected_numerical, H_actual, 1e-5));
   }
+}
+
+//*******************************************************************************
+TEST(OrientedPlane3, jacobian_normal) {
+  Matrix23 H_actual, H_expected;
+  OrientedPlane3 plane(-1, 0.1, 0.2, 5);
+
+  std::function<Unit3(const OrientedPlane3&)> f = std::bind(
+      &OrientedPlane3::normal, std::placeholders::_1, boost::none);
+
+  H_expected = numericalDerivative11(f, plane);
+  plane.normal(H_actual);
+  EXPECT(assert_equal(H_actual, H_expected, 1e-5));
+}
+
+//*******************************************************************************
+TEST(OrientedPlane3, jacobian_distance) {
+  Matrix13 H_actual, H_expected;
+  OrientedPlane3 plane(-1, 0.1, 0.2, 5);
+
+  std::function<double(const OrientedPlane3&)> f = std::bind(
+      &OrientedPlane3::distance, std::placeholders::_1, boost::none);
+
+  H_expected = numericalDerivative11(f, plane);
+  plane.distance(H_actual);
+  EXPECT(assert_equal(H_actual, H_expected, 1e-5));
+}
+
+//*******************************************************************************
+TEST(OrientedPlane3, getMethodJacobians) {
+  OrientedPlane3 plane(-1, 0.1, 0.2, 5);
+  Matrix33 H_retract, H_getters;
+  Matrix23 H_normal;
+  Matrix13 H_distance;
+
+  // confirm the getters are exactly on the tangent space
+  Vector3 v(0, 0, 0);
+  plane.retract(v, H_retract);
+  plane.normal(H_normal);
+  plane.distance(H_distance);
+  H_getters << H_normal, H_distance;
+  EXPECT(assert_equal(H_retract, H_getters, 1e-5));
 }
 
 /* ************************************************************************* */

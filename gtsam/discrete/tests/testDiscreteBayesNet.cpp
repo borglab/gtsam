@@ -25,12 +25,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-
-#include <boost/assign/list_inserter.hpp>
-#include <boost/assign/std/map.hpp>
-
-using namespace boost::assign;
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -106,6 +100,11 @@ TEST(DiscreteBayesNet, Asia) {
   DiscreteConditional expected2(Bronchitis % "11/9");
   EXPECT(assert_equal(expected2, *chordal->back()));
 
+  // Check evaluate and logProbability
+  auto result = fg.optimize();
+  EXPECT_DOUBLES_EQUAL(asia.logProbability(result),
+                       std::log(asia.evaluate(result)), 1e-9);
+
   // add evidence, we were in Asia and we have dyspnea
   fg.add(Asia, "0 1");
   fg.add(Dyspnea, "0 1");
@@ -115,11 +114,11 @@ TEST(DiscreteBayesNet, Asia) {
   EXPECT(assert_equal(expected2, *chordal->back()));
 
   // now sample from it
-  DiscreteValues expectedSample;
+  DiscreteValues expectedSample{{Asia.first, 1},       {Dyspnea.first, 1},
+                                {XRay.first, 1},       {Tuberculosis.first, 0},
+                                {Smoking.first, 1},    {Either.first, 1},
+                                {LungCancer.first, 1}, {Bronchitis.first, 0}};
   SETDEBUG("DiscreteConditional::sample", false);
-  insert(expectedSample)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 1)(
-      Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 1)(
-      LungCancer.first, 1)(Bronchitis.first, 0);
   auto actualSample = chordal2->sample();
   EXPECT(assert_equal(expectedSample, actualSample));
 }

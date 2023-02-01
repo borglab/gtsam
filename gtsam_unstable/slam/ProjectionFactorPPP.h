@@ -31,7 +31,7 @@ namespace gtsam {
    * @ingroup slam
    */
   template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
-  class ProjectionFactorPPP: public NoiseModelFactor3<POSE, POSE, LANDMARK> {
+  class ProjectionFactorPPP: public NoiseModelFactorN<POSE, POSE, LANDMARK> {
   protected:
 
     // Keep a copy of measurement and calibration for I/O
@@ -45,7 +45,7 @@ namespace gtsam {
   public:
 
     /// shorthand for base class type
-    typedef NoiseModelFactor3<POSE, POSE, LANDMARK> Base;
+    typedef NoiseModelFactorN<POSE, POSE, LANDMARK> Base;
 
     /// shorthand for this class
     typedef ProjectionFactorPPP<POSE, LANDMARK, CALIBRATION> This;
@@ -142,8 +142,11 @@ namespace gtsam {
         if (H2) *H2 = Matrix::Zero(2,6);
         if (H3) *H3 = Matrix::Zero(2,3);
         if (verboseCheirality_)
-          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
-              " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+            std::cout << e.what() << ": Landmark "
+                      << DefaultKeyFormatter(this->key2())
+                      << " moved behind camera "
+                      << DefaultKeyFormatter(this->key1())
+                      << std::endl;
         if (throwCheirality_)
           throw e;
       }

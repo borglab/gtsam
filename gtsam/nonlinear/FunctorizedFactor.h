@@ -56,9 +56,9 @@ namespace gtsam {
  *     MultiplyFunctor(multiplier));
  */
 template <typename R, typename T>
-class FunctorizedFactor : public NoiseModelFactor1<T> {
+class FunctorizedFactor : public NoiseModelFactorN<T> {
  private:
-  using Base = NoiseModelFactor1<T>;
+  using Base = NoiseModelFactorN<T>;
 
   R measured_;  ///< value that is compared with functor return value
   SharedNoiseModel noiseModel_;                          ///< noise model
@@ -101,7 +101,7 @@ class FunctorizedFactor : public NoiseModelFactor1<T> {
       const KeyFormatter &keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
     std::cout << s << (s != "" ? " " : "") << "FunctorizedFactor("
-              << keyFormatter(this->key()) << ")" << std::endl;
+              << keyFormatter(this->key1()) << ")" << std::endl;
     traits<R>::Print(measured_, "  measurement: ");
     std::cout << "  noise model sigmas: " << noiseModel_->sigmas().transpose()
               << std::endl;
@@ -120,6 +120,7 @@ class FunctorizedFactor : public NoiseModelFactor1<T> {
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar &boost::serialization::make_nvp(
         "NoiseModelFactor1", boost::serialization::base_object<Base>(*this));
     ar &BOOST_SERIALIZATION_NVP(measured_);
@@ -155,9 +156,9 @@ FunctorizedFactor<R, T> MakeFunctorizedFactor(Key key, const R &z,
  * @param T2: The second argument type for the functor.
  */
 template <typename R, typename T1, typename T2>
-class FunctorizedFactor2 : public NoiseModelFactor2<T1, T2> {
+class FunctorizedFactor2 : public NoiseModelFactorN<T1, T2> {
  private:
-  using Base = NoiseModelFactor2<T1, T2>;
+  using Base = NoiseModelFactorN<T1, T2>;
 
   R measured_;  ///< value that is compared with functor return value
   SharedNoiseModel noiseModel_;  ///< noise model
@@ -227,6 +228,7 @@ class FunctorizedFactor2 : public NoiseModelFactor2<T1, T2> {
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
     ar &boost::serialization::make_nvp(
         "NoiseModelFactor2", boost::serialization::base_object<Base>(*this));
     ar &BOOST_SERIALIZATION_NVP(measured_);

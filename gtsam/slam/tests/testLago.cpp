@@ -31,7 +31,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 
 static Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x', 3);
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(3, 0.1));
@@ -284,9 +283,10 @@ TEST( Lago, largeGraphNoisy_orientations ) {
   Values::shared_ptr expected;
   boost::tie(gmatlab, expected) = readG2o(matlabFile);
 
-  for(const auto key_val: *expected){
-    Key k = key_val.key;
-    EXPECT(assert_equal(expected->at<Pose2>(k), actual.at<Pose2>(k), 1e-5));
+  for(const auto key_pose: expected->extract<Pose2>()){
+    const Key& k = key_pose.first;
+    const Pose2& pose = key_pose.second;
+    EXPECT(assert_equal(pose, actual.at<Pose2>(k), 1e-5));
   }
 }
 
@@ -310,9 +310,10 @@ TEST( Lago, largeGraphNoisy ) {
   Values::shared_ptr expected;
   boost::tie(gmatlab, expected) = readG2o(matlabFile);
 
-  for(const auto key_val: *expected){
-    Key k = key_val.key;
-    EXPECT(assert_equal(expected->at<Pose2>(k), actual.at<Pose2>(k), 1e-2));
+  for(const auto key_pose: expected->extract<Pose2>()){
+    const Key& k = key_pose.first;
+    const Pose2& pose = key_pose.second;
+    EXPECT(assert_equal(pose, actual.at<Pose2>(k), 1e-2));
   }
 }
 

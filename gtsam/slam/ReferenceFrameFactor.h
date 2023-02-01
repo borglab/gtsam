@@ -54,13 +54,13 @@ P transform_point(
  * specific classes of landmarks
  */
 template<class POINT, class TRANSFORM>
-class ReferenceFrameFactor : public NoiseModelFactor3<POINT, TRANSFORM, POINT> {
+class ReferenceFrameFactor : public NoiseModelFactorN<POINT, TRANSFORM, POINT> {
 protected:
   /** default constructor for serialization only */
   ReferenceFrameFactor() {}
 
 public:
-  typedef NoiseModelFactor3<POINT, TRANSFORM, POINT> Base;
+  typedef NoiseModelFactorN<POINT, TRANSFORM, POINT> Base;
   typedef ReferenceFrameFactor<POINT, TRANSFORM> This;
 
   typedef POINT Point;

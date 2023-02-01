@@ -255,14 +255,14 @@ public:
  *
  * @ingroup navigation
  */
-class GTSAM_EXPORT CombinedImuFactor: public NoiseModelFactor6<Pose3, Vector3, Pose3,
+class GTSAM_EXPORT CombinedImuFactor: public NoiseModelFactorN<Pose3, Vector3, Pose3,
     Vector3, imuBias::ConstantBias, imuBias::ConstantBias> {
 public:
 
 private:
 
   typedef CombinedImuFactor This;
-  typedef NoiseModelFactor6<Pose3, Vector3, Pose3, Vector3,
+  typedef NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
       imuBias::ConstantBias, imuBias::ConstantBias> Base;
 
   PreintegratedCombinedMeasurements _PIM_;
@@ -334,7 +334,9 @@ public:
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(NoiseModelFactor6);
+    // NoiseModelFactor6 instead of NoiseModelFactorN for backward compatibility
+    ar& boost::serialization::make_nvp(
+        "NoiseModelFactor6", boost::serialization::base_object<Base>(*this));
     ar& BOOST_SERIALIZATION_NVP(_PIM_);
   }
 

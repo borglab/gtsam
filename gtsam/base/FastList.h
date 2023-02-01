@@ -56,6 +56,9 @@ public:
   /** Copy constructor from the base list class */
   FastList(const Base& x) : Base(x) {}
 
+  /// Construct from c++11 initializer list:
+  FastList(std::initializer_list<VALUE> l) : Base(l) {}
+
 #ifdef GTSAM_ALLOCATOR_BOOSTPOOL
   /** Copy constructor from a standard STL container */
   FastList(const std::list<VALUE>& x) {

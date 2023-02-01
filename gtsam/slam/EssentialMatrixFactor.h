@@ -31,10 +31,10 @@ namespace gtsam {
 /**
  * Factor that evaluates epipolar error p'Ep for given essential matrix
  */
-class EssentialMatrixFactor : public NoiseModelFactor1<EssentialMatrix> {
+class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
   Vector3 vA_, vB_;  ///< Homogeneous versions, in ideal coordinates
 
-  typedef NoiseModelFactor1<EssentialMatrix> Base;
+  typedef NoiseModelFactorN<EssentialMatrix> Base;
   typedef EssentialMatrixFactor This;
 
  public:
@@ -106,12 +106,12 @@ class EssentialMatrixFactor : public NoiseModelFactor1<EssentialMatrix> {
  * in image 2 is perfect, and returns re-projection error in image 1
  */
 class EssentialMatrixFactor2
-    : public NoiseModelFactor2<EssentialMatrix, double> {
+    : public NoiseModelFactorN<EssentialMatrix, double> {
   Point3 dP1_;  ///< 3D point corresponding to measurement in image 1
   Point2 pn_;   ///< Measurement in image 2, in ideal coordinates
   double f_;    ///< approximate conversion factor for error scaling
 
-  typedef NoiseModelFactor2<EssentialMatrix, double> Base;
+  typedef NoiseModelFactorN<EssentialMatrix, double> Base;
   typedef EssentialMatrixFactor2 This;
 
  public:
@@ -321,11 +321,11 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
  */
 template <class CALIBRATION>
 class EssentialMatrixFactor4
-    : public NoiseModelFactor2<EssentialMatrix, CALIBRATION> {
+    : public NoiseModelFactorN<EssentialMatrix, CALIBRATION> {
  private:
   Point2 pA_, pB_;  ///< points in pixel coordinates
 
-  typedef NoiseModelFactor2<EssentialMatrix, CALIBRATION> Base;
+  typedef NoiseModelFactorN<EssentialMatrix, CALIBRATION> Base;
   typedef EssentialMatrixFactor4 This;
 
   static constexpr int DimK = FixedDimension<CALIBRATION>::value;

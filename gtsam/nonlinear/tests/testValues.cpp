@@ -25,15 +25,11 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/assign/std/list.hpp> // for operator +=
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/list_of.hpp>
 #include <boost/bind/bind.hpp>
 #include <stdexcept>
 #include <limits>
 #include <type_traits>
 
-using namespace boost::assign;
 using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;
@@ -199,6 +195,14 @@ TEST(Values, basic_functions)
   values.insert(6, M1);
   values.insert(8, M2);
 
+  size_t count = 0;
+  for (const auto& it : values) {
+    count += 1;
+    if (it.key == 2 || it.key == 4) EXPECT_LONGS_EQUAL(3, it.value.dim());
+    if (it.key == 6 || it.key == 8) EXPECT_LONGS_EQUAL(6, it.value.dim());
+  }
+  EXPECT_LONGS_EQUAL(4, count);
+
   // find
   EXPECT_LONGS_EQUAL(4, values.find(4)->key);
   EXPECT_LONGS_EQUAL(4, values_c.find(4)->key);
@@ -214,7 +218,6 @@ TEST(Values, basic_functions)
   EXPECT_LONGS_EQUAL(6, values_c.upper_bound(4)->key);
   EXPECT_LONGS_EQUAL(4, values.upper_bound(3)->key);
   EXPECT_LONGS_EQUAL(4, values_c.upper_bound(3)->key);
-
 }
 
 /* ************************************************************************* */
@@ -224,9 +227,8 @@ TEST(Values, retract_full)
   config0.insert(key1, Vector3(1.0, 2.0, 3.0));
   config0.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues delta = pair_list_of<Key, Vector>
-    (key1, Vector3(1.0, 1.1, 1.2))
-    (key2, Vector3(1.3, 1.4, 1.5));
+  const VectorValues delta{{key1, Vector3(1.0, 1.1, 1.2)},
+                           {key2, Vector3(1.3, 1.4, 1.5)}};
 
   Values expected;
   expected.insert(key1, Vector3(2.0, 3.1, 4.2));
@@ -243,8 +245,7 @@ TEST(Values, retract_partial)
   config0.insert(key1, Vector3(1.0, 2.0, 3.0));
   config0.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues delta = pair_list_of<Key, Vector>
-    (key2, Vector3(1.3, 1.4, 1.5));
+  const VectorValues delta{{key2, Vector3(1.3, 1.4, 1.5)}};
 
   Values expected;
   expected.insert(key1, Vector3(1.0, 2.0, 3.0));
@@ -252,6 +253,24 @@ TEST(Values, retract_partial)
 
   CHECK(assert_equal(expected, config0.retract(delta)));
   CHECK(assert_equal(expected, Values(config0, delta)));
+}
+
+/* ************************************************************************* */
+TEST(Values, retract_masked)
+{
+  Values config0;
+  config0.insert(key1, Vector3(1.0, 2.0, 3.0));
+  config0.insert(key2, Vector3(5.0, 6.0, 7.0));
+
+  const VectorValues delta{{key1, Vector3(1.0, 1.1, 1.2)},
+                           {key2, Vector3(1.3, 1.4, 1.5)}};
+
+  Values expected;
+  expected.insert(key1, Vector3(1.0, 2.0, 3.0));
+  expected.insert(key2, Vector3(6.3, 7.4, 8.5));
+
+  config0.retractMasked(delta, {key2});
+  CHECK(assert_equal(expected, config0));
 }
 
 /* ************************************************************************* */
@@ -279,9 +298,8 @@ TEST(Values, localCoordinates)
   valuesA.insert(key1, Vector3(1.0, 2.0, 3.0));
   valuesA.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues expDelta = pair_list_of<Key, Vector>
-    (key1, Vector3(0.1, 0.2, 0.3))
-    (key2, Vector3(0.4, 0.5, 0.6));
+  VectorValues expDelta{{key1, Vector3(0.1, 0.2, 0.3)},
+                        {key2, Vector3(0.4, 0.5, 0.6)}};
 
   Values valuesB = valuesA.retract(expDelta);
 
@@ -350,6 +368,7 @@ TEST(Values, filter) {
   values.insert(2, pose2);
   values.insert(3, pose3);
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   // Filter by key
   int i = 0;
   Values::Filtered<Value> filtered = values.filter(std::bind(std::greater_equal<Key>(), std::placeholders::_1, 2));
@@ -402,8 +421,6 @@ TEST(Values, filter) {
     ++ i;
   }
   EXPECT_LONGS_EQUAL(2, (long)i);
-  EXPECT_LONGS_EQUAL(2, (long)values.count<Pose3>());
-  EXPECT_LONGS_EQUAL(2, (long)values.count<Pose2>());
 
   // construct a values with the view
   Values actualSubValues2(pose_filtered);
@@ -411,6 +428,16 @@ TEST(Values, filter) {
   expectedSubValues2.insert(1, pose1);
   expectedSubValues2.insert(3, pose3);
   EXPECT(assert_equal(expectedSubValues2, actualSubValues2));
+#endif
+
+  // Test counting by type.
+  EXPECT_LONGS_EQUAL(2, (long)values.count<Pose3>());
+  EXPECT_LONGS_EQUAL(2, (long)values.count<Pose2>());
+
+  // Filter by type using extract.
+  auto extracted_pose3s = values.extract<Pose3>();
+  EXPECT_LONGS_EQUAL(2, (long)extracted_pose3s.size());
+
 }
 
 /* ************************************************************************* */
@@ -426,6 +453,7 @@ TEST(Values, Symbol_filter) {
   values.insert(X(2), pose2);
   values.insert(Symbol('y', 3), pose3);
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   int i = 0;
   for(const auto key_value: values.filter(Symbol::ChrTest('y'))) {
     if(i == 0) {
@@ -440,6 +468,12 @@ TEST(Values, Symbol_filter) {
     ++ i;
   }
   LONGS_EQUAL(2, (long)i);
+#endif
+
+// Test extract with filter on symbol:
+  auto extracted_pose3s = values.extract<Pose3>(Symbol::ChrTest('y'));
+  EXPECT_LONGS_EQUAL(2, (long)extracted_pose3s.size());
+
 }
 
 /* ************************************************************************* */

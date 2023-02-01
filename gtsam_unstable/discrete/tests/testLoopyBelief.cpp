@@ -11,14 +11,12 @@
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/inference/VariableIndex.h>
 
-#include <boost/assign/list_of.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <fstream>
 #include <iostream>
 
 using namespace std;
 using namespace boost;
-using namespace boost::assign;
 using namespace gtsam;
 
 /**
@@ -105,7 +103,7 @@ class LoopyBelief {
         if (debug) subGraph.print("------- Subgraph:");
         DiscreteFactor::shared_ptr message;
         boost::tie(dummyCond, message) =
-            EliminateDiscrete(subGraph, Ordering(list_of(neighbor)));
+            EliminateDiscrete(subGraph, Ordering{neighbor});
         // store the new factor into messages
         messages.insert(make_pair(neighbor, message));
         if (debug) message->print("------- Message: ");
@@ -230,7 +228,7 @@ TEST_UNSAFE(LoopyBelief, construction) {
 
   // Map from key to DiscreteKey for building belief factor.
   // TODO: this is bad!
-  std::map<Key, DiscreteKey> allKeys = map_list_of(0, C)(1, S)(2, R)(3, W);
+  std::map<Key, DiscreteKey> allKeys{{0, C}, {1, S}, {2, R}, {3, W}};
 
   // Build graph
   DecisionTreeFactor pC(C, "0.5 0.5");

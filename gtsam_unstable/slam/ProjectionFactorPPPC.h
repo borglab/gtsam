@@ -34,7 +34,7 @@ namespace gtsam {
    */
 template <class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
 class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
-    : public NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> {
+    : public NoiseModelFactorN<POSE, POSE, LANDMARK, CALIBRATION> {
  protected:
   Point2 measured_;  ///< 2D measurement
 
@@ -44,7 +44,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
 
  public:
   /// shorthand for base class type
-  typedef NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> Base;
+  typedef NoiseModelFactorN<POSE, POSE, LANDMARK, CALIBRATION> Base;
 
   /// shorthand for this class
   typedef ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> This;

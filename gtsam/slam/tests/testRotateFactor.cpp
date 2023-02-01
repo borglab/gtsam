@@ -12,11 +12,9 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/vector.hpp>
 #include <vector>
 
 using namespace std;
-using namespace boost::assign;
 using namespace std::placeholders;
 using namespace gtsam;
 

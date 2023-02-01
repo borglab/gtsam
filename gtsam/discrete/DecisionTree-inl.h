@@ -22,14 +22,10 @@
 #include <gtsam/discrete/DecisionTree.h>
 
 #include <algorithm>
-#include <boost/assign/std/vector.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/type_traits/has_dereference.hpp>
-#include <boost/unordered_set.hpp>
+
 #include <cmath>
 #include <fstream>
 #include <list>
@@ -40,8 +36,6 @@
 #include <vector>
 
 namespace gtsam {
-
-  using boost::assign::operator+=;
 
   /****************************************************************************/
   // Node
@@ -63,6 +57,9 @@ namespace gtsam {
      * Particularly useful when leaves have been pruned.
      */
     size_t nrAssignments_;
+
+    /// Default constructor for serialization.
+    Leaf() {}
 
     /// Constructor from constant
     Leaf(const Y& constant, size_t nrAssignments = 1)
@@ -154,6 +151,18 @@ namespace gtsam {
     }
 
     bool isLeaf() const override { return true; }
+
+   private:
+    using Base = DecisionTree<L, Y>::Node;
+
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar& BOOST_SERIALIZATION_NVP(constant_);
+      ar& BOOST_SERIALIZATION_NVP(nrAssignments_);
+    }
   };  // Leaf
 
   /****************************************************************************/
@@ -177,6 +186,9 @@ namespace gtsam {
     using ChoicePtr = boost::shared_ptr<const Choice>;
 
    public:
+    /// Default constructor for serialization.
+    Choice() {}
+
     ~Choice() override {
 #ifdef DT_DEBUG_MEMORY
       std::std::cout << Node::nrNodes << " destructing (Choice) " << this->id()
@@ -428,6 +440,19 @@ namespace gtsam {
         r->push_back(branch->choose(label, index));
       return Unique(r);
     }
+
+   private:
+    using Base = DecisionTree<L, Y>::Node;
+
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar& BOOST_SERIALIZATION_NVP(label_);
+      ar& BOOST_SERIALIZATION_NVP(branches_);
+      ar& BOOST_SERIALIZATION_NVP(allSame_);
+    }
   };  // Choice
 
   /****************************************************************************/
@@ -504,8 +529,7 @@ namespace gtsam {
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const L& label,
       const DecisionTree& f0, const DecisionTree& f1)  {
-    std::vector<DecisionTree> functions;
-    functions += f0, f1;
+    const std::vector<DecisionTree> functions{f0, f1};
     root_ = compose(functions.begin(), functions.end(), label);
   }
 

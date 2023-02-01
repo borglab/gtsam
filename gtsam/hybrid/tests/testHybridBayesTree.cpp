@@ -33,6 +33,24 @@ using symbol_shorthand::M;
 using symbol_shorthand::X;
 
 /* ****************************************************************************/
+// Test multifrontal optimize
+TEST(HybridBayesTree, OptimizeMultifrontal) {
+  Switching s(4);
+
+  HybridBayesTree::shared_ptr hybridBayesTree =
+      s.linearizedFactorGraph.eliminateMultifrontal();
+  HybridValues delta = hybridBayesTree->optimize();
+
+  VectorValues expectedValues;
+  expectedValues.insert(X(0), -0.999904 * Vector1::Ones());
+  expectedValues.insert(X(1), -0.99029 * Vector1::Ones());
+  expectedValues.insert(X(2), -1.00971 * Vector1::Ones());
+  expectedValues.insert(X(3), -1.0001 * Vector1::Ones());
+
+  EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
+}
+
+/* ****************************************************************************/
 // Test for optimizing a HybridBayesTree with a given assignment.
 TEST(HybridBayesTree, OptimizeAssignment) {
   Switching s(4);
@@ -105,7 +123,7 @@ TEST(HybridBayesTree, Optimize) {
     graph1.push_back(s.linearizedFactorGraph.at(i));
   }
 
-  // Add the Gaussian factors, 1 prior on X(1),
+  // Add the Gaussian factors, 1 prior on X(0),
   // 3 measurements on X(2), X(3), X(4)
   graph1.push_back(s.linearizedFactorGraph.at(0));
   for (size_t i = 4; i <= 6; i++) {
@@ -132,10 +150,16 @@ TEST(HybridBayesTree, Optimize) {
 
   DiscreteFactorGraph dfg;
   for (auto&& f : *remainingFactorGraph) {
-    auto factor = dynamic_pointer_cast<HybridDiscreteFactor>(f);
-    dfg.push_back(
-        boost::dynamic_pointer_cast<DecisionTreeFactor>(factor->inner()));
+    auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(f);
+    assert(discreteFactor);
+    dfg.push_back(discreteFactor);
   }
+
+  // Add the probabilities for each branch
+  DiscreteKeys discrete_keys = {{M(0), 2}, {M(1), 2}, {M(2), 2}};
+  vector<double> probs = {0.012519475, 0.041280228, 0.075018647, 0.081663656,
+                          0.037152205, 0.12248971,  0.07349729,  0.08};
+  dfg.emplace_shared<DecisionTreeFactor>(discrete_keys, probs);
 
   DiscreteValues expectedMPE = dfg.optimize();
   VectorValues expectedValues = hybridBayesNet->optimize(expectedMPE);
@@ -145,17 +169,46 @@ TEST(HybridBayesTree, Optimize) {
 }
 
 /* ****************************************************************************/
-// Test HybridBayesTree serialization.
-TEST(HybridBayesTree, Serialization) {
+// Test for choosing a GaussianBayesTree from a HybridBayesTree.
+TEST(HybridBayesTree, Choose) {
   Switching s(4);
-  Ordering ordering = s.linearizedFactorGraph.getHybridOrdering();
-  HybridBayesTree hbt =
-      *(s.linearizedFactorGraph.eliminateMultifrontal(ordering));
 
-  using namespace gtsam::serializationTestHelpers;
-  EXPECT(equalsObj<HybridBayesTree>(hbt));
-  EXPECT(equalsXML<HybridBayesTree>(hbt));
-  EXPECT(equalsBinary<HybridBayesTree>(hbt));
+  HybridGaussianISAM isam;
+  HybridGaussianFactorGraph graph1;
+
+  // Add the 3 hybrid factors, x1-x2, x2-x3, x3-x4
+  for (size_t i = 1; i < 4; i++) {
+    graph1.push_back(s.linearizedFactorGraph.at(i));
+  }
+
+  // Add the Gaussian factors, 1 prior on X(0),
+  // 3 measurements on X(2), X(3), X(4)
+  graph1.push_back(s.linearizedFactorGraph.at(0));
+  for (size_t i = 4; i <= 6; i++) {
+    graph1.push_back(s.linearizedFactorGraph.at(i));
+  }
+
+  // Add the discrete factors
+  for (size_t i = 7; i <= 9; i++) {
+    graph1.push_back(s.linearizedFactorGraph.at(i));
+  }
+
+  isam.update(graph1);
+
+  DiscreteValues assignment;
+  assignment[M(0)] = 1;
+  assignment[M(1)] = 1;
+  assignment[M(2)] = 1;
+
+  GaussianBayesTree gbt = isam.choose(assignment);
+
+  // Specify ordering so it matches that of HybridGaussianISAM.
+  Ordering ordering(KeyVector{X(0), X(1), X(2), X(3), M(0), M(1), M(2)});
+  auto bayesTree = s.linearizedFactorGraph.eliminateMultifrontal(ordering);
+
+  auto expected_gbt = bayesTree->choose(assignment);
+
+  EXPECT(assert_equal(expected_gbt, gbt));
 }
 
 /* ************************************************************************* */

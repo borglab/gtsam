@@ -60,6 +60,29 @@ namespace gtsam {
     explicit SymbolicBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph)
         : Base(graph) {}
 
+    /**
+     * Constructor that takes an initializer list of shared pointers.
+     *  SymbolicBayesNet bn = {make_shared<SymbolicConditional>(), ...};
+     */
+    SymbolicBayesNet(std::initializer_list<boost::shared_ptr<SymbolicConditional>> conditionals)
+        : Base(conditionals) {}
+
+    /// Construct from a single conditional
+    SymbolicBayesNet(SymbolicConditional&& c) {
+      push_back(boost::make_shared<SymbolicConditional>(c));
+    }
+
+    /**
+     * @brief Add a single conditional and return a reference.
+     * This allows for chaining, e.g.,
+     *   SymbolicBayesNet bn = 
+     *     SymbolicBayesNet(SymbolicConditional(...))(SymbolicConditional(...));
+     */
+    SymbolicBayesNet& operator()(SymbolicConditional&& c) {
+      push_back(boost::make_shared<SymbolicConditional>(c));
+      return *this;
+    }
+
     /// Destructor
     virtual ~SymbolicBayesNet() {}
 

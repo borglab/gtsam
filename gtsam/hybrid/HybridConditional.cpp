@@ -17,6 +17,7 @@
 
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/inference/Key.h>
 
@@ -38,7 +39,7 @@ HybridConditional::HybridConditional(const KeyVector &continuousFrontals,
 
 /* ************************************************************************ */
 HybridConditional::HybridConditional(
-    boost::shared_ptr<GaussianConditional> continuousConditional)
+    const boost::shared_ptr<GaussianConditional> &continuousConditional)
     : HybridConditional(continuousConditional->keys(), {},
                         continuousConditional->nrFrontals()) {
   inner_ = continuousConditional;
@@ -46,7 +47,7 @@ HybridConditional::HybridConditional(
 
 /* ************************************************************************ */
 HybridConditional::HybridConditional(
-    boost::shared_ptr<DiscreteConditional> discreteConditional)
+    const boost::shared_ptr<DiscreteConditional> &discreteConditional)
     : HybridConditional({}, discreteConditional->discreteKeys(),
                         discreteConditional->nrFrontals()) {
   inner_ = discreteConditional;
@@ -54,7 +55,7 @@ HybridConditional::HybridConditional(
 
 /* ************************************************************************ */
 HybridConditional::HybridConditional(
-    boost::shared_ptr<GaussianMixture> gaussianMixture)
+    const boost::shared_ptr<GaussianMixture> &gaussianMixture)
     : BaseFactor(KeyVector(gaussianMixture->keys().begin(),
                            gaussianMixture->keys().begin() +
                                gaussianMixture->nrContinuous()),
@@ -102,7 +103,72 @@ void HybridConditional::print(const std::string &s,
 /* ************************************************************************ */
 bool HybridConditional::equals(const HybridFactor &other, double tol) const {
   const This *e = dynamic_cast<const This *>(&other);
-  return e != nullptr && BaseFactor::equals(*e, tol);
+  if (e == nullptr) return false;
+  if (auto gm = asMixture()) {
+    auto other = e->asMixture();
+    return other != nullptr && gm->equals(*other, tol);
+  }
+  if (auto gc = asGaussian()) {
+    auto other = e->asGaussian();
+    return other != nullptr && gc->equals(*other, tol);
+  }
+  if (auto dc = asDiscrete()) {
+    auto other = e->asDiscrete();
+    return other != nullptr && dc->equals(*other, tol);
+  }
+
+  return inner_ ? (e->inner_ ? inner_->equals(*(e->inner_), tol) : false)
+                : !(e->inner_);
+}
+
+/* ************************************************************************ */
+double HybridConditional::error(const HybridValues &values) const {
+  if (auto gc = asGaussian()) {
+    return gc->error(values.continuous());
+  }
+  if (auto gm = asMixture()) {
+    return gm->error(values);
+  }
+  if (auto dc = asDiscrete()) {
+    return dc->error(values.discrete());
+  }
+  throw std::runtime_error(
+      "HybridConditional::error: conditional type not handled");
+}
+
+/* ************************************************************************ */
+double HybridConditional::logProbability(const HybridValues &values) const {
+  if (auto gc = asGaussian()) {
+    return gc->logProbability(values.continuous());
+  }
+  if (auto gm = asMixture()) {
+    return gm->logProbability(values);
+  }
+  if (auto dc = asDiscrete()) {
+    return dc->logProbability(values.discrete());
+  }
+  throw std::runtime_error(
+      "HybridConditional::logProbability: conditional type not handled");
+}
+
+/* ************************************************************************ */
+double HybridConditional::logNormalizationConstant() const {
+  if (auto gc = asGaussian()) {
+    return gc->logNormalizationConstant();
+  }
+  if (auto gm = asMixture()) {
+    return gm->logNormalizationConstant(); // 0.0!
+  }
+  if (auto dc = asDiscrete()) {
+    return dc->logNormalizationConstant(); // 0.0!
+  }
+  throw std::runtime_error(
+      "HybridConditional::logProbability: conditional type not handled");
+}
+
+/* ************************************************************************ */
+double HybridConditional::evaluate(const HybridValues &values) const {
+  return std::exp(logProbability(values));
 }
 
 }  // namespace gtsam

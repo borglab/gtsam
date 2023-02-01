@@ -21,9 +21,7 @@ virtual class gtsam::noiseModel::Isotropic;
 virtual class gtsam::imuBias::ConstantBias;
 virtual class gtsam::NonlinearFactor;
 virtual class gtsam::NoiseModelFactor;
-virtual class gtsam::NoiseModelFactor2;
-virtual class gtsam::NoiseModelFactor3;
-virtual class gtsam::NoiseModelFactor4;
+virtual class gtsam::NoiseModelFactorN;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
@@ -430,8 +428,9 @@ virtual class IMUFactor : gtsam::NoiseModelFactor {
   Vector gyro() const;
   Vector accel() const;
   Vector z() const;
-  size_t key1() const;
-  size_t key2() const;
+
+  template <I = {1, 2}>
+  size_t key() const;
 };
 
 #include <gtsam_unstable/dynamics/FullIMUFactor.h>
@@ -448,8 +447,9 @@ virtual class FullIMUFactor : gtsam::NoiseModelFactor {
   Vector gyro() const;
   Vector accel() const;
   Vector z() const;
-  size_t key1() const;
-  size_t key2() const;
+
+  template <I = {1, 2}>
+  size_t key() const;
 };
 
 #include <gtsam_unstable/dynamics/DynamicsPriors.h>
@@ -733,14 +733,14 @@ class AHRS {
 // Tectonic SAM Factors
 
 #include <gtsam_unstable/slam/TSAMFactors.h>
-//typedef gtsam::NoiseModelFactor2<gtsam::Pose2, gtsam::Point2> NLPosePose;
+//typedef gtsam::NoiseModelFactorN<gtsam::Pose2, gtsam::Point2> NLPosePose;
 virtual class DeltaFactor : gtsam::NoiseModelFactor {
   DeltaFactor(size_t i, size_t j, const gtsam::Point2& measured,
       const gtsam::noiseModel::Base* noiseModel);
   //void print(string s) const;
 };
 
-//typedef gtsam::NoiseModelFactor4<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
+//typedef gtsam::NoiseModelFactorN<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
 //    gtsam::Point2> NLPosePosePosePoint;
 virtual class DeltaFactorBase : gtsam::NoiseModelFactor {
   DeltaFactorBase(size_t b1, size_t i, size_t b2, size_t j,
@@ -748,7 +748,7 @@ virtual class DeltaFactorBase : gtsam::NoiseModelFactor {
   //void print(string s) const;
 };
 
-//typedef gtsam::NoiseModelFactor4<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
+//typedef gtsam::NoiseModelFactorN<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
 //    gtsam::Pose2> NLPosePosePosePose;
 virtual class OdometryFactorBase : gtsam::NoiseModelFactor {
   OdometryFactorBase(size_t b1, size_t i, size_t b2, size_t j,

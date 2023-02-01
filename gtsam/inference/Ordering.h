@@ -50,16 +50,12 @@ public:
   Ordering() {
   }
 
+  using KeyVector::KeyVector;  // Inherit the KeyVector's constructors
+
   /// Create from a container
   template<typename KEYS>
   explicit Ordering(const KEYS& keys) :
       Base(keys.begin(), keys.end()) {
-  }
-
-  /// Create an ordering using iterators over keys
-  template<typename ITERATOR>
-  Ordering(ITERATOR firstKey, ITERATOR lastKey) :
-      Base(firstKey, lastKey) {
   }
 
   /// Add new variables to the ordering as ordering += key1, key2, ...  Equivalent to calling
@@ -73,7 +69,7 @@ public:
   /**
    * @brief Append new keys to the ordering as `ordering += keys`.
    *
-   * @param key
+   * @param keys The key vector to append to this ordering.
    * @return The ordering variable with appended keys.
    */
   This& operator+=(KeyVector& keys);
@@ -195,7 +191,7 @@ public:
     KeySet src = fg.keys();
     KeyVector keys(src.begin(), src.end());
     std::stable_sort(keys.begin(), keys.end());
-    return Ordering(keys);
+    return Ordering(keys.begin(), keys.end());
   }
 
   /// METIS Formatting function

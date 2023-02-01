@@ -12,14 +12,11 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std/map.hpp>
 #include <boost/optional.hpp>
 #include <boost/format.hpp>
 
 #include <algorithm>
 
-using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
@@ -251,8 +248,7 @@ void sampleSolutions() {
   vector<DiscreteBayesNet::shared_ptr> samplers(NRSTUDENTS);
 
   // Given the time-slots, we can create NRSTUDENTS independent samplers
-  vector<size_t> slots;
-  slots += 12,11,13, 21,16,1, 3,2,6, 7,22,4; // given slots
+  vector<size_t> slots{12,11,13, 21,16,1, 3,2,6, 7,22,4}; // given slots
   for (size_t i = 0; i < NRSTUDENTS; i++)
     samplers[i] = createSampler(i, slots[i], schedulers);
 

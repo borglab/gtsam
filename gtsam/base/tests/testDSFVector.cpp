@@ -21,14 +21,15 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/make_shared.hpp>
-#include <boost/assign/std/list.hpp>
-#include <boost/assign/std/set.hpp>
-#include <boost/assign/std/vector.hpp>
-using namespace boost::assign;
 
 #include <iostream>
+#include <set>
+#include <list>
+#include <utility>
 
-using namespace std;
+using std::pair;
+using std::map;
+using std::vector;
 using namespace gtsam;
 
 /* ************************************************************************* */
@@ -64,8 +65,8 @@ TEST(DSFBase, mergePairwiseMatches) {
 
   // Create some "matches"
   typedef pair<size_t,size_t> Match;
-  vector<Match> matches;
-  matches += Match(1,2), Match(2,3), Match(4,5), Match(4,6);
+  const vector<Match> matches{Match(1, 2), Match(2, 3), Match(4, 5),
+                              Match(4, 6)};
 
   // Merge matches
   DSFBase dsf(7); // We allow for keys 0..6
@@ -85,7 +86,7 @@ TEST(DSFBase, mergePairwiseMatches) {
 /* ************************************************************************* */
 TEST(DSFVector, merge2) {
   boost::shared_ptr<DSFBase::V> v = boost::make_shared<DSFBase::V>(5);
-  std::vector<size_t> keys; keys += 1, 3;
+  const std::vector<size_t> keys {1, 3};
   DSFVector dsf(v, keys);
   dsf.merge(1,3);
   EXPECT(dsf.find(1) == dsf.find(3));
@@ -95,10 +96,10 @@ TEST(DSFVector, merge2) {
 TEST(DSFVector, sets) {
   DSFVector dsf(2);
   dsf.merge(0,1);
-  map<size_t, set<size_t> > sets = dsf.sets();
+  map<size_t, std::set<size_t> > sets = dsf.sets();
   LONGS_EQUAL(1, sets.size());
 
-  set<size_t> expected; expected += 0, 1;
+  const std::set<size_t> expected{0, 1};
   EXPECT(expected == sets[dsf.find(0)]);
 }
 
@@ -109,7 +110,7 @@ TEST(DSFVector, arrays) {
   map<size_t, vector<size_t> > arrays = dsf.arrays();
   LONGS_EQUAL(1, arrays.size());
 
-  vector<size_t> expected; expected += 0, 1;
+  const vector<size_t> expected{0, 1};
   EXPECT(expected == arrays[dsf.find(0)]);
 }
 
@@ -118,10 +119,10 @@ TEST(DSFVector, sets2) {
   DSFVector dsf(3);
   dsf.merge(0,1);
   dsf.merge(1,2);
-  map<size_t, set<size_t> > sets = dsf.sets();
+  map<size_t, std::set<size_t> > sets = dsf.sets();
   LONGS_EQUAL(1, sets.size());
 
-  set<size_t> expected; expected += 0, 1, 2;
+  const std::set<size_t> expected{0, 1, 2};
   EXPECT(expected == sets[dsf.find(0)]);
 }
 
@@ -133,7 +134,7 @@ TEST(DSFVector, arrays2) {
   map<size_t, vector<size_t> > arrays = dsf.arrays();
   LONGS_EQUAL(1, arrays.size());
 
-  vector<size_t> expected; expected += 0, 1, 2;
+  const vector<size_t> expected{0, 1, 2};
   EXPECT(expected == arrays[dsf.find(0)]);
 }
 
@@ -141,10 +142,10 @@ TEST(DSFVector, arrays2) {
 TEST(DSFVector, sets3) {
   DSFVector dsf(3);
   dsf.merge(0,1);
-  map<size_t, set<size_t> > sets = dsf.sets();
+  map<size_t, std::set<size_t> > sets = dsf.sets();
   LONGS_EQUAL(2, sets.size());
 
-  set<size_t> expected; expected += 0, 1;
+  const std::set<size_t> expected{0, 1};
   EXPECT(expected == sets[dsf.find(0)]);
 }
 
@@ -155,7 +156,7 @@ TEST(DSFVector, arrays3) {
   map<size_t, vector<size_t> > arrays = dsf.arrays();
   LONGS_EQUAL(2, arrays.size());
 
-  vector<size_t> expected; expected += 0, 1;
+  const vector<size_t> expected{0, 1};
   EXPECT(expected == arrays[dsf.find(0)]);
 }
 
@@ -163,10 +164,10 @@ TEST(DSFVector, arrays3) {
 TEST(DSFVector, set) {
   DSFVector dsf(3);
   dsf.merge(0,1);
-  set<size_t> set = dsf.set(0);
+  std::set<size_t> set = dsf.set(0);
   LONGS_EQUAL(2, set.size());
 
-  std::set<size_t> expected; expected += 0, 1;
+  const std::set<size_t> expected{0, 1};
   EXPECT(expected == set);
 }
 
@@ -175,10 +176,10 @@ TEST(DSFVector, set2) {
   DSFVector dsf(3);
   dsf.merge(0,1);
   dsf.merge(1,2);
-  set<size_t> set = dsf.set(0);
+  std::set<size_t> set = dsf.set(0);
   LONGS_EQUAL(3, set.size());
 
-  std::set<size_t> expected; expected += 0, 1, 2;
+  const std::set<size_t> expected{0, 1, 2};
   EXPECT(expected == set);
 }
 
@@ -195,13 +196,12 @@ TEST(DSFVector, isSingleton) {
 TEST(DSFVector, mergePairwiseMatches) {
 
   // Create some measurements
-  vector<size_t> keys;
-  keys += 1,2,3,4,5,6;
+  const vector<size_t> keys{1, 2, 3, 4, 5, 6};
 
   // Create some "matches"
   typedef pair<size_t,size_t> Match;
-  vector<Match> matches;
-  matches += Match(1,2), Match(2,3), Match(4,5), Match(4,6);
+  const vector<Match> matches{Match(1, 2), Match(2, 3), Match(4, 5),
+                              Match(4, 6)};
 
   // Merge matches
   DSFVector dsf(keys);
@@ -209,13 +209,13 @@ TEST(DSFVector, mergePairwiseMatches) {
     dsf.merge(m.first,m.second);
 
   // Check that we have two connected components, 1,2,3 and 4,5,6
-  map<size_t, set<size_t> > sets = dsf.sets();
+  map<size_t, std::set<size_t> > sets = dsf.sets();
   LONGS_EQUAL(2, sets.size());
-  set<size_t> expected1; expected1 += 1,2,3;
-  set<size_t> actual1 = sets[dsf.find(2)];
+  const std::set<size_t> expected1{1, 2, 3};
+  std::set<size_t> actual1 = sets[dsf.find(2)];
   EXPECT(expected1 == actual1);
-  set<size_t> expected2; expected2 += 4,5,6;
-  set<size_t> actual2 = sets[dsf.find(5)];
+  const std::set<size_t> expected2{4, 5, 6};
+  std::set<size_t> actual2 = sets[dsf.find(5)];
   EXPECT(expected2 == actual2);
 }
 

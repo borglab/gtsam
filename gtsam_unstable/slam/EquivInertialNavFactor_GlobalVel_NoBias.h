@@ -87,12 +87,12 @@ namespace gtsam {
  */
 
 template<class POSE, class VELOCITY>
-class EquivInertialNavFactor_GlobalVel_NoBias : public NoiseModelFactor4<POSE, VELOCITY, POSE, VELOCITY> {
+class EquivInertialNavFactor_GlobalVel_NoBias : public NoiseModelFactorN<POSE, VELOCITY, POSE, VELOCITY> {
 
 private:
 
   typedef EquivInertialNavFactor_GlobalVel_NoBias<POSE, VELOCITY> This;
-  typedef NoiseModelFactor4<POSE, VELOCITY, POSE, VELOCITY> Base;
+  typedef NoiseModelFactorN<POSE, VELOCITY, POSE, VELOCITY> Base;
 
   Vector delta_pos_in_t0_;
   Vector delta_vel_in_t0_;
@@ -136,10 +136,10 @@ public:
       const std::string& s = "EquivInertialNavFactor_GlobalVel_NoBias",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << s << "("
-        << keyFormatter(this->key1()) << ","
-        << keyFormatter(this->key2()) << ","
-        << keyFormatter(this->key3()) << ","
-        << keyFormatter(this->key4()) << "\n";
+        << keyFormatter(this->key<1>()) << ","
+        << keyFormatter(this->key<2>()) << ","
+        << keyFormatter(this->key<3>()) << ","
+        << keyFormatter(this->key<4>()) << "\n";
     std::cout << "delta_pos_in_t0: " << this->delta_pos_in_t0_.transpose() << std::endl;
     std::cout << "delta_vel_in_t0: " << this->delta_vel_in_t0_.transpose() << std::endl;
     std::cout << "delta_angles: " << this->delta_angles_ << std::endl;

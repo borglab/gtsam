@@ -35,7 +35,7 @@ template <size_t d>
 ShonanFactor<d>::ShonanFactor(Key j1, Key j2, const Rot &R12, size_t p,
                               const SharedNoiseModel &model,
                               const boost::shared_ptr<Matrix> &G)
-    : NoiseModelFactor2<SOn, SOn>(ConvertNoiseModel(model, p * d), j1, j2),
+    : NoiseModelFactorN<SOn, SOn>(ConvertNoiseModel(model, p * d), j1, j2),
       M_(R12.matrix()), // d*d in all cases
       p_(p),            // 4 for SO(4)
       pp_(p * p),       // 16 for SO(4)
@@ -57,8 +57,8 @@ ShonanFactor<d>::ShonanFactor(Key j1, Key j2, const Rot &R12, size_t p,
 template <size_t d>
 void ShonanFactor<d>::print(const std::string &s,
                             const KeyFormatter &keyFormatter) const {
-  std::cout << s << "ShonanFactor<" << p_ << ">(" << keyFormatter(key1()) << ","
-            << keyFormatter(key2()) << ")\n";
+  std::cout << s << "ShonanFactor<" << p_ << ">(" << keyFormatter(key<1>()) << ","
+            << keyFormatter(key<2>()) << ")\n";
   traits<Matrix>::Print(M_, "  M: ");
   noiseModel_->print("  noise model: ");
 }
@@ -68,7 +68,7 @@ template <size_t d>
 bool ShonanFactor<d>::equals(const NonlinearFactor &expected,
                              double tol) const {
   auto e = dynamic_cast<const ShonanFactor *>(&expected);
-  return e != nullptr && NoiseModelFactor2<SOn, SOn>::equals(*e, tol) &&
+  return e != nullptr && NoiseModelFactorN<SOn, SOn>::equals(*e, tol) &&
          p_ == e->p_ && M_ == e->M_;
 }
 

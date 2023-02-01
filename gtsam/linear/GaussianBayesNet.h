@@ -65,8 +65,17 @@ namespace gtsam {
     explicit GaussianBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph)
         : Base(graph) {}
 
+    /**
+     * Constructor that takes an initializer list of shared pointers.
+     *  BayesNet bn = {make_shared<Conditional>(), ...};
+     */
+    template <class DERIVEDCONDITIONAL>
+    GaussianBayesNet(
+        std::initializer_list<boost::shared_ptr<DERIVEDCONDITIONAL> > conditionals)
+        : Base(conditionals) {}
+
     /// Destructor
-    virtual ~GaussianBayesNet() {}
+    virtual ~GaussianBayesNet() = default;
 
     /// @}
 
@@ -88,12 +97,30 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
+    /// Sum error over all variables.
+    double error(const VectorValues& x) const;
+
+    /// Sum logProbability over all variables.
+    double logProbability(const VectorValues& x) const;
+
+    /**
+     * Calculate probability density for given values `x`:
+     *   exp(logProbability)
+     * where x is the vector of values.
+     */
+    double evaluate(const VectorValues& x) const;
+
+    /// Evaluate probability density, sugar.
+    double operator()(const VectorValues& x) const {
+      return evaluate(x);
+    }
+
     /// Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, by
     /// back-substitution
     VectorValues optimize() const;
 
     /// Version of optimize for incomplete BayesNet, given missing variables
-    VectorValues optimize(const VectorValues given) const;
+    VectorValues optimize(const VectorValues& given) const;
 
     /**
      * Sample using ancestral sampling
@@ -110,13 +137,13 @@ namespace gtsam {
      *   VectorValues given = ...;
      *   auto sample = gbn.sample(given, &rng);
      */
-    VectorValues sample(VectorValues given, std::mt19937_64* rng) const;
+    VectorValues sample(const VectorValues& given, std::mt19937_64* rng) const;
 
     /// Sample using ancestral sampling, use default rng
     VectorValues sample() const;
 
     /// Sample from an incomplete BayesNet, use default rng
-    VectorValues sample(VectorValues given) const;
+    VectorValues sample(const VectorValues& given) const;
 
     /**
      * Return ordering corresponding to a topological sort.
@@ -187,9 +214,6 @@ namespace gtsam {
      *        allocateVectorValues */
     VectorValues gradientAtZero() const;
 
-    /** 0.5 * sum of squared Mahalanobis distances. */
-    double error(const VectorValues& x) const;
-
     /**
      * Computes the determinant of a GassianBayesNet. A GaussianBayesNet is an upper triangular
      * matrix and for an upper triangular matrix determinant is the product of the diagonal
@@ -220,6 +244,14 @@ namespace gtsam {
      * gz'*R'=gx', gy = gz.*sigmas
      */
     VectorValues backSubstituteTranspose(const VectorValues& gx) const;
+
+    /// @}
+    /// @name HybridValues methods.
+    /// @{
+
+    using Base::evaluate; // Expose evaluate(const HybridValues&) method..
+    using Base::logProbability; // Expose logProbability(const HybridValues&) method..
+    using Base::error; // Expose error(const HybridValues&) method..
 
     /// @}
 

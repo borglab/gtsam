@@ -77,12 +77,12 @@ namespace gtsam {
  *            vehicle
  */
 template<class POSE, class VELOCITY, class IMUBIAS>
-class InertialNavFactor_GlobalVelocity : public NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
+class InertialNavFactor_GlobalVelocity : public NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
 
 private:
 
   typedef InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> This;
-  typedef NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
+  typedef NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
 
   Vector measurement_acc_;
   Vector measurement_gyro_;

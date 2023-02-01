@@ -25,10 +25,8 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/assign/std/map.hpp>
 #include <iostream>
 
-using namespace boost::assign;
 using namespace std::placeholders;
 
 namespace {
@@ -437,7 +435,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     E(2, 0) = 10;
     E(2, 2) = 1;
     E(3, 1) = 10;
-    SmartFactor::FBlocks Fs = list_of<Matrix>(F1)(F2);
+    SmartFactor::FBlocks Fs {F1, F2};
     Vector b(4);
     b.setZero();
 

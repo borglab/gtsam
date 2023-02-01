@@ -28,7 +28,7 @@ namespace gtsam {
  * @ingroup slam
  */
 template<class POSE, class LANDMARK>
-class GenericStereoFactor: public NoiseModelFactor2<POSE, LANDMARK> {
+class GenericStereoFactor: public NoiseModelFactorN<POSE, LANDMARK> {
 private:
 
   // Keep a copy of measurement and calibration for I/O
@@ -43,7 +43,7 @@ private:
 public:
 
   // shorthand for base class type
-  typedef NoiseModelFactor2<POSE, LANDMARK> Base;             ///< typedef for base class
+  typedef NoiseModelFactorN<POSE, LANDMARK> Base;             ///< typedef for base class
   typedef GenericStereoFactor<POSE, LANDMARK> This;           ///< typedef for this class (with templates)
   typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
   typedef POSE CamPose;                                       ///< typedef for Pose Lie Value type
@@ -170,6 +170,7 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor2",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);

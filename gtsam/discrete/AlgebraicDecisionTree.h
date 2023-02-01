@@ -71,7 +71,7 @@ namespace gtsam {
       static inline double id(const double& x) { return x; }
     };
 
-    AlgebraicDecisionTree() : Base(1.0) {}
+    AlgebraicDecisionTree(double leaf = 1.0) : Base(leaf) {}
 
     // Explicitly non-explicit constructor
     AlgebraicDecisionTree(const Base& add) : Base(add) {}
@@ -158,9 +158,9 @@ namespace gtsam {
     }
 
     /// print method customized to value type `double`.
-    void print(const std::string& s,
-              const typename Base::LabelFormatter& labelFormatter =
-                  &DefaultFormatter) const {
+    void print(const std::string& s = "",
+               const typename Base::LabelFormatter& labelFormatter =
+                   &DefaultFormatter) const {
       auto valueFormatter = [](const double& v) {
         return (boost::format("%4.8g") % v).str();
       };

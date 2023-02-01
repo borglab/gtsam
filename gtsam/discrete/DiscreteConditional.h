@@ -18,9 +18,9 @@
 
 #pragma once
 
+#include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/Signature.h>
-#include <gtsam/inference/Conditional.h>
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
@@ -147,6 +147,11 @@ class GTSAM_EXPORT DiscreteConditional
   /// @name Standard Interface
   /// @{
 
+  /// Log-probability is just -error(x).
+  double logProbability(const DiscreteValues& x) const  {
+    return -error(x);
+  }
+
   /// print index signature only
   void printSignature(
       const std::string& s = "Discrete Conditional: ",
@@ -155,9 +160,12 @@ class GTSAM_EXPORT DiscreteConditional
   }
 
   /// Evaluate, just look up in AlgebraicDecisonTree
-  double operator()(const DiscreteValues& values) const override {
+  double evaluate(const DiscreteValues& values) const {
     return ADT::operator()(values);
   }
+
+  using DecisionTreeFactor::error;       ///< DiscreteValues version
+  using DecisionTreeFactor::operator();  ///< DiscreteValues version
 
   /**
    * @brief restrict to given *parent* values.
@@ -225,6 +233,34 @@ class GTSAM_EXPORT DiscreteConditional
   std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                    const Names& names = {}) const override;
 
+
+  /// @}
+  /// @name HybridValues methods.
+  /// @{
+
+  /**
+   * Calculate probability for HybridValues `x`.
+   * Dispatches to DiscreteValues version.
+   */
+  double evaluate(const HybridValues& x) const override;
+
+  using BaseConditional::operator();  ///< HybridValues version
+
+  /**
+   * Calculate log-probability log(evaluate(x)) for HybridValues `x`.
+   * This is actually just -error(x).
+   */
+  double logProbability(const HybridValues& x) const override {
+    return -error(x);
+  }
+
+  /**
+   * logNormalizationConstant K is just zero, such that
+   * logProbability(x) = log(evaluate(x)) = - error(x)
+   * and hence error(x) = - log(evaluate(x)) > 0 for all x.
+   */
+  double logNormalizationConstant() const override { return 0.0; }
+
   /// @}
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
@@ -239,6 +275,15 @@ class GTSAM_EXPORT DiscreteConditional
   /// Internal version of choose
   DiscreteConditional::ADT choose(const DiscreteValues& given,
                                   bool forceComplete) const;
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
+  }
 };
 // DiscreteConditional
 

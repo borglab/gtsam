@@ -133,9 +133,9 @@ std::ostream& operator<<(std::ostream& os, const ImuFactor& f) {
 
 //------------------------------------------------------------------------------
 void ImuFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
-  cout << (s.empty() ? s : s + "\n") << "ImuFactor(" << keyFormatter(this->key1())
-       << "," << keyFormatter(this->key2()) << "," << keyFormatter(this->key3())
-       << "," << keyFormatter(this->key4()) << "," << keyFormatter(this->key5())
+  cout << (s.empty() ? s : s + "\n") << "ImuFactor(" << keyFormatter(this->key<1>())
+       << "," << keyFormatter(this->key<2>()) << "," << keyFormatter(this->key<3>())
+       << "," << keyFormatter(this->key<4>()) << "," << keyFormatter(this->key<5>())
        << ")\n";
   cout << *this << endl;
 }
@@ -184,22 +184,22 @@ PreintegratedImuMeasurements ImuFactor::Merge(
 ImuFactor::shared_ptr ImuFactor::Merge(const shared_ptr& f01,
     const shared_ptr& f12) {
   // IMU bias keys must be the same.
-  if (f01->key5() != f12->key5())
+  if (f01->key<5>() != f12->key<5>())
   throw std::domain_error("ImuFactor::Merge: IMU bias keys must be the same");
 
   // expect intermediate pose, velocity keys to matchup.
-  if (f01->key3() != f12->key1() || f01->key4() != f12->key2())
+  if (f01->key<3>() != f12->key<1>() || f01->key<4>() != f12->key<2>())
   throw std::domain_error(
       "ImuFactor::Merge: intermediate pose, velocity keys need to match up");
 
   // return new factor
   auto pim02 =
   Merge(f01->preintegratedMeasurements(), f12->preintegratedMeasurements());
-  return boost::make_shared<ImuFactor>(f01->key1(),  // P0
-      f01->key2(),  // V0
-      f12->key3(),  // P2
-      f12->key4(),  // V2
-      f01->key5(),  // B
+  return boost::make_shared<ImuFactor>(f01->key<1>(),  // P0
+      f01->key<2>(),  // V0
+      f12->key<3>(),  // P2
+      f12->key<4>(),  // V2
+      f01->key<5>(),  // B
       pim02);
 }
 #endif
@@ -230,8 +230,8 @@ std::ostream& operator<<(std::ostream& os, const ImuFactor2& f) {
 void ImuFactor2::print(const string& s,
     const KeyFormatter& keyFormatter) const {
   cout << (s.empty() ? s : s + "\n") << "ImuFactor2("
-       << keyFormatter(this->key1()) << "," << keyFormatter(this->key2()) << ","
-       << keyFormatter(this->key3()) << ")\n";
+       << keyFormatter(this->key<1>()) << "," << keyFormatter(this->key<2>()) << ","
+       << keyFormatter(this->key<3>()) << ")\n";
   cout << *this << endl;
 }
 

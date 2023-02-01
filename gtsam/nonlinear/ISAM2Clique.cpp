@@ -245,7 +245,7 @@ bool ISAM2Clique::optimizeWildfireNode(const KeySet& replaced, double threshold,
 
     // Back-substitute
     fastBackSubstitute(delta);
-    count += conditional_->nrFrontals();
+    *count += conditional_->nrFrontals();
 
     if (valuesChanged(replaced, originalValues, *delta, threshold)) {
       markFrontalsAsChanged(changed);
