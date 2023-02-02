@@ -26,7 +26,6 @@
 #include <mutex>
 #include <optional>
 
-
 namespace gtsam {
 
   // Forward declarations

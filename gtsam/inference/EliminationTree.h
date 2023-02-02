@@ -121,23 +121,20 @@ namespace gtsam {
 
   public:
     ~EliminationTree() {
-      // default destructor will cause stack overflow for deletion of large trees
-      // so we delete the tree explicitly by first BFSing the tree to determine the topological order
-      // and then clearing the children of each node in topological order
+      // use default destructor which recursively deletes all nodes with shared_ptr causes stack overflow.
+      // so for each tree, we first move the root into a queue; then we do a BFS on the tree with the queue;
+      // for each node iterated, if its reference count is 1, it will be deleted while its children are still in the queue.
+      // so that the recursive deletion will not happen.
       for (auto&& root : roots_) {
-        std::queue<Node*> bfs_queue;
-        std::deque<Node*> topological_order;
-        bfs_queue.push(root.get());
+        std::queue<sharedNode> bfs_queue;
+        bfs_queue.push(root);
+        root = nullptr;
         while (!bfs_queue.empty()) {
-          Node* node = bfs_queue.front();
+          auto node = bfs_queue.front();
           bfs_queue.pop();
-          topological_order.push_front(node);
           for (auto&& child : node->children) {
-            bfs_queue.push(child.get());
+            bfs_queue.push(child);
           }
-        }
-        for (auto&& node : topological_order) {
-          node->children.clear();
         }
       }
     }
@@ -178,7 +175,6 @@ namespace gtsam {
 
     /** Swap the data of this tree with another one, this operation is very fast. */
     void swap(This& other);
-
 
   protected:
     /// Protected default constructor
