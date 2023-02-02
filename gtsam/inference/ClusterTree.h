@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include <deque>
 #include <queue>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastVector.h>
@@ -48,8 +47,7 @@ class ClusterTree {
 
     Cluster() : problemSize_(0) {}
 
-    virtual ~Cluster() {
-    }
+    virtual ~Cluster() {}
 
     const Cluster& operator[](size_t i) const {
       return *(children[i]);
@@ -169,21 +167,19 @@ class ClusterTree {
 
   virtual ~ClusterTree() {
     // use default destructor which recursively deletes all nodes with shared_ptr causes stack overflow.
-    // so for each tree, we do a BFS to get sequence of nodes to delete, and clear their children first.
+    // so for each tree, we first move the root into a queue; then we do a BFS on the tree with the queue;
+    // for each node iterated, if its reference count is 1, it will be deleted while its children are still in the queue.
+    // so that the recursive deletion will not happen.
     for (auto&& root : roots_) {
-      std::queue<Cluster*> bfs_queue;
-      std::deque<Cluster*> topological_order;
-      bfs_queue.push(root.get());
+      std::queue<sharedNode> bfs_queue;
+      bfs_queue.push(root);
+      root = nullptr;
       while (!bfs_queue.empty()) {
         auto node = bfs_queue.front();
-        topological_order.push_front(node);
         bfs_queue.pop();
-        for (auto&& child : node->children) {
-          bfs_queue.push(child.get());
+        for (auto child : node->children) {
+          bfs_queue.push(child);
         }
-      }
-      for (auto&& node : topological_order) {
-        node->children.clear();
       }
     }
   }

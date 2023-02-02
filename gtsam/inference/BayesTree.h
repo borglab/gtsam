@@ -28,7 +28,6 @@
 
 #include <string>
 #include <queue>
-#include <deque>
 
 namespace gtsam {
 
@@ -114,20 +113,23 @@ namespace gtsam {
     BayesTree(const This& other);
 
     ~BayesTree() {
+      nodes_.clear();  // clear the map manually, as we cannot control the order of destruction in the map
       for (auto&& root: roots_) {
-        std::queue<Clique*> bfs_queue;
-        std::deque<Clique*> topological_order;
-        bfs_queue.push(root.get());
+        std::queue<sharedClique> bfs_queue;
+        
+        // first, move the root to the queue
+        bfs_queue.push(root);
+        root = nullptr;
+
+        // do a BFS on the tree, for each node, add its children to the queue, and then delete it from the queue
+        // So if the reference count of the node is 1, it will be deleted, and because its children are in the queue,
+        // the deletion of the node will not trigger a recursive deletion of the children.
         while (!bfs_queue.empty()) {
-          Clique* current = bfs_queue.front();
+          auto current = bfs_queue.front();
           bfs_queue.pop();
-          topological_order.push_front(current);
-          for (auto&& child: current->children) {
-            bfs_queue.push(child.get());
+          for (auto child: current->children) {
+            bfs_queue.push(child);
           }
-        }
-        for (auto&& clique: topological_order) {
-          clique->children.clear();
         }
       }
     }
