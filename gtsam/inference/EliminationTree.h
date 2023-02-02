@@ -19,7 +19,6 @@
 
 #include <utility>
 #include <memory>
-#include <deque>
 #include <queue>
 
 #include <gtsam/base/Testable.h>
