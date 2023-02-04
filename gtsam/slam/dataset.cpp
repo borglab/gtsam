@@ -51,11 +51,12 @@
 
 #if defined(__GNUC__) && (__GNUC__ == 7)
 #include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
 #else
 #include <filesystem>
+namespace fs = std::filesystem;
 #endif
 
-namespace fs = std::filesystem;
 using gtsam::symbol_shorthand::L;
 
 using std::cout;
