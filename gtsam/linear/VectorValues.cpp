@@ -43,7 +43,7 @@ namespace gtsam {
 #ifdef TBB_GREATER_EQUAL_2020
       values_.emplace(key, x.segment(j, n));
 #else
-      values_.insert(std::make_pair(key, x.segment(j, n)));
+      values_.insert({key, x.segment(j, n)});
 #endif
       j += n;
     }
@@ -56,7 +56,7 @@ namespace gtsam {
 #ifdef TBB_GREATER_EQUAL_2020
       values_.emplace(v.key, x.segment(j, v.dimension));
 #else
-      values_.insert(std::make_pair(v.key, x.segment(j, v.dimension)));
+      values_.insert({v.key, x.segment(j, v.dimension)});
 #endif
       j += v.dimension;
     }
@@ -70,7 +70,7 @@ namespace gtsam {
 #ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(key, Vector::Zero(value.size()));
 #else
-      result.values_.insert(std::make_pair(key, Vector::Zero(value.size())));
+      result.values_.insert({key, Vector::Zero(value.size())});
 #endif
     return result;
   }
@@ -267,7 +267,7 @@ namespace gtsam {
 #ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(j1->first, j1->second + j2->second);
 #else
-      result.values_.insert(std::make_pair(j1->first, j1->second + j2->second));
+      result.values_.insert({j1->first, j1->second + j2->second});
 #endif
 
     return result;
@@ -329,7 +329,7 @@ namespace gtsam {
 #ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(j1->first, j1->second - j2->second);
 #else
-      result.values_.insert(std::make_pair(j1->first, j1->second - j2->second));
+      result.values_.insert({j1->first, j1->second - j2->second});
 #endif
 
     return result;
@@ -349,7 +349,7 @@ namespace gtsam {
 #ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(key_v.first, a * key_v.second);
 #else
-      result.values_.insert(std::make_pair(key_v.first, a * key_v.second));
+      result.values_.insert({key_v.first, a * key_v.second});
 #endif
     return result;
   }

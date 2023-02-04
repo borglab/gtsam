@@ -245,7 +245,7 @@ namespace gtsam {
   void BayesTree<CLIQUE>::fillNodesIndex(const sharedClique& subtree) {
     // Add each frontal variable of this root node
     for(const Key& j: subtree->conditional()->frontals()) {
-      bool inserted = nodes_.insert(std::make_pair(j, subtree)).second;
+      bool inserted = nodes_.insert({j, subtree}).second;
       assert(inserted); (void)inserted;
     }
     // Fill index for each child

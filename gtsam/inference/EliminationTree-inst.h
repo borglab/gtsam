@@ -218,13 +218,13 @@ namespace gtsam {
     // Add roots in sorted order
     {
       FastMap<Key,sharedNode> keys;
-      for(const sharedNode& root: this->roots_) { keys.insert(std::make_pair(root->key, root)); }
+      for(const sharedNode& root: this->roots_) { keys.emplace(root->key, root); }
       typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
       for(const Key_Node& key_node: keys) { stack1.push(key_node.second); }
     }
     {
       FastMap<Key,sharedNode> keys;
-      for(const sharedNode& root: expected.roots_) { keys.insert(std::make_pair(root->key, root)); }
+      for(const sharedNode& root: expected.roots_) { keys.emplace(root->key, root); }
       typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
       for(const Key_Node& key_node: keys) { stack2.push(key_node.second); }
     }
@@ -258,13 +258,13 @@ namespace gtsam {
       // Add children in sorted order
       {
         FastMap<Key,sharedNode> keys;
-        for(const sharedNode& node: node1->children) { keys.insert(std::make_pair(node->key, node)); }
+        for(const sharedNode& node: node1->children) { keys.emplace(node->key, node); }
         typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
         for(const Key_Node& key_node: keys) { stack1.push(key_node.second); }
       }
       {
         FastMap<Key,sharedNode> keys;
-        for(const sharedNode& node: node2->children) { keys.insert(std::make_pair(node->key, node)); }
+        for(const sharedNode& node: node2->children) { keys.emplace(node->key, node); }
         typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
         for(const Key_Node& key_node: keys) { stack2.push(key_node.second); }
       }

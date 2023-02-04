@@ -396,7 +396,7 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
 
     FastMap<Key, size_t> KeySlotMap;
     for (size_t slot = 0; slot < allKeys.size(); slot++)
-      KeySlotMap.insert(std::make_pair(allKeys[slot], slot));
+      KeySlotMap.emplace(allKeys[slot], slot);
 
     // Schur complement trick
     // G = F' * F - F' * E * P * E' * F
