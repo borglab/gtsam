@@ -198,7 +198,7 @@ namespace gtsam {
     allRemainingFactors->push_back(remainingFactors.begin(), remainingFactors.end());
 
     // Return result
-    return std::make_pair(result, allRemainingFactors);
+    return {result, allRemainingFactors};
   }
 
   /* ************************************************************************* */

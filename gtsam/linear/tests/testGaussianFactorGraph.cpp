@@ -245,9 +245,7 @@ TEST(GaussianFactorGraph, eliminate_empty) {
   // eliminate an empty factor
   GaussianFactorGraph gfg;
   gfg.add(JacobianFactor());
-  GaussianBayesNet::shared_ptr actualBN;
-  GaussianFactorGraph::shared_ptr remainingGFG;
-  std::tie(actualBN, remainingGFG) = gfg.eliminatePartialSequential(Ordering());
+  const auto [actualBN, remainingGFG] = gfg.eliminatePartialSequential(Ordering());
 
   // expected Bayes net is empty
   GaussianBayesNet expectedBN;

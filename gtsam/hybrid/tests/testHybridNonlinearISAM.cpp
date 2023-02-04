@@ -149,9 +149,7 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
   ordering += X(2);
 
   // Now we calculate the actual factors using full elimination
-  HybridBayesTree::shared_ptr expectedHybridBayesTree;
-  HybridGaussianFactorGraph::shared_ptr expectedRemainingGraph;
-  std::tie(expectedHybridBayesTree, expectedRemainingGraph) =
+  const auto [expectedHybridBayesTree, expectedRemainingGraph] =
       switching.linearizedFactorGraph
           .BaseEliminateable::eliminatePartialMultifrontal(ordering);
 
@@ -250,9 +248,7 @@ TEST(HybridNonlinearISAM, Approx_inference) {
   }
 
   // Now we calculate the actual factors using full elimination
-  HybridBayesTree::shared_ptr unprunedHybridBayesTree;
-  HybridGaussianFactorGraph::shared_ptr unprunedRemainingGraph;
-  std::tie(unprunedHybridBayesTree, unprunedRemainingGraph) =
+  const auto [unprunedHybridBayesTree, unprunedRemainingGraph] =
       switching.linearizedFactorGraph
           .BaseEliminateable::eliminatePartialMultifrontal(ordering);
 

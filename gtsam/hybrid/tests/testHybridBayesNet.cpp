@@ -131,9 +131,7 @@ TEST(HybridBayesNet, Choose) {
 
   const Ordering ordering(s.linearizationPoint.keys());
 
-  HybridBayesNet::shared_ptr hybridBayesNet;
-  HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
-  std::tie(hybridBayesNet, remainingFactorGraph) =
+  const auto [hybridBayesNet, remainingFactorGraph] =
       s.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   DiscreteValues assignment;

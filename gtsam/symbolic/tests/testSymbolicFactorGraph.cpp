@@ -65,17 +65,13 @@ TEST(SymbolicFactorGraph, eliminatePartialSequential) {
   const auto expectedSfg = SymbolicFactorGraph(SymbolicFactor(2, 3))(
       SymbolicFactor(4, 5))(SymbolicFactor(2, 3, 4));
 
-  SymbolicBayesNet::shared_ptr actualBayesNet;
-  SymbolicFactorGraph::shared_ptr actualSfg;
-  std::tie(actualBayesNet, actualSfg) =
+  const auto [actualBayesNet, actualSfg] =
       simpleTestGraph2.eliminatePartialSequential(Ordering{0, 1});
 
   EXPECT(assert_equal(expectedSfg, *actualSfg));
   EXPECT(assert_equal(expectedBayesNet, *actualBayesNet));
 
-  SymbolicBayesNet::shared_ptr actualBayesNet2;
-  SymbolicFactorGraph::shared_ptr actualSfg2;
-  std::tie(actualBayesNet2, actualSfg2) =
+  const auto [actualBayesNet2, actualSfg2] =
       simpleTestGraph2.eliminatePartialSequential(Ordering{0, 1});
 
   EXPECT(assert_equal(expectedSfg, *actualSfg2));
@@ -106,9 +102,7 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal) {
       SymbolicFactorGraph(SymbolicFactor(0, 1))(SymbolicFactor(0, 2))(
           SymbolicFactor(1, 3))(SymbolicFactor(2, 3))(SymbolicFactor(1));
 
-  SymbolicBayesTree::shared_ptr actualBayesTree;
-  SymbolicFactorGraph::shared_ptr actualFactorGraph;
-  std::tie(actualBayesTree, actualFactorGraph) =
+  const auto [actualBayesTree, actualFactorGraph] =
       simpleTestGraph2.eliminatePartialMultifrontal(Ordering{4, 5});
 
   EXPECT(assert_equal(expectedFactorGraph, *actualFactorGraph));
@@ -122,9 +116,7 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal) {
       std::make_shared<SymbolicConditional>(5, 4)));
   expectedBayesTree2.insertRoot(root2);
 
-  SymbolicBayesTree::shared_ptr actualBayesTree2;
-  SymbolicFactorGraph::shared_ptr actualFactorGraph2;
-  std::tie(actualBayesTree2, actualFactorGraph2) =
+  const auto [actualBayesTree2, actualFactorGraph2] =
       simpleTestGraph2.eliminatePartialMultifrontal(KeyVector{4, 5});
 
   EXPECT(assert_equal(expectedFactorGraph, *actualFactorGraph2));
@@ -152,11 +144,11 @@ TEST(SymbolicFactorGraph, eliminate_disconnected_graph) {
 
   // create expected Chordal bayes Net
   SymbolicBayesNet expected;
-  expected.push_back(std::make_shared<SymbolicConditional>(0, 1, 2));
-  expected.push_back(std::make_shared<SymbolicConditional>(1, 2));
-  expected.push_back(std::make_shared<SymbolicConditional>(2));
-  expected.push_back(std::make_shared<SymbolicConditional>(3, 4));
-  expected.push_back(std::make_shared<SymbolicConditional>(4));
+  expected.emplace_shared<SymbolicConditional>(0, 1, 2);
+  expected.emplace_shared<SymbolicConditional>(1, 2);
+  expected.emplace_shared<SymbolicConditional>(2);
+  expected.emplace_shared<SymbolicConditional>(3, 4);
+  expected.emplace_shared<SymbolicConditional>(4);
 
   Ordering order;
   order += 0, 1, 2, 3, 4;

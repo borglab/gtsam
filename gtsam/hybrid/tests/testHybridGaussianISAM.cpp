@@ -132,9 +132,7 @@ TEST(HybridGaussianElimination, IncrementalInference) {
   ordering += X(2);
 
   // Now we calculate the expected factors using full elimination
-  HybridBayesTree::shared_ptr expectedHybridBayesTree;
-  HybridGaussianFactorGraph::shared_ptr expectedRemainingGraph;
-  std::tie(expectedHybridBayesTree, expectedRemainingGraph) =
+  const auto [expectedHybridBayesTree, expectedRemainingGraph] =
       switching.linearizedFactorGraph.eliminatePartialMultifrontal(ordering);
 
   // The densities on X(0) should be the same
@@ -231,9 +229,7 @@ TEST(HybridGaussianElimination, Approx_inference) {
   }
 
   // Now we calculate the actual factors using full elimination
-  HybridBayesTree::shared_ptr unprunedHybridBayesTree;
-  HybridGaussianFactorGraph::shared_ptr unprunedRemainingGraph;
-  std::tie(unprunedHybridBayesTree, unprunedRemainingGraph) =
+  const auto [unprunedHybridBayesTree, unprunedRemainingGraph] =
       switching.linearizedFactorGraph.eliminatePartialMultifrontal(ordering);
 
   size_t maxNrLeaves = 5;

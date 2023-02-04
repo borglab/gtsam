@@ -270,9 +270,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   auto ordering_full =
       Ordering::ColamdConstrainedLast(hfg, {M(0), M(1), M(2), M(3)});
 
-  HybridBayesTree::shared_ptr hbt;
-  HybridGaussianFactorGraph::shared_ptr remaining;
-  std::tie(hbt, remaining) = hfg.eliminatePartialMultifrontal(ordering_full);
+  const auto [hbt, remaining] = hfg.eliminatePartialMultifrontal(ordering_full);
 
   // 9 cliques in the bayes tree and 0 remaining variables to eliminate.
   EXPECT_LONGS_EQUAL(9, hbt->size());
@@ -353,9 +351,7 @@ TEST(HybridGaussianFactorGraph, Switching) {
   // GTSAM_PRINT(*hfg);
   // GTSAM_PRINT(ordering_full);
 
-  HybridBayesTree::shared_ptr hbt;
-  HybridGaussianFactorGraph::shared_ptr remaining;
-  std::tie(hbt, remaining) = hfg->eliminatePartialMultifrontal(ordering_full);
+  const auto [hbt, remaining] = hfg->eliminatePartialMultifrontal(ordering_full);
 
   // 12 cliques in the bayes tree and 0 remaining variables to eliminate.
   EXPECT_LONGS_EQUAL(12, hbt->size());
@@ -411,9 +407,7 @@ TEST(HybridGaussianFactorGraph, SwitchingISAM) {
   }
   auto ordering_full = Ordering(ordering);
 
-  HybridBayesTree::shared_ptr hbt;
-  HybridGaussianFactorGraph::shared_ptr remaining;
-  std::tie(hbt, remaining) = hfg->eliminatePartialMultifrontal(ordering_full);
+  const auto [hbt, remaining] = hfg->eliminatePartialMultifrontal(ordering_full);
 
   auto new_fg = makeSwitchingChain(12);
   auto isam = HybridGaussianISAM(*hbt);
@@ -847,10 +841,9 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   EXPECT(ratioTest(bn, measurements, fg));
 
   // Do elimination of X(2) only:
-  auto result = fg.eliminatePartialSequential(Ordering{X(2)});
-  auto fg1 = *result.second;
-  fg1.push_back(*result.first);
-  EXPECT(ratioTest(bn, measurements, fg1));
+  auto [bn1, fg1] = fg.eliminatePartialSequential(Ordering{X(2)});
+  fg1->push_back(*bn1);
+  EXPECT(ratioTest(bn, measurements, *fg1));
 
   // Create ordering that eliminates in time order, then discrete modes:
   Ordering ordering {X(2), X(1), X(0), N(0), N(1), N(2), M(1), M(2)};
