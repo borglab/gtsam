@@ -18,7 +18,8 @@ inline static SignatureParser::Table ParseAnd() {
   return {ParseFalseRow(), ParseFalseRow(), ParseFalseRow(), ParseTrueRow()};
 }
 
-bool static ParseConditional(const std::string& token, std::vector<double>& row) {
+bool static ParseConditional(const std::string& token,
+                             std::vector<double>& row) {
   // Expect something like a/b/c
   std::istringstream iss2(token);
   try {
@@ -35,7 +36,8 @@ bool static ParseConditional(const std::string& token, std::vector<double>& row)
   return true;
 }
 
-void static ParseConditionalTable(const std::vector<std::string>& tokens, SignatureParser::Table& table) {
+void static ParseConditionalTable(const std::vector<std::string>& tokens,
+                                  SignatureParser::Table& table) {
   // loop over the words
   // for each word, split it into doubles using a stringstream
   for (const auto& word : tokens) {
@@ -105,8 +107,8 @@ bool SignatureParser::parse(const std::string& str, Table& table) {
   if (table.empty()) {
     return false;
   }
-  // the boost::phoenix parser did not return an error if we could not fully parse a string
-  // it just returned whatever it could parse
+  // the boost::phoenix parser did not return an error if we could not fully
+  // parse a string it just returned whatever it could parse
   return true;
 }
 }  // namespace gtsam
