@@ -193,9 +193,7 @@ Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
     const SharedNoiseModel& model = nullptr) {
 
   // Create a factor graph and initial values
-  Values values;
-  NonlinearFactorGraph graph;
-  std::tie(graph, values) = triangulationGraph<CALIBRATION> //
+  const auto [graph, values] = triangulationGraph<CALIBRATION> //
       (poses, sharedCal, measurements, Symbol('p', 0), initialEstimate, model);
 
   return optimize(graph, values, Symbol('p', 0));
@@ -215,9 +213,7 @@ Point3 triangulateNonlinear(
     const SharedNoiseModel& model = nullptr) {
 
   // Create a factor graph and initial values
-  Values values;
-  NonlinearFactorGraph graph;
-  std::tie(graph, values) = triangulationGraph<CAMERA> //
+  const auto [graph, values] = triangulationGraph<CAMERA> //
       (cameras, measurements, Symbol('p', 0), initialEstimate, model);
 
   return optimize(graph, values, Symbol('p', 0));

@@ -179,10 +179,8 @@ ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
 
   // Anchor prior is added here as depends on initial value (and cost is zero)
   if (parameters_.alpha > 0) {
-    size_t i;
-    Rot value;
     const size_t dim = SOn::Dimension(p);
-    std::tie(i, value) = parameters_.anchor;
+    const auto [i, value] = parameters_.anchor;
     auto model = noiseModel::Isotropic::Precision(dim, parameters_.alpha);
     graph.emplace_shared<PriorFactor<SOn>>(i, SOn::Lift(p, value.matrix()),
                                            model);

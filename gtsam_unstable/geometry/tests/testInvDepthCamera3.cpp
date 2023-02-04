@@ -130,9 +130,7 @@ TEST(InvDepthFactor, backproject)
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose,K);
   Point2 z = inv_camera.project(expected, inv_depth);
 
-  Vector5 actual_vec;
-  double actual_inv;
-  std::tie(actual_vec, actual_inv) = inv_camera.backproject(z, 4);
+  const auto [actual_vec, actual_inv] = inv_camera.backproject(z, 4);
   EXPECT(assert_equal(expected,actual_vec,1e-7));
   EXPECT_DOUBLES_EQUAL(inv_depth,actual_inv,1e-7);
 }
@@ -146,9 +144,7 @@ TEST(InvDepthFactor, backproject2)
   InvDepthCamera3<Cal3_S2> inv_camera(Pose3(Rot3::Ypr(1.5,0.1, -1.5), Point3(-5, -5, 2)),K);
   Point2 z = inv_camera.project(expected, inv_depth);
 
-  Vector5 actual_vec;
-  double actual_inv;
-  std::tie(actual_vec, actual_inv) = inv_camera.backproject(z, 10);
+  const auto [actual_vec, actual_inv] = inv_camera.backproject(z, 10);
   EXPECT(assert_equal(expected,actual_vec,1e-7));
   EXPECT_DOUBLES_EQUAL(inv_depth,actual_inv,1e-7);
 }

@@ -360,9 +360,10 @@ namespace gtsam {
           C1_minus_B.assign(C1_minus_B_set.begin(), C1_minus_B_set.end());
         }
         // Factor into C1\B | B.
-        sharedFactorGraph temp_remaining;
-        std::tie(p_C1_B, temp_remaining) =
-          FactorGraphType(p_C1_Bred).eliminatePartialMultifrontal(Ordering(C1_minus_B), function);
+        p_C1_B =
+            FactorGraphType(p_C1_Bred)
+                .eliminatePartialMultifrontal(Ordering(C1_minus_B), function)
+                .first;
       }
       std::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
         KeyVector C2_minus_B; {
@@ -372,9 +373,10 @@ namespace gtsam {
           C2_minus_B.assign(C2_minus_B_set.begin(), C2_minus_B_set.end());
         }
         // Factor into C2\B | B.
-        sharedFactorGraph temp_remaining;
-        std::tie(p_C2_B, temp_remaining) =
-          FactorGraphType(p_C2_Bred).eliminatePartialMultifrontal(Ordering(C2_minus_B), function);
+        p_C2_B =
+            FactorGraphType(p_C2_Bred)
+                .eliminatePartialMultifrontal(Ordering(C2_minus_B), function)
+                .first;
       }
       gttoc(Full_root_factoring);
 

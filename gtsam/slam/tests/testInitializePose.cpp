@@ -33,10 +33,8 @@ using namespace gtsam;
 /* ************************************************************************* */
 TEST(InitializePose3, computePoses2D) {
   const string g2oFile = findExampleDataFile("noisyToyGraph.txt");
-  NonlinearFactorGraph::shared_ptr inputGraph;
-  Values::shared_ptr posesInFile;
   bool is3D = false;
-  std::tie(inputGraph, posesInFile) = readG2o(g2oFile, is3D);
+  const auto [inputGraph, posesInFile] = readG2o(g2oFile, is3D);
 
   auto priorModel = noiseModel::Unit::Create(3);
   inputGraph->addPrior(0, posesInFile->at<Pose2>(0), priorModel);
@@ -56,10 +54,8 @@ TEST(InitializePose3, computePoses2D) {
 /* ************************************************************************* */
 TEST(InitializePose3, computePoses3D) {
   const string g2oFile = findExampleDataFile("Klaus3");
-  NonlinearFactorGraph::shared_ptr inputGraph;
-  Values::shared_ptr posesInFile;
   bool is3D = true;
-  std::tie(inputGraph, posesInFile) = readG2o(g2oFile, is3D);
+  const auto [inputGraph, posesInFile] = readG2o(g2oFile, is3D);
 
   auto priorModel = noiseModel::Unit::Create(6);
   inputGraph->addPrior(0, posesInFile->at<Pose3>(0), priorModel);

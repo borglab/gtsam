@@ -143,9 +143,7 @@ T Expression<T>::value(const Values& values,
     std::vector<Matrix>* H) const {
   if (H) {
     // Call private version that returns derivatives in H
-    KeyVector keys;
-    FastVector<int> dims;
-    std::tie(keys, dims) = keysAndDims();
+    const auto [keys, dims] = keysAndDims();
     return valueAndDerivatives(values, keys, dims, *H);
   } else
     // no derivatives needed, just return value

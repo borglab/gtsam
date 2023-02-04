@@ -350,10 +350,7 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   ordering += X(0);
   ordering += X(1);
 
-  HybridConditional::shared_ptr hybridConditionalMixture;
-  std::shared_ptr<Factor> factorOnModes;
-
-  std::tie(hybridConditionalMixture, factorOnModes) =
+  const auto [hybridConditionalMixture, factorOnModes] =
       EliminateHybrid(factors, ordering);
 
   auto gaussianConditionalMixture =

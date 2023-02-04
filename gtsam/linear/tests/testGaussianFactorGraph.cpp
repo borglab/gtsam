@@ -155,20 +155,16 @@ TEST(GaussianFactorGraph, matrices) {
   // jacobian
   Matrix A = Ab.leftCols(Ab.cols() - 1);
   Vector b = Ab.col(Ab.cols() - 1);
-  Matrix actualA;
-  Vector actualb;
-  std::tie(actualA, actualb) = gfg.jacobian();
+  const auto [actualA, actualb] = gfg.jacobian();
   EXPECT(assert_equal(A, actualA));
   EXPECT(assert_equal(b, actualb));
 
   // hessian
   Matrix L = A.transpose() * A;
   Vector eta = A.transpose() * b;
-  Matrix actualL;
-  Vector actualeta;
-  std::tie(actualL, actualeta) = gfg.hessian();
+  const auto [actualL, actualEta] = gfg.hessian();
   EXPECT(assert_equal(L, actualL));
-  EXPECT(assert_equal(eta, actualeta));
+  EXPECT(assert_equal(eta, actualEta));
 
   // hessianBlockDiagonal
   VectorValues expectLdiagonal;  // Make explicit that diagonal is sum-squares of columns
@@ -261,12 +257,8 @@ TEST(GaussianFactorGraph, eliminate_empty) {
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, matrices2) {
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
-  Matrix A;
-  Vector b;
-  std::tie(A, b) = gfg.jacobian();
-  Matrix AtA;
-  Vector eta;
-  std::tie(AtA, eta) = gfg.hessian();
+  const auto [A, b] = gfg.jacobian();
+  const auto [AtA, eta] = gfg.hessian();
   EXPECT(assert_equal(A.transpose() * A, AtA));
   EXPECT(assert_equal(A.transpose() * b, eta));
   Matrix expectedAtA(6, 6);
@@ -312,9 +304,7 @@ TEST(GaussianFactorGraph, multiplyHessianAdd2) {
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
 
   // brute force
-  Matrix AtA;
-  Vector eta;
-  std::tie(AtA, eta) = gfg.hessian();
+  const auto [AtA, eta] = gfg.hessian();
   Vector X(6);
   X << 1, 2, 3, 4, 5, 6;
   Vector Y(6);
@@ -339,12 +329,8 @@ TEST(GaussianFactorGraph, multiplyHessianAdd2) {
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, matricesMixed) {
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
-  Matrix A;
-  Vector b;
-  std::tie(A, b) = gfg.jacobian();  // incorrect !
-  Matrix AtA;
-  Vector eta;
-  std::tie(AtA, eta) = gfg.hessian();  // correct
+  const auto [A, b] = gfg.jacobian();  // incorrect !
+  const auto [AtA, eta] = gfg.hessian();  // correct
   EXPECT(assert_equal(A.transpose() * A, AtA));
   Vector expected = -(Vector(6) << -25, 17.5, 5, -13.5, 29, 4).finished();
   EXPECT(assert_equal(expected, eta));

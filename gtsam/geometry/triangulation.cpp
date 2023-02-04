@@ -48,10 +48,7 @@ Vector4 triangulateHomogeneousDLT(
     A.row(row) = p.x() * projection.row(2) - projection.row(0);
     A.row(row + 1) = p.y() * projection.row(2) - projection.row(1);
   }
-  int rank;
-  double error;
-  Vector v;
-  std::tie(rank, error, v) = DLT(A, rank_tol);
+  const auto [rank, error, v] = DLT(A, rank_tol);
 
   if (rank < 3) throw(TriangulationUnderconstrainedException());
 
@@ -79,10 +76,7 @@ Vector4 triangulateHomogeneousDLT(
     A.row(row) = p.x() * projection.row(2) - p.z() * projection.row(0);
     A.row(row + 1) = p.y() * projection.row(2) - p.z() * projection.row(1);
   }
-  int rank;
-  double error;
-  Vector v;
-  std::tie(rank, error, v) = DLT(A, rank_tol);
+  const auto [rank, error, v] = DLT(A, rank_tol);
 
   if (rank < 3) throw(TriangulationUnderconstrainedException());
 

@@ -59,10 +59,8 @@ TEST( Iterative, conjugateGradientDescent )
   VectorValues expected = fg.optimize();
 
   // get matrices
-  Matrix A;
-  Vector b;
   Vector x0 = Z_6x1;
-  std::tie(A, b) = fg.jacobian();
+  const auto [A, b] = fg.jacobian();
   Vector expectedX = (Vector(6) << -0.1, 0.1, -0.1, -0.1, 0.1, -0.2).finished();
 
   // Do conjugate gradient descent, System version

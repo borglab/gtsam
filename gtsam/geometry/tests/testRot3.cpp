@@ -128,10 +128,8 @@ TEST( Rot3, AxisAngle2)
   // constructor from a rotation matrix, as doubles in *row-major* order.
   Rot3 R1(-0.999957, 0.00922903, 0.00203116, 0.00926964, 0.999739, 0.0208927, -0.0018374, 0.0209105, -0.999781);
   
-  Unit3 actualAxis;
-  double actualAngle;
   // convert Rot3 to quaternion using GTSAM
-  std::tie(actualAxis, actualAngle) = R1.axisAngle();
+  const auto [actualAxis, actualAngle] = R1.axisAngle();
   
   double expectedAngle = 3.1396582;
   CHECK(assert_equal(expectedAngle, actualAngle, 1e-5));
@@ -508,11 +506,9 @@ TEST( Rot3, yaw_pitch_roll )
 TEST( Rot3, RQ)
 {
   // Try RQ on a pure rotation
-  Matrix actualK;
-  Vector actual;
-  std::tie(actualK, actual) = RQ(R.matrix());
+  const auto [actualK, actual] = RQ(R.matrix());
   Vector expected = Vector3(0.14715, 0.385821, 0.231671);
-  CHECK(assert_equal(I_3x3,actualK));
+  CHECK(assert_equal(I_3x3, (Matrix)actualK));
   CHECK(assert_equal(expected,actual,1e-6));
 
   // Try using xyz call, asserting that Rot3::RzRyRx(x,y,z).xyz()==[x;y;z]
@@ -531,9 +527,9 @@ TEST( Rot3, RQ)
   // Try RQ to recover calibration from 3*3 sub-block of projection matrix
   Matrix K = (Matrix(3, 3) << 500.0, 0.0, 320.0, 0.0, 500.0, 240.0, 0.0, 0.0, 1.0).finished();
   Matrix A = K * R.matrix();
-  std::tie(actualK, actual) = RQ(A);
-  CHECK(assert_equal(K,actualK));
-  CHECK(assert_equal(expected,actual,1e-6));
+  const auto [actualK2, actual2] = RQ(A);
+  CHECK(assert_equal(K, actualK2));
+  CHECK(assert_equal(expected, actual2, 1e-6));
 }
 
 /* ************************************************************************* */

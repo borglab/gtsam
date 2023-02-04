@@ -325,10 +325,9 @@ TEST(HybridGaussianFactorGraph, Switching) {
     std::transform(naturalX.begin(), naturalX.end(), std::back_inserter(ordX),
                    [](int x) { return X(x); });
 
-    KeyVector ndX;
-    std::vector<int> lvls;
-    std::tie(ndX, lvls) = makeBinaryOrdering(ordX);
+    auto [ndX, lvls] = makeBinaryOrdering(ordX);
     std::copy(ndX.begin(), ndX.end(), std::back_inserter(ordering));
+    // TODO(dellaert): this has no effect!
     for (auto &l : lvls) {
       l = -l;
     }
@@ -339,11 +338,9 @@ TEST(HybridGaussianFactorGraph, Switching) {
     std::vector<Key> ordC;
     std::transform(naturalC.begin(), naturalC.end(), std::back_inserter(ordC),
                    [](int x) { return M(x); });
-    KeyVector ndC;
-    std::vector<int> lvls;
 
     // std::copy(ordC.begin(), ordC.end(), std::back_inserter(ordering));
-    std::tie(ndC, lvls) = makeBinaryOrdering(ordC);
+    const auto [ndC, lvls] = makeBinaryOrdering(ordC);
     std::copy(ndC.begin(), ndC.end(), std::back_inserter(ordering));
   }
   auto ordering_full = Ordering(ordering);
@@ -384,10 +381,9 @@ TEST(HybridGaussianFactorGraph, SwitchingISAM) {
     std::transform(naturalX.begin(), naturalX.end(), std::back_inserter(ordX),
                    [](int x) { return X(x); });
 
-    KeyVector ndX;
-    std::vector<int> lvls;
-    std::tie(ndX, lvls) = makeBinaryOrdering(ordX);
+    auto [ndX, lvls] = makeBinaryOrdering(ordX);
     std::copy(ndX.begin(), ndX.end(), std::back_inserter(ordering));
+    // TODO(dellaert): this has no effect!
     for (auto &l : lvls) {
       l = -l;
     }
@@ -398,11 +394,9 @@ TEST(HybridGaussianFactorGraph, SwitchingISAM) {
     std::vector<Key> ordC;
     std::transform(naturalC.begin(), naturalC.end(), std::back_inserter(ordC),
                    [](int x) { return M(x); });
-    KeyVector ndC;
-    std::vector<int> lvls;
 
     // std::copy(ordC.begin(), ordC.end(), std::back_inserter(ordering));
-    std::tie(ndC, lvls) = makeBinaryOrdering(ordC);
+    const auto [ndC, lvls] = makeBinaryOrdering(ordC);
     std::copy(ndC.begin(), ndC.end(), std::back_inserter(ordering));
   }
   auto ordering_full = Ordering(ordering);
@@ -476,9 +470,7 @@ TEST(HybridGaussianFactorGraph, SwitchingTwoVar) {
     ordering_partial.emplace_back(X(i));
     ordering_partial.emplace_back(Y(i));
   }
-  HybridBayesNet::shared_ptr hbn;
-  HybridGaussianFactorGraph::shared_ptr remaining;
-  std::tie(hbn, remaining) = hfg->eliminatePartialSequential(ordering_partial);
+  const auto [hbn, remaining] = hfg->eliminatePartialSequential(ordering_partial);
 
   EXPECT_LONGS_EQUAL(14, hbn->size());
   EXPECT_LONGS_EQUAL(11, remaining->size());

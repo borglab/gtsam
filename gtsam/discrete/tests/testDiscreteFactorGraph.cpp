@@ -109,9 +109,7 @@ TEST(DiscreteFactorGraph, test) {
   // Test EliminateDiscrete
   Ordering frontalKeys;
   frontalKeys += Key(0);
-  DiscreteConditional::shared_ptr conditional;
-  DecisionTreeFactor::shared_ptr newFactor;
-  std::tie(conditional, newFactor) = EliminateDiscrete(graph, frontalKeys);
+  const auto [conditional, newFactor] = EliminateDiscrete(graph, frontalKeys);
 
   // Check Conditional
   CHECK(conditional);
@@ -128,9 +126,7 @@ TEST(DiscreteFactorGraph, test) {
   Ordering ordering;
   ordering += Key(0), Key(1), Key(2);
   DiscreteEliminationTree etree(graph, ordering);
-  DiscreteBayesNet::shared_ptr actual;
-  DiscreteFactorGraph::shared_ptr remainingGraph;
-  std::tie(actual, remainingGraph) = etree.eliminate(&EliminateDiscrete);
+  const auto [actual, remainingGraph] = etree.eliminate(&EliminateDiscrete);
 
   // Check Bayes net
   DiscreteBayesNet expectedBayesNet;

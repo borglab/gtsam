@@ -74,9 +74,7 @@ TEST(SymbolicFactor, EliminateSymbolic)
   const SymbolicConditional expectedConditional =
     SymbolicConditional::FromKeys(KeyVector{0,1,2,3,4,5,6}, 4);
 
-  SymbolicFactor::shared_ptr actualFactor;
-  SymbolicConditional::shared_ptr actualConditional;
-  std::tie(actualConditional, actualFactor) =
+  const auto [actualConditional, actualFactor] =
       EliminateSymbolic(factors, Ordering{0, 1, 2, 3});
 
   CHECK(assert_equal(expectedConditional, *actualConditional));
