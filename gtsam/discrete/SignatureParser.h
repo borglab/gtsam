@@ -17,7 +17,8 @@
  */
 
 #pragma once
-#include <iostream>
+
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -38,18 +39,18 @@ namespace gtsam {
  *   "1/2/3 2/3/4 1/2/3 2/3/4 1/2/3 2/3/4 1/2/3 2/3/4 1/2/3" :
  *      {{1,2,3},{2,3,4},{1,2,3},{2,3,4},{1,2,3},{2,3,4},{1,2,3},{2,3,4},{1,2,3}}
  *
- * If the string has un-parsable elements, should parse whatever it can:
- *   "1/2 sdf" : {{1,2}}
+ * If the string has un-parsable elements the parser will fail with nullopt:
+ *   "1/2 sdf" : nullopt !
  *
- * It should return false if the string is empty:
- *   "": false
+ * It also fails if the string is empty:
+ *   "": nullopt !
  *
- * We should return false if the rows are not of the same size.
+ * Also fails if the rows are not of the same size.
  */
-namespace SignatureParser {
-typedef std::vector<double> Row;
-typedef std::vector<Row> Table;
+struct SignatureParser {
+  using Row = std::vector<double>;
+  using Table = std::vector<Row>;
 
-bool parse(const std::string& str, Table& table);
-};  // namespace SignatureParser
+  static std::optional<Table> Parse(const std::string& str);
+};
 }  // namespace gtsam
