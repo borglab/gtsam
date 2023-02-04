@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
       tictoc_getNode(basicTimeNode, basicTime);
       basicTime = basicTimeNode->secs();
       gtsam::tictoc_reset_();
-      cout << "  Basic: " << double(1000000 * basicTime / double(mat.rows()*mat.cols()*nReps)) << " mus/element" << endl;
+      cout << "  Basic: " << double(1000000 * basicTime / double(mat.rows()*mat.cols()*nReps)) << " μs/element" << endl;
 
       gttic_(fullTime);
       for(size_t rep=0; rep<nReps; ++rep)
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
       tictoc_getNode(fullTimeNode, fullTime);
       fullTime = fullTimeNode->secs();
       gtsam::tictoc_reset_();
-      cout << "  Full:  " << double(1000000 * fullTime / double(full.rows()*full.cols()*nReps)) << " mus/element" << endl;
+      cout << "  Full:  " << double(1000000 * fullTime / double(full.rows()*full.cols()*nReps)) << " μs/element" << endl;
 
       gttic_(topTime);
       for(size_t rep=0; rep<nReps; ++rep)
@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
       tictoc_getNode(topTimeNode, topTime);
       topTime = topTimeNode->secs();
       gtsam::tictoc_reset_();
-      cout << "  Top:   " << double(1000000 * topTime / double(top.rows()*top.cols()*nReps)) << " mus/element" << endl;
+      cout << "  Top:   " << double(1000000 * topTime / double(top.rows()*top.cols()*nReps)) << " μs/element" << endl;
 
       gttic_(blockTime);
       for(size_t rep=0; rep<nReps; ++rep)
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
       tictoc_getNode(blockTimeNode, blockTime);
       blockTime = blockTimeNode->secs();
       gtsam::tictoc_reset_();
-      cout << "  Block: " << double(1000000 * blockTime / double(block.rows()*block.cols()*nReps)) << " mus/element" << endl;
+      cout << "  Block: " << double(1000000 * blockTime / double(block.rows()*block.cols()*nReps)) << " μs/element" << endl;
 
       cout << endl;
     }
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
       tictoc_getNode(basicTimeNode, basicTime);
       basicTime = basicTimeNode->secs();
       gtsam::tictoc_reset_();
-      cout << "  Basic: " << double(1000000 * basicTime / double(mat.rows()*mat.cols()*nReps)) << " mus/element" << endl;
+      cout << "  Basic: " << double(1000000 * basicTime / double(mat.rows()*mat.cols()*nReps)) << " μs/element" << endl;
 
       gttic_(fullTime);
       for(size_t rep=0; rep<nReps; ++rep)
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
       tictoc_getNode(fullTimeNode, fullTime);
       fullTime = fullTimeNode->secs();
       gtsam::tictoc_reset_();
-      cout << "  Full:  " << double(1000000 * fullTime / double(full.rows()*full.cols()*nReps)) << " mus/element" << endl;
+      cout << "  Full:  " << double(1000000 * fullTime / double(full.rows()*full.cols()*nReps)) << " μs/element" << endl;
 
       gttic_(topTime);
       for(size_t rep=0; rep<nReps; ++rep)
@@ -162,7 +162,7 @@ int main(int argc, char* argv[]) {
       tictoc_getNode(topTimeNode, topTime);
       topTime = topTimeNode->secs();
       gtsam::tictoc_reset_();
-      cout << "  Top:   " << double(1000000 * topTime / double(top.rows()*top.cols()*nReps)) << " mus/element" << endl;
+      cout << "  Top:   " << double(1000000 * topTime / double(top.rows()*top.cols()*nReps)) << " μs/element" << endl;
 
       gttic_(blockTime);
       for(size_t rep=0; rep<nReps; ++rep)
@@ -173,62 +173,63 @@ int main(int argc, char* argv[]) {
       tictoc_getNode(blockTimeNode, blockTime);
       blockTime = blockTimeNode->secs();
       gtsam::tictoc_reset_();
-      cout << "  Block: " << double(1000000 * blockTime / double(block.rows()*block.cols()*nReps)) << " mus/element" << endl;
+      cout << "  Block: " << double(1000000 * blockTime / double(block.rows()*block.cols()*nReps)) << " μs/element" << endl;
 
       cout << endl;
     }
 
     {
       double basicTime, fullTime, topTime, blockTime;
-      typedef pair<size_t,size_t> ij_t;
-      vector<ij_t> ijs(100000);
+      typedef std::pair<size_t,size_t> ij_t;
+      std::vector<ij_t> ijs(100000);
 
       cout << "Row-major matrix, random assignment:" << endl;
 
       // Do a few initial assignments to let any cache effects stabilize
-      for_each(ijs.begin(), ijs.end(), _1 = make_pair(uniform_i(rng),uniform_j(rng)));
+      for (auto& ij : ijs) ij = {uniform_i(rng), uniform_j(rng)};
       for(size_t rep=0; rep<1000; ++rep)
-        for(const ij_t& ij: ijs) { mat(ij.first, ij.second) = uniform(rng); }
+        for(const auto& [i, j]: ijs) { mat(i, j) = uniform(rng); }
 
       gttic_(basicTime);
-      for_each(ijs.begin(), ijs.end(), _1 = make_pair(uniform_i(rng),uniform_j(rng)));
+      for (auto& ij : ijs) ij = {uniform_i(rng), uniform_j(rng)};
       for(size_t rep=0; rep<1000; ++rep)
-        for(const ij_t& ij: ijs) { mat(ij.first, ij.second) = uniform(rng); }
+        for(const auto& [i, j]: ijs) { mat(i, j) = uniform(rng); }
       gttoc_(basicTime);
       tictoc_getNode(basicTimeNode, basicTime);
       basicTime = basicTimeNode->secs();
       gtsam::tictoc_reset_();
-      cout << "  Basic: " << double(1000000 * basicTime / double(ijs.size()*nReps)) << " mus/element" << endl;
+      cout << "  Basic: " << double(1000000 * basicTime / double(ijs.size()*nReps)) << " μs/element" << endl;
 
       gttic_(fullTime);
-      for_each(ijs.begin(), ijs.end(), _1 = make_pair(uniform_i(rng),uniform_j(rng)));
+      for (auto& ij : ijs) ij = {uniform_i(rng), uniform_j(rng)};
       for(size_t rep=0; rep<1000; ++rep)
-        for(const ij_t& ij: ijs) { full(ij.first, ij.second) = uniform(rng); }
+        for(const auto& [i, j]: ijs) { full(i, j) = uniform(rng); }
       gttoc_(fullTime);
       tictoc_getNode(fullTimeNode, fullTime);
       fullTime = fullTimeNode->secs();
       gtsam::tictoc_reset_();
-      cout << "  Full:  " << double(1000000 * fullTime / double(ijs.size()*nReps)) << " mus/element" << endl;
+      cout << "  Full:  " << double(1000000 * fullTime / double(ijs.size()*nReps)) << " μs/element" << endl;
 
       gttic_(topTime);
-      for_each(ijs.begin(), ijs.end(), _1 = make_pair(uniform_i(rng)%top.rows(),uniform_j(rng)));
+      for (auto& ij : ijs) ij = {uniform_i(rng) % top.rows(), uniform_j(rng)};
       for(size_t rep=0; rep<1000; ++rep)
-        for(const ij_t& ij: ijs) { top(ij.first, ij.second) = uniform(rng); }
+        for(const auto& [i, j]: ijs) { top(i, j) = uniform(rng); }
       gttoc_(topTime);
       tictoc_getNode(topTimeNode, topTime);
       topTime = topTimeNode->secs();
       gtsam::tictoc_reset_();
-      cout << "  Top:   " << double(1000000 * topTime / double(ijs.size()*nReps)) << " mus/element" << endl;
+      cout << "  Top:   " << double(1000000 * topTime / double(ijs.size()*nReps)) << " μs/element" << endl;
 
       gttic_(blockTime);
-      for_each(ijs.begin(), ijs.end(), _1 = make_pair(uniform_i(rng)%block.rows(),uniform_j(rng)%block.cols()));
+      for (auto& ij : ijs)
+        ij = {uniform_i(rng) % block.rows(), uniform_j(rng) % block.cols()};
       for(size_t rep=0; rep<1000; ++rep)
-        for(const ij_t& ij: ijs) { block(ij.first, ij.second) = uniform(rng); }
+        for(const auto& [i, j]: ijs) { block(i, j) = uniform(rng); }
       gttoc_(blockTime);
       tictoc_getNode(blockTimeNode, blockTime);
       blockTime = blockTimeNode->secs();
       gtsam::tictoc_reset_();
-      cout << "  Block: " << double(1000000 * blockTime / double(ijs.size()*nReps)) << " mus/element" << endl;
+      cout << "  Block: " << double(1000000 * blockTime / double(ijs.size()*nReps)) << " μs/element" << endl;
 
       cout << endl;
     }
