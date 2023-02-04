@@ -131,14 +131,15 @@ HessianFactor::HessianFactor(Key j1, Key j2, Key j3, const Matrix& G11,
 }
 
 /* ************************************************************************* */
-std::vector<DenseIndex> _getSizeHFVec(const std::vector<Vector>& m) {
+namespace {
+static std::vector<DenseIndex> _getSizeHFVec(const std::vector<Vector>& m) {
   std::vector<DenseIndex> dims;
   for (const Vector& v : m) {
     dims.push_back(v.size());
   }
   return dims;
 }
-}
+}  // namespace
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const KeyVector& js,
@@ -409,9 +410,7 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
 
   // copy to yvalues
   for (DenseIndex i = 0; i < (DenseIndex) size(); ++i) {
-    bool didNotExist;
-    VectorValues::iterator it;
-    std::tie(it, didNotExist) = yvalues.tryInsert(keys_[i], Vector());
+    const auto [it, didNotExist] = yvalues.tryInsert(keys_[i], Vector());
     if (didNotExist)
       it->second = alpha * y[i]; // init
     else
