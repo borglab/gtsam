@@ -140,8 +140,7 @@ namespace gtsam {
                                                           orderedKeys, product);
     gttoc(lookup);
 
-    return std::make_pair(
-        std::dynamic_pointer_cast<DiscreteConditional>(lookup), max);
+    return {std::dynamic_pointer_cast<DiscreteConditional>(lookup), max};
   }
 
   /* ************************************************************************ */
@@ -223,7 +222,7 @@ namespace gtsam {
         std::make_shared<DiscreteConditional>(product, *sum, orderedKeys);
     gttoc(divide);
 
-    return std::make_pair(conditional, sum);
+    return {conditional, sum};
   }
 
   /* ************************************************************************ */

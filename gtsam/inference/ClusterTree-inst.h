@@ -273,7 +273,7 @@ EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) 
   }
 
   // Return result
-  return std::make_pair(result, remaining);
+  return {result, remaining};
 }
 
 } // namespace gtsam

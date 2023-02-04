@@ -137,7 +137,7 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     graph.emplace_shared<TriangulationFactor<Camera> > //
         (camera_i, measurements[i], model, landmarkKey);
   }
-  return std::make_pair(graph, values);
+  return {graph, values};
 }
 
 /**
@@ -165,7 +165,7 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     graph.emplace_shared<TriangulationFactor<CAMERA> > //
         (camera_i, measurements[i], model? model : unit, landmarkKey);
   }
-  return std::make_pair(graph, values);
+  return {graph, values};
 }
 
 /**
