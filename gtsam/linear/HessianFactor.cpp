@@ -131,11 +131,6 @@ HessianFactor::HessianFactor(Key j1, Key j2, Key j3, const Matrix& G11,
 }
 
 /* ************************************************************************* */
-namespace {
-DenseIndex _getSizeHF(const Vector& m) {
-  return m.size();
-}
-
 std::vector<DenseIndex> _getSizeHFVec(const std::vector<Vector>& m) {
   std::vector<DenseIndex> dims;
   for (const Vector& v : m) {
