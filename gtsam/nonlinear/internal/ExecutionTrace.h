@@ -33,6 +33,11 @@ namespace internal {
 
 template<int T> struct CallRecord;
 
+// The MSVC compiler insists on knowing extended alignment is ok.
+#ifdef _MSC_VER
+#define _ENABLE_EXTENDED_ALIGNED_STORAGE
+#endif
+
 /// Storage type for the execution trace.
 /// It enforces the proper alignment in a portable way.
 /// Provide a traceSize() sized array of this type to traceExecution as traceStorage.
