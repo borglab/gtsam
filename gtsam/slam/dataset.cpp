@@ -47,8 +47,11 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#if defined(__GNUC__) && (__GNUC__ == 7)
+#include <experimental/filesystem>
+#else
 #include <filesystem>
-
+#endif
 using namespace std;
 namespace fs = std::filesystem;
 using gtsam::symbol_shorthand::L;
