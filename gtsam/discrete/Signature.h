@@ -25,7 +25,7 @@
 namespace gtsam {
 
   /**
-   * Signature for a discrete conditional density, used to construct conditionals.
+   * Signature for a discrete conditional distribution, used to construct conditionals.
    *
    * The format is (Key % string) for nodes with no parents,
    * and (Key | Key, Key = string) for nodes with parents.
