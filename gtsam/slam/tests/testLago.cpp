@@ -74,8 +74,8 @@ TEST(Lago, findMinimumSpanningTree) {
   // We should recover the following spanning tree:
   //
   //              x2
-  //             /  \               
-  //            /    \              
+  //             /  \
+  //            /    \
   //          x3     x1
   //                 /
   //                /
