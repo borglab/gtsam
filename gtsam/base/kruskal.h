@@ -22,12 +22,11 @@
 
 #include <vector>
 
-namespace gtsam::utils
-{
-    template <class FactorGraph>
-    std::vector<size_t> kruskal(const FactorGraph &fg,
-                                const FastMap<Key, size_t> &ordering,
-                                const std::vector<double> &weights);
+namespace gtsam::utils {
+template <class FactorGraph>
+std::vector<size_t> kruskal(const FactorGraph &fg,
+                            const FastMap<Key, size_t> &ordering,
+                            const std::vector<double> &weights);
 }
 
 #include <gtsam/base/kruskal-inl.h>

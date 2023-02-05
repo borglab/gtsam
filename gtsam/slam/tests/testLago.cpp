@@ -108,30 +108,41 @@ TEST( Lago, checkSTandChords ) {
 }
 
 /* *************************************************************************** */
-TEST( Lago, orientationsOverSpanningTree ) {
+TEST(Lago, orientationsOverSpanningTree) {
   NonlinearFactorGraph g = simpleLago::graph();
-  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
-      BetweenFactor<Pose2> >(g);
+  auto gPlus = initialize::buildPoseGraph<Pose2>(g);
+  PredecessorMap<Key> tree = lago::findMinimumSpanningTree(gPlus);
 
   // check the tree structure
-  EXPECT_LONGS_EQUAL(x0, tree[x0]);
+  using initialize::kAnchorKey;
+
+  EXPECT_LONGS_EQUAL(kAnchorKey, tree[x0]);
   EXPECT_LONGS_EQUAL(x0, tree[x1]);
-  EXPECT_LONGS_EQUAL(x0, tree[x2]);
-  EXPECT_LONGS_EQUAL(x0, tree[x3]);
+  EXPECT_LONGS_EQUAL(x1, tree[x2]);
+  EXPECT_LONGS_EQUAL(x2, tree[x3]);
 
   lago::key2doubleMap expected;
-  expected[x0]=  0;
-  expected[x1]=  M_PI/2; // edge x0->x1 (consistent with edge (x0,x1))
-  expected[x2]= -M_PI; // edge x0->x2 (traversed backwards wrt edge (x2,x0))
-  expected[x3]= -M_PI/2;  // edge x0->x3 (consistent with edge (x0,x3))
+  expected[x0] = 0;
+  expected[x1] = M_PI / 2;      // edges traversed: x0->x1
+  expected[x2] = M_PI;          // edges traversed: x0->x1->x2
+  expected[x3] = 3 * M_PI / 2;  // edges traversed: x0->x1->x2->x3
 
   lago::key2doubleMap deltaThetaMap;
-  vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
-  vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
-  lago::getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
+  vector<size_t>
+      spanningTreeIds;  // ids of between factors forming the spanning tree T
+  vector<size_t>
+      chordsIds;  // ids of between factors corresponding to chordsIds wrt T
+  lago::getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree,
+                         gPlus);
 
   lago::key2doubleMap actual;
   actual = lago::computeThetasToRoot(deltaThetaMap, tree);
+
+  std::cout << "Thetas to root Map\n";
+  for (const auto& [k, v] : actual) {
+    std::cout << k << ": " << v << "\n";
+  }
+
   DOUBLES_EQUAL(expected[x0], actual[x0], 1e-6);
   DOUBLES_EQUAL(expected[x1], actual[x1], 1e-6);
   DOUBLES_EQUAL(expected[x2], actual[x2], 1e-6);
@@ -141,24 +152,24 @@ TEST( Lago, orientationsOverSpanningTree ) {
 /* *************************************************************************** */
 TEST( Lago, regularizedMeasurements ) {
   NonlinearFactorGraph g = simpleLago::graph();
-  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
-      BetweenFactor<Pose2> >(g);
+  auto gPlus = initialize::buildPoseGraph<Pose2>(g);
+  PredecessorMap<Key> tree = lago::findMinimumSpanningTree(gPlus);
 
   lago::key2doubleMap deltaThetaMap;
   vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
   vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
-  lago::getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
+  lago::getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, gPlus);
 
   lago::key2doubleMap orientationsToRoot = lago::computeThetasToRoot(deltaThetaMap, tree);
 
-  GaussianFactorGraph lagoGraph = lago::buildLinearOrientationGraph(spanningTreeIds, chordsIds, g, orientationsToRoot, tree);
+  GaussianFactorGraph lagoGraph = lago::buildLinearOrientationGraph(spanningTreeIds, chordsIds, gPlus, orientationsToRoot, tree);
   std::pair<Matrix,Vector> actualAb = lagoGraph.jacobian();
   // jacobian corresponding to the orientation measurements (last entry is the prior on the anchor and is disregarded)
   Vector actual = (Vector(5) <<  actualAb.second(0),actualAb.second(1),actualAb.second(2),actualAb.second(3),actualAb.second(4)).finished();
   // this is the whitened error, so we multiply by the std to unwhiten
   actual = 0.1 * actual;
   // Expected regularized measurements (same for the spanning tree, corrected for the chordsIds)
-  Vector expected = (Vector(5) << M_PI/2, M_PI, -M_PI/2, M_PI/2 - 2*M_PI , M_PI/2).finished();
+  Vector expected = (Vector(5) << M_PI/2, M_PI/2, M_PI/2, 0 , -M_PI).finished();
 
   EXPECT(assert_equal(expected, actual, 1e-6));
 }
