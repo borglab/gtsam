@@ -23,6 +23,7 @@
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphBuilder.h>
+#include <gtsam/base/kruskal.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -51,28 +52,6 @@ using std::ostream;
 using std::vector;
 
 namespace gtsam {
-
-/*****************************************************************************/
-/* sort the container and return permutation index with default comparator */
-template <typename Container>
-static vector<size_t> sort_idx(const Container &src) {
-  typedef typename Container::value_type T;
-  const size_t n = src.size();
-  vector<std::pair<size_t, T> > tmp;
-  tmp.reserve(n);
-  for (size_t i = 0; i < n; i++) tmp.emplace_back(i, src[i]);
-
-  /* sort */
-  std::stable_sort(tmp.begin(), tmp.end());
-
-  /* copy back */
-  vector<size_t> idx;
-  idx.reserve(n);
-  for (size_t i = 0; i < n; i++) {
-    idx.push_back(tmp[i].first);
-  }
-  return idx;
-}
 
 /****************************************************************************/
 Subgraph::Subgraph(const vector<size_t> &indices) {
@@ -240,7 +219,6 @@ std::string SubgraphBuilderParameters::augmentationWeightTranslator(
 
 /****************************************************************/
 vector<size_t> SubgraphBuilder::buildTree(const GaussianFactorGraph &gfg,
-                                          const FastMap<Key, size_t> &ordering,
                                           const vector<double> &weights) const {
   const SubgraphBuilderParameters &p = parameters_;
   switch (p.skeletonType) {
@@ -251,7 +229,7 @@ vector<size_t> SubgraphBuilder::buildTree(const GaussianFactorGraph &gfg,
       return bfs(gfg);
       break;
     case SubgraphBuilderParameters::KRUSKAL:
-      return kruskal(gfg, ordering, weights);
+      return kruskal(gfg, weights);
       break;
     default:
       std::cerr << "SubgraphBuilder::buildTree undefined skeleton type" << endl;
@@ -327,33 +305,8 @@ vector<size_t> SubgraphBuilder::bfs(const GaussianFactorGraph &gfg) const {
 
 /****************************************************************/
 vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
-                                        const FastMap<Key, size_t> &ordering,
                                         const vector<double> &weights) const {
-  const VariableIndex variableIndex(gfg);
-  const size_t n = variableIndex.size();
-  const vector<size_t> sortedIndices = sort_idx(weights);
-
-  /* initialize buffer */
-  vector<size_t> treeIndices;
-  treeIndices.reserve(n - 1);
-
-  // container for acsendingly sorted edges
-  DSFVector dsf(n);
-
-  size_t count = 0;
-  for (const size_t index : sortedIndices) {
-    const GaussianFactor &gf = *gfg[index];
-    const auto keys = gf.keys();
-    if (keys.size() != 2) continue;
-    const size_t u = ordering.find(keys[0])->second,
-                 v = ordering.find(keys[1])->second;
-    if (dsf.find(u) != dsf.find(v)) {
-      dsf.merge(u, v);
-      treeIndices.push_back(index);
-      if (++count == n - 1) break;
-    }
-  }
-  return treeIndices;
+  return utils::kruskal(gfg, weights);
 }
 
 /****************************************************************/
@@ -382,7 +335,7 @@ Subgraph SubgraphBuilder::operator()(const GaussianFactorGraph &gfg) const {
   vector<double> weights = this->weights(gfg);
 
   // Build spanning tree.
-  const vector<size_t> tree = buildTree(gfg, forward_ordering, weights);
+  const vector<size_t> tree = buildTree(gfg, weights);
   if (tree.size() != n - 1) {
     throw std::runtime_error(
         "SubgraphBuilder::operator() failure: tree.size() != n-1, might be caused by disconnected graph");
@@ -406,6 +359,7 @@ Subgraph SubgraphBuilder::operator()(const GaussianFactorGraph &gfg) const {
 /****************************************************************/
 SubgraphBuilder::Weights SubgraphBuilder::weights(
     const GaussianFactorGraph &gfg) const {
+
   const size_t m = gfg.size();
   Weights weight;
   weight.reserve(m);
