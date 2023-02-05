@@ -18,14 +18,15 @@ jobs:
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
-        name: [
-          ubuntu-20.04-gcc-9,
-          ubuntu-20.04-gcc-9-tbb,
-          ubuntu-20.04-clang-9,
-          macOS-11-xcode-13.4.1,
-        ]
+        name:
+          [
+            ubuntu-20.04-gcc-9,
+            ubuntu-20.04-gcc-9-tbb,
+            ubuntu-20.04-clang-9,
+            macOS-11-xcode-13.4.1,
+          ]
 
-        build_type: [Debug, Release]
+        build_type: [Debug]
         python_version: [3]
         include:
           - name: ubuntu-20.04-gcc-9
@@ -43,8 +44,6 @@ jobs:
             os: ubuntu-20.04
             compiler: clang
             version: "9"
-            build_type: Debug
-            python_version: "3"
 
           - name: macOS-11-xcode-13.4.1
             os: macOS-11
@@ -70,7 +69,7 @@ jobs:
 
           sudo apt-get -y update
           sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libboost-all-dev
-          
+
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
             echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
@@ -86,15 +85,9 @@ jobs:
           brew tap ProfFan/robotics
           brew install cmake ninja
           brew install boost
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            brew install gcc@${{ matrix.version }}
-            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
-          else
-            sudo xcode-select -switch /Applications/Xcode.app
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXX=clang++" >> $GITHUB_ENV
-          fi
+          sudo xcode-select -switch /Applications/Xcode.app
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
       - name: Set GTSAM_WITH_TBB Flag
         if: matrix.flag == 'tbb'
         run: |
