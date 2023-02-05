@@ -131,6 +131,7 @@ jobs:
       - name: Use system versions of 3rd party libraries
         if: matrix.flag == 'system'
         run: |
+          sudo apt-get install libeigen3-dev
           echo "GTSAM_USE_SYSTEM_EIGEN=ON" >> $GITHUB_ENV
           echo "GTSAM_USE_SYSTEM_METIS=ON" >> $GITHUB_ENV
 
