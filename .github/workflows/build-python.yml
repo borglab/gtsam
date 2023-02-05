@@ -19,32 +19,26 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          ubuntu-20.04-gcc-7,
           ubuntu-20.04-gcc-9,
+          ubuntu-20.04-gcc-9-tbb,
           ubuntu-20.04-clang-9,
           macOS-11-xcode-13.4.1,
-          ubuntu-20.04-gcc-7-tbb,
         ]
 
         build_type: [Debug, Release]
         python_version: [3]
         include:
-          - name: ubuntu-20.04-gcc-7
-            os: ubuntu-20.04
-            compiler: gcc
-            version: "7"
-
           - name: ubuntu-20.04-gcc-9
             os: ubuntu-20.04
             compiler: gcc
             version: "9"
 
-          - name: ubuntu-20.04-clang-9
+          - name: ubuntu-20.04-gcc-9-tbb
             os: ubuntu-20.04
-            compiler: clang
+            compiler: gcc
             version: "9"
+            flag: tbb
 
-          # NOTE temporarily added this as it is a required check.
           - name: ubuntu-20.04-clang-9
             os: ubuntu-20.04
             compiler: clang
@@ -56,12 +50,6 @@ jobs:
             os: macOS-11
             compiler: xcode
             version: "13.4.1"
-
-          - name: ubuntu-20.04-gcc-7-tbb
-            os: ubuntu-20.04
-            compiler: gcc
-            version: "7"
-            flag: tbb
 
     steps:
       - name: Checkout

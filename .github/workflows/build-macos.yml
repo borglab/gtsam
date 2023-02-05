@@ -38,14 +38,8 @@ jobs:
         run: |
           brew install cmake ninja
           brew install boost
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            brew install gcc@${{ matrix.version }}
-            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
-          else
-            sudo xcode-select -switch /Applications/Xcode.app
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXX=clang++" >> $GITHUB_ENV
-          fi
+          sudo xcode-select -switch /Applications/Xcode.app
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
       - name: Build and Test
         run: bash .github/scripts/unix.sh -t
