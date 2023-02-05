@@ -55,8 +55,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          # LLVM (clang) 9 is not in Bionic's repositories so we add the official LLVM repository.
-          if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
+          # LLVM (clang) 9/14 is not in Bionic's repositories so we add the official LLVM repository.
+          if [ "${{ matrix.compiler }}" = "clang" ]; then
             # (ipv4|ha).pool.sks-keyservers.net is the SKS GPG global keyserver pool
             # ipv4 avoids potential timeouts because of crappy IPv6 infrastructure
             # 15CF4D18AF4F7421 is the GPG key for the LLVM apt repository

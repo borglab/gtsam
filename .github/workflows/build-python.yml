@@ -26,7 +26,7 @@ jobs:
             macOS-11-xcode-13.4.1,
           ]
 
-        build_type: [Debug]
+        build_type: [Release]
         python_version: [3]
         include:
           - name: ubuntu-20.04-gcc-9
