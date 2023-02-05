@@ -10,9 +10,11 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file SubgraphBuilder-inl.h
+ * @file kruskal.h
  * @date Dec 31, 2009
- * @author Frank Dellaert, Yong-Dian Jian
+ * @author Frank Dellaert
+ * @author Yong-Dian Jian
+ * @author Ankur Roy Chowdhury
  */
 
 #pragma once
@@ -22,9 +24,17 @@
 #include <vector>
 
 namespace gtsam::utils {
+/**
+ * Compute the minimum spanning tree (MST) using Kruskal's algorithm
+ * @param fg Factor graph
+ * @param weights Weights of the edges/factors in the factor graph
+ * @return Edge/factor indices spanning the MST
+ * @note Only binary factors are considered while constructing the spanning tree 
+ * @note The indices of 'weights' should match the indices of the edges in the factor graph 
+ */
 template <class FactorGraph>
 std::vector<size_t> kruskal(const FactorGraph &fg,
                             const std::vector<double> &weights);
-}
+}  // namespace gtsam::utils
 
 #include <gtsam/base/kruskal-inl.h>

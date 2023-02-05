@@ -53,6 +53,12 @@ inline std::vector<size_t> sortedIndices(const std::vector<double> &src) {
 template <class Graph>
 std::vector<size_t> kruskal(const Graph &fg,
                             const std::vector<double> &weights) {
+  if (fg.size() != weights.size()) {
+    throw std::runtime_error(
+        "kruskal() failure: fg.size() != weights.size(), all factors need to "
+        "assigned a weight");
+  }
+
   // Create an index from variables to factor indices.
   const VariableIndex variableIndex(fg);
 
