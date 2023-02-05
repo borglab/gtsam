@@ -13,7 +13,6 @@
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <memory>
-#include <boost/algorithm/string.hpp>
 #include <iostream>
 #include <vector>
 
@@ -41,7 +40,9 @@ void PreconditionerParameters::print(ostream &os) const {
 
 /***************************************************************************************/
 PreconditionerParameters::Kernel PreconditionerParameters::kernelTranslator(const std::string &src) {
-  std::string s = src;  boost::algorithm::to_upper(s);
+  std::string s = src;
+  // convert string s to upper case
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   if (s == "GTSAM") return PreconditionerParameters::GTSAM;
   else if (s == "CHOLMOD") return PreconditionerParameters::CHOLMOD;
   /* default is cholmod */
@@ -50,7 +51,9 @@ PreconditionerParameters::Kernel PreconditionerParameters::kernelTranslator(cons
 
 /***************************************************************************************/
 PreconditionerParameters::Verbosity PreconditionerParameters::verbosityTranslator(const std::string &src)  {
-  std::string s = src;  boost::algorithm::to_upper(s);
+  std::string s = src;
+  // convert string to upper case
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   if (s == "SILENT") return PreconditionerParameters::SILENT;
   else if (s == "COMPLEXITY") return PreconditionerParameters::COMPLEXITY;
   else if (s == "ERROR") return PreconditionerParameters::ERROR;

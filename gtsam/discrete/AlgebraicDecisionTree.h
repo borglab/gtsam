@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <map>
 #include <string>
+#include <iomanip>
 #include <vector>
 namespace gtsam {
 
@@ -162,7 +163,9 @@ namespace gtsam {
                const typename Base::LabelFormatter& labelFormatter =
                    &DefaultFormatter) const {
       auto valueFormatter = [](const double& v) {
-        return (boost::format("%4.8g") % v).str();
+        std::stringstream ss;
+        ss << std::setw(4) << std::setprecision(8) << v;
+        return ss.str();
       };
       Base::print(s, labelFormatter, valueFormatter);
     }

@@ -21,7 +21,7 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-#include <boost/variant.hpp>
+
 #include <string>
 
 namespace gtsam {

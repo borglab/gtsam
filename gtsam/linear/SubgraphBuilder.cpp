@@ -25,7 +25,6 @@
 #include <gtsam/linear/SubgraphBuilder.h>
 #include <gtsam/base/kruskal.h>
 
-#include <boost/algorithm/string.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -133,7 +132,8 @@ ostream &operator<<(ostream &os, const SubgraphBuilderParameters &p) {
 SubgraphBuilderParameters::Skeleton
 SubgraphBuilderParameters::skeletonTranslator(const std::string &src) {
   std::string s = src;
-  boost::algorithm::to_upper(s);
+  // convert to upper case
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   if (s == "NATURALCHAIN")
     return NATURALCHAIN;
   else if (s == "BFS")
@@ -161,7 +161,8 @@ std::string SubgraphBuilderParameters::skeletonTranslator(Skeleton s) {
 SubgraphBuilderParameters::SkeletonWeight
 SubgraphBuilderParameters::skeletonWeightTranslator(const std::string &src) {
   std::string s = src;
-  boost::algorithm::to_upper(s);
+  // convert to upper case
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   if (s == "EQUAL")
     return EQUAL;
   else if (s == "RHS")
@@ -196,7 +197,8 @@ SubgraphBuilderParameters::AugmentationWeight
 SubgraphBuilderParameters::augmentationWeightTranslator(
     const std::string &src) {
   std::string s = src;
-  boost::algorithm::to_upper(s);
+  // convert to upper case
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   if (s == "SKELETON") return SKELETON;
   //  else if (s == "STRETCH")  return STRETCH;
   //  else if (s == "GENERALIZED_STRETCH")  return GENERALIZED_STRETCH;

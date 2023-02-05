@@ -25,7 +25,6 @@
 #include <gtsam_unstable/slam/TOAFactor.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/format.hpp>
 
 using namespace std;
 using namespace gtsam;

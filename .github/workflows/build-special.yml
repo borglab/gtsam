@@ -15,78 +15,80 @@ jobs:
       BOOST_VERSION: 1.67.0
 
     strategy:
-      fail-fast: false
+      fail-fast: true
 
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name:
           [
-            ubuntu-gcc-deprecated,
-            ubuntu-gcc-quaternions,
-            ubuntu-gcc-tbb,
-            ubuntu-cayleymap,
+            ubuntu-clang-deprecated,
+            ubuntu-clang-quaternions,
+            ubuntu-clang-tbb,
+            ubuntu-clang-cayleymap,
+            ubuntu-clang-system-libs,
           ]
 
         build_type: [Debug, Release]
 
         include:
-          - name: ubuntu-gcc-deprecated
-            os: ubuntu-20.04
-            compiler: gcc
-            version: "9"
+          - name: ubuntu-clang-deprecated
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
             flag: deprecated
 
-          - name: ubuntu-gcc-quaternions
-            os: ubuntu-20.04
-            compiler: gcc
-            version: "9"
+          - name: ubuntu-clang-quaternions
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
             flag: quaternions
 
-          - name: ubuntu-gcc-tbb
-            os: ubuntu-20.04
-            compiler: gcc
-            version: "9"
+          - name: ubuntu-clang-tbb
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
             flag: tbb
 
-          - name: ubuntu-cayleymap
-            os: ubuntu-20.04
-            compiler: gcc
-            version: "9"
+          - name: ubuntu-clang-cayleymap
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
             flag: cayley
 
-          - name: ubuntu-system-libs
-            os: ubuntu-20.04
-            compiler: gcc
-            version: "9"
-            flag: system-libs
+          - name: ubuntu-clang-system-libs
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
+            flag: system
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install (Linux)
         if: runner.os == 'Linux'
         run: |
-          # LLVM 9 is not in Bionic's repositories so we add the official LLVM repository.
-          if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
+          sudo apt-get -y update
+          sudo apt-get -y install software-properties-common
+
+          # LLVM (clang) 9/14 is not in 22.04 (jammy)'s repositories so we add the official LLVM repository.
+          if [ "${{ matrix.compiler }}" = "clang" ]; then
+            # (ipv4|ha).pool.sks-keyservers.net is the SKS GPG global keyserver pool
+            # ipv4 avoids potential timeouts because of crappy IPv6 infrastructure
+            # 15CF4D18AF4F7421 is the GPG key for the LLVM apt repository
+            # This key is not in the keystore by default for Ubuntu so we need to add it.
+            LLVM_KEY=15CF4D18AF4F7421
             gpg --keyserver keyserver.ubuntu.com --recv-key $LLVM_KEY || gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key $LLVM_KEY
-            gpg -a --export 15CF4D18AF4F7421 | sudo apt-key add -
-            sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
+            gpg -a --export $LLVM_KEY | sudo apt-key add -
+            sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy main"
           fi
 
-          sudo apt-get -y update
           sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libicu-dev
 
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
-            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
-          else
-            sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
-            echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
-          fi
+          sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
+          echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
+          echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
 
       - name: Install Boost
         if: runner.os == 'Linux'
@@ -97,15 +99,9 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew install cmake ninja boost
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            brew install gcc@${{ matrix.version }}
-            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
-          else
-            sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXX=clang++" >> $GITHUB_ENV
-            fi
+          sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
 
       - name: Set Allow Deprecated Flag
         if: matrix.flag == 'deprecated'
@@ -135,8 +131,11 @@ jobs:
       - name: Use system versions of 3rd party libraries
         if: matrix.flag == 'system'
         run: |
+          sudo apt-get install libeigen3-dev
           echo "GTSAM_USE_SYSTEM_EIGEN=ON" >> $GITHUB_ENV
-          echo "GTSAM_USE_SYSTEM_METIS=ON" >> $GITHUB_ENV
+          # TODO(dellaert): This does not work yet?
+          # sudo apt-get install metis
+          # echo "GTSAM_USE_SYSTEM_METIS=ON" >> $GITHUB_ENV
 
       - name: Build & Test
         run: |

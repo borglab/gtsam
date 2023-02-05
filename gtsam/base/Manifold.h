@@ -144,7 +144,7 @@ public:
 
   BOOST_CONCEPT_USAGE(IsManifold) {
     BOOST_STATIC_ASSERT_MSG(
-        (boost::is_base_of<manifold_tag, structure_category_tag>::value),
+        (std::is_base_of<manifold_tag, structure_category_tag>::value),
         "This type's structure_category trait does not assert it as a manifold (or derived)");
     BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
 

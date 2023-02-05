@@ -17,16 +17,17 @@
  */
 
 #pragma once
+
 #include <gtsam/config.h>      // Configuration from CMake
 #include <gtsam/nonlinear/internal/JacobianMap.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/Manifold.h>
 
-#include <boost/type_traits/aligned_storage.hpp>
-
 #include <Eigen/Core>
+
 #include <iostream>
 #include <optional>
+#include <type_traits>
 
 namespace gtsam {
 namespace internal {
@@ -36,8 +37,8 @@ template<int T> struct CallRecord;
 /// Storage type for the execution trace.
 /// It enforces the proper alignment in a portable way.
 /// Provide a traceSize() sized array of this type to traceExecution as traceStorage.
-static const unsigned TraceAlignment = 32;
-typedef boost::aligned_storage<1, TraceAlignment>::type ExecutionTraceStorage;
+static const unsigned TraceAlignment = 16; // 16 bytes is the default alignment used by Eigen.
+typedef std::aligned_storage<1, TraceAlignment>::type ExecutionTraceStorage;
 
 template<bool UseBlock, typename Derived>
 struct UseBlockIf {

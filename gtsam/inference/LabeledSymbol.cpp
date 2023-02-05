@@ -17,8 +17,6 @@
 
 #include <gtsam/inference/LabeledSymbol.h>
 
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
 #include <iostream>
 
 namespace gtsam {
@@ -73,7 +71,9 @@ void LabeledSymbol::print(const std::string& s) const {
 
 /* ************************************************************************* */
 LabeledSymbol::operator std::string() const {
-  return str(boost::format("%c%c%d") % c_ % label_ % j_);
+  char buffer[100];
+  snprintf(buffer, 100, "%c%c%lu", c_, label_, j_);
+  return std::string(buffer);
 }
 
 /* ************************************************************************* */

@@ -29,8 +29,6 @@
 #include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/format.hpp>
-
 #include <sstream>
 #include <limits>
 #include "gtsam/base/Vector.h"
@@ -134,18 +132,14 @@ HessianFactor::HessianFactor(Key j1, Key j2, Key j3, const Matrix& G11,
 
 /* ************************************************************************* */
 namespace {
-DenseIndex _getSizeHF(const Vector& m) {
-  return m.size();
-}
-
-std::vector<DenseIndex> _getSizeHFVec(const std::vector<Vector>& m) {
+static std::vector<DenseIndex> _getSizeHFVec(const std::vector<Vector>& m) {
   std::vector<DenseIndex> dims;
   for (const Vector& v : m) {
     dims.push_back(v.size());
   }
   return dims;
 }
-}
+}  // namespace
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const KeyVector& js,

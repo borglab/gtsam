@@ -16,7 +16,6 @@
  */
 
 #include <gtsam_unstable/nonlinear/LinearizedFactor.h>
-#include <boost/format.hpp>
 #include <iostream>
 
 namespace gtsam {
@@ -69,8 +68,9 @@ void LinearizedJacobianFactor::print(const std::string& s, const KeyFormatter& k
     std::cout << keyFormatter(key) << " ";
   std::cout << std::endl;
 
-  for(const_iterator key=begin(); key!=end(); ++key)
-    std::cout << boost::format("A[%1%]=\n")%keyFormatter(*key) << A(*key) << std::endl;
+  for(const_iterator key=begin(); key!=end(); ++key) {
+    std::cout << "A[" << keyFormatter(*key) << "]=\n" << A(*key) << std::endl;
+  }
   std::cout << "b=\n" << b() << std::endl;
 
   lin_points_.print("Linearization Point: ");

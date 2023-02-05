@@ -31,8 +31,6 @@
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/cholesky.h>
 
-#include <boost/format.hpp>
-
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
@@ -407,7 +405,7 @@ void JacobianFactor::print(const string& s,
   if (!s.empty())
     cout << s << "\n";
   for (const_iterator key = begin(); key != end(); ++key) {
-    cout << boost::format("  A[%1%] = ") % formatter(*key);
+    cout << "  A[" << formatter(*key) << "] = ";
     cout << getA(key).format(matlabFormat()) << endl;
   }
   cout << formatMatrixIndented("  b = ", getb(), true) << "\n";

@@ -474,7 +474,7 @@ public:
 
   BOOST_CONCEPT_USAGE(IsVectorSpace) {
     BOOST_STATIC_ASSERT_MSG(
-        (boost::is_base_of<vector_space_tag, structure_category_tag>::value),
+        (std::is_base_of<vector_space_tag, structure_category_tag>::value),
         "This type's trait does not assert it as a vector space (or derived)");
     r = p + q;
     r = -p;

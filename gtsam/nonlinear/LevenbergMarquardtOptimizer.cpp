@@ -28,11 +28,10 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/format.hpp>
-
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <limits>
 #include <string>
 
@@ -62,7 +61,8 @@ LevenbergMarquardtOptimizer::LevenbergMarquardtOptimizer(const NonlinearFactorGr
 
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::initTime() {
-  startTime_ = boost::posix_time::microsec_clock::universal_time();
+  // use chrono to measure time in microseconds
+  startTime_ = std::chrono::high_resolution_clock::now();
 }
 
 /* ************************************************************************* */
@@ -104,9 +104,12 @@ inline void LevenbergMarquardtOptimizer::writeLogFile(double currentError){
 
   if (!params_.logFile.empty()) {
     ofstream os(params_.logFile.c_str(), ios::app);
-    boost::posix_time::ptime currentTime = boost::posix_time::microsec_clock::universal_time();
+    // use chrono to measure time in microseconds
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    // Get the time spent in seconds and print it
+    double timeSpent = std::chrono::duration_cast<std::chrono::microseconds>(currentTime - startTime_).count() / 1e6;
     os << /*inner iterations*/ currentState->totalNumberInnerIterations << ","
-        << 1e-6 * (currentTime - startTime_).total_microseconds() << ","
+        << timeSpent << ","
         << /*current error*/ currentError << "," << currentState->lambda << ","
         << /*outer iterations*/ currentState->iterations << endl;
   }
@@ -218,12 +221,12 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
 #else
     double iterationTime = lamda_iteration_timer.elapsed();
 #endif
-    if (currentState->iterations == 0)
+    if (currentState->iterations == 0) {
       cout << "iter      cost      cost_change    lambda  success iter_time" << endl;
-
-    cout << boost::format("% 4d % 8e   % 3.2e   % 3.2e  % 4d   % 3.2e") % currentState->iterations %
-                newError % costChange % currentState->lambda % systemSolvedSuccessfully %
-                iterationTime << endl;
+    }
+    cout << setw(4) << currentState->iterations << " " << setw(8) << newError << " " << setw(3) << setprecision(2)
+         << costChange << " " << setw(3) << setprecision(2) << currentState->lambda << " " << setw(4)
+         << systemSolvedSuccessfully << " " << setw(3) << setprecision(2) << iterationTime << endl;
   }
 
   if (step_is_successful) {

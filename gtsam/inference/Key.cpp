@@ -20,7 +20,6 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/LabeledSymbol.h>
 
-#include <boost/lexical_cast.hpp>
 #include <iostream>
 
 using namespace std;
@@ -30,10 +29,12 @@ namespace gtsam {
 /* ************************************************************************* */
 string _defaultKeyFormatter(Key key) {
   const Symbol asSymbol(key);
-  if (asSymbol.chr() > 0)
+  if (asSymbol.chr() > 0) {
     return (string) asSymbol;
-  else
-    return boost::lexical_cast<string>(key);
+  }
+  else {
+    return std::to_string(key);
+  }
 }
 
 /* ************************************************************************* */
@@ -48,10 +49,12 @@ string _multirobotKeyFormatter(Key key) {
     return (string) asLabeledSymbol;
 
   const Symbol asSymbol(key);
-  if (asLabeledSymbol.chr() > 0)
+  if (asLabeledSymbol.chr() > 0) {
     return (string) asSymbol;
-  else
-    return boost::lexical_cast<string>(key);
+  }
+  else {
+    return std::to_string(key);
+  }
 }
 
 /* ************************************************************************* */

@@ -27,7 +27,6 @@
 #include <gtsam/nonlinear/Symbol.h>
 
 #include <algorithm>
-#include <boost/format.hpp>
 #include <cmath>
 #include <limits>
 #include <vector>
@@ -194,7 +193,7 @@ class MixtureFactor : public HybridFactor {
     std::cout << "\nMixtureFactor\n";
     auto valueFormatter = [](const sharedFactor& v) {
       if (v) {
-        return (boost::format("Nonlinear factor on %d keys") % v->size()).str();
+        return "Nonlinear factor on " + std::to_string(v->size()) + " keys";
       } else {
         return std::string("nullptr");
       }

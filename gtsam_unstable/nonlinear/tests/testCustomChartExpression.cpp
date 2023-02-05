@@ -19,6 +19,8 @@
 
 #include <gtsam_unstable/nonlinear/expressionTesting.h>
 #include <CppUnitLite/TestHarness.h>
+#include <type_traits>
+
 
 using namespace gtsam;
 
@@ -46,8 +48,8 @@ struct ProjectionChart {
 
 namespace gtsam {
 namespace traits {
-template<> struct is_chart<ProjectionChart> : public boost::true_type {};
-template<> struct dimension<ProjectionChart> : public boost::integral_constant<int, 2> {};
+template<> struct is_chart<ProjectionChart> : public std::true_type {};
+template<> struct dimension<ProjectionChart> : public std::integral_constant<int, 2> {};
 }  // namespace traits
 }  // namespace gtsam
 

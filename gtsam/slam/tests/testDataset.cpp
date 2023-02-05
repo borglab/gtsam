@@ -22,8 +22,6 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/TestableAssertions.h>
 
-#include <boost/algorithm/string.hpp>
-
 #include <CppUnitLite/TestHarness.h>
 
 #include <iostream>
@@ -38,7 +36,8 @@ TEST(dataSet, findExampleDataFile) {
   const string expected_end = "examples/Data/example.graph";
   const string actual = findExampleDataFile("example");
   string actual_end = actual.substr(actual.size() - expected_end.size(), expected_end.size());
-  boost::replace_all(actual_end, "\\", "/"); // Convert directory separators to forward-slash
+  // replace all ocurrences of \\ with / use stl
+  std::replace(actual_end.begin(), actual_end.end(), '\\', '/');
   EXPECT(assert_equal(expected_end, actual_end));
 }
 

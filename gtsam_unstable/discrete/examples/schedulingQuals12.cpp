@@ -12,8 +12,6 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/format.hpp>
-
 #include <algorithm>
 
 using namespace std;
@@ -193,8 +191,9 @@ void solveStaged(size_t addMutex = 2) {
 
     // remove this slot from consideration
     slotsAvailable[bestSlot] = 0.0;
-    cout << boost::format("%s = %d (%d), count = %d") % scheduler.studentName(NRSTUDENTS-1-s)
-        % scheduler.slotName(bestSlot) % bestSlot % count << endl;
+    cout << scheduler.studentName(NRSTUDENTS - 1 - s) << " = " << 
+      scheduler.slotName(bestSlot) << " (" << bestSlot
+         << "), count = " << count << endl;
   }
   tictoc_print_();
 }
@@ -234,9 +233,8 @@ void sampleSolutions() {
     size_t min = *min_element(stats.begin(), stats.end());
     size_t nz = count_if(stats.begin(), stats.end(), NonZero);
     if (nz >= 15 && max <= 2) {
-      cout << boost::format(
-          "Sampled schedule %d, min = %d, nz = %d, max = %d\n") % (n + 1) % min
-          % nz % max;
+      cout << "Sampled schedule " << (n + 1) << ", min = " << min
+        << ", nz = " << nz << ", max = " << max << endl;
       for (size_t i = 0; i < NRSTUDENTS; i++) {
         cout << schedulers[i].studentName(0) << " : " << schedulers[i].slotName(
             slots[i]) << endl;

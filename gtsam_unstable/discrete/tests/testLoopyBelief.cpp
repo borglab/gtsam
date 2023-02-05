@@ -71,7 +71,7 @@ class LoopyBelief {
   void print(const std::string& s = "") const {
     cout << s << ":" << endl;
     for (const auto& [key, _] : starGraphs_) {
-      starGraphs_.at(key).print((boost::format("Node %d:") % key).str());
+      starGraphs_.at(key).print("Node " + std::to_string(key) + ":");
     }
   }
 
@@ -124,9 +124,11 @@ class LoopyBelief {
         val[key] = v;
         sum += (*beliefAtKey)(val);
       }
+      // TODO(kartikarcot): Check if this makes sense
       string sumFactorTable;
-      for (size_t v = 0; v < allDiscreteKeys.at(key).second; ++v)
-        sumFactorTable = (boost::format("%s %f") % sumFactorTable % sum).str();
+      for (size_t v = 0; v < allDiscreteKeys.at(key).second; ++v) {
+        sumFactorTable = sumFactorTable + " " + std::to_string(sum);
+      }
       DecisionTreeFactor sumFactor(allDiscreteKeys.at(key), sumFactorTable);
       if (debug) sumFactor.print("denomFactor: ");
       beliefAtKey =

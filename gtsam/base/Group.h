@@ -51,7 +51,7 @@ public:
 
   BOOST_CONCEPT_USAGE(IsGroup) {
     BOOST_STATIC_ASSERT_MSG(
-        (boost::is_base_of<group_tag, structure_category_tag>::value),
+        (std::is_base_of<group_tag, structure_category_tag>::value),
         "This type's structure_category trait does not assert it as a group (or derived)");
     e = traits<G>::Identity();
     e = traits<G>::Compose(g, h);
