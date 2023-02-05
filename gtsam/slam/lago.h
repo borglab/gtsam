@@ -70,9 +70,9 @@ GTSAM_EXPORT GaussianFactorGraph buildLinearOrientationGraph(
     const std::vector<size_t>& chordsIds, const NonlinearFactorGraph& g,
     const key2doubleMap& orientationsToRoot, const PredecessorMap& tree);
 
-/** Given a "pose2" factor graph, find it's minimum spanning tree.
- * Note: all 'Pose2' Between factors are given equal weightage.
- * Note: assumes all the edges (factors) are Between factors
+/** Given a "pose2" factor graph, find its minimum spanning tree.
+ * Note: All 'Pose2' Between factors are given equal weightage.
+ * Note: Assumes all the edges (factors) are Between factors.
  */
 GTSAM_EXPORT PredecessorMap findMinimumSpanningTree(
     const NonlinearFactorGraph& pose2Graph);

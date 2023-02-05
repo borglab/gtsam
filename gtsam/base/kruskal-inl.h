@@ -12,7 +12,9 @@
 /**
  * @file kruskal-inl.h
  * @date Dec 31, 2009
- * @author Frank Dellaert, Yong-Dian Jian
+ * @author Frank Dellaert
+ * @author Yong-Dian Jian
+ * @author Ankur Roy Chowdhury
  */
 
 #pragma once
@@ -20,37 +22,37 @@
 #include <gtsam/base/DSFMap.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/types.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/VariableIndex.h>
 
-#include <memory>
+#include <algorithm>
+#include <numeric>
 #include <vector>
 
 namespace gtsam::utils {
 
 /*****************************************************************************/
-/* sort the container and return permutation index with default comparator */
-inline std::vector<size_t> sortedIndices(const std::vector<double> &src) {
-  const size_t n = src.size();
-  std::vector<std::pair<size_t, double>> tmp;
-  tmp.reserve(n);
-  for (size_t i = 0; i < n; i++) tmp.emplace_back(i, src[i]);
+/* Sort the 'weights' in increasing order and return the sorted order of its
+ * indices. */
+inline std::vector<size_t> sortedIndices(const std::vector<double> &weights) {
+  // Get the number of elements in the 'weights' vector.
+  const size_t n = weights.size();
 
-  /* sort */
-  std::stable_sort(tmp.begin(), tmp.end());
+  // Create a vector of 'indices'.
+  std::vector<size_t> indices(n);
+  std::iota(indices.begin(), indices.end(), 0);
 
-  /* copy back */
-  std::vector<size_t> idx;
-  idx.reserve(n);
-  for (size_t i = 0; i < n; i++) {
-    idx.push_back(tmp[i].first);
-  }
-  return idx;
+  // Sort the 'indices' based on the values in 'weights'.
+  std::stable_sort(indices.begin(), indices.end(),
+                   [&weights](const size_t i0, const size_t i1) {
+                     return weights[i0] < weights[i1];
+                   });
+
+  return indices;
 }
 
 /****************************************************************/
-template <class Graph>
-std::vector<size_t> kruskal(const Graph &fg,
+template <class FACTOR>
+std::vector<size_t> kruskal(const FactorGraph<FACTOR> &fg,
                             const std::vector<double> &weights) {
   if (fg.size() != weights.size()) {
     throw std::runtime_error(
@@ -61,7 +63,7 @@ std::vector<size_t> kruskal(const Graph &fg,
   // Create an index from variables to factor indices.
   const VariableIndex variableIndex(fg);
 
-  // Get indices in sort-order of the weights
+  // Get indices in sort-order of the weights.
   const std::vector<size_t> sortedIndices =
       gtsam::utils::sortedIndices(weights);
 
@@ -81,11 +83,20 @@ std::vector<size_t> kruskal(const Graph &fg,
     // Ignore non-binary edges.
     if (factor->size() != 2) continue;
 
-    auto u = dsf.find(factor->front()), v = dsf.find(factor->back());
-    auto loop = (u == v);
+    // Find the representatives of the sets for both the Keys in the binary
+    // factor.
+    const auto u = dsf.find(factor->front()), v = dsf.find(factor->back());
+
+    // Check if there is a potential loop.
+    const bool loop = (u == v);
     if (!loop) {
+      // Merge the sets.
       dsf.merge(u, v);
+
+      // Add the current index to the tree.
       treeIndices.push_back(index);
+
+      // Break if all the Keys have been added to the tree.
       if (++count == n - 1) break;
     }
   }

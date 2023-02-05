@@ -129,7 +129,6 @@ TEST( SubgraphSolver, constructor3 )
   DOUBLES_EQUAL(0.0, error(Ab, optimized), 1e-5);
 }
 
-
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

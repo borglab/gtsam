@@ -359,7 +359,6 @@ Subgraph SubgraphBuilder::operator()(const GaussianFactorGraph &gfg) const {
 /****************************************************************/
 SubgraphBuilder::Weights SubgraphBuilder::weights(
     const GaussianFactorGraph &gfg) const {
-  using Weights = std::vector<double>;
 
   const size_t m = gfg.size();
   Weights weight;

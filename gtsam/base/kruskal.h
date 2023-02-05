@@ -20,6 +20,7 @@
 #pragma once
 
 #include <gtsam/base/FastMap.h>
+#include <gtsam/inference/FactorGraph.h>
 
 #include <vector>
 
@@ -32,8 +33,8 @@ namespace gtsam::utils {
  * @note Only binary factors are considered while constructing the spanning tree 
  * @note The indices of 'weights' should match the indices of the edges in the factor graph 
  */
-template <class FactorGraph>
-std::vector<size_t> kruskal(const FactorGraph &fg,
+template <class FACTOR>
+std::vector<size_t> kruskal(const FactorGraph<FACTOR> &fg,
                             const std::vector<double> &weights);
 }  // namespace gtsam::utils
 
