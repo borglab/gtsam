@@ -368,7 +368,7 @@ TEST(JacobianFactor, operators )
   EXPECT(assert_equal(expectedX, actualX));
 
   // test gradient at zero
-  Matrix A; Vector b2; std::tie(A,b2) = lf.jacobian();
+  const auto [A, b2] = lf.jacobian();
   VectorValues expectedG;
   expectedG.insert(1, Vector2(20,-10));
   expectedG.insert(2, Vector2(-20, 10));

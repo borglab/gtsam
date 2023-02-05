@@ -330,9 +330,7 @@ void ISAM2Clique::addGradientAtZero(VectorValues* g) const {
   for (auto it = conditional_->begin(); it != conditional_->end(); ++it) {
     const DenseIndex dim = conditional_->getDim(it);
     const Vector contribution = gradientContribution_.segment(position, dim);
-    VectorValues::iterator values_it;
-    bool success;
-    std::tie(values_it, success) = g->tryInsert(*it, contribution);
+    auto [values_it, success] = g->tryInsert(*it, contribution);
     if (!success) values_it->second += contribution;
     position += dim;
   }

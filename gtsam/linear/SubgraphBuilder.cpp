@@ -475,7 +475,7 @@ std::pair<GaussianFactorGraph, GaussianFactorGraph> splitFactorGraph(
     remaining.remove(e.index);
   }
 
-  return std::make_pair(subgraphFactors, remaining);
+  return {subgraphFactors, remaining};
 }
 
 /*****************************************************************************/

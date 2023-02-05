@@ -65,9 +65,7 @@ using symbol_shorthand::L;
  */
 TEST( GaussianJunctionTreeB, constructor2 ) {
   // create a graph
-  NonlinearFactorGraph nlfg;
-  Values values;
-  std::tie(nlfg, values) = createNonlinearSmoother(7);
+  const auto [nlfg, values] = createNonlinearSmoother(7);
   SymbolicFactorGraph::shared_ptr symbolic = nlfg.symbolic();
 
   // linearize
@@ -125,43 +123,35 @@ TEST( GaussianJunctionTreeB, constructor2 ) {
 }
 
 ///* ************************************************************************* */
-//TEST( GaussianJunctionTreeB, optimizeMultiFrontal )
-//{
-//  // create a graph
-//  GaussianFactorGraph fg;
-//  Ordering ordering;
-//  std::tie(fg,ordering) = createSmoother(7);
-//
-//  // optimize the graph
-//  GaussianJunctionTree tree(fg);
-//  VectorValues actual = tree.optimize(&EliminateQR);
-//
-//  // verify
-//  VectorValues expected(vector<size_t>(7,2)); // expected solution
-//  Vector v = Vector2(0., 0.);
-//  for (int i=1; i<=7; i++)
-//    expected[ordering[X(i)]] = v;
-//  EXPECT(assert_equal(expected,actual));
-//}
-//
-///* ************************************************************************* */
-//TEST( GaussianJunctionTreeB, optimizeMultiFrontal2)
-//{
-//  // create a graph
-//  example::Graph nlfg = createNonlinearFactorGraph();
-//  Values noisy = createNoisyValues();
-//  Ordering ordering; ordering += X(1),X(2),L(1);
-//  GaussianFactorGraph fg = *nlfg.linearize(noisy, ordering);
-//
-//  // optimize the graph
-//  GaussianJunctionTree tree(fg);
-//  VectorValues actual = tree.optimize(&EliminateQR);
-//
-//  // verify
-//  VectorValues expected = createCorrectDelta(ordering); // expected solution
-//  EXPECT(assert_equal(expected,actual));
-//}
-//
+TEST(GaussianJunctionTreeB, OptimizeMultiFrontal) {
+  // create a graph
+  const auto fg = createSmoother(7);
+
+  // optimize the graph
+  const VectorValues actual = fg.optimize(&EliminateQR);
+
+  // verify
+  VectorValues expected;
+  const Vector v = Vector2(0., 0.);
+  for (int i = 1; i <= 7; i++) expected.emplace(X(i), v);
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(GaussianJunctionTreeB, optimizeMultiFrontal2) {
+  // create a graph
+  const auto nlfg = createNonlinearFactorGraph();
+  const auto noisy = createNoisyValues();
+  const auto fg = *nlfg.linearize(noisy);
+
+  // optimize the graph
+  VectorValues actual = fg.optimize(&EliminateQR);
+
+  // verify
+  VectorValues expected = createCorrectDelta();  // expected solution
+  EXPECT(assert_equal(expected, actual));
+}
+
 ///* ************************************************************************* */
 //TEST(GaussianJunctionTreeB, slamlike) {
 //  Values init;

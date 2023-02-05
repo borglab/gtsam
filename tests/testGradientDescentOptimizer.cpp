@@ -63,16 +63,12 @@ std::tuple<NonlinearFactorGraph, Values> generateProblem() {
   Pose2 x5(2.1, 2.1, -M_PI_2);
   initialEstimate.insert(5, x5);
 
-  return std::tie(graph, initialEstimate);
+  return {graph, initialEstimate};
 }
 
 /* ************************************************************************* */
 TEST(NonlinearConjugateGradientOptimizer, Optimize) {
-
-  NonlinearFactorGraph graph;
-  Values initialEstimate;
-
-  std::tie(graph, initialEstimate) = generateProblem();
+const auto [graph, initialEstimate] = generateProblem();
 //  cout << "initial error = " << graph.error(initialEstimate) << endl;
 
   NonlinearOptimizerParams param;

@@ -350,10 +350,7 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   ordering += X(0);
   ordering += X(1);
 
-  HybridConditional::shared_ptr hybridConditionalMixture;
-  std::shared_ptr<Factor> factorOnModes;
-
-  std::tie(hybridConditionalMixture, factorOnModes) =
+  const auto [hybridConditionalMixture, factorOnModes] =
       EliminateHybrid(factors, ordering);
 
   auto gaussianConditionalMixture =
@@ -385,9 +382,7 @@ TEST(HybridFactorGraph, Partial_Elimination) {
   for (size_t k = 0; k < self.K; k++) ordering += X(k);
 
   // Eliminate partially i.e. only continuous part.
-  HybridBayesNet::shared_ptr hybridBayesNet;
-  HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
-  std::tie(hybridBayesNet, remainingFactorGraph) =
+  const auto [hybridBayesNet, remainingFactorGraph] =
       linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   CHECK(hybridBayesNet);
@@ -415,8 +410,6 @@ TEST(HybridFactorGraph, Full_Elimination) {
   auto linearizedFactorGraph = self.linearizedFactorGraph;
 
   // We first do a partial elimination
-  HybridBayesNet::shared_ptr hybridBayesNet_partial;
-  HybridGaussianFactorGraph::shared_ptr remainingFactorGraph_partial;
   DiscreteBayesNet discreteBayesNet;
 
   {
@@ -425,7 +418,7 @@ TEST(HybridFactorGraph, Full_Elimination) {
     for (size_t k = 0; k < self.K; k++) ordering += X(k);
 
     // Eliminate partially.
-    std::tie(hybridBayesNet_partial, remainingFactorGraph_partial) =
+    const auto [hybridBayesNet_partial, remainingFactorGraph_partial] =
         linearizedFactorGraph.eliminatePartialSequential(ordering);
 
     DiscreteFactorGraph discrete_fg;
@@ -489,9 +482,7 @@ TEST(HybridFactorGraph, Printing) {
   for (size_t k = 0; k < self.K; k++) ordering += X(k);
 
   // Eliminate partially.
-  HybridBayesNet::shared_ptr hybridBayesNet;
-  HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
-  std::tie(hybridBayesNet, remainingFactorGraph) =
+  const auto [hybridBayesNet, remainingFactorGraph] =
       linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   string expected_hybridFactorGraph = R"(
@@ -721,11 +712,9 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   ordering += X(1);
 
   HybridGaussianFactorGraph linearized = *fg.linearize(initialEstimate);
-  gtsam::HybridBayesNet::shared_ptr hybridBayesNet;
-  gtsam::HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
 
   // This should NOT fail
-  std::tie(hybridBayesNet, remainingFactorGraph) =
+  const auto [hybridBayesNet, remainingFactorGraph] =
       linearized.eliminatePartialSequential(ordering);
   EXPECT_LONGS_EQUAL(4, hybridBayesNet->size());
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());

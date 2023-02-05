@@ -94,9 +94,7 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor)
   Ab_.full() = factor.info().selfadjointView();
 
   // Do Cholesky to get a Jacobian
-  size_t maxrank;
-  bool success;
-  std::tie(maxrank, success) = choleskyCareful(Ab_.matrix());
+  const auto [maxrank, success] = choleskyCareful(Ab_.matrix());
 
   // Check that Cholesky succeeded OR it managed to factor the full Hessian.
   // THe latter case occurs with non-positive definite matrices arising from QP.
@@ -213,9 +211,7 @@ void JacobianFactor::JacobianFactorHelper(const GaussianFactorGraph& graph,
       graph);
 
   // Count dimensions
-  FastVector<DenseIndex> varDims;
-  DenseIndex m, n;
-  std::tie(varDims, m, n) = _countDims(jacobians, orderedSlots);
+  const auto [varDims, m, n] = _countDims(jacobians, orderedSlots);
 
   // Allocate matrix and copy keys in order
   gttic(allocate);

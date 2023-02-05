@@ -179,10 +179,8 @@ ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
 
   // Anchor prior is added here as depends on initial value (and cost is zero)
   if (parameters_.alpha > 0) {
-    size_t i;
-    Rot value;
     const size_t dim = SOn::Dimension(p);
-    std::tie(i, value) = parameters_.anchor;
+    const auto [i, value] = parameters_.anchor;
     auto model = noiseModel::Isotropic::Precision(dim, parameters_.alpha);
     graph.emplace_shared<PriorFactor<SOn>>(i, SOn::Lift(p, value.matrix()),
                                            model);
@@ -755,7 +753,7 @@ std::pair<double, Vector> ShonanAveraging<d>::computeMinEigenVector(
     const Values &values) const {
   Vector minEigenVector;
   double minEigenValue = computeMinEigenValue(values, &minEigenVector);
-  return std::make_pair(minEigenValue, minEigenVector);
+  return {minEigenValue, minEigenVector};
 }
 
 /* ************************************************************************* */
@@ -908,7 +906,7 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
             "When using robust norm, Shonan only tests a single rank. Set pMin = pMax");
       }
       const Values SO3Values = roundSolution(Qstar);
-      return std::make_pair(SO3Values, 0);
+      return {SO3Values, 0};
     } else {
       // Check certificate of global optimality
       Vector minEigenVector;
@@ -916,7 +914,7 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
       if (minEigenValue > parameters_.optimalityThreshold) {
         // If at global optimum, round and return solution
         const Values SO3Values = roundSolution(Qstar);
-        return std::make_pair(SO3Values, minEigenValue);
+        return {SO3Values, minEigenValue};
       }
 
       // Not at global optimimum yet, so check whether we will go to next level

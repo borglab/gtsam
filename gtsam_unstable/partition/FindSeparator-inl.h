@@ -249,9 +249,7 @@ namespace gtsam { namespace partition {
     prepareMetisGraph<GenericGraph>(graph, keys, workspace, &xadj, &adjncy, &adjwgt);
 
     // run ND on the graph
-    size_t sepsize;
-    sharedInts part;
-    std::tie(sepsize, part) = separatorMetis(numKeys, xadj, adjncy, adjwgt, verbose);
+    const auto [sepsize, part] = separatorMetis(numKeys, xadj, adjncy, adjwgt, verbose);
     if (!sepsize)  return std::optional<MetisResult>();
 
     // convert the 0-1-2 from Metis to 1-2-0, so that the separator is 0, as later
@@ -309,9 +307,7 @@ namespace gtsam { namespace partition {
     prepareMetisGraph<GenericGraph>(graph, keys, workspace, &xadj, &adjncy, &adjwgt);
 
     // run metis on the graph
-    int edgecut;
-    sharedInts part;
-    std::tie(edgecut, part) = edgeMetis(numKeys, xadj, adjncy, adjwgt, verbose);
+    const auto [edgecut, part] = edgeMetis(numKeys, xadj, adjncy, adjwgt, verbose);
 
     // convert the 0-1-2 from Metis to 1-2-0, so that the separator is 0, as later we will have more submaps
     MetisResult result;

@@ -118,10 +118,8 @@ TEST( InvDepthFactor, Jacobian3D ) {
   Point2 expected_uv = level_camera.project(landmark);
 
   // get expected landmark representation using backprojection
-  double inv_depth;
-  Vector5 inv_landmark;
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  std::tie(inv_landmark, inv_depth) = inv_camera.backproject(expected_uv, 5);
+  const auto [inv_landmark, inv_depth] = inv_camera.backproject(expected_uv, 5);
   Vector5 expected_inv_landmark((Vector(5) << 0., 0., 1., 0., 0.).finished());
 
   CHECK(assert_equal(expected_inv_landmark, inv_landmark, 1e-6));

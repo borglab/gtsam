@@ -154,8 +154,7 @@ TEST(Vector, weightedPseudoinverse )
   Vector weights = sigmas.array().square().inverse();
 
   // perform solve
-  Vector actual; double precision;
-  std::tie(actual, precision) = weightedPseudoinverse(x, weights);
+  const auto [actual, precision] = weightedPseudoinverse(x, weights);
 
   // construct expected
   Vector expected(2);
@@ -179,8 +178,7 @@ TEST(Vector, weightedPseudoinverse_constraint )
   sigmas(0) = 0.0; sigmas(1) = 0.2;
   Vector weights = sigmas.array().square().inverse();
   // perform solve
-  Vector actual; double precision;
-  std::tie(actual, precision) = weightedPseudoinverse(x, weights);
+  const auto [actual, precision] = weightedPseudoinverse(x, weights);
 
   // construct expected
   Vector expected(2);
@@ -197,8 +195,7 @@ TEST(Vector, weightedPseudoinverse_nan )
   Vector a = (Vector(4) << 1., 0., 0., 0.).finished();
   Vector sigmas = (Vector(4) << 0.1, 0.1, 0., 0.).finished();
   Vector weights = sigmas.array().square().inverse();
-  Vector pseudo; double precision;
-  std::tie(pseudo, precision) = weightedPseudoinverse(a, weights);
+  const auto [pseudo, precision] = weightedPseudoinverse(a, weights);
 
   Vector expected = (Vector(4) << 1., 0., 0.,0.).finished();
   EXPECT(assert_equal(expected, pseudo));

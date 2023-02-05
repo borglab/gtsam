@@ -248,8 +248,7 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
       xjm(k) = R(j+k, j);
 
     // calculate the Householder vector v
-    double beta; Vector vjm;
-    std::tie(beta,vjm) = house(xjm);
+    const auto [beta, vjm] = house(xjm);
 
     // pad with zeros to get m-dimensional vector v
     for(size_t k = 0 ; k < m; k++)

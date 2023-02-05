@@ -59,7 +59,7 @@ namespace gtsam {
   public:
     /** convenience insert so we can pass ints for TypedSymbol keys */
     inline void insert(const KEY& key, const KEY& parent) {
-      std::map<KEY, KEY>::insert(std::make_pair(key, parent));
+      std::map<KEY, KEY>::emplace(key, parent);
     }
   };
 

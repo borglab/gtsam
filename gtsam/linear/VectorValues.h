@@ -80,7 +80,7 @@ namespace gtsam {
    public:
     typedef Values::iterator iterator;              ///< Iterator over vector values
     typedef Values::const_iterator const_iterator;  ///< Const iterator over vector values
-    typedef std::shared_ptr<This> shared_ptr;     ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr;       ///< shared_ptr to this class
     typedef Values::value_type value_type;          ///< Typedef to pair<Key, Vector>
     typedef value_type KeyValuePair;                ///< Typedef to pair<Key, Vector>
     typedef std::map<Key, size_t> Dims;             ///< Keyed vector dimensions
@@ -186,7 +186,7 @@ namespace gtsam {
 #if ! defined(GTSAM_USE_TBB) || defined (TBB_GREATER_EQUAL_2020)
       return values_.emplace(std::piecewise_construct, std::forward_as_tuple(j), std::forward_as_tuple(args...));
 #else
-      return values_.insert(std::make_pair(j, Vector(std::forward<Args>(args)...)));
+      return values_.insert({j, Vector(std::forward<Args>(args)...)});
 #endif
     }
 
@@ -195,7 +195,7 @@ namespace gtsam {
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated. */
     iterator insert(Key j, const Vector& value) {
-      return insert(std::make_pair(j, value));
+      return insert({j, value});
     }
 
     /** Insert all values from \c values.  Throws an invalid_argument exception if any keys to be
@@ -210,7 +210,7 @@ namespace gtsam {
 #ifdef TBB_GREATER_EQUAL_2020
       return values_.emplace(j, value);
 #else
-      return values_.insert(std::make_pair(j, value));
+      return values_.insert({j, value});
 #endif
     }
 

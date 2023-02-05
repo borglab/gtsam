@@ -77,9 +77,7 @@ int main(int argc, char* argv[]) {
   for (const SfmTrack& track : mydata.tracks) {
     // Leaf expression for j^th point
     Point3_ point_('p', j);
-    for (const SfmMeasurement& m : track.measurements) {
-      size_t i = m.first;
-      Point2 uv = m.second;
+    for (const auto& [i, uv] : track.measurements) {
       // Leaf expression for i^th camera
       Expression<SfmCamera> camera_(C(i));
       // Below an expression for the prediction of the measurement:

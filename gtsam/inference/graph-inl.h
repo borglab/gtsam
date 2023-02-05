@@ -48,13 +48,8 @@ public:
 /* ************************************************************************* */
 template<class KEY>
 std::list<KEY> predecessorMap2Keys(const PredecessorMap<KEY>& p_map) {
-
   typedef typename SGraph<KEY>::Vertex SVertex;
-
-  SGraph<KEY> g;
-  SVertex root;
-  std::map<KEY, SVertex> key2vertex;
-  std::tie(g, root, key2vertex) = gtsam::predecessorMap2Graph<SGraph<KEY>, SVertex, KEY>(p_map);
+  const auto [g, root, key2vertex] = gtsam::predecessorMap2Graph<SGraph<KEY>, SVertex, KEY>(p_map);
 
   // breadth first visit on the graph
   std::list<KEY> keys;
@@ -121,18 +116,16 @@ predecessorMap2Graph(const PredecessorMap<KEY>& p_map) {
   std::map<KEY, V> key2vertex;
   V v1, v2, root;
   bool foundRoot = false;
-  for(auto child_parent: p_map) {
-    KEY child, parent;
-    std::tie(child,parent) = child_parent;
+  for(const auto& [child, parent]: p_map) {
     if (key2vertex.find(child) == key2vertex.end()) {
        v1 = add_vertex(child, g);
-       key2vertex.insert(std::make_pair(child, v1));
+       key2vertex.emplace(child, v1);
      } else
        v1 = key2vertex[child];
 
     if (key2vertex.find(parent) == key2vertex.end()) {
        v2 = add_vertex(parent, g);
-       key2vertex.insert(std::make_pair(parent, v2));
+       key2vertex.emplace(parent, v2);
      } else
        v2 = key2vertex[parent];
 
@@ -180,7 +173,6 @@ std::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>& 
     boost::property<boost::vertex_name_t, KEY>,
     boost::property<boost::edge_weight_t, POSE> > PoseGraph;
   typedef typename boost::graph_traits<PoseGraph>::vertex_descriptor PoseVertex;
-  typedef typename boost::graph_traits<PoseGraph>::edge_descriptor PoseEdge;
 
   PoseGraph g;
   PoseVertex root;
@@ -189,8 +181,6 @@ std::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>& 
       predecessorMap2Graph<PoseGraph, PoseVertex, KEY>(tree);
 
   // attach the relative poses to the edges
-  PoseEdge edge12, edge21;
-  bool found1, found2;
   for(typename G::sharedFactor nl_factor: graph) {
 
     if (nl_factor->keys().size() > 2)
@@ -207,8 +197,8 @@ std::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>& 
     PoseVertex v2 = key2vertex.find(key2)->second;
 
     POSE l1Xl2 = factor->measured();
-    std::tie(edge12, found1) = boost::edge(v1, v2, g);
-    std::tie(edge21, found2) = boost::edge(v2, v1, g);
+    const auto [edge12, found1] = boost::edge(v1, v2, g);
+    const auto [edge21, found2] = boost::edge(v2, v1, g);
     if (found1 && found2) throw std::invalid_argument ("composePoses: invalid spanning tree");
     if (!found1 && !found2) continue;
     if (found1)

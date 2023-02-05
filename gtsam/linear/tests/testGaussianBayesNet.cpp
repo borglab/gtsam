@@ -50,8 +50,7 @@ static GaussianBayesNet noisyBayesNet = {
 /* ************************************************************************* */
 TEST( GaussianBayesNet, Matrix )
 {
-  Matrix R; Vector d;
-  std::tie(R,d) = smallBayesNet.matrix(); // find matrix and RHS
+  const auto [R, d] = smallBayesNet.matrix(); // find matrix and RHS
 
   Matrix R1 = (Matrix2() <<
           1.0, 1.0,
@@ -100,8 +99,7 @@ TEST(GaussianBayesNet, Evaluate2) {
 /* ************************************************************************* */
 TEST( GaussianBayesNet, NoisyMatrix )
 {
-  Matrix R; Vector d;
-  std::tie(R,d) = noisyBayesNet.matrix(); // find matrix and RHS
+  const auto [R, d] = noisyBayesNet.matrix(); // find matrix and RHS
 
   Matrix R1 = (Matrix2() <<
           0.5, 0.5,
@@ -123,9 +121,7 @@ TEST(GaussianBayesNet, Optimize) {
 
 /* ************************************************************************* */
 TEST(GaussianBayesNet, NoisyOptimize) {
-  Matrix R;
-  Vector d;
-  std::tie(R, d) = noisyBayesNet.matrix();  // find matrix and RHS
+  const auto [R, d] = noisyBayesNet.matrix();  // find matrix and RHS
   const Vector x = R.inverse() * d;
   const VectorValues expected{{_x_, x.head(1)}, {_y_, x.tail(1)}};
 
@@ -236,9 +232,7 @@ TEST( GaussianBayesNet, MatrixStress )
         KeyVector({_y_, _x_, _z_}), KeyVector({_y_, _z_, _x_}),
         KeyVector({_z_, _x_, _y_}), KeyVector({_z_, _y_, _x_})}) {
     const Ordering ordering(keys);
-    Matrix R;
-    Vector d;
-    std::tie(R, d) = bn.matrix(ordering);
+    const auto [R, d] = bn.matrix(ordering);
     EXPECT(assert_equal(expected.vector(ordering), R.inverse() * d));
   }
 }

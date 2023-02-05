@@ -79,8 +79,6 @@ class LoopyBelief {
   DiscreteFactorGraph::shared_ptr iterate(
       const std::map<Key, DiscreteKey>& allDiscreteKeys) {
     static const bool debug = false;
-    static DiscreteConditional::shared_ptr
-        dummyCond;  // unused by-product of elimination
     DiscreteFactorGraph::shared_ptr beliefs(new DiscreteFactorGraph());
     std::map<Key, std::map<Key, DiscreteFactor::shared_ptr> > allMessages;
     // Eliminate each star graph
@@ -99,8 +97,7 @@ class LoopyBelief {
           subGraph.push_back(starGraphs_.at(key).star->at(factor));
         }
         if (debug) subGraph.print("------- Subgraph:");
-        DiscreteFactor::shared_ptr message;
-        std::tie(dummyCond, message) =
+        const auto [dummyCond, message] =
             EliminateDiscrete(subGraph, Ordering{neighbor});
         // store the new factor into messages
         messages.insert(make_pair(neighbor, message));

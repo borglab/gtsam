@@ -219,10 +219,8 @@ Template typename This::State This::iterate(
   } else {
     // If we CAN make some progress, i.e. p_k != 0
     // Adapt stepsize if some inactive constraints complain about this move
-    double alpha;
-    int factorIx;
     VectorValues p = newValues - state.values;
-    std::tie(alpha, factorIx) = // using 16.41
+    const auto [alpha, factorIx] = // using 16.41
         computeStepSize(state.workingSet, state.values, p, POLICY::maxAlpha);
     // also add to the working set the one that complains the most
     InequalityFactorGraph newWorkingSet = state.workingSet;

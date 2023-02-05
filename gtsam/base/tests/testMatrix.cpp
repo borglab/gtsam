@@ -857,8 +857,7 @@ TEST(Matrix, qr )
   Matrix expectedR = (Matrix(6, 4) << 15, 0, -8.3333, 0, 00, 11.1803, 0, -2.2361, 00, 0,
       7.4536, 0, 00, 0, 0, 10.9545, 00, 0, 0, 0, 00, 0, 0, 0).finished();
 
-  Matrix Q, R;
-  std::tie(Q, R) = qr(A);
+  const auto [Q, R] = qr(A);
   EXPECT(assert_equal(expectedQ, Q, 1e-4));
   EXPECT(assert_equal(expectedR, R, 1e-4));
   EXPECT(assert_equal(A, Q*R, 1e-14));
@@ -915,10 +914,7 @@ TEST(Matrix, weighted_elimination )
 
   // unpack and verify
   size_t i = 0;
-  for (const auto& tuple : solution) {
-    Vector r;
-    double di, sigma;
-    std::tie(r, di, sigma) = tuple;
+  for (const auto& [r, di, sigma] : solution) {
     EXPECT(assert_equal(r, expectedR.row(i))); // verify r
     DOUBLES_EQUAL(d(i), di, 1e-8); // verify d
     DOUBLES_EQUAL(newSigmas(i), sigma, 1e-5); // verify sigma
@@ -1142,10 +1138,7 @@ TEST(Matrix, DLT )
       1.89,         2.24,         3.99,         3.24,         3.84,         6.84,        18.09,        21.44,        38.19,
       2.24,         2.48,         6.24,         3.08,         3.41,         8.58,        24.64,        27.28,        68.64
   ).finished();
-  int rank;
-  double error;
-  Vector actual;
-  std::tie(rank,error,actual) = DLT(A);
+  const auto [rank,error,actual] = DLT(A);
   Vector expected = (Vector(9) << -0.0, 0.2357, 0.4714, -0.2357, 0.0, - 0.4714,-0.4714, 0.4714, 0.0).finished();
   EXPECT_LONGS_EQUAL(8,rank);
   EXPECT_DOUBLES_EQUAL(0,error,1e-8);

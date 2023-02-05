@@ -219,10 +219,9 @@ size_t getTicTocID(const char *descriptionC) {
   static gtsam::FastMap<std::string, size_t> idMap;
 
   // Retrieve or add this string
-  gtsam::FastMap<std::string, size_t>::const_iterator it = idMap.find(
-      description);
+  auto it = idMap.find(description);
   if (it == idMap.end()) {
-    it = idMap.insert(std::make_pair(description, nextId)).first;
+    it = idMap.insert({description, nextId}).first;
     ++nextId;
   }
 

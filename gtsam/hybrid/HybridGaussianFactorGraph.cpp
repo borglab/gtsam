@@ -251,9 +251,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 #endif
 
   // Separate out decision tree into conditionals and remaining factors.
-  GaussianMixture::Conditionals conditionals;
-  GaussianMixtureFactor::Factors newFactors;
-  std::tie(conditionals, newFactors) = unzip(eliminationResults);
+  const auto [conditionals, newFactors] = unzip(eliminationResults);
 
   // Create the GaussianMixture from the conditionals
   auto gaussianMixture = std::make_shared<GaussianMixture>(

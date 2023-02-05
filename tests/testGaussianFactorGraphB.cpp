@@ -111,9 +111,7 @@ TEST(GaussianFactorGraph, eliminateOne_l1) {
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_x1_fast) {
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  GaussianConditional::shared_ptr conditional;
-  JacobianFactor::shared_ptr remaining;
-  std::tie(conditional, remaining) = EliminateQR(fg, Ordering{X(1)});
+  const auto [conditional, remaining] = EliminateQR(fg, Ordering{X(1)});
 
   // create expected Conditional Gaussian
   Matrix I = 15 * I_2x2, R11 = I, S12 = -0.111111 * I, S13 = -0.444444 * I;
@@ -289,9 +287,7 @@ TEST(GaussianFactorGraph, elimination) {
   GaussianBayesNet bayesNet = *fg.eliminateSequential();
 
   // Check matrix
-  Matrix R;
-  Vector d;
-  std::tie(R, d) = bayesNet.matrix();
+  const auto [R, d] = bayesNet.matrix();
   Matrix expected =
       (Matrix(2, 2) << 0.707107, -0.353553, 0.0, 0.612372).finished();
   Matrix expected2 =
