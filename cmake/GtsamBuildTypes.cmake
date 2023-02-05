@@ -87,7 +87,10 @@ if(MSVC)
   list_append_cache(GTSAM_COMPILE_DEFINITIONS_PRIVATE
     WINDOWS_LEAN_AND_MEAN
     NOMINMAX
-    )
+  )
+  list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC
+    _ENABLE_EXTENDED_ALIGNED_STORAGE
+  )
   # Avoid literally hundreds to thousands of warnings:
   list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC
     /wd4267 # warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
