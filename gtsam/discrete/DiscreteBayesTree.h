@@ -63,7 +63,7 @@ class GTSAM_EXPORT DiscreteBayesTreeClique
 
 /* ************************************************************************* */
 /**
- * @brief A Bayes tree representing a Discrete density.
+ * @brief A Bayes tree representing a Discrete distribution.
  * @ingroup discrete
  */
 class GTSAM_EXPORT DiscreteBayesTree

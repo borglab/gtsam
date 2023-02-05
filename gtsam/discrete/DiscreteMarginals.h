@@ -41,7 +41,7 @@ class DiscreteMarginals {
   DiscreteMarginals() {}
 
   /** Construct a marginals class.
-   * @param graph The factor graph defining the full joint density on all variables.
+   * @param graph The factor graph defining the full joint distribution on all variables.
    */
   DiscreteMarginals(const DiscreteFactorGraph& graph) {
     bayesTree_ = graph.eliminateMultifrontal();

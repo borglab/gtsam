@@ -29,7 +29,7 @@ using namespace gtsam;
 DiscreteKey X(0, 2), Y(1, 3), Z(2, 2);
 
 /* ************************************************************************* */
-TEST(testSignature, simple_conditional) {
+TEST(testSignature, SimpleConditional) {
   Signature sig(X, {Y}, "1/1 2/3 1/4");
   CHECK(sig.table());
   Signature::Table table = *sig.table();
@@ -54,7 +54,7 @@ TEST(testSignature, simple_conditional) {
 }
 
 /* ************************************************************************* */
-TEST(testSignature, simple_conditional_nonparser) {
+TEST(testSignature, SimpleConditionalNonparser) {
   Signature::Row row1{1, 1}, row2{2, 3}, row3{1, 4};
   Signature::Table table{row1, row2, row3};
 
@@ -77,7 +77,7 @@ TEST(testSignature, simple_conditional_nonparser) {
 DiscreteKey A(0, 2), S(1, 2), T(2, 2), L(3, 2), B(4, 2), E(5, 2), D(7, 2);
 
 // Make sure we can create all signatures for Asia network with constructor.
-TEST(testSignature, all_examples) {
+TEST(testSignature, AllExamples) {
   DiscreteKey X(6, 2);
   Signature a(A, {}, "99/1");
   Signature s(S, {}, "50/50");
@@ -89,7 +89,7 @@ TEST(testSignature, all_examples) {
 }
 
 // Make sure we can create all signatures for Asia network with operator magic.
-TEST(testSignature, all_examples_magic) {
+TEST(testSignature, AllExamplesMagic) {
   DiscreteKey X(6, 2);
   Signature a(A % "99/1");
   Signature s(S % "50/50");
@@ -101,7 +101,7 @@ TEST(testSignature, all_examples_magic) {
 }
 
 // Check example from docs.
-TEST(testSignature, doxygen_example) {
+TEST(testSignature, DoxygenExample) {
   Signature::Table table{{0.9, 0.1}, {0.2, 0.8}, {0.3, 0.7}, {0.1, 0.9}};
   Signature d1(D, {E, B}, table);
   Signature d2((D | E, B) = "9/1 2/8 3/7 1/9");
