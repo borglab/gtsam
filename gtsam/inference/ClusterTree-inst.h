@@ -209,9 +209,13 @@ struct EliminationData {
       // Fill nodes index - we do this here instead of calling insertRoot at the end to avoid
       // putting orphan subtrees in the index - they'll already be in the index of the ISAM2
       // object they're added to.
-      for (const Key& j: myData.bayesTreeNode->conditional()->frontals())
+      for (const Key& j : myData.bayesTreeNode->conditional()->frontals()) {
+#ifdef GTSAM_USE_TBB
+        nodesIndex_.insert({j, myData.bayesTreeNode});
+#else
         nodesIndex_.emplace(j, myData.bayesTreeNode);
-
+#endif
+      }
       // Store remaining factor in parent's gathered factors
       if (!eliminationResult.second->empty()) {
 #ifdef GTSAM_USE_TBB
