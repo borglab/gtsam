@@ -219,7 +219,6 @@ std::string SubgraphBuilderParameters::augmentationWeightTranslator(
 
 /****************************************************************/
 vector<size_t> SubgraphBuilder::buildTree(const GaussianFactorGraph &gfg,
-                                          const FastMap<Key, size_t> &ordering,
                                           const vector<double> &weights) const {
   const SubgraphBuilderParameters &p = parameters_;
   switch (p.skeletonType) {
@@ -336,7 +335,7 @@ Subgraph SubgraphBuilder::operator()(const GaussianFactorGraph &gfg) const {
   vector<double> weights = this->weights(gfg);
 
   // Build spanning tree.
-  const vector<size_t> tree = buildTree(gfg, forward_ordering, weights);
+  const vector<size_t> tree = buildTree(gfg, weights);
   if (tree.size() != n - 1) {
     throw std::runtime_error(
         "SubgraphBuilder::operator() failure: tree.size() != n-1, might be caused by disconnected graph");
