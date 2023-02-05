@@ -270,9 +270,8 @@ static VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph,
   // Find a minimum spanning tree
   if (useOdometricPath)
     tree = findOdometricPath(pose2Graph);
-  else {
+  else
     tree = findMinimumSpanningTree(pose2Graph);
-  }
 
   // Create a linear factor graph (LFG) of scalars
   key2doubleMap deltaThetaMap;

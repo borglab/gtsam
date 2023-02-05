@@ -167,12 +167,11 @@ class GTSAM_EXPORT SubgraphBuilder {
   std::vector<size_t> unary(const GaussianFactorGraph &gfg) const;
   std::vector<size_t> natural_chain(const GaussianFactorGraph &gfg) const;
   std::vector<size_t> bfs(const GaussianFactorGraph &gfg) const;
-  std::vector<size_t> sample(const std::vector<double> &weights,
-                             const size_t t) const;
   std::vector<size_t> kruskal(const GaussianFactorGraph &gfg,
                               const std::vector<double> &weights) const;
+  std::vector<size_t> sample(const std::vector<double> &weights,
+                             const size_t t) const;
   Weights weights(const GaussianFactorGraph &gfg) const ;
-
   SubgraphBuilderParameters parameters_;
 };
 

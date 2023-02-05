@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file SubgraphBuilder-inl.h
+ * @file kruskal-inl.h
  * @date Dec 31, 2009
  * @author Frank Dellaert, Yong-Dian Jian
  */
