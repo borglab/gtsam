@@ -124,15 +124,40 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal) {
 }
 
 /* ************************************************************************* */
-TEST(SymbolicFactorGraph, marginalMultifrontalBayesNet) {
-  auto expectedBayesNet =
-      SymbolicBayesNet(SymbolicConditional(0, 1, 2))(SymbolicConditional(
-          1, 2, 3))(SymbolicConditional(2, 3))(SymbolicConditional(3));
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetOrdering) {
+  auto expectedBayesNet = SymbolicBayesNet({0, 1, 2})({1, 2, 3})({2, 3})({3});
 
-  auto ordering = Ordering{0,1,2,3};
-  SymbolicBayesNet actual1 =
-      *simpleTestGraph2.marginalMultifrontalBayesNet(std::cref(ordering));
-  EXPECT(assert_equal(expectedBayesNet, actual1));
+  SymbolicBayesNet actual =
+      *simpleTestGraph2.marginalMultifrontalBayesNet(Ordering{0, 1, 2, 3});
+  EXPECT(assert_equal(expectedBayesNet, actual));
+}
+
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetKeyVector) {
+  auto expectedBayesNet = SymbolicBayesNet({0, 1, 2})({2, 1, 3})({1, 3})({3});
+
+  SymbolicBayesNet actual =
+      *simpleTestGraph2.marginalMultifrontalBayesNet(KeyVector{0, 1, 2, 3});
+  EXPECT(assert_equal(expectedBayesNet, actual));
+}
+
+TEST_UNSAFE(SymbolicFactorGraph, MarginalMultifrontalBayesNetOrderingPlus) {
+  auto expectedBayesNet = SymbolicBayesNet(SymbolicConditional{0, 3})({3});
+
+  const Ordering orderedVariables{0, 3},
+      marginalizedVariableOrdering{1, 2, 4, 5};
+  SymbolicBayesNet actual = *simpleTestGraph2.marginalMultifrontalBayesNet(
+      orderedVariables, marginalizedVariableOrdering);
+  EXPECT(assert_equal(expectedBayesNet, actual));
+}
+
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetKeyVectorPlus) {
+  auto expectedBayesNet = SymbolicBayesNet({0, 1, 3})({3, 1})({1});
+
+  const KeyVector variables{0, 1, 3};
+  const Ordering marginalizedVariableOrdering{2, 4, 5};
+  SymbolicBayesNet actual = *simpleTestGraph2.marginalMultifrontalBayesNet(
+      variables, marginalizedVariableOrdering);
+  EXPECT(assert_equal(expectedBayesNet, actual));
 }
 
 /* ************************************************************************* */
