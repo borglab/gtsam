@@ -73,6 +73,7 @@ set(interface_files
     ${GTSAM_SOURCE_DIR}/gtsam/geometry/geometry.i
     ${GTSAM_SOURCE_DIR}/gtsam/linear/linear.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
+    ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/values.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/custom.i
     ${GTSAM_SOURCE_DIR}/gtsam/symbolic/symbolic.i
     ${GTSAM_SOURCE_DIR}/gtsam/sam/sam.i
