@@ -171,7 +171,7 @@ class GTSAM_EXPORT SubgraphBuilder {
                               const std::vector<double> &weights) const;
   std::vector<size_t> sample(const std::vector<double> &weights,
                              const size_t t) const;
-  Weights weights(const GaussianFactorGraph &gfg) const ;
+  Weights weights(const GaussianFactorGraph &gfg) const;
   SubgraphBuilderParameters parameters_;
 };
 
