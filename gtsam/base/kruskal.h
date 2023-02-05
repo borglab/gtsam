@@ -12,7 +12,6 @@
 /**
  * @file SubgraphBuilder-inl.h
  * @date Dec 31, 2009
- * @date Jan 23, 2023
  * @author Frank Dellaert, Yong-Dian Jian
  */
 

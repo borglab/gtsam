@@ -55,7 +55,7 @@ static const noiseModel::Diagonal::shared_ptr priorPose2Noise =
  * The root is assumed to have orientation zero.
  */
 static double computeThetaToRoot(const Key nodeKey,
-    const PredecessorMap<Key>& tree, const key2doubleMap& deltaThetaMap,
+    const PredecessorMap& tree, const key2doubleMap& deltaThetaMap,
     const key2doubleMap& thetaFromRootMap) {
 
   double nodeTheta = 0;
@@ -81,7 +81,7 @@ static double computeThetaToRoot(const Key nodeKey,
 
 /* ************************************************************************* */
 key2doubleMap computeThetasToRoot(const key2doubleMap& deltaThetaMap,
-    const PredecessorMap<Key>& tree) {
+    const PredecessorMap& tree) {
 
   key2doubleMap thetaToRootMap;
 
@@ -102,7 +102,7 @@ key2doubleMap computeThetasToRoot(const key2doubleMap& deltaThetaMap,
 void getSymbolicGraph(
 /*OUTPUTS*/vector<size_t>& spanningTreeIds, vector<size_t>& chordsIds,
     key2doubleMap& deltaThetaMap,
-    /*INPUTS*/const PredecessorMap<Key>& tree, const NonlinearFactorGraph& g) {
+    /*INPUTS*/const PredecessorMap& tree, const NonlinearFactorGraph& g) {
 
   // Get keys for which you want the orientation
   size_t id = 0;
@@ -166,7 +166,7 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
 GaussianFactorGraph buildLinearOrientationGraph(
     const vector<size_t>& spanningTreeIds, const vector<size_t>& chordsIds,
     const NonlinearFactorGraph& g, const key2doubleMap& orientationsToRoot,
-    const PredecessorMap<Key>& tree) {
+    const PredecessorMap& tree) {
 
   GaussianFactorGraph lagoGraph;
   Vector deltaTheta;
@@ -200,10 +200,10 @@ GaussianFactorGraph buildLinearOrientationGraph(
 }
 
 /* ************************************************************************* */
-static PredecessorMap<Key> findOdometricPath(
+static PredecessorMap findOdometricPath(
     const NonlinearFactorGraph& pose2Graph) {
 
-  PredecessorMap<Key> tree;
+  PredecessorMap tree;
   Key minKey = kAnchorKey; // this initialization does not matter
   bool minUnassigned = true;
 
@@ -216,18 +216,18 @@ static PredecessorMap<Key> findOdometricPath(
       minUnassigned = false;
     }
     if (key2 - key1 == 1) { // consecutive keys
-      tree.insert(key2, key1);
+      tree.emplace(key2, key1);
       if (key1 < minKey)
         minKey = key1;
     }
   }
-  tree.insert(minKey, kAnchorKey);
-  tree.insert(kAnchorKey, kAnchorKey); // root
+  tree.emplace(minKey, kAnchorKey);
+  tree.emplace(kAnchorKey, kAnchorKey); // root
   return tree;
 }
 
 /*****************************************************************************/
-PredecessorMap<Key> findMinimumSpanningTree(
+PredecessorMap findMinimumSpanningTree(
     const NonlinearFactorGraph& pose2Graph) {
   // Compute the minimum spanning tree
   const FastMap<Key, size_t> forwardOrdering =
@@ -239,7 +239,7 @@ PredecessorMap<Key> findMinimumSpanningTree(
   // Create a PredecessorMap 'predecessorMap' such that:
   // predecessorMap[key2] = key1, where key1 is the 'parent' node for key2 in
   // the spanning tree
-  PredecessorMap<Key> predecessorMap;
+  PredecessorMap predecessorMap;
   std::map<Key, bool> visitationMap;
   std::stack<std::pair<Key, Key>> stack;
 
@@ -268,7 +268,7 @@ static VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph,
                                         bool useOdometricPath) {
   gttic(lago_computeOrientations);
 
-  PredecessorMap<Key> tree;
+  PredecessorMap tree;
   // Find a minimum spanning tree
   if (useOdometricPath)
     tree = findOdometricPath(pose2Graph);

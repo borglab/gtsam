@@ -69,7 +69,7 @@ NonlinearFactorGraph graph() {
 TEST(Lago, findMinimumSpanningTree) {
   NonlinearFactorGraph g = simpleLago::graph();
   auto gPlus = initialize::buildPoseGraph<Pose2>(g);
-  PredecessorMap<Key> tree = lago::findMinimumSpanningTree(gPlus);
+  lago::PredecessorMap tree = lago::findMinimumSpanningTree(gPlus);
 
   // We should recover the following spanning tree:
   //
@@ -94,7 +94,7 @@ TEST(Lago, findMinimumSpanningTree) {
 TEST( Lago, checkSTandChords ) {
   NonlinearFactorGraph g = simpleLago::graph();
   auto gPlus = initialize::buildPoseGraph<Pose2>(g);
-  PredecessorMap<Key> tree = lago::findMinimumSpanningTree(gPlus);
+  lago::PredecessorMap tree = lago::findMinimumSpanningTree(gPlus);
 
   lago::key2doubleMap deltaThetaMap;
   vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
@@ -111,7 +111,7 @@ TEST( Lago, checkSTandChords ) {
 TEST(Lago, orientationsOverSpanningTree) {
   NonlinearFactorGraph g = simpleLago::graph();
   auto gPlus = initialize::buildPoseGraph<Pose2>(g);
-  PredecessorMap<Key> tree = lago::findMinimumSpanningTree(gPlus);
+  lago::PredecessorMap tree = lago::findMinimumSpanningTree(gPlus);
 
   // check the tree structure
   using initialize::kAnchorKey;
@@ -138,11 +138,6 @@ TEST(Lago, orientationsOverSpanningTree) {
   lago::key2doubleMap actual;
   actual = lago::computeThetasToRoot(deltaThetaMap, tree);
 
-  std::cout << "Thetas to root Map\n";
-  for (const auto& [k, v] : actual) {
-    std::cout << k << ": " << v << "\n";
-  }
-
   DOUBLES_EQUAL(expected[x0], actual[x0], 1e-6);
   DOUBLES_EQUAL(expected[x1], actual[x1], 1e-6);
   DOUBLES_EQUAL(expected[x2], actual[x2], 1e-6);
@@ -153,7 +148,7 @@ TEST(Lago, orientationsOverSpanningTree) {
 TEST( Lago, regularizedMeasurements ) {
   NonlinearFactorGraph g = simpleLago::graph();
   auto gPlus = initialize::buildPoseGraph<Pose2>(g);
-  PredecessorMap<Key> tree = lago::findMinimumSpanningTree(gPlus);
+  lago::PredecessorMap tree = lago::findMinimumSpanningTree(gPlus);
 
   lago::key2doubleMap deltaThetaMap;
   vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
