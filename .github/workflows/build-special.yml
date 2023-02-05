@@ -81,7 +81,7 @@ jobs:
             LLVM_KEY=15CF4D18AF4F7421
             gpg --keyserver keyserver.ubuntu.com --recv-key $LLVM_KEY || gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key $LLVM_KEY
             gpg -a --export $LLVM_KEY | sudo apt-key add -
-            sudo add-apt-repository "deb deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy main" main"
+            sudo add-apt-repository "deb deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy main"
           fi
 
           sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libicu-dev
