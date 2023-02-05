@@ -20,7 +20,7 @@
 
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/types.h>
-#include <gtsam/base/DSFVector.h>
+#include <gtsam/base/DSFMap.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/VariableIndex.h>
@@ -34,12 +34,10 @@ namespace gtsam::utils
 
     /*****************************************************************************/
     /* sort the container and return permutation index with default comparator */
-    template <typename Container>
-    static std::vector<size_t> sort_idx(const Container &src)
+    inline std::vector<size_t> sortedIndices(const std::vector<double> &src)
     {
-        typedef typename Container::value_type T;
         const size_t n = src.size();
-        std::vector<std::pair<size_t, T>> tmp;
+        std::vector<std::pair<size_t, double>> tmp;
         tmp.reserve(n);
         for (size_t i = 0; i < n; i++)
             tmp.emplace_back(i, src[i]);
@@ -63,27 +61,33 @@ namespace gtsam::utils
                                 const FastMap<Key, size_t> &ordering,
                                 const std::vector<double> &weights)
     {
+        // Create an index from variables to factor indices.
         const VariableIndex variableIndex(fg);
-        const size_t n = variableIndex.size();
-        const std::vector<size_t> sortedIndices = sort_idx(weights);
 
-        /* initialize buffer */
+        // Get indices in sort-order of the weights
+        const std::vector<size_t> sortedIndices = gtsam::utils::sortedIndices(weights);
+
+        // Create a vector to hold MST indices.
+        const size_t n = variableIndex.size();
         std::vector<size_t> treeIndices;
         treeIndices.reserve(n - 1);
 
-        // container for acsendingly sorted edges
-        DSFVector dsf(n);
+        // Initialize disjoint-set forest to keep track of merged 'blah'.
+        DSFMap<Key> dsf;
 
+        // Loop over all edges in order of increasing weight.
         size_t count = 0;
         for (const size_t index : sortedIndices)
         {
-            const auto &f = *fg[index];
-            const auto keys = f.keys();
-            if (keys.size() != 2)
+            const auto factor = fg[index];
+
+            // Ignore non-binary edges.
+            if (factor->size() != 2)
                 continue;
-            const size_t u = ordering.find(keys[0])->second,
-                         v = ordering.find(keys[1])->second;
-            if (dsf.find(u) != dsf.find(v))
+
+            auto u = dsf.find(factor->front()), v = dsf.find(factor->back());
+            auto loop = (u == v);
+            if (!loop)
             {
                 dsf.merge(u, v);
                 treeIndices.push_back(index);

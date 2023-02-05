@@ -20,6 +20,7 @@
  */
 
 #include <gtsam/slam/lago.h>
+#include <gtsam/slam/InitializePose.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Pose2.h>
@@ -64,20 +65,45 @@ NonlinearFactorGraph graph() {
 }
 }
 
+/*******************************************************************************/
+TEST(Lago, findMinimumSpanningTree) {
+  NonlinearFactorGraph g = simpleLago::graph();
+  auto gPlus = initialize::buildPoseGraph<Pose2>(g);
+  PredecessorMap<Key> tree = lago::findMinimumSpanningTree(gPlus);
+
+  // We should recover the following spanning tree:
+  //
+  //              x2
+  //             /  \               
+  //            /    \              
+  //          x3     x1
+  //                 /
+  //                /
+  //              x0
+  //               |
+  //               a
+  using initialize::kAnchorKey;
+  EXPECT_LONGS_EQUAL(kAnchorKey, tree[kAnchorKey]);
+  EXPECT_LONGS_EQUAL(kAnchorKey, tree[x0]);
+  EXPECT_LONGS_EQUAL(x0, tree[x1]);
+  EXPECT_LONGS_EQUAL(x1, tree[x2]);
+  EXPECT_LONGS_EQUAL(x2, tree[x3]);
+}
+
 /* *************************************************************************** */
 TEST( Lago, checkSTandChords ) {
   NonlinearFactorGraph g = simpleLago::graph();
-  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
-      BetweenFactor<Pose2> >(g);
+  auto gPlus = initialize::buildPoseGraph<Pose2>(g);
+  PredecessorMap<Key> tree = lago::findMinimumSpanningTree(gPlus);
 
   lago::key2doubleMap deltaThetaMap;
   vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
   vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
   lago::getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
 
-  DOUBLES_EQUAL(spanningTreeIds[0], 0, 1e-6); // factor 0 is the first in the ST (0->1)
-  DOUBLES_EQUAL(spanningTreeIds[1], 3, 1e-6); // factor 3 is the second in the ST(2->0)
-  DOUBLES_EQUAL(spanningTreeIds[2], 4, 1e-6); // factor 4 is the third in the  ST(0->3)
+  EXPECT_LONGS_EQUAL(0, spanningTreeIds[0]); // factor 0 is the first in the ST(0->1)
+  EXPECT_LONGS_EQUAL(1, spanningTreeIds[1]); // factor 1 is the second in the ST(1->2)
+  EXPECT_LONGS_EQUAL(2, spanningTreeIds[2]); // factor 2 is the third in the  ST(2->3)
 
 }
 
@@ -88,10 +114,10 @@ TEST( Lago, orientationsOverSpanningTree ) {
       BetweenFactor<Pose2> >(g);
 
   // check the tree structure
-  EXPECT_LONGS_EQUAL(tree[x0], x0);
-  EXPECT_LONGS_EQUAL(tree[x1], x0);
-  EXPECT_LONGS_EQUAL(tree[x2], x0);
-  EXPECT_LONGS_EQUAL(tree[x3], x0);
+  EXPECT_LONGS_EQUAL(x0, tree[x0]);
+  EXPECT_LONGS_EQUAL(x0, tree[x1]);
+  EXPECT_LONGS_EQUAL(x0, tree[x2]);
+  EXPECT_LONGS_EQUAL(x0, tree[x3]);
 
   lago::key2doubleMap expected;
   expected[x0]=  0;
@@ -145,8 +171,8 @@ TEST( Lago, smallGraphVectorValues ) {
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
   EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI).finished(), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI).finished(), initial.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI).finished(), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI).finished(), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -171,8 +197,8 @@ TEST( Lago, multiplePosePriors ) {
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
   EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI).finished(), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI).finished(), initial.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI).finished(), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI).finished(), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -194,12 +220,12 @@ TEST( Lago, multiplePoseAndRotPriors ) {
   NonlinearFactorGraph g = simpleLago::graph();
   g.addPrior(x1, simpleLago::pose1.theta(), model);
   VectorValues initial = lago::initializeOrientations(g, useOdometricPath);
-
+  
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
   EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
   EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI).finished(), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI).finished(), initial.at(x3), 1e-6));
+  EXPECT(assert_equal((Vector(1) << M_PI).finished(), initial.at(x2), 1e-6));
+  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI).finished(), initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
