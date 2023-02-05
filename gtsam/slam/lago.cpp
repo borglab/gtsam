@@ -227,90 +227,69 @@ static PredecessorMap<Key> findOdometricPath(
 }
 
 /*****************************************************************************/
-PredecessorMap<Key> findMinimumSpanningTree(const NonlinearFactorGraph& pose2Graph){
-
+PredecessorMap<Key> findMinimumSpanningTree(
+    const NonlinearFactorGraph& pose2Graph) {
   // Compute the minimum spanning tree
-  const FastMap<Key, size_t> forwardOrdering = Ordering::Natural(pose2Graph).invert();
+  const FastMap<Key, size_t> forwardOrdering =
+      Ordering::Natural(pose2Graph).invert();
   const auto edgeWeights = std::vector<double>(pose2Graph.size(), 1.0);
-  const auto mstEdgeIndices = utils::kruskal(pose2Graph, forwardOrdering, edgeWeights);
+  const auto mstEdgeIndices =
+      utils::kruskal(pose2Graph, forwardOrdering, edgeWeights);
 
-  // std::cout << "MST Edge Indices:\n";
-  // for(const auto& i: mstEdgeIndices){
-  //   std::cout << i << ", ";
-  // }
-  // std::cout << "\n";
-
-  // Create PredecessorMap
+  // Create a PredecessorMap 'predecessorMap' such that:
+  // predecessorMap[key2] = key1, where key1 is the 'parent' node for key2 in
+  // the spanning tree
   PredecessorMap<Key> predecessorMap;
   std::map<Key, bool> visitationMap;
   std::stack<std::pair<Key, Key>> stack;
 
-  // const auto rootKey = pose2Graph[mstEdgeIndices.front()]->front();
-  // stack.push({rootKey, rootKey});
   stack.push({kAnchorKey, kAnchorKey});
   while (!stack.empty()) {
-      auto [u, parent] = stack.top();
-      stack.pop();
-      if (visitationMap[u]) continue;
-      visitationMap[u] = true;
-      predecessorMap[u] = parent;
-      for (const auto& edgeIdx: mstEdgeIndices) {
-          const auto v = pose2Graph[edgeIdx]->front();
-          const auto w = pose2Graph[edgeIdx]->back();
-          if((v == u || w == u) && !visitationMap[v == u ? w : v]) {
-              stack.push({v == u ? w : v, u});
-          }
+    auto [u, parent] = stack.top();
+    stack.pop();
+    if (visitationMap[u]) continue;
+    visitationMap[u] = true;
+    predecessorMap[u] = parent;
+    for (const auto& edgeIdx : mstEdgeIndices) {
+      const auto v = pose2Graph[edgeIdx]->front();
+      const auto w = pose2Graph[edgeIdx]->back();
+      if ((v == u || w == u) && !visitationMap[v == u ? w : v]) {
+        stack.push({v == u ? w : v, u});
       }
-   }
-  
+    }
+  }
+
   return predecessorMap;
 }
 
 /* ************************************************************************* */
 // Return the orientations of a graph including only BetweenFactors<Pose2>
 static VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph,
-    bool useOdometricPath) {
+                                        bool useOdometricPath) {
   gttic(lago_computeOrientations);
 
-  // Find a minimum spanning tree
   PredecessorMap<Key> tree;
+  // Find a minimum spanning tree
   if (useOdometricPath)
     tree = findOdometricPath(pose2Graph);
-  else
-  {
+  else {
     tree = findMinimumSpanningTree(pose2Graph);
-    // tree = findMinimumSpanningTree<NonlinearFactorGraph, Key, BetweenFactor<Pose2>>(pose2Graph);
-
-    std::cout << "computeOrientations:: Spanning Tree: \n";
-    for(const auto&[k, v]: tree){
-      std::cout << gtsam::DefaultKeyFormatter(gtsam::Symbol(v)) << " -> " << gtsam::DefaultKeyFormatter(gtsam::Symbol(k)) << "\n";
-    }
   }
 
   // Create a linear factor graph (LFG) of scalars
   key2doubleMap deltaThetaMap;
-  vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
-  vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
+  vector<size_t>
+      spanningTreeIds;  // ids of between factors forming the spanning tree T
+  vector<size_t>
+      chordsIds;  // ids of between factors corresponding to chordsIds wrt T
   getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, pose2Graph);
-
-  // std::cout << "Spanning Tree Edge Ids:\n";
-  // for(const auto& i: spanningTreeIds){
-  //   std::cout << i << ", ";
-  // }
-  // std::cout << "\n";
-
-  // std::cout << "Chord Edge Ids:\n";
-  // for(const auto& i: chordsIds){
-  //   std::cout << i << ", ";
-  // }
-  // std::cout << "\n";
 
   // temporary structure to correct wraparounds along loops
   key2doubleMap orientationsToRoot = computeThetasToRoot(deltaThetaMap, tree);
 
   // regularize measurements and plug everything in a factor graph
-  GaussianFactorGraph lagoGraph = buildLinearOrientationGraph(spanningTreeIds,
-      chordsIds, pose2Graph, orientationsToRoot, tree);
+  GaussianFactorGraph lagoGraph = buildLinearOrientationGraph(
+      spanningTreeIds, chordsIds, pose2Graph, orientationsToRoot, tree);
 
   // Solve the LFG
   VectorValues orientationsLago = lagoGraph.optimize();
@@ -320,21 +299,13 @@ static VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph,
 
 /* ************************************************************************* */
 VectorValues initializeOrientations(const NonlinearFactorGraph& graph,
-    bool useOdometricPath) {
-
+                                    bool useOdometricPath) {
   // We "extract" the Pose2 subgraph of the original graph: this
   // is done to properly model priors and avoiding operating on a larger graph
   NonlinearFactorGraph pose2Graph = initialize::buildPoseGraph<Pose2>(graph);
 
   // Get orientations from relative orientation measurements
-  auto initial = computeOrientations(pose2Graph, useOdometricPath);
-  std::cout << "Lago::initializeOrientations: Values: \n";
-  for(const auto& [key, val]: initial){
-    std::cout << gtsam::DefaultKeyFormatter(gtsam::Symbol(key)) << " -> " << val << "\n";
-  }
-  std::cout << "\n";
-
-  return initial;
+  return computeOrientations(pose2Graph, useOdometricPath);
 }
 
 /* ************************************************************************* */
