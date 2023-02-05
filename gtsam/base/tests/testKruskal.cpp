@@ -67,12 +67,13 @@ gtsam::NonlinearFactorGraph makeTestNonlinearFactorGraph() {
 TEST(kruskal, GaussianFactorGraph) {
   using namespace gtsam;
 
+  // Create factor graph.
   const auto g = makeTestGaussianFactorGraph();
 
-  const FastMap<Key, size_t> forward_ordering = Ordering::Natural(g).invert();
+  // Assign weights to all the edges in the graph.
   const auto weights = std::vector<double>(g.size(), 1.0);
 
-  const auto mstEdgeIndices = utils::kruskal(g, forward_ordering, weights);
+  const auto mstEdgeIndices = utils::kruskal(g, weights);
 
   EXPECT(mstEdgeIndices[0] == 0);
   EXPECT(mstEdgeIndices[1] == 1);
@@ -83,12 +84,13 @@ TEST(kruskal, GaussianFactorGraph) {
 TEST(kruskal, NonlinearFactorGraph) {
   using namespace gtsam;
 
+  // Create factor graph.
   const auto g = makeTestNonlinearFactorGraph();
 
-  const FastMap<Key, size_t> forward_ordering = Ordering::Natural(g).invert();
+  // Assign weights to all the edges in the graph.
   const auto weights = std::vector<double>(g.size(), 1.0);
 
-  const auto mstEdgeIndices = utils::kruskal(g, forward_ordering, weights);
+  const auto mstEdgeIndices = utils::kruskal(g, weights);
 
   EXPECT(mstEdgeIndices[0] == 0);
   EXPECT(mstEdgeIndices[1] == 1);
