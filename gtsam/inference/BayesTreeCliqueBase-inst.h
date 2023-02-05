@@ -20,8 +20,6 @@
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/base/timing.h>
 
-#include <functional>
-
 namespace gtsam {
 
   /* ************************************************************************* */
@@ -178,9 +176,8 @@ namespace gtsam {
         // The variables we want to keepSet are exactly the ones in S
         KeyVector indicesS(this->conditional()->beginParents(),
                            this->conditional()->endParents());
-        auto ordering = Ordering(indicesS);
         auto separatorMarginal =
-            p_Cp.marginalMultifrontalBayesNet(std::cref(ordering), function);
+            p_Cp.marginalMultifrontalBayesNet(Ordering(indicesS), function);
         cachedSeparatorMarginal_ = *separatorMarginal;
       }
     }

@@ -26,7 +26,6 @@
 #include <gtsam/base/timing.h>
 
 #include <fstream>
-#include <functional>
 
 namespace gtsam {
 
@@ -278,9 +277,8 @@ namespace gtsam {
     FactorGraphType cliqueMarginal = clique->marginal2(function);
 
     // Now, marginalize out everything that is not variable j
-    auto ordering  = Ordering{j};
     BayesNetType marginalBN =
-        *cliqueMarginal.marginalMultifrontalBayesNet(std::cref(ordering), function);
+        *cliqueMarginal.marginalMultifrontalBayesNet(Ordering{j}, function);
 
     // The Bayes net should contain only one conditional for variable j, so return it
     return marginalBN.front();
@@ -402,9 +400,8 @@ namespace gtsam {
       gttoc(Disjoint_marginals);
     }
 
-    auto ordering = Ordering{j1, j2};
     // now, marginalize out everything that is not variable j1 or j2
-    return p_BC1C2.marginalMultifrontalBayesNet(std::cref(ordering), function);
+    return p_BC1C2.marginalMultifrontalBayesNet(Ordering{j1, j2}, function);
   }
 
   /* ************************************************************************* */

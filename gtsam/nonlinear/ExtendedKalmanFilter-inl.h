@@ -38,7 +38,7 @@ namespace gtsam {
     Ordering lastKeyAsOrdering;
     lastKeyAsOrdering += lastKey;
     const GaussianConditional::shared_ptr marginal =
-      linearFactorGraph.marginalMultifrontalBayesNet(std::cref(lastKeyAsOrdering))->front();
+      linearFactorGraph.marginalMultifrontalBayesNet(lastKeyAsOrdering)->front();
 
     // Extract the current estimate of x1,P1
     VectorValues result = marginal->solve(VectorValues());

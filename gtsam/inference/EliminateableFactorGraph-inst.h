@@ -21,15 +21,6 @@
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/inferenceExceptions.h>
 
-// some helper functions
-namespace {
-  // A function to take a reference_wrapper object and return the underlying pointer
-  template<typename T>
-  T* get_pointer(std::reference_wrapper<T> ref) {
-    return &ref.get();
-  }
-}
-
 namespace gtsam {
 
   /* ************************************************************************* */

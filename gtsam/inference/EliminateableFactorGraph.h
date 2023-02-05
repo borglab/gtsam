@@ -139,7 +139,7 @@ namespace gtsam {
       OptionalVariableIndex variableIndex = {}) const;
 
     /** Do multifrontal elimination of all variables to produce a Bayes tree.  If an ordering is not
-     *  provided, the ordering will be computed using either COLAMD or METIS, dependeing on
+     *  provided, the ordering will be computed using either COLAMD or METIS, depending on
      *  the parameter orderingType (Ordering::COLAMD or Ordering::METIS)
      *
      *  <b> Example - Full Cholesky elimination in COLAMD order: </b>
@@ -160,7 +160,7 @@ namespace gtsam {
       OptionalVariableIndex variableIndex = {}) const;
 
     /** Do multifrontal elimination of all variables to produce a Bayes tree.  If an ordering is not
-     *  provided, the ordering will be computed using either COLAMD or METIS, dependeing on
+     *  provided, the ordering will be computed using either COLAMD or METIS, depending on
      *  the parameter orderingType (Ordering::COLAMD or Ordering::METIS)
      *
      *  <b> Example - Full QR elimination in specified order:
@@ -273,8 +273,7 @@ namespace gtsam {
      *  COLAMD marginalization order by default
      *  @param variables Determines the *ordered* variables whose marginal to compute, 
      *         will be ordered in the returned BayesNet.
-     *  @param function Optional dense elimination function, if not provided the default will be
-     *         used.
+     *  @param function Optional dense elimination function..
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
     std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
@@ -286,8 +285,7 @@ namespace gtsam {
      *  COLAMD marginalization order by default
      *  @param variables Determines the variables whose marginal to compute, 
      *         will be ordered using constrained COLAMD.
-     *  @param function Optional dense elimination function, if not provided the default will be
-     *         used.
+     *  @param function Optional dense elimination function..
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
     std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
@@ -300,8 +298,7 @@ namespace gtsam {
      *         will be ordered in the returned BayesNet.
      *  @param marginalizedVariableOrdering Ordering for the variables being marginalized out,
      *         i.e. all variables not in \c variables.
-     *  @param function Optional dense elimination function, if not provided the default will be
-     *         used.
+     *  @param function Optional dense elimination function..
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
     std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
@@ -315,8 +312,7 @@ namespace gtsam {
      *         will be ordered using constrained COLAMD.
      *  @param marginalizedVariableOrdering Ordering for the variables being marginalized out,
      *         i.e. all variables not in \c variables.
-     *  @param function Optional dense elimination function, if not provided the default will be
-     *         used.
+     *  @param function Optional dense elimination function..
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
     std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
