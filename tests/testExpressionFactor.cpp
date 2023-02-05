@@ -233,9 +233,7 @@ TEST(ExpressionFactor, Shallow) {
   Point2_ expression = project(transformTo(x_, p_));
 
   // Get and check keys and dims
-  KeyVector keys;
-  FastVector<int> dims;
-  std::tie(keys, dims) = expression.keysAndDims();
+  const auto [keys, dims] = expression.keysAndDims();
   LONGS_EQUAL(2,keys.size());
   LONGS_EQUAL(2,dims.size());
   LONGS_EQUAL(1,keys[0]);

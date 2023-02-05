@@ -239,10 +239,8 @@ std::vector<size_t> getDiscreteSequence(size_t x) {
  */
 AlgebraicDecisionTree<Key> getProbPrimeTree(
     const HybridGaussianFactorGraph& graph) {
-  HybridBayesNet::shared_ptr bayesNet;
-  HybridGaussianFactorGraph::shared_ptr remainingGraph;
   Ordering continuous(graph.continuousKeySet());
-  std::tie(bayesNet, remainingGraph) =
+  const auto [bayesNet, remainingGraph] =
       graph.eliminatePartialSequential(continuous);
 
   auto last_conditional = bayesNet->at(bayesNet->size() - 1);
@@ -297,9 +295,7 @@ TEST(HybridEstimation, Probability) {
 
   // Continuous elimination
   Ordering continuous_ordering(graph.continuousKeySet());
-  HybridBayesNet::shared_ptr bayesNet;
-  HybridGaussianFactorGraph::shared_ptr discreteGraph;
-  std::tie(bayesNet, discreteGraph) =
+  auto [bayesNet, discreteGraph] =
       graph.eliminatePartialSequential(continuous_ordering);
 
   // Discrete elimination
@@ -347,9 +343,7 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
 
   // Eliminate continuous
   Ordering continuous_ordering(graph.continuousKeySet());
-  HybridBayesTree::shared_ptr bayesTree;
-  HybridGaussianFactorGraph::shared_ptr discreteGraph;
-  std::tie(bayesTree, discreteGraph) =
+  const auto [bayesTree, discreteGraph] =
       graph.eliminatePartialMultifrontal(continuous_ordering);
 
   // Get the last continuous conditional which will have all the discrete keys

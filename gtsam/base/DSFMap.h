@@ -50,7 +50,7 @@ class DSFMap {
     iterator it = entries_.find(key);
     // if key does not exist, create and return itself
     if (it == entries_.end()) {
-      it = entries_.insert(std::make_pair(key, empty)).first;
+      it = entries_.insert({key, empty}).first;
       it->second.parent_ = it;
       it->second.rank_ = 0;
     }

@@ -74,8 +74,8 @@ int main(const int argc, const char* argv[]) {
 
   // Calculate and print marginal covariances for all variables
   Marginals marginals(*graph, result);
-  for (const auto& key_pose : result.extract<Pose3>()) {
-    std::cout << marginals.marginalCovariance(key_pose.first) << endl;
+  for (const auto& [key, pose] : result.extract<Pose3>()) {
+    std::cout << marginals.marginalCovariance(key) << endl;
   }
   return 0;
 }

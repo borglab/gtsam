@@ -557,12 +557,12 @@ void runPerturb()
 
   // Perturb values
   VectorValues noise;
-  for(const auto& key_dim: initial.dims())
+  for(const auto& [key, dim]: initial.dims())
   {
-    Vector noisev(key_dim.second);
+    Vector noisev(dim);
     for(Vector::Index i = 0; i < noisev.size(); ++i)
       noisev(i) = normal(rng);
-    noise.insert(key_dim.first, noisev);
+    noise.insert(key, noisev);
   }
   Values perturbed = initial.retract(noise);
 

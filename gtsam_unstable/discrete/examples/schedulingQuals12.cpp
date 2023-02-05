@@ -178,9 +178,6 @@ void solveStaged(size_t addMutex = 2) {
     gttoc_(eliminate);
 
     // find root node
-//    chordal->back()->print("back: ");
-//    chordal->front()->print("front: ");
-//    exit(0);
     DiscreteConditional::shared_ptr root = chordal->back();
     if (debug)
       root->print(""/*scheduler.studentName(s)*/);
@@ -211,7 +208,6 @@ DiscreteBayesNet::shared_ptr createSampler(size_t i,
   SETDEBUG("Scheduler::buildGraph", false);
   scheduler.addStudentSpecificConstraints(0, slot);
   DiscreteBayesNet::shared_ptr chordal = scheduler.eliminate();
-  // chordal->print(scheduler[i].studentKey(0).name()); // large !
   schedulers.push_back(scheduler);
   return chordal;
 }

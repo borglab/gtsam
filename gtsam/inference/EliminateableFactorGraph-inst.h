@@ -72,9 +72,7 @@ namespace gtsam {
       gttic(eliminateSequential);
       // Do elimination
       EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
-      std::shared_ptr<BayesNetType> bayesNet;
-      std::shared_ptr<FactorGraphType> factorGraph;
-      std::tie(bayesNet,factorGraph) = etree.eliminate(function);
+      const auto [bayesNet, factorGraph] = etree.eliminate(function);
       // If any factors are remaining, the ordering was incomplete
       if(!factorGraph->empty())
         throw InconsistentEliminationRequested();
@@ -136,9 +134,7 @@ namespace gtsam {
       // Do elimination with given ordering
       EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
       JunctionTreeType junctionTree(etree);
-      std::shared_ptr<BayesTreeType> bayesTree;
-      std::shared_ptr<FactorGraphType> factorGraph;
-      std::tie(bayesTree,factorGraph) = junctionTree.eliminate(function);
+      const auto [bayesTree, factorGraph] = junctionTree.eliminate(function);
       // If any factors are remaining, the ordering was incomplete
       if(!factorGraph->empty())
         throw InconsistentEliminationRequested();
@@ -274,9 +270,7 @@ namespace gtsam {
       gttic(marginalMultifrontalBayesNet);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
       // in the order requested.
-      std::shared_ptr<BayesTreeType> bayesTree;
-      std::shared_ptr<FactorGraphType> factorGraph;
-      std::tie(bayesTree,factorGraph) =
+      const auto [bayesTree, factorGraph] =
         eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
 
       if(const Ordering* varsAsOrdering = boost::get<const Ordering&>(&variables))
@@ -341,9 +335,7 @@ namespace gtsam {
       gttic(marginalMultifrontalBayesTree);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
       // in the order requested.
-      std::shared_ptr<BayesTreeType> bayesTree;
-      std::shared_ptr<FactorGraphType> factorGraph;
-      std::tie(bayesTree,factorGraph) =
+      const auto [bayesTree, factorGraph] =
         eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
 
       if(const Ordering* varsAsOrdering = boost::get<const Ordering&>(&variables))

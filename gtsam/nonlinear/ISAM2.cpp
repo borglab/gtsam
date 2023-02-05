@@ -321,7 +321,7 @@ void ISAM2::recalculateIncremental(const ISAM2UpdateParams& updateParams,
     const int group =
         result->observedKeys.size() < affectedFactorsVarIndex.size() ? 1 : 0;
     for (Key var : result->observedKeys)
-      constraintGroups.insert(std::make_pair(var, group));
+      constraintGroups.emplace(var, group);
   }
 
   // Remove unaffected keys from the constraints

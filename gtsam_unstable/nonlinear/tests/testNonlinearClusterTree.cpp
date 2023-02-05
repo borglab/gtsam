@@ -86,8 +86,8 @@ TEST(NonlinearClusterTree, Clusters) {
   // Calculate expected result of only evaluating the marginalCluster
   Ordering ordering;
   ordering.push_back(x1);
-  auto expected = gfg->eliminatePartialSequential(ordering);
-  auto expectedFactor = std::dynamic_pointer_cast<HessianFactor>(expected.second->at(0));
+  const auto [bn, fg] = gfg->eliminatePartialSequential(ordering);
+  auto expectedFactor = std::dynamic_pointer_cast<HessianFactor>(fg->at(0));
   if (!expectedFactor)
     throw std::runtime_error("Expected HessianFactor");
 
@@ -95,7 +95,7 @@ TEST(NonlinearClusterTree, Clusters) {
   auto actual = marginalCluster->linearizeAndEliminate(initial);
   const GaussianBayesNet& bayesNet = actual.first;
   const HessianFactor& factor = *actual.second;
-  EXPECT(assert_equal(*expected.first->at(0), *bayesNet.at(0), 1e-6));
+  EXPECT(assert_equal(*bn->at(0), *bayesNet.at(0), 1e-6));
   EXPECT(assert_equal(*expectedFactor, factor, 1e-6));
 }
 

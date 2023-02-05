@@ -210,7 +210,7 @@ struct EliminationData {
       // putting orphan subtrees in the index - they'll already be in the index of the ISAM2
       // object they're added to.
       for (const Key& j: myData.bayesTreeNode->conditional()->frontals())
-        nodesIndex_.insert(std::make_pair(j, myData.bayesTreeNode));
+        nodesIndex_.emplace(j, myData.bayesTreeNode);
 
       // Store remaining factor in parent's gathered factors
       if (!eliminationResult.second->empty()) {
@@ -273,7 +273,7 @@ EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) 
   }
 
   // Return result
-  return std::make_pair(result, remaining);
+  return {result, remaining};
 }
 
 } // namespace gtsam

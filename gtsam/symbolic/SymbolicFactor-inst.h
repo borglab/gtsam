@@ -61,9 +61,10 @@ namespace gtsam
       std::set_difference(allKeys.begin(), allKeys.end(), frontals.begin(), frontals.end(), orderedKeys.begin() + nFrontals);
 
       // Return resulting conditional and factor
-      return std::make_pair(
+      return {
         SymbolicConditional::FromKeysShared(orderedKeys, nFrontals),
-        SymbolicFactor::FromIteratorsShared(orderedKeys.begin() + nFrontals, orderedKeys.end()));
+        SymbolicFactor::FromIteratorsShared(orderedKeys.begin() + nFrontals, orderedKeys.end())
+      };
     }
   }
 }

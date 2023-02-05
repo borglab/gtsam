@@ -463,10 +463,7 @@ inline std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T) {
 
 /* ************************************************************************* */
 inline GaussianFactorGraph createSmoother(int T) {
-  NonlinearFactorGraph nlfg;
-  Values poses;
-  std::tie(nlfg, poses) = createNonlinearSmoother(T);
-
+  const auto [nlfg, poses] = createNonlinearSmoother(T);
   return *nlfg.linearize(poses);
 }
 

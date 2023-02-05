@@ -38,12 +38,12 @@ KalmanFilter::solve(const GaussianFactorGraph& factorGraph) const {
 
   // Eliminate the graph using the provided Eliminate function
   Ordering ordering(factorGraph.keys());
-  GaussianBayesNet::shared_ptr bayesNet = //
+  const auto bayesNet = //
       factorGraph.eliminateSequential(ordering, function_);
 
   // As this is a filter, all we need is the posterior P(x_t).
   // This is the last GaussianConditional in the resulting BayesNet
-  GaussianConditional::shared_ptr posterior = *(--bayesNet->end());
+  GaussianConditional::shared_ptr posterior = bayesNet->back();
   return std::make_shared<GaussianDensity>(*posterior);
 }
 

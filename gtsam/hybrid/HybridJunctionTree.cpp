@@ -100,9 +100,7 @@ struct HybridConstructorTraversalData {
 
     Ordering keyAsOrdering;
     keyAsOrdering.push_back(node->key);
-    SymbolicConditional::shared_ptr conditional;
-    SymbolicFactor::shared_ptr separatorFactor;
-    std::tie(conditional, separatorFactor) =
+    const auto [conditional, separatorFactor] =
         internal::EliminateSymbolic(symbolicFactors, keyAsOrdering);
 
     // Store symbolic elimination results in the parent

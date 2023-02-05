@@ -258,9 +258,7 @@ TEST( Lago, smallGraph2 ) {
 TEST( Lago, largeGraphNoisy_orientations ) {
 
   string inputFile = findExampleDataFile("noisyToyGraph");
-  NonlinearFactorGraph::shared_ptr g;
-  Values::shared_ptr initial;
-  std::tie(g, initial) = readG2o(inputFile);
+  const auto [g, initial] = readG2o(inputFile);
 
   // Add prior on the pose having index (key) = 0
   NonlinearFactorGraph graphWithPrior = *g;
@@ -279,9 +277,7 @@ TEST( Lago, largeGraphNoisy_orientations ) {
     }
   }
   string matlabFile = findExampleDataFile("orientationsNoisyToyGraph");
-  NonlinearFactorGraph::shared_ptr gmatlab;
-  Values::shared_ptr expected;
-  std::tie(gmatlab, expected) = readG2o(matlabFile);
+  const auto [gmatlab, expected] = readG2o(matlabFile);
 
   for(const auto& key_pose: expected->extract<Pose2>()){
     const Key& k = key_pose.first;
@@ -294,9 +290,7 @@ TEST( Lago, largeGraphNoisy_orientations ) {
 TEST( Lago, largeGraphNoisy ) {
 
   string inputFile = findExampleDataFile("noisyToyGraph");
-  NonlinearFactorGraph::shared_ptr g;
-  Values::shared_ptr initial;
-  std::tie(g, initial) = readG2o(inputFile);
+  const auto [g, initial] = readG2o(inputFile);
 
   // Add prior on the pose having index (key) = 0
   NonlinearFactorGraph graphWithPrior = *g;
@@ -306,9 +300,7 @@ TEST( Lago, largeGraphNoisy ) {
   Values actual = lago::initialize(graphWithPrior);
 
   string matlabFile = findExampleDataFile("optimizedNoisyToyGraph");
-  NonlinearFactorGraph::shared_ptr gmatlab;
-  Values::shared_ptr expected;
-  std::tie(gmatlab, expected) = readG2o(matlabFile);
+  const auto [gmatlab, expected] = readG2o(matlabFile);
 
   for(const auto& key_pose: expected->extract<Pose2>()){
     const Key& k = key_pose.first;

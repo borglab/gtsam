@@ -159,7 +159,7 @@ std::tuple<V, int> nonlinearConjugateGradient(const S &system,
       std::cout << "Exiting, as error = " << currentError << " < "
           << params.errorTol << std::endl;
     }
-    return std::tie(initial, iteration);
+    return {initial, iteration};
   }
 
   V currentValues = initial;
@@ -217,7 +217,7 @@ std::tuple<V, int> nonlinearConjugateGradient(const S &system,
         << "nonlinearConjugateGradient: Terminating because reached maximum iterations"
         << std::endl;
 
-  return std::tie(currentValues, iteration);
+  return {currentValues, iteration};
 }
 
 } // \ namespace gtsam

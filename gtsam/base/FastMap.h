@@ -63,7 +63,7 @@ public:
   }
 
   /** Handy 'insert' function for Matlab wrapper */
-  bool insert2(const KEY& key, const VALUE& val) { return Base::insert(std::make_pair(key, val)).second; }
+  bool insert2(const KEY& key, const VALUE& val) { return Base::insert({key, val}).second; }
 
   /** Handy 'exists' function */
   bool exists(const KEY& e) const { return this->find(e) != this->end(); }

@@ -176,7 +176,7 @@ TEST(Point3, mean) {
 
 TEST(Point3, mean_pair) {
   Point3 a_mean(2, 2, 2), b_mean(-1, 1, 0);
-  Point3Pair expected = std::make_pair(a_mean, b_mean);
+  Point3Pair expected = {a_mean, b_mean};
   Point3 a1(0, 0, 0), a2(1, 2, 3), a3(5, 4, 3);
   Point3 b1(-1, 0, 0), b2(-2, 4, 0), b3(0, -1, 0);
   std::vector<Point3Pair> point_pairs{{a1, b1}, {a2, b2}, {a3, b3}};

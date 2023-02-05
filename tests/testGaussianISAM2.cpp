@@ -246,7 +246,6 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
 
   // Check gradient at each node
   bool nodeGradientsOk = true;
-  typedef ISAM2::sharedClique sharedClique;
   for (const auto& [key, clique] : isam.nodes()) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
@@ -450,7 +449,6 @@ TEST(ISAM2, swapFactors)
   EXPECT(isam_check(fullgraph, fullinit, isam, *this, result_));
 
   // Check gradient at each node
-  typedef ISAM2::sharedClique sharedClique;
   for (const auto& [key, clique]: isam.nodes()) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
@@ -575,7 +573,6 @@ TEST(ISAM2, constrained_ordering)
   EXPECT(isam_check(fullgraph, fullinit, isam, *this, result_));
 
   // Check gradient at each node
-  typedef ISAM2::sharedClique sharedClique;
   for (const auto& [key, clique]: isam.nodes()) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
