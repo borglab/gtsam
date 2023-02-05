@@ -72,7 +72,7 @@ void LabeledSymbol::print(const std::string& s) const {
 /* ************************************************************************* */
 LabeledSymbol::operator std::string() const {
   char buffer[100];
-  snprintf(buffer, 100, "%c%c%llu", c_, label_, j_);
+  snprintf(buffer, 100, "%c%c%lu", c_, label_, j_);
   return std::string(buffer);
 }
 
