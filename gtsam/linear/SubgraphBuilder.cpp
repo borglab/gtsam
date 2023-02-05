@@ -365,50 +365,38 @@ SubgraphBuilder::Weights SubgraphBuilder::weights(
   Weights weights;
   weights.reserve(m);
 
-  for (const GaussianFactor::shared_ptr &gf : gfg)
-  {
-    switch (parameters_.skeletonWeight)
-    {
-    case SubgraphBuilderParameters::EQUAL:
-      weights.push_back(1.0);
-      break;
-    case SubgraphBuilderParameters::RHS_2NORM:
-    {
-      if (JacobianFactor::shared_ptr jf =
-              std::dynamic_pointer_cast<JacobianFactor>(gf))
-      {
-        weights.push_back(jf->getb().norm());
-      }
-      else if (HessianFactor::shared_ptr hf =
-                   std::dynamic_pointer_cast<HessianFactor>(gf))
-      {
-        weights.push_back(hf->linearTerm().norm());
-      }
-    }
-    break;
-    case SubgraphBuilderParameters::LHS_FNORM:
-    {
-      if (JacobianFactor::shared_ptr jf =
-              std::dynamic_pointer_cast<JacobianFactor>(gf))
-      {
-        weights.push_back(std::sqrt(jf->getA().squaredNorm()));
-      }
-      else if (HessianFactor::shared_ptr hf =
-                   std::dynamic_pointer_cast<HessianFactor>(gf))
-      {
-        weights.push_back(std::sqrt(hf->information().squaredNorm()));
-      }
-    }
-    break;
+  for (const GaussianFactor::shared_ptr &gf : gfg) {
+    switch (parameters_.skeletonWeight) {
+      case SubgraphBuilderParameters::EQUAL:
+        weights.push_back(1.0);
+        break;
+      case SubgraphBuilderParameters::RHS_2NORM: {
+        if (JacobianFactor::shared_ptr jf =
+                std::dynamic_pointer_cast<JacobianFactor>(gf)) {
+          weights.push_back(jf->getb().norm());
+        } else if (HessianFactor::shared_ptr hf =
+                       std::dynamic_pointer_cast<HessianFactor>(gf)) {
+          weights.push_back(hf->linearTerm().norm());
+        }
+      } break;
+      case SubgraphBuilderParameters::LHS_FNORM: {
+        if (JacobianFactor::shared_ptr jf =
+                std::dynamic_pointer_cast<JacobianFactor>(gf)) {
+          weights.push_back(std::sqrt(jf->getA().squaredNorm()));
+        } else if (HessianFactor::shared_ptr hf =
+                       std::dynamic_pointer_cast<HessianFactor>(gf)) {
+          weights.push_back(std::sqrt(hf->information().squaredNorm()));
+        }
+      } break;
 
-    case SubgraphBuilderParameters::RANDOM:
-      weights.push_back(std::rand() % 100 + 1.0);
-      break;
+      case SubgraphBuilderParameters::RANDOM:
+        weights.push_back(std::rand() % 100 + 1.0);
+        break;
 
-    default:
-      throw std::invalid_argument(
-          "utils::assign_weights: undefined weight scheme ");
-      break;
+      default:
+        throw std::invalid_argument(
+            "SubgraphBuilder::weights(): undefined weight scheme ");
+        break;
     }
   }
   return weights;
