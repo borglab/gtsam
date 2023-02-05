@@ -230,7 +230,7 @@ vector<size_t> SubgraphBuilder::buildTree(const GaussianFactorGraph &gfg,
       return bfs(gfg);
       break;
     case SubgraphBuilderParameters::KRUSKAL:
-      return kruskal(gfg, ordering, weights);
+      return kruskal(gfg, weights);
       break;
     default:
       std::cerr << "SubgraphBuilder::buildTree undefined skeleton type" << endl;
@@ -306,9 +306,8 @@ vector<size_t> SubgraphBuilder::bfs(const GaussianFactorGraph &gfg) const {
 
 /****************************************************************/
 vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
-                                        const FastMap<Key, size_t> &ordering,
                                         const vector<double> &weights) const {
-  return utils::kruskal(gfg, ordering, weights);
+  return utils::kruskal(gfg, weights);
 }
 
 /****************************************************************/

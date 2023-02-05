@@ -52,7 +52,6 @@ inline std::vector<size_t> sortedIndices(const std::vector<double> &src) {
 /****************************************************************/
 template <class Graph>
 std::vector<size_t> kruskal(const Graph &fg,
-                            const FastMap<Key, size_t> &ordering,
                             const std::vector<double> &weights) {
   // Create an index from variables to factor indices.
   const VariableIndex variableIndex(fg);
@@ -66,7 +65,7 @@ std::vector<size_t> kruskal(const Graph &fg,
   std::vector<size_t> treeIndices;
   treeIndices.reserve(n - 1);
 
-  // Initialize disjoint-set forest to keep track of merged 'blah'.
+  // Initialize disjoint-set forest to keep track of merged Keys.
   DSFMap<Key> dsf;
 
   // Loop over all edges in order of increasing weight.

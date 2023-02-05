@@ -24,7 +24,6 @@
 namespace gtsam::utils {
 template <class FactorGraph>
 std::vector<size_t> kruskal(const FactorGraph &fg,
-                            const FastMap<Key, size_t> &ordering,
                             const std::vector<double> &weights);
 }
 

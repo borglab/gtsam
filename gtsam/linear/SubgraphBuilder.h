@@ -171,7 +171,6 @@ class GTSAM_EXPORT SubgraphBuilder {
   std::vector<size_t> sample(const std::vector<double> &weights,
                              const size_t t) const;
   std::vector<size_t> kruskal(const GaussianFactorGraph &gfg,
-                              const FastMap<Key, size_t> &ordering,
                               const std::vector<double> &weights) const;
   Weights weights(const GaussianFactorGraph &gfg) const ;
 

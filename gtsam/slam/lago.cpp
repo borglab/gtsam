@@ -230,11 +230,9 @@ static PredecessorMap findOdometricPath(
 PredecessorMap findMinimumSpanningTree(
     const NonlinearFactorGraph& pose2Graph) {
   // Compute the minimum spanning tree
-  const FastMap<Key, size_t> forwardOrdering =
-      Ordering::Natural(pose2Graph).invert();
   const auto edgeWeights = std::vector<double>(pose2Graph.size(), 1.0);
   const auto mstEdgeIndices =
-      utils::kruskal(pose2Graph, forwardOrdering, edgeWeights);
+      utils::kruskal(pose2Graph, edgeWeights);
 
   // Create a PredecessorMap 'predecessorMap' such that:
   // predecessorMap[key2] = key1, where key1 is the 'parent' node for key2 in
