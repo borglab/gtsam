@@ -15,7 +15,7 @@ jobs:
       BOOST_VERSION: 1.67.0
 
     strategy:
-      fail-fast: false
+      fail-fast: true
 
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
@@ -38,7 +38,7 @@ jobs:
             version: "14"
             flag: deprecated
 
-            - name: ubuntu-clang-quaternions
+          - name: ubuntu-clang-quaternions
             os: ubuntu-22.04
             compiler: clang
             version: "14"

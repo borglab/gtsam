@@ -14,7 +14,7 @@ jobs:
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
