@@ -140,7 +140,7 @@ TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetKeyVector) {
   EXPECT(assert_equal(expectedBayesNet, actual));
 }
 
-TEST_UNSAFE(SymbolicFactorGraph, MarginalMultifrontalBayesNetOrderingPlus) {
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetOrderingPlus) {
   auto expectedBayesNet = SymbolicBayesNet(SymbolicConditional{0, 3})({3});
 
   const Ordering orderedVariables{0, 3},
@@ -158,6 +158,53 @@ TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetKeyVectorPlus) {
   SymbolicBayesNet actual = *simpleTestGraph2.marginalMultifrontalBayesNet(
       variables, marginalizedVariableOrdering);
   EXPECT(assert_equal(expectedBayesNet, actual));
+}
+
+/* ************************************************************************* */
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesTreeOrdering) {
+  auto expectedBayesTree =
+      *simpleTestGraph2.eliminatePartialMultifrontal(Ordering{4, 5})
+           .second->eliminateMultifrontal(Ordering{0, 1, 2, 3});
+
+  SymbolicBayesTree actual =
+      *simpleTestGraph2.marginalMultifrontalBayesTree(Ordering{0, 1, 2, 3});
+  EXPECT(assert_equal(expectedBayesTree, actual));
+}
+
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesTreeKeyVector) {
+  auto expectedBayesTree =
+      *simpleTestGraph2.eliminatePartialMultifrontal(Ordering{4, 5})
+           .second->eliminateMultifrontal(Ordering::OrderingType::COLAMD);
+
+  SymbolicBayesTree actual =
+      *simpleTestGraph2.marginalMultifrontalBayesTree(KeyVector{0, 1, 2, 3});
+  EXPECT(assert_equal(expectedBayesTree, actual));
+}
+
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesTreeOrderingPlus) {
+  const Ordering orderedVariables{0, 3},
+      marginalizedVariableOrdering{1, 2, 4, 5};
+  auto expectedBayesTree =
+      *simpleTestGraph2
+           .eliminatePartialMultifrontal(marginalizedVariableOrdering)
+           .second->eliminateMultifrontal(orderedVariables);
+
+  SymbolicBayesTree actual = *simpleTestGraph2.marginalMultifrontalBayesTree(
+      orderedVariables, marginalizedVariableOrdering);
+  EXPECT(assert_equal(expectedBayesTree, actual));
+}
+
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesTreeKeyVectorPlus) {
+  const Ordering marginalizedVariableOrdering{2, 4, 5};
+  auto expectedBayesTree =
+      *simpleTestGraph2
+           .eliminatePartialMultifrontal(marginalizedVariableOrdering)
+           .second->eliminateMultifrontal(Ordering::OrderingType::COLAMD);
+
+  const KeyVector variables{0, 1, 3};
+  SymbolicBayesTree actual = *simpleTestGraph2.marginalMultifrontalBayesTree(
+      variables, marginalizedVariableOrdering);
+  EXPECT(assert_equal(expectedBayesTree, actual));
 }
 
 /* ************************************************************************* */
