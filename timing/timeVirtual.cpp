@@ -19,7 +19,6 @@
 #include <gtsam/base/timing.h>
 
 #include <memory>
-#include <boost/intrusive_ptr.hpp>
 
 #include <iostream>
 
@@ -47,14 +46,6 @@ struct VirtualCounted {
   virtual void setData(size_t data) { this->data = data; }
   virtual ~VirtualCounted() {}
 };
-
-void intrusive_ptr_add_ref(VirtualCounted* obj) { ++ obj->refCount; }
-void intrusive_ptr_release(VirtualCounted* obj) {
-  assert(obj->refCount > 0);
-  -- obj->refCount;
-  if(obj->refCount == 0)
-    delete obj;
-}
 
 int main(int argc, char *argv[]) {
 
@@ -145,7 +136,7 @@ int main(int argc, char *argv[]) {
 
   gttic_(intrusive_virtual_alloc_dealloc_call);
   for(size_t i=0; i<trials; ++i) {
-    intrusive_ptr<VirtualCounted> obj(new VirtualCounted(i));
+    std::shared_ptr<VirtualCounted> obj(new VirtualCounted(i));
     obj->setData(i+1);
   }
   gttoc_(intrusive_virtual_alloc_dealloc_call);
