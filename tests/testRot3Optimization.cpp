@@ -17,7 +17,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <boost/math/constants/constants.hpp>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/geometry/Point3.h>

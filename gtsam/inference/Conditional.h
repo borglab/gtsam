@@ -18,8 +18,6 @@
 // \callgraph
 #pragma once
 
-#include <boost/range.hpp>
-
 #include <gtsam/inference/Key.h>
 
 namespace gtsam {

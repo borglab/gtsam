@@ -30,7 +30,6 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <functional>
-#include <boost/iterator/counting_iterator.hpp>
 
 using namespace std;
 using namespace gtsam;

@@ -27,8 +27,6 @@
 
 #include <gtsam/inference/Ordering.h>
 
-#include <boost/algorithm/string.hpp>
-
 #include <stdexcept>
 #include <iostream>
 #include <iomanip>
