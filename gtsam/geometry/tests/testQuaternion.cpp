@@ -29,9 +29,9 @@ typedef traits<Q>::ChartJacobian QuaternionJacobian;
 
 //******************************************************************************
 TEST(Quaternion , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Quaternion >));
-  BOOST_CONCEPT_ASSERT((IsManifold<Quaternion >));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Quaternion >));
+  GTSAM_CONCEPT_ASSERT1(IsGroup<Quaternion >);
+  GTSAM_CONCEPT_ASSERT2(IsManifold<Quaternion >);
+  GTSAM_CONCEPT_ASSERT3(IsLieGroup<Quaternion >);
 }
 
 //******************************************************************************

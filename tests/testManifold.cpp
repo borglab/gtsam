@@ -37,27 +37,27 @@ typedef PinholeCamera<Cal3Bundler> Camera;
 
 //******************************************************************************
 TEST(Manifold, SomeManifoldsGTSAM) {
-  //BOOST_CONCEPT_ASSERT((IsManifold<int>)); // integer is not a manifold
-  BOOST_CONCEPT_ASSERT((IsManifold<Camera>));
-  BOOST_CONCEPT_ASSERT((IsManifold<Cal3_S2>));
-  BOOST_CONCEPT_ASSERT((IsManifold<Cal3Bundler>));
-  BOOST_CONCEPT_ASSERT((IsManifold<Camera>));
+  //GTSAM_CONCEPT_ASSERT(IsManifold<int>); // integer is not a manifold
+  GTSAM_CONCEPT_ASSERT(IsManifold<Camera>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Cal3_S2>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Cal3Bundler>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Camera>);
 }
 
 //******************************************************************************
 TEST(Manifold, SomeLieGroupsGTSAM) {
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Rot2>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Pose2>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Rot3>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Pose3>));
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Rot2>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Pose2>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Rot3>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Pose3>);
 }
 
 //******************************************************************************
 TEST(Manifold, SomeVectorSpacesGTSAM) {
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<double>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<float>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Point2>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Matrix24>));
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<double>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<float>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Point2>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Matrix24>);
 }
 
 //******************************************************************************

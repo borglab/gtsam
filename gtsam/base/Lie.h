@@ -264,8 +264,8 @@ public:
   typedef typename traits<T>::TangentVector TangentVector;
   typedef typename traits<T>::ChartJacobian ChartJacobian;
 
-  BOOST_CONCEPT_USAGE(IsLieGroup) {
-    BOOST_STATIC_ASSERT_MSG(
+  GTSAM_CONCEPT_USAGE(IsLieGroup) {
+    static_assert(
         (std::is_base_of<lie_group_tag, structure_category_tag>::value),
         "This type's trait does not assert it is a Lie group (or derived)");
 

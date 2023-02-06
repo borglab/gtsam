@@ -8,28 +8,22 @@
 
 #pragma once
 
-// This is a helper to ease the transition to the new traits defined in this file.
-// Uncomment this if you want all methods that are tagged as not implemented
-// to cause compilation errors.
-#ifdef COMPILE_ERROR_NOT_IMPLEMENTED
-
 #ifdef GTSAM_USE_BOOST_FEATURES
-#include <boost/static_assert.hpp>
+#include <boost/concept_check.hpp>
+#define GTSAM_CONCEPT_USAGE(concept) BOOST_CONCEPT_USAGE((concept))
+#define GTSAM_CONCEPT_ASSERT(concept) BOOST_CONCEPT_ASSERT((concept))
+#define GTSAM_CONCEPT_ASSERT1(concept) BOOST_CONCEPT_ASSERT((concept))
+#define GTSAM_CONCEPT_ASSERT2(concept) BOOST_CONCEPT_ASSERT((concept))
+#define GTSAM_CONCEPT_ASSERT3(concept) BOOST_CONCEPT_ASSERT((concept))
+#define GTSAM_CONCEPT_REQUIRES(concept, return_type) BOOST_CONCEPT_REQUIRES((concept), (return_type))
+#else 
+// These do something sensible:
+#define GTSAM_CONCEPT_USAGE(concept) void check##concept()
+#define GTSAM_CONCEPT_ASSERT(concept) concept checkConcept [[maybe_unused]];
+#define GTSAM_CONCEPT_ASSERT1(concept) concept checkConcept1 [[maybe_unused]];
+#define GTSAM_CONCEPT_ASSERT2(concept) concept checkConcept2 [[maybe_unused]];
+#define GTSAM_CONCEPT_ASSERT3(concept) concept checkConcept3 [[maybe_unused]];
+// This one just ignores concept for now:
+#define GTSAM_CONCEPT_REQUIRES(concept, return_type) return_type
 #endif
 
-#define CONCEPT_NOT_IMPLEMENTED BOOST_STATIC_ASSERT_MSG(boost::false_type, \
-"This method is required by the new concepts framework but has not been implemented yet.");
-
-#else
-
-#include <exception>
-#define CONCEPT_NOT_IMPLEMENTED \
-  throw std::runtime_error("This method is required by the new concepts framework but has not been implemented yet.");
-
-#endif
-
-namespace gtsam {
-
-template <typename T> struct traits;
-
-}

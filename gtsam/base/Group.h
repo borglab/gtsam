@@ -52,8 +52,8 @@ public:
   typedef typename traits<G>::group_flavor flavor_tag;
   //typedef typename traits<G>::identity::value_type identity_value_type;
 
-  BOOST_CONCEPT_USAGE(IsGroup) {
-    BOOST_STATIC_ASSERT_MSG(
+  GTSAM_CONCEPT_USAGE(IsGroup) {
+    static_assert(
         (std::is_base_of<group_tag, structure_category_tag>::value),
         "This type's structure_category trait does not assert it as a group (or derived)");
     e = traits<G>::Identity();
@@ -82,7 +82,7 @@ private:
 
 /// Check invariants
 template<typename G>
-BOOST_CONCEPT_REQUIRES(((IsGroup<G>)),(bool)) //
+GTSAM_CONCEPT_REQUIRES(IsGroup<G>,bool) //
 check_group_invariants(const G& a, const G& b, double tol = 1e-9) {
   G e = traits<G>::Identity();
   return traits<G>::Equals(traits<G>::Compose(a, traits<G>::Inverse(a)), e, tol)
@@ -128,7 +128,7 @@ struct AdditiveGroup : AdditiveGroupTraits<Class>, Testable<Class> {};
 
 /// compose multiple times
 template<typename G>
-BOOST_CONCEPT_REQUIRES(((IsGroup<G>)),(G)) //
+GTSAM_CONCEPT_REQUIRES(IsGroup<G>,G) //
 compose_pow(const G& g, size_t n) {
   if (n == 0) return traits<G>::Identity();
   else if (n == 1) return g;
@@ -139,8 +139,8 @@ compose_pow(const G& g, size_t n) {
 /// Assumes nothing except group structure and Testable from G and H
 template<typename G, typename H>
 class DirectProduct: public std::pair<G, H> {
-  BOOST_CONCEPT_ASSERT((IsGroup<G>));
-  BOOST_CONCEPT_ASSERT((IsGroup<H>));
+  GTSAM_CONCEPT_ASSERT1(IsGroup<G>);
+  GTSAM_CONCEPT_ASSERT2(IsGroup<H>);
 
 public:
   /// Default constructor yields identity
@@ -170,8 +170,8 @@ struct traits<DirectProduct<G, H> > :
 /// Assumes existence of three additive operators for both groups
 template<typename G, typename H>
 class DirectSum: public std::pair<G, H> {
-  BOOST_CONCEPT_ASSERT((IsGroup<G>));  // TODO(frank): check additive
-  BOOST_CONCEPT_ASSERT((IsGroup<H>));  // TODO(frank): check additive
+  GTSAM_CONCEPT_ASSERT1(IsGroup<G>);  // TODO(frank): check additive
+  GTSAM_CONCEPT_ASSERT2(IsGroup<H>);  // TODO(frank): check additive
 
   const G& g() const { return this->first; }
   const H& h() const { return this->second;}

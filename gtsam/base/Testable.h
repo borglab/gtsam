@@ -33,9 +33,7 @@
 
 #pragma once
 
-#ifdef GTSAM_USE_BOOST_FEATURES
-#include <boost/concept_check.hpp>
-#endif
+#include <gtsam/base/concepts.h>
 
 #include <functional>
 #include <iostream>
@@ -63,7 +61,7 @@ namespace gtsam {
     bool r1,r2;
   public:
 
-    BOOST_CONCEPT_USAGE(IsTestable) {
+    GTSAM_CONCEPT_USAGE(IsTestable) {
       // check print function, with optional string
       traits<T>::Print(t, std::string());
       traits<T>::Print(t);
@@ -136,7 +134,7 @@ namespace gtsam {
   template<typename T>
   struct HasTestablePrereqs {
 
-    BOOST_CONCEPT_USAGE(HasTestablePrereqs) {
+    GTSAM_CONCEPT_USAGE(HasTestablePrereqs) {
       t->print(str);
       b = t->equals(*s,tol);
     }
@@ -154,7 +152,7 @@ namespace gtsam {
   struct Testable {
 
     // Check that T has the necessary methods
-    BOOST_CONCEPT_ASSERT((HasTestablePrereqs<T>));
+    GTSAM_CONCEPT_ASSERT(HasTestablePrereqs<T>);
 
     static void Print(const T& m, const std::string& str = "") {
       m.print(str);
@@ -173,7 +171,7 @@ namespace gtsam {
  *
  * NOTE: intentionally not in the gtsam namespace to allow for classes not in
  * the gtsam namespace to be more easily enforced as testable
- * @deprecated please use BOOST_CONCEPT_ASSERT and
+ * @deprecated please use GTSAM_CONCEPT_ASSERT and
  */
 #define GTSAM_CONCEPT_TESTABLE_INST(T) template class gtsam::IsTestable<T>;
 #define GTSAM_CONCEPT_TESTABLE_TYPE(T) using _gtsam_Testable_##T = gtsam::IsTestable<T>;

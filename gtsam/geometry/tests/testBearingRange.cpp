@@ -34,7 +34,7 @@ BearingRange3D br3D(Pose3().bearing(Point3(1, 0, 0)), 1);
 
 //******************************************************************************
 TEST(BearingRange2D, Concept) {
-  BOOST_CONCEPT_ASSERT((IsManifold<BearingRange2D>));
+  GTSAM_CONCEPT_ASSERT(IsManifold<BearingRange2D>);
 }
 
 /* ************************************************************************* */
@@ -46,7 +46,7 @@ TEST(BearingRange, 2D) {
 
 //******************************************************************************
 TEST(BearingRange3D, Concept) {
-  BOOST_CONCEPT_ASSERT((IsManifold<BearingRange3D>));
+  GTSAM_CONCEPT_ASSERT(IsManifold<BearingRange3D>);
 }
 
 /* ************************************************************************* */

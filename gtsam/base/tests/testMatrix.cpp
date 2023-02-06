@@ -1146,17 +1146,30 @@ TEST(Matrix, DLT )
 }
 
 //******************************************************************************
-TEST(Matrix , IsVectorSpace) {
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Matrix24>));
-  typedef Eigen::Matrix<double,2,3,Eigen::RowMajor> RowMajor;
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<RowMajor>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Matrix>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector>));
-  typedef Eigen::Matrix<double,1,-1> RowVector;
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<RowVector>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector5>));
+TEST(Matrix, Matrix24IsVectorSpace) {
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Matrix24>);
 }
 
+TEST(Matrix, RowMajorIsVectorSpace) {
+  typedef Eigen::Matrix<double, 2, 3, Eigen::RowMajor> RowMajor;
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowMajor>);
+}
+
+TEST(Matrix, MatrixIsVectorSpace) {
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Matrix>);
+}
+
+TEST(Matrix, VectorIsVectorSpace) {
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector>);
+}
+
+TEST(Matrix, RowVectorIsVectorSpace) {
+  typedef Eigen::Matrix<double, 1, -1> RowVector;
+  GTSAM_CONCEPT_ASSERT1(IsVectorSpace<RowVector>);
+  GTSAM_CONCEPT_ASSERT2(IsVectorSpace<Vector5>);
+}
+
+//******************************************************************************
 TEST(Matrix, AbsoluteError) {
   double a = 2000, b = 1997, tol = 1e-1;
   bool isEqual;
