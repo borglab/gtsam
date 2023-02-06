@@ -1,11 +1,11 @@
 set (excluded_examples
-    elaboratePoint2KalmanFilter.cpp
+    "elaboratePoint2KalmanFilter.cpp"
 )
 
 # if GTSAM_ENABLE_BOOST_SERIALIZATION is not set then SolverComparer.cpp will not compile
 if (NOT GTSAM_ENABLE_BOOST_SERIALIZATION)
     list (APPEND excluded_examples
-    SolverComparer.cpp
+    "SolverComparer.cpp"
   )
 endif()
 
@@ -13,10 +13,10 @@ endif()
 if (NOT GTSAM_USE_BOOST_FEATURES) 
   # add to excluded examples
   list (APPEND excluded_examples
-      CombinedImuFactorsExample.run
-      ImuFactorsExample.run
-      ShonanAveragingCLI.cpp
-      SolverComparer.cpp
+      "CombinedImuFactorsExample.cpp"
+      "ImuFactorsExample.cpp"
+      "ShonanAveragingCLI.cpp"
+      "SolverComparer.cpp"
       )
 endif()
 
