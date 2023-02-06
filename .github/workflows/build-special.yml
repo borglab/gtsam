@@ -15,7 +15,7 @@ jobs:
       BOOST_VERSION: 1.67.0
 
     strategy:
-      fail-fast: true
+      fail-fast: false
 
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
