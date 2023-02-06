@@ -216,7 +216,7 @@ namespace gtsam {
     /** Compute the marginal of the requested variables and return the result as a Bayes net.  Uses
      *  COLAMD marginalization ordering by default
      *  @param variables Determines the *ordered* variables whose marginal to compute, 
-     *         will be ordered in the returned BayesNet.
+     *         will be ordered in the returned BayesNet as specified.
      *  @param function Optional dense elimination function.
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. 
@@ -228,8 +228,8 @@ namespace gtsam {
 
     /** Compute the marginal of the requested variables and return the result as a Bayes net.  Uses
      *  COLAMD marginalization ordering by default
-     *  @param variables Determines the variables whose marginal to compute,
-     *         will be ordered using constrained COLAMD.
+     *  @param variables Determines the variables whose marginal to compute, will be ordered 
+     *                   using COLAMD; use `Ordering(variables)` to specify the variable ordering.
      *  @param function Optional dense elimination function.
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. 
@@ -241,7 +241,7 @@ namespace gtsam {
 
     /** Compute the marginal of the requested variables and return the result as a Bayes net.
      *  @param variables Determines the *ordered* variables whose marginal to compute, 
-     *         will be ordered in the returned BayesNet.
+     *         will be ordered in the returned BayesNet as specified.
      *  @param marginalizedVariableOrdering Ordering for the variables being marginalized out,
      *         i.e. all variables not in \c variables.
      *  @param function Optional dense elimination function.
@@ -255,8 +255,8 @@ namespace gtsam {
       OptionalVariableIndex variableIndex = {}) const;
 
     /** Compute the marginal of the requested variables and return the result as a Bayes net.
-     *  @param variables Determines the variables whose marginal to compute,
-     *         will be ordered using constrained COLAMD.
+     *  @param variables Determines the variables whose marginal to compute, will be ordered 
+     *                   using COLAMD; use `Ordering(variables)` to specify the variable ordering.
      *  @param marginalizedVariableOrdering Ordering for the variables being marginalized out,
      *         i.e. all variables not in \c variables.
      *  @param function Optional dense elimination function.
@@ -272,7 +272,7 @@ namespace gtsam {
     /** Compute the marginal of the requested variables and return the result as a Bayes tree.  Uses
      *  COLAMD marginalization order by default
      *  @param variables Determines the *ordered* variables whose marginal to compute, 
-     *         will be ordered in the returned BayesNet.
+     *         will be ordered in the returned BayesNet as specified.
      *  @param function Optional dense elimination function..
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
@@ -283,8 +283,8 @@ namespace gtsam {
 
     /** Compute the marginal of the requested variables and return the result as a Bayes tree.  Uses
      *  COLAMD marginalization order by default
-     *  @param variables Determines the variables whose marginal to compute, 
-     *         will be ordered using constrained COLAMD.
+     *  @param variables Determines the variables whose marginal to compute, will be ordered 
+     *                   using COLAMD; use `Ordering(variables)` to specify the variable ordering.
      *  @param function Optional dense elimination function..
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
@@ -295,7 +295,7 @@ namespace gtsam {
 
     /** Compute the marginal of the requested variables and return the result as a Bayes tree.
      *  @param variables Determines the *ordered* variables whose marginal to compute, 
-     *         will be ordered in the returned BayesNet.
+     *         will be ordered in the returned BayesNet as specified.
      *  @param marginalizedVariableOrdering Ordering for the variables being marginalized out,
      *         i.e. all variables not in \c variables.
      *  @param function Optional dense elimination function..
@@ -308,8 +308,8 @@ namespace gtsam {
       OptionalVariableIndex variableIndex = {}) const;
 
     /** Compute the marginal of the requested variables and return the result as a Bayes tree.
-     *  @param variables Determines the variables whose marginal to compute, 
-     *         will be ordered using constrained COLAMD.
+     *  @param variables Determines the variables whose marginal to compute, will be ordered 
+     *                   using COLAMD; use `Ordering(variables)` to specify the variable ordering.
      *  @param marginalizedVariableOrdering Ordering for the variables being marginalized out,
      *         i.e. all variables not in \c variables.
      *  @param function Optional dense elimination function..

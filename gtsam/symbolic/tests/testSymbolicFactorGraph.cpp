@@ -125,38 +125,36 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal) {
 
 /* ************************************************************************* */
 TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetOrdering) {
-  auto expectedBayesNet = SymbolicBayesNet({0, 1, 2})({1, 2, 3})({2, 3})({3});
-
   SymbolicBayesNet actual =
       *simpleTestGraph2.marginalMultifrontalBayesNet(Ordering{0, 1, 2, 3});
+  auto expectedBayesNet = SymbolicBayesNet({0, 1, 2})({1, 2, 3})({2, 3})({3});
   EXPECT(assert_equal(expectedBayesNet, actual));
 }
 
 TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetKeyVector) {
-  auto expectedBayesNet = SymbolicBayesNet({0, 1, 2})({2, 1, 3})({1, 3})({3});
-
   SymbolicBayesNet actual =
       *simpleTestGraph2.marginalMultifrontalBayesNet(KeyVector{0, 1, 2, 3});
+  // Since we use KeyVector, the variable ordering will be determined by COLAMD:
+  auto expectedBayesNet = SymbolicBayesNet({0, 1, 2})({2, 1, 3})({1, 3})({3});
   EXPECT(assert_equal(expectedBayesNet, actual));
 }
 
 TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetOrderingPlus) {
-  auto expectedBayesNet = SymbolicBayesNet(SymbolicConditional{0, 3})({3});
-
   const Ordering orderedVariables{0, 3},
       marginalizedVariableOrdering{1, 2, 4, 5};
   SymbolicBayesNet actual = *simpleTestGraph2.marginalMultifrontalBayesNet(
       orderedVariables, marginalizedVariableOrdering);
+  auto expectedBayesNet = SymbolicBayesNet(SymbolicConditional{0, 3})({3});
   EXPECT(assert_equal(expectedBayesNet, actual));
 }
 
 TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetKeyVectorPlus) {
-  auto expectedBayesNet = SymbolicBayesNet({0, 1, 3})({3, 1})({1});
-
   const KeyVector variables{0, 1, 3};
   const Ordering marginalizedVariableOrdering{2, 4, 5};
   SymbolicBayesNet actual = *simpleTestGraph2.marginalMultifrontalBayesNet(
       variables, marginalizedVariableOrdering);
+  // Since we use KeyVector, the variable ordering will be determined by COLAMD:
+  auto expectedBayesNet = SymbolicBayesNet({0, 1, 3})({3, 1})({1});
   EXPECT(assert_equal(expectedBayesNet, actual));
 }
 
@@ -172,6 +170,7 @@ TEST(SymbolicFactorGraph, MarginalMultifrontalBayesTreeOrdering) {
 }
 
 TEST(SymbolicFactorGraph, MarginalMultifrontalBayesTreeKeyVector) {
+  // Same: KeyVector variant will use COLAMD:
   auto expectedBayesTree =
       *simpleTestGraph2.eliminatePartialMultifrontal(Ordering{4, 5})
            .second->eliminateMultifrontal(Ordering::OrderingType::COLAMD);
@@ -195,6 +194,7 @@ TEST(SymbolicFactorGraph, MarginalMultifrontalBayesTreeOrderingPlus) {
 }
 
 TEST(SymbolicFactorGraph, MarginalMultifrontalBayesTreeKeyVectorPlus) {
+  // Again: KeyVector variant will use COLAMD:
   const Ordering marginalizedVariableOrdering{2, 4, 5};
   auto expectedBayesTree =
       *simpleTestGraph2
