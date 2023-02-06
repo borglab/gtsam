@@ -189,7 +189,7 @@ namespace gtsam {
     template<typename T>
     void addExpressionFactor(const SharedNoiseModel& R, const T& z,
                              const Expression<T>& h) {
-      push_back(std::make_shared<ExpressionFactor<T> >(R, z, h));
+      this->emplace_shared<ExpressionFactor<T>>(R, z, h);
     }
 
     /**

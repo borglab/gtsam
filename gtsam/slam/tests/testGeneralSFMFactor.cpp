@@ -50,7 +50,7 @@ class Graph: public NonlinearFactorGraph {
 public:
   void addMeasurement(int i, int j, const Point2& z,
       const SharedNoiseModel& model) {
-    push_back(std::make_shared<Projection>(z, model, X(i), L(j)));
+    emplace_shared<Projection>(z, model, X(i), L(j));
   }
 
   void addCameraConstraint(int j, const GeneralCamera& p) {
