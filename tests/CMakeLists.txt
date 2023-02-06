@@ -9,6 +9,7 @@ endif()
 
 if (NOT GTSAM_USE_BOOST_FEATURES)
 	list(APPEND tests_exclude "testGncOptimizer.cpp")
+	list(APPEND tests_exclude "testGraph.cpp")
 endif()
 
 if (NOT GTSAM_ENABLE_BOOST_SERIALIZATION)
