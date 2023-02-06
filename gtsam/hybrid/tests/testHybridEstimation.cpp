@@ -37,6 +37,8 @@
 
 #include "Switching.h"
 
+#include <bitset>
+
 using namespace std;
 using namespace gtsam;
 
