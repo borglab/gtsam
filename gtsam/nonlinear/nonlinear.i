@@ -582,8 +582,7 @@ virtual class DoglegOptimizer : gtsam::NonlinearOptimizer {
   double getDelta() const;
 };
   
-/* Not creating bindings to GncOptimizer since the Chi2Inv currently uses boost */
-/* 
+// TODO(dellaert): This will only work when GTSAM_USE_BOOST_FEATURES is true.
 #include <gtsam/nonlinear/GncOptimizer.h>
 template<PARAMS>
 virtual class GncOptimizer {
@@ -600,7 +599,6 @@ virtual class GncOptimizer {
 
 typedef gtsam::GncOptimizer<gtsam::GncParams<gtsam::GaussNewtonParams>> GncGaussNewtonOptimizer;
 typedef gtsam::GncOptimizer<gtsam::GncParams<gtsam::LevenbergMarquardtParams>> GncLMOptimizer;
-*/
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 virtual class LevenbergMarquardtOptimizer : gtsam::NonlinearOptimizer {
