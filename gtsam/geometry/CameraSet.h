@@ -153,7 +153,7 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
    * full matrices and vectors and pass it to the pointer
    * version of the function
    */
-  template <class POINT, class... OptArgs>
+  template <class POINT, class... OptArgs, typename = std::enable_if_t<sizeof...(OptArgs)!=0>>
   Vector reprojectionError(const POINT& point, const ZVector& measured,
                            OptArgs&... args) const {
     // pass it to the pointer version of the function
@@ -396,7 +396,7 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
 
     FastMap<Key, size_t> KeySlotMap;
     for (size_t slot = 0; slot < allKeys.size(); slot++)
-      KeySlotMap.insert(std::make_pair(allKeys[slot], slot));
+      KeySlotMap.emplace(allKeys[slot], slot);
 
     // Schur complement trick
     // G = F' * F - F' * E * P * E' * F

@@ -19,8 +19,6 @@
  */
 
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/range/adaptor/map.hpp>
 #include <iostream>
 #include <string>
 
@@ -32,7 +30,8 @@ namespace gtsam {
 LevenbergMarquardtParams::VerbosityLM LevenbergMarquardtParams::verbosityLMTranslator(
     const std::string &src) {
   std::string s = src;
-  boost::algorithm::to_upper(s);
+  // convert to upper case
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   if (s == "SILENT")
     return LevenbergMarquardtParams::SILENT;
   if (s == "SUMMARY")

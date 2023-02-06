@@ -37,6 +37,8 @@
 
 #include "Switching.h"
 
+#include <bitset>
+
 using namespace std;
 using namespace gtsam;
 
@@ -44,7 +46,7 @@ using symbol_shorthand::X;
 
 Ordering getOrdering(HybridGaussianFactorGraph& factors,
                      const HybridGaussianFactorGraph& newFactors) {
-  factors += newFactors;
+  factors.push_back(newFactors);
   // Get all the discrete keys from the factors
   KeySet allDiscrete = factors.discreteKeySet();
 
@@ -83,10 +85,10 @@ TEST(HybridEstimation, Full) {
 
   Ordering hybridOrdering;
   for (size_t k = 0; k < K; k++) {
-    hybridOrdering += X(k);
+    hybridOrdering.push_back(X(k));
   }
   for (size_t k = 0; k < K - 1; k++) {
-    hybridOrdering += M(k);
+    hybridOrdering.push_back(M(k));
   }
 
   HybridBayesNet::shared_ptr bayesNet =
@@ -239,10 +241,8 @@ std::vector<size_t> getDiscreteSequence(size_t x) {
  */
 AlgebraicDecisionTree<Key> getProbPrimeTree(
     const HybridGaussianFactorGraph& graph) {
-  HybridBayesNet::shared_ptr bayesNet;
-  HybridGaussianFactorGraph::shared_ptr remainingGraph;
   Ordering continuous(graph.continuousKeySet());
-  std::tie(bayesNet, remainingGraph) =
+  const auto [bayesNet, remainingGraph] =
       graph.eliminatePartialSequential(continuous);
 
   auto last_conditional = bayesNet->at(bayesNet->size() - 1);
@@ -297,9 +297,7 @@ TEST(HybridEstimation, Probability) {
 
   // Continuous elimination
   Ordering continuous_ordering(graph.continuousKeySet());
-  HybridBayesNet::shared_ptr bayesNet;
-  HybridGaussianFactorGraph::shared_ptr discreteGraph;
-  std::tie(bayesNet, discreteGraph) =
+  auto [bayesNet, discreteGraph] =
       graph.eliminatePartialSequential(continuous_ordering);
 
   // Discrete elimination
@@ -347,9 +345,7 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
 
   // Eliminate continuous
   Ordering continuous_ordering(graph.continuousKeySet());
-  HybridBayesTree::shared_ptr bayesTree;
-  HybridGaussianFactorGraph::shared_ptr discreteGraph;
-  std::tie(bayesTree, discreteGraph) =
+  const auto [bayesTree, discreteGraph] =
       graph.eliminatePartialMultifrontal(continuous_ordering);
 
   // Get the last continuous conditional which will have all the discrete keys
@@ -448,8 +444,7 @@ TEST(HybridEstimation, eliminateSequentialRegression) {
   DiscreteConditional expected(m % "0.51341712/1");  // regression
 
   // Eliminate into BN using one ordering
-  Ordering ordering1;
-  ordering1 += X(0), X(1), M(0);
+  const Ordering ordering1{X(0), X(1), M(0)};
   HybridBayesNet::shared_ptr bn1 = fg->eliminateSequential(ordering1);
 
   // Check that the discrete conditional matches the expected.
@@ -457,8 +452,7 @@ TEST(HybridEstimation, eliminateSequentialRegression) {
   EXPECT(assert_equal(expected, *dc1, 1e-9));
 
   // Eliminate into BN using a different ordering
-  Ordering ordering2;
-  ordering2 += X(0), X(1), M(0);
+  const Ordering ordering2{X(0), X(1), M(0)};
   HybridBayesNet::shared_ptr bn2 = fg->eliminateSequential(ordering2);
 
   // Check that the discrete conditional matches the expected.

@@ -126,15 +126,10 @@ TEST(HybridGaussianElimination, IncrementalInference) {
 
   /********************************************************/
   // Run batch elimination so we can compare results.
-  Ordering ordering;
-  ordering += X(0);
-  ordering += X(1);
-  ordering += X(2);
+  const Ordering ordering {X(0), X(1), X(2)};
 
   // Now we calculate the expected factors using full elimination
-  HybridBayesTree::shared_ptr expectedHybridBayesTree;
-  HybridGaussianFactorGraph::shared_ptr expectedRemainingGraph;
-  std::tie(expectedHybridBayesTree, expectedRemainingGraph) =
+  const auto [expectedHybridBayesTree, expectedRemainingGraph] =
       switching.linearizedFactorGraph.eliminatePartialMultifrontal(ordering);
 
   // The densities on X(0) should be the same
@@ -160,12 +155,10 @@ TEST(HybridGaussianElimination, IncrementalInference) {
 
   // We only perform manual continuous elimination for 0,0.
   // The other discrete probabilities on M(2) are calculated the same way
-  Ordering discrete_ordering;
-  discrete_ordering += M(0);
-  discrete_ordering += M(1);
+  const Ordering discreteOrdering{M(0), M(1)};
   HybridBayesTree::shared_ptr discreteBayesTree =
       expectedRemainingGraph->BaseEliminateable::eliminateMultifrontal(
-          discrete_ordering);
+          discreteOrdering);
 
   DiscreteValues m00;
   m00[M(0)] = 0, m00[M(1)] = 0;
@@ -227,13 +220,11 @@ TEST(HybridGaussianElimination, Approx_inference) {
   // Create ordering.
   Ordering ordering;
   for (size_t j = 0; j < 4; j++) {
-    ordering += X(j);
+    ordering.push_back(X(j));
   }
 
   // Now we calculate the actual factors using full elimination
-  HybridBayesTree::shared_ptr unprunedHybridBayesTree;
-  HybridGaussianFactorGraph::shared_ptr unprunedRemainingGraph;
-  std::tie(unprunedHybridBayesTree, unprunedRemainingGraph) =
+  const auto [unprunedHybridBayesTree, unprunedRemainingGraph] =
       switching.linearizedFactorGraph.eliminatePartialMultifrontal(ordering);
 
   size_t maxNrLeaves = 5;

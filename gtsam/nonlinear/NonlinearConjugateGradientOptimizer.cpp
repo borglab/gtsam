@@ -63,9 +63,7 @@ NonlinearConjugateGradientOptimizer::System::State NonlinearConjugateGradientOpt
 }
 
 GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
-  Values newValues;
-  int dummy;
-  boost::tie(newValues, dummy) = nonlinearConjugateGradient<System, Values>(
+  const auto [newValues, dummy] = nonlinearConjugateGradient<System, Values>(
       System(graph_), state_->values, params_, true /* single iteration */);
   state_.reset(new State(newValues, graph_.error(newValues), state_->iterations + 1));
 
@@ -76,9 +74,7 @@ GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
 const Values& NonlinearConjugateGradientOptimizer::optimize() {
   // Optimize until convergence
   System system(graph_);
-  Values newValues;
-  int iterations;
-  boost::tie(newValues, iterations) =
+  const auto [newValues, iterations] =
       nonlinearConjugateGradient(system, state_->values, params_, false);
   state_.reset(new State(std::move(newValues), graph_.error(newValues), iterations));
   return state_->values;

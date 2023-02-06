@@ -185,8 +185,8 @@ struct EliminationData {
       // Gather factors
       FactorGraphType gatheredFactors;
       gatheredFactors.reserve(node->factors.size() + node->nrChildren());
-      gatheredFactors += node->factors;
-      gatheredFactors += myData.childFactors;
+      gatheredFactors.push_back(node->factors);
+      gatheredFactors.push_back(myData.childFactors);
 
       // Check for Bayes tree orphan subtrees, and add them to our children
       // TODO(frank): should this really happen here?
@@ -209,9 +209,13 @@ struct EliminationData {
       // Fill nodes index - we do this here instead of calling insertRoot at the end to avoid
       // putting orphan subtrees in the index - they'll already be in the index of the ISAM2
       // object they're added to.
-      for (const Key& j: myData.bayesTreeNode->conditional()->frontals())
-        nodesIndex_.insert(std::make_pair(j, myData.bayesTreeNode));
-
+      for (const Key& j : myData.bayesTreeNode->conditional()->frontals()) {
+#ifdef GTSAM_USE_TBB
+        nodesIndex_.insert({j, myData.bayesTreeNode});
+#else
+        nodesIndex_.emplace(j, myData.bayesTreeNode);
+#endif
+      }
       // Store remaining factor in parent's gathered factors
       if (!eliminationResult.second->empty()) {
 #ifdef GTSAM_USE_TBB
@@ -273,7 +277,7 @@ EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) 
   }
 
   // Return result
-  return std::make_pair(result, remaining);
+  return {result, remaining};
 }
 
 } // namespace gtsam

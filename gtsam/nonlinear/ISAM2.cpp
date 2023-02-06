@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <map>
 #include <utility>
+#include <variant>
 
 using namespace std;
 
@@ -38,16 +39,18 @@ template class BayesTree<ISAM2Clique>;
 
 /* ************************************************************************* */
 ISAM2::ISAM2(const ISAM2Params& params) : params_(params), update_count_(0) {
-  if (params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
+  if (std::holds_alternative<ISAM2DoglegParams>(params_.optimizationParams)) {
     doglegDelta_ =
-        boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+        std::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+  }
 }
 
 /* ************************************************************************* */
 ISAM2::ISAM2() : update_count_(0) {
-  if (params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
+  if (std::holds_alternative<ISAM2DoglegParams>(params_.optimizationParams)) {
     doglegDelta_ =
-        boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+        std::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
+  }
 }
 
 /* ************************************************************************* */
@@ -176,9 +179,11 @@ void ISAM2::recalculateBatch(const ISAM2UpdateParams& updateParams,
   gttic(recalculateBatch);
 
   gttic(add_keys);
-  br::copy(variableIndex_ | br::map_keys,
-           std::inserter(*affectedKeysSet, affectedKeysSet->end()));
 
+  // copy the keys from the variableIndex_ to the affectedKeysSet
+  for (const auto& [key, _] : variableIndex_) {
+    affectedKeysSet->insert(key);
+  }
   // Removed unused keys:
   VariableIndex affectedFactorsVarIndex = variableIndex_;
 
@@ -289,8 +294,7 @@ void ISAM2::recalculateIncremental(const ISAM2UpdateParams& updateParams,
   gttic(orphans);
   // Add the orphaned subtrees
   for (const auto& orphan : *orphans)
-    factors +=
-        std::make_shared<BayesTreeOrphanWrapper<ISAM2::Clique> >(orphan);
+    factors.emplace_shared<BayesTreeOrphanWrapper<ISAM2::Clique> >(orphan);
   gttoc(orphans);
 
   // 3. Re-order and eliminate the factor graph into a Bayes net (Algorithm
@@ -319,7 +323,7 @@ void ISAM2::recalculateIncremental(const ISAM2UpdateParams& updateParams,
     const int group =
         result->observedKeys.size() < affectedFactorsVarIndex.size() ? 1 : 0;
     for (Key var : result->observedKeys)
-      constraintGroups.insert(std::make_pair(var, group));
+      constraintGroups.emplace(var, group);
   }
 
   // Remove unaffected keys from the constraints
@@ -700,10 +704,10 @@ void ISAM2::marginalizeLeaves(
 // Marked const but actually changes mutable delta
 void ISAM2::updateDelta(bool forceFullSolve) const {
   gttic(updateDelta);
-  if (params_.optimizationParams.type() == typeid(ISAM2GaussNewtonParams)) {
+  if (std::holds_alternative<ISAM2GaussNewtonParams>(params_.optimizationParams)) {
     // If using Gauss-Newton, update with wildfireThreshold
     const ISAM2GaussNewtonParams& gaussNewtonParams =
-        boost::get<ISAM2GaussNewtonParams>(params_.optimizationParams);
+        std::get<ISAM2GaussNewtonParams>(params_.optimizationParams);
     const double effectiveWildfireThreshold =
         forceFullSolve ? 0.0 : gaussNewtonParams.wildfireThreshold;
     gttic(Wildfire_update);
@@ -711,11 +715,10 @@ void ISAM2::updateDelta(bool forceFullSolve) const {
                                       effectiveWildfireThreshold, &delta_);
     deltaReplacedMask_.clear();
     gttoc(Wildfire_update);
-
-  } else if (params_.optimizationParams.type() == typeid(ISAM2DoglegParams)) {
+  } else if (std::holds_alternative<ISAM2DoglegParams>(params_.optimizationParams)) {
     // If using Dogleg, do a Dogleg step
     const ISAM2DoglegParams& doglegParams =
-        boost::get<ISAM2DoglegParams>(params_.optimizationParams);
+        std::get<ISAM2DoglegParams>(params_.optimizationParams);
     const double effectiveWildfireThreshold =
         forceFullSolve ? 0.0 : doglegParams.wildfireThreshold;
 

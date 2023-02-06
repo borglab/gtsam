@@ -31,12 +31,6 @@
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/cholesky.h>
 
-#include <boost/format.hpp>
-#include <boost/array.hpp>
-#include <boost/range/algorithm/copy.hpp>
-#include <boost/range/adaptor/indirected.hpp>
-#include <boost/range/adaptor/map.hpp>
-
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
@@ -100,9 +94,7 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor)
   Ab_.full() = factor.info().selfadjointView();
 
   // Do Cholesky to get a Jacobian
-  size_t maxrank;
-  bool success;
-  boost::tie(maxrank, success) = choleskyCareful(Ab_.matrix());
+  const auto [maxrank, success] = choleskyCareful(Ab_.matrix());
 
   // Check that Cholesky succeeded OR it managed to factor the full Hessian.
   // THe latter case occurs with non-positive definite matrices arising from QP.
@@ -122,7 +114,7 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor)
 /* ************************************************************************* */
 // Helper functions for combine constructor
 namespace {
-boost::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
+std::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
     const FastVector<JacobianFactor::shared_ptr>& factors,
     const FastVector<VariableSlots::const_iterator>& variableSlots) {
   gttic(countDims);
@@ -188,7 +180,7 @@ boost::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
   }
 #endif
 
-  return boost::make_tuple(varDims, m, n);
+  return std::make_tuple(varDims, m, n);
 }
 
 /* ************************************************************************* */
@@ -219,18 +211,16 @@ void JacobianFactor::JacobianFactorHelper(const GaussianFactorGraph& graph,
       graph);
 
   // Count dimensions
-  FastVector<DenseIndex> varDims;
-  DenseIndex m, n;
-  boost::tie(varDims, m, n) = _countDims(jacobians, orderedSlots);
+  const auto [varDims, m, n] = _countDims(jacobians, orderedSlots);
 
   // Allocate matrix and copy keys in order
   gttic(allocate);
   Ab_ = VerticalBlockMatrix(varDims, m, true); // Allocate augmented matrix
   Base::keys_.resize(orderedSlots.size());
-  boost::range::copy(
-      // Get variable keys
-      orderedSlots | boost::adaptors::indirected | boost::adaptors::map_keys,
-      Base::keys_.begin());
+  // Copy keys in order
+  std::transform(orderedSlots.begin(), orderedSlots.end(),
+      Base::keys_.begin(),
+      [](const VariableSlots::const_iterator& it) {return it->first;});
   gttoc(allocate);
 
   // Loop over slots in combined factor and copy blocks from source factors
@@ -415,7 +405,7 @@ void JacobianFactor::print(const string& s,
   if (!s.empty())
     cout << s << "\n";
   for (const_iterator key = begin(); key != end(); ++key) {
-    cout << boost::format("  A[%1%] = ") % formatter(*key);
+    cout << "  A[" << formatter(*key) << "] = ";
     cout << getA(key).format(matlabFormat()) << endl;
   }
   cout << formatMatrixIndented("  b = ", getb(), true) << "\n";

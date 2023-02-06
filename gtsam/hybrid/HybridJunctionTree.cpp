@@ -94,15 +94,13 @@ struct HybridConstructorTraversalData {
     symbolicFactors.reserve(node->factors.size() +
                             data.childSymbolicFactors.size());
     // Add ETree node factors
-    symbolicFactors += node->factors;
+    symbolicFactors.push_back(node->factors);
     // Add symbolic factors passed up from children
-    symbolicFactors += data.childSymbolicFactors;
+    symbolicFactors.push_back(data.childSymbolicFactors);
 
     Ordering keyAsOrdering;
     keyAsOrdering.push_back(node->key);
-    SymbolicConditional::shared_ptr conditional;
-    SymbolicFactor::shared_ptr separatorFactor;
-    boost::tie(conditional, separatorFactor) =
+    const auto [conditional, separatorFactor] =
         internal::EliminateSymbolic(symbolicFactors, keyAsOrdering);
 
     // Store symbolic elimination results in the parent
@@ -129,9 +127,9 @@ struct HybridConstructorTraversalData {
       // Check if we should merge the i^th child
       if (nrParents + nrFrontals == childConditionals[i]->nrParents()) {
         const bool myType =
-            data.discreteKeys.exists(conditional->frontals()[0]);
+            data.discreteKeys.exists(conditional->frontals().front());
         const bool theirType =
-            data.discreteKeys.exists(childConditionals[i]->frontals()[0]);
+            data.discreteKeys.exists(childConditionals[i]->frontals().front());
 
         if (myType == theirType) {
           // Increment number of frontal variables

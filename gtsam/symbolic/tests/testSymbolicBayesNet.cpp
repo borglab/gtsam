@@ -83,9 +83,9 @@ TEST(SymbolicBayesNet, Dot) {
   using symbol_shorthand::A;
   using symbol_shorthand::X;
   SymbolicBayesNet bn;
-  bn += SymbolicConditional(X(3), X(2), A(2));
-  bn += SymbolicConditional(X(2), X(1), A(1));
-  bn += SymbolicConditional(X(1));
+  bn.emplace_shared<SymbolicConditional>(X(3), X(2), A(2));
+  bn.emplace_shared<SymbolicConditional>(X(2), X(1), A(1));
+  bn.emplace_shared<SymbolicConditional>(X(1));
 
   DotWriter writer;
   writer.positionHints.emplace('a', 2);

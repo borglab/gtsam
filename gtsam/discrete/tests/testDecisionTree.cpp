@@ -26,6 +26,8 @@
 #include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/discrete/Signature.h>
 
+#include <iomanip>
+
 using std::vector;
 using std::string;
 using std::map;
@@ -50,7 +52,9 @@ struct CrazyDecisionTree : public DecisionTree<string, Crazy> {
   void print(const std::string& s = "") const {
     auto keyFormatter = [](const std::string& s) { return s; };
     auto valueFormatter = [](const Crazy& v) {
-      return (boost::format("{%d,%4.2g}") % v.a % v.b).str();
+      std::stringstream ss;
+      ss << "{" << v.a << "," << std::setw(4) << std::setprecision(2) << v.b << "}";
+      return ss.str();
     };
     DecisionTree<string, Crazy>::print("", keyFormatter, valueFormatter);
   }
@@ -86,7 +90,7 @@ struct DT : public DecisionTree<string, int> {
   void print(const std::string& s = "") const {
     auto keyFormatter = [](const std::string& s) { return s; };
     auto valueFormatter = [](const int& v) {
-      return (boost::format("%d") % v).str();
+      return std::to_string(v);
     };
     std::cout << s;
     Base::print("", keyFormatter, valueFormatter);
@@ -458,9 +462,7 @@ TEST(DecisionTree, unzip) {
   DTP tree(B, DTP(A, {0, "zero"}, {1, "one"}),
            DTP(A, {2, "two"}, {1337, "l33t"}));
 
-  DT1 dt1;
-  DT2 dt2;
-  std::tie(dt1, dt2) = unzip(tree);
+  const auto [dt1, dt2] = unzip(tree);
 
   DT1 tree1(B, DT1(A, 0, 1), DT1(A, 2, 1337));
   DT2 tree2(B, DT2(A, "zero", "one"), DT2(A, "two", "l33t"));

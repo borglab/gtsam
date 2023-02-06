@@ -19,8 +19,6 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/format.hpp>
-
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -480,7 +478,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   const size_t maxRank = min(m, n);
 
   // create storage for [R d]
-  typedef boost::tuple<size_t, Matrix, double> Triple;
+  typedef std::tuple<size_t, Matrix, double> Triple;
   list<Triple> Rd;
 
   Matrix rd(1, n + 1);  // and for row of R
@@ -506,7 +504,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
       rd = Ab.row(*constraint_row);
 
       // Construct solution (r, d, sigma)
-      Rd.push_back(boost::make_tuple(j, rd, kInfinity));
+      Rd.push_back(std::make_tuple(j, rd, kInfinity));
 
       // exit after rank exhausted
       if (Rd.size() >= maxRank)
@@ -552,7 +550,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
         rd.block(0, j + 1, 1, n - j) = pseudo.transpose() * Ab.block(0, j + 1, m, n - j);
 
         // construct solution (r, d, sigma)
-        Rd.push_back(boost::make_tuple(j, rd, precision));
+        Rd.push_back(std::make_tuple(j, rd, precision));
       } else {
         // If precision is zero, no information on this column
         // This is actually not limited to constraints, could happen in Gaussian::QR
@@ -577,9 +575,9 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   bool mixed = false;
   Ab.setZero();  // make sure we don't look below
   for (const Triple& t: Rd) {
-    const size_t& j = t.get<0>();
-    const Matrix& rd = t.get<1>();
-    precisions(i) = t.get<2>();
+    const size_t& j = std::get<0>(t);
+    const Matrix& rd = std::get<1>(t);
+    precisions(i) = std::get<2>(t);
     if (std::isinf(precisions(i)))
       mixed = true;
     Ab.block(i, j, 1, n + 1 - j) = rd.block(0, j, 1, n + 1 - j);
@@ -606,7 +604,7 @@ Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smar
 
 /* ************************************************************************* */
 void Isotropic::print(const string& name) const {
-  cout << boost::format("isotropic dim=%1% sigma=%2%") % dim() % sigma_ << endl;
+  cout << "isotropic dim=" << dim() << " sigma=" << sigma_ << endl;
 }
 
 /* ************************************************************************* */

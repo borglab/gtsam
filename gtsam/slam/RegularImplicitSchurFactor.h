@@ -148,7 +148,7 @@ public:
   std::pair<Matrix, Vector> jacobian() const override {
     throw std::runtime_error(
         "RegularImplicitSchurFactor::jacobian non implemented");
-    return std::make_pair(Matrix(), Vector());
+    return {Matrix(), Vector()};
   }
 
   /// *Compute* full augmented information matrix

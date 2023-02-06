@@ -24,8 +24,6 @@
 #include <gtsam/inference/Symbol.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/tuple/tuple.hpp>
-#include <boost/bind/bind.hpp>
 
 // STL/C++
 #include <iostream>
@@ -51,8 +49,7 @@ static GaussianBayesNet noisyBayesNet = {
 /* ************************************************************************* */
 TEST( GaussianBayesNet, Matrix )
 {
-  Matrix R; Vector d;
-  boost::tie(R,d) = smallBayesNet.matrix(); // find matrix and RHS
+  const auto [R, d] = smallBayesNet.matrix(); // find matrix and RHS
 
   Matrix R1 = (Matrix2() <<
           1.0, 1.0,
@@ -101,8 +98,7 @@ TEST(GaussianBayesNet, Evaluate2) {
 /* ************************************************************************* */
 TEST( GaussianBayesNet, NoisyMatrix )
 {
-  Matrix R; Vector d;
-  boost::tie(R,d) = noisyBayesNet.matrix(); // find matrix and RHS
+  const auto [R, d] = noisyBayesNet.matrix(); // find matrix and RHS
 
   Matrix R1 = (Matrix2() <<
           0.5, 0.5,
@@ -124,9 +120,7 @@ TEST(GaussianBayesNet, Optimize) {
 
 /* ************************************************************************* */
 TEST(GaussianBayesNet, NoisyOptimize) {
-  Matrix R;
-  Vector d;
-  boost::tie(R, d) = noisyBayesNet.matrix();  // find matrix and RHS
+  const auto [R, d] = noisyBayesNet.matrix();  // find matrix and RHS
   const Vector x = R.inverse() * d;
   const VectorValues expected{{_x_, x.head(1)}, {_y_, x.tail(1)}};
 
@@ -216,8 +210,7 @@ TEST(GaussianBayesNet, MonteCarloIntegration) {
 /* ************************************************************************* */
 TEST(GaussianBayesNet, ordering)
 {
-  Ordering expected;
-  expected += _x_, _y_;
+  const Ordering expected{_x_, _y_};
   const auto actual = noisyBayesNet.ordering();
   EXPECT(assert_equal(expected, actual));
 }
@@ -237,9 +230,7 @@ TEST( GaussianBayesNet, MatrixStress )
         KeyVector({_y_, _x_, _z_}), KeyVector({_y_, _z_, _x_}),
         KeyVector({_z_, _x_, _y_}), KeyVector({_z_, _y_, _x_})}) {
     const Ordering ordering(keys);
-    Matrix R;
-    Vector d;
-    boost::tie(R, d) = bn.matrix(ordering);
+    const auto [R, d] = bn.matrix(ordering);
     EXPECT(assert_equal(expected.vector(ordering), R.inverse() * d));
   }
 }
@@ -286,15 +277,15 @@ TEST( GaussianBayesNet, backSubstituteTransposeNoisy )
 TEST( GaussianBayesNet, DeterminantTest )
 {
   GaussianBayesNet cbn;
-  cbn += GaussianConditional(
+  cbn.emplace_shared<GaussianConditional>(
           0, Vector2(3.0, 4.0), (Matrix2() << 1.0, 3.0, 0.0, 4.0).finished(),
           1, (Matrix2() << 2.0, 1.0, 2.0, 3.0).finished(), noiseModel::Isotropic::Sigma(2, 2.0));
 
-  cbn += GaussianConditional(
+  cbn.emplace_shared<GaussianConditional>(
           1, Vector2(5.0, 6.0), (Matrix2() << 1.0, 1.0, 0.0, 3.0).finished(),
           2, (Matrix2() << 1.0, 0.0, 5.0, 2.0).finished(), noiseModel::Isotropic::Sigma(2, 2.0));
 
-  cbn += GaussianConditional(
+  cbn.emplace_shared<GaussianConditional>(
       3, Vector2(7.0, 8.0), (Matrix2() << 1.0, 1.0, 0.0, 5.0).finished(), noiseModel::Isotropic::Sigma(2, 2.0));
 
   double expectedDeterminant = 60.0 / 64.0;
@@ -317,22 +308,22 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
 
   // Create an arbitrary Bayes Net
   GaussianBayesNet gbn;
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
+  gbn.emplace_shared<GaussianConditional>(
     0, Vector2(1.0,2.0), (Matrix2() << 3.0,4.0,0.0,6.0).finished(),
     3, (Matrix2() << 7.0,8.0,9.0,10.0).finished(),
-    4, (Matrix2() << 11.0,12.0,13.0,14.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
+    4, (Matrix2() << 11.0,12.0,13.0,14.0).finished());
+  gbn.emplace_shared<GaussianConditional>(
     1, Vector2(15.0,16.0), (Matrix2() << 17.0,18.0,0.0,20.0).finished(),
     2, (Matrix2() << 21.0,22.0,23.0,24.0).finished(),
-    4, (Matrix2() << 25.0,26.0,27.0,28.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
+    4, (Matrix2() << 25.0,26.0,27.0,28.0).finished());
+  gbn.emplace_shared<GaussianConditional>(
     2, Vector2(29.0,30.0), (Matrix2() << 31.0,32.0,0.0,34.0).finished(),
-    3, (Matrix2() << 35.0,36.0,37.0,38.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
+    3, (Matrix2() << 35.0,36.0,37.0,38.0).finished());
+  gbn.emplace_shared<GaussianConditional>(
     3, Vector2(39.0,40.0), (Matrix2() << 41.0,42.0,0.0,44.0).finished(),
-    4, (Matrix2() << 45.0,46.0,47.0,48.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-    4, Vector2(49.0,50.0), (Matrix2() << 51.0,52.0,0.0,54.0).finished()));
+    4, (Matrix2() << 45.0,46.0,47.0,48.0).finished());
+  gbn.emplace_shared<GaussianConditional>(
+    4, Vector2(49.0,50.0), (Matrix2() << 51.0,52.0,0.0,54.0).finished());
 
   // Compute the Hessian numerically
   Matrix hessian = numericalHessian<Vector10>(

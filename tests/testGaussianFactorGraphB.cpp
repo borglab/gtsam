@@ -26,10 +26,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/range/adaptor/map.hpp>
-namespace br { using namespace boost::range; using namespace boost::adaptors; }
-
 #include <string.h>
 #include <iostream>
 
@@ -82,8 +78,7 @@ TEST(GaussianFactorGraph, eliminateOne_x1) {
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_x2) {
-  Ordering ordering;
-  ordering += X(2), L(1), X(1);
+  const Ordering ordering{X(2), L(1), X(1)};
   GaussianFactorGraph fg = createGaussianFactorGraph();
   auto actual = EliminateQR(fg, Ordering{X(2)}).first;
 
@@ -98,8 +93,7 @@ TEST(GaussianFactorGraph, eliminateOne_x2) {
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_l1) {
-  Ordering ordering;
-  ordering += L(1), X(1), X(2);
+  const Ordering ordering{L(1), X(1), X(2)};
   GaussianFactorGraph fg = createGaussianFactorGraph();
   auto actual = EliminateQR(fg, Ordering{L(1)}).first;
 
@@ -115,9 +109,7 @@ TEST(GaussianFactorGraph, eliminateOne_l1) {
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_x1_fast) {
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  GaussianConditional::shared_ptr conditional;
-  JacobianFactor::shared_ptr remaining;
-  boost::tie(conditional, remaining) = EliminateQR(fg, Ordering{X(1)});
+  const auto [conditional, remaining] = EliminateQR(fg, Ordering{X(1)});
 
   // create expected Conditional Gaussian
   Matrix I = 15 * I_2x2, R11 = I, S12 = -0.111111 * I, S13 = -0.444444 * I;
@@ -288,14 +280,11 @@ TEST(GaussianFactorGraph, elimination) {
   fg.emplace_shared<JacobianFactor>(X(2), Ap, b, sigma);
 
   // Eliminate
-  Ordering ordering;
-  ordering += X(1), X(2);
+  const Ordering ordering{X(1), X(2)};
   GaussianBayesNet bayesNet = *fg.eliminateSequential();
 
   // Check matrix
-  Matrix R;
-  Vector d;
-  boost::tie(R, d) = bayesNet.matrix();
+  const auto [R, d] = bayesNet.matrix();
   Matrix expected =
       (Matrix(2, 2) << 0.707107, -0.353553, 0.0, 0.612372).finished();
   Matrix expected2 =
@@ -356,7 +345,6 @@ static SharedDiagonal model = noiseModel::Isotropic::Sigma(2,1);
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, replace)
 {
-  Ordering ord; ord += X(1),X(2),X(3),X(4),X(5),X(6);
   SharedDiagonal noise(noiseModel::Isotropic::Sigma(3, 1.0));
 
   GaussianFactorGraph::sharedFactor f1(new JacobianFactor(
@@ -439,10 +427,10 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
           0.0,             1.,           0.0,
           -1.2246468e-16,           0.0,            -1),
           Point3(0.511832102, 8.42819594, 5.76841725)), priorModel);
-  factors += ProjectionFactor(Point2(333.648615, 98.61535), measModel, xC1, l32, K);
-  factors += ProjectionFactor(Point2(218.508, 83.8022039), measModel, xC1, l41, K);
-  factors += RangeFactor<Pose3,Point3>(xC1, l32, relElevation, elevationModel);
-  factors += RangeFactor<Pose3,Point3>(xC1, l41, relElevation, elevationModel);
+  factors.emplace_shared<ProjectionFactor>(Point2(333.648615, 98.61535), measModel, xC1, l32, K);
+  factors.emplace_shared<ProjectionFactor>(Point2(218.508, 83.8022039), measModel, xC1, l41, K);
+  factors.emplace_shared<RangeFactor<Pose3,Point3>>(xC1, l32, relElevation, elevationModel);
+  factors.emplace_shared<RangeFactor<Pose3,Point3>>(xC1, l41, relElevation, elevationModel);
 
   // Check that sigmas are correct (i.e., unit)
   GaussianFactorGraph lfg = *factors.linearize(initValues);
@@ -450,7 +438,7 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
   GaussianBayesTree actBT = *lfg.eliminateMultifrontal();
 
   // Check that all sigmas in an unconstrained bayes tree are set to one
-  for(const GaussianBayesTree::sharedClique& clique: actBT.nodes() | br::map_values) {
+  for (const auto& [key, clique]: actBT.nodes()) {
     GaussianConditional::shared_ptr conditional = clique->conditional();
     //size_t dim = conditional->rows();
     //EXPECT(assert_equal(gtsam::Vector::Ones(dim), conditional->get_model()->sigmas(), tol));

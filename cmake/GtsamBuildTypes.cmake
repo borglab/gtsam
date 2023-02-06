@@ -87,7 +87,10 @@ if(MSVC)
   list_append_cache(GTSAM_COMPILE_DEFINITIONS_PRIVATE
     WINDOWS_LEAN_AND_MEAN
     NOMINMAX
-    )
+  )
+  list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC
+    _ENABLE_EXTENDED_ALIGNED_STORAGE
+  )
   # Avoid literally hundreds to thousands of warnings:
   list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC
     /wd4267 # warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
@@ -126,6 +129,7 @@ else()
     -fPIC                                          # ensure proper code generation for shared libraries
     $<$<CXX_COMPILER_ID:GNU>:-Wreturn-local-addr -Werror=return-local-addr>            # Error: return local address
     $<$<CXX_COMPILER_ID:Clang>:-Wreturn-stack-address   -Werror=return-stack-address>  # Error: return local address
+    $<$<CXX_COMPILER_ID:Clang>:-Wno-misleading-indentation>  # Eigen triggers a ton!
     -Wreturn-type  -Werror=return-type             # Error on missing return()
     -Wformat -Werror=format-security               # Error on wrong printf() arguments
     $<$<COMPILE_LANGUAGE:CXX>:${flag_override_}>   # Enforce the use of the override keyword

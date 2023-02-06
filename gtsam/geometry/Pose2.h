@@ -309,14 +309,14 @@ public:
    * exponential map parameterization
    * @return a pair of [start, end] indices into the tangent space vector
    */
-  inline static std::pair<size_t, size_t> translationInterval() { return std::make_pair(0, 1); }
+  inline static std::pair<size_t, size_t> translationInterval() { return {0, 1}; }
 
   /**
    * Return the start and end indices (inclusive) of the rotation component of the
    * exponential map parameterization
    * @return a pair of [start, end] indices into the tangent space vector
    */
-  static std::pair<size_t, size_t> rotationInterval() { return std::make_pair(2, 2); }
+  static std::pair<size_t, size_t> rotationInterval() { return {2, 2}; }
 
   /// Output stream operator
   GTSAM_EXPORT

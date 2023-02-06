@@ -245,7 +245,7 @@ namespace gtsam {
   void BayesTree<CLIQUE>::fillNodesIndex(const sharedClique& subtree) {
     // Add each frontal variable of this root node
     for(const Key& j: subtree->conditional()->frontals()) {
-      bool inserted = nodes_.insert(std::make_pair(j, subtree)).second;
+      bool inserted = nodes_.insert({j, subtree}).second;
       assert(inserted); (void)inserted;
     }
     // Fill index for each child
@@ -360,9 +360,10 @@ namespace gtsam {
           C1_minus_B.assign(C1_minus_B_set.begin(), C1_minus_B_set.end());
         }
         // Factor into C1\B | B.
-        sharedFactorGraph temp_remaining;
-        boost::tie(p_C1_B, temp_remaining) =
-          FactorGraphType(p_C1_Bred).eliminatePartialMultifrontal(Ordering(C1_minus_B), function);
+        p_C1_B =
+            FactorGraphType(p_C1_Bred)
+                .eliminatePartialMultifrontal(Ordering(C1_minus_B), function)
+                .first;
       }
       std::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
         KeyVector C2_minus_B; {
@@ -372,20 +373,21 @@ namespace gtsam {
           C2_minus_B.assign(C2_minus_B_set.begin(), C2_minus_B_set.end());
         }
         // Factor into C2\B | B.
-        sharedFactorGraph temp_remaining;
-        boost::tie(p_C2_B, temp_remaining) =
-          FactorGraphType(p_C2_Bred).eliminatePartialMultifrontal(Ordering(C2_minus_B), function);
+        p_C2_B =
+            FactorGraphType(p_C2_Bred)
+                .eliminatePartialMultifrontal(Ordering(C2_minus_B), function)
+                .first;
       }
       gttoc(Full_root_factoring);
 
       gttic(Variable_joint);
-      p_BC1C2 += p_B;
-      p_BC1C2 += *p_C1_B;
-      p_BC1C2 += *p_C2_B;
+      p_BC1C2.push_back(p_B);
+      p_BC1C2.push_back(*p_C1_B);
+      p_BC1C2.push_back(*p_C2_B);
       if(C1 != B)
-        p_BC1C2 += C1->conditional();
+        p_BC1C2.push_back(C1->conditional());
       if(C2 != B)
-        p_BC1C2 += C2->conditional();
+        p_BC1C2.push_back(C2->conditional());
       gttoc(Variable_joint);
     }
     else
@@ -393,8 +395,8 @@ namespace gtsam {
       // The nodes have no common ancestor, they're in different trees, so they're joint is just the
       // product of their marginals.
       gttic(Disjoint_marginals);
-      p_BC1C2 += C1->marginal2(function);
-      p_BC1C2 += C2->marginal2(function);
+      p_BC1C2.push_back(C1->marginal2(function));
+      p_BC1C2.push_back(C2->marginal2(function));
       gttoc(Disjoint_marginals);
     }
 

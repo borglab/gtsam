@@ -163,13 +163,11 @@ class GTSAM_EXPORT SubgraphBuilder {
 
  private:
   std::vector<size_t> buildTree(const GaussianFactorGraph &gfg,
-                                const FastMap<Key, size_t> &ordering,
                                 const std::vector<double> &weights) const;
   std::vector<size_t> unary(const GaussianFactorGraph &gfg) const;
   std::vector<size_t> natural_chain(const GaussianFactorGraph &gfg) const;
   std::vector<size_t> bfs(const GaussianFactorGraph &gfg) const;
   std::vector<size_t> kruskal(const GaussianFactorGraph &gfg,
-                              const FastMap<Key, size_t> &ordering,
                               const std::vector<double> &weights) const;
   std::vector<size_t> sample(const std::vector<double> &weights,
                              const size_t t) const;

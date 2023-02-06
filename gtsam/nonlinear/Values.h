@@ -105,8 +105,11 @@ namespace gtsam {
 
     typedef KeyValuePair value_type;
 
+    /// @name Constructors
+    /// @{
+
     /** Default constructor creates an empty Values class */
-    Values() {}
+    Values() = default;
 
     /** Copy constructor duplicates all keys and values */
     Values(const Values& other);
@@ -124,6 +127,7 @@ namespace gtsam {
     /** Construct from a Values and an update vector: identical to other.retract(delta) */
     Values(const Values& other, const VectorValues& delta);
 
+    /// @}
     /// @name Testable
     /// @{
 
@@ -134,6 +138,8 @@ namespace gtsam {
     bool equals(const Values& other, double tol=1e-9) const;
 
     /// @}
+    /// @name Standard Interface
+    /// @{
 
     /** Retrieve a variable by key \c j.  The type of the value associated with
      * this key is supplied as a template argument to this function.
@@ -174,6 +180,42 @@ namespace gtsam {
     /** whether the config is empty */
     bool empty() const { return values_.empty(); }
 
+    /// @}
+    /// @name Iterator
+    /// @{
+
+    struct deref_iterator {
+      using const_iterator_type = typename KeyValueMap::const_iterator;
+      const_iterator_type it_;
+      deref_iterator(const_iterator_type it) : it_(it) {}
+      ConstKeyValuePair operator*() const { return {it_->first, *(it_->second)}; }
+      std::unique_ptr<ConstKeyValuePair> operator->() {
+        return std::make_unique<ConstKeyValuePair>(it_->first, *(it_->second));
+      }
+      bool operator==(const deref_iterator& other) const {
+        return it_ == other.it_;
+      }
+      bool operator!=(const deref_iterator& other) const { return it_ != other.it_; }
+      deref_iterator& operator++() {
+        ++it_;
+        return *this;
+      }
+    };
+
+    deref_iterator begin() const { return deref_iterator(values_.begin()); }
+    deref_iterator end() const { return deref_iterator(values_.end()); }
+
+    /** Find an element by key, returning an iterator, or end() if the key was
+     * not found. */
+    deref_iterator find(Key j) const { return deref_iterator(values_.find(j)); }
+
+    /** Find the element greater than or equal to the specified key. */
+    deref_iterator lower_bound(Key j) const { return deref_iterator(values_.lower_bound(j)); }
+    
+    /** Find the lowest-ordered element greater than the specified key. */
+    deref_iterator upper_bound(Key j) const { return deref_iterator(values_.upper_bound(j)); }
+
+    /// @}
     /// @name Manifold Operations
     /// @{
 
@@ -296,7 +338,8 @@ namespace gtsam {
     // supplied \c filter function.
     template<class ValueType>
     static bool filterHelper(const std::function<bool(Key)> filter, const ConstKeyValuePair& key_value) {
-      BOOST_STATIC_ASSERT((!boost::is_same<ValueType, Value>::value));
+      // static_assert if ValueType is type: Value
+      static_assert(!std::is_same<Value, ValueType>::value, "ValueType must not be type: Value to use this filter");
       // Filter and check the type
       return filter(key_value.key) && (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value));
     }

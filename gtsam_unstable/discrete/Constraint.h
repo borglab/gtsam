@@ -21,7 +21,6 @@
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam_unstable/dllexport.h>
 
-#include <boost/format.hpp>
 #include <map>
 
 namespace gtsam {
@@ -86,13 +85,13 @@ class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
   /// Render as markdown table.
   std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                        const Names& names = {}) const override {
-    return (boost::format("`Constraint` on %1% variables\n") % (size())).str();
+    return "`Constraint` on " + std::to_string(size()) + " variables\n";
   }
 
   /// Render as html table.
   std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                    const Names& names = {}) const override {
-    return (boost::format("<p>Constraint on %1% variables</p>") % (size())).str();
+    return "<p>Constraint on " + std::to_string(size()) + " variables</p>";
   }
 
   /// @}

@@ -21,7 +21,6 @@
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/OptionalJacobian.h>
-#include <boost/concept/assert.hpp>
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #endif

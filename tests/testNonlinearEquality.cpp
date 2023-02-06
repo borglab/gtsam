@@ -193,11 +193,10 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
   Symbol key1('x', 1);
   Pose2 feasible1(1.0, 2.0, 3.0);
   double error_gain = 500.0;
-  PoseNLE nle(key1, feasible1, error_gain);
 
   // add to a graph
   NonlinearFactorGraph graph;
-  graph += nle;
+  graph.emplace_shared<PoseNLE>(key1, feasible1, error_gain);
 
   // initialize away from the ideal
   Pose2 initPose(0.0, 2.0, 3.0);
@@ -227,16 +226,13 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
   Pose2 initPose(0.0, 2.0, 3.0);
   init.insert(key1, initPose);
 
+  // add nle to a graph
   double error_gain = 500.0;
-  PoseNLE nle(key1, feasible1, error_gain);
-
-  // create a soft prior that conflicts
-  PosePrior prior(key1, initPose, noiseModel::Isotropic::Sigma(3, 0.1));
-
-  // add to a graph
   NonlinearFactorGraph graph;
-  graph += nle;
-  graph += prior;
+  graph.emplace_shared<PoseNLE>(key1, feasible1, error_gain);
+  
+  // add a soft prior that conflicts
+  graph.emplace_shared<PosePrior>(key1, initPose, noiseModel::Isotropic::Sigma(3, 0.1));
 
   // optimize
   Ordering ordering;
@@ -440,17 +436,17 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
   Symbol x1('x', 1), x2('x', 2);
   Symbol l1('l', 1), l2('l', 2);
   Point2 pt_x1(1.0, 1.0), pt_x2(5.0, 6.0);
-  graph += eq2D::UnaryEqualityConstraint(pt_x1, x1);
-  graph += eq2D::UnaryEqualityConstraint(pt_x2, x2);
+  graph.emplace_shared<eq2D::UnaryEqualityConstraint>(pt_x1, x1);
+  graph.emplace_shared<eq2D::UnaryEqualityConstraint>(pt_x2, x2);
 
   Point2 z1(0.0, 5.0);
   SharedNoiseModel sigma(noiseModel::Isotropic::Sigma(2, 0.1));
-  graph += simulated2D::Measurement(z1, sigma, x1, l1);
+  graph.emplace_shared<simulated2D::Measurement>(z1, sigma, x1, l1);
 
   Point2 z2(-4.0, 0.0);
-  graph += simulated2D::Measurement(z2, sigma, x2, l2);
+  graph.emplace_shared<simulated2D::Measurement>(z2, sigma, x2, l2);
 
-  graph += eq2D::PointEqualityConstraint(l1, l2);
+  graph.emplace_shared<eq2D::PointEqualityConstraint>(l1, l2);
 
   Values initialEstimate;
   initialEstimate.insert(x1, pt_x1);
@@ -480,20 +476,20 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
 
   // constant constraint on x1
   Point2 pose1(1.0, 1.0);
-  graph += eq2D::UnaryEqualityConstraint(pose1, x1);
+  graph.emplace_shared<eq2D::UnaryEqualityConstraint>(pose1, x1);
 
   SharedDiagonal sigma = noiseModel::Isotropic::Sigma(2, 0.1);
 
   // measurement from x1 to l1
   Point2 z1(0.0, 5.0);
-  graph += simulated2D::Measurement(z1, sigma, x1, l1);
+  graph.emplace_shared<simulated2D::Measurement>(z1, sigma, x1, l1);
 
   // measurement from x2 to l2
   Point2 z2(-4.0, 0.0);
-  graph += simulated2D::Measurement(z2, sigma, x2, l2);
+  graph.emplace_shared<simulated2D::Measurement>(z2, sigma, x2, l2);
 
   // equality constraint between l1 and l2
-  graph += eq2D::PointEqualityConstraint(l1, l2);
+  graph.emplace_shared<eq2D::PointEqualityConstraint>(l1, l2);
 
   // create an initial estimate
   Values initialEstimate;
@@ -542,18 +538,18 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
   NonlinearFactorGraph graph;
 
   // create equality constraints for poses
-  graph += NonlinearEquality<Pose3>(key_x1, leftCamera.pose());
-  graph += NonlinearEquality<Pose3>(key_x2, rightCamera.pose());
+  graph.emplace_shared<NonlinearEquality<Pose3>>(key_x1, leftCamera.pose());
+  graph.emplace_shared<NonlinearEquality<Pose3>>(key_x2, rightCamera.pose());
 
   // create  factors
   SharedDiagonal vmodel = noiseModel::Unit::Create(2);
-  graph += GenericProjectionFactor<Pose3, Point3, Cal3_S2>(
+  graph.emplace_shared<GenericProjectionFactor<Pose3, Point3, Cal3_S2>>(
       leftCamera.project(landmark), vmodel, key_x1, key_l1, shK);
-  graph += GenericProjectionFactor<Pose3, Point3, Cal3_S2>(
+  graph.emplace_shared<GenericProjectionFactor<Pose3, Point3, Cal3_S2>>(
       rightCamera.project(landmark), vmodel, key_x2, key_l2, shK);
 
   // add equality constraint saying there is only one point
-  graph += NonlinearEquality2<Point3>(key_l1, key_l2);
+  graph.emplace_shared<NonlinearEquality2<Point3>>(key_l1, key_l2);
 
   // create initial data
   Point3 landmark1(0.5, 5, 0);

@@ -490,7 +490,7 @@ Class* unwrap_ptr(const mxArray* obj, const string& propertyName) {
 //template <>
 //Vector unwrap_shared_ptr<Vector>(const mxArray* obj, const string& propertyName) {
 //  bool unwrap_shared_ptr_Vector_attempted = false;
-//  BOOST_STATIC_ASSERT(unwrap_shared_ptr_Vector_attempted, "Vector cannot be unwrapped as a shared pointer");
+//  static_assert(unwrap_shared_ptr_Vector_attempted, "Vector cannot be unwrapped as a shared pointer");
 //  return Vector();
 //}
 
@@ -498,7 +498,7 @@ Class* unwrap_ptr(const mxArray* obj, const string& propertyName) {
 //template <>
 //Matrix unwrap_shared_ptr<Matrix>(const mxArray* obj, const string& propertyName) {
 //  bool unwrap_shared_ptr_Matrix_attempted = false;
-//  BOOST_STATIC_ASSERT(unwrap_shared_ptr_Matrix_attempted, "Matrix cannot be unwrapped as a shared pointer");
+//  static_assert(unwrap_shared_ptr_Matrix_attempted, "Matrix cannot be unwrapped as a shared pointer");
 //  return Matrix();
 //}
 

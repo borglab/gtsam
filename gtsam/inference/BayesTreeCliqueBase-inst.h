@@ -123,7 +123,7 @@ namespace gtsam {
       gttoc(BayesTreeCliqueBase_shortcut);
       FactorGraphType p_Cp_B(parent->shortcut(B, function)); // P(Sp||B)
       gttic(BayesTreeCliqueBase_shortcut);
-      p_Cp_B += parent->conditional_; // P(Fp|Sp)
+      p_Cp_B.push_back(parent->conditional_); // P(Fp|Sp)
 
       // Determine the variables we want to keepSet, S union B
       KeyVector keep = shortcut_indices(B, p_Cp_B);
@@ -171,7 +171,7 @@ namespace gtsam {
         gttic(BayesTreeCliqueBase_separatorMarginal_cachemiss);
 
         // now add the parent conditional
-        p_Cp += parent->conditional_;  // P(Fp|Sp)
+        p_Cp.push_back(parent->conditional_);  // P(Fp|Sp)
 
         // The variables we want to keepSet are exactly the ones in S
         KeyVector indicesS(this->conditional()->beginParents(),
@@ -198,7 +198,7 @@ namespace gtsam {
     // initialize with separator marginal P(S)
     FactorGraphType p_C = this->separatorMarginal(function);
     // add the conditional P(F|S)
-    p_C += std::shared_ptr<FactorType>(this->conditional_);
+    p_C.push_back(std::shared_ptr<FactorType>(this->conditional_));
     return p_C;
   }
 

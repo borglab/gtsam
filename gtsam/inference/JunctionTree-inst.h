@@ -77,16 +77,14 @@ struct ConstructorTraversalData {
     symbolicFactors.reserve(
         ETreeNode->factors.size() + myData.childSymbolicFactors.size());
     // Add ETree node factors
-    symbolicFactors += ETreeNode->factors;
+    symbolicFactors.push_back(ETreeNode->factors);
     // Add symbolic factors passed up from children
-    symbolicFactors += myData.childSymbolicFactors;
+    symbolicFactors.push_back(myData.childSymbolicFactors);
 
     Ordering keyAsOrdering;
     keyAsOrdering.push_back(ETreeNode->key);
-    SymbolicConditional::shared_ptr myConditional;
-    SymbolicFactor::shared_ptr mySeparatorFactor;
-    boost::tie(myConditional, mySeparatorFactor) = internal::EliminateSymbolic(
-        symbolicFactors, keyAsOrdering);
+    const auto [myConditional, mySeparatorFactor] =
+        internal::EliminateSymbolic(symbolicFactors, keyAsOrdering);
 
     // Store symbolic elimination results in the parent
     myData.parentData->childSymbolicConditionals.push_back(myConditional);

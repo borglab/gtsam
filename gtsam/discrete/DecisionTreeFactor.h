@@ -104,7 +104,7 @@ namespace gtsam {
       return ADT::operator()(values);
     }
 
-    /// Evaluate probability density, sugar.
+    /// Evaluate probability distribution, sugar.
     double operator()(const DiscreteValues& values) const override {
       return ADT::operator()(values);
     }
@@ -268,5 +268,4 @@ namespace gtsam {
 // traits
 template <>
 struct traits<DecisionTreeFactor> : public Testable<DecisionTreeFactor> {};
-
 }  // namespace gtsam

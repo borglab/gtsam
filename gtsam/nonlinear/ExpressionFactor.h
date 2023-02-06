@@ -42,7 +42,7 @@ namespace gtsam {
  */
 template <typename T>
 class ExpressionFactor : public NoiseModelFactor {
-  BOOST_CONCEPT_ASSERT((IsTestable<T>));
+  GTSAM_CONCEPT_ASSERT(IsTestable<T>);
 
 protected:
 
@@ -180,7 +180,7 @@ protected:
    if (keys_.empty()) {
      // This is the case when called in ExpressionFactor Constructor.
      // We then take the keys from the expression in sorted order.
-     boost::tie(keys_, dims_) = expression_.keysAndDims();
+     std::tie(keys_, dims_) = expression_.keysAndDims();
    } else {
      // This happens with classes derived from BinaryExpressionFactor etc.
      // In that case, the keys_ are already defined and we just need to grab
@@ -288,6 +288,7 @@ private:
     return expression(keys);
   }
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
@@ -295,6 +296,7 @@ private:
         "ExpressionFactorN",
         boost::serialization::base_object<ExpressionFactor<T>>(*this));
   }
+#endif
 };
 /// traits
 template <typename T, typename... Args>

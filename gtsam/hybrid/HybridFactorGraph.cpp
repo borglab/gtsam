@@ -20,8 +20,6 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 
-#include <boost/format.hpp>
-
 namespace gtsam {
 
 /* ************************************************************************* */

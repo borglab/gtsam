@@ -22,8 +22,6 @@
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <boost/algorithm/string.hpp>
-
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>

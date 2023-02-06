@@ -33,11 +33,9 @@ int main(int argc, char *argv[]) {
   size_t trials = 1;
 
   // read graph
-  Values::shared_ptr solution;
-  NonlinearFactorGraph::shared_ptr g;
   string inputFile = findExampleDataFile("w10000");
   auto model = noiseModel::Diagonal::Sigmas((Vector(3) << 0.05, 0.05, 5.0 * M_PI / 180.0).finished());
-  boost::tie(g, solution) = load2D(inputFile, model);
+  const auto [g, solution] = load2D(inputFile, model);
 
   // add noise to create initial estimate
   Values initial;

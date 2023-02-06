@@ -29,9 +29,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/range/adaptor/reversed.hpp>
-#include <boost/tuple/tuple.hpp>
-
 #include <fstream>
 
 using namespace std;
@@ -45,11 +42,9 @@ Symbol key(int x, int y) { return symbol_shorthand::X(1000 * x + y); }
 /* ************************************************************************* */
 TEST(SubgraphPreconditioner, planarOrdering) {
   // Check canonical ordering
-  Ordering expected, ordering = planarOrdering(3);
-  expected +=
-      key(3, 3), key(2, 3), key(1, 3),
-      key(3, 2), key(2, 2), key(1, 2),
-      key(3, 1), key(2, 1), key(1, 1);
+  Ordering ordering = planarOrdering(3),
+           expected{key(3, 3), key(2, 3), key(1, 3), key(3, 2), key(2, 2),
+                    key(1, 2), key(3, 1), key(2, 1), key(1, 1)};
   EXPECT(assert_equal(expected, ordering));
 }
 
@@ -65,9 +60,7 @@ static double error(const GaussianFactorGraph& fg, const VectorValues& x) {
 /* ************************************************************************* */
 TEST(SubgraphPreconditioner, planarGraph) {
   // Check planar graph construction
-  GaussianFactorGraph A;
-  VectorValues xtrue;
-  boost::tie(A, xtrue) = planarGraph(3);
+  const auto [A, xtrue] = planarGraph(3);
   LONGS_EQUAL(13, A.size());
   LONGS_EQUAL(9, xtrue.size());
   DOUBLES_EQUAL(0, error(A, xtrue), 1e-9);  // check zero error for xtrue
@@ -81,13 +74,10 @@ TEST(SubgraphPreconditioner, planarGraph) {
 /* ************************************************************************* */
 TEST(SubgraphPreconditioner, splitOffPlanarTree) {
   // Build a planar graph
-  GaussianFactorGraph A;
-  VectorValues xtrue;
-  boost::tie(A, xtrue) = planarGraph(3);
+  const auto [A, xtrue] = planarGraph(3);
 
   // Get the spanning tree and constraints, and check their sizes
-  GaussianFactorGraph T, C;
-  boost::tie(T, C) = splitOffPlanarTree(3, A);
+  const auto [T, C] = splitOffPlanarTree(3, A);
   LONGS_EQUAL(9, T.size());
   LONGS_EQUAL(4, C.size());
 
@@ -100,14 +90,11 @@ TEST(SubgraphPreconditioner, splitOffPlanarTree) {
 /* ************************************************************************* */
 TEST(SubgraphPreconditioner, system) {
   // Build a planar graph
-  GaussianFactorGraph Ab;
-  VectorValues xtrue;
   size_t N = 3;
-  boost::tie(Ab, xtrue) = planarGraph(N);  // A*x-b
+  const auto [Ab, xtrue] = planarGraph(N);  // A*x-b
 
   // Get the spanning tree and remaining graph
-  GaussianFactorGraph Ab1, Ab2;  // A1*x-b1 and A2*x-b2
-  boost::tie(Ab1, Ab2) = splitOffPlanarTree(N, Ab);
+  auto [Ab1, Ab2] = splitOffPlanarTree(N, Ab);
 
   // Eliminate the spanning tree to build a prior
   const Ordering ord = planarOrdering(N);
@@ -123,11 +110,9 @@ TEST(SubgraphPreconditioner, system) {
   Ab2.add(key(1, 1), Z_2x2, Z_2x1);
   Ab2.add(key(1, 2), Z_2x2, Z_2x1);
   Ab2.add(key(1, 3), Z_2x2, Z_2x1);
-  Matrix A, A1, A2;
-  Vector b, b1, b2;
-  std::tie(A, b) = Ab.jacobian(ordering);
-  std::tie(A1, b1) = Ab1.jacobian(ordering);
-  std::tie(A2, b2) = Ab2.jacobian(ordering);
+  const auto [A, b] = Ab.jacobian(ordering);
+  const auto [A1, b1] = Ab1.jacobian(ordering);
+  const auto [A2, b2] = Ab2.jacobian(ordering);
   Matrix R1 = Rc1.matrix(ordering).first;
   Matrix Abar(13 * 2, 9 * 2);
   Abar.topRows(9 * 2) = Matrix::Identity(9 * 2, 9 * 2);
@@ -196,14 +181,11 @@ TEST(SubgraphPreconditioner, system) {
 /* ************************************************************************* */
 TEST(SubgraphPreconditioner, conjugateGradients) {
   // Build a planar graph
-  GaussianFactorGraph Ab;
-  VectorValues xtrue;
   size_t N = 3;
-  boost::tie(Ab, xtrue) = planarGraph(N);  // A*x-b
+  const auto [Ab, xtrue] = planarGraph(N);  // A*x-b
 
   // Get the spanning tree
-  GaussianFactorGraph Ab1, Ab2;  // A1*x-b1 and A2*x-b2
-  boost::tie(Ab1, Ab2) = splitOffPlanarTree(N, Ab);
+  const auto [Ab1, Ab2] = splitOffPlanarTree(N, Ab);
 
   // Eliminate the spanning tree to build a prior
   GaussianBayesNet Rc1 = *Ab1.eliminateSequential();  // R1*x-c1

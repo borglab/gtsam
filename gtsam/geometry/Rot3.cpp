@@ -21,7 +21,6 @@
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
-#include <boost/math/constants/constants.hpp>
 
 #include <cmath>
 #include <random>
@@ -170,13 +169,13 @@ Vector3 Rot3::xyz(OptionalJacobian<3, 3> H) const {
 #endif
 
     Matrix39 qHm;
-    boost::tie(I, q) = RQ(m, qHm);
+    std::tie(I, q) = RQ(m, qHm);
 
     // TODO : Explore whether this expression can be optimized as both
     // qHm and mH are super-sparse
     *H = qHm * mH;
   } else
-    boost::tie(I, q) = RQ(matrix());
+    std::tie(I, q) = RQ(matrix());
   return q;
 }
 

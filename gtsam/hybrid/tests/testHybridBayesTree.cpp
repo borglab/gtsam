@@ -97,11 +97,9 @@ TEST(HybridBayesTree, OptimizeAssignment) {
 
   // Create ordering.
   Ordering ordering;
-  for (size_t k = 0; k < s.K; k++) ordering += X(k);
+  for (size_t k = 0; k < s.K; k++) ordering.push_back(X(k));
 
-  HybridBayesNet::shared_ptr hybridBayesNet;
-  HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
-  std::tie(hybridBayesNet, remainingFactorGraph) =
+  const auto [hybridBayesNet, remainingFactorGraph] =
       s.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   GaussianBayesNet gbn = hybridBayesNet->choose(assignment);
@@ -141,11 +139,9 @@ TEST(HybridBayesTree, Optimize) {
 
   // Create ordering.
   Ordering ordering;
-  for (size_t k = 0; k < s.K; k++) ordering += X(k);
+  for (size_t k = 0; k < s.K; k++) ordering.push_back(X(k));
 
-  HybridBayesNet::shared_ptr hybridBayesNet;
-  HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
-  std::tie(hybridBayesNet, remainingFactorGraph) =
+  const auto [hybridBayesNet, remainingFactorGraph] =
       s.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   DiscreteFactorGraph dfg;

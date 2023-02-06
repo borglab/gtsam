@@ -35,7 +35,7 @@ using namespace std;
  ****************************************************************************/
 TEST( JunctionTree, constructor )
 {
-  Ordering order; order += 0, 1, 2, 3;
+  const Ordering order{0, 1, 2, 3};
 
   SymbolicJunctionTree actual(SymbolicEliminationTree(simpleChain, order));
 

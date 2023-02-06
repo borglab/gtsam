@@ -26,7 +26,6 @@
 
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
-#include <boost/tuple/tuple.hpp>
 
 #include <vector>
 
@@ -280,7 +279,7 @@ struct Reshape<N, M, InOptions, M, N, InOptions> {
 
 template <int OutM, int OutN, int OutOptions, int InM, int InN, int InOptions>
 inline typename Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & m){
-  BOOST_STATIC_ASSERT(InM * InN == OutM * OutN);
+  static_assert(InM * InN == OutM * OutN);
   return Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::reshape(m);
 }
 
@@ -307,7 +306,7 @@ GTSAM_EXPORT void inplace_QR(Matrix& A);
  * @param sigmas is a vector of the measurement standard deviation
  * @return list of r vectors, d  and sigma
  */
-GTSAM_EXPORT std::list<boost::tuple<Vector, double, double> >
+GTSAM_EXPORT std::list<std::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas);
 
 /**
@@ -434,7 +433,7 @@ GTSAM_EXPORT void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V);
  * Returns rank of A, minimum error (singular value),
  * and corresponding eigenvector (column of V, with A=U*S*V')
  */
-GTSAM_EXPORT boost::tuple<int, double, Vector>
+GTSAM_EXPORT std::tuple<int, double, Vector>
 DLT(const Matrix& A, double rank_tol = 1e-9);
 
 /**

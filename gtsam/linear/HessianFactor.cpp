@@ -29,20 +29,11 @@
 #include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/format.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/range/adaptor/transformed.hpp>
-#include <boost/range/adaptor/map.hpp>
-#include <boost/range/algorithm/copy.hpp>
-
 #include <sstream>
 #include <limits>
+#include "gtsam/base/Vector.h"
 
 using namespace std;
-namespace br {
-using namespace boost::range;
-using namespace boost::adaptors;
-}
 
 namespace gtsam {
 
@@ -141,15 +132,19 @@ HessianFactor::HessianFactor(Key j1, Key j2, Key j3, const Matrix& G11,
 
 /* ************************************************************************* */
 namespace {
-DenseIndex _getSizeHF(const Vector& m) {
-  return m.size();
+static std::vector<DenseIndex> _getSizeHFVec(const std::vector<Vector>& m) {
+  std::vector<DenseIndex> dims;
+  for (const Vector& v : m) {
+    dims.push_back(v.size());
+  }
+  return dims;
 }
-}
+}  // namespace
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const KeyVector& js,
     const std::vector<Matrix>& Gs, const std::vector<Vector>& gs, double f) :
-    GaussianFactor(js), info_(gs | br::transformed(&_getSizeHF), true) {
+    GaussianFactor(js), info_(_getSizeHFVec(gs), true) {
   // Get the number of variables
   size_t variable_count = js.size();
 
@@ -415,9 +410,7 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
 
   // copy to yvalues
   for (DenseIndex i = 0; i < (DenseIndex) size(); ++i) {
-    bool didNotExist;
-    VectorValues::iterator it;
-    boost::tie(it, didNotExist) = yvalues.tryInsert(keys_[i], Vector());
+    const auto [it, didNotExist] = yvalues.tryInsert(keys_[i], Vector());
     if (didNotExist)
       it->second = alpha * y[i]; // init
     else

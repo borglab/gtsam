@@ -20,8 +20,10 @@
 #pragma once
 
 #include <gtsam/dllexport.h>
+#ifdef GTSAM_USE_BOOST_FEATURES
 #include <boost/concept/assert.hpp>
 #include <boost/range/concepts.hpp>
+#endif
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #include <cstddef>
@@ -153,33 +155,7 @@ namespace gtsam {
     operator T() const { return value; }
   };
 
-  /* ************************************************************************* */
-  /** A helper class that behaves as a container with one element, and works with
-   * boost::range */
-  template<typename T>
-  class ListOfOneContainer {
-    T element_;
-  public:
-    typedef T value_type;
-    typedef const T* const_iterator;
-    typedef T* iterator;
-    ListOfOneContainer(const T& element) : element_(element) {}
-    const T* begin() const { return &element_; }
-    const T* end() const { return &element_ + 1; }
-    T* begin() { return &element_; }
-    T* end() { return &element_ + 1; }
-    size_t size() const { return 1; }
-  };
-
-  BOOST_CONCEPT_ASSERT((boost::RandomAccessRangeConcept<ListOfOneContainer<int> >));
-
-  /** Factory function for ListOfOneContainer to enable ListOfOne(e) syntax. */
-  template<typename T>
-  ListOfOneContainer<T> ListOfOne(const T& element) {
-    return ListOfOneContainer<T>(element);
-  }
-
-  /* ************************************************************************* */
+    /* ************************************************************************* */
 #ifdef __clang__
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wunused-private-field" // Clang complains that previousOpenMPThreads is unused in the #else case below
@@ -234,27 +210,27 @@ namespace gtsam {
 
 #if (_MSC_VER < 1800)
 
-#include <boost/math/special_functions/fpclassify.hpp>
+#include <cmath>
 namespace std {
   template<typename T> inline int isfinite(T a) {
-    return (int)boost::math::isfinite(a); }
+    return (int)std::isfinite(a); }
   template<typename T> inline int isnan(T a) {
-    return (int)boost::math::isnan(a); }
+    return (int)std::isnan(a); }
   template<typename T> inline int isinf(T a) {
-    return (int)boost::math::isinf(a); }
+    return (int)std::isinf(a); }
 }
 
 #endif
 
-#include <boost/math/constants/constants.hpp>
+#include <cmath>
 #ifndef M_PI
-#define M_PI (boost::math::constants::pi<double>())
+#define M_PI (3.14159265358979323846)
 #endif
 #ifndef M_PI_2
-#define M_PI_2 (boost::math::constants::pi<double>() / 2.0)
+#define M_PI_2 (M_PI / 2.0)
 #endif
 #ifndef M_PI_4
-#define M_PI_4 (boost::math::constants::pi<double>() / 4.0)
+#define M_PI_4 (M_PI / 4.0)
 #endif
 
 #endif

@@ -293,15 +293,11 @@ TEST(HessianFactor, CombineAndEliminate1) {
 
   // perform elimination on jacobian
   Ordering ordering {1};
-  GaussianConditional::shared_ptr expectedConditional;
-  JacobianFactor::shared_ptr expectedFactor;
-  boost::tie(expectedConditional, expectedFactor) = jacobian.eliminate(ordering);
+  const auto [expectedConditional, expectedFactor] = jacobian.eliminate(ordering);
   CHECK(expectedFactor);
 
   // Eliminate
-  GaussianConditional::shared_ptr actualConditional;
-  HessianFactor::shared_ptr actualHessian;
-  boost::tie(actualConditional, actualHessian) = //
+  const auto [actualConditional, actualHessian] = //
       EliminateCholesky(gfg, ordering);
   actualConditional->setModel(false,Vector3(1,1,1)); // add a unit model for comparison
 
@@ -356,15 +352,11 @@ TEST(HessianFactor, CombineAndEliminate2) {
 
   // perform elimination on jacobian
   Ordering ordering {0};
-  GaussianConditional::shared_ptr expectedConditional;
-  JacobianFactor::shared_ptr expectedFactor;
-  boost::tie(expectedConditional, expectedFactor) = //
+  const auto [expectedConditional, expectedFactor] =
       jacobian.eliminate(ordering);
 
   // Eliminate
-  GaussianConditional::shared_ptr actualConditional;
-  HessianFactor::shared_ptr actualHessian;
-  boost::tie(actualConditional, actualHessian) = //
+  const auto [actualConditional, actualHessian] = //
       EliminateCholesky(gfg, ordering);
   actualConditional->setModel(false,Vector3(1,1,1)); // add a unit model for comparison
 
@@ -498,7 +490,7 @@ TEST(HessianFactor, gradientAtZero)
 
   // test gradient at zero
   VectorValues expectedG{{0, -g1}, {1, -g2}};
-  Matrix A; Vector b; boost::tie(A,b) = factor.jacobian();
+  const auto [A, b] = factor.jacobian();
   KeyVector keys {0, 1};
   EXPECT(assert_equal(-A.transpose()*b, expectedG.vector(keys)));
   VectorValues actualG = factor.gradientAtZero();

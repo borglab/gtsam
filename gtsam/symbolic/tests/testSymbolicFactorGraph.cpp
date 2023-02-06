@@ -65,17 +65,13 @@ TEST(SymbolicFactorGraph, eliminatePartialSequential) {
   const auto expectedSfg = SymbolicFactorGraph(SymbolicFactor(2, 3))(
       SymbolicFactor(4, 5))(SymbolicFactor(2, 3, 4));
 
-  SymbolicBayesNet::shared_ptr actualBayesNet;
-  SymbolicFactorGraph::shared_ptr actualSfg;
-  boost::tie(actualBayesNet, actualSfg) =
+  const auto [actualBayesNet, actualSfg] =
       simpleTestGraph2.eliminatePartialSequential(Ordering{0, 1});
 
   EXPECT(assert_equal(expectedSfg, *actualSfg));
   EXPECT(assert_equal(expectedBayesNet, *actualBayesNet));
 
-  SymbolicBayesNet::shared_ptr actualBayesNet2;
-  SymbolicFactorGraph::shared_ptr actualSfg2;
-  boost::tie(actualBayesNet2, actualSfg2) =
+  const auto [actualBayesNet2, actualSfg2] =
       simpleTestGraph2.eliminatePartialSequential(Ordering{0, 1});
 
   EXPECT(assert_equal(expectedSfg, *actualSfg2));
@@ -84,8 +80,7 @@ TEST(SymbolicFactorGraph, eliminatePartialSequential) {
 
 /* ************************************************************************* */
 TEST(SymbolicFactorGraph, eliminateFullMultifrontal) {
-  Ordering ordering;
-  ordering += 0, 1, 2, 3;
+  Ordering ordering{0, 1, 2, 3};
   SymbolicBayesTree actual1 = *simpleChain.eliminateMultifrontal(ordering);
   EXPECT(assert_equal(simpleChainBayesTree, actual1));
 
@@ -106,9 +101,7 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal) {
       SymbolicFactorGraph(SymbolicFactor(0, 1))(SymbolicFactor(0, 2))(
           SymbolicFactor(1, 3))(SymbolicFactor(2, 3))(SymbolicFactor(1));
 
-  SymbolicBayesTree::shared_ptr actualBayesTree;
-  SymbolicFactorGraph::shared_ptr actualFactorGraph;
-  boost::tie(actualBayesTree, actualFactorGraph) =
+  const auto [actualBayesTree, actualFactorGraph] =
       simpleTestGraph2.eliminatePartialMultifrontal(Ordering{4, 5});
 
   EXPECT(assert_equal(expectedFactorGraph, *actualFactorGraph));
@@ -122,9 +115,7 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal) {
       std::make_shared<SymbolicConditional>(5, 4)));
   expectedBayesTree2.insertRoot(root2);
 
-  SymbolicBayesTree::shared_ptr actualBayesTree2;
-  SymbolicFactorGraph::shared_ptr actualFactorGraph2;
-  boost::tie(actualBayesTree2, actualFactorGraph2) =
+  const auto [actualBayesTree2, actualFactorGraph2] =
       simpleTestGraph2.eliminatePartialMultifrontal(KeyVector{4, 5});
 
   EXPECT(assert_equal(expectedFactorGraph, *actualFactorGraph2));
@@ -132,14 +123,87 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal) {
 }
 
 /* ************************************************************************* */
-TEST(SymbolicFactorGraph, marginalMultifrontalBayesNet) {
-  auto expectedBayesNet =
-      SymbolicBayesNet(SymbolicConditional(0, 1, 2))(SymbolicConditional(
-          1, 2, 3))(SymbolicConditional(2, 3))(SymbolicConditional(3));
-
-  SymbolicBayesNet actual1 =
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetOrdering) {
+  SymbolicBayesNet actual =
       *simpleTestGraph2.marginalMultifrontalBayesNet(Ordering{0, 1, 2, 3});
-  EXPECT(assert_equal(expectedBayesNet, actual1));
+  auto expectedBayesNet = SymbolicBayesNet({0, 1, 2})({1, 2, 3})({2, 3})({3});
+  EXPECT(assert_equal(expectedBayesNet, actual));
+}
+
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetKeyVector) {
+  SymbolicBayesNet actual =
+      *simpleTestGraph2.marginalMultifrontalBayesNet(KeyVector{0, 1, 2, 3});
+  // Since we use KeyVector, the variable ordering will be determined by COLAMD:
+  auto expectedBayesNet = SymbolicBayesNet({0, 1, 2})({2, 1, 3})({1, 3})({3});
+  EXPECT(assert_equal(expectedBayesNet, actual));
+}
+
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetOrderingPlus) {
+  const Ordering orderedVariables{0, 3},
+      marginalizedVariableOrdering{1, 2, 4, 5};
+  SymbolicBayesNet actual = *simpleTestGraph2.marginalMultifrontalBayesNet(
+      orderedVariables, marginalizedVariableOrdering);
+  auto expectedBayesNet = SymbolicBayesNet(SymbolicConditional{0, 3})({3});
+  EXPECT(assert_equal(expectedBayesNet, actual));
+}
+
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesNetKeyVectorPlus) {
+  const KeyVector variables{0, 1, 3};
+  const Ordering marginalizedVariableOrdering{2, 4, 5};
+  SymbolicBayesNet actual = *simpleTestGraph2.marginalMultifrontalBayesNet(
+      variables, marginalizedVariableOrdering);
+  // Since we use KeyVector, the variable ordering will be determined by COLAMD:
+  auto expectedBayesNet = SymbolicBayesNet({0, 1, 3})({3, 1})({1});
+  EXPECT(assert_equal(expectedBayesNet, actual));
+}
+
+/* ************************************************************************* */
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesTreeOrdering) {
+  auto expectedBayesTree =
+      *simpleTestGraph2.eliminatePartialMultifrontal(Ordering{4, 5})
+           .second->eliminateMultifrontal(Ordering{0, 1, 2, 3});
+
+  SymbolicBayesTree actual =
+      *simpleTestGraph2.marginalMultifrontalBayesTree(Ordering{0, 1, 2, 3});
+  EXPECT(assert_equal(expectedBayesTree, actual));
+}
+
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesTreeKeyVector) {
+  // Same: KeyVector variant will use COLAMD:
+  auto expectedBayesTree =
+      *simpleTestGraph2.eliminatePartialMultifrontal(Ordering{4, 5})
+           .second->eliminateMultifrontal(Ordering::OrderingType::COLAMD);
+
+  SymbolicBayesTree actual =
+      *simpleTestGraph2.marginalMultifrontalBayesTree(KeyVector{0, 1, 2, 3});
+  EXPECT(assert_equal(expectedBayesTree, actual));
+}
+
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesTreeOrderingPlus) {
+  const Ordering orderedVariables{0, 3},
+      marginalizedVariableOrdering{1, 2, 4, 5};
+  auto expectedBayesTree =
+      *simpleTestGraph2
+           .eliminatePartialMultifrontal(marginalizedVariableOrdering)
+           .second->eliminateMultifrontal(orderedVariables);
+
+  SymbolicBayesTree actual = *simpleTestGraph2.marginalMultifrontalBayesTree(
+      orderedVariables, marginalizedVariableOrdering);
+  EXPECT(assert_equal(expectedBayesTree, actual));
+}
+
+TEST(SymbolicFactorGraph, MarginalMultifrontalBayesTreeKeyVectorPlus) {
+  // Again: KeyVector variant will use COLAMD:
+  const Ordering marginalizedVariableOrdering{2, 4, 5};
+  auto expectedBayesTree =
+      *simpleTestGraph2
+           .eliminatePartialMultifrontal(marginalizedVariableOrdering)
+           .second->eliminateMultifrontal(Ordering::OrderingType::COLAMD);
+
+  const KeyVector variables{0, 1, 3};
+  SymbolicBayesTree actual = *simpleTestGraph2.marginalMultifrontalBayesTree(
+      variables, marginalizedVariableOrdering);
+  EXPECT(assert_equal(expectedBayesTree, actual));
 }
 
 /* ************************************************************************* */
@@ -152,14 +216,13 @@ TEST(SymbolicFactorGraph, eliminate_disconnected_graph) {
 
   // create expected Chordal bayes Net
   SymbolicBayesNet expected;
-  expected.push_back(std::make_shared<SymbolicConditional>(0, 1, 2));
-  expected.push_back(std::make_shared<SymbolicConditional>(1, 2));
-  expected.push_back(std::make_shared<SymbolicConditional>(2));
-  expected.push_back(std::make_shared<SymbolicConditional>(3, 4));
-  expected.push_back(std::make_shared<SymbolicConditional>(4));
+  expected.emplace_shared<SymbolicConditional>(0, 1, 2);
+  expected.emplace_shared<SymbolicConditional>(1, 2);
+  expected.emplace_shared<SymbolicConditional>(2);
+  expected.emplace_shared<SymbolicConditional>(3, 4);
+  expected.emplace_shared<SymbolicConditional>(4);
 
-  Ordering order;
-  order += 0, 1, 2, 3, 4;
+  const Ordering order{0, 1, 2, 3, 4};
   SymbolicBayesNet actual = *fg.eliminateSequential(order);
 
   EXPECT(assert_equal(expected, actual));
@@ -229,9 +292,9 @@ TEST(SymbolicFactorGraph, constructFromBayesNet) {
 
   // create Bayes Net
   SymbolicBayesNet bayesNet;
-  bayesNet += SymbolicConditional(0, 1, 2);
-  bayesNet += SymbolicConditional(1, 2);
-  bayesNet += SymbolicConditional(1);
+  bayesNet.emplace_shared<SymbolicConditional>(0, 1, 2);
+  bayesNet.emplace_shared<SymbolicConditional>(1, 2);
+  bayesNet.emplace_shared<SymbolicConditional>(1);
 
   // create actual factor graph from a Bayes Net
   SymbolicFactorGraph actual(bayesNet);
@@ -286,7 +349,7 @@ TEST(SymbolicFactorGraph, push_back) {
 TEST(SymbolicFactorGraph, add_factors) {
   SymbolicFactorGraph fg1;
   fg1.push_factor(10);
-  fg1 += SymbolicFactor::shared_ptr();  // empty slot!
+  fg1.push_back(SymbolicFactor::shared_ptr());  // empty slot!
   fg1.push_factor(11);
 
   SymbolicFactorGraph fg2;

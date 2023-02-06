@@ -52,7 +52,6 @@ using ConcurrentMapBase = gtsam::FastMap<KEY, VALUE>;
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/split_member.hpp>
 #endif
-#include <boost/static_assert.hpp>
 
 #include <gtsam/base/FastVector.h>
 

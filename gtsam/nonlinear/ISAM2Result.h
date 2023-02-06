@@ -27,8 +27,6 @@
 #include <gtsam/nonlinear/ISAM2Params.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-#include <boost/variant.hpp>
-
 namespace gtsam {
 
 /**

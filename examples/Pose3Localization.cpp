@@ -37,7 +37,7 @@ int main(const int argc, const char* argv[]) {
   NonlinearFactorGraph::shared_ptr graph;
   Values::shared_ptr initial;
   bool is3D = true;
-  boost::tie(graph, initial) = readG2o(g2oFile, is3D);
+  std::tie(graph, initial) = readG2o(g2oFile, is3D);
 
   // Add prior on the first key
   auto priorModel = noiseModel::Diagonal::Variances(
@@ -67,15 +67,15 @@ int main(const int argc, const char* argv[]) {
     std::cout << "Writing results to file: " << outputFile << std::endl;
     NonlinearFactorGraph::shared_ptr graphNoKernel;
     Values::shared_ptr initial2;
-    boost::tie(graphNoKernel, initial2) = readG2o(g2oFile);
+    std::tie(graphNoKernel, initial2) = readG2o(g2oFile);
     writeG2o(*graphNoKernel, result, outputFile);
     std::cout << "done! " << std::endl;
   }
 
   // Calculate and print marginal covariances for all variables
   Marginals marginals(*graph, result);
-  for (const auto& key_pose : result.extract<Pose3>()) {
-    std::cout << marginals.marginalCovariance(key_pose.first) << endl;
+  for (const auto& [key, pose] : result.extract<Pose3>()) {
+    std::cout << marginals.marginalCovariance(key) << endl;
   }
   return 0;
 }

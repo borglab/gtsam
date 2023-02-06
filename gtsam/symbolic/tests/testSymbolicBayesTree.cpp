@@ -22,17 +22,34 @@
 #include <gtsam/symbolic/SymbolicBayesTree.h>
 #include <gtsam/symbolic/tests/symbolicExampleGraphs.h>
 
-#include <boost/range/adaptor/indirected.hpp>
-using boost::adaptors::indirected;
-
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <iterator>
+#include <type_traits>
 
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
 static bool debug = false;
+
+// Given a vector of shared pointers infer the type of the pointed-to objects
+template<typename T>
+using PointedToType = std::decay_t<decltype(**declval<T>().begin())>;
+
+// Given a vector of shared pointers infer the type of the pointed-to objects
+template<typename T>
+using ValuesVector = std::vector<PointedToType<T>>;
+
+// Return a vector of dereferenced values
+template<typename T>
+ValuesVector<T> deref(const T& v) {
+  ValuesVector<T> result;
+  for (auto& t : v)
+    result.push_back(*t);
+  return result;
+}
+
 
 /* ************************************************************************* */
 TEST(SymbolicBayesTree, clear) {
@@ -111,8 +128,7 @@ TEST(BayesTree, removePath) {
   bayesTree.removePath(bayesTree[_C_], &bn, &orphans);
   SymbolicFactorGraph factors(bn);
   CHECK(assert_equal(expected, factors));
-  CHECK(assert_container_equal(expectedOrphans | indirected,
-                               orphans | indirected));
+  CHECK(assert_container_equal(deref(expectedOrphans), deref(orphans)));
 
   bayesTree = bayesTreeOrig;
 
@@ -127,8 +143,7 @@ TEST(BayesTree, removePath) {
   bayesTree.removePath(bayesTree[_E_], &bn2, &orphans2);
   SymbolicFactorGraph factors2(bn2);
   CHECK(assert_equal(expected2, factors2));
-  CHECK(assert_container_equal(expectedOrphans2 | indirected,
-                               orphans2 | indirected));
+  CHECK(assert_container_equal(deref(expectedOrphans2), deref(orphans2)));
 }
 
 /* ************************************************************************* */
@@ -147,8 +162,7 @@ TEST(BayesTree, removePath2) {
   CHECK(assert_equal(expected, factors));
   SymbolicBayesTree::Cliques expectedOrphans{bayesTree[_S_], bayesTree[_T_],
                                              bayesTree[_X_]};
-  CHECK(assert_container_equal(expectedOrphans | indirected,
-                               orphans | indirected));
+  CHECK(assert_container_equal(deref(expectedOrphans), deref(orphans)));
 }
 
 /* ************************************************************************* */
@@ -167,8 +181,7 @@ TEST(BayesTree, removePath3) {
   expected.emplace_shared<SymbolicFactor>(_T_, _E_, _L_);
   CHECK(assert_equal(expected, factors));
   SymbolicBayesTree::Cliques expectedOrphans{bayesTree[_S_], bayesTree[_X_]};
-  CHECK(assert_container_equal(expectedOrphans | indirected,
-                               orphans | indirected));
+  CHECK(assert_container_equal(deref(expectedOrphans), deref(orphans)));
 }
 
 void getAllCliques(const SymbolicBayesTree::sharedClique& subtree,
@@ -244,13 +257,12 @@ TEST(BayesTree, removeTop) {
 
   // Check expected outcome
   SymbolicBayesNet expected;
-  expected += SymbolicConditional::FromKeys<KeyVector>(Keys(_E_)(_L_)(_B_), 3);
-  expected += SymbolicConditional::FromKeys<KeyVector>(Keys(_S_)(_B_)(_L_), 1);
+  expected.add(SymbolicConditional::FromKeys<KeyVector>(Keys(_E_)(_L_)(_B_), 3));
+  expected.add(SymbolicConditional::FromKeys<KeyVector>(Keys(_S_)(_B_)(_L_), 1));
   CHECK(assert_equal(expected, bn));
 
   SymbolicBayesTree::Cliques expectedOrphans{bayesTree[_T_], bayesTree[_X_]};
-  CHECK(assert_container_equal(expectedOrphans | indirected,
-                               orphans | indirected));
+  CHECK(assert_container_equal(deref(expectedOrphans), deref(orphans)));
 
   // Try removeTop again with a factor that should not change a thing
   // std::shared_ptr<IndexFactor> newFactor2(new IndexFactor(_B_));
@@ -261,8 +273,7 @@ TEST(BayesTree, removeTop) {
   SymbolicFactorGraph expected2;
   CHECK(assert_equal(expected2, factors2));
   SymbolicBayesTree::Cliques expectedOrphans2;
-  CHECK(assert_container_equal(expectedOrphans2 | indirected,
-                               orphans2 | indirected));
+  CHECK(assert_container_equal(deref(expectedOrphans2), deref(orphans2)));
 }
 
 /* ************************************************************************* */
@@ -286,8 +297,7 @@ TEST(BayesTree, removeTop2) {
   CHECK(assert_equal(expected, bn));
 
   SymbolicBayesTree::Cliques expectedOrphans{bayesTree[_S_], bayesTree[_X_]};
-  CHECK(assert_container_equal(expectedOrphans | indirected,
-                               orphans | indirected));
+  CHECK(assert_container_equal(deref(expectedOrphans), deref(orphans)));
 }
 
 /* ************************************************************************* */

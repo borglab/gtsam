@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include <boost/version.hpp>
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/version.hpp>
 #if BOOST_VERSION >= 107400
 #include <boost/serialization/library_version_type.hpp>
 #endif
@@ -51,7 +51,7 @@ template<typename VALUE>
 class FastSet: public std::set<VALUE, std::less<VALUE>,
     typename internal::FastDefaultAllocator<VALUE>::type> {
 
-  BOOST_CONCEPT_ASSERT ((IsTestable<VALUE> ));
+  GTSAM_CONCEPT_ASSERT(IsTestable<VALUE>);
 
 public:
 

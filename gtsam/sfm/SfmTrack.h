@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <gtsam/base/serialization.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 

@@ -19,18 +19,23 @@
 #include <gtsam/slam/lago.h>
 
 #include <gtsam/slam/InitializePose.h>
-#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/base/timing.h>
+#include <gtsam/base/kruskal.h>
 
-#include <boost/math/special_functions.hpp>
+#include <iostream>
+#include <stack>
+#include <cmath>
 
 using namespace std;
 
 namespace gtsam {
 namespace lago {
+
+using initialize::kAnchorKey;
 
 static const Matrix I = I_1x1;
 static const Matrix I3 = I_3x3;
@@ -49,7 +54,7 @@ static const noiseModel::Diagonal::shared_ptr priorPose2Noise =
  * The root is assumed to have orientation zero.
  */
 static double computeThetaToRoot(const Key nodeKey,
-    const PredecessorMap<Key>& tree, const key2doubleMap& deltaThetaMap,
+    const PredecessorMap& tree, const key2doubleMap& deltaThetaMap,
     const key2doubleMap& thetaFromRootMap) {
 
   double nodeTheta = 0;
@@ -75,20 +80,19 @@ static double computeThetaToRoot(const Key nodeKey,
 
 /* ************************************************************************* */
 key2doubleMap computeThetasToRoot(const key2doubleMap& deltaThetaMap,
-    const PredecessorMap<Key>& tree) {
+    const PredecessorMap& tree) {
 
   key2doubleMap thetaToRootMap;
 
-  // Orientation of the roo
-  thetaToRootMap.insert(pair<Key, double>(initialize::kAnchorKey, 0.0));
+  // Orientation of the root
+  thetaToRootMap.emplace(kAnchorKey, 0.0);
 
   // for all nodes in the tree
-  for(const key2doubleMap::value_type& it: deltaThetaMap) {
+  for(const auto& [nodeKey, _]: deltaThetaMap) {
     // compute the orientation wrt root
-    Key nodeKey = it.first;
-    double nodeTheta = computeThetaToRoot(nodeKey, tree, deltaThetaMap,
+    const double nodeTheta = computeThetaToRoot(nodeKey, tree, deltaThetaMap,
         thetaToRootMap);
-    thetaToRootMap.insert(pair<Key, double>(nodeKey, nodeTheta));
+    thetaToRootMap.emplace(nodeKey, nodeTheta);
   }
   return thetaToRootMap;
 }
@@ -97,7 +101,7 @@ key2doubleMap computeThetasToRoot(const key2doubleMap& deltaThetaMap,
 void getSymbolicGraph(
 /*OUTPUTS*/vector<size_t>& spanningTreeIds, vector<size_t>& chordsIds,
     key2doubleMap& deltaThetaMap,
-    /*INPUTS*/const PredecessorMap<Key>& tree, const NonlinearFactorGraph& g) {
+    /*INPUTS*/const PredecessorMap& tree, const NonlinearFactorGraph& g) {
 
   // Get keys for which you want the orientation
   size_t id = 0;
@@ -161,7 +165,7 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
 GaussianFactorGraph buildLinearOrientationGraph(
     const vector<size_t>& spanningTreeIds, const vector<size_t>& chordsIds,
     const NonlinearFactorGraph& g, const key2doubleMap& orientationsToRoot,
-    const PredecessorMap<Key>& tree) {
+    const PredecessorMap& tree) {
 
   GaussianFactorGraph lagoGraph;
   Vector deltaTheta;
@@ -174,7 +178,7 @@ GaussianFactorGraph buildLinearOrientationGraph(
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
     lagoGraph.add(key1, -I, key2, I, deltaTheta, model_deltaTheta);
   }
-  // put regularized measurements in the chordsIds
+  // put regularized measurements in the chords
   for(const size_t& factorId: chordsIds) {
     const KeyVector& keys = g[factorId]->keys();
     Key key1 = keys[0], key2 = keys[1];
@@ -183,23 +187,23 @@ GaussianFactorGraph buildLinearOrientationGraph(
     ///cout << "REG: key1= " << DefaultKeyFormatter(key1) << " key2= " << DefaultKeyFormatter(key2) << endl;
     double k2pi_noise = key1_DeltaTheta_key2 + orientationsToRoot.at(key1)
         - orientationsToRoot.at(key2); // this coincides to summing up measurements along the cycle induced by the chord
-    double k = boost::math::round(k2pi_noise / (2 * M_PI));
+    double k = std::round(k2pi_noise / (2 * M_PI));
     //if (k2pi_noise - 2*k*M_PI > 1e-5) cout << k2pi_noise - 2*k*M_PI << endl; // for debug
     Vector deltaThetaRegularized = (Vector(1)
         << key1_DeltaTheta_key2 - 2 * k * M_PI).finished();
     lagoGraph.add(key1, -I, key2, I, deltaThetaRegularized, model_deltaTheta);
   }
   // prior on the anchor orientation
-  lagoGraph.add(initialize::kAnchorKey, I, (Vector(1) << 0.0).finished(), priorOrientationNoise);
+  lagoGraph.add(kAnchorKey, I, (Vector(1) << 0.0).finished(), priorOrientationNoise);
   return lagoGraph;
 }
 
 /* ************************************************************************* */
-static PredecessorMap<Key> findOdometricPath(
+static PredecessorMap findOdometricPath(
     const NonlinearFactorGraph& pose2Graph) {
 
-  PredecessorMap<Key> tree;
-  Key minKey = initialize::kAnchorKey; // this initialization does not matter
+  PredecessorMap tree;
+  Key minKey = kAnchorKey; // this initialization does not matter
   bool minUnassigned = true;
 
   for(const std::shared_ptr<NonlinearFactor>& factor: pose2Graph) {
@@ -211,42 +215,77 @@ static PredecessorMap<Key> findOdometricPath(
       minUnassigned = false;
     }
     if (key2 - key1 == 1) { // consecutive keys
-      tree.insert(key2, key1);
+      tree.emplace(key2, key1);
       if (key1 < minKey)
         minKey = key1;
     }
   }
-  tree.insert(minKey, initialize::kAnchorKey);
-  tree.insert(initialize::kAnchorKey, initialize::kAnchorKey); // root
+  tree.emplace(minKey, kAnchorKey);
+  tree.emplace(kAnchorKey, kAnchorKey); // root
   return tree;
+}
+
+/*****************************************************************************/
+PredecessorMap findMinimumSpanningTree(
+    const NonlinearFactorGraph& pose2Graph) {
+  // Compute the minimum spanning tree
+  const auto edgeWeights = std::vector<double>(pose2Graph.size(), 1.0);
+  const auto mstEdgeIndices =
+      utils::kruskal(pose2Graph, edgeWeights);
+
+  // Create a PredecessorMap 'predecessorMap' such that:
+  // predecessorMap[key2] = key1, where key1 is the 'parent' node for key2 in
+  // the spanning tree
+  PredecessorMap predecessorMap;
+  std::map<Key, bool> visitationMap;
+  std::stack<std::pair<Key, Key>> stack;
+
+  stack.push({kAnchorKey, kAnchorKey});
+  while (!stack.empty()) {
+    auto [u, parent] = stack.top();
+    stack.pop();
+    if (visitationMap[u]) continue;
+    visitationMap[u] = true;
+    predecessorMap[u] = parent;
+    for (const auto& edgeIdx : mstEdgeIndices) {
+      const auto v = pose2Graph[edgeIdx]->front();
+      const auto w = pose2Graph[edgeIdx]->back();
+      if ((v == u || w == u) && !visitationMap[v == u ? w : v]) {
+        stack.push({v == u ? w : v, u});
+      }
+    }
+  }
+
+  return predecessorMap;
 }
 
 /* ************************************************************************* */
 // Return the orientations of a graph including only BetweenFactors<Pose2>
 static VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph,
-    bool useOdometricPath) {
+                                        bool useOdometricPath) {
   gttic(lago_computeOrientations);
 
+  PredecessorMap tree;
   // Find a minimum spanning tree
-  PredecessorMap<Key> tree;
   if (useOdometricPath)
     tree = findOdometricPath(pose2Graph);
   else
-    tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
-        BetweenFactor<Pose2> >(pose2Graph);
+    tree = findMinimumSpanningTree(pose2Graph);
 
   // Create a linear factor graph (LFG) of scalars
   key2doubleMap deltaThetaMap;
-  vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
-  vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
+  vector<size_t>
+      spanningTreeIds;  // ids of between factors forming the spanning tree T
+  vector<size_t>
+      chordsIds;  // ids of between factors corresponding to chordsIds wrt T
   getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, pose2Graph);
 
   // temporary structure to correct wraparounds along loops
   key2doubleMap orientationsToRoot = computeThetasToRoot(deltaThetaMap, tree);
 
   // regularize measurements and plug everything in a factor graph
-  GaussianFactorGraph lagoGraph = buildLinearOrientationGraph(spanningTreeIds,
-      chordsIds, pose2Graph, orientationsToRoot, tree);
+  GaussianFactorGraph lagoGraph = buildLinearOrientationGraph(
+      spanningTreeIds, chordsIds, pose2Graph, orientationsToRoot, tree);
 
   // Solve the LFG
   VectorValues orientationsLago = lagoGraph.optimize();
@@ -256,8 +295,7 @@ static VectorValues computeOrientations(const NonlinearFactorGraph& pose2Graph,
 
 /* ************************************************************************* */
 VectorValues initializeOrientations(const NonlinearFactorGraph& graph,
-    bool useOdometricPath) {
-
+                                    bool useOdometricPath) {
   // We "extract" the Pose2 subgraph of the original graph: this
   // is done to properly model priors and avoiding operating on a larger graph
   NonlinearFactorGraph pose2Graph = initialize::buildPoseGraph<Pose2>(graph);
@@ -314,8 +352,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
     }
   }
   // add prior
-  linearPose2graph.add(initialize::kAnchorKey, I3, Vector3(0.0, 0.0, 0.0),
-      priorPose2Noise);
+  linearPose2graph.add(kAnchorKey, I3, Vector3(0.0, 0.0, 0.0), priorPose2Noise);
 
   // optimize
   VectorValues posesLago = linearPose2graph.optimize();
@@ -324,7 +361,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
   Values initialGuessLago;
   for(const VectorValues::value_type& it: posesLago) {
     Key key = it.first;
-    if (key != initialize::kAnchorKey) {
+    if (key != kAnchorKey) {
       const Vector& poseVector = it.second;
       Pose2 poseLago = Pose2(poseVector(0), poseVector(1),
           orientationsLago.at(key)(0) + poseVector(2));
@@ -361,7 +398,7 @@ Values initialize(const NonlinearFactorGraph& graph,
   // for all nodes in the tree
   for(const VectorValues::value_type& it: orientations) {
     Key key = it.first;
-    if (key != initialize::kAnchorKey) {
+    if (key != kAnchorKey) {
       const Pose2& pose = initialGuess.at<Pose2>(key);
       const Vector& orientation = it.second;
       Pose2 poseLago = Pose2(pose.x(), pose.y(), orientation(0));

@@ -19,7 +19,6 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/CalibratedCamera.h>
-#include <boost/lexical_cast.hpp>
 
 namespace gtsam {
 
@@ -86,7 +85,7 @@ public:
     if (model && model->dim() != traits<Measurement>::dimension)
       throw std::invalid_argument(
           "TriangulationFactor must be created with "
-              + boost::lexical_cast<std::string>((int) traits<Measurement>::dimension)
+              + std::to_string((int) traits<Measurement>::dimension)
               + "-dimensional noise model.");
   }
 

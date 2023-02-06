@@ -274,16 +274,16 @@ inline GaussianFactorGraph createGaussianFactorGraph() {
   GaussianFactorGraph fg;
 
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-  fg += JacobianFactor(X(1), 10*I_2x2, -1.0*Vector::Ones(2));
+  fg.emplace_shared<JacobianFactor>(X(1), 10*I_2x2, -1.0*Vector::Ones(2));
 
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg += JacobianFactor(X(1), -10*I_2x2, X(2), 10*I_2x2, Vector2(2.0, -1.0));
+  fg.emplace_shared<JacobianFactor>(X(1), -10*I_2x2, X(2), 10*I_2x2, Vector2(2.0, -1.0));
 
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg += JacobianFactor(X(1), -5*I_2x2, L(1), 5*I_2x2, Vector2(0.0, 1.0));
+  fg.emplace_shared<JacobianFactor>(X(1), -5*I_2x2, L(1), 5*I_2x2, Vector2(0.0, 1.0));
 
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
-  fg += JacobianFactor(X(2), -5*I_2x2, L(1), 5*I_2x2, Vector2(-1.0, 1.5));
+  fg.emplace_shared<JacobianFactor>(X(2), -5*I_2x2, L(1), 5*I_2x2, Vector2(-1.0, 1.5));
 
   return fg;
 }
@@ -463,10 +463,7 @@ inline std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T) {
 
 /* ************************************************************************* */
 inline GaussianFactorGraph createSmoother(int T) {
-  NonlinearFactorGraph nlfg;
-  Values poses;
-  std::tie(nlfg, poses) = createNonlinearSmoother(T);
-
+  const auto [nlfg, poses] = createNonlinearSmoother(T);
   return *nlfg.linearize(poses);
 }
 

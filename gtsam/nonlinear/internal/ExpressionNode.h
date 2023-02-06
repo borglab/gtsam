@@ -38,7 +38,7 @@ T & upAlign(T & value, unsigned requiredAlignment = TraceAlignment) {
   // right now only word sized types are supported.
   // Easy to extend if needed,
   //   by somehow inferring the unsigned integer of same size
-  BOOST_STATIC_ASSERT(sizeof(T) == sizeof(size_t));
+  static_assert(sizeof(T) == sizeof(size_t));
   size_t & uiValue = reinterpret_cast<size_t &>(value);
   size_t misAlignment = uiValue % requiredAlignment;
   if (misAlignment) {
@@ -559,7 +559,7 @@ public:
 template <class T>
 class ScalarMultiplyNode : public ExpressionNode<T> {
   // Check that T is a vector space
-  BOOST_CONCEPT_ASSERT((gtsam::IsVectorSpace<T>));
+  GTSAM_CONCEPT_ASSERT(gtsam::IsVectorSpace<T>);
 
   double scalar_;
   std::shared_ptr<ExpressionNode<T> > expression_;

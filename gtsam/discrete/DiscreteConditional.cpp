@@ -266,7 +266,7 @@ void DiscreteConditional::sampleInPlace(DiscreteValues* values) const {
 size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
   static mt19937 rng(2);  // random number generator
 
-  // Get the correct conditional density
+  // Get the correct conditional distribution
   ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
 
   // TODO(Duy): only works for one key now, seems horribly slow this way

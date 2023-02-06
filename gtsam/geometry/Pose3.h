@@ -364,7 +364,7 @@ public:
    * @return a pair of [start, end] indices into the tangent space vector
    */
   inline static std::pair<size_t, size_t> translationInterval() {
-    return std::make_pair(3, 5);
+    return {3, 5};
   }
 
   /**
@@ -373,7 +373,7 @@ public:
    * @return a pair of [start, end] indices into the tangent space vector
    */
   static std::pair<size_t, size_t> rotationInterval() {
-    return std::make_pair(0, 2);
+    return {0, 2};
   }
 
     /**

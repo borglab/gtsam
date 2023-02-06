@@ -21,7 +21,6 @@
 #include <iostream>
 using namespace std;
 
-#include <boost/tuple/tuple.hpp>
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/JacobianFactor.h>
@@ -106,7 +105,7 @@ int main()
   JacobianFactor::shared_ptr factor;
 
   for(int i = 0; i < n; i++)
-    boost::tie(conditional, factor) =
+    std::tie(conditional, factor) =
         JacobianFactor(combined).eliminate(Ordering{_x2_});
 
   long timeLog2 = clock();
@@ -116,8 +115,7 @@ int main()
   cout << ((double)n/seconds) << " calls/second" << endl;
 
   // time matrix_augmented
-//  Ordering ordering;
-//  ordering += _x2_, _l1_, _x1_;
+//  const Ordering ordering{_x2_, _l1_, _x1_};
 //  size_t n1 = 10000000;
 //  timeLog = clock();
 //

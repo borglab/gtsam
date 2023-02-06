@@ -107,11 +107,8 @@ TEST(DiscreteFactorGraph, test) {
   graph.add(C & B, "3 1 1 3");
 
   // Test EliminateDiscrete
-  Ordering frontalKeys;
-  frontalKeys += Key(0);
-  DiscreteConditional::shared_ptr conditional;
-  DecisionTreeFactor::shared_ptr newFactor;
-  boost::tie(conditional, newFactor) = EliminateDiscrete(graph, frontalKeys);
+  const Ordering frontalKeys{0};
+  const auto [conditional, newFactor] = EliminateDiscrete(graph, frontalKeys);
 
   // Check Conditional
   CHECK(conditional);
@@ -125,12 +122,9 @@ TEST(DiscreteFactorGraph, test) {
   EXPECT(assert_equal(expectedFactor, *newFactor));
 
   // Test using elimination tree
-  Ordering ordering;
-  ordering += Key(0), Key(1), Key(2);
+  const Ordering ordering{0, 1, 2};
   DiscreteEliminationTree etree(graph, ordering);
-  DiscreteBayesNet::shared_ptr actual;
-  DiscreteFactorGraph::shared_ptr remainingGraph;
-  boost::tie(actual, remainingGraph) = etree.eliminate(&EliminateDiscrete);
+  const auto [actual, remainingGraph] = etree.eliminate(&EliminateDiscrete);
 
   // Check Bayes net
   DiscreteBayesNet expectedBayesNet;
@@ -235,8 +229,7 @@ TEST(DiscreteFactorGraph, testMPE_Darwiche09book_p244) {
   EXPECT(assert_equal(mpe, actualMPE));
 
   // Check Bayes Net
-  Ordering ordering;
-  ordering += Key(0), Key(1), Key(2), Key(3), Key(4);
+  const Ordering ordering{0, 1, 2, 3, 4};
   auto chordal = graph.eliminateSequential(ordering);
   EXPECT_LONGS_EQUAL(5, chordal->size());
 

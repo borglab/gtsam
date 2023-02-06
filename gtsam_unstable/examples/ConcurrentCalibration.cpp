@@ -32,7 +32,6 @@
 #include <string>
 #include <fstream>
 #include <iostream>
-#include <boost/lexical_cast.hpp>
 
 using namespace std;
 using namespace gtsam;

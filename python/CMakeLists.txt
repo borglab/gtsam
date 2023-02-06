@@ -64,6 +64,7 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/geometry/geometry.i
     ${PROJECT_SOURCE_DIR}/gtsam/linear/linear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
+    ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/values.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/custom.i
     ${PROJECT_SOURCE_DIR}/gtsam/symbolic/symbolic.i
     ${PROJECT_SOURCE_DIR}/gtsam/sam/sam.i

@@ -30,7 +30,6 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind/bind.hpp>
 #include <list>
 
 #include "imuFactorTesting.h"

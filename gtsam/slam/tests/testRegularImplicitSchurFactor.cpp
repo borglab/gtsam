@@ -27,8 +27,6 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/range/iterator_range.hpp>
-#include <boost/range/adaptor/map.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;

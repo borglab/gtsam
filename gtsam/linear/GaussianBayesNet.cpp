@@ -20,8 +20,8 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
-#include <boost/range/adaptor/reversed.hpp>
 #include <fstream>
+#include <iterator>
 
 using namespace std;
 using namespace gtsam;
@@ -50,11 +50,11 @@ namespace gtsam {
     VectorValues solution = given;
     // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
     // solve each node in reverse topological sort order (parents first)
-    for (auto cg : boost::adaptors::reverse(*this)) {
+    for (auto it = std::make_reverse_iterator(end()); it != std::make_reverse_iterator(begin()); ++it) {
       // i^th part of R*x=y, x=inv(R)*y
       // (Rii*xi + R_i*x(i+1:))./si = yi =>
       // xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
-      solution.insert(cg->solve(solution));
+      solution.insert((*it)->solve(solution));
     }
     return solution;
   }
@@ -69,8 +69,8 @@ namespace gtsam {
                                         std::mt19937_64* rng) const {
     VectorValues result(given);
     // sample each node in reverse topological sort order (parents first)
-    for (auto cg : boost::adaptors::reverse(*this)) {
-      const VectorValues sampled = cg->sample(result, rng);
+    for (auto it = std::make_reverse_iterator(end()); it != std::make_reverse_iterator(begin()); ++it) {
+      const VectorValues sampled = (*it)->sample(result, rng);
       result.insert(sampled);
     }
     return result;
@@ -131,8 +131,8 @@ namespace gtsam {
     VectorValues result;
     // TODO this looks pretty sketchy. result is passed as the parents argument
     //  as it's filled up by solving the gaussian conditionals.
-    for (auto cg: boost::adaptors::reverse(*this)) {
-      result.insert(cg->solveOtherRHS(result, rhs));
+    for (auto it = std::make_reverse_iterator(end()); it != std::make_reverse_iterator(begin()); ++it) {
+      result.insert((*it)->solveOtherRHS(result, rhs));
     }
     return result;
   }
