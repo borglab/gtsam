@@ -25,7 +25,10 @@
 #include <gtsam/inference/MetisIndex.h>
 #include <gtsam/base/FastSet.h>
 
+#ifdef GTSAM_USE_BOOST_FEATURES
 #include <boost/assign/list_inserter.hpp>
+#endif
+
 #include <algorithm>
 #include <vector>
 
