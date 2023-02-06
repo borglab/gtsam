@@ -78,8 +78,7 @@ TEST(GaussianFactorGraph, eliminateOne_x1) {
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_x2) {
-  Ordering ordering;
-  ordering += X(2), L(1), X(1);
+  const Ordering ordering{X(2), L(1), X(1)};
   GaussianFactorGraph fg = createGaussianFactorGraph();
   auto actual = EliminateQR(fg, Ordering{X(2)}).first;
 
@@ -94,8 +93,7 @@ TEST(GaussianFactorGraph, eliminateOne_x2) {
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_l1) {
-  Ordering ordering;
-  ordering += L(1), X(1), X(2);
+  const Ordering ordering{L(1), X(1), X(2)};
   GaussianFactorGraph fg = createGaussianFactorGraph();
   auto actual = EliminateQR(fg, Ordering{L(1)}).first;
 
@@ -282,8 +280,7 @@ TEST(GaussianFactorGraph, elimination) {
   fg.emplace_shared<JacobianFactor>(X(2), Ap, b, sigma);
 
   // Eliminate
-  Ordering ordering;
-  ordering += X(1), X(2);
+  const Ordering ordering{X(1), X(2)};
   GaussianBayesNet bayesNet = *fg.eliminateSequential();
 
   // Check matrix
@@ -348,7 +345,6 @@ static SharedDiagonal model = noiseModel::Isotropic::Sigma(2,1);
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, replace)
 {
-  Ordering ord; ord += X(1),X(2),X(3),X(4),X(5),X(6);
   SharedDiagonal noise(noiseModel::Isotropic::Sigma(3, 1.0));
 
   GaussianFactorGraph::sharedFactor f1(new JacobianFactor(

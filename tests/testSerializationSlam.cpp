@@ -217,7 +217,7 @@ BOOST_CLASS_EXPORT_GUID(GenericStereoFactor3D, "gtsam::GenericStereoFactor3D")
 TEST (testSerializationSLAM, smallExample_linear) {
   using namespace example;
 
-  Ordering ordering; ordering += X(1),X(2),L(1);
+  const Ordering ordering{X(1), X(2), L(1)};
   EXPECT(equalsObj(ordering));
   EXPECT(equalsXML(ordering));
   EXPECT(equalsBinary(ordering));

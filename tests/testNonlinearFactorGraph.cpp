@@ -78,13 +78,13 @@ TEST( NonlinearFactorGraph, keys )
 /* ************************************************************************* */
 TEST( NonlinearFactorGraph, GET_ORDERING)
 {
-  Ordering expected; expected += L(1), X(2), X(1); // For starting with l1,x1,x2
+  const Ordering expected{L(1), X(2), X(1)};  // For starting with l1,x1,x2
   NonlinearFactorGraph nlfg = createNonlinearFactorGraph();
   Ordering actual = Ordering::Colamd(nlfg);
   EXPECT(assert_equal(expected,actual));
 
   // Constrained ordering - put x2 at the end
-  Ordering expectedConstrained; expectedConstrained += L(1), X(1), X(2);
+  const Ordering expectedConstrained{L(1), X(1), X(2)};
   FastMap<Key, int> constraints;
   constraints[X(2)] = 1;
   Ordering actualConstrained = Ordering::ColamdConstrained(nlfg, constraints);
@@ -198,8 +198,7 @@ TEST(NonlinearFactorGraph, UpdateCholesky) {
   EXPECT(assert_equal(expected, fg.updateCholesky(initial)));
 
   // solve with Ordering
-  Ordering ordering;
-  ordering += L(1), X(2), X(1);
+  const Ordering ordering{L(1), X(2), X(1)};
   EXPECT(assert_equal(expected, fg.updateCholesky(initial, ordering)));
 
   // solve with new method, heavily damped
@@ -251,8 +250,7 @@ TEST(testNonlinearFactorGraph, eliminate) {
   auto linearized = graph.linearize(values);
 
   // Eliminate
-  Ordering ordering;
-  ordering += 11, 21, 12, 22;
+  const Ordering ordering{11, 21, 12, 22};
   auto bn = linearized->eliminateSequential(ordering);
   EXPECT_LONGS_EQUAL(4, bn->size());
 }

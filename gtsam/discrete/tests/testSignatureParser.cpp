@@ -91,7 +91,7 @@ TEST(SimpleParser, GibberishInMiddle) {
 
 // A test with slash in the end
 TEST(SimpleParser, SlashInEnd) {
-  const auto table = SignatureParser::parse("1/1 2/");
+  const auto table = SignatureParser::Parse("1/1 2/");
   EXPECT(!table);
 }
 

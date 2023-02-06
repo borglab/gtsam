@@ -114,8 +114,7 @@ TEST(GaussianBayesTree, balanced_smoother_marginals) {
   GaussianFactorGraph smoother = createSmoother(7);
 
   // Create the Bayes tree
-  Ordering ordering;
-  ordering += X(1), X(3), X(5), X(7), X(2), X(6), X(4);
+  const Ordering ordering{X(1), X(3), X(5), X(7), X(2), X(6), X(4)};
   GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal(ordering);
 
   VectorValues actualSolution = bayesTree.optimize();
@@ -162,8 +161,7 @@ TEST( GaussianBayesTree, balanced_smoother_shortcuts )
   GaussianFactorGraph smoother = createSmoother(7);
 
   // Create the Bayes tree
-  Ordering ordering;
-  ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
+  const Ordering ordering{X(1), X(3), X(5), X(7), X(2), X(6), X(4)};
   GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal(ordering);
 
   // Check the conditional P(Root|Root)
@@ -194,8 +192,7 @@ TEST( GaussianBayesTree, balanced_smoother_shortcuts )
 //TEST( BayesTree, balanced_smoother_clique_marginals )
 //{
 //  // Create smoother with 7 nodes
-//  Ordering ordering;
-//  ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
+//  const Ordering ordering{X(1),X(3),X(5),X(7),X(2),X(6),X(4)};
 //  GaussianFactorGraph smoother = createSmoother(7, ordering).first;
 //
 //  // Create the Bayes tree
@@ -223,8 +220,7 @@ TEST( GaussianBayesTree, balanced_smoother_shortcuts )
 TEST( GaussianBayesTree, balanced_smoother_joint )
 {
   // Create smoother with 7 nodes
-  Ordering ordering;
-  ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
+  const Ordering ordering{X(1), X(3), X(5), X(7), X(2), X(6), X(4)};
   GaussianFactorGraph smoother = createSmoother(7);
 
   // Create the Bayes tree, expected to look like:

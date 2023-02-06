@@ -33,7 +33,7 @@ using symbol_shorthand::L;
 TEST( ISAM, iSAM_smoother )
 {
   Ordering ordering;
-  for (int t = 1; t <= 7; t++) ordering += X(t);
+  for (int t = 1; t <= 7; t++) ordering.push_back(X(t));
 
   // Create smoother with 7 nodes
   GaussianFactorGraph smoother = createSmoother(7);

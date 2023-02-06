@@ -115,8 +115,7 @@ int main()
   cout << ((double)n/seconds) << " calls/second" << endl;
 
   // time matrix_augmented
-//  Ordering ordering;
-//  ordering += _x2_, _l1_, _x1_;
+//  const Ordering ordering{_x2_, _l1_, _x1_};
 //  size_t n1 = 10000000;
 //  timeLog = clock();
 //

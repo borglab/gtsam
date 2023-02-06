@@ -34,7 +34,7 @@ TEST ( NestedDissection, oneIsland )
   fg.addBearingRange(2, 1, Rot2(), 0., bearingRangeNoise);
   fg.addPoseConstraint(1, Pose2());
 
-  Ordering ordering; ordering += x1, x2, l1;
+  const Ordering ordering{x1, x2, l1};
 
   int numNodeStopPartition = 1e3;
   int minNodesPerMap = 1e3;
@@ -61,7 +61,7 @@ TEST ( NestedDissection, TwoIslands )
   fg.addOdometry(3, 5, Pose2(), odoNoise);
   fg.addPoseConstraint(1, Pose2());
   fg.addPoseConstraint(4, Pose2());
-  Ordering ordering; ordering += x1, x2, x3, x4, x5;
+  const Ordering ordering{x1, x2, x3, x4, x5};
 
   int numNodeStopPartition = 2;
   int minNodesPerMap = 1;
@@ -96,7 +96,7 @@ TEST ( NestedDissection, FourIslands )
   fg.addOdometry(3, 5, Pose2(), odoNoise);
   fg.addPoseConstraint(1, Pose2());
   fg.addPoseConstraint(4, Pose2());
-  Ordering ordering; ordering += x1, x2, x3, x4, x5;
+  const Ordering ordering{x1, x2, x3, x4, x5};
 
   int numNodeStopPartition = 2;
   int minNodesPerMap = 1;
@@ -144,7 +144,7 @@ TEST ( NestedDissection, weekLinks )
   fg.addPoseConstraint(1, Pose2());
   fg.addPoseConstraint(4, Pose2());
   fg.addPoseConstraint(5, Pose2());
-  Ordering ordering; ordering += x1, x2, x3, x4, x5, l6;
+  const Ordering ordering{x1, x2, x3, x4, x5, l6};
 
   int numNodeStopPartition = 2;
   int minNodesPerMap = 1;
@@ -206,7 +206,7 @@ TEST ( NestedDissection, manual_cuts )
   fg.addPrior(x0, Pose2(0.1, 0, 0), priorNoise);
 
   // generate ordering
-  Ordering ordering; ordering += x0, x1, x2, l1, l2, l3, l4, l5, l6;
+  const Ordering ordering{x0, x1, x2, l1, l2, l3, l4, l5, l6};
 
   // define cuts
   std::shared_ptr<Cuts> cuts(new Cuts());
@@ -301,9 +301,9 @@ TEST( NestedDissection, Graph3D) {
     graph.addMeasurement(3, j, cameras[3].project(points[j-1]).expmap(measurementZeroNoise->sample()), measurementNoise);
 
   // make an easy ordering
-  Ordering ordering; ordering += x0, x1, x2, x3;
+  const Ordering ordering{x0, x1, x2, x3};
   for (int j=1; j<=24; j++)
-    ordering += Symbol('l', j);
+    ordering.push_back(Symbol('l', j));
 
   // nested dissection
   const int numNodeStopPartition = 10;

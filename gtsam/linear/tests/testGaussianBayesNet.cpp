@@ -211,8 +211,7 @@ TEST(GaussianBayesNet, MonteCarloIntegration) {
 /* ************************************************************************* */
 TEST(GaussianBayesNet, ordering)
 {
-  Ordering expected;
-  expected += _x_, _y_;
+  const Ordering expected{_x_, _y_};
   const auto actual = noisyBayesNet.ordering();
   EXPECT(assert_equal(expected, actual));
 }

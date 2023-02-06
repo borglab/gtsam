@@ -66,15 +66,6 @@ public:
     return boost::assign::make_list_inserter(
         boost::assign_detail::call_push_back<This>(*this))(key);
   }
-#else
-  /** A simple inserter to insert one key at a time
-   * @param key The key to insert
-   * @return The ordering
-   */
-  This& operator+=(Key key) {
-    push_back(key);
-    return *this;
-  }
 #endif
 
   /**
