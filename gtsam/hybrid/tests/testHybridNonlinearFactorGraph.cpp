@@ -265,7 +265,7 @@ TEST(HybridFactorGraph, EliminationTree) {
 
   // Create ordering.
   Ordering ordering;
-  for (size_t k = 0; k < self.K; k++) ordering += X(k);
+  for (size_t k = 0; k < self.K; k++) ordering.push_back(X(k));
 
   // Create elimination tree.
   HybridEliminationTree etree(self.linearizedFactorGraph, ordering);
@@ -286,8 +286,7 @@ TEST(GaussianElimination, Eliminate_x0) {
   factors.push_back(self.linearizedFactorGraph[1]);
 
   // Eliminate x0
-  Ordering ordering;
-  ordering += X(0);
+  const Ordering ordering{X(0)};
 
   auto result = EliminateHybrid(factors, ordering);
   CHECK(result.first);
@@ -310,8 +309,7 @@ TEST(HybridsGaussianElimination, Eliminate_x1) {
   factors.push_back(self.linearizedFactorGraph[2]);  // involves m1
 
   // Eliminate x1
-  Ordering ordering;
-  ordering += X(1);
+  const Ordering ordering{X(1)};
 
   auto result = EliminateHybrid(factors, ordering);
   CHECK(result.first);
@@ -346,9 +344,7 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   auto factors = self.linearizedFactorGraph;
 
   // Eliminate x0
-  Ordering ordering;
-  ordering += X(0);
-  ordering += X(1);
+  const Ordering ordering{X(0), X(1)};
 
   const auto [hybridConditionalMixture, factorOnModes] =
       EliminateHybrid(factors, ordering);
@@ -379,7 +375,7 @@ TEST(HybridFactorGraph, Partial_Elimination) {
 
   // Create ordering of only continuous variables.
   Ordering ordering;
-  for (size_t k = 0; k < self.K; k++) ordering += X(k);
+  for (size_t k = 0; k < self.K; k++) ordering.push_back(X(k));
 
   // Eliminate partially i.e. only continuous part.
   const auto [hybridBayesNet, remainingFactorGraph] =
@@ -415,7 +411,7 @@ TEST(HybridFactorGraph, Full_Elimination) {
   {
     // Create ordering.
     Ordering ordering;
-    for (size_t k = 0; k < self.K; k++) ordering += X(k);
+    for (size_t k = 0; k < self.K; k++) ordering.push_back(X(k));
 
     // Eliminate partially.
     const auto [hybridBayesNet_partial, remainingFactorGraph_partial] =
@@ -430,15 +426,15 @@ TEST(HybridFactorGraph, Full_Elimination) {
     }
 
     ordering.clear();
-    for (size_t k = 0; k < self.K - 1; k++) ordering += M(k);
+    for (size_t k = 0; k < self.K - 1; k++) ordering.push_back(M(k));
     discreteBayesNet =
         *discrete_fg.eliminateSequential(ordering, EliminateDiscrete);
   }
 
   // Create ordering.
   Ordering ordering;
-  for (size_t k = 0; k < self.K; k++) ordering += X(k);
-  for (size_t k = 0; k < self.K - 1; k++) ordering += M(k);
+  for (size_t k = 0; k < self.K; k++) ordering.push_back(X(k));
+  for (size_t k = 0; k < self.K - 1; k++) ordering.push_back(M(k));
 
   // Eliminate partially.
   HybridBayesNet::shared_ptr hybridBayesNet =
@@ -479,7 +475,7 @@ TEST(HybridFactorGraph, Printing) {
 
   // Create ordering.
   Ordering ordering;
-  for (size_t k = 0; k < self.K; k++) ordering += X(k);
+  for (size_t k = 0; k < self.K; k++) ordering.push_back(X(k));
 
   // Eliminate partially.
   const auto [hybridBayesNet, remainingFactorGraph] =
@@ -705,11 +701,7 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   initialEstimate.insert(L(1), Point2(4.1, 1.8));
 
   // We want to eliminate variables not connected to DCFactors first.
-  Ordering ordering;
-  ordering += L(0);
-  ordering += L(1);
-  ordering += X(0);
-  ordering += X(1);
+  const Ordering ordering {L(0), L(1), X(0), X(1)};
 
   HybridGaussianFactorGraph linearized = *fg.linearize(initialEstimate);
 

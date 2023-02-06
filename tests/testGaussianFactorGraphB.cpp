@@ -78,8 +78,7 @@ TEST(GaussianFactorGraph, eliminateOne_x1) {
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_x2) {
-  Ordering ordering;
-  ordering += X(2), L(1), X(1);
+  const Ordering ordering{X(2), L(1), X(1)};
   GaussianFactorGraph fg = createGaussianFactorGraph();
   auto actual = EliminateQR(fg, Ordering{X(2)}).first;
 
@@ -94,8 +93,7 @@ TEST(GaussianFactorGraph, eliminateOne_x2) {
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_l1) {
-  Ordering ordering;
-  ordering += L(1), X(1), X(2);
+  const Ordering ordering{L(1), X(1), X(2)};
   GaussianFactorGraph fg = createGaussianFactorGraph();
   auto actual = EliminateQR(fg, Ordering{L(1)}).first;
 
@@ -282,8 +280,7 @@ TEST(GaussianFactorGraph, elimination) {
   fg.emplace_shared<JacobianFactor>(X(2), Ap, b, sigma);
 
   // Eliminate
-  Ordering ordering;
-  ordering += X(1), X(2);
+  const Ordering ordering{X(1), X(2)};
   GaussianBayesNet bayesNet = *fg.eliminateSequential();
 
   // Check matrix
@@ -348,7 +345,6 @@ static SharedDiagonal model = noiseModel::Isotropic::Sigma(2,1);
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, replace)
 {
-  Ordering ord; ord += X(1),X(2),X(3),X(4),X(5),X(6);
   SharedDiagonal noise(noiseModel::Isotropic::Sigma(3, 1.0));
 
   GaussianFactorGraph::sharedFactor f1(new JacobianFactor(
@@ -431,10 +427,10 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
           0.0,             1.,           0.0,
           -1.2246468e-16,           0.0,            -1),
           Point3(0.511832102, 8.42819594, 5.76841725)), priorModel);
-  factors += ProjectionFactor(Point2(333.648615, 98.61535), measModel, xC1, l32, K);
-  factors += ProjectionFactor(Point2(218.508, 83.8022039), measModel, xC1, l41, K);
-  factors += RangeFactor<Pose3,Point3>(xC1, l32, relElevation, elevationModel);
-  factors += RangeFactor<Pose3,Point3>(xC1, l41, relElevation, elevationModel);
+  factors.emplace_shared<ProjectionFactor>(Point2(333.648615, 98.61535), measModel, xC1, l32, K);
+  factors.emplace_shared<ProjectionFactor>(Point2(218.508, 83.8022039), measModel, xC1, l41, K);
+  factors.emplace_shared<RangeFactor<Pose3,Point3>>(xC1, l32, relElevation, elevationModel);
+  factors.emplace_shared<RangeFactor<Pose3,Point3>>(xC1, l41, relElevation, elevationModel);
 
   // Check that sigmas are correct (i.e., unit)
   GaussianFactorGraph lfg = *factors.linearize(initValues);

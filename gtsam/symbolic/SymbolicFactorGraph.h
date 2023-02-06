@@ -97,7 +97,7 @@ namespace gtsam {
 
     /// Construct from a single factor
     SymbolicFactorGraph(SymbolicFactor&& c) {
-        push_back(std::make_shared<SymbolicFactor>(c));
+        emplace_shared<SymbolicFactor>(c);
     }
 
     /**
@@ -107,7 +107,7 @@ namespace gtsam {
      *     SymbolicFactorGraph(SymbolicFactor(...))(SymbolicFactor(...));
      */
     SymbolicFactorGraph& operator()(SymbolicFactor&& c) {
-        push_back(std::make_shared<SymbolicFactor>(c));
+        emplace_shared<SymbolicFactor>(c);
         return *this;
     }
 

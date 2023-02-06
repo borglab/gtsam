@@ -29,7 +29,10 @@
 
 #include <Eigen/Core>  // for Eigen::aligned_allocator
 
+#ifdef GTSAM_USE_BOOST_FEATURES
 #include <boost/assign/list_inserter.hpp>
+#endif
+
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/vector.hpp>
@@ -212,6 +215,7 @@ class FactorGraph {
     push_back(factor);
   }
 
+#ifdef GTSAM_USE_BOOST_FEATURES
   /// `+=` works well with boost::assign list inserter.
   template <class DERIVEDFACTOR>
   typename std::enable_if<
@@ -221,6 +225,7 @@ class FactorGraph {
     return boost::assign::make_list_inserter(RefCallPushBack<This>(*this))(
         factor);
   }
+#endif
 
   /// @}
   /// @name Adding via iterators
@@ -271,6 +276,7 @@ class FactorGraph {
     push_back(factorOrContainer);
   }
 
+#ifdef GTSAM_USE_BOOST_FEATURES
   /**
    * Add a factor or container of factors, including STL collections,
    * BayesTrees, etc.
@@ -281,6 +287,7 @@ class FactorGraph {
     return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this))(
         factorOrContainer);
   }
+#endif
 
   /// @}
   /// @name Specialized versions

@@ -21,7 +21,6 @@
 #include <iostream>
 
 using namespace std;
-using namespace boost;
 using namespace gtsam;
 
 struct DtorTestBase {

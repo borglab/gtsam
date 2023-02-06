@@ -185,7 +185,7 @@ template<class Class>
 struct VectorSpaceTraits: VectorSpaceImpl<Class, Class::dimension> {
 
   // Check that Class has the necessary machinery
-  BOOST_CONCEPT_ASSERT((HasVectorSpacePrereqs<Class>));
+  GTSAM_CONCEPT_ASSERT(HasVectorSpacePrereqs<Class>);
 
   typedef vector_space_tag structure_category;
 
@@ -473,7 +473,7 @@ public:
   typedef typename traits<T>::structure_category structure_category_tag;
 
   BOOST_CONCEPT_USAGE(IsVectorSpace) {
-    BOOST_STATIC_ASSERT_MSG(
+    static_assert(
         (std::is_base_of<vector_space_tag, structure_category_tag>::value),
         "This type's trait does not assert it as a vector space (or derived)");
     r = p + q;

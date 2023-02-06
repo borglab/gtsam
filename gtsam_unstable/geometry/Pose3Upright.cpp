@@ -5,7 +5,6 @@
  * @author Alex Cunningham
  */
 
-#include <boost/mpl/assert.hpp>
 #include <iostream>
 #include "gtsam/base/OptionalJacobian.h"
 #include "gtsam/base/Vector.h"

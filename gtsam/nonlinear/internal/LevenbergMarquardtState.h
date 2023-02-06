@@ -131,7 +131,7 @@ struct LevenbergMarquardtState : public NonlinearOptimizerState {
       const Key& key = key_dim.first;
       const size_t& dim = key_dim.second;
       const CachedModel* item = getCachedModel(dim);
-      damped += std::make_shared<JacobianFactor>(key, item->A, item->b, item->model);
+      damped.emplace_shared<JacobianFactor>(key, item->A, item->b, item->model);
     }
     return damped;
   }
@@ -147,7 +147,7 @@ struct LevenbergMarquardtState : public NonlinearOptimizerState {
         const size_t dim = key_vector.second.size();
         CachedModel* item = getCachedModel(dim);
         item->A.diagonal() = sqrtHessianDiagonal.at(key);  // use diag(hessian)
-        damped += std::make_shared<JacobianFactor>(key, item->A, item->b, item->model);
+        damped.emplace_shared<JacobianFactor>(key, item->A, item->b, item->model);
       } catch (const std::out_of_range&) {
         continue;  // Don't attempt any damping if no key found in diagonal
       }

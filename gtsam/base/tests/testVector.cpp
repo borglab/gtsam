@@ -266,11 +266,14 @@ TEST(Vector, linear_dependent3 )
 }
 
 //******************************************************************************
-TEST(Vector, IsVectorSpace) {
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector5>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector>));
+TEST(Vector, VectorIsVectorSpace) {
+  GTSAM_CONCEPT_ASSERT1(IsVectorSpace<Vector5>);
+  GTSAM_CONCEPT_ASSERT2(IsVectorSpace<Vector>);
+}
+
+TEST(Vector, RowVectorIsVectorSpace) {
   typedef Eigen::Matrix<double,1,-1> RowVector;
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<RowVector>));
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowVector>);
 }
 
 /* ************************************************************************* */

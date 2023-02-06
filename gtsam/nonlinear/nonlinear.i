@@ -358,6 +358,7 @@ virtual class DoglegOptimizer : gtsam::NonlinearOptimizer {
   double getDelta() const;
 };
   
+// TODO(dellaert): This will only work when GTSAM_USE_BOOST_FEATURES is true.
 #include <gtsam/nonlinear/GncOptimizer.h>
 template<PARAMS>
 virtual class GncOptimizer {

@@ -84,12 +84,12 @@ void HybridGaussianISAM::updateInternal(
 
   // Add the removed top and the new factors
   HybridGaussianFactorGraph factors;
-  factors += bn;
-  factors += newFactors;
+  factors.push_back(bn);
+  factors.push_back(newFactors);
 
   // Add the orphaned subtrees
   for (const sharedClique& orphan : *orphans) {
-    factors += std::make_shared<BayesTreeOrphanWrapper<Node>>(orphan);
+    factors.emplace_shared<BayesTreeOrphanWrapper<Node>>(orphan);
   }
 
   const VariableIndex index(factors);

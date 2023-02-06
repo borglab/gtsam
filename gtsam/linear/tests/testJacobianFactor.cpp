@@ -25,8 +25,6 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <boost/range/iterator_range.hpp>
-
 using namespace std;
 using namespace gtsam;
 

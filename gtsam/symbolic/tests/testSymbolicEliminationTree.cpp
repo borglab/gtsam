@@ -110,19 +110,20 @@ TEST(EliminationTree, Create2) {
   //                          \  |
   //                            l3
   SymbolicFactorGraph graph;
+  graph.emplace_shared<SymbolicFactor>(X(1), L(1));
+  graph.emplace_shared<SymbolicFactor>(X(1), X(2));
+  graph.emplace_shared<SymbolicFactor>(X(2), L(1));
+  graph.emplace_shared<SymbolicFactor>(X(2), X(3));
+  graph.emplace_shared<SymbolicFactor>(X(3), X(4));
+  graph.emplace_shared<SymbolicFactor>(X(4), L(2));
+  graph.emplace_shared<SymbolicFactor>(X(4), X(5));
+  graph.emplace_shared<SymbolicFactor>(L(2), X(5));
+  graph.emplace_shared<SymbolicFactor>(X(4), L(3));
+  graph.emplace_shared<SymbolicFactor>(X(5), L(3));
+
   auto binary = [](Key j1, Key j2) -> SymbolicFactor {
     return SymbolicFactor(j1, j2);
   };
-  graph += binary(X(1), L(1));
-  graph += binary(X(1), X(2));
-  graph += binary(X(2), L(1));
-  graph += binary(X(2), X(3));
-  graph += binary(X(3), X(4));
-  graph += binary(X(4), L(2));
-  graph += binary(X(4), X(5));
-  graph += binary(L(2), X(5));
-  graph += binary(X(4), L(3));
-  graph += binary(X(5), L(3));
 
   SymbolicEliminationTree expected = EliminationTreeTester::MakeTree(  //
       ChildNodes(                                                      //

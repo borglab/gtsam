@@ -18,9 +18,6 @@
 
 #include <gtsam/linear/VectorValues.h>
 
-#include <boost/bind/bind.hpp>
-#include <boost/range/numeric.hpp>
-
 using namespace std;
 
 namespace gtsam {

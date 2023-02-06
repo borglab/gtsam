@@ -35,8 +35,7 @@ namespace gtsam {
     // Compute the marginal on the last key
     // Solve the linear factor graph, converting it into a linear Bayes Network
     // P(x0,x1) = P(x0|x1)*P(x1)
-    Ordering lastKeyAsOrdering;
-    lastKeyAsOrdering += lastKey;
+    const Ordering lastKeyAsOrdering{lastKey};
     const GaussianConditional::shared_ptr marginal =
       linearFactorGraph.marginalMultifrontalBayesNet(lastKeyAsOrdering)->front();
 

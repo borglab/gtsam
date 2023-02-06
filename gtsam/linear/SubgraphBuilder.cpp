@@ -25,9 +25,9 @@
 #include <gtsam/linear/SubgraphBuilder.h>
 #include <gtsam/base/kruskal.h>
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/vector.hpp>
 #endif
 

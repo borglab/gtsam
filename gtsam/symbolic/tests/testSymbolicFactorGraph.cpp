@@ -80,8 +80,7 @@ TEST(SymbolicFactorGraph, eliminatePartialSequential) {
 
 /* ************************************************************************* */
 TEST(SymbolicFactorGraph, eliminateFullMultifrontal) {
-  Ordering ordering;
-  ordering += 0, 1, 2, 3;
+  Ordering ordering{0, 1, 2, 3};
   SymbolicBayesTree actual1 = *simpleChain.eliminateMultifrontal(ordering);
   EXPECT(assert_equal(simpleChainBayesTree, actual1));
 
@@ -223,8 +222,7 @@ TEST(SymbolicFactorGraph, eliminate_disconnected_graph) {
   expected.emplace_shared<SymbolicConditional>(3, 4);
   expected.emplace_shared<SymbolicConditional>(4);
 
-  Ordering order;
-  order += 0, 1, 2, 3, 4;
+  const Ordering order{0, 1, 2, 3, 4};
   SymbolicBayesNet actual = *fg.eliminateSequential(order);
 
   EXPECT(assert_equal(expected, actual));
@@ -294,9 +292,9 @@ TEST(SymbolicFactorGraph, constructFromBayesNet) {
 
   // create Bayes Net
   SymbolicBayesNet bayesNet;
-  bayesNet += SymbolicConditional(0, 1, 2);
-  bayesNet += SymbolicConditional(1, 2);
-  bayesNet += SymbolicConditional(1);
+  bayesNet.emplace_shared<SymbolicConditional>(0, 1, 2);
+  bayesNet.emplace_shared<SymbolicConditional>(1, 2);
+  bayesNet.emplace_shared<SymbolicConditional>(1);
 
   // create actual factor graph from a Bayes Net
   SymbolicFactorGraph actual(bayesNet);
@@ -351,7 +349,7 @@ TEST(SymbolicFactorGraph, push_back) {
 TEST(SymbolicFactorGraph, add_factors) {
   SymbolicFactorGraph fg1;
   fg1.push_factor(10);
-  fg1 += SymbolicFactor::shared_ptr();  // empty slot!
+  fg1.push_back(SymbolicFactor::shared_ptr());  // empty slot!
   fg1.push_factor(11);
 
   SymbolicFactorGraph fg2;

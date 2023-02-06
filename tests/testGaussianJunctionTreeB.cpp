@@ -78,20 +78,7 @@ TEST( GaussianJunctionTreeB, constructor2 ) {
   SymbolicEliminationTree stree(*symbolic, ordering);
   GaussianJunctionTree actual(etree);
 
-  Ordering o324;
-  o324 += X(3), X(2), X(4);
-  Ordering o56;
-  o56 += X(5), X(6);
-  Ordering o7;
-  o7 += X(7);
-  Ordering o1;
-  o1 += X(1);
-
-  // Can no longer test these:
-//  Ordering sep1;
-//  Ordering sep2; sep2 += X(4);
-//  Ordering sep3; sep3 += X(6);
-//  Ordering sep4; sep4 += X(2);
+  const Ordering o324{X(3), X(2), X(4)}, o56{X(5), X(6)}, o7{X(7)}, o1{X(1)};
 
   GaussianJunctionTree::sharedNode x324 = actual.roots().front();
   LONGS_EQUAL(2, x324->children.size());
@@ -228,8 +215,7 @@ TEST(GaussianJunctionTreeB, optimizeMultiFrontal2) {
 //  init.insert(X(0), Pose2());
 //  init.insert(X(1), Pose2(1.0, 0.0, 0.0));
 //
-//  Ordering ordering;
-//  ordering += X(1), X(0);
+//  const Ordering ordering{X(1), X(0)};
 //
 //  GaussianFactorGraph gfg = *fg.linearize(init, ordering);
 //

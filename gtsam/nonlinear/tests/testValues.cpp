@@ -25,7 +25,6 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind/bind.hpp>
 #include <stdexcept>
 #include <limits>
 #include <type_traits>

@@ -69,7 +69,7 @@ namespace gtsam {
 
     /// Construct from a single conditional
     SymbolicBayesNet(SymbolicConditional&& c) {
-      push_back(std::make_shared<SymbolicConditional>(c));
+      emplace_shared<SymbolicConditional>(c);
     }
 
     /**
@@ -79,7 +79,7 @@ namespace gtsam {
      *     SymbolicBayesNet(SymbolicConditional(...))(SymbolicConditional(...));
      */
     SymbolicBayesNet& operator()(SymbolicConditional&& c) {
-      push_back(std::make_shared<SymbolicConditional>(c));
+      emplace_shared<SymbolicConditional>(c);
       return *this;
     }
 

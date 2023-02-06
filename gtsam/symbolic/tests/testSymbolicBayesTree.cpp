@@ -257,8 +257,8 @@ TEST(BayesTree, removeTop) {
 
   // Check expected outcome
   SymbolicBayesNet expected;
-  expected += SymbolicConditional::FromKeys<KeyVector>(Keys(_E_)(_L_)(_B_), 3);
-  expected += SymbolicConditional::FromKeys<KeyVector>(Keys(_S_)(_B_)(_L_), 1);
+  expected.add(SymbolicConditional::FromKeys<KeyVector>(Keys(_E_)(_L_)(_B_), 3));
+  expected.add(SymbolicConditional::FromKeys<KeyVector>(Keys(_S_)(_B_)(_L_), 1));
   CHECK(assert_equal(expected, bn));
 
   SymbolicBayesTree::Cliques expectedOrphans{bayesTree[_T_], bayesTree[_X_]};

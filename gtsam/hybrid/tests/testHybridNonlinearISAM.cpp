@@ -143,10 +143,7 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
 
   /********************************************************/
   // Run batch elimination so we can compare results.
-  Ordering ordering;
-  ordering += X(0);
-  ordering += X(1);
-  ordering += X(2);
+  const Ordering ordering {X(0), X(1), X(2)};
 
   // Now we calculate the actual factors using full elimination
   const auto [expectedHybridBayesTree, expectedRemainingGraph] =
@@ -176,12 +173,10 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
 
   // We only perform manual continuous elimination for 0,0.
   // The other discrete probabilities on M(1) are calculated the same way
-  Ordering discrete_ordering;
-  discrete_ordering += M(0);
-  discrete_ordering += M(1);
+  const Ordering discreteOrdering{M(0), M(1)};
   HybridBayesTree::shared_ptr discreteBayesTree =
       expectedRemainingGraph->BaseEliminateable::eliminateMultifrontal(
-          discrete_ordering);
+          discreteOrdering);
 
   DiscreteValues m00;
   m00[M(0)] = 0, m00[M(1)] = 0;
@@ -244,7 +239,7 @@ TEST(HybridNonlinearISAM, Approx_inference) {
   // Create ordering.
   Ordering ordering;
   for (size_t j = 0; j < 4; j++) {
-    ordering += X(j);
+    ordering.push_back(X(j));
   }
 
   // Now we calculate the actual factors using full elimination

@@ -173,9 +173,7 @@ TEST(CSP, WesternUS) {
                      {6, 3}, {7, 2}, {8, 0}, {9, 1}, {10, 0}};
 
   // Create ordering according to example in ND-CSP.lyx
-  Ordering ordering;
-  ordering += Key(0), Key(1), Key(2), Key(3), Key(4), Key(5), Key(6), Key(7),
-      Key(8), Key(9), Key(10);
+  const Ordering ordering{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
   // Solve using that ordering:
   auto actualMPE = csp.optimize(ordering);

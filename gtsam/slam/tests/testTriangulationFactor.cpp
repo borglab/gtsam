@@ -25,8 +25,6 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/bind/bind.hpp>
-
 using namespace std;
 using namespace gtsam;
 using namespace std::placeholders;

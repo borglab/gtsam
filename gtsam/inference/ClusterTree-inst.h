@@ -185,8 +185,8 @@ struct EliminationData {
       // Gather factors
       FactorGraphType gatheredFactors;
       gatheredFactors.reserve(node->factors.size() + node->nrChildren());
-      gatheredFactors += node->factors;
-      gatheredFactors += myData.childFactors;
+      gatheredFactors.push_back(node->factors);
+      gatheredFactors.push_back(myData.childFactors);
 
       // Check for Bayes tree orphan subtrees, and add them to our children
       // TODO(frank): should this really happen here?

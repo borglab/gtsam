@@ -44,7 +44,7 @@ void MetisIndex::augment(const FACTORGRAPH& factors) {
       for(const Key& key: *factors[i]) {
         keySet.insert(keySet.end(), key); // Keep a track of all unique keys
         if (intKeyBMap_.left.find(key) == intKeyBMap_.left.end()) {
-          intKeyBMap_.insert(bm_type::value_type(key, keyCounter));
+          intKeyBMap_.insert(key, keyCounter);
           keyCounter++;
         }
       }

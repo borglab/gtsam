@@ -27,8 +27,8 @@ namespace gtsam {
 /// Assumes Lie group structure for G and H
 template<typename G, typename H>
 class ProductLieGroup: public std::pair<G, H> {
-  BOOST_CONCEPT_ASSERT((IsLieGroup<G>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<H>));
+  GTSAM_CONCEPT_ASSERT1(IsLieGroup<G>);
+  GTSAM_CONCEPT_ASSERT2(IsLieGroup<H>);
   typedef std::pair<G, H> Base;
 
 protected:

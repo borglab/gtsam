@@ -199,9 +199,9 @@ SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic() const
 
   for (const sharedFactor& factor: factors_) {
     if(factor)
-      *symbolic += SymbolicFactor(*factor);
+      symbolic->push_back(SymbolicFactor(*factor));
     else
-      *symbolic += SymbolicFactorGraph::sharedFactor();
+      symbolic->push_back(SymbolicFactorGraph::sharedFactor());
   }
 
   return symbolic;
@@ -265,11 +265,11 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
   linearFG->reserve(size());
 
   // linearize all factors
-  for(const sharedFactor& factor: factors_) {
-    if(factor) {
-      (*linearFG) += factor->linearize(linearizationPoint);
+  for (const sharedFactor& factor : factors_) {
+    if (factor) {
+      linearFG->push_back(factor->linearize(linearizationPoint));
     } else
-    (*linearFG) += GaussianFactor::shared_ptr();
+      linearFG->push_back(GaussianFactor::shared_ptr());
   }
 
 #endif

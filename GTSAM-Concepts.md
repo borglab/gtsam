@@ -166,7 +166,7 @@ Concept Checks
 
 Boost provides a nice way to check whether a given type satisfies a concept. For example, the following
 
-    BOOST_CONCEPT_ASSERT(IsVectorSpace<Point2>)
+    GTSAM_CONCEPT_ASSERT(IsVectorSpace<Point2>)
     
 asserts that Point2 indeed is a model for the VectorSpace concept.
 

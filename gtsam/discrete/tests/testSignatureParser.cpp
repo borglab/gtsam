@@ -85,8 +85,13 @@ TEST(SimpleParser, Gibberish) {
 
 // If Gibberish is in the middle, it should not parse.
 TEST(SimpleParser, GibberishInMiddle) {
-  SignatureParser::Table expectedTable{{1, 1}, {2, 3}};
   const auto table = SignatureParser::Parse("1/1 2/3 sdf 1/4");
+  EXPECT(!table);
+}
+
+// A test with slash in the end
+TEST(SimpleParser, SlashInEnd) {
+  const auto table = SignatureParser::Parse("1/1 2/");
   EXPECT(!table);
 }
 

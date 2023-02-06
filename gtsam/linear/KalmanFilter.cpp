@@ -54,7 +54,8 @@ KalmanFilter::fuse(const State& p, GaussianFactor::shared_ptr newFactor) const {
 
   // Create a factor graph
   GaussianFactorGraph factorGraph;
-  factorGraph += p, newFactor;
+  factorGraph.push_back(p);
+  factorGraph.push_back(newFactor);
 
   // Eliminate graph in order x0, x1, to get Bayes net P(x0|x1)P(x1)
   return solve(factorGraph);
@@ -66,7 +67,7 @@ KalmanFilter::State KalmanFilter::init(const Vector& x0,
 
   // Create a factor graph f(x0), eliminate it into P(x0)
   GaussianFactorGraph factorGraph;
-  factorGraph += JacobianFactor(0, I_, x0, P0); // |x-x0|^2_diagSigma
+  factorGraph.emplace_shared<JacobianFactor>(0, I_, x0, P0); // |x-x0|^2_diagSigma
   return solve(factorGraph);
 }
 
@@ -75,7 +76,7 @@ KalmanFilter::State KalmanFilter::init(const Vector& x, const Matrix& P0) const 
 
   // Create a factor graph f(x0), eliminate it into P(x0)
   GaussianFactorGraph factorGraph;
-  factorGraph += HessianFactor(0, x, P0); // 0.5*(x-x0)'*inv(Sigma)*(x-x0)
+  factorGraph.emplace_shared<HessianFactor>(0, x, P0); // 0.5*(x-x0)'*inv(Sigma)*(x-x0)
   return solve(factorGraph);
 }
 

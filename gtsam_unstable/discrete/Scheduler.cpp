@@ -248,7 +248,7 @@ DiscreteBayesNet::shared_ptr Scheduler::eliminate() const {
   // TODO: fix this!!
   size_t maxKey = keys().size();
   Ordering defaultKeyOrdering;
-  for (size_t i = 0; i < maxKey; ++i) defaultKeyOrdering += Key(i);
+  for (size_t i = 0; i < maxKey; ++i) defaultKeyOrdering.push_back(i);
   DiscreteBayesNet::shared_ptr chordal =
       this->eliminateSequential(defaultKeyOrdering);
   gttoc(my_eliminate);

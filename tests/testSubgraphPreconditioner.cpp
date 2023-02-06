@@ -42,11 +42,9 @@ Symbol key(int x, int y) { return symbol_shorthand::X(1000 * x + y); }
 /* ************************************************************************* */
 TEST(SubgraphPreconditioner, planarOrdering) {
   // Check canonical ordering
-  Ordering expected, ordering = planarOrdering(3);
-  expected +=
-      key(3, 3), key(2, 3), key(1, 3),
-      key(3, 2), key(2, 2), key(1, 2),
-      key(3, 1), key(2, 1), key(1, 1);
+  Ordering ordering = planarOrdering(3),
+           expected{key(3, 3), key(2, 3), key(1, 3), key(3, 2), key(2, 2),
+                    key(1, 2), key(3, 1), key(2, 1), key(1, 1)};
   EXPECT(assert_equal(expected, ordering));
 }
 

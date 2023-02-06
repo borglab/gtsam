@@ -37,12 +37,12 @@ gtsam::GaussianFactorGraph makeTestGaussianFactorGraph() {
   Matrix I = I_2x2;
   Vector2 b(0, 0);
   const SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.5));
-  gfg += JacobianFactor(X(1), I, X(2), I, b, model);
-  gfg += JacobianFactor(X(1), I, X(3), I, b, model);
-  gfg += JacobianFactor(X(1), I, X(4), I, b, model);
-  gfg += JacobianFactor(X(2), I, X(3), I, b, model);
-  gfg += JacobianFactor(X(2), I, X(4), I, b, model);
-  gfg += JacobianFactor(X(3), I, X(4), I, b, model);
+  gfg.emplace_shared<JacobianFactor>(X(1), I, X(2), I, b, model);
+  gfg.emplace_shared<JacobianFactor>(X(1), I, X(3), I, b, model);
+  gfg.emplace_shared<JacobianFactor>(X(1), I, X(4), I, b, model);
+  gfg.emplace_shared<JacobianFactor>(X(2), I, X(3), I, b, model);
+  gfg.emplace_shared<JacobianFactor>(X(2), I, X(4), I, b, model);
+  gfg.emplace_shared<JacobianFactor>(X(3), I, X(4), I, b, model);
 
   return gfg;
 }
@@ -53,12 +53,12 @@ gtsam::NonlinearFactorGraph makeTestNonlinearFactorGraph() {
 
   NonlinearFactorGraph nfg;
   const SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.5));
-  nfg += BetweenFactor(X(1), X(2), Rot3(), model);
-  nfg += BetweenFactor(X(1), X(3), Rot3(), model);
-  nfg += BetweenFactor(X(1), X(4), Rot3(), model);
-  nfg += BetweenFactor(X(2), X(3), Rot3(), model);
-  nfg += BetweenFactor(X(2), X(4), Rot3(), model);
-  nfg += BetweenFactor(X(3), X(4), Rot3(), model);
+  nfg.emplace_shared<BetweenFactor<Rot3>>(X(1), X(2), Rot3(), model);
+  nfg.emplace_shared<BetweenFactor<Rot3>>(X(1), X(3), Rot3(), model);
+  nfg.emplace_shared<BetweenFactor<Rot3>>(X(1), X(4), Rot3(), model);
+  nfg.emplace_shared<BetweenFactor<Rot3>>(X(2), X(3), Rot3(), model);
+  nfg.emplace_shared<BetweenFactor<Rot3>>(X(2), X(4), Rot3(), model);
+  nfg.emplace_shared<BetweenFactor<Rot3>>(X(3), X(4), Rot3(), model);
 
   return nfg;
 }

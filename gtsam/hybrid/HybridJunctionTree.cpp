@@ -94,9 +94,9 @@ struct HybridConstructorTraversalData {
     symbolicFactors.reserve(node->factors.size() +
                             data.childSymbolicFactors.size());
     // Add ETree node factors
-    symbolicFactors += node->factors;
+    symbolicFactors.push_back(node->factors);
     // Add symbolic factors passed up from children
-    symbolicFactors += data.childSymbolicFactors;
+    symbolicFactors.push_back(data.childSymbolicFactors);
 
     Ordering keyAsOrdering;
     keyAsOrdering.push_back(node->key);

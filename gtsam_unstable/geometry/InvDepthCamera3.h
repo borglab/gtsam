@@ -12,13 +12,16 @@
 #pragma once
 
 #include <cmath>
-#include <boost/serialization/nvp.hpp>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/nvp.hpp>
+#endif
 
 namespace gtsam {
 

@@ -35,9 +35,9 @@ static const double s = 4;
 
 //******************************************************************************
 TEST(Similarity2, Concepts) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Similarity2>));
-  BOOST_CONCEPT_ASSERT((IsManifold<Similarity2>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Similarity2>));
+  GTSAM_CONCEPT_ASSERT1(IsGroup<Similarity2>);
+  GTSAM_CONCEPT_ASSERT2(IsManifold<Similarity2>);
+  GTSAM_CONCEPT_ASSERT3(IsLieGroup<Similarity2>);
 }
 
 //******************************************************************************

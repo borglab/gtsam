@@ -21,7 +21,6 @@
 
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/geometry/BearingRange.h>
-#include <boost/concept/assert.hpp>
 
 namespace gtsam {
 

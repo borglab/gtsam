@@ -279,7 +279,7 @@ struct Reshape<N, M, InOptions, M, N, InOptions> {
 
 template <int OutM, int OutN, int OutOptions, int InM, int InN, int InOptions>
 inline typename Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & m){
-  BOOST_STATIC_ASSERT(InM * InN == OutM * OutN);
+  static_assert(InM * InN == OutM * OutN);
   return Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::reshape(m);
 }
 

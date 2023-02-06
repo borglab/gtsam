@@ -71,17 +71,17 @@ TEST(Lago, findMinimumSpanningTree) {
   auto gPlus = initialize::buildPoseGraph<Pose2>(g);
   lago::PredecessorMap tree = lago::findMinimumSpanningTree(gPlus);
 
-  // We should recover the following spanning tree:
-  //
-  //              x2
-  //             /  \
-  //            /    \
-  //          x3     x1
-  //                 /
-  //                /
-  //              x0
-  //               |
-  //               a
+  /* We should recover the following spanning tree:
+                x2
+               /  \
+              /    \
+            x3     x1
+                   /
+                  /
+                x0
+                 |
+                 a
+  */
   using initialize::kAnchorKey;
   EXPECT_LONGS_EQUAL(kAnchorKey, tree[kAnchorKey]);
   EXPECT_LONGS_EQUAL(kAnchorKey, tree[x0]);

@@ -77,9 +77,9 @@ struct ConstructorTraversalData {
     symbolicFactors.reserve(
         ETreeNode->factors.size() + myData.childSymbolicFactors.size());
     // Add ETree node factors
-    symbolicFactors += ETreeNode->factors;
+    symbolicFactors.push_back(ETreeNode->factors);
     // Add symbolic factors passed up from children
-    symbolicFactors += myData.childSymbolicFactors;
+    symbolicFactors.push_back(myData.childSymbolicFactors);
 
     Ordering keyAsOrdering;
     keyAsOrdering.push_back(ETreeNode->key);

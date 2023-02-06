@@ -34,9 +34,9 @@ TEST(Point2 , Constructor) {
 
 //******************************************************************************
 TEST(Double , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<double>));
-  BOOST_CONCEPT_ASSERT((IsManifold<double>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<double>));
+  GTSAM_CONCEPT_ASSERT1(IsGroup<double>);
+  GTSAM_CONCEPT_ASSERT2(IsManifold<double>);
+  GTSAM_CONCEPT_ASSERT3(IsVectorSpace<double>);
 }
 
 //******************************************************************************
@@ -48,9 +48,9 @@ TEST(Double , Invariants) {
 
 //******************************************************************************
 TEST(Point2 , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Point2>));
-  BOOST_CONCEPT_ASSERT((IsManifold<Point2>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Point2>));
+  GTSAM_CONCEPT_ASSERT1(IsGroup<Point2>);
+  GTSAM_CONCEPT_ASSERT2(IsManifold<Point2>);
+  GTSAM_CONCEPT_ASSERT3(IsVectorSpace<Point2>);
 }
 
 //******************************************************************************

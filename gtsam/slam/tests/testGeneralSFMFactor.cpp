@@ -50,7 +50,7 @@ class Graph: public NonlinearFactorGraph {
 public:
   void addMeasurement(int i, int j, const Point2& z,
       const SharedNoiseModel& model) {
-    push_back(std::make_shared<Projection>(z, model, X(i), L(j)));
+    emplace_shared<Projection>(z, model, X(i), L(j));
   }
 
   void addCameraConstraint(int j, const GeneralCamera& p) {
@@ -483,10 +483,7 @@ TEST(GeneralSFMFactor, BinaryJacobianFactor) {
               actualJacobian.augmentedInformation(), 1e-9));
 
       // Construct from GaussianFactorGraph
-      GaussianFactorGraph gfg1;
-      gfg1 += expected;
-      GaussianFactorGraph gfg2;
-      gfg2 += actual;
+      GaussianFactorGraph gfg1 {expected}, gfg2 {actual};
       HessianFactor hessian1(gfg1), hessian2(gfg2);
       EXPECT(assert_equal(hessian1, hessian2, 1e-9));
     }

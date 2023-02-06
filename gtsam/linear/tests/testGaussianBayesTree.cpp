@@ -299,10 +299,10 @@ TEST(GaussianBayesTree, determinant_and_smallestEigenvalue) {
   GaussianFactorGraph fg;
   Key x1 = 2, x2 = 0, l1 = 1;
   SharedDiagonal unit2 = noiseModel::Unit::Create(2);
-  fg += JacobianFactor(x1, 10 * I_2x2, -1.0 * Vector::Ones(2), unit2);
-  fg += JacobianFactor(x2, 10 * I_2x2, x1, -10 * I_2x2, Vector2(2.0, -1.0), unit2);
-  fg += JacobianFactor(l1, 5 * I_2x2, x1, -5 * I_2x2, Vector2(0.0, 1.0), unit2);
-  fg += JacobianFactor(x2, -5 * I_2x2, l1, 5 * I_2x2, Vector2(-1.0, 1.5), unit2);
+  fg.emplace_shared<JacobianFactor>(x1, 10 * I_2x2, -1.0 * Vector::Ones(2), unit2);
+  fg.emplace_shared<JacobianFactor>(x2, 10 * I_2x2, x1, -10 * I_2x2, Vector2(2.0, -1.0), unit2);
+  fg.emplace_shared<JacobianFactor>(l1, 5 * I_2x2, x1, -5 * I_2x2, Vector2(0.0, 1.0), unit2);
+  fg.emplace_shared<JacobianFactor>(x2, -5 * I_2x2, l1, 5 * I_2x2, Vector2(-1.0, 1.5), unit2);
 
   // create corresponding Bayes tree:
   std::shared_ptr<gtsam::GaussianBayesTree> bt = fg.eliminateMultifrontal();
@@ -327,15 +327,14 @@ TEST(GaussianBayesTree, LogDeterminant) {
   GaussianFactorGraph fg;
   Key x1 = X(1), x2 = X(2), l1 = L(1);
   SharedDiagonal unit2 = noiseModel::Unit::Create(2);
-  fg += JacobianFactor(x1, 10 * I_2x2, -1.0 * Vector2::Ones(), unit2);
-  fg += JacobianFactor(x2, 10 * I_2x2, x1, -10 * I_2x2, Vector2(2.0, -1.0),
-                       unit2);
-  fg += JacobianFactor(l1, 5 * I_2x2, x1, -5 * I_2x2, Vector2(0.0, 1.0), unit2);
-  fg +=
-      JacobianFactor(x2, -5 * I_2x2, l1, 5 * I_2x2, Vector2(-1.0, 1.5), unit2);
-  fg += JacobianFactor(x3, 10 * I_2x2, x2, -10 * I_2x2, Vector2(2.0, -1.0),
-                       unit2);
-  fg += JacobianFactor(x3, 10 * I_2x2, -1.0 * Vector2::Ones(), unit2);
+  fg.emplace_shared<JacobianFactor>(x1, 10 * I_2x2, -1.0 * Vector2::Ones(), unit2);
+  fg.emplace_shared<JacobianFactor>(x2, 10 * I_2x2, x1, -10 * I_2x2,
+                                    Vector2(2.0, -1.0), unit2);
+  fg.emplace_shared<JacobianFactor>(l1, 5 * I_2x2, x1, -5 * I_2x2, Vector2(0.0, 1.0), unit2);
+  fg.emplace_shared<JacobianFactor>(x2, -5 * I_2x2, l1, 5 * I_2x2, Vector2(-1.0, 1.5), unit2);
+  fg.emplace_shared<JacobianFactor>(x3, 10 * I_2x2, x2, -10 * I_2x2,
+                                    Vector2(2.0, -1.0), unit2);
+  fg.emplace_shared<JacobianFactor>(x3, 10 * I_2x2, -1.0 * Vector2::Ones(), unit2);
 
   // create corresponding Bayes net and Bayes tree:
   std::shared_ptr<gtsam::GaussianBayesNet> bn = fg.eliminateSequential();

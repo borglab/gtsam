@@ -48,6 +48,23 @@ else()
     set(excluded_sources ${excluded_sources} "${CMAKE_CURRENT_SOURCE_DIR}/geometry/Rot3Q.cpp")
 endif()
 
+# if GTSAM_ENABLE_BOOST_SERIALIZATION is not set, then we need to exclude the following:
+if(NOT GTSAM_ENABLE_BOOST_SERIALIZATION)
+    list (APPEND excluded_headers
+        "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/base/serializationTestHelpers.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/base/serialization.h"
+    )
+endif()
+ 
+# if GTSAM_USE_BOOST_FEATURES is not set, then we need to exclude the following:
+if(NOT GTSAM_USE_BOOST_FEATURES)
+    list (APPEND excluded_sources
+        "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/GncOptimizer.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/inference/graph.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/inference/graph-inl.h"
+    )
+endif()
+ 
 # Common headers
 file(GLOB gtsam_core_headers "*.h")
 install(FILES ${gtsam_core_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam)
