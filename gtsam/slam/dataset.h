@@ -30,7 +30,6 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/base/serialization.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/types.h>
 

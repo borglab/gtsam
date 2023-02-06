@@ -22,9 +22,6 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/3rdparty/ceres/autodiff.h>
 
-#include <boost/static_assert.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-
 namespace gtsam {
 
 /**

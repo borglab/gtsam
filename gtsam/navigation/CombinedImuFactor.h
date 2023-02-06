@@ -27,7 +27,6 @@
 #include <gtsam/navigation/TangentPreintegration.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/serialization.h>
 
 namespace gtsam {
 
@@ -336,6 +335,7 @@ public:
       OptionalMatrixType H5, OptionalMatrixType H6) const override;
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -345,6 +345,7 @@ public:
         "NoiseModelFactor6", boost::serialization::base_object<Base>(*this));
     ar& BOOST_SERIALIZATION_NVP(_PIM_);
   }
+#endif
 
 public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
