@@ -11,6 +11,10 @@ if (NOT GTSAM_USE_BOOST_FEATURES)
 	list(APPEND tests_exclude "testGncOptimizer.cpp")
 endif()
 
+if (NOT GTSAM_ENABLE_BOOST_SERIALIZATION)
+	list(APPEND tests_exclude "testSerializationSLAM.cpp")
+endif()
+
 # Build tests
 gtsamAddTestsGlob(tests "test*.cpp" "${tests_exclude}" "gtsam")
 
