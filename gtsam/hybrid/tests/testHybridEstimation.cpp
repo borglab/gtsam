@@ -44,7 +44,7 @@ using symbol_shorthand::X;
 
 Ordering getOrdering(HybridGaussianFactorGraph& factors,
                      const HybridGaussianFactorGraph& newFactors) {
-  factors += newFactors;
+  factors.push_back(newFactors);
   // Get all the discrete keys from the factors
   KeySet allDiscrete = factors.discreteKeySet();
 

@@ -292,9 +292,9 @@ TEST(SymbolicFactorGraph, constructFromBayesNet) {
 
   // create Bayes Net
   SymbolicBayesNet bayesNet;
-  bayesNet += SymbolicConditional(0, 1, 2);
-  bayesNet += SymbolicConditional(1, 2);
-  bayesNet += SymbolicConditional(1);
+  bayesNet.emplace_shared<SymbolicConditional>(0, 1, 2);
+  bayesNet.emplace_shared<SymbolicConditional>(1, 2);
+  bayesNet.emplace_shared<SymbolicConditional>(1);
 
   // create actual factor graph from a Bayes Net
   SymbolicFactorGraph actual(bayesNet);
@@ -349,7 +349,7 @@ TEST(SymbolicFactorGraph, push_back) {
 TEST(SymbolicFactorGraph, add_factors) {
   SymbolicFactorGraph fg1;
   fg1.push_factor(10);
-  fg1 += SymbolicFactor::shared_ptr();  // empty slot!
+  fg1.push_back(SymbolicFactor::shared_ptr());  // empty slot!
   fg1.push_factor(11);
 
   SymbolicFactorGraph fg2;

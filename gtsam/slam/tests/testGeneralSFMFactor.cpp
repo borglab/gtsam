@@ -483,10 +483,7 @@ TEST(GeneralSFMFactor, BinaryJacobianFactor) {
               actualJacobian.augmentedInformation(), 1e-9));
 
       // Construct from GaussianFactorGraph
-      GaussianFactorGraph gfg1;
-      gfg1 += expected;
-      GaussianFactorGraph gfg2;
-      gfg2 += actual;
+      GaussianFactorGraph gfg1 {expected}, gfg2 {actual};
       HessianFactor hessian1(gfg1), hessian2(gfg2);
       EXPECT(assert_equal(hessian1, hessian2, 1e-9));
     }
