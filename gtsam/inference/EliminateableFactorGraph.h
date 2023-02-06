@@ -22,13 +22,11 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
-#include <boost/variant.hpp>
 
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/VariableIndex.h>
 
 namespace gtsam {
-
   /// Traits class for eliminateable factor graphs, specifies the types that result from
   /// elimination, etc.  This must be defined for each factor graph that inherits from
   /// EliminateableFactorGraph.
@@ -141,7 +139,7 @@ namespace gtsam {
       OptionalVariableIndex variableIndex = {}) const;
 
     /** Do multifrontal elimination of all variables to produce a Bayes tree.  If an ordering is not
-     *  provided, the ordering will be computed using either COLAMD or METIS, dependeing on
+     *  provided, the ordering will be computed using either COLAMD or METIS, depending on
      *  the parameter orderingType (Ordering::COLAMD or Ordering::METIS)
      *
      *  <b> Example - Full Cholesky elimination in COLAMD order: </b>
@@ -162,7 +160,7 @@ namespace gtsam {
       OptionalVariableIndex variableIndex = {}) const;
 
     /** Do multifrontal elimination of all variables to produce a Bayes tree.  If an ordering is not
-     *  provided, the ordering will be computed using either COLAMD or METIS, dependeing on
+     *  provided, the ordering will be computed using either COLAMD or METIS, depending on
      *  the parameter orderingType (Ordering::COLAMD or Ordering::METIS)
      *
      *  <b> Example - Full QR elimination in specified order:
@@ -217,60 +215,108 @@ namespace gtsam {
 
     /** Compute the marginal of the requested variables and return the result as a Bayes net.  Uses
      *  COLAMD marginalization ordering by default
-     *  @param variables Determines the variables whose marginal to compute, if provided as an
-     *         Ordering they will be ordered in the returned BayesNet as specified, and if provided
-     *         as a KeyVector they will be ordered using constrained COLAMD.
-     *  @param function Optional dense elimination function, if not provided the default will be
-     *         used.
+     *  @param variables Determines the *ordered* variables whose marginal to compute, 
+     *         will be ordered in the returned BayesNet as specified.
+     *  @param function Optional dense elimination function.
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
-     *         provided one will be computed. */
+     *         provided one will be computed. 
+     */
     std::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
-      boost::variant<const Ordering&, const KeyVector&> variables,
+      const Ordering& variables,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = {}) const;
+
+    /** Compute the marginal of the requested variables and return the result as a Bayes net.  Uses
+     *  COLAMD marginalization ordering by default
+     *  @param variables Determines the variables whose marginal to compute, will be ordered 
+     *                   using COLAMD; use `Ordering(variables)` to specify the variable ordering.
+     *  @param function Optional dense elimination function.
+     *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
+     *         provided one will be computed. 
+     */
+    std::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
+      const KeyVector& variables,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = {}) const;
 
     /** Compute the marginal of the requested variables and return the result as a Bayes net.
-     *  @param variables Determines the variables whose marginal to compute, if provided as an
-     *         Ordering they will be ordered in the returned BayesNet as specified, and if provided
-     *         as a KeyVector they will be ordered using constrained COLAMD.
+     *  @param variables Determines the *ordered* variables whose marginal to compute, 
+     *         will be ordered in the returned BayesNet as specified.
      *  @param marginalizedVariableOrdering Ordering for the variables being marginalized out,
      *         i.e. all variables not in \c variables.
-     *  @param function Optional dense elimination function, if not provided the default will be
-     *         used.
+     *  @param function Optional dense elimination function.
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
-     *         provided one will be computed. */
+     *         provided one will be computed.
+     */
     std::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
-      boost::variant<const Ordering&, const KeyVector&> variables,
+      const Ordering& variables,
+      const Ordering& marginalizedVariableOrdering,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = {}) const;
+
+    /** Compute the marginal of the requested variables and return the result as a Bayes net.
+     *  @param variables Determines the variables whose marginal to compute, will be ordered 
+     *                   using COLAMD; use `Ordering(variables)` to specify the variable ordering.
+     *  @param marginalizedVariableOrdering Ordering for the variables being marginalized out,
+     *         i.e. all variables not in \c variables.
+     *  @param function Optional dense elimination function.
+     *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
+     *         provided one will be computed.
+     */
+    std::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
+      const KeyVector& variables,
       const Ordering& marginalizedVariableOrdering,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = {}) const;
 
     /** Compute the marginal of the requested variables and return the result as a Bayes tree.  Uses
      *  COLAMD marginalization order by default
-     *  @param variables Determines the variables whose marginal to compute, if provided as an
-     *         Ordering they will be ordered in the returned BayesNet as specified, and if provided
-     *         as a KeyVector they will be ordered using constrained COLAMD.
-     *  @param function Optional dense elimination function, if not provided the default will be
-     *         used.
+     *  @param variables Determines the *ordered* variables whose marginal to compute, 
+     *         will be ordered in the returned BayesNet as specified.
+     *  @param function Optional dense elimination function..
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
     std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
-      boost::variant<const Ordering&, const KeyVector&> variables,
+      const Ordering& variables,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = {}) const;
+
+    /** Compute the marginal of the requested variables and return the result as a Bayes tree.  Uses
+     *  COLAMD marginalization order by default
+     *  @param variables Determines the variables whose marginal to compute, will be ordered 
+     *                   using COLAMD; use `Ordering(variables)` to specify the variable ordering.
+     *  @param function Optional dense elimination function..
+     *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
+     *         provided one will be computed. */
+    std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
+      const KeyVector& variables,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = {}) const;
 
     /** Compute the marginal of the requested variables and return the result as a Bayes tree.
-     *  @param variables Determines the variables whose marginal to compute, if provided as an
-     *         Ordering they will be ordered in the returned BayesNet as specified, and if provided
-     *         as a KeyVector they will be ordered using constrained COLAMD.
+     *  @param variables Determines the *ordered* variables whose marginal to compute, 
+     *         will be ordered in the returned BayesNet as specified.
      *  @param marginalizedVariableOrdering Ordering for the variables being marginalized out,
      *         i.e. all variables not in \c variables.
-     *  @param function Optional dense elimination function, if not provided the default will be
-     *         used.
+     *  @param function Optional dense elimination function..
      *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
      *         provided one will be computed. */
     std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
-      boost::variant<const Ordering&, const KeyVector&> variables,
+      const Ordering& variables,
+      const Ordering& marginalizedVariableOrdering,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = {}) const;
+
+    /** Compute the marginal of the requested variables and return the result as a Bayes tree.
+     *  @param variables Determines the variables whose marginal to compute, will be ordered 
+     *                   using COLAMD; use `Ordering(variables)` to specify the variable ordering.
+     *  @param marginalizedVariableOrdering Ordering for the variables being marginalized out,
+     *         i.e. all variables not in \c variables.
+     *  @param function Optional dense elimination function..
+     *  @param variableIndex Optional pre-computed VariableIndex for the factor graph, if not
+     *         provided one will be computed. */
+    std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
+      const KeyVector& variables,
       const Ordering& marginalizedVariableOrdering,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = {}) const;

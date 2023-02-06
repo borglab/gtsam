@@ -92,7 +92,7 @@ namespace gtsam {
       // Use this trick to find the value using a hint, since we are inserting
       // from another sorted map
       size_t oldSize = values_.size();
-      hint = values_.emplace_hint(hint, key, value);
+      hint = values_.insert(hint, {key, value});
       if (values_.size() > oldSize) {
         values_.unsafe_erase(hint);
         throw out_of_range(
