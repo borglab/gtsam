@@ -61,7 +61,7 @@ namespace gtsam {
     bool r1,r2;
   public:
 
-    GTSAM_CONCEPT_USAGE(IsTestable) {
+    BOOST_CONCEPT_USAGE(IsTestable) {
       // check print function, with optional string
       traits<T>::Print(t, std::string());
       traits<T>::Print(t);
@@ -134,7 +134,7 @@ namespace gtsam {
   template<typename T>
   struct HasTestablePrereqs {
 
-    GTSAM_CONCEPT_USAGE(HasTestablePrereqs) {
+    BOOST_CONCEPT_USAGE(HasTestablePrereqs) {
       t->print(str);
       b = t->equals(*s,tol);
     }

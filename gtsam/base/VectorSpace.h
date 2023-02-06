@@ -168,7 +168,7 @@ struct HasVectorSpacePrereqs {
   Class p, q;
   Vector v;
 
-  GTSAM_CONCEPT_USAGE(HasVectorSpacePrereqs) {
+  BOOST_CONCEPT_USAGE(HasVectorSpacePrereqs) {
     p = Class::Identity();  // identity
     q = p + p;              // addition
     q = p - p;              // subtraction
@@ -472,7 +472,7 @@ public:
 
   typedef typename traits<T>::structure_category structure_category_tag;
 
-  GTSAM_CONCEPT_USAGE(IsVectorSpace) {
+  BOOST_CONCEPT_USAGE(IsVectorSpace) {
     static_assert(
         (std::is_base_of<vector_space_tag, structure_category_tag>::value),
         "This type's trait does not assert it as a vector space (or derived)");

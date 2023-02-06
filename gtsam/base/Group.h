@@ -52,7 +52,7 @@ public:
   typedef typename traits<G>::group_flavor flavor_tag;
   //typedef typename traits<G>::identity::value_type identity_value_type;
 
-  GTSAM_CONCEPT_USAGE(IsGroup) {
+  BOOST_CONCEPT_USAGE(IsGroup) {
     static_assert(
         (std::is_base_of<group_tag, structure_category_tag>::value),
         "This type's structure_category trait does not assert it as a group (or derived)");

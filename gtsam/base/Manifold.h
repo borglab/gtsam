@@ -61,7 +61,7 @@ struct HasManifoldPrereqs {
   Eigen::Matrix<double, dim, 1> v;
   OptionalJacobian<dim, dim> Hp, Hq, Hv;
 
-  GTSAM_CONCEPT_USAGE(HasManifoldPrereqs) {
+  BOOST_CONCEPT_USAGE(HasManifoldPrereqs) {
     v = p.localCoordinates(q);
     q = p.retract(v);
   }
@@ -139,7 +139,7 @@ public:
   typedef typename traits<T>::ManifoldType ManifoldType;
   typedef typename traits<T>::TangentVector TangentVector;
 
-  GTSAM_CONCEPT_USAGE(IsManifold) {
+  BOOST_CONCEPT_USAGE(IsManifold) {
     static_assert(
         (std::is_base_of<manifold_tag, structure_category_tag>::value),
         "This type's structure_category trait does not assert it as a manifold (or derived)");
