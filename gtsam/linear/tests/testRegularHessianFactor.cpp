@@ -66,11 +66,11 @@ TEST(RegularHessianFactor, Constructors)
 
   // Test constructor from Gaussian Factor Graph
   GaussianFactorGraph gfg;
-  gfg += jf;
+  gfg.push_back(jf);
   RegularHessianFactor<2> factor4(gfg);
   EXPECT(assert_equal(factor, factor4));
   GaussianFactorGraph gfg2;
-  gfg2 += factor;
+  gfg2.push_back(factor);
   RegularHessianFactor<2> factor5(gfg);
   EXPECT(assert_equal(factor, factor5));
 

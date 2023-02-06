@@ -427,10 +427,10 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
           0.0,             1.,           0.0,
           -1.2246468e-16,           0.0,            -1),
           Point3(0.511832102, 8.42819594, 5.76841725)), priorModel);
-  factors += ProjectionFactor(Point2(333.648615, 98.61535), measModel, xC1, l32, K);
-  factors += ProjectionFactor(Point2(218.508, 83.8022039), measModel, xC1, l41, K);
-  factors += RangeFactor<Pose3,Point3>(xC1, l32, relElevation, elevationModel);
-  factors += RangeFactor<Pose3,Point3>(xC1, l41, relElevation, elevationModel);
+  factors.emplace_shared<ProjectionFactor>(Point2(333.648615, 98.61535), measModel, xC1, l32, K);
+  factors.emplace_shared<ProjectionFactor>(Point2(218.508, 83.8022039), measModel, xC1, l41, K);
+  factors.emplace_shared<RangeFactor<Pose3,Point3>>(xC1, l32, relElevation, elevationModel);
+  factors.emplace_shared<RangeFactor<Pose3,Point3>>(xC1, l41, relElevation, elevationModel);
 
   // Check that sigmas are correct (i.e., unit)
   GaussianFactorGraph lfg = *factors.linearize(initValues);

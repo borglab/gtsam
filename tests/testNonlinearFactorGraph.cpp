@@ -162,8 +162,8 @@ TEST( NonlinearFactorGraph, rekey )
   // updated measurements
   Point2 z3(0, -1),  z4(-1.5, -1.);
   SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
-  expRekey += simulated2D::Measurement(z3, sigma0_2, X(1), L(4));
-  expRekey += simulated2D::Measurement(z4, sigma0_2, X(2), L(4));
+  expRekey.emplace_shared<simulated2D::Measurement>(z3, sigma0_2, X(1), L(4));
+  expRekey.emplace_shared<simulated2D::Measurement>(z4, sigma0_2, X(2), L(4));
 
   EXPECT(assert_equal(expRekey, actRekey));
 }

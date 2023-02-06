@@ -74,7 +74,7 @@ ISAM2 createSlamlikeISAM2(
   // Add odometry from time 0 to time 5
   for( ; i<5; ++i) {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -93,9 +93,9 @@ ISAM2 createSlamlikeISAM2(
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -116,7 +116,7 @@ ISAM2 createSlamlikeISAM2(
   // Add odometry from time 6 to time 10
   for( ; i<10; ++i) {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -135,9 +135,9 @@ ISAM2 createSlamlikeISAM2(
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -230,7 +230,7 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
 
   // Check information
   GaussianFactorGraph isamGraph(isam);
-  isamGraph += isam.roots().front()->cachedFactor_;
+  isamGraph.push_back(isam.roots().front()->cachedFactor_);
   Matrix expectedHessian = fullgraph.linearize(isam.getLinearizationPoint())->augmentedHessian();
   Matrix actualHessian = isamGraph.augmentedHessian();
   expectedHessian.bottomRightCorner(1,1) = actualHessian.bottomRightCorner(1,1);
@@ -249,7 +249,7 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
   for (const auto& [key, clique] : isam.nodes()) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
-    jfg += clique->conditional();
+    jfg.push_back(clique->conditional());
     VectorValues expectedGradient = jfg.gradientAtZero();
     // Compare with actual gradients
     DenseIndex variablePosition = 0;
@@ -353,7 +353,7 @@ TEST(ISAM2, clone) {
 
     // Modify original isam
     NonlinearFactorGraph factors;
-    factors += BetweenFactor<Pose2>(0, 10,
+    factors.emplace_shared<BetweenFactor<Pose2>>(0, 10,
         isam.calculateEstimate<Pose2>(0).between(isam.calculateEstimate<Pose2>(10)), noiseModel::Unit::Create(3));
     isam.update(factors);
 
@@ -439,7 +439,7 @@ TEST(ISAM2, swapFactors)
 
     NonlinearFactorGraph swapfactors;
 //    swapfactors += BearingRange<Pose2,Point2>(10, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise; // original factor
-    swapfactors += BearingRangeFactor<Pose2,Point2>(10, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 5.0, brNoise);
+    swapfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(10, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 5.0, brNoise);
     fullgraph.push_back(swapfactors);
     isam.update(swapfactors, Values(), toRemove);
   }
@@ -452,7 +452,7 @@ TEST(ISAM2, swapFactors)
   for (const auto& [key, clique]: isam.nodes()) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
-    jfg += clique->conditional();
+    jfg.push_back(clique->conditional());
     VectorValues expectedGradient = jfg.gradientAtZero();
     // Compare with actual gradients
     DenseIndex variablePosition = 0;
@@ -507,7 +507,7 @@ TEST(ISAM2, constrained_ordering)
   // Add odometry from time 0 to time 5
   for( ; i<5; ++i) {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -523,9 +523,9 @@ TEST(ISAM2, constrained_ordering)
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -543,7 +543,7 @@ TEST(ISAM2, constrained_ordering)
   // Add odometry from time 6 to time 10
   for( ; i<10; ++i) {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -556,9 +556,9 @@ TEST(ISAM2, constrained_ordering)
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -576,7 +576,7 @@ TEST(ISAM2, constrained_ordering)
   for (const auto& [key, clique]: isam.nodes()) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
-    jfg += clique->conditional();
+    jfg.push_back(clique->conditional());
     VectorValues expectedGradient = jfg.gradientAtZero();
     // Compare with actual gradients
     DenseIndex variablePosition = 0;
@@ -665,9 +665,9 @@ TEST(ISAM2, marginalizeLeaves1) {
   NonlinearFactorGraph factors;
   factors.addPrior(0, 0.0, model);
 
-  factors += BetweenFactor<double>(0, 1, 0.0, model);
-  factors += BetweenFactor<double>(1, 2, 0.0, model);
-  factors += BetweenFactor<double>(0, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 1, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(1, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 2, 0.0, model);
 
   Values values;
   values.insert(0, 0.0);
@@ -692,10 +692,10 @@ TEST(ISAM2, marginalizeLeaves2) {
   NonlinearFactorGraph factors;
   factors.addPrior(0, 0.0, model);
 
-  factors += BetweenFactor<double>(0, 1, 0.0, model);
-  factors += BetweenFactor<double>(1, 2, 0.0, model);
-  factors += BetweenFactor<double>(0, 2, 0.0, model);
-  factors += BetweenFactor<double>(2, 3, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 1, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(1, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(2, 3, 0.0, model);
 
   Values values;
   values.insert(0, 0.0);
@@ -722,15 +722,15 @@ TEST(ISAM2, marginalizeLeaves3) {
   NonlinearFactorGraph factors;
   factors.addPrior(0, 0.0, model);
 
-  factors += BetweenFactor<double>(0, 1, 0.0, model);
-  factors += BetweenFactor<double>(1, 2, 0.0, model);
-  factors += BetweenFactor<double>(0, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 1, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(1, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 2, 0.0, model);
 
-  factors += BetweenFactor<double>(2, 3, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(2, 3, 0.0, model);
 
-  factors += BetweenFactor<double>(3, 4, 0.0, model);
-  factors += BetweenFactor<double>(4, 5, 0.0, model);
-  factors += BetweenFactor<double>(3, 5, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(3, 4, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(4, 5, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(3, 5, 0.0, model);
 
   Values values;
   values.insert(0, 0.0);
@@ -760,8 +760,8 @@ TEST(ISAM2, marginalizeLeaves4) {
 
   NonlinearFactorGraph factors;
   factors.addPrior(0, 0.0, model);
-  factors += BetweenFactor<double>(0, 2, 0.0, model);
-  factors += BetweenFactor<double>(1, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(1, 2, 0.0, model);
 
   Values values;
   values.insert(0, 0.0);
