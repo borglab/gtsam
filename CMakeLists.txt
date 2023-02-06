@@ -48,6 +48,9 @@ if(${GTSAM_SOURCE_DIR} STREQUAL ${GTSAM_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
 
+include(cmake/HandleGeneralOptions.cmake)   # CMake build options
+
+############### Decide on BOOST ######################################
 # Enable or disable serialization with GTSAM_ENABLE_BOOST_SERIALIZATION
 option(GTSAM_ENABLE_BOOST_SERIALIZATION "Enable Boost serialization" ON)
 if(GTSAM_ENABLE_BOOST_SERIALIZATION)
@@ -59,10 +62,12 @@ if(GTSAM_USE_BOOST_FEATURES)
   add_definitions(-DGTSAM_USE_BOOST_FEATURES)
 endif()
 
-include(cmake/HandleGeneralOptions.cmake)   # CMake build options
+if(GTSAM_ENABLE_BOOST_SERIALIZATION OR GTSAM_USE_BOOST_FEATURES)
+include(cmake/HandleBoost.cmake)
+endif()
+######################################################################
 
-# Libraries:
-include(cmake/HandleBoost.cmake)            # Boost
+# Other Libraries:
 include(cmake/HandleCCache.cmake)           # ccache
 include(cmake/HandleCPack.cmake)            # CPack
 include(cmake/HandleEigen.cmake)            # Eigen3
