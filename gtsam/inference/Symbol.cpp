@@ -57,7 +57,7 @@ bool Symbol::equals(const Symbol& expected, double tol) const {
 
 Symbol::operator std::string() const {
   char buffer[10];
-  snprintf(buffer, 10, "%c%lu", c_, j_);
+  snprintf(buffer, 10, "%c%llu", c_, static_cast<unsigned long long>(j_));
   return std::string(buffer);
 }
 
