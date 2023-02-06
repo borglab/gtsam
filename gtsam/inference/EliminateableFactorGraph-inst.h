@@ -246,7 +246,7 @@ namespace gtsam {
       Ordering marginalVarsOrdering(totalOrdering.end() - nVars, totalOrdering.end());
 
       // Call this function again with the computed orderings
-      return marginalMultifrontalBayesNet(std::cref(marginalVarsOrdering), marginalizationOrdering, function, variableIndex);
+      return marginalMultifrontalBayesNet(marginalVarsOrdering, marginalizationOrdering, function, variableIndex);
     }
   }
 
@@ -274,7 +274,7 @@ namespace gtsam {
       Ordering marginalVarsOrdering(totalOrdering.end() - nVars, totalOrdering.end());
 
       // Call this function again with the computed orderings
-      return marginalMultifrontalBayesNet(std::cref(marginalVarsOrdering), marginalizationOrdering, function, variableIndex);
+      return marginalMultifrontalBayesNet(marginalVarsOrdering, marginalizationOrdering, function, variableIndex);
     }
   }
 
@@ -351,7 +351,7 @@ namespace gtsam {
       Ordering marginalVarsOrdering(totalOrdering.end() - nVars, totalOrdering.end());
 
       // Call this function again with the computed orderings
-      return marginalMultifrontalBayesTree(std::cref(marginalVarsOrdering), marginalizationOrdering, function, variableIndex);
+      return marginalMultifrontalBayesTree(marginalVarsOrdering, marginalizationOrdering, function, variableIndex);
     }
   }
 
@@ -379,7 +379,7 @@ namespace gtsam {
       Ordering marginalVarsOrdering(totalOrdering.end() - nVars, totalOrdering.end());
 
       // Call this function again with the computed orderings
-      return marginalMultifrontalBayesTree(std::cref(marginalVarsOrdering), marginalizationOrdering, function, variableIndex);
+      return marginalMultifrontalBayesTree(marginalVarsOrdering, marginalizationOrdering, function, variableIndex);
     }
   }
 
