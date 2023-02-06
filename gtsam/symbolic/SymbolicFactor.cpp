@@ -49,7 +49,7 @@ namespace gtsam {
     SymbolicFactor::eliminate(const Ordering& keys) const
   {
     SymbolicFactorGraph graph;
-    graph += *this; // TODO: Is there a way to avoid copying this factor?
+    graph.push_back(*this); // TODO: Is there a way to avoid copying this factor?
     return EliminateSymbolic(graph, keys);
   }
 

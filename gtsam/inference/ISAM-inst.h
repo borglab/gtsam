@@ -36,12 +36,12 @@ void ISAM<BAYESTREE>::updateInternal(const FactorGraphType& newFactors,
 
   // Add the removed top and the new factors
   FactorGraphType factors;
-  factors += bn;
-  factors += newFactors;
+  factors.push_back(bn);
+  factors.push_back(newFactors);
 
   // Add the orphaned subtrees
   for (const sharedClique& orphan : *orphans)
-    factors += std::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan);
+    factors.push_back(std::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan));
 
   // Get an ordering where the new keys are eliminated last
   const VariableIndex index(factors);

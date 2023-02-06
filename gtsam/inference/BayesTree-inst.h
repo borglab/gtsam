@@ -381,13 +381,13 @@ namespace gtsam {
       gttoc(Full_root_factoring);
 
       gttic(Variable_joint);
-      p_BC1C2 += p_B;
-      p_BC1C2 += *p_C1_B;
-      p_BC1C2 += *p_C2_B;
+      p_BC1C2.push_back(p_B);
+      p_BC1C2.push_back(*p_C1_B);
+      p_BC1C2.push_back(*p_C2_B);
       if(C1 != B)
-        p_BC1C2 += C1->conditional();
+        p_BC1C2.push_back(C1->conditional());
       if(C2 != B)
-        p_BC1C2 += C2->conditional();
+        p_BC1C2.push_back(C2->conditional());
       gttoc(Variable_joint);
     }
     else
@@ -395,8 +395,8 @@ namespace gtsam {
       // The nodes have no common ancestor, they're in different trees, so they're joint is just the
       // product of their marginals.
       gttic(Disjoint_marginals);
-      p_BC1C2 += C1->marginal2(function);
-      p_BC1C2 += C2->marginal2(function);
+      p_BC1C2.push_back(C1->marginal2(function));
+      p_BC1C2.push_back(C2->marginal2(function));
       gttoc(Disjoint_marginals);
     }
 

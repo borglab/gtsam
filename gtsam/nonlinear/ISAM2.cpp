@@ -294,8 +294,7 @@ void ISAM2::recalculateIncremental(const ISAM2UpdateParams& updateParams,
   gttic(orphans);
   // Add the orphaned subtrees
   for (const auto& orphan : *orphans)
-    factors +=
-        std::make_shared<BayesTreeOrphanWrapper<ISAM2::Clique> >(orphan);
+    factors.emplace_shared<BayesTreeOrphanWrapper<ISAM2::Clique> >(orphan);
   gttoc(orphans);
 
   // 3. Re-order and eliminate the factor graph into a Bayes net (Algorithm
