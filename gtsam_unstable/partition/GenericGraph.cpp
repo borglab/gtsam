@@ -6,6 +6,7 @@
  *  Description: generic graph types used in partitioning
  */
 #include <iostream>
+#include <cassert>
 
 #include <gtsam/base/DSFVector.h>
 
