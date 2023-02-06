@@ -67,7 +67,7 @@ void save(Archive& ar, const std::optional<T>& t, const unsigned int /*version*/
   // It is an inherent limitation to the serialization of optional.hpp
   // that the underlying type must be either a pointer or must have a
   // default constructor.
-  BOOST_STATIC_ASSERT(boost::serialization::detail::is_default_constructible<T>::value || boost::is_pointer<T>::value);
+  static_assert(boost::serialization::detail::is_default_constructible<T>::value || boost::is_pointer<T>::value);
   const bool tflag = t.has_value();
   ar << boost::serialization::make_nvp("initialized", tflag);
   if (tflag) {
