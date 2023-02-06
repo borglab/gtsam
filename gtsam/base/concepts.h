@@ -13,7 +13,10 @@
 // to cause compilation errors.
 #ifdef COMPILE_ERROR_NOT_IMPLEMENTED
 
+#ifdef GTSAM_USE_BOOST_FEATURES
 #include <boost/static_assert.hpp>
+#endif
+
 #define CONCEPT_NOT_IMPLEMENTED BOOST_STATIC_ASSERT_MSG(boost::false_type, \
 "This method is required by the new concepts framework but has not been implemented yet.");
 

@@ -23,9 +23,11 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/OptionalJacobian.h>
 
+#ifdef GTSAM_USE_BOOST_FEATURES
 #include <boost/concept_check.hpp>
 #include <boost/concept/requires.hpp>
 #include <boost/type_traits/is_base_of.hpp>
+#endif
 
 namespace gtsam {
 

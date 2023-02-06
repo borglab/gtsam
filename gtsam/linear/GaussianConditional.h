@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include <boost/utility.hpp>
-
 #include <gtsam/global_includes.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/inference/Conditional.h>

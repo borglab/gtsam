@@ -24,8 +24,6 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/Vector.h>
 
-#include <boost/algorithm/string.hpp>
-
 #include <stdexcept>
 
 using std::cout;

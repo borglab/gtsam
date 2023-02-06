@@ -24,7 +24,6 @@
 #include <gtsam/inference/Symbol.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind/bind.hpp>
 
 // STL/C++
 #include <iostream>

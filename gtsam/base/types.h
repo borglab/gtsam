@@ -20,8 +20,10 @@
 #pragma once
 
 #include <gtsam/dllexport.h>
+#ifdef GTSAM_USE_BOOST_FEATURES
 #include <boost/concept/assert.hpp>
 #include <boost/range/concepts.hpp>
+#endif
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #include <cstddef>

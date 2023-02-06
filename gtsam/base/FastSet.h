@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include <boost/version.hpp>
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/version.hpp>
 #if BOOST_VERSION >= 107400
 #include <boost/serialization/library_version_type.hpp>
 #endif

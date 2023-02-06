@@ -27,8 +27,6 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/math/special_functions.hpp>
-
 #include <utility>
 
 using namespace std;

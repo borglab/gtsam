@@ -288,6 +288,7 @@ private:
     return expression(keys);
   }
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
@@ -295,6 +296,7 @@ private:
         "ExpressionFactorN",
         boost::serialization::base_object<ExpressionFactor<T>>(*this));
   }
+#endif
 };
 /// traits
 template <typename T, typename... Args>

@@ -19,17 +19,16 @@
 #include <gtsam/slam/lago.h>
 
 #include <gtsam/slam/InitializePose.h>
-#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/kruskal.h>
 
-#include <boost/math/special_functions.hpp>
-
 #include <iostream>
 #include <stack>
+#include <cmath>
 
 using namespace std;
 
@@ -188,7 +187,7 @@ GaussianFactorGraph buildLinearOrientationGraph(
     ///cout << "REG: key1= " << DefaultKeyFormatter(key1) << " key2= " << DefaultKeyFormatter(key2) << endl;
     double k2pi_noise = key1_DeltaTheta_key2 + orientationsToRoot.at(key1)
         - orientationsToRoot.at(key2); // this coincides to summing up measurements along the cycle induced by the chord
-    double k = boost::math::round(k2pi_noise / (2 * M_PI));
+    double k = std::round(k2pi_noise / (2 * M_PI));
     //if (k2pi_noise - 2*k*M_PI > 1e-5) cout << k2pi_noise - 2*k*M_PI << endl; // for debug
     Vector deltaThetaRegularized = (Vector(1)
         << key1_DeltaTheta_key2 - 2 * k * M_PI).finished();

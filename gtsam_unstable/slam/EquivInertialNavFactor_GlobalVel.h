@@ -27,8 +27,6 @@
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/bind/bind.hpp>
-
 #include <ostream>
 
 namespace gtsam {

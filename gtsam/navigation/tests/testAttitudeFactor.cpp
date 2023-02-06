@@ -20,7 +20,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/bind/bind.hpp>
 #include <functional>
 #include "gtsam/base/Matrix.h"
 #include <CppUnitLite/TestHarness.h>

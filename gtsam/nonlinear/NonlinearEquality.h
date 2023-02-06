@@ -21,8 +21,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
 
-#include <boost/bind/bind.hpp>
-
 #include <limits>
 #include <iostream>
 #include <cmath>
@@ -346,6 +344,7 @@ class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /// Serialization function
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -354,6 +353,7 @@ class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
     ar& boost::serialization::make_nvp(
         "NoiseModelFactor2", boost::serialization::base_object<Base>(*this));
   }
+#endif
 };
 // \NonlinearEquality2
 

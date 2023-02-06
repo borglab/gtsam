@@ -21,8 +21,6 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/navigation/BarometricFactor.h>
 
-#include <boost/bind/bind.hpp>
-
 using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;

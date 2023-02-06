@@ -17,8 +17,6 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/bind/bind.hpp>
-
 namespace gtsam {
 
 /**

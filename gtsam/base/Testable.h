@@ -33,7 +33,10 @@
 
 #pragma once
 
+#ifdef GTSAM_USE_BOOST_FEATURES
 #include <boost/concept_check.hpp>
+#endif
+
 #include <functional>
 #include <iostream>
 #include <memory>

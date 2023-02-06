@@ -23,8 +23,6 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/Value.h>
 
-#include <boost/pool/pool_alloc.hpp>
-
 #include <cmath>
 #include <iostream>
 #include <typeinfo> // operator typeid
