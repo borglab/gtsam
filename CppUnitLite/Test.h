@@ -144,7 +144,7 @@ std::to_string(actualTemp))); return; } }
   double expectedTemp = expected; \
   if (!std::isfinite(actualTemp) || !std::isfinite(expectedTemp) || fabs ((expectedTemp)-(actualTemp)) > threshold) \
 { result_.addFailure (Failure (name_, __FILE__, __LINE__, \
-std::to_string(expectedTemp), std::to_string(actualTemp))); return; } }
+std::to_string((double)expectedTemp), std::to_string((double)actualTemp))); return; } }
 
 
 /* EXPECTs: tests will continue running after a failure */
@@ -164,7 +164,7 @@ std::to_string(actualTemp))); } }
   double expectedTemp = expected; \
   if (!std::isfinite(actualTemp) || !std::isfinite(expectedTemp) || fabs ((expectedTemp)-(actualTemp)) > threshold) \
 { result_.addFailure (Failure (name_, __FILE__, __LINE__, \
-std::to_string(expectedTemp), std::to_string(actualTemp))); } }
+std::to_string((double)expectedTemp), std::to_string((double)actualTemp))); } }
 
 
 #define FAIL(text) \
