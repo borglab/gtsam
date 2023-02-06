@@ -9,11 +9,13 @@ if (NOT GTSAM_ENABLE_BOOST_SERIALIZATION)
   )
 endif()
 
-# Add examples to exclude if GTSAM_USE_BOOST is not set
-if (NOT GTSAM_USE_BOOST) 
+# Add examples to exclude if GTSAM_USE_BOOST_FEATURES is not set
+if (NOT GTSAM_USE_BOOST_FEATURES) 
   # add to excluded examples
   list (APPEND excluded_examples
-      # Boost examples
+      CombinedImuFactorsExample.run
+      ImuFactorsExample.run
+      ShonanAveragingCLI.cpp
       SolverComparer.cpp
       )
 endif()
