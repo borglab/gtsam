@@ -121,9 +121,10 @@ namespace gtsam {
     for (auto&& factor : factors) product = (*factor) * product;
     gttoc(product);
 
-    // Normalize the product factor to prevent underflow
-    Ordering ordering = Ordering::Colamd(DiscreteFactorGraph{product});
-    DecisionTreeFactor::shared_ptr normalization = product.sum(ordering);
+    // Sum all the potentials by pretending all keys are frontal:
+    auto normalization = product.sum(product.size());
+
+    // Normalize the product factor to prevent underflow.
     product = product / (*normalization);
 
     // max out frontals, this is the factor on the separator
