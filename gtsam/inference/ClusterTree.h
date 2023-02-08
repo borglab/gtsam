@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include <queue>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Ordering.h>
@@ -165,26 +164,9 @@ class ClusterTree {
     return *(roots_[i]);
   }
 
-  virtual ~ClusterTree() {
-    // use default destructor which recursively deletes all nodes with shared_ptr causes stack overflow.
-    // so for each tree, we first move the root into a queue; then we do a BFS on the tree with the queue;
-    // for each node iterated, if its reference count is 1, it will be deleted while its children are still in the queue.
-    // so that the recursive deletion will not happen.
-    for (auto&& root : roots_) {
-      std::queue<sharedNode> bfs_queue;
-      bfs_queue.push(root);
-      root = nullptr;
-      while (!bfs_queue.empty()) {
-        auto node = bfs_queue.front();
-        bfs_queue.pop();
-        for (auto child : node->children) {
-          bfs_queue.push(child);
-        }
-      }
-    }
-  }
-
   /// @}
+
+  ~ClusterTree();
 
  protected:
   /// @name Details

@@ -27,7 +27,6 @@
 #include <gtsam/base/FastVector.h>
 
 #include <string>
-#include <queue>
 
 namespace gtsam {
 
@@ -112,29 +111,10 @@ namespace gtsam {
     /** Copy constructor */
     BayesTree(const This& other);
 
-    ~BayesTree() {
-      nodes_.clear();  // clear the map manually, as we cannot control the order of destruction in the map
-      for (auto&& root: roots_) {
-        std::queue<sharedClique> bfs_queue;
-        
-        // first, move the root to the queue
-        bfs_queue.push(root);
-        root = nullptr;
-
-        // do a BFS on the tree, for each node, add its children to the queue, and then delete it from the queue
-        // So if the reference count of the node is 1, it will be deleted, and because its children are in the queue,
-        // the deletion of the node will not trigger a recursive deletion of the children.
-        while (!bfs_queue.empty()) {
-          auto current = bfs_queue.front();
-          bfs_queue.pop();
-          for (auto child: current->children) {
-            bfs_queue.push(child);
-          }
-        }
-      }
-    }
-
     /// @}
+
+    /** Destructor */
+    ~BayesTree(); 
 
     /** Assignment operator */
     This& operator=(const This& other);
