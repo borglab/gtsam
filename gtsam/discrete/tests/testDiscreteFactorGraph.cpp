@@ -119,6 +119,9 @@ TEST(DiscreteFactorGraph, test) {
   // Check Factor
   CHECK(newFactor);
   DecisionTreeFactor expectedFactor(B & A, "10 6 6 10");
+  auto normalization = expectedFactor.sum(expectedFactor.size());
+  // Ensure normalization is correct.
+  expectedFactor = expectedFactor / *normalization;
   EXPECT(assert_equal(expectedFactor, *newFactor));
 
   // Test using elimination tree
