@@ -113,6 +113,9 @@ namespace gtsam {
 
     /// @}
 
+    /** Destructor */
+    ~BayesTree(); 
+
     /** Assignment operator */
     This& operator=(const This& other);
 
