@@ -189,15 +189,13 @@ T Expression<T>::valueAndDerivatives(const Values& values,
 
 template<typename T>
 T Expression<T>::traceExecution(const Values& values,
-    internal::ExecutionTrace<T>& trace, void* traceStorage) const {
-  return root_->traceExecution(values, trace,
-      static_cast<internal::ExecutionTraceStorage*>(traceStorage));
+    internal::ExecutionTrace<T>& trace, char* traceStorage) const {
+  return root_->traceExecution(values, trace, traceStorage);
 }
 
 // Allocate a single block of aligned memory using a unique_ptr.
 inline std::unique_ptr<internal::ExecutionTraceStorage[]> allocAligned(size_t size) {
   const size_t alignedSize = (size + internal::TraceAlignment - 1) / internal::TraceAlignment;
-  std::cerr << size << " : " << alignedSize << '\n';
   return std::unique_ptr<internal::ExecutionTraceStorage[]>(
       new internal::ExecutionTraceStorage[alignedSize]);
 }
@@ -214,7 +212,7 @@ T Expression<T>::valueAndJacobianMap(const Values& values,
     // with an execution trace, made up entirely of "Record" structs, see
     // the FunctionalNode class in expression-inl.h
     internal::ExecutionTrace<T> trace;
-    T value(this->traceExecution(values, trace, traceStorage.get()));
+    T value(this->traceExecution(values, trace, reinterpret_cast<char *>(traceStorage.get())));
 
     // We then calculate the Jacobians using reverse automatic differentiation (AD).
     trace.startReverseAD1(jacobians);

@@ -188,9 +188,9 @@ TEST(ExpressionFactor, Binary) {
   values.insert(2, Point2(0, 0));
 
   // Check size
-  internal::ExecutionTrace<Point2> trace;
   auto traceStorage = allocAligned(binary.traceSize());
-  Point2 value = binary.traceExecution(values, trace, traceStorage.get());
+  internal::ExecutionTrace<Point2> trace;
+  Point2 value = binary.traceExecution(values, trace, reinterpret_cast<char *>(traceStorage.get()));
   EXPECT(assert_equal(Point2(0,0),value, 1e-9))
   // trace.print();
 
@@ -240,9 +240,9 @@ TEST(ExpressionFactor, Shallow) {
 
   // traceExecution of shallow tree
   typedef internal::UnaryExpression<Point2, Point3> Unary;
-  internal::ExecutionTrace<Point2> trace;
   auto traceStorage = allocAligned(expression.traceSize());
-  Point2 value = expression.traceExecution(values, trace, traceStorage.get());
+  internal::ExecutionTrace<Point2> trace;
+  Point2 value = expression.traceExecution(values, trace, reinterpret_cast<char *>(traceStorage.get()));
   EXPECT(assert_equal(Point2(0,0),value, 1e-9))
   // trace.print();
 
