@@ -717,14 +717,14 @@ class BinarySumNode : public ExpressionNode<T> {
   };
 
   /// Construct an execution trace for reverse AD
-  T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-                           ExecutionTraceStorage* ptr) const override {
+  T traceExecution(const Values &values, ExecutionTrace<T> &trace,
+                   ExecutionTraceStorage *ptr) const override {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
-    Record* record = new (ptr) Record();
+    Record *record = new (ptr) Record();
     trace.setFunction(record);
 
-    ExecutionTraceStorage* ptr1 = ptr + upAligned(sizeof(Record));
-    ExecutionTraceStorage* ptr2 = ptr1 + expression1_->traceSize();
+    auto ptr1 = reinterpret_cast<ExecutionTraceStorage *>(reinterpret_cast<char *>(ptr) + upAligned(sizeof(Record)));
+    auto ptr2 = reinterpret_cast<ExecutionTraceStorage *>(reinterpret_cast<char *>(ptr1) + expression1_->traceSize());
     return expression1_->traceExecution(values, record->trace1, ptr1) +
            expression2_->traceExecution(values, record->trace2, ptr2);
   }
