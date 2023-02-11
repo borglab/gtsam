@@ -218,7 +218,7 @@ protected:
 template <typename T>
 class ScalarMultiplyExpression : public Expression<T> {
   // Check that T is a vector space
-  GTSAM_CONCEPT_ASSERT(gtsam::IsVectorSpace<T>);
+  GTSAM_CONCEPT_ASSERT(gtsam::IsVectorSpace<T>)
 
  public:
   explicit ScalarMultiplyExpression(double s, const Expression<T>& e);
@@ -231,7 +231,7 @@ class ScalarMultiplyExpression : public Expression<T> {
 template <typename T>
 class BinarySumExpression : public Expression<T> {
   // Check that T is a vector space
-  GTSAM_CONCEPT_ASSERT(gtsam::IsVectorSpace<T>);
+  GTSAM_CONCEPT_ASSERT(gtsam::IsVectorSpace<T>)
 
  public:
   explicit BinarySumExpression(const Expression<T>& e1, const Expression<T>& e2);

@@ -92,7 +92,7 @@ template<class Class>
 struct ManifoldTraits: GetDimensionImpl<Class, Class::dimension> {
 
   // Check that Class has the necessary machinery
-  GTSAM_CONCEPT_ASSERT(HasManifoldPrereqs<Class>);
+  GTSAM_CONCEPT_ASSERT(HasManifoldPrereqs<Class>)
 
   // Dimension of the manifold
   enum { dimension = Class::dimension };

@@ -1147,26 +1147,26 @@ TEST(Matrix, DLT )
 
 //******************************************************************************
 TEST(Matrix, Matrix24IsVectorSpace) {
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Matrix24>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Matrix24>)
 }
 
 TEST(Matrix, RowMajorIsVectorSpace) {
   typedef Eigen::Matrix<double, 2, 3, Eigen::RowMajor> RowMajor;
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowMajor>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowMajor>)
 }
 
 TEST(Matrix, MatrixIsVectorSpace) {
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Matrix>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Matrix>)
 }
 
 TEST(Matrix, VectorIsVectorSpace) {
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector>)
 }
 
 TEST(Matrix, RowVectorIsVectorSpace) {
   typedef Eigen::Matrix<double, 1, -1> RowVector;
-  GTSAM_CONCEPT_ASSERT1(IsVectorSpace<RowVector>);
-  GTSAM_CONCEPT_ASSERT2(IsVectorSpace<Vector5>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowVector>)
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector5>)
 }
 
 //******************************************************************************

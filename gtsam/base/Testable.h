@@ -152,7 +152,7 @@ namespace gtsam {
   struct Testable {
 
     // Check that T has the necessary methods
-    GTSAM_CONCEPT_ASSERT(HasTestablePrereqs<T>);
+    GTSAM_CONCEPT_ASSERT(HasTestablePrereqs<T>)
 
     static void Print(const T& m, const std::string& str = "") {
       m.print(str);

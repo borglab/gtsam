@@ -35,7 +35,7 @@ namespace gtsam {
 
 template <class T> class BinaryMeasurement : public Factor {
   // Check that T type is testable
-  GTSAM_CONCEPT_ASSERT(IsTestable<T>);
+  GTSAM_CONCEPT_ASSERT(IsTestable<T>)
 
 public:
   // shorthand for a smart pointer to a measurement

@@ -22,7 +22,6 @@
 #include <gtsam/discrete/DecisionTree.h>
 
 #include <algorithm>
-
 #include <cmath>
 #include <fstream>
 #include <list>
@@ -33,6 +32,7 @@
 #include <vector>
 #include <optional>
 #include <cassert>
+#include <iterator>
 
 namespace gtsam {
 

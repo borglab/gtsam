@@ -25,7 +25,9 @@
 #include <map>
 #include <string>
 #include <iomanip>
+#include <iterator>
 #include <vector>
+
 namespace gtsam {
 
   /**

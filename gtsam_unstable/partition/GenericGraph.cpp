@@ -5,6 +5,7 @@
  *       Author: nikai
  *  Description: generic graph types used in partitioning
  */
+#include <algorithm>
 #include <iostream>
 #include <cassert>
 
