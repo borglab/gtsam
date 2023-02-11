@@ -27,6 +27,7 @@
 
 #include <iostream>
 #include <optional>
+#include <string>
 #include <type_traits>
 
 namespace gtsam {
@@ -37,7 +38,13 @@ template<int T> struct CallRecord;
 /// Storage type for the execution trace.
 /// It enforces the proper alignment in a portable way.
 /// Provide a traceSize() sized array of this type to traceExecution as traceStorage.
-static const unsigned TraceAlignment = 16; // 16 bytes is the default alignment used by Eigen.
+#ifdef _MSC_VER
+// TODO(dellaert): this might lead to trouble if Eigen decides to use 32 on Windows.
+static const unsigned TraceAlignment = 16; // 16 bytes max_align on Windows
+#else
+static const unsigned TraceAlignment = 32; // Alignment used by Eigen on some platforms.
+#endif
+// TODO(dellaert): we *should* be able to simplify the code using the pointer arithmetic from ExecutionTraceStorage.
 typedef std::aligned_storage<1, TraceAlignment>::type ExecutionTraceStorage;
 
 template<bool UseBlock, typename Derived>
@@ -123,11 +130,11 @@ class ExecutionTrace {
 
   /// Print
   void print(const std::string& indent = "") const {
-    if (kind == Constant)
+    if (kind == Constant) {
       std::cout << indent << "Constant" << std::endl;
-    else if (kind == Leaf)
+    } else if (kind == Leaf) {
       std::cout << indent << "Leaf, key = " << content.key << std::endl;
-    else if (kind == Function) {
+    } else if (kind == Function) {
       content.ptr->print(indent + "  ");
     }
   }
@@ -135,9 +142,9 @@ class ExecutionTrace {
   /// Return record pointer, quite unsafe, used only for testing
   template<class Record>
   std::optional<Record*> record() {
-    if (kind != Function)
+    if (kind != Function) {
       return {};
-    else {
+    } else {
       Record* p = dynamic_cast<Record*>(content.ptr);
       return p ? std::optional<Record*>(p) : std::nullopt;
     }
@@ -152,10 +159,11 @@ class ExecutionTrace {
       // This branch will only be called on trivial Leaf expressions, i.e. Priors
       static const JacobianTT I = JacobianTT::Identity();
       handleLeafCase(I, jacobians, content.key);
-    } else if (kind == Function)
+    } else if (kind == Function) {
       // This is the more typical entry point, starting the AD pipeline
       // Inside startReverseAD2 the correctly dimensioned pipeline is chosen.
       content.ptr->startReverseAD2(jacobians);
+    }
   }
 
   /// Either add to Jacobians (Leaf) or propagate (Function)
