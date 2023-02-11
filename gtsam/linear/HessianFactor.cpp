@@ -378,7 +378,7 @@ GaussianFactor::shared_ptr HessianFactor::negate() const {
   shared_ptr result = std::make_shared<This>(*this);
   // Negate the information matrix of the result
   result->info_.negate();
-  return result;
+  return std::move(result);
 }
 
 /* ************************************************************************* */

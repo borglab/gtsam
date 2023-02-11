@@ -51,7 +51,6 @@ class GTSAM_EXPORT ISAM2Clique
 
   /// Default constructor
   ISAM2Clique() : Base() {}
-  virtual ~ISAM2Clique() = default;
 
   /// Copy constructor, does *not* copy solution pointers as these are invalid
   /// in different trees.

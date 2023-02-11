@@ -83,9 +83,6 @@ namespace gtsam {
       return *this;
     }
 
-    /// Destructor
-    virtual ~SymbolicBayesNet() {}
-
     /// @}
 
     /// @name Testable

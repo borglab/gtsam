@@ -106,7 +106,7 @@ public:
   /// @{
 
   /** Destructor */
-  virtual ~NonlinearFactor() {}
+  virtual ~NonlinearFactor() override {}
 
   /**
    * In nonlinear factors, the error function returns the negative log-likelihood

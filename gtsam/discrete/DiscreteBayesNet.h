@@ -65,9 +65,6 @@ class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional> {
     DiscreteBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph)
         : Base(graph) {}
 
-    /// Destructor
-    virtual ~DiscreteBayesNet() {}
-
     /// @}
 
     /// @name Testable

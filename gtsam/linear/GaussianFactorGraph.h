@@ -108,7 +108,7 @@ namespace gtsam {
     GaussianFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
     /** Virtual destructor */
-    virtual ~GaussianFactorGraph() {}
+    virtual ~GaussianFactorGraph() override {}
 
     /// @}
     /// @name Testable

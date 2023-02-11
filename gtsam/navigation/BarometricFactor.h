@@ -89,12 +89,12 @@ class GTSAM_EXPORT BarometricFactor : public NoiseModelFactorN<Pose3, double> {
         // From https://www.grc.nasa.gov/www/k-12/airplane/atmosmet.html
         return (std::pow(n / 101.29, 1. / 5.256) * 288.08 - 273.1 - 15.04) /
                -0.00649;
-    };
+    }
 
     inline double baroOut(const double& meters) {
         double temp = 15.04 - 0.00649 * meters;
         return 101.29 * std::pow(((temp + 273.1) / 288.08), 5.256);
-    };
+    }
 
    private:
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///

@@ -51,7 +51,7 @@ namespace gtsam {
     GaussianFactor(const CONTAINER& keys) : Base(keys) {}
 
     /** Destructor */
-    virtual ~GaussianFactor() {}
+    virtual ~GaussianFactor() override {}
 
     // Implementing Testable interface
 

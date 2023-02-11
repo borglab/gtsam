@@ -45,7 +45,6 @@ class GTSAM_EXPORT DiscreteBayesTreeClique
   typedef std::shared_ptr<This> shared_ptr;
   typedef std::weak_ptr<This> weak_ptr;
   DiscreteBayesTreeClique() {}
-  virtual ~DiscreteBayesTreeClique() {}
   DiscreteBayesTreeClique(
       const std::shared_ptr<DiscreteConditional>& conditional)
       : Base(conditional) {}

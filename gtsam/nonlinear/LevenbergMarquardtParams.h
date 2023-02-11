@@ -117,8 +117,8 @@ public:
   }
 
   static LevenbergMarquardtParams ReplaceOrdering(LevenbergMarquardtParams params,
-                                                  const Ordering& ordering) {
-    params.ordering = ordering;
+                                                  const Ordering& ord) {
+    params.ordering = ord;
     return params;
   }
 

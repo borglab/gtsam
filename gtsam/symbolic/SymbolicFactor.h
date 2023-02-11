@@ -79,7 +79,7 @@ namespace gtsam {
     /** Create symbolic version of any factor */
     explicit SymbolicFactor(const Factor& factor) : Base(factor.keys()) {}
 
-    virtual ~SymbolicFactor() {}
+    virtual ~SymbolicFactor() override {}
 
     /// Copy this object as its actual derived type.
     SymbolicFactor::shared_ptr clone() const { return std::make_shared<This>(*this); }

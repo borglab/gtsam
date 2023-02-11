@@ -18,11 +18,9 @@
 
 #include <gtsam/navigation/NavState.h>
 
-using namespace std;
+#include <string>
 
 namespace gtsam {
-
-#define TIE(R,t,v,x) const Rot3& R = (x).R_;const Point3& t = (x).t_;const Velocity3& v = (x).v_;
 
 //------------------------------------------------------------------------------
 NavState NavState::Create(const Rot3& R, const Point3& t, const Velocity3& v,
@@ -87,7 +85,7 @@ Matrix7 NavState::matrix() const {
 }
 
 //------------------------------------------------------------------------------
-ostream& operator<<(ostream& os, const NavState& state) {
+std::ostream& operator<<(std::ostream& os, const NavState& state) {
   os << "R: " << state.attitude() << "\n";
   os << "p: " << state.position().transpose() << "\n";
   os << "v: " << state.velocity().transpose();
@@ -95,8 +93,8 @@ ostream& operator<<(ostream& os, const NavState& state) {
 }
 
 //------------------------------------------------------------------------------
-void NavState::print(const string& s) const {
-  cout << (s.empty() ? s : s + " ") << *this << endl;
+void NavState::print(const std::string& s) const {
+  std::cout << (s.empty() ? s : s + " ") << *this << std::endl;
 }
 
 //------------------------------------------------------------------------------
@@ -108,7 +106,7 @@ bool NavState::equals(const NavState& other, double tol) const {
 //------------------------------------------------------------------------------
 NavState NavState::retract(const Vector9& xi, //
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
-  TIE(nRb, n_t, n_v, *this);
+  auto [nRb, n_t, n_v] = (*this);
   Matrix3 D_bRc_xi, D_R_nRb, D_t_nRb, D_v_nRb;
   const Rot3 bRc = Rot3::Expmap(dR(xi), H2 ? &D_bRc_xi : 0);
   const Rot3 nRc = nRb.compose(bRc, H1 ? &D_R_nRb : 0);
@@ -214,7 +212,8 @@ NavState NavState::update(const Vector3& b_acceleration, const Vector3& b_omega,
 //------------------------------------------------------------------------------
 Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
     OptionalJacobian<9, 9> H) const {
-  TIE(nRb, n_t, n_v, *this);
+  auto [nRb, n_t, n_v] = (*this);
+
   const double dt2 = dt * dt;
   const Vector3 omega_cross_vel = omega.cross(n_v);
 

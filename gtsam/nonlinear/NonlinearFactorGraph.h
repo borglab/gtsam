@@ -79,7 +79,7 @@ namespace gtsam {
     NonlinearFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
     /// Destructor
-    virtual ~NonlinearFactorGraph() {}
+    virtual ~NonlinearFactorGraph() override {}
 
     /// @}
     /// @name Testable

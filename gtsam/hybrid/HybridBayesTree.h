@@ -55,8 +55,6 @@ class GTSAM_EXPORT HybridBayesTreeClique
       : Base(conditional) {}
   ///< Copy constructor
   HybridBayesTreeClique(const HybridBayesTreeClique& clique) : Base(clique) {}
-
-  virtual ~HybridBayesTreeClique() {}
 };
 
 /* ************************************************************************* */

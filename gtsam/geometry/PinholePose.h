@@ -67,7 +67,7 @@ public:
   /// @name Standard Interface
   /// @{
 
-  virtual ~PinholeBaseK() {
+  virtual ~PinholeBaseK() override {
   }
 
   /// return calibration
@@ -425,7 +425,7 @@ public:
 
   /// for Nonlinear Triangulation
   Vector defaultErrorWhenTriangulatingBehindCamera() const {
-    return Eigen::Matrix<double,traits<Point2>::dimension,1>::Constant(2.0 * K_->fx());;
+    return Eigen::Matrix<double,traits<Point2>::dimension,1>::Constant(2.0 * K_->fx());
   }
   /// @}
 

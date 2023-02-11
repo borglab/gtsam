@@ -123,8 +123,6 @@ class MixtureFactor : public HybridFactor {
     }
   }
 
-  ~MixtureFactor() = default;
-
   /**
    * @brief Compute error of the MixtureFactor as a tree.
    *

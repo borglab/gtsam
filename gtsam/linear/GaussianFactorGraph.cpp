@@ -249,7 +249,7 @@ namespace gtsam {
     // combine all factors and get upper-triangular part of Hessian
     Scatter scatter(*this, ordering);
     HessianFactor combined(*this, scatter);
-    return combined.info().selfadjointView();;
+    return combined.info().selfadjointView();
   }
 
   /* ************************************************************************* */
@@ -257,7 +257,7 @@ namespace gtsam {
     // combine all factors and get upper-triangular part of Hessian
     Scatter scatter(*this);
     HessianFactor combined(*this, scatter);
-    return combined.info().selfadjointView();;
+    return combined.info().selfadjointView();
   }
 
   /* ************************************************************************* */

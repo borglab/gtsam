@@ -111,9 +111,6 @@ namespace gtsam {
         return *this;
     }
 
-    /// Destructor
-    virtual ~SymbolicFactorGraph() {}
-
     /// @}
 
     /// @name Testable

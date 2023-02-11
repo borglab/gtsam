@@ -54,13 +54,13 @@ class GTSAM_EXPORT HybridValues {
   HybridValues() = default;
 
   /// Construct from DiscreteValues and VectorValues.
-  HybridValues(const VectorValues& cv, const DiscreteValues& dv)
-      : continuous_(cv), discrete_(dv){};
+  HybridValues(const VectorValues &cv, const DiscreteValues &dv)
+      : continuous_(cv), discrete_(dv){}
 
   /// Construct from all values types.
   HybridValues(const VectorValues& cv, const DiscreteValues& dv,
                const Values& v)
-      : continuous_(cv), discrete_(dv), nonlinear_(v){};
+      : continuous_(cv), discrete_(dv), nonlinear_(v){}
 
   /// @}
   /// @name Testable
@@ -73,7 +73,7 @@ class GTSAM_EXPORT HybridValues {
     continuous_.print("  Continuous",
                       keyFormatter);              // print continuous components
     discrete_.print("  Discrete", keyFormatter);  // print discrete components
-  };
+  }
 
   /// equals required by Testable for unit testing
   bool equals(const HybridValues& other, double tol = 1e-9) const {
@@ -95,20 +95,20 @@ class GTSAM_EXPORT HybridValues {
   const Values& nonlinear() const { return nonlinear_; }
 
   /// Check whether a variable with key \c j exists in VectorValues.
-  bool existsVector(Key j) { return continuous_.exists(j); };
+  bool existsVector(Key j) { return continuous_.exists(j); }
 
   /// Check whether a variable with key \c j exists in DiscreteValues.
-  bool existsDiscrete(Key j) { return (discrete_.find(j) != discrete_.end()); };
+  bool existsDiscrete(Key j) { return (discrete_.find(j) != discrete_.end()); }
 
   /// Check whether a variable with key \c j exists in values.
   bool existsNonlinear(Key j) {
     return nonlinear_.exists(j);
-  };
+  }
 
   /// Check whether a variable with key \c j exists.
   bool exists(Key j) {
     return existsVector(j) || existsDiscrete(j) || existsNonlinear(j);
-  };
+  }
 
   /** Insert a vector \c value with key \c j.  Throws an invalid_argument
    * exception if the key \c j is already used.
@@ -120,7 +120,7 @@ class GTSAM_EXPORT HybridValues {
    * the key \c j is already used.
    * @param value The vector to be inserted.
    * @param j The index with which the value will be associated. */
-  void insert(Key j, size_t value) { discrete_[j] = value; };
+  void insert(Key j, size_t value) { discrete_[j] = value; }
 
   /// insert_or_assign() , similar to Values.h
   void insert_or_assign(Key j, const Vector& value) {
@@ -166,13 +166,13 @@ class GTSAM_EXPORT HybridValues {
    * Read/write access to the vector value with key \c j, throws
    * std::out_of_range if \c j does not exist.
    */
-  Vector& at(Key j) { return continuous_.at(j); };
+  Vector& at(Key j) { return continuous_.at(j); }
 
   /**
    * Read/write access to the discrete value with key \c j, throws
    * std::out_of_range if \c j does not exist.
    */
-  size_t& atDiscrete(Key j) { return discrete_.at(j); };
+  size_t& atDiscrete(Key j) { return discrete_.at(j); }
 
   /** For all key/value pairs in \c values, replace continuous values with
    * corresponding keys in this object with those in \c values.  Throws
@@ -227,7 +227,7 @@ class GTSAM_EXPORT HybridValues {
     ss << this->continuous_.html(keyFormatter);
     ss << this->discrete_.html(keyFormatter);
     return ss.str();
-  };
+  }
 
   /// @}
 };

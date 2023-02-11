@@ -71,9 +71,6 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
       const SmartStereoProjectionParams& params = SmartStereoProjectionParams(),
       const std::optional<Pose3>& body_P_sensor = {});
 
-  /** Virtual destructor */
-  ~SmartStereoProjectionPoseFactor() override = default;
-
   /**
    * add a new measurement and pose key
    * @param measured is the 2m dimensional location of the projection of a

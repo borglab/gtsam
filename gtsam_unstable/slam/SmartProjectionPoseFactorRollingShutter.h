@@ -113,9 +113,6 @@ class GTSAM_UNSTABLE_EXPORT SmartProjectionPoseFactorRollingShutter
           "linearizationMode must be set to HESSIAN");
   }
 
-  /** Virtual destructor */
-  ~SmartProjectionPoseFactorRollingShutter() override = default;
-
   /**
    * add a new measurement, with 2 pose keys, interpolation factor, and cameraId
    * @param measured 2-dimensional location of the projection of a single
