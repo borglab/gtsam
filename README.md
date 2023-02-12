@@ -72,7 +72,7 @@ If you are using GTSAM for academic work, please use the following citation:
   publisher    = {Georgia Tech Borg Lab},
   version      = {4.2a8},
   doi          = {10.5281/zenodo.5794541},
-  url          = {https://github.com/borglab/gtsam)}}
+  url          = {https://github.com/borglab/gtsam}
 }
 ```
 
