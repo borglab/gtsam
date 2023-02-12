@@ -47,7 +47,7 @@ TEST(Expression, Constant) {
   Rot3_ R(someR);
   Values values;
   Rot3 actual = R.value(values);
-  EXPECT(assert_equal(someR, actual));
+  EXPECT(assert_equal(someR, actual))
   EXPECT_LONGS_EQUAL(0, R.traceSize())
 }
 
@@ -60,7 +60,7 @@ TEST(Expression, Leaf) {
   values.insert(key, someR);
 
   Rot3 actual2 = R.value(values);
-  EXPECT(assert_equal(someR, actual2));
+  EXPECT(assert_equal(someR, actual2))
 }
 
 /* ************************************************************************* */
@@ -70,7 +70,7 @@ TEST(Expression, Leaves) {
   const Point3 somePoint(1, 2, 3);
   values.insert(Symbol('p', 10), somePoint);
   std::vector<Point3_> pointExpressions = createUnknowns<Point3>(10, 'p', 1);
-  EXPECT(assert_equal(somePoint, pointExpressions.back().value(values)));
+  EXPECT(assert_equal(somePoint, pointExpressions.back().value(values)))
 }
 
 /* ************************************************************************* */
@@ -93,14 +93,14 @@ const set<Key> expected{1};
 TEST(Expression, Unary1) {
   using namespace unary;
   Expression<Point2> unaryExpression(f1, pointExpression);
-  EXPECT(expected == unaryExpression.keys());
+  EXPECT(expected == unaryExpression.keys())
 }
 
 // Check that also works with a scalar return value.
 TEST(Expression, Unary2) {
   using namespace unary;
   Double_ unaryExpression(f2, pointExpression);
-  EXPECT(expected == unaryExpression.keys());
+  EXPECT(expected == unaryExpression.keys())
 }
 
 // Unary(Leaf), dynamic
@@ -108,7 +108,7 @@ TEST(Expression, Unary3) {
   using namespace unary;
   // TODO(yetongumich): dynamic output arguments do not work yet!
   // Expression<Vector> unaryExpression(f3, pointExpression);
-  // EXPECT(expected == unaryExpression.keys());
+  // EXPECT(expected == unaryExpression.keys())
 }
 
 /* ************************************************************************* */
@@ -149,7 +149,7 @@ TEST(Expression, NullaryMethod) {
   // Check dims as map
   std::map<Key, int> map;
   norm_.dims(map); // TODO(yetongumich): Change to google style pointer convention.
-  LONGS_EQUAL(1, map.size());
+  LONGS_EQUAL(1, map.size())
 
   // Get value and Jacobians
   std::vector<Matrix> H(1);
@@ -157,10 +157,10 @@ TEST(Expression, NullaryMethod) {
 
   // Check all
   const double norm = sqrt(3*3 + 4*4 + 5*5);
-  EXPECT(actual == norm);
+  EXPECT(actual == norm)
   Matrix expected(1, 3);
   expected << 3.0 / norm, 4.0 / norm, 5.0 / norm;
-  EXPECT(assert_equal(expected, H[0]));
+  EXPECT(assert_equal(expected, H[0]))
 }
 
 /* ************************************************************************* */
@@ -187,7 +187,7 @@ TEST(Expression, BinaryToDouble) {
 // Check keys of an expression created from class method.
 TEST(Expression, BinaryKeys) {
   const set<Key> expected{1, 2};
-  EXPECT(expected == binary::p_cam.keys());
+  EXPECT(expected == binary::p_cam.keys())
 }
 
 /* ************************************************************************* */
@@ -195,7 +195,7 @@ TEST(Expression, BinaryKeys) {
 TEST(Expression, BinaryDimensions) {
   map<Key, int> actual, expected{{1, 6}, {2, 3}};
   binary::p_cam.dims(actual);
-  EXPECT(actual == expected);
+  EXPECT(actual == expected)
 }
 
 /* ************************************************************************* */
@@ -204,7 +204,7 @@ TEST(Expression, BinaryTraceSize) {
   typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
   size_t expectedTraceSize = sizeof(Binary::Record);
   internal::upAlign(expectedTraceSize);
-  EXPECT_LONGS_EQUAL(expectedTraceSize, binary::p_cam.traceSize());
+  EXPECT_LONGS_EQUAL(expectedTraceSize, binary::p_cam.traceSize())
 }
 
 /* ************************************************************************* */
@@ -224,7 +224,7 @@ Expression<Point2> uv_hat(uncalibrate<Cal3_S2>, K, projection);
 // keys
 TEST(Expression, TreeKeys) {
   const set<Key> expected{1, 2, 3};
-  EXPECT(expected == tree::uv_hat.keys());
+  EXPECT(expected == tree::uv_hat.keys())
 }
 
 /* ************************************************************************* */
@@ -232,25 +232,25 @@ TEST(Expression, TreeKeys) {
 TEST(Expression, TreeDimensions) {
   map<Key, int> actual, expected{{1, 6}, {2, 3}, {3, 5}};
   tree::uv_hat.dims(actual);
-  EXPECT(actual == expected);
+  EXPECT(actual == expected)
 }
 
 /* ************************************************************************* */
 // TraceSize
 TEST(Expression, TreeTraceSize) {
   typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary1;
-  EXPECT_LONGS_EQUAL(internal::upAligned(sizeof(Binary1::Record)), tree::p_cam.traceSize());
+  EXPECT_LONGS_EQUAL(internal::upAligned(sizeof(Binary1::Record)), tree::p_cam.traceSize())
 
   typedef internal::UnaryExpression<Point2, Point3> Unary;
   EXPECT_LONGS_EQUAL(internal::upAligned(sizeof(Unary::Record)) + tree::p_cam.traceSize(),
-                     tree::projection.traceSize());
+                     tree::projection.traceSize())
 
-  EXPECT_LONGS_EQUAL(0, tree::K.traceSize());
+  EXPECT_LONGS_EQUAL(0, tree::K.traceSize())
 
   typedef internal::BinaryExpression<Point2, Cal3_S2, Point2> Binary2;
   EXPECT_LONGS_EQUAL(internal::upAligned(sizeof(Binary2::Record)) + tree::K.traceSize() +
                          tree::projection.traceSize(),
-                     tree::uv_hat.traceSize());
+                     tree::uv_hat.traceSize())
 }
 
 /* ************************************************************************* */
@@ -262,7 +262,7 @@ TEST(Expression, compose1) {
 
   // Check keys
   const set<Key> expected{1, 2};
-  EXPECT(expected == R3.keys());
+  EXPECT(expected == R3.keys())
 }
 
 /* ************************************************************************* */
@@ -274,7 +274,7 @@ TEST(Expression, compose2) {
 
   // Check keys
   const set<Key> expected{1};
-  EXPECT(expected == R3.keys());
+  EXPECT(expected == R3.keys())
 }
 
 /* ************************************************************************* */
@@ -286,7 +286,7 @@ TEST(Expression, compose3) {
 
   // Check keys
   const set<Key> expected{3};
-  EXPECT(expected == R3.keys());
+  EXPECT(expected == R3.keys())
 }
 
 /* ************************************************************************* */
@@ -299,7 +299,7 @@ TEST(Expression, compose4) {
 
   // Check keys
   const set<Key> expected{1};
-  EXPECT(expected == R3.keys());
+  EXPECT(expected == R3.keys())
 }
 
 /* ************************************************************************* */
@@ -323,7 +323,7 @@ TEST(Expression, ternary) {
 
   // Check keys
   const set<Key> expected {1, 2, 3};
-  EXPECT(expected == ABC.keys());
+  EXPECT(expected == ABC.keys())
 }
 
 /* ************************************************************************* */
@@ -333,28 +333,28 @@ TEST(Expression, ScalarMultiply) {
   const Point3_ expr = 23 * Point3_(key);
 
   const set<Key> expected_keys{key};
-  EXPECT(expected_keys == expr.keys());
+  EXPECT(expected_keys == expr.keys())
 
   map<Key, int> actual_dims, expected_dims {{key, 3}};
   expr.dims(actual_dims);
-  EXPECT(actual_dims == expected_dims);
+  EXPECT(actual_dims == expected_dims)
 
   // Check dims as map
   std::map<Key, int> map;
   expr.dims(map);
-  LONGS_EQUAL(1, map.size());
+  LONGS_EQUAL(1, map.size())
 
   Values values;
   values.insert<Point3>(key, Point3(1, 0, 2));
 
   // Check value
   const Point3 expected(23, 0, 46);
-  EXPECT(assert_equal(expected, expr.value(values)));
+  EXPECT(assert_equal(expected, expr.value(values)))
 
   // Check value + Jacobians
   std::vector<Matrix> H(1);
-  EXPECT(assert_equal(expected, expr.value(values, H)));
-  EXPECT(assert_equal(23 * I_3x3, H[0]));
+  EXPECT(assert_equal(expected, expr.value(values, H)))
+  EXPECT(assert_equal(23 * I_3x3, H[0]))
 }
 
 /* ************************************************************************* */
@@ -364,28 +364,28 @@ TEST(Expression, BinarySum) {
   const Point3_ sum_ = Point3_(key) + Point3_(Point3(1, 1, 1));
 
   const set<Key> expected_keys{key};
-  EXPECT(expected_keys == sum_.keys());
+  EXPECT(expected_keys == sum_.keys())
 
   map<Key, int> actual_dims, expected_dims {{key, 3}};
   sum_.dims(actual_dims);
-  EXPECT(actual_dims == expected_dims);
+  EXPECT(actual_dims == expected_dims)
 
   // Check dims as map
   std::map<Key, int> map;
   sum_.dims(map);
-  LONGS_EQUAL(1, map.size());
+  LONGS_EQUAL(1, map.size())
 
   Values values;
   values.insert<Point3>(key, Point3(2, 2, 2));
 
   // Check value
   const Point3 expected(3, 3, 3);
-  EXPECT(assert_equal(expected, sum_.value(values)));
+  EXPECT(assert_equal(expected, sum_.value(values)))
 
   // Check value + Jacobians
   std::vector<Matrix> H(1);
-  EXPECT(assert_equal(expected, sum_.value(values, H)));
-  EXPECT(assert_equal(I_3x3, H[0]));
+  EXPECT(assert_equal(expected, sum_.value(values, H)))
+  EXPECT(assert_equal(I_3x3, H[0]))
 }
 
 /* ************************************************************************* */
@@ -395,19 +395,19 @@ TEST(Expression, TripleSum) {
   const Point3_ p1_(Point3(1, 1, 1)), p2_(key);
   const Expression<Point3> sum_ = p1_ + p2_ + p1_;
 
-  LONGS_EQUAL(1, sum_.keys().size());
+  LONGS_EQUAL(1, sum_.keys().size())
 
   Values values;
   values.insert<Point3>(key, Point3(2, 2, 2));
 
   // Check value
   const Point3 expected(4, 4, 4);
-  EXPECT(assert_equal(expected, sum_.value(values)));
+  EXPECT(assert_equal(expected, sum_.value(values)))
 
   // Check value + Jacobians
   std::vector<Matrix> H(1);
-  EXPECT(assert_equal(expected, sum_.value(values, H)));
-  EXPECT(assert_equal(I_3x3, H[0]));
+  EXPECT(assert_equal(expected, sum_.value(values, H)))
+  EXPECT(assert_equal(I_3x3, H[0]))
 }
 
 /* ************************************************************************* */
@@ -419,19 +419,19 @@ TEST(Expression, PlusEqual) {
   sum_ += p2_;
   sum_ += p1_;
 
-  LONGS_EQUAL(1, sum_.keys().size());
+  LONGS_EQUAL(1, sum_.keys().size())
 
   Values values;
   values.insert<Point3>(key, Point3(2, 2, 2));
 
   // Check value
   const Point3 expected(4, 4, 4);
-  EXPECT(assert_equal(expected, sum_.value(values)));
+  EXPECT(assert_equal(expected, sum_.value(values)))
 
   // Check value + Jacobians
   std::vector<Matrix> H(1);
-  EXPECT(assert_equal(expected, sum_.value(values, H)));
-  EXPECT(assert_equal(I_3x3, H[0]));
+  EXPECT(assert_equal(expected, sum_.value(values, H)))
+  EXPECT(assert_equal(I_3x3, H[0]))
 }
 
 /* ************************************************************************* */
@@ -444,12 +444,12 @@ TEST(Expression, SumOfUnaries) {
   values.insert<Point3>(key, Point3(6, 0, 0));
 
   // Check value
-  EXPECT_DOUBLES_EQUAL(12, sum_.value(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(12, sum_.value(values), 1e-9)
 
   // Check value + Jacobians
   std::vector<Matrix> H(1);
-  EXPECT_DOUBLES_EQUAL(12, sum_.value(values, H), 1e-9);
-  EXPECT(assert_equal(Vector3(2, 0, 0).transpose(), H[0]));
+  EXPECT_DOUBLES_EQUAL(12, sum_.value(values, H), 1e-9)
+  EXPECT(assert_equal(Vector3(2, 0, 0).transpose(), H[0]))
 }
 
 /* ************************************************************************* */
@@ -460,20 +460,20 @@ TEST(Expression, UnaryOfSum) {
 
   map<Key, int> actual_dims, expected_dims = {{key1, 3}, {key2, 3}};
   norm_.dims(actual_dims);
-  EXPECT(actual_dims == expected_dims);
+  EXPECT(actual_dims == expected_dims)
 
   Values values;
   values.insert<Point3>(key1, Point3(1, 0, 0));
   values.insert<Point3>(key2, Point3(0, 1, 0));
 
   // Check value
-  EXPECT_DOUBLES_EQUAL(sqrt(2), norm_.value(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(sqrt(2), norm_.value(values), 1e-9)
 
   // Check value + Jacobians
   std::vector<Matrix> H(2);
-  EXPECT_DOUBLES_EQUAL(sqrt(2), norm_.value(values, H), 1e-9);
-  EXPECT(assert_equal(0.5 * sqrt(2) * Vector3(1, 1, 0).transpose(), H[0]));
-  EXPECT(assert_equal(0.5 * sqrt(2) * Vector3(1, 1, 0).transpose(), H[1]));
+  EXPECT_DOUBLES_EQUAL(sqrt(2), norm_.value(values, H), 1e-9)
+  EXPECT(assert_equal(0.5 * sqrt(2) * Vector3(1, 1, 0).transpose(), H[0]))
+  EXPECT(assert_equal(0.5 * sqrt(2) * Vector3(1, 1, 0).transpose(), H[1]))
 }
 
 /* ************************************************************************* */
@@ -483,7 +483,7 @@ TEST(Expression, WeightedSum) {
 
   map<Key, int> actual_dims, expected_dims {{key1, 3}, {key2, 3}};
   weighted_sum_.dims(actual_dims);
-  EXPECT(actual_dims == expected_dims);
+  EXPECT(actual_dims == expected_dims)
 
   Values values;
   const Point3 point1(1, 0, 0), point2(0, 1, 0);
@@ -492,13 +492,13 @@ TEST(Expression, WeightedSum) {
 
   // Check value
   const Point3 expected = 17 * point1 + 23 * point2;
-  EXPECT(assert_equal(expected, weighted_sum_.value(values)));
+  EXPECT(assert_equal(expected, weighted_sum_.value(values)))
 
   // Check value + Jacobians
   std::vector<Matrix> H(2);
-  EXPECT(assert_equal(expected, weighted_sum_.value(values, H)));
-  EXPECT(assert_equal(17 * I_3x3, H[0]));
-  EXPECT(assert_equal(23 * I_3x3, H[1]));
+  EXPECT(assert_equal(expected, weighted_sum_.value(values, H)))
+  EXPECT(assert_equal(17 * I_3x3, H[0]))
+  EXPECT(assert_equal(23 * I_3x3, H[1]))
 }
 
 /* ************************************************************************* */
@@ -509,13 +509,13 @@ TEST(Expression, Subtract) {
   values.insert(1, q);
   const Vector3_ expression = Vector3_(0) - Vector3_(1);
   set<Key> expected_keys = {0, 1};
-  EXPECT(expression.keys() == expected_keys);
+  EXPECT(expression.keys() == expected_keys)
 
   // Check value + Jacobians
   std::vector<Matrix> H(2);
-  EXPECT(assert_equal<Vector3>(p - q, expression.value(values, H)));
-  EXPECT(assert_equal(I_3x3, H[0]));
-  EXPECT(assert_equal(-I_3x3, H[1]));
+  EXPECT(assert_equal<Vector3>(p - q, expression.value(values, H)))
+  EXPECT(assert_equal(I_3x3, H[0]))
+  EXPECT(assert_equal(-I_3x3, H[1]))
 }
 
 /* ************************************************************************* */
@@ -530,12 +530,12 @@ TEST(Expression, LinearExpression) {
 
   // Check value
   const Vector3 expected(1, 0, 2);
-  EXPECT(assert_equal(expected, linear_.value(values)));
+  EXPECT(assert_equal(expected, linear_.value(values)))
 
   // Check value + Jacobians
   std::vector<Matrix> H(1);
-  EXPECT(assert_equal(expected, linear_.value(values, H)));
-  EXPECT(assert_equal(I_3x3, H[0]));
+  EXPECT(assert_equal(expected, linear_.value(values, H)))
+  EXPECT(assert_equal(I_3x3, H[0]))
 }
 
 /* ************************************************************************* */

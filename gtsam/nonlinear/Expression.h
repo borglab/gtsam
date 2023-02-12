@@ -191,7 +191,7 @@ protected:
 
   /// trace execution, very unsafe
   T traceExecution(const Values& values, internal::ExecutionTrace<T>& trace,
-      void* traceStorage) const;
+      char* traceStorage) const;
 
   /// brief Return value and derivatives, reverse AD version
   T valueAndJacobianMap(const Values& values,
