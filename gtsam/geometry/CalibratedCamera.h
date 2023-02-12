@@ -309,14 +309,6 @@ public:
   }
 
   /// @}
-  /// @name Standard Interface
-  /// @{
-
-  /// destructor
-  virtual ~CalibratedCamera() {
-  }
-
-  /// @}
   /// @name Manifold
   /// @{
 

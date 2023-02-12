@@ -79,9 +79,6 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
                                 const SmartStereoProjectionParams& params =
                                     SmartStereoProjectionParams());
 
-  /** Virtual destructor */
-  ~SmartStereoProjectionFactorPP() override = default;
-
   /**
    * add a new measurement, with a pose key, and an extrinsic pose key
    * @param measured is the 3-dimensional location of the projection of a

@@ -48,8 +48,8 @@ struct Keypoints {
   /// Optional confidences/responses for each detection, of shape N.
   std::optional<gtsam::Vector> responses;
 
-  Keypoints(const Eigen::MatrixX2d& coordinates)
-      : coordinates(coordinates){};  // std::nullopt
+  Keypoints(const Eigen::MatrixX2d &_coordinates)
+      : coordinates(_coordinates) {}
 };
 
 using KeypointsVector = std::vector<Keypoints>;

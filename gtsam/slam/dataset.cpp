@@ -456,19 +456,14 @@ template <> struct ParseMeasurement<BearingRange2D> {
   // The actual parser
   std::optional<BinaryMeasurement<BearingRange2D>>
   operator()(std::istream &is, const std::string &tag) {
-    if (tag != "BR" && tag != "LANDMARK")
-      return std::nullopt;
-
     size_t id1, id2;
     is >> id1 >> id2;
     double bearing, range, bearing_std, range_std;
 
     if (tag == "BR") {
       is >> bearing >> range >> bearing_std >> range_std;
-    }
-
-    // A landmark measurement, converted to bearing-range
-    if (tag == "LANDMARK") {
+    } else if (tag == "LANDMARK") {
+      // A landmark measurement, converted to bearing-range
       double lmx, lmy;
       double v1, v2, v3;
 
@@ -489,6 +484,8 @@ template <> struct ParseMeasurement<BearingRange2D> {
         bearing_std = 1;
         range_std = 1;
       }
+    } else {
+      return std::nullopt;
     }
 
     // optional filter

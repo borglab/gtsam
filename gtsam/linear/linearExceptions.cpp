@@ -41,23 +41,23 @@ more information.");
 
   /* ************************************************************************* */
   const char* InvalidNoiseModel::what() const noexcept {
-    if(description_.empty())
+    if(description_->empty())
       description_ = "A JacobianFactor was attempted to be constructed or modified to use a\n"
                      "noise model of incompatible dimension.  The JacobianFactor has\n"
                      "dimensionality (i.e. length of error vector) " + std::to_string(factorDims) +
                      " but the provided noise model has dimensionality " + std::to_string(noiseModelDims) + ".";
-    return description_.c_str();
+    return description_->c_str();
   }
 
   /* ************************************************************************* */
   const char* InvalidMatrixBlock::what() const noexcept {
-    if(description_.empty()) {
+    if(description_->empty()) {
       description_ = "A JacobianFactor was attempted to be constructed with a matrix block of\n"
                      "inconsistent dimension.  The JacobianFactor has " + std::to_string(factorRows) +
                      " rows (i.e. length of error vector) but the provided matrix block has " +
                      std::to_string(blockRows) + " rows.";
     }
-    return description_.c_str();
+    return description_->c_str();
   }
 
  }

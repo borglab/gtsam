@@ -32,7 +32,7 @@ class Test
 public:
   Test (const std::string& testName);
   Test (const std::string& testName, const std::string& filename, long lineNumber, bool safeCheck);
-  virtual ~Test() {};
+  virtual ~Test() {}
 
   virtual void  run (TestResult& result) = 0;
 
@@ -63,7 +63,6 @@ protected:
 #define TEST(testGroup, testName)\
   class testGroup##testName##Test : public Test \
   { public: testGroup##testName##Test () : Test (#testName "Test", __FILE__, __LINE__, true) {} \
-            virtual ~testGroup##testName##Test () {};\
             void run (TestResult& result_) override;} \
     testGroup##testName##Instance; \
   void testGroup##testName##Test::run (TestResult& result_)

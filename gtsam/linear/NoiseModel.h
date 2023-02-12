@@ -668,7 +668,7 @@ namespace gtsam {
     public:
 
       /// Default Constructor for serialization
-      Robust() {};
+      Robust() {}
 
       /// Constructor
       Robust(const RobustModel::shared_ptr robust, const NoiseModel::shared_ptr noise)

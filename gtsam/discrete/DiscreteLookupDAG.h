@@ -89,9 +89,6 @@ class GTSAM_EXPORT DiscreteLookupDAG : public BayesNet<DiscreteLookupTable> {
   /// Create from BayesNet with LookupTables
   static DiscreteLookupDAG FromBayesNet(const DiscreteBayesNet& bayesNet);
 
-  /// Destructor
-  virtual ~DiscreteLookupDAG() {}
-
   /// @}
 
   /// @name Testable

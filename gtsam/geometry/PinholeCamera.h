@@ -321,7 +321,7 @@ public:
 
   /// for Nonlinear Triangulation
   Vector defaultErrorWhenTriangulatingBehindCamera() const {
-    return Eigen::Matrix<double,traits<Point2>::dimension,1>::Constant(2.0 * K_.fx());;
+    return Eigen::Matrix<double,traits<Point2>::dimension,1>::Constant(2.0 * K_.fx());
   }
 
 private:

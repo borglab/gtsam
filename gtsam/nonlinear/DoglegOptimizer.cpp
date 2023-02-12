@@ -54,8 +54,8 @@ namespace internal {
 struct DoglegState : public NonlinearOptimizerState {
   const double delta;
 
-  DoglegState(const Values& values, double error, double delta, unsigned int iterations = 0)
-      : NonlinearOptimizerState(values, error, iterations), delta(delta) {}
+  DoglegState(const Values& _values, double _error, double _delta, unsigned int _iterations = 0)
+      : NonlinearOptimizerState(_values, _error, _iterations), delta(_delta) {}
 };
 }
 

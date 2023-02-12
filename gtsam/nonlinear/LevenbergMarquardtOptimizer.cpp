@@ -145,7 +145,8 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
   double modelFidelity = 0.0;
   bool step_is_successful = false;
   bool stopSearchingLambda = false;
-  double newError = numeric_limits<double>::infinity(), costChange;
+  double newError = numeric_limits<double>::infinity();
+  double costChange = 0.0;
   Values newValues;
   VectorValues delta;
 

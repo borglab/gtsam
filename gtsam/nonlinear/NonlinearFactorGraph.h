@@ -78,9 +78,6 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     NonlinearFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
-    /// Destructor
-    virtual ~NonlinearFactorGraph() {}
-
     /// @}
     /// @name Testable
     /// @{

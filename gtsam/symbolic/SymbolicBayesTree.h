@@ -39,7 +39,6 @@ namespace gtsam {
     typedef std::shared_ptr<This> shared_ptr;
     typedef std::weak_ptr<This> weak_ptr;
     SymbolicBayesTreeClique() {}
-    virtual ~SymbolicBayesTreeClique() {}
     SymbolicBayesTreeClique(const std::shared_ptr<SymbolicConditional>& conditional) : Base(conditional) {}
   };
 

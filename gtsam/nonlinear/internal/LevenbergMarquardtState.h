@@ -49,19 +49,19 @@ struct LevenbergMarquardtState : public NonlinearOptimizerState {
                                    // optimization (for each iteration, LM tries multiple
                                    // inner iterations with different lambdas)
 
-  LevenbergMarquardtState(const Values& initialValues, double error, double lambda,
-                          double currentFactor, unsigned int iterations = 0,
+  LevenbergMarquardtState(const Values& initialValues, double _error, double _lambda,
+                          double currentFactor, unsigned int _iterations = 0,
                           unsigned int totalNumberInnerIterations = 0)
-      : NonlinearOptimizerState(initialValues, error, iterations),
-        lambda(lambda),
+      : NonlinearOptimizerState(initialValues, _error, _iterations),
+        lambda(_lambda),
         currentFactor(currentFactor),
         totalNumberInnerIterations(totalNumberInnerIterations) {}
 
   // Constructor version that takes ownership of values
-  LevenbergMarquardtState(Values&& initialValues, double error, double lambda, double currentFactor,
-                          unsigned int iterations = 0, unsigned int totalNumberInnerIterations = 0)
-      : NonlinearOptimizerState(initialValues, error, iterations),
-        lambda(lambda),
+  LevenbergMarquardtState(Values&& initialValues, double _error, double _lambda, double currentFactor,
+                          unsigned int _iterations = 0, unsigned int totalNumberInnerIterations = 0)
+      : NonlinearOptimizerState(initialValues, _error, _iterations),
+        lambda(_lambda),
         currentFactor(currentFactor),
         totalNumberInnerIterations(totalNumberInnerIterations) {}
 
@@ -119,7 +119,7 @@ struct LevenbergMarquardtState : public NonlinearOptimizerState {
     if (!item->model)
       *item = CachedModel(dim, 1.0 / std::sqrt(lambda));
     return item;
-  };
+  }
 
   /// Build a damped system for a specific lambda, vanilla version
   GaussianFactorGraph buildDampedSystem(GaussianFactorGraph damped /* gets copied */) const {

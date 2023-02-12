@@ -18,6 +18,7 @@
 #include <gtsam/inference/LabeledSymbol.h>
 
 #include <iostream>
+#include <limits>
 
 namespace gtsam {
 

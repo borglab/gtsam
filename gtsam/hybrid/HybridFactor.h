@@ -97,9 +97,6 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   HybridFactor(const KeyVector &continuousKeys,
                const DiscreteKeys &discreteKeys);
 
-  /// Virtual destructor
-  virtual ~HybridFactor() = default;
-
   /// @}
   /// @name Testable
   /// @{

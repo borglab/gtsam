@@ -74,9 +74,6 @@ namespace gtsam {
         std::initializer_list<std::shared_ptr<DERIVEDCONDITIONAL> > conditionals)
         : Base(conditionals) {}
 
-    /// Destructor
-    virtual ~GaussianBayesNet() = default;
-
     /// @}
 
     /// @name Testable

@@ -107,9 +107,6 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     GaussianFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
-    /** Virtual destructor */
-    virtual ~GaussianFactorGraph() {}
-
     /// @}
     /// @name Testable
     /// @{

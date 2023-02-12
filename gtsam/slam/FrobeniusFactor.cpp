@@ -61,7 +61,7 @@ ConvertNoiseModel(const SharedNoiseModel &model, size_t d, bool defaultToUnit) {
     return noiseModel::Robust::Create(
         noiseModel::mEstimator::Huber::Create(1.345), isoModel);
   } else {
-    return isoModel;
+    return std::move(isoModel);
   }
 }
 

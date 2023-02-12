@@ -113,7 +113,8 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal,
 
     // Set px and py using intrinsic coordinates since that is where radial
     // distortion correction is done.
-    px = pn.x(), py = pn.y();
+    px = pn.x();
+    py = pn.y();
     iteration++;
 
   } while (iteration < maxIterations);

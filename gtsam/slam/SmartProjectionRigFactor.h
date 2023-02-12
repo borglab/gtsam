@@ -107,9 +107,6 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
           "linearizationMode must be set to HESSIAN");
   }
 
-  /** Virtual destructor */
-  ~SmartProjectionRigFactor() override = default;
-
   /**
    * add a new measurement, corresponding to an observation from pose "poseKey"
    * and taken from the camera in the rig identified by "cameraId"

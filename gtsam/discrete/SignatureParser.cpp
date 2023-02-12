@@ -38,7 +38,7 @@ std::optional<Row> static ParseConditional(const std::string& token) {
   } catch (...) {
     return std::nullopt;
   }
-  return row;
+  return std::move(row);
 }
 
 std::optional<Table> static ParseConditionalTable(
@@ -62,7 +62,7 @@ std::optional<Table> static ParseConditionalTable(
       }
     }
   }
-  return table;
+  return std::move(table);
 }
 
 std::vector<std::string> static Tokenize(const std::string& str) {

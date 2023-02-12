@@ -18,7 +18,12 @@
 
 #include <gtsam/linear/VectorValues.h>
 
-using namespace std;
+#include <functional>
+#include <utility>
+
+// assert_throw needs a semicolon in Release mode.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wextra-semi-stmt"
 
 namespace gtsam {
 
@@ -27,10 +32,10 @@ namespace gtsam {
   {
     // Merge using predicate for comparing first of pair
     merge(first.begin(), first.end(), second.begin(), second.end(), inserter(values_, values_.end()),
-      std::bind(&less<Key>::operator(), less<Key>(), std::bind(&KeyValuePair::first, std::placeholders::_1),
+      std::bind(&std::less<Key>::operator(), std::less<Key>(), std::bind(&KeyValuePair::first, std::placeholders::_1),
           std::bind(&KeyValuePair::first, std::placeholders::_2)));
     if(size() != first.size() + second.size())
-      throw invalid_argument("Requested to merge two VectorValues that have one or more variables in common.");
+      throw std::invalid_argument("Requested to merge two VectorValues that have one or more variables in common.");
   }
 
   /* ************************************************************************ */
@@ -92,7 +97,7 @@ namespace gtsam {
       hint = values_.insert(hint, {key, value});
       if (values_.size() > oldSize) {
         values_.unsafe_erase(hint);
-        throw out_of_range(
+        throw std::out_of_range(
             "Requested to update a VectorValues with another VectorValues that "
             "contains keys not present in the first.");
       } else {
@@ -107,7 +112,7 @@ namespace gtsam {
     size_t originalSize = size();
     values_.insert(values.begin(), values.end());
     if (size() != originalSize + values.size())
-      throw invalid_argument(
+      throw std::invalid_argument(
           "Requested to insert a VectorValues into another VectorValues that "
           "already contains one or more of its keys.");
     return *this;
@@ -122,10 +127,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  GTSAM_EXPORT ostream& operator<<(ostream& os, const VectorValues& v) {
+  GTSAM_EXPORT std::ostream& operator<<(std::ostream& os, const VectorValues& v) {
     // Change print depending on whether we are using TBB
 #ifdef GTSAM_USE_TBB
-    map<Key, Vector> sorted;
+    std::map<Key, Vector> sorted;
     for (const auto& [key,value] : v) {
       sorted.emplace(key, value);
     }
@@ -140,11 +145,11 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  void VectorValues::print(const string& str,
+  void VectorValues::print(const std::string& str,
                            const KeyFormatter& formatter) const {
-    cout << str << ": " << size() << " elements\n";
-    cout << key_formatter(formatter) << *this;
-    cout.flush();
+    std::cout << str << ": " << size() << " elements\n";
+    std::cout << key_formatter(formatter) << *this;
+    std::cout.flush();
 }
 
   /* ************************************************************************ */
@@ -222,15 +227,15 @@ namespace gtsam {
   double VectorValues::dot(const VectorValues& v) const
   {
     if(this->size() != v.size())
-      throw invalid_argument("VectorValues::dot called with a VectorValues of different structure");
+      throw std::invalid_argument("VectorValues::dot called with a VectorValues of different structure");
     double result = 0.0;
     auto this_it = this->begin();
     auto v_it = v.begin();
     for(; this_it != this->end(); ++this_it, ++v_it) {
       assert_throw(this_it->first == v_it->first, 
-          invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
+          std::invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
       assert_throw(this_it->second.size() == v_it->second.size(), 
-          invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
+          std::invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
       result += this_it->second.dot(v_it->second);
     }
     return result;
@@ -254,9 +259,9 @@ namespace gtsam {
   VectorValues VectorValues::operator+(const VectorValues& c) const
   {
     if(this->size() != c.size())
-      throw invalid_argument("VectorValues::operator+ called with different vector sizes");
+      throw std::invalid_argument("VectorValues::operator+ called with different vector sizes");
     assert_throw(hasSameStructure(c),
-      invalid_argument("VectorValues::operator+ called with different vector sizes"));
+      std::invalid_argument("VectorValues::operator+ called with different vector sizes"));
 
     VectorValues result;
     // The result.end() hint here should result in constant-time inserts
@@ -280,9 +285,9 @@ namespace gtsam {
   VectorValues& VectorValues::operator+=(const VectorValues& c)
   {
     if(this->size() != c.size())
-      throw invalid_argument("VectorValues::operator+= called with different vector sizes");
+      throw std::invalid_argument("VectorValues::operator+= called with different vector sizes");
     assert_throw(hasSameStructure(c),
-      invalid_argument("VectorValues::operator+= called with different vector sizes"));
+      std::invalid_argument("VectorValues::operator+= called with different vector sizes"));
 
     iterator j1 = begin();
     const_iterator j2 = c.begin();
@@ -303,11 +308,11 @@ namespace gtsam {
   VectorValues& VectorValues::addInPlace_(const VectorValues& c)
   {
     for(const_iterator j2 = c.begin(); j2 != c.end(); ++j2) {
-      pair<VectorValues::iterator, bool> xi = tryInsert(j2->first, Vector());
-      if(xi.second)
-        xi.first->second = j2->second;
+      const auto& [it, success] = tryInsert(j2->first, Vector());
+      if(success)
+        it->second = j2->second;
       else
-        xi.first->second += j2->second;
+        it->second += j2->second;
     }
     return *this;
   }
@@ -316,9 +321,9 @@ namespace gtsam {
   VectorValues VectorValues::operator-(const VectorValues& c) const
   {
     if(this->size() != c.size())
-      throw invalid_argument("VectorValues::operator- called with different vector sizes");
+      throw std::invalid_argument("VectorValues::operator- called with different vector sizes");
     assert_throw(hasSameStructure(c),
-      invalid_argument("VectorValues::operator- called with different vector sizes"));
+      std::invalid_argument("VectorValues::operator- called with different vector sizes"));
 
     VectorValues result;
     // The result.end() hint here should result in constant-time inserts
@@ -373,8 +378,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  string VectorValues::html(const KeyFormatter& keyFormatter) const {
-    stringstream ss;
+  std::string VectorValues::html(const KeyFormatter& keyFormatter) const {
+    std::stringstream ss;
 
     // Print out preamble.
     ss << "<div>\n<table class='VectorValues'>\n  <thead>\n";
@@ -406,3 +411,6 @@ namespace gtsam {
   /* ************************************************************************ */
 
 } // \namespace gtsam
+
+#pragma clang diagnostic pop
+

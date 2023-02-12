@@ -59,10 +59,6 @@ public:
   template<typename CONTAINER>
   DiscreteFactor(const CONTAINER& keys) : Base(keys) {}
 
-  /// Virtual destructor
-  virtual ~DiscreteFactor() {
-  }
-
   /// @}
   /// @name Testable
   /// @{

@@ -129,7 +129,7 @@ public:
     try {
       return camera.project2(point,H1,H2) - measured_;
     }
-    catch( CheiralityException& e) {
+    catch( CheiralityException& e [[maybe_unused]]) {
       if (H1) *H1 = JacobianC::Zero();
       if (H2) *H2 = JacobianL::Zero();
       //TODO Print the exception via logging
@@ -150,7 +150,7 @@ public:
       const CAMERA& camera = values.at<CAMERA>(key1);
       const LANDMARK& point = values.at<LANDMARK>(key2);
       b = measured() - camera.project2(point, H1, H2);
-    } catch (CheiralityException& e) {
+    } catch (CheiralityException& e [[maybe_unused]]) {
       H1.setZero();
       H2.setZero();
       b.setZero();

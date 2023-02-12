@@ -105,9 +105,6 @@ public:
   /// @name Standard Interface
   /// @{
 
-  /** Destructor */
-  virtual ~NonlinearFactor() {}
-
   /**
    * In nonlinear factors, the error function returns the negative log-likelihood
    * as a non-linear function of the values in a \class Values object.

@@ -69,8 +69,6 @@ public:
     this->error_function_ = errorFunction;
   }
 
-  ~CustomFactor() override = default;
-
   /**
     * Calls the errorFunction closure, which is a std::function object
     * One can check if a derivative is needed in the errorFunction by checking the length of Jacobian array

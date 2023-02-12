@@ -287,7 +287,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
       auto hf = std::dynamic_pointer_cast<HessianFactor>(factor);
       if (!hf) throw std::runtime_error("Expected HessianFactor!");
       hf->constantTerm() += 2.0 * pair.first->logNormalizationConstant();
-      return hf;
+      return std::move(hf);
     };
 
     GaussianMixtureFactor::Factors correctedFactors(eliminationResults,
