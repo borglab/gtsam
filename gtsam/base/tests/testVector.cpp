@@ -267,8 +267,8 @@ TEST(Vector, linear_dependent3 )
 
 //******************************************************************************
 TEST(Vector, VectorIsVectorSpace) {
-  GTSAM_CONCEPT_ASSERT1(IsVectorSpace<Vector5>);
-  GTSAM_CONCEPT_ASSERT2(IsVectorSpace<Vector>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector5>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector>);
 }
 
 TEST(Vector, RowVectorIsVectorSpace) {

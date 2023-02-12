@@ -1165,8 +1165,8 @@ TEST(Matrix, VectorIsVectorSpace) {
 
 TEST(Matrix, RowVectorIsVectorSpace) {
   typedef Eigen::Matrix<double, 1, -1> RowVector;
-  GTSAM_CONCEPT_ASSERT1(IsVectorSpace<RowVector>);
-  GTSAM_CONCEPT_ASSERT2(IsVectorSpace<Vector5>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowVector>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector5>);
 }
 
 //******************************************************************************

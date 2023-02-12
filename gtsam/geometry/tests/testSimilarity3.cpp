@@ -54,9 +54,9 @@ const double degree = M_PI / 180;
 
 //******************************************************************************
 TEST(Similarity3, Concepts) {
-  GTSAM_CONCEPT_ASSERT1(IsGroup<Similarity3 >);
-  GTSAM_CONCEPT_ASSERT2(IsManifold<Similarity3 >);
-  GTSAM_CONCEPT_ASSERT3(IsLieGroup<Similarity3 >);
+  GTSAM_CONCEPT_ASSERT(IsGroup<Similarity3 >);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Similarity3 >);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Similarity3 >);
 }
 
 //******************************************************************************
