@@ -82,7 +82,7 @@ else()
 endif ()
 
 if (MSVC)
-    if (GTSAM_LIBRARY_TYPE STREQUAL "SHARED")
+    if (GTSAM_SHARED_LIB)
         # mute eigen static assert to avoid errors in shared lib
         list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC EIGEN_NO_STATIC_ASSERT)
     endif()
