@@ -166,6 +166,8 @@ class ClusterTree {
 
   /// @}
 
+  ~ClusterTree();
+
  protected:
   /// @name Details
   /// @{

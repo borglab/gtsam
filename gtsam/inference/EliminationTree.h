@@ -118,6 +118,7 @@ namespace gtsam {
     /// @}
 
   public:
+    ~EliminationTree(); 
     /// @name Standard Interface
     /// @{
 

@@ -18,6 +18,7 @@
 #pragma once
 
 #include <stack>
+#include <queue>
 
 #include <gtsam/base/timing.h>
 #include <gtsam/base/treeTraversal-inst.h>
@@ -179,6 +180,43 @@ namespace gtsam {
 
     return *this;
   }
+
+  /* ************************************************************************* */
+  
+  /** Destructor
+   * Using default destructor causes stack overflow for large trees due to recursive destruction of nodes;
+   * so we manually decrease the reference count of each node in the tree through a BFS, and the nodes with
+   * reference count 0 will be deleted. Please see [PR-1441](https://github.com/borglab/gtsam/pull/1441) for more details.
+   */
+  template<class BAYESNET, class GRAPH>
+  EliminationTree<BAYESNET,GRAPH>::~EliminationTree()
+  {
+    // For each tree, we first move the root into a queue; then we do a BFS on the tree with the queue;
+
+    for (auto&& root : roots_) {
+      std::queue<sharedNode> bfs_queue;
+
+      // first, move the root to the queue
+      bfs_queue.push(root);
+      root = nullptr; // now the root node is owned by the queue
+
+      // for each node iterated, if its reference count is 1, it will be deleted while its children are still in the queue.
+      // so that the recursive deletion will not happen.
+      while (!bfs_queue.empty()) {
+        // move the ownership of the front node from the queue to the current variable
+        auto node = bfs_queue.front();
+        bfs_queue.pop();
+
+        // add the children of the current node to the queue, so that the queue will also own the children nodes.
+        for (auto&& child : node->children) {
+          bfs_queue.push(child);
+        } // leaving the scope of current will decrease the reference count of the current node by 1, and if the reference count is 0,
+          // the node will be deleted. Because the children are in the queue, the deletion of the node will not trigger a recursive
+          // deletion of the children.
+      }
+    }
+  }
+
 
   /* ************************************************************************* */
   template<class BAYESNET, class GRAPH>
