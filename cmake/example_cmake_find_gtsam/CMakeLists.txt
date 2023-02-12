@@ -1,7 +1,7 @@
 # This file shows how to build and link a user project against GTSAM using CMake
 ###################################################################################
 # To create your own project, replace "example" with the actual name of your project
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.4)
 project(example CXX)
 
 # Find GTSAM, either from a local build, or from a Debian/Ubuntu package.
