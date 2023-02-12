@@ -107,11 +107,14 @@ TEST(DiscreteFactorGraph, test) {
   graph.add(C & B, "3 1 1 3");
 
   // Test EliminateDiscrete
-  Ordering frontalKeys;
-  frontalKeys += Key(0);
+  const Ordering frontalKeys{0};
   DiscreteConditional::shared_ptr conditional;
   DecisionTreeFactor::shared_ptr newFactor;
   boost::tie(conditional, newFactor) = EliminateDiscrete(graph, frontalKeys);
+
+  // Normalize newFactor by max for comparison with expected
+  auto normalization = newFactor->max(newFactor->size());
+  DecisionTreeFactor normalizedFactor = *newFactor / *normalization;
 
   // Check Conditional
   CHECK(conditional);
@@ -120,13 +123,15 @@ TEST(DiscreteFactorGraph, test) {
   EXPECT(assert_equal(expectedConditional, *conditional));
 
   // Check Factor
-  CHECK(newFactor);
   DecisionTreeFactor expectedFactor(B & A, "10 6 6 10");
-  EXPECT(assert_equal(expectedFactor, *newFactor));
+  // Normalize by max.
+  normalization = expectedFactor.max(expectedFactor.size());
+  // Ensure normalization is correct.
+  expectedFactor = expectedFactor / *normalization;
+  EXPECT(assert_equal(expectedFactor, normalizedFactor));
 
   // Test using elimination tree
-  Ordering ordering;
-  ordering += Key(0), Key(1), Key(2);
+  const Ordering ordering{0, 1, 2};
   DiscreteEliminationTree etree(graph, ordering);
   DiscreteBayesNet::shared_ptr actual;
   DiscreteFactorGraph::shared_ptr remainingGraph;
