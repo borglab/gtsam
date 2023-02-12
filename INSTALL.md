@@ -13,7 +13,7 @@ $ make install
 ## Important Installation Notes
 
 1. GTSAM requires the following libraries to be installed on your system:
-    - BOOST version 1.65 or greater (install through Linux repositories or MacPorts). Please see [Boost Notes](#boost-notes) for version recommendations based on your compiler.
+    - BOOST version 1.67 or greater (install through Linux repositories or MacPorts). Please see [Boost Notes](#boost-notes) for version recommendations based on your compiler.
 
     - Cmake version 3.0 or higher
     - Support for XCode 4.3 command line tools on Mac requires CMake 2.8.8 or higher
@@ -66,17 +66,6 @@ execute commands as follows for an out-of-source build:
 
   This will build the library and unit tests, run all of the unit tests,
   and then install the library itself.
-
-## Boost Notes
-
-Versions of Boost prior to 1.65 have a known bug that prevents proper "deep" serialization of objects, which means that objects encapsulated inside other objects don't get serialized.
-This is particularly seen when using `clang` as the C++ compiler.
-
-For this reason we recommend Boost>=1.65, and recommend installing it through alternative channels when it is not available through your operating system's primary package manager.
-
-## Known Issues
-
-- MSVC 2013 is not yet supported because it cannot build the serialization module of Boost 1.55 (or earlier).
 
 # Windows Installation
 
