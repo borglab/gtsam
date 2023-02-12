@@ -1151,8 +1151,10 @@ TEST(Matrix, Matrix24IsVectorSpace) {
 }
 
 TEST(Matrix, RowMajorIsVectorSpace) {
+#ifdef GTSAM_USE_BOOST_FEATURES
   typedef Eigen::Matrix<double, 2, 3, Eigen::RowMajor> RowMajor;
   GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowMajor>);
+#endif
 }
 
 TEST(Matrix, MatrixIsVectorSpace) {
@@ -1164,9 +1166,11 @@ TEST(Matrix, VectorIsVectorSpace) {
 }
 
 TEST(Matrix, RowVectorIsVectorSpace) {
+#ifdef GTSAM_USE_BOOST_FEATURES
   typedef Eigen::Matrix<double, 1, -1> RowVector;
   GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowVector>);
   GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector5>);
+#endif
 }
 
 //******************************************************************************

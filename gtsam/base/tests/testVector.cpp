@@ -272,8 +272,10 @@ TEST(Vector, VectorIsVectorSpace) {
 }
 
 TEST(Vector, RowVectorIsVectorSpace) {
+#ifdef GTSAM_USE_BOOST_FEATURES
   typedef Eigen::Matrix<double,1,-1> RowVector;
   GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowVector>);
+#endif
 }
 
 /* ************************************************************************* */
