@@ -121,8 +121,8 @@ namespace gtsam {
     for (auto&& factor : factors) product = (*factor) * product;
     gttoc(product);
 
-    // Sum all the potentials by pretending all keys are frontal:
-    auto normalization = product.sum(product.size());
+    // Max over all the potentials by pretending all keys are frontal:
+    auto normalization = product.max(product.size());
 
     // Normalize the product factor to prevent underflow.
     product = product / (*normalization);
@@ -210,8 +210,8 @@ namespace gtsam {
     for (auto&& factor : factors) product = (*factor) * product;
     gttoc(product);
 
-    // Sum all the potentials by pretending all keys are frontal:
-    auto normalization = product.sum(product.size());
+    // Max over all the potentials by pretending all keys are frontal:
+    auto normalization = product.max(product.size());
 
     // Normalize the product factor to prevent underflow.
     product = product / (*normalization);
