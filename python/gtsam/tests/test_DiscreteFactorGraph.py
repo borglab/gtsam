@@ -14,7 +14,7 @@ Author: Frank Dellaert
 import unittest
 
 import numpy as np
-from gtsam import DiscreteConditional, DiscreteFactorGraph, DiscreteKeys, DiscreteValues, Ordering, Symbol
+from gtsam import DecisionTreeFactor, DiscreteConditional, DiscreteFactorGraph, DiscreteKeys, DiscreteValues, Ordering, Symbol
 from gtsam.utils.test_case import GtsamTestCase
 
 OrderingType = Ordering.OrderingType
@@ -215,6 +215,64 @@ class TestDiscreteFactorGraph(GtsamTestCase):
         vals = [mpe[X[i][0]] for i in range(num_obs)]
 
         self.assertEqual(vals, [desired_state]*num_obs)
+
+    def test_sumProduct_chain(self):
+        """
+        Test for numerical underflow in EliminateDiscrete on long chains.
+        Adapted from the toy problem of @pcl15423
+        Ref: https://github.com/borglab/gtsam/issues/1448
+        """
+        num_states = 3
+        chain_length = 400
+        desired_state = 1
+        states = list(range(num_states))
+
+        # Helper function to mimic the behavior of gtbook.Variables discrete_series function
+        def make_key(character, index, cardinality):
+            symbol = Symbol(character, index)
+            key = symbol.key()
+            return (key, cardinality)
+
+        X = {index: make_key("X", index, len(states)) for index in range(chain_length)}
+        graph = DiscreteFactorGraph()
+
+        # Construct test transition matrix
+        transitions = np.diag([1.0, 0.5, 0.1])
+        transitions += 0.1/(num_states)
+
+        # Ensure that the transition matrix is Markov (columns sum to 1)
+        transitions /= np.sum(transitions, axis=0)
+
+        # The stationary distribution is the eigenvector corresponding to eigenvalue 1
+        eigvals, eigvecs = np.linalg.eig(transitions)
+        stationary_idx = np.where(np.isclose(eigvals, 1.0))
+        stationary_dist = eigvecs[:, stationary_idx]
+
+        # Ensure that the stationary distribution is positive and normalized
+        stationary_dist /= np.sum(stationary_dist)
+        expected = DecisionTreeFactor(X[chain_length-1], stationary_dist.flatten())
+
+        # The transition matrix parsed by DiscreteConditional is a row-wise CPT
+        transitions = transitions.T
+        transition_cpt = []
+        for i in range(0, num_states):
+            transition_row = "/".join([str(x) for x in transitions[i]])
+            transition_cpt.append(transition_row)
+        transition_cpt = " ".join(transition_cpt)
+
+        for i in reversed(range(1, chain_length)):
+            transition_conditional = DiscreteConditional(X[i], [X[i-1]], transition_cpt)
+            graph.push_back(transition_conditional)
+
+        # Run sum product using natural ordering so the resulting Bayes net has the form:
+        # X_0 <- X_1 <- ... <- X_n
+        sum_product = graph.sumProduct(OrderingType.NATURAL)
+
+        # Get the DiscreteConditional representing the marginal on the last factor
+        last_marginal = sum_product.at(chain_length - 1)
+
+        # Ensure marginal probabilities are close to the stationary distribution
+        self.gtsamAssertEquals(expected, last_marginal)
 
 if __name__ == "__main__":
     unittest.main()

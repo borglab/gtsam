@@ -108,7 +108,14 @@ TEST(DiscreteFactorGraph, test) {
 
   // Test EliminateDiscrete
   const Ordering frontalKeys{0};
-  const auto [conditional, newFactor] = EliminateDiscrete(graph, frontalKeys);
+  const auto [conditional, newFactorPtr] = EliminateDiscrete(graph, frontalKeys);
+
+  DecisionTreeFactor newFactor = *newFactorPtr;
+
+  // Normalize newFactor by max for comparison with expected
+  auto normalization = newFactor.max(newFactor.size());
+
+  newFactor = newFactor / *normalization;
 
   // Check Conditional
   CHECK(conditional);
@@ -117,9 +124,13 @@ TEST(DiscreteFactorGraph, test) {
   EXPECT(assert_equal(expectedConditional, *conditional));
 
   // Check Factor
-  CHECK(newFactor);
+  CHECK(&newFactor);
   DecisionTreeFactor expectedFactor(B & A, "10 6 6 10");
-  EXPECT(assert_equal(expectedFactor, *newFactor));
+  // Normalize by max.
+  normalization = expectedFactor.max(expectedFactor.size());
+  // Ensure normalization is correct.
+  expectedFactor = expectedFactor / *normalization;
+  EXPECT(assert_equal(expectedFactor, newFactor));
 
   // Test using elimination tree
   const Ordering ordering{0, 1, 2};
