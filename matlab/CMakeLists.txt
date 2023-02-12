@@ -42,7 +42,7 @@ endif()
 
 include(MatlabWrap)
 
-if(NOT BUILD_SHARED_LIBS)
+if(NOT GTSAM_SHARED_LIB)
   message(
     FATAL_ERROR
       "GTSAM_INSTALL_MATLAB_TOOLBOX and BUILD_SHARED_LIBS=OFF."
@@ -54,7 +54,7 @@ endif()
 # ##############################################################################
 # Generate, build and install toolbox
 set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-if(NOT BUILD_SHARED_LIBS)
+if(NOT GTSAM_SHARED_LIB)
   list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
 endif()
 
@@ -89,7 +89,7 @@ matlab_wrap("${interface_files}" "gtsam" "${GTSAM_ADDITIONAL_LIBRARIES}"
 if(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
   # Generate, build and install toolbox
   set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-  if(NOT BUILD_SHARED_LIBS)
+  if(NOT GTSAM_SHARED_LIB)
     list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
   endif()
 

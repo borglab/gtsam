@@ -118,10 +118,11 @@ message(STATUS "GTSAM Version: ${gtsam_version}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
 # build shared and static versions of the library
-message(STATUS "Building GTSAM - shared: ${BUILD_SHARED_LIBS}")
+message(STATUS "Building GTSAM - as a ${GTSAM_LIBRARY_TYPE} library")
 
-# BUILD_SHARED_LIBS automatically defines static/shared libs:
-add_library(gtsam ${gtsam_srcs})
+# BUILD_SHARED_LIBS automatically defines static/shared libs
+# Here we ensure we control which type of library gtsam is specifically
+add_library(gtsam ${GTSAM_LIBRARY_TYPE} ${gtsam_srcs})
 target_link_libraries(gtsam PUBLIC ${GTSAM_BOOST_LIBRARIES})
 target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
 
@@ -174,7 +175,7 @@ target_include_directories(gtsam SYSTEM BEFORE PUBLIC
 )
 
 if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
-	if (NOT BUILD_SHARED_LIBS)
+	if (NOT GTSAM_SHARED_LIB)
 		set_target_properties(gtsam PROPERTIES
 			PREFIX "lib"
 			COMPILE_DEFINITIONS GTSAM_IMPORT_STATIC)

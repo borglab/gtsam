@@ -14,7 +14,7 @@ print_enabled_config(${GTSAM_BUILD_TIMING_ALWAYS}         "Build timing scripts 
 if (DOXYGEN_FOUND)
     print_enabled_config(${GTSAM_BUILD_DOCS}              "Build Docs")
 endif()
-print_enabled_config(${BUILD_SHARED_LIBS}                 "Build shared GTSAM libraries")
+print_enabled_config(${GTSAM_SHARED_LIB}                  "Build shared GTSAM libraries")
 print_enabled_config(${GTSAM_BUILD_TYPE_POSTFIXES}        "Put build type in library name")
 if(GTSAM_UNSTABLE_AVAILABLE)
     print_enabled_config(${GTSAM_BUILD_UNSTABLE}          "Build libgtsam_unstable        ")

@@ -87,8 +87,7 @@ set(gtsam_unstable_soversion ${GTSAM_VERSION_MAJOR})
 message(STATUS "GTSAM_UNSTABLE Version: ${gtsam_unstable_version}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
-# BUILD_SHARED_LIBS automatically defines static/shared libs:
-add_library(gtsam_unstable ${gtsam_unstable_srcs})
+add_library(gtsam_unstable ${GTSAM_LIBRARY_TYPE} ${gtsam_unstable_srcs})
 
 # Apply build flags:
 gtsam_apply_build_flags(gtsam_unstable)
@@ -102,7 +101,7 @@ target_link_libraries(gtsam_unstable PUBLIC gtsam)
 # No need to link against Boost here, it's inherited from gtsam PUBLIC interface
 
 if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
-	if (NOT BUILD_SHARED_LIBS)
+	if (NOT GTSAM_SHARED_LIB)
 		set_target_properties(gtsam_unstable PROPERTIES
 			PREFIX "lib"
 			COMPILE_DEFINITIONS GTSAM_UNSTABLE_IMPORT_STATIC)
