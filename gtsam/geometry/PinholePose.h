@@ -59,16 +59,11 @@ public:
   /// @name Advanced Constructors
   /// @{
 
-  explicit PinholeBaseK(const Vector &v) :
-  PinholeBase(v) {
-  }
+  explicit PinholeBaseK(const Vector& v) : PinholeBase(v) {}
 
   /// @}
   /// @name Standard Interface
   /// @{
-
-  virtual ~PinholeBaseK() override {
-  }
 
   /// return calibration
   virtual const CALIBRATION& calibration() const = 0;

@@ -52,7 +52,7 @@ public:
   /// @{
 
   /** Default constructor is origin */
- Pose3() : R_(traits<Rot3>::Identity()), t_(traits<Point3>::Identity()) {}
+  Pose3() : R_(traits<Rot3>::Identity()), t_(traits<Point3>::Identity()) {}
 
   /** Copy constructor */
   Pose3(const Pose3& pose) :

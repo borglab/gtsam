@@ -42,6 +42,9 @@ namespace gtsam {
     typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
     typedef Factor Base; ///< Our base class
 
+    /// @name Standard Constructors
+    /// @{
+
     /** Default constructor creates empty factor */
     GaussianFactor() {}
 
@@ -50,18 +53,21 @@ namespace gtsam {
     template<typename CONTAINER>
     GaussianFactor(const CONTAINER& keys) : Base(keys) {}
 
-    /** Destructor */
-    virtual ~GaussianFactor() override {}
+    /// @}
+    /// @name Testable
+    /// @{
 
-    // Implementing Testable interface
-
-    /// print
+    /// print with optional string
     void print(
         const std::string& s = "",
         const KeyFormatter& formatter = DefaultKeyFormatter) const override = 0;
 
-    /** Equals for testable */
+    /// assert equality up to a tolerance
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const = 0;
+
+    /// @}
+    /// @name Standard Interface
+    /// @{
 
     /**
      * In Gaussian factors, the error function returns either the negative log-likelihood, e.g.,
@@ -144,6 +150,10 @@ namespace gtsam {
     virtual void updateHessian(const KeyVector& keys,
                            SymmetricBlockMatrix* info) const = 0;
 
+    /// @}
+    /// @name Operator interface
+    /// @{
+
     /// y += alpha * A'*A*x
     virtual void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const = 0;
 
@@ -156,12 +166,18 @@ namespace gtsam {
     /// Gradient wrt a key at any values
     virtual Vector gradient(Key key, const VectorValues& x) const = 0;
 
+    /// @}
+    /// @name Advanced Interface
+    /// @{
+
     // Determine position of a given key
     template <typename CONTAINER>
     static DenseIndex Slot(const CONTAINER& keys, Key key) {
       return std::find(keys.begin(), keys.end(), key) - keys.begin();
     }
 
+    /// @}
+    
   private:
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
@@ -171,7 +187,6 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
 #endif
-
   }; // GaussianFactor
 
 /// traits

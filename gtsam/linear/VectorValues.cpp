@@ -130,7 +130,7 @@ namespace gtsam {
   GTSAM_EXPORT std::ostream& operator<<(std::ostream& os, const VectorValues& v) {
     // Change print depending on whether we are using TBB
 #ifdef GTSAM_USE_TBB
-    map<Key, Vector> sorted;
+    std::map<Key, Vector> sorted;
     for (const auto& [key,value] : v) {
       sorted.emplace(key, value);
     }
