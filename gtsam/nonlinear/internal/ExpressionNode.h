@@ -110,7 +110,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* traceStorage) const = 0;
+      char* traceStorage) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -146,7 +146,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* traceStorage) const override {
+      char* traceStorage) const override {
     return constant_;
   }
 
@@ -199,7 +199,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* traceStorage) const override {
+      char* traceStorage) const override {
     trace.setLeaf(key_);
     return values.at<T>(key_);
   }
@@ -276,7 +276,7 @@ public:
     A1 value1;
 
     /// Construct record by calling argument expression
-    Record(const Values& values, const ExpressionNode<A1>& expression1, ExecutionTraceStorage* ptr)
+    Record(const Values& values, const ExpressionNode<A1>& expression1, char* ptr)
         : value1(expression1.traceExecution(values, trace1, ptr + upAligned(sizeof(Record)))) {}
 
     /// Print to std::cout
@@ -308,7 +308,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* ptr) const override {
+      char* ptr) const override {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
 
     // Create a Record in the memory pointed to by ptr
@@ -399,7 +399,7 @@ public:
 
     /// Construct record by calling argument expressions
     Record(const Values& values, const ExpressionNode<A1>& expression1,
-           const ExpressionNode<A2>& expression2, ExecutionTraceStorage* ptr)
+           const ExpressionNode<A2>& expression2, char* ptr)
         : value1(expression1.traceExecution(values, trace1, ptr += upAligned(sizeof(Record)))),
           value2(expression2.traceExecution(values, trace2, ptr += expression1.traceSize())) {}
 
@@ -427,7 +427,7 @@ public:
 
   /// Construct an execution trace for reverse AD, see UnaryExpression for explanation
   T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* ptr) const override {
+      char* ptr) const override {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
     Record* record = new (ptr) Record(values, *expression1_, *expression2_, ptr);
     trace.setFunction(record);
@@ -498,6 +498,8 @@ public:
   // Inner Record Class
   struct Record: public CallRecordImplementor<Record, traits<T>::dimension> {
 
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     typename Jacobian<T, A1>::type dTdA1;
     typename Jacobian<T, A2>::type dTdA2;
     typename Jacobian<T, A3>::type dTdA3;
@@ -513,7 +515,7 @@ public:
     /// Construct record by calling 3 argument expressions
     Record(const Values& values, const ExpressionNode<A1>& expression1,
            const ExpressionNode<A2>& expression2,
-           const ExpressionNode<A3>& expression3, ExecutionTraceStorage* ptr)
+           const ExpressionNode<A3>& expression3, char* ptr)
         : value1(expression1.traceExecution(values, trace1, ptr += upAligned(sizeof(Record)))),
           value2(expression2.traceExecution(values, trace2, ptr += expression1.traceSize())),
           value3(expression3.traceExecution(values, trace3, ptr += expression2.traceSize())) {}
@@ -545,7 +547,7 @@ public:
 
   /// Construct an execution trace for reverse AD, see UnaryExpression for explanation
   T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-                           ExecutionTraceStorage* ptr) const override {
+                           char* ptr) const override {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
     Record* record = new (ptr) Record(values, *expression1_, *expression2_, *expression3_, ptr);
     trace.setFunction(record);
@@ -625,7 +627,7 @@ class ScalarMultiplyNode : public ExpressionNode<T> {
 
   /// Construct an execution trace for reverse AD
   T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-                           ExecutionTraceStorage* ptr) const override {
+                           char* ptr) const override {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
     Record* record = new (ptr) Record();
     ptr += upAligned(sizeof(Record));
@@ -717,14 +719,14 @@ class BinarySumNode : public ExpressionNode<T> {
   };
 
   /// Construct an execution trace for reverse AD
-  T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-                           ExecutionTraceStorage* ptr) const override {
+  T traceExecution(const Values &values, ExecutionTrace<T> &trace,
+                   char* ptr) const override {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
-    Record* record = new (ptr) Record();
+    Record *record = new (ptr) Record();
     trace.setFunction(record);
 
-    ExecutionTraceStorage* ptr1 = ptr + upAligned(sizeof(Record));
-    ExecutionTraceStorage* ptr2 = ptr1 + expression1_->traceSize();
+    auto ptr1 = ptr + upAligned(sizeof(Record));
+    auto ptr2 = ptr1 + expression1_->traceSize();
     return expression1_->traceExecution(values, record->trace1, ptr1) +
            expression2_->traceExecution(values, record->trace2, ptr2);
   }

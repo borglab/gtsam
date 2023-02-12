@@ -19,14 +19,14 @@
 
 #pragma once
 
-// The MSVC compiler workaround for the unsupported variable length array
-// utilizes the std::unique_ptr<> custom deleter.
-// See Expression<T>::valueAndJacobianMap() below.
-#ifdef _MSC_VER
-#include <memory>
-#endif
-
 #include <gtsam/nonlinear/internal/ExpressionNode.h>
+
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
+
 
 namespace gtsam {
 
@@ -145,9 +145,10 @@ T Expression<T>::value(const Values& values,
     // Call private version that returns derivatives in H
     const auto [keys, dims] = keysAndDims();
     return valueAndDerivatives(values, keys, dims, *H);
-  } else
+  } else {
     // no derivatives needed, just return value
     return root_->value(values);
+  }
 }
 
 template<typename T>
@@ -188,38 +189,39 @@ T Expression<T>::valueAndDerivatives(const Values& values,
 
 template<typename T>
 T Expression<T>::traceExecution(const Values& values,
-    internal::ExecutionTrace<T>& trace, void* traceStorage) const {
-  return root_->traceExecution(values, trace,
-      static_cast<internal::ExecutionTraceStorage*>(traceStorage));
+    internal::ExecutionTrace<T>& trace, char* traceStorage) const {
+  return root_->traceExecution(values, trace, traceStorage);
+}
+
+// Allocate a single block of aligned memory using a unique_ptr.
+inline std::unique_ptr<internal::ExecutionTraceStorage[]> allocAligned(size_t size) {
+  const size_t alignedSize = (size + internal::TraceAlignment - 1) / internal::TraceAlignment;
+  return std::unique_ptr<internal::ExecutionTraceStorage[]>(
+      new internal::ExecutionTraceStorage[alignedSize]);
 }
 
 template<typename T>
 T Expression<T>::valueAndJacobianMap(const Values& values,
     internal::JacobianMap& jacobians) const {
-  // The following piece of code is absolutely crucial for performance.
-  // We allocate a block of memory on the stack, which can be done at runtime
-  // with modern C++ compilers. The traceExecution then fills this memory
-  // with an execution trace, made up entirely of "Record" structs, see
-  // the FunctionalNode class in expression-inl.h
-  size_t size = traceSize();
+  try {
+    // We allocate a single block of aligned memory using a unique_ptr.
+    const size_t size = traceSize();
+    auto traceStorage = allocAligned(size);
 
-  // Windows does not support variable length arrays, so memory must be dynamically
-  // allocated on Visual Studio. For more information see the issue below
-  // https://bitbucket.org/gtborg/gtsam/issue/178/vlas-unsupported-in-visual-studio
-#ifdef _MSC_VER
-  std::unique_ptr<void, void(*)(void*)> traceStorageDeleter(
-    _aligned_malloc(size, internal::TraceAlignment),
-    [](void *ptr){ _aligned_free(ptr); });
-  auto traceStorage = static_cast<internal::ExecutionTraceStorage*>(traceStorageDeleter.get());
-#else
-  internal::ExecutionTraceStorage traceStorage[size];
-#endif
+    // The traceExecution call then fills this memory
+    // with an execution trace, made up entirely of "Record" structs, see
+    // the FunctionalNode class in expression-inl.h
+    internal::ExecutionTrace<T> trace;
+    T value(this->traceExecution(values, trace, reinterpret_cast<char *>(traceStorage.get())));
 
-  internal::ExecutionTrace<T> trace;
-  T value(this->traceExecution(values, trace, traceStorage));
-  trace.startReverseAD1(jacobians);
-
-  return value;
+    // We then calculate the Jacobians using reverse automatic differentiation (AD).
+    trace.startReverseAD1(jacobians);
+    return value;
+  } catch (const std::bad_alloc &e) {
+    std::cerr << "valueAndJacobianMap exception: " << e.what() << '\n';
+    throw e;
+  }
+  // Here traceStorage will be de-allocated properly.
 }
 
 template<typename T>
@@ -261,7 +263,7 @@ struct apply_compose<double> {
   }
 };
 
-}
+} // namespace internal
 
 // Global methods:
 
