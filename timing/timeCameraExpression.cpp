@@ -99,7 +99,6 @@ int main() {
   // ExpressionFactor, optimized
   // Oct 3, 2014, Macbook Air
   // 9.0 musecs/call
-  typedef PinholeCamera<Cal3_S2> Camera;
   NonlinearFactor::shared_ptr g3 =
       boost::make_shared<ExpressionFactor<Point2> >(model, z,
           Point2_(myProject, x, p));
