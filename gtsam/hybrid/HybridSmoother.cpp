@@ -24,6 +24,37 @@
 namespace gtsam {
 
 /* ************************************************************************* */
+Ordering HybridSmoother::getOrdering(
+    const HybridGaussianFactorGraph &newFactors) {
+  HybridGaussianFactorGraph factors(hybridBayesNet());
+  factors += newFactors;
+  // Get all the discrete keys from the factors
+  KeySet allDiscrete = factors.discreteKeySet();
+
+  // Create KeyVector with continuous keys followed by discrete keys.
+  KeyVector newKeysDiscreteLast;
+  const KeySet newFactorKeys = newFactors.keys();
+  // Insert continuous keys first.
+  for (auto &k : newFactorKeys) {
+    if (!allDiscrete.exists(k)) {
+      newKeysDiscreteLast.push_back(k);
+    }
+  }
+
+  // Insert discrete keys at the end
+  std::copy(allDiscrete.begin(), allDiscrete.end(),
+            std::back_inserter(newKeysDiscreteLast));
+
+  const VariableIndex index(newFactors);
+
+  // Get an ordering where the new keys are eliminated last
+  Ordering ordering = Ordering::ColamdConstrainedLast(
+      index, KeyVector(newKeysDiscreteLast.begin(), newKeysDiscreteLast.end()),
+      true);
+  return ordering;
+}
+
+/* ************************************************************************* */
 void HybridSmoother::update(HybridGaussianFactorGraph graph,
                             const Ordering &ordering,
                             std::optional<size_t> maxNrLeaves) {
@@ -92,7 +123,6 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &originalGraph,
     }
 
     graph.push_back(newConditionals);
-    // newConditionals.print("\n\n\nNew Conditionals to add back");
   }
   return {graph, hybridBayesNet};
 }
