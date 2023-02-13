@@ -54,7 +54,7 @@ include(cmake/HandleGeneralOptions.cmake)   # CMake build options
 # Enable or disable serialization with GTSAM_ENABLE_BOOST_SERIALIZATION
 option(GTSAM_ENABLE_BOOST_SERIALIZATION "Enable Boost serialization" ON)
 if(GTSAM_ENABLE_BOOST_SERIALIZATION)
-  add_definitions(-DGTSAM_ENABLE_BOOST_SERIALIZATION)
+  add_compile_definitions(GTSAM_ENABLE_BOOST_SERIALIZATION)
 endif()
 
 option(GTSAM_USE_BOOST_FEATURES "Enable Features that use Boost" ON)
