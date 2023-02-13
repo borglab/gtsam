@@ -17,7 +17,7 @@
  * @date    Oct 14, 2012
  */
 
-#include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
+#include <gtsam/nonlinear/BatchFixedLagSmoother.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>

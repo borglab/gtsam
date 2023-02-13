@@ -20,7 +20,7 @@
 // \callgraph
 #pragma once
 
-#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
+#include <gtsam/nonlinear/FixedLagSmoother.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <queue>
 
@@ -35,10 +35,10 @@ public:
 
   /** default constructor */
   BatchFixedLagSmoother(double smootherLag = 0.0, const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams(), bool enforceConsistency = true) :
-    FixedLagSmoother(smootherLag), parameters_(parameters), enforceConsistency_(enforceConsistency) { };
+    FixedLagSmoother(smootherLag), parameters_(parameters), enforceConsistency_(enforceConsistency) { }
 
   /** destructor */
-  ~BatchFixedLagSmoother() override { };
+  ~BatchFixedLagSmoother() override {}
 
   /** Print the factor for debugging and testing (implementing Testable) */
   void print(const std::string& s = "BatchFixedLagSmoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
