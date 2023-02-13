@@ -17,7 +17,7 @@
  * @date    Feb 27, 2013
  */
 
-#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
+#include <gtsam/nonlinear/FixedLagSmoother.h>
 
 namespace gtsam {
 

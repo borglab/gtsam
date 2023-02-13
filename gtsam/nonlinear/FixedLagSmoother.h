@@ -51,7 +51,7 @@ public:
     size_t nonlinearVariables; ///< The number of variables that can be relinearized
     size_t linearVariables; ///< The number of variables that must keep a constant linearization point
     double error; ///< The final factor graph error
-    Result() : iterations(0), intermediateSteps(0), nonlinearVariables(0), linearVariables(0), error(0) {};
+    Result() : iterations(0), intermediateSteps(0), nonlinearVariables(0), linearVariables(0), error(0) {}
 
     /// Getter methods
     size_t getIterations() const { return iterations; }
