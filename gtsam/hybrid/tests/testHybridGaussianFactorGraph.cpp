@@ -598,7 +598,6 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
 // Check that assembleGraphTree assembles Gaussian factor graphs for each
 // assignment.
 TEST(HybridGaussianFactorGraph, assembleGraphTree) {
-  using symbol_shorthand::Z;
   const int num_measurements = 1;
   auto fg = tiny::createHybridGaussianFactorGraph(
       num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
@@ -680,7 +679,6 @@ bool ratioTest(const HybridBayesNet &bn, const VectorValues &measurements,
 /* ****************************************************************************/
 // Check that eliminating tiny net with 1 measurement yields correct result.
 TEST(HybridGaussianFactorGraph, EliminateTiny1) {
-  using symbol_shorthand::Z;
   const int num_measurements = 1;
   const VectorValues measurements{{Z(0), Vector1(5.0)}};
   auto bn = tiny::createHybridBayesNet(num_measurements);
@@ -713,10 +711,66 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
 }
 
 /* ****************************************************************************/
+// Check that eliminating tiny net with 1 measurement with mode order swapped
+// yields correct result.
+TEST(HybridGaussianFactorGraph, EliminateTiny1Swapped) {
+  const VectorValues measurements{{Z(0), Vector1(5.0)}};
+
+  // Create mode key: 1 is low-noise, 0 is high-noise.
+  const DiscreteKey mode{M(0), 2};
+  HybridBayesNet bn;
+
+  // Create Gaussian mixture z_0 = x0 + noise for each measurement.
+  bn.emplace_back(new GaussianMixture(
+      {Z(0)}, {X(0)}, {mode},
+      {GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Z_1x1, 3),
+       GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Z_1x1,
+                                                0.5)}));
+
+  // Create prior on X(0).
+  bn.push_back(
+      GaussianConditional::sharedMeanAndStddev(X(0), Vector1(5.0), 0.5));
+
+  // Add prior on mode.
+  bn.emplace_back(new DiscreteConditional(mode, "1/1"));
+
+  // bn.print();
+  auto fg = bn.toFactorGraph(measurements);
+  EXPECT_LONGS_EQUAL(3, fg.size());
+
+  // fg.print();
+
+  EXPECT(ratioTest(bn, measurements, fg));
+
+  // Create expected Bayes Net:
+  HybridBayesNet expectedBayesNet;
+
+  // Create Gaussian mixture on X(0).
+  // regression, but mean checked to be 5.0 in both cases:
+  const auto conditional0 = boost::make_shared<GaussianConditional>(
+                 X(0), Vector1(10.1379), I_1x1 * 2.02759),
+             conditional1 = boost::make_shared<GaussianConditional>(
+                 X(0), Vector1(14.1421), I_1x1 * 2.82843);
+  expectedBayesNet.emplace_back(
+      new GaussianMixture({X(0)}, {}, {mode}, {conditional0, conditional1}));
+
+  // Add prior on mode.
+  expectedBayesNet.emplace_back(new DiscreteConditional(mode, "1/1"));
+
+  // Test elimination
+  const auto posterior = fg.eliminateSequential();
+  // EXPECT(assert_equal(expectedBayesNet, *posterior, 0.01));
+
+  EXPECT(ratioTest(bn, measurements, *posterior));
+
+  // posterior->print();
+  // posterior->optimize().print();
+}
+
+/* ****************************************************************************/
 // Check that eliminating tiny net with 2 measurements yields correct result.
 TEST(HybridGaussianFactorGraph, EliminateTiny2) {
   // Create factor graph with 2 measurements such that posterior mean = 5.0.
-  using symbol_shorthand::Z;
   const int num_measurements = 2;
   const VectorValues measurements{{Z(0), Vector1(4.0)}, {Z(1), Vector1(6.0)}};
   auto bn = tiny::createHybridBayesNet(num_measurements);
@@ -750,7 +804,6 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
 // Test eliminating tiny net with 1 mode per measurement.
 TEST(HybridGaussianFactorGraph, EliminateTiny22) {
   // Create factor graph with 2 measurements such that posterior mean = 5.0.
-  using symbol_shorthand::Z;
   const int num_measurements = 2;
   const bool manyModes = true;
 
@@ -821,12 +874,12 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   //      D     D
   //      |     |
   //      m1    m2
-  //      |     | 
+  //      |     |
   // C-x0-HC-x1-HC-x2
   //   |     |     |
   //   HF    HF    HF
   //   |     |     |
-  //   n0    n1    n2 
+  //   n0    n1    n2
   //   |     |     |
   //   D     D     D
   EXPECT_LONGS_EQUAL(11, fg.size());
@@ -838,7 +891,7 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   EXPECT(ratioTest(bn, measurements, *fg1));
 
   // Create ordering that eliminates in time order, then discrete modes:
-  Ordering ordering {X(2), X(1), X(0), N(0), N(1), N(2), M(1), M(2)};
+  Ordering ordering{X(2), X(1), X(0), N(0), N(1), N(2), M(1), M(2)};
 
   // Do elimination:
   const HybridBayesNet::shared_ptr posterior = fg.eliminateSequential(ordering);

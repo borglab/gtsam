@@ -106,7 +106,9 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
     // TODO(dellaert): just use a virtual method defined in HybridFactor.
     if (auto gf = dynamic_pointer_cast<GaussianFactor>(f)) {
       result = addGaussian(result, gf);
-    } else if (auto gm = dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
+    } else if (auto gmf = dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
+      result = gmf->add(result);
+    } else if (auto gm = dynamic_pointer_cast<GaussianMixture>(f)) {
       result = gm->add(result);
     } else if (auto hc = dynamic_pointer_cast<HybridConditional>(f)) {
       if (auto gm = hc->asMixture()) {
@@ -281,17 +283,15 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     // taking care to correct for conditional constant.
 
     // Correct for the normalization constant used up by the conditional
-    auto correct = [&](const Result &pair) -> GaussianFactor::shared_ptr {
+    auto correct = [&](const Result &pair) {
       const auto &factor = pair.second;
-      if (!factor) return factor;  // TODO(dellaert): not loving this.
+      if (!factor) return;
       auto hf = std::dynamic_pointer_cast<HessianFactor>(factor);
       if (!hf) throw std::runtime_error("Expected HessianFactor!");
       hf->constantTerm() += 2.0 * pair.first->logNormalizationConstant();
-      return std::move(hf);
     };
+    eliminationResults.visit(correct);
 
-    GaussianMixtureFactor::Factors correctedFactors(eliminationResults,
-                                                    correct);
     const auto mixtureFactor = std::make_shared<GaussianMixtureFactor>(
         continuousSeparator, discreteSeparator, newFactors);
 
