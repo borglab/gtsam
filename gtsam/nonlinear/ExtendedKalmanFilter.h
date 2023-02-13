@@ -44,8 +44,8 @@ namespace gtsam {
 template <class VALUE>
 class ExtendedKalmanFilter {
   // Check that VALUE type is a testable Manifold
-  GTSAM_CONCEPT_ASSERT1(IsTestable<VALUE>);
-  GTSAM_CONCEPT_ASSERT2(IsManifold<VALUE>);
+  GTSAM_CONCEPT_ASSERT(IsTestable<VALUE>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<VALUE>);
 
  public:
   typedef std::shared_ptr<ExtendedKalmanFilter<VALUE> > shared_ptr;

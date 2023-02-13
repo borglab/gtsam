@@ -40,8 +40,8 @@ namespace gtsam {
   class BetweenFactor: public NoiseModelFactorN<VALUE, VALUE> {
 
     // Check that VALUE type is a testable Lie group
-    GTSAM_CONCEPT_ASSERT1(IsTestable<VALUE>);
-    GTSAM_CONCEPT_ASSERT2(IsLieGroup<VALUE>);
+    GTSAM_CONCEPT_ASSERT(IsTestable<VALUE>);
+    GTSAM_CONCEPT_ASSERT(IsLieGroup<VALUE>);
 
   public:
 

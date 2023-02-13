@@ -139,8 +139,8 @@ compose_pow(const G& g, size_t n) {
 /// Assumes nothing except group structure and Testable from G and H
 template<typename G, typename H>
 class DirectProduct: public std::pair<G, H> {
-  GTSAM_CONCEPT_ASSERT1(IsGroup<G>);
-  GTSAM_CONCEPT_ASSERT2(IsGroup<H>);
+  GTSAM_CONCEPT_ASSERT(IsGroup<G>);
+  GTSAM_CONCEPT_ASSERT(IsGroup<H>);
 
 public:
   /// Default constructor yields identity
@@ -170,8 +170,8 @@ struct traits<DirectProduct<G, H> > :
 /// Assumes existence of three additive operators for both groups
 template<typename G, typename H>
 class DirectSum: public std::pair<G, H> {
-  GTSAM_CONCEPT_ASSERT1(IsGroup<G>);  // TODO(frank): check additive
-  GTSAM_CONCEPT_ASSERT2(IsGroup<H>);  // TODO(frank): check additive
+  GTSAM_CONCEPT_ASSERT(IsGroup<G>);  // TODO(frank): check additive
+  GTSAM_CONCEPT_ASSERT(IsGroup<H>);  // TODO(frank): check additive
 
   const G& g() const { return this->first; }
   const H& h() const { return this->second;}

@@ -34,9 +34,9 @@ TEST(Point3 , Constructor) {
 
 //******************************************************************************
 TEST(Point3 , Concept) {
-  GTSAM_CONCEPT_ASSERT1(IsGroup<Point3>);
-  GTSAM_CONCEPT_ASSERT2(IsManifold<Point3>);
-  GTSAM_CONCEPT_ASSERT3(IsVectorSpace<Point3>);
+  GTSAM_CONCEPT_ASSERT(IsGroup<Point3>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Point3>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Point3>);
 }
 
 //******************************************************************************
