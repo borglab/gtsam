@@ -348,7 +348,8 @@ TEST(HybridGaussianFactorGraph, Switching) {
   // GTSAM_PRINT(*hfg);
   // GTSAM_PRINT(ordering_full);
 
-  const auto [hbt, remaining] = hfg->eliminatePartialMultifrontal(ordering_full);
+  const auto [hbt, remaining] =
+      hfg->eliminatePartialMultifrontal(ordering_full);
 
   // 12 cliques in the bayes tree and 0 remaining variables to eliminate.
   EXPECT_LONGS_EQUAL(12, hbt->size());
@@ -401,7 +402,8 @@ TEST(HybridGaussianFactorGraph, SwitchingISAM) {
   }
   auto ordering_full = Ordering(ordering);
 
-  const auto [hbt, remaining] = hfg->eliminatePartialMultifrontal(ordering_full);
+  const auto [hbt, remaining] =
+      hfg->eliminatePartialMultifrontal(ordering_full);
 
   auto new_fg = makeSwitchingChain(12);
   auto isam = HybridGaussianISAM(*hbt);
@@ -470,7 +472,8 @@ TEST(HybridGaussianFactorGraph, SwitchingTwoVar) {
     ordering_partial.emplace_back(X(i));
     ordering_partial.emplace_back(Y(i));
   }
-  const auto [hbn, remaining] = hfg->eliminatePartialSequential(ordering_partial);
+  const auto [hbn, remaining] =
+      hfg->eliminatePartialSequential(ordering_partial);
 
   EXPECT_LONGS_EQUAL(14, hbn->size());
   EXPECT_LONGS_EQUAL(11, remaining->size());
@@ -747,9 +750,9 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1Swapped) {
 
   // Create Gaussian mixture on X(0).
   // regression, but mean checked to be 5.0 in both cases:
-  const auto conditional0 = boost::make_shared<GaussianConditional>(
+  const auto conditional0 = std::make_shared<GaussianConditional>(
                  X(0), Vector1(10.1379), I_1x1 * 2.02759),
-             conditional1 = boost::make_shared<GaussianConditional>(
+             conditional1 = std::make_shared<GaussianConditional>(
                  X(0), Vector1(14.1421), I_1x1 * 2.82843);
   expectedBayesNet.emplace_back(
       new GaussianMixture({X(0)}, {}, {mode}, {conditional0, conditional1}));
