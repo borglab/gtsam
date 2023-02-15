@@ -1,6 +1,3 @@
-set (excluded_scripts
-    elaboratePoint2KalmanFilter.cpp
-)
 # Add scripts to exclude if GTSAM_ENABLE_BOOST_SERIALIZATION is not set
 if (NOT GTSAM_ENABLE_BOOST_SERIALIZATION) 
   # add to excluded scripts
