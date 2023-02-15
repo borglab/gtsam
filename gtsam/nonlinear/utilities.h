@@ -328,12 +328,12 @@ Values localToWorld(const Values& local, const Pose2& base,
       // if value is a Pose2, compose it with base pose
       Pose2 pose = local.at<Pose2>(key);
       world.insert(key, base.compose(pose));
-    } catch (const std::exception& e1) {
+    } catch ([[maybe_unused]] const std::exception& e1) {
       try {
         // if value is a Point2, transform it from base pose
         Point2 point = local.at<Point2>(key);
         world.insert(key, base.transformFrom(point));
-      } catch (const std::exception& e2) {
+      } catch ([[maybe_unused]]  const std::exception& e2) {
         // if not Pose2 or Point2, do nothing
         #ifndef NDEBUG
           std::cerr << "Values[key] is neither Pose2 nor Point2, so skip" << std::endl;
