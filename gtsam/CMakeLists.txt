@@ -177,8 +177,8 @@ target_include_directories(gtsam SYSTEM BEFORE PUBLIC
 if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
 	if (NOT GTSAM_SHARED_LIB)
 		set_target_properties(gtsam PROPERTIES
-			PREFIX "lib"
-			COMPILE_DEFINITIONS GTSAM_IMPORT_STATIC)
+			PREFIX "lib")
+		target_compile_definitions(gtsam PRIVATE GTSAM_IMPORT_STATIC)
 	else()
 		set_target_properties(gtsam PROPERTIES
 			PREFIX ""
