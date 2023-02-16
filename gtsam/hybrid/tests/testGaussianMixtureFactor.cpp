@@ -93,6 +93,7 @@ TEST(GaussianMixtureFactor, Sum) {
   EXPECT(actual.at(1) == f22);
 }
 
+/* ************************************************************************* */
 TEST(GaussianMixtureFactor, Printing) {
   DiscreteKey m1(1, 2);
   auto A1 = Matrix::Zero(2, 1);
@@ -136,6 +137,7 @@ TEST(GaussianMixtureFactor, Printing) {
   EXPECT(assert_print_equal(expected, mixtureFactor));
 }
 
+/* ************************************************************************* */
 TEST(GaussianMixtureFactor, GaussianMixture) {
   KeyVector keys;
   keys.push_back(X(0));
