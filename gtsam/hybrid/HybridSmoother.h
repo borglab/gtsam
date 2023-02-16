@@ -50,6 +50,8 @@ class HybridSmoother {
   void update(HybridGaussianFactorGraph graph, const Ordering& ordering,
               boost::optional<size_t> maxNrLeaves = boost::none);
 
+  Ordering getOrdering(const HybridGaussianFactorGraph& newFactors);
+
   /**
    * @brief Add conditionals from previous timestep as part of liquefication.
    *
