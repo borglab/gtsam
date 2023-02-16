@@ -107,8 +107,8 @@ struct traits<K4> : internal::AdditiveGroupTraits<K4> {
 TEST(Cyclic , DirectSum) {
   // The Direct sum of Z2 and Z2 is *not* Cyclic<4>, but the
   // smallest non-cyclic group called the Klein four-group:
-  GTSAM_CONCEPT_ASSERT1(IsGroup<K4>);
-  GTSAM_CONCEPT_ASSERT2(IsTestable<K4>);
+  GTSAM_CONCEPT_ASSERT(IsGroup<K4>);
+  GTSAM_CONCEPT_ASSERT(IsTestable<K4>);
 
   // Refer to http://en.wikipedia.org/wiki/Klein_four-group
   K4 e(0,0), a(0, 1), b(1, 0), c(1, 1);

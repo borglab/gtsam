@@ -29,6 +29,8 @@ if(NOT MSVC AND NOT XCODE_VERSION)
     print_config("C++ compilation flags" "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
 endif()
 
+print_config("Enable Boost serialization" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
+
 print_build_options_for_target(gtsam)
 
 print_config("Use System Eigen" "${GTSAM_USE_SYSTEM_EIGEN} (Using version: ${GTSAM_EIGEN_VERSION})")
