@@ -1,10 +1,6 @@
 #include <gtwrap/matlab.h>
 #include <map>
 
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/serialization/export.hpp>
-
 
 
 
@@ -62,7 +58,7 @@ void load2D_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("load2D",nargout,nargin,5);
   string filename = unwrap< string >(in[0]);
-  boost::shared_ptr<Test> model = unwrap_shared_ptr< Test >(in[1], "ptr_Test");
+  std::shared_ptr<Test> model = unwrap_shared_ptr< Test >(in[1], "ptr_Test");
   int maxID = unwrap< int >(in[2]);
   bool addNoise = unwrap< bool >(in[3]);
   bool smart = unwrap< bool >(in[4]);
@@ -74,7 +70,7 @@ void load2D_1(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("load2D",nargout,nargin,5);
   string filename = unwrap< string >(in[0]);
-  boost::shared_ptr<gtsam::noiseModel::Diagonal> model = unwrap_shared_ptr< gtsam::noiseModel::Diagonal >(in[1], "ptr_gtsamnoiseModelDiagonal");
+  std::shared_ptr<gtsam::noiseModel::Diagonal> model = unwrap_shared_ptr< gtsam::noiseModel::Diagonal >(in[1], "ptr_gtsamnoiseModelDiagonal");
   int maxID = unwrap< int >(in[2]);
   bool addNoise = unwrap< bool >(in[3]);
   bool smart = unwrap< bool >(in[4]);
