@@ -1,5 +1,3 @@
-
-
 #include <pybind11/eigen.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/pybind11.h>
@@ -8,14 +6,10 @@
 
 #include "gtsam/geometry/Point2.h"
 #include "gtsam/geometry/Point3.h"
-
-#include "wrap/serialization.h"
 #include <boost/serialization/export.hpp>
 
 BOOST_CLASS_EXPORT(gtsam::Point2)
 BOOST_CLASS_EXPORT(gtsam::Point3)
-
-
 
 
 using namespace std;

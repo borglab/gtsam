@@ -1,5 +1,3 @@
-
-
 #include <pybind11/eigen.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/pybind11.h>
@@ -7,10 +5,6 @@
 #include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 
 #include "gtsam/geometry/Pose3.h"
-
-#include "wrap/serialization.h"
-#include <boost/serialization/export.hpp>
-
 
 
 

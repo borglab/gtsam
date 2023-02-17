@@ -20,6 +20,7 @@ class TestWrap(unittest.TestCase):
     """
     Test the Matlab wrapper
     """
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -36,7 +37,7 @@ class TestWrap(unittest.TestCase):
         template_file = osp.join(self.TEST_DIR, "..", "gtwrap",
                                  "matlab_wrapper", "matlab_wrapper.tpl")
         if not osp.exists(template_file):
-            with open(template_file, 'w') as tpl:
+            with open(template_file, 'w', encoding="UTF-8") as tpl:
                 tpl.write("#include <gtwrap/matlab.h>\n#include <map>\n")
 
         # Create the `actual/matlab` directory
@@ -51,8 +52,8 @@ class TestWrap(unittest.TestCase):
         success = filecmp.cmp(actual, expected)
 
         if not success:
-            os.system("diff {} {}".format(actual, expected))
-        self.assertTrue(success, "Mismatch for file {0}".format(file))
+            os.system(f"diff {actual} {expected}")
+        self.assertTrue(success, f"Mismatch for file {file}")
 
     def test_geometry(self):
         """
@@ -63,11 +64,10 @@ class TestWrap(unittest.TestCase):
         file = osp.join(self.INTERFACE_DIR, 'geometry.i')
 
         # Create MATLAB wrapper instance
-        wrapper = MatlabWrapper(
-            module_name='geometry',
-            top_module_namespace=['gtsam'],
-            ignore_classes=[''],
-        )
+        wrapper = MatlabWrapper(module_name='geometry',
+                                top_module_namespace=['gtsam'],
+                                ignore_classes=[''],
+                                use_boost_serialization=True)
 
         wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
 
