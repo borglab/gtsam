@@ -1,0 +1,23 @@
+Creating new factor and variable types
+=======================================
+
+GTSAM comes with a set of variable and factor types typically used in SFM and
+SLAM.  Geometry variables such as points and poses are in the geometry
+subdirectory and module.  Factors such as BetweenFactor and BearingFactor are in
+the gtsam/slam directory.
+
+To use GTSAM to solve your own problems, you will often have to create new factor
+types, which derive either from NonlinearFactor or NoiseModelFactor, or one of
+their derived types.  Here is an outline of the options:
+
+- The number of variables your factor involves is <b>unknown</b> at compile time - derive from NoiseModelFactor and implement NoiseModelFactor::unwhitenedError()
+
+  - This is a factor expressing the sum-of-squares error between a measurement \f$ z \f$ and a measurement prediction function \f$ h(x) \f$, on which the errors are expected to follow some distribution specified by a noise model (see noiseModel).
+
+- The number of variables your factor involves is <b>known</b> at compile time and is between 1 and 6 - derive from NoiseModelFactor1, NoiseModelFactor2, NoiseModelFactor3, NoiseModelFactor4, NoiseModelFactor5, or NoiseModelFactor6, and implement <b>\c evaluateError()</b>
+
+  - This factor expresses the same sum-of-squares error with a noise model, but makes the implementation task slightly easier than with %NoiseModelFactor.
+
+- Derive from NonlinearFactor
+
+  - This is more advanced and allows creating factors without an explicit noise model, or that linearize to HessianFactor instead of JacobianFactor.

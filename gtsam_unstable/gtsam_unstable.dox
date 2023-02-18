@@ -1,7 +1,3 @@
-// This causes Doxygen to find classes inside the gtsam namespace without
-// explicitly specifying it when writing class names.
-namespace gtsam {
-
 /**
 
 \page GTSAM_UNSTABLE
@@ -9,12 +5,14 @@ namespace gtsam {
 \section  gtsam_unstable_overview Overview
 
 GTSAM_UNSTABLE is a set of experimental additions to GTSAM that are not fully ready to be 
+\page gtsam_unstable_overview gtsam_unstable overview
+
+GTSAM_UNSTABLE is a set of experimental additions to GTSAM that are not fully ready to be
 integrated into the rest of the library.  This library is actively maintained,
 and should follow the same design procedures as GTSAM.
 
 Because parts of this library are supposed to be a part of GTSAM, all code should
 be in the gtsam namespace, rather than a gtsam_unstable namespace.
 
-*/
 
-}
+*/

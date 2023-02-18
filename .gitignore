@@ -17,5 +17,6 @@
 # for QtCreator:
 CMakeLists.txt.user*
 xcode/
+docs/build
 /Dockerfile
 /python/gtsam/notebooks/.ipynb_checkpoints/ellipses-checkpoint.ipynb
