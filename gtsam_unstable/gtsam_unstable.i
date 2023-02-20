@@ -40,6 +40,7 @@ class gtsam::LevenbergMarquardtParams;
 class gtsam::ISAM2Params;
 class gtsam::GaussianDensity;
 class gtsam::LevenbergMarquardtOptimizer;
+class gtsam::FixedLagSmoother;
 
 namespace gtsam {
 
@@ -530,67 +531,7 @@ virtual class DiscreteEulerPoincareHelicopter : gtsam::NoiseModelFactor {
 //*************************************************************************
 // nonlinear
 //*************************************************************************
-#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
-class FixedLagSmootherKeyTimestampMapValue {
-  FixedLagSmootherKeyTimestampMapValue(size_t key, double timestamp);
-  FixedLagSmootherKeyTimestampMapValue(const gtsam::FixedLagSmootherKeyTimestampMapValue& other);
-};
-
-class FixedLagSmootherKeyTimestampMap {
-  FixedLagSmootherKeyTimestampMap();
-  FixedLagSmootherKeyTimestampMap(const gtsam::FixedLagSmootherKeyTimestampMap& other);
-
-  // Note: no print function
-
-  // common STL methods
-  size_t size() const;
-  bool empty() const;
-  void clear();
-
-  double at(const size_t key) const;
-  void insert(const gtsam::FixedLagSmootherKeyTimestampMapValue& value);
-};
-
-class FixedLagSmootherResult {
-  size_t getIterations() const;
-  size_t getNonlinearVariables() const;
-  size_t getLinearVariables() const;
-  double getError() const;
-};
-
-#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
-virtual class FixedLagSmoother {
-  void print(string s) const;
-  bool equals(const gtsam::FixedLagSmoother& rhs, double tol) const;
-
-  gtsam::FixedLagSmootherKeyTimestampMap timestamps() const;
-  double smootherLag() const;
-
-  gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph &newFactors,
-                                       const gtsam::Values &newTheta,
-                                       const gtsam::FixedLagSmootherKeyTimestampMap &timestamps);
-  gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph &newFactors,
-                                       const gtsam::Values &newTheta,
-                                       const gtsam::FixedLagSmootherKeyTimestampMap &timestamps,
-                                       const gtsam::FactorIndices &factorsToRemove);
-  gtsam::Values calculateEstimate() const;
-};
-
-#include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
-virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
-  BatchFixedLagSmoother();
-  BatchFixedLagSmoother(double smootherLag);
-  BatchFixedLagSmoother(double smootherLag, const gtsam::LevenbergMarquardtParams& params);
-
-  void print(string s = "BatchFixedLagSmoother:\n") const;
-
-  gtsam::LevenbergMarquardtParams params() const;
-  template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
-                     gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
-                     Vector, Matrix}>
-  VALUE calculateEstimate(size_t key) const;
-};
-
+#include <gtsam/nonlinear/FixedLagSmoother.h>
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
 virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
   IncrementalFixedLagSmoother();
