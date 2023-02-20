@@ -28,7 +28,7 @@
 #include <gtsam_unstable/nonlinear/ConcurrentBatchSmoother.h>
 
 // We will compare the results to a similar Fixed-Lag Smoother
-#include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
+#include <gtsam/nonlinear/BatchFixedLagSmoother.h>
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.
