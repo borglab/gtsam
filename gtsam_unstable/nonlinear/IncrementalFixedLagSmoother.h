@@ -20,7 +20,7 @@
 // \callgraph
 #pragma once
 
-#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
+#include <gtsam/nonlinear/FixedLagSmoother.h>
 #include <gtsam/nonlinear/ISAM2.h>
 
 namespace gtsam {
