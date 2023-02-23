@@ -366,7 +366,7 @@ class GTSAM_EXPORT ShonanAveraging {
   template <class T>
   static Values LiftTo(size_t p, const Values &values) {
     Values result;
-    for (const auto it : values.extract<T>()) {
+    for (const auto& it : values.extract<T>()) {
       result.insert(it.first, SOn::Lift(p, it.second.matrix()));
     }
     return result;
