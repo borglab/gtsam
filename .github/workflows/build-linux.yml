@@ -20,8 +20,8 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          ubuntu-20.04-gcc-9,
-          ubuntu-20.04-clang-9,
+          # ubuntu-20.04-gcc-9,
+          # ubuntu-20.04-clang-9,
           ubuntu-22.04-gcc-11,
           ubuntu-22.04-clang-14,
         ]
@@ -29,6 +29,16 @@ jobs:
         build_type: [Debug, Release]
         build_unstable: [ON]
         include:
+          # - name: ubuntu-20.04-gcc-9
+          #   os: ubuntu-20.04
+          #   compiler: gcc
+          #   version: "9"
+
+          # - name: ubuntu-20.04-clang-9
+          #   os: ubuntu-20.04
+          #   compiler: clang
+          #   version: "9"
+
           - name: ubuntu-22.04-gcc-11
             os: ubuntu-22.04
             compiler: gcc
