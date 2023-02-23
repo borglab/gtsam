@@ -83,7 +83,7 @@ set(interface_files
 )
 # Wrap
 matlab_wrap("${interface_files}" "gtsam" "${GTSAM_ADDITIONAL_LIBRARIES}"
-            "" "${mexFlags}" "${ignore}")
+            "" "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
 
 # Wrap version for gtsam_unstable
 if(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)

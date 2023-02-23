@@ -33,13 +33,15 @@ class MatlabWrapper(CheckMixin, FormatMixin):
     def __init__(self,
                  module_name,
                  top_module_namespace='',
-                 ignore_classes=()):
+                 ignore_classes=(),
+                 use_boost_serialization=False):
         super().__init__()
 
         self.module_name = module_name
         self.top_module_namespace = top_module_namespace
         self.ignore_classes = ignore_classes
         self.verbose = False
+        self.use_boost_serialization = use_boost_serialization
 
         # Map the data type to its Matlab class.
         # Found in Argument.cpp in old wrapper
@@ -358,8 +360,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         elif (self.is_shared_ptr(arg.ctype) or self.can_be_pointer(arg.ctype)) and \
                 arg.ctype.typename.name not in self.ignore_namespace:
 
-            arg_type = "{std_boost}::shared_ptr<{ctype_sep}>".format(
-                std_boost='boost' if constructor else 'boost',
+            arg_type = "std::shared_ptr<{ctype_sep}>".format(
                 ctype_sep=ctype_sep)
             unwrap = 'unwrap_shared_ptr< {ctype_sep} >(in[{id}], "ptr_{ctype}");'.format(
                 ctype_sep=ctype_sep, ctype=ctype_camel, id=arg_id)
@@ -762,13 +763,12 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 {varargout} = {wrapper}({num}, this);
                 this.{name} = {varargout};
             end
-            """.format(
-                name=propty.name,
-                varargout='varargout{1}',
-                wrapper=self._wrapper_name(),
-                num=self._update_wrapper_id(
-                    (namespace_name, inst_class, propty.name, propty),
-                    function_name=function_name))
+            """.format(name=propty.name,
+                       varargout='varargout{1}',
+                       wrapper=self._wrapper_name(),
+                       num=self._update_wrapper_id(
+                           (namespace_name, inst_class, propty.name, propty),
+                           function_name=function_name))
             properties.append(getter)
 
             # Setter doesn't need varargin since it needs just one input.
@@ -778,12 +778,11 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 obj.{name} = value;
                 {wrapper}({num}, this, value);
             end
-            """.format(
-                name=propty.name,
-                wrapper=self._wrapper_name(),
-                num=self._update_wrapper_id(
-                    (namespace_name, inst_class, propty.name, propty),
-                    function_name=function_name))
+            """.format(name=propty.name,
+                       wrapper=self._wrapper_name(),
+                       num=self._update_wrapper_id(
+                           (namespace_name, inst_class, propty.name, propty),
+                           function_name=function_name))
             properties.append(setter)
 
         return properties
@@ -860,9 +859,11 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 continue
 
             if method_name == 'serialize':
-                serialize[0] = True
-                method_text += self.wrap_class_serialize_method(
-                    namespace_name, inst_class)
+                if self.use_boost_serialization:
+                    serialize[0] = True
+                    method_text += self.wrap_class_serialize_method(
+                        namespace_name, inst_class)
+
             else:
                 # Generate method code
                 method_text += textwrap.indent(textwrap.dedent("""\
@@ -998,7 +999,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 """),
                                            prefix="  ")
 
-        if serialize:
+        if serialize and self.use_boost_serialization:
             method_text += WrapperTemplate.matlab_deserialize.format(
                 class_name=namespace_name + '.' + instantiated_class.name,
                 wrapper=self._wrapper_name(),
@@ -1192,7 +1193,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             shared_obj = 'pairResult.' + pair_value
 
             if not (return_type.is_shared_ptr or return_type.is_ptr):
-                shared_obj = 'boost::make_shared<{name}>({shared_obj})' \
+                shared_obj = 'std::make_shared<{name}>({shared_obj})' \
                     .format(name=self._format_type_name(return_type.typename),
                             shared_obj='pairResult.' + pair_value)
 
@@ -1230,7 +1231,18 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                     obj=obj, method_name_sep=sep_method_name('.'))
             else:
                 method_name_sep_dot = sep_method_name('.')
-                shared_obj_template = 'boost::make_shared<{method_name_sep_col}>({obj}),' \
+
+                # Specialize for std::optional so we access the underlying member
+                #TODO(Varun) How do we handle std::optional as a Mex type?
+                if isinstance(ctype, parser.TemplatedType) and \
+                    "std::optional" == str(ctype.typename)[:13]:
+                    obj = f"*{obj}"
+                    type_name = ctype.template_params[0].typename
+                    method_name_sep_dot = ".".join(
+                        type_name.namespaces) + f".{type_name.name}"
+
+
+                shared_obj_template = 'std::make_shared<{method_name_sep_col}>({obj}),' \
                                         '"{method_name_sep_dot}"'
                 shared_obj = shared_obj_template \
                     .format(method_name_sep_col=sep_method_name(),
@@ -1351,7 +1363,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             if collector_func[2] == 'collectorInsertAndMakeBase':
                 body += textwrap.indent(textwrap.dedent('''\
                     mexAtExit(&_deleteAllObjects);
-                    typedef boost::shared_ptr<{class_name_sep}> Shared;\n
+                    typedef std::shared_ptr<{class_name_sep}> Shared;\n
                     Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
                     collector_{class_name}.insert(self);
                 ''').format(class_name_sep=class_name_separated,
@@ -1360,7 +1372,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
                 if collector_func[1].parent_class:
                     body += textwrap.indent(textwrap.dedent('''
-                        typedef boost::shared_ptr<{}> SharedBase;
+                        typedef std::shared_ptr<{}> SharedBase;
                         out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
                         *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
                     ''').format(collector_func[1].parent_class),
@@ -1373,7 +1385,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
                 if collector_func[1].parent_class:
                     base += textwrap.indent(textwrap.dedent('''
-                        typedef boost::shared_ptr<{}> SharedBase;
+                        typedef std::shared_ptr<{}> SharedBase;
                         out[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
                         *reinterpret_cast<SharedBase**>(mxGetData(out[1])) = new SharedBase(*self);
                     ''').format(collector_func[1].parent_class),
@@ -1381,7 +1393,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
                 body += textwrap.dedent('''\
                       mexAtExit(&_deleteAllObjects);
-                      typedef boost::shared_ptr<{class_name_sep}> Shared;\n
+                      typedef std::shared_ptr<{class_name_sep}> Shared;\n
                     {body_args}  Shared *self = new Shared(new {class_name_sep}({params}));
                       collector_{class_name}.insert(self);
                       out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
@@ -1394,7 +1406,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
             elif collector_func[2] == 'deconstructor':
                 body += textwrap.indent(textwrap.dedent('''\
-                    typedef boost::shared_ptr<{class_name_sep}> Shared;
+                    typedef std::shared_ptr<{class_name_sep}> Shared;
                     checkArguments("delete_{class_name}",nargout,nargin,1);
                     Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
                     Collector_{class_name}::iterator item;
@@ -1408,16 +1420,18 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                                         prefix='  ')
 
             elif extra == 'serialize':
-                body += self.wrap_collector_function_serialize(
-                    collector_func[1].name,
-                    full_name=collector_func[1].to_cpp(),
-                    namespace=collector_func[0])
+                if self.use_boost_serialization:
+                    body += self.wrap_collector_function_serialize(
+                        collector_func[1].name,
+                        full_name=collector_func[1].to_cpp(),
+                        namespace=collector_func[0])
 
             elif extra == 'deserialize':
-                body += self.wrap_collector_function_deserialize(
-                    collector_func[1].name,
-                    full_name=collector_func[1].to_cpp(),
-                    namespace=collector_func[0])
+                if self.use_boost_serialization:
+                    body += self.wrap_collector_function_deserialize(
+                        collector_func[1].name,
+                        full_name=collector_func[1].to_cpp(),
+                        namespace=collector_func[0])
 
             elif is_method or is_static_method:
                 method_name = ''
@@ -1610,7 +1624,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                             class_name_sep=cls.name))
 
             # Get the Boost exports for serialization
-            if cls.original.namespaces() and self._has_serialization(cls):
+            if self.use_boost_serialization and \
+                cls.original.namespaces() and self._has_serialization(cls):
                 boost_class_export_guid += 'BOOST_CLASS_EXPORT_GUID({}, "{}");\n'.format(
                     class_name_sep, class_name)
 
@@ -1648,12 +1663,19 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         # Generate the header includes
         includes_list = sorted(self.includes,
                                key=lambda include: include.header)
+
+        # If boost serialization is enabled, include serialization headers
+        if self.use_boost_serialization:
+            boost_headers = WrapperTemplate.boost_headers
+        else:
+            boost_headers = ""
+
         includes = textwrap.dedent("""\
             {wrapper_file_headers}
             {boost_headers}
             {includes_list}
         """).format(wrapper_file_headers=self.wrapper_file_headers.strip(),
-                    boost_headers=WrapperTemplate.boost_headers,
+                    boost_headers=boost_headers,
                     includes_list='\n'.join(map(str, includes_list)))
 
         preamble = self.generate_preamble()

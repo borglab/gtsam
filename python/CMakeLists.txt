@@ -88,7 +88,7 @@ pybind_wrap(${GTSAM_PYTHON_TARGET} # target
             ${PROJECT_SOURCE_DIR}/python/gtsam/gtsam.tpl
             gtsam # libs
             "gtsam;gtsam_header" # dependencies
-            OFF # use_boost
+            ${GTSAM_ENABLE_BOOST_SERIALIZATION} # use_boost_serialization
             )
 
 set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
@@ -167,7 +167,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             ${PROJECT_SOURCE_DIR}/python/gtsam_unstable/gtsam_unstable.tpl
             gtsam_unstable # libs
             "gtsam_unstable;gtsam_unstable_header" # dependencies
-            OFF # use_boost
+            ${GTSAM_ENABLE_BOOST_SERIALIZATION} # use_boost_serialization
             )
 
     set_target_properties(${GTSAM_PYTHON_UNSTABLE_TARGET} PROPERTIES
