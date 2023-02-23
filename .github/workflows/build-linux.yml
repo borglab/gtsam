@@ -50,6 +50,9 @@ jobs:
             version: "14"
 
     steps:
+      - name: Maximize build disk space
+        uses: easimon/maximize-build-space@v6
+
       - name: Checkout
         uses: actions/checkout@v3
 
