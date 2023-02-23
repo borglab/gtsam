@@ -30,7 +30,7 @@
 
 namespace gtsam {
 
-class GTSAM_UNSTABLE_EXPORT FixedLagSmoother {
+class GTSAM_EXPORT FixedLagSmoother {
 
 public:
 
