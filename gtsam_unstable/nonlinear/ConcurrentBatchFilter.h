@@ -50,7 +50,7 @@ public:
     double error; ///< The final factor graph error
 
     /// Constructor
-    Result() : iterations(0), lambdas(0), nonlinearVariables(0), linearVariables(0), error(0) {};
+    Result() : iterations(0), lambdas(0), nonlinearVariables(0), linearVariables(0), error(0) {}
 
     /// Getter methods
     size_t getIterations() const { return iterations; }
@@ -61,10 +61,10 @@ public:
   };
 
   /** Default constructor */
-  ConcurrentBatchFilter(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) : parameters_(parameters) {};
+  ConcurrentBatchFilter(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) : parameters_(parameters) {}
 
   /** Default destructor */
-  ~ConcurrentBatchFilter() override {};
+  ~ConcurrentBatchFilter() override = default;
 
   /** Implement a GTSAM standard 'print' function */
   void print(const std::string& s = "Concurrent Batch Filter:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;

@@ -561,7 +561,7 @@ public:
 template <class T>
 class ScalarMultiplyNode : public ExpressionNode<T> {
   // Check that T is a vector space
-  GTSAM_CONCEPT_ASSERT(gtsam::IsVectorSpace<T>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<T>);
 
   double scalar_;
   std::shared_ptr<ExpressionNode<T> > expression_;
