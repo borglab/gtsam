@@ -40,6 +40,7 @@ set(ignore
     gtsam::IndexPairVector
     gtsam::BetweenFactorPose2s
     gtsam::BetweenFactorPose3s
+    gtsam::FixedLagSmootherKeyTimestampMapValue
     gtsam::Point2Vector
     gtsam::Point2Pairs
     gtsam::Point3Pairs
@@ -144,7 +145,6 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::Point2Vector
             gtsam::Pose3Vector
             gtsam::KeyVector
-            gtsam::FixedLagSmootherKeyTimestampMapValue
             gtsam::BinaryMeasurementsPoint3
             gtsam::BinaryMeasurementsUnit3
             gtsam::BinaryMeasurementsRot3

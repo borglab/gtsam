@@ -30,13 +30,13 @@ class TestFixedLagSmootherExample(GtsamTestCase):
         # Define a batch fixed lag smoother, which uses
         # Levenberg-Marquardt to perform the nonlinear optimization
         lag = 2.0
-        smoother_batch = gtsam_unstable.BatchFixedLagSmoother(lag)
+        smoother_batch = gtsam.BatchFixedLagSmoother(lag)
 
         # Create containers to store the factors and linearization points
         # that will be sent to the smoothers
         new_factors = gtsam.NonlinearFactorGraph()
         new_values = gtsam.Values()
-        new_timestamps = gtsam_unstable.FixedLagSmootherKeyTimestampMap()
+        new_timestamps = gtsam.FixedLagSmootherKeyTimestampMap()
 
         # Create  a prior on the first pose, placing it at the origin
         prior_mean = gtsam.Pose2(0, 0, 0)

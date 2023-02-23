@@ -17,7 +17,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
+#include <gtsam/nonlinear/BatchFixedLagSmoother.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/Ordering.h>

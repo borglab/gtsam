@@ -185,7 +185,7 @@ template<class Class>
 struct VectorSpaceTraits: VectorSpaceImpl<Class, Class::dimension> {
 
   // Check that Class has the necessary machinery
-  GTSAM_CONCEPT_ASSERT(HasVectorSpacePrereqs<Class>);
+GTSAM_CONCEPT_ASSERT(HasVectorSpacePrereqs<Class>);
 
   typedef vector_space_tag structure_category;
 
