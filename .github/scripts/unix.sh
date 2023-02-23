@@ -99,7 +99,7 @@ function build ()
     if (($(nproc) > 2)); then
       make -j$(nproc)
     else
-      make -j1
+      make -j2
     fi
   elif [ "$(uname)" == "Darwin" ]; then
     make -j$(sysctl -n hw.physicalcpu)
@@ -121,7 +121,7 @@ function test ()
     if (($(nproc) > 2)); then
       make -j$(nproc) check
     else
-      make -j1 check
+      make -j2 check
     fi
   elif [ "$(uname)" == "Darwin" ]; then
     make -j$(sysctl -n hw.physicalcpu) check
