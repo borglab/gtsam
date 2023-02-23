@@ -29,15 +29,15 @@ jobs:
         build_type: [Debug, Release]
         build_unstable: [ON]
         include:
-          - name: ubuntu-20.04-gcc-9
-            os: ubuntu-20.04
-            compiler: gcc
-            version: "9"
+          # - name: ubuntu-20.04-gcc-9
+          #   os: ubuntu-20.04
+          #   compiler: gcc
+          #   version: "9"
 
-          - name: ubuntu-20.04-clang-9
-            os: ubuntu-20.04
-            compiler: clang
-            version: "9"
+          # - name: ubuntu-20.04-clang-9
+          #   os: ubuntu-20.04
+          #   compiler: clang
+          #   version: "9"
 
           - name: ubuntu-22.04-gcc-11
             os: ubuntu-22.04
@@ -50,9 +50,6 @@ jobs:
             version: "14"
 
     steps:
-      - name: Maximize build disk space
-        uses: easimon/maximize-build-space@v6
-
       - name: Checkout
         uses: actions/checkout@v3
 
