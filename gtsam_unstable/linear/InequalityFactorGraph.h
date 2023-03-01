@@ -34,7 +34,7 @@ private:
   typedef FactorGraph<LinearInequality> Base;
 
 public:
-  typedef boost::shared_ptr<InequalityFactorGraph> shared_ptr;
+  typedef std::shared_ptr<InequalityFactorGraph> shared_ptr;
 
   /** print */
   void print(

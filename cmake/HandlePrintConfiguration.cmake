@@ -14,7 +14,7 @@ print_enabled_config(${GTSAM_BUILD_TIMING_ALWAYS}         "Build timing scripts 
 if (DOXYGEN_FOUND)
     print_enabled_config(${GTSAM_BUILD_DOCS}              "Build Docs")
 endif()
-print_enabled_config(${BUILD_SHARED_LIBS}                 "Build shared GTSAM libraries")
+print_enabled_config(${GTSAM_SHARED_LIB}                  "Build shared GTSAM libraries")
 print_enabled_config(${GTSAM_BUILD_TYPE_POSTFIXES}        "Put build type in library name")
 if(GTSAM_UNSTABLE_AVAILABLE)
     print_enabled_config(${GTSAM_BUILD_UNSTABLE}          "Build libgtsam_unstable        ")
@@ -28,6 +28,8 @@ if(NOT MSVC AND NOT XCODE_VERSION)
     print_config("C compilation flags" "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
     print_config("C++ compilation flags" "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
 endif()
+
+print_config("Enable Boost serialization" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
 
 print_build_options_for_target(gtsam)
 
@@ -87,7 +89,7 @@ print_enabled_config(${GTSAM_USE_QUATERNIONS}             "Quaternions as defaul
 print_enabled_config(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency checking    ")
 print_enabled_config(${GTSAM_ROT3_EXPMAP}                 "Rot3 retract is full ExpMap     ")
 print_enabled_config(${GTSAM_POSE3_EXPMAP}                "Pose3 retract is full ExpMap    ")
-print_enabled_config(${GTSAM_ALLOW_DEPRECATED_SINCE_V42}  "Allow features deprecated in GTSAM 4.1")
+print_enabled_config(${GTSAM_ALLOW_DEPRECATED_SINCE_V43}  "Allow features deprecated in GTSAM 4.3")
 print_enabled_config(${GTSAM_SUPPORT_NESTED_DISSECTION}   "Metis-based Nested Dissection   ")
 print_enabled_config(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space preintegration")
 

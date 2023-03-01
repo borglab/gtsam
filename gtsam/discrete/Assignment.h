@@ -31,6 +31,7 @@ namespace gtsam {
  * An assignment from labels to value index (size_t).
  * Assigns to each label a value. Implemented as a simple map.
  * A discrete factor takes an Assignment and returns a value.
+ * @ingroup discrete
  */
 template <class L>
 class Assignment : public std::map<L, size_t> {
@@ -49,6 +50,13 @@ class Assignment : public std::map<L, size_t> {
 
  public:
   using std::map<L, size_t>::operator=;
+
+  // Define the implicit default constructor.
+  Assignment() = default;
+
+  // Construct from initializer list.
+  Assignment(std::initializer_list<std::pair<const L, size_t>> init)
+      : std::map<L, size_t>{init} {}
 
   void print(const std::string& s = "Assignment: ",
              const std::function<std::string(L)>& labelFormatter =

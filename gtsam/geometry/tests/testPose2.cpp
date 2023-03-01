@@ -23,12 +23,10 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Rot2.h>
 
-#include <boost/assign/std/vector.hpp>  // for operator +=
-#include <boost/optional.hpp>
+#include <optional>
 #include <cmath>
 #include <iostream>
 
-using namespace boost::assign;
 using namespace gtsam;
 using namespace std;
 
@@ -37,9 +35,9 @@ GTSAM_CONCEPT_LIE_INST(Pose2)
 
 //******************************************************************************
 TEST(Pose2 , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Pose2 >));
-  BOOST_CONCEPT_ASSERT((IsManifold<Pose2 >));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Pose2 >));
+  GTSAM_CONCEPT_ASSERT(IsGroup<Pose2 >);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Pose2 >);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Pose2 >);
 }
 
 /* ************************************************************************* */
@@ -230,7 +228,7 @@ TEST( Pose2, ExpmapDerivative1) {
   Vector3 w(0.1, 0.27, -0.3);
   Pose2::Expmap(w,actualH);
   Matrix3 expectedH = numericalDerivative21<Pose2, Vector3,
-      OptionalJacobian<3, 3> >(&Pose2::Expmap, w, boost::none, 1e-2);
+      OptionalJacobian<3, 3> >(&Pose2::Expmap, w, {}, 1e-2);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
@@ -240,7 +238,7 @@ TEST( Pose2, ExpmapDerivative2) {
   Vector3 w0(0.1, 0.27, 0.0);  // alpha = 0
   Pose2::Expmap(w0,actualH);
   Matrix3 expectedH = numericalDerivative21<Pose2, Vector3,
-      OptionalJacobian<3, 3> >(&Pose2::Expmap, w0, boost::none, 1e-2);
+      OptionalJacobian<3, 3> >(&Pose2::Expmap, w0, {}, 1e-2);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
@@ -251,7 +249,7 @@ TEST( Pose2, LogmapDerivative1) {
   Pose2 p = Pose2::Expmap(w);
   EXPECT(assert_equal(w, Pose2::Logmap(p,actualH), 1e-5));
   Matrix3 expectedH = numericalDerivative21<Vector3, Pose2,
-      OptionalJacobian<3, 3> >(&Pose2::Logmap, p, boost::none, 1e-2);
+      OptionalJacobian<3, 3> >(&Pose2::Logmap, p, {}, 1e-2);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
@@ -262,7 +260,7 @@ TEST( Pose2, LogmapDerivative2) {
   Pose2 p = Pose2::Expmap(w0);
   EXPECT(assert_equal(w0, Pose2::Logmap(p,actualH), 1e-5));
   Matrix3 expectedH = numericalDerivative21<Vector3, Pose2,
-      OptionalJacobian<3, 3> >(&Pose2::Logmap, p, boost::none, 1e-2);
+      OptionalJacobian<3, 3> >(&Pose2::Logmap, p, {}, 1e-2);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
@@ -720,7 +718,7 @@ TEST(Pose2, align_1) {
   Pose2 expected(Rot2::fromAngle(0), Point2(10, 10));
   Point2Pairs ab_pairs {{Point2(10, 10), Point2(0, 0)},
                         {Point2(30, 20), Point2(20, 10)}};
-  boost::optional<Pose2> aTb = Pose2::Align(ab_pairs);
+  std::optional<Pose2> aTb = Pose2::Align(ab_pairs);
   EXPECT(assert_equal(expected, *aTb));
 }
 
@@ -733,7 +731,7 @@ TEST(Pose2, align_2) {
   Point2Pairs ab_pairs {{expected.transformFrom(b1), b1},
                         {expected.transformFrom(b2), b2}};
 
-  boost::optional<Pose2> aTb = Pose2::Align(ab_pairs);
+  std::optional<Pose2> aTb = Pose2::Align(ab_pairs);
   EXPECT(assert_equal(expected, *aTb));
 }
 
@@ -749,13 +747,12 @@ namespace align_3 {
 TEST(Pose2, align_3) {
   using namespace align_3;
 
-  Point2Pairs ab_pairs;
   Point2Pair ab1(make_pair(a1, b1));
   Point2Pair ab2(make_pair(a2, b2));
   Point2Pair ab3(make_pair(a3, b3));
-  ab_pairs += ab1, ab2, ab3;
+  const Point2Pairs ab_pairs{ab1, ab2, ab3};
 
-  boost::optional<Pose2> aTb = Pose2::Align(ab_pairs);
+  std::optional<Pose2> aTb = Pose2::Align(ab_pairs);
   EXPECT(assert_equal(expected, *aTb));
 }
 
@@ -765,7 +762,7 @@ namespace {
   /* ************************************************************************* */
   struct Triangle { size_t i_, j_, k_;};
 
-  boost::optional<Pose2> align2(const Point2Vector& as, const Point2Vector& bs,
+  std::optional<Pose2> align2(const Point2Vector& as, const Point2Vector& bs,
     const pair<Triangle, Triangle>& trianglePair) {
       const Triangle& t1 = trianglePair.first, t2 = trianglePair.second;
       Point2Pairs ab_pairs = {{as[t1.i_], bs[t2.i_]},
@@ -778,14 +775,12 @@ namespace {
 TEST(Pose2, align_4) {
   using namespace align_3;
 
-  Point2Vector as, bs;
-  as += a1, a2, a3;
-  bs += b3, b1, b2;  // note in 3,1,2 order !
+  Point2Vector as{a1, a2, a3}, bs{b3, b1, b2};  // note in 3,1,2 order !
 
   Triangle t1; t1.i_=0; t1.j_=1; t1.k_=2;
   Triangle t2; t2.i_=1; t2.j_=2; t2.k_=0;
 
-  boost::optional<Pose2> actual = align2(as, bs, {t1, t2});
+  std::optional<Pose2> actual = align2(as, bs, {t1, t2});
   EXPECT(assert_equal(expected, *actual));
 }
 

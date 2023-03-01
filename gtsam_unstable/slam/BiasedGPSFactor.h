@@ -25,21 +25,24 @@ namespace gtsam {
   /**
    * A class to model GPS measurements, including a bias term which models
    * common-mode errors and that can be partially corrected if other sensors are used
-   * @ingroup SLAM
+   * @ingroup slam
    */
-  class BiasedGPSFactor: public NoiseModelFactor2<Pose3, Point3> {
+  class BiasedGPSFactor: public NoiseModelFactorN<Pose3, Point3> {
 
   private:
 
     typedef BiasedGPSFactor This;
-    typedef NoiseModelFactor2<Pose3, Point3> Base;
+    typedef NoiseModelFactorN<Pose3, Point3> Base;
 
     Point3 measured_; /** The measurement */
 
   public:
 
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
+
     // shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<BiasedGPSFactor> shared_ptr;
+    typedef std::shared_ptr<BiasedGPSFactor> shared_ptr;
 
     /** default constructor - only use for serialization */
     BiasedGPSFactor() {}
@@ -57,8 +60,8 @@ namespace gtsam {
     /** print */
     void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "BiasedGPSFactor("
-          << keyFormatter(this->key1()) << ","
-          << keyFormatter(this->key2()) << ")\n"
+          << keyFormatter(this->key<1>()) << ","
+          << keyFormatter(this->key<2>()) << ")\n"
           << "  measured: " << measured_.transpose() << std::endl;
       this->noiseModel_->print("  noise model: ");
     }
@@ -73,14 +76,13 @@ namespace gtsam {
 
     /** vector of errors */
     Vector evaluateError(const Pose3& pose, const Point3& bias,
-        boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-            boost::none) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2) const override {
 
       if (H1 || H2){
         H1->resize(3,6); // jacobian wrt pose
-        (*H1) << Matrix3::Zero(),  pose.rotation().matrix();
+        (*H1) << Z_3x3,  pose.rotation().matrix();
         H2->resize(3,3); // jacobian wrt bias
-        (*H2) << Matrix3::Identity();
+        (*H2) << I_3x3;
       }
       return pose.translation() + bias - measured_;
     }
@@ -92,14 +94,17 @@ namespace gtsam {
 
   private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
       ar & boost::serialization::make_nvp("NoiseModelFactor2",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
+#endif
   }; // \class BiasedGPSFactor
 
 } /// namespace gtsam

@@ -16,9 +16,18 @@ template<typename MatrixType> void zeroReduction(const MatrixType& m) {
   VERIFY(!m.any());
   VERIFY(m.prod()==1);
   VERIFY(m.sum()==0);
+  VERIFY(m.norm()==0);
+  VERIFY(m.squaredNorm()==0);
   VERIFY(m.count()==0);
   VERIFY(m.allFinite());
   VERIFY(!m.hasNaN());
+  VERIFY_RAISES_ASSERT( m.minCoeff() );
+  VERIFY_RAISES_ASSERT( m.maxCoeff() );
+  Index i,j;
+  VERIFY_RAISES_ASSERT( m.minCoeff(&i,&j) );
+  VERIFY_RAISES_ASSERT( m.maxCoeff(&i,&j) );
+  VERIFY_RAISES_ASSERT( m.reshaped().minCoeff(&i) );
+  VERIFY_RAISES_ASSERT( m.reshaped().maxCoeff(&i) );
 }
 
 
@@ -81,7 +90,7 @@ template<typename VectorType> void zeroSizedVector()
   }
 }
 
-void test_zerosized()
+EIGEN_DECLARE_TEST(zerosized)
 {
   zeroSizedMatrix<Matrix2d>();
   zeroSizedMatrix<Matrix3i>();

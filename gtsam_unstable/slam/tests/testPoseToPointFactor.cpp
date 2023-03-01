@@ -67,9 +67,9 @@ TEST(PoseToPointFactor, jacobian_2D) {
   PoseToPointFactor<Pose2,Point2> factor(pose_key, point_key, l_meas, noise);
 
   // Calculate numerical derivatives
-  auto f = std::bind(&PoseToPointFactor<Pose2,Point2>::evaluateError, factor,
-                     std::placeholders::_1, std::placeholders::_2, boost::none,
-                     boost::none);
+  auto f = [&factor] (const Pose2& pose, const Point2& pt) {
+	  return factor.evaluateError(pose, pt);
+  };
   Matrix numerical_H1 = numericalDerivative21<Vector, Pose2, Point2>(f, p, l);
   Matrix numerical_H2 = numericalDerivative22<Vector, Pose2, Point2>(f, p, l);
 
@@ -137,9 +137,10 @@ TEST(PoseToPointFactor, jacobian_3D) {
   PoseToPointFactor<Pose3,Point3> factor(pose_key, point_key, l_meas, noise);
 
   // Calculate numerical derivatives
-  auto f = std::bind(&PoseToPointFactor<Pose3,Point3>::evaluateError, factor,
-                     std::placeholders::_1, std::placeholders::_2, boost::none,
-                     boost::none);
+  auto f = [&factor] (const Pose3& pose, const Point3& pt) {
+	  return factor.evaluateError(pose, pt);
+  };
+
   Matrix numerical_H1 = numericalDerivative21<Vector, Pose3, Point3>(f, p, l);
   Matrix numerical_H2 = numericalDerivative22<Vector, Pose3, Point3>(f, p, l);
 

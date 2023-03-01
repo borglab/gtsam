@@ -22,9 +22,6 @@
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/NoiseModel.h>
 
-#include <boost/assign/list_of.hpp>
-using namespace boost::assign;
-
 #include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
 
@@ -228,13 +225,13 @@ TEST(Serialization, gaussian_bayes_net) {
 /* ************************************************************************* */
 TEST (Serialization, gaussian_bayes_tree) {
   const Key x1=1, x2=2, x3=3, x4=4;
-  const Ordering chainOrdering = Ordering(list_of(x2)(x1)(x3)(x4));
+  const Ordering chainOrdering {x2, x1, x3, x4};
   const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
-  const GaussianFactorGraph chain = list_of
-    (JacobianFactor(x2, (Matrix(1, 1) << 1.).finished(), x1, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise))
-    (JacobianFactor(x2, (Matrix(1, 1) << 1.).finished(), x3, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise))
-    (JacobianFactor(x3, (Matrix(1, 1) << 1.).finished(), x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise))
-    (JacobianFactor(x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise));
+  const GaussianFactorGraph chain = {
+    std::make_shared<JacobianFactor>(x2, (Matrix(1, 1) << 1.).finished(), x1, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
+    std::make_shared<JacobianFactor>(x2, (Matrix(1, 1) << 1.).finished(), x3, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
+    std::make_shared<JacobianFactor>(x3, (Matrix(1, 1) << 1.).finished(), x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
+    std::make_shared<JacobianFactor>(x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise)};
 
   GaussianBayesTree init = *chain.eliminateMultifrontal(chainOrdering);
   GaussianBayesTree expected = *chain.eliminateMultifrontal(chainOrdering);

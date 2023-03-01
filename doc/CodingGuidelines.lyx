@@ -271,7 +271,7 @@ color{red}{// Make 'private' any typedefs that must be redefined in derived
 
 \begin_layout Plain Layout
 
-    typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer to
+    typedef std::shared_ptr<This> shared_ptr;  ///< Shared pointer to
  this
 \end_layout
 
@@ -304,7 +304,7 @@ color{red}{// Make 'public' the typedefs that will be valid in the derived
 
 \begin_layout Plain Layout
 
-    typedef boost::shared_ptr<FACTOR> sharedFactor; ///< Shared pointer
+    typedef std::shared_ptr<FACTOR> sharedFactor; ///< Shared pointer
  to a factor
 \end_layout
 

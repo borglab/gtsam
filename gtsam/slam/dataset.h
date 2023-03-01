@@ -30,16 +30,15 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/base/serialization.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/types.h>
 
-#include <boost/smart_ptr/shared_ptr.hpp>
 #include <string>
 #include <utility> // for pair
 #include <vector>
 #include <iosfwd>
 #include <map>
+#include <optional>
 
 namespace gtsam {
 
@@ -118,7 +117,7 @@ typedef std::pair<std::pair<size_t, size_t>, Pose2> IndexedEdge;
  * @param is input stream
  * @param tag string parsed from input stream, will only parse if vertex type
  */
-GTSAM_EXPORT boost::optional<IndexedPose> parseVertexPose(std::istream& is,
+GTSAM_EXPORT std::optional<IndexedPose> parseVertexPose(std::istream& is,
     const std::string& tag);
 
 /**
@@ -126,7 +125,7 @@ GTSAM_EXPORT boost::optional<IndexedPose> parseVertexPose(std::istream& is,
  * @param is input stream
  * @param tag string parsed from input stream, will only parse if vertex type
  */
-GTSAM_EXPORT boost::optional<IndexedLandmark> parseVertexLandmark(std::istream& is,
+GTSAM_EXPORT std::optional<IndexedLandmark> parseVertexLandmark(std::istream& is,
     const std::string& tag);
 
 /**
@@ -134,7 +133,7 @@ GTSAM_EXPORT boost::optional<IndexedLandmark> parseVertexLandmark(std::istream& 
  * @param is input stream
  * @param tag string parsed from input stream, will only parse if edge type
  */
-GTSAM_EXPORT boost::optional<IndexedEdge> parseEdge(std::istream& is,
+GTSAM_EXPORT std::optional<IndexedEdge> parseEdge(std::istream& is,
     const std::string& tag);
 
 /// Return type for load functions, which return a graph and initial values. For
@@ -225,21 +224,4 @@ parse3DFactors(const std::string &filename,
 using BinaryMeasurementsUnit3 = std::vector<BinaryMeasurement<Unit3>>;
 using BinaryMeasurementsPoint3 = std::vector<BinaryMeasurement<Point3>>;
 using BinaryMeasurementsRot3 = std::vector<BinaryMeasurement<Rot3>>;
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-inline boost::optional<IndexedPose> GTSAM_DEPRECATED
-parseVertex(std::istream& is, const std::string& tag) {
-  return parseVertexPose(is, tag);
-}
-
-GTSAM_EXPORT std::map<size_t, Pose3> GTSAM_DEPRECATED
-parse3DPoses(const std::string& filename, size_t maxIndex = 0);
-
-GTSAM_EXPORT std::map<size_t, Point3> GTSAM_DEPRECATED
-parse3DLandmarks(const std::string& filename, size_t maxIndex = 0);
-
-GTSAM_EXPORT GraphAndValues GTSAM_DEPRECATED
-load2D_robust(const std::string& filename,
-              const noiseModel::Base::shared_ptr& model, size_t maxIndex = 0);
-#endif
 }  // namespace gtsam

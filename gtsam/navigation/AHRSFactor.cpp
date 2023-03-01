@@ -98,15 +98,15 @@ AHRSFactor::AHRSFactor(
 
 gtsam::NonlinearFactor::shared_ptr AHRSFactor::clone() const {
 //------------------------------------------------------------------------------
-  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+  return std::static_pointer_cast<gtsam::NonlinearFactor>(
       gtsam::NonlinearFactor::shared_ptr(new This(*this)));
 }
 
 //------------------------------------------------------------------------------
 void AHRSFactor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  cout << s << "AHRSFactor(" << keyFormatter(this->key1()) << ","
-      << keyFormatter(this->key2()) << "," << keyFormatter(this->key3()) << ",";
+  cout << s << "AHRSFactor(" << keyFormatter(this->key<1>()) << ","
+      << keyFormatter(this->key<2>()) << "," << keyFormatter(this->key<3>()) << ",";
   _PIM_.print("  preintegrated measurements:");
   noiseModel_->print("  noise model: ");
 }
@@ -119,8 +119,8 @@ bool AHRSFactor::equals(const NonlinearFactor& other, double tol) const {
 
 //------------------------------------------------------------------------------
 Vector AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
-    const Vector3& bias, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2, boost::optional<Matrix&> H3) const {
+    const Vector3& bias, OptionalMatrixType H1,
+    OptionalMatrixType H2, OptionalMatrixType H3) const {
 
   // Do bias correction, if (H3) will contain 3*3 derivative used below
   const Vector3 biascorrectedOmega = _PIM_.predict(bias, H3);
@@ -185,11 +185,11 @@ Rot3 AHRSFactor::Predict(const Rot3& rot_i, const Vector3& bias,
 AHRSFactor::AHRSFactor(Key rot_i, Key rot_j, Key bias,
                        const PreintegratedAhrsMeasurements& pim,
                        const Vector3& omegaCoriolis,
-                       const boost::optional<Pose3>& body_P_sensor)
+                       const std::optional<Pose3>& body_P_sensor)
     : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), rot_i, rot_j,
            bias),
       _PIM_(pim) {
-  auto p = boost::make_shared<PreintegratedAhrsMeasurements::Params>(pim.p());
+  auto p = std::make_shared<PreintegratedAhrsMeasurements::Params>(pim.p());
   p->body_P_sensor = body_P_sensor;
   _PIM_.p_ = p;
 }
@@ -198,8 +198,8 @@ AHRSFactor::AHRSFactor(Key rot_i, Key rot_j, Key bias,
 Rot3 AHRSFactor::predict(const Rot3& rot_i, const Vector3& bias,
                          const PreintegratedAhrsMeasurements& pim,
                          const Vector3& omegaCoriolis,
-                         const boost::optional<Pose3>& body_P_sensor) {
-  auto p = boost::make_shared<PreintegratedAhrsMeasurements::Params>(pim.p());
+                         const std::optional<Pose3>& body_P_sensor) {
+  auto p = std::make_shared<PreintegratedAhrsMeasurements::Params>(pim.p());
   p->omegaCoriolis = omegaCoriolis;
   p->body_P_sensor = body_P_sensor;
   PreintegratedAhrsMeasurements newPim = pim;

@@ -327,10 +327,10 @@ double Pose2::range(const Pose2& pose,
  * as they also satisfy ca = t + R*cb, hence t = ca - R*cb
  */
 
-boost::optional<Pose2> Pose2::Align(const Point2Pairs &ab_pairs) {
+std::optional<Pose2> Pose2::Align(const Point2Pairs &ab_pairs) {
   const size_t n = ab_pairs.size();
   if (n < 2) {
-    return boost::none;  // we need at least 2 pairs
+    return {};  // we need at least 2 pairs
   }
 
   // calculate centroids
@@ -359,7 +359,7 @@ boost::optional<Pose2> Pose2::Align(const Point2Pairs &ab_pairs) {
   return Pose2(R, t);
 }
 
-boost::optional<Pose2> Pose2::Align(const Matrix& a, const Matrix& b) {
+std::optional<Pose2> Pose2::Align(const Matrix& a, const Matrix& b) {
   if (a.rows() != 2 || b.rows() != 2 || a.cols() != b.cols()) {
     throw std::invalid_argument(
       "Pose2:Align expects 2*N matrices of equal shape.");
@@ -370,16 +370,6 @@ boost::optional<Pose2> Pose2::Align(const Matrix& a, const Matrix& b) {
   }
   return Pose2::Align(ab_pairs);
 }
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-boost::optional<Pose2> align(const Point2Pairs& ba_pairs) {
-  Point2Pairs ab_pairs;
-  for (const Point2Pair &baPair : ba_pairs) {
-    ab_pairs.emplace_back(baPair.second, baPair.first);
-  }
-  return Pose2::Align(ab_pairs);
-}
-#endif
 
 /* ************************************************************************* */
 } // namespace gtsam

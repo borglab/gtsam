@@ -23,7 +23,6 @@
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastVector.h>
 
-#include <boost/make_shared.hpp>
 
 namespace gtsam {
 
@@ -107,7 +106,7 @@ namespace gtsam {
 
     typedef GaussianFactor Base; ///< Typedef to base class
     typedef HessianFactor This; ///< Typedef to this class
-    typedef boost::shared_ptr<This> shared_ptr; ///< A shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< A shared_ptr to this class
     typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
     typedef SymmetricBlockMatrix::constBlock constBlock; ///< A block from the Hessian matrix (const version)
 
@@ -187,7 +186,7 @@ namespace gtsam {
 
     /** Clone this HessianFactor */
     GaussianFactor::shared_ptr clone() const override {
-      return boost::make_shared<HessianFactor>(*this); }
+      return std::make_shared<HessianFactor>(*this); }
 
     /** Print the factor for debugging and testing (implementing Testable) */
     void print(const std::string& s = "",
@@ -195,6 +194,9 @@ namespace gtsam {
 
     /** Compare to another factor for testing (implementing Testable) */
     bool equals(const GaussianFactor& lf, double tol = 1e-9) const override;
+
+    /// HybridValues simply extracts the \class VectorValues and calls error.
+    using GaussianFactor::error;
 
     /** 
      * Evaluate the factor error f(x). 
@@ -338,7 +340,7 @@ namespace gtsam {
 
     /**
      * Compute the gradient at a key:
-     *      \grad f(x_i) = \sum_j G_ij*x_j - g_i
+     *  \f$ \grad f(x_i) = \sum_j G_ij*x_j - g_i \f$
      */
     Vector gradient(Key key, const VectorValues& x) const override;
 
@@ -346,7 +348,7 @@ namespace gtsam {
      *  In-place elimination that returns a conditional on (ordered) keys specified, and leaves
      *  this factor to be on the remaining keys (separator) only. Does dense partial Cholesky.
      */
-    boost::shared_ptr<GaussianConditional> eliminateCholesky(const Ordering& keys);
+    std::shared_ptr<GaussianConditional> eliminateCholesky(const Ordering& keys);
 
       /// Solve the system A'*A delta = A'*b in-place, return delta as VectorValues
     VectorValues solve();
@@ -361,6 +363,7 @@ namespace gtsam {
     friend class NonlinearFactorGraph;
     friend class NonlinearClusterTree;
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -368,6 +371,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(GaussianFactor);
       ar & BOOST_SERIALIZATION_NVP(info_);
     }
+#endif
   };
 
 /**
@@ -385,8 +389,8 @@ namespace gtsam {
 *   @param keys The variables to eliminate and their elimination ordering
 *   @return The conditional and remaining factor
 *
-*   \addtogroup LinearSolving */
-GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
+*   \ingroup LinearSolving */
+GTSAM_EXPORT std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<HessianFactor> >
   EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
 
 /**
@@ -403,8 +407,8 @@ GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr
 *   @param keys The variables to eliminate and their elimination ordering
 *   @return The conditional and remaining factor
 *
-*   \addtogroup LinearSolving */
-GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<GaussianFactor> >
+*   \ingroup LinearSolving */
+GTSAM_EXPORT std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<GaussianFactor> >
   EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
 
 /// traits

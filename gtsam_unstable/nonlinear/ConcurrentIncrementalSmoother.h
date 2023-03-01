@@ -30,7 +30,7 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT ConcurrentIncrementalSmoother : public virtual ConcurrentSmoother {
 
 public:
-  typedef boost::shared_ptr<ConcurrentIncrementalSmoother> shared_ptr;
+  typedef std::shared_ptr<ConcurrentIncrementalSmoother> shared_ptr;
   typedef ConcurrentSmoother Base; ///< typedef for base class
 
   /** Meta information returned about the update */
@@ -109,7 +109,7 @@ public:
    * and additionally, variables that were already in the system must not be included here.
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const boost::optional<FactorIndices>& removeFactorIndices = boost::none);
+      const std::optional<FactorIndices>& removeFactorIndices = {});
 
   /**
    * Perform any required operations before the synchronization process starts.

@@ -27,8 +27,8 @@
 #include <stack>
 #include <vector>
 #include <string>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
+#include <cassert>
 
 namespace gtsam {
 
@@ -41,10 +41,10 @@ namespace {
 template<typename NODE, typename DATA>
 struct TraversalNode {
   bool expanded;
-  const boost::shared_ptr<NODE>& treeNode;
+  const std::shared_ptr<NODE>& treeNode;
   DATA& parentData;
   typename FastList<DATA>::iterator dataPointer;
-  TraversalNode(const boost::shared_ptr<NODE>& _treeNode, DATA& _parentData) :
+  TraversalNode(const std::shared_ptr<NODE>& _treeNode, DATA& _parentData) :
       expanded(false), treeNode(_treeNode), parentData(_parentData) {
   }
 };
@@ -52,7 +52,7 @@ struct TraversalNode {
 // Do nothing - default argument for post-visitor for tree traversal
 struct no_op {
   template<typename NODE, typename DATA>
-  void operator()(const boost::shared_ptr<NODE>& node, const DATA& data) {
+  void operator()(const std::shared_ptr<NODE>& node, const DATA& data) {
   }
 };
 
@@ -78,7 +78,7 @@ void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre,
     VISITOR_POST& visitorPost) {
   // Typedefs
   typedef typename FOREST::Node Node;
-  typedef boost::shared_ptr<Node> sharedNode;
+  typedef std::shared_ptr<Node> sharedNode;
 
   // Depth first traversal stack
   typedef TraversalNode<typename FOREST::Node, DATA> TraversalNode;
@@ -169,29 +169,29 @@ void DepthFirstForestParallel(FOREST& forest, DATA& rootData,
 /** Traversal function for CloneForest */
 namespace {
 template<typename NODE>
-boost::shared_ptr<NODE> CloneForestVisitorPre(
-    const boost::shared_ptr<NODE>& node,
-    const boost::shared_ptr<NODE>& parentPointer) {
+std::shared_ptr<NODE> CloneForestVisitorPre(
+    const std::shared_ptr<NODE>& node,
+    const std::shared_ptr<NODE>& parentPointer) {
   // Clone the current node and add it to its cloned parent
-  boost::shared_ptr<NODE> clone = boost::make_shared<NODE>(*node);
+  std::shared_ptr<NODE> clone = std::make_shared<NODE>(*node);
   clone->children.clear();
   parentPointer->children.push_back(clone);
   return clone;
 }
 }
 
-/** Clone a tree, copy-constructing new nodes (calling boost::make_shared) and setting up child
+/** Clone a tree, copy-constructing new nodes (calling std::make_shared) and setting up child
  *  pointers for a clone of the original tree.
  *  @param forest The forest of trees to clone.  The method \c forest.roots() should exist and
  *         return a collection of shared pointers to \c FOREST::Node.
  *  @return The new collection of roots. */
 template<class FOREST>
-FastVector<boost::shared_ptr<typename FOREST::Node> > CloneForest(
+FastVector<std::shared_ptr<typename FOREST::Node> > CloneForest(
     const FOREST& forest) {
   typedef typename FOREST::Node Node;
-  boost::shared_ptr<Node> rootContainer = boost::make_shared<Node>();
+  std::shared_ptr<Node> rootContainer = std::make_shared<Node>();
   DepthFirstForest(forest, rootContainer, CloneForestVisitorPre<Node>);
-  return FastVector<boost::shared_ptr<Node> >(rootContainer->children.begin(),
+  return FastVector<std::shared_ptr<Node> >(rootContainer->children.begin(),
       rootContainer->children.end());
 }
 
@@ -204,7 +204,7 @@ struct PrintForestVisitorPre {
       formatter(formatter) {
   }
   template<typename NODE> std::string operator()(
-      const boost::shared_ptr<NODE>& node, const std::string& parentString) {
+      const std::shared_ptr<NODE>& node, const std::string& parentString) {
     // Print the current node
     node->print(parentString + "-", formatter);
     // Increment the indentation

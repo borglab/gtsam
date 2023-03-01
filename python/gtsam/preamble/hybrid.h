@@ -12,10 +12,9 @@
  */
 #include <pybind11/stl.h>
 
+// NOTE: Needed since we are including pybind11/stl.h.
 #ifdef GTSAM_ALLOCATOR_TBB
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Key, tbb::tbb_allocator<gtsam::Key>>);
 #else
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Key>);
 #endif
-
-PYBIND11_MAKE_OPAQUE(std::vector<gtsam::GaussianFactor::shared_ptr>);

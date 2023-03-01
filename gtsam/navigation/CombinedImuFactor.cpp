@@ -21,7 +21,9 @@
  **/
 
 #include <gtsam/navigation/CombinedImuFactor.h>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/export.hpp>
+#endif
 
 /* External or standard includes */
 #include <ostream>
@@ -206,7 +208,7 @@ CombinedImuFactor::CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j,
 
 //------------------------------------------------------------------------------
 gtsam::NonlinearFactor::shared_ptr CombinedImuFactor::clone() const {
-  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+  return std::static_pointer_cast<gtsam::NonlinearFactor>(
       gtsam::NonlinearFactor::shared_ptr(new This(*this)));
 }
 
@@ -214,9 +216,9 @@ gtsam::NonlinearFactor::shared_ptr CombinedImuFactor::clone() const {
 void CombinedImuFactor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
   cout << (s.empty() ? s : s + "\n") << "CombinedImuFactor("
-       << keyFormatter(this->key1()) << "," << keyFormatter(this->key2()) << ","
-       << keyFormatter(this->key3()) << "," << keyFormatter(this->key4()) << ","
-       << keyFormatter(this->key5()) << "," << keyFormatter(this->key6())
+       << keyFormatter(this->key<1>()) << "," << keyFormatter(this->key<2>()) << ","
+       << keyFormatter(this->key<3>()) << "," << keyFormatter(this->key<4>()) << ","
+       << keyFormatter(this->key<5>()) << "," << keyFormatter(this->key<6>())
        << ")\n";
   _PIM_.print("  preintegrated measurements:");
   this->noiseModel_->print("  noise model: ");
@@ -232,9 +234,9 @@ bool CombinedImuFactor::equals(const NonlinearFactor& other, double tol) const {
 Vector CombinedImuFactor::evaluateError(const Pose3& pose_i,
     const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
     const imuBias::ConstantBias& bias_i, const imuBias::ConstantBias& bias_j,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
-    boost::optional<Matrix&> H3, boost::optional<Matrix&> H4,
-    boost::optional<Matrix&> H5, boost::optional<Matrix&> H6) const {
+    OptionalMatrixType H1, OptionalMatrixType H2,
+    OptionalMatrixType H3, OptionalMatrixType H4,
+    OptionalMatrixType H5, OptionalMatrixType H6) const {
 
   // error wrt bias evolution model (random walk)
   Matrix6 Hbias_i, Hbias_j;

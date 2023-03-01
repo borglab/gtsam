@@ -17,6 +17,7 @@
 #pragma once
 
 #include <gtsam/inference/BayesTreeCliqueBase.h>
+#include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/base/timing.h>
 
 namespace gtsam {
@@ -122,13 +123,13 @@ namespace gtsam {
       gttoc(BayesTreeCliqueBase_shortcut);
       FactorGraphType p_Cp_B(parent->shortcut(B, function)); // P(Sp||B)
       gttic(BayesTreeCliqueBase_shortcut);
-      p_Cp_B += parent->conditional_; // P(Fp|Sp)
+      p_Cp_B.push_back(parent->conditional_); // P(Fp|Sp)
 
       // Determine the variables we want to keepSet, S union B
       KeyVector keep = shortcut_indices(B, p_Cp_B);
 
       // Marginalize out everything except S union B
-      boost::shared_ptr<FactorGraphType> p_S_B = p_Cp_B.marginal(keep, function);
+      std::shared_ptr<FactorGraphType> p_S_B = p_Cp_B.marginal(keep, function);
       return *p_S_B->eliminatePartialSequential(S_setminus_B, function).first;
     }
     else
@@ -170,14 +171,14 @@ namespace gtsam {
         gttic(BayesTreeCliqueBase_separatorMarginal_cachemiss);
 
         // now add the parent conditional
-        p_Cp += parent->conditional_;  // P(Fp|Sp)
+        p_Cp.push_back(parent->conditional_);  // P(Fp|Sp)
 
         // The variables we want to keepSet are exactly the ones in S
         KeyVector indicesS(this->conditional()->beginParents(),
                            this->conditional()->endParents());
         auto separatorMarginal =
             p_Cp.marginalMultifrontalBayesNet(Ordering(indicesS), function);
-        cachedSeparatorMarginal_.reset(*separatorMarginal);
+        cachedSeparatorMarginal_ = *separatorMarginal;
       }
     }
 
@@ -197,7 +198,7 @@ namespace gtsam {
     // initialize with separator marginal P(S)
     FactorGraphType p_C = this->separatorMarginal(function);
     // add the conditional P(F|S)
-    p_C += boost::shared_ptr<FactorType>(this->conditional_);
+    p_C.push_back(std::shared_ptr<FactorType>(this->conditional_));
     return p_C;
   }
 
@@ -216,7 +217,7 @@ namespace gtsam {
       }
 
       //Delete CachedShortcut for this clique
-      cachedSeparatorMarginal_ = boost::none;
+      cachedSeparatorMarginal_ = {};
     }
 
   }

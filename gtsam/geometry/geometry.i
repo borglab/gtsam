@@ -340,6 +340,10 @@ class Rot3 {
   gtsam::Point3 rotate(const gtsam::Point3& p) const;
   gtsam::Point3 unrotate(const gtsam::Point3& p) const;
 
+  // Group action on Unit3
+  gtsam::Unit3 rotate(const gtsam::Unit3& p) const;
+  gtsam::Unit3 unrotate(const gtsam::Unit3& p) const;
+  
   // Standard Interface
   static gtsam::Rot3 Expmap(Vector v);
   static Vector Logmap(const gtsam::Rot3& p);
@@ -372,8 +376,8 @@ class Pose2 {
   Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
   Pose2(Vector v);
 
-  static boost::optional<gtsam::Pose2> Align(const gtsam::Point2Pairs& abPointPairs);
-  static boost::optional<gtsam::Pose2> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
+  static std::optional<gtsam::Pose2> Align(const gtsam::Point2Pairs& abPointPairs);
+  static std::optional<gtsam::Pose2> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
 
   // Testable
   void print(string s = "") const;
@@ -436,8 +440,8 @@ class Pose3 {
   Pose3(const gtsam::Pose2& pose2);
   Pose3(Matrix mat);
 
-  static boost::optional<gtsam::Pose3> Align(const gtsam::Point3Pairs& abPointPairs);
-  static boost::optional<gtsam::Pose3> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
+  static std::optional<gtsam::Pose3> Align(const gtsam::Point3Pairs& abPointPairs);
+  static std::optional<gtsam::Pose3> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
 
   // Testable
   void print(string s = "") const;
@@ -1123,7 +1127,7 @@ class StereoCamera {
 #include <gtsam/geometry/triangulation.h>
 class TriangulationResult {
   enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
-  Status status;
+  gtsam::TriangulationResult::Status status;
   TriangulationResult(const gtsam::Point3& p);
   const gtsam::Point3& get() const;
   static gtsam::TriangulationResult Degenerate();
@@ -1142,7 +1146,7 @@ class TriangulationParameters {
   bool enableEPI;
   double landmarkDistanceThreshold;
   double dynamicOutlierRejectionThreshold;
-  SharedNoiseModel noiseModel;
+  gtsam::SharedNoiseModel noiseModel;
   TriangulationParameters(const double rankTolerance = 1.0,
                           const bool enableEPI = false,
                           double landmarkDistanceThreshold = -1,

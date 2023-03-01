@@ -17,7 +17,6 @@
  */
 
 #include <gtsam/linear/GaussianDensity.h>
-#include <boost/format.hpp>
 #include <string>
 
 using std::cout;
@@ -37,8 +36,9 @@ GaussianDensity GaussianDensity::FromMeanAndStddev(Key key, const Vector& mean,
 void GaussianDensity::print(const string& s,
                             const KeyFormatter& formatter) const {
   cout << s << ": density on ";
-  for (const_iterator it = beginFrontals(); it != endFrontals(); ++it)
-    cout << (boost::format("[%1%]") % (formatter(*it))).str() << " ";
+  for (const_iterator it = beginFrontals(); it != endFrontals(); ++it) {
+    cout << "[" << formatter(*it) << "] ";
+  }
   cout << endl;
   gtsam::print(mean(), "mean: ");
   gtsam::print(covariance(), "covariance: ");

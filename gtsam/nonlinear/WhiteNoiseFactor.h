@@ -155,7 +155,7 @@ namespace gtsam {
     /// @{
 
     /// linearize returns a Hessianfactor that is an approximation of error(p)
-    boost::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
+    std::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
       double u = x.at<double>(meanKey_);
       double p = x.at<double>(precisionKey_);
       Key j1 = meanKey_;
@@ -166,7 +166,7 @@ namespace gtsam {
     // TODO: Frank commented this out for now, can it go?
     //    /// @return a deep copy of this factor
     //    gtsam::NonlinearFactor::shared_ptr clone() const override {
-    //      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    //      return std::static_pointer_cast<gtsam::NonlinearFactor>(
     //          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /// @}

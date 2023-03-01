@@ -26,7 +26,7 @@ namespace gtsam {
 
 /**
  * @brief Calibration used by Bundler
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3Bundler : public Cal3 {
@@ -42,7 +42,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   enum { dimension = 3 };
 
   ///< shared pointer to stereo calibration object
-  using shared_ptr = boost::shared_ptr<Cal3Bundler>;
+  using shared_ptr = std::shared_ptr<Cal3Bundler>;
 
   /// @name Standard Constructors
   /// @{
@@ -100,14 +100,6 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
 
   Vector3 vector() const;
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  /// get parameter u0
-  inline double GTSAM_DEPRECATED u0() const { return u0_; }
-
-  /// get parameter v0
-  inline double GTSAM_DEPRECATED v0() const { return v0_; }
-#endif
-
   /**
    * @brief: convert intrinsic coordinates xy to image coordinates uv
    * Version of uncalibrate with derivatives
@@ -116,8 +108,8 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal = boost::none,
-                     OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal = {},
+                     OptionalJacobian<2, 2> Dp = {}) const;
 
   /**
    * Convert a pixel coordinate to ideal coordinate xy
@@ -127,8 +119,8 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in intrinsic coordinates
    */
-  Point2 calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal = boost::none,
-                   OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal = {},
+                   OptionalJacobian<2, 2> Dp = {}) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
   Matrix2 D2d_intrinsic(const Point2& p) const;
@@ -164,6 +156,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   /// @name Advanced Interface
   /// @{
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
@@ -174,6 +167,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
     ar& BOOST_SERIALIZATION_NVP(k2_);
     ar& BOOST_SERIALIZATION_NVP(tol_);
   }
+#endif
 
   /// @}
 };

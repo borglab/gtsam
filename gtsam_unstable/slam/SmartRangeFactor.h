@@ -19,12 +19,13 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <optional>
 
 namespace gtsam {
 
 /**
  * Smart factor for range SLAM
- * @ingroup SLAM
+ * @ingroup slam
  */
 class SmartRangeFactor: public NoiseModelFactor {
  protected:
@@ -42,6 +43,10 @@ class SmartRangeFactor: public NoiseModelFactor {
   double variance_;  ///< variance on noise
 
  public:
+
+  // Provide access to the Matrix& version of unwhitenedError
+  using NoiseModelFactor::unwhitenedError;
+
   /** Default constructor: don't use directly */
   SmartRangeFactor() {
   }
@@ -101,8 +106,8 @@ class SmartRangeFactor: public NoiseModelFactor {
     }
 
     Circle2 circle1 = circles.front();
-    boost::optional<Point2> best_fh;
-    auto bestCircle2 = boost::make_optional(false, circle1);  // fixes issue #38
+    std::optional<Point2> best_fh;
+    std::optional<Circle2> bestCircle2 = std::nullopt;  // fixes issue #38
 
     // loop over all circles
     for (const Circle2& it : circles) {
@@ -111,7 +116,7 @@ class SmartRangeFactor: public NoiseModelFactor {
       if (d < 1e-9)
         continue;  // skip circles that are in the same location
       // Find f and h, the intersection points in normalized circles
-      boost::optional<Point2> fh = circleCircleIntersection(
+      std::optional<Point2> fh = circleCircleIntersection(
           circle1.radius / d, it.radius / d);
       // Check if this pair is better by checking h = fh->y()
       // if h is large, the intersections are well defined.
@@ -143,8 +148,7 @@ class SmartRangeFactor: public NoiseModelFactor {
   /**
    * Error function *without* the NoiseModel, \f$ z-h(x) \f$.
    */
-  Vector unwhitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const override {
+  Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override {
     size_t n = size();
     if (n < 3) {
       if (H) {
@@ -176,7 +180,7 @@ class SmartRangeFactor: public NoiseModelFactor {
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 };

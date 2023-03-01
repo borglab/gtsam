@@ -27,7 +27,7 @@ namespace gtsam {
 static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
   bool smart = true;
   auto model = noiseModel::Gaussian::Covariance(covariance, smart);
-  auto diagonal = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+  auto diagonal = std::dynamic_pointer_cast<noiseModel::Diagonal>(model);
   if (!diagonal)
     throw std::invalid_argument("ScenarioRunner::Diagonal: not a diagonal");
   return diagonal;
@@ -40,7 +40,7 @@ static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
 class GTSAM_EXPORT ScenarioRunner {
  public:
   typedef imuBias::ConstantBias Bias;
-  typedef boost::shared_ptr<PreintegrationParams> SharedParams;
+  typedef std::shared_ptr<PreintegrationParams> SharedParams;
 
  private:
   const Scenario& scenario_;
@@ -113,7 +113,7 @@ class GTSAM_EXPORT ScenarioRunner {
  */
 class GTSAM_EXPORT CombinedScenarioRunner : public ScenarioRunner {
  public:
-  typedef boost::shared_ptr<PreintegrationCombinedParams> SharedParams;
+  typedef std::shared_ptr<PreintegrationCombinedParams> SharedParams;
 
  private:
   const SharedParams p_;

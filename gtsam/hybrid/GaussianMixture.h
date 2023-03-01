@@ -23,11 +23,14 @@
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/linear/GaussianConditional.h>
 
 namespace gtsam {
+
+class HybridValues;
 
 /**
  * @brief A conditional of gaussian mixtures indexed by discrete variables, as
@@ -45,29 +48,28 @@ namespace gtsam {
  * where i indexes the components and k_i is a component-wise normalization
  * constant.
  *
+ * @ingroup hybrid
  */
 class GTSAM_EXPORT GaussianMixture
     : public HybridFactor,
       public Conditional<HybridFactor, GaussianMixture> {
  public:
   using This = GaussianMixture;
-  using shared_ptr = boost::shared_ptr<GaussianMixture>;
+  using shared_ptr = std::shared_ptr<GaussianMixture>;
   using BaseFactor = HybridFactor;
   using BaseConditional = Conditional<HybridFactor, GaussianMixture>;
-
-  /// Alias for DecisionTree of GaussianFactorGraphs
-  using Sum = DecisionTree<Key, GaussianFactorGraph>;
 
   /// typedef for Decision Tree of Gaussian Conditionals
   using Conditionals = DecisionTree<Key, GaussianConditional::shared_ptr>;
 
  private:
-  Conditionals conditionals_;
+  Conditionals conditionals_;  ///< a decision tree of Gaussian conditionals.
+  double logConstant_;         ///< log of the normalization constant.
 
   /**
    * @brief Convert a DecisionTree of factors into a DT of Gaussian FGs.
    */
-  Sum asGaussianFactorGraphTree() const;
+  GaussianFactorGraphTree asGaussianFactorGraphTree() const;
 
   /**
    * @brief Helper function to get the pruner functor.
@@ -84,7 +86,7 @@ class GTSAM_EXPORT GaussianMixture
   /// @name Constructors
   /// @{
 
-  /// Defaut constructor, mainly for serialization.
+  /// Default constructor, mainly for serialization.
   GaussianMixture() = default;
 
   /**
@@ -111,20 +113,22 @@ class GTSAM_EXPORT GaussianMixture
    * @param discreteParents Discrete parents variables
    * @param conditionals List of conditionals
    */
-  static This FromConditionals(
+  GaussianMixture(KeyVector &&continuousFrontals, KeyVector &&continuousParents,
+                  DiscreteKeys &&discreteParents,
+                  std::vector<GaussianConditional::shared_ptr> &&conditionals);
+
+  /**
+   * @brief Make a Gaussian Mixture from a list of Gaussian conditionals
+   *
+   * @param continuousFrontals The continuous frontal variables
+   * @param continuousParents The continuous parent variables
+   * @param discreteParents Discrete parents variables
+   * @param conditionals List of conditionals
+   */
+  GaussianMixture(
       const KeyVector &continuousFrontals, const KeyVector &continuousParents,
       const DiscreteKeys &discreteParents,
       const std::vector<GaussianConditional::shared_ptr> &conditionals);
-
-  /// @}
-  /// @name Standard API
-  /// @{
-
-  GaussianConditional::shared_ptr operator()(
-      const DiscreteValues &discreteVals) const;
-
-  /// Returns the total number of continuous components
-  size_t nrComponents() const;
 
   /// @}
   /// @name Testable
@@ -139,9 +143,94 @@ class GTSAM_EXPORT GaussianMixture
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
   /// @}
+  /// @name Standard API
+  /// @{
+
+  /// @brief Return the conditional Gaussian for the given discrete assignment.
+  GaussianConditional::shared_ptr operator()(
+      const DiscreteValues &discreteValues) const;
+
+  /// Returns the total number of continuous components
+  size_t nrComponents() const;
+
+  /// Returns the continuous keys among the parents.
+  KeyVector continuousParents() const;
+
+  /// The log normalization constant is max of the the individual
+  /// log-normalization constants.
+  double logNormalizationConstant() const override { return logConstant_; }
+
+  /**
+   * Create a likelihood factor for a Gaussian mixture, return a Mixture factor
+   * on the parents.
+   */
+  std::shared_ptr<GaussianMixtureFactor> likelihood(
+      const VectorValues &given) const;
 
   /// Getter for the underlying Conditionals DecisionTree
-  const Conditionals &conditionals();
+  const Conditionals &conditionals() const;
+
+  /**
+   * @brief Compute logProbability of the GaussianMixture as a tree.
+   *
+   * @param continuousValues The continuous VectorValues.
+   * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
+   * as the conditionals, and leaf values as the logProbability.
+   */
+  AlgebraicDecisionTree<Key> logProbability(
+      const VectorValues &continuousValues) const;
+
+  /**
+   * @brief Compute the error of this Gaussian Mixture.
+   *
+   * This requires some care, as different mixture components may have
+   * different normalization constants. Let's consider p(x|y,m), where m is
+   * discrete. We need the error to satisfy the invariant:
+   *
+   *    error(x;y,m) = K - log(probability(x;y,m))
+   *
+   * For all x,y,m. But note that K, the (log) normalization constant defined
+   * in Conditional.h, should not depend on x, y, or m, only on the parameters
+   * of the density. Hence, we delegate to the underlying Gaussian
+   * conditionals, indexed by m, which do satisfy:
+   *
+   *    log(probability_m(x;y)) = K_m - error_m(x;y)
+   *
+   * We resolve by having K == max(K_m) and
+   *
+   *    error(x;y,m) = error_m(x;y) + K - K_m
+   *
+   * which also makes error(x;y,m) >= 0 for all x,y,m.
+   *
+   * @param values Continuous values and discrete assignment.
+   * @return double
+   */
+  double error(const HybridValues &values) const override;
+
+  /**
+   * @brief Compute error of the GaussianMixture as a tree.
+   *
+   * @param continuousValues The continuous VectorValues.
+   * @return AlgebraicDecisionTree<Key> A decision tree on the discrete keys
+   * only, with the leaf values as the error for each assignment.
+   */
+  AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
+
+  /**
+   * @brief Compute the logProbability of this Gaussian Mixture.
+   *
+   * @param values Continuous values and discrete assignment.
+   * @return double
+   */
+  double logProbability(const HybridValues &values) const override;
+
+  /// Calculate probability density for given `values`.
+  double evaluate(const HybridValues &values) const override;
+
+  /// Evaluate probability density, sugar.
+  double operator()(const HybridValues &values) const {
+    return evaluate(values);
+  }
 
   /**
    * @brief Prune the decision tree of Gaussian factors as per the discrete
@@ -157,10 +246,29 @@ class GTSAM_EXPORT GaussianMixture
    * maintaining the decision tree structure.
    *
    * @param sum Decision Tree of Gaussian Factor Graphs
-   * @return Sum
+   * @return GaussianFactorGraphTree
    */
-  Sum add(const Sum &sum) const;
+  GaussianFactorGraphTree add(const GaussianFactorGraphTree &sum) const;
+  /// @}
+
+ private:
+  /// Check whether `given` has values for all frontal keys.
+  bool allFrontalsGiven(const VectorValues &given) const;
+
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
+    ar &BOOST_SERIALIZATION_NVP(conditionals_);
+  }
+#endif
 };
+
+/// Return the DiscreteKey vector as a set.
+std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys);
 
 // traits
 template <>

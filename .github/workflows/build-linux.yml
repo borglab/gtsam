@@ -20,19 +20,15 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          ubuntu-20.04-gcc-7,
           ubuntu-20.04-gcc-9,
           ubuntu-20.04-clang-9,
+          ubuntu-22.04-gcc-11,
+          ubuntu-22.04-clang-14,
         ]
 
-        build_type: [Debug, Release]
+        build_type: [Release]
         build_unstable: [ON]
         include:
-          - name: ubuntu-20.04-gcc-7
-            os: ubuntu-20.04
-            compiler: gcc
-            version: "7"
-
           - name: ubuntu-20.04-gcc-9
             os: ubuntu-20.04
             compiler: gcc
@@ -43,14 +39,24 @@ jobs:
             compiler: clang
             version: "9"
 
+          - name: ubuntu-22.04-gcc-11
+            os: ubuntu-22.04
+            compiler: gcc
+            version: "11"
+
+          - name: ubuntu-22.04-clang-14
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Dependencies
         run: |
-          # LLVM (clang) 9 is not in Bionic's repositories so we add the official LLVM repository.
-          if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
+          # LLVM (clang) 9/14 is not in Bionic's repositories so we add the official LLVM repository.
+          if [ "${{ matrix.compiler }}" = "clang" ]; then
             # (ipv4|ha).pool.sks-keyservers.net is the SKS GPG global keyserver pool
             # ipv4 avoids potential timeouts because of crappy IPv6 infrastructure
             # 15CF4D18AF4F7421 is the GPG key for the LLVM apt repository

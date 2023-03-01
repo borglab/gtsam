@@ -36,7 +36,7 @@ TEST(testNonlinearISAM, markov_chain ) {
   // create initial graph
   Pose2 cur_pose; // start at origin
   NonlinearFactorGraph start_factors;
-  start_factors += NonlinearEquality<Pose2>(0, cur_pose);
+  start_factors.emplace_shared<NonlinearEquality<Pose2>>(0, cur_pose);
 
   Values init;
   Values expected;
@@ -50,7 +50,7 @@ TEST(testNonlinearISAM, markov_chain ) {
   Pose2 z(1.0, 2.0, 0.1);
   for (size_t i=1; i<=nrPoses; ++i) {
     NonlinearFactorGraph new_factors;
-    new_factors += BetweenFactor<Pose2>(i-1, i, z, model);
+    new_factors.emplace_shared<BetweenFactor<Pose2>>(i-1, i, z, model);
     Values new_init;
 
     cur_pose = cur_pose.compose(z);
@@ -84,7 +84,7 @@ TEST(testNonlinearISAM, markov_chain_with_disconnects ) {
   // create initial graph
   Pose2 cur_pose; // start at origin
   NonlinearFactorGraph start_factors;
-  start_factors += NonlinearEquality<Pose2>(0, cur_pose);
+  start_factors.emplace_shared<NonlinearEquality<Pose2>>(0, cur_pose);
 
   Values init;
   Values expected;
@@ -106,7 +106,7 @@ TEST(testNonlinearISAM, markov_chain_with_disconnects ) {
   Pose2 z(1.0, 2.0, 0.1);
   for (size_t i=1; i<=nrPoses; ++i) {
     NonlinearFactorGraph new_factors;
-    new_factors += BetweenFactor<Pose2>(i-1, i, z, model3);
+    new_factors.emplace_shared<BetweenFactor<Pose2>>(i-1, i, z, model3);
     Values new_init;
 
     cur_pose = cur_pose.compose(z);
@@ -161,7 +161,7 @@ TEST(testNonlinearISAM, markov_chain_with_reconnect ) {
   // create initial graph
   Pose2 cur_pose; // start at origin
   NonlinearFactorGraph start_factors;
-  start_factors += NonlinearEquality<Pose2>(0, cur_pose);
+  start_factors.emplace_shared<NonlinearEquality<Pose2>>(0, cur_pose);
 
   Values init;
   Values expected;
@@ -183,7 +183,7 @@ TEST(testNonlinearISAM, markov_chain_with_reconnect ) {
   Pose2 z(1.0, 2.0, 0.1);
   for (size_t i=1; i<=nrPoses; ++i) {
     NonlinearFactorGraph new_factors;
-    new_factors += BetweenFactor<Pose2>(i-1, i, z, model3);
+    new_factors.emplace_shared<BetweenFactor<Pose2>>(i-1, i, z, model3);
     Values new_init;
 
     cur_pose = cur_pose.compose(z);
@@ -204,7 +204,7 @@ TEST(testNonlinearISAM, markov_chain_with_reconnect ) {
 
     // Reconnect with observation later
     if (i == 15) {
-      new_factors += BearingRangeFactor<Pose2, Point2>(
+      new_factors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(
           i, lm1, cur_pose.bearing(landmark1), cur_pose.range(landmark1), model2);
     }
 

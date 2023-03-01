@@ -235,7 +235,7 @@ static void test_nested_ops_with_ref()
 }
 
 
-void test_cxx11_tensor_ref()
+EIGEN_DECLARE_TEST(cxx11_tensor_ref)
 {
   CALL_SUBTEST(test_simple_lvalue_ref());
   CALL_SUBTEST(test_simple_rvalue_ref());

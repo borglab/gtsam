@@ -23,26 +23,29 @@ namespace gtsam {
 
   /**
    * A class for a soft prior on any Value type
-   * @ingroup SLAM
+   * @ingroup slam
    */
   template<class POSE>
-  class PosePriorFactor: public NoiseModelFactor1<POSE> {
+  class PosePriorFactor: public NoiseModelFactorN<POSE> {
 
   private:
 
     typedef PosePriorFactor<POSE> This;
-    typedef NoiseModelFactor1<POSE> Base;
+    typedef NoiseModelFactorN<POSE> Base;
 
     POSE prior_; /** The measurement */
-    boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
+    std::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
     /** concept check by type */
     GTSAM_CONCEPT_TESTABLE_TYPE(POSE)
     GTSAM_CONCEPT_POSE_TYPE(POSE)
   public:
 
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
+
     /// shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<PosePriorFactor<POSE> > shared_ptr;
+    typedef typename std::shared_ptr<PosePriorFactor<POSE> > shared_ptr;
 
     /** default constructor - only use for serialization */
     PosePriorFactor() {}
@@ -51,13 +54,13 @@ namespace gtsam {
 
     /** Constructor */
     PosePriorFactor(Key key, const POSE& prior, const SharedNoiseModel& model,
-        boost::optional<POSE> body_P_sensor = boost::none) :
+        std::optional<POSE> body_P_sensor = {}) :
       Base(model, key), prior_(prior), body_P_sensor_(body_P_sensor) {
     }
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
@@ -83,7 +86,7 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const POSE& p, boost::optional<Matrix&> H = boost::none) const override {
+    Vector evaluateError(const POSE& p, OptionalMatrixType H) const override {
       if(body_P_sensor_) {
         // manifold equivalent of h(x)-z -> log(z,h(x))
         return prior_.localCoordinates(p.compose(*body_P_sensor_, H));
@@ -98,6 +101,7 @@ namespace gtsam {
 
   private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -106,6 +110,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(prior_);
       ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
     }
+#endif
   };
 
 } /// namespace gtsam

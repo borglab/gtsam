@@ -19,12 +19,10 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/Signature.h>
-
-#include <boost/assign/std/map.hpp>
-using namespace boost::assign;
 
 using namespace std;
 using namespace gtsam;
@@ -50,6 +48,9 @@ TEST( DecisionTreeFactor, constructors)
   EXPECT_DOUBLES_EQUAL(8, f1(values), 1e-9);
   EXPECT_DOUBLES_EQUAL(7, f2(values), 1e-9);
   EXPECT_DOUBLES_EQUAL(75, f3(values), 1e-9);
+
+  // Assert that error = -log(value)
+  EXPECT_DOUBLES_EQUAL(-log(f1(values)), f1.error(values), 1e-9);
 }
 
 /* ************************************************************************* */

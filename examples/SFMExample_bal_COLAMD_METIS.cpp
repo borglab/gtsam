@@ -26,7 +26,6 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/format.hpp>
 #include <vector>
 
 using namespace std;
@@ -47,8 +46,7 @@ int main(int argc, char* argv[]) {
 
   // Load the SfM data from file
   SfmData mydata = SfmData::FromBalFile(filename);
-  cout << boost::format("read %1% tracks on %2% cameras\n") %
-              mydata.numberTracks() % mydata.numberCameras();
+  cout << "read " << mydata.numberTracks() << " tracks on " << mydata.numberCameras() << " cameras" << endl;
 
   // Create a factor graph
   NonlinearFactorGraph graph;
@@ -59,9 +57,7 @@ int main(int argc, char* argv[]) {
   // Add measurements to the factor graph
   size_t j = 0;
   for (const SfmTrack& track : mydata.tracks) {
-    for (const SfmMeasurement& m : track.measurements) {
-      size_t i = m.first;
-      Point2 uv = m.second;
+    for (const auto& [i, uv] : track.measurements) {
       graph.emplace_shared<MyFactor>(
           uv, noise, C(i), P(j));  // note use of shorthand symbols C and P
     }
@@ -130,9 +126,9 @@ int main(int argc, char* argv[]) {
     cout << endl << endl;
 
     cout << "Time comparison by solving " << filename << " results:" << endl;
-    cout << boost::format("%1% point tracks and %2% cameras\n") %
-                mydata.numberTracks() % mydata.numberCameras()
-         << endl;
+
+    cout << mydata.numberTracks() << " point tracks and " << mydata.numberCameras()
+         << " cameras" << endl;
 
     tictoc_print_();
   }

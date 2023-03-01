@@ -57,7 +57,7 @@ Point2 uncalibrate_(const Cal3DS2& k, const Point2& pt) {
 /* ************************************************************************* */
 TEST(Cal3DS2, Duncalibrate1) {
   Matrix computed;
-  K.uncalibrate(p, computed, boost::none);
+  K.uncalibrate(p, computed, {});
   Matrix numerical = numericalDerivative21(uncalibrate_, K, p, 1e-7);
   CHECK(assert_equal(numerical, computed, 1e-5));
   Matrix separate = K.D2d_calibration(p);
@@ -67,7 +67,7 @@ TEST(Cal3DS2, Duncalibrate1) {
 /* ************************************************************************* */
 TEST(Cal3DS2, Duncalibrate2) {
   Matrix computed;
-  K.uncalibrate(p, boost::none, computed);
+  K.uncalibrate(p, {}, computed);
   Matrix numerical = numericalDerivative22(uncalibrate_, K, p, 1e-7);
   CHECK(assert_equal(numerical, computed, 1e-5));
   Matrix separate = K.D2d_intrinsic(p);

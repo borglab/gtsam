@@ -38,7 +38,7 @@ namespace gtsam {
    * row for all operations.  To include all rows, rowEnd() should be set to the number of rows in
    * the matrix (i.e. one after the last true row index).
    *
-   * @addtogroup base */
+   * @ingroup base */
   class GTSAM_EXPORT VerticalBlockMatrix
   {
   public:
@@ -219,6 +219,7 @@ namespace gtsam {
     friend class SymmetricBlockMatrix;
 
   private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -229,6 +230,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(rowEnd_);
       ar & BOOST_SERIALIZATION_NVP(blockStart_);
     }
+#endif
   };
 
 }

@@ -134,7 +134,7 @@ Point2 Cal3Fisheye::calibrate(const Point2& uv, OptionalJacobian<2, 9> Dcal,
     Matrix2 jac;
 
     // Calculate the current estimate (uv_hat) and the jacobian
-    const Point2 uv_hat = uncalibrate(pi, boost::none, jac);
+    const Point2 uv_hat = uncalibrate(pi, {}, jac);
 
     // Test convergence
     if ((uv_hat - uv).norm() < tol_) break;
@@ -162,9 +162,9 @@ std::ostream& operator<<(std::ostream& os, const Cal3Fisheye& cal) {
 }
 
 /* ************************************************************************* */
-void Cal3Fisheye::print(const std::string& s_) const {
-  gtsam::print((Matrix)K(), s_ + ".K");
-  gtsam::print(Vector(k()), s_ + ".k");
+void Cal3Fisheye::print(const std::string& s) const {
+  gtsam::print((Matrix)K(), s + ".K");
+  gtsam::print(Vector(k()), s + ".k");
 }
 
 /* ************************************************************************* */

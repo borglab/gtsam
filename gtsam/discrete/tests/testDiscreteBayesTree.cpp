@@ -21,9 +21,6 @@
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
 
-#include <boost/assign/std/vector.hpp>
-using namespace boost::assign;
-
 #include <CppUnitLite/TestHarness.h>
 
 #include <iostream>
@@ -37,7 +34,7 @@ static constexpr bool debug = false;
 struct TestFixture {
   vector<DiscreteKey> keys;
   DiscreteBayesNet bayesNet;
-  boost::shared_ptr<DiscreteBayesTree> bayesTree;
+  std::shared_ptr<DiscreteBayesTree> bayesTree;
 
   /**
    * Create a thin-tree Bayesnet, a la Jean-Guillaume Durand (former student),

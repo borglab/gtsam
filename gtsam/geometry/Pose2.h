@@ -25,12 +25,15 @@
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/dllexport.h>
+#include <gtsam/base/std_optional_serialization.h>
+
+#include <optional>
 
 namespace gtsam {
 
 /**
  * A 2D pose (Point2,Rot2)
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class Pose2: public LieGroup<Pose2, 3> {
@@ -99,10 +102,10 @@ public:
    *  Note this allows for noise on the points but in that case the mapping 
    *  will not be exact.
    */
-  static boost::optional<Pose2> Align(const Point2Pairs& abPointPairs);
+  static std::optional<Pose2> Align(const Point2Pairs& abPointPairs);
 
   // Version of Pose2::Align that takes 2 matrices.
-  static boost::optional<Pose2> Align(const Matrix& a, const Matrix& b);
+  static std::optional<Pose2> Align(const Matrix& a, const Matrix& b);
 
   /// @}
   /// @name Testable
@@ -134,10 +137,10 @@ public:
   /// @{
 
   ///Exponential map at identity - create a rotation from canonical coordinates \f$ [T_x,T_y,\theta] \f$
-  GTSAM_EXPORT static Pose2 Expmap(const Vector3& xi, ChartJacobian H = boost::none);
+  GTSAM_EXPORT static Pose2 Expmap(const Vector3& xi, ChartJacobian H = {});
 
   ///Log map at identity - return the canonical coordinates \f$ [T_x,T_y,\theta] \f$ of this rotation
-  GTSAM_EXPORT static Vector3 Logmap(const Pose2& p, ChartJacobian H = boost::none);
+  GTSAM_EXPORT static Vector3 Logmap(const Pose2& p, ChartJacobian H = {});
 
   /**
    * Calculate Adjoint map
@@ -196,8 +199,8 @@ public:
 
   // Chart at origin, depends on compile-time flag SLOW_BUT_CORRECT_EXPMAP
   struct ChartAtOrigin {
-	GTSAM_EXPORT static Pose2 Retract(const Vector3& v, ChartJacobian H = boost::none);
-	GTSAM_EXPORT static Vector3 Local(const Pose2& r, ChartJacobian H = boost::none);
+	GTSAM_EXPORT static Pose2 Retract(const Vector3& v, ChartJacobian H = {});
+	GTSAM_EXPORT static Vector3 Local(const Pose2& r, ChartJacobian H = {});
   };
 
   using LieGroup<Pose2, 3>::inverse; // version with derivative
@@ -208,8 +211,8 @@ public:
 
   /** Return point coordinates in pose coordinate frame */
   GTSAM_EXPORT Point2 transformTo(const Point2& point,
-      OptionalJacobian<2, 3> Dpose = boost::none,
-      OptionalJacobian<2, 2> Dpoint = boost::none) const;
+      OptionalJacobian<2, 3> Dpose = {},
+      OptionalJacobian<2, 2> Dpoint = {}) const;
 
   /**
    * @brief transform many points in world coordinates and transform to Pose.
@@ -220,8 +223,8 @@ public:
 
   /** Return point coordinates in global frame */
   GTSAM_EXPORT Point2 transformFrom(const Point2& point,
-      OptionalJacobian<2, 3> Dpose = boost::none,
-      OptionalJacobian<2, 2> Dpoint = boost::none) const;
+      OptionalJacobian<2, 3> Dpose = {},
+      OptionalJacobian<2, 2> Dpoint = {}) const;
 
   /**
    * @brief transform many points in Pose coordinates and transform to world.
@@ -269,7 +272,7 @@ public:
    * @return 2D rotation \f$ \in SO(2) \f$
    */
   GTSAM_EXPORT Rot2 bearing(const Point2& point,
-               OptionalJacobian<1, 3> H1=boost::none, OptionalJacobian<1, 2> H2=boost::none) const;
+               OptionalJacobian<1, 3> H1={}, OptionalJacobian<1, 2> H2={}) const;
 
   /**
    * Calculate bearing to another pose
@@ -277,7 +280,7 @@ public:
    * @return 2D rotation \f$ \in SO(2) \f$
    */
   GTSAM_EXPORT Rot2 bearing(const Pose2& pose,
-               OptionalJacobian<1, 3> H1=boost::none, OptionalJacobian<1, 3> H2=boost::none) const;
+               OptionalJacobian<1, 3> H1={}, OptionalJacobian<1, 3> H2={}) const;
 
   /**
    * Calculate range to a landmark
@@ -285,8 +288,8 @@ public:
    * @return range (double)
    */
   GTSAM_EXPORT double range(const Point2& point,
-      OptionalJacobian<1, 3> H1=boost::none,
-      OptionalJacobian<1, 2> H2=boost::none) const;
+      OptionalJacobian<1, 3> H1={},
+      OptionalJacobian<1, 2> H2={}) const;
 
   /**
    * Calculate range to another pose
@@ -294,8 +297,8 @@ public:
    * @return range (double)
    */
   GTSAM_EXPORT double range(const Pose2& point,
-      OptionalJacobian<1, 3> H1=boost::none,
-      OptionalJacobian<1, 3> H2=boost::none) const;
+      OptionalJacobian<1, 3> H1={},
+      OptionalJacobian<1, 3> H2={}) const;
 
   /// @}
   /// @name Advanced Interface
@@ -306,14 +309,14 @@ public:
    * exponential map parameterization
    * @return a pair of [start, end] indices into the tangent space vector
    */
-  inline static std::pair<size_t, size_t> translationInterval() { return std::make_pair(0, 1); }
+  inline static std::pair<size_t, size_t> translationInterval() { return {0, 1}; }
 
   /**
    * Return the start and end indices (inclusive) of the rotation component of the
    * exponential map parameterization
    * @return a pair of [start, end] indices into the tangent space vector
    */
-  static std::pair<size_t, size_t> rotationInterval() { return std::make_pair(2, 2); }
+  static std::pair<size_t, size_t> rotationInterval() { return {2, 2}; }
 
   /// Output stream operator
   GTSAM_EXPORT
@@ -323,6 +326,7 @@ public:
 
  private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  //
   // Serialization function
   friend class boost::serialization::access;
   template<class Archive>
@@ -330,6 +334,7 @@ public:
     ar & BOOST_SERIALIZATION_NVP(t_);
     ar & BOOST_SERIALIZATION_NVP(r_);
   }
+#endif
 
 public:
   // Align for Point2, which is either derived from, or is typedef, of Vector2
@@ -342,16 +347,6 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
   // NOTE(chris): Need eval() as workaround for Apple clang + avx2.
   return Matrix(Pose2::wedge(xi(0),xi(1),xi(2))).eval();
 }
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-/**
- * @deprecated Use static constructor (with reversed pairs!)
- * Calculate pose between a vector of 2D point correspondences (p,q)
- * where q = Pose2::transformFrom(p) = t + R*p
- */
-GTSAM_EXPORT boost::optional<Pose2> 
-GTSAM_DEPRECATED align(const Point2Pairs& pairs);
-#endif
 
 // Convenience typedef
 using Pose2Pair = std::pair<Pose2, Pose2>;

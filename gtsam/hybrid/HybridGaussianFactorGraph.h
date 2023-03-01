@@ -12,19 +12,23 @@
 /**
  * @file   HybridGaussianFactorGraph.h
  * @brief  Linearized Hybrid factor graph that uses type erasure
- * @author Fan Jiang
+ * @author Fan Jiang, Varun Agrawal, Frank Dellaert
  * @date   Mar 11, 2022
  */
 
 #pragma once
 
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
-#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/VectorValues.h>
+
+#include <functional>
+#include <optional>
 
 namespace gtsam {
 
@@ -36,18 +40,34 @@ class HybridEliminationTree;
 class HybridBayesTree;
 class HybridJunctionTree;
 class DecisionTreeFactor;
-
 class JacobianFactor;
+class HybridValues;
 
-/** Main elimination function for HybridGaussianFactorGraph */
+/**
+ * @brief Main elimination function for HybridGaussianFactorGraph.
+ *
+ * @param factors The factor graph to eliminate.
+ * @param keys The elimination ordering.
+ * @return The conditional on the ordering keys and the remaining factors.
+ * @ingroup hybrid
+ */
 GTSAM_EXPORT
-std::pair<boost::shared_ptr<HybridConditional>, HybridFactor::shared_ptr>
+std::pair<std::shared_ptr<HybridConditional>, std::shared_ptr<Factor>>
 EliminateHybrid(const HybridGaussianFactorGraph& factors, const Ordering& keys);
+
+/**
+ * @brief Return a Colamd constrained ordering where the discrete keys are
+ * eliminated after the continuous keys.
+ *
+ * @return const Ordering
+ */
+GTSAM_EXPORT const Ordering
+HybridOrdering(const HybridGaussianFactorGraph& graph);
 
 /* ************************************************************************* */
 template <>
 struct EliminationTraits<HybridGaussianFactorGraph> {
-  typedef HybridFactor FactorType;  ///< Type of factors in factor graph
+  typedef Factor FactorType;  ///< Type of factors in factor graph
   typedef HybridGaussianFactorGraph
       FactorGraphType;  ///< Type of the factor graph (e.g.
                         ///< HybridGaussianFactorGraph)
@@ -60,18 +80,25 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
   typedef HybridBayesTree BayesTreeType;        ///< Type of Bayes tree
   typedef HybridJunctionTree JunctionTreeType;  ///< Type of Junction tree
   /// The default dense elimination function
-  static std::pair<boost::shared_ptr<ConditionalType>,
-                   boost::shared_ptr<FactorType> >
+  static std::pair<std::shared_ptr<ConditionalType>,
+                   std::shared_ptr<FactorType>>
   DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
     return EliminateHybrid(factors, keys);
+  }
+  /// The default ordering generation function
+  static Ordering DefaultOrderingFunc(
+      const FactorGraphType& graph,
+      std::optional<std::reference_wrapper<const VariableIndex>>) {
+    return HybridOrdering(graph);
   }
 };
 
 /**
- * Gaussian Hybrid Factor Graph
+ * Hybrid Gaussian Factor Graph
  * -----------------------
  * This is the linearized version of a hybrid factor graph.
- * Everything inside needs to be hybrid factor or hybrid conditional.
+ *
+ * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridGaussianFactorGraph
     : public HybridFactorGraph,
@@ -87,14 +114,15 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   using This = HybridGaussianFactorGraph;  ///< this class
   using BaseEliminateable =
       EliminateableFactorGraph<This>;          ///< for elimination
-  using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
+  using shared_ptr = std::shared_ptr<This>;  ///< shared_ptr to This
 
   using Values = gtsam::Values;  ///< backwards compatibility
-  using Indices = KeyVector;     ///> map from keys to values
+  using Indices = KeyVector;     ///< map from keys to values
 
   /// @name Constructors
   /// @{
 
+  /// @brief Default constructor.
   HybridGaussianFactorGraph() = default;
 
   /**
@@ -107,67 +135,63 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       : Base(graph) {}
 
   /// @}
+  /// @name Testable
+  /// @{
 
-  using Base::empty;
-  using Base::reserve;
-  using Base::size;
-  using Base::operator[];
-  using Base::add;
-  using Base::push_back;
-  using Base::resize;
+  // TODO(dellaert):  customize print and equals.
+  // void print(const std::string& s = "HybridGaussianFactorGraph",
+  //            const KeyFormatter& keyFormatter = DefaultKeyFormatter) const
+  //     override;
+  // bool equals(const This& fg, double tol = 1e-9) const override;
 
-  /// Add a Jacobian factor to the factor graph.
-  void add(JacobianFactor&& factor);
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
-  /// Add a Jacobian factor as a shared ptr.
-  void add(boost::shared_ptr<JacobianFactor> factor);
-
-  /// Add a DecisionTreeFactor to the factor graph.
-  void add(DecisionTreeFactor&& factor);
-
-  /// Add a DecisionTreeFactor as a shared ptr.
-  void add(boost::shared_ptr<DecisionTreeFactor> factor);
+  using Base::error; // Expose error(const HybridValues&) method..
 
   /**
-   * Add a gaussian factor *pointer* to the internal gaussian factor graph
-   * @param gaussianFactor - boost::shared_ptr to the factor to add
-   */
-  template <typename FACTOR>
-  IsGaussian<FACTOR> push_gaussian(
-      const boost::shared_ptr<FACTOR>& gaussianFactor) {
-    Base::push_back(boost::make_shared<HybridGaussianFactor>(gaussianFactor));
-  }
-
-  /// Construct a factor and add (shared pointer to it) to factor graph.
-  template <class FACTOR, class... Args>
-  IsGaussian<FACTOR> emplace_gaussian(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    push_gaussian(factor);
-  }
-
-  /**
-   * @brief Add a single factor shared pointer to the hybrid factor graph.
-   * Dynamically handles the factor type and assigns it to the correct
-   * underlying container.
+   * @brief Compute error for each discrete assignment,
+   * and return as a tree.
    *
-   * @param sharedFactor The factor to add to this factor graph.
+   * Error \f$ e = \Vert x - \mu \Vert_{\Sigma} \f$.
+   *
+   * @param continuousValues Continuous values at which to compute the error.
+   * @return AlgebraicDecisionTree<Key>
    */
-  void push_back(const SharedFactor& sharedFactor) {
-    if (auto p = boost::dynamic_pointer_cast<GaussianFactor>(sharedFactor)) {
-      push_gaussian(p);
-    } else {
-      Base::push_back(sharedFactor);
-    }
-  }
+  AlgebraicDecisionTree<Key> error(const VectorValues& continuousValues) const;
 
   /**
-   * @brief Return a Colamd constrained ordering where the discrete keys are
-   * eliminated after the continuous keys.
+   * @brief Compute unnormalized probability \f$ P(X | M, Z) \f$
+   * for each discrete assignment, and return as a tree.
    *
-   * @return const Ordering
+   * @param continuousValues Continuous values at which to compute the
+   * probability.
+   * @return AlgebraicDecisionTree<Key>
    */
-  const Ordering getHybridOrdering() const;
+  AlgebraicDecisionTree<Key> probPrime(
+      const VectorValues& continuousValues) const;
+
+  /**
+   * @brief Compute the unnormalized posterior probability for a continuous
+   * vector values given a specific assignment.
+   *
+   * @return double
+   */
+  double probPrime(const HybridValues& values) const;
+
+  /**
+   * @brief Create a decision tree of factor graphs out of this hybrid factor
+   * graph.
+   *
+   * For example, if there are two mixture factors, one with a discrete key A
+   * and one with a discrete key B, then the decision tree will have two levels,
+   * one for A and one for B. The leaves of the tree will be the Gaussian
+   * factors that have only continuous keys.
+   */
+  GaussianFactorGraphTree assembleGraphTree() const;
+
+  /// @}
 };
 
 }  // namespace gtsam

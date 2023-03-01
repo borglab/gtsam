@@ -22,6 +22,8 @@
 #include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridValues.h>
+#include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
@@ -35,16 +37,18 @@ GaussianMixtureFactor::GaussianMixtureFactor(const KeyVector &continuousKeys,
 /* *******************************************************************************/
 bool GaussianMixtureFactor::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
-  return e != nullptr && Base::equals(*e, tol);
-}
+  if (e == nullptr) return false;
 
-/* *******************************************************************************/
-GaussianMixtureFactor GaussianMixtureFactor::FromFactors(
-    const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys,
-    const std::vector<GaussianFactor::shared_ptr> &factors) {
-  Factors dt(discreteKeys, factors);
+  // This will return false if either factors_ is empty or e->factors_ is empty,
+  // but not if both are empty or both are not empty:
+  if (factors_.empty() ^ e->factors_.empty()) return false;
 
-  return GaussianMixtureFactor(continuousKeys, discreteKeys, dt);
+  // Check the base and the factors:
+  return Base::equals(*e, tol) &&
+         factors_.equals(e->factors_,
+                         [tol](const sharedFactor &f1, const sharedFactor &f2) {
+                           return f1->equals(*f2, tol);
+                         });
 }
 
 /* *******************************************************************************/
@@ -52,47 +56,67 @@ void GaussianMixtureFactor::print(const std::string &s,
                                   const KeyFormatter &formatter) const {
   HybridFactor::print(s, formatter);
   std::cout << "{\n";
-  factors_.print(
-      "", [&](Key k) { return formatter(k); },
-      [&](const GaussianFactor::shared_ptr &gf) -> std::string {
-        RedirectCout rd;
-        std::cout << ":\n";
-        if (gf && !gf->empty()) {
-          gf->print("", formatter);
-          return rd.str();
-        } else {
-          return "nullptr";
-        }
-      });
+  if (factors_.empty()) {
+    std::cout << "  empty" << std::endl;
+  } else {
+    factors_.print(
+        "", [&](Key k) { return formatter(k); },
+        [&](const sharedFactor &gf) -> std::string {
+          RedirectCout rd;
+          std::cout << ":\n";
+          if (gf && !gf->empty()) {
+            gf->print("", formatter);
+            return rd.str();
+          } else {
+            return "nullptr";
+          }
+        });
+  }
   std::cout << "}" << std::endl;
 }
 
 /* *******************************************************************************/
-const GaussianMixtureFactor::Factors &GaussianMixtureFactor::factors() {
-  return factors_;
+GaussianMixtureFactor::sharedFactor GaussianMixtureFactor::operator()(
+    const DiscreteValues &assignment) const {
+  return factors_(assignment);
 }
 
 /* *******************************************************************************/
-GaussianMixtureFactor::Sum GaussianMixtureFactor::add(
-    const GaussianMixtureFactor::Sum &sum) const {
+GaussianFactorGraphTree GaussianMixtureFactor::add(
+    const GaussianFactorGraphTree &sum) const {
   using Y = GaussianFactorGraph;
   auto add = [](const Y &graph1, const Y &graph2) {
     auto result = graph1;
     result.push_back(graph2);
     return result;
   };
-  const Sum tree = asGaussianFactorGraphTree();
+  const auto tree = asGaussianFactorGraphTree();
   return sum.empty() ? tree : sum.apply(tree, add);
 }
 
 /* *******************************************************************************/
-GaussianMixtureFactor::Sum GaussianMixtureFactor::asGaussianFactorGraphTree()
+GaussianFactorGraphTree GaussianMixtureFactor::asGaussianFactorGraphTree()
     const {
-  auto wrap = [](const GaussianFactor::shared_ptr &factor) {
-    GaussianFactorGraph result;
-    result.push_back(factor);
-    return result;
-  };
+  auto wrap = [](const sharedFactor &gf) { return GaussianFactorGraph{gf}; };
   return {factors_, wrap};
 }
+
+/* *******************************************************************************/
+AlgebraicDecisionTree<Key> GaussianMixtureFactor::error(
+    const VectorValues &continuousValues) const {
+  // functor to convert from sharedFactor to double error value.
+  auto errorFunc = [&continuousValues](const sharedFactor &gf) {
+    return gf->error(continuousValues);
+  };
+  DecisionTree<Key, double> errorTree(factors_, errorFunc);
+  return errorTree;
+}
+
+/* *******************************************************************************/
+double GaussianMixtureFactor::error(const HybridValues &values) const {
+  const sharedFactor gf = factors_(values.discrete());
+  return gf->error(values.continuous());
+}
+/* *******************************************************************************/
+
 }  // namespace gtsam

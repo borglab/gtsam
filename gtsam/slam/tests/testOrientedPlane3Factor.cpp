@@ -25,10 +25,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std.hpp>
-
-using namespace boost::assign;
 using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;
@@ -144,9 +140,9 @@ TEST( OrientedPlane3Factor, Derivatives ) {
   OrientedPlane3Factor factor(p.planeCoefficients(), noise, poseKey, planeKey);
 
   // Calculate numerical derivatives
-  std::function<Vector(const Pose3 &, const OrientedPlane3 &)> f = std::bind(
-      &OrientedPlane3Factor::evaluateError, factor, std::placeholders::_1,
-      std::placeholders::_2, boost::none, boost::none);
+  auto f = [&factor](const Pose3& p, const OrientedPlane3& o) {
+    return factor.evaluateError(p, o);
+  };
   Matrix numericalH1 = numericalDerivative21<Vector, Pose3, OrientedPlane3>(f, poseLin, pLin);
   Matrix numericalH2 = numericalDerivative22<Vector, Pose3, OrientedPlane3>(f, poseLin, pLin);
 
@@ -184,16 +180,13 @@ TEST( OrientedPlane3DirectionPrior, Constructor ) {
 
   // Calculate numerical derivatives
   Matrix expectedH1 = numericalDerivative11<Vector, OrientedPlane3>(
-      std::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, std::placeholders::_1,
-          boost::none), T1);
+		  [&factor](const OrientedPlane3& o) {return factor.evaluateError(o);}, T1);
 
   Matrix expectedH2 = numericalDerivative11<Vector, OrientedPlane3>(
-      std::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, std::placeholders::_1,
-          boost::none), T2);
+      [&factor](const OrientedPlane3& o) {return factor.evaluateError(o);}, T2);
 
   Matrix expectedH3 = numericalDerivative11<Vector, OrientedPlane3>(
-      std::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, std::placeholders::_1,
-          boost::none), T3);
+      [&factor](const OrientedPlane3& o) { return factor.evaluateError(o); }, T3);
 
   // Use the factor to calculate the derivative
   Matrix actualH1, actualH2, actualH3;

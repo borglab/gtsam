@@ -40,6 +40,7 @@ set(ignore
     gtsam::IndexPairVector
     gtsam::BetweenFactorPose2s
     gtsam::BetweenFactorPose3s
+    gtsam::FixedLagSmootherKeyTimestampMapValue
     gtsam::Point2Vector
     gtsam::Point2Pairs
     gtsam::Point3Pairs
@@ -51,7 +52,10 @@ set(ignore
     gtsam::BinaryMeasurementsUnit3
     gtsam::BinaryMeasurementsRot3
     gtsam::DiscreteKey
-    gtsam::KeyPairDoubleMap)
+    gtsam::KeyPairDoubleMap
+    gtsam::gtsfm::MatchIndicesMap
+    gtsam::gtsfm::KeypointsVector
+    gtsam::gtsfm::SfmTrack2dVector)
 
 set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i
@@ -61,6 +65,7 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/geometry/geometry.i
     ${PROJECT_SOURCE_DIR}/gtsam/linear/linear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
+    ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/values.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/custom.i
     ${PROJECT_SOURCE_DIR}/gtsam/symbolic/symbolic.i
     ${PROJECT_SOURCE_DIR}/gtsam/sam/sam.i
@@ -83,7 +88,7 @@ pybind_wrap(${GTSAM_PYTHON_TARGET} # target
             ${PROJECT_SOURCE_DIR}/python/gtsam/gtsam.tpl
             gtsam # libs
             "gtsam;gtsam_header" # dependencies
-            ON # use_boost
+            ${GTSAM_ENABLE_BOOST_SERIALIZATION} # use_boost_serialization
             )
 
 set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
@@ -140,7 +145,6 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::Point2Vector
             gtsam::Pose3Vector
             gtsam::KeyVector
-            gtsam::FixedLagSmootherKeyTimestampMapValue
             gtsam::BinaryMeasurementsPoint3
             gtsam::BinaryMeasurementsUnit3
             gtsam::BinaryMeasurementsRot3
@@ -148,8 +152,12 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::CameraSetCal3Bundler
             gtsam::CameraSetCal3Unified
             gtsam::CameraSetCal3Fisheye
-            gtsam::KeyPairDoubleMap)
-            
+            gtsam::KeyPairDoubleMap
+            gtsam::gtsfm::MatchIndicesMap
+            gtsam::gtsfm::KeypointsVector
+            gtsam::gtsfm::SfmTrack2dVector)
+
+
     pybind_wrap(${GTSAM_PYTHON_UNSTABLE_TARGET} # target
             ${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i # interface_header
             "gtsam_unstable.cpp" # generated_cpp
@@ -159,7 +167,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             ${PROJECT_SOURCE_DIR}/python/gtsam_unstable/gtsam_unstable.tpl
             gtsam_unstable # libs
             "gtsam_unstable;gtsam_unstable_header" # dependencies
-            ON # use_boost
+            ${GTSAM_ENABLE_BOOST_SERIALIZATION} # use_boost_serialization
             )
 
     set_target_properties(${GTSAM_PYTHON_UNSTABLE_TARGET} PROPERTIES

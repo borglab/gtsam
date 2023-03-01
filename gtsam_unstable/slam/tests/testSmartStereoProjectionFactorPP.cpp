@@ -23,12 +23,10 @@
 #include <gtsam/slam/PoseTranslationPrior.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/StereoFactor.h>
-#include <boost/assign/std/vector.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
 using namespace std;
-using namespace boost::assign;
 using namespace gtsam;
 
 namespace {
@@ -289,9 +287,7 @@ TEST( SmartProjectionPoseFactor, noiseless_error_multipleExtrinsics_missingMeasu
    EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
 
    // The following are generically exercising the triangulation
-   CameraSet<StereoCamera> cams;
-   cams += w_Camera_cam1;
-   cams += w_Camera_cam2;
+   CameraSet<StereoCamera> cams{w_Camera_cam1, w_Camera_cam2};
    TriangulationResult result = factor1.triangulateSafe(cams);
    CHECK(result);
    EXPECT(assert_equal(landmark, *result, 1e-7));
@@ -352,7 +348,7 @@ TEST( SmartStereoProjectionFactorPP, noisy_error_multipleExtrinsics ) {
   measurements.push_back(cam1_uv);
   measurements.push_back(cam2_uv);
 
-  vector<boost::shared_ptr<Cal3_S2Stereo> > Ks; ///< shared pointer to calibration object (one for each camera)
+  vector<std::shared_ptr<Cal3_S2Stereo> > Ks; ///< shared pointer to calibration object (one for each camera)
   Ks.push_back(K);
   Ks.push_back(K);
 

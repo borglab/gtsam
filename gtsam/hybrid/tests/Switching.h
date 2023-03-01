@@ -57,11 +57,11 @@ inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
 
   // keyFunc(1) to keyFunc(n+1)
   for (size_t t = 1; t < n; t++) {
-    hfg.add(GaussianMixtureFactor::FromFactors(
+    hfg.add(GaussianMixtureFactor(
         {keyFunc(t), keyFunc(t + 1)}, {{dKeyFunc(t), 2}},
-        {boost::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
+        {std::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
                                             I_3x3, Z_3x1),
-         boost::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
+         std::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
                                             I_3x3, Vector3::Ones())}));
 
     if (t > 1) {
@@ -70,7 +70,7 @@ inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
     }
   }
 
-  return boost::make_shared<HybridGaussianFactorGraph>(std::move(hfg));
+  return std::make_shared<HybridGaussianFactorGraph>(std::move(hfg));
 }
 
 /**
@@ -130,45 +130,56 @@ struct Switching {
    * @param K The total number of timesteps.
    * @param between_sigma The stddev between poses.
    * @param prior_sigma The stddev on priors (also used for measurements).
+   * @param measurements Vector of measurements for each timestep.
    */
-  Switching(size_t K, double between_sigma = 1.0, double prior_sigma = 0.1)
+  Switching(size_t K, double between_sigma = 1.0, double prior_sigma = 0.1,
+            std::vector<double> measurements = {},
+            std::string discrete_transition_prob = "1/2 3/2")
       : K(K) {
-    // Create DiscreteKeys for binary K modes, modes[0] will not be used.
-    for (size_t k = 0; k <= K; k++) {
+    using noiseModel::Isotropic;
+
+    // Create DiscreteKeys for binary K modes.
+    for (size_t k = 0; k < K; k++) {
       modes.emplace_back(M(k), 2);
     }
 
+    // If measurements are not provided, we just have the robot moving forward.
+    if (measurements.size() == 0) {
+      for (size_t k = 0; k < K; k++) {
+        measurements.push_back(k);
+      }
+    }
+
     // Create hybrid factor graph.
-    // Add a prior on X(1).
-    auto prior = boost::make_shared<PriorFactor<double>>(
-        X(1), 0, noiseModel::Isotropic::Sigma(1, prior_sigma));
-    nonlinearFactorGraph.push_nonlinear(prior);
+    // Add a prior on X(0).
+    nonlinearFactorGraph.emplace_shared<PriorFactor<double>>(
+        X(0), measurements.at(0), Isotropic::Sigma(1, prior_sigma));
 
     // Add "motion models".
-    for (size_t k = 1; k < K; k++) {
+    for (size_t k = 0; k < K - 1; k++) {
       KeyVector keys = {X(k), X(k + 1)};
       auto motion_models = motionModels(k, between_sigma);
       std::vector<NonlinearFactor::shared_ptr> components;
       for (auto &&f : motion_models) {
-        components.push_back(boost::dynamic_pointer_cast<NonlinearFactor>(f));
+        components.push_back(std::dynamic_pointer_cast<NonlinearFactor>(f));
       }
-      nonlinearFactorGraph.emplace_hybrid<MixtureFactor>(
+      nonlinearFactorGraph.emplace_shared<MixtureFactor>(
           keys, DiscreteKeys{modes[k]}, components);
     }
 
     // Add measurement factors
-    auto measurement_noise = noiseModel::Isotropic::Sigma(1, prior_sigma);
-    for (size_t k = 2; k <= K; k++) {
-      nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double>>(
-          X(k), 1.0 * (k - 1), measurement_noise);
+    auto measurement_noise = Isotropic::Sigma(1, prior_sigma);
+    for (size_t k = 1; k < K; k++) {
+      nonlinearFactorGraph.emplace_shared<PriorFactor<double>>(
+          X(k), measurements.at(k), measurement_noise);
     }
 
     // Add "mode chain"
-    addModeChain(&nonlinearFactorGraph);
+    addModeChain(&nonlinearFactorGraph, discrete_transition_prob);
 
     // Create the linearization point.
-    for (size_t k = 1; k <= K; k++) {
-      linearizationPoint.insert<double>(X(k), static_cast<double>(k));
+    for (size_t k = 0; k < K; k++) {
+      linearizationPoint.insert<double>(X(k), static_cast<double>(k + 1));
     }
 
     // The ground truth is robot moving forward
@@ -181,33 +192,41 @@ struct Switching {
                                                            double sigma = 1.0) {
     auto noise_model = noiseModel::Isotropic::Sigma(1, sigma);
     auto still =
-             boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
+             std::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
          moving =
-             boost::make_shared<MotionModel>(X(k), X(k + 1), 1.0, noise_model);
+             std::make_shared<MotionModel>(X(k), X(k + 1), 1.0, noise_model);
     return {still, moving};
   }
 
-  // Add "mode chain" to HybridNonlinearFactorGraph
-  void addModeChain(HybridNonlinearFactorGraph *fg) {
-    auto prior = boost::make_shared<DiscreteDistribution>(modes[1], "1/1");
-    fg->push_discrete(prior);
-    for (size_t k = 1; k < K - 1; k++) {
+  /**
+   * @brief Add "mode chain" to HybridNonlinearFactorGraph from M(0) to M(K-2).
+   * E.g. if K=4, we want M0, M1 and M2.
+   *
+   * @param fg The nonlinear factor graph to which the mode chain is added.
+   */
+  void addModeChain(HybridNonlinearFactorGraph *fg,
+                    std::string discrete_transition_prob = "1/2 3/2") {
+    fg->emplace_shared<DiscreteDistribution>(modes[0], "1/1");
+    for (size_t k = 0; k < K - 2; k++) {
       auto parents = {modes[k]};
-      auto conditional = boost::make_shared<DiscreteConditional>(
-          modes[k + 1], parents, "1/2 3/2");
-      fg->push_discrete(conditional);
+      fg->emplace_shared<DiscreteConditional>(modes[k + 1], parents,
+                                              discrete_transition_prob);
     }
   }
 
-  // Add "mode chain" to HybridGaussianFactorGraph
-  void addModeChain(HybridGaussianFactorGraph *fg) {
-    auto prior = boost::make_shared<DiscreteDistribution>(modes[1], "1/1");
-    fg->push_discrete(prior);
-    for (size_t k = 1; k < K - 1; k++) {
+  /**
+   * @brief Add "mode chain" to HybridGaussianFactorGraph from M(0) to M(K-2).
+   * E.g. if K=4, we want M0, M1 and M2.
+   *
+   * @param fg The gaussian factor graph to which the mode chain is added.
+   */
+  void addModeChain(HybridGaussianFactorGraph *fg,
+                    std::string discrete_transition_prob = "1/2 3/2") {
+    fg->emplace_shared<DiscreteDistribution>(modes[0], "1/1");
+    for (size_t k = 0; k < K - 2; k++) {
       auto parents = {modes[k]};
-      auto conditional = boost::make_shared<DiscreteConditional>(
-          modes[k + 1], parents, "1/2 3/2");
-      fg->push_discrete(conditional);
+      fg->emplace_shared<DiscreteConditional>(modes[k + 1], parents,
+                                              discrete_transition_prob);
     }
   }
 };

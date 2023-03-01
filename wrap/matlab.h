@@ -37,10 +37,6 @@ extern "C" {
 #include <mex.h>
 }
 
-#include <boost/cstdint.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/shared_ptr.hpp>
-
 #include <list>
 #include <set>
 #include <sstream>
@@ -49,7 +45,6 @@ extern "C" {
 #include <typeinfo>
 
 using namespace std;
-using namespace boost; // not usual, but for conciseness of generated code
 
 // start GTSAM Specifics /////////////////////////////////////////////////
 // to enable Matrix and Vector constructor for SharedGaussian:
@@ -66,15 +61,15 @@ using namespace boost; // not usual, but for conciseness of generated code
 // "Unique" key to signal calling the matlab object constructor with a raw pointer
 // to a shared pointer of the same C++ object type as the MATLAB type.
 // Also present in utilities.h
-static const boost::uint64_t ptr_constructor_key =
-  (boost::uint64_t('G') << 56) |
-  (boost::uint64_t('T') << 48) |
-  (boost::uint64_t('S') << 40) |
-  (boost::uint64_t('A') << 32) |
-  (boost::uint64_t('M') << 24) |
-  (boost::uint64_t('p') << 16) |
-  (boost::uint64_t('t') << 8) |
-  (boost::uint64_t('r'));
+static const std::uint64_t ptr_constructor_key =
+  (std::uint64_t('G') << 56) |
+  (std::uint64_t('T') << 48) |
+  (std::uint64_t('S') << 40) |
+  (std::uint64_t('A') << 32) |
+  (std::uint64_t('M') << 24) |
+  (std::uint64_t('p') << 16) |
+  (std::uint64_t('t') << 8) |
+  (std::uint64_t('r'));
 
 //*****************************************************************************
 // Utilities
@@ -262,9 +257,9 @@ template <typename T>
 T myGetScalar(const mxArray* array) {
   switch (mxGetClassID(array)) {
     case mxINT64_CLASS:
-      return (T) *(boost::int64_t*) mxGetData(array);
+      return (T) *(std::int64_t*) mxGetData(array);
     case mxUINT64_CLASS:
-      return (T) *(boost::uint64_t*) mxGetData(array);
+      return (T) *(std::uint64_t*) mxGetData(array);
     default:
       // hope for the best!
       return (T) mxGetScalar(array);
@@ -402,7 +397,7 @@ mxArray* create_object(const std::string& classname, void *pointer, bool isVirtu
   int nargin = 2;
   // First input argument is pointer constructor key
   input[0] = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
-  *reinterpret_cast<boost::uint64_t*>(mxGetData(input[0])) = ptr_constructor_key;
+  *reinterpret_cast<std::uint64_t*>(mxGetData(input[0])) = ptr_constructor_key;
   // Second input argument is the pointer
   input[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
   *reinterpret_cast<void**>(mxGetData(input[1])) = pointer;
@@ -453,28 +448,28 @@ mxArray* create_object(const std::string& classname, void *pointer, bool isVirtu
  class to matlab.
 */
 template <typename Class>
-mxArray* wrap_shared_ptr(boost::shared_ptr< Class > shared_ptr, const std::string& matlabName, bool isVirtual) {
+mxArray* wrap_shared_ptr(std::shared_ptr< Class > shared_ptr, const std::string& matlabName, bool isVirtual) {
   // Create actual class object from out pointer
   mxArray* result;
   if(isVirtual) {
-    boost::shared_ptr<void> void_ptr(shared_ptr);
+    std::shared_ptr<void> void_ptr(shared_ptr);
     result = create_object(matlabName, &void_ptr, isVirtual, typeid(*shared_ptr).name());
   } else {
-    boost::shared_ptr<Class> *heapPtr = new boost::shared_ptr<Class>(shared_ptr);
+    std::shared_ptr<Class> *heapPtr = new std::shared_ptr<Class>(shared_ptr);
     result = create_object(matlabName, heapPtr, isVirtual, "");
   }
   return result;
 }
 
 template <typename Class>
-boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& propertyName) {
+std::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& propertyName) {
 
   mxArray* mxh = mxGetProperty(obj,0, propertyName.c_str());
   if (mxGetClassID(mxh) != mxUINT32OR64_CLASS || mxIsComplex(mxh)
     || mxGetM(mxh) != 1 || mxGetN(mxh) != 1) error(
     "Parameter is not an Shared type.");
 
-  boost::shared_ptr<Class>* spp = *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetData(mxh));
+  std::shared_ptr<Class>* spp = *reinterpret_cast<std::shared_ptr<Class>**> (mxGetData(mxh));
   return *spp;
 }
 
@@ -490,7 +485,7 @@ Class* unwrap_ptr(const mxArray* obj, const string& propertyName) {
 //template <>
 //Vector unwrap_shared_ptr<Vector>(const mxArray* obj, const string& propertyName) {
 //  bool unwrap_shared_ptr_Vector_attempted = false;
-//  BOOST_STATIC_ASSERT(unwrap_shared_ptr_Vector_attempted, "Vector cannot be unwrapped as a shared pointer");
+//  static_assert(unwrap_shared_ptr_Vector_attempted, "Vector cannot be unwrapped as a shared pointer");
 //  return Vector();
 //}
 
@@ -498,7 +493,7 @@ Class* unwrap_ptr(const mxArray* obj, const string& propertyName) {
 //template <>
 //Matrix unwrap_shared_ptr<Matrix>(const mxArray* obj, const string& propertyName) {
 //  bool unwrap_shared_ptr_Matrix_attempted = false;
-//  BOOST_STATIC_ASSERT(unwrap_shared_ptr_Matrix_attempted, "Matrix cannot be unwrapped as a shared pointer");
+//  static_assert(unwrap_shared_ptr_Matrix_attempted, "Matrix cannot be unwrapped as a shared pointer");
 //  return Matrix();
 //}
 

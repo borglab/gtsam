@@ -21,18 +21,28 @@
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/discrete/Signature.h>
 
-#include <boost/assign/std/map.hpp>
-using namespace boost::assign;
-
 using namespace std;
 using namespace gtsam;
+
+static const DiscreteValues kExample{{12, 1}, {5, 0}};
+
+/* ************************************************************************* */
+// Check insert
+TEST(DiscreteValues, Insert) {
+  EXPECT(assert_equal({{12, 1}, {5, 0}, {13, 2}},
+                      DiscreteValues(kExample).insert({{13, 2}})));
+}
+
+/* ************************************************************************* */
+// Check update.
+TEST(DiscreteValues, Update) {
+  EXPECT(assert_equal({{12, 2}, {5, 0}},
+                      DiscreteValues(kExample).update({{12, 2}})));
+}
 
 /* ************************************************************************* */
 // Check markdown representation with a value formatter.
 TEST(DiscreteValues, markdownWithValueFormatter) {
-  DiscreteValues values;
-  values[12] = 1;  // A
-  values[5] = 0;   // B
   string expected =
       "|Variable|value|\n"
       "|:-:|:-:|\n"
@@ -40,16 +50,13 @@ TEST(DiscreteValues, markdownWithValueFormatter) {
       "|A|One|\n";
   auto keyFormatter = [](Key key) { return key == 12 ? "A" : "B"; };
   DiscreteValues::Names names{{12, {"Zero", "One", "Two"}}, {5, {"-", "+"}}};
-  string actual = values.markdown(keyFormatter, names);
+  string actual = kExample.markdown(keyFormatter, names);
   EXPECT(actual == expected);
 }
 
 /* ************************************************************************* */
 // Check html representation with a value formatter.
 TEST(DiscreteValues, htmlWithValueFormatter) {
-  DiscreteValues values;
-  values[12] = 1;  // A
-  values[5] = 0;   // B
   string expected =
       "<div>\n"
       "<table class='DiscreteValues'>\n"
@@ -64,7 +71,7 @@ TEST(DiscreteValues, htmlWithValueFormatter) {
       "</div>";
   auto keyFormatter = [](Key key) { return key == 12 ? "A" : "B"; };
   DiscreteValues::Names names{{12, {"Zero", "One", "Two"}}, {5, {"-", "+"}}};
-  string actual = values.html(keyFormatter, names);
+  string actual = kExample.html(keyFormatter, names);
   EXPECT(actual == expected);
 }
 

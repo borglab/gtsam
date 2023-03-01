@@ -29,8 +29,8 @@ namespace gtsam {
 template<class T, class P>
 P transform_point(
     const T& trans, const P& global,
-    boost::optional<Matrix&> Dtrans,
-    boost::optional<Matrix&> Dglobal) {
+    OptionalMatrixType Dtrans,
+    OptionalMatrixType Dglobal) {
   return trans.transformFrom(global, Dtrans, Dglobal);
 }
 
@@ -54,14 +54,17 @@ P transform_point(
  * specific classes of landmarks
  */
 template<class POINT, class TRANSFORM>
-class ReferenceFrameFactor : public NoiseModelFactor3<POINT, TRANSFORM, POINT> {
+class ReferenceFrameFactor : public NoiseModelFactorN<POINT, TRANSFORM, POINT> {
 protected:
   /** default constructor for serialization only */
   ReferenceFrameFactor() {}
 
 public:
-  typedef NoiseModelFactor3<POINT, TRANSFORM, POINT> Base;
+  typedef NoiseModelFactorN<POINT, TRANSFORM, POINT> Base;
   typedef ReferenceFrameFactor<POINT, TRANSFORM> This;
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
   typedef POINT Point;
   typedef TRANSFORM Transform;
@@ -90,17 +93,17 @@ public:
   ~ReferenceFrameFactor() override{}
 
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** Combined cost and derivative function using boost::optional */
   Vector evaluateError(const Point& global, const Transform& trans, const Point& local,
-        boost::optional<Matrix&> Dforeign = boost::none,
-        boost::optional<Matrix&> Dtrans = boost::none,
-        boost::optional<Matrix&> Dlocal = boost::none) const override {
+        OptionalMatrixType Dforeign, OptionalMatrixType Dtrans,
+        OptionalMatrixType Dlocal) const override {
     Point newlocal = transform_point<Transform,Point>(trans, global, Dtrans, Dforeign);
-    if (Dlocal)
+    if (Dlocal) {
       *Dlocal = -1* Matrix::Identity(traits<Point>::dimension, traits<Point>::dimension);
+    }
     return traits<Point>::Local(local,newlocal);
   }
 
@@ -119,6 +122,7 @@ public:
   Key local_key() const { return this->key3(); }
 
 private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -126,6 +130,7 @@ private:
     ar & boost::serialization::make_nvp("NonlinearFactor3",
         boost::serialization::base_object<Base>(*this));
   }
+#endif
 };
 
 /// traits

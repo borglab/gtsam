@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  Event
+ *  @file  Event.h
  *  @brief Space-time event
  *  @author Frank Dellaert
  *  @author Jay Chakravarty
@@ -55,7 +55,7 @@ class Event {
   Point3 location() const { return location_; }
 
   // TODO(frank) we really have to think of a better way to do linear arguments
-  double height(OptionalJacobian<1, 4> H = boost::none) const {
+  double height(OptionalJacobian<1, 4> H = {}) const {
     static const Matrix14 JacobianZ = (Matrix14() << 0, 0, 0, 1).finished();
     if (H) *H = JacobianZ;
     return location_.z();
@@ -101,8 +101,8 @@ class TimeOfArrival {
 
   /// Calculate time of arrival, with derivatives
   double operator()(const Event& event, const Point3& sensor,  //
-                    OptionalJacobian<1, 4> H1 = boost::none,   //
-                    OptionalJacobian<1, 3> H2 = boost::none) const {
+                    OptionalJacobian<1, 4> H1 = {},   //
+                    OptionalJacobian<1, 3> H2 = {}) const {
     Matrix13 D1, D2;
     double distance = gtsam::distance3(event.location(), sensor, D1, D2);
     if (H1)

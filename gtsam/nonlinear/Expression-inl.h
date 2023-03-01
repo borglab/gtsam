@@ -21,10 +21,12 @@
 
 #include <gtsam/nonlinear/internal/ExpressionNode.h>
 
-#include <boost/bind/bind.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/range/adaptor/map.hpp>
-#include <boost/range/algorithm.hpp>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
+
 
 namespace gtsam {
 
@@ -138,21 +140,19 @@ void Expression<T>::print(const std::string& s) const {
 
 template<typename T>
 T Expression<T>::value(const Values& values,
-    boost::optional<std::vector<Matrix>&> H) const {
-
+    std::vector<Matrix>* H) const {
   if (H) {
     // Call private version that returns derivatives in H
-    KeyVector keys;
-    FastVector<int> dims;
-    boost::tie(keys, dims) = keysAndDims();
+    const auto [keys, dims] = keysAndDims();
     return valueAndDerivatives(values, keys, dims, *H);
-  } else
+  } else {
     // no derivatives needed, just return value
     return root_->value(values);
+  }
 }
 
 template<typename T>
-const boost::shared_ptr<internal::ExpressionNode<T> >& Expression<T>::root() const {
+const std::shared_ptr<internal::ExpressionNode<T> >& Expression<T>::root() const {
   return root_;
 }
 
@@ -189,39 +189,39 @@ T Expression<T>::valueAndDerivatives(const Values& values,
 
 template<typename T>
 T Expression<T>::traceExecution(const Values& values,
-    internal::ExecutionTrace<T>& trace, void* traceStorage) const {
-  return root_->traceExecution(values, trace,
-      static_cast<internal::ExecutionTraceStorage*>(traceStorage));
+    internal::ExecutionTrace<T>& trace, char* traceStorage) const {
+  return root_->traceExecution(values, trace, traceStorage);
+}
+
+// Allocate a single block of aligned memory using a unique_ptr.
+inline std::unique_ptr<internal::ExecutionTraceStorage[]> allocAligned(size_t size) {
+  const size_t alignedSize = (size + internal::TraceAlignment - 1) / internal::TraceAlignment;
+  return std::unique_ptr<internal::ExecutionTraceStorage[]>(
+      new internal::ExecutionTraceStorage[alignedSize]);
 }
 
 template<typename T>
 T Expression<T>::valueAndJacobianMap(const Values& values,
     internal::JacobianMap& jacobians) const {
-  // The following piece of code is absolutely crucial for performance.
-  // We allocate a block of memory on the stack, which can be done at runtime
-  // with modern C++ compilers. The traceExecution then fills this memory
-  // with an execution trace, made up entirely of "Record" structs, see
-  // the FunctionalNode class in expression-inl.h
-  size_t size = traceSize();
+  try {
+    // We allocate a single block of aligned memory using a unique_ptr.
+    const size_t size = traceSize();
+    auto traceStorage = allocAligned(size);
 
-  // Windows does not support variable length arrays, so memory must be dynamically
-  // allocated on Visual Studio. For more information see the issue below
-  // https://bitbucket.org/gtborg/gtsam/issue/178/vlas-unsupported-in-visual-studio
-#ifdef _MSC_VER
-  auto traceStorage = static_cast<internal::ExecutionTraceStorage*>(_aligned_malloc(size, internal::TraceAlignment));
-#else
-  internal::ExecutionTraceStorage traceStorage[size];
-#endif
+    // The traceExecution call then fills this memory
+    // with an execution trace, made up entirely of "Record" structs, see
+    // the FunctionalNode class in expression-inl.h
+    internal::ExecutionTrace<T> trace;
+    T value(this->traceExecution(values, trace, reinterpret_cast<char *>(traceStorage.get())));
 
-  internal::ExecutionTrace<T> trace;
-  T value(this->traceExecution(values, trace, traceStorage));
-  trace.startReverseAD1(jacobians);
-
-#ifdef _MSC_VER
-  _aligned_free(traceStorage);
-#endif
-
-  return value;
+    // We then calculate the Jacobians using reverse automatic differentiation (AD).
+    trace.startReverseAD1(jacobians);
+    return value;
+  } catch (const std::bad_alloc &e) {
+    std::cerr << "valueAndJacobianMap exception: " << e.what() << '\n';
+    throw e;
+  }
+  // Here traceStorage will be de-allocated properly.
 }
 
 template<typename T>
@@ -229,9 +229,14 @@ typename Expression<T>::KeysAndDims Expression<T>::keysAndDims() const {
   std::map<Key, int> map;
   dims(map);
   size_t n = map.size();
-  KeysAndDims pair = std::make_pair(KeyVector(n), FastVector<int>(n));
-  boost::copy(map | boost::adaptors::map_keys, pair.first.begin());
-  boost::copy(map | boost::adaptors::map_values, pair.second.begin());
+  KeysAndDims pair = {KeyVector(n), FastVector<int>(n)};
+  // Copy map into pair of vectors
+  auto key_it = pair.first.begin();
+  auto dim_it = pair.second.begin();
+  for (const auto& [key, value] : map) {
+    *key_it++ = key;
+    *dim_it++ = value;
+  }
   return pair;
 }
 
@@ -242,7 +247,7 @@ struct apply_compose {
   typedef T result_type;
   static const int Dim = traits<T>::dimension;
   T operator()(const T& x, const T& y, OptionalJacobian<Dim, Dim> H1 =
-      boost::none, OptionalJacobian<Dim, Dim> H2 = boost::none) const {
+      {}, OptionalJacobian<Dim, Dim> H2 = {}) const {
     return x.compose(y, H1, H2);
   }
 };
@@ -250,15 +255,15 @@ struct apply_compose {
 template <>
 struct apply_compose<double> {
   double operator()(const double& x, const double& y,
-                    OptionalJacobian<1, 1> H1 = boost::none,
-                    OptionalJacobian<1, 1> H2 = boost::none) const {
+                    OptionalJacobian<1, 1> H1 = {},
+                    OptionalJacobian<1, 1> H2 = {}) const {
     if (H1) H1->setConstant(y);
     if (H2) H2->setConstant(x);
     return x * y;
   }
 };
 
-}
+} // namespace internal
 
 // Global methods:
 
@@ -285,16 +290,16 @@ std::vector<Expression<T> > createUnknowns(size_t n, char c, size_t start) {
 
 template <typename T>
 ScalarMultiplyExpression<T>::ScalarMultiplyExpression(double s, const Expression<T>& e)
-    : Expression<T>(boost::make_shared<internal::ScalarMultiplyNode<T>>(s, e)) {}
+    : Expression<T>(std::make_shared<internal::ScalarMultiplyNode<T>>(s, e)) {}
 
 
 template <typename T>
 BinarySumExpression<T>::BinarySumExpression(const Expression<T>& e1, const Expression<T>& e2)
-    : Expression<T>(boost::make_shared<internal::BinarySumNode<T>>(e1, e2)) {}
+    : Expression<T>(std::make_shared<internal::BinarySumNode<T>>(e1, e2)) {}
 
 template <typename T>
 Expression<T>& Expression<T>::operator+=(const Expression<T>& e) {
-  root_ = boost::make_shared<internal::BinarySumNode<T>>(*this, e);
+  root_ = std::make_shared<internal::BinarySumNode<T>>(*this, e);
   return *this;
 }
 

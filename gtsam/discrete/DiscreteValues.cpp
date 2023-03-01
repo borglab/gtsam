@@ -26,6 +26,7 @@ using std::stringstream;
 
 namespace gtsam {
 
+/* ************************************************************************ */
 void DiscreteValues::print(const string& s,
                            const KeyFormatter& keyFormatter) const {
   cout << s << ": ";
@@ -34,6 +35,46 @@ void DiscreteValues::print(const string& s,
   cout << endl;
 }
 
+/* ************************************************************************ */
+bool DiscreteValues::equals(const DiscreteValues& x, double tol) const {
+  if (this->size() != x.size()) return false;
+  auto it1 = x.begin();
+  auto it2 = this->begin();
+  for (; it1 != x.end(); ++it1, ++it2) {
+    if (it1->first != it2->first || it1->second != it2->second) return false;
+  }
+  return true;
+}
+
+/* ************************************************************************ */
+DiscreteValues& DiscreteValues::insert(const DiscreteValues& values) {
+  for (const auto& kv : values) {
+    if (count(kv.first)) {
+      throw std::out_of_range(
+          "Requested to insert a DiscreteValues into another DiscreteValues "
+          "that already contains one or more of its keys.");
+    } else {
+      this->emplace(kv);
+    }
+  }
+  return *this;
+}
+
+/* ************************************************************************ */
+DiscreteValues& DiscreteValues::update(const DiscreteValues& values) {
+  for (const auto& kv : values) {
+    if (!count(kv.first)) {
+      throw std::out_of_range(
+          "Requested to update a DiscreteValues with another DiscreteValues "
+          "that contains keys not present in the first.");
+    } else {
+      (*this)[kv.first] = kv.second;
+    }
+  }
+  return *this;
+}
+
+/* ************************************************************************ */
 string DiscreteValues::Translate(const Names& names, Key key, size_t index) {
   if (names.empty()) {
     stringstream ss;
@@ -60,6 +101,7 @@ string DiscreteValues::markdown(const KeyFormatter& keyFormatter,
   return ss.str();
 }
 
+/* ************************************************************************ */
 string DiscreteValues::html(const KeyFormatter& keyFormatter,
                             const Names& names) const {
   stringstream ss;
@@ -84,6 +126,7 @@ string DiscreteValues::html(const KeyFormatter& keyFormatter,
   return ss.str();
 }
 
+/* ************************************************************************ */
 string markdown(const DiscreteValues& values, const KeyFormatter& keyFormatter,
                 const DiscreteValues::Names& names) {
   return values.markdown(keyFormatter, names);

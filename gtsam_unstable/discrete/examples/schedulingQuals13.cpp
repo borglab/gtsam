@@ -12,14 +12,8 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std/map.hpp>
-#include <boost/optional.hpp>
-#include <boost/format.hpp>
-
 #include <algorithm>
 
-using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
@@ -222,8 +216,8 @@ void solveStaged(size_t addMutex = 2) {
 
     // remove this slot from consideration
     slotsAvailable[bestSlot] = 0.0;
-    cout << boost::format("%s = %d (%d), count = %d") % scheduler.studentName(NRSTUDENTS-1-s)
-        % scheduler.slotName(bestSlot) % bestSlot % count << endl;
+    cout << scheduler.studentName(NRSTUDENTS - 1 - s) << " = " << scheduler.slotName(bestSlot) << " (" << bestSlot
+         << "), count = " << count << endl;
   }
   tictoc_print_();
 }
@@ -251,8 +245,7 @@ void sampleSolutions() {
   vector<DiscreteBayesNet::shared_ptr> samplers(NRSTUDENTS);
 
   // Given the time-slots, we can create NRSTUDENTS independent samplers
-  vector<size_t> slots;
-  slots += 12,11,13, 21,16,1, 3,2,6, 7,22,4; // given slots
+  vector<size_t> slots{12,11,13, 21,16,1, 3,2,6, 7,22,4}; // given slots
   for (size_t i = 0; i < NRSTUDENTS; i++)
     samplers[i] = createSampler(i, slots[i], schedulers);
 
@@ -268,9 +261,7 @@ void sampleSolutions() {
     size_t min = *min_element(stats.begin(), stats.end());
     size_t nz = count_if(stats.begin(), stats.end(), NonZero);
     if (nz >= 16 && max <= 3) {
-      cout << boost::format(
-          "Sampled schedule %d, min = %d, nz = %d, max = %d\n") % (n + 1) % min
-          % nz % max;
+      cout << "Sampled schedule " << n + 1 << ", min = " << min << ", nz = " << nz << ", max = " << max << endl;
       for (size_t i = 0; i < NRSTUDENTS; i++) {
         cout << schedulers[i].studentName(0) << " : " << schedulers[i].slotName(
             slots[i]) << endl;

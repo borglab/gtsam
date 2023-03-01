@@ -61,7 +61,7 @@ TEST( AntiFactor, NegativeHessian)
 
   // Linearize the AntiFactor into a Hessian Factor
   GaussianFactor::shared_ptr antiGaussian = antiFactor->linearize(values);
-  HessianFactor::shared_ptr antiHessian = boost::dynamic_pointer_cast<HessianFactor>(antiGaussian);
+  HessianFactor::shared_ptr antiHessian = std::dynamic_pointer_cast<HessianFactor>(antiGaussian);
 
   Matrix expected_information = -originalHessian->information();
   Matrix actual_information = antiHessian->information();

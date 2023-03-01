@@ -36,7 +36,7 @@
 
 namespace testing {
 // Create default parameters with Z-down and above noise parameters
-static boost::shared_ptr<PreintegratedCombinedMeasurements::Params> Params(
+static std::shared_ptr<PreintegratedCombinedMeasurements::Params> Params(
     const Matrix3& biasAccCovariance = Matrix3::Zero(),
     const Matrix3& biasOmegaCovariance = Matrix3::Zero(),
     const Matrix6& biasAccOmegaInt = Matrix6::Zero()) {

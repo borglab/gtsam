@@ -6,8 +6,7 @@
  *  Description: generic graph types used in partitioning
  */
 #include <iostream>
-#include <boost/make_shared.hpp>
-#include <boost/lexical_cast.hpp>
+#include <cassert>
 
 #include <gtsam/base/DSFVector.h>
 
@@ -396,7 +395,7 @@ namespace gtsam { namespace partition {
         hasOdometry =  cameraToCamera[camera1] == camera2;
         if (nrCommonLandmarks > 0 || hasOdometry) {
           nrTotalConstraints = 2 * nrCommonLandmarks + (hasOdometry ? 6 : 0);
-          reducedGraph.push_back(boost::make_shared<GenericFactor3D>(camera1, camera2,
+          reducedGraph.push_back(std::make_shared<GenericFactor3D>(camera1, camera2,
               factorIndex++, NODE_POSE_3D, NODE_POSE_3D, nrTotalConstraints));
         }
       }
@@ -465,9 +464,9 @@ namespace gtsam { namespace partition {
     }
 
      if (minFoundConstraintsPerCamera < minNrConstraintsPerCamera)
-      throw runtime_error("checkSingularity:minConstraintsPerCamera < " + boost::lexical_cast<string>(minFoundConstraintsPerCamera));
+      throw runtime_error("checkSingularity:minConstraintsPerCamera < " + std::to_string(minFoundConstraintsPerCamera));
     if (minFoundConstraintsPerLandmark < minNrConstraintsPerLandmark)
-      throw runtime_error("checkSingularity:minConstraintsPerLandmark < " + boost::lexical_cast<string>(minFoundConstraintsPerLandmark));
+      throw runtime_error("checkSingularity:minConstraintsPerLandmark < " + std::to_string(minFoundConstraintsPerLandmark));
   }
 
 }} // namespace

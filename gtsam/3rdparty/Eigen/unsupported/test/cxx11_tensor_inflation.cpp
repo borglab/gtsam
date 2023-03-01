@@ -74,7 +74,7 @@ static void test_simple_inflation()
   }
 }
 
-void test_cxx11_tensor_inflation()
+EIGEN_DECLARE_TEST(cxx11_tensor_inflation)
 {
   CALL_SUBTEST(test_simple_inflation<ColMajor>());
   CALL_SUBTEST(test_simple_inflation<RowMajor>());

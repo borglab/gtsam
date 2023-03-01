@@ -18,7 +18,6 @@
 #pragma once
 
 #include <gtsam/global_includes.h>
-#include <boost/lexical_cast.hpp>
 #include <exception>
 
 namespace gtsam {
