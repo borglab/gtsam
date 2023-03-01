@@ -143,6 +143,9 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    */
   double error(const HybridValues &values) const override;
 
+  /// Getter for GaussianFactor decision tree
+  Factors factors() const { return factors_; }
+
   /// Add MixtureFactor to a Sum, syntactic sugar.
   friend GaussianFactorGraphTree &operator+=(
       GaussianFactorGraphTree &sum, const GaussianMixtureFactor &factor) {
