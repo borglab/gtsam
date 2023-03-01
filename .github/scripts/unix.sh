@@ -71,8 +71,7 @@ function configure()
       -DGTSAM_USE_SYSTEM_EIGEN=${GTSAM_USE_SYSTEM_EIGEN:-OFF} \
       -DGTSAM_USE_SYSTEM_METIS=${GTSAM_USE_SYSTEM_METIS:-OFF} \
       -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
-      -DGTSAM_SINGLE_TEST_EXE=OFF \
-      -DBoost_ARCHITECTURE=-x64
+      -DGTSAM_SINGLE_TEST_EXE=OFF
 }
 
 
@@ -95,7 +94,7 @@ function build ()
 
   if [ "$(uname)" == "Linux" ]; then
     if (($(nproc) > 2)); then
-      make -j$(nproc)
+      make -j4
     else
       make -j2
     fi
