@@ -131,7 +131,7 @@ namespace gtsam {
      * term, and f the constant term.
      * JacobianFactor error is \f[ 0.5* (Ax-b)' M (Ax-b) = 0.5*x'A'MAx - x'A'Mb + 0.5*b'Mb \f]
      * HessianFactor  error is \f[ 0.5*(x'Gx - 2x'g + f) = 0.5*x'Gx    - x'*g   + 0.5*f    \f]
-     * So, with \f$ A = [A1 A2] \f$ and \f$ G=A*'M*A = [A1';A2']*M*[A1 A2] \f$ we have
+     * So, with \f$ A = [A1 A2] \f$ and \f$ G=A'*M*A = [A1';A2']*M*[A1 A2] \f$ we have
      \code
       n1*n1 G11 = A1'*M*A1
       n1*n2 G12 = A1'*M*A2
