@@ -131,8 +131,7 @@ public:
    * @brief Re-initialize PreintegratedCombinedMeasurements with initial bias
    * covariance estimate.
    *
-   * @param Q_init The initial bias covariance estimates as 6x6 matrix. If not
-   * provided, it uses the last values from the preintMeasCov.
+   * @param Q_init The initial bias covariance estimates as a 6x6 matrix.
    */
   void resetIntegration(const gtsam::Matrix6& Q_init);
 
