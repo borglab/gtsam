@@ -59,17 +59,17 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
 
   // Default Params for a Z-down navigation frame, such as NED: gravity points
   // along positive Z-axis
-  static boost::shared_ptr<PreintegrationCombinedParams> MakeSharedD(
+  static std::shared_ptr<PreintegrationCombinedParams> MakeSharedD(
       double g = 9.81) {
-    return boost::shared_ptr<PreintegrationCombinedParams>(
+    return std::shared_ptr<PreintegrationCombinedParams>(
         new PreintegrationCombinedParams(Vector3(0, 0, g)));
   }
 
   // Default Params for a Z-up navigation frame, such as ENU: gravity points
   // along negative Z-axis
-  static boost::shared_ptr<PreintegrationCombinedParams> MakeSharedU(
+  static std::shared_ptr<PreintegrationCombinedParams> MakeSharedU(
       double g = 9.81) {
-    return boost::shared_ptr<PreintegrationCombinedParams>(
+    return std::shared_ptr<PreintegrationCombinedParams>(
         new PreintegrationCombinedParams(Vector3(0, 0, -g)));
   }
 
@@ -86,6 +86,7 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
   const Matrix6& getBiasAccOmegaInit() const { return biasAccOmegaInt; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -96,6 +97,7 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
     ar& BOOST_SERIALIZATION_NVP(biasOmegaCovariance);
     ar& BOOST_SERIALIZATION_NVP(biasAccOmegaInt);
   }
+#endif
 
  public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
