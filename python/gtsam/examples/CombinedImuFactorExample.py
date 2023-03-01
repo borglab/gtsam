@@ -5,7 +5,7 @@ All Rights Reserved
 
 See LICENSE for the license information
 
-A script validating and demonstrating the CobiendImuFactor inference.
+A script validating and demonstrating inference with the CombinedImuFactor.
 
 Author: Varun Agrawal
 """
@@ -17,14 +17,14 @@ from __future__ import print_function
 import argparse
 import math
 
-import gtsam
 import matplotlib.pyplot as plt
 import numpy as np
 from gtsam.symbol_shorthand import B, V, X
 from gtsam.utils.plot import plot_pose3
 from mpl_toolkits.mplot3d import Axes3D
-
 from PreintegrationExample import POSES_FIG, PreintegrationExample
+
+import gtsam
 
 GRAVITY = 9.81
 
@@ -192,7 +192,9 @@ class CombinedImuFactorExample(PreintegrationExample):
 
                 if verbose:
                     print(factor)
-                    print(pim.predict(initial_state_i, self.actualBias))
+                    print("Predicted state at {0}:\n{1}".format(
+                        t + self.dt,
+                        pim.predict(initial_state_i, self.actualBias)))
 
                 pim.resetIntegration()
 
@@ -203,6 +205,9 @@ class CombinedImuFactorExample(PreintegrationExample):
                 actual_state_i = self.scenario.navState(t + self.dt)
                 print("Actual state at {0}:\n{1}".format(
                     t + self.dt, actual_state_i))
+
+                # Set initial state to current
+                initial_state_i = actual_state_i
 
                 noisy_state_i = gtsam.NavState(
                     actual_state_i.pose().compose(poseNoise),
