@@ -73,7 +73,7 @@ Ordering getOrdering(HybridGaussianFactorGraph& factors,
   return ordering;
 }
 
-TEST_DISABLED(HybridEstimation, Full) {
+TEST(HybridEstimation, Full) {
   size_t K = 6;
   std::vector<double> measurements = {0, 1, 2, 2, 2, 3};
   // Ground truth discrete seq
@@ -115,7 +115,7 @@ TEST_DISABLED(HybridEstimation, Full) {
 
 /****************************************************************************/
 // Test approximate inference with an additional pruning step.
-TEST_DISABLED(HybridEstimation, Incremental) {
+TEST(HybridEstimation, Incremental) {
   size_t K = 15;
   std::vector<double> measurements = {0, 1, 2, 2, 2, 2,  3,  4,  5,  6, 6,
                                       7, 8, 9, 9, 9, 10, 11, 11, 11, 11};
@@ -283,7 +283,7 @@ AlgebraicDecisionTree<Key> getProbPrimeTree(
  * Test for correctness of different branches of the P'(Continuous | Discrete).
  * The values should match those of P'(Continuous) for each discrete mode.
  ********************************************************************************/
-TEST_DISABLED(HybridEstimation, Probability) {
+TEST(HybridEstimation, Probability) {
   constexpr size_t K = 4;
   std::vector<double> measurements = {0, 1, 2, 2};
   double between_sigma = 1.0, measurement_sigma = 0.1;
@@ -326,7 +326,7 @@ TEST_DISABLED(HybridEstimation, Probability) {
  * in the multi-frontal setting. The values should match those of P'(Continuous)
  * for each discrete mode.
  */
-TEST_DISABLED(HybridEstimation, ProbabilityMultifrontal) {
+TEST(HybridEstimation, ProbabilityMultifrontal) {
   constexpr size_t K = 4;
   std::vector<double> measurements = {0, 1, 2, 2};
 
@@ -433,7 +433,7 @@ static HybridGaussianFactorGraph::shared_ptr createHybridGaussianFactorGraph() {
 /*********************************************************************************
  * Do hybrid elimination and do regression test on discrete conditional.
  ********************************************************************************/
-TEST_DISABLED(HybridEstimation, eliminateSequentialRegression) {
+TEST(HybridEstimation, eliminateSequentialRegression) {
   // Create the factor graph from the nonlinear factor graph.
   HybridGaussianFactorGraph::shared_ptr fg = createHybridGaussianFactorGraph();
 
@@ -468,7 +468,7 @@ TEST_DISABLED(HybridEstimation, eliminateSequentialRegression) {
  * 3. Sample from the Bayes Net.
  * 4. Check that the ratio `BN(x)/FG(x) = constant` for all samples `x`.
  ********************************************************************************/
-TEST_DISABLED(HybridEstimation, CorrectnessViaSampling) {
+TEST(HybridEstimation, CorrectnessViaSampling) {
   // 1. Create the factor graph from the nonlinear factor graph.
   const auto fg = createHybridGaussianFactorGraph();
 
@@ -502,14 +502,19 @@ TEST_DISABLED(HybridEstimation, CorrectnessViaSampling) {
 }
 
 /****************************************************************************/
+/**
+ * Helper function to add the constant term corresponding to
+ * the difference in noise models.
+ */
 std::shared_ptr<HybridGaussianFactorGraph> addConstantTerm(
     const HybridGaussianFactorGraph& gfg, const Key& mode, double noise_tight,
     double noise_loose, size_t d, size_t tight_index) {
   HybridGaussianFactorGraph updated_gfg;
 
+  constexpr double log2pi = 1.8378770664093454835606594728112;
   // logConstant will be of the tighter model
-  double logConstant =
-      -0.5 * d * 1.8378770664093454835606594728112 + log(1.0 / noise_tight);
+  double logNormalizationConstant = log(1.0 / noise_tight);
+  double logConstant = -0.5 * d * log2pi + logNormalizationConstant;
 
   for (auto&& f : gfg) {
     if (auto gmf = dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
@@ -517,13 +522,15 @@ std::shared_ptr<HybridGaussianFactorGraph> addConstantTerm(
                       const GaussianFactor::shared_ptr& gf) {
         if (assignment.at(mode) != tight_index) {
           double factor_log_constant =
-              -0.5 * d * 1.8378770664093454835606594728112 +
-              log(1.0 / noise_loose);
+              -0.5 * d * log2pi + log(1.0 / noise_loose);
 
           GaussianFactorGraph gfg_;
           gfg_.push_back(gf);
           Vector c(d);
-          c << std::sqrt(2.0 * (logConstant - factor_log_constant));
+          for (size_t i = 0; i < d; i++) {
+            c(i) = std::sqrt(2.0 * (logConstant - factor_log_constant));
+          }
+
           auto constantFactor = std::make_shared<JacobianFactor>(c);
           gfg_.push_back(constantFactor);
           return std::make_shared<JacobianFactor>(gfg_);
@@ -542,6 +549,7 @@ std::shared_ptr<HybridGaussianFactorGraph> addConstantTerm(
   return std::make_shared<HybridGaussianFactorGraph>(updated_gfg);
 }
 
+/****************************************************************************/
 TEST(HybridEstimation, ModeSelection) {
   HybridNonlinearFactorGraph graph;
   Values initial;
@@ -616,56 +624,57 @@ TEST(HybridEstimation, ModeSelection2) {
   using symbol_shorthand::Z;
 
   // The size of the noise model
-  size_t d = 1;
+  size_t d = 3;
   double noise_tight = 0.5, noise_loose = 5.0;
 
   HybridBayesNet bn;
   const DiscreteKey mode{M(0), 2};
 
   bn.push_back(
-      GaussianConditional::sharedMeanAndStddev(Z(0), -I_1x1, X(0), Z_1x1, 0.1));
+      GaussianConditional::sharedMeanAndStddev(Z(0), -I_3x3, X(0), Z_3x1, 0.1));
   bn.push_back(
-      GaussianConditional::sharedMeanAndStddev(Z(0), -I_1x1, X(1), Z_1x1, 0.1));
+      GaussianConditional::sharedMeanAndStddev(Z(0), -I_3x3, X(1), Z_3x1, 0.1));
   bn.emplace_back(new GaussianMixture(
       {Z(0)}, {X(0), X(1)}, {mode},
-      {GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), -I_1x1, X(1),
-                                                Z_1x1, noise_loose),
-       GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), -I_1x1, X(1),
-                                                Z_1x1, noise_tight)}));
+      {GaussianConditional::sharedMeanAndStddev(Z(0), I_3x3, X(0), -I_3x3, X(1),
+                                                Z_3x1, noise_loose),
+       GaussianConditional::sharedMeanAndStddev(Z(0), I_3x3, X(0), -I_3x3, X(1),
+                                                Z_3x1, noise_tight)}));
 
   VectorValues vv;
-  vv.insert(Z(0), Z_1x1);
+  vv.insert(Z(0), Z_3x1);
 
   auto fg = bn.toFactorGraph(vv);
 
   auto expected_posterior = fg.eliminateSequential();
   // expected_posterior->print("\n\n\nLikelihood BN:");
 
-  std::cout << "\n\n==================\n\n" << std::endl;
+  // std::cout << "\n\n==================\n\n" << std::endl;
+
   HybridNonlinearFactorGraph graph;
   Values initial;
 
-  auto measurement_model = noiseModel::Isotropic::Sigma(1, 0.1);
-  auto motion_model = noiseModel::Isotropic::Sigma(1, 1.0);
+  auto measurement_model = noiseModel::Isotropic::Sigma(d, 0.1);
+  auto motion_model = noiseModel::Isotropic::Sigma(d, 1.0);
 
-  graph.emplace_shared<PriorFactor<double>>(X(0), 0.0, measurement_model);
-  graph.emplace_shared<PriorFactor<double>>(X(1), 0.0, measurement_model);
+  graph.emplace_shared<PriorFactor<Vector3>>(X(0), Z_3x1, measurement_model);
+  graph.emplace_shared<PriorFactor<Vector3>>(X(1), Z_3x1, measurement_model);
 
   DiscreteKeys modes;
   modes.emplace_back(M(0), 2);
 
-  auto model0 = std::make_shared<MotionModel>(
-           X(0), X(1), 0.0, noiseModel::Isotropic::Sigma(d, noise_loose)),
-       model1 = std::make_shared<MotionModel>(
-           X(0), X(1), 0.0, noiseModel::Isotropic::Sigma(d, noise_tight));
+  auto model0 = std::make_shared<BetweenFactor<Vector3>>(
+           X(0), X(1), Z_3x1, noiseModel::Isotropic::Sigma(d, noise_loose)),
+       model1 = std::make_shared<BetweenFactor<Vector3>>(
+           X(0), X(1), Z_3x1, noiseModel::Isotropic::Sigma(d, noise_tight));
 
   std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
 
   KeyVector keys = {X(0), X(1)};
   graph.emplace_shared<MixtureFactor>(keys, modes, components);
 
-  initial.insert(X(0), 0.0);
-  initial.insert(X(1), 0.0);
+  initial.insert<Vector3>(X(0), Z_3x1);
+  initial.insert<Vector3>(X(1), Z_3x1);
 
   auto gfg = graph.linearize(initial);
   gfg = addConstantTerm(*gfg, M(0), noise_tight, noise_loose, d, 1);
