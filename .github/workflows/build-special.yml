@@ -12,7 +12,6 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ON
-      BOOST_VERSION: 1.67.0
 
     strategy:
       fail-fast: false
@@ -100,7 +99,7 @@ jobs:
       - name: Install Boost
         if: runner.os == 'Linux'
         run: |
-          bash .github/scripts/boost.sh
+          sudo apt-get -y install libboost-all-dev
 
       - name: Install (macOS)
         if: runner.os == 'macOS'

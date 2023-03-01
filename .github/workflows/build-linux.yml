@@ -12,7 +12,6 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
-      BOOST_VERSION: 1.67.0
 
     strategy:
       fail-fast: true
@@ -82,7 +81,7 @@ jobs:
 
       - name: Install Boost
         run: |
-          bash .github/scripts/boost.sh
+          sudo apt-get -y install libboost-all-dev
 
       - name: Build and Test
         run: bash .github/scripts/unix.sh -t
