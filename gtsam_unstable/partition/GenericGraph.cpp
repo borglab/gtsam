@@ -7,6 +7,7 @@
  */
 #include <iostream>
 #include <cassert>
+#include <algorithm>
 
 #include <gtsam/base/DSFVector.h>
 
