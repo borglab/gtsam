@@ -95,11 +95,11 @@ add_subdirectory(gtsam)
 # Build Tests
 add_subdirectory(tests)
 
-# Build timing
-add_subdirectory(timing)
-
 # Build examples
 add_subdirectory(examples)
+
+# Build timing
+add_subdirectory(timing)
 
 # Build gtsam_unstable
 if (GTSAM_BUILD_UNSTABLE)
