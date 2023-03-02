@@ -27,7 +27,9 @@ namespace gtsam {
 Ordering HybridSmoother::getOrdering(
     const HybridGaussianFactorGraph &newFactors) {
   HybridGaussianFactorGraph factors(hybridBayesNet());
-  factors += newFactors;
+  for(auto& factor: newFactors){
+    factors.push_back(factor);
+  }
   // Get all the discrete keys from the factors
   KeySet allDiscrete = factors.discreteKeySet();
 

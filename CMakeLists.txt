@@ -95,8 +95,6 @@ add_subdirectory(gtsam)
 # Build Tests
 add_subdirectory(tests)
 
-# Build examples
-add_subdirectory(examples)
 
 # Build timing
 add_subdirectory(timing)
@@ -104,6 +102,9 @@ add_subdirectory(timing)
 # Build gtsam_unstable
 if (GTSAM_BUILD_UNSTABLE)
   add_subdirectory(gtsam_unstable)
+  
+  # Build examples (Note: 'examples' require `gtsam_unstable` be built since it links against it.)
+  add_subdirectory(examples)
 endif()
 
 # This is the new wrapper
