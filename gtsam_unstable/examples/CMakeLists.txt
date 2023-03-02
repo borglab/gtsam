@@ -9,4 +9,4 @@ if (NOT GTSAM_USE_BOOST_FEATURES)
 endif()
 
 
-gtsamAddExamplesGlob("*.cpp" "${excluded_examples}" "gtsam_unstable")
+gtsamAddExamplesGlob("*.cpp" "${excluded_examples}" "gtsam")
