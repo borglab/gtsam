@@ -28,6 +28,7 @@ jobs:
             ubuntu-clang-cayleymap,
             ubuntu-clang-system-libs,
             ubuntu-no-boost,
+            ubuntu-no-unstable,
           ]
 
         build_type: [Debug, Release]
@@ -68,6 +69,12 @@ jobs:
             compiler: clang
             version: "14"
             flag: no_boost
+
+          - name: ubuntu-no-unstable
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
+            flag: no_unstable
 
     steps:
       - name: Checkout
@@ -150,6 +157,12 @@ jobs:
           echo "GTSAM_ENABLE_BOOST_SERIALIZATION=OFF" >> $GITHUB_ENV
           echo "GTSAM_USE_BOOST_FEATURES=OFF" >> $GITHUB_ENV
           echo "GTSAM will not use BOOST"
+
+      - name: Turn off unstable
+        if: matrix.flag == 'no_unstable'
+        run: |
+          echo "GTSAM_BUILD_UNSTABLE=OFF" >> $GITHUB_ENV
+          echo "GTSAM 'unstable' will not be built."
 
       - name: Build & Test
         run: |
