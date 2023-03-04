@@ -45,7 +45,7 @@ Ordering HybridSmoother::getOrdering(
   std::copy(allDiscrete.begin(), allDiscrete.end(),
             std::back_inserter(newKeysDiscreteLast));
 
-  const VariableIndex index(newFactors);
+  const VariableIndex index(factors);
 
   // Get an ordering where the new keys are eliminated last
   Ordering ordering = Ordering::ColamdConstrainedLast(
