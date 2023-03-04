@@ -53,6 +53,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
       - name: Install (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -79,6 +80,7 @@ jobs:
             echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
             echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
           fi
+
       - name: Install (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -88,22 +90,27 @@ jobs:
           sudo xcode-select -switch /Applications/Xcode.app
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
+
       - name: Set GTSAM_WITH_TBB Flag
         if: matrix.flag == 'tbb'
         run: |
           echo "GTSAM_WITH_TBB=ON" >> $GITHUB_ENV
           echo "GTSAM Uses TBB"
+
       - name: Set Swap Space
         if: runner.os == 'Linux'
         uses: pierotofy/set-swap-space@master
         with:
           swap-size-gb: 6
+
       - name: Install Dependencies
         run: |
           bash .github/scripts/python.sh -d
+
       - name: Build
         run: |
           bash .github/scripts/python.sh -b
+
       - name: Test
         run: |
           bash .github/scripts/python.sh -t
