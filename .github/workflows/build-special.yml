@@ -12,7 +12,7 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ON
-      BOOST_VERSION: 1.67.0
+      GTSAM_FORCE_SHARED_LIB: ON  # Make shared library to save memory on CI
 
     strategy:
       fail-fast: false
@@ -93,14 +93,20 @@ jobs:
 
           sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libicu-dev
 
-          sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
-          echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
-          echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
+            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
+            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
+          else
+            sudo apt-get install -y clang-${{ matrix.version }} g++-multilib
+            echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
+            echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
+          fi
 
       - name: Install Boost
         if: runner.os == 'Linux'
         run: |
-          bash .github/scripts/boost.sh
+          sudo apt-get -y install libboost-all-dev
 
       - name: Install (macOS)
         if: runner.os == 'macOS'
@@ -150,6 +156,12 @@ jobs:
           echo "GTSAM_ENABLE_BOOST_SERIALIZATION=OFF" >> $GITHUB_ENV
           echo "GTSAM_USE_BOOST_FEATURES=OFF" >> $GITHUB_ENV
           echo "GTSAM will not use BOOST"
+
+      - name: Set Swap Space
+        if: runner.os == 'Linux'
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 12
 
       - name: Build & Test
         run: |
