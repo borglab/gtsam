@@ -17,6 +17,7 @@
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearISAM.h>
@@ -35,14 +36,15 @@
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
 
-#include "Switching.h"
-
 #include <bitset>
+
+#include "Switching.h"
 
 using namespace std;
 using namespace gtsam;
 
 using symbol_shorthand::X;
+using symbol_shorthand::Z;
 
 Ordering getOrdering(HybridGaussianFactorGraph& factors,
                      const HybridGaussianFactorGraph& newFactors) {
@@ -91,8 +93,7 @@ TEST(HybridEstimation, Full) {
     hybridOrdering.push_back(M(k));
   }
 
-  HybridBayesNet::shared_ptr bayesNet =
-      graph.eliminateSequential();
+  HybridBayesNet::shared_ptr bayesNet = graph.eliminateSequential();
 
   EXPECT_LONGS_EQUAL(2 * K - 1, bayesNet->size());
 
@@ -338,7 +339,6 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
   Switching switching(K, between_sigma, measurement_sigma, measurements,
                       "1/1 1/1");
   auto graph = switching.linearizedFactorGraph;
-  Ordering ordering = getOrdering(graph, HybridGaussianFactorGraph());
 
   // Get the tree of unnormalized probabilities for each mode sequence.
   AlgebraicDecisionTree<Key> expected_probPrimeTree = getProbPrimeTree(graph);
@@ -501,6 +501,179 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
     // 4. Check that the ratio is constant.
     EXPECT_DOUBLES_EQUAL(expected_ratio, compute_ratio(sample), 1e-6);
   }
+}
+
+/****************************************************************************/
+/**
+ * Helper function to add the constant term corresponding to
+ * the difference in noise models.
+ */
+std::shared_ptr<GaussianMixtureFactor> mixedVarianceFactor(
+    const MixtureFactor& mf, const Values& initial, const Key& mode,
+    double noise_tight, double noise_loose, size_t d, size_t tight_index) {
+  GaussianMixtureFactor::shared_ptr gmf = mf.linearize(initial);
+
+  constexpr double log2pi = 1.8378770664093454835606594728112;
+  // logConstant will be of the tighter model
+  double logNormalizationConstant = log(1.0 / noise_tight);
+  double logConstant = -0.5 * d * log2pi + logNormalizationConstant;
+
+  auto func = [&](const Assignment<Key>& assignment,
+                  const GaussianFactor::shared_ptr& gf) {
+    if (assignment.at(mode) != tight_index) {
+      double factor_log_constant = -0.5 * d * log2pi + log(1.0 / noise_loose);
+
+      GaussianFactorGraph _gfg;
+      _gfg.push_back(gf);
+      Vector c(d);
+      for (size_t i = 0; i < d; i++) {
+        c(i) = std::sqrt(2.0 * (logConstant - factor_log_constant));
+      }
+
+      _gfg.emplace_shared<JacobianFactor>(c);
+      return std::make_shared<JacobianFactor>(_gfg);
+    } else {
+      return dynamic_pointer_cast<JacobianFactor>(gf);
+    }
+  };
+  auto updated_components = gmf->factors().apply(func);
+  auto updated_gmf = std::make_shared<GaussianMixtureFactor>(
+      gmf->continuousKeys(), gmf->discreteKeys(), updated_components);
+
+  return updated_gmf;
+}
+
+/****************************************************************************/
+TEST(HybridEstimation, ModeSelection) {
+  HybridNonlinearFactorGraph graph;
+  Values initial;
+
+  auto measurement_model = noiseModel::Isotropic::Sigma(1, 0.1);
+  auto motion_model = noiseModel::Isotropic::Sigma(1, 1.0);
+
+  graph.emplace_shared<PriorFactor<double>>(X(0), 0.0, measurement_model);
+  graph.emplace_shared<PriorFactor<double>>(X(1), 0.0, measurement_model);
+
+  DiscreteKeys modes;
+  modes.emplace_back(M(0), 2);
+
+  // The size of the noise model
+  size_t d = 1;
+  double noise_tight = 0.5, noise_loose = 5.0;
+
+  auto model0 = std::make_shared<MotionModel>(
+           X(0), X(1), 0.0, noiseModel::Isotropic::Sigma(d, noise_loose)),
+       model1 = std::make_shared<MotionModel>(
+           X(0), X(1), 0.0, noiseModel::Isotropic::Sigma(d, noise_tight));
+
+  std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
+
+  KeyVector keys = {X(0), X(1)};
+  MixtureFactor mf(keys, modes, components);
+
+  initial.insert(X(0), 0.0);
+  initial.insert(X(1), 0.0);
+
+  auto gmf =
+      mixedVarianceFactor(mf, initial, M(0), noise_tight, noise_loose, d, 1);
+  graph.add(gmf);
+
+  auto gfg = graph.linearize(initial);
+
+  HybridBayesNet::shared_ptr bayesNet = gfg->eliminateSequential();
+
+  HybridValues delta = bayesNet->optimize();
+  EXPECT_LONGS_EQUAL(1, delta.discrete().at(M(0)));
+
+  /**************************************************************/
+  HybridBayesNet bn;
+  const DiscreteKey mode{M(0), 2};
+
+  bn.push_back(
+      GaussianConditional::sharedMeanAndStddev(Z(0), -I_1x1, X(0), Z_1x1, 0.1));
+  bn.push_back(
+      GaussianConditional::sharedMeanAndStddev(Z(0), -I_1x1, X(1), Z_1x1, 0.1));
+  bn.emplace_back(new GaussianMixture(
+      {Z(0)}, {X(0), X(1)}, {mode},
+      {GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), -I_1x1, X(1),
+                                                Z_1x1, noise_loose),
+       GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), -I_1x1, X(1),
+                                                Z_1x1, noise_tight)}));
+
+  VectorValues vv;
+  vv.insert(Z(0), Z_1x1);
+
+  auto fg = bn.toFactorGraph(vv);
+  auto expected_posterior = fg.eliminateSequential();
+
+  EXPECT(assert_equal(*expected_posterior, *bayesNet, 1e-6));
+}
+
+/****************************************************************************/
+TEST(HybridEstimation, ModeSelection2) {
+  using symbol_shorthand::Z;
+
+  // The size of the noise model
+  size_t d = 3;
+  double noise_tight = 0.5, noise_loose = 5.0;
+
+  HybridBayesNet bn;
+  const DiscreteKey mode{M(0), 2};
+
+  bn.push_back(
+      GaussianConditional::sharedMeanAndStddev(Z(0), -I_3x3, X(0), Z_3x1, 0.1));
+  bn.push_back(
+      GaussianConditional::sharedMeanAndStddev(Z(0), -I_3x3, X(1), Z_3x1, 0.1));
+  bn.emplace_back(new GaussianMixture(
+      {Z(0)}, {X(0), X(1)}, {mode},
+      {GaussianConditional::sharedMeanAndStddev(Z(0), I_3x3, X(0), -I_3x3, X(1),
+                                                Z_3x1, noise_loose),
+       GaussianConditional::sharedMeanAndStddev(Z(0), I_3x3, X(0), -I_3x3, X(1),
+                                                Z_3x1, noise_tight)}));
+
+  VectorValues vv;
+  vv.insert(Z(0), Z_3x1);
+
+  auto fg = bn.toFactorGraph(vv);
+
+  auto expected_posterior = fg.eliminateSequential();
+
+  // =====================================
+
+  HybridNonlinearFactorGraph graph;
+  Values initial;
+
+  auto measurement_model = noiseModel::Isotropic::Sigma(d, 0.1);
+  auto motion_model = noiseModel::Isotropic::Sigma(d, 1.0);
+
+  graph.emplace_shared<PriorFactor<Vector3>>(X(0), Z_3x1, measurement_model);
+  graph.emplace_shared<PriorFactor<Vector3>>(X(1), Z_3x1, measurement_model);
+
+  DiscreteKeys modes;
+  modes.emplace_back(M(0), 2);
+
+  auto model0 = std::make_shared<BetweenFactor<Vector3>>(
+           X(0), X(1), Z_3x1, noiseModel::Isotropic::Sigma(d, noise_loose)),
+       model1 = std::make_shared<BetweenFactor<Vector3>>(
+           X(0), X(1), Z_3x1, noiseModel::Isotropic::Sigma(d, noise_tight));
+
+  std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
+
+  KeyVector keys = {X(0), X(1)};
+  MixtureFactor mf(keys, modes, components);
+
+  initial.insert<Vector3>(X(0), Z_3x1);
+  initial.insert<Vector3>(X(1), Z_3x1);
+
+  auto gmf =
+      mixedVarianceFactor(mf, initial, M(0), noise_tight, noise_loose, d, 1);
+  graph.add(gmf);
+
+  auto gfg = graph.linearize(initial);
+
+  HybridBayesNet::shared_ptr bayesNet = gfg->eliminateSequential();
+
+  EXPECT(assert_equal(*expected_posterior, *bayesNet, 1e-6));
 }
 
 /* ************************************************************************* */

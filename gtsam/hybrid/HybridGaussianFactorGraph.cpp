@@ -190,8 +190,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
 /* ************************************************************************ */
 // If any GaussianFactorGraph in the decision tree contains a nullptr, convert
 // that leaf to an empty GaussianFactorGraph. Needed since the DecisionTree will
-// otherwise create a GFG with a single (null) factor.
-// TODO(dellaert): still a mystery to me why this is needed.
+// otherwise create a GFG with a single (null) factor, which doesn't register as null.
 GaussianFactorGraphTree removeEmpty(const GaussianFactorGraphTree &sum) {
   auto emptyGaussian = [](const GaussianFactorGraph &graph) {
     bool hasNull =
@@ -275,9 +274,9 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     };
 
     DecisionTree<Key, double> probabilities(eliminationResults, probability);
-    return {std::make_shared<HybridConditional>(gaussianMixture),
-            std::make_shared<DecisionTreeFactor>(discreteSeparator,
-                                                   probabilities)};
+    return {
+        std::make_shared<HybridConditional>(gaussianMixture),
+        std::make_shared<DecisionTreeFactor>(discreteSeparator, probabilities)};
   } else {
     // Otherwise, we create a resulting GaussianMixtureFactor on the separator,
     // taking care to correct for conditional constant.
