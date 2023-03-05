@@ -530,8 +530,7 @@ std::shared_ptr<GaussianMixtureFactor> mixedVarianceFactor(
         c(i) = std::sqrt(2.0 * (logConstant - factor_log_constant));
       }
 
-      auto constantFactor = std::make_shared<JacobianFactor>(c);
-      _gfg.push_back(constantFactor);
+      _gfg.emplace_shared<JacobianFactor>(c);
       return std::make_shared<JacobianFactor>(_gfg);
     } else {
       return dynamic_pointer_cast<JacobianFactor>(gf);
@@ -607,12 +606,6 @@ TEST(HybridEstimation, ModeSelection) {
   auto fg = bn.toFactorGraph(vv);
   auto expected_posterior = fg.eliminateSequential();
 
-  // graph.print();
-  // gfg->print("Original Gaussian Factor Graph:");
-  // fg.print("\n\nFrom Bayes Net");
-
-  // bayesNet->print("\n\nBayes Net from FG");
-  // expected_posterior->print("\n\n");
   EXPECT(assert_equal(*expected_posterior, *bayesNet, 1e-6));
 }
 
@@ -644,9 +637,8 @@ TEST(HybridEstimation, ModeSelection2) {
   auto fg = bn.toFactorGraph(vv);
 
   auto expected_posterior = fg.eliminateSequential();
-  // expected_posterior->print("\n\n\nLikelihood BN:");
 
-  // std::cout << "\n\n==================\n\n" << std::endl;
+  // =====================================
 
   HybridNonlinearFactorGraph graph;
   Values initial;
@@ -681,7 +673,6 @@ TEST(HybridEstimation, ModeSelection2) {
 
   HybridBayesNet::shared_ptr bayesNet = gfg->eliminateSequential();
 
-  // bayesNet->print();
   EXPECT(assert_equal(*expected_posterior, *bayesNet, 1e-6));
 }
 
