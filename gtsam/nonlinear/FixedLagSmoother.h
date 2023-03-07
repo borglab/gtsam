@@ -20,7 +20,7 @@
 // \callgraph
 #pragma once
 
-#include <gtsam_unstable/dllexport.h>
+#include <gtsam/dllexport.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
