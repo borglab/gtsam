@@ -27,7 +27,8 @@ namespace gtsam {
 Ordering HybridSmoother::getOrdering(
     const HybridGaussianFactorGraph &newFactors) {
   HybridGaussianFactorGraph factors(hybridBayesNet());
-  factors += newFactors;
+  factors.push_back(newFactors);
+
   // Get all the discrete keys from the factors
   KeySet allDiscrete = factors.discreteKeySet();
 
@@ -72,8 +73,7 @@ void HybridSmoother::update(HybridGaussianFactorGraph graph,
     HybridBayesNet prunedBayesNetFragment =
         bayesNetFragment->prune(*maxNrLeaves);
     // Set the bayes net fragment to the pruned version
-    bayesNetFragment =
-        std::make_shared<HybridBayesNet>(prunedBayesNetFragment);
+    bayesNetFragment = std::make_shared<HybridBayesNet>(prunedBayesNetFragment);
   }
 
   // Add the partial bayes net to the posterior bayes net.

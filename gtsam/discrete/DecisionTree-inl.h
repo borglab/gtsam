@@ -33,6 +33,7 @@
 #include <vector>
 #include <optional>
 #include <cassert>
+#include <iterator>
 
 namespace gtsam {
 

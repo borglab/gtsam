@@ -51,8 +51,8 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
 
   /// See two named constructors below for good values of n_gravity in body
   /// frame
-  PreintegrationCombinedParams(const Vector3& n_gravity)
-      : PreintegrationParams(n_gravity),
+  PreintegrationCombinedParams(const Vector3& n_gravity_)
+      : PreintegrationParams(n_gravity_),
         biasAccCovariance(I_3x3),
         biasOmegaCovariance(I_3x3),
         biasAccOmegaInt(I_6x6) {}
