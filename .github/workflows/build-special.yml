@@ -12,7 +12,6 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ON
-      GTSAM_FORCE_SHARED_LIB: ON  # Make shared library to save memory on CI
 
     strategy:
       fail-fast: false
