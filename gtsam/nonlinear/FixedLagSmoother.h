@@ -20,10 +20,6 @@
 // \callgraph
 #pragma once
 
-#ifdef GTSAN_BUILD_UNSTABLE
-#include <gtsam_unstable/dllexport.h>
-#endif
-
 #include <gtsam/dllexport.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
