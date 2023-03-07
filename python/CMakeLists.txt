@@ -21,7 +21,19 @@ include(PybindWrap)
 ## Load the necessary files to compile the wrapper
 
 # Load the pybind11 code
-add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
+
+
+# This is required to avoid an error in modern pybind11 cmake scripts:
+if(POLICY CMP0057)
+  cmake_policy(SET CMP0057 NEW)
+endif()
+
+# Prefer system pybind11 first, if not found, rely on bundled version:
+find_package(pybind11 CONFIG QUIET)
+if (NOT pybind11_FOUND)
+        add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
+endif()
+
 # Set the wrapping script variable
 set(PYBIND_WRAP_SCRIPT "${PROJECT_SOURCE_DIR}/wrap/scripts/pybind_wrap.py")
 ############################################################
