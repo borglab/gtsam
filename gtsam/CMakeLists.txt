@@ -133,7 +133,8 @@ set_target_properties(gtsam PROPERTIES
     OUTPUT_NAME         gtsam
     CLEAN_DIRECT_OUTPUT 1
     VERSION             ${gtsam_version}
-    SOVERSION           ${gtsam_soversion})
+    SOVERSION           ${gtsam_soversion}
+    LINKER_LANGUAGE     CXX)
 
 # Append Eigen include path to either
 # system-eigen, or GTSAM eigen path
