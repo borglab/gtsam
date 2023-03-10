@@ -80,7 +80,7 @@ protected:
 #define TEST_UNSAFE(testGroup, testName)\
   class testGroup##testName##Test : public Test \
   { public: testGroup##testName##Test () : Test (#testName "Test", __FILE__, __LINE__, false) {} \
-            virtual ~testGroup##testName##Test () {};\
+            virtual ~testGroup##testName##Test () {} \
             void run (TestResult& result_) override;} \
     testGroup##testName##Instance; \
   void testGroup##testName##Test::run (TestResult& result_)

@@ -51,7 +51,7 @@ public:
     double error; ///< The final factor graph error
 
     /// Constructor
-    Result() : iterations(0), nonlinearVariables(0), linearVariables(0), error(0) {};
+    Result() : iterations(0), nonlinearVariables(0), linearVariables(0), error(0) {}
 
     /// Getter methods
     size_t getIterations() const { return iterations; }
@@ -61,10 +61,10 @@ public:
   };
 
   /** Default constructor */
-  ConcurrentIncrementalFilter(const ISAM2Params& parameters = ISAM2Params()) : isam2_(parameters) {};
+  ConcurrentIncrementalFilter(const ISAM2Params& parameters = ISAM2Params()) : isam2_(parameters) {}
 
   /** Default destructor */
-  ~ConcurrentIncrementalFilter() override {};
+  ~ConcurrentIncrementalFilter() override {}
 
   /** Implement a GTSAM standard 'print' function */
   void print(const std::string& s = "Concurrent Incremental Filter:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
