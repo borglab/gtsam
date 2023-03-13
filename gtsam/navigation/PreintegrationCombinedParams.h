@@ -24,7 +24,6 @@
 
 /* GTSAM includes */
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/serialization.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/navigation/PreintegrationCombinedParams.h>
 #include <gtsam/navigation/TangentPreintegration.h>
