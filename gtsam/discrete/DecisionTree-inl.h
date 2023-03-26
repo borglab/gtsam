@@ -649,8 +649,9 @@ namespace gtsam {
         throw std::invalid_argument("DecisionTree::create invalid argument");
       }
       auto choice = std::make_shared<Choice>(begin->first, endY - beginY);
-      for (ValueIt y = beginY; y != endY; y++)
+      for (ValueIt y = beginY; y != endY; y++) {
         choice->push_back(NodePtr(new Leaf(*y)));
+      }
       return Choice::Unique(choice);
     }
 
@@ -825,6 +826,16 @@ namespace gtsam {
     size_t total = 0;
     visit([&total](const Y& node) { total += 1; });
     return total;
+  }
+
+  /****************************************************************************/
+  template <typename L, typename Y>
+  size_t DecisionTree<L, Y>::nrAssignments() const {
+    size_t n = 0;
+    this->visitLeaf([&n](const DecisionTree<L, Y>::Leaf& leaf) {
+      n += leaf.nrAssignments();
+    });
+    return n;
   }
 
   /****************************************************************************/

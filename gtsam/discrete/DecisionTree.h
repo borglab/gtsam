@@ -300,6 +300,15 @@ namespace gtsam {
     size_t nrLeaves() const;
 
     /**
+     * @brief Return the number of total leaf assignments.
+     * This includes counts removed from implicit pruning hence,
+     * it will always be >= nrLeaves().
+     *
+     * @return size_t
+     */
+    size_t nrAssignments() const;
+
+    /**
      * @brief Fold a binary function over the tree, returning accumulator.
      *
      * @tparam X type for accumulator.
