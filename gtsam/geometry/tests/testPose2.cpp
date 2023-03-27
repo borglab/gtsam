@@ -474,6 +474,33 @@ TEST( Pose2, compose_matrix )
   EXPECT(assert_equal(gM1*_1M2,matrix(gT1.compose(_1T2)))); // RIGHT DOES NOT
 }
 
+
+
+/* ************************************************************************* */
+TEST( Pose2, translation )  {
+  Pose2 pose(3.5, -8.2, 4.2);
+
+  Matrix actualH;
+  EXPECT(assert_equal((Vector2() << 3.5, -8.2).finished(), pose.translation(actualH), 1e-8));
+
+  std::function<Point2(const Pose2&)> f = [](const Pose2& T) { return T.translation(); };
+  Matrix numericalH = numericalDerivative11<Point2, Pose2>(f, pose);
+  EXPECT(assert_equal(numericalH, actualH, 1e-6));
+}
+
+/* ************************************************************************* */
+TEST( Pose2, rotation ) {
+  Pose2 pose(3.5, -8.2, 4.2);
+
+  Matrix actualH(4, 3);
+  EXPECT(assert_equal(Rot2(4.2), pose.rotation(actualH), 1e-8));
+
+  std::function<Rot2(const Pose2&)> f = [](const Pose2& T) { return T.rotation(); };
+  Matrix numericalH = numericalDerivative11<Rot2, Pose2>(f, pose);
+  EXPECT(assert_equal(numericalH, actualH, 1e-6));
+}
+
+
 /* ************************************************************************* */
 TEST( Pose2, between )
 {
