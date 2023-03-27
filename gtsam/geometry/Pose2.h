@@ -252,16 +252,16 @@ public:
   inline double theta() const { return r_.theta(); }
 
   /// translation
-  inline const Point2& t() const { return t_; }
+  inline const Point2& t() const { return translation(); }
 
   /// rotation
-  inline const Rot2&   r() const { return r_; }
+  inline const Rot2&   r() const { return rotation(); }
 
   /// translation
-  inline const Point2& translation() const { return t_; }
+  const Point2& translation(OptionalJacobian<2, 3> Hself={}) const;
 
   /// rotation
-  inline const Rot2&   rotation() const { return r_; }
+  const Rot2&   rotation(OptionalJacobian<1, 3> Hself={}) const;
 
   //// return transformation matrix
   GTSAM_EXPORT Matrix3 matrix() const;
