@@ -303,6 +303,26 @@ namespace gtsam {
      * @brief Return the number of total leaf assignments.
      * This includes counts removed from implicit pruning hence,
      * it will always be >= nrLeaves().
+     * 
+     * E.g. we have a decision tree as below, where each node has 2 branches:
+     *
+     * Choice(m1)
+     * 0 Choice(m0)
+     * 0 0 Leaf 0.0
+     * 0 1 Leaf 0.0
+     * 1 Choice(m0)
+     * 1 0 Leaf 1.0
+     * 1 1 Leaf 2.0
+     *
+     * In the unpruned form, the tree will have 4 assignments, 2 for each key, and 4 leaves.
+     *
+     * In the pruned form, the number of assignments is still 4 but the number of leaves is now 3, as below:
+     *
+     * Choice(m1)
+     * 0 Leaf 0.0
+     * 1 Choice(m0)
+     * 1 0 Leaf 1.0
+     * 1 1 Leaf 2.0
      *
      * @return size_t
      */
