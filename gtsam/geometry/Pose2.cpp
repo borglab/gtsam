@@ -33,21 +33,6 @@ GTSAM_CONCEPT_POSE_INST(Pose2)
 static const Rot2 R_PI_2(Rot2::fromCosSin(0., 1.));
 
 /* ************************************************************************* */
-const Point2 &Pose2::translation(OptionalJacobian<2, 3> Hself) const {
-  if (Hself) {
-    *Hself = Matrix::Zero(2, 3);
-    (*Hself).block<2, 2>(0, 0) = rotation().matrix();
-  }
-  return t_;
-}
-
-/* ************************************************************************* */
-const Rot2& Pose2::rotation(OptionalJacobian<1, 3> Hself) const {
-  if (Hself) *Hself << 0, 0, 1;
-  return r_;
-}
-
-/* ************************************************************************* */
 Matrix3 Pose2::matrix() const {
   Matrix2 R = r_.matrix();
   Matrix32 R0;
