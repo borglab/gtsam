@@ -249,10 +249,10 @@ public:
   inline double theta() const { return r_.theta(); }
 
   /// translation
-  inline const Point2& t() const { return translation(); }
+  inline const Point2& t() const { return t_; }
 
   /// rotation
-  inline const Rot2&   r() const { return rotation(); }
+  inline const Rot2&   r() const { return r_; }
 
   /// translation
   inline const Point2& translation(OptionalJacobian<2, 3> Hself={}) const {
