@@ -76,8 +76,7 @@ void save(Archive& ar, const std::optional<T>& t, const unsigned int /*version*/
 }
 
 template <class Archive, class T>
-void load(Archive& ar, std::optional<T>& t, const unsigned int /*version*/
-) {
+void load(Archive& ar, std::optional<T>& t, const unsigned int /*version*/) {
   bool tflag;
   ar >> boost::serialization::make_nvp("initialized", tflag);
   if (!tflag) {
