@@ -38,7 +38,7 @@ class ConstantVelocityFactor : public NoiseModelFactorN<NavState, NavState> {
    public:
     ConstantVelocityFactor(Key i, Key j, double dt, const SharedNoiseModel &model)
         : NoiseModelFactorN<NavState, NavState>(model, i, j), dt_(dt) {}
-    ~ConstantVelocityFactor() override{};
+    ~ConstantVelocityFactor() override {}
 
     /**
      * @brief Caclulate error: (x2 - x1.update(dt)))
