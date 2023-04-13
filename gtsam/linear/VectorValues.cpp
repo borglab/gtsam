@@ -41,7 +41,7 @@ namespace gtsam {
   /* ************************************************************************ */
   VectorValues::VectorValues(const Vector& x, const Dims& dims) {
     size_t j = 0;
-    for (const auto& [key,n] : dims)  {
+    for (const auto& [key, n] : dims) {
 #ifdef TBB_GREATER_EQUAL_2020
       values_.emplace(key, x.segment(j, n));
 #else
@@ -68,7 +68,7 @@ namespace gtsam {
   VectorValues VectorValues::Zero(const VectorValues& other)
   {
     VectorValues result;
-    for(const auto& [key,value]: other)
+    for (const auto& [key, value] : other)
 #ifdef TBB_GREATER_EQUAL_2020
       result.values_.emplace(key, Vector::Zero(value.size()));
 #else
@@ -79,7 +79,7 @@ namespace gtsam {
 
   /* ************************************************************************ */
   VectorValues::iterator VectorValues::insert(const std::pair<Key, Vector>& key_value) {
-    std::pair<iterator, bool> result = values_.insert(key_value);
+    const std::pair<iterator, bool> result = values_.insert(key_value);
     if(!result.second)
       throw std::invalid_argument(
       "Requested to insert variable '" + DefaultKeyFormatter(key_value.first)
@@ -90,7 +90,7 @@ namespace gtsam {
   /* ************************************************************************ */
   VectorValues& VectorValues::update(const VectorValues& values) {
     iterator hint = begin();
-    for (const auto& [key,value] : values) {
+    for (const auto& [key, value] : values) {
       // Use this trick to find the value using a hint, since we are inserting
       // from another sorted map
       size_t oldSize = values_.size();
@@ -131,10 +131,10 @@ namespace gtsam {
     // Change print depending on whether we are using TBB
 #ifdef GTSAM_USE_TBB
     std::map<Key, Vector> sorted;
-    for (const auto& [key,value] : v) {
+    for (const auto& [key, value] : v) {
       sorted.emplace(key, value);
     }
-    for (const auto& [key,value] : sorted)
+    for (const auto& [key, value] : sorted)
 #else
     for (const auto& [key,value] : v)
 #endif
@@ -344,14 +344,13 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  VectorValues operator*(const double a, const VectorValues &v)
-  {
+  VectorValues operator*(const double a, const VectorValues& c) {
     VectorValues result;
-    for(const VectorValues::KeyValuePair& key_v: v)
+    for (const auto& [key, value] : c)
 #ifdef TBB_GREATER_EQUAL_2020
-      result.values_.emplace(key_v.first, a * key_v.second);
+      result.values_.emplace(key, a * value);
 #else
-      result.values_.insert({key_v.first, a * key_v.second});
+      result.values_.insert({key, a * value});
 #endif
     return result;
   }
