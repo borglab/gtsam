@@ -67,9 +67,11 @@ void ManifoldPreintegration::update(const Vector3& measuredAcc,
 
   // Possibly correct for sensor pose
   Matrix3 D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega;
-  if (p().body_P_sensor)
-    std::tie(acc, omega) = correctMeasurementsBySensorPose(acc, omega,
-        D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega);
+  if (p().body_P_sensor) {
+    std::tie(acc, omega) = correctMeasurementsBySensorPose(
+        acc, omega, D_correctedAcc_acc, D_correctedAcc_omega,
+        D_correctedOmega_omega);
+  }
 
   // Save current rotation for updating Jacobians
   const Rot3 oldRij = deltaXij_.attitude();

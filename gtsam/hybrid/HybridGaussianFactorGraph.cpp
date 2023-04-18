@@ -248,7 +248,6 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
 #ifdef HYBRID_TIMING
   tictoc_print_();
-  tictoc_reset_();
 #endif
 
   // Separate out decision tree into conditionals and remaining factors.
@@ -416,9 +415,6 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
     return continuousElimination(factors, frontalKeys);
   } else {
     // Case 3: We are now in the hybrid land!
-#ifdef HYBRID_TIMING
-    tictoc_reset_();
-#endif
     return hybridElimination(factors, frontalKeys, continuousSeparator,
                              discreteSeparatorSet);
   }
