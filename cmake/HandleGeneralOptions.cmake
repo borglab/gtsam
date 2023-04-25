@@ -30,6 +30,7 @@ option(GTSAM_ALLOW_DEPRECATED_SINCE_V43     "Allow use of methods/functions depr
 option(GTSAM_SUPPORT_NESTED_DISSECTION      "Support Metis-based nested dissection" ON)
 option(GTSAM_TANGENT_PREINTEGRATION         "Use new ImuFactor with integration on tangent space" ON)
 option(GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR "Use the slower but correct version of BetweenFactor" OFF)
+option(GTSAM_SLOW_BUT_CORRECT_EXPMAP        "Use slower but correct expmap"  ON)
 
 if (GTSAM_FORCE_SHARED_LIB)
     message(STATUS "GTSAM is a shared library due to GTSAM_FORCE_SHARED_LIB")

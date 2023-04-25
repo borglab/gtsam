@@ -66,7 +66,7 @@ TEST(Pose2, manifold) {
 /* ************************************************************************* */
 TEST(Pose2, retract) {
   Pose2 pose(M_PI/2.0, Point2(1, 2));
-#ifdef SLOW_BUT_CORRECT_EXPMAP
+#ifdef GTSAM_SLOW_BUT_CORRECT_EXPMAP
   Pose2 expected(1.00811, 2.01528, 2.5608);
 #else
   Pose2 expected(M_PI/2.0+0.99, Point2(1.015, 2.01));
@@ -204,7 +204,7 @@ TEST(Pose2, Adjoint_hat) {
 TEST(Pose2, logmap) {
   Pose2 pose0(M_PI/2.0, Point2(1, 2));
   Pose2 pose(M_PI/2.0+0.018, Point2(1.015, 2.01));
-#ifdef SLOW_BUT_CORRECT_EXPMAP
+#ifdef GTSAM_SLOW_BUT_CORRECT_EXPMAP
   Vector3 expected(0.00986473, -0.0150896, 0.018);
 #else
   Vector3 expected(0.01, -0.015, 0.018);
