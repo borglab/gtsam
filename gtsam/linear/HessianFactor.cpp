@@ -38,7 +38,7 @@ using namespace std;
 namespace gtsam {
 
 // Typedefs used in constructors below.
-using Dims = std::vector<Eigen::Index>;
+using Dims = std::vector<Key>;
 
 /* ************************************************************************* */
 void HessianFactor::Allocate(const Scatter& scatter) {
