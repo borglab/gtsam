@@ -563,8 +563,19 @@ class Unit3 {
 
   // Other functionality
   Matrix basis() const;
+  Matrix basis(Eigen::Ref<Eigen::MatrixXd> H) const;
   Matrix skew() const;
   gtsam::Point3 point3() const;
+  gtsam::Point3 point3(Eigen::Ref<Eigen::MatrixXd> H) const;
+
+  Vector3 unitVector() const;
+  Vector3 unitVector(Eigen::Ref<Eigen::MatrixXd> H) const;
+  double dot(const gtsam::Unit3& q) const;
+  double dot(const gtsam::Unit3& q, Eigen::Ref<Eigen::MatrixXd> H1,
+             Eigen::Ref<Eigen::MatrixXd> H2) const;
+  Vector2 errorVector(const gtsam::Unit3& q) const;
+  Vector2 errorVector(const gtsam::Unit3& q, Eigen::Ref<Eigen::MatrixXd> H_p,
+                      Eigen::Ref<Eigen::MatrixXd> H_q) const;
 
   // Manifold
   static size_t Dim();
