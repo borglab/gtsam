@@ -125,6 +125,10 @@ class Point3 {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // Other methods
+  gtsam::Point3 normalize(const gtsam::Point3 &p) const;
+  gtsam::Point3 normalize(const gtsam::Point3 &p, Eigen::Ref<Eigen::MatrixXd> H) const;
 };
 
 class Point3Pairs {
@@ -342,6 +346,9 @@ class Rot3 {
 
   // Group action on Unit3
   gtsam::Unit3 rotate(const gtsam::Unit3& p) const;
+  gtsam::Unit3 rotate(const gtsam::Unit3& p,
+                      Eigen::Ref<Eigen::MatrixXd> HR,
+                      Eigen::Ref<Eigen::MatrixXd> Hp) const;
   gtsam::Unit3 unrotate(const gtsam::Unit3& p) const;
   
   // Standard Interface
@@ -582,6 +589,8 @@ class Unit3 {
   size_t dim() const;
   gtsam::Unit3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Unit3& s) const;
+  gtsam::Unit3 FromPoint3(const gtsam::Point3& point) const;
+  gtsam::Unit3 FromPoint3(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> H) const;
 
   // enabling serialization functionality
   void serialize() const;
