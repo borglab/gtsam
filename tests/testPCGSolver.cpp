@@ -26,10 +26,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-
 #include <iostream>
 #include <fstream>
 
@@ -88,13 +84,13 @@ TEST( GaussianFactorGraphSystem, multiply_getb)
   // Create a Gaussian Factor Graph
   GaussianFactorGraph simpleGFG;
   SharedDiagonal unit2 = noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.3));
-  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << -1, -1).finished(), unit2);
-  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< -10, 0, 0, -10).finished(), 0, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << 2, -1).finished(), unit2);
-  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << 0, 1).finished(), unit2);
-  simpleGFG += JacobianFactor(0, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << -1, 1.5).finished(), unit2);
-  simpleGFG += JacobianFactor(0, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
-  simpleGFG += JacobianFactor(1, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
-  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << -1, -1).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< -10, 0, 0, -10).finished(), 0, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << 2, -1).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << 0, 1).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(0, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << -1, 1.5).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(0, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(1, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
 
   // Create a dummy-preconditioner and a GaussianFactorGraphSystem
   DummyPreconditioner dummyPreconditioner;
@@ -129,8 +125,8 @@ TEST( GaussianFactorGraphSystem, multiply_getb)
 TEST(PCGSolver, dummy) {
   LevenbergMarquardtParams params;
   params.linearSolverType = LevenbergMarquardtParams::Iterative;
-  auto pcg = boost::make_shared<PCGSolverParameters>();
-  pcg->preconditioner_ = boost::make_shared<DummyPreconditionerParameters>();
+  auto pcg = std::make_shared<PCGSolverParameters>();
+  pcg->preconditioner_ = std::make_shared<DummyPreconditionerParameters>();
   params.iterativeParams = pcg;
 
   NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
@@ -149,9 +145,9 @@ TEST(PCGSolver, dummy) {
 TEST(PCGSolver, blockjacobi) {
   LevenbergMarquardtParams params;
   params.linearSolverType = LevenbergMarquardtParams::Iterative;
-  auto pcg = boost::make_shared<PCGSolverParameters>();
+  auto pcg = std::make_shared<PCGSolverParameters>();
   pcg->preconditioner_ =
-      boost::make_shared<BlockJacobiPreconditionerParameters>();
+      std::make_shared<BlockJacobiPreconditionerParameters>();
   params.iterativeParams = pcg;
 
   NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
@@ -170,8 +166,8 @@ TEST(PCGSolver, blockjacobi) {
 TEST(PCGSolver, subgraph) {
   LevenbergMarquardtParams params;
   params.linearSolverType = LevenbergMarquardtParams::Iterative;
-  auto pcg = boost::make_shared<PCGSolverParameters>();
-  pcg->preconditioner_ = boost::make_shared<SubgraphPreconditionerParameters>();
+  auto pcg = std::make_shared<PCGSolverParameters>();
+  pcg->preconditioner_ = std::make_shared<SubgraphPreconditionerParameters>();
   params.iterativeParams = pcg;
 
   NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();

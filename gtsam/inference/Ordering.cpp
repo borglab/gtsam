@@ -19,17 +19,11 @@
 #include <vector>
 #include <limits>
 
-#include <boost/format.hpp>
-
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>
 
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
-#ifdef GTSAM_USE_SYSTEM_METIS
 #include <metis.h>
-#else
-#include <gtsam/3rdparty/metis/include/metis.h>
-#endif
 #endif
 
 using namespace std;
@@ -111,9 +105,9 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
     gttic(ccolamd);
     int rv = ccolamd((int) nFactors, (int) nVars, (int) Alen, &A[0], &p[0],
         knobs, stats, &cmember[0]);
-    if (rv != 1)
-      throw runtime_error(
-          (boost::format("ccolamd failed with return value %1%") % rv).str());
+    if (rv != 1) {
+      throw runtime_error("ccolamd failed with return value " + to_string(rv));
+    }
   }
 
   //  ccolamd_report(stats);
@@ -285,6 +279,17 @@ void Ordering::print(const std::string& str,
   if (!endedOnNewline)
     cout << "\n";
   cout.flush();
+}
+
+/* ************************************************************************* */
+Ordering::This& Ordering::operator+=(KeyVector& keys) {
+  this->insert(this->end(), keys.begin(), keys.end());
+  return *this;
+}
+
+/* ************************************************************************* */
+bool Ordering::contains(const Key& key) const {
+  return std::find(this->begin(), this->end(), key) != this->end();
 }
 
 /* ************************************************************************* */

@@ -2668,7 +2668,7 @@ reference "eq:pushforward"
 \begin{eqnarray*}
 \varphi(a)e^{\yhat} & = & \varphi(ae^{\xhat})\\
 a^{-1}e^{\yhat} & = & \left(ae^{\xhat}\right)^{-1}\\
-e^{\yhat} & = & -ae^{\xhat}a^{-1}\\
+e^{\yhat} & = & ae^{-\xhat}a^{-1}\\
 \yhat & = & -\Ad a\xhat
 \end{eqnarray*}
 
@@ -3003,8 +3003,8 @@ between
 \begin_inset Formula 
 \begin{align}
 \varphi(g,h)e^{\yhat} & =\varphi(ge^{\xhat},h)\nonumber \\
-g^{-1}he^{\yhat} & =\left(ge^{\xhat}\right)^{-1}h=-e^{\xhat}g^{-1}h\nonumber \\
-e^{\yhat} & =-\left(h^{-1}g\right)e^{\xhat}\left(h^{-1}g\right)^{-1}=-\exp\Ad{\left(h^{-1}g\right)}\xhat\nonumber \\
+g^{-1}he^{\yhat} & =\left(ge^{\xhat}\right)^{-1}h=e^{-\xhat}g^{-1}h\nonumber \\
+e^{\yhat} & =\left(h^{-1}g\right)e^{-\xhat}\left(h^{-1}g\right)^{-1}=\exp\Ad{\left(h^{-1}g\right)}(-\xhat)\nonumber \\
 \yhat & =-\Ad{\left(h^{-1}g\right)}\xhat=-\Ad{\varphi\left(h,g\right)}\xhat\label{eq:Dbetween1}
 \end{align}
 
@@ -6674,7 +6674,7 @@ One representation of a line is through 2 vectors
 \begin_inset Formula $d$
 \end_inset
 
- points from the orgin to the closest point on the line.
+ points from the origin to the closest point on the line.
 \end_layout
 
 \begin_layout Standard

@@ -119,7 +119,7 @@ h = figure;
 % Solver object
 isamParams = ISAM2Params;
 isamParams.setFactorization('CHOLESKY');
-isamParams.setRelinearizeSkip(10);
+isamParams.relinearizeSkip = 10;
 isam = gtsam.ISAM2(isamParams);
 newFactors = NonlinearFactorGraph;
 newValues = Values;
@@ -175,9 +175,9 @@ for i = 1:length(times)
         % known initial conditions
         currentPoseEstimate = currentPoseFixedGT;
         if navFrameRotating == 1
-            currentVelocityEstimate = LieVector(currentVelocityRotatingGT);
+            currentVelocityEstimate = currentVelocityRotatingGT;
         else
-            currentVelocityEstimate = LieVector(currentVelocityFixedGT);
+            currentVelocityEstimate = currentVelocityFixedGT;
         end
         
         % Set Priors
@@ -186,7 +186,7 @@ for i = 1:length(times)
         newValues.insert(currentBiasKey, zeroBias);
         % Initial values, same for IMU types 1 and 2
         newFactors.add(PriorFactorPose3(currentPoseKey, currentPoseEstimate, sigma_init_x));
-        newFactors.add(PriorFactorLieVector(currentVelKey, currentVelocityEstimate, sigma_init_v));
+        newFactors.add(PriorFactorVector(currentVelKey, currentVelocityEstimate, sigma_init_v));
         newFactors.add(PriorFactorConstantBias(currentBiasKey, zeroBias, sigma_init_b));
         
         % Store data

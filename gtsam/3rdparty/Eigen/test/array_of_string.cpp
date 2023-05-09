@@ -9,7 +9,7 @@
 
 #include "main.h"
 
-void test_array_of_string()
+EIGEN_DECLARE_TEST(array_of_string)
 {
   typedef Array<std::string,1,Dynamic> ArrayXs;
   ArrayXs a1(3), a2(3), a3(3), a3ref(3);

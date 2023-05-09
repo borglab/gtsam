@@ -36,9 +36,9 @@ TEST(SO3, Identity) {
 
 //******************************************************************************
 TEST(SO3, Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<SO3>));
-  BOOST_CONCEPT_ASSERT((IsManifold<SO3>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<SO3>));
+  GTSAM_CONCEPT_ASSERT(IsGroup<SO3>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<SO3>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<SO3>);
 }
 
 //******************************************************************************
@@ -67,10 +67,12 @@ TEST(SO3, ClosestTo) {
 }
 
 //******************************************************************************
+namespace {
 SO3 id;
 Vector3 z_axis(0, 0, 1), v2(1, 2, 0), v3(1, 2, 3);
 SO3 R1(Eigen::AngleAxisd(0.1, z_axis));
 SO3 R2(Eigen::AngleAxisd(0.2, z_axis));
+}  // namespace
 
 /* ************************************************************************* */
 TEST(SO3, ChordalMean) {
@@ -79,16 +81,16 @@ TEST(SO3, ChordalMean) {
 }
 
 //******************************************************************************
+// Check that Hat specialization is equal to dynamic version
 TEST(SO3, Hat) {
-  // Check that Hat specialization is equal to dynamic version
   EXPECT(assert_equal(SO3::Hat(z_axis), SOn::Hat(z_axis)));
   EXPECT(assert_equal(SO3::Hat(v2), SOn::Hat(v2)));
   EXPECT(assert_equal(SO3::Hat(v3), SOn::Hat(v3)));
 }
 
 //******************************************************************************
+// Check that Hat specialization is equal to dynamic version
 TEST(SO3, Vee) {
-  // Check that Hat specialization is equal to dynamic version
   auto X1 = SOn::Hat(z_axis), X2 = SOn::Hat(v2), X3 = SOn::Hat(v3);
   EXPECT(assert_equal(SO3::Vee(X1), SOn::Vee(X1)));
   EXPECT(assert_equal(SO3::Vee(X2), SOn::Vee(X2)));
@@ -208,7 +210,7 @@ TEST(SO3, ExpmapDerivative) {
 TEST(SO3, ExpmapDerivative2) {
   const Vector3 theta(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-      std::bind(&SO3::Expmap, std::placeholders::_1, boost::none), theta);
+      std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
 
   CHECK(assert_equal(Jexpected, SO3::ExpmapDerivative(theta)));
   CHECK(assert_equal(Matrix3(Jexpected.transpose()),
@@ -219,7 +221,7 @@ TEST(SO3, ExpmapDerivative2) {
 TEST(SO3, ExpmapDerivative3) {
   const Vector3 theta(10, 20, 30);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-      std::bind(&SO3::Expmap, std::placeholders::_1, boost::none), theta);
+      std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
 
   CHECK(assert_equal(Jexpected, SO3::ExpmapDerivative(theta)));
   CHECK(assert_equal(Matrix3(Jexpected.transpose()),
@@ -274,7 +276,7 @@ TEST(SO3, ExpmapDerivative5) {
 TEST(SO3, ExpmapDerivative6) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-      std::bind(&SO3::Expmap, std::placeholders::_1, boost::none), thetahat);
+      std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), thetahat);
   Matrix3 Jactual;
   SO3::Expmap(thetahat, Jactual);
   EXPECT(assert_equal(Jexpected, Jactual));
@@ -285,7 +287,7 @@ TEST(SO3, LogmapDerivative) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const SO3 R = SO3::Expmap(thetahat);  // some rotation
   const Matrix Jexpected = numericalDerivative11<Vector, SO3>(
-      std::bind(&SO3::Logmap, std::placeholders::_1, boost::none), R);
+      std::bind(&SO3::Logmap, std::placeholders::_1, nullptr), R);
   const Matrix3 Jactual = SO3::LogmapDerivative(thetahat);
   EXPECT(assert_equal(Jexpected, Jactual));
 }
@@ -295,7 +297,7 @@ TEST(SO3, JacobianLogmap) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const SO3 R = SO3::Expmap(thetahat);  // some rotation
   const Matrix Jexpected = numericalDerivative11<Vector, SO3>(
-      std::bind(&SO3::Logmap, std::placeholders::_1, boost::none), R);
+      std::bind(&SO3::Logmap, std::placeholders::_1, nullptr), R);
   Matrix3 Jactual;
   SO3::Logmap(R, Jactual);
   EXPECT(assert_equal(Jexpected, Jactual));

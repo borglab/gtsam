@@ -71,7 +71,7 @@ protected:
   DoglegParams params_;
 
 public:
-  typedef boost::shared_ptr<DoglegOptimizer> shared_ptr;
+  typedef std::shared_ptr<DoglegOptimizer> shared_ptr;
 
   /// @name Standard interface
   /// @{

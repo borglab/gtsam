@@ -21,12 +21,27 @@
 
 namespace gtsam {
 
+class Line3;
+
+/**
+ * Transform a line from world to camera frame
+ * @param wTc - Pose3 of camera in world frame
+ * @param wL - Line3 in world frame
+ * @param Dpose - OptionalJacobian of transformed line with respect to p
+ * @param Dline -  OptionalJacobian of transformed line with respect to l
+ * @return Transformed line in camera frame
+ */
+GTSAM_EXPORT Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
+                  OptionalJacobian<4, 6> Dpose = {},
+                  OptionalJacobian<4, 4> Dline = {});
+
+
 /**
  * A 3D line (R,a,b) : (Rot3,Scalar,Scalar)
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
-class Line3 {
+class GTSAM_EXPORT Line3 {
  private:
   Rot3 R_;    // Rotation of line about x and y in world frame
   double a_, b_;  // Intersection of line with the world x-y plane rotated by R_
@@ -54,8 +69,8 @@ class Line3 {
    * @return q: resulting line after adding the increment and mapping to the manifold
    */
   Line3 retract(const Vector4 &v,
-                OptionalJacobian<4, 4> Dp = boost::none,
-                OptionalJacobian<4, 4> Dv = boost::none) const;
+                OptionalJacobian<4, 4> Dp = {},
+                OptionalJacobian<4, 4> Dv = {}) const;
 
   /**
    * The localCoordinates method is the inverse of retract and finds the difference
@@ -67,8 +82,8 @@ class Line3 {
    * @return v: difference in the tangent space
    */
   Vector4 localCoordinates(const Line3 &q,
-                           OptionalJacobian<4, 4> Dp = boost::none,
-                           OptionalJacobian<4, 4> Dq = boost::none) const;
+                           OptionalJacobian<4, 4> Dp = {},
+                           OptionalJacobian<4, 4> Dq = {}) const;
 
   /**
    * Print R, a, b
@@ -90,7 +105,7 @@ class Line3 {
    * @return Unit3 - projected line in image plane, in homogenous coordinates.
    * We use Unit3 since it is a manifold with the right dimension.
    */
-  Unit3 project(OptionalJacobian<2, 4> Dline = boost::none) const;
+  Unit3 project(OptionalJacobian<2, 4> Dline = {}) const;
 
   /**
    * Returns point on the line that is at a certain distance starting from the
@@ -135,18 +150,6 @@ class Line3 {
                            OptionalJacobian<4, 6> Dpose,
                            OptionalJacobian<4, 4> Dline);
 };
-
-/**
- * Transform a line from world to camera frame
- * @param wTc - Pose3 of camera in world frame
- * @param wL - Line3 in world frame
- * @param Dpose - OptionalJacobian of transformed line with respect to p
- * @param Dline -  OptionalJacobian of transformed line with respect to l
- * @return Transformed line in camera frame
- */
-Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
-                  OptionalJacobian<4, 6> Dpose = boost::none,
-                  OptionalJacobian<4, 4> Dline = boost::none);
 
 template<>
 struct traits<Line3> : public internal::Manifold<Line3> {};

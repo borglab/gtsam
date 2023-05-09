@@ -20,6 +20,7 @@ class TestWrap(unittest.TestCase):
     """
     Test the Matlab wrapper
     """
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -36,7 +37,7 @@ class TestWrap(unittest.TestCase):
         template_file = osp.join(self.TEST_DIR, "..", "gtwrap",
                                  "matlab_wrapper", "matlab_wrapper.tpl")
         if not osp.exists(template_file):
-            with open(template_file, 'w') as tpl:
+            with open(template_file, 'w', encoding="UTF-8") as tpl:
                 tpl.write("#include <gtwrap/matlab.h>\n#include <map>\n")
 
         # Create the `actual/matlab` directory
@@ -51,8 +52,8 @@ class TestWrap(unittest.TestCase):
         success = filecmp.cmp(actual, expected)
 
         if not success:
-            os.system("diff {} {}".format(actual, expected))
-        self.assertTrue(success, "Mismatch for file {0}".format(file))
+            os.system(f"diff {actual} {expected}")
+        self.assertTrue(success, f"Mismatch for file {file}")
 
     def test_geometry(self):
         """
@@ -63,11 +64,10 @@ class TestWrap(unittest.TestCase):
         file = osp.join(self.INTERFACE_DIR, 'geometry.i')
 
         # Create MATLAB wrapper instance
-        wrapper = MatlabWrapper(
-            module_name='geometry',
-            top_module_namespace=['gtsam'],
-            ignore_classes=[''],
-        )
+        wrapper = MatlabWrapper(module_name='geometry',
+                                top_module_namespace=['gtsam'],
+                                ignore_classes=[''],
+                                use_boost_serialization=True)
 
         wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
 
@@ -92,10 +92,19 @@ class TestWrap(unittest.TestCase):
         wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
 
         files = [
-            'functions_wrapper.cpp', 'aGlobalFunction.m', 'load2D.m',
+            'functions_wrapper.cpp',
+            'aGlobalFunction.m',
+            'load2D.m',
             'MultiTemplatedFunctionDoubleSize_tDouble.m',
             'MultiTemplatedFunctionStringSize_tDouble.m',
-            'overloadedGlobalFunction.m', 'TemplatedFunctionRot3.m'
+            'overloadedGlobalFunction.m',
+            'TemplatedFunctionRot3.m',
+            'DefaultFuncInt.m',
+            'DefaultFuncObj.m',
+            'DefaultFuncString.m',
+            'DefaultFuncVector.m',
+            'DefaultFuncZero.m',
+            'setPose.m',
         ]
 
         for file in files:
@@ -115,10 +124,17 @@ class TestWrap(unittest.TestCase):
         wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
 
         files = [
-            'class_wrapper.cpp', 'FunDouble.m', 'FunRange.m',
-            'MultipleTemplatesIntDouble.m', 'MultipleTemplatesIntFloat.m',
-            'MyFactorPosePoint2.m', 'MyVector3.m', 'MyVector12.m',
-            'PrimitiveRefDouble.m', 'Test.m'
+            'class_wrapper.cpp',
+            'FunDouble.m',
+            'FunRange.m',
+            'MultipleTemplatesIntDouble.m',
+            'MultipleTemplatesIntFloat.m',
+            'MyFactorPosePoint2.m',
+            'MyVector3.m',
+            'MyVector12.m',
+            'PrimitiveRefDouble.m',
+            'Test.m',
+            'ForwardKinematics.m',
         ]
 
         for file in files:
@@ -137,7 +153,10 @@ class TestWrap(unittest.TestCase):
 
         wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
 
-        files = ['template_wrapper.cpp']
+        files = [
+            'template_wrapper.cpp', 'ScopedTemplateResult.m',
+            'TemplatedConstructor.m'
+        ]
 
         for file in files:
             actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
@@ -155,8 +174,11 @@ class TestWrap(unittest.TestCase):
         wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
 
         files = [
-            'inheritance_wrapper.cpp', 'MyBase.m', 'MyTemplateMatrix.m',
-            'MyTemplatePoint2.m'
+            'inheritance_wrapper.cpp',
+            'MyBase.m',
+            'MyTemplateMatrix.m',
+            'MyTemplatePoint2.m',
+            'ForwardKinematicsFactor.m',
         ]
 
         for file in files:
@@ -178,10 +200,17 @@ class TestWrap(unittest.TestCase):
         wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
 
         files = [
-            'namespaces_wrapper.cpp', '+ns1/aGlobalFunction.m',
-            '+ns1/ClassA.m', '+ns1/ClassB.m', '+ns2/+ns3/ClassB.m',
-            '+ns2/aGlobalFunction.m', '+ns2/ClassA.m', '+ns2/ClassC.m',
-            '+ns2/overloadedGlobalFunction.m', 'ClassD.m'
+            'namespaces_wrapper.cpp',
+            '+ns1/aGlobalFunction.m',
+            '+ns1/ClassA.m',
+            '+ns1/ClassB.m',
+            '+ns2/+ns3/ClassB.m',
+            '+ns2/aGlobalFunction.m',
+            '+ns2/ClassA.m',
+            '+ns2/ClassC.m',
+            '+ns2/overloadedGlobalFunction.m',
+            'ClassD.m',
+            '+gtsam/Values.m',
         ]
 
         for file in files:
@@ -203,8 +232,10 @@ class TestWrap(unittest.TestCase):
 
         files = [
             'special_cases_wrapper.cpp',
-            '+gtsam/PinholeCameraCal3Bundler.m',
+            '+gtsam/GeneralSFMFactorCal3Bundler.m',
             '+gtsam/NonlinearFactorGraph.m',
+            '+gtsam/PinholeCameraCal3Bundler.m',
+            '+gtsam/SfmTrack.m',
         ]
 
         for file in files:

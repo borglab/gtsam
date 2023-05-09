@@ -110,7 +110,7 @@ static void test_striding_as_lvalue()
 }
 
 
-void test_cxx11_tensor_striding()
+EIGEN_DECLARE_TEST(cxx11_tensor_striding)
 {
   CALL_SUBTEST(test_simple_striding<ColMajor>());
   CALL_SUBTEST(test_simple_striding<RowMajor>());

@@ -21,9 +21,7 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/Testable.h>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/assign/list_of.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 
 #include <utility>
 
@@ -31,6 +29,7 @@ namespace gtsam {
 
   // Forward declarations
   class SymbolicConditional;
+  class HybridValues;
   class Ordering;
 
   /** SymbolicFactor represents a symbolic factor that specifies graph topology but is not
@@ -45,9 +44,9 @@ namespace gtsam {
     typedef SymbolicConditional ConditionalType;
 
     /** Overriding the shared_ptr typedef */
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
 
-    /// @name Standard Interface
+    /// @name Standard Constructors
     /// @{
 
     /** Default constructor for I/O */
@@ -55,35 +54,33 @@ namespace gtsam {
 
     /** Construct unary factor */
     explicit SymbolicFactor(Key j) :
-      Base(boost::assign::cref_list_of<1>(j)) {}
+      Base(KeyVector{j}) {}
 
     /** Construct binary factor */
     SymbolicFactor(Key j1, Key j2) :
-      Base(boost::assign::cref_list_of<2>(j1)(j2)) {}
+      Base(KeyVector{j1, j2}) {}
 
     /** Construct ternary factor */
     SymbolicFactor(Key j1, Key j2, Key j3) :
-      Base(boost::assign::cref_list_of<3>(j1)(j2)(j3)) {}
+      Base(KeyVector{j1, j2, j3}) {}
 
     /** Construct 4-way factor */
     SymbolicFactor(Key j1, Key j2, Key j3, Key j4) :
-      Base(boost::assign::cref_list_of<4>(j1)(j2)(j3)(j4)) {}
+      Base(KeyVector{j1, j2, j3, j4}) {}
 
     /** Construct 5-way factor */
     SymbolicFactor(Key j1, Key j2, Key j3, Key j4, Key j5) :
-      Base(boost::assign::cref_list_of<5>(j1)(j2)(j3)(j4)(j5)) {}
+      Base(KeyVector{j1, j2, j3, j4, j5}) {}
 
     /** Construct 6-way factor */
     SymbolicFactor(Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) :
-      Base(boost::assign::cref_list_of<6>(j1)(j2)(j3)(j4)(j5)(j6)) {}
+      Base(KeyVector{j1, j2, j3, j4, j5, j6}) {}
 
     /** Create symbolic version of any factor */
     explicit SymbolicFactor(const Factor& factor) : Base(factor.keys()) {}
 
-    virtual ~SymbolicFactor() {}
-
     /// Copy this object as its actual derived type.
-    SymbolicFactor::shared_ptr clone() const { return boost::make_shared<This>(*this); }
+    SymbolicFactor::shared_ptr clone() const { return std::make_shared<This>(*this); }
 
     /// @}
 
@@ -107,10 +104,9 @@ namespace gtsam {
     }
 
     /// @}
-
     /// @name Advanced Constructors
     /// @{
-  public:
+  
     /** Constructor from a collection of keys */
     template<typename KEYITERATOR>
     static SymbolicFactor FromIterators(KEYITERATOR beginKey, KEYITERATOR endKey) {
@@ -120,20 +116,20 @@ namespace gtsam {
     /** Constructor from a collection of keys */
     template<typename KEYITERATOR>
     static SymbolicFactor::shared_ptr FromIteratorsShared(KEYITERATOR beginKey, KEYITERATOR endKey) {
-      SymbolicFactor::shared_ptr result = boost::make_shared<SymbolicFactor>();
+      SymbolicFactor::shared_ptr result = std::make_shared<SymbolicFactor>();
       result->keys_.assign(beginKey, endKey);
       return result;
     }
 
-    /** Constructor from a collection of keys - compatible with boost::assign::list_of and
-     *  boost::assign::cref_list_of */
+    /** Constructor from a collection of keys - compatible with boost assign::list_of and
+     *  boost assign::cref_list_of */
     template<class CONTAINER>
     static SymbolicFactor FromKeys(const CONTAINER& keys) {
       return SymbolicFactor(Base::FromKeys(keys));
     }
 
-    /** Constructor from a collection of keys - compatible with boost::assign::list_of and
-     *  boost::assign::cref_list_of */
+    /** Constructor from a collection of keys - compatible with boost assign::list_of and
+     *  boost assign::cref_list_of */
     template<class CONTAINER>
     static SymbolicFactor::shared_ptr FromKeysShared(const CONTAINER& keys) {
       return FromIteratorsShared(keys.begin(), keys.end());
@@ -144,23 +140,25 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
-    /** Whether the factor is empty (involves zero variables). */
-    bool empty() const { return keys_.empty(); }
+    /// The `error` method throws an exception.
+    double error(const HybridValues& c) const override;
 
     /** Eliminate the variables in \c keys, in the order specified in \c keys, returning a
      *  conditional and marginal. */
-    std::pair<boost::shared_ptr<SymbolicConditional>, boost::shared_ptr<SymbolicFactor> >
+    std::pair<std::shared_ptr<SymbolicConditional>, std::shared_ptr<SymbolicFactor> >
       eliminate(const Ordering& keys) const;
 
     /// @}
 
   private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
+#endif
   }; // IndexFactor
 
   // Forward declarations
@@ -171,7 +169,7 @@ namespace gtsam {
    *  one of the factor graph elimination functions (see EliminateableFactorGraph).  The factor
    *  graph elimination functions do sparse variable elimination, and use this function to eliminate
    *  single variables or variable cliques. */
-  GTSAM_EXPORT std::pair<boost::shared_ptr<SymbolicConditional>, boost::shared_ptr<SymbolicFactor> >
+  GTSAM_EXPORT std::pair<std::shared_ptr<SymbolicConditional>, std::shared_ptr<SymbolicFactor> >
     EliminateSymbolic(const SymbolicFactorGraph& factors, const Ordering& keys);
 
   /// traits

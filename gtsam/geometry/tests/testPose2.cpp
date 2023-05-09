@@ -23,12 +23,10 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Rot2.h>
 
-#include <boost/assign/std/vector.hpp>  // for operator +=
-#include <boost/optional.hpp>
+#include <optional>
 #include <cmath>
 #include <iostream>
 
-using namespace boost::assign;
 using namespace gtsam;
 using namespace std;
 
@@ -37,9 +35,9 @@ GTSAM_CONCEPT_LIE_INST(Pose2)
 
 //******************************************************************************
 TEST(Pose2 , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Pose2 >));
-  BOOST_CONCEPT_ASSERT((IsManifold<Pose2 >));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Pose2 >));
+  GTSAM_CONCEPT_ASSERT(IsGroup<Pose2 >);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Pose2 >);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Pose2 >);
 }
 
 /* ************************************************************************* */
@@ -230,7 +228,7 @@ TEST( Pose2, ExpmapDerivative1) {
   Vector3 w(0.1, 0.27, -0.3);
   Pose2::Expmap(w,actualH);
   Matrix3 expectedH = numericalDerivative21<Pose2, Vector3,
-      OptionalJacobian<3, 3> >(&Pose2::Expmap, w, boost::none, 1e-2);
+      OptionalJacobian<3, 3> >(&Pose2::Expmap, w, {}, 1e-2);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
@@ -240,7 +238,7 @@ TEST( Pose2, ExpmapDerivative2) {
   Vector3 w0(0.1, 0.27, 0.0);  // alpha = 0
   Pose2::Expmap(w0,actualH);
   Matrix3 expectedH = numericalDerivative21<Pose2, Vector3,
-      OptionalJacobian<3, 3> >(&Pose2::Expmap, w0, boost::none, 1e-2);
+      OptionalJacobian<3, 3> >(&Pose2::Expmap, w0, {}, 1e-2);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
@@ -251,7 +249,7 @@ TEST( Pose2, LogmapDerivative1) {
   Pose2 p = Pose2::Expmap(w);
   EXPECT(assert_equal(w, Pose2::Logmap(p,actualH), 1e-5));
   Matrix3 expectedH = numericalDerivative21<Vector3, Pose2,
-      OptionalJacobian<3, 3> >(&Pose2::Logmap, p, boost::none, 1e-2);
+      OptionalJacobian<3, 3> >(&Pose2::Logmap, p, {}, 1e-2);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
@@ -262,7 +260,7 @@ TEST( Pose2, LogmapDerivative2) {
   Pose2 p = Pose2::Expmap(w0);
   EXPECT(assert_equal(w0, Pose2::Logmap(p,actualH), 1e-5));
   Matrix3 expectedH = numericalDerivative21<Vector3, Pose2,
-      OptionalJacobian<3, 3> >(&Pose2::Logmap, p, boost::none, 1e-2);
+      OptionalJacobian<3, 3> >(&Pose2::Logmap, p, {}, 1e-2);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
@@ -717,123 +715,109 @@ TEST( Pose2, range_pose )
 /* ************************************************************************* */
 
 TEST(Pose2, align_1) {
-  Pose2 expected(Rot2::fromAngle(0), Point2(10,10));
-
-  vector<Point2Pair> correspondences;
-  Point2Pair pq1(make_pair(Point2(0,0), Point2(10,10)));
-  Point2Pair pq2(make_pair(Point2(20,10), Point2(30,20)));
-  correspondences += pq1, pq2;
-
-  boost::optional<Pose2> actual = align(correspondences);
-  EXPECT(assert_equal(expected, *actual));
+  Pose2 expected(Rot2::fromAngle(0), Point2(10, 10));
+  Point2Pairs ab_pairs {{Point2(10, 10), Point2(0, 0)},
+                        {Point2(30, 20), Point2(20, 10)}};
+  std::optional<Pose2> aTb = Pose2::Align(ab_pairs);
+  EXPECT(assert_equal(expected, *aTb));
 }
 
 TEST(Pose2, align_2) {
-  Point2 t(20,10);
+  Point2 t(20, 10);
   Rot2 R = Rot2::fromAngle(M_PI/2.0);
   Pose2 expected(R, t);
 
-  vector<Point2Pair> correspondences;
-  Point2 p1(0,0), p2(10,0);
-  Point2 q1 = expected.transformFrom(p1), q2 = expected.transformFrom(p2);
-  EXPECT(assert_equal(Point2(20,10),q1));
-  EXPECT(assert_equal(Point2(20,20),q2));
-  Point2Pair pq1(make_pair(p1, q1));
-  Point2Pair pq2(make_pair(p2, q2));
-  correspondences += pq1, pq2;
+  Point2 b1(0, 0), b2(10, 0);
+  Point2Pairs ab_pairs {{expected.transformFrom(b1), b1},
+                        {expected.transformFrom(b2), b2}};
 
-  boost::optional<Pose2> actual = align(correspondences);
-  EXPECT(assert_equal(expected, *actual));
+  std::optional<Pose2> aTb = Pose2::Align(ab_pairs);
+  EXPECT(assert_equal(expected, *aTb));
 }
 
 namespace align_3 {
-  Point2 t(10,10);
+  Point2 t(10, 10);
   Pose2 expected(Rot2::fromAngle(2*M_PI/3), t);
-  Point2 p1(0,0), p2(10,0), p3(10,10);
-  Point2 q1 = expected.transformFrom(p1), q2 = expected.transformFrom(p2), q3 = expected.transformFrom(p3);
+  Point2 b1(0, 0), b2(10, 0), b3(10, 10);
+  Point2 a1 = expected.transformFrom(b1),
+         a2 = expected.transformFrom(b2),
+         a3 = expected.transformFrom(b3);
 }
 
 TEST(Pose2, align_3) {
   using namespace align_3;
 
-  vector<Point2Pair> correspondences;
-  Point2Pair pq1(make_pair(p1, q1));
-  Point2Pair pq2(make_pair(p2, q2));
-  Point2Pair pq3(make_pair(p3, q3));
-  correspondences += pq1, pq2, pq3;
+  Point2Pair ab1(make_pair(a1, b1));
+  Point2Pair ab2(make_pair(a2, b2));
+  Point2Pair ab3(make_pair(a3, b3));
+  const Point2Pairs ab_pairs{ab1, ab2, ab3};
 
-  boost::optional<Pose2> actual = align(correspondences);
-  EXPECT(assert_equal(expected, *actual));
+  std::optional<Pose2> aTb = Pose2::Align(ab_pairs);
+  EXPECT(assert_equal(expected, *aTb));
 }
 
 namespace {
   /* ************************************************************************* */
   // Prototype code to align two triangles using a rigid transform
   /* ************************************************************************* */
-  struct Triangle { size_t i_,j_,k_;};
+  struct Triangle { size_t i_, j_, k_;};
 
-  boost::optional<Pose2> align2(const Point2Vector& ps, const Point2Vector& qs,
+  std::optional<Pose2> align2(const Point2Vector& as, const Point2Vector& bs,
     const pair<Triangle, Triangle>& trianglePair) {
       const Triangle& t1 = trianglePair.first, t2 = trianglePair.second;
-      vector<Point2Pair> correspondences;
-      correspondences += make_pair(ps[t1.i_],qs[t2.i_]), make_pair(ps[t1.j_],qs[t2.j_]), make_pair(ps[t1.k_],qs[t2.k_]);
-      return align(correspondences);
+      Point2Pairs ab_pairs = {{as[t1.i_], bs[t2.i_]},
+                              {as[t1.j_], bs[t2.j_]},
+                              {as[t1.k_], bs[t2.k_]}};
+      return Pose2::Align(ab_pairs);
   }
 }
 
 TEST(Pose2, align_4) {
   using namespace align_3;
 
-  Point2Vector ps,qs;
-  ps += p1, p2, p3;
-  qs += q3, q1, q2; // note in 3,1,2 order !
+  Point2Vector as{a1, a2, a3}, bs{b3, b1, b2};  // note in 3,1,2 order !
 
   Triangle t1; t1.i_=0; t1.j_=1; t1.k_=2;
   Triangle t2; t2.i_=1; t2.j_=2; t2.k_=0;
 
-  boost::optional<Pose2> actual = align2(ps, qs, make_pair(t1,t2));
+  std::optional<Pose2> actual = align2(as, bs, {t1, t2});
   EXPECT(assert_equal(expected, *actual));
 }
 
 //******************************************************************************
+namespace {
+Pose2 id;
 Pose2 T1(M_PI / 4.0, Point2(sqrt(0.5), sqrt(0.5)));
 Pose2 T2(M_PI / 2.0, Point2(0.0, 2.0));
+}  // namespace
 
 //******************************************************************************
-TEST(Pose2 , Invariants) {
-  Pose2 id;
+TEST(Pose2, Invariants) {
+  EXPECT(check_group_invariants(id, id));
+  EXPECT(check_group_invariants(id, T1));
+  EXPECT(check_group_invariants(T2, id));
+  EXPECT(check_group_invariants(T2, T1));
 
-  EXPECT(check_group_invariants(id,id));
-  EXPECT(check_group_invariants(id,T1));
-  EXPECT(check_group_invariants(T2,id));
-  EXPECT(check_group_invariants(T2,T1));
-
-  EXPECT(check_manifold_invariants(id,id));
-  EXPECT(check_manifold_invariants(id,T1));
-  EXPECT(check_manifold_invariants(T2,id));
-  EXPECT(check_manifold_invariants(T2,T1));
-
+  EXPECT(check_manifold_invariants(id, id));
+  EXPECT(check_manifold_invariants(id, T1));
+  EXPECT(check_manifold_invariants(T2, id));
+  EXPECT(check_manifold_invariants(T2, T1));
 }
 
 //******************************************************************************
-TEST(Pose2 , LieGroupDerivatives) {
-  Pose2 id;
-
-  CHECK_LIE_GROUP_DERIVATIVES(id,id);
-  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
-
+TEST(Pose2, LieGroupDerivatives) {
+  CHECK_LIE_GROUP_DERIVATIVES(id, id);
+  CHECK_LIE_GROUP_DERIVATIVES(id, T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, T1);
 }
 
 //******************************************************************************
-TEST(Pose2 , ChartDerivatives) {
-  Pose2 id;
-
-  CHECK_CHART_DERIVATIVES(id,id);
-  CHECK_CHART_DERIVATIVES(id,T2);
-  CHECK_CHART_DERIVATIVES(T2,id);
-  CHECK_CHART_DERIVATIVES(T2,T1);
+TEST(Pose2, ChartDerivatives) {
+  CHECK_CHART_DERIVATIVES(id, id);
+  CHECK_CHART_DERIVATIVES(id, T2);
+  CHECK_CHART_DERIVATIVES(T2, id);
+  CHECK_CHART_DERIVATIVES(T2, T1);
 }
 
 //******************************************************************************
@@ -913,7 +897,7 @@ TEST(Pose2 , TransformCovariance3) {
 
 /* ************************************************************************* */
 TEST(Pose2, Print) {
-  Pose2 pose(Rot2::identity(), Point2(1, 2));
+  Pose2 pose(Rot2::Identity(), Point2(1, 2));
 
   // Generate the expected output
   string s = "Planar Pose";

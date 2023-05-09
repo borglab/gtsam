@@ -16,10 +16,13 @@ py::bind_vector<
     m_, "Point2Vector");
 py::bind_vector<std::vector<gtsam::Point2Pair>>(m_, "Point2Pairs");
 py::bind_vector<std::vector<gtsam::Point3Pair>>(m_, "Point3Pairs");
+py::bind_vector<std::vector<gtsam::Pose2Pair>>(m_, "Pose2Pairs");
 py::bind_vector<std::vector<gtsam::Pose3Pair>>(m_, "Pose3Pairs");
 py::bind_vector<std::vector<gtsam::Pose3>>(m_, "Pose3Vector");
 py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3_S2>>>(
     m_, "CameraSetCal3_S2");
+py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3DS2>>>(
+    m_, "CameraSetCal3DS2");
 py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Bundler>>>(
     m_, "CameraSetCal3Bundler");
 py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Unified>>>(

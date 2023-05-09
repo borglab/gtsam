@@ -14,8 +14,8 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 from typing import List, Sequence, Union
 
-from pyparsing import (Forward, Optional, Or, ParseResults,  # type: ignore
-                       delimitedList)
+from pyparsing import ParseResults  # type: ignore
+from pyparsing import Forward, Optional, Or, delimitedList
 
 from .tokens import (BASIS_TYPES, CONST, IDENT, LOPBRACK, RAW_POINTER, REF,
                      ROPBRACK, SHARED_POINTER)
@@ -52,6 +52,10 @@ class Typename:
                  instantiations: Sequence[ParseResults] = ()):
         self.name = t[-1]  # the name is the last element in this list
         self.namespaces = t[:-1]
+
+        # If the first namespace is empty string, just get rid of it.
+        if self.namespaces and self.namespaces[0] == '':
+            self.namespaces.pop(0)
 
         if instantiations:
             if isinstance(instantiations, Sequence):
@@ -92,8 +96,8 @@ class Typename:
         else:
             cpp_name = self.name
         return '{}{}{}'.format(
-            "::".join(self.namespaces[idx:]),
-            "::" if self.namespaces[idx:] else "",
+            "::".join(self.namespaces),
+            "::" if self.namespaces else "",
             cpp_name,
         )
 
@@ -213,21 +217,17 @@ class Type:
             is_const="const " if self.is_const else "",
             is_ptr_or_ref=" " + is_ptr_or_ref if is_ptr_or_ref else "")
 
-    def to_cpp(self, use_boost: bool) -> str:
+    def to_cpp(self) -> str:
         """
         Generate the C++ code for wrapping.
 
         Treat all pointers as "const shared_ptr<T>&"
         Treat Matrix and Vector as "const Matrix&" and "const Vector&" resp.
-
-        Args:
-            use_boost: Flag indicating whether to use boost::shared_ptr or std::shared_ptr.
         """
-        shared_ptr_ns = "boost" if use_boost else "std"
 
         if self.is_shared_ptr:
-            typename = "{ns}::shared_ptr<{typename}>".format(
-                ns=shared_ptr_ns, typename=self.typename.to_cpp())
+            typename = "std::shared_ptr<{typename}>".format(
+                typename=self.typename.to_cpp())
         elif self.is_ptr:
             typename = "{typename}*".format(typename=self.typename.to_cpp())
         elif self.is_ref or self.typename.name in ["Matrix", "Vector"]:
@@ -245,6 +245,7 @@ class Type:
     def get_typename(self):
         """Convenience method to get the typename of this type."""
         return self.typename.name
+
 
 class TemplatedType:
     """
@@ -291,25 +292,19 @@ class TemplatedType:
         return "TemplatedType({typename.namespaces}::{typename.name})".format(
             typename=self.typename)
 
-    def to_cpp(self, use_boost: bool):
+    def to_cpp(self):
         """
         Generate the C++ code for wrapping.
-
-        Args:
-            use_boost: Flag indicating whether to use boost::shared_ptr or std::shared_ptr.
         """
         # Use Type.to_cpp to do the heavy lifting for the template parameters.
-        template_args = ", ".join(
-            [t.to_cpp(use_boost) for t in self.template_params])
+        template_args = ", ".join([t.to_cpp() for t in self.template_params])
 
         typename = "{typename}<{template_args}>".format(
             typename=self.typename.qualified_name(),
             template_args=template_args)
 
-        shared_ptr_ns = "boost" if use_boost else "std"
         if self.is_shared_ptr:
-            typename = "{ns}::shared_ptr<{typename}>".format(ns=shared_ptr_ns,
-                                                             typename=typename)
+            typename = f"std::shared_ptr<{typename}>"
         elif self.is_ptr:
             typename = "{typename}*".format(typename=typename)
         elif self.is_ref or self.typename.name in ["Matrix", "Vector"]:

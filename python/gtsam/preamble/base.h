@@ -11,6 +11,8 @@
  * mutations on Python side will not be reflected on C++.
  */
 
-PYBIND11_MAKE_OPAQUE(std::vector<gtsam::IndexPair>);
+PYBIND11_MAKE_OPAQUE(gtsam::IndexPairVector);
+
+PYBIND11_MAKE_OPAQUE(gtsam::IndexPairSet);
 
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Matrix>);  // JacobianVector

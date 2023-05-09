@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
   // addition, the *type* of the iterativeParams decides on the type of
   // iterative solver, in this case the SPCG (subgraph PCG)
   parameters.linearSolverType = NonlinearOptimizerParams::Iterative;
-  parameters.iterativeParams = boost::make_shared<SubgraphSolverParameters>();
+  parameters.iterativeParams = std::make_shared<SubgraphSolverParameters>();
 
   LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, parameters);
   Values result = optimizer.optimize();

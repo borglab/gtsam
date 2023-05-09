@@ -29,7 +29,7 @@ set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHON_VERSION})
 # module_template: The template file (.tpl) from which to generate the Pybind11 module.
 # libs: Libraries to link with.
 # dependencies: Dependencies which need to be built before the wrapper.
-# use_boost (optional): Flag indicating whether to include Boost.
+# use_boost_serialization (optional): Flag indicating whether to include Boost.
 function(
   pybind_wrap
   target
@@ -42,12 +42,12 @@ function(
   libs
   dependencies)
   set(ExtraMacroArgs ${ARGN})
-  list(GET ExtraMacroArgs 0 USE_BOOST)
-  if(USE_BOOST)
-    set(_WRAP_BOOST_ARG "--use-boost")
-  else(USE_BOOST)
+  list(GET ExtraMacroArgs 0 USE_BOOST_SERIALIZATION)
+  if(USE_BOOST_SERIALIZATION)
+    set(_WRAP_BOOST_ARG "--use-boost-serialization")
+  else(USE_BOOST_SERIALIZATION)
     set(_WRAP_BOOST_ARG "")
-  endif(USE_BOOST)
+  endif(USE_BOOST_SERIALIZATION)
 
   if(UNIX)
     set(GTWRAP_PATH_SEPARATOR ":")
@@ -55,15 +55,44 @@ function(
     set(GTWRAP_PATH_SEPARATOR ";")
   endif()
 
+  # Create a copy of interface_headers so we can freely manipulate it
+  set(interface_files ${interface_headers})
+
+  # Pop the main interface file so that interface_files has only submodules.
+  list(POP_FRONT interface_files main_interface)
+
   # Convert .i file names to .cpp file names.
-  foreach(filepath ${interface_headers})
-    get_filename_component(interface ${filepath} NAME)
-    string(REPLACE ".i" ".cpp" cpp_file ${interface})
+  foreach(interface_file ${interface_files})
+    # This block gets the interface file name and does the replacement
+    get_filename_component(interface ${interface_file} NAME_WLE)
+    set(cpp_file "${interface}.cpp")
     list(APPEND cpp_files ${cpp_file})
+
+    # Wrap the specific interface header
+    # This is done so that we can create CMake dependencies in such a way so that when changing a single .i file,
+    # the others don't need to be regenerated.
+    # NOTE: We have to use `add_custom_command` so set the dependencies correctly.
+    # https://stackoverflow.com/questions/40032593/cmake-does-not-rebuild-dependent-after-prerequisite-changes
+    add_custom_command(
+      OUTPUT ${cpp_file}
+      COMMAND
+        ${CMAKE_COMMAND} -E env
+        "PYTHONPATH=${GTWRAP_PACKAGE_DIR}${GTWRAP_PATH_SEPARATOR}$ENV{PYTHONPATH}"
+        ${PYTHON_EXECUTABLE} ${PYBIND_WRAP_SCRIPT} --src "${interface_file}"
+          --out "${cpp_file}"  --module_name ${module_name}
+          --top_module_namespaces "${top_namespace}" --ignore ${ignore_classes}
+          --template ${module_template} --is_submodule ${_WRAP_BOOST_ARG}
+      DEPENDS "${interface_file}" ${module_template} "${module_name}/specializations/${interface}.h" "${module_name}/preamble/${interface}.h"
+      VERBATIM)
+
   endforeach()
 
+  get_filename_component(main_interface_name ${main_interface} NAME_WLE)
+  set(main_cpp_file "${main_interface_name}.cpp")
+  list(PREPEND cpp_files ${main_cpp_file})
+
   add_custom_command(
-    OUTPUT ${cpp_files}
+    OUTPUT ${main_cpp_file}
     COMMAND
       ${CMAKE_COMMAND} -E env
       "PYTHONPATH=${GTWRAP_PACKAGE_DIR}${GTWRAP_PATH_SEPARATOR}$ENV{PYTHONPATH}"
@@ -71,23 +100,10 @@ function(
       --out "${generated_cpp}" --module_name ${module_name}
       --top_module_namespaces "${top_namespace}" --ignore ${ignore_classes}
       --template ${module_template} ${_WRAP_BOOST_ARG}
-    DEPENDS "${interface_headers}" ${module_template}
+    DEPENDS "${main_interface}" ${module_template} "${module_name}/specializations/${main_interface_name}.h" "${module_name}/specializations/${main_interface_name}.h"
     VERBATIM)
 
-  add_custom_target(pybind_wrap_${module_name} ALL DEPENDS ${cpp_files})
-
-  # Late dependency injection, to make sure this gets called whenever the
-  # interface header or the wrap library are updated.
-  # ~~~
-  # See: https://stackoverflow.com/questions/40032593/cmake-does-not-rebuild-dependent-after-prerequisite-changes
-  # ~~~
-  add_custom_command(
-    OUTPUT ${cpp_files}
-    DEPENDS ${interface_headers}
-    # @GTWRAP_SOURCE_DIR@/gtwrap/interface_parser.py
-    # @GTWRAP_SOURCE_DIR@/gtwrap/pybind_wrapper.py
-    # @GTWRAP_SOURCE_DIR@/gtwrap/template_instantiator.py
-    APPEND)
+    add_custom_target(pybind_wrap_${module_name} DEPENDS ${cpp_files})
 
   pybind11_add_module(${target} "${cpp_files}")
 

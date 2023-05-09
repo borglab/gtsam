@@ -1,23 +1,24 @@
-# -*- coding: utf-8 -*-
 import os
-import sys
 import subprocess
+import sys
 from textwrap import dedent
 
 import pytest
 
 DIR = os.path.abspath(os.path.dirname(__file__))
 MAIN_DIR = os.path.dirname(os.path.dirname(DIR))
+WIN = sys.platform.startswith("win32") or sys.platform.startswith("cygwin")
 
 
+@pytest.mark.parametrize("parallel", [False, True])
 @pytest.mark.parametrize("std", [11, 0])
-def test_simple_setup_py(monkeypatch, tmpdir, std):
+def test_simple_setup_py(monkeypatch, tmpdir, parallel, std):
     monkeypatch.chdir(tmpdir)
     monkeypatch.syspath_prepend(MAIN_DIR)
 
     (tmpdir / "setup.py").write_text(
         dedent(
-            u"""\
+            f"""\
             import sys
             sys.path.append({MAIN_DIR!r})
 
@@ -39,19 +40,24 @@ def test_simple_setup_py(monkeypatch, tmpdir, std):
                 cmdclass["build_ext"] = build_ext
 
 
+            parallel = {parallel}
+            if parallel:
+                from pybind11.setup_helpers import ParallelCompile
+                ParallelCompile().install()
+
             setup(
                 name="simple_setup_package",
                 cmdclass=cmdclass,
                 ext_modules=ext_modules,
             )
             """
-        ).format(MAIN_DIR=MAIN_DIR, std=std),
+        ),
         encoding="ascii",
     )
 
     (tmpdir / "main.cpp").write_text(
         dedent(
-            u"""\
+            """\
             #include <pybind11/pybind11.h>
 
             int f(int x) {
@@ -65,13 +71,20 @@ def test_simple_setup_py(monkeypatch, tmpdir, std):
         encoding="ascii",
     )
 
-    subprocess.check_call(
+    out = subprocess.check_output(
         [sys.executable, "setup.py", "build_ext", "--inplace"],
-        stdout=sys.stdout,
-        stderr=sys.stderr,
     )
+    if not WIN:
+        assert b"-g0" in out
+    out = subprocess.check_output(
+        [sys.executable, "setup.py", "build_ext", "--inplace", "--force"],
+        env=dict(os.environ, CFLAGS="-g"),
+    )
+    if not WIN:
+        assert b"-g0" not in out
 
     # Debug helper printout, normally hidden
+    print(out)
     for item in tmpdir.listdir():
         print(item.basename)
 
@@ -82,7 +95,7 @@ def test_simple_setup_py(monkeypatch, tmpdir, std):
 
     (tmpdir / "test.py").write_text(
         dedent(
-            u"""\
+            """\
             import simple_setup
             assert simple_setup.f(3) == 9
             """
@@ -93,3 +106,46 @@ def test_simple_setup_py(monkeypatch, tmpdir, std):
     subprocess.check_call(
         [sys.executable, "test.py"], stdout=sys.stdout, stderr=sys.stderr
     )
+
+
+def test_intree_extensions(monkeypatch, tmpdir):
+    monkeypatch.syspath_prepend(MAIN_DIR)
+
+    from pybind11.setup_helpers import intree_extensions
+
+    monkeypatch.chdir(tmpdir)
+    root = tmpdir
+    root.ensure_dir()
+    subdir = root / "dir"
+    subdir.ensure_dir()
+    src = subdir / "ext.cpp"
+    src.ensure()
+    relpath = src.relto(tmpdir)
+    (ext,) = intree_extensions([relpath])
+    assert ext.name == "ext"
+    subdir.ensure("__init__.py")
+    (ext,) = intree_extensions([relpath])
+    assert ext.name == "dir.ext"
+
+
+def test_intree_extensions_package_dir(monkeypatch, tmpdir):
+    monkeypatch.syspath_prepend(MAIN_DIR)
+
+    from pybind11.setup_helpers import intree_extensions
+
+    monkeypatch.chdir(tmpdir)
+    root = tmpdir / "src"
+    root.ensure_dir()
+    subdir = root / "dir"
+    subdir.ensure_dir()
+    src = subdir / "ext.cpp"
+    src.ensure()
+    (ext,) = intree_extensions([src.relto(tmpdir)], package_dir={"": "src"})
+    assert ext.name == "dir.ext"
+    (ext,) = intree_extensions([src.relto(tmpdir)], package_dir={"foo": "src"})
+    assert ext.name == "foo.dir.ext"
+    subdir.ensure("__init__.py")
+    (ext,) = intree_extensions([src.relto(tmpdir)], package_dir={"": "src"})
+    assert ext.name == "dir.ext"
+    (ext,) = intree_extensions([src.relto(tmpdir)], package_dir={"foo": "src"})
+    assert ext.name == "foo.dir.ext"

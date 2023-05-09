@@ -156,7 +156,7 @@ TEST(testISAM2SmartFactor, Stereo_Batch) {
   using symbol_shorthand::X;
 
   const auto K =
-      boost::make_shared<Cal3_S2Stereo>(fx, fy, .0, cx, cy, baseline);
+      std::make_shared<Cal3_S2Stereo>(fx, fy, .0, cx, cy, baseline);
 
   // Pose prior - at identity
   auto priorPoseNoise = noiseModel::Diagonal::Sigmas(
@@ -184,7 +184,7 @@ TEST(testISAM2SmartFactor, Stereo_Batch) {
         SmartProjectionParams parm(HESSIAN, ZERO_ON_DEGENERACY);
 
         smartFactors[stObs.lm_id] =
-            boost::make_shared<SmartStereoProjectionPoseFactor>(noise, parm);
+            std::make_shared<SmartStereoProjectionPoseFactor>(noise, parm);
 
         batch_graph.push_back(smartFactors[stObs.lm_id]);
       }
@@ -198,10 +198,10 @@ TEST(testISAM2SmartFactor, Stereo_Batch) {
 
     // prior, for the first keyframe:
     if (kf_id == 0) {
-      batch_graph.addPrior(X(kf_id), Pose3::identity(), priorPoseNoise);
+      batch_graph.addPrior(X(kf_id), Pose3::Identity(), priorPoseNoise);
     }
 
-    batch_values.insert(X(kf_id), Pose3::identity());
+    batch_values.insert(X(kf_id), Pose3::Identity());
   }
 
   LevenbergMarquardtParams parameters;
@@ -242,7 +242,7 @@ TEST(testISAM2SmartFactor, Stereo_iSAM2) {
   using symbol_shorthand::X;
 
   const auto K =
-      boost::make_shared<Cal3_S2Stereo>(fx, fy, .0, cx, cy, baseline);
+      std::make_shared<Cal3_S2Stereo>(fx, fy, .0, cx, cy, baseline);
 
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0.01;
@@ -267,7 +267,7 @@ TEST(testISAM2SmartFactor, Stereo_iSAM2) {
   // Storage of smart factors:
   std::map<lm_id_t, SmartStereoProjectionPoseFactor::shared_ptr> smartFactors;
 
-  Pose3 lastKeyframePose = Pose3::identity();
+  Pose3 lastKeyframePose = Pose3::Identity();
 
   // Run one timestep at once:
   for (const auto &entries : dataset) {
@@ -290,7 +290,7 @@ TEST(testISAM2SmartFactor, Stereo_iSAM2) {
         SmartProjectionParams params(HESSIAN, ZERO_ON_DEGENERACY);
 
         smartFactors[stObs.lm_id] =
-            boost::make_shared<SmartStereoProjectionPoseFactor>(noise, params);
+            std::make_shared<SmartStereoProjectionPoseFactor>(noise, params);
         newFactor2lm[newFactors.size()] = stObs.lm_id;
         newFactors.push_back(smartFactors[stObs.lm_id]);
       } else {
@@ -307,7 +307,7 @@ TEST(testISAM2SmartFactor, Stereo_iSAM2) {
 
     // prior, for the first keyframe:
     if (kf_id == 0) {
-      newFactors.addPrior(X(kf_id), Pose3::identity(), priorPoseNoise);
+      newFactors.addPrior(X(kf_id), Pose3::Identity(), priorPoseNoise);
     }
 
     // 2) Run iSAM2:

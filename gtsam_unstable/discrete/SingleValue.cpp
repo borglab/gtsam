@@ -10,7 +10,6 @@
 #include <gtsam_unstable/discrete/Domain.h>
 #include <gtsam_unstable/discrete/SingleValue.h>
 
-#include <boost/make_shared.hpp>
 
 namespace gtsam {
 
@@ -23,14 +22,13 @@ void SingleValue::print(const string& s, const KeyFormatter& formatter) const {
 }
 
 /* ************************************************************************* */
-double SingleValue::operator()(const Values& values) const {
+double SingleValue::operator()(const DiscreteValues& values) const {
   return (double)(values.at(keys_[0]) == value_);
 }
 
 /* ************************************************************************* */
 DecisionTreeFactor SingleValue::toDecisionTreeFactor() const {
-  DiscreteKeys keys;
-  keys += DiscreteKey(keys_[0], cardinality_);
+  const DiscreteKeys keys{DiscreteKey(keys_[0], cardinality_)};
   vector<double> table;
   for (size_t i1 = 0; i1 < cardinality_; i1++) table.push_back(i1 == value_);
   DecisionTreeFactor converted(keys, table);
@@ -44,11 +42,10 @@ DecisionTreeFactor SingleValue::operator*(const DecisionTreeFactor& f) const {
 }
 
 /* ************************************************************************* */
-bool SingleValue::ensureArcConsistency(size_t j,
-                                       vector<Domain>& domains) const {
+bool SingleValue::ensureArcConsistency(Key j, Domains* domains) const {
   if (j != keys_[0])
     throw invalid_argument("SingleValue check on wrong domain");
-  Domain& D = domains[j];
+  Domain& D = domains->at(j);
   if (D.isSingleton()) {
     if (D.firstValue() != value_) throw runtime_error("Unsatisfiable");
     return false;
@@ -58,20 +55,20 @@ bool SingleValue::ensureArcConsistency(size_t j,
 }
 
 /* ************************************************************************* */
-Constraint::shared_ptr SingleValue::partiallyApply(const Values& values) const {
-  Values::const_iterator it = values.find(keys_[0]);
+Constraint::shared_ptr SingleValue::partiallyApply(const DiscreteValues& values) const {
+  DiscreteValues::const_iterator it = values.find(keys_[0]);
   if (it != values.end() && it->second != value_)
     throw runtime_error("SingleValue::partiallyApply: unsatisfiable");
-  return boost::make_shared<SingleValue>(keys_[0], cardinality_, value_);
+  return std::make_shared<SingleValue>(keys_[0], cardinality_, value_);
 }
 
 /* ************************************************************************* */
 Constraint::shared_ptr SingleValue::partiallyApply(
-    const vector<Domain>& domains) const {
-  const Domain& Dk = domains[keys_[0]];
+    const Domains& domains) const {
+  const Domain& Dk = domains.at(keys_[0]);
   if (Dk.isSingleton() && !Dk.contains(value_))
     throw runtime_error("SingleValue::partiallyApply: unsatisfiable");
-  return boost::make_shared<SingleValue>(discreteKey(), value_);
+  return std::make_shared<SingleValue>(discreteKey(), value_);
 }
 
 /* ************************************************************************* */

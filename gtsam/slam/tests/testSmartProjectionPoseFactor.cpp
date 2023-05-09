@@ -24,14 +24,12 @@
 #include <gtsam/slam/PoseTranslationPrior.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/assign/std/map.hpp>
 #include <iostream>
 
-using namespace boost::assign;
 using namespace std::placeholders;
 
+namespace {
 static const double rankTol = 1.0;
 // Create a noise model for the pixel error
 static const double sigma = 0.1;
@@ -51,6 +49,7 @@ static Point2 measurement1(323.0, 240.0);
 LevenbergMarquardtParams lmParams;
 // Make more verbose like so (in tests):
 // lmParams.verbosityLM = LevenbergMarquardtParams::SUMMARY;
+}
 
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Constructor) {
@@ -139,7 +138,7 @@ TEST( SmartProjectionPoseFactor, noiseless ) {
   factor.triangulateAndComputeE(actualE, values);
 
   // get point
-  boost::optional<Point3> point = factor.point();
+  auto point = factor.point();
   CHECK(point);
 
   // calculate numerical derivative with triangulated point
@@ -356,7 +355,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
   // Create smart factors
   KeyVector views {x1, x2};
 
-  SmartFactor::shared_ptr smartFactor1 = boost::make_shared<SmartFactor>(model, sharedK);
+  SmartFactor::shared_ptr smartFactor1 = std::make_shared<SmartFactor>(model, sharedK);
   smartFactor1->add(measurements_cam1, views);
 
   SmartFactor::Cameras cameras;
@@ -367,7 +366,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
   CHECK(smartFactor1->triangulateSafe(cameras));
   CHECK(!smartFactor1->isDegenerate());
   CHECK(!smartFactor1->isPointBehindCamera());
-  boost::optional<Point3> p = smartFactor1->point();
+  auto p = smartFactor1->point();
   CHECK(p);
   EXPECT(assert_equal(landmark1, *p));
 
@@ -406,7 +405,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     RegularHessianFactor<6> expected(x1, x2, G11, G12, g1, G22, g2, f);
     expectedInformation = expected.information();
 
-    boost::shared_ptr<RegularHessianFactor<6> > actual =
+    std::shared_ptr<RegularHessianFactor<6> > actual =
         smartFactor1->createHessianFactor(cameras, 0.0);
     EXPECT(assert_equal(expectedInformation, actual->information(), 1e-6));
     EXPECT(assert_equal(expected, *actual, 1e-6));
@@ -436,7 +435,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     E(2, 0) = 10;
     E(2, 2) = 1;
     E(3, 1) = 10;
-    SmartFactor::FBlocks Fs = list_of<Matrix>(F1)(F2);
+    SmartFactor::FBlocks Fs {F1, F2};
     Vector b(4);
     b.setZero();
 
@@ -451,7 +450,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     JacobianFactorQ<6, 2> expectedQ(keys, Fs, E, P, b, n);
     EXPECT(assert_equal(expectedInformation, expectedQ.information(), 1e-6));
 
-    boost::shared_ptr<JacobianFactorQ<6, 2> > actualQ =
+    std::shared_ptr<JacobianFactorQ<6, 2> > actualQ =
         smartFactor1->createJacobianQFactor(cameras, 0.0);
     CHECK(actualQ);
     EXPECT(assert_equal(expectedInformation, actualQ->information(), 1e-6));
@@ -468,7 +467,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     // createRegularImplicitSchurFactor
     RegularImplicitSchurFactor<Camera> expected(keys, Fs, E, whiteP, b);
 
-    boost::shared_ptr<RegularImplicitSchurFactor<Camera> > actual =
+    std::shared_ptr<RegularImplicitSchurFactor<Camera> > actual =
         smartFactor1->createRegularImplicitSchurFactor(cameras, 0.0);
     CHECK(actual);
     EXPECT(assert_equal(expectedInformation, expected.information(), 1e-6));
@@ -487,7 +486,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     JacobianFactor expected(x1, s * A1, x2, s * A2, b, n);
     EXPECT(assert_equal(expectedInformation, expected.information(), 1e-6));
 
-    boost::shared_ptr<JacobianFactor> actual =
+    std::shared_ptr<JacobianFactor> actual =
         smartFactor1->createJacobianSVDFactor(cameras, 0.0);
     CHECK(actual);
     EXPECT(assert_equal(expectedInformation, actual->information(), 1e-6));
@@ -888,14 +887,14 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
               Point3(0.0897734171, -0.110201006, 0.901022872)),
           values.at<Pose3>(x3)));
 
-  boost::shared_ptr<GaussianFactor> factor1 = smartFactor1->linearize(values);
-  boost::shared_ptr<GaussianFactor> factor2 = smartFactor2->linearize(values);
-  boost::shared_ptr<GaussianFactor> factor3 = smartFactor3->linearize(values);
+  std::shared_ptr<GaussianFactor> factor1 = smartFactor1->linearize(values);
+  std::shared_ptr<GaussianFactor> factor2 = smartFactor2->linearize(values);
+  std::shared_ptr<GaussianFactor> factor3 = smartFactor3->linearize(values);
 
   Matrix CumulativeInformation = factor1->information() + factor2->information()
       + factor3->information();
 
-  boost::shared_ptr<GaussianFactorGraph> GaussianGraph = graph.linearize(
+  std::shared_ptr<GaussianFactorGraph> GaussianGraph = graph.linearize(
       values);
   Matrix GraphInformation = GaussianGraph->hessian().first;
 
@@ -1072,7 +1071,7 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
   values.insert(x1, cam1.pose());
   values.insert(x2, cam2.pose());
 
-  boost::shared_ptr<GaussianFactor> factor = smartFactor1->linearize(values);
+  std::shared_ptr<GaussianFactor> factor = smartFactor1->linearize(values);
 
   // compute triangulation from linearization point
   // compute reprojection errors (sum squared)
@@ -1100,7 +1099,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   values.insert(x2, cam2.pose());
   values.insert(x3, cam3.pose());
 
-  boost::shared_ptr<GaussianFactor> factor = smartFactorInstance->linearize(
+  std::shared_ptr<GaussianFactor> factor = smartFactorInstance->linearize(
       values);
 
   Pose3 poseDrift = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
@@ -1110,7 +1109,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   rotValues.insert(x2, poseDrift.compose(pose_right));
   rotValues.insert(x3, poseDrift.compose(pose_above));
 
-  boost::shared_ptr<GaussianFactor> factorRot = smartFactorInstance->linearize(
+  std::shared_ptr<GaussianFactor> factorRot = smartFactorInstance->linearize(
       rotValues);
 
   // Hessian is invariant to rotations in the nondegenerate case
@@ -1124,7 +1123,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   tranValues.insert(x2, poseDrift2.compose(pose_right));
   tranValues.insert(x3, poseDrift2.compose(pose_above));
 
-  boost::shared_ptr<GaussianFactor> factorRotTran =
+  std::shared_ptr<GaussianFactor> factorRotTran =
       smartFactorInstance->linearize(tranValues);
 
   // Hessian is invariant to rotations and translations in the nondegenerate case
@@ -1153,7 +1152,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   values.insert(x2, cam2.pose());
   values.insert(x3, cam3.pose());
 
-  boost::shared_ptr<GaussianFactor> factor = smartFactor->linearize(values);
+  std::shared_ptr<GaussianFactor> factor = smartFactor->linearize(values);
 
   Pose3 poseDrift = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
@@ -1162,7 +1161,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   rotValues.insert(x2, poseDrift.compose(level_pose));
   rotValues.insert(x3, poseDrift.compose(level_pose));
 
-  boost::shared_ptr<GaussianFactor> factorRot = //
+  std::shared_ptr<GaussianFactor> factorRot = //
       smartFactor->linearize(rotValues);
 
   // Hessian is invariant to rotations in the nondegenerate case
@@ -1176,7 +1175,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   tranValues.insert(x2, poseDrift2.compose(level_pose));
   tranValues.insert(x3, poseDrift2.compose(level_pose));
 
-  boost::shared_ptr<GaussianFactor> factorRotTran = smartFactor->linearize(
+  std::shared_ptr<GaussianFactor> factorRotTran = smartFactor->linearize(
       tranValues);
 
   // Hessian is invariant to rotations and translations in the nondegenerate case
@@ -1330,47 +1329,6 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
                   -0.130455917),
               Point3(0.0897734171, -0.110201006, 0.901022872)),
           values.at<Pose3>(x3)));
-}
-
-/* ************************************************************************* */
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained")
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal")
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian")
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit")
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic")
-BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel")
-BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal")
-
-TEST(SmartProjectionPoseFactor, serialize) {
-  using namespace vanillaPose;
-  using namespace gtsam::serializationTestHelpers;
-  SmartProjectionParams params;
-  params.setRankTolerance(rankTol);
-  SmartFactor factor(model, sharedK, params);
-
-  EXPECT(equalsObj(factor));
-  EXPECT(equalsXML(factor));
-  EXPECT(equalsBinary(factor));
-}
-
-TEST(SmartProjectionPoseFactor, serialize2) {
-  using namespace vanillaPose;
-  using namespace gtsam::serializationTestHelpers;
-  SmartProjectionParams params;
-  params.setRankTolerance(rankTol);
-  Pose3 bts;
-  SmartFactor factor(model, sharedK, bts, params);
-
-  // insert some measurments
-  KeyVector key_view;
-  Point2Vector meas_view;
-  key_view.push_back(Symbol('x', 1));
-  meas_view.push_back(Point2(10, 10));
-  factor.add(meas_view, key_view);
-
-  EXPECT(equalsObj(factor));
-  EXPECT(equalsXML(factor));
-  EXPECT(equalsBinary(factor));
 }
 
 /* ************************************************************************* */

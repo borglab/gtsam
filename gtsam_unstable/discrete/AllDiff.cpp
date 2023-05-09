@@ -9,7 +9,7 @@
 #include <gtsam_unstable/discrete/AllDiff.h>
 #include <gtsam_unstable/discrete/Domain.h>
 
-#include <boost/make_shared.hpp>
+#include <optional>
 
 namespace gtsam {
 
@@ -26,7 +26,7 @@ void AllDiff::print(const std::string& s, const KeyFormatter& formatter) const {
 }
 
 /* ************************************************************************* */
-double AllDiff::operator()(const Values& values) const {
+double AllDiff::operator()(const DiscreteValues& values) const {
   std::set<size_t> taken;  // record values taken by keys
   for (Key dkey : keys_) {
     size_t value = values.at(dkey);      // get the value for that key
@@ -57,21 +57,25 @@ DecisionTreeFactor AllDiff::operator*(const DecisionTreeFactor& f) const {
 }
 
 /* ************************************************************************* */
-bool AllDiff::ensureArcConsistency(size_t j,
-                                   std::vector<Domain>& domains) const {
+bool AllDiff::ensureArcConsistency(Key j, Domains* domains) const {
+  Domain& Dj = domains->at(j);
+
   // Though strictly not part of allDiff, we check for
-  // a value in domains[j] that does not occur in any other connected domain.
+  // a value in domains->at(j) that does not occur in any other connected domain.
   // If found, we make this a singleton...
   // TODO: make a new constraint where this really is true
-  Domain& Dj = domains[j];
-  if (Dj.checkAllDiff(keys_, domains)) return true;
+  std::optional<Domain> maybeChanged = Dj.checkAllDiff(keys_, *domains);
+  if (maybeChanged) {
+    Dj = *maybeChanged;
+    return true;
+  }
 
-  // Check all other domains for singletons and erase corresponding values
+  // Check all other domains for singletons and erase corresponding values.
   // This is the same as arc-consistency on the equivalent binary constraints
   bool changed = false;
   for (Key k : keys_)
     if (k != j) {
-      const Domain& Dk = domains[k];
+      const Domain& Dk = domains->at(k);
       if (Dk.isSingleton()) {  // check if singleton
         size_t value = Dk.firstValue();
         if (Dj.contains(value)) {
@@ -84,22 +88,22 @@ bool AllDiff::ensureArcConsistency(size_t j,
 }
 
 /* ************************************************************************* */
-Constraint::shared_ptr AllDiff::partiallyApply(const Values& values) const {
+Constraint::shared_ptr AllDiff::partiallyApply(const DiscreteValues& values) const {
   DiscreteKeys newKeys;
   // loop over keys and add them only if they do not appear in values
   for (Key k : keys_)
     if (values.find(k) == values.end()) {
       newKeys.push_back(DiscreteKey(k, cardinalities_.at(k)));
     }
-  return boost::make_shared<AllDiff>(newKeys);
+  return std::make_shared<AllDiff>(newKeys);
 }
 
 /* ************************************************************************* */
 Constraint::shared_ptr AllDiff::partiallyApply(
-    const std::vector<Domain>& domains) const {
-  DiscreteFactor::Values known;
+    const Domains& domains) const {
+  DiscreteValues known;
   for (Key k : keys_) {
-    const Domain& Dk = domains[k];
+    const Domain& Dk = domains.at(k);
     if (Dk.isSingleton()) known[k] = Dk.firstValue();
   }
   return partiallyApply(known);

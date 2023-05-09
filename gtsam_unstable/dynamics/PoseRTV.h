@@ -88,8 +88,8 @@ public:
 
   /** range between translations */
   double range(const PoseRTV& other,
-               OptionalJacobian<1,9> H1=boost::none,
-               OptionalJacobian<1,9> H2=boost::none) const;
+               OptionalJacobian<1,9> H1={},
+               OptionalJacobian<1,9> H2={}) const;
   /// @}
 
   /// @name IMU-specific
@@ -138,8 +138,8 @@ public:
    * Note: the transform jacobian convention is flipped
    */
   PoseRTV transformed_from(const Pose3& trans,
-      ChartJacobian Dglobal = boost::none,
-      OptionalJacobian<9, 6> Dtrans = boost::none) const;
+      ChartJacobian Dglobal = {},
+      OptionalJacobian<9, 6> Dtrans = {}) const;
 
   /// @}
   /// @name Utility functions
@@ -157,6 +157,7 @@ public:
   /// @}
 
 private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -164,6 +165,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(first);
     ar & BOOST_SERIALIZATION_NVP(second);
   }
+#endif
 };
 
 

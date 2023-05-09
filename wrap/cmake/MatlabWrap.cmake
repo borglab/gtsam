@@ -62,12 +62,12 @@ macro(find_and_configure_matlab)
 endmacro()
 
 # Consistent and user-friendly wrap function
-function(matlab_wrap interfaceHeader linkLibraries
-         extraIncludeDirs extraMexFlags ignore_classes)
+function(matlab_wrap interfaceHeader moduleName linkLibraries
+         extraIncludeDirs extraMexFlags ignore_classes use_boost_serialization)
   find_and_configure_matlab()
-  wrap_and_install_library("${interfaceHeader}" "${linkLibraries}"
+  wrap_and_install_library("${interfaceHeader}" "${moduleName}" "${linkLibraries}"
                            "${extraIncludeDirs}" "${extraMexFlags}"
-                           "${ignore_classes}")
+                           "${ignore_classes}" "${use_boost_serialization}")
 endfunction()
 
 # Wrapping function.  Builds a mex module from the provided
@@ -77,6 +77,7 @@ endfunction()
 # Arguments:
 #
 # interfaceHeader:  The relative path to the wrapper interface definition file.
+# moduleName:       The name of the wrapped module, e.g. gtsam
 # linkLibraries:    Any *additional* libraries to link.  Your project library
 # (e.g. `lba`), libraries it depends on, and any necessary MATLAB libraries will
 # be linked automatically.  So normally, leave this empty.
@@ -85,16 +86,18 @@ endfunction()
 # extraMexFlags:    Any *additional* flags to pass to the compiler when building
 # the wrap code.  Normally, leave this empty.
 # ignore_classes:  List of classes to ignore in the wrapping.
-function(wrap_and_install_library interfaceHeader linkLibraries
-         extraIncludeDirs extraMexFlags ignore_classes)
-  wrap_library_internal("${interfaceHeader}" "${linkLibraries}"
-                        "${extraIncludeDirs}" "${mexFlags}")
-  install_wrapped_library_internal("${interfaceHeader}")
+# use_boost_serialization: Flag indicating whether to provide Boost-based serialization.
+function(wrap_and_install_library interfaceHeader moduleName linkLibraries
+         extraIncludeDirs extraMexFlags ignore_classes use_boost_serialization)
+  wrap_library_internal("${interfaceHeader}" "${moduleName}" "${linkLibraries}"
+                        "${extraIncludeDirs}" "${extraMexFlags}" "${ignore_classes}"
+                        "${use_boost_serialization}")
+  install_wrapped_library_internal("${moduleName}")
 endfunction()
 
 # Internal function that wraps a library and compiles the wrapper
-function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs
-         extraMexFlags)
+function(wrap_library_internal interfaceHeader moduleName linkLibraries extraIncludeDirs
+         extraMexFlags ignore_classes use_boost_serialization)
   if(UNIX AND NOT APPLE)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
       set(mexModuleExt mexa64)
@@ -120,7 +123,6 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs
   # Extract module name from interface header file name
   get_filename_component(interfaceHeader "${interfaceHeader}" ABSOLUTE)
   get_filename_component(modulePath "${interfaceHeader}" PATH)
-  get_filename_component(moduleName "${interfaceHeader}" NAME_WE)
 
   # Paths for generated files
   set(generated_files_path "${PROJECT_BINARY_DIR}/wrap/${moduleName}")
@@ -136,8 +138,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs
   # explicit link libraries list so that the next block of code can unpack any
   # static libraries
   set(automaticDependencies "")
-  foreach(lib ${moduleName} ${linkLibraries})
-    # message("MODULE NAME: ${moduleName}")
+  foreach(lib ${module} ${linkLibraries})
     if(TARGET "${lib}")
       get_target_property(dependentLibraries ${lib} INTERFACE_LINK_LIBRARIES)
       # message("DEPENDENT LIBRARIES:  ${dependentLibraries}")
@@ -147,36 +148,12 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs
     endif()
   endforeach()
 
-  # CHRIS: Temporary fix. On my system the get_target_property above returned
-  # Not-found for gtsam module This needs to be fixed!!
-  if(UNIX AND NOT APPLE)
-    list(
-      APPEND
-      automaticDependencies
-      ${Boost_SERIALIZATION_LIBRARY_RELEASE}
-      ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-      ${Boost_SYSTEM_LIBRARY_RELEASE}
-      ${Boost_THREAD_LIBRARY_RELEASE}
-      ${Boost_DATE_TIME_LIBRARY_RELEASE})
-    # Only present in Boost >= 1.48.0
-    if(Boost_TIMER_LIBRARY_RELEASE)
-      list(APPEND automaticDependencies ${Boost_TIMER_LIBRARY_RELEASE}
-           ${Boost_CHRONO_LIBRARY_RELEASE})
-      if(WRAP_MEX_BUILD_STATIC_MODULE)
-        # list(APPEND automaticDependencies -Wl,--no-as-needed -lrt)
-      endif()
-    endif()
-  endif()
-
-  # message("AUTOMATIC DEPENDENCIES:  ${automaticDependencies}") CHRIS: End
-  # temporary fix
-
   # Separate dependencies
   set(correctedOtherLibraries "")
   set(otherLibraryTargets "")
   set(otherLibraryNontargets "")
   set(otherSourcesAndObjects "")
-  foreach(lib ${moduleName} ${linkLibraries} ${automaticDependencies})
+  foreach(lib ${module} ${linkLibraries} ${automaticDependencies})
     if(TARGET "${lib}")
       if(WRAP_MEX_BUILD_STATIC_MODULE)
         get_target_property(target_sources ${lib} SOURCES)
@@ -243,6 +220,20 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs
   find_package(PythonInterp ${WRAP_PYTHON_VERSION} EXACT)
   find_package(PythonLibs ${WRAP_PYTHON_VERSION} EXACT)
 
+  # Set the path separator for PYTHONPATH
+  if(UNIX)
+    set(GTWRAP_PATH_SEPARATOR ":")
+  else()
+    set(GTWRAP_PATH_SEPARATOR ";")
+  endif()
+
+  # Set boost serialization flag for the python script call below.
+  if(use_boost_serialization)
+    set(_BOOST_SERIALIZATION "--use-boost-serialization")
+  else(use_boost_serialization)
+    set(_BOOST_SERIALIZATION "")
+  endif(use_boost_serialization)
+
   add_custom_command(
     OUTPUT ${generated_cpp_file}
     DEPENDS ${interfaceHeader} ${module_library_target} ${otherLibraryTargets}
@@ -250,9 +241,9 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs
     COMMAND
       ${CMAKE_COMMAND} -E env
       "PYTHONPATH=${GTWRAP_PACKAGE_DIR}${GTWRAP_PATH_SEPARATOR}$ENV{PYTHONPATH}"
-      ${PYTHON_EXECUTABLE} ${MATLAB_WRAP_SCRIPT} --src ${interfaceHeader}
+      ${PYTHON_EXECUTABLE} ${MATLAB_WRAP_SCRIPT} --src "${interfaceHeader}"
       --module_name ${moduleName} --out ${generated_files_path}
-      --top_module_namespaces ${moduleName} --ignore ${ignore_classes}
+      --top_module_namespaces ${moduleName} --ignore ${ignore_classes} ${_BOOST_SERIALIZATION}
     VERBATIM
     WORKING_DIRECTORY ${generated_files_path})
 
@@ -324,8 +315,8 @@ endfunction()
 
 # Internal function that installs a wrap toolbox
 function(install_wrapped_library_internal interfaceHeader)
-  get_filename_component(moduleName "${interfaceHeader}" NAME_WE)
-  set(generated_files_path "${PROJECT_BINARY_DIR}/wrap/${moduleName}")
+  get_filename_component(module "${interfaceHeader}" NAME_WE)
+  set(generated_files_path "${PROJECT_BINARY_DIR}/wrap/${module}")
 
   # NOTE: only installs .m and mex binary files (not .cpp) - the trailing slash
   # on the directory name here prevents creating the top-level module name

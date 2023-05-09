@@ -34,8 +34,10 @@ class TestTranslationRecovery(unittest.TestCase):
 
     def test_constructor(self):
         """Construct from binary measurements."""
-        algorithm = gtsam.TranslationRecovery(gtsam.BinaryMeasurementsUnit3())
+        algorithm = gtsam.TranslationRecovery()
         self.assertIsInstance(algorithm, gtsam.TranslationRecovery)
+        algorithm_params = gtsam.TranslationRecovery(gtsam.LevenbergMarquardtParams())
+        self.assertIsInstance(algorithm_params, gtsam.TranslationRecovery)
 
     def test_run(self):
         gt_poses = ExampleValues()
@@ -45,9 +47,9 @@ class TestTranslationRecovery(unittest.TestCase):
         lmParams = gtsam.LevenbergMarquardtParams()
         lmParams.setVerbosityLM("silent")
 
-        algorithm = gtsam.TranslationRecovery(measurements, lmParams)
+        algorithm = gtsam.TranslationRecovery(lmParams)
         scale = 2.0
-        result = algorithm.run(scale)
+        result = algorithm.run(measurements, scale)
 
         w_aTc = gt_poses.atPose3(2).translation() - gt_poses.atPose3(0).translation()
         w_aTb = gt_poses.atPose3(1).translation() - gt_poses.atPose3(0).translation()

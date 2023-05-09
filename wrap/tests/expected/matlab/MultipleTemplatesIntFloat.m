@@ -9,7 +9,7 @@ classdef MultipleTemplatesIntFloat < handle
     function obj = MultipleTemplatesIntFloat(varargin)
       if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
         my_ptr = varargin{2};
-        class_wrapper(52, my_ptr);
+        class_wrapper(61, my_ptr);
       else
         error('Arguments do not match any overload of MultipleTemplatesIntFloat constructor');
       end
@@ -17,7 +17,7 @@ classdef MultipleTemplatesIntFloat < handle
     end
 
     function delete(obj)
-      class_wrapper(53, obj.ptr_MultipleTemplatesIntFloat);
+      class_wrapper(62, obj.ptr_MultipleTemplatesIntFloat);
     end
 
     function display(obj), obj.print(''); end

@@ -25,8 +25,6 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <boost/iterator/transform_iterator.hpp>
-
 #include <list>
 #include <memory>
 #include <sstream>
@@ -52,15 +50,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Values::Values(const Values& other, const VectorValues& delta) {
-    for (const_iterator key_value = other.begin(); key_value != other.end(); ++key_value) {
-      VectorValues::const_iterator it = delta.find(key_value->key);
-      Key key = key_value->key;  // Non-const duplicate to deal with non-const insert argument
+    for (const auto& [key,value] : other.values_) {
+      VectorValues::const_iterator it = delta.find(key);
       if (it != delta.end()) {
         const Vector& v = it->second;
-        Value* retractedValue(key_value->value.retract_(v));  // Retract
-        values_.insert(key, retractedValue);  // Add retracted result directly to result values
+        Value* retractedValue(value->retract_(v));  // Retract
+        values_.emplace(key, retractedValue);  // Add retracted result directly to result values
       } else {
-        values_.insert(key, key_value->value.clone_());  // Add original version to result values
+        values_.emplace(key, value->clone_());  // Add original version to result values
       }
     }
   }
@@ -69,9 +66,9 @@ namespace gtsam {
   void Values::print(const string& str, const KeyFormatter& keyFormatter) const {
     cout << str << (str.empty() ? "" : "\n");
     cout << "Values with " << size() << " values:\n";
-    for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
-      cout << "Value " << keyFormatter(key_value->key) << ": ";
-      key_value->value.print("");
+    for (const auto& [key,value] : values_) {
+      cout << "Value " << keyFormatter(key) << ": ";
+      value->print("");
       cout << "\n";
     }
   }
@@ -80,12 +77,12 @@ namespace gtsam {
   bool Values::equals(const Values& other, double tol) const {
     if (this->size() != other.size())
       return false;
-    for (const_iterator it1 = this->begin(), it2 = other.begin();
-        it1 != this->end(); ++it1, ++it2) {
-      const Value& value1 = it1->value;
-      const Value& value2 = it2->value;
-      if (typeid(value1) != typeid(value2) || it1->key != it2->key
-          || !value1.equals_(value2, tol)) {
+    for (auto it1 = values_.begin(), it2 = other.values_.begin();
+         it1 != values_.end(); ++it1, ++it2) {
+      const Value* value1 = it1->second.get();
+      const Value* value2 = it2->second.get();
+      if (typeid(*value1) != typeid(*value2) || it1->first != it2->first
+          || !value1->equals_(*value2, tol)) {
         return false;
       }
     }
@@ -103,88 +100,134 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  void Values::retractMasked(const VectorValues& delta, const KeySet& mask) {
+    gttic(retractMasked);
+    assert(this->size() == delta.size());
+    auto key_value = values_.begin();
+    VectorValues::const_iterator key_delta;
+#ifdef GTSAM_USE_TBB
+    for (; key_value != values_.end(); ++key_value) {
+      key_delta = delta.find(key_value->first);
+#else
+    for (key_delta = delta.begin(); key_value != values_.end();
+         ++key_value, ++key_delta) {
+      assert(key_value->first == key_delta->first);
+#endif
+      Key var = key_value->first;
+      assert(static_cast<size_t>(delta[var].size()) == key_value->second->dim());
+      assert(delta[var].allFinite());
+      if (mask.exists(var)) {
+        Value* retracted = key_value->second->retract_(delta[var]);
+        // TODO(dellaert): can we use std::move here?
+        *(key_value->second) = *retracted;
+        retracted->deallocate_();
+      }
+    }
+  }
+
+  /* ************************************************************************* */
   VectorValues Values::localCoordinates(const Values& cp) const {
     if(this->size() != cp.size())
       throw DynamicValuesMismatched();
     VectorValues result;
-    for(const_iterator it1=this->begin(), it2=cp.begin(); it1!=this->end(); ++it1, ++it2) {
-      if(it1->key != it2->key)
+    for (auto it1 = values_.begin(), it2 = cp.values_.begin();
+         it1 != values_.end(); ++it1, ++it2) {
+      if(it1->first != it2->first)
         throw DynamicValuesMismatched(); // If keys do not match
       // Will throw a dynamic_cast exception if types do not match
       // NOTE: this is separate from localCoordinates(cp, ordering, result) due to at() vs. insert
-      result.insert(it1->key, it1->value.localCoordinates_(it2->value));
+      result.insert(it1->first, it1->second->localCoordinates_(*it2->second));
     }
     return result;
   }
 
   /* ************************************************************************* */
   const Value& Values::at(Key j) const {
-    // Find the item
-    KeyValueMap::const_iterator item = values_.find(j);
+    KeyValueMap::const_iterator it = values_.find(j);
 
     // Throw exception if it does not exist
-    if(item == values_.end())
+    if(it == values_.end())
       throw ValuesKeyDoesNotExist("retrieve", j);
-    return *item->second;
+    return *it->second;
   }
 
   /* ************************************************************************* */
   void Values::insert(Key j, const Value& val) {
-    std::pair<iterator,bool> insertResult = tryInsert(j, val);
+    auto insertResult = values_.emplace(j, val.clone_());
     if(!insertResult.second)
       throw ValuesKeyAlreadyExists(j);
   }
 
   /* ************************************************************************* */
-  void Values::insert(const Values& values) {
-    for(const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
-      Key key = key_value->key; // Non-const duplicate to deal with non-const insert argument
-      insert(key, key_value->value);
+  void Values::insert(const Values& other) {
+    for (const auto& [key, value] : other.values_) {
+      insert(key, *(value));
     }
-  }
-
-  /* ************************************************************************* */
-  std::pair<Values::iterator, bool> Values::tryInsert(Key j, const Value& value) {
-    std::pair<KeyValueMap::iterator, bool> result = values_.insert(j, value.clone_());
-    return std::make_pair(boost::make_transform_iterator(result.first, &make_deref_pair), result.second);
   }
 
   /* ************************************************************************* */
   void Values::update(Key j, const Value& val) {
     // Find the value to update
-    KeyValueMap::iterator item = values_.find(j);
-    if (item == values_.end())
+    KeyValueMap::iterator it = values_.find(j);
+    if (it == values_.end())
       throw ValuesKeyDoesNotExist("update", j);
 
     // Cast to the derived type
-    const Value& old_value = *item->second;
+    const Value& old_value = *it->second;
     if (typeid(old_value) != typeid(val))
       throw ValuesIncorrectType(j, typeid(old_value), typeid(val));
 
-    values_.replace(item, val.clone_());
+    values_.erase(j);
+    values_.emplace(j, val.clone_());
   }
 
   /* ************************************************************************* */
-  void Values::update(const Values& values) {
-    for(const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
-      this->update(key_value->key, key_value->value);
+  void Values::update(const Values& other) {
+    for (auto& [key, value] : other.values_) {
+      this->update(key, *(value));
+    }
+  }
+
+  /* ************************************************************************ */
+  void Values::insert_or_assign(Key j, const Value& val) {
+    if (this->exists(j)) {
+      // If key already exists, perform an update.
+      this->update(j, val);
+    } else {
+      // If key does not exist, perform an insert.
+      this->insert(j, val);
+    }
+  }
+
+  /* ************************************************************************ */
+  void Values::insert_or_assign(const Values& other) {
+    for (auto& [key, value] : other.values_) {
+      this->insert_or_assign(key, *(value));
     }
   }
 
   /* ************************************************************************* */
   void Values::erase(Key j) {
-    KeyValueMap::iterator item = values_.find(j);
-    if(item == values_.end())
+    KeyValueMap::iterator it = values_.find(j);
+    if(it == values_.end())
       throw ValuesKeyDoesNotExist("erase", j);
-    values_.erase(item);
+    values_.erase(it);
   }
 
   /* ************************************************************************* */
   KeyVector Values::keys() const {
     KeyVector result;
     result.reserve(size());
-    for(const_iterator key_value = begin(); key_value != end(); ++key_value)
-      result.push_back(key_value->key);
+    for(const auto& [key,value]: values_)
+      result.push_back(key);
+    return result;
+  }
+
+  /* ************************************************************************* */
+  KeySet Values::keySet() const {
+    KeySet result;
+    for(const auto& [key,value]: values_)
+      result.insert(key);
     return result;
   }
 
@@ -198,8 +241,17 @@ namespace gtsam {
   /* ************************************************************************* */
   size_t Values::dim() const {
     size_t result = 0;
-    for(const auto key_value: *this) {
-      result += key_value.value.dim();
+    for (const auto& [key,value] : values_) {
+      result += value->dim();
+    }
+    return result;
+  }
+
+  /* ************************************************************************* */
+  std::map<Key,size_t> Values::dims() const {
+    std::map<Key,size_t> result;
+    for (const auto& [key,value] : values_) {
+      result.emplace(key, value->dim());
     }
     return result;
   }
@@ -207,8 +259,8 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues Values::zeroVectors() const {
     VectorValues result;
-    for(const auto key_value: *this)
-      result.insert(key_value.key, Vector::Zero(key_value.value.dim()));
+    for (const auto& [key,value] : values_)
+      result.insert(key, Vector::Zero(value->dim()));
     return result;
   }
 

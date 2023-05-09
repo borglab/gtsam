@@ -8,16 +8,14 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/inference/VariableIndex.h>
 
-#include <boost/assign/list_of.hpp>
-#include <boost/range/adaptor/map.hpp>
 #include <fstream>
 #include <iostream>
 
 using namespace std;
 using namespace boost;
-using namespace boost::assign;
 using namespace gtsam;
 
 /**
@@ -48,7 +46,7 @@ class LoopyBelief {
     void print(const std::string& s = "") const {
       cout << s << ":" << endl;
       star->print("Star graph: ");
-      for (Key key : correctedBeliefIndices | boost::adaptors::map_keys) {
+      for (const auto& [key, _] : correctedBeliefIndices) {
         cout << "Belief factor index for " << key << ": "
              << correctedBeliefIndices.at(key) << endl;
       }
@@ -72,8 +70,8 @@ class LoopyBelief {
   /// print
   void print(const std::string& s = "") const {
     cout << s << ":" << endl;
-    for (Key key : starGraphs_ | boost::adaptors::map_keys) {
-      starGraphs_.at(key).print((boost::format("Node %d:") % key).str());
+    for (const auto& [key, _] : starGraphs_) {
+      starGraphs_.at(key).print("Node " + std::to_string(key) + ":");
     }
   }
 
@@ -81,12 +79,10 @@ class LoopyBelief {
   DiscreteFactorGraph::shared_ptr iterate(
       const std::map<Key, DiscreteKey>& allDiscreteKeys) {
     static const bool debug = false;
-    static DiscreteConditional::shared_ptr
-        dummyCond;  // unused by-product of elimination
     DiscreteFactorGraph::shared_ptr beliefs(new DiscreteFactorGraph());
     std::map<Key, std::map<Key, DiscreteFactor::shared_ptr> > allMessages;
     // Eliminate each star graph
-    for (Key key : starGraphs_ | boost::adaptors::map_keys) {
+    for (const auto& [key, _] : starGraphs_) {
       //      cout << "***** Node " << key << "*****" << endl;
       // initialize belief to the unary factor from the original graph
       DecisionTreeFactor::shared_ptr beliefAtKey;
@@ -95,16 +91,14 @@ class LoopyBelief {
       std::map<Key, DiscreteFactor::shared_ptr> messages;
 
       // eliminate each neighbor in this star graph one by one
-      for (Key neighbor : starGraphs_.at(key).correctedBeliefIndices |
-                              boost::adaptors::map_keys) {
+      for (const auto& [neighbor, _] : starGraphs_.at(key).correctedBeliefIndices) {
         DiscreteFactorGraph subGraph;
         for (size_t factor : starGraphs_.at(key).varIndex_[neighbor]) {
           subGraph.push_back(starGraphs_.at(key).star->at(factor));
         }
         if (debug) subGraph.print("------- Subgraph:");
-        DiscreteFactor::shared_ptr message;
-        boost::tie(dummyCond, message) =
-            EliminateDiscrete(subGraph, Ordering(list_of(neighbor)));
+        const auto [dummyCond, message] =
+            EliminateDiscrete(subGraph, Ordering{neighbor});
         // store the new factor into messages
         messages.insert(make_pair(neighbor, message));
         if (debug) message->print("------- Message: ");
@@ -113,30 +107,32 @@ class LoopyBelief {
         // Incorporate new the factor to belief
         if (!beliefAtKey)
           beliefAtKey =
-              boost::dynamic_pointer_cast<DecisionTreeFactor>(message);
+              std::dynamic_pointer_cast<DecisionTreeFactor>(message);
         else
-          beliefAtKey = boost::make_shared<DecisionTreeFactor>(
+          beliefAtKey = std::make_shared<DecisionTreeFactor>(
               (*beliefAtKey) *
-              (*boost::dynamic_pointer_cast<DecisionTreeFactor>(message)));
+              (*std::dynamic_pointer_cast<DecisionTreeFactor>(message)));
       }
       if (starGraphs_.at(key).unary)
-        beliefAtKey = boost::make_shared<DecisionTreeFactor>(
+        beliefAtKey = std::make_shared<DecisionTreeFactor>(
             (*beliefAtKey) * (*starGraphs_.at(key).unary));
       if (debug) beliefAtKey->print("New belief at key: ");
       // normalize belief
       double sum = 0.0;
       for (size_t v = 0; v < allDiscreteKeys.at(key).second; ++v) {
-        DiscreteFactor::Values val;
+        DiscreteValues val;
         val[key] = v;
         sum += (*beliefAtKey)(val);
       }
+      // TODO(kartikarcot): Check if this makes sense
       string sumFactorTable;
-      for (size_t v = 0; v < allDiscreteKeys.at(key).second; ++v)
-        sumFactorTable = (boost::format("%s %f") % sumFactorTable % sum).str();
+      for (size_t v = 0; v < allDiscreteKeys.at(key).second; ++v) {
+        sumFactorTable = sumFactorTable + " " + std::to_string(sum);
+      }
       DecisionTreeFactor sumFactor(allDiscreteKeys.at(key), sumFactorTable);
       if (debug) sumFactor.print("denomFactor: ");
       beliefAtKey =
-          boost::make_shared<DecisionTreeFactor>((*beliefAtKey) / sumFactor);
+          std::make_shared<DecisionTreeFactor>((*beliefAtKey) / sumFactor);
       if (debug) beliefAtKey->print("New belief at key normalized: ");
       beliefs->push_back(beliefAtKey);
       allMessages[key] = messages;
@@ -144,21 +140,20 @@ class LoopyBelief {
 
     // Update corrected beliefs
     VariableIndex beliefFactors(*beliefs);
-    for (Key key : starGraphs_ | boost::adaptors::map_keys) {
+    for (const auto& [key, _] : starGraphs_) {
       std::map<Key, DiscreteFactor::shared_ptr> messages = allMessages[key];
-      for (Key neighbor : starGraphs_.at(key).correctedBeliefIndices |
-                              boost::adaptors::map_keys) {
-        DecisionTreeFactor correctedBelief =
-            (*boost::dynamic_pointer_cast<DecisionTreeFactor>(
+      for (const auto& [neighbor, _] : starGraphs_.at(key).correctedBeliefIndices) {
+              DecisionTreeFactor correctedBelief =
+            (*std::dynamic_pointer_cast<DecisionTreeFactor>(
                 beliefs->at(beliefFactors[key].front()))) /
-            (*boost::dynamic_pointer_cast<DecisionTreeFactor>(
+            (*std::dynamic_pointer_cast<DecisionTreeFactor>(
                 messages.at(neighbor)));
         if (debug) correctedBelief.print("correctedBelief: ");
         size_t beliefIndex =
             starGraphs_.at(neighbor).correctedBeliefIndices.at(key);
         starGraphs_.at(neighbor).star->replace(
             beliefIndex,
-            boost::make_shared<DecisionTreeFactor>(correctedBelief));
+            std::make_shared<DecisionTreeFactor>(correctedBelief));
       }
     }
 
@@ -176,7 +171,7 @@ class LoopyBelief {
       const std::map<Key, DiscreteKey>& allDiscreteKeys) const {
     StarGraphs starGraphs;
     VariableIndex varIndex(graph);  ///< access to all factors of each node
-    for (Key key : varIndex | boost::adaptors::map_keys) {
+    for (const auto& [key, _] : varIndex) {
       // initialize to multiply with other unary factors later
       DecisionTreeFactor::shared_ptr prodOfUnaries;
 
@@ -188,12 +183,12 @@ class LoopyBelief {
         // accumulate unary factors
         if (graph.at(factorIndex)->size() == 1) {
           if (!prodOfUnaries)
-            prodOfUnaries = boost::dynamic_pointer_cast<DecisionTreeFactor>(
+            prodOfUnaries = std::dynamic_pointer_cast<DecisionTreeFactor>(
                 graph.at(factorIndex));
           else
-            prodOfUnaries = boost::make_shared<DecisionTreeFactor>(
+            prodOfUnaries = std::make_shared<DecisionTreeFactor>(
                 *prodOfUnaries *
-                (*boost::dynamic_pointer_cast<DecisionTreeFactor>(
+                (*std::dynamic_pointer_cast<DecisionTreeFactor>(
                     graph.at(factorIndex))));
         }
       }
@@ -229,7 +224,7 @@ TEST_UNSAFE(LoopyBelief, construction) {
 
   // Map from key to DiscreteKey for building belief factor.
   // TODO: this is bad!
-  std::map<Key, DiscreteKey> allKeys = map_list_of(0, C)(1, S)(2, R)(3, W);
+  std::map<Key, DiscreteKey> allKeys{{0, C}, {1, S}, {2, R}, {3, W}};
 
   // Build graph
   DecisionTreeFactor pC(C, "0.5 0.5");

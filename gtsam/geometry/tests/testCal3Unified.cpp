@@ -68,7 +68,7 @@ Point2 uncalibrate_(const Cal3Unified& k, const Point2& pt) {
 /* ************************************************************************* */
 TEST(Cal3Unified, Duncalibrate1) {
   Matrix computed;
-  K.uncalibrate(p, computed, boost::none);
+  K.uncalibrate(p, computed, {});
   Matrix numerical = numericalDerivative21(uncalibrate_, K, p, 1e-7);
   CHECK(assert_equal(numerical, computed, 1e-6));
 }
@@ -76,7 +76,7 @@ TEST(Cal3Unified, Duncalibrate1) {
 /* ************************************************************************* */
 TEST(Cal3Unified, Duncalibrate2) {
   Matrix computed;
-  K.uncalibrate(p, boost::none, computed);
+  K.uncalibrate(p, {}, computed);
   Matrix numerical = numericalDerivative22(uncalibrate_, K, p, 1e-7);
   CHECK(assert_equal(numerical, computed, 1e-6));
 }

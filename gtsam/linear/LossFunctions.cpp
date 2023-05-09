@@ -19,6 +19,7 @@
 #include <gtsam/linear/LossFunctions.h>
 
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -37,6 +38,10 @@ Vector Base::weight(const Vector& error) const {
   for (size_t i = 0; i < n; ++i)
     w(i) = weight(error(i));
   return w;
+}
+
+Vector Base::sqrtWeight(const Vector &error) const {
+  return weight(error).cwiseSqrt();
 }
 
 // The following three functions re-weight block matrices and a vector

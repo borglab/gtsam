@@ -18,7 +18,7 @@
 #pragma once
 
 #include <utility>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastVector.h>
@@ -52,32 +52,32 @@ namespace gtsam {
   {
   protected:
     typedef EliminationTree<BAYESNET, GRAPH> This; ///< This class
-    typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
 
   public:
     typedef GRAPH FactorGraphType; ///< The factor graph type
     typedef typename GRAPH::FactorType FactorType; ///< The type of factors
-    typedef typename boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
+    typedef typename std::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
     typedef BAYESNET BayesNetType; ///< The BayesNet corresponding to FACTOR
     typedef typename BayesNetType::ConditionalType ConditionalType; ///< The type of conditionals
-    typedef typename boost::shared_ptr<ConditionalType> sharedConditional; ///< Shared pointer to a conditional
+    typedef typename std::shared_ptr<ConditionalType> sharedConditional; ///< Shared pointer to a conditional
     typedef typename GRAPH::Eliminate Eliminate;
 
     struct Node {
       typedef FastVector<sharedFactor> Factors;
-      typedef FastVector<boost::shared_ptr<Node> > Children;
+      typedef FastVector<std::shared_ptr<Node> > Children;
 
       Key key; ///< key associated with root
       Factors factors; ///< factors associated with root
       Children children; ///< sub-trees
 
-      sharedFactor eliminate(const boost::shared_ptr<BayesNetType>& output,
+      sharedFactor eliminate(const std::shared_ptr<BayesNetType>& output,
         const Eliminate& function, const FastVector<sharedFactor>& childrenFactors) const;
 
       void print(const std::string& str, const KeyFormatter& keyFormatter) const;
     };
 
-    typedef boost::shared_ptr<Node> sharedNode; ///< Shared pointer to Node
+    typedef std::shared_ptr<Node> sharedNode; ///< Shared pointer to Node
 
   protected:
     /** concept check */
@@ -118,6 +118,7 @@ namespace gtsam {
     /// @}
 
   public:
+    ~EliminationTree(); 
     /// @name Standard Interface
     /// @{
 
@@ -126,7 +127,7 @@ namespace gtsam {
     * in GaussianFactorGraph.h
     * @return The Bayes net and factor graph resulting from elimination
     */
-    std::pair<boost::shared_ptr<BayesNetType>, boost::shared_ptr<FactorGraphType> >
+    std::pair<std::shared_ptr<BayesNetType>, std::shared_ptr<FactorGraphType> >
       eliminate(Eliminate function) const;
 
     /// @}

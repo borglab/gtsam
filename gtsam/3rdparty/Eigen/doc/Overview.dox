@@ -4,8 +4,6 @@ namespace Eigen {
 
 This is the API documentation for Eigen3. You can <a href="eigen-doc.tgz">download</a> it as a tgz archive for offline reading.
 
-You're already an Eigen2 user? Here is a \link Eigen2ToEigen3 Eigen2 to Eigen3 guide \endlink to help porting your application.
-
 For a first contact with Eigen, the best place is to have a look at the \link GettingStarted getting started \endlink page that show you how to write and compile your first program with Eigen.
 
 Then, the \b quick \b reference \b pages give you a quite complete description of the API in a very condensed format that is specially useful to recall the syntax of a particular feature, or to have a quick look at the API. They currently cover the two following feature sets, and more will come in the future:

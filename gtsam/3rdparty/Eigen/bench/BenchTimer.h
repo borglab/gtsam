@@ -28,11 +28,15 @@
 #endif
 
 static void escape(void *p) {
+#if EIGEN_COMP_GNUC || EIGEN_COMP_CLANG
   asm volatile("" : : "g"(p) : "memory");
+#endif
 }
 
 static void clobber() {
+#if EIGEN_COMP_GNUC || EIGEN_COMP_CLANG
   asm volatile("" : : : "memory");
+#endif
 }
 
 #include <Eigen/Core>

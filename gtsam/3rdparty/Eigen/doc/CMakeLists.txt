@@ -7,11 +7,14 @@ project(EigenDoc)
 if(CMAKE_COMPILER_IS_GNUCXX)
   if(CMAKE_SYSTEM_NAME MATCHES Linux)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1 -g1")
-  endif(CMAKE_SYSTEM_NAME MATCHES Linux)
-endif(CMAKE_COMPILER_IS_GNUCXX)
+  endif()
+endif()
+
+# some examples and snippets needs c++11, so let's check it once
+check_cxx_compiler_flag("-std=c++11" EIGEN_COMPILER_SUPPORT_CPP11)
 
 option(EIGEN_INTERNAL_DOCUMENTATION "Build internal documentation" OFF)
-
+option(EIGEN_DOC_USE_MATHJAX "Use MathJax for rendering math in HTML docs" ON)
 
 # Set some Doxygen flags
 set(EIGEN_DOXY_PROJECT_NAME             "Eigen")
@@ -19,11 +22,18 @@ set(EIGEN_DOXY_OUTPUT_DIRECTORY_SUFFIX  "")
 set(EIGEN_DOXY_INPUT                    "\"${Eigen_SOURCE_DIR}/Eigen\" \"${Eigen_SOURCE_DIR}/doc\"")
 set(EIGEN_DOXY_HTML_COLORSTYLE_HUE      "220")
 set(EIGEN_DOXY_TAGFILES                 "")
+
 if(EIGEN_INTERNAL_DOCUMENTATION)
   set(EIGEN_DOXY_INTERNAL                 "YES")
-else(EIGEN_INTERNAL_DOCUMENTATION)
+else()
   set(EIGEN_DOXY_INTERNAL                 "NO")
-endif(EIGEN_INTERNAL_DOCUMENTATION)
+endif()
+
+if (EIGEN_DOC_USE_MATHJAX)
+  set(EIGEN_DOXY_USE_MATHJAX "YES")
+else ()
+  set(EIGEN_DOXY_USE_MATHJAX "NO")
+endif()
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
@@ -103,7 +113,7 @@ add_custom_target(doc ALL
   COMMAND doxygen Doxyfile-unsupported
   COMMAND ${CMAKE_COMMAND} -E copy ${Eigen_BINARY_DIR}/doc/html/group__TopicUnalignedArrayAssert.html ${Eigen_BINARY_DIR}/doc/html/TopicUnalignedArrayAssert.html
   COMMAND ${CMAKE_COMMAND} -E rename html eigen-doc
-  COMMAND ${CMAKE_COMMAND} -E remove eigen-doc/eigen-doc.tgz
+  COMMAND ${CMAKE_COMMAND} -E remove eigen-doc/eigen-doc.tgz eigen-doc/unsupported/_formulas.log eigen-doc/_formulas.log
   COMMAND ${CMAKE_COMMAND} -E tar cfz eigen-doc.tgz eigen-doc
   COMMAND ${CMAKE_COMMAND} -E rename eigen-doc.tgz eigen-doc/eigen-doc.tgz
   COMMAND ${CMAKE_COMMAND} -E rename eigen-doc html

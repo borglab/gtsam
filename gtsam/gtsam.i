@@ -39,9 +39,6 @@ class KeyList {
   void remove(size_t key);
 
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 // Actually a FastSet<Key>
@@ -67,12 +64,9 @@ class KeySet {
   bool count(size_t key) const;  // returns true if value exists
 
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
-// Actually a vector<Key>
+// Actually a vector<Key>, needed for Matlab
 class KeyVector {
   KeyVector();
   KeyVector(const gtsam::KeyVector& other);
@@ -91,9 +85,6 @@ class KeyVector {
   void push_back(size_t key) const;
 
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 // Actually a FastMap<Key,int>
@@ -165,6 +156,7 @@ gtsam::Values allPose2s(gtsam::Values& values);
 Matrix extractPose2(const gtsam::Values& values);
 gtsam::Values allPose3s(gtsam::Values& values);
 Matrix extractPose3(const gtsam::Values& values);
+Matrix extractVectors(const gtsam::Values& values, char c);
 void perturbPoint2(gtsam::Values& values, double sigma, int seed = 42u);
 void perturbPose2(gtsam::Values& values, double sigmaT, double sigmaR,
                   int seed = 42u);

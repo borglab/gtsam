@@ -42,7 +42,7 @@ endif()
 
 include(MatlabWrap)
 
-if(NOT BUILD_SHARED_LIBS)
+if(NOT GTSAM_SHARED_LIB)
   message(
     FATAL_ERROR
       "GTSAM_INSTALL_MATLAB_TOOLBOX and BUILD_SHARED_LIBS=OFF."
@@ -54,7 +54,7 @@ endif()
 # ##############################################################################
 # Generate, build and install toolbox
 set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-if(NOT BUILD_SHARED_LIBS)
+if(NOT GTSAM_SHARED_LIB)
   list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
 endif()
 
@@ -64,26 +64,42 @@ set(ignore
     gtsam::Point3
     gtsam::CustomFactor)
 
+set(interface_files
+    ${GTSAM_SOURCE_DIR}/gtsam/gtsam.i
+    ${GTSAM_SOURCE_DIR}/gtsam/base/base.i
+    ${GTSAM_SOURCE_DIR}/gtsam/basis/basis.i
+    ${PROJECT_SOURCE_DIR}/gtsam/inference/inference.i
+    ${PROJECT_SOURCE_DIR}/gtsam/discrete/discrete.i
+    ${GTSAM_SOURCE_DIR}/gtsam/geometry/geometry.i
+    ${GTSAM_SOURCE_DIR}/gtsam/linear/linear.i
+    ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
+    ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/values.i
+    ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/custom.i
+    ${GTSAM_SOURCE_DIR}/gtsam/symbolic/symbolic.i
+    ${GTSAM_SOURCE_DIR}/gtsam/sam/sam.i
+    ${GTSAM_SOURCE_DIR}/gtsam/slam/slam.i
+    ${GTSAM_SOURCE_DIR}/gtsam/sfm/sfm.i
+    ${GTSAM_SOURCE_DIR}/gtsam/navigation/navigation.i
+)
 # Wrap
-matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam/gtsam.i "${GTSAM_ADDITIONAL_LIBRARIES}"
-            "" "${mexFlags}" "${ignore}")
+matlab_wrap("${interface_files}" "gtsam" "${GTSAM_ADDITIONAL_LIBRARIES}"
+            "" "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
 
 # Wrap version for gtsam_unstable
 if(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
   # Generate, build and install toolbox
   set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-  if(NOT BUILD_SHARED_LIBS)
+  if(NOT GTSAM_SHARED_LIB)
     list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
   endif()
 
   # Wrap
-  matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i "gtsam" ""
-              "${mexFlags}" "${ignore}")
+  matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i "gtsam_unstable"
+              "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}" "${ignore}")
 endif(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
 
 # Record the root dir for gtsam - needed during external builds, e.g., ROS
 set(GTSAM_SOURCE_ROOT_DIR ${GTSAM_SOURCE_DIR})
-message(STATUS "GTSAM_SOURCE_ROOT_DIR: [${GTSAM_SOURCE_ROOT_DIR}]")
 
 # Tests message(STATUS "Installing Matlab Toolbox")
 install_matlab_scripts("${GTSAM_SOURCE_ROOT_DIR}/matlab/" "*.m;*.fig")

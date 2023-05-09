@@ -9,30 +9,34 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam_unstable/discrete/Domain.h>
 
-#include <boost/make_shared.hpp>
-
+#include <sstream>
 namespace gtsam {
 
 using namespace std;
 
 /* ************************************************************************* */
 void Domain::print(const string& s, const KeyFormatter& formatter) const {
-  //    cout << s << ": Domain on " << formatter(keys_[0]) << " (j=" <<
-  //    formatter(keys_[0]) << ") with values";
-  //    for (size_t v: values_) cout << " " << v;
-  //    cout << endl;
-  for (size_t v : values_) cout << v;
+  cout << s << ": Domain on " << formatter(key()) << " (j=" << formatter(key())
+       << ") with values";
+  for (size_t v : values_) cout << " " << v;
+  cout << endl;
 }
 
 /* ************************************************************************* */
-double Domain::operator()(const Values& values) const {
-  return contains(values.at(keys_[0]));
+string Domain::base1Str() const {
+  stringstream ss;
+  for (size_t v : values_) ss << v + 1;
+  return ss.str();
+}
+
+/* ************************************************************************* */
+double Domain::operator()(const DiscreteValues& values) const {
+  return contains(values.at(key()));
 }
 
 /* ************************************************************************* */
 DecisionTreeFactor Domain::toDecisionTreeFactor() const {
-  DiscreteKeys keys;
-  keys += DiscreteKey(keys_[0], cardinality_);
+  const DiscreteKeys keys{DiscreteKey(key(), cardinality_)};
   vector<double> table;
   for (size_t i1 = 0; i1 < cardinality_; ++i1) table.push_back(contains(i1));
   DecisionTreeFactor converted(keys, table);
@@ -46,9 +50,9 @@ DecisionTreeFactor Domain::operator*(const DecisionTreeFactor& f) const {
 }
 
 /* ************************************************************************* */
-bool Domain::ensureArcConsistency(size_t j, vector<Domain>& domains) const {
-  if (j != keys_[0]) throw invalid_argument("Domain check on wrong domain");
-  Domain& D = domains[j];
+bool Domain::ensureArcConsistency(Key j, Domains* domains) const {
+  if (j != key()) throw invalid_argument("Domain check on wrong domain");
+  Domain& D = domains->at(j);
   for (size_t value : values_)
     if (!D.contains(value)) throw runtime_error("Unsatisfiable");
   D = *this;
@@ -56,37 +60,36 @@ bool Domain::ensureArcConsistency(size_t j, vector<Domain>& domains) const {
 }
 
 /* ************************************************************************* */
-bool Domain::checkAllDiff(const KeyVector keys, vector<Domain>& domains) {
-  Key j = keys_[0];
+std::optional<Domain> Domain::checkAllDiff(const KeyVector keys,
+                                             const Domains& domains) const {
+  Key j = key();
   // for all values in this domain
-  for (size_t value : values_) {
+  for (const size_t value : values_) {
     // for all connected domains
-    for (Key k : keys)
+    for (const Key k : keys)
       // if any domain contains the value we cannot make this domain singleton
-      if (k != j && domains[k].contains(value)) goto found;
-    values_.clear();
-    values_.insert(value);
-    return true;  // we changed it
+      if (k != j && domains.at(k).contains(value)) goto found;
+    // Otherwise: return a singleton:
+    return Domain(this->discreteKey(), value);
   found:;
   }
-  return false;  // we did not change it
+  return {};  // we did not change it
 }
 
 /* ************************************************************************* */
-Constraint::shared_ptr Domain::partiallyApply(const Values& values) const {
-  Values::const_iterator it = values.find(keys_[0]);
+Constraint::shared_ptr Domain::partiallyApply(const DiscreteValues& values) const {
+  DiscreteValues::const_iterator it = values.find(key());
   if (it != values.end() && !contains(it->second))
     throw runtime_error("Domain::partiallyApply: unsatisfiable");
-  return boost::make_shared<Domain>(*this);
+  return std::make_shared<Domain>(*this);
 }
 
 /* ************************************************************************* */
-Constraint::shared_ptr Domain::partiallyApply(
-    const vector<Domain>& domains) const {
-  const Domain& Dk = domains[keys_[0]];
+Constraint::shared_ptr Domain::partiallyApply(const Domains& domains) const {
+  const Domain& Dk = domains.at(key());
   if (Dk.isSingleton() && !contains(*Dk.begin()))
     throw runtime_error("Domain::partiallyApply: unsatisfiable");
-  return boost::make_shared<Domain>(Dk);
+  return std::make_shared<Domain>(Dk);
 }
 
 /* ************************************************************************* */

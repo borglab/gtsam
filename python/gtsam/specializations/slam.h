@@ -12,8 +12,9 @@
  */
 
 py::bind_vector<
-    std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose3> > > >(
+    std::vector<std::shared_ptr<gtsam::BetweenFactor<gtsam::Pose3>>>>(
     m_, "BetweenFactorPose3s");
 py::bind_vector<
-    std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose2> > > >(
+    std::vector<std::shared_ptr<gtsam::BetweenFactor<gtsam::Pose2>>>>(
     m_, "BetweenFactorPose2s");
+py::bind_vector<gtsam::Rot3Vector>(m_, "Rot3Vector");

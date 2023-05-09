@@ -21,9 +21,6 @@
 #include <gtsam_unstable/base/DSF.h>
 #include <gtsam/base/DSFMap.h>
 
-#include <boost/format.hpp>
-#include <boost/assign/std/vector.hpp>
-
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -32,8 +29,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
-using boost::format;
 
 int main(int argc, char* argv[]) {
 
@@ -42,8 +37,7 @@ int main(int argc, char* argv[]) {
   os << "images,points,matches,Base,Map,BTree" << endl;
 
   // loop over number of images
-  vector<size_t> ms;
-  ms += 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000;
+  vector<size_t> ms {10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000};
   for(size_t m: ms) {
     // We use volatile here to make these appear to the optimizing compiler as
     // if their values are only known at run-time.
@@ -55,8 +49,7 @@ int main(int argc, char* argv[]) {
     volatile double fpm = 0.5; // fraction of points matched
     volatile size_t nm = fpm * n * np; // number of matches
 
-    cout << format("\nTesting with %1% images, %2% points, %3% matches\n")
-            % (int)m % (int)N % (int)nm;
+    cout << "\nTesting with " << (int)m << " images, " << (int)N << " points, " << (int)nm << " matches\n";
     cout << "Generating " << nm << " matches" << endl;
     std::mt19937 rng;
     std::uniform_int_distribution<> rn(0, N - 1);
@@ -67,7 +60,7 @@ int main(int argc, char* argv[]) {
     for (size_t k = 0; k < nm; k++)
       matches.push_back(Match(rn(rng), rn(rng)));
 
-    os << format("%1%,%2%,%3%,") % (int)m % (int)N % (int)nm;
+    os << (int)m << "," << (int)N << "," << (int)nm << ",";
 
     {
       // DSFBase version
@@ -80,7 +73,7 @@ int main(int argc, char* argv[]) {
       tictoc_getNode(dsftimeNode, dsftime);
       dsftime = dsftimeNode->secs();
       os << dsftime << ",";
-      cout << format("DSFBase: %1% s") % dsftime << endl;
+      cout << "DSFBase: " << dsftime << " s" << endl;
       tictoc_reset_();
     }
 
@@ -95,7 +88,7 @@ int main(int argc, char* argv[]) {
       tictoc_getNode(dsftimeNode, dsftime);
       dsftime = dsftimeNode->secs();
       os << dsftime << endl;
-      cout << format("DSFMap: %1% s") % dsftime << endl;
+      cout << "DSFMap: " << dsftime << " s" << endl;
       tictoc_reset_();
     }
 
@@ -112,7 +105,7 @@ int main(int argc, char* argv[]) {
       tictoc_getNode(dsftimeNode, dsftime);
       dsftime = dsftimeNode->secs();
       os << dsftime << endl;
-      cout << format("DSF functional: %1% s") % dsftime << endl;
+      cout << "DSF functional: " << dsftime << " s" << endl;
       tictoc_reset_();
     }
 
@@ -129,7 +122,7 @@ int main(int argc, char* argv[]) {
       tictoc_getNode(dsftimeNode, dsftime);
       dsftime = dsftimeNode->secs();
       os << dsftime << ",";
-      cout << format("DSF in-place: %1% s") % dsftime << endl;
+      cout << "DSF in-place: " << dsftime << " s" << endl;
       tictoc_reset_();
     }
 

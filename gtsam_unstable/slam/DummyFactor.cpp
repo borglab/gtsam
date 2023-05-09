@@ -7,15 +7,11 @@
 
 #include <gtsam_unstable/slam/DummyFactor.h>
 
-#include <boost/assign/list_of.hpp>
-
-using namespace boost::assign;
-
 namespace gtsam {
 
 /* ************************************************************************* */
 DummyFactor::DummyFactor(const Key& key1, size_t dim1, const Key& key2, size_t dim2)
-: NonlinearFactor(cref_list_of<2>(key1)(key2))
+: NonlinearFactor(KeyVector{key1, key2})
 {
   dims_.push_back(dim1);
   dims_.push_back(dim2);
@@ -39,11 +35,11 @@ bool DummyFactor::equals(const NonlinearFactor& f, double tol) const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianFactor>
+std::shared_ptr<GaussianFactor>
 DummyFactor::linearize(const Values& c) const {
   // Only linearize if the factor is active
   if (!this->active(c))
-    return boost::shared_ptr<JacobianFactor>();
+    return std::shared_ptr<JacobianFactor>();
 
    // Fill in terms with zero matrices
   std::vector<std::pair<Key, Matrix> > terms(this->size());

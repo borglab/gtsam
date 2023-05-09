@@ -24,8 +24,6 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
 
-#include <boost/math/constants/constants.hpp>
-
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -40,9 +38,9 @@ static double error = 1e-9, epsilon = 0.001;
 
 //******************************************************************************
 TEST(Rot3 , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Rot3 >));
-  BOOST_CONCEPT_ASSERT((IsManifold<Rot3 >));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Rot3 >));
+  GTSAM_CONCEPT_ASSERT(IsGroup<Rot3 >);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Rot3 >);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Rot3 >);
 }
 
 /* ************************************************************************* */
@@ -128,10 +126,8 @@ TEST( Rot3, AxisAngle2)
   // constructor from a rotation matrix, as doubles in *row-major* order.
   Rot3 R1(-0.999957, 0.00922903, 0.00203116, 0.00926964, 0.999739, 0.0208927, -0.0018374, 0.0209105, -0.999781);
   
-  Unit3 actualAxis;
-  double actualAngle;
   // convert Rot3 to quaternion using GTSAM
-  std::tie(actualAxis, actualAngle) = R1.axisAngle();
+  const auto [actualAxis, actualAngle] = R1.axisAngle();
   
   double expectedAngle = 3.1396582;
   CHECK(assert_equal(expectedAngle, actualAngle, 1e-5));
@@ -197,7 +193,7 @@ TEST( Rot3, retract)
 
 /* ************************************************************************* */
 TEST( Rot3, log) {
-  static const double PI = boost::math::constants::pi<double>();
+  static const double PI = std::acos(-1.0);
   Vector w;
   Rot3 R;
 
@@ -360,7 +356,7 @@ TEST( Rot3, rotate_derivatives)
 {
   Matrix actualDrotate1a, actualDrotate1b, actualDrotate2;
   R.rotate(P, actualDrotate1a, actualDrotate2);
-  R.inverse().rotate(P, actualDrotate1b, boost::none);
+  R.inverse().rotate(P, actualDrotate1b, {});
   Matrix numerical1 = numericalDerivative21(testing::rotate<Rot3,Point3>, R, P);
   Matrix numerical2 = numericalDerivative21(testing::rotate<Rot3,Point3>, R.inverse(), P);
   Matrix numerical3 = numericalDerivative22(testing::rotate<Rot3,Point3>, R, P);
@@ -508,11 +504,9 @@ TEST( Rot3, yaw_pitch_roll )
 TEST( Rot3, RQ)
 {
   // Try RQ on a pure rotation
-  Matrix actualK;
-  Vector actual;
-  boost::tie(actualK, actual) = RQ(R.matrix());
+  const auto [actualK, actual] = RQ(R.matrix());
   Vector expected = Vector3(0.14715, 0.385821, 0.231671);
-  CHECK(assert_equal(I_3x3,actualK));
+  CHECK(assert_equal(I_3x3, (Matrix)actualK));
   CHECK(assert_equal(expected,actual,1e-6));
 
   // Try using xyz call, asserting that Rot3::RzRyRx(x,y,z).xyz()==[x;y;z]
@@ -531,9 +525,9 @@ TEST( Rot3, RQ)
   // Try RQ to recover calibration from 3*3 sub-block of projection matrix
   Matrix K = (Matrix(3, 3) << 500.0, 0.0, 320.0, 0.0, 500.0, 240.0, 0.0, 0.0, 1.0).finished();
   Matrix A = K * R.matrix();
-  boost::tie(actualK, actual) = RQ(A);
-  CHECK(assert_equal(K,actualK));
-  CHECK(assert_equal(expected,actual,1e-6));
+  const auto [actualK2, actual2] = RQ(A);
+  CHECK(assert_equal(K, actualK2));
+  CHECK(assert_equal(expected, actual2, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -640,46 +634,44 @@ TEST( Rot3, slerp)
 }
 
 //******************************************************************************
+namespace {
+Rot3 id;
 Rot3 T1(Rot3::AxisAngle(Vector3(0, 0, 1), 1));
 Rot3 T2(Rot3::AxisAngle(Vector3(0, 1, 0), 2));
+}  // namespace
 
 //******************************************************************************
-TEST(Rot3 , Invariants) {
-  Rot3 id;
+TEST(Rot3, Invariants) {
+  EXPECT(check_group_invariants(id, id));
+  EXPECT(check_group_invariants(id, T1));
+  EXPECT(check_group_invariants(T2, id));
+  EXPECT(check_group_invariants(T2, T1));
+  EXPECT(check_group_invariants(T1, T2));
 
-  EXPECT(check_group_invariants(id,id));
-  EXPECT(check_group_invariants(id,T1));
-  EXPECT(check_group_invariants(T2,id));
-  EXPECT(check_group_invariants(T2,T1));
-  EXPECT(check_group_invariants(T1,T2));
-
-  EXPECT(check_manifold_invariants(id,id));
-  EXPECT(check_manifold_invariants(id,T1));
-  EXPECT(check_manifold_invariants(T2,id));
-  EXPECT(check_manifold_invariants(T2,T1));
-  EXPECT(check_manifold_invariants(T1,T2));
+  EXPECT(check_manifold_invariants(id, id));
+  EXPECT(check_manifold_invariants(id, T1));
+  EXPECT(check_manifold_invariants(T2, id));
+  EXPECT(check_manifold_invariants(T2, T1));
+  EXPECT(check_manifold_invariants(T1, T2));
 }
 
 //******************************************************************************
-TEST(Rot3 , LieGroupDerivatives) {
-  Rot3 id;
-
-  CHECK_LIE_GROUP_DERIVATIVES(id,id);
-  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
-  CHECK_LIE_GROUP_DERIVATIVES(T1,T2);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
+TEST(Rot3, LieGroupDerivatives) {
+  CHECK_LIE_GROUP_DERIVATIVES(id, id);
+  CHECK_LIE_GROUP_DERIVATIVES(id, T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, id);
+  CHECK_LIE_GROUP_DERIVATIVES(T1, T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, T1);
 }
 
 //******************************************************************************
-TEST(Rot3 , ChartDerivatives) {
-  Rot3 id;
+TEST(Rot3, ChartDerivatives) {
   if (ROT3_DEFAULT_COORDINATES_MODE == Rot3::EXPMAP) {
-    CHECK_CHART_DERIVATIVES(id,id);
-    CHECK_CHART_DERIVATIVES(id,T2);
-    CHECK_CHART_DERIVATIVES(T2,id);
-    CHECK_CHART_DERIVATIVES(T1,T2);
-    CHECK_CHART_DERIVATIVES(T2,T1);
+    CHECK_CHART_DERIVATIVES(id, id);
+    CHECK_CHART_DERIVATIVES(id, T2);
+    CHECK_CHART_DERIVATIVES(T2, id);
+    CHECK_CHART_DERIVATIVES(T1, T2);
+    CHECK_CHART_DERIVATIVES(T2, T1);
   }
 }
 

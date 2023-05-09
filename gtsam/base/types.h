@@ -14,14 +14,16 @@
  * @brief    Typedefs for easier changing of types
  * @author   Richard Roberts
  * @date     Aug 21, 2010
- * @addtogroup base
+ * @ingroup base
  */
 
 #pragma once
 
 #include <gtsam/dllexport.h>
+#ifdef GTSAM_USE_BOOST_FEATURES
 #include <boost/concept/assert.hpp>
 #include <boost/range/concepts.hpp>
+#endif
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #include <cstddef>
@@ -46,18 +48,49 @@
 #include <omp.h>
 #endif
 
+/* Define macros for ignoring compiler warnings.
+ * Usage Example:
+ * ```
+ *  CLANG_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations")
+ *  GCC_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations")
+ *  MSVC_DIAGNOSTIC_PUSH_IGNORE(4996)
+ *  // ... code you want to suppress deprecation warnings for ...
+ *  DIAGNOSTIC_POP()
+ * ```
+ */
+#define DO_PRAGMA(x) _Pragma (#x)
 #ifdef __clang__
 #  define CLANG_DIAGNOSTIC_PUSH_IGNORE(diag) \
   _Pragma("clang diagnostic push") \
-  _Pragma("clang diagnostic ignored \"" diag "\"")
+  DO_PRAGMA(clang diagnostic ignored diag)
 #else
 #  define CLANG_DIAGNOSTIC_PUSH_IGNORE(diag)
 #endif
 
-#ifdef __clang__
-#  define CLANG_DIAGNOSTIC_POP() _Pragma("clang diagnostic pop")
+#ifdef __GNUC__
+#  define GCC_DIAGNOSTIC_PUSH_IGNORE(diag) \
+  _Pragma("GCC diagnostic push") \
+  DO_PRAGMA(GCC diagnostic ignored diag)
 #else
-#  define CLANG_DIAGNOSTIC_POP()
+#  define GCC_DIAGNOSTIC_PUSH_IGNORE(diag)
+#endif
+
+#ifdef _MSC_VER
+#  define MSVC_DIAGNOSTIC_PUSH_IGNORE(code) \
+  _Pragma("warning ( push )") \
+  DO_PRAGMA(warning ( disable : code ))
+#else
+#  define MSVC_DIAGNOSTIC_PUSH_IGNORE(code)
+#endif
+
+#if defined(__clang__)
+#  define DIAGNOSTIC_POP() _Pragma("clang diagnostic pop")
+#elif defined(__GNUC__)
+#  define DIAGNOSTIC_POP() _Pragma("GCC diagnostic pop")
+#elif defined(_MSC_VER)
+#  define DIAGNOSTIC_POP() _Pragma("warning ( pop )")
+#else
+#  define DIAGNOSTIC_POP()
 #endif
 
 namespace gtsam {
@@ -122,33 +155,7 @@ namespace gtsam {
     operator T() const { return value; }
   };
 
-  /* ************************************************************************* */
-  /** A helper class that behaves as a container with one element, and works with
-   * boost::range */
-  template<typename T>
-  class ListOfOneContainer {
-    T element_;
-  public:
-    typedef T value_type;
-    typedef const T* const_iterator;
-    typedef T* iterator;
-    ListOfOneContainer(const T& element) : element_(element) {}
-    const T* begin() const { return &element_; }
-    const T* end() const { return &element_ + 1; }
-    T* begin() { return &element_; }
-    T* end() { return &element_ + 1; }
-    size_t size() const { return 1; }
-  };
-
-  BOOST_CONCEPT_ASSERT((boost::RandomAccessRangeConcept<ListOfOneContainer<int> >));
-
-  /** Factory function for ListOfOneContainer to enable ListOfOne(e) syntax. */
-  template<typename T>
-  ListOfOneContainer<T> ListOfOne(const T& element) {
-    return ListOfOneContainer<T>(element);
-  }
-
-  /* ************************************************************************* */
+    /* ************************************************************************* */
 #ifdef __clang__
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wunused-private-field" // Clang complains that previousOpenMPThreads is unused in the #else case below
@@ -203,27 +210,27 @@ namespace gtsam {
 
 #if (_MSC_VER < 1800)
 
-#include <boost/math/special_functions/fpclassify.hpp>
+#include <cmath>
 namespace std {
   template<typename T> inline int isfinite(T a) {
-    return (int)boost::math::isfinite(a); }
+    return (int)std::isfinite(a); }
   template<typename T> inline int isnan(T a) {
-    return (int)boost::math::isnan(a); }
+    return (int)std::isnan(a); }
   template<typename T> inline int isinf(T a) {
-    return (int)boost::math::isinf(a); }
+    return (int)std::isinf(a); }
 }
 
 #endif
 
-#include <boost/math/constants/constants.hpp>
+#include <cmath>
 #ifndef M_PI
-#define M_PI (boost::math::constants::pi<double>())
+#define M_PI (3.14159265358979323846)
 #endif
 #ifndef M_PI_2
-#define M_PI_2 (boost::math::constants::pi<double>() / 2.0)
+#define M_PI_2 (M_PI / 2.0)
 #endif
 #ifndef M_PI_4
-#define M_PI_4 (boost::math::constants::pi<double>() / 4.0)
+#define M_PI_4 (M_PI / 4.0)
 #endif
 
 #endif
@@ -248,7 +255,7 @@ namespace gtsam {
   /**
    * A SFINAE trait to mark classes that need special alignment.
    *
-   * This is required to make boost::make_shared and etc respect alignment, which is essential for the Python
+   * This is required to make std::make_shared and etc respect alignment, which is essential for the Python
    * wrappers to work properly.
    *
    * Explanation

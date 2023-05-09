@@ -21,9 +21,6 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SparseEigen.h>
 
-#include <boost/assign/list_of.hpp>
-using boost::assign::list_of;
-
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
 
@@ -49,7 +46,7 @@ TEST(SparseEigen, sparseJacobianEigen) {
   EXPECT(assert_equal(gfg.augmentedJacobian(), Matrix(sparseResult)));
 
   // Call sparseJacobian with optional ordering...
-  auto ordering = Ordering(list_of(x45)(x123));
+  const Ordering ordering{x45, x123};
 
   // Eigen Sparse with optional ordering
   EXPECT(assert_equal(gfg.augmentedJacobian(ordering),
