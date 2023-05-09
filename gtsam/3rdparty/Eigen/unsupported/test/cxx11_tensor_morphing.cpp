@@ -41,29 +41,7 @@ static void test_simple_reshape()
   }
 }
 
-template <typename>
-static void test_static_reshape() {
-#if defined(EIGEN_HAS_INDEX_LIST)
-  using Eigen::type2index;
-
-  Tensor<float, 5> tensor(2, 3, 1, 7, 1);
-  tensor.setRandom();
-
-  // New dimensions: [2, 3, 7]
-  Eigen::IndexList<type2index<2>, type2index<3>, type2index<7>> dim;
-  Tensor<float, 3> reshaped = tensor.reshape(static_cast<Eigen::DSizes<ptrdiff_t,3>>(dim));
-
-  for (int i = 0; i < 2; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      for (int k = 0; k < 7; ++k) {
-        VERIFY_IS_EQUAL(tensor(i, j, 0, k, 0), reshaped(i, j, k));
-      }
-    }
-  }
-#endif
-}
-
-template <typename>
+template<typename>
 static void test_reshape_in_expr() {
   MatrixXf m1(2,3*5*7*11);
   MatrixXf m2(3*5*7*11,13);
@@ -112,19 +90,19 @@ static void test_reshape_as_lvalue()
   }
 }
 
-template<typename T, int DataLayout>
+template<int DataLayout>
 static void test_simple_slice()
 {
-  Tensor<T, 5, DataLayout> tensor(2,3,5,7,11);
+  Tensor<float, 5, DataLayout> tensor(2,3,5,7,11);
   tensor.setRandom();
 
-  Tensor<T, 5, DataLayout> slice1(1,1,1,1,1);
+  Tensor<float, 5, DataLayout> slice1(1,1,1,1,1);
   Eigen::DSizes<ptrdiff_t, 5> indices(1,2,3,4,5);
   Eigen::DSizes<ptrdiff_t, 5> sizes(1,1,1,1,1);
   slice1 = tensor.slice(indices, sizes);
   VERIFY_IS_EQUAL(slice1(0,0,0,0,0), tensor(1,2,3,4,5));
 
-  Tensor<T, 5, DataLayout> slice2(1,1,2,2,3);
+  Tensor<float, 5, DataLayout> slice2(1,1,2,2,3);
   Eigen::DSizes<ptrdiff_t, 5> indices2(1,1,3,4,5);
   Eigen::DSizes<ptrdiff_t, 5> sizes2(1,1,2,2,3);
   slice2 = tensor.slice(indices2, sizes2);
@@ -137,20 +115,20 @@ static void test_simple_slice()
   }
 }
 
-template<typename T>
+template<typename=void>
 static void test_const_slice()
 {
-  const T b[1] = {42};
-  TensorMap<Tensor<const T, 1> > m(b, 1);
+  const float b[1] = {42};
+  TensorMap<Tensor<const float, 1> > m(b, 1);
   DSizes<DenseIndex, 1> offsets;
   offsets[0] = 0;
-  TensorRef<Tensor<const T, 1> > slice_ref(m.slice(offsets, m.dimensions()));
+  TensorRef<Tensor<const float, 1> > slice_ref(m.slice(offsets, m.dimensions()));
   VERIFY_IS_EQUAL(slice_ref(0), 42);
 }
 
-template<typename T, int DataLayout>
+template<int DataLayout>
 static void test_slice_in_expr() {
-  typedef Matrix<T, Dynamic, Dynamic, DataLayout> Mtx;
+  typedef Matrix<float, Dynamic, Dynamic, DataLayout> Mtx;
   Mtx m1(7,7);
   Mtx m2(3,3);
   m1.setRandom();
@@ -158,10 +136,10 @@ static void test_slice_in_expr() {
 
   Mtx m3 = m1.block(1, 2, 3, 3) * m2.block(0, 2, 3, 1);
 
-  TensorMap<Tensor<T, 2, DataLayout>> tensor1(m1.data(), 7, 7);
-  TensorMap<Tensor<T, 2, DataLayout>> tensor2(m2.data(), 3, 3);
-  Tensor<T, 2, DataLayout> tensor3(3,1);
-  typedef typename Tensor<T, 1>::DimensionPair DimPair;
+  TensorMap<Tensor<float, 2, DataLayout>> tensor1(m1.data(), 7, 7);
+  TensorMap<Tensor<float, 2, DataLayout>> tensor2(m2.data(), 3, 3);
+  Tensor<float, 2, DataLayout> tensor3(3,1);
+  typedef Tensor<float, 1>::DimensionPair DimPair;
   array<DimPair, 1> contract_along{{DimPair(1, 0)}};
 
   Eigen::DSizes<ptrdiff_t, 2> indices1(1,2);
@@ -178,28 +156,28 @@ static void test_slice_in_expr() {
   }
 
   // Take an arbitrary slice of an arbitrarily sized tensor.
-  TensorMap<Tensor<const T, 2, DataLayout>> tensor4(m1.data(), 7, 7);
-  Tensor<T, 1, DataLayout> tensor6 = tensor4.reshape(DSizes<ptrdiff_t, 1>(7*7)).exp().slice(DSizes<ptrdiff_t, 1>(0), DSizes<ptrdiff_t, 1>(35));
+  TensorMap<Tensor<const float, 2, DataLayout>> tensor4(m1.data(), 7, 7);
+  Tensor<float, 1, DataLayout> tensor6 = tensor4.reshape(DSizes<ptrdiff_t, 1>(7*7)).exp().slice(DSizes<ptrdiff_t, 1>(0), DSizes<ptrdiff_t, 1>(35));
   for (int i = 0; i < 35; ++i) {
     VERIFY_IS_APPROX(tensor6(i), expf(tensor4.data()[i]));
   }
 }
 
-template<typename T, int DataLayout>
+template<int DataLayout>
 static void test_slice_as_lvalue()
 {
-  Tensor<T, 3, DataLayout> tensor1(2,2,7);
+  Tensor<float, 3, DataLayout> tensor1(2,2,7);
   tensor1.setRandom();
-  Tensor<T, 3, DataLayout> tensor2(2,2,7);
+  Tensor<float, 3, DataLayout> tensor2(2,2,7);
   tensor2.setRandom();
-  Tensor<T, 3, DataLayout> tensor3(4,3,5);
+  Tensor<float, 3, DataLayout> tensor3(4,3,5);
   tensor3.setRandom();
-  Tensor<T, 3, DataLayout> tensor4(4,3,2);
+  Tensor<float, 3, DataLayout> tensor4(4,3,2);
   tensor4.setRandom();
-  Tensor<T, 3, DataLayout> tensor5(10,13,12);
+  Tensor<float, 3, DataLayout> tensor5(10,13,12);
   tensor5.setRandom();
 
-  Tensor<T, 3, DataLayout> result(4,5,7);
+  Tensor<float, 3, DataLayout> result(4,5,7);
   Eigen::DSizes<ptrdiff_t, 3> sizes12(2,2,7);
   Eigen::DSizes<ptrdiff_t, 3> first_slice(0,0,0);
   result.slice(first_slice, sizes12) = tensor1;
@@ -245,10 +223,10 @@ static void test_slice_as_lvalue()
   }
 }
 
-template<typename T, int DataLayout>
+template<int DataLayout>
 static void test_slice_raw_data()
 {
-  Tensor<T, 4, DataLayout> tensor(3,5,7,11);
+  Tensor<float, 4, DataLayout> tensor(3,5,7,11);
   tensor.setRandom();
 
   Eigen::DSizes<ptrdiff_t, 4> offsets(1,2,3,4);
@@ -275,7 +253,7 @@ static void test_slice_raw_data()
   extents = Eigen::DSizes<ptrdiff_t, 4>(1,2,1,1);
   auto slice3 = SliceEvaluator(tensor.slice(offsets, extents), DefaultDevice());
   VERIFY_IS_EQUAL(slice3.dimensions().TotalSize(), 2);
-  VERIFY_IS_EQUAL(slice3.data(), static_cast<T*>(0));
+  VERIFY_IS_EQUAL(slice3.data(), static_cast<float*>(0));
 
   if (DataLayout == ColMajor) {
     offsets = Eigen::DSizes<ptrdiff_t, 4>(0,2,3,4);
@@ -340,15 +318,15 @@ static void test_slice_raw_data()
 }
 
 
-template<typename T, int DataLayout>
+template<int DataLayout>
 static void test_strided_slice()
 {
-  typedef Tensor<T, 5, DataLayout> Tensor5f;
+  typedef Tensor<float, 5, DataLayout> Tensor5f;
   typedef Eigen::DSizes<Eigen::DenseIndex, 5> Index5;
-  typedef Tensor<T, 2, DataLayout> Tensor2f;
+  typedef Tensor<float, 2, DataLayout> Tensor2f;
   typedef Eigen::DSizes<Eigen::DenseIndex, 2> Index2;
-  Tensor<T, 5, DataLayout> tensor(2,3,5,7,11);
-  Tensor<T, 2, DataLayout> tensor2(7,11);
+  Tensor<float, 5, DataLayout> tensor(2,3,5,7,11);
+  Tensor<float, 2, DataLayout> tensor2(7,11);
   tensor.setRandom();
   tensor2.setRandom();
 
@@ -434,13 +412,13 @@ static void test_strided_slice()
   }
 }
 
-template<typename T, int DataLayout>
+template<int DataLayout>
 static void test_strided_slice_write()
 {
-  typedef Tensor<T, 2, DataLayout> Tensor2f;
+  typedef Tensor<float, 2, DataLayout> Tensor2f;
   typedef Eigen::DSizes<Eigen::DenseIndex, 2> Index2;
 
-  Tensor<T, 2, DataLayout> tensor(7,11),tensor2(7,11);
+  Tensor<float, 2, DataLayout> tensor(7,11),tensor2(7,11);
   tensor.setRandom();
   tensor2=tensor;
   Tensor2f slice(2,3);
@@ -460,14 +438,15 @@ static void test_strided_slice_write()
   }
 }
 
-template<typename T, int DataLayout>
+
+template<int DataLayout>
 static void test_composition()
 {
-  Eigen::Tensor<T, 2, DataLayout> matrix(7, 11);
+  Eigen::Tensor<float, 2, DataLayout> matrix(7, 11);
   matrix.setRandom();
 
   const DSizes<ptrdiff_t, 3> newDims(1, 1, 11);
-  Eigen::Tensor<T, 3, DataLayout> tensor =
+  Eigen::Tensor<float, 3, DataLayout> tensor =
       matrix.slice(DSizes<ptrdiff_t, 2>(2, 0), DSizes<ptrdiff_t, 2>(1, 11)).reshape(newDims);
 
   VERIFY_IS_EQUAL(tensor.dimensions().TotalSize(), 11);
@@ -479,87 +458,28 @@ static void test_composition()
   }
 }
 
-template<typename T, int DataLayout>
-static void test_empty_slice()
-{
-  Tensor<T, 3, DataLayout> tensor(2,3,5);
-  tensor.setRandom();
-  Tensor<T, 3, DataLayout> copy = tensor;
 
-  // empty size in first dimension
-  Eigen::DSizes<ptrdiff_t, 3> indices1(1,2,3);
-  Eigen::DSizes<ptrdiff_t, 3> sizes1(0,1,2);
-  Tensor<T, 3, DataLayout> slice1(0,1,2);
-  slice1.setRandom();
-  tensor.slice(indices1, sizes1) = slice1;
-
-  // empty size in second dimension
-  Eigen::DSizes<ptrdiff_t, 3> indices2(1,2,3);
-  Eigen::DSizes<ptrdiff_t, 3> sizes2(1,0,2);
-  Tensor<T, 3, DataLayout> slice2(1,0,2);
-  slice2.setRandom();
-  tensor.slice(indices2, sizes2) = slice2;
-
-  // empty size in third dimension
-  Eigen::DSizes<ptrdiff_t, 3> indices3(1,2,3);
-  Eigen::DSizes<ptrdiff_t, 3> sizes3(1,1,0);
-  Tensor<T, 3, DataLayout> slice3(1,1,0);
-  slice3.setRandom();
-  tensor.slice(indices3, sizes3) = slice3;
-
-  // empty size in first and second dimension
-  Eigen::DSizes<ptrdiff_t, 3> indices4(1,2,3);
-  Eigen::DSizes<ptrdiff_t, 3> sizes4(0,0,2);
-  Tensor<T, 3, DataLayout> slice4(0,0,2);
-  slice4.setRandom();
-  tensor.slice(indices4, sizes4) = slice4;
-
-  // empty size in second and third dimension
-  Eigen::DSizes<ptrdiff_t, 3> indices5(1,2,3);
-  Eigen::DSizes<ptrdiff_t, 3> sizes5(1,0,0);
-  Tensor<T, 3, DataLayout> slice5(1,0,0);
-  slice5.setRandom();
-  tensor.slice(indices5, sizes5) = slice5;
-
-  // empty size in all dimensions
-  Eigen::DSizes<ptrdiff_t, 3> indices6(1,2,3);
-  Eigen::DSizes<ptrdiff_t, 3> sizes6(0,0,0);
-  Tensor<T, 3, DataLayout> slice6(0,0,0);
-  slice6.setRandom();
-  tensor.slice(indices6, sizes6) = slice6;
-
-  // none of these operations should change the tensor's components
-  // because all of the rvalue slices have at least one zero dimension
-  for (int i = 0; i < 2; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      for (int k = 0; k < 5; ++k) {
-          VERIFY_IS_EQUAL(tensor(i,j,k), copy(i,j,k));
-      }
-    }
-  }
-}
-
-#define CALL_SUBTEST_PART(PART) \
-  CALL_SUBTEST_##PART
-
-#define CALL_SUBTESTS_TYPES_LAYOUTS(PART, NAME)       \
-  CALL_SUBTEST_PART(PART)((NAME<float, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<float, RowMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<bool, ColMajor>())); \
-  CALL_SUBTEST_PART(PART)((NAME<bool, RowMajor>()))
-
-EIGEN_DECLARE_TEST(cxx11_tensor_morphing)
+void test_cxx11_tensor_morphing()
 {
   CALL_SUBTEST_1(test_simple_reshape<void>());
-  CALL_SUBTEST_1(test_static_reshape<void>());
-  CALL_SUBTEST_1(test_reshape_as_lvalue<void>());
   CALL_SUBTEST_1(test_reshape_in_expr<void>());
-  CALL_SUBTEST_1(test_const_slice<float>());
+  CALL_SUBTEST_1(test_reshape_as_lvalue<void>());
 
-  CALL_SUBTESTS_TYPES_LAYOUTS(2, test_simple_slice);
-  CALL_SUBTESTS_TYPES_LAYOUTS(3, test_slice_as_lvalue);
-  CALL_SUBTESTS_TYPES_LAYOUTS(4, test_slice_raw_data);
-  CALL_SUBTESTS_TYPES_LAYOUTS(5, test_strided_slice_write);
-  CALL_SUBTESTS_TYPES_LAYOUTS(6, test_strided_slice);
-  CALL_SUBTESTS_TYPES_LAYOUTS(7, test_composition);
+  CALL_SUBTEST_1(test_simple_slice<ColMajor>());
+  CALL_SUBTEST_1(test_simple_slice<RowMajor>());
+  CALL_SUBTEST_1(test_const_slice());
+  CALL_SUBTEST_2(test_slice_in_expr<ColMajor>());
+  CALL_SUBTEST_3(test_slice_in_expr<RowMajor>());
+  CALL_SUBTEST_4(test_slice_as_lvalue<ColMajor>());
+  CALL_SUBTEST_4(test_slice_as_lvalue<RowMajor>());
+  CALL_SUBTEST_5(test_slice_raw_data<ColMajor>());
+  CALL_SUBTEST_5(test_slice_raw_data<RowMajor>());
+
+  CALL_SUBTEST_6(test_strided_slice_write<ColMajor>());
+  CALL_SUBTEST_6(test_strided_slice<ColMajor>());
+  CALL_SUBTEST_6(test_strided_slice_write<RowMajor>());
+  CALL_SUBTEST_6(test_strided_slice<RowMajor>());
+
+  CALL_SUBTEST_7(test_composition<ColMajor>());
+  CALL_SUBTEST_7(test_composition<RowMajor>());
 }

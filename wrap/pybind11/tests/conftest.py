@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 """pytest configuration
 
 Extends output capture as needed by pybind11: ignore constructors, optional unordered lines.
-Adds docstring and exceptions message sanitizers.
+Adds docstring and exceptions message sanitizers: ignore Python 2 vs 3 differences.
 """
 
 import contextlib
@@ -12,19 +13,24 @@ import textwrap
 
 import pytest
 
-# Early diagnostic for failed imports
-import pybind11_tests
+import env
 
-_long_marker = re.compile(r"([0-9])L")
-_hexadecimal = re.compile(r"0x[0-9a-fA-F]+")
+# Early diagnostic for failed imports
+import pybind11_tests  # noqa: F401
+
+_unicode_marker = re.compile(r'u(\'[^\']*\')')
+_long_marker = re.compile(r'([0-9])L')
+_hexadecimal = re.compile(r'0x[0-9a-fA-F]+')
 
 # Avoid collecting Python3 only files
 collect_ignore = []
+if env.PY2:
+    collect_ignore.append("test_async.py")
 
 
 def _strip_and_dedent(s):
     """For triple-quote strings"""
-    return textwrap.dedent(s.lstrip("\n").rstrip())
+    return textwrap.dedent(s.lstrip('\n').rstrip())
 
 
 def _split_and_sort(s):
@@ -34,14 +40,11 @@ def _split_and_sort(s):
 
 def _make_explanation(a, b):
     """Explanation for a failed assert -- the a and b arguments are List[str]"""
-    return ["--- actual / +++ expected"] + [
-        line.strip("\n") for line in difflib.ndiff(a, b)
-    ]
+    return ["--- actual / +++ expected"] + [line.strip('\n') for line in difflib.ndiff(a, b)]
 
 
-class Output:
+class Output(object):
     """Basic output post-processing and comparison"""
-
     def __init__(self, string):
         self.string = string
         self.explanation = []
@@ -51,11 +54,7 @@ class Output:
 
     def __eq__(self, other):
         # Ignore constructor/destructor output which is prefixed with "###"
-        a = [
-            line
-            for line in self.string.strip().splitlines()
-            if not line.startswith("###")
-        ]
+        a = [line for line in self.string.strip().splitlines() if not line.startswith("###")]
         b = _strip_and_dedent(other).splitlines()
         if a == b:
             return True
@@ -66,7 +65,6 @@ class Output:
 
 class Unordered(Output):
     """Custom comparison for output without strict line ordering"""
-
     def __eq__(self, other):
         a = _split_and_sort(self.string)
         b = _split_and_sort(other)
@@ -77,7 +75,7 @@ class Unordered(Output):
             return False
 
 
-class Capture:
+class Capture(object):
     def __init__(self, capfd):
         self.capfd = capfd
         self.out = ""
@@ -120,7 +118,7 @@ def capture(capsys):
     return Capture(capsys)
 
 
-class SanitizedString:
+class SanitizedString(object):
     def __init__(self, sanitizer):
         self.sanitizer = sanitizer
         self.string = ""
@@ -143,7 +141,9 @@ class SanitizedString:
 def _sanitize_general(s):
     s = s.strip()
     s = s.replace("pybind11_tests.", "m.")
+    s = s.replace("unicode", "str")
     s = _long_marker.sub(r"\1", s)
+    s = _unicode_marker.sub(r"\1", s)
     return s
 
 
@@ -175,7 +175,7 @@ def msg():
 # noinspection PyUnusedLocal
 def pytest_assertrepr_compare(op, left, right):
     """Hook to insert custom failure explanation"""
-    if hasattr(left, "explanation"):
+    if hasattr(left, 'explanation'):
         return left.explanation
 
 
@@ -189,8 +189,8 @@ def suppress(exception):
 
 
 def gc_collect():
-    """Run the garbage collector twice (needed when running
-    reference counting tests with PyPy)"""
+    ''' Run the garbage collector twice (needed when running
+    reference counting tests with PyPy) '''
     gc.collect()
     gc.collect()
 
@@ -198,16 +198,3 @@ def gc_collect():
 def pytest_configure():
     pytest.suppress = suppress
     pytest.gc_collect = gc_collect
-
-
-def pytest_report_header(config):
-    del config  # Unused.
-    assert (
-        pybind11_tests.compiler_info is not None
-    ), "Please update pybind11_tests.cpp if this assert fails."
-    return (
-        "C++ Info:"
-        f" {pybind11_tests.compiler_info}"
-        f" {pybind11_tests.cpp_std}"
-        f" {pybind11_tests.PYBIND11_INTERNALS_ID}"
-    )

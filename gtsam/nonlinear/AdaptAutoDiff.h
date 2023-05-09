@@ -22,6 +22,9 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/3rdparty/ceres/autodiff.h>
 
+#include <boost/static_assert.hpp>
+#include <boost/type_traits/is_base_of.hpp>
+
 namespace gtsam {
 
 /**
@@ -44,8 +47,8 @@ class AdaptAutoDiff {
 
  public:
   VectorT operator()(const Vector1& v1, const Vector2& v2,
-                     OptionalJacobian<M, N1> H1 = {},
-                     OptionalJacobian<M, N2> H2 = {}) {
+                     OptionalJacobian<M, N1> H1 = boost::none,
+                     OptionalJacobian<M, N2> H2 = boost::none) {
     using ceres::internal::AutoDiff;
 
     bool success;

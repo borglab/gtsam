@@ -10,6 +10,8 @@ A visualSLAM example for the structure-from-motion problem on a simulated datase
 This version uses iSAM to solve the problem incrementally
 """
 
+from __future__ import print_function
+
 import numpy as np
 import gtsam
 from gtsam.examples import SFMdata
@@ -92,7 +94,7 @@ def main():
             current_estimate = isam.estimate()
             print('*' * 50)
             print('Frame {}:'.format(i))
-            current_estimate.print('Current estimate: ')
+            current_estimate.print_('Current estimate: ')
 
             # Clear the factor graph and values for the next iteration
             graph.resize(0)

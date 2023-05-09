@@ -22,7 +22,6 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include "gtsam/base/OptionalJacobian.h"
 
 // \namespace
 namespace simulated2DOriented {
@@ -63,7 +62,7 @@ namespace simulated2DOriented {
   }
 
   /// Prior on a single pose, optional derivative version
-  Pose2 prior(const Pose2& x, OptionalJacobian<3,3> H = OptionalNone) {
+  Pose2 prior(const Pose2& x, boost::optional<Matrix&> H = boost::none) {
     if (H) *H = I_3x3;
     return x;
   }
@@ -74,25 +73,25 @@ namespace simulated2DOriented {
   }
 
   /// odometry between two poses, optional derivative version
-  Pose2 odo(const Pose2& x1, const Pose2& x2, OptionalJacobian<3,3> H1 =
-      OptionalNone, OptionalJacobian<3,3> H2 = OptionalNone) {
+  Pose2 odo(const Pose2& x1, const Pose2& x2, boost::optional<Matrix&> H1 =
+      boost::none, boost::optional<Matrix&> H2 = boost::none) {
     return x1.between(x2, H1, H2);
   }
 
   /// Unary factor encoding a soft prior on a vector
   template<class VALUE = Pose2>
-  struct GenericPosePrior: public NoiseModelFactorN<VALUE> {
+  struct GenericPosePrior: public NoiseModelFactor1<VALUE> {
 
     Pose2 measured_; ///< measurement
 
     /// Create generic pose prior
     GenericPosePrior(const Pose2& measured, const SharedNoiseModel& model, Key key) :
-      NoiseModelFactorN<VALUE>(model, key), measured_(measured) {
+      NoiseModelFactor1<VALUE>(model, key), measured_(measured) {
     }
 
     /// Evaluate error and optionally derivative
-    Vector evaluateError(const Pose2& x, OptionalMatrixType H =
-        OptionalNone) const {
+    Vector evaluateError(const Pose2& x, boost::optional<Matrix&> H =
+        boost::none) const {
       return measured_.localCoordinates(prior(x, H));
     }
 
@@ -102,33 +101,31 @@ namespace simulated2DOriented {
    * Binary factor simulating "odometry" between two Vectors
    */
   template<class VALUE = Pose2>
-  struct GenericOdometry: public NoiseModelFactorN<VALUE, VALUE> {
+  struct GenericOdometry: public NoiseModelFactor2<VALUE, VALUE> {
     Pose2 measured_;   ///< Between measurement for odometry factor
 
     typedef GenericOdometry<VALUE> This;
-
-    // Provide access to the Matrix& version of evaluateError:
-    using NoiseModelFactor2<VALUE, VALUE>::evaluateError;
 
     /**
      * Creates an odometry factor between two poses
      */
     GenericOdometry(const Pose2& measured, const SharedNoiseModel& model,
         Key i1, Key i2) :
-          NoiseModelFactorN<VALUE, VALUE>(model, i1, i2), measured_(measured) {
+          NoiseModelFactor2<VALUE, VALUE>(model, i1, i2), measured_(measured) {
     }
 
     ~GenericOdometry() override {}
 
     /// Evaluate error and optionally derivative
     Vector evaluateError(const VALUE& x1, const VALUE& x2,
-        OptionalMatrixType H1, OptionalMatrixType H2) const override {
+        boost::optional<Matrix&> H1 = boost::none,
+        boost::optional<Matrix&> H2 = boost::none) const override {
       return measured_.localCoordinates(odo(x1, x2, H1, H2));
     }
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return std::static_pointer_cast<gtsam::NonlinearFactor>(
+      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   };

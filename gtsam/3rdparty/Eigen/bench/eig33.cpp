@@ -101,7 +101,7 @@ void eigen33(const Matrix& mat, Matrix& evecs, Vector& evals)
   computeRoots(scaledMat,evals);
 
   // compute the eigen vectors
-  // **here we assume 3 different eigenvalues**
+  // **here we assume 3 differents eigenvalues**
 
   // "optimized version" which appears to be slower with gcc!
 //     Vector base;

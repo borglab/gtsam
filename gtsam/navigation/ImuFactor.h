@@ -53,7 +53,6 @@ typedef ManifoldPreintegration PreintegrationType;
  *     TRO, 28(1):61-76, 2012.
  * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor:
  *     Computation of the Jacobian Matrices", Tech. Report, 2013.
- *     Available in this repo as "PreintegratedIMUJacobians.pdf".
  * [4] C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza, "IMU Preintegration on
  *     Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation",
  *     Robotics: Science and Systems (RSS), 2015.
@@ -67,7 +66,7 @@ typedef ManifoldPreintegration PreintegrationType;
  * as soon as it is received from the IMU) so as to avoid costly integration
  * at time of factor construction.
  *
- * @ingroup navigation
+ * @addtogroup SLAM
  */
 class GTSAM_EXPORT PreintegratedImuMeasurements: public PreintegrationType {
 
@@ -91,7 +90,7 @@ public:
    *  @param p       Parameters, typically fixed in a single application
    *  @param biasHat Current estimate of acceleration and rotation rate biases
    */
-  PreintegratedImuMeasurements(const std::shared_ptr<PreintegrationParams>& p,
+  PreintegratedImuMeasurements(const boost::shared_ptr<PreintegrationParams>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias()) :
       PreintegrationType(p, biasHat) {
     preintMeasCov_.setZero();
@@ -122,11 +121,7 @@ public:
 
   /**
    * Add a single IMU measurement to the preintegration.
-   * Both accelerometer and gyroscope measurements are taken to be in the sensor
-   * frame and conversion to the body frame is handled by `body_P_sensor` in
-   * `PreintegrationParams`.
-   *
-   * @param measuredAcc Measured acceleration (as given by the sensor)
+   * @param measuredAcc Measured acceleration (in body frame, as given by the sensor)
    * @param measuredOmega Measured angular velocity (as given by the sensor)
    * @param dt Time interval between this and the last IMU measurement
    */
@@ -146,7 +141,6 @@ public:
 #endif
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -155,7 +149,6 @@ public:
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
     ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
   }
-#endif
 };
 
 /**
@@ -168,28 +161,25 @@ public:
  * (which are usually slowly varying quantities), which is up to the caller.
  * See also CombinedImuFactor for a class that does this for you.
  *
- * @ingroup navigation
+ * @addtogroup SLAM
  */
-class GTSAM_EXPORT ImuFactor: public NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
+class GTSAM_EXPORT ImuFactor: public NoiseModelFactor5<Pose3, Vector3, Pose3, Vector3,
     imuBias::ConstantBias> {
 private:
 
   typedef ImuFactor This;
-  typedef NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
+  typedef NoiseModelFactor5<Pose3, Vector3, Pose3, Vector3,
       imuBias::ConstantBias> Base;
 
   PreintegratedImuMeasurements _PIM_;
 
 public:
 
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
-
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
-  typedef typename std::shared_ptr<ImuFactor> shared_ptr;
+  typedef typename boost::shared_ptr<ImuFactor> shared_ptr;
 #else
-  typedef std::shared_ptr<ImuFactor> shared_ptr;
+  typedef boost::shared_ptr<ImuFactor> shared_ptr;
 #endif
 
   /** Default constructor - only use for serialization */
@@ -233,8 +223,10 @@ public:
   /// vector of errors
   Vector evaluateError(const Pose3& pose_i, const Vector3& vel_i,
       const Pose3& pose_j, const Vector3& vel_j,
-      const imuBias::ConstantBias& bias_i, OptionalMatrixType H1, OptionalMatrixType H2,
-      OptionalMatrixType H3, OptionalMatrixType H4, OptionalMatrixType H5) const override;
+      const imuBias::ConstantBias& bias_i, boost::optional<Matrix&> H1 =
+          boost::none, boost::optional<Matrix&> H2 = boost::none,
+      boost::optional<Matrix&> H3 = boost::none, boost::optional<Matrix&> H4 =
+          boost::none, boost::optional<Matrix&> H5 = boost::none) const override;
 
 #ifdef GTSAM_TANGENT_PREINTEGRATION
   /// Merge two pre-integrated measurement classes
@@ -248,35 +240,29 @@ public:
 
  private:
   /** Serialization function */
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    // NoiseModelFactor5 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor5",
          boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(_PIM_);
   }
-#endif
 };
 // class ImuFactor
 
 /**
  * ImuFactor2 is a ternary factor that uses NavStates rather than Pose/Velocity.
- * @ingroup navigation
+ * @addtogroup SLAM
  */
-class GTSAM_EXPORT ImuFactor2 : public NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias> {
+class GTSAM_EXPORT ImuFactor2 : public NoiseModelFactor3<NavState, NavState, imuBias::ConstantBias> {
 private:
 
   typedef ImuFactor2 This;
-  typedef NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias> Base;
+  typedef NoiseModelFactor3<NavState, NavState, imuBias::ConstantBias> Base;
 
   PreintegratedImuMeasurements _PIM_;
 
 public:
-
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
 
   /** Default constructor - only use for serialization */
   ImuFactor2() {}
@@ -315,22 +301,20 @@ public:
   /// vector of errors
   Vector evaluateError(const NavState& state_i, const NavState& state_j,
                        const imuBias::ConstantBias& bias_i,  //
-                       OptionalMatrixType H1, OptionalMatrixType H2,
-                       OptionalMatrixType H3) const override;
+                       boost::optional<Matrix&> H1 = boost::none,
+                       boost::optional<Matrix&> H2 = boost::none,
+                       boost::optional<Matrix&> H3 = boost::none) const override;
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    // NoiseModelFactor3 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor3",
          boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(_PIM_);
   }
-#endif
 };
 // class ImuFactor2
 

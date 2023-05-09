@@ -70,17 +70,16 @@ Vector6 SO4::ChartAtOrigin::Local(const SO4 &Q, ChartJacobian H);
 /**
  * Project to top-left 3*3 matrix. Note this is *not* in general \in SO(3).
  */
-GTSAM_EXPORT Matrix3 topLeft(const SO4 &Q, OptionalJacobian<9, 6> H = {});
+GTSAM_EXPORT Matrix3 topLeft(const SO4 &Q, OptionalJacobian<9, 6> H = boost::none);
 
 /**
  * Project to Stiefel manifold of 4*3 orthonormal 3-frames in R^4, i.e., pi(Q)
- * -> \f$ S \in St(3,4) \f$.
+ * -> S \in St(3,4).
  */
-GTSAM_EXPORT Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = {});
+GTSAM_EXPORT Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = boost::none);
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
-template <class Archive>
 /** Serialization function */
+template <class Archive>
 void serialize(Archive &ar, SO4 &Q, const unsigned int /*version*/) {
   Matrix4 &M = Q.matrix_;
   ar &boost::serialization::make_nvp("Q11", M(0, 0));
@@ -103,7 +102,6 @@ void serialize(Archive &ar, SO4 &Q, const unsigned int /*version*/) {
   ar &boost::serialization::make_nvp("Q43", M(3, 2));
   ar &boost::serialization::make_nvp("Q44", M(3, 3));
 }
-#endif
 
 /*
  * Define the traits. internal::LieGroup provides both Lie group and Testable

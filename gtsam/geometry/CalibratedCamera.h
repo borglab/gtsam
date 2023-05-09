@@ -25,9 +25,7 @@
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/dllexport.h>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
-#endif
 
 namespace gtsam {
 
@@ -48,7 +46,7 @@ private:
 
 /**
  * A pinhole camera class that has a Pose3, functions as base class for all pinhole cameras
- * @ingroup geometry
+ * @addtogroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT PinholeBase {
@@ -178,7 +176,7 @@ public:
    * @param pc point in camera coordinates
    */
   static Point2 Project(const Point3& pc, //
-      OptionalJacobian<2, 3> Dpoint = {});
+      OptionalJacobian<2, 3> Dpoint = boost::none);
 
   /**
    * Project from 3D point at infinity in camera coordinates into image
@@ -186,7 +184,7 @@ public:
    * @param pc point in camera coordinates
    */
   static Point2 Project(const Unit3& pc, //
-      OptionalJacobian<2, 2> Dpoint = {});
+      OptionalJacobian<2, 2> Dpoint = boost::none);
 
   /// Project a point into the image and check depth
   std::pair<Point2, bool> projectSafe(const Point3& pw) const;
@@ -197,7 +195,7 @@ public:
    * @return the intrinsic coordinates of the projected point
    */
   Point2 project2(const Point3& point, OptionalJacobian<2, 6> Dpose =
-      {}, OptionalJacobian<2, 3> Dpoint = {}) const;
+      boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
   /** Project point at infinity into the image
    * Throws a CheiralityException if point behind image plane iff GTSAM_THROW_CHEIRALITY_EXCEPTION
@@ -205,13 +203,13 @@ public:
    * @return the intrinsic coordinates of the projected point
    */
   Point2 project2(const Unit3& point,
-      OptionalJacobian<2, 6> Dpose = {},
-      OptionalJacobian<2, 2> Dpoint = {}) const;
+      OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, 2> Dpoint = boost::none) const;
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   static Point3 BackprojectFromCamera(const Point2& p, const double depth,
-                                      OptionalJacobian<3, 2> Dpoint = {},
-                                      OptionalJacobian<3, 1> Ddepth = {});
+                                      OptionalJacobian<3, 2> Dpoint = boost::none,
+                                      OptionalJacobian<3, 1> Ddepth = boost::none);
 
   /// @}
   /// @name Advanced interface
@@ -223,21 +221,19 @@ public:
    * @return a pair of [start, end] indices into the tangent space vector
    */
   inline static std::pair<size_t, size_t> translationInterval() {
-    return {3, 5};
+    return std::make_pair(3, 5);
   }
 
   /// @}
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(pose_);
   }
-#endif
 };
 // end of class PinholeBase
 
@@ -245,7 +241,7 @@ private:
  * A Calibrated camera class [R|-R't], calibration K=I.
  * If calibration is known, it is more computationally efficient
  * to calibrate the measurements rather than try to predict in pixels.
- * @ingroup geometry
+ * @addtogroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT CalibratedCamera: public PinholeBase {
@@ -274,7 +270,7 @@ public:
 
   // Create CalibratedCamera, with derivatives
   static CalibratedCamera Create(const Pose3& pose,
-                                 OptionalJacobian<dimension, 6> H1 = {}) {
+                                 OptionalJacobian<dimension, 6> H1 = boost::none) {
     if (H1)
       *H1 << I_6x6;
     return CalibratedCamera(pose);
@@ -306,6 +302,14 @@ public:
   /// construct from vector
   explicit CalibratedCamera(const Vector &v) :
       PinholeBase(v) {
+  }
+
+  /// @}
+  /// @name Standard Interface
+  /// @{
+
+  /// destructor
+  virtual ~CalibratedCamera() {
   }
 
   /// @}
@@ -342,13 +346,13 @@ public:
    * Use project2, which is more consistently named across Pinhole cameras
    */
   Point2 project(const Point3& point, OptionalJacobian<2, 6> Dcamera =
-      {}, OptionalJacobian<2, 3> Dpoint = {}) const;
+      boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   Point3 backproject(const Point2& pn, double depth,
-                     OptionalJacobian<3, 6> Dresult_dpose = {},
-                     OptionalJacobian<3, 2> Dresult_dp = {},
-                     OptionalJacobian<3, 1> Dresult_ddepth = {}) const {
+                     OptionalJacobian<3, 6> Dresult_dpose = boost::none,
+                     OptionalJacobian<3, 2> Dresult_dp = boost::none,
+                     OptionalJacobian<3, 1> Dresult_ddepth = boost::none) const {
 
     Matrix32 Dpoint_dpn;
     Matrix31 Dpoint_ddepth;
@@ -375,8 +379,8 @@ public:
    * @return range (double)
    */
   double range(const Point3& point,
-      OptionalJacobian<1, 6> Dcamera = {},
-      OptionalJacobian<1, 3> Dpoint = {}) const {
+      OptionalJacobian<1, 6> Dcamera = boost::none,
+      OptionalJacobian<1, 3> Dpoint = boost::none) const {
     return pose().range(point, Dcamera, Dpoint);
   }
 
@@ -385,8 +389,8 @@ public:
    * @param pose Other SO(3) pose
    * @return range (double)
    */
-  double range(const Pose3& pose, OptionalJacobian<1, 6> Dcamera = {},
-      OptionalJacobian<1, 6> Dpose = {}) const {
+  double range(const Pose3& pose, OptionalJacobian<1, 6> Dcamera = boost::none,
+      OptionalJacobian<1, 6> Dpose = boost::none) const {
     return this->pose().range(pose, Dcamera, Dpose);
   }
 
@@ -396,8 +400,8 @@ public:
    * @return range (double)
    */
   double range(const CalibratedCamera& camera, //
-      OptionalJacobian<1, 6> H1 = {}, //
-      OptionalJacobian<1, 6> H2 = {}) const {
+      OptionalJacobian<1, 6> H1 = boost::none, //
+      OptionalJacobian<1, 6> H2 = boost::none) const {
     return pose().range(camera.pose(), H1, H2);
   }
 
@@ -408,7 +412,6 @@ private:
   /// @name Advanced Interface
   /// @{
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -417,7 +420,6 @@ private:
         & boost::serialization::make_nvp("PinholeBase",
             boost::serialization::base_object<PinholeBase>(*this));
   }
-#endif
 
   /// @}
 };

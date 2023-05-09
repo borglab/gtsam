@@ -17,8 +17,6 @@
  * @date     2/11/16
  */
 
-#pragma once
-
 #include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 
 /******************************************************************************/
@@ -45,7 +43,7 @@ namespace gtsam {
  *
  * We want the minimum of all those alphas among all inactive inequality.
  */
-Template std::tuple<double, int> This::computeStepSize(
+Template boost::tuple<double, int> This::computeStepSize(
     const InequalityFactorGraph& workingSet, const VectorValues& xk,
     const VectorValues& p, const double& maxAlpha) const {
   double minAlpha = maxAlpha;
@@ -74,7 +72,7 @@ Template std::tuple<double, int> This::computeStepSize(
       }
     }
   }
-  return std::make_tuple(minAlpha, closestFactorIx);
+  return boost::make_tuple(minAlpha, closestFactorIx);
 }
 
 /******************************************************************************/
@@ -149,7 +147,7 @@ Template JacobianFactor::shared_ptr This::createDualFactor(
   if (Aterms.size() > 0) {
     Vector b = problem_.costGradient(key, delta);
     // to compute the least-square approximation of dual variables
-    return std::make_shared<JacobianFactor>(Aterms, b);
+    return boost::make_shared<JacobianFactor>(Aterms, b);
   } else {
     return nullptr;
   }
@@ -219,8 +217,10 @@ Template typename This::State This::iterate(
   } else {
     // If we CAN make some progress, i.e. p_k != 0
     // Adapt stepsize if some inactive constraints complain about this move
+    double alpha;
+    int factorIx;
     VectorValues p = newValues - state.values;
-    const auto [alpha, factorIx] = // using 16.41
+    boost::tie(alpha, factorIx) = // using 16.41
         computeStepSize(state.workingSet, state.values, p, POLICY::maxAlpha);
     // also add to the working set the one that complains the most
     InequalityFactorGraph newWorkingSet = state.workingSet;

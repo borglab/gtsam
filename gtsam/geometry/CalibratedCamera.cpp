@@ -117,7 +117,7 @@ Point2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
     OptionalJacobian<2, 3> Dpoint) const {
 
   Matrix3 Rt; // calculated by transformTo if needed
-  const Point3 q = pose().transformTo(point, {}, Dpoint ? &Rt : 0);
+  const Point3 q = pose().transformTo(point, boost::none, Dpoint ? &Rt : 0);
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   if (q.z() <= 0)
     throw CheiralityException();

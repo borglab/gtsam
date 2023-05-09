@@ -36,7 +36,7 @@ template<typename T> void test_minres_T()
 
 }
 
-EIGEN_DECLARE_TEST(minres)
+void test_minres()
 {
   CALL_SUBTEST_1(test_minres_T<double>());
 //  CALL_SUBTEST_2(test_minres_T<std::compex<double> >());

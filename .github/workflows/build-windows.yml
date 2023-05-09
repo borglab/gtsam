@@ -16,7 +16,7 @@ jobs:
       BOOST_EXE: boost_1_72_0-msvc-14.2
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
@@ -26,11 +26,7 @@ jobs:
             windows-2019-cl,
           ]
 
-        build_type: [
-            Debug,
-            #TODO(Varun) The release build takes over 2.5 hours, need to figure out why.
-            # Release
-          ]
+        build_type: [Debug, Release]
         build_unstable: [ON]
         include:
           #TODO This build fails, need to understand why.
@@ -48,9 +44,7 @@ jobs:
       - name: Install Dependencies
         shell: powershell
         run: |
-          iwr -useb get.scoop.sh -outfile 'install_scoop.ps1'
-          .\install_scoop.ps1 -RunAsAdmin
-
+          Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
           scoop install cmake --global  # So we don't get issues with CMP0074 policy
           scoop install ninja --global
 
@@ -94,35 +88,15 @@ jobs:
           echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Configuration
-        run: |
-          cmake -E remove_directory build
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
+        uses: actions/checkout@v2
 
       - name: Build
         run: |
-          # Since Visual Studio is a multi-generator, we need to use --config
-          # https://stackoverflow.com/a/24470998/1236990
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target gtsam
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target gtsam_unstable
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target wrap
-
-          # Run GTSAM tests
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.basis
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.discrete
-          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.geometry
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.inference
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.linear
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.navigation
-          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.nonlinear
-          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.sam
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.sfm
-          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.slam
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.symbolic
-
-          # Run GTSAM_UNSTABLE tests
-          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base_unstable
-          
+          cmake -E remove_directory build
+          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
+          cmake --build build --config ${{ matrix.build_type }} --target gtsam
+          cmake --build build --config ${{ matrix.build_type }} --target gtsam_unstable
+          cmake --build build --config ${{ matrix.build_type }} --target wrap
+          cmake --build build --config ${{ matrix.build_type }} --target check.base
+          cmake --build build --config ${{ matrix.build_type }} --target check.base_unstable
+          cmake --build build --config ${{ matrix.build_type }} --target check.linear

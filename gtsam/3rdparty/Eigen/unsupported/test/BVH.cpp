@@ -192,7 +192,7 @@ struct TreeTest
 };
 
 
-EIGEN_DECLARE_TEST(BVH)
+void test_BVH()
 {
   for(int i = 0; i < g_repeat; i++) {
 #ifdef EIGEN_TEST_PART_1

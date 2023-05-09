@@ -8,7 +8,7 @@ struct Foo
   static Index object_limit;
   int dummy;
 
-  Foo() : dummy(0)
+  Foo()
   {
 #ifdef EIGEN_EXCEPTIONS
     // TODO: Is this the correct way to handle this?
@@ -33,37 +33,26 @@ Index Foo::object_limit = 0;
 #undef EIGEN_TEST_MAX_SIZE
 #define EIGEN_TEST_MAX_SIZE 3
 
-EIGEN_DECLARE_TEST(ctorleak)
+void test_ctorleak()
 {
   typedef Matrix<Foo, Dynamic, Dynamic> MatrixX;
   typedef Matrix<Foo, Dynamic, 1> VectorX;
-  
   Foo::object_count = 0;
   for(int i = 0; i < g_repeat; i++) {
     Index rows = internal::random<Index>(2,EIGEN_TEST_MAX_SIZE), cols = internal::random<Index>(2,EIGEN_TEST_MAX_SIZE);
-    Foo::object_limit = rows*cols;
-    {
-    MatrixX r(rows, cols);
-    Foo::object_limit = r.size()+internal::random<Index>(0, rows*cols - 2);
+    Foo::object_limit = internal::random<Index>(0, rows*cols - 2);
     std::cout << "object_limit =" << Foo::object_limit << std::endl;
 #ifdef EIGEN_EXCEPTIONS
     try
     {
 #endif
-      if(internal::random<bool>()) {
-        std::cout <<       "\nMatrixX m(" << rows << ", " << cols << ");\n";
-        MatrixX m(rows, cols);
-      }
-      else {
-        std::cout <<       "\nMatrixX m(r);\n";
-        MatrixX m(r);
-      }
+    	std::cout <<       "\nMatrixX m(" << rows << ", " << cols << ");\n";
+      MatrixX m(rows, cols);
 #ifdef EIGEN_EXCEPTIONS
       VERIFY(false);  // not reached if exceptions are enabled
     }
     catch (const Foo::Fail&) { /* ignore */ }
 #endif
-    }
     VERIFY_IS_EQUAL(Index(0), Foo::object_count);
 
     {
@@ -77,5 +66,4 @@ EIGEN_DECLARE_TEST(ctorleak)
     }
     VERIFY_IS_EQUAL(Index(0), Foo::object_count);
   }
-  std::cout << "\n";
 }

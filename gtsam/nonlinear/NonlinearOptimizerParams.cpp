@@ -9,6 +9,7 @@
  */
 
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
+#include <boost/algorithm/string.hpp>
 
 namespace gtsam {
 
@@ -16,8 +17,7 @@ namespace gtsam {
 NonlinearOptimizerParams::Verbosity NonlinearOptimizerParams::verbosityTranslator(
     const std::string &src) {
   std::string s = src;
-  // Convert to upper case
-  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+  boost::algorithm::to_upper(s);
   if (s == "SILENT")
     return NonlinearOptimizerParams::SILENT;
   if (s == "ERROR")
@@ -67,7 +67,7 @@ std::string NonlinearOptimizerParams::verbosityTranslator(
 
 /* ************************************************************************* */
 void NonlinearOptimizerParams::setIterativeParams(
-    const std::shared_ptr<IterativeOptimizationParameters> params) {
+    const boost::shared_ptr<IterativeOptimizationParameters> params) {
   iterativeParams = params;
 }
 

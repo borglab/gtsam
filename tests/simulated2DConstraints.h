@@ -25,7 +25,6 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/BoundingConstraint.h>
 #include <tests/simulated2D.h>
-#include "gtsam/nonlinear/NonlinearFactor.h"
 
 // \namespace
 
@@ -55,14 +54,14 @@ namespace simulated2D {
     struct ScalarCoordConstraint1: public BoundingConstraint1<VALUE> {
       typedef BoundingConstraint1<VALUE> Base;  ///< Base class convenience typedef
       typedef ScalarCoordConstraint1<VALUE, IDX> This; ///< This class convenience typedef
-      typedef std::shared_ptr<ScalarCoordConstraint1<VALUE, IDX> > shared_ptr; ///< std::shared_ptr convenience typedef
+      typedef boost::shared_ptr<ScalarCoordConstraint1<VALUE, IDX> > shared_ptr; ///< boost::shared_ptr convenience typedef
       typedef VALUE Point; ///< Constrained variable type
 
       ~ScalarCoordConstraint1() override {}
 
       /// @return a deep copy of this factor
       gtsam::NonlinearFactor::shared_ptr clone() const override {
-        return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        return boost::static_pointer_cast<gtsam::NonlinearFactor>(
             gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
       /**
@@ -88,8 +87,8 @@ namespace simulated2D {
        * @param x is the estimate of the constrained variable being evaluated
        * @param H is an optional Jacobian, linearized at x
        */
-      double value(const Point& x, OptionalMatrixType H =
-          OptionalNone) const override {
+      double value(const Point& x, boost::optional<Matrix&> H =
+          boost::none) const override {
         if (H) {
           Matrix D = Matrix::Zero(1, traits<Point>::GetDimension(x));
           D(0, IDX) = 1.0;
@@ -130,7 +129,7 @@ namespace simulated2D {
 
       /// @return a deep copy of this factor
       gtsam::NonlinearFactor::shared_ptr clone() const override {
-        return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        return boost::static_pointer_cast<gtsam::NonlinearFactor>(
             gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
       /**
@@ -152,8 +151,8 @@ namespace simulated2D {
        * @return the distance between the variables
        */
       double value(const Point& x1, const Point& x2,
-          OptionalMatrixType H1 = OptionalNone,
-          OptionalMatrixType H2 = OptionalNone) const override {
+          boost::optional<Matrix&> H1 = boost::none,
+          boost::optional<Matrix&> H2 = boost::none) const override {
         if (H1) *H1 = numericalDerivative21(range_trait<Point,Point>, x1, x2, 1e-5);
         if (H1) *H2 = numericalDerivative22(range_trait<Point,Point>, x1, x2, 1e-5);
         return range_trait(x1, x2);
@@ -179,7 +178,7 @@ namespace simulated2D {
 
       /// @return a deep copy of this factor
       gtsam::NonlinearFactor::shared_ptr clone() const override {
-        return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        return boost::static_pointer_cast<gtsam::NonlinearFactor>(
             gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
       /**
@@ -202,8 +201,8 @@ namespace simulated2D {
        * @return the distance between the variables
        */
       double value(const Pose& x1, const Point& x2,
-          OptionalMatrixType H1 = OptionalNone,
-          OptionalMatrixType H2 = OptionalNone) const override {
+          boost::optional<Matrix&> H1 = boost::none,
+          boost::optional<Matrix&> H2 = boost::none) const override {
         if (H1) *H1 = numericalDerivative21(range_trait<Pose,Point>, x1, x2, 1e-5);
         if (H1) *H2 = numericalDerivative22(range_trait<Pose,Point>, x1, x2, 1e-5);
         return range_trait(x1, x2);

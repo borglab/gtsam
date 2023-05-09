@@ -18,6 +18,9 @@
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/slam/dataset.h>
 
+#include <boost/assign/std/vector.hpp>
+
+using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 

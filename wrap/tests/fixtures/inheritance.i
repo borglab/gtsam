@@ -1,9 +1,10 @@
 // A base class
 virtual class MyBase {
+
 };
 
 // A templated class
-template<T = {gtsam::Point2, Matrix, A}>
+template<T = {gtsam::Point2, Matrix}>
 virtual class MyTemplate : MyBase {
   MyTemplate();
 
@@ -24,6 +25,3 @@ virtual class MyTemplate : MyBase {
 
 
 virtual class ForwardKinematicsFactor : gtsam::BetweenFactor<gtsam::Pose3> {};
-
-template <T = {double}>
-virtual class ParentHasTemplate : MyTemplate<T> {};

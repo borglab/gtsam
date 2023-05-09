@@ -19,7 +19,6 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/timing.h>
 #include <iostream>
-#include "gtsam/base/OptionalJacobian.h"
 
 using namespace std;
 using namespace gtsam;
@@ -44,7 +43,7 @@ Rot2 Rot2betweenOptimized(const Rot2& r1, const Rot2& r2) {
 
 /* ************************************************************************* */
 Vector Rot2BetweenFactorEvaluateErrorDefault(const Rot2& measured, const Rot2& p1, const Rot2& p2,
-  OptionalJacobian<1,1> H1, OptionalJacobian<1,1> H2)
+  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2)
 {
   Rot2 hx = p1.between(p2, H1, H2); // h(x)
   // manifold equivalent of h(x)-z -> log(z,h(x))
@@ -53,7 +52,7 @@ Vector Rot2BetweenFactorEvaluateErrorDefault(const Rot2& measured, const Rot2& p
 
 /* ************************************************************************* */
 Vector Rot2BetweenFactorEvaluateErrorOptimizedBetween(const Rot2& measured, const Rot2& p1, const Rot2& p2,
-  OptionalJacobian<1,1> H1, OptionalJacobian<1,1> H2)
+  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2)
 {
   Rot2 hx = Rot2betweenOptimized(p1, p2); // h(x)
   if (H1) *H1 = -I_1x1;
@@ -64,7 +63,7 @@ Vector Rot2BetweenFactorEvaluateErrorOptimizedBetween(const Rot2& measured, cons
 
 /* ************************************************************************* */
 Vector Rot2BetweenFactorEvaluateErrorOptimizedBetweenNoeye(const Rot2& measured, const Rot2& p1, const Rot2& p2,
-  OptionalJacobian<1,1> H1, OptionalJacobian<1,1> H2)
+  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2)
 {
   // TODO: Implement
   Rot2 hx = Rot2betweenOptimized(p1, p2); // h(x)
@@ -77,7 +76,7 @@ Vector Rot2BetweenFactorEvaluateErrorOptimizedBetweenNoeye(const Rot2& measured,
 /* ************************************************************************* */
 typedef Eigen::Matrix<double,1,1> Matrix1;
 Vector Rot2BetweenFactorEvaluateErrorOptimizedBetweenFixed(const Rot2& measured, const Rot2& p1, const Rot2& p2,
-  OptionalJacobian<1,1> H1, OptionalJacobian<1,1> H2)
+  boost::optional<Matrix1&> H1, boost::optional<Matrix1&> H2)
 {
   // TODO: Implement
   Rot2 hx = Rot2betweenOptimized(p1, p2); // h(x)

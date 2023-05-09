@@ -1,6 +1,6 @@
-# - MACRO_OPTIONAL_ADD_SUBDIRECTORY() combines add_subdirectory() with an option()
+# - MACRO_OPTIONAL_ADD_SUBDIRECTORY() combines ADD_SUBDIRECTORY() with an OPTION()
 # MACRO_OPTIONAL_ADD_SUBDIRECTORY( <dir> )
-# If you use MACRO_OPTIONAL_ADD_SUBDIRECTORY() instead of add_subdirectory(),
+# If you use MACRO_OPTIONAL_ADD_SUBDIRECTORY() instead of ADD_SUBDIRECTORY(),
 # this will have two effects
 # 1 - CMake will not complain if the directory doesn't exist
 #     This makes sense if you want to distribute just one of the subdirs
@@ -16,16 +16,16 @@
 # For details see the accompanying COPYING-CMAKE-SCRIPTS file.
 
 
-macro (MACRO_OPTIONAL_ADD_SUBDIRECTORY _dir )
-   get_filename_component(_fullPath ${_dir} ABSOLUTE)
-   if(EXISTS ${_fullPath})
-      if(${ARGC} EQUAL 2)
-        option(BUILD_${_dir} "Build directory ${_dir}" ${ARGV1})
-      else(${ARGC} EQUAL 2)
-        option(BUILD_${_dir} "Build directory ${_dir}" TRUE)
-      endif(${ARGC} EQUAL 2)
-      if(BUILD_${_dir})
-         add_subdirectory(${_dir})
-      endif(BUILD_${_dir})
-   endif(EXISTS ${_fullPath})
-endmacro (MACRO_OPTIONAL_ADD_SUBDIRECTORY)
+MACRO (MACRO_OPTIONAL_ADD_SUBDIRECTORY _dir )
+   GET_FILENAME_COMPONENT(_fullPath ${_dir} ABSOLUTE)
+   IF(EXISTS ${_fullPath})
+      IF(${ARGC} EQUAL 2)
+        OPTION(BUILD_${_dir} "Build directory ${_dir}" ${ARGV1})
+      ELSE(${ARGC} EQUAL 2)
+        OPTION(BUILD_${_dir} "Build directory ${_dir}" TRUE)
+      ENDIF(${ARGC} EQUAL 2)
+      IF(BUILD_${_dir})
+         ADD_SUBDIRECTORY(${_dir})
+      ENDIF(BUILD_${_dir})
+   ENDIF(EXISTS ${_fullPath})
+ENDMACRO (MACRO_OPTIONAL_ADD_SUBDIRECTORY)

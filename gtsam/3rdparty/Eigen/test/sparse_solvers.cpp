@@ -98,23 +98,10 @@ template<typename Scalar> void sparse_solvers(int rows, int cols)
     initSparse<Scalar>(density, refMat2, m2, ForceNonZeroDiag|MakeLowerTriangular, &zeroCoords, &nonzeroCoords);
     VERIFY_IS_APPROX(refMat2.template triangularView<Lower>().solve(vec2),
                      m2.template triangularView<Lower>().solve(vec3));
-
-    // test empty triangular matrix
-    {
-      m2.resize(0,0);
-      refMatB.resize(0,refMatB.cols());
-      DenseMatrix res = m2.template triangularView<Lower>().solve(refMatB);
-      VERIFY_IS_EQUAL(res.rows(),0);
-      VERIFY_IS_EQUAL(res.cols(),refMatB.cols());
-      res = refMatB;
-      m2.template triangularView<Lower>().solveInPlace(res);
-      VERIFY_IS_EQUAL(res.rows(),0);
-      VERIFY_IS_EQUAL(res.cols(),refMatB.cols());
-    }
   }
 }
 
-EIGEN_DECLARE_TEST(sparse_solvers)
+void test_sparse_solvers()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1(sparse_solvers<double>(8, 8) );

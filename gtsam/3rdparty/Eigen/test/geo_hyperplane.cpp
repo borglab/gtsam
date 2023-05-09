@@ -117,7 +117,7 @@ template<typename Scalar> void lines()
       VERIFY_IS_APPROX(result, center);
 
     // check conversions between two types of lines
-    PLine pl(line_u); // gcc 3.3 will crash if we don't name this variable.
+    PLine pl(line_u); // gcc 3.3 will commit suicide if we don't name this variable
     HLine line_u2(pl);
     CoeffsType converted_coeffs = line_u2.coeffs();
     if(line_u2.normal().dot(line_u.normal())<Scalar(0))
@@ -172,10 +172,15 @@ template<typename Scalar> void hyperplane_alignment()
 
   VERIFY_IS_APPROX(p1->coeffs(), p2->coeffs());
   VERIFY_IS_APPROX(p1->coeffs(), p3->coeffs());
+  
+  #if defined(EIGEN_VECTORIZE) && EIGEN_MAX_STATIC_ALIGN_BYTES > 0
+  if(internal::packet_traits<Scalar>::Vectorizable && internal::packet_traits<Scalar>::size<=4)
+    VERIFY_RAISES_ASSERT((::new(reinterpret_cast<void*>(array3u)) Plane3a));
+  #endif
 }
 
 
-EIGEN_DECLARE_TEST(geo_hyperplane)
+void test_geo_hyperplane()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( hyperplane(Hyperplane<float,2>()) );

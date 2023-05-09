@@ -1,7 +1,7 @@
 
 if (ACML_LIBRARIES)
   set(ACML_FIND_QUIETLY TRUE)
-endif ()
+endif (ACML_LIBRARIES)
 
 find_library(ACML_LIBRARIES
   NAMES

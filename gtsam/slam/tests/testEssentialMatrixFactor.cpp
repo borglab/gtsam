@@ -15,7 +15,6 @@
 #include <gtsam/nonlinear/expressionTesting.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/slam/EssentialMatrixFactor.h>
-#include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/dataset.h>
 
 using namespace std::placeholders;
@@ -35,7 +34,8 @@ gtsam::Rot3 cRb = gtsam::Rot3(bX, bZ, -bY).inverse();
 namespace example1 {
 
 const string filename = findExampleDataFile("18pointExample1.txt");
-SfmData data = SfmData::FromBalFile(filename);
+SfmData data;
+bool readOK = readBAL(filename, data);
 Rot3 c1Rc2 = data.cameras[1].pose().rotation();
 Point3 c1Tc2 = data.cameras[1].pose().translation();
 // TODO: maybe default value not good; assert with 0th
@@ -53,6 +53,8 @@ Vector vB(size_t i) { return EssentialMatrix::Homogeneous(pB(i)); }
 
 //*************************************************************************
 TEST(EssentialMatrixFactor, testData) {
+  CHECK(readOK);
+
   // Check E matrix
   Matrix expected(3, 3);
   expected << 0, 0, 0, 0, 0, -0.1, 0.1, 0, 0;
@@ -536,7 +538,8 @@ TEST(EssentialMatrixFactor4, minimizationWithStrongCal3BundlerPrior) {
 namespace example2 {
 
 const string filename = findExampleDataFile("5pointExample2.txt");
-SfmData data = SfmData::FromBalFile(filename);
+SfmData data;
+bool readOK = readBAL(filename, data);
 Rot3 aRb = data.cameras[1].pose().rotation();
 Point3 aTb = data.cameras[1].pose().translation();
 EssentialMatrix trueE(aRb, Unit3(aTb));
@@ -547,7 +550,7 @@ Point2 pA(size_t i) { return data.tracks[i].measurements[0].second; }
 Point2 pB(size_t i) { return data.tracks[i].measurements[1].second; }
 
 Cal3Bundler trueK = Cal3Bundler(500, 0, 0);
-std::shared_ptr<Cal3Bundler> K = std::make_shared<Cal3Bundler>(trueK);
+boost::shared_ptr<Cal3Bundler> K = boost::make_shared<Cal3Bundler>(trueK);
 PinholeCamera<Cal3Bundler> camera2(data.cameras[1].pose(), trueK);
 
 Vector vA(size_t i) {
@@ -629,14 +632,14 @@ TEST(EssentialMatrixFactor2, extraMinimization) {
   // We start with a factor graph and add constraints to it
   // Noise sigma is 1, assuming pixel measurements
   NonlinearFactorGraph graph;
-  for (size_t i = 0; i < data.numberTracks(); i++)
+  for (size_t i = 0; i < data.number_tracks(); i++)
     graph.emplace_shared<EssentialMatrixFactor2>(100, i, pA(i), pB(i), model2,
                                                  K);
 
   // Check error at ground truth
   Values truth;
   truth.insert(100, trueE);
-  for (size_t i = 0; i < data.numberTracks(); i++) {
+  for (size_t i = 0; i < data.number_tracks(); i++) {
     Point3 P1 = data.tracks[i].p;
     truth.insert(i, double(baseline / P1.z()));
   }
@@ -651,7 +654,7 @@ TEST(EssentialMatrixFactor2, extraMinimization) {
   // Check result
   EssentialMatrix actual = result.at<EssentialMatrix>(100);
   EXPECT(assert_equal(trueE, actual, 1e-1));
-  for (size_t i = 0; i < data.numberTracks(); i++)
+  for (size_t i = 0; i < data.number_tracks(); i++)
     EXPECT_DOUBLES_EQUAL(truth.at<double>(i), result.at<double>(i), 1e-1);
 
   // Check error at result

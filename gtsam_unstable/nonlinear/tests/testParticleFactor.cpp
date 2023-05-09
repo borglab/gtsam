@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/linear/NoiseModel.h>
+#include <boost/make_shared.hpp>
 
 namespace gtsam {
 
@@ -28,7 +29,7 @@ class ParticleFactor {
 
 public:
   typedef ParticleFactor This; ///< Typedef to this class
-  typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+  typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
 };
 
@@ -53,7 +54,7 @@ public:
    * @param P0 covariance at time 0, given as a diagonal Gaussian 'model'
    */
   State init(const Vector& x0, const SharedDiagonal& P0) {
-    return std::make_shared<ParticleFactor<X> >();
+    return boost::make_shared<ParticleFactor<X> >();
   }
 
 };

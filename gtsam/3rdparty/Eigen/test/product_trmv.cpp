@@ -70,7 +70,7 @@ template<typename MatrixType> void trmv(const MatrixType& m)
   // TODO check with sub-matrices
 }
 
-EIGEN_DECLARE_TEST(product_trmv)
+void test_product_trmv()
 {
   int s = 0;
   for(int i = 0; i < g_repeat ; i++) {

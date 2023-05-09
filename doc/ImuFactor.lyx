@@ -1,9 +1,7 @@
-#LyX 2.3 created this file. For more info see http://www.lyx.org/
-\lyxformat 544
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
 \begin_document
 \begin_header
-\save_transient_properties true
-\origin unavailable
 \textclass article
 \use_default_options true
 \maintain_unincluded_children false
@@ -11,18 +9,16 @@
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman "default" "default"
-\font_sans "default" "default"
-\font_typewriter "default" "default"
-\font_math "auto" "auto"
+\font_roman default
+\font_sans default
+\font_typewriter default
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100 100
-\font_tt_scale 100 100
-\use_microtype false
-\use_dash_ligatures true
+\font_sf_scale 100
+\font_tt_scale 100
+
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -33,26 +29,16 @@
 \use_hyperref false
 \papersize default
 \use_geometry true
-\use_package amsmath 1
-\use_package amssymb 1
-\use_package cancel 1
-\use_package esint 1
-\use_package mathdots 1
-\use_package mathtools 1
-\use_package mhchem 1
-\use_package stackrel 1
-\use_package stmaryrd 1
-\use_package undertilde 1
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
 \cite_engine basic
-\cite_engine_type default
-\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
-\justification true
 \use_refstyle 1
-\use_minted 0
 \index Index
 \shortcut idx
 \color #008000
@@ -65,10 +51,7 @@
 \tocdepth 3
 \paragraph_separation indent
 \paragraph_indentation default
-\is_math_indent 0
-\math_numbering_side default
-\quotes_style english
-\dynamic_quotes 0
+\quotes_language english
 \papercolumns 1
 \papersides 1
 \paperpagestyle default
@@ -82,11 +65,11 @@
 \begin_body
 
 \begin_layout Title
-The New IMU Factor
+The new IMU Factor
 \end_layout
 
 \begin_layout Author
-Frank Dellaert & Varun Agrawal
+Frank Dellaert
 \end_layout
 
 \begin_layout Standard
@@ -106,282 +89,6 @@ filename "macros.lyx"
 \end_inset
 
 
-\end_layout
-
-\begin_layout Standard
-\begin_inset FormulaMacro
-\newcommand{\Rnine}{\mathfrak{\mathbb{R}^{9}}}
-{\mathfrak{\mathbb{R}^{9}}}
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset FormulaMacro
-\newcommand{\Rninethree}{\mathfrak{\mathbb{R}^{9\times3}}}
-{\mathfrak{\mathbb{R}^{9\times3}}}
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset FormulaMacro
-\newcommand{\Rninesix}{\mathfrak{\mathbb{R}^{9\times6}}}
-{\mathfrak{\mathbb{R}^{9\times6}}}
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset FormulaMacro
-\newcommand{\Rninenine}{\mathfrak{\mathbb{R}^{9\times9}}}
-{\mathfrak{\mathbb{R}^{9\times9}}}
-\end_inset
-
-
-\end_layout
-
-\begin_layout Subsubsection*
-IMU Factor
-\end_layout
-
-\begin_layout Standard
-The IMU factor has 2 variants:
-\end_layout
-
-\begin_layout Enumerate
-ImuFactor is a 5-way factor between the previous pose and velocity, the
- current pose and velocity, and the current IMU bias.
-\end_layout
-
-\begin_layout Enumerate
-ImuFactor2 is a 3-way factor between the previous NavState, the current
- NavState and the current IMU bias.
-\end_layout
-
-\begin_layout Standard
-Both variants take a PreintegratedMeasurements object which encodes all
- the IMU measurements between the previous timestep and the current timestep.
-\end_layout
-
-\begin_layout Standard
-There are also 2 variants of this class:
-\end_layout
-
-\begin_layout Enumerate
-Manifold Preintegration: This version keeps track of the incremental NavState
- 
-\begin_inset Formula $\Delta X_{ij}$
-\end_inset
-
- with respect to the previous NavState, on the NavState manifold itself.
- It also keeps track of the 
-\begin_inset Formula $\Rninesix$
-\end_inset
-
- Jacobian of 
-\begin_inset Formula $\Delta X_{ij}$
-\end_inset
-
- w.r.t.
- the bias.
- This corresponds to Forster et.
- al.
-\begin_inset CommandInset citation
-LatexCommand cite
-key "Forster15rss"
-literal "false"
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Enumerate
-Tangent Preintegration: This version keeps track of the incremental NavState
- in the NavState tangent space instead.
- This is a 
-\begin_inset Formula $\Rnine$
-\end_inset
-
- vector 
-\emph on
-preintegrated_
-\emph default
-.
- It also keeps track of the 
-\begin_inset Formula $\Rninesix$
-\end_inset
-
- jacobian of the 
-\emph on
-preintegrated_
-\emph default
- w.r.t.
- the bias.
- 
-\end_layout
-
-\begin_layout Standard
-The main function of a factor is to calculate an error.
- This is done exactly the same in both variants: 
-\begin_inset Formula 
-\begin{equation}
-e(X_{i},X_{j})=X_{j}\ominus\widehat{X_{j}}\label{eq:imu-factor-error}
-\end{equation}
-
-\end_inset
-
-where the predicted NavState 
-\begin_inset Formula $\widehat{X_{j}}$
-\end_inset
-
- at time 
-\begin_inset Formula $t_{j}$
-\end_inset
-
- is a function of the NavState 
-\begin_inset Formula $X_{i}$
-\end_inset
-
- at time 
-\begin_inset Formula $t_{i}$
-\end_inset
-
- and the preintegrated measurements 
-\begin_inset Formula $PIM$
-\end_inset
-
-:
-\begin_inset Formula 
-\[
-\widehat{X_{j}}=f(X_{i},PIM)
-\]
-
-\end_inset
-
-The noise model associated with this factor is assumed to be zero-mean Gaussian
- with a 
-\begin_inset Formula $9\times9$
-\end_inset
-
- covariance matrix 
-\begin_inset Formula $\Sigma_{ij}$
-\end_inset
-
-, which is defined in the tangent space 
-\begin_inset Formula $T_{X_{j}}\mathcal{N}$
-\end_inset
-
- of the NavState manifold at the NavState 
-\begin_inset Formula $X_{j}$
-\end_inset
-
-.
- This (discrete-time) covariance matrix is computed in the preintegrated
- measurement class, of which there are two variants as discussed above.
-\end_layout
-
-\begin_layout Subsubsection*
-Combined IMU Factor
-\end_layout
-
-\begin_layout Standard
-The IMU factor above requires that bias drift over time be modeled as a
- separate stochastic process (using a BetweenFactor for example), a crucial
- aspect given that the preintegrated measurements depend on these bias values
- and are thus correlated.
- For this reason, we provide another type of IMU factor which we term the
- Combined IMU Factor.
- This factor similarly has 2 variants:
-\end_layout
-
-\begin_layout Enumerate
-CombinedImuFactor is a 6-way factor between the previous pose, velocity
- and IMU bias and the current pose, velocity and IMU bias.
-\end_layout
-
-\begin_layout Enumerate
-CombinedImuFactor2 is a 4-way factor between the previous NavState and IMU
- bias and the current NavState and IMU bias.
-\end_layout
-
-\begin_layout Standard
-Since the Combined IMU Factor has a larger state variable due to the inclusion
- of IMU biases, the noise model associated with this factor is assumed to
- be a zero mean Gaussian with a 
-\begin_inset Formula $15\times15$
-\end_inset
-
- covariance matrix 
-\begin_inset Formula $\Sigma$
-\end_inset
-
-, similarly defined on the tangent space of the NavState manifold.
-\end_layout
-
-\begin_layout Subsubsection*
-Covariance Matrices
-\end_layout
-
-\begin_layout Standard
-For IMU preintegration, it is important to propagate the uncertainty accurately
- as well.
- As such, we detail the various covariance matrices used in the preintegration
- step.
-\end_layout
-
-\begin_layout Itemize
-Gyroscope Covariance 
-\begin_inset Formula $Q_{\omega}$
-\end_inset
-
-: Measurement uncertainty of the gyroscope.
-\end_layout
-
-\begin_layout Itemize
-Gyroscope Bias Covariance 
-\begin_inset Formula $Q_{\Delta b^{\omega}}$
-\end_inset
-
- : The covariance associated with the gyroscope bias random walk.
-\end_layout
-
-\begin_layout Itemize
-Accelerometer Covariance 
-\begin_inset Formula $Q_{acc}$
-\end_inset
-
- : Measurement uncertainty of the accelerometer.
-\end_layout
-
-\begin_layout Itemize
-Accelerometer Bias Covariance 
-\begin_inset Formula $Q_{\Delta b^{acc}}$
-\end_inset
-
- : The covariance associated with the accelerometer bias random walk.
-\end_layout
-
-\begin_layout Itemize
-Integration Covariance 
-\begin_inset Formula $Q_{int}$
-\end_inset
-
- : This is the uncertainty due to modeling errors in the integration from
- acceleration to velocity and position.
-\end_layout
-
-\begin_layout Itemize
-Initial Bias Estimate Covariance 
-\begin_inset Formula $Q_{init}$
-\end_inset
-
- : This is the uncertainty associated with the estimation of the bias (since
- we jointly estimate the bias as well).
 \end_layout
 
 \begin_layout Subsubsection*
@@ -537,7 +244,7 @@ X(t)=\left\{ R_{0},P_{0}+V_{0}t,V_{0}\right\}
 then the differential equation describing the trajectory is
 \begin_inset Formula 
 \[
-\dot{X}(t)=\left[0_{3x3},V_{0},0_{3x1}\right],\,\,\,\,\,X(0)=\left\{ R_{0},P_{0},V_{0}\right\} 
+\dot{X}(t)=\left[0_{3x3},V_{0},0_{3x1}\right],\,\,\,\,\, X(0)=\left\{ R_{0},P_{0},V_{0}\right\} 
 \]
 
 \end_inset
@@ -578,15 +285,7 @@ acceleration
 \end_inset
 
  in the body frame.
- We know (from 
-\begin_inset CommandInset citation
-LatexCommand cite
-key "Murray94book"
-literal "false"
-
-\end_inset
-
-) that the derivative of 
+ We know (from Murray84book) that the derivative of 
 \begin_inset Formula $R$
 \end_inset
 
@@ -893,7 +592,6 @@ Lie Group Methods
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Iserles00an"
-literal "true"
 
 \end_inset
 
@@ -904,7 +602,7 @@ literal "true"
 ,
 \begin_inset Formula 
 \begin{equation}
-\dot{R}(t)=F(R,t),\,\,\,\,R(0)=R_{0}\label{eq:diffSo3}
+\dot{R}(t)=F(R,t),\,\,\,\, R(0)=R_{0}\label{eq:diffSo3}
 \end{equation}
 
 \end_inset
@@ -1007,6 +705,15 @@ In other words, the vector field
 
 \begin_layout Subsubsection*
 Retractions
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\Rnine}{\mathfrak{\mathbb{R}^{9}}}
+{\mathfrak{\mathbb{R}^{9}}}
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -1240,8 +947,8 @@ Or, as another way to state this, if we solve the differential equations
 \begin_inset Formula 
 \begin{eqnarray*}
 \dot{\theta}(t) & = & H(\theta)^{-1}\,\omega^{b}(t)\\
-\dot{p}(t) & = & R_{0}^{T}\,V_{0}+v(t)\\
-\dot{v}(t) & = & R_{0}^{T}\,g+R_{b}^{0}(t)a^{b}(t)
+\dot{p}(t) & = & R_{0}^{T}\, V_{0}+v(t)\\
+\dot{v}(t) & = & R_{0}^{T}\, g+R_{b}^{0}(t)a^{b}(t)
 \end{eqnarray*}
 
 \end_inset
@@ -1293,15 +1000,7 @@ In the IMU factor, we need to predict the NavState
 
  needs to be known in order to compensate properly for the initial velocity
  and rotated gravity vector.
- Hence, the idea of Lupton
-\begin_inset CommandInset citation
-LatexCommand cite
-key "Lupton12tro"
-literal "false"
-
-\end_inset
-
- was to split up 
+ Hence, the idea of Lupton was to split up 
 \begin_inset Formula $v(t)$
 \end_inset
 
@@ -1316,7 +1015,7 @@ v(t)=v_{g}(t)+v_{a}(t)
 evolving as
 \begin_inset Formula 
 \begin{eqnarray*}
-\dot{v}_{g}(t) & = & R_{i}^{T}\,g\\
+\dot{v}_{g}(t) & = & R_{i}^{T}\, g\\
 \dot{v}_{a}(t) & = & R_{b}^{i}(t)a^{b}(t)
 \end{eqnarray*}
 
@@ -1342,7 +1041,7 @@ p(t)=p_{i}(t)+p_{g}(t)+p_{v}(t)
 evolving as
 \begin_inset Formula 
 \begin{eqnarray*}
-\dot{p}_{i}(t) & = & R_{i}^{T}\,V_{i}\\
+\dot{p}_{i}(t) & = & R_{i}^{T}\, V_{i}\\
 \dot{p}_{g}(t) & = & v_{g}(t)=R_{i}^{T}gt\\
 \dot{p}_{v}(t) & = & v_{a}(t)
 \end{eqnarray*}
@@ -1358,11 +1057,8 @@ p_{g}(t) & = & R_{i}^{T}\frac{gt^{2}}{2}
 
 \end_inset
 
-The recipe for the IMU factor is then, in summary:
-\end_layout
-
-\begin_layout Enumerate
-Solve the ordinary differential equations
+The recipe for the IMU factor is then, in summary.
+ Solve the ordinary differential equations
 \begin_inset Formula 
 \begin{eqnarray*}
 \dot{\theta}(t) & = & H(\theta(t))^{-1}\,\omega^{b}(t)\\
@@ -1381,10 +1077,7 @@ starting from zero, up to time
 \end_inset
 
  at all times.
-\end_layout
-
-\begin_layout Enumerate
-Form the local coordinate vector as
+ Form the local coordinate vector as
 \begin_inset Formula 
 \[
 \zeta(t_{ij})=\left[\theta(t_{ij}),p(t_{ij}),v(t_{ij})\right]=\left[\theta(t_{ij}),R_{i}^{T}V_{i}t_{ij}+R_{i}^{T}\frac{gt_{ij}^{2}}{2}+p_{v}(t_{ij}),R_{i}^{T}gt_{ij}+v_{a}(t_{ij})\right]
@@ -1392,10 +1085,6 @@ Form the local coordinate vector as
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Enumerate
 Predict the NavState 
 \begin_inset Formula $X_{j}$
 \end_inset
@@ -1407,7 +1096,7 @@ Predict the NavState
  from
 \begin_inset Formula 
 \[
-X_{j}=\mathcal{R}_{X_{i}}(\zeta(t_{ij}))=\left\{ \Phi_{R_{0}}\left(\theta(t_{ij})\right),P_{i}+V_{i}t_{ij}+\frac{gt_{ij}^{2}}{2}+R_{i}\,p_{v}(t_{ij}),V_{i}+gt_{ij}+R_{i}\,v_{a}(t_{ij})\right\} 
+X_{j}=\mathcal{R}_{X_{i}}(\zeta(t_{ij}))=\left\{ \Phi_{R_{0}}\left(\theta(t_{ij})\right),P_{i}+V_{i}t_{ij}+\frac{gt_{ij}^{2}}{2}+R_{i}\, p_{v}(t_{ij}),V_{i}+gt_{ij}+R_{i}\, v_{a}(t_{ij})\right\} 
 \]
 
 \end_inset
@@ -1490,59 +1179,11 @@ where we defined the rotation matrix
 \end_layout
 
 \begin_layout Subsubsection*
-Noise Modeling
+Noise Propagation
 \end_layout
 
 \begin_layout Standard
-Given the above solutions to the differential equations, we add noise modeling
- to account for the various sources of error in the system 
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{eqnarray}
-\theta_{k+1} & = & \theta_{k}+H(\theta_{k})^{-1}\,(\omega_{k}^{b}+\epsilon_{k}^{\omega}-b_{k}^{\omega}-\epsilon_{init}^{\omega})\Delta_{t}\nonumber \\
-p_{k+1} & = & p_{k}+v_{k}\Delta_{t}+R_{k}(a_{k}^{b}+\epsilon_{k}^{a}-b_{k}^{a}-\epsilon_{init}^{a})\frac{\Delta_{t}^{2}}{2}+\epsilon_{k}^{int}\label{eq:preintegration}\\
-v_{k+1} & = & v_{k}+R_{k}(a_{k}^{b}+\epsilon_{k}^{a}-b_{k}^{a}-\epsilon_{init}^{a})\Delta_{t}\nonumber \\
-b_{k+1}^{a} & = & b_{k}^{a}+\epsilon_{k}^{b^{a}}\nonumber \\
-b_{k+1}^{\omega} & = & b_{k}^{\omega}+\epsilon_{k}^{b^{\omega}}\nonumber 
-\end{eqnarray}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-which we can write compactly as,
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{eqnarray}
-\theta_{k+1} & = & f_{\theta}(\theta_{k},b_{k}^{w},\epsilon_{k}^{\omega},\epsilon_{init}^{b^{\omega}})\label{eq:compact-preintegration}\\
-p_{k+1} & = & f_{p}(p_{k},v_{k},\theta_{k},b_{k}^{a},\epsilon_{k}^{a},\epsilon_{init}^{a},\epsilon_{k}^{int})\nonumber \\
-v_{k+1} & = & f_{v}(v_{k,}\theta_{k,}b_{k}^{a},\epsilon_{k}^{a},\epsilon_{init}^{a})\nonumber \\
-b_{k+1}^{a} & = & f_{b^{a}}(b_{k}^{a},\epsilon_{k}^{b^{a}})\nonumber \\
-b_{k+1}^{\omega} & = & f_{b^{\omega}}(b_{k}^{\omega},\epsilon_{k}^{b^{\omega}})\nonumber 
-\end{eqnarray}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Subsubsection*
-Noise Propagation in IMU Factor
-\end_layout
-
-\begin_layout Standard
-We wish to compute the ImuFactor covariance matrix 
-\begin_inset Formula $\Sigma_{ij}$
-\end_inset
-
-.
- Even when we assume uncorrelated noise on 
+Even when we assume uncorrelated noise on 
 \begin_inset Formula $\omega^{b}$
 \end_inset
 
@@ -1560,12 +1201,11 @@ We wish to compute the ImuFactor covariance matrix
 \end_inset
 
  appear in multiple places.
- To model the noise propagation, let us define the preintegrated navigation
- state 
+ To model the noise propagation, let us define 
 \begin_inset Formula $\zeta_{k}=[\theta_{k},p_{k},v_{k}]$
 \end_inset
 
-, as a 9D vector on tangent space at and rewrite Eqns.
+ and rewrite Eqns.
  (
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -1599,7 +1239,7 @@ Then the noise on
  propagates as
 \begin_inset Formula 
 \begin{equation}
-\Sigma_{k+1}=A_{k}\Sigma_{k}A_{k}^{T}+B_{k}\Sigma_{\eta}^{ad}B_{k}^{T}+C_{k}\Sigma_{\eta}^{gd}C_{k}^{T}\label{eq:prop}
+\Sigma_{k+1}=A_{k}\Sigma_{k}A_{k}^{T}+B_{k}\Sigma_{\eta}^{ad}B_{k}+C_{k}\Sigma_{\eta}^{gd}C_{k}\label{eq:prop}
 \end{equation}
 
 \end_inset
@@ -1641,42 +1281,6 @@ where
 \end_inset
 
 .
- Note that 
-\begin_inset Formula $\Sigma_{k},$
-\end_inset
-
-
-\begin_inset Formula $\Sigma_{\eta}^{ad}$
-\end_inset
-
-, and 
-\begin_inset Formula $\Sigma_{\eta}^{gd}$
-\end_inset
-
- are discrete time covariances with 
-\begin_inset Formula $\Sigma_{\eta}^{ad}$
-\end_inset
-
-, and 
-\begin_inset Formula $\Sigma_{\eta}^{gd}$
-\end_inset
-
-divided by 
-\begin_inset Formula $\Delta_{t}$
-\end_inset
-
-.
- Please see the section on Covariance Discretization
-\begin_inset CommandInset ref
-LatexCommand vpageref
-reference "subsec:Covariance-Discretization"
-plural "false"
-caps "false"
-noprefix "false"
-
-\end_inset
-
-.
 \end_layout
 
 \begin_layout Standard
@@ -1691,7 +1295,7 @@ We start with the noise propagation on
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\deriv{\theta_{k+1}}{\theta_{k}}=I_{3\times3}+\deriv{H(\theta_{k})^{-1}\omega_{k}^{b}}{\theta_{k}}\Delta_{t}
+\deriv{\theta_{k+1}}{\theta_{k}}=I_{3x3}+\deriv{H(\theta_{k})^{-1}\omega_{k}^{b}}{\theta_{k}}\Delta_{t}
 \]
 
 \end_inset
@@ -1703,7 +1307,7 @@ It can be shown that for small
  we have 
 \begin_inset Formula 
 \[
-\deriv{H(\theta_{k})^{-1}\omega_{k}^{b}}{\theta_{k}}\approx-\frac{1}{2}\Skew{\omega_{k}^{b}}\mbox{ and hence }\deriv{\theta_{k+1}}{\theta_{k}}=I_{3\times3}-\frac{\Delta_{t}}{2}\Skew{\omega_{k}^{b}}
+\deriv{H(\theta_{k})^{-1}\omega_{k}^{b}}{\theta_{k}}\approx-\frac{1}{2}\Skew{\omega_{k}^{b}}\mbox{ and hence }\deriv{\theta_{k+1}}{\theta_{k}}=I_{3x3}-\frac{\Delta t}{2}\Skew{\omega_{k}^{b}}
 \]
 
 \end_inset
@@ -1753,9 +1357,9 @@ Putting all this together, we finally obtain
 \begin_inset Formula 
 \[
 A_{k}\approx\left[\begin{array}{ccc}
-I_{3\times3}-\frac{\Delta_{t}}{2}\Skew{\omega_{k}^{b}} & 0_{3\times3} & 0_{3\times3}\\
+I_{3\times3}-\frac{\Delta_{t}}{2}\Skew{\omega_{k}^{b}}\\
 R_{k}\Skew{-a_{k}^{b}}H(\theta_{k})\frac{\Delta_{t}}{2}^{2} & I_{3\times3} & I_{3\times3}\Delta_{t}\\
-R_{k}\Skew{-a_{k}^{b}}H(\theta_{k})\Delta_{t} & 0_{3\times3} & I_{3\times3}
+R_{k}\Skew{-a_{k}^{b}}H(\theta_{k})\Delta_{t} &  & I_{3\times3}
 \end{array}\right]
 \]
 
@@ -1768,7 +1372,7 @@ B_{k}=\left[\begin{array}{c}
 0_{3\times3}\\
 R_{k}\frac{\Delta_{t}}{2}^{2}\\
 R_{k}\Delta_{t}
-\end{array}\right],\,\,\,\,C_{k}=\left[\begin{array}{c}
+\end{array}\right],\,\,\,\, C_{k}=\left[\begin{array}{c}
 H(\theta_{k})^{-1}\Delta_{t}\\
 0_{3\times3}\\
 0_{3\times3}
@@ -1780,393 +1384,9 @@ H(\theta_{k})^{-1}\Delta_{t}\\
 
 \end_layout
 
-\begin_layout Subsubsection*
-Noise Propagation in Combined IMU Factor
-\end_layout
-
-\begin_layout Standard
-We can similarly account for bias drift over time, as is commonly seen in
- commercial grade IMUs.
-\end_layout
-
-\begin_layout Standard
-We expand the state vector as 
-\begin_inset Formula $\zeta_{k}=[\theta_{k},p_{k},v_{k},b_{k}^{a},b_{k}^{\omega}]$
-\end_inset
-
- to include the bias terms and define the augmented noise vector 
-\begin_inset Formula $\epsilon=[\epsilon_{k}^{\omega},\epsilon_{k}^{a},\epsilon_{k}^{b^{a}},\epsilon_{k}^{b^{\omega}},\epsilon_{k}^{int},\epsilon_{init}^{b^{a}},\epsilon_{init}^{b^{\omega}}]$
-\end_inset
-
-.
- This gives the noise propagation equation as
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{equation}
-\Sigma_{k+1}=F_{k}\Sigma_{k}F_{k}^{T}+G_{k}Q_{k}G_{k}^{T}\label{eq:prop-combined}
-\end{equation}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-where 
-\begin_inset Formula $F_{k}$
-\end_inset
-
- is the 
-\begin_inset Formula $15\times15$
-\end_inset
-
- derivative of 
-\begin_inset Formula $f$
-\end_inset
-
- wrpt this new 
-\begin_inset Formula $\zeta$
-\end_inset
-
-, and 
-\begin_inset Formula $G_{k}$
-\end_inset
-
- is the 
-\begin_inset Formula $15\times21$
-\end_inset
-
- matrix for first order uncertainty propagation.
- 
-\begin_inset Formula $Q_{k}$
-\end_inset
-
- defines the uncertainty of 
-\begin_inset Formula $\eta$
-\end_inset
-
-.
- The top-left 
-\begin_inset Formula $9\times9$
-\end_inset
-
- of 
-\begin_inset Formula $F_{k}$
-\end_inset
-
- is the same as 
-\begin_inset Formula $A_{k}$
-\end_inset
-
-, thus we only have the jacobians wrpt the biases left to account for.
-\end_layout
-
-\begin_layout Standard
-Conveniently, the jacobians of the pose and velocity wrpt the biases are
- already computed in the 
-\emph on
-ImuFactor 
-\emph default
-derivation as matrices 
-\begin_inset Formula $B_{k}$
-\end_inset
-
- and 
-\begin_inset Formula $C_{k}$
-\end_inset
-
-, while they are identity matrices wrpt the biases themselves.
- Thus, we can easily plug-in the values from the previous section to give
- us the final result
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-F_{k}\approx\left[\begin{array}{ccccc}
-I_{3\times3}-\frac{\Delta_{t}}{2}\Skew{\omega_{k}^{b}} & 0_{3\times3} & 0_{3\times3} & 0_{3\times3} & H(\theta_{k})^{-1}\Delta_{t}\\
-R_{k}\Skew{-a_{k}^{b}}H(\theta_{k})\frac{\Delta_{t}}{2}^{2} & I_{3\times3} & I_{3\times3}\Delta_{t} & R_{k}\frac{\Delta_{t}}{2}^{2} & 0_{3\times3}\\
-R_{k}\Skew{-a_{k}^{b}}H(\theta_{k})\Delta_{t} & 0_{3\times3} & I_{3\times3} & R_{k}\Delta_{t} & 0_{3\times3}\\
-0_{3\times3} & 0_{3\times3} & 0_{3\times3} & I_{3\times3} & 0_{3\times3}\\
-0_{3\times3} & 0_{3\times3} & 0_{3\times3} & 0_{3\times3} & I_{3\times3}
-\end{array}\right]
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Similarly for 
-\begin_inset Formula $Q_{k},$
-\end_inset
-
-we get
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-Q_{k}=\left[\begin{array}{ccccccc}
-\Sigma^{\omega}\\
- & \Sigma^{a}\\
- &  & \Sigma^{b^{a}}\\
- &  &  & \Sigma^{b^{\omega}}\\
- &  &  &  & \Sigma^{int}\\
- &  &  &  &  & \Sigma^{init_{11}} & \Sigma^{init_{12}}\\
- &  &  &  &  & \Sigma^{init_{21}} & \Sigma^{init_{22}}
-\end{array}\right]
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-and for 
-\begin_inset Formula $G_{k}$
-\end_inset
-
- we get
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-G_{k}=\left[\begin{array}{ccccccc}
-\deriv{\theta}{\epsilon^{\omega}} & \deriv{\theta}{\epsilon^{a}} & \deriv{\theta}{\epsilon^{b^{a}}} & \deriv{\theta}{\epsilon^{b^{\omega}}} & \deriv{\theta}{\epsilon^{int}} & \deriv{\theta}{\epsilon_{init}^{b^{a}}} & \deriv{\theta}{\epsilon_{init}^{b^{\omega}}}\\
-\deriv p{\epsilon^{\omega}} & \deriv p{\epsilon^{a}} & \deriv p{\epsilon^{b^{a}}} & \deriv p{\epsilon^{b^{\omega}}} & \deriv p{\epsilon^{int}} & \deriv p{\epsilon_{init}^{b^{a}}} & \deriv p{\epsilon_{init}^{b^{\omega}}}\\
-\deriv v{\epsilon^{\omega}} & \deriv v{\epsilon^{a}} & \deriv v{\epsilon^{b^{a}}} & \deriv v{\epsilon^{b^{\omega}}} & \deriv v{\epsilon^{int}} & \deriv v{\epsilon_{init}^{b^{a}}} & \deriv v{\epsilon_{init}^{b^{\omega}}}\\
-\deriv{b^{a}}{\epsilon^{\omega}} & \deriv{b^{a}}{\epsilon^{a}} & \deriv{b^{a}}{\epsilon^{b^{a}}} & \deriv{b^{a}}{\epsilon^{b^{\omega}}} & \deriv{b^{a}}{\epsilon^{int}} & \deriv{b^{a}}{\epsilon_{init}^{b^{a}}} & \deriv{b^{a}}{\epsilon_{init}^{b^{\omega}}}\\
-\deriv{b^{\omega}}{\epsilon^{\omega}} & \deriv{b^{\omega}}{\epsilon^{a}} & \deriv{b^{\omega}}{\epsilon^{b^{a}}} & \deriv{b^{\omega}}{\epsilon^{b^{\omega}}} & \deriv{b^{\omega}}{\epsilon^{int}} & \deriv{b^{\omega}}{\epsilon_{init}^{b^{a}}} & \deriv{b^{\omega}}{\epsilon_{init}^{b^{\omega}}}
-\end{array}\right]=\left[\begin{array}{ccccccc}
-\deriv{\theta}{\epsilon^{\omega}} & 0 & 0 & 0 & 0 & 0 & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\\
-0 & \deriv p{\epsilon^{a}} & 0 & 0 & \deriv p{\epsilon^{int}} & \deriv p{\eta_{init}^{b^{a}}} & 0\\
-0 & \deriv v{\epsilon^{a}} & 0 & 0 & 0 & \deriv v{\eta_{init}^{b^{a}}} & 0\\
-0 & 0 & I_{3\times3} & 0 & 0 & 0 & 0\\
-0 & 0 & 0 & I_{3\times3} & 0 & 0 & 0
-\end{array}\right]
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-We can perform the block-wise computation of 
-\begin_inset Formula $G_{k}Q_{k}G_{k}^{T}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-G_{k}Q_{k}G_{k}^{T}=\left[\begin{array}{ccccccc}
-\deriv{\theta}{\epsilon^{\omega}} & 0 & 0 & 0 & 0 & 0 & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\\
-0 & \deriv p{\epsilon^{a}} & 0 & 0 & \deriv p{\epsilon^{int}} & \deriv p{\eta_{init}^{b^{a}}} & 0\\
-0 & \deriv v{\epsilon^{a}} & 0 & 0 & 0 & \deriv v{\eta_{init}^{b^{a}}} & 0\\
-0 & 0 & I_{3\times3} & 0 & 0 & 0 & 0\\
-0 & 0 & 0 & I_{3\times3} & 0 & 0 & 0
-\end{array}\right]\left[\begin{array}{ccccccc}
-\Sigma^{\omega}\\
- & \Sigma^{a}\\
- &  & \Sigma^{b^{a}}\\
- &  &  & \Sigma^{b^{\omega}}\\
- &  &  &  & \Sigma^{int}\\
- &  &  &  &  & \Sigma^{init_{11}} & \Sigma^{init_{12}}\\
- &  &  &  &  & \Sigma^{init_{21}} & \Sigma^{init_{22}}
-\end{array}\right]G_{k}^{T}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-G_{k}Q_{k}G_{k}^{T}=\left[\begin{array}{ccccccc}
-\deriv{\theta}{\epsilon^{\omega}}\Sigma^{\omega} & 0 & 0 & 0 & 0 & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{22}}\\
-0 & \deriv p{\epsilon^{a}}\Sigma^{a} & 0 & 0 & \deriv p{\epsilon^{int}}\Sigma^{int} & \deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}} & \deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\\
-0 & \deriv v{\epsilon^{a}}\Sigma^{a} & 0 & 0 & 0 & \deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}} & \deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\\
-0 & 0 & \Sigma^{b^{a}} & 0 & 0 & 0 & 0\\
-0 & 0 & 0 & \Sigma^{b^{\omega}} & 0 & 0 & 0
-\end{array}\right]G_{k}^{T}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{multline*}
-G_{k}Q_{k}G_{k}^{T}=\left[\begin{array}{ccccccc}
-\deriv{\theta}{\epsilon^{\omega}}\Sigma^{\omega} & 0 & 0 & 0 & 0 & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{22}}\\
-0 & \deriv p{\epsilon^{a}}\Sigma^{a} & 0 & 0 & \deriv p{\epsilon^{int}}\Sigma^{int} & \deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}} & \deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\\
-0 & \deriv v{\epsilon^{a}}\Sigma^{a} & 0 & 0 & 0 & \deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}} & \deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\\
-0 & 0 & \Sigma^{b^{a}} & 0 & 0 & 0 & 0\\
-0 & 0 & 0 & \Sigma^{b^{\omega}} & 0 & 0 & 0
-\end{array}\right]\\
-\left[\begin{array}{ccccc}
-\deriv{\theta}{\epsilon^{\omega}}^{T} & 0 & 0 & 0 & 0\\
-0 & \deriv p{\epsilon^{a}}^{T} & \deriv v{\epsilon^{a}}^{T} & 0 & 0\\
-0 & 0 & 0 & I_{3\times3} & 0\\
-0 & 0 & 0 & 0 & I_{3\times3}\\
-0 & \deriv p{\epsilon^{int}}^{T} & 0 & 0 & 0\\
-0 & \deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & 0 & 0 & 0 & 0
-\end{array}\right]
-\end{multline*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{multline*}
-=\\
-\left[\begin{array}{ccccc}
-\deriv{\theta}{\epsilon^{\omega}}\Sigma^{\omega}\deriv{\theta}{\epsilon^{\omega}}^{T}+\deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{22}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T}+\deriv p{\epsilon^{int}}\Sigma^{int}\deriv p{\epsilon^{int}}^{T}\\
- & +\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T}+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T}+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T}+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-0 & 0 & 0 & \Sigma^{b^{a}} & 0\\
-0 & 0 & 0 & 0 & \Sigma^{b^{\omega}}
-\end{array}\right]
-\end{multline*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-which we can break into 3 matrices for clarity, representing the main diagonal
- and off-diagonal elements
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{multline*}
-=\\
-\left[\begin{array}{ccccc}
-\deriv{\theta}{\epsilon^{\omega}}\Sigma^{\omega}\deriv{\theta}{\epsilon^{\omega}}^{T} & 0 & 0 & 0 & 0\\
-0 & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T} & 0 & 0 & 0\\
-0 & 0 & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T} & 0 & 0\\
-0 & 0 & 0 & \Sigma^{b^{a}} & 0\\
-0 & 0 & 0 & 0 & \Sigma^{b^{\omega}}
-\end{array}\right]+\\
-\left[\begin{array}{ccccc}
-\deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{22}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & 0 & 0 & 0 & 0\\
-0 & \deriv p{\epsilon^{int}}\Sigma^{int}\deriv p{\epsilon^{int}}^{T}+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}}^{T} & 0 & 0 & 0\\
-0 & 0 & \deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-0 & 0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0 & 0
-\end{array}\right]+\\
-\left[\begin{array}{ccccc}
-0 & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & 0 & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T}+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T}+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}}^{T} & 0 & 0 & 0\\
-0 & 0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0 & 0
-\end{array}\right]
-\end{multline*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Subsubsection*
-Covariance Discretization
-\begin_inset CommandInset label
-LatexCommand label
-name "subsec:Covariance-Discretization"
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-So far, all the covariances are assumed to be continuous since the state
- and measurement models are considered to be continuous-time stochastic
- processes.
- However, we sample measurements in a discrete-time fashion, necessitating
- the need to convert the covariances to their discrete time equivalents.
-\end_layout
-
-\begin_layout Standard
-The IMU is modeled as a first order Gauss-Markov process, with a measurement
- noise and a process noise.
- Following 
-\begin_inset CommandInset citation
-LatexCommand cite
-after "Alg. 1 Page 57"
-key "Nikolic16thesis"
-literal "false"
-
-\end_inset
-
- and 
-\begin_inset CommandInset citation
-LatexCommand cite
-after "Eqns 129-130"
-key "Trawny05report_IndirectKF"
-literal "false"
-
-\end_inset
-
-, the measurement noises 
-\begin_inset Formula $[\epsilon^{a},\epsilon^{\omega},\epsilon_{init}]$
-\end_inset
-
- are simply scaled by 
-\begin_inset Formula $\frac{1}{\Delta t}$
-\end_inset
-
-, and the process noises 
-\begin_inset Formula $[\epsilon^{int},\epsilon^{b^{a}},\epsilon^{b^{\omega}}]$
-\end_inset
-
- are scaled by 
-\begin_inset Formula $\Delta t$
-\end_inset
-
- where 
-\begin_inset Formula $\Delta t$
-\end_inset
-
- is the time interval between 2 consecutive samples.
- For a thorough explanation of the discretization process, please refer
- to 
-\begin_inset CommandInset citation
-LatexCommand cite
-after "Section 8.1"
-key "Simon06book"
-literal "false"
-
-\end_inset
-
-.
-\end_layout
-
 \begin_layout Standard
 \begin_inset CommandInset bibtex
 LatexCommand bibtex
-btprint "btPrintCited"
 bibfiles "refs"
 options "plain"
 

@@ -18,7 +18,6 @@
 #include <gtsam/inference/VariableSlots.h>
 
 #include <iostream>
-#include <limits>
 
 using namespace std;
 

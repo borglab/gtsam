@@ -20,6 +20,7 @@
 #ifdef GTSAM_USE_QUATERNIONS
 
 #include <gtsam/geometry/Rot3.h>
+#include <boost/math/constants/constants.hpp>
 #include <cmath>
 
 using namespace std;

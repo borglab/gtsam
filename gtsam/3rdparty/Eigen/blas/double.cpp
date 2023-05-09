@@ -19,7 +19,7 @@
 #include "level2_real_impl.h"
 #include "level3_impl.h"
 
-double EIGEN_BLAS_FUNC(sdot)(int* n, float* x, int* incx, float* y, int* incy)
+double BLASFUNC(dsdot)(int* n, float* x, int* incx, float* y, int* incy)
 {
   if(*n<=0) return 0;
 

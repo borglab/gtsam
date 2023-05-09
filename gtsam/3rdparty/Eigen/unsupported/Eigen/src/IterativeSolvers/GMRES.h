@@ -64,15 +64,6 @@ bool gmres(const MatrixType & mat, const Rhs & rhs, Dest & x, const Precondition
   typedef Matrix < Scalar, Dynamic, 1 > VectorType;
   typedef Matrix < Scalar, Dynamic, Dynamic, ColMajor> FMatrixType;
 
-  const RealScalar considerAsZero = (std::numeric_limits<RealScalar>::min)();
-
-  if(rhs.norm() <= considerAsZero) 
-  {
-    x.setZero();
-    tol_error = 0;
-    return true;
-  }
-
   RealScalar tol = tol_error;
   const Index maxIters = iters;
   iters = 0;
@@ -316,14 +307,31 @@ public:
 
   /** \internal */
   template<typename Rhs,typename Dest>
-  void _solve_vector_with_guess_impl(const Rhs& b, Dest& x) const
+  void _solve_with_guess_impl(const Rhs& b, Dest& x) const
   {
-    m_iterations = Base::maxIterations();
-    m_error = Base::m_tolerance;
-    bool ret = internal::gmres(matrix(), b, x, Base::m_preconditioner, m_iterations, m_restart, m_error);
-    m_info = (!ret) ? NumericalIssue
+    bool failed = false;
+    for(Index j=0; j<b.cols(); ++j)
+    {
+      m_iterations = Base::maxIterations();
+      m_error = Base::m_tolerance;
+
+      typename Dest::ColXpr xj(x,j);
+      if(!internal::gmres(matrix(), b.col(j), xj, Base::m_preconditioner, m_iterations, m_restart, m_error))
+        failed = true;
+    }
+    m_info = failed ? NumericalIssue
           : m_error <= Base::m_tolerance ? Success
           : NoConvergence;
+    m_isInitialized = true;
+  }
+
+  /** \internal */
+  template<typename Rhs,typename Dest>
+  void _solve_impl(const Rhs& b, MatrixBase<Dest> &x) const
+  {
+    x = b;
+    if(x.squaredNorm() == 0) return; // Check Zero right hand side
+    _solve_with_guess_impl(b,x.derived());
   }
 
 protected:

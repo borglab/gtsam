@@ -113,8 +113,7 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal,
 
     // Set px and py using intrinsic coordinates since that is where radial
     // distortion correction is done.
-    px = pn.x();
-    py = pn.y();
+    px = pn.x(), py = pn.y();
     iteration++;
 
   } while (iteration < maxIterations);
@@ -132,14 +131,14 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal,
 /* ************************************************************************* */
 Matrix2 Cal3Bundler::D2d_intrinsic(const Point2& p) const {
   Matrix2 Dp;
-  uncalibrate(p, {}, Dp);
+  uncalibrate(p, boost::none, Dp);
   return Dp;
 }
 
 /* ************************************************************************* */
 Matrix23 Cal3Bundler::D2d_calibration(const Point2& p) const {
   Matrix23 Dcal;
-  uncalibrate(p, Dcal, {});
+  uncalibrate(p, Dcal, boost::none);
   return Dcal;
 }
 

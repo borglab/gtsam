@@ -268,7 +268,7 @@ void check_global_interpolation_with_derivatives2d()
   }
 }
 
-EIGEN_DECLARE_TEST(splines)
+void test_splines()
 {
   for (int i = 0; i < g_repeat; ++i)
   {

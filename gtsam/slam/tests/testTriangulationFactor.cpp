@@ -25,13 +25,18 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/assign.hpp>
+#include <boost/assign/std/vector.hpp>
+#include <boost/bind/bind.hpp>
+
 using namespace std;
 using namespace gtsam;
+using namespace boost::assign;
 using namespace std::placeholders;
 
 // Some common constants
-static const std::shared_ptr<Cal3_S2> sharedCal = //
-    std::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
+static const boost::shared_ptr<Cal3_S2> sharedCal = //
+    boost::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
 
 // Looking along X-axis, 1 meter above ground plane (x-y)
 static const Rot3 upright = Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2);
@@ -57,7 +62,7 @@ TEST( triangulation, TriangulationFactor ) {
   factor.evaluateError(landmark, HActual);
 
   Matrix HExpected = numericalDerivative11<Vector,Point3>(
-		  [&factor](const Point3& l) { return factor.evaluateError(l);}, landmark);
+      std::bind(&Factor::evaluateError, &factor, std::placeholders::_1, boost::none), landmark);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(HExpected, HActual, 1e-3));
@@ -80,8 +85,8 @@ TEST( triangulation, TriangulationFactorStereo ) {
   Matrix HActual;
   factor.evaluateError(landmark, HActual);
 
-  Matrix HExpected = numericalDerivative11<Vector, Point3>(
-		  [&factor](const Point3& l) { return factor.evaluateError(l);}, landmark);
+  Matrix HExpected = numericalDerivative11<Vector,Point3>(
+      std::bind(&Factor::evaluateError, &factor, std::placeholders::_1, boost::none), landmark);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(HExpected, HActual, 1e-3));
@@ -89,7 +94,7 @@ TEST( triangulation, TriangulationFactorStereo ) {
   // compare same problem against expression factor
   Expression<StereoPoint2>::UnaryFunction<Point3>::type f =
       std::bind(&StereoCamera::project2, camera2, std::placeholders::_1,
-                nullptr, std::placeholders::_2);
+                boost::none, std::placeholders::_2);
   Expression<Point3> point_(pointKey);
   Expression<StereoPoint2> project2_(f, point_);
 

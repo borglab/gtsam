@@ -39,7 +39,7 @@ TEST( PCGsolver, verySimpleLinearSystem) {
 
   // Create a Gaussian Factor Graph
   GaussianFactorGraph simpleGFG;
-  simpleGFG.emplace_shared<JacobianFactor>(0, (Matrix(2,2)<< 4, 1, 1, 3).finished(), (Vector(2) << 1,2 ).finished(), noiseModel::Unit::Create(2));
+  simpleGFG += JacobianFactor(0, (Matrix(2,2)<< 4, 1, 1, 3).finished(), (Vector(2) << 1,2 ).finished(), noiseModel::Unit::Create(2));
 
   // Exact solution already known
   VectorValues exactSolution;
@@ -53,20 +53,20 @@ TEST( PCGsolver, verySimpleLinearSystem) {
 
   // Solve the system using Preconditioned Conjugate Gradient solver
   // Common PCG parameters
-  gtsam::PCGSolverParameters::shared_ptr pcg = std::make_shared<gtsam::PCGSolverParameters>();
+  gtsam::PCGSolverParameters::shared_ptr pcg = boost::make_shared<gtsam::PCGSolverParameters>();
   pcg->setMaxIterations(500);
   pcg->setEpsilon_abs(0.0);
   pcg->setEpsilon_rel(0.0);
   //pcg->setVerbosity("ERROR");
 
   // With Dummy preconditioner
-  pcg->preconditioner_ = std::make_shared<gtsam::DummyPreconditionerParameters>();
+  pcg->preconditioner_ = boost::make_shared<gtsam::DummyPreconditionerParameters>();
   VectorValues deltaPCGDummy = PCGSolver(*pcg).optimize(simpleGFG);
   EXPECT(assert_equal(exactSolution, deltaPCGDummy, 1e-7));
   //deltaPCGDummy.print("PCG Dummy");
 
   // With Block-Jacobi preconditioner
-  pcg->preconditioner_ = std::make_shared<gtsam::BlockJacobiPreconditionerParameters>();
+  pcg->preconditioner_ = boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>();
   // It takes more than 1000 iterations for this test
   pcg->setMaxIterations(1500);
   VectorValues deltaPCGJacobi = PCGSolver(*pcg).optimize(simpleGFG);
@@ -81,13 +81,13 @@ TEST(PCGSolver, simpleLinearSystem) {
   GaussianFactorGraph simpleGFG;
   //SharedDiagonal unit2 = noiseModel::Unit::Create(2);
   SharedDiagonal unit2 = noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.3));
-  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << -1, -1).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< -10, 0, 0, -10).finished(), 0, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << 2, -1).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << 0, 1).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(0, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << -1, 1.5).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(0, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(1, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << -1, -1).finished(), unit2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< -10, 0, 0, -10).finished(), 0, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << 2, -1).finished(), unit2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << 0, 1).finished(), unit2);
+  simpleGFG += JacobianFactor(0, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << -1, 1.5).finished(), unit2);
+  simpleGFG += JacobianFactor(0, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
+  simpleGFG += JacobianFactor(1, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
   //simpleGFG.print("system");
 
   // Expected solution
@@ -104,20 +104,20 @@ TEST(PCGSolver, simpleLinearSystem) {
 
   // Solve the system using Preconditioned Conjugate Gradient solver
   // Common PCG parameters
-  gtsam::PCGSolverParameters::shared_ptr pcg = std::make_shared<gtsam::PCGSolverParameters>();
+  gtsam::PCGSolverParameters::shared_ptr pcg = boost::make_shared<gtsam::PCGSolverParameters>();
   pcg->setMaxIterations(500);
   pcg->setEpsilon_abs(0.0);
   pcg->setEpsilon_rel(0.0);
   //pcg->setVerbosity("ERROR");
 
   // With Dummy preconditioner
-  pcg->preconditioner_ = std::make_shared<gtsam::DummyPreconditionerParameters>();
+  pcg->preconditioner_ = boost::make_shared<gtsam::DummyPreconditionerParameters>();
   VectorValues deltaPCGDummy = PCGSolver(*pcg).optimize(simpleGFG);
   EXPECT(assert_equal(expectedSolution, deltaPCGDummy, 1e-5));
   //deltaPCGDummy.print("PCG Dummy");
 
   // With Block-Jacobi preconditioner
-  pcg->preconditioner_ = std::make_shared<gtsam::BlockJacobiPreconditionerParameters>();
+  pcg->preconditioner_ = boost::make_shared<gtsam::BlockJacobiPreconditionerParameters>();
   VectorValues deltaPCGJacobi = PCGSolver(*pcg).optimize(simpleGFG);
   EXPECT(assert_equal(expectedSolution, deltaPCGJacobi, 1e-5));
   //deltaPCGJacobi.print("PCG Jacobi");

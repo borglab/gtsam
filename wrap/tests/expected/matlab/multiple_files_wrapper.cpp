@@ -1,15 +1,19 @@
 #include <gtwrap/matlab.h>
 #include <map>
 
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/serialization/export.hpp>
 
 
 
 
-typedef std::set<std::shared_ptr<gtsam::Class1>*> Collector_gtsamClass1;
+
+typedef std::set<boost::shared_ptr<gtsam::Class1>*> Collector_gtsamClass1;
 static Collector_gtsamClass1 collector_gtsamClass1;
-typedef std::set<std::shared_ptr<gtsam::Class2>*> Collector_gtsamClass2;
+typedef std::set<boost::shared_ptr<gtsam::Class2>*> Collector_gtsamClass2;
 static Collector_gtsamClass2 collector_gtsamClass2;
-typedef std::set<std::shared_ptr<gtsam::ClassA>*> Collector_gtsamClassA;
+typedef std::set<boost::shared_ptr<gtsam::ClassA>*> Collector_gtsamClassA;
 static Collector_gtsamClassA collector_gtsamClassA;
 
 
@@ -71,7 +75,7 @@ void _multiple_files_RTTIRegister() {
     mxDestroyArray(registry);
 
     mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);
-    if(mexPutVariable("global", "gtsam_multiple_files_rttiRegistry_created", newAlreadyCreated) != 0) {
+    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
     }
     mxDestroyArray(newAlreadyCreated);
@@ -81,7 +85,7 @@ void _multiple_files_RTTIRegister() {
 void gtsamClass1_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef std::shared_ptr<gtsam::Class1> Shared;
+  typedef boost::shared_ptr<gtsam::Class1> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_gtsamClass1.insert(self);
@@ -90,7 +94,7 @@ void gtsamClass1_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int n
 void gtsamClass1_constructor_1(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef std::shared_ptr<gtsam::Class1> Shared;
+  typedef boost::shared_ptr<gtsam::Class1> Shared;
 
   Shared *self = new Shared(new gtsam::Class1());
   collector_gtsamClass1.insert(self);
@@ -100,21 +104,21 @@ void gtsamClass1_constructor_1(int nargout, mxArray *out[], int nargin, const mx
 
 void gtsamClass1_deconstructor_2(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef std::shared_ptr<gtsam::Class1> Shared;
+  typedef boost::shared_ptr<gtsam::Class1> Shared;
   checkArguments("delete_gtsamClass1",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_gtsamClass1::iterator item;
   item = collector_gtsamClass1.find(self);
   if(item != collector_gtsamClass1.end()) {
+    delete self;
     collector_gtsamClass1.erase(item);
   }
-  delete self;
 }
 
 void gtsamClass2_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef std::shared_ptr<gtsam::Class2> Shared;
+  typedef boost::shared_ptr<gtsam::Class2> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_gtsamClass2.insert(self);
@@ -123,7 +127,7 @@ void gtsamClass2_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int n
 void gtsamClass2_constructor_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef std::shared_ptr<gtsam::Class2> Shared;
+  typedef boost::shared_ptr<gtsam::Class2> Shared;
 
   Shared *self = new Shared(new gtsam::Class2());
   collector_gtsamClass2.insert(self);
@@ -133,21 +137,21 @@ void gtsamClass2_constructor_4(int nargout, mxArray *out[], int nargin, const mx
 
 void gtsamClass2_deconstructor_5(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef std::shared_ptr<gtsam::Class2> Shared;
+  typedef boost::shared_ptr<gtsam::Class2> Shared;
   checkArguments("delete_gtsamClass2",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_gtsamClass2::iterator item;
   item = collector_gtsamClass2.find(self);
   if(item != collector_gtsamClass2.end()) {
+    delete self;
     collector_gtsamClass2.erase(item);
   }
-  delete self;
 }
 
 void gtsamClassA_collectorInsertAndMakeBase_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef std::shared_ptr<gtsam::ClassA> Shared;
+  typedef boost::shared_ptr<gtsam::ClassA> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_gtsamClassA.insert(self);
@@ -156,7 +160,7 @@ void gtsamClassA_collectorInsertAndMakeBase_6(int nargout, mxArray *out[], int n
 void gtsamClassA_constructor_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef std::shared_ptr<gtsam::ClassA> Shared;
+  typedef boost::shared_ptr<gtsam::ClassA> Shared;
 
   Shared *self = new Shared(new gtsam::ClassA());
   collector_gtsamClassA.insert(self);
@@ -166,15 +170,15 @@ void gtsamClassA_constructor_7(int nargout, mxArray *out[], int nargin, const mx
 
 void gtsamClassA_deconstructor_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef std::shared_ptr<gtsam::ClassA> Shared;
+  typedef boost::shared_ptr<gtsam::ClassA> Shared;
   checkArguments("delete_gtsamClassA",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_gtsamClassA::iterator item;
   item = collector_gtsamClassA.find(self);
   if(item != collector_gtsamClassA.end()) {
+    delete self;
     collector_gtsamClassA.erase(item);
   }
-  delete self;
 }
 
 

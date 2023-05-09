@@ -21,10 +21,10 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastVector.h>
+#include <boost/optional.hpp>
 
 #include <string>
 #include <mutex>
-#include <optional>
 
 namespace gtsam {
 
@@ -52,16 +52,16 @@ namespace gtsam {
     typedef BayesTreeCliqueBase<DERIVED, FACTORGRAPH> This;
     typedef DERIVED DerivedType;
     typedef EliminationTraits<FACTORGRAPH> EliminationTraitsType;
-    typedef std::shared_ptr<This> shared_ptr;
-    typedef std::weak_ptr<This> weak_ptr;
-    typedef std::shared_ptr<DerivedType> derived_ptr;
-    typedef std::weak_ptr<DerivedType> derived_weak_ptr;
+    typedef boost::shared_ptr<This> shared_ptr;
+    typedef boost::weak_ptr<This> weak_ptr;
+    typedef boost::shared_ptr<DerivedType> derived_ptr;
+    typedef boost::weak_ptr<DerivedType> derived_weak_ptr;
 
   public:
     typedef FACTORGRAPH FactorGraphType;
     typedef typename EliminationTraitsType::BayesNetType BayesNetType;
     typedef typename BayesNetType::ConditionalType ConditionalType;
-    typedef std::shared_ptr<ConditionalType> sharedConditional;
+    typedef boost::shared_ptr<ConditionalType> sharedConditional;
     typedef typename FactorGraphType::FactorType FactorType;
     typedef typename FactorGraphType::Eliminate Eliminate;
 
@@ -102,7 +102,7 @@ namespace gtsam {
     /// @}
 
     /// This stores the Cached separator marginal P(S)
-    mutable std::optional<FactorGraphType> cachedSeparatorMarginal_;
+    mutable boost::optional<FactorGraphType> cachedSeparatorMarginal_;
     /// This protects Cached seperator marginal P(S) from concurrent read/writes
     /// as many the functions which access it are const (hence the mutable)
     /// leading to the false impression that these const functions are thread-safe
@@ -174,7 +174,7 @@ namespace gtsam {
      */
     void deleteCachedShortcuts();
 
-    const std::optional<FactorGraphType>& cachedSeparatorMarginal() const {
+    const boost::optional<FactorGraphType>& cachedSeparatorMarginal() const {
       std::lock_guard<std::mutex> marginalLock(cachedSeparatorMarginalMutex_);
       return cachedSeparatorMarginal_; 
     }
@@ -194,12 +194,11 @@ namespace gtsam {
     /** Non-recursive delete cached shortcuts and marginals - internal only. */
     void deleteCachedShortcutsNonRecursive() { 
       std::lock_guard<std::mutex> marginalLock(cachedSeparatorMarginalMutex_);
-      cachedSeparatorMarginal_ = {}; 
+      cachedSeparatorMarginal_ = boost::none; 
     }
 
   private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -214,7 +213,6 @@ namespace gtsam {
       }
       ar & BOOST_SERIALIZATION_NVP(children);
     }
-#endif
 
     /// @}
 

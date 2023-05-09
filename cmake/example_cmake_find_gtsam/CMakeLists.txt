@@ -12,6 +12,6 @@ add_executable(example
 )
 
 # By using CMake exported targets, a simple "link" dependency introduces the
-# include directories (-I) flags, and add any other
+# include directories (-I) flags, links against Boost, and add any other
 # required build flags (e.g. C++11, etc.)
 target_link_libraries(example PRIVATE gtsam)

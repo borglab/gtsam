@@ -19,8 +19,6 @@
  * PowerMethod/AcceleratedPowerMethod
  */
 
-#pragma once
-
 #include <gtsam/inference/Symbol.h>
 
 #include <iostream>

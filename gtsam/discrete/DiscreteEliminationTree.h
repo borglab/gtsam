@@ -24,17 +24,13 @@
 
 namespace gtsam {
 
-  /**
-   * @brief Elimination tree for discrete factors.
-   * @ingroup discrete
-   */
   class GTSAM_EXPORT DiscreteEliminationTree :
     public EliminationTree<DiscreteBayesNet, DiscreteFactorGraph>
   {
   public:
     typedef EliminationTree<DiscreteBayesNet, DiscreteFactorGraph> Base; ///< Base class
     typedef DiscreteEliminationTree This; ///< This class
-    typedef std::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
+    typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
 
     /**
     * Build the elimination tree of a factor graph using pre-computed column structure.

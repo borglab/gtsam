@@ -26,30 +26,25 @@ class CheckMixin:
                 return True
         return False
 
-    def can_be_pointer(self, arg_type: parser.Type):
-        """
-        Determine if the `arg_type` can have a pointer to it.
-
-        E.g. `Pose3` can have `Pose3*` but 
-        `Matrix` should not have `Matrix*`.
-        """
-        return (arg_type.typename.name not in self.not_ptr_type
-                and arg_type.typename.name not in self.ignore_namespace
-                and arg_type.typename.name != 'string')
-
     def is_shared_ptr(self, arg_type: parser.Type):
         """
         Determine if the `interface_parser.Type` should be treated as a
         shared pointer in the wrapper.
         """
-        return arg_type.is_shared_ptr
+        return arg_type.is_shared_ptr or (
+            arg_type.typename.name not in self.not_ptr_type
+            and arg_type.typename.name not in self.ignore_namespace
+            and arg_type.typename.name != 'string')
 
     def is_ptr(self, arg_type: parser.Type):
         """
         Determine if the `interface_parser.Type` should be treated as a
         raw pointer in the wrapper.
         """
-        return arg_type.is_ptr
+        return arg_type.is_ptr or (
+            arg_type.typename.name not in self.not_ptr_type
+            and arg_type.typename.name not in self.ignore_namespace
+            and arg_type.typename.name != 'string')
 
     def is_ref(self, arg_type: parser.Type):
         """
@@ -113,7 +108,7 @@ class FormatMixin:
         elif is_method:
             formatted_type_name += self.data_type_param.get(name) or name
         else:
-            formatted_type_name += str(name)
+            formatted_type_name += name
 
         if separator == "::":  # C++
             templates = []
@@ -197,9 +192,10 @@ class FormatMixin:
         method = ''
 
         if isinstance(static_method, parser.StaticMethod):
-            method += static_method.parent.to_cpp() + separator
+            method += "".join([separator + x for x in static_method.parent.namespaces()]) + \
+                      separator + static_method.parent.name + separator
 
-        return method
+        return method[2 * len(separator):]
 
     def _format_global_function(self,
                                 function: Union[parser.GlobalFunction, Any],

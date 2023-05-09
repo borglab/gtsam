@@ -101,7 +101,7 @@ template<typename _Scalar> void CauchyBounds_scalar()
           internal::random<int>(18,26) )) );
 }
 
-EIGEN_DECLARE_TEST(polynomialutils)
+void test_polynomialutils()
 {
   for(int i = 0; i < g_repeat; i++)
   {

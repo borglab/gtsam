@@ -8,18 +8,18 @@ Adds the following targets::
     pybind11::lto - Link time optimizations (manual selection)
     pybind11::thin_lto - Link time optimizations (manual selection)
     pybind11::python_link_helper - Adds link to Python libraries
+    pybind11::python2_no_register - Avoid warning/error with Python 2 + C++14/7
     pybind11::windows_extras - MSVC bigobj and mp for building multithreaded
     pybind11::opt_size - avoid optimizations that increase code size
 
 Adds the following functions::
 
     pybind11_strip(target) - strip target after building on linux/macOS
-    pybind11_find_import(module) - See if a module is installed.
+
 
 #]======================================================]
 
 # CMake 3.10 has an include_guard command, but we can't use that yet
-# include_guard(global) (pre-CMake 3.10)
 if(TARGET pybind11::lto)
   return()
 endif()
@@ -35,12 +35,6 @@ get_property(
 if(NOT is_config)
   set(optional_global GLOBAL)
 endif()
-
-# If not run in Python mode, we still would like this to at least
-# include pybind11's include directory:
-set(pybind11_INCLUDE_DIRS
-    "${pybind11_INCLUDE_DIR}"
-    CACHE INTERNAL "Include directory for pybind11 (Python not requested)")
 
 # --------------------- Shared targets ----------------------------
 
@@ -64,6 +58,31 @@ set_property(
   TARGET pybind11::embed
   APPEND
   PROPERTY INTERFACE_LINK_LIBRARIES pybind11::pybind11)
+
+# ----------------------- no register ----------------------
+
+# Workaround for Python 2.7 and C++17 (C++14 as a warning) incompatibility
+# This adds the flags -Wno-register and -Wno-deprecated-register if the compiler
+# is Clang 3.9+ or AppleClang and the compile language is CXX, or /wd5033 for MSVC (all languages,
+# since MSVC didn't recognize COMPILE_LANGUAGE until CMake 3.11+).
+
+add_library(pybind11::python2_no_register INTERFACE IMPORTED ${optional_global})
+set(clang_4plus
+    "$<AND:$<CXX_COMPILER_ID:Clang>,$<NOT:$<VERSION_LESS:$<CXX_COMPILER_VERSION>,3.9>>>")
+set(no_register "$<OR:${clang_4plus},$<CXX_COMPILER_ID:AppleClang>>")
+
+if(MSVC AND CMAKE_VERSION VERSION_LESS 3.11)
+  set(cxx_no_register "${no_register}")
+else()
+  set(cxx_no_register "$<AND:$<COMPILE_LANGUAGE:CXX>,${no_register}>")
+endif()
+
+set(msvc "$<CXX_COMPILER_ID:MSVC>")
+
+set_property(
+  TARGET pybind11::python2_no_register
+  PROPERTY INTERFACE_COMPILE_OPTIONS
+           "$<${cxx_no_register}:-Wno-register;-Wno-deprecated-register>" "$<${msvc}:/wd5033>")
 
 # --------------------------- link helper ---------------------------
 
@@ -90,32 +109,28 @@ endif()
 
 add_library(pybind11::windows_extras IMPORTED INTERFACE ${optional_global})
 
-if(MSVC) # That's also clang-cl
-  # /bigobj is needed for bigger binding projects due to the limit to 64k
-  # addressable sections
+if(MSVC)
+  # /MP enables multithreaded builds (relevant when there are many files), /bigobj is
+  # needed for bigger binding projects due to the limit to 64k addressable sections
   set_property(
     TARGET pybind11::windows_extras
     APPEND
-    PROPERTY INTERFACE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
+    PROPERTY INTERFACE_COMPILE_OPTIONS /bigobj)
 
-  # /MP enables multithreaded builds (relevant when there are many files) for MSVC
-  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC") # no Clang no Intel
-    if(CMAKE_VERSION VERSION_LESS 3.11)
-      set_property(
-        TARGET pybind11::windows_extras
-        APPEND
-        PROPERTY INTERFACE_COMPILE_OPTIONS $<$<NOT:$<CONFIG:Debug>>:/MP>)
-    else()
-      # Only set these options for C++ files.  This is important so that, for
-      # instance, projects that include other types of source files like CUDA
-      # .cu files don't get these options propagated to nvcc since that would
-      # cause the build to fail.
-      set_property(
-        TARGET pybind11::windows_extras
-        APPEND
-        PROPERTY INTERFACE_COMPILE_OPTIONS
-                 $<$<NOT:$<CONFIG:Debug>>:$<$<COMPILE_LANGUAGE:CXX>:/MP>>)
-    endif()
+  if(CMAKE_VERSION VERSION_LESS 3.11)
+    set_property(
+      TARGET pybind11::windows_extras
+      APPEND
+      PROPERTY INTERFACE_COMPILE_OPTIONS $<$<NOT:$<CONFIG:Debug>>:/MP>)
+  else()
+    # Only set these options for C++ files.  This is important so that, for
+    # instance, projects that include other types of source files like CUDA
+    # .cu files don't get these options propagated to nvcc since that would
+    # cause the build to fail.
+    set_property(
+      TARGET pybind11::windows_extras
+      APPEND
+      PROPERTY INTERFACE_COMPILE_OPTIONS $<$<NOT:$<CONFIG:Debug>>:$<$<COMPILE_LANGUAGE:CXX>:/MP>>)
   endif()
 endif()
 
@@ -181,77 +196,6 @@ else()
 
 endif()
 
-# --------------------- pybind11_find_import -------------------------------
-
-if(NOT _pybind11_nopython)
-  # Check to see if modules are importable. Use REQUIRED to force an error if
-  # one of the modules is not found. <package_name>_FOUND will be set if the
-  # package was found (underscores replace dashes if present). QUIET will hide
-  # the found message, and VERSION will require a minimum version. A successful
-  # find will cache the result.
-  function(pybind11_find_import PYPI_NAME)
-    # CMake variables need underscores (PyPI doesn't care)
-    string(REPLACE "-" "_" NORM_PYPI_NAME "${PYPI_NAME}")
-
-    # Return if found previously
-    if(${NORM_PYPI_NAME}_FOUND)
-      return()
-    endif()
-
-    set(options "REQUIRED;QUIET")
-    set(oneValueArgs "VERSION")
-    cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "" ${ARGN})
-
-    if(ARG_REQUIRED)
-      set(status_level FATAL_ERROR)
-    else()
-      set(status_level WARNING)
-    endif()
-
-    execute_process(
-      COMMAND
-        ${${_Python}_EXECUTABLE} -c
-        "from pkg_resources import get_distribution; print(get_distribution('${PYPI_NAME}').version)"
-      RESULT_VARIABLE RESULT_PRESENT
-      OUTPUT_VARIABLE PKG_VERSION
-      ERROR_QUIET)
-
-    string(STRIP "${PKG_VERSION}" PKG_VERSION)
-
-    # If a result is present, this failed
-    if(RESULT_PRESENT)
-      set(${NORM_PYPI_NAME}_FOUND
-          ${NORM_PYPI_NAME}-NOTFOUND
-          CACHE INTERNAL "")
-      # Always warn or error
-      message(
-        ${status_level}
-        "Missing: ${PYPI_NAME} ${ARG_VERSION}\nTry: ${${_Python}_EXECUTABLE} -m pip install ${PYPI_NAME}"
-      )
-    else()
-      if(ARG_VERSION AND PKG_VERSION VERSION_LESS ARG_VERSION)
-        message(
-          ${status_level}
-          "Version incorrect: ${PYPI_NAME} ${PKG_VERSION} found, ${ARG_VERSION} required - try upgrading"
-        )
-      else()
-        set(${NORM_PYPI_NAME}_FOUND
-            YES
-            CACHE INTERNAL "")
-        set(${NORM_PYPI_NAME}_VERSION
-            ${PKG_VERSION}
-            CACHE INTERNAL "")
-      endif()
-      if(NOT ARG_QUIET)
-        message(STATUS "Found ${PYPI_NAME} ${PKG_VERSION}")
-      endif()
-    endif()
-    if(NOT ARG_VERSION OR (NOT PKG_VERSION VERSION_LESS ARG_VERSION))
-      # We have successfully found a good version, cache to avoid calling again.
-    endif()
-  endfunction()
-endif()
-
 # --------------------- LTO -------------------------------
 
 include(CheckCXXCompilerFlag)
@@ -277,36 +221,23 @@ function(_pybind11_return_if_cxx_and_linker_flags_work result cxxflags linkerfla
 endfunction()
 
 function(_pybind11_generate_lto target prefer_thin_lto)
-  if(MINGW)
-    message(STATUS "${target} disabled (problems with undefined symbols for MinGW for now)")
-    return()
-  endif()
-
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(cxx_append "")
     set(linker_append "")
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT APPLE)
       # Clang Gold plugin does not support -Os; append -O3 to MinSizeRel builds to override it
       set(linker_append ";$<$<CONFIG:MinSizeRel>:-O3>")
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND NOT MINGW)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
       set(cxx_append ";-fno-fat-lto-objects")
     endif()
 
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "ppc64le" OR CMAKE_SYSTEM_PROCESSOR MATCHES "mips64")
-      set(NO_FLTO_ARCH TRUE)
-    else()
-      set(NO_FLTO_ARCH FALSE)
-    endif()
-
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang"
-       AND prefer_thin_lto
-       AND NOT NO_FLTO_ARCH)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND prefer_thin_lto)
       _pybind11_return_if_cxx_and_linker_flags_work(
         HAS_FLTO_THIN "-flto=thin${cxx_append}" "-flto=thin${linker_append}"
         PYBIND11_LTO_CXX_FLAGS PYBIND11_LTO_LINKER_FLAGS)
     endif()
 
-    if(NOT HAS_FLTO_THIN AND NOT NO_FLTO_ARCH)
+    if(NOT HAS_FLTO_THIN)
       _pybind11_return_if_cxx_and_linker_flags_work(
         HAS_FLTO "-flto${cxx_append}" "-flto${linker_append}" PYBIND11_LTO_CXX_FLAGS
         PYBIND11_LTO_LINKER_FLAGS)
@@ -325,9 +256,7 @@ function(_pybind11_generate_lto target prefer_thin_lto)
 
   # Enable LTO flags if found, except for Debug builds
   if(PYBIND11_LTO_CXX_FLAGS)
-    # CONFIG takes multiple values in CMake 3.19+, until then we have to use OR
-    set(is_debug "$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>")
-    set(not_debug "$<NOT:${is_debug}>")
+    set(not_debug "$<NOT:$<CONFIG:Debug>>")
     set(cxx_lang "$<COMPILE_LANGUAGE:CXX>")
     if(MSVC AND CMAKE_VERSION VERSION_LESS 3.11)
       set(genex "${not_debug}")

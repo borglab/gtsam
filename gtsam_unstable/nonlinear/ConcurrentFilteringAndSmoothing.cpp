@@ -78,7 +78,7 @@ NonlinearFactorGraph calculateMarginalFactors(const NonlinearFactorGraph& graph,
     NonlinearFactorGraph marginalFactors;
     marginalFactors.reserve(marginalLinearFactors.size());
     for(const GaussianFactor::shared_ptr& gaussianFactor: marginalLinearFactors) {
-      marginalFactors.emplace_shared<LinearContainerFactor>(gaussianFactor, theta);
+      marginalFactors += boost::make_shared<LinearContainerFactor>(gaussianFactor, theta);
     }
 
     return marginalFactors;

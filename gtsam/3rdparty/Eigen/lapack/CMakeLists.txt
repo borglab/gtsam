@@ -1,13 +1,15 @@
 
 project(EigenLapack CXX)
 
-include(CheckLanguage)
-check_language(Fortran)
-if(CMAKE_Fortran_COMPILER)
-  enable_language(Fortran)
-  set(EIGEN_Fortran_COMPILER_WORKS ON)
-else()
-  set(EIGEN_Fortran_COMPILER_WORKS OFF)
+include("../cmake/language_support.cmake")
+
+workaround_9220(Fortran EIGEN_Fortran_COMPILER_WORKS)
+
+if(EIGEN_Fortran_COMPILER_WORKS)
+  enable_language(Fortran OPTIONAL)
+  if(NOT CMAKE_Fortran_COMPILER)
+    set(EIGEN_Fortran_COMPILER_WORKS OFF)
+  endif()
 endif()
 
 add_custom_target(lapack)
@@ -33,7 +35,7 @@ set(EigenLapack_SRCS  ${EigenLapack_SRCS}
   second_NONE.f dsecnd_NONE.f
 )
 
-option(EIGEN_ENABLE_LAPACK_TESTS OFF "Enable the Lapack unit tests")
+option(EIGEN_ENABLE_LAPACK_TESTS OFF "Enbale the Lapack unit tests")
 
 if(EIGEN_ENABLE_LAPACK_TESTS)
 
@@ -57,7 +59,7 @@ if(EIGEN_ENABLE_LAPACK_TESTS)
       message(STATUS "Setup lapack reference and lapack unit tests")
       execute_process(COMMAND tar xzf  "lapack_addons_3.4.1.tgz" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     else()
-      message(STATUS "Download of lapack_addons_3.4.1.tgz failed, LAPACK unit tests won't be enabled")
+      message(STATUS "Download of lapack_addons_3.4.1.tgz failed, LAPACK unit tests wont be enabled")
       set(EIGEN_ENABLE_LAPACK_TESTS false)
     endif()
                   
@@ -72,7 +74,7 @@ if(EIGEN_ENABLE_LAPACK_TESTS)
         sgetrf.f  dgetrf.f  cgetrf.f  zgetrf.f
         sgetrs.f  dgetrs.f  cgetrs.f  zgetrs.f)
     
-    file(GLOB ReferenceLapack_SRCS0 RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "reference/*.f")
+    FILE(GLOB ReferenceLapack_SRCS0 RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "reference/*.f")
     foreach(filename1 IN LISTS ReferenceLapack_SRCS0)
       string(REPLACE "reference/" "" filename ${filename1})
       list(FIND EigenLapack_SRCS ${filename} id1)
@@ -84,33 +86,29 @@ if(EIGEN_ENABLE_LAPACK_TESTS)
   endif()
   
   
-endif()
+endif(EIGEN_ENABLE_LAPACK_TESTS)
 
-endif()
-
-set(EIGEN_LAPACK_TARGETS "")
+endif(EIGEN_Fortran_COMPILER_WORKS)
 
 add_library(eigen_lapack_static ${EigenLapack_SRCS} ${ReferenceLapack_SRCS})
-list(APPEND EIGEN_LAPACK_TARGETS eigen_lapack_static)
+add_library(eigen_lapack SHARED ${EigenLapack_SRCS})
 
-if (EIGEN_BUILD_SHARED_LIBS)
-  add_library(eigen_lapack SHARED ${EigenLapack_SRCS})
-  list(APPEND EIGEN_LAPACK_TARGETS eigen_lapack)
-  target_link_libraries(eigen_lapack  eigen_blas)
+target_link_libraries(eigen_lapack  eigen_blas)
+
+if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
+  target_link_libraries(eigen_lapack_static ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
+  target_link_libraries(eigen_lapack        ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
 endif()
 
-foreach(target IN LISTS EIGEN_LAPACK_TARGETS)
-  if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
-    target_link_libraries(${target} ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
-  endif()
-  add_dependencies(lapack ${target})
-  install(TARGETS ${target}
-          RUNTIME DESTINATION bin
-          LIBRARY DESTINATION lib
-          ARCHIVE DESTINATION lib)
-endforeach()
+add_dependencies(lapack eigen_lapack eigen_lapack_static)
 
+install(TARGETS eigen_lapack eigen_lapack_static
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
+        
+        
 get_filename_component(eigen_full_path_to_testing_lapack "./testing/" ABSOLUTE)
 if(EXISTS ${eigen_full_path_to_testing_lapack})
   
@@ -135,25 +133,24 @@ if(EXISTS ${eigen_full_path_to_testing_lapack})
   string(REGEX REPLACE "(.*)/STACK:(.*) (.*)" "\\1/STACK:900000000000000000 \\3"
     CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
   endif()
-  file(MAKE_DIRECTORY "${LAPACK_BINARY_DIR}/TESTING")
   add_subdirectory(testing/MATGEN)
   add_subdirectory(testing/LIN)
   add_subdirectory(testing/EIG)
   macro(add_lapack_test output input target)
     set(TEST_INPUT "${LAPACK_SOURCE_DIR}/testing/${input}")
-    set(TEST_OUTPUT "${LAPACK_BINARY_DIR}/TESTING/${output}")
+    set(TEST_OUTPUT "${LAPACK_BINARY_DIR}/testing/${output}")
+    get_target_property(TEST_LOC ${target} LOCATION)
     string(REPLACE "." "_" input_name ${input})
     set(testName "${target}_${input_name}")
     if(EXISTS "${TEST_INPUT}")
-      add_test(NAME LAPACK-${testName}
-        COMMAND "${CMAKE_COMMAND}"
-        -DTEST=$<TARGET_FILE:${target}>
+      add_test(LAPACK-${testName} "${CMAKE_COMMAND}"
+        -DTEST=${TEST_LOC}
         -DINPUT=${TEST_INPUT} 
         -DOUTPUT=${TEST_OUTPUT} 
         -DINTDIR=${CMAKE_CFG_INTDIR}
         -P "${LAPACK_SOURCE_DIR}/testing/runtest.cmake")
     endif()
-  endmacro()
+  endmacro(add_lapack_test)
 
   if (BUILD_SINGLE)
   add_lapack_test(stest.out stest.in xlintsts)

@@ -39,7 +39,7 @@ static void test_sigmoid()
 }
 
 
-EIGEN_DECLARE_TEST(cxx11_tensor_math)
+void test_cxx11_tensor_math()
 {
   CALL_SUBTEST(test_tanh());
   CALL_SUBTEST(test_sigmoid());

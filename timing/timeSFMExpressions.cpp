@@ -56,7 +56,7 @@ int main() {
   NonlinearFactorGraph graph;
   for (size_t i = 0; i < M; i++) {
     for (size_t j = 0; j < N; j++) {
-      NonlinearFactor::shared_ptr f = std::make_shared<
+      NonlinearFactor::shared_ptr f = boost::make_shared<
           ExpressionFactor<Point2> >
 #ifdef TERNARY
           (model, z, project3(x[i], p[j], K));

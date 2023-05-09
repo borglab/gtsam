@@ -52,7 +52,7 @@ IMU_params.setOmegaCoriolis(w_coriolis);
 %% Solver object
 isamParams = ISAM2Params;
 isamParams.setFactorization('CHOLESKY');
-isamParams.relinearizeSkip = 10;
+isamParams.setRelinearizeSkip(10);
 isam = gtsam.ISAM2(isamParams);
 newFactors = NonlinearFactorGraph;
 newValues = Values;

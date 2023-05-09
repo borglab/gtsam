@@ -70,7 +70,7 @@
 #cmakedefine GTSAM_THROW_CHEIRALITY_EXCEPTION
 
 // Make sure dependent projects that want it can see deprecated functions
-#cmakedefine GTSAM_ALLOW_DEPRECATED_SINCE_V43
+#cmakedefine GTSAM_ALLOW_DEPRECATED_SINCE_V41
 
 // Support Metis-based nested dissection
 #cmakedefine GTSAM_SUPPORT_NESTED_DISSECTION

@@ -65,11 +65,11 @@ TEST(Event, Derivatives) {
   Matrix13 actualH2;
   kToa(exampleEvent, microphoneAt0, actualH1, actualH2);
   Matrix expectedH1 = numericalDerivative11<double, Event>(
-      std::bind(kToa, std::placeholders::_1, microphoneAt0, nullptr, nullptr),
+      std::bind(kToa, std::placeholders::_1, microphoneAt0, boost::none, boost::none),
       exampleEvent);
   EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
   Matrix expectedH2 = numericalDerivative11<double, Point3>(
-      std::bind(kToa, exampleEvent, std::placeholders::_1, nullptr, nullptr),
+      std::bind(kToa, exampleEvent, std::placeholders::_1, boost::none, boost::none),
       microphoneAt0);
   EXPECT(assert_equal(expectedH2, actualH2, 1e-8));
 }

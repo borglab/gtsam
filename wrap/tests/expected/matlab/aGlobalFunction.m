@@ -4,4 +4,3 @@ function varargout = aGlobalFunction(varargin)
       else
         error('Arguments do not match any overload of function aGlobalFunction');
       end
-end

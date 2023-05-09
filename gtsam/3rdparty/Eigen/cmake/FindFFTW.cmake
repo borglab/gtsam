@@ -22,8 +22,7 @@ if( NOT FFTW_ROOT AND ENV{FFTWDIR} )
 endif()
 
 # Check if we can use PkgConfig
-include(CMakeFindDependencyMacro)
-find_dependency(PkgConfig)
+find_package(PkgConfig)
 
 #Determine from PKG
 if( PKG_CONFIG_FOUND AND NOT FFTW_ROOT )
@@ -102,7 +101,7 @@ else()
     PATHS ${PKG_FFTW_INCLUDE_DIRS} ${INCLUDE_INSTALL_DIR}
   )
 
-endif()
+endif( FFTW_ROOT )
 
 set(FFTW_LIBRARIES ${FFTW_LIB} ${FFTWF_LIB})
 

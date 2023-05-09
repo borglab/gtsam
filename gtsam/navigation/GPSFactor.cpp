@@ -38,7 +38,7 @@ bool GPSFactor::equals(const NonlinearFactor& expected, double tol) const {
 
 //***************************************************************************
 Vector GPSFactor::evaluateError(const Pose3& p,
-    OptionalMatrixType H) const {
+    boost::optional<Matrix&> H) const {
   return p.translation(H) -nT_;
 }
 
@@ -80,7 +80,7 @@ bool GPSFactor2::equals(const NonlinearFactor& expected, double tol) const {
 
 //***************************************************************************
 Vector GPSFactor2::evaluateError(const NavState& p,
-    OptionalMatrixType H) const {
+    boost::optional<Matrix&> H) const {
   return p.position(H) -nT_;
 }
 

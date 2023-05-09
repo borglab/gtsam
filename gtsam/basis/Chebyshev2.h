@@ -22,7 +22,8 @@
  *
  * This is different from Chebyshev.h since it leverage ideas from
  * pseudo-spectral optimization, i.e. we don't decompose into basis functions,
- * rather estimate function values at the Chebyshev points.
+ * rather estimate function parameters that enforce function nodes at Chebyshev
+ * points.
  *
  * Please refer to Agrawal21icra for more details.
  *
@@ -35,6 +36,8 @@
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/basis/Basis.h>
+
+#include <boost/function.hpp>
 
 namespace gtsam {
 
@@ -132,7 +135,7 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
    * Create matrix of values at Chebyshev points given vector-valued function.
    */
   template <size_t M>
-  static Matrix matrix(std::function<Eigen::Matrix<double, M, 1>(double)> f,
+  static Matrix matrix(boost::function<Eigen::Matrix<double, M, 1>(double)> f,
                        size_t N, double a = -1, double b = 1) {
     Matrix Xmat(M, N);
     for (size_t j = 0; j < N; j++) {

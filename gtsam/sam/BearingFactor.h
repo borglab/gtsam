@@ -30,7 +30,7 @@ struct Bearing;
  * Binary factor for a bearing measurement
  * Works for any two types A1,A2 for which the functor Bearing<A1,A2>() is
  * defined
- * @ingroup sam
+ * @addtogroup SAM
  */
 template <typename A1, typename A2,
           typename T = typename Bearing<A1, A2>::result_type>
@@ -62,7 +62,9 @@ struct BearingFactor : public ExpressionFactorN<T, A1, A2> {
   }
   
   Vector evaluateError(const A1& a1, const A2& a2,
-    OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 = OptionalNone) const {
+    boost::optional<Matrix&> H1 = boost::none,
+    boost::optional<Matrix&> H2 = boost::none) const
+  {
     std::vector<Matrix> Hs(2);
     const auto &keys = Factor::keys();
     const Vector error = unwhitenedError(
@@ -75,14 +77,12 @@ struct BearingFactor : public ExpressionFactorN<T, A1, A2> {
 
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& boost::serialization::make_nvp(
         "Base", boost::serialization::base_object<Base>(*this));
   }
-#endif
 };  // BearingFactor
 
 /// traits

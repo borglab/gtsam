@@ -17,13 +17,13 @@
  */
 
 // For an explanation of headers, see SFMExample.cpp
-#include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/sfm/SfmData.h>  // for loading BAL datasets !
-#include <gtsam/slam/dataset.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/inference/Ordering.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/slam/dataset.h>  // for loading BAL datasets !
+
 #include <gtsam/base/timing.h>
 
 #include <vector>
@@ -45,8 +45,10 @@ int main(int argc, char* argv[]) {
   if (argc > 1) filename = string(argv[1]);
 
   // Load the SfM data from file
-  SfmData mydata = SfmData::FromBalFile(filename);
-  cout << "read " << mydata.numberTracks() << " tracks on " << mydata.numberCameras() << " cameras" << endl;
+  SfmData mydata;
+  readBAL(filename, mydata);
+  cout << boost::format("read %1% tracks on %2% cameras\n") %
+              mydata.number_tracks() % mydata.number_cameras();
 
   // Create a factor graph
   NonlinearFactorGraph graph;
@@ -57,7 +59,9 @@ int main(int argc, char* argv[]) {
   // Add measurements to the factor graph
   size_t j = 0;
   for (const SfmTrack& track : mydata.tracks) {
-    for (const auto& [i, uv] : track.measurements) {
+    for (const SfmMeasurement& m : track.measurements) {
+      size_t i = m.first;
+      Point2 uv = m.second;
       graph.emplace_shared<MyFactor>(
           uv, noise, C(i), P(j));  // note use of shorthand symbols C and P
     }
@@ -126,9 +130,9 @@ int main(int argc, char* argv[]) {
     cout << endl << endl;
 
     cout << "Time comparison by solving " << filename << " results:" << endl;
-
-    cout << mydata.numberTracks() << " point tracks and " << mydata.numberCameras()
-         << " cameras" << endl;
+    cout << boost::format("%1% point tracks and %2% cameras\n") %
+                mydata.number_tracks() % mydata.number_cameras()
+         << endl;
 
     tictoc_print_();
   }

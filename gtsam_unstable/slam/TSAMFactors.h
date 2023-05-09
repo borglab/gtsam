@@ -26,20 +26,17 @@ namespace gtsam {
 /**
  * DeltaFactor: relative 2D measurement between Pose2 and Point2
  */
-class DeltaFactor: public NoiseModelFactorN<Pose2, Point2> {
+class DeltaFactor: public NoiseModelFactor2<Pose2, Point2> {
 
 public:
   typedef DeltaFactor This;
-  typedef NoiseModelFactorN<Pose2, Point2> Base;
-  typedef std::shared_ptr<This> shared_ptr;
+  typedef NoiseModelFactor2<Pose2, Point2> Base;
+  typedef boost::shared_ptr<This> shared_ptr;
 
 private:
   Point2 measured_; ///< the measurement
 
 public:
-
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
 
   /// Constructor
   DeltaFactor(Key i, Key j, const Point2& measured,
@@ -49,7 +46,8 @@ public:
 
   /// Evaluate measurement error h(x)-z
   Vector evaluateError(const Pose2& pose, const Point2& point,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+          boost::none) const override {
     return pose.transformTo(point, H1, H2) - measured_;
   }
 };
@@ -57,20 +55,17 @@ public:
 /**
  * DeltaFactorBase: relative 2D measurement between Pose2 and Point2, with Basenodes
  */
-class DeltaFactorBase: public NoiseModelFactorN<Pose2, Pose2, Pose2, Point2> {
+class DeltaFactorBase: public NoiseModelFactor4<Pose2, Pose2, Pose2, Point2> {
 
 public:
   typedef DeltaFactorBase This;
-  typedef NoiseModelFactorN<Pose2, Pose2, Pose2, Point2> Base;
-  typedef std::shared_ptr<This> shared_ptr;
+  typedef NoiseModelFactor4<Pose2, Pose2, Pose2, Point2> Base;
+  typedef boost::shared_ptr<This> shared_ptr;
 
 private:
   Point2 measured_; ///< the measurement
 
 public:
-
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
 
   /// Constructor
   DeltaFactorBase(Key b1, Key i, Key b2, Key j, const Point2& measured,
@@ -81,8 +76,10 @@ public:
   /// Evaluate measurement error h(x)-z
   Vector evaluateError(const Pose2& base1, const Pose2& pose,
       const Pose2& base2, const Point2& point, //
-      OptionalMatrixType H1, OptionalMatrixType H2, //
-      OptionalMatrixType H3, OptionalMatrixType H4) const override {
+      boost::optional<Matrix&> H1 = boost::none, //
+      boost::optional<Matrix&> H2 = boost::none, //
+      boost::optional<Matrix&> H3 = boost::none, //
+      boost::optional<Matrix&> H4 = boost::none) const override {
     if (H1 || H2 || H3 || H4) {
       // TODO use fixed-size matrices
       Matrix D_pose_g_base1, D_pose_g_pose;
@@ -113,20 +110,17 @@ public:
 /**
  * OdometryFactorBase: Pose2 odometry, with Basenodes
  */
-class OdometryFactorBase: public NoiseModelFactorN<Pose2, Pose2, Pose2, Pose2> {
+class OdometryFactorBase: public NoiseModelFactor4<Pose2, Pose2, Pose2, Pose2> {
 
 public:
   typedef OdometryFactorBase This;
-  typedef NoiseModelFactorN<Pose2, Pose2, Pose2, Pose2> Base;
-  typedef std::shared_ptr<This> shared_ptr;
+  typedef NoiseModelFactor4<Pose2, Pose2, Pose2, Pose2> Base;
+  typedef boost::shared_ptr<This> shared_ptr;
 
 private:
   Pose2 measured_; ///< the measurement
 
 public:
-
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
 
   /// Constructor
   OdometryFactorBase(Key b1, Key i, Key b2, Key j, const Pose2& measured,
@@ -136,9 +130,11 @@ public:
 
   /// Evaluate measurement error h(x)-z
   Vector evaluateError(const Pose2& base1, const Pose2& pose1,
-      const Pose2& base2, const Pose2& pose2,
-      OptionalMatrixType H1, OptionalMatrixType H2,
-      OptionalMatrixType H3, OptionalMatrixType H4) const override {
+      const Pose2& base2, const Pose2& pose2, //
+      boost::optional<Matrix&> H1 = boost::none, //
+      boost::optional<Matrix&> H2 = boost::none, //
+      boost::optional<Matrix&> H3 = boost::none, //
+      boost::optional<Matrix&> H4 = boost::none) const override {
     if (H1 || H2 || H3 || H4) {
       // TODO use fixed-size matrices
       Matrix D_pose1_g_base1, D_pose1_g_pose1;

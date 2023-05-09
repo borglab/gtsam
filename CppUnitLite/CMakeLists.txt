@@ -6,6 +6,7 @@ file(GLOB cppunitlite_src "*.cpp")
 add_library(CppUnitLite STATIC ${cppunitlite_src} ${cppunitlite_headers})
 list(APPEND GTSAM_EXPORTED_TARGETS CppUnitLite)
 set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
+target_link_libraries(CppUnitLite PUBLIC Boost::boost) # boost/lexical_cast.h
 
 gtsam_assign_source_folders("${cppunitlite_headers};${cppunitlite_src}") # MSVC project structure
 

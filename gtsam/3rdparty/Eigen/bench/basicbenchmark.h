@@ -16,13 +16,13 @@ void benchBasic_loop(const MatrixType& I, MatrixType& m, int iterations)
     {
       asm("#begin_bench_loop LazyEval");
       if (MatrixType::SizeAtCompileTime!=Eigen::Dynamic) asm("#fixedsize");
-      m = (I + 0.00005 * (m + m.lazyProduct(m))).eval();
+      m = (I + 0.00005 * (m + m.lazy() * m)).eval();
     }
     else if (Mode==OmpEval)
     {
       asm("#begin_bench_loop OmpEval");
       if (MatrixType::SizeAtCompileTime!=Eigen::Dynamic) asm("#fixedsize");
-      m = (I + 0.00005 * (m + m.lazyProduct(m))).eval();
+      m = (I + 0.00005 * (m + m.lazy() * m)).evalOMP();
     }
     else
     {

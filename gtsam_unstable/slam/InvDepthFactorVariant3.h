@@ -17,12 +17,14 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/base/numericalDerivative.h>
 
+#include <boost/bind/bind.hpp>
+
 namespace gtsam {
 
 /**
  * Binary factor representing the first visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant3a: public NoiseModelFactorN<Pose3, Vector3> {
+class InvDepthFactorVariant3a: public NoiseModelFactor2<Pose3, Vector3> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -34,14 +36,11 @@ public:
   /// shorthand for base class type
   typedef NoiseModelFactor2<Pose3, Vector3> Base;
 
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
-
   /// shorthand for this class
   typedef InvDepthFactorVariant3a This;
 
   /// shorthand for a smart pointer to a factor
-  typedef std::shared_ptr<This> shared_ptr;
+  typedef boost::shared_ptr<This> shared_ptr;
 
   /// Default constructor
   InvDepthFactorVariant3a() :
@@ -97,8 +96,8 @@ public:
       return camera.project(world_P_landmark) - measured_;
     } catch( CheiralityException& e) {
       std::cout << e.what()
-          << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key<1>()) << "," << DefaultKeyFormatter(this->key<2>()) << "]"
-          << " moved behind camera [" << DefaultKeyFormatter(this->key<1>()) << "]"
+          << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key1()) << "," << DefaultKeyFormatter(this->key2()) << "]"
+          << " moved behind camera [" << DefaultKeyFormatter(this->key1()) << "]"
           << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
@@ -107,7 +106,8 @@ public:
 
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(const Pose3& pose, const Vector3& landmark,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+      boost::optional<Matrix&> H1=boost::none,
+      boost::optional<Matrix&> H2=boost::none) const override {
 
     if(H1) {
       (*H1) = numericalDerivative11<Vector, Pose3>(
@@ -137,7 +137,6 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -146,13 +145,12 @@ private:
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
-#endif
 };
 
 /**
  * Ternary factor representing a visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant3b: public NoiseModelFactorN<Pose3, Pose3, Vector3> {
+class InvDepthFactorVariant3b: public NoiseModelFactor3<Pose3, Pose3, Vector3> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -162,13 +160,13 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactorN<Pose3, Pose3, Vector3> Base;
+  typedef NoiseModelFactor3<Pose3, Pose3, Vector3> Base;
 
   /// shorthand for this class
   typedef InvDepthFactorVariant3b This;
 
   /// shorthand for a smart pointer to a factor
-  typedef std::shared_ptr<This> shared_ptr;
+  typedef boost::shared_ptr<This> shared_ptr;
 
   /// Default constructor
   InvDepthFactorVariant3b() :
@@ -224,8 +222,8 @@ public:
       return camera.project(world_P_landmark) - measured_;
     } catch( CheiralityException& e) {
       std::cout << e.what()
-          << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key<1>()) << "," << DefaultKeyFormatter(this->key<3>()) << "]"
-          << " moved behind camera " << DefaultKeyFormatter(this->key<2>())
+          << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key1()) << "," << DefaultKeyFormatter(this->key3()) << "]"
+          << " moved behind camera " << DefaultKeyFormatter(this->key2())
           << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
@@ -234,7 +232,9 @@ public:
 
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(const Pose3& pose1, const Pose3& pose2, const Vector3& landmark,
-      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3) const override {
+      boost::optional<Matrix&> H1=boost::none,
+      boost::optional<Matrix&> H2=boost::none,
+      boost::optional<Matrix&> H3=boost::none) const override {
 
     if(H1)
       (*H1) = numericalDerivative11<Vector, Pose3>(
@@ -269,16 +269,14 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
-  friend class boost::serialization::access;
   /// Serialization function
+  friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
-#endif
 };
 
 } // \ namespace gtsam

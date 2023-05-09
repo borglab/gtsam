@@ -115,7 +115,7 @@ template<typename Scalar, int Size> void orthomethods(int size=Size)
   VERIFY_IS_APPROX(mcrossN3.row(i), matN3.row(i).cross(vec3));
 }
 
-EIGEN_DECLARE_TEST(geo_orthomethods)
+void test_geo_orthomethods()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( orthomethods_3<float>() );

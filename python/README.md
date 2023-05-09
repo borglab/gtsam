@@ -8,7 +8,6 @@ For instructions on updating the version of the [wrap library](https://github.co
 
 ## Requirements
 
-- Cmake >= 3.15
 - If you want to build the GTSAM python library for a specific python version (eg 3.6),
   use the `-DGTSAM_PYTHON_VERSION=3.6` option when running `cmake` otherwise the default interpreter will be used.
 - If the interpreter is inside an environment (such as an anaconda environment or virtualenv environment),

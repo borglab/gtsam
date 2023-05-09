@@ -25,7 +25,7 @@ bool SimWall2D::equals(const SimWall2D& other, double tol) const {
 }
 
 /* ************************************************************************* */
-bool SimWall2D::intersects(const SimWall2D& B, Point2* pt) const {
+bool SimWall2D::intersects(const SimWall2D& B, boost::optional<Point2&> pt) const {
   const bool debug = false;
 
   const SimWall2D& A = *this;

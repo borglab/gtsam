@@ -54,7 +54,7 @@ static void test_swap_as_lvalue()
 }
 
 
-EIGEN_DECLARE_TEST(cxx11_tensor_layout_swap)
+void test_cxx11_tensor_layout_swap()
 {
   CALL_SUBTEST(test_simple_swap());
   CALL_SUBTEST(test_swap_as_lvalue());

@@ -27,6 +27,8 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/timing.h>
 
+#include <boost/math/special_functions.hpp>
+
 #include <utility>
 
 using namespace std;
@@ -42,7 +44,7 @@ GaussianFactorGraph InitializePose3::buildLinearOrientationGraph(const Nonlinear
     Matrix3 Rij;
     double rotationPrecision = 1.0;
 
-    auto pose3Between = std::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
+    auto pose3Between = boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
     if (pose3Between){
       Rij = pose3Between->measured().rotation().matrix();
       Vector precisions = Vector::Zero(6);
@@ -120,12 +122,12 @@ Values InitializePose3::computeOrientationsGradient(
   gttic(InitializePose3_computeOrientationsGradient);
 
   // this works on the inverse rotations, according to Tron&Vidal,2011
-  std::map<Key,Rot3> inverseRot;
-  inverseRot.emplace(initialize::kAnchorKey, Rot3());
-  for(const auto& key_pose: givenGuess.extract<Pose3>()) {
-    const Key& key = key_pose.first;
-    const Pose3& pose = key_pose.second;
-    inverseRot.emplace(key, pose.rotation().inverse());
+  Values inverseRot;
+  inverseRot.insert(initialize::kAnchorKey, Rot3());
+  for(const auto key_value: givenGuess) {
+    Key key = key_value.key;
+    const Pose3& pose = givenGuess.at<Pose3>(key);
+    inverseRot.insert(key, pose.rotation().inverse());
   }
 
   // Create the map of edges incident on each node
@@ -136,8 +138,10 @@ Values InitializePose3::computeOrientationsGradient(
 
   // calculate max node degree & allocate gradient
   size_t maxNodeDeg = 0;
-  for (const auto& key_R : inverseRot) {
-    const Key& key = key_R.first;
+  VectorValues grad;
+  for(const auto key_value: inverseRot) {
+    Key key = key_value.key;
+    grad.insert(key,Z_3x1);
     size_t currNodeDeg = (adjEdgesMap.at(key)).size();
     if(currNodeDeg > maxNodeDeg)
       maxNodeDeg = currNodeDeg;
@@ -158,29 +162,28 @@ Values InitializePose3::computeOrientationsGradient(
     //////////////////////////////////////////////////////////////////////////
     // compute the gradient at each node
     maxGrad = 0;
-    VectorValues grad;
-    for (const auto& key_R : inverseRot) {
-      const Key& key = key_R.first;
-      const Rot3& Ri = key_R.second;
+    for (const auto key_value : inverseRot) {
+      Key key = key_value.key;
       Vector gradKey = Z_3x1;
       // collect the gradient for each edge incident on key
       for (const size_t& factorId : adjEdgesMap.at(key)) {
-        const Rot3& Rij = factorId2RotMap.at(factorId);
+        Rot3 Rij = factorId2RotMap.at(factorId);
+        Rot3 Ri = inverseRot.at<Rot3>(key);
         auto factor = pose3Graph.at(factorId);
         const auto& keys = factor->keys();
         if (key == keys[0]) {
           Key key1 = keys[1];
-          const Rot3& Rj = inverseRot.at(key1);
+          Rot3 Rj = inverseRot.at<Rot3>(key1);
           gradKey = gradKey + gradientTron(Ri, Rij * Rj, a, b);
         } else if (key == keys[1]) {
           Key key0 = keys[0];
-          const Rot3& Rj = inverseRot.at(key0);
+          Rot3 Rj = inverseRot.at<Rot3>(key0);
           gradKey = gradKey + gradientTron(Ri, Rij.between(Rj), a, b);
         } else {
           cout << "Error in gradient computation" << endl;
         }
       }  // end of i-th gradient computation
-      grad.insert(key, stepsize * gradKey);
+      grad.at(key) = stepsize * gradKey;
 
       double normGradKey = (gradKey).norm();
       if(normGradKey>maxGrad)
@@ -189,12 +192,8 @@ Values InitializePose3::computeOrientationsGradient(
 
     //////////////////////////////////////////////////////////////////////////
     // update estimates
-    for (auto& key_R : inverseRot) {
-      const Key& key = key_R.first;
-      Rot3& Ri = key_R.second;
-      Ri = Ri.retract(grad.at(key));
-    }
-    
+    inverseRot = inverseRot.retract(grad);
+
     //////////////////////////////////////////////////////////////////////////
     // check stopping condition
     if (it>20 && maxGrad < 5e-3)
@@ -202,13 +201,13 @@ Values InitializePose3::computeOrientationsGradient(
   } // enf of gradient iterations
 
   // Return correct rotations
-  const Rot3& Rref = inverseRot.at(initialize::kAnchorKey); // This will be set to the identity as so far we included no prior
+  const Rot3& Rref = inverseRot.at<Rot3>(initialize::kAnchorKey); // This will be set to the identity as so far we included no prior
   Values estimateRot;
-  for (const auto& key_R : inverseRot) {
-    const Key& key = key_R.first;
+  for(const auto key_value: inverseRot) {
+    Key key = key_value.key;
     if (key != initialize::kAnchorKey) {
-      const Rot3& R = key_R.second;
-      if (setRefFrame)
+      const Rot3& R = inverseRot.at<Rot3>(key);
+      if(setRefFrame)
         estimateRot.insert(key, Rref.compose(R.inverse()));
       else
         estimateRot.insert(key, R.inverse());
@@ -224,12 +223,12 @@ void InitializePose3::createSymbolicGraph(
   size_t factorId = 0;
   for (const auto& factor : pose3Graph) {
     auto pose3Between =
-        std::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
+        boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
     if (pose3Between) {
       Rot3 Rij = pose3Between->measured().rotation();
       factorId2RotMap->emplace(factorId, Rij);
 
-      Key key1 = pose3Between->key<1>();
+      Key key1 = pose3Between->key1();
       if (adjEdgesMap->find(key1) != adjEdgesMap->end()) {  // key is already in
         adjEdgesMap->at(key1).push_back(factorId);
       } else {
@@ -237,7 +236,7 @@ void InitializePose3::createSymbolicGraph(
         edge_id.push_back(factorId);
         adjEdgesMap->emplace(key1, edge_id);
       }
-      Key key2 = pose3Between->key<2>();
+      Key key2 = pose3Between->key2();
       if (adjEdgesMap->find(key2) != adjEdgesMap->end()) {  // key is already in
         adjEdgesMap->at(key2).push_back(factorId);
       } else {

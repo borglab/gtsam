@@ -29,6 +29,9 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/assign/list_of.hpp>
+using boost::assign::list_of;
+using boost::assign::map_list_of;
 
 namespace gtsam {
 
@@ -250,7 +253,8 @@ TEST(AdaptAutoDiff, SnavelyExpression) {
     internal::upAligned(RecordSize) + P.traceSize() + X.traceSize(),
     expression.traceSize());
 
-  const set<Key> expected{1, 2};
+  set<Key> expected = list_of(1)(2);
+
   EXPECT(expected == expression.keys());
 }
 

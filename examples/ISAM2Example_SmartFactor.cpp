@@ -87,8 +87,9 @@ int main(int argc, char* argv[]) {
     result.print();
 
     cout << "Detailed results:" << endl;
-    for (auto& [key, status] : result.detail->variableStatus) {
-      PrintKey(key);
+    for (auto keyedStatus : result.detail->variableStatus) {
+      const auto& status = keyedStatus.second;
+      PrintKey(keyedStatus.first);
       cout << " {" << endl;
       cout << "reeliminated: " << status.isReeliminated << endl;
       cout << "relinearized above thresh: " << status.isAboveRelinThreshold
@@ -104,7 +105,7 @@ int main(int argc, char* argv[]) {
     Values currentEstimate = isam.calculateEstimate();
     currentEstimate.print("Current estimate: ");
 
-    auto pointEstimate = smartFactor->point(currentEstimate);
+    boost::optional<Point3> pointEstimate = smartFactor->point(currentEstimate);
     if (pointEstimate) {
       cout << *pointEstimate << endl;
     } else {

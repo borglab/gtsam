@@ -24,26 +24,23 @@ namespace gtsam {
  * Ternary factor representing a visual measurement that includes inverse depth
  */
 template<class POSE, class LANDMARK, class INVDEPTH>
-class InvDepthFactor3: public NoiseModelFactorN<POSE, LANDMARK, INVDEPTH> {
+class InvDepthFactor3: public NoiseModelFactor3<POSE, LANDMARK, INVDEPTH> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
   Point2 measured_;                ///< 2D measurement
-  std::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
+  boost::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
 
 public:
 
   /// shorthand for base class type
   typedef NoiseModelFactor3<POSE, LANDMARK, INVDEPTH> Base;
 
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
-
   /// shorthand for this class
   typedef InvDepthFactor3<POSE, LANDMARK, INVDEPTH> This;
 
   /// shorthand for a smart pointer to a factor
-  typedef std::shared_ptr<This> shared_ptr;
+  typedef boost::shared_ptr<This> shared_ptr;
 
   /// Default constructor
   InvDepthFactor3() :
@@ -86,14 +83,16 @@ public:
 
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(const POSE& pose, const Vector5& point, const INVDEPTH& invDepth,
-      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3) const override {
+      boost::optional<Matrix&> H1=boost::none,
+      boost::optional<Matrix&> H2=boost::none,
+      boost::optional<Matrix&> H3=boost::none) const override {
     try {
       InvDepthCamera3<Cal3_S2> camera(pose, K_);
       return camera.project(point, invDepth, H1, H2, H3) - measured_;
     } catch( CheiralityException& e) {
       if (H1) *H1 = Matrix::Zero(2,6);
       if (H2) *H2 = Matrix::Zero(2,5);
-      if (H3) *H3 = Matrix::Zero(2,1);
+      if (H3) *H2 = Matrix::Zero(2,1);
       std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
           " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
@@ -113,7 +112,6 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -122,6 +120,5 @@ private:
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
-#endif
 };
 } // \ namespace gtsam

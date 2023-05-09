@@ -24,7 +24,8 @@ namespace gtsam {
 
 /* ************************************************************************* */
 template<class FG>
-void VariableIndex::augment(const FG& factors, const FactorIndices* newFactorIndices) {
+void VariableIndex::augment(const FG& factors,
+    boost::optional<const FactorIndices&> newFactorIndices) {
   gttic(VariableIndex_augment);
 
   // Augment index for each factor

@@ -36,7 +36,7 @@ struct PreconditionerParameters;
 struct GTSAM_EXPORT PCGSolverParameters: public ConjugateGradientParameters {
 public:
   typedef ConjugateGradientParameters Base;
-  typedef std::shared_ptr<PCGSolverParameters> shared_ptr;
+  typedef boost::shared_ptr<PCGSolverParameters> shared_ptr;
 
   PCGSolverParameters() {
   }
@@ -51,9 +51,9 @@ public:
   // needed for python wrapper
   void print(const std::string &s) const;
 
-  std::shared_ptr<PreconditionerParameters> preconditioner_;
+  boost::shared_ptr<PreconditionerParameters> preconditioner_;
 
-  void setPreconditionerParams(const std::shared_ptr<PreconditionerParameters> preconditioner);
+  void setPreconditionerParams(const boost::shared_ptr<PreconditionerParameters> preconditioner);
 };
 
 /**
@@ -62,12 +62,12 @@ public:
 class GTSAM_EXPORT PCGSolver: public IterativeSolver {
 public:
   typedef IterativeSolver Base;
-  typedef std::shared_ptr<PCGSolver> shared_ptr;
+  typedef boost::shared_ptr<PCGSolver> shared_ptr;
 
 protected:
 
   PCGSolverParameters parameters_;
-  std::shared_ptr<Preconditioner> preconditioner_;
+  boost::shared_ptr<Preconditioner> preconditioner_;
 
 public:
   /* Interface to initialize a solver without a problem */
@@ -102,9 +102,15 @@ public:
   void multiply(const Vector &x, Vector& y) const;
   void leftPrecondition(const Vector &x, Vector &y) const;
   void rightPrecondition(const Vector &x, Vector &y) const;
-  void scal(const double alpha, Vector &x) const;
-  double dot(const Vector &x, const Vector &y) const;
-  void axpy(const double alpha, const Vector &x, Vector &y) const;
+  inline void scal(const double alpha, Vector &x) const {
+    x *= alpha;
+  }
+  inline double dot(const Vector &x, const Vector &y) const {
+    return x.dot(y);
+  }
+  inline void axpy(const double alpha, const Vector &x, Vector &y) const {
+    y += alpha * x;
+  }
 
   void getb(Vector &b) const;
 };

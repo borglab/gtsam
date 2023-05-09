@@ -17,6 +17,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <boost/math/constants/constants.hpp>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/geometry/Point3.h>
@@ -31,8 +32,6 @@ using namespace gtsam;
 typedef BetweenFactor<Rot3> Between;
 typedef NonlinearFactorGraph Graph;
 
-using symbol_shorthand::R;
-
 /* ************************************************************************* */
 TEST(Rot3, optimize) {
 
@@ -40,11 +39,11 @@ TEST(Rot3, optimize) {
   Values truth;
   Values initial;
   Graph fg;
-  fg.addPrior(R(0), Rot3(), noiseModel::Isotropic::Sigma(3, 0.01));
+  fg.addPrior(Symbol('r',0), Rot3(), noiseModel::Isotropic::Sigma(3, 0.01));
   for(int j=0; j<6; ++j) {
-    truth.insert(R(j), Rot3::Rz(M_PI/3.0 * double(j)));
-    initial.insert(R(j), Rot3::Rz(M_PI/3.0 * double(j) + 0.1 * double(j%2)));
-    fg.emplace_shared<Between>(R(j), R((j+1)%6), Rot3::Rz(M_PI/3.0), noiseModel::Isotropic::Sigma(3, 0.01));
+    truth.insert(Symbol('r',j), Rot3::Rz(M_PI/3.0 * double(j)));
+    initial.insert(Symbol('r',j), Rot3::Rz(M_PI/3.0 * double(j) + 0.1 * double(j%2)));
+    fg += Between(Symbol('r',j), Symbol('r',(j+1)%6), Rot3::Rz(M_PI/3.0), noiseModel::Isotropic::Sigma(3, 0.01));
   }
 
   Values final = GaussNewtonOptimizer(fg, initial).optimize();

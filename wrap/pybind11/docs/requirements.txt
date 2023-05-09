@@ -1,6 +1,5 @@
-breathe==4.34.0
-furo==2022.6.21
-sphinx==5.0.2
-sphinx-copybutton==0.5.0
-sphinxcontrib-moderncmakedomain==3.21.4
-sphinxcontrib-svg2pdfconverter==1.2.0
+breathe==4.20.0
+commonmark==0.9.1
+recommonmark==0.6.0
+sphinx==3.2.1
+sphinx_rtd_theme==0.5.0

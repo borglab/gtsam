@@ -17,16 +17,16 @@
 if(NOT Eigen2_FIND_VERSION)
   if(NOT Eigen2_FIND_VERSION_MAJOR)
     set(Eigen2_FIND_VERSION_MAJOR 2)
-  endif()
+  endif(NOT Eigen2_FIND_VERSION_MAJOR)
   if(NOT Eigen2_FIND_VERSION_MINOR)
     set(Eigen2_FIND_VERSION_MINOR 0)
-  endif()
+  endif(NOT Eigen2_FIND_VERSION_MINOR)
   if(NOT Eigen2_FIND_VERSION_PATCH)
     set(Eigen2_FIND_VERSION_PATCH 0)
-  endif()
+  endif(NOT Eigen2_FIND_VERSION_PATCH)
 
   set(Eigen2_FIND_VERSION "${Eigen2_FIND_VERSION_MAJOR}.${Eigen2_FIND_VERSION_MINOR}.${Eigen2_FIND_VERSION_PATCH}")
-endif()
+endif(NOT Eigen2_FIND_VERSION)
 
 macro(_eigen2_check_version)
   file(READ "${EIGEN2_INCLUDE_DIR}/Eigen/src/Core/util/Macros.h" _eigen2_version_header)
@@ -49,8 +49,8 @@ macro(_eigen2_check_version)
 
     message(STATUS "Eigen2 version ${EIGEN2_VERSION} found in ${EIGEN2_INCLUDE_DIR}, "
                    "but at least version ${Eigen2_FIND_VERSION} is required")
-  endif()
-endmacro()
+  endif(NOT EIGEN2_VERSION_OK)
+endmacro(_eigen2_check_version)
 
 if (EIGEN2_INCLUDE_DIR)
 
@@ -58,7 +58,7 @@ if (EIGEN2_INCLUDE_DIR)
   _eigen2_check_version()
   set(EIGEN2_FOUND ${EIGEN2_VERSION_OK})
 
-else ()
+else (EIGEN2_INCLUDE_DIR)
 
 find_path(EIGEN2_INCLUDE_DIR NAMES Eigen/Core
      PATHS
@@ -69,12 +69,12 @@ find_path(EIGEN2_INCLUDE_DIR NAMES Eigen/Core
 
 if(EIGEN2_INCLUDE_DIR)
   _eigen2_check_version()
-endif()
+endif(EIGEN2_INCLUDE_DIR)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Eigen2 DEFAULT_MSG EIGEN2_INCLUDE_DIR EIGEN2_VERSION_OK)
 
 mark_as_advanced(EIGEN2_INCLUDE_DIR)
 
-endif()
+endif(EIGEN2_INCLUDE_DIR)
 

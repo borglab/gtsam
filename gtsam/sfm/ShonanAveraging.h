@@ -165,7 +165,7 @@ class GTSAM_EXPORT ShonanAveraging {
   size_t nrUnknowns() const { return nrUnknowns_; }
 
   /// Return number of measurements
-  size_t numberMeasurements() const { return measurements_.size(); }
+  size_t nrMeasurements() const { return measurements_.size(); }
 
   /// k^th binary measurement
   const BinaryMeasurement<Rot> &measurement(size_t k) const {
@@ -184,7 +184,7 @@ class GTSAM_EXPORT ShonanAveraging {
     for (auto &measurement : measurements) {
       auto model = measurement.noiseModel();
       const auto &robust =
-          std::dynamic_pointer_cast<noiseModel::Robust>(model);
+          boost::dynamic_pointer_cast<noiseModel::Robust>(model);
 
       SharedNoiseModel robust_model;
       // Check if the noise model is already robust
@@ -300,7 +300,6 @@ class GTSAM_EXPORT ShonanAveraging {
   /**
    * Create initial Values of type SO(p)
    * @param p the dimensionality of the rotation manifold
-   * @param rng random number generator
    */
   Values initializeRandomlyAt(size_t p, std::mt19937 &rng) const;
 
@@ -339,7 +338,7 @@ class GTSAM_EXPORT ShonanAveraging {
    * @param initial initial SO(p) values
    * @return lm optimizer
    */
-  std::shared_ptr<LevenbergMarquardtOptimizer> createOptimizerAt(
+  boost::shared_ptr<LevenbergMarquardtOptimizer> createOptimizerAt(
       size_t p, const Values &initial) const;
 
   /**
@@ -366,8 +365,8 @@ class GTSAM_EXPORT ShonanAveraging {
   template <class T>
   static Values LiftTo(size_t p, const Values &values) {
     Values result;
-    for (const auto& it : values.extract<T>()) {
-      result.insert(it.first, SOn::Lift(p, it.second.matrix()));
+    for (const auto it : values.filter<T>()) {
+      result.insert(it.key, SOn::Lift(p, it.value.matrix()));
     }
     return result;
   }

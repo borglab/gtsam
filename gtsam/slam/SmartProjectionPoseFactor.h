@@ -24,7 +24,7 @@
 namespace gtsam {
 /**
  *
- * @ingroup slam
+ * @addtogroup SLAM
  *
  * If you are using the factor, please cite:
  * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating conditionally
@@ -39,24 +39,25 @@ namespace gtsam {
  * The factor only constrains poses (variable dimension is 6).
  * This factor requires that values contains the involved poses (Pose3).
  * If the calibration should be optimized, as well, use SmartProjectionFactor instead!
- * @ingroup slam
+ * @addtogroup SLAM
  */
-template <class CALIBRATION>
-class SmartProjectionPoseFactor
-    : public SmartProjectionFactor<PinholePose<CALIBRATION> > {
- private:
+template<class CALIBRATION>
+class SmartProjectionPoseFactor: public SmartProjectionFactor<
+    PinholePose<CALIBRATION> > {
+
+private:
   typedef PinholePose<CALIBRATION> Camera;
   typedef SmartProjectionFactor<Camera> Base;
   typedef SmartProjectionPoseFactor<CALIBRATION> This;
 
 protected:
 
-  std::shared_ptr<CALIBRATION> K_; ///< calibration object (one for all cameras)
+  boost::shared_ptr<CALIBRATION> K_; ///< calibration object (one for all cameras)
 
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef std::shared_ptr<This> shared_ptr;
+  typedef boost::shared_ptr<This> shared_ptr;
 
   /**
    * Default constructor, only for serialization
@@ -71,7 +72,7 @@ public:
    */
   SmartProjectionPoseFactor(
       const SharedNoiseModel& sharedNoiseModel,
-      const std::shared_ptr<CALIBRATION> K,
+      const boost::shared_ptr<CALIBRATION> K,
       const SmartProjectionParams& params = SmartProjectionParams())
       : Base(sharedNoiseModel, params), K_(K) {
   }
@@ -85,8 +86,8 @@ public:
    */
   SmartProjectionPoseFactor(
       const SharedNoiseModel& sharedNoiseModel,
-      const std::shared_ptr<CALIBRATION> K,
-      const std::optional<Pose3> body_P_sensor,
+      const boost::shared_ptr<CALIBRATION> K,
+      const boost::optional<Pose3> body_P_sensor,
       const SmartProjectionParams& params = SmartProjectionParams())
       : SmartProjectionPoseFactor(sharedNoiseModel, K, params) {
     this->body_P_sensor_ = body_P_sensor;
@@ -125,7 +126,7 @@ public:
   }
 
   /** return calibration shared pointers */
-  inline const std::shared_ptr<CALIBRATION> calibration() const {
+  inline const boost::shared_ptr<CALIBRATION> calibration() const {
     return K_;
   }
 
@@ -148,7 +149,6 @@ public:
 
  private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -156,7 +156,7 @@ public:
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
-#endif
+
 };
 // end of class declaration
 

@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
         Vector6 covvec;
         covvec << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
         auto cov = noiseModel::Diagonal::Variances(covvec);
-        auto f = std::make_shared<BetweenFactor<imuBias::ConstantBias> >(
+        auto f = boost::make_shared<BetweenFactor<imuBias::ConstantBias> >(
             b1, b2, imuBias::ConstantBias(), cov);
         newgraph.add(f);
         initialEstimate.insert(biasKey, imuBias::ConstantBias());

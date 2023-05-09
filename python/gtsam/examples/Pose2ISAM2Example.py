@@ -111,7 +111,7 @@ def Pose2SLAM_ISAM2_example():
     # update calls are required to perform the relinearization.
     parameters = gtsam.ISAM2Params()
     parameters.setRelinearizeThreshold(0.1)
-    parameters.relinearizeSkip = 1
+    parameters.setRelinearizeSkip(1)
     isam = gtsam.ISAM2(parameters)
 
     # Create the ground truth odometry measurements of the robot during the trajectory.

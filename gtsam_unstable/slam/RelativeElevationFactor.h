@@ -25,18 +25,15 @@ namespace gtsam {
  *
  * TODO: enable use of a Pose3 for the target as well
  */
-class GTSAM_UNSTABLE_EXPORT RelativeElevationFactor: public NoiseModelFactorN<Pose3, Point3> {
+class GTSAM_UNSTABLE_EXPORT RelativeElevationFactor: public NoiseModelFactor2<Pose3, Point3> {
 private:
 
   double measured_; /** measurement */
 
   typedef RelativeElevationFactor This;
-  typedef NoiseModelFactorN<Pose3, Point3> Base;
+  typedef NoiseModelFactor2<Pose3, Point3> Base;
 
 public:
-
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
 
   RelativeElevationFactor() : measured_(0.0) {} /* Default constructor */
 
@@ -47,12 +44,12 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** h(x)-z */
   Vector evaluateError(const Pose3& pose, const Point3& point,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override;
+      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const override;
 
   /** return the measured */
   inline double measured() const { return measured_; }
@@ -65,17 +62,14 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor2",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);
   }
-#endif
 }; // RelativeElevationFactor
 
 

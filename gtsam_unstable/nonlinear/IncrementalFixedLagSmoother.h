@@ -20,9 +20,8 @@
 // \callgraph
 #pragma once
 
-#include <gtsam/nonlinear/FixedLagSmoother.h>
+#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
 #include <gtsam/nonlinear/ISAM2.h>
-#include "gtsam_unstable/dllexport.h"
 
 namespace gtsam {
 
@@ -36,7 +35,7 @@ class GTSAM_UNSTABLE_EXPORT IncrementalFixedLagSmoother: public FixedLagSmoother
 public:
 
   /// Typedef for a shared pointer to an Incremental Fixed-Lag Smoother
-  typedef std::shared_ptr<IncrementalFixedLagSmoother> shared_ptr;
+  typedef boost::shared_ptr<IncrementalFixedLagSmoother> shared_ptr;
 
   /** default constructor */
   IncrementalFixedLagSmoother(double smootherLag = 0.0,
@@ -114,9 +113,6 @@ public:
   /// Get results of latest isam2 update
   const ISAM2Result& getISAM2Result() const{ return isamResult_; }
 
-  /// Get the iSAM2 object which is used for the inference internally
-  const ISAM2& getISAM2() const { return isam_; }
-
 protected:
 
   /** Create default parameters */
@@ -138,7 +134,7 @@ protected:
 
   /** Fill in an iSAM2 ConstrainedKeys structure such that the provided keys are eliminated before all others */
   void createOrderingConstraints(const KeyVector& marginalizableKeys,
-      std::optional<FastMap<Key, int> >& constrainedKeys) const;
+      boost::optional<FastMap<Key, int> >& constrainedKeys) const;
 
 private:
   /** Private methods for printing debug information */

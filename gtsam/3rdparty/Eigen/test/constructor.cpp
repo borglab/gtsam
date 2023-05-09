@@ -20,8 +20,6 @@ template<typename MatrixType> struct Wrapper
   inline operator MatrixType& () { return m_mat; }
 };
 
-enum my_sizes { M = 12, N = 7};
-
 template<typename MatrixType> void ctor_init1(const MatrixType& m)
 {
   // Check logic in PlainObjectBase::_init1
@@ -39,7 +37,7 @@ template<typename MatrixType> void ctor_init1(const MatrixType& m)
 }
 
 
-EIGEN_DECLARE_TEST(constructor)
+void test_constructor()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( ctor_init1(Matrix<float, 1, 1>()) );
@@ -82,17 +80,5 @@ EIGEN_DECLARE_TEST(constructor)
   {
     Array<float,3,3> a(123);
     VERIFY_IS_EQUAL(a(4), 123.f);
-  }
-  {
-    MatrixXi m1(M,N);
-    VERIFY_IS_EQUAL(m1.rows(),M);
-    VERIFY_IS_EQUAL(m1.cols(),N);
-    ArrayXXi a1(M,N);
-    VERIFY_IS_EQUAL(a1.rows(),M);
-    VERIFY_IS_EQUAL(a1.cols(),N);
-    VectorXi v1(M);
-    VERIFY_IS_EQUAL(v1.size(),M);
-    ArrayXi a2(M);
-    VERIFY_IS_EQUAL(a2.size(),M);
   }
 }

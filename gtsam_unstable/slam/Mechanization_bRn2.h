@@ -1,5 +1,5 @@
 /**
- * @file Mechanization_bRn2.h
+ * @file Mechanization_bRn.h
  * @date Jan 25, 2012
  * @author Chris Beall
  * @author Frank Dellaert

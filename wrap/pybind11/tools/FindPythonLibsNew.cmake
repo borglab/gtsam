@@ -57,8 +57,6 @@ endif()
 
 if(PythonLibsNew_FIND_QUIETLY)
   set(_pythonlibs_quiet QUIET)
-else()
-  set(_pythonlibs_quiet "")
 endif()
 
 if(PythonLibsNew_FIND_REQUIRED)
@@ -92,7 +90,7 @@ endif()
 
 # Use the Python interpreter to find the libs.
 if(NOT PythonLibsNew_FIND_VERSION)
-  set(PythonLibsNew_FIND_VERSION "3.6")
+  set(PythonLibsNew_FIND_VERSION "")
 endif()
 
 find_package(PythonInterp ${PythonLibsNew_FIND_VERSION} ${_pythonlibs_required}
@@ -112,26 +110,12 @@ endif()
 # VERSION. VERSION will typically be like "2.7" on unix, and "27" on windows.
 execute_process(
   COMMAND
-    "${PYTHON_EXECUTABLE}" "-c" "
-import sys;import struct;
-import sysconfig as s
-USE_SYSCONFIG = sys.version_info >= (3, 10)
-if not USE_SYSCONFIG:
-    from distutils import sysconfig as ds
+    "${PYTHON_EXECUTABLE}" "-c" "from distutils import sysconfig as s;import sys;import struct;
 print('.'.join(str(v) for v in sys.version_info));
 print(sys.prefix);
-if USE_SYSCONFIG:
-    scheme = s.get_default_scheme()
-    if scheme == 'posix_local':
-        # Debian's default scheme installs to /usr/local/ but we want to find headers in /usr/
-        scheme = 'posix_prefix'
-    print(s.get_path('platinclude', scheme))
-    print(s.get_path('platlib'))
-    print(s.get_config_var('EXT_SUFFIX') or s.get_config_var('SO'))
-else:
-    print(ds.get_python_inc(plat_specific=True));
-    print(ds.get_python_lib(plat_specific=True));
-    print(ds.get_config_var('EXT_SUFFIX') or ds.get_config_var('SO'));
+print(s.get_python_inc(plat_specific=True));
+print(s.get_python_lib(plat_specific=True));
+print(s.get_config_var('SO'));
 print(hasattr(sys, 'gettotalrefcount')+0);
 print(struct.calcsize('@P'));
 print(s.get_config_var('LDVERSION') or s.get_config_var('VERSION'));
@@ -151,36 +135,26 @@ if(NOT _PYTHON_SUCCESS MATCHES 0)
   return()
 endif()
 
-# Can manually set values when cross-compiling
-macro(_PYBIND11_GET_IF_UNDEF lst index name)
-  if(NOT DEFINED "${name}")
-    list(GET "${lst}" "${index}" "${name}")
-  endif()
-endmacro()
-
 # Convert the process output into a list
 if(WIN32)
   string(REGEX REPLACE "\\\\" "/" _PYTHON_VALUES ${_PYTHON_VALUES})
 endif()
 string(REGEX REPLACE ";" "\\\\;" _PYTHON_VALUES ${_PYTHON_VALUES})
 string(REGEX REPLACE "\n" ";" _PYTHON_VALUES ${_PYTHON_VALUES})
-_pybind11_get_if_undef(_PYTHON_VALUES 0 _PYTHON_VERSION_LIST)
-_pybind11_get_if_undef(_PYTHON_VALUES 1 PYTHON_PREFIX)
-_pybind11_get_if_undef(_PYTHON_VALUES 2 PYTHON_INCLUDE_DIR)
-_pybind11_get_if_undef(_PYTHON_VALUES 3 PYTHON_SITE_PACKAGES)
-_pybind11_get_if_undef(_PYTHON_VALUES 4 PYTHON_MODULE_EXTENSION)
-_pybind11_get_if_undef(_PYTHON_VALUES 5 PYTHON_IS_DEBUG)
-_pybind11_get_if_undef(_PYTHON_VALUES 6 PYTHON_SIZEOF_VOID_P)
-_pybind11_get_if_undef(_PYTHON_VALUES 7 PYTHON_LIBRARY_SUFFIX)
-_pybind11_get_if_undef(_PYTHON_VALUES 8 PYTHON_LIBDIR)
-_pybind11_get_if_undef(_PYTHON_VALUES 9 PYTHON_MULTIARCH)
+list(GET _PYTHON_VALUES 0 _PYTHON_VERSION_LIST)
+list(GET _PYTHON_VALUES 1 PYTHON_PREFIX)
+list(GET _PYTHON_VALUES 2 PYTHON_INCLUDE_DIR)
+list(GET _PYTHON_VALUES 3 PYTHON_SITE_PACKAGES)
+list(GET _PYTHON_VALUES 4 PYTHON_MODULE_EXTENSION)
+list(GET _PYTHON_VALUES 5 PYTHON_IS_DEBUG)
+list(GET _PYTHON_VALUES 6 PYTHON_SIZEOF_VOID_P)
+list(GET _PYTHON_VALUES 7 PYTHON_LIBRARY_SUFFIX)
+list(GET _PYTHON_VALUES 8 PYTHON_LIBDIR)
+list(GET _PYTHON_VALUES 9 PYTHON_MULTIARCH)
 
 # Make sure the Python has the same pointer-size as the chosen compiler
 # Skip if CMAKE_SIZEOF_VOID_P is not defined
-# This should be skipped for (non-Apple) cross-compiles (like EMSCRIPTEN)
-if(NOT CMAKE_CROSSCOMPILING
-   AND CMAKE_SIZEOF_VOID_P
-   AND (NOT "${PYTHON_SIZEOF_VOID_P}" STREQUAL "${CMAKE_SIZEOF_VOID_P}"))
+if(CMAKE_SIZEOF_VOID_P AND (NOT "${PYTHON_SIZEOF_VOID_P}" STREQUAL "${CMAKE_SIZEOF_VOID_P}"))
   if(PythonLibsNew_FIND_REQUIRED)
     math(EXPR _PYTHON_BITS "${PYTHON_SIZEOF_VOID_P} * 8")
     math(EXPR _CMAKE_BITS "${CMAKE_SIZEOF_VOID_P} * 8")

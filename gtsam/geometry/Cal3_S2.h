@@ -16,7 +16,7 @@
  */
 
 /**
- * @ingroup geometry
+ * @addtogroup geometry
  */
 
 #pragma once
@@ -28,7 +28,7 @@ namespace gtsam {
 
 /**
  * @brief The most common 5DOF 3D->2D calibration
- * @ingroup geometry
+ * @addtogroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3_S2 : public Cal3 {
@@ -36,7 +36,7 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
   enum { dimension = 5 };
 
   ///< shared pointer to calibration object
-  using shared_ptr = std::shared_ptr<Cal3_S2>;
+  using shared_ptr = boost::shared_ptr<Cal3_S2>;
 
   /// @name Standard Constructors
   /// @{
@@ -66,8 +66,8 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 5> Dcal = {},
-                     OptionalJacobian<2, 2> Dp = {}) const;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 5> Dcal = boost::none,
+                     OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /**
    * Convert image coordinates uv to intrinsic coordinates xy
@@ -76,8 +76,8 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in intrinsic coordinates
    */
-  Point2 calibrate(const Point2& p, OptionalJacobian<2, 5> Dcal = {},
-                   OptionalJacobian<2, 2> Dp = {}) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 5> Dcal = boost::none,
+                   OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /**
    * Convert homogeneous image coordinates to intrinsic coordinates
@@ -102,8 +102,8 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
 
   /// "Between", subtracts calibrations. between(p,q) == compose(inverse(p),q)
   inline Cal3_S2 between(const Cal3_S2& q,
-                         OptionalJacobian<5, 5> H1 = {},
-                         OptionalJacobian<5, 5> H2 = {}) const {
+                         OptionalJacobian<5, 5> H1 = boost::none,
+                         OptionalJacobian<5, 5> H2 = boost::none) const {
     if (H1) *H1 = -I_5x5;
     if (H2) *H2 = I_5x5;
     return Cal3_S2(q.fx_ - fx_, q.fy_ - fy_, q.s_ - s_, q.u0_ - u0_,
@@ -132,7 +132,6 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
   /// @{
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template <class Archive>
@@ -140,7 +139,6 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
     ar& boost::serialization::make_nvp(
         "Cal3_S2", boost::serialization::base_object<Cal3>(*this));
   }
-#endif
 
   /// @}
 };

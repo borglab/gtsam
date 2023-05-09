@@ -825,7 +825,7 @@ int main(int argc, char* argv[])
   }
   for (int i = 1; i < argc; i++) {
     bool arg_handled = false;
-    // Step 1. Try to match action invocation names.
+    // Step 1. Try to match action invokation names.
     for (auto it = available_actions.begin(); it != available_actions.end(); ++it) {
       if (!strcmp(argv[i], (*it)->invokation_name())) {
         if (!action) {

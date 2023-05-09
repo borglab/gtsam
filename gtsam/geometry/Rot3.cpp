@@ -21,6 +21,7 @@
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
+#include <boost/math/constants/constants.hpp>
 
 #include <cmath>
 #include <random>
@@ -169,13 +170,13 @@ Vector3 Rot3::xyz(OptionalJacobian<3, 3> H) const {
 #endif
 
     Matrix39 qHm;
-    std::tie(I, q) = RQ(m, qHm);
+    boost::tie(I, q) = RQ(m, qHm);
 
     // TODO : Explore whether this expression can be optimized as both
     // qHm and mH are super-sparse
     *H = qHm * mH;
   } else
-    std::tie(I, q) = RQ(matrix());
+    boost::tie(I, q) = RQ(matrix());
   return q;
 }
 
@@ -224,6 +225,17 @@ double Rot3::yaw(OptionalJacobian<1, 3> H) const {
   } else
     y = xyz()(2);
   return y;
+}
+
+/* ************************************************************************* */
+Vector Rot3::quaternion() const {
+  gtsam::Quaternion q = toQuaternion();
+  Vector v(4);
+  v(0) = q.w();
+  v(1) = q.x();
+  v(2) = q.y();
+  v(3) = q.z();
+  return v;
 }
 
 /* ************************************************************************* */
@@ -280,8 +292,8 @@ pair<Matrix3, Vector3> RQ(const Matrix3& A, OptionalJacobian<3, 9> H) {
     (*H)(1, 8) = yHb22 * cx;
 
     // Next, calculate the derivate of z. We have
-    // c10 = a10 * cy + a11 * sx * sy + a12 * cx * sy
-    // c11 = a11 * cx - a12 * sx
+    // c20 = a10 * cy + a11 * sx * sy + a12 * cx * sy
+    // c22 = a11 * cx - a12 * sx
     const auto c10Hx = (A(1, 1) * cx - A(1, 2) * sx) * sy;
     const auto c10Hy = A(1, 2) * cx * cy + A(1, 1) * cy * sx - A(1, 0) * sy;
     Vector9 c10HA = c10Hx * H->row(0) + c10Hy * H->row(1);

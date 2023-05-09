@@ -61,7 +61,7 @@ static void test_const()
   Eigen::array<int, 2> bcast;
   bcast[0] = 3;
   bcast[1] = 1;
-  const TensorMap<const Tensor<float, 2> > input_tensor(input.data(), 3, 3);
+  const TensorMap<Tensor<const float, 2> > input_tensor(input.data(), 3, 3);
   Tensor<float, 2> output_tensor= (input_tensor - input_tensor.maximum(depth_dim).eval().reshape(dims2d).broadcast(bcast));
 
   for (int i = 0; i < 3; ++i) {
@@ -72,7 +72,7 @@ static void test_const()
 }
 
 
-EIGEN_DECLARE_TEST(cxx11_tensor_forced_eval)
+void test_cxx11_tensor_forced_eval()
 {
   CALL_SUBTEST(test_simple());
   CALL_SUBTEST(test_const());

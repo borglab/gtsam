@@ -20,21 +20,18 @@
 
 #pragma once
 
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/StereoCamera.h>
-#include <gtsam/geometry/triangulation.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/SmartFactorBase.h>
 #include <gtsam/slam/SmartFactorParams.h>
+
+#include <gtsam/geometry/triangulation.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/slam/StereoFactor.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam_unstable/dllexport.h>
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
-#include <boost/serialization/optional.hpp>
-#endif
-
-#include <optional>
+#include <boost/optional.hpp>
+#include <boost/make_shared.hpp>
 #include <vector>
 
 namespace gtsam {
@@ -52,9 +49,8 @@ typedef SmartProjectionParams SmartStereoProjectionParams;
  * If you'd like to store poses in values instead of cameras, use
  * SmartStereoProjectionPoseFactor instead
 */
-class SmartStereoProjectionFactor
-    : public SmartFactorBase<StereoCamera> {
- private:
+class SmartStereoProjectionFactor: public SmartFactorBase<StereoCamera> {
+private:
 
   typedef SmartFactorBase<StereoCamera> Base;
 
@@ -74,7 +70,7 @@ protected:
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef std::shared_ptr<SmartStereoProjectionFactor> shared_ptr;
+  typedef boost::shared_ptr<SmartStereoProjectionFactor> shared_ptr;
 
   /// Vector of cameras
   typedef CameraSet<StereoCamera> Cameras;
@@ -90,7 +86,7 @@ public:
    */
   SmartStereoProjectionFactor(const SharedNoiseModel& sharedNoiseModel,
       const SmartStereoProjectionParams& params = SmartStereoProjectionParams(),
-      const std::optional<Pose3> body_P_sensor = {}) :
+      const boost::optional<Pose3> body_P_sensor = boost::none) :
       Base(sharedNoiseModel, body_P_sensor), //
       params_(params), //
       result_(TriangulationResult::Degenerate()) {
@@ -200,7 +196,7 @@ public:
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
-  std::shared_ptr<RegularHessianFactor<Base::Dim> > createHessianFactor(
+  boost::shared_ptr<RegularHessianFactor<Base::Dim> > createHessianFactor(
       const Cameras& cameras, const double lambda = 0.0,  bool diagonalDamping =
           false) const {
 
@@ -222,7 +218,7 @@ public:
         m = Matrix::Zero(Base::Dim, Base::Dim);
       for(Vector& v: gs)
         v = Vector::Zero(Base::Dim);
-      return std::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
+      return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
           Gs, gs, 0.0);
     }
 
@@ -239,59 +235,59 @@ public:
     SymmetricBlockMatrix augmentedHessian = //
         Cameras::SchurComplement(Fs, E, b, lambda, diagonalDamping);
 
-    return std::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
+    return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
         augmentedHessian);
   }
 
   // create factor
-//  std::shared_ptr<RegularImplicitSchurFactor<StereoCamera> > createRegularImplicitSchurFactor(
+//  boost::shared_ptr<RegularImplicitSchurFactor<StereoCamera> > createRegularImplicitSchurFactor(
 //      const Cameras& cameras, double lambda) const {
 //    if (triangulateForLinearize(cameras))
 //      return Base::createRegularImplicitSchurFactor(cameras, *result_, lambda);
 //    else
 //      // failed: return empty
-//      return std::shared_ptr<RegularImplicitSchurFactor<StereoCamera> >();
+//      return boost::shared_ptr<RegularImplicitSchurFactor<StereoCamera> >();
 //  }
 //
 //  /// create factor
-//  std::shared_ptr<JacobianFactorQ<Base::Dim, Base::ZDim> > createJacobianQFactor(
+//  boost::shared_ptr<JacobianFactorQ<Base::Dim, Base::ZDim> > createJacobianQFactor(
 //      const Cameras& cameras, double lambda) const {
 //    if (triangulateForLinearize(cameras))
 //      return Base::createJacobianQFactor(cameras, *result_, lambda);
 //    else
 //      // failed: return empty
-//      return std::make_shared<JacobianFactorQ<Base::Dim, Base::ZDim> >(this->keys_);
+//      return boost::make_shared<JacobianFactorQ<Base::Dim, Base::ZDim> >(this->keys_);
 //  }
 //
 //  /// Create a factor, takes values
-//  std::shared_ptr<JacobianFactorQ<Base::Dim, Base::ZDim> > createJacobianQFactor(
+//  boost::shared_ptr<JacobianFactorQ<Base::Dim, Base::ZDim> > createJacobianQFactor(
 //      const Values& values, double lambda) const {
 //    return createJacobianQFactor(this->cameras(values), lambda);
 //  }
 
   /// different (faster) way to compute Jacobian factor
-  std::shared_ptr<JacobianFactor> createJacobianSVDFactor(
+  boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
       return Base::createJacobianSVDFactor(cameras, *result_, lambda);
     else
-      return std::make_shared<JacobianFactorSVD<Base::Dim, ZDim> >(this->keys_);
+      return boost::make_shared<JacobianFactorSVD<Base::Dim, ZDim> >(this->keys_);
   }
 
 //  /// linearize to a Hessianfactor
-//  virtual std::shared_ptr<RegularHessianFactor<Base::Dim> > linearizeToHessian(
+//  virtual boost::shared_ptr<RegularHessianFactor<Base::Dim> > linearizeToHessian(
 //      const Values& values, double lambda = 0.0) const {
 //    return createHessianFactor(this->cameras(values), lambda);
 //  }
 
 //  /// linearize to an Implicit Schur factor
-//  virtual std::shared_ptr<RegularImplicitSchurFactor<StereoCamera> > linearizeToImplicit(
+//  virtual boost::shared_ptr<RegularImplicitSchurFactor<StereoCamera> > linearizeToImplicit(
 //      const Values& values, double lambda = 0.0) const {
 //    return createRegularImplicitSchurFactor(this->cameras(values), lambda);
 //  }
 //
 //  /// linearize to a JacobianfactorQ
-//  virtual std::shared_ptr<JacobianFactorQ<Base::Dim, Base::ZDim> > linearizeToJacobian(
+//  virtual boost::shared_ptr<JacobianFactorQ<Base::Dim, Base::ZDim> > linearizeToJacobian(
 //      const Values& values, double lambda = 0.0) const {
 //    return createJacobianQFactor(this->cameras(values), lambda);
 //  }
@@ -301,7 +297,7 @@ public:
    * @param values Values structure which must contain camera poses for this factor
    * @return a Gaussian factor
    */
-  std::shared_ptr<GaussianFactor> linearizeDamped(const Cameras& cameras,
+  boost::shared_ptr<GaussianFactor> linearizeDamped(const Cameras& cameras,
       const double lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different linear factors
     switch (params_.linearizationMode) {
@@ -323,7 +319,7 @@ public:
    * @param values Values structure which must contain camera poses for this factor
    * @return a Gaussian factor
    */
-  std::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
+  boost::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
       const double lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different linear factors
     Cameras cameras = this->cameras(values);
@@ -331,7 +327,7 @@ public:
   }
 
   /// linearize
-  std::shared_ptr<GaussianFactor> linearize(
+  boost::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
     return linearizeDamped(values);
   }
@@ -343,7 +339,7 @@ public:
   bool triangulateAndComputeE(Matrix& E, const Cameras& cameras) const {
     bool nonDegenerate = triangulateForLinearize(cameras);
     if (nonDegenerate)
-      cameras.project2(*result_, nullptr, &E);
+      cameras.project2(*result_, boost::none, E);
     return nonDegenerate;
   }
 
@@ -418,7 +414,7 @@ public:
    * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
    */
   double totalReprojectionError(const Cameras& cameras,
-      std::optional<Point3> externalPoint = {}) const {
+      boost::optional<Point3> externalPoint = boost::none) const {
 
     if (externalPoint)
       result_ = TriangulationResult(*externalPoint);
@@ -456,8 +452,8 @@ public:
    */
   void correctForMissingMeasurements(
       const Cameras& cameras, Vector& ue,
-      typename Cameras::FBlocks* Fs = nullptr,
-      Matrix* E = nullptr) const override {
+      boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
+      boost::optional<Matrix&> E = boost::none) const override {
     // when using stereo cameras, some of the measurements might be missing:
     for (size_t i = 0; i < cameras.size(); i++) {
       const StereoPoint2& z = measured_.at(i);
@@ -504,7 +500,6 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -513,7 +508,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(params_.throwCheirality);
     ar & BOOST_SERIALIZATION_NVP(params_.verboseCheirality);
   }
-#endif
 };
 
 /// traits

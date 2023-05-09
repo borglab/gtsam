@@ -105,7 +105,7 @@ m1.noalias() += m2 * m3; \endcode</td>
 <td>First of all, here the .noalias() in the first expression is useless because
     m2*m3 will be evaluated anyway. However, note how this expression can be rewritten
     so that no temporary is required. (tip: for very small fixed size matrix
-    it is slightly better to rewrite it like this: m1.noalias() = m2 * m3; m1 += m4;</td>
+    it is slighlty better to rewrite it like this: m1.noalias() = m2 * m3; m1 += m4;</td>
 </tr>
 <tr class="alt">
 <td>\code

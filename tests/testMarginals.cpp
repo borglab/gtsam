@@ -59,8 +59,8 @@ TEST(Marginals, planarSLAMmarginals) {
   SharedDiagonal odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
   Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
   // create between factors to represent odometry
-  graph.emplace_shared<BetweenFactor<Pose2>>(x1, x2, odometry, odometryNoise);
-  graph.emplace_shared<BetweenFactor<Pose2>>(x2, x3, odometry, odometryNoise);
+  graph += BetweenFactor<Pose2>(x1, x2, odometry, odometryNoise);
+  graph += BetweenFactor<Pose2>(x2, x3, odometry, odometryNoise);
 
   /* add measurements */
   // general noisemodel for measurements
@@ -75,9 +75,9 @@ TEST(Marginals, planarSLAMmarginals) {
        range32 = 2.0;
 
   // create bearing/range factors
-  graph.emplace_shared<BearingRangeFactor<Pose2, Point2>>(x1, l1, bearing11, range11, measurementNoise);
-  graph.emplace_shared<BearingRangeFactor<Pose2, Point2>>(x2, l1, bearing21, range21, measurementNoise);
-  graph.emplace_shared<BearingRangeFactor<Pose2, Point2>>(x3, l2, bearing32, range32, measurementNoise);
+  graph += BearingRangeFactor<Pose2, Point2>(x1, l1, bearing11, range11, measurementNoise);
+  graph += BearingRangeFactor<Pose2, Point2>(x2, l1, bearing21, range21, measurementNoise);
+  graph += BearingRangeFactor<Pose2, Point2>(x3, l2, bearing32, range32, measurementNoise);
 
   // linearization point for marginals
   Values soln;
@@ -195,9 +195,9 @@ TEST(Marginals, planarSLAMmarginals) {
 TEST(Marginals, order) {
   NonlinearFactorGraph fg;
   fg.addPrior(0, Pose2(), noiseModel::Unit::Create(3));
-  fg.emplace_shared<BetweenFactor<Pose2>>(0, 1, Pose2(1,0,0), noiseModel::Unit::Create(3));
-  fg.emplace_shared<BetweenFactor<Pose2>>(1, 2, Pose2(1,0,0), noiseModel::Unit::Create(3));
-  fg.emplace_shared<BetweenFactor<Pose2>>(2, 3, Pose2(1,0,0), noiseModel::Unit::Create(3));
+  fg += BetweenFactor<Pose2>(0, 1, Pose2(1,0,0), noiseModel::Unit::Create(3));
+  fg += BetweenFactor<Pose2>(1, 2, Pose2(1,0,0), noiseModel::Unit::Create(3));
+  fg += BetweenFactor<Pose2>(2, 3, Pose2(1,0,0), noiseModel::Unit::Create(3));
 
   Values vals;
   vals.insert(0, Pose2());
@@ -208,31 +208,31 @@ TEST(Marginals, order) {
   vals.insert(100, Point2(0,1));
   vals.insert(101, Point2(1,1));
 
-  fg.emplace_shared<BearingRangeFactor<Pose2,Point2>>(0, 100,
+  fg += BearingRangeFactor<Pose2,Point2>(0, 100,
     vals.at<Pose2>(0).bearing(vals.at<Point2>(100)),
     vals.at<Pose2>(0).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2));
-  fg.emplace_shared<BearingRangeFactor<Pose2,Point2>>(0, 101,
+  fg += BearingRangeFactor<Pose2,Point2>(0, 101,
     vals.at<Pose2>(0).bearing(vals.at<Point2>(101)),
     vals.at<Pose2>(0).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2));
 
-  fg.emplace_shared<BearingRangeFactor<Pose2,Point2>>(1, 100,
+  fg += BearingRangeFactor<Pose2,Point2>(1, 100,
     vals.at<Pose2>(1).bearing(vals.at<Point2>(100)),
     vals.at<Pose2>(1).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2));
-  fg.emplace_shared<BearingRangeFactor<Pose2,Point2>>(1, 101,
+  fg += BearingRangeFactor<Pose2,Point2>(1, 101,
     vals.at<Pose2>(1).bearing(vals.at<Point2>(101)),
     vals.at<Pose2>(1).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2));
 
-  fg.emplace_shared<BearingRangeFactor<Pose2,Point2>>(2, 100,
+  fg += BearingRangeFactor<Pose2,Point2>(2, 100,
     vals.at<Pose2>(2).bearing(vals.at<Point2>(100)),
     vals.at<Pose2>(2).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2));
-  fg.emplace_shared<BearingRangeFactor<Pose2,Point2>>(2, 101,
+  fg += BearingRangeFactor<Pose2,Point2>(2, 101,
     vals.at<Pose2>(2).bearing(vals.at<Point2>(101)),
     vals.at<Pose2>(2).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2));
 
-  fg.emplace_shared<BearingRangeFactor<Pose2,Point2>>(3, 100,
+  fg += BearingRangeFactor<Pose2,Point2>(3, 100,
     vals.at<Pose2>(3).bearing(vals.at<Point2>(100)),
     vals.at<Pose2>(3).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2));
-  fg.emplace_shared<BearingRangeFactor<Pose2,Point2>>(3, 101,
+  fg += BearingRangeFactor<Pose2,Point2>(3, 101,
     vals.at<Pose2>(3).bearing(vals.at<Point2>(101)),
     vals.at<Pose2>(3).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2));
 

@@ -22,26 +22,20 @@
 
 #pragma once
 
-#include <gtsam/inference/DotWriter.h>
-#include <gtsam/inference/Key.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/inference/Key.h>
 
 #include <Eigen/Core>  // for Eigen::aligned_allocator
 
-#ifdef GTSAM_USE_BOOST_FEATURES
 #include <boost/assign/list_inserter.hpp>
-#endif
-
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/make_shared.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/vector.hpp>
-#endif
 
 #include <string>
 #include <type_traits>
 #include <utility>
-#include <iosfwd>
 
 namespace gtsam {
 /// Define collection type:
@@ -50,8 +44,6 @@ typedef FastVector<FactorIndex> FactorIndices;
 // Forward declarations
 template <class CLIQUE>
 class BayesTree;
-
-class HybridValues;
 
 /** Helper */
 template <class C>
@@ -101,7 +93,7 @@ template <class FACTOR>
 class FactorGraph {
  public:
   typedef FACTOR FactorType;  ///< factor type
-  typedef std::shared_ptr<FACTOR>
+  typedef boost::shared_ptr<FACTOR>
       sharedFactor;  ///< Shared pointer to a factor
   typedef sharedFactor value_type;
   typedef typename FastVector<sharedFactor>::iterator iterator;
@@ -109,7 +101,7 @@ class FactorGraph {
 
  private:
   typedef FactorGraph<FACTOR> This;  ///< Typedef for this class
-  typedef std::shared_ptr<This>
+  typedef boost::shared_ptr<This>
       shared_ptr;  ///< Shared pointer for this class
 
   /// Check if a DERIVEDFACTOR is in fact derived from FactorType.
@@ -122,7 +114,7 @@ class FactorGraph {
   using HasDerivedValueType = typename std::enable_if<
       std::is_base_of<FactorType, typename T::value_type>::value>::type;
 
-  /// Check if T has a pointer type derived from FactorType.
+  /// Check if T has a value_type derived from FactorType.
   template <typename T>
   using HasDerivedElementType = typename std::enable_if<std::is_base_of<
       FactorType, typename T::value_type::element_type>::value>::type;
@@ -133,11 +125,6 @@ class FactorGraph {
 
   /** Collection of factors */
   FastVector<sharedFactor> factors_;
-
-  /// Check exact equality of the factor pointers. Useful for derived ==.
-  bool isEqual(const FactorGraph& other) const {
-    return factors_ == other.factors_;
-  }
 
   /// @name Standard Constructors
   /// @{
@@ -160,22 +147,10 @@ class FactorGraph {
   /// @}
 
  public:
-  /// @name Constructors
-  /// @{
-
   /// Default destructor
-  /// Public and virtual so boost serialization can call it.
+  // Public and virtual so boost serialization can call it.
   virtual ~FactorGraph() = default;
 
-  /**
-   * Constructor that takes an initializer list of shared pointers.
-   *  FactorGraph fg = {make_shared<MyFactor>(), ...};
-   */
-  template <class DERIVEDFACTOR, typename = IsDerived<DERIVEDFACTOR>>
-  FactorGraph(std::initializer_list<std::shared_ptr<DERIVEDFACTOR>> sharedFactors)
-      : factors_(sharedFactors) {}
-
-  /// @}
   /// @name Adding Single Factors
   /// @{
 
@@ -187,14 +162,14 @@ class FactorGraph {
 
   /// Add a factor directly using a shared_ptr.
   template <class DERIVEDFACTOR>
-  IsDerived<DERIVEDFACTOR> push_back(std::shared_ptr<DERIVEDFACTOR> factor) {
-    factors_.push_back(std::shared_ptr<FACTOR>(factor));
+  IsDerived<DERIVEDFACTOR> push_back(boost::shared_ptr<DERIVEDFACTOR> factor) {
+    factors_.push_back(boost::shared_ptr<FACTOR>(factor));
   }
 
   /// Emplace a shared pointer to factor of given type.
   template <class DERIVEDFACTOR, class... Args>
   IsDerived<DERIVEDFACTOR> emplace_shared(Args&&... args) {
-    factors_.push_back(std::allocate_shared<DERIVEDFACTOR>(
+    factors_.push_back(boost::allocate_shared<DERIVEDFACTOR>(
         Eigen::aligned_allocator<DERIVEDFACTOR>(),
         std::forward<Args>(args)...));
   }
@@ -205,27 +180,25 @@ class FactorGraph {
    */
   template <class DERIVEDFACTOR>
   IsDerived<DERIVEDFACTOR> push_back(const DERIVEDFACTOR& factor) {
-    factors_.push_back(std::allocate_shared<DERIVEDFACTOR>(
+    factors_.push_back(boost::allocate_shared<DERIVEDFACTOR>(
         Eigen::aligned_allocator<DERIVEDFACTOR>(), factor));
   }
 
   /// `add` is a synonym for push_back.
   template <class DERIVEDFACTOR>
-  IsDerived<DERIVEDFACTOR> add(std::shared_ptr<DERIVEDFACTOR> factor) {
+  IsDerived<DERIVEDFACTOR> add(boost::shared_ptr<DERIVEDFACTOR> factor) {
     push_back(factor);
   }
 
-#ifdef GTSAM_USE_BOOST_FEATURES
   /// `+=` works well with boost::assign list inserter.
   template <class DERIVEDFACTOR>
   typename std::enable_if<
       std::is_base_of<FactorType, DERIVEDFACTOR>::value,
       boost::assign::list_inserter<RefCallPushBack<This>>>::type
-  operator+=(std::shared_ptr<DERIVEDFACTOR> factor) {
+  operator+=(boost::shared_ptr<DERIVEDFACTOR> factor) {
     return boost::assign::make_list_inserter(RefCallPushBack<This>(*this))(
         factor);
   }
-#endif
 
   /// @}
   /// @name Adding via iterators
@@ -276,7 +249,6 @@ class FactorGraph {
     push_back(factorOrContainer);
   }
 
-#ifdef GTSAM_USE_BOOST_FEATURES
   /**
    * Add a factor or container of factors, including STL collections,
    * BayesTrees, etc.
@@ -287,7 +259,6 @@ class FactorGraph {
     return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this))(
         factorOrContainer);
   }
-#endif
 
   /// @}
   /// @name Specialized versions
@@ -317,11 +288,11 @@ class FactorGraph {
   /// @name Testable
   /// @{
 
-  /// Print out graph to std::cout, with optional key formatter.
+  /// print out graph
   virtual void print(const std::string& s = "FactorGraph",
                      const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
-  /// Check equality up to tolerance.
+  /** Check equality */
   bool equals(const This& fg, double tol = 1e-9) const;
   /// @}
 
@@ -369,9 +340,6 @@ class FactorGraph {
   /** Get the last factor */
   sharedFactor back() const { return factors_.back(); }
 
-  /** Add error for all factors. */
-  double error(const HybridValues &values) const;
-
   /// @}
   /// @name Modifying Factor Graphs (imperative, discouraged)
   /// @{
@@ -386,7 +354,7 @@ class FactorGraph {
    * less than the original, factors at the end will be removed.  If the new
    * size is larger than the original, null factors will be appended.
    */
-  virtual void resize(size_t size) { factors_.resize(size); }
+  void resize(size_t size) { factors_.resize(size); }
 
   /** delete factor without re-arranging indexes by inserting a nullptr pointer
    */
@@ -402,24 +370,6 @@ class FactorGraph {
   iterator erase(iterator first, iterator last) {
     return factors_.erase(first, last);
   }
-
-  /// @}
-  /// @name Graph Display
-  /// @{
-
-  /// Output to graphviz format, stream version.
-  void dot(std::ostream& os,
-           const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-           const DotWriter& writer = DotWriter()) const;
-
-  /// Output to graphviz format string.
-  std::string dot(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-                  const DotWriter& writer = DotWriter()) const;
-
-  /// output to file with graphviz format.
-  void saveGraph(const std::string& filename,
-                 const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-                 const DotWriter& writer = DotWriter()) const;
 
   /// @}
   /// @name Advanced Interface
@@ -442,14 +392,12 @@ class FactorGraph {
   inline bool exists(size_t idx) const { return idx < size() && at(idx); }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_NVP(factors_);
   }
-#endif
 
   /// @}
 };  // FactorGraph

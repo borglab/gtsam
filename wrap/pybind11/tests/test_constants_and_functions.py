@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pytest
 
 m = pytest.importorskip("pybind11_tests.constants_and_functions")
@@ -39,14 +40,3 @@ def test_exception_specifiers():
     assert m.f2(53) == 55
     assert m.f3(86) == 89
     assert m.f4(140) == 144
-
-
-def test_function_record_leaks():
-    class RaisingRepr:
-        def __repr__(self):
-            raise RuntimeError("Surprise!")
-
-    with pytest.raises(RuntimeError):
-        m.register_large_capture_with_invalid_arguments(m)
-    with pytest.raises(RuntimeError):
-        m.register_with_raising_repr(m, RaisingRepr())

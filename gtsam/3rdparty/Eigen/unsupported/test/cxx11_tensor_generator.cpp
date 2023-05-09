@@ -42,11 +42,11 @@ struct Generator2D {
 template <int DataLayout>
 static void test_2D()
 {
-  Tensor<float, 2> matrix(512, 512);
+  Tensor<float, 2> matrix(5, 7);
   Tensor<float, 2> result = matrix.generate(Generator2D());
 
-  for (int i = 0; i < 512; ++i) {
-    for (int j = 0; j < 512; ++j) {
+  for (int i = 0; i < 5; ++i) {
+    for (int j = 0; j < 5; ++j) {
       VERIFY_IS_EQUAL(result(i, j), 3*i + 11*j);
     }
   }
@@ -80,7 +80,7 @@ static void test_gaussian()
 }
 
 
-EIGEN_DECLARE_TEST(cxx11_tensor_generator)
+void test_cxx11_tensor_generator()
 {
   CALL_SUBTEST(test_1D<ColMajor>());
   CALL_SUBTEST(test_1D<RowMajor>());

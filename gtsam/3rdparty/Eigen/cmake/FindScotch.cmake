@@ -71,12 +71,11 @@ if( SCOTCH_FIND_COMPONENTS )
 endif()
 
 # SCOTCH may depend on Threads, try to find it
-include(CMakeFindDependencyMacro)
 if (NOT THREADS_FOUND)
   if (SCOTCH_FIND_REQUIRED)
-    find_dependency(Threads REQUIRED)
+    find_package(Threads REQUIRED)
   else()
-    find_dependency(Threads)
+    find_package(Threads)
   endif()
 endif()
 
@@ -302,7 +301,7 @@ if(SCOTCH_LIBRARIES)
   set(CMAKE_REQUIRED_INCLUDES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
-endif()
+endif(SCOTCH_LIBRARIES)
 
 if (SCOTCH_LIBRARIES)
   list(GET SCOTCH_LIBRARIES 0 first_lib)

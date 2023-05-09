@@ -20,40 +20,6 @@ Available types include :class:`handle`, :class:`object`, :class:`bool_`,
     Be sure to review the :ref:`pytypes_gotchas` before using this heavily in
     your C++ API.
 
-.. _instantiating_compound_types:
-
-Instantiating compound Python types from C++
-============================================
-
-Dictionaries can be initialized in the :class:`dict` constructor:
-
-.. code-block:: cpp
-
-    using namespace pybind11::literals; // to bring in the `_a` literal
-    py::dict d("spam"_a=py::none(), "eggs"_a=42);
-
-A tuple of python objects can be instantiated using :func:`py::make_tuple`:
-
-.. code-block:: cpp
-
-    py::tuple tup = py::make_tuple(42, py::none(), "spam");
-
-Each element is converted to a supported Python type.
-
-A `simple namespace`_ can be instantiated using
-
-.. code-block:: cpp
-
-    using namespace pybind11::literals;  // to bring in the `_a` literal
-    py::object SimpleNamespace = py::module_::import("types").attr("SimpleNamespace");
-    py::object ns = SimpleNamespace("spam"_a=py::none(), "eggs"_a=42);
-
-Attributes on a namespace can be modified with the :func:`py::delattr`,
-:func:`py::getattr`, and :func:`py::setattr` functions. Simple namespaces can
-be useful as lightweight stand-ins for class instances.
-
-.. _simple namespace: https://docs.python.org/3/library/types.html#types.SimpleNamespace
-
 .. _casting_back_and_forth:
 
 Casting back and forth
@@ -64,7 +30,7 @@ types to Python, which can be done using :func:`py::cast`:
 
 .. code-block:: cpp
 
-    MyClass *cls = ...;
+    MyClass *cls = ..;
     py::object obj = py::cast(cls);
 
 The reverse direction uses the following syntax:
@@ -90,12 +56,12 @@ This example obtains a reference to the Python ``Decimal`` class.
 .. code-block:: cpp
 
     // Equivalent to "from decimal import Decimal"
-    py::object Decimal = py::module_::import("decimal").attr("Decimal");
+    py::object Decimal = py::module::import("decimal").attr("Decimal");
 
 .. code-block:: cpp
 
     // Try to import scipy
-    py::object scipy = py::module_::import("scipy");
+    py::object scipy = py::module::import("scipy");
     return scipy.attr("__version__");
 
 
@@ -115,7 +81,7 @@ via ``operator()``.
 .. code-block:: cpp
 
     // Use Python to make our directories
-    py::object os = py::module_::import("os");
+    py::object os = py::module::import("os");
     py::object makedirs = os.attr("makedirs");
     makedirs("/tmp/path/to/somewhere");
 
@@ -165,7 +131,6 @@ Keyword arguments are also supported. In Python, there is the usual call syntax:
 
     def f(number, say, to):
         ...  # function code
-
 
     f(1234, say="hello", to=some_instance)  # keyword call in Python
 
@@ -231,9 +196,9 @@ C++ functions that require a specific subtype rather than a generic :class:`obje
     #include <pybind11/numpy.h>
     using namespace pybind11::literals;
 
-    py::module_ os = py::module_::import("os");
-    py::module_ path = py::module_::import("os.path");  // like 'import os.path as path'
-    py::module_ np = py::module_::import("numpy");  // like 'import numpy as np'
+    py::module os = py::module::import("os");
+    py::module path = py::module::import("os.path");  // like 'import os.path as path'
+    py::module np = py::module::import("numpy");  // like 'import numpy as np'
 
     py::str curdir_abs = path.attr("abspath")(path.attr("curdir"));
     py::print(py::str("Current directory: ") + curdir_abs);

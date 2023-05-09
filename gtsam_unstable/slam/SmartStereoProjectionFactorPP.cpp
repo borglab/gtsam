@@ -28,7 +28,7 @@ SmartStereoProjectionFactorPP::SmartStereoProjectionFactorPP(
 void SmartStereoProjectionFactorPP::add(
     const StereoPoint2& measured,
     const Key& w_P_body_key, const Key& body_P_cam_key,
-    const std::shared_ptr<Cal3_S2Stereo>& K) {
+    const boost::shared_ptr<Cal3_S2Stereo>& K) {
   // we index by cameras..
   Base::add(measured, w_P_body_key);
   // but we also store the extrinsic calibration keys in the same order
@@ -45,7 +45,7 @@ void SmartStereoProjectionFactorPP::add(
 void SmartStereoProjectionFactorPP::add(
     const std::vector<StereoPoint2>& measurements,
     const KeyVector& world_P_body_keys, const KeyVector& body_P_cam_keys,
-    const std::vector<std::shared_ptr<Cal3_S2Stereo>>& Ks) {
+    const std::vector<boost::shared_ptr<Cal3_S2Stereo>>& Ks) {
   assert(world_P_body_keys.size() == measurements.size());
   assert(world_P_body_keys.size() == body_P_cam_keys.size());
   assert(world_P_body_keys.size() == Ks.size());
@@ -65,7 +65,7 @@ void SmartStereoProjectionFactorPP::add(
 void SmartStereoProjectionFactorPP::add(
     const std::vector<StereoPoint2>& measurements,
     const KeyVector& world_P_body_keys, const KeyVector& body_P_cam_keys,
-    const std::shared_ptr<Cal3_S2Stereo>& K) {
+    const boost::shared_ptr<Cal3_S2Stereo>& K) {
   assert(world_P_body_keys.size() == measurements.size());
   assert(world_P_body_keys.size() == body_P_cam_keys.size());
   for (size_t i = 0; i < measurements.size(); i++) {

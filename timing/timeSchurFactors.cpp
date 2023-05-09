@@ -14,9 +14,12 @@
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholePose.h>
 
+#include <boost/assign/list_of.hpp>
+#include <boost/assign/std/vector.hpp>
 #include <fstream>
 
 using namespace std;
+using namespace boost::assign;
 using namespace gtsam;
 
 #define SLOW
@@ -101,7 +104,7 @@ void timeAll(size_t m, size_t N) {
   { // Raw memory Version
     FastVector < Key > keys;
     for (size_t i = 0; i < m; i++)
-      keys.push_back(i);
+      keys += i;
     Vector x = xvalues.vector(keys);
     double* xdata = x.data();
 
@@ -144,7 +147,7 @@ int main(void) {
   //  ms += 20, 30, 40, 50;
   // ms += 20,30,40,50,60,70,80,90,100;
   for (size_t m = 2; m <= 50; m += 2)
-    ms.push_back(m);
+    ms += m;
   //for (size_t m=10;m<=100;m+=10) ms += m;
   // loop over number of images
   for(size_t m: ms)

@@ -18,7 +18,7 @@
  */
 
 /**
- * @ingroup geometry
+ * @addtogroup geometry
  */
 
 #pragma once
@@ -30,7 +30,7 @@ namespace gtsam {
 /**
  * @brief Calibration of a omni-directional camera with mirror + lens radial
  * distortion
- * @ingroup geometry
+ * @addtogroup geometry
  * \nosubgrouping
  *
  * Similar to Cal3DS2, does distortion but has additional mirror parameter xi
@@ -51,9 +51,6 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
 
  public:
   enum { dimension = 10 };
-
-  ///< shared pointer to stereo calibration object
-  using shared_ptr = std::shared_ptr<Cal3Unified>;
 
   /// @name Standard Constructors
   /// @{
@@ -106,12 +103,12 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
    * @return point in image coordinates
    */
   Point2 uncalibrate(const Point2& p,
-                     OptionalJacobian<2, 10> Dcal = {},
-                     OptionalJacobian<2, 2> Dp = {}) const;
+                     OptionalJacobian<2, 10> Dcal = boost::none,
+                     OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /// Conver a pixel coordinate to ideal coordinate
-  Point2 calibrate(const Point2& p, OptionalJacobian<2, 10> Dcal = {},
-                   OptionalJacobian<2, 2> Dp = {}) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 10> Dcal = boost::none,
+                   OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /// Convert a 3D point to normalized unit plane
   Point2 spaceToNPlane(const Point2& p) const;
@@ -138,7 +135,6 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
   /// @}
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
@@ -147,7 +143,6 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
         "Cal3Unified", boost::serialization::base_object<Cal3DS2_Base>(*this));
     ar& BOOST_SERIALIZATION_NVP(xi_);
   }
-#endif
 };
 
 template <>

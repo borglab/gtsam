@@ -12,12 +12,12 @@
 
 // #include <vector>
 
-#include "../../Eigen/Core"
-#include "../../Eigen/Jacobi"
-#include "../../Eigen/QR"
-#include "NumericalDiff"
+#include <Eigen/Core>
+#include <Eigen/Jacobi>
+#include <Eigen/QR>
+#include <unsupported/Eigen/NumericalDiff> 
 
-#include "../../Eigen/SparseQR"
+#include <Eigen/SparseQR>
 
 /**
   * \defgroup LevenbergMarquardt_Module Levenberg-Marquardt module
@@ -29,10 +29,7 @@
   * 
   */
 
-#include "../../Eigen/SparseCore"
-
-#include "../../Eigen/src/Core/util/DisableStupidWarnings.h"
-
+#include "Eigen/SparseCore"
 #ifndef EIGEN_PARSED_BY_DOXYGEN
 
 #include "src/LevenbergMarquardt/LMqrsolv.h"
@@ -44,6 +41,5 @@
 #include "src/LevenbergMarquardt/LevenbergMarquardt.h"
 #include "src/LevenbergMarquardt/LMonestep.h"
 
-#include "../../Eigen/src/Core/util/ReenableStupidWarnings.h"
 
 #endif // EIGEN_LEVENBERGMARQUARDT_MODULE

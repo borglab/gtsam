@@ -22,7 +22,7 @@
 namespace gtsam {
 
 template <>
-void SOn::Hat(const Vector &xi, Eigen::Ref<Matrix> X) {
+GTSAM_EXPORT void SOn::Hat(const Vector &xi, Eigen::Ref<Matrix> X) {
   size_t n = AmbientDim(xi.size());
   if (n < 2)
     throw std::invalid_argument("SO<N>::Hat: n<2 not supported");
@@ -48,7 +48,7 @@ void SOn::Hat(const Vector &xi, Eigen::Ref<Matrix> X) {
   }
 }
 
-template <> Matrix SOn::Hat(const Vector &xi) {
+template <> GTSAM_EXPORT Matrix SOn::Hat(const Vector &xi) {
   size_t n = AmbientDim(xi.size());
   Matrix X(n, n); // allocate space for n*n skew-symmetric matrix
   SOn::Hat(xi, X);
@@ -56,6 +56,7 @@ template <> Matrix SOn::Hat(const Vector &xi) {
 }
 
 template <>
+GTSAM_EXPORT
 Vector SOn::Vee(const Matrix& X) {
   const size_t n = X.rows();
   if (n < 2) throw std::invalid_argument("SO<N>::Hat: n<2 not supported");
@@ -103,9 +104,7 @@ SOn LieGroup<SOn, Eigen::Dynamic>::between(const SOn& g, DynamicJacobian H1,
 }
 
 // Dynamic version of vec
-template <>
-typename SOn::VectorN2 SOn::vec(DynamicJacobian H) const
-{
+template <> typename SOn::VectorN2 SOn::vec(DynamicJacobian H) const {
   const size_t n = rows(), n2 = n * n;
 
   // Vectorize

@@ -50,7 +50,7 @@ template<typename MatrixType> void determinant(const MatrixType& m)
   VERIFY_IS_APPROX(m2.block(0,0,0,0).determinant(), Scalar(1));
 }
 
-EIGEN_DECLARE_TEST(determinant)
+void test_determinant()
 {
   for(int i = 0; i < g_repeat; i++) {
     int s = 0;

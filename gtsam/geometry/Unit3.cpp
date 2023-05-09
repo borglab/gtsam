@@ -33,14 +33,6 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Unit3::Unit3(const Vector3& p) : p_(p.normalized()) {}
-
-Unit3::Unit3(double x, double y, double z) : p_(x, y, z) { p_.normalize(); }
-
-Unit3::Unit3(const Point2& p, double f) : p_(p.x(), p.y(), f) {
-  p_.normalize();
-}
-/* ************************************************************************* */
 Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2, 3> H) {
   // 3*3 Derivative of representation with respect to point is 3*3:
   Matrix3 D_p_point;
@@ -117,8 +109,8 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
       jacobian.block<3, 2>(3, 0) = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
 
       // Cache the result and jacobian
-      H_B_ = (jacobian);
-      B_ = (B);
+      H_B_.reset(jacobian);
+      B_.reset(B);
     }
 
     // Return cached jacobian, possibly computed just above
@@ -134,7 +126,7 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
     const Point3 B1 = gtsam::cross(n, axis);
     B.col(0) = normalize(B1);
     B.col(1) = gtsam::cross(n, B.col(0));
-    B_ = (B);
+    B_.reset(B);
   }
 
   return *B_;

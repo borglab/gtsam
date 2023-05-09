@@ -19,6 +19,9 @@
 
 #include <gtsam/discrete/DiscreteMarginals.h>
 
+#include <boost/assign/std/vector.hpp>
+using namespace boost::assign;
+
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -44,7 +47,7 @@ TEST_UNSAFE( DiscreteMarginals, UGM_small ) {
 
   DiscreteMarginals marginals(graph);
   DiscreteFactor::shared_ptr actualC = marginals(Cathy.first);
-  DiscreteValues values;
+  DiscreteFactor::Values values;
 
   values[Cathy.first] = 0;
   EXPECT_DOUBLES_EQUAL( 0.359631, (*actualC)(values), 1e-6);
@@ -91,7 +94,7 @@ TEST_UNSAFE( DiscreteMarginals, UGM_chain ) {
 
   DiscreteMarginals marginals(graph);
   DiscreteFactor::shared_ptr actualC = marginals(key[2].first);
-  DiscreteValues values;
+  DiscreteFactor::Values values;
 
   values[key[2].first] = 0;
   EXPECT_DOUBLES_EQUAL( 0.03426, (*actualC)(values), 1e-4);
@@ -119,11 +122,11 @@ TEST_UNSAFE( DiscreteMarginals, truss ) {
 //  bayesTree->print("Bayes Tree");
   typedef DiscreteBayesTreeClique Clique;
 
-  Clique expected0(std::make_shared<DiscreteConditional>((key[0] | key[2], key[4]) = "2/1 2/1 2/1 2/1"));
+  Clique expected0(boost::make_shared<DiscreteConditional>((key[0] | key[2], key[4]) = "2/1 2/1 2/1 2/1"));
   Clique::shared_ptr actual0 = (*bayesTree)[0];
 //  EXPECT(assert_equal(expected0, *actual0)); // TODO, correct but fails
 
-  Clique expected1(std::make_shared<DiscreteConditional>((key[1] | key[3], key[4]) = "1/2 1/2 1/2 1/2"));
+  Clique expected1(boost::make_shared<DiscreteConditional>((key[1] | key[3], key[4]) = "1/2 1/2 1/2 1/2"));
   Clique::shared_ptr actual1 = (*bayesTree)[1];
 //  EXPECT(assert_equal(expected1, *actual1)); // TODO, correct but fails
 
@@ -133,12 +136,12 @@ TEST_UNSAFE( DiscreteMarginals, truss ) {
   // test 0
   DecisionTreeFactor expectedM0(key[0],"0.666667 0.333333");
   DiscreteFactor::shared_ptr actualM0 = marginals(0);
-  EXPECT(assert_equal(expectedM0, *std::dynamic_pointer_cast<DecisionTreeFactor>(actualM0),1e-5));
+  EXPECT(assert_equal(expectedM0, *boost::dynamic_pointer_cast<DecisionTreeFactor>(actualM0),1e-5));
 
   // test 1
   DecisionTreeFactor expectedM1(key[1],"0.333333 0.666667");
   DiscreteFactor::shared_ptr actualM1 = marginals(1);
-  EXPECT(assert_equal(expectedM1, *std::dynamic_pointer_cast<DecisionTreeFactor>(actualM1),1e-5));
+  EXPECT(assert_equal(expectedM1, *boost::dynamic_pointer_cast<DecisionTreeFactor>(actualM1),1e-5));
 }
 
 /* ************************************************************************* */
@@ -161,11 +164,11 @@ TEST_UNSAFE(DiscreteMarginals, truss2) {
   graph.add(key[2] & key[3] & key[4], "1 2 3 4 5 6 7 8");
 
   // Calculate the marginals by brute force
-  auto allPosbValues = DiscreteValues::CartesianProduct(
-      key[0] & key[1] & key[2] & key[3] & key[4]);
+  vector<DiscreteFactor::Values> allPosbValues =
+      cartesianProduct(key[0] & key[1] & key[2] & key[3] & key[4]);
   Vector T = Z_5x1, F = Z_5x1;
   for (size_t i = 0; i < allPosbValues.size(); ++i) {
-    DiscreteValues x = allPosbValues[i];
+    DiscreteFactor::Values x = allPosbValues[i];
     double px = graph(x);
     for (size_t j = 0; j < 5; j++)
       if (x[j])
@@ -183,11 +186,12 @@ TEST_UNSAFE(DiscreteMarginals, truss2) {
     F[j] /= sum;
 
     // Marginals
-    const vector<double> table{F[j], T[j]};
+    vector<double> table;
+    table += F[j], T[j];
     DecisionTreeFactor expectedM(key[j], table);
     DiscreteFactor::shared_ptr actualM = marginals(j);
     EXPECT(assert_equal(
-        expectedM, *std::dynamic_pointer_cast<DecisionTreeFactor>(actualM)));
+        expectedM, *boost::dynamic_pointer_cast<DecisionTreeFactor>(actualM)));
   }
 }
 

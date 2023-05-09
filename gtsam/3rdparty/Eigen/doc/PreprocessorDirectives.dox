@@ -51,7 +51,7 @@ are doing.
 
 \section TopicPreprocessorDirectivesCppVersion C++ standard features
 
-By default, %Eigen strive to automatically detect and enable language features at compile-time based on
+By default, %Eigen strive to automatically detect and enable langage features at compile-time based on
 the information provided by the compiler.
 
  - \b EIGEN_MAX_CPP_VER - disables usage of C++ features requiring a version greater than EIGEN_MAX_CPP_VER.
@@ -66,7 +66,7 @@ functions by defining EIGEN_HAS_C99_MATH=1.
    Automatic detection disabled if EIGEN_MAX_CPP_VER<11.
  - \b EIGEN_HAS_CXX11_MATH - controls the implementation of some functions such as round, logp1, isinf, isnan, etc.
    Automatic detection disabled if EIGEN_MAX_CPP_VER<11.
- - \b EIGEN_HAS_RVALUE_REFERENCES - defines whether rvalue references are supported
+ - \b EIGEN_HAS_RVALUE_REFERENCES - defines whetehr rvalue references are supported
    Automatic detection disabled if EIGEN_MAX_CPP_VER<11.
  - \b EIGEN_HAS_STD_RESULT_OF - defines whether std::result_of is supported
    Automatic detection disabled if EIGEN_MAX_CPP_VER<11.
@@ -78,7 +78,6 @@ functions by defining EIGEN_HAS_C99_MATH=1.
    Automatic detection disabled if EIGEN_MAX_CPP_VER<11.
  - \b EIGEN_HAS_CXX11_NOEXCEPT - defines whether noexcept is supported
    Automatic detection disabled if EIGEN_MAX_CPP_VER<11.
- - \b EIGEN_NO_IO - Disables any usage and support for `<iostreams>`.
 
 \section TopicPreprocessorDirectivesAssertions Assertions
 
@@ -107,7 +106,7 @@ run time. However, these assertions do cost time and can thus be turned off.
  Let us emphasize that \c EIGEN_MAX_*_ALIGN_BYTES define only a diserable upper bound. In practice data is aligned to largest power-of-two common divisor of \c EIGEN_MAX_STATIC_ALIGN_BYTES and the size of the data, such that memory is not wasted.
  - \b \c EIGEN_DONT_PARALLELIZE - if defined, this disables multi-threading. This is only relevant if you enabled OpenMP.
    See \ref TopicMultiThreading for details.
- - \b \c EIGEN_DONT_VECTORIZE - disables explicit vectorization when defined. Not defined by default, unless 
+ - \b EIGEN_DONT_VECTORIZE - disables explicit vectorization when defined. Not defined by default, unless 
    alignment is disabled by %Eigen's platform test or the user defining \c EIGEN_DONT_ALIGN.
  - \b \c EIGEN_UNALIGNED_VECTORIZE - disables/enables vectorization with unaligned stores. Default is 1 (enabled).
    If set to 0 (disabled), then expression for which the destination cannot be aligned are not vectorized (e.g., unaligned
@@ -117,21 +116,17 @@ run time. However, these assertions do cost time and can thus be turned off.
    Define it to 0 to disable.
  - \b \c EIGEN_UNROLLING_LIMIT - defines the size of a loop to enable meta unrolling. Set it to zero to disable
    unrolling. The size of a loop here is expressed in %Eigen's own notion of "number of FLOPS", it does not
-   correspond to the number of iterations or the number of instructions. The default is value 110.
+   correspond to the number of iterations or the number of instructions. The default is value 100.
  - \b \c EIGEN_STACK_ALLOCATION_LIMIT - defines the maximum bytes for a buffer to be allocated on the stack. For internal
    temporary buffers, dynamic memory allocation is employed as a fall back. For fixed-size matrices or arrays, exceeding
    this threshold raises a compile time assertion. Use 0 to set no limit. Default is 128 KB.
- - \b \c EIGEN_NO_CUDA - disables CUDA support when defined. Might be useful in .cu files for which Eigen is used on the host only,
-   and never called from device code.
  - \b \c EIGEN_STRONG_INLINE - This macro is used to qualify critical functions and methods that we expect the compiler to inline.
    By default it is defined to \c __forceinline for MSVC and ICC, and to \c inline for other compilers. A tipical usage is to
    define it to \c inline for MSVC users wanting faster compilation times, at the risk of performance degradations in some rare
    cases for which MSVC inliner fails to do a good job.
- - \b \c EIGEN_DEFAULT_L1_CACHE_SIZE - Sets the default L1 cache size that is used in Eigen's GEBP kernel when the correct cache size cannot be determined at runtime.
- - \b \c EIGEN_DEFAULT_L2_CACHE_SIZE - Sets the default L2 cache size that is used in Eigen's GEBP kernel when the correct cache size cannot be determined at runtime.
- - \b \c EIGEN_DEFAULT_L3_CACHE_SIZE - Sets the default L3 cache size that is used in Eigen's GEBP kernel when the correct cache size cannot be determined at runtime.
 
- - \c EIGEN_DONT_ALIGN - Deprecated, it is a synonym for \c EIGEN_MAX_ALIGN_BYTES=0. It disables alignment completely. %Eigen will not try to align its objects and does not expect that any objects passed to it are aligned. This will turn off vectorization if \b \c EIGEN_UNALIGNED_VECTORIZE=1. Not defined by default.
+
+ - \c EIGEN_DONT_ALIGN - Deprecated, it is a synonym for \c EIGEN_MAX_ALIGN_BYTES=0. It disables alignment completely. %Eigen will not try to align its objects and does not expect that any objects passed to it are aligned. This will turn off vectorization if \b EIGEN_UNALIGNED_VECTORIZE=1. Not defined by default.
  - \c EIGEN_DONT_ALIGN_STATICALLY - Deprecated, it is a synonym for \c EIGEN_MAX_STATIC_ALIGN_BYTES=0. It disables alignment of arrays on the stack. Not defined by default, unless \c EIGEN_DONT_ALIGN is defined.
 
 
@@ -146,18 +141,18 @@ following macros are supported; none of them are defined by default.
  - \b EIGEN_CWISE_PLUGIN - filename of plugin for extending the Cwise class.
  - \b EIGEN_DENSEBASE_PLUGIN - filename of plugin for extending the DenseBase class.
  - \b EIGEN_DYNAMICSPARSEMATRIX_PLUGIN - filename of plugin for extending the DynamicSparseMatrix class.
- - \b EIGEN_FUNCTORS_PLUGIN - filename of plugin for adding new functors and specializations of functor_traits.
- - \b EIGEN_MAPBASE_PLUGIN - filename of plugin for extending the MapBase class.
  - \b EIGEN_MATRIX_PLUGIN - filename of plugin for extending the Matrix class.
  - \b EIGEN_MATRIXBASE_PLUGIN - filename of plugin for extending the MatrixBase class.
  - \b EIGEN_PLAINOBJECTBASE_PLUGIN - filename of plugin for extending the PlainObjectBase class.
+ - \b EIGEN_MAPBASE_PLUGIN - filename of plugin for extending the MapBase class.
  - \b EIGEN_QUATERNION_PLUGIN - filename of plugin for extending the Quaternion class.
  - \b EIGEN_QUATERNIONBASE_PLUGIN - filename of plugin for extending the QuaternionBase class.
  - \b EIGEN_SPARSEMATRIX_PLUGIN - filename of plugin for extending the SparseMatrix class.
  - \b EIGEN_SPARSEMATRIXBASE_PLUGIN - filename of plugin for extending the SparseMatrixBase class.
  - \b EIGEN_SPARSEVECTOR_PLUGIN - filename of plugin for extending the SparseVector class.
  - \b EIGEN_TRANSFORM_PLUGIN - filename of plugin for extending the Transform class.
- - \b EIGEN_VECTORWISEOP_PLUGIN - filename of plugin for extending the VectorwiseOp class.
+ - \b EIGEN_FUNCTORS_PLUGIN - filename of plugin for adding new functors and specializations of functor_traits.
+
 
 \section TopicPreprocessorDirectivesDevelopers Macros for Eigen developers
 

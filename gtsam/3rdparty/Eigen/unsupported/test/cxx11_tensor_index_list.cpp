@@ -22,9 +22,9 @@ static void test_static_index_list()
   VERIFY_IS_EQUAL(internal::array_get<0>(reduction_axis), 0);
   VERIFY_IS_EQUAL(internal::array_get<1>(reduction_axis), 1);
   VERIFY_IS_EQUAL(internal::array_get<2>(reduction_axis), 2);
-  VERIFY_IS_EQUAL(static_cast<Index>(reduction_axis[0]), 0);
-  VERIFY_IS_EQUAL(static_cast<Index>(reduction_axis[1]), 1);
-  VERIFY_IS_EQUAL(static_cast<Index>(reduction_axis[2]), 2);
+  VERIFY_IS_EQUAL(static_cast<DenseIndex>(reduction_axis[0]), 0);
+  VERIFY_IS_EQUAL(static_cast<DenseIndex>(reduction_axis[1]), 1);
+  VERIFY_IS_EQUAL(static_cast<DenseIndex>(reduction_axis[2]), 2);
 
   EIGEN_STATIC_ASSERT((internal::array_get<0>(reduction_axis) == 0), YOU_MADE_A_PROGRAMMING_MISTAKE);
   EIGEN_STATIC_ASSERT((internal::array_get<1>(reduction_axis) == 1), YOU_MADE_A_PROGRAMMING_MISTAKE);
@@ -167,18 +167,19 @@ static void test_type2indexpair_list()
 
   typedef Eigen::IndexPairList<Eigen::type2indexpair<0,10>> Dims0;
   typedef Eigen::IndexPairList<Eigen::type2indexpair<0,10>, Eigen::type2indexpair<1,11>, Eigen::type2indexpair<2,12>> Dims2_a;
-  typedef Eigen::IndexPairList<Eigen::type2indexpair<0,10>, Eigen::IndexPair<Index>, Eigen::type2indexpair<2,12>> Dims2_b;
-  typedef Eigen::IndexPairList<Eigen::IndexPair<Index>, Eigen::type2indexpair<1,11>, Eigen::IndexPair<Index>> Dims2_c;
+  typedef Eigen::IndexPairList<Eigen::type2indexpair<0,10>, Eigen::IndexPair<DenseIndex>, Eigen::type2indexpair<2,12>> Dims2_b;
+  typedef Eigen::IndexPairList<Eigen::IndexPair<DenseIndex>, Eigen::type2indexpair<1,11>, Eigen::IndexPair<DenseIndex>> Dims2_c;
 
+  Dims0 d0;
   Dims2_a d2_a;
 
   Dims2_b d2_b;
-  d2_b.set(1, Eigen::IndexPair<Index>(1,11));
+  d2_b.set(1, Eigen::IndexPair<DenseIndex>(1,11));
 
   Dims2_c d2_c;
-  d2_c.set(0, Eigen::IndexPair<Index>(Eigen::IndexPair<Index>(0,10)));
-  d2_c.set(1, Eigen::IndexPair<Index>(1,11));  // setting type2indexpair to correct value.
-  d2_c.set(2, Eigen::IndexPair<Index>(2,12));
+  d2_c.set(0, Eigen::IndexPair<DenseIndex>(Eigen::IndexPair<DenseIndex>(0,10)));
+  d2_c.set(1, Eigen::IndexPair<DenseIndex>(1,11));  // setting type2indexpair to correct value.
+  d2_c.set(2, Eigen::IndexPair<DenseIndex>(2,12));
 
   VERIFY_IS_EQUAL(d2_a[0].first, 0);
   VERIFY_IS_EQUAL(d2_a[0].second, 10);
@@ -277,9 +278,9 @@ static void test_dynamic_index_list()
   VERIFY_IS_EQUAL(internal::array_get<0>(reduction_axis), 2);
   VERIFY_IS_EQUAL(internal::array_get<1>(reduction_axis), 1);
   VERIFY_IS_EQUAL(internal::array_get<2>(reduction_axis), 0);
-  VERIFY_IS_EQUAL(static_cast<Index>(reduction_axis[0]), 2);
-  VERIFY_IS_EQUAL(static_cast<Index>(reduction_axis[1]), 1);
-  VERIFY_IS_EQUAL(static_cast<Index>(reduction_axis[2]), 0);
+  VERIFY_IS_EQUAL(static_cast<DenseIndex>(reduction_axis[0]), 2);
+  VERIFY_IS_EQUAL(static_cast<DenseIndex>(reduction_axis[1]), 1);
+  VERIFY_IS_EQUAL(static_cast<DenseIndex>(reduction_axis[2]), 0);
 
   Tensor<float, 1> result = tensor.sum(reduction_axis);
   for (int i = 0; i < result.size(); ++i) {
@@ -309,10 +310,10 @@ static void test_mixed_index_list()
   VERIFY_IS_EQUAL(internal::array_get<1>(reduction_axis), 1);
   VERIFY_IS_EQUAL(internal::array_get<2>(reduction_axis), 2);
   VERIFY_IS_EQUAL(internal::array_get<3>(reduction_axis), 3);
-  VERIFY_IS_EQUAL(static_cast<Index>(reduction_axis[0]), 0);
-  VERIFY_IS_EQUAL(static_cast<Index>(reduction_axis[1]), 1);
-  VERIFY_IS_EQUAL(static_cast<Index>(reduction_axis[2]), 2);
-  VERIFY_IS_EQUAL(static_cast<Index>(reduction_axis[3]), 3);
+  VERIFY_IS_EQUAL(static_cast<DenseIndex>(reduction_axis[0]), 0);
+  VERIFY_IS_EQUAL(static_cast<DenseIndex>(reduction_axis[1]), 1);
+  VERIFY_IS_EQUAL(static_cast<DenseIndex>(reduction_axis[2]), 2);
+  VERIFY_IS_EQUAL(static_cast<DenseIndex>(reduction_axis[3]), 3);
 
   typedef IndexList<type2index<0>, int, type2index<2>, int> ReductionIndices;
   ReductionIndices reduction_indices;
@@ -372,7 +373,7 @@ static void test_dim_check()
 
 #endif
 
-EIGEN_DECLARE_TEST(cxx11_tensor_index_list)
+void test_cxx11_tensor_index_list()
 {
 #ifdef EIGEN_HAS_INDEX_LIST
   CALL_SUBTEST(test_static_index_list());

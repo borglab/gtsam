@@ -11,9 +11,8 @@
 //
 
 #include <iostream>
-#include <bench/BenchTimer.h>
 #include <Eigen/Core>
-
+#include <bench/BenchTimer.h>
 
 using namespace std;
 using namespace Eigen;
@@ -31,22 +30,10 @@ using namespace Eigen;
 #define SCALARB SCALAR
 #endif
 
-#ifdef ROWMAJ_A
-const int opt_A = RowMajor;
-#else
-const int opt_A = ColMajor;
-#endif
-
-#ifdef ROWMAJ_B
-const int opt_B = RowMajor;
-#else
-const int opt_B = ColMajor;
-#endif
-
 typedef SCALAR Scalar;
 typedef NumTraits<Scalar>::Real RealScalar;
-typedef Matrix<SCALARA,Dynamic,Dynamic,opt_A> A;
-typedef Matrix<SCALARB,Dynamic,Dynamic,opt_B> B;
+typedef Matrix<SCALARA,Dynamic,Dynamic> A;
+typedef Matrix<SCALARB,Dynamic,Dynamic> B;
 typedef Matrix<Scalar,Dynamic,Dynamic> C;
 typedef Matrix<RealScalar,Dynamic,Dynamic> M;
 
@@ -71,61 +58,45 @@ static char lower = 'L';
 static char right = 'R';
 static int intone = 1;
 
-#ifdef ROWMAJ_A
-const char transA = trans;
-#else
-const char transA = notrans;
-#endif
-
-#ifdef ROWMAJ_B
-const char transB = trans;
-#else
-const char transB = notrans;
-#endif
-
-template<typename A,typename B>
-void blas_gemm(const A& a, const B& b, MatrixXf& c)
+void blas_gemm(const MatrixXf& a, const MatrixXf& b, MatrixXf& c)
 {
   int M = c.rows(); int N = c.cols(); int K = a.cols();
-  int lda = a.outerStride(); int ldb = b.outerStride(); int ldc = c.rows();
+  int lda = a.rows(); int ldb = b.rows(); int ldc = c.rows();
 
-  sgemm_(&transA,&transB,&M,&N,&K,&fone,
+  sgemm_(&notrans,&notrans,&M,&N,&K,&fone,
          const_cast<float*>(a.data()),&lda,
          const_cast<float*>(b.data()),&ldb,&fone,
          c.data(),&ldc);
 }
 
-template<typename A,typename B>
-void blas_gemm(const A& a, const B& b, MatrixXd& c)
+EIGEN_DONT_INLINE void blas_gemm(const MatrixXd& a, const MatrixXd& b, MatrixXd& c)
 {
   int M = c.rows(); int N = c.cols(); int K = a.cols();
-  int lda = a.outerStride(); int ldb = b.outerStride(); int ldc = c.rows();
+  int lda = a.rows(); int ldb = b.rows(); int ldc = c.rows();
 
-  dgemm_(&transA,&transB,&M,&N,&K,&done,
+  dgemm_(&notrans,&notrans,&M,&N,&K,&done,
          const_cast<double*>(a.data()),&lda,
          const_cast<double*>(b.data()),&ldb,&done,
          c.data(),&ldc);
 }
 
-template<typename A,typename B>
-void blas_gemm(const A& a, const B& b, MatrixXcf& c)
+void blas_gemm(const MatrixXcf& a, const MatrixXcf& b, MatrixXcf& c)
 {
   int M = c.rows(); int N = c.cols(); int K = a.cols();
-  int lda = a.outerStride(); int ldb = b.outerStride(); int ldc = c.rows();
+  int lda = a.rows(); int ldb = b.rows(); int ldc = c.rows();
 
-  cgemm_(&transA,&transB,&M,&N,&K,(float*)&cfone,
+  cgemm_(&notrans,&notrans,&M,&N,&K,(float*)&cfone,
          const_cast<float*>((const float*)a.data()),&lda,
          const_cast<float*>((const float*)b.data()),&ldb,(float*)&cfone,
          (float*)c.data(),&ldc);
 }
 
-template<typename A,typename B>
-void blas_gemm(const A& a, const B& b, MatrixXcd& c)
+void blas_gemm(const MatrixXcd& a, const MatrixXcd& b, MatrixXcd& c)
 {
   int M = c.rows(); int N = c.cols(); int K = a.cols();
-  int lda = a.outerStride(); int ldb = b.outerStride(); int ldc = c.rows();
+  int lda = a.rows(); int ldb = b.rows(); int ldc = c.rows();
 
-  zgemm_(&transA,&transB,&M,&N,&K,(double*)&cdone,
+  zgemm_(&notrans,&notrans,&M,&N,&K,(double*)&cdone,
          const_cast<double*>((const double*)a.data()),&lda,
          const_cast<double*>((const double*)b.data()),&ldb,(double*)&cdone,
          (double*)c.data(),&ldc);
@@ -141,7 +112,6 @@ void matlab_cplx_cplx(const M& ar, const M& ai, const M& br, const M& bi, M& cr,
   cr.noalias() -= ai * bi;
   ci.noalias() += ar * bi;
   ci.noalias() += ai * br;
-  // [cr ci] += [ar ai] * br + [-ai ar] * bi
 }
 
 void matlab_real_cplx(const M& a, const M& br, const M& bi, M& cr, M& ci)
@@ -156,12 +126,10 @@ void matlab_cplx_real(const M& ar, const M& ai, const M& b, M& cr, M& ci)
   ci.noalias() += ai * b;
 }
 
-
-
 template<typename A, typename B, typename C>
 EIGEN_DONT_INLINE void gemm(const A& a, const B& b, C& c)
 {
-  c.noalias() += a * b;
+ c.noalias() += a * b;
 }
 
 int main(int argc, char ** argv)
@@ -211,8 +179,8 @@ int main(int argc, char ** argv)
       }
       else if(argv[i][1]=='t')
       {
-        tries = atoi(argv[++i]);
         ++i;
+        tries = atoi(argv[i++]);
       }
       else if(argv[i][1]=='p')
       {
@@ -248,7 +216,7 @@ int main(int argc, char ** argv)
   std::cout << "Matrix sizes = " << m << "x" << p << " * " << p << "x" << n << "\n";
   std::ptrdiff_t mc(m), nc(n), kc(p);
   internal::computeProductBlockingSizes<Scalar,Scalar>(kc, mc, nc);
-  std::cout << "blocking size (mc x kc) = " << mc << " x " << kc << " x " << nc << "\n";
+  std::cout << "blocking size (mc x kc) = " << mc << " x " << kc << "\n";
 
   C r = c;
 
@@ -272,7 +240,7 @@ int main(int argc, char ** argv)
     blas_gemm(a,b,r);
     c.noalias() += a * b;
     if(!r.isApprox(c)) {
-      std::cout << (r  - c).norm()/r.norm() << "\n";
+      std::cout << r  - c << "\n";
       std::cerr << "Warning, your product is crap!\n\n";
     }
   #else
@@ -281,7 +249,7 @@ int main(int argc, char ** argv)
       gemm(a,b,c);
       r.noalias() += a.cast<Scalar>() .lazyProduct( b.cast<Scalar>() );
       if(!r.isApprox(c)) {
-        std::cout << (r  - c).norm()/r.norm() << "\n";
+        std::cout << r - c << "\n";
         std::cerr << "Warning, your product is crap!\n\n";
       }
     }
@@ -294,9 +262,6 @@ int main(int argc, char ** argv)
   std::cout << "blas  cpu         " << tblas.best(CPU_TIMER)/rep  << "s  \t" << (double(m)*n*p*rep*2/tblas.best(CPU_TIMER))*1e-9  <<  " GFLOPS \t(" << tblas.total(CPU_TIMER)  << "s)\n";
   std::cout << "blas  real        " << tblas.best(REAL_TIMER)/rep << "s  \t" << (double(m)*n*p*rep*2/tblas.best(REAL_TIMER))*1e-9 <<  " GFLOPS \t(" << tblas.total(REAL_TIMER) << "s)\n";
   #endif
-
-  // warm start
-  if(b.norm()+a.norm()==123.554) std::cout << "\n";
 
   BenchTimer tmt;
   c = rc;
@@ -320,11 +285,11 @@ int main(int argc, char ** argv)
   
   if(1.*m*n*p<30*30*30)
   {
-    BenchTimer tmt;
-    c = rc;
-    BENCH(tmt, tries, rep, c.noalias()+=a.lazyProduct(b));
-    std::cout << "lazy cpu         " << tmt.best(CPU_TIMER)/rep  << "s  \t" << (double(m)*n*p*rep*2/tmt.best(CPU_TIMER))*1e-9  <<  " GFLOPS \t(" << tmt.total(CPU_TIMER)  << "s)\n";
-    std::cout << "lazy real        " << tmt.best(REAL_TIMER)/rep << "s  \t" << (double(m)*n*p*rep*2/tmt.best(REAL_TIMER))*1e-9 <<  " GFLOPS \t(" << tmt.total(REAL_TIMER) << "s)\n";
+      BenchTimer tmt;
+      c = rc;
+      BENCH(tmt, tries, rep, c.noalias()+=a.lazyProduct(b));
+      std::cout << "lazy cpu         " << tmt.best(CPU_TIMER)/rep  << "s  \t" << (double(m)*n*p*rep*2/tmt.best(CPU_TIMER))*1e-9  <<  " GFLOPS \t(" << tmt.total(CPU_TIMER)  << "s)\n";
+      std::cout << "lazy real        " << tmt.best(REAL_TIMER)/rep << "s  \t" << (double(m)*n*p*rep*2/tmt.best(REAL_TIMER))*1e-9 <<  " GFLOPS \t(" << tmt.total(REAL_TIMER) << "s)\n";
   }
   
   #ifdef DECOUPLED

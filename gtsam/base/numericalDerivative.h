@@ -35,10 +35,10 @@ namespace gtsam {
  *
  * Usage of the boost bind version to rearrange arguments:
  *   for a function with one relevant param and an optional derivative:
- *     Foo bar(const Obj& a, OptionalMatrixType H1)
+ *     Foo bar(const Obj& a, boost::optional<Matrix&> H1)
  *   Use boost.bind to restructure:
- *     std::bind(bar, std::placeholders::_1, {})
- *   This syntax will fix the optional argument to {}, while using the first argument provided
+ *     std::bind(bar, std::placeholders::_1, boost::none)
+ *   This syntax will fix the optional argument to boost::none, while using the first argument provided
  *
  * For member functions, such as below, with an instantiated copy instanceOfSomeClass
  *     Foo SomeClass::bar(const Obj& a)
@@ -71,10 +71,10 @@ typename Eigen::Matrix<double, N, 1> numericalGradient(
     std::function<double(const X&)> h, const X& x, double delta = 1e-5) {
   double factor = 1.0 / (2.0 * delta);
 
-  static_assert(
-      (std::is_base_of<manifold_tag, typename traits<X>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG(
+      (boost::is_base_of<manifold_tag, typename traits<X>::structure_category>::value),
       "Template argument X must be a manifold type.");
-  static_assert(N>0, "Template argument X must be fixed-size type or N must be specified.");
+  BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type or N must be specified.");
 
   // Prepare a tangent vector to perturb x with, only works for fixed size
   typename traits<X>::TangentVector d;
@@ -111,13 +111,13 @@ typename internal::FixedSizeMatrix<Y, X>::type numericalDerivative11(
     std::function<Y(const X&)> h, const X& x, double delta = 1e-5) {
   typedef typename internal::FixedSizeMatrix<Y,X>::type Matrix;
 
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
   typedef traits<Y> TraitsY;
 
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X>::structure_category>::value),
       "Template argument X must be a manifold type.");
-  static_assert(N>0, "Template argument X must be fixed-size type or N must be specified.");
+  BOOST_STATIC_ASSERT_MSG(N>0, "Template argument X must be fixed-size type or N must be specified.");
   typedef traits<X> TraitsX;
 
   // get value at x, and corresponding chart
@@ -165,9 +165,9 @@ typename internal::FixedSizeMatrix<Y,X>::type numericalDerivative11(Y (*h)(const
 template<class Y, class X1, class X2, int N = traits<X1>::dimension>
 typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative21(const std::function<Y(const X1&, const X2&)>& h,
     const X1& x1, const X2& x2, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X1, N>(
       std::bind(h, std::placeholders::_1, std::cref(x2)), x1, delta);
@@ -194,9 +194,9 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative21(Y (*h)(cons
 template<class Y, class X1, class X2, int N = traits<X2>::dimension>
 typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative22(std::function<Y(const X1&, const X2&)> h,
     const X1& x1, const X2& x2, double delta = 1e-5) {
-//  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+//  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
 //       "Template argument X1 must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X2>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X2>::structure_category>::value),
        "Template argument X2 must be a manifold type.");
   return numericalDerivative11<Y, X2, N>(
       std::bind(h, std::cref(x1), std::placeholders::_1), x2, delta);
@@ -226,9 +226,9 @@ template<class Y, class X1, class X2, class X3, int N = traits<X1>::dimension>
 typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative31(
     std::function<Y(const X1&, const X2&, const X3&)> h, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X1, N>(
       std::bind(h, std::placeholders::_1, std::cref(x2), std::cref(x3)),
@@ -259,9 +259,9 @@ template<class Y, class X1, class X2, class X3, int N = traits<X2>::dimension>
 typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative32(
     std::function<Y(const X1&, const X2&, const X3&)> h, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X2>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X2>::structure_category>::value),
       "Template argument X2 must be a manifold type.");
   return numericalDerivative11<Y, X2, N>(
       std::bind(h, std::cref(x1), std::placeholders::_1, std::cref(x3)),
@@ -292,9 +292,9 @@ template<class Y, class X1, class X2, class X3, int N = traits<X3>::dimension>
 typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative33(
     std::function<Y(const X1&, const X2&, const X3&)> h, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X3>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X3>::structure_category>::value),
       "Template argument X3 must be a manifold type.");
   return numericalDerivative11<Y, X3, N>(
       std::bind(h, std::cref(x1), std::cref(x2), std::placeholders::_1),
@@ -325,9 +325,9 @@ template<class Y, class X1, class X2, class X3, class X4, int N = traits<X1>::di
 typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative41(
     std::function<Y(const X1&, const X2&, const X3&, const X4&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X1, N>(
       std::bind(h, std::placeholders::_1, std::cref(x2), std::cref(x3),
@@ -359,9 +359,9 @@ template<class Y, class X1, class X2, class X3, class X4, int N = traits<X2>::di
 typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative42(
     std::function<Y(const X1&, const X2&, const X3&, const X4&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X2>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X2>::structure_category>::value),
       "Template argument X2 must be a manifold type.");
   return numericalDerivative11<Y, X2, N>(
       std::bind(h, std::cref(x1), std::placeholders::_1, std::cref(x3),
@@ -393,9 +393,9 @@ template<class Y, class X1, class X2, class X3, class X4, int N = traits<X3>::di
 typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative43(
     std::function<Y(const X1&, const X2&, const X3&, const X4&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X3>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X3>::structure_category>::value),
       "Template argument X3 must be a manifold type.");
   return numericalDerivative11<Y, X3, N>(
       std::bind(h, std::cref(x1), std::cref(x2), std::placeholders::_1,
@@ -427,9 +427,9 @@ template<class Y, class X1, class X2, class X3, class X4, int N = traits<X4>::di
 typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative44(
     std::function<Y(const X1&, const X2&, const X3&, const X4&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X4>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X4>::structure_category>::value),
       "Template argument X4 must be a manifold type.");
   return numericalDerivative11<Y, X4, N>(
       std::bind(h, std::cref(x1), std::cref(x2), std::cref(x3),
@@ -462,9 +462,9 @@ template<class Y, class X1, class X2, class X3, class X4, class X5, int N = trai
 typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative51(
     std::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X1, N>(
       std::bind(h, std::placeholders::_1, std::cref(x2), std::cref(x3),
@@ -498,9 +498,9 @@ template<class Y, class X1, class X2, class X3, class X4, class X5, int N = trai
 typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative52(
     std::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X2, N>(
       std::bind(h, std::cref(x1), std::placeholders::_1, std::cref(x3),
@@ -534,9 +534,9 @@ template<class Y, class X1, class X2, class X3, class X4, class X5, int N = trai
 typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative53(
     std::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X3, N>(
       std::bind(h, std::cref(x1), std::cref(x2), std::placeholders::_1,
@@ -570,9 +570,9 @@ template<class Y, class X1, class X2, class X3, class X4, class X5, int N = trai
 typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative54(
     std::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X4, N>(
       std::bind(h, std::cref(x1), std::cref(x2), std::cref(x3),
@@ -606,9 +606,9 @@ template<class Y, class X1, class X2, class X3, class X4, class X5, int N = trai
 typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative55(
     std::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X5, N>(
       std::bind(h, std::cref(x1), std::cref(x2), std::cref(x3),
@@ -643,9 +643,9 @@ template<class Y, class X1, class X2, class X3, class X4, class X5, class X6, in
 typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative61(
     std::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X1, N>(
       std::bind(h, std::placeholders::_1, std::cref(x2), std::cref(x3),
@@ -680,9 +680,9 @@ template<class Y, class X1, class X2, class X3, class X4, class X5, class X6, in
 typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative62(
     std::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X2, N>(
       std::bind(h, std::cref(x1), std::placeholders::_1, std::cref(x3),
@@ -717,9 +717,9 @@ template<class Y, class X1, class X2, class X3, class X4, class X5, class X6, in
 typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative63(
     std::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X3, N>(
       std::bind(h, std::cref(x1), std::cref(x2), std::placeholders::_1,
@@ -754,9 +754,9 @@ template<class Y, class X1, class X2, class X3, class X4, class X5, class X6, in
 typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative64(
     std::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X4, N>(
       std::bind(h, std::cref(x1), std::cref(x2), std::cref(x3),
@@ -791,9 +791,9 @@ template<class Y, class X1, class X2, class X3, class X4, class X5, class X6, in
 typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative65(
     std::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X5, N>(
       std::bind(h, std::cref(x1), std::cref(x2), std::cref(x3),
@@ -829,9 +829,9 @@ typename internal::FixedSizeMatrix<Y, X6>::type numericalDerivative66(
     std::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h,
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6,
     double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
   return numericalDerivative11<Y, X6, N>(
       std::bind(h, std::cref(x1), std::cref(x2), std::cref(x3),
@@ -860,7 +860,7 @@ inline typename internal::FixedSizeMatrix<Y,X6>::type numericalDerivative66(Y (*
 template<class X>
 inline typename internal::FixedSizeMatrix<X,X>::type numericalHessian(std::function<double(const X&)> f, const X& x,
     double delta = 1e-5) {
-  static_assert( (std::is_base_of<gtsam::manifold_tag, typename traits<X>::structure_category>::value),
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X>::structure_category>::value),
       "Template argument X must be a manifold type.");
   typedef Eigen::Matrix<double, traits<X>::dimension, 1> VectorD;
   typedef std::function<double(const X&)> F;

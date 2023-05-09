@@ -1,13 +1,14 @@
-# pylint: disable=missing-function-docstring
+# -*- coding: utf-8 -*-
+from __future__ import print_function
 
 import argparse
 import sys
 import sysconfig
 
-from .commands import get_cmake_dir, get_include
+from .commands import get_include, get_cmake_dir
 
 
-def print_includes() -> None:
+def print_includes():
     dirs = [
         sysconfig.get_path("include"),
         sysconfig.get_path("platinclude"),
@@ -17,14 +18,13 @@ def print_includes() -> None:
     # Make unique but preserve order
     unique_dirs = []
     for d in dirs:
-        if d and d not in unique_dirs:
+        if d not in unique_dirs:
             unique_dirs.append(d)
 
     print(" ".join("-I" + d for d in unique_dirs))
 
 
-def main() -> None:
-
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--includes",

@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file     QPSParser.cpp
+ * @file     QPParser.cpp
  * @author   Ivan Dario Jimenez
  * @date     3/5/16
  */

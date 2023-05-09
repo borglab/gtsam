@@ -20,23 +20,12 @@ virtual class RangeFactor : gtsam::NoiseModelFactor {
 
   // enabling serialization functionality
   void serialize() const;
-
-  const double measured() const;
 };
 
-// between points:
-typedef gtsam::RangeFactor<gtsam::Point2, gtsam::Point2> RangeFactor2;
-typedef gtsam::RangeFactor<gtsam::Point3, gtsam::Point3> RangeFactor3;
-
-// between pose and point:
 typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactor2D;
-typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Pose2> RangeFactorPose2;
-
-// between poses:
 typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactor3D;
+typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Pose2> RangeFactorPose2;
 typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Pose3> RangeFactorPose3;
-
-// more specialized types:
 typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::Point3>
     RangeFactorCalibratedCameraPoint;
 typedef gtsam::RangeFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>, gtsam::Point3>
@@ -56,9 +45,6 @@ virtual class RangeFactorWithTransform : gtsam::NoiseModelFactor {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // Use `double` instead of template since that is all we need.
-  const double measured() const;
 };
 
 typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Point2>
@@ -78,8 +64,6 @@ virtual class BearingFactor : gtsam::NoiseModelFactor {
 
   // enabling serialization functionality
   void serialize() const;
-
-  const BEARING& measured() const;
 };
 
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2>
@@ -108,11 +92,5 @@ typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2,
 typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Pose2, gtsam::Rot2,
                                   double>
     BearingRangeFactorPose2;
-typedef gtsam::BearingRangeFactor<gtsam::Pose3, gtsam::Point3, gtsam::Unit3,
-                                  double>
-    BearingRangeFactor3D;
-typedef gtsam::BearingRangeFactor<gtsam::Pose3, gtsam::Pose3, gtsam::Unit3,
-                                  double>
-    BearingRangeFactorPose3;
 
 }  // namespace gtsam

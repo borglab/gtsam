@@ -5,12 +5,6 @@
 # All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-if(CMAKE_VERSION VERSION_LESS 3.12)
-  message(FATAL_ERROR "You cannot use the new FindPython module with CMake < 3.12")
-endif()
-
-include_guard(GLOBAL)
-
 get_property(
   is_config
   TARGET pybind11::headers
@@ -18,11 +12,15 @@ get_property(
 
 if(pybind11_FIND_QUIETLY)
   set(_pybind11_quiet QUIET)
-else()
-  set(_pybind11_quiet "")
 endif()
 
-if(NOT Python_FOUND AND NOT Python3_FOUND)
+if(CMAKE_VERSION VERSION_LESS 3.12)
+  message(FATAL_ERROR "You cannot use the new FindPython module with CMake < 3.12")
+endif()
+
+if(NOT Python_FOUND
+   AND NOT Python3_FOUND
+   AND NOT Python2_FOUND)
   if(NOT DEFINED Python_FIND_IMPLEMENTATIONS)
     set(Python_FIND_IMPLEMENTATIONS CPython PyPy)
   endif()
@@ -32,7 +30,7 @@ if(NOT Python_FOUND AND NOT Python3_FOUND)
     set(Python_ROOT_DIR "$ENV{pythonLocation}")
   endif()
 
-  find_package(Python 3.6 REQUIRED COMPONENTS Interpreter Development ${_pybind11_quiet})
+  find_package(Python REQUIRED COMPONENTS Interpreter Development ${_pybind11_quiet})
 
   # If we are in submodule mode, export the Python targets to global targets.
   # If this behavior is not desired, FindPython _before_ pybind11.
@@ -49,10 +47,19 @@ if(Python_FOUND)
   set(_Python
       Python
       CACHE INTERNAL "" FORCE)
-elseif(Python3_FOUND)
+elseif(Python3_FOUND AND NOT Python2_FOUND)
   set(_Python
       Python3
       CACHE INTERNAL "" FORCE)
+elseif(Python2_FOUND AND NOT Python3_FOUND)
+  set(_Python
+      Python2
+      CACHE INTERNAL "" FORCE)
+else()
+  message(AUTHOR_WARNING "Python2 and Python3 both present, pybind11 in "
+                         "PYBIND11_NOPYTHON mode (manually activate to silence warning)")
+  set(_pybind11_nopython ON)
+  return()
 endif()
 
 if(PYBIND11_MASTER_PROJECT)
@@ -63,58 +70,23 @@ if(PYBIND11_MASTER_PROJECT)
   endif()
 endif()
 
-# If a user finds Python, they may forget to include the Interpreter component
-# and the following two steps require it. It is highly recommended by CMake
-# when finding development libraries anyway, so we will require it.
-if(NOT DEFINED ${_Python}_EXECUTABLE)
-  message(
-    FATAL_ERROR
-      "${_Python} was found without the Interpreter component. Pybind11 requires this component.")
-
-endif()
-
-if(NOT ${_Python}_EXECUTABLE STREQUAL PYBIND11_PYTHON_EXECUTABLE_LAST)
-  # Detect changes to the Python version/binary in subsequent CMake runs, and refresh config if needed
-  unset(PYTHON_IS_DEBUG CACHE)
-  unset(PYTHON_MODULE_EXTENSION CACHE)
-  set(PYBIND11_PYTHON_EXECUTABLE_LAST
-      "${${_Python}_EXECUTABLE}"
-      CACHE INTERNAL "Python executable during the last CMake run")
-endif()
-
-if(NOT DEFINED PYTHON_IS_DEBUG)
-  # Debug check - see https://stackoverflow.com/questions/646518/python-how-to-detect-debug-Interpreter
-  execute_process(
-    COMMAND "${${_Python}_EXECUTABLE}" "-c"
-            "import sys; sys.exit(hasattr(sys, 'gettotalrefcount'))"
-    RESULT_VARIABLE _PYTHON_IS_DEBUG)
-  set(PYTHON_IS_DEBUG
-      "${_PYTHON_IS_DEBUG}"
-      CACHE INTERNAL "Python debug status")
-endif()
+# Debug check - see https://stackoverflow.com/questions/646518/python-how-to-detect-debug-Interpreter
+execute_process(
+  COMMAND "${${_Python}_EXECUTABLE}" "-c" "import sys; sys.exit(hasattr(sys, 'gettotalrefcount'))"
+  RESULT_VARIABLE PYTHON_IS_DEBUG)
 
 # Get the suffix - SO is deprecated, should use EXT_SUFFIX, but this is
 # required for PyPy3 (as of 7.3.1)
-if(NOT DEFINED PYTHON_MODULE_EXTENSION)
-  execute_process(
-    COMMAND
-      "${${_Python}_EXECUTABLE}" "-c"
-      "import sys, importlib; s = importlib.import_module('distutils.sysconfig' if sys.version_info < (3, 10) else 'sysconfig'); print(s.get_config_var('EXT_SUFFIX') or s.get_config_var('SO'))"
-    OUTPUT_VARIABLE _PYTHON_MODULE_EXTENSION
-    ERROR_VARIABLE _PYTHON_MODULE_EXTENSION_ERR
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(
+  COMMAND "${${_Python}_EXECUTABLE}" "-c"
+          "from distutils import sysconfig; print(sysconfig.get_config_var('SO'))"
+  OUTPUT_VARIABLE _PYTHON_MODULE_EXTENSION
+  ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-  if(_PYTHON_MODULE_EXTENSION STREQUAL "")
-    message(
-      FATAL_ERROR "pybind11 could not query the module file extension, likely the 'distutils'"
-                  "package is not installed. Full error message:\n${_PYTHON_MODULE_EXTENSION_ERR}")
-  endif()
-
-  # This needs to be available for the pybind11_extension function
-  set(PYTHON_MODULE_EXTENSION
-      "${_PYTHON_MODULE_EXTENSION}"
-      CACHE INTERNAL "")
-endif()
+# This needs to be available for the pybind11_extension function
+set(PYTHON_MODULE_EXTENSION
+    "${_PYTHON_MODULE_EXTENSION}"
+    CACHE INTERNAL "")
 
 # Python debug libraries expose slightly different objects before 3.8
 # https://docs.python.org/3.6/c-api/intro.html#debugging-builds
@@ -126,34 +98,28 @@ if(PYTHON_IS_DEBUG)
     PROPERTY INTERFACE_COMPILE_DEFINITIONS Py_DEBUG)
 endif()
 
-# Check on every access - since Python can change - do nothing in that case.
+# Check on every access - since Python2 and Python3 could have been used - do nothing in that case.
 
 if(DEFINED ${_Python}_INCLUDE_DIRS)
-  # Only add Python for build - must be added during the import for config
-  # since it has to be re-discovered.
-  #
-  # This needs to be a target to be included after the local pybind11
-  # directory, just in case there there is an installed pybind11 sitting
-  # next to Python's includes. It also ensures Python is a SYSTEM library.
-  add_library(pybind11::python_headers INTERFACE IMPORTED)
-  set_property(
-    TARGET pybind11::python_headers PROPERTY INTERFACE_INCLUDE_DIRECTORIES
-                                             "$<BUILD_INTERFACE:${${_Python}_INCLUDE_DIRS}>")
   set_property(
     TARGET pybind11::pybind11
     APPEND
-    PROPERTY INTERFACE_LINK_LIBRARIES pybind11::python_headers)
-  set(pybind11_INCLUDE_DIRS
-      "${pybind11_INCLUDE_DIR}" "${${_Python}_INCLUDE_DIRS}"
-      CACHE INTERNAL "Directories where pybind11 and possibly Python headers are located")
+    PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${${_Python}_INCLUDE_DIRS}>)
+endif()
+
+if(DEFINED ${_Python}_VERSION AND ${_Python}_VERSION VERSION_LESS 3)
+  set_property(
+    TARGET pybind11::pybind11
+    APPEND
+    PROPERTY INTERFACE_LINK_LIBRARIES pybind11::python2_no_register)
 endif()
 
 # In CMake 3.18+, you can find these separately, so include an if
-if(TARGET ${_Python}::Python)
+if(TARGET ${_Python}::${_Python})
   set_property(
     TARGET pybind11::embed
     APPEND
-    PROPERTY INTERFACE_LINK_LIBRARIES ${_Python}::Python)
+    PROPERTY INTERFACE_LINK_LIBRARIES ${_Python}::${_Python})
 endif()
 
 # CMake 3.15+ has this
@@ -175,25 +141,27 @@ function(pybind11_add_module target_name)
   cmake_parse_arguments(PARSE_ARGV 1 ARG
                         "STATIC;SHARED;MODULE;THIN_LTO;OPT_SIZE;NO_EXTRAS;WITHOUT_SOABI" "" "")
 
-  if(ARG_STATIC)
-    set(lib_type STATIC)
-  elseif(ARG_SHARED)
-    set(lib_type SHARED)
+  if(ARG_ADD_LIBRARY_STATIC)
+    set(type STATIC)
+  elseif(ARG_ADD_LIBRARY_SHARED)
+    set(type SHARED)
   else()
-    set(lib_type MODULE)
+    set(type MODULE)
   endif()
 
   if("${_Python}" STREQUAL "Python")
-    python_add_library(${target_name} ${lib_type} ${ARG_UNPARSED_ARGUMENTS})
+    python_add_library(${target_name} ${type} ${ARG_UNPARSED_ARGUMENTS})
   elseif("${_Python}" STREQUAL "Python3")
-    python3_add_library(${target_name} ${lib_type} ${ARG_UNPARSED_ARGUMENTS})
+    python3_add_library(${target_name} ${type} ${ARG_UNPARSED_ARGUMENTS})
+  elseif("${_Python}" STREQUAL "Python2")
+    python2_add_library(${target_name} ${type} ${ARG_UNPARSED_ARGUMENTS})
   else()
     message(FATAL_ERROR "Cannot detect FindPython version: ${_Python}")
   endif()
 
   target_link_libraries(${target_name} PRIVATE pybind11::headers)
 
-  if(lib_type STREQUAL "MODULE")
+  if(type STREQUAL "MODULE")
     target_link_libraries(${target_name} PRIVATE pybind11::module)
   else()
     target_link_libraries(${target_name} PRIVATE pybind11::embed)
@@ -203,21 +171,16 @@ function(pybind11_add_module target_name)
     target_link_libraries(${target_name} PRIVATE pybind11::windows_extras)
   endif()
 
-  # -fvisibility=hidden is required to allow multiple modules compiled against
-  # different pybind versions to work properly, and for some features (e.g.
-  # py::module_local).  We force it on everything inside the `pybind11`
-  # namespace; also turning it on for a pybind module compilation here avoids
-  # potential warnings or issues from having mixed hidden/non-hidden types.
-  if(NOT DEFINED CMAKE_CXX_VISIBILITY_PRESET)
-    set_target_properties(${target_name} PROPERTIES CXX_VISIBILITY_PRESET "hidden")
+  if(DEFINED ${_Python}_VERSION AND ${_Python}_VERSION VERSION_LESS 3)
+    target_link_libraries(${target_name} PRIVATE pybind11::python2_no_register)
   endif()
 
-  if(NOT DEFINED CMAKE_CUDA_VISIBILITY_PRESET)
-    set_target_properties(${target_name} PROPERTIES CUDA_VISIBILITY_PRESET "hidden")
-  endif()
+  set_target_properties(${target_name} PROPERTIES CXX_VISIBILITY_PRESET "hidden"
+                                                  CUDA_VISIBILITY_PRESET "hidden")
 
   # If we don't pass a WITH_SOABI or WITHOUT_SOABI, use our own default handling of extensions
-  if(NOT ARG_WITHOUT_SOABI AND NOT "WITH_SOABI" IN_LIST ARG_UNPARSED_ARGUMENTS)
+  if("${type}" STREQUAL "MODULE" AND (NOT ARG_WITHOUT_SOABI OR NOT "WITH_SOABI" IN_LIST
+                                                               ARG_UNPARSED_ARGUMENTS))
     pybind11_extension(${target_name})
   endif()
 

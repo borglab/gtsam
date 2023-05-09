@@ -28,8 +28,8 @@ template<typename MatrixType> void swap(const MatrixType& m)
   typedef typename MatrixType::Scalar Scalar;
 
   eigen_assert((!internal::is_same<MatrixType,OtherMatrixType>::value));
-  Index rows = m.rows();
-  Index cols = m.cols();
+  typename MatrixType::Index rows = m.rows();
+  typename MatrixType::Index cols = m.cols();
   
   // construct 3 matrix guaranteed to be distinct
   MatrixType m1 = MatrixType::Random(rows,cols);
@@ -83,7 +83,7 @@ template<typename MatrixType> void swap(const MatrixType& m)
   }
 }
 
-EIGEN_DECLARE_TEST(swap)
+void test_swap()
 {
   int s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
   CALL_SUBTEST_1( swap(Matrix3f()) ); // fixed size, no vectorization 

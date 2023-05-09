@@ -70,9 +70,6 @@ They are summarized in the following tables:
 <tr><td>UmfPackLU</td><td>\link UmfPackSupport_Module UmfPackSupport \endlink</td><td>Direct LU factorization</td><td>Square</td><td>Fill-in reducing, Leverage fast dense algebra</td>
     <td>Requires the <a href="http://www.suitesparse.com">SuiteSparse</a> package, \b GPL </td>
     <td></td></tr>
-<tr><td>KLU</td><td>\link KLUSupport_Module KLUSupport \endlink</td><td>Direct LU factorization</td><td>Square</td><td>Fill-in reducing, suitted for circuit simulation</td>
-    <td>Requires the <a href="http://www.suitesparse.com">SuiteSparse</a> package, \b GPL </td>
-    <td></td></tr>
 <tr><td>SuperLU</td><td>\link SuperLUSupport_Module SuperLUSupport \endlink</td><td>Direct LU factorization</td><td>Square</td><td>Fill-in reducing, Leverage fast dense algebra</td>
     <td>Requires the <a href="http://crd-legacy.lbl.gov/~xiaoye/SuperLU/">SuperLU</a> library, (BSD-like)</td>
     <td></td></tr>

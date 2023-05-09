@@ -1,3 +1,5 @@
+
+
 #include <pybind11/eigen.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/pybind11.h>
@@ -10,6 +12,10 @@
 #include "path/to/ns2/ClassA.h"
 #include "path/to/ns3.h"
 #include "gtsam/nonlinear/Values.h"
+
+#include "wrap/serialization.h"
+#include <boost/serialization/export.hpp>
+
 
 
 

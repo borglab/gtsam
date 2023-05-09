@@ -23,9 +23,8 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphSolver.h>
-
+#include <boost/optional.hpp>
 #include <string>
-#include <optional>
 
 namespace gtsam {
 
@@ -105,7 +104,7 @@ public:
   };
 
   LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
-  std::optional<Ordering> ordering; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
+  boost::optional<Ordering> ordering; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
 
   NonlinearOptimizerParams() = default;
@@ -167,7 +166,7 @@ public:
     linearSolverType = linearSolverTranslator(solver);
   }
 
-  void setIterativeParams(const std::shared_ptr<IterativeOptimizationParameters> params);
+  void setIterativeParams(const boost::shared_ptr<IterativeOptimizationParameters> params);
 
   void setOrdering(const Ordering& ordering) {
     this->ordering = ordering;

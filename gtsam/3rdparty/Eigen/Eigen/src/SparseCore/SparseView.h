@@ -90,7 +90,6 @@ struct unary_evaluator<SparseView<ArgType>, IteratorBased>
     
     class InnerIterator : public EvalIterator
     {
-      protected:
         typedef typename XprType::Scalar Scalar;
       public:
 

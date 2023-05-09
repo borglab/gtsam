@@ -23,9 +23,11 @@
 #include <gtsam/base/FastVector.h>
 #include <gtsam/dllexport.h>
 
+#include <boost/optional/optional.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
+
 #include <cassert>
 #include <stdexcept>
-#include <optional>
 
 namespace gtsam {
 
@@ -40,7 +42,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT VariableIndex {
  public:
-  typedef std::shared_ptr<VariableIndex> shared_ptr;
+  typedef boost::shared_ptr<VariableIndex> shared_ptr;
   typedef FactorIndices::iterator Factor_iterator;
   typedef FactorIndices::const_iterator Factor_const_iterator;
 
@@ -124,16 +126,7 @@ class GTSAM_EXPORT VariableIndex {
    * solving problems incrementally.
    */
   template<class FG>
-  void augment(const FG& factors, const FactorIndices* newFactorIndices = nullptr);
-
-  /**
-   * An overload of augment() that takes a single factor. and l-value
-   * reference to FactorIndeces.
-   */
-  template<class FG>
-  void augment(const FG& factor, const FactorIndices& newFactorIndices) {
-    augment(factor, &newFactorIndices);
-  }
+  void augment(const FG& factors, boost::optional<const FactorIndices&> newFactorIndices = boost::none);
 
   /**
    * Augment the variable index after an existing factor now affects to more
@@ -190,7 +183,6 @@ protected:
   }
 
 private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -199,7 +191,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(nFactors_);
     ar & BOOST_SERIALIZATION_NVP(nEntries_);
   }
-#endif
 
   /// @}
 };

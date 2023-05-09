@@ -1,9 +1,9 @@
-# CHOLMOD lib usually requires linking to a blas and lapack library.
+# Cholmod lib usually requires linking to a blas and lapack library.
 # It is up to the user of this module to find a BLAS and link to it.
 
 if (CHOLMOD_INCLUDES AND CHOLMOD_LIBRARIES)
   set(CHOLMOD_FIND_QUIETLY TRUE)
-endif ()
+endif (CHOLMOD_INCLUDES AND CHOLMOD_LIBRARIES)
 
 find_path(CHOLMOD_INCLUDES
   NAMES
@@ -29,7 +29,7 @@ if(CHOLMOD_LIBRARIES)
     set(CHOLMOD_LIBRARIES FALSE)
   endif ()
 
-endif()
+endif(CHOLMOD_LIBRARIES)
 
 if(CHOLMOD_LIBRARIES)
 
@@ -40,7 +40,7 @@ if(CHOLMOD_LIBRARIES)
     set(CHOLMOD_LIBRARIES FALSE)
   endif ()
 
-endif()
+endif(CHOLMOD_LIBRARIES)
 
 if(CHOLMOD_LIBRARIES)
 
@@ -51,7 +51,7 @@ if(CHOLMOD_LIBRARIES)
     set(CHOLMOD_LIBRARIES FALSE)
   endif ()
 
-endif()
+endif(CHOLMOD_LIBRARIES)
 
 if(CHOLMOD_LIBRARIES)
 
@@ -62,7 +62,7 @@ if(CHOLMOD_LIBRARIES)
     set(CHOLMOD_LIBRARIES FALSE)
   endif ()
 
-endif()
+endif(CHOLMOD_LIBRARIES)
 
 if(CHOLMOD_LIBRARIES)
 
@@ -71,16 +71,16 @@ if(CHOLMOD_LIBRARIES)
     set(CHOLMOD_LIBRARIES ${CHOLMOD_LIBRARIES} ${CHOLMOD_METIS_LIBRARY})
   endif ()
 
-endif()
+endif(CHOLMOD_LIBRARIES)
 
 if(CHOLMOD_LIBRARIES)
 
   find_library(SUITESPARSE_LIBRARY SuiteSparse PATHS ${CHOLMOD_LIBDIR} $ENV{CHOLMODDIR} ${LIB_INSTALL_DIR})
   if (SUITESPARSE_LIBRARY)
     set(CHOLMOD_LIBRARIES ${CHOLMOD_LIBRARIES} ${SUITESPARSE_LIBRARY})
-  endif ()
+  endif (SUITESPARSE_LIBRARY)
   
-endif()
+endif(CHOLMOD_LIBRARIES)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(CHOLMOD DEFAULT_MSG

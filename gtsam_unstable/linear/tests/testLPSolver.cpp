@@ -30,6 +30,9 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/foreach.hpp>
+#include <boost/range/adaptor/map.hpp>
+
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
@@ -69,7 +72,8 @@ TEST(LPInitSolver, InfiniteLoopSingleVar) {
   LPSolver solver(lp);
   VectorValues starter;
   starter.insert(1, Vector3(0, 0, 2));
-  const auto [results, duals] = solver.optimize(starter);
+  VectorValues results, duals;
+  boost::tie(results, duals) = solver.optimize(starter);
   VectorValues expected;
   expected.insert(1, Vector3(13.5, 6.5, -6.5));
   CHECK(assert_equal(results, expected, 1e-7));
@@ -96,7 +100,8 @@ TEST(LPInitSolver, InfiniteLoopMultiVar) {
   starter.insert(X, kZero);
   starter.insert(Y, kZero);
   starter.insert(Z, Vector::Constant(1, 2.0));
-  const auto [results, duals] = solver.optimize(starter);
+  VectorValues results, duals;
+  boost::tie(results, duals) = solver.optimize(starter);
   VectorValues expected;
   expected.insert(X, Vector::Constant(1, 13.5));
   expected.insert(Y, Vector::Constant(1, 6.5));
@@ -195,7 +200,8 @@ TEST(LPSolver, SimpleTest1) {
   expected_x1.insert(1, Vector::Ones(2));
   CHECK(assert_equal(expected_x1, x1, 1e-10));
 
-  const auto [result, duals] = lpSolver.optimize(init);
+  VectorValues result, duals;
+  boost::tie(result, duals) = lpSolver.optimize(init);
   VectorValues expectedResult;
   expectedResult.insert(1, Vector2(8. / 3., 2. / 3.));
   CHECK(assert_equal(expectedResult, result, 1e-10));
@@ -205,9 +211,9 @@ TEST(LPSolver, SimpleTest1) {
 TEST(LPSolver, TestWithoutInitialValues) {
   LP lp = simpleLP1();
   LPSolver lpSolver(lp);
-  VectorValues expectedResult;
+  VectorValues result, duals, expectedResult;
   expectedResult.insert(1, Vector2(8. / 3., 2. / 3.));
-  const auto [result, duals] = lpSolver.optimize();
+  boost::tie(result, duals) = lpSolver.optimize();
   CHECK(assert_equal(expectedResult, result));
 }
 

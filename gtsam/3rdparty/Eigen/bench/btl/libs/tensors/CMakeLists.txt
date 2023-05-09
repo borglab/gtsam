@@ -39,6 +39,6 @@ if (TENSOR_FOUND)
     btl_add_target_property(btl_tensor_novec_vecmat COMPILE_FLAGS "-fno-exceptions -DEIGEN_DONT_VECTORIZE -DBTL_PREFIX=tensor_novec")
     btl_add_target_property(btl_tensor_novec_matmat COMPILE_FLAGS "-fno-exceptions -DEIGEN_DONT_VECTORIZE -DBTL_PREFIX=tensor_novec")
 
-  endif()
+  endif(NOT BTL_NOVEC)
 
-endif ()
+endif (TENSOR_FOUND)

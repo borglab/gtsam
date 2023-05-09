@@ -20,6 +20,7 @@
 
 #include <gtsam/base/Manifold.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <boost/tuple/tuple.hpp>
 
 namespace gtsam {
 
@@ -50,7 +51,7 @@ public:
 
   typedef NonlinearOptimizer Base;
   typedef NonlinearOptimizerParams Parameters;
-  typedef std::shared_ptr<NonlinearConjugateGradientOptimizer> shared_ptr;
+  typedef boost::shared_ptr<NonlinearConjugateGradientOptimizer> shared_ptr;
 
 protected:
   Parameters params_;
@@ -144,7 +145,7 @@ double lineSearch(const S &system, const V currentValues, const W &gradient) {
  * The last parameter is a switch between gradient-descent and conjugate gradient
  */
 template<class S, class V>
-std::tuple<V, int> nonlinearConjugateGradient(const S &system,
+boost::tuple<V, int> nonlinearConjugateGradient(const S &system,
     const V &initial, const NonlinearOptimizerParams &params,
     const bool singleIteration, const bool gradientDescent = false) {
 
@@ -159,7 +160,7 @@ std::tuple<V, int> nonlinearConjugateGradient(const S &system,
       std::cout << "Exiting, as error = " << currentError << " < "
           << params.errorTol << std::endl;
     }
-    return {initial, iteration};
+    return boost::tie(initial, iteration);
   }
 
   V currentValues = initial;
@@ -217,7 +218,7 @@ std::tuple<V, int> nonlinearConjugateGradient(const S &system,
         << "nonlinearConjugateGradient: Terminating because reached maximum iterations"
         << std::endl;
 
-  return {currentValues, iteration};
+  return boost::tie(currentValues, iteration);
 }
 
 } // \ namespace gtsam

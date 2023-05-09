@@ -11,37 +11,6 @@
 
 #include "main.h"
 
-template<typename Dst, typename Lhs, typename Rhs>
-void check_scalar_multiple3(Dst &dst, const Lhs& A, const Rhs& B)
-{
-  VERIFY_EVALUATION_COUNT( (dst.noalias()  = A * B), 0);
-  VERIFY_IS_APPROX( dst, (A.eval() * B.eval()).eval() );
-  VERIFY_EVALUATION_COUNT( (dst.noalias() += A * B), 0);
-  VERIFY_IS_APPROX( dst, 2*(A.eval() * B.eval()).eval() );
-  VERIFY_EVALUATION_COUNT( (dst.noalias() -= A * B), 0);
-  VERIFY_IS_APPROX( dst, (A.eval() * B.eval()).eval() );
-}
-
-template<typename Dst, typename Lhs, typename Rhs, typename S2>
-void check_scalar_multiple2(Dst &dst, const Lhs& A, const Rhs& B, S2 s2)
-{
-  CALL_SUBTEST( check_scalar_multiple3(dst, A,    B) );
-  CALL_SUBTEST( check_scalar_multiple3(dst, A,   -B) );
-  CALL_SUBTEST( check_scalar_multiple3(dst, A, s2*B) );
-  CALL_SUBTEST( check_scalar_multiple3(dst, A, B*s2) );
-  CALL_SUBTEST( check_scalar_multiple3(dst, A, (B*s2).conjugate()) );
-}
-
-template<typename Dst, typename Lhs, typename Rhs, typename S1, typename S2>
-void check_scalar_multiple1(Dst &dst, const Lhs& A, const Rhs& B, S1 s1, S2 s2)
-{
-  CALL_SUBTEST( check_scalar_multiple2(dst,    A, B, s2) );
-  CALL_SUBTEST( check_scalar_multiple2(dst,   -A, B, s2) );
-  CALL_SUBTEST( check_scalar_multiple2(dst, s1*A, B, s2) );
-  CALL_SUBTEST( check_scalar_multiple2(dst, A*s1, B, s2) );
-  CALL_SUBTEST( check_scalar_multiple2(dst, (A*s1).conjugate(), B, s2) );
-}
-
 template<typename MatrixType> void product_notemporary(const MatrixType& m)
 {
   /* This test checks the number of temporaries created
@@ -136,9 +105,7 @@ template<typename MatrixType> void product_notemporary(const MatrixType& m)
   VERIFY_EVALUATION_COUNT( m3.noalias() = m1.block(r0,r0,r1,r1).template triangularView<UnitUpper>()  * m2.block(r0,c0,r1,c1), 1);
 
   // Zero temporaries for lazy products ...
-  m3.setRandom(rows,cols);
   VERIFY_EVALUATION_COUNT( Scalar tmp = 0; tmp += Scalar(RealScalar(1)) /  (m3.transpose().lazyProduct(m3)).diagonal().sum(), 0 );
-  VERIFY_EVALUATION_COUNT( m3.noalias() = m1.conjugate().lazyProduct(m2.conjugate()), 0);
 
   // ... and even no temporary for even deeply (>=2) nested products
   VERIFY_EVALUATION_COUNT( Scalar tmp = 0; tmp += Scalar(RealScalar(1)) /  (m3.transpose() * m3).diagonal().sum(), 0 );
@@ -160,19 +127,11 @@ template<typename MatrixType> void product_notemporary(const MatrixType& m)
   VERIFY_EVALUATION_COUNT( cvres.noalias() = (rm3+rm3) * (m1*cv1), 1 );
 
   // Check outer products
-  #ifdef EIGEN_ALLOCA
-  bool temp_via_alloca = m3.rows()*sizeof(Scalar) <= EIGEN_STACK_ALLOCATION_LIMIT;
-  #else
-  bool temp_via_alloca = false;
-  #endif
   m3 = cv1 * rv1;
   VERIFY_EVALUATION_COUNT( m3.noalias() = cv1 * rv1, 0 );
-  VERIFY_EVALUATION_COUNT( m3.noalias() = (cv1+cv1) * (rv1+rv1), temp_via_alloca ? 0 : 1 );
+  VERIFY_EVALUATION_COUNT( m3.noalias() = (cv1+cv1) * (rv1+rv1), 1 );
   VERIFY_EVALUATION_COUNT( m3.noalias() = (m1*cv1) * (rv1), 1 );
   VERIFY_EVALUATION_COUNT( m3.noalias() += (m1*cv1) * (rv1), 1 );
-  rm3 = cv1 * rv1;
-  VERIFY_EVALUATION_COUNT( rm3.noalias() = cv1 * rv1, 0 );
-  VERIFY_EVALUATION_COUNT( rm3.noalias() = (cv1+cv1) * (rv1+rv1), temp_via_alloca ? 0 : 1 );
   VERIFY_EVALUATION_COUNT( rm3.noalias() = (cv1) * (rv1 * m1), 1 );
   VERIFY_EVALUATION_COUNT( rm3.noalias() -= (cv1) * (rv1 * m1), 1 );
   VERIFY_EVALUATION_COUNT( rm3.noalias() = (m1*cv1) * (rv1 * m1), 2 );
@@ -181,18 +140,9 @@ template<typename MatrixType> void product_notemporary(const MatrixType& m)
   // Check nested products
   VERIFY_EVALUATION_COUNT( cvres.noalias() = m1.adjoint() * m1 * cv1, 1 );
   VERIFY_EVALUATION_COUNT( rvres.noalias() = rv1 * (m1 * m2.adjoint()), 1 );
-
-  // exhaustively check all scalar multiple combinations:
-  {
-    // Generic path:
-    check_scalar_multiple1(m3, m1, m2, s1, s2);
-    // Force fall back to coeff-based:
-    typename ColMajorMatrixType::BlockXpr m3_blck = m3.block(r0,r0,1,1);
-    check_scalar_multiple1(m3_blck, m1.block(r0,c0,1,1), m2.block(c0,r0,1,1), s1, s2);
-  }
 }
 
-EIGEN_DECLARE_TEST(product_notemporary)
+void test_product_notemporary()
 {
   int s;
   for(int i = 0; i < g_repeat; i++) {

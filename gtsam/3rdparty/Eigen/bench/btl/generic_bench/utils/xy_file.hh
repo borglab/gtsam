@@ -55,7 +55,7 @@ bool read_xy_file(const std::string & filename, std::vector<int> & tab_sizes,
 
 // The Vector class must satisfy the following part of STL vector concept :
 //            resize() method
-//            [] operator for setting element
+//            [] operator for seting element
 // the vector element must have the << operator define
 
 using namespace std;

@@ -61,7 +61,7 @@ using symbol_shorthand::X;  // for poses
 /* ************************************************************************* */
 int main(int argc, char *argv[]) {
   // Define the camera calibration parameters
-  auto K = std::make_shared<Cal3Fisheye>(
+  auto K = boost::make_shared<Cal3Fisheye>(
       278.66, 278.48, 0.0, 319.75, 241.96, -0.013721808247486035,
       0.020727425669427896, -0.012786476702685545, 0.0025242267320687625);
 
@@ -122,7 +122,8 @@ int main(int argc, char *argv[]) {
   std::cout << "initial error=" << graph.error(initialEstimate) << std::endl;
   std::cout << "final error=" << graph.error(result) << std::endl;
 
-  graph.saveGraph("examples/vio_batch.dot", result);
+  std::ofstream os("examples/vio_batch.dot");
+  graph.saveGraph(os, result);
 
   return 0;
 }

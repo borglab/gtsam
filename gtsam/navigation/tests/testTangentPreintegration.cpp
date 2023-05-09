@@ -35,7 +35,7 @@ Vector9 f(const Vector9& zeta, const Vector3& a, const Vector3& w) {
 
 namespace testing {
 // Create default parameters with Z-down and above noise parameters
-static std::shared_ptr<PreintegrationParams> Params() {
+static boost::shared_ptr<PreintegrationParams> Params() {
   auto p = PreintegrationParams::MakeSharedD(kGravity);
   p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
   p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
@@ -108,8 +108,8 @@ TEST(TangentPreintegration, computeError) {
                         const imuBias::ConstantBias&)>
       f = std::bind(&TangentPreintegration::computeError, pim,
                     std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, nullptr, nullptr,
-                    nullptr);
+                    std::placeholders::_3, boost::none, boost::none,
+                    boost::none);
   // NOTE(frank): tolerance of 1e-3 on H1 because approximate away from 0
   EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
   EXPECT(assert_equal(numericalDerivative32(f, x1, x2, bias), aH2, 1e-9));

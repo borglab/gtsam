@@ -17,16 +17,7 @@ class NonlinearFactorGraph {
 
 // Typedef with template as template arg.
 template<CALIBRATION, POINT>
-class GeneralSFMFactor {
-  gtsam::This::Verbosity verbosity;
-
-  enum Verbosity {
-    SILENT,
-    SUMMARY,
-    VALUES
-  };
-};
-
+class GeneralSFMFactor {};
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3> GeneralSFMFactorCal3Bundler;
 
 // Template as template arg for class property.

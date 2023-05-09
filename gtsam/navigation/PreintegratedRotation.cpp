@@ -115,7 +115,8 @@ void PreintegratedRotation::integrateMeasurement(const Vector3& measuredOmega,
 Rot3 PreintegratedRotation::biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
     OptionalJacobian<3, 3> H) const {
   const Vector3 biasInducedOmega = delRdelBiasOmega_ * biasOmegaIncr;
-  const Rot3 deltaRij_biascorrected = deltaRij_.expmap(biasInducedOmega,{}, H);
+  const Rot3 deltaRij_biascorrected = deltaRij_.expmap(biasInducedOmega,
+      boost::none, H);
   if (H)
     (*H) *= delRdelBiasOmega_;
   return deltaRij_biascorrected;

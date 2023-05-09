@@ -18,6 +18,7 @@
  */
 
 #include <gtsam/base/Vector.h>
+#include <boost/optional.hpp>
 #include <stdexcept>
 #include <cstdarg>
 #include <limits>
@@ -298,14 +299,17 @@ weightedPseudoinverse(const Vector& a, const Vector& weights) {
 }
 
 /* ************************************************************************* */
-Vector concatVectors(const std::list<Vector>& vs) {
+Vector concatVectors(const std::list<Vector>& vs)
+{
   size_t dim = 0;
-  for (const Vector& v : vs) dim += v.size();
+  for(Vector v: vs)
+  dim += v.size();
 
   Vector A(dim);
   size_t index = 0;
-  for (const Vector& v : vs) {
-    for (int d = 0; d < v.size(); d++) A(d + index) = v(d);
+  for(Vector v: vs) {
+    for(int d = 0; d < v.size(); d++)
+      A(d+index) = v(d);
     index += v.size();
   }
 

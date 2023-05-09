@@ -98,7 +98,7 @@ template<typename MatrixType> void schur(int size = MatrixType::ColsAtCompileTim
   }
 }
 
-EIGEN_DECLARE_TEST(schur_real)
+void test_schur_real()
 {
   CALL_SUBTEST_1(( schur<Matrix4f>() ));
   CALL_SUBTEST_2(( schur<MatrixXd>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4)) ));

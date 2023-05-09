@@ -12,7 +12,6 @@
 #include <Eigen/Geometry>
 #include <Eigen/LU>
 #include <Eigen/SVD>
-#include "AnnoyingScalar.h"
 
 template<typename T> T bounded_acos(T v)
 {
@@ -75,13 +74,6 @@ template<typename Scalar, int Options> void quaternion(void)
   q1.coeffs().setRandom();
   VERIFY_IS_APPROX(q1.coeffs(), (q1*q2).coeffs());
 
-#ifndef EIGEN_NO_IO
-  // Printing
-  std::ostringstream ss;
-  ss << q2;
-  VERIFY(ss.str() == "0i + 0j + 0k + 1");
-#endif
-
   // concatenation
   q1 *= q2;
 
@@ -93,7 +85,7 @@ template<typename Scalar, int Options> void quaternion(void)
   if (refangle>Scalar(EIGEN_PI))
     refangle = Scalar(2)*Scalar(EIGEN_PI) - refangle;
 
-  if((q1.coeffs()-q2.coeffs()).norm() > Scalar(10)*largeEps)
+  if((q1.coeffs()-q2.coeffs()).norm() > 10*largeEps)
   {
     VERIFY_IS_MUCH_SMALLER_THAN(abs(q1.angularDistance(q2) - refangle), Scalar(1));
   }
@@ -121,7 +113,7 @@ template<typename Scalar, int Options> void quaternion(void)
 
   // Do not execute the test if the rotation angle is almost zero, or
   // the rotation axis and v1 are almost parallel.
-  if (abs(aa.angle()) > Scalar(5)*test_precision<Scalar>()
+  if (abs(aa.angle()) > 5*test_precision<Scalar>()
       && (aa.axis() - v1.normalized()).norm() < Scalar(1.99)
       && (aa.axis() + v1.normalized()).norm() < Scalar(1.99))
   {
@@ -218,6 +210,10 @@ template<typename Scalar> void mapQuaternion(void){
   VERIFY_IS_APPROX(q1.coeffs(), q2.coeffs());
   VERIFY_IS_APPROX(q1.coeffs(), q3.coeffs());
   VERIFY_IS_APPROX(q4.coeffs(), q3.coeffs());
+  #ifdef EIGEN_VECTORIZE
+  if(internal::packet_traits<Scalar>::Vectorizable)
+    VERIFY_RAISES_ASSERT((MQuaternionA(array3unaligned)));
+  #endif
     
   VERIFY_IS_APPROX(mq1 * (mq1.inverse() * v1), v1);
   VERIFY_IS_APPROX(mq1 * (mq1.conjugate() * v1), v1);
@@ -245,17 +241,9 @@ template<typename Scalar> void mapQuaternion(void){
   const MQuaternionUA& cmq3(mq3);
   VERIFY( &cmq3.x() == &mq3.x() );
   // FIXME the following should be ok. The problem is that currently the LValueBit flag
-  // is used to determine whether we can return a coeff by reference or not, which is not enough for Map<const ...>.
+  // is used to determine wether we can return a coeff by reference or not, which is not enough for Map<const ...>.
   //const MCQuaternionUA& cmcq3(mcq3);
   //VERIFY( &cmcq3.x() == &mcq3.x() );
-
-  // test cast
-  {
-    Quaternion<float> q1f = mq1.template cast<float>();
-    VERIFY_IS_APPROX(q1f.template cast<Scalar>(),mq1);
-    Quaternion<double> q1d = mq1.template cast<double>();
-    VERIFY_IS_APPROX(q1d.template cast<Scalar>(),mq1);
-  }
 }
 
 template<typename Scalar> void quaternionAlignment(void){
@@ -277,6 +265,10 @@ template<typename Scalar> void quaternionAlignment(void){
 
   VERIFY_IS_APPROX(q1->coeffs(), q2->coeffs());
   VERIFY_IS_APPROX(q1->coeffs(), q3->coeffs());
+  #if defined(EIGEN_VECTORIZE) && EIGEN_MAX_STATIC_ALIGN_BYTES>0
+  if(internal::packet_traits<Scalar>::Vectorizable && internal::packet_traits<Scalar>::size<=4)
+    VERIFY_RAISES_ASSERT((::new(reinterpret_cast<void*>(arrayunaligned)) QuaternionA));
+  #endif
 }
 
 template<typename PlainObjectType> void check_const_correctness(const PlainObjectType&)
@@ -293,40 +285,18 @@ template<typename PlainObjectType> void check_const_correctness(const PlainObjec
   VERIFY( !(Map<ConstPlainObjectType, Aligned>::Flags & LvalueBit) );
 }
 
-#if EIGEN_HAS_RVALUE_REFERENCES
-
-// Regression for bug 1573
-struct MovableClass {
-  // The following line is a workaround for gcc 4.7 and 4.8 (see bug 1573 comments).
-  static_assert(std::is_nothrow_move_constructible<Quaternionf>::value,"");
-  MovableClass() = default;
-  MovableClass(const MovableClass&) = default;
-  MovableClass(MovableClass&&) noexcept = default;
-  MovableClass& operator=(const MovableClass&) = default;
-  MovableClass& operator=(MovableClass&&) = default;
-  Quaternionf m_quat;
-};
-
-#endif
-
-EIGEN_DECLARE_TEST(geo_quaternion)
+void test_geo_quaternion()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1(( quaternion<float,AutoAlign>() ));
     CALL_SUBTEST_1( check_const_correctness(Quaternionf()) );
-    CALL_SUBTEST_1(( quaternion<float,DontAlign>() ));
-    CALL_SUBTEST_1(( quaternionAlignment<float>() ));
-    CALL_SUBTEST_1( mapQuaternion<float>() );
-
     CALL_SUBTEST_2(( quaternion<double,AutoAlign>() ));
     CALL_SUBTEST_2( check_const_correctness(Quaterniond()) );
-    CALL_SUBTEST_2(( quaternion<double,DontAlign>() ));
-    CALL_SUBTEST_2(( quaternionAlignment<double>() ));
+    CALL_SUBTEST_3(( quaternion<float,DontAlign>() ));
+    CALL_SUBTEST_4(( quaternion<double,DontAlign>() ));
+    CALL_SUBTEST_5(( quaternionAlignment<float>() ));
+    CALL_SUBTEST_6(( quaternionAlignment<double>() ));
+    CALL_SUBTEST_1( mapQuaternion<float>() );
     CALL_SUBTEST_2( mapQuaternion<double>() );
-
-#ifndef EIGEN_TEST_ANNOYING_SCALAR_DONT_THROW
-    AnnoyingScalar::dont_throw = true;
-#endif
-    CALL_SUBTEST_3(( quaternion<AnnoyingScalar,AutoAlign>() ));
   }
 }

@@ -16,26 +16,14 @@
  *  @author Duy-Nguyen Ta
  */
 
-#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DiscreteFactor.h>
+#include <CppUnitLite/TestHarness.h>
+#include <boost/assign/std/map.hpp>
+using namespace boost::assign;
 
 using namespace std;
 using namespace gtsam;
-using namespace gtsam::serializationTestHelpers;
-
-/* ************************************************************************* */
-TEST(DisreteKeys, Serialization) {
-  DiscreteKeys keys;
-  keys& DiscreteKey(0, 2);
-  keys& DiscreteKey(1, 3);
-  keys& DiscreteKey(2, 4);
-
-  EXPECT(equalsObj<DiscreteKeys>(keys));
-  EXPECT(equalsXML<DiscreteKeys>(keys));
-  EXPECT(equalsBinary<DiscreteKeys>(keys));
-}
 
 /* ************************************************************************* */
 int main() {
@@ -43,3 +31,4 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
+

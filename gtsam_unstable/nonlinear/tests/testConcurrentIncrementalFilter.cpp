@@ -80,8 +80,8 @@ NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph,
 
 
   std::set<Key> KeysToKeep;
-  for(const auto key: linPoint.keys()) { // we cycle over all the keys of factorGraph
-    KeysToKeep.insert(key);
+  for(const auto key_value: linPoint) { // we cycle over all the keys of factorGraph
+    KeysToKeep.insert(key_value.key);
   } // so far we are keeping all keys, but we want to delete the ones that we are going to marginalize
   for(Key key: keysToMarginalize) {
     KeysToKeep.erase(key);
@@ -468,7 +468,7 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_2 )
 {
   // Create a set of optimizer parameters
   ISAM2Params parameters;
-  parameters.relinearizeThreshold = 0.;
+  parameters.relinearizeThreshold = 0;
   // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
   //  default value for that is 10 (if you set that to zero the code will crash)
   parameters.relinearizeSkip = 1;
@@ -594,7 +594,7 @@ TEST( ConcurrentIncrementalFilter, synchronize_1 )
 {
   // Create a set of optimizer parameters
   ISAM2Params parameters;
-  parameters.relinearizeThreshold = 0.;
+  parameters.relinearizeThreshold = 0;
   // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
   //  default value for that is 10 (if you set that to zero the code will crash)
   parameters.relinearizeSkip = 1;
@@ -641,7 +641,7 @@ TEST( ConcurrentIncrementalFilter, synchronize_2 )
 {
   // Create a set of optimizer parameters
   ISAM2Params parameters;
-  parameters.relinearizeThreshold = 0.;
+  parameters.relinearizeThreshold = 0;
   // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
   //  default value for that is 10 (if you set that to zero the code will crash)
   parameters.relinearizeSkip = 1;
@@ -711,7 +711,7 @@ TEST( ConcurrentIncrementalFilter, synchronize_3 )
 {
   // Create a set of optimizer parameters
   ISAM2Params parameters;
-  parameters.relinearizeThreshold = 0.;
+  parameters.relinearizeThreshold = 0;
   // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
   //  default value for that is 10 (if you set that to zero the code will crash)
   parameters.relinearizeSkip = 1;
@@ -798,7 +798,7 @@ TEST( ConcurrentIncrementalFilter, synchronize_4 )
 {
   // Create a set of optimizer parameters
   ISAM2Params parameters;
-  parameters.relinearizeThreshold = 0.;
+  parameters.relinearizeThreshold = 0;
   // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
   //  default value for that is 10 (if you set that to zero the code will crash)
   parameters.relinearizeSkip = 1;
@@ -893,7 +893,7 @@ TEST( ConcurrentIncrementalFilter, synchronize_5 )
 {
   // Create a set of optimizer parameters
   ISAM2Params parameters;
-  parameters.relinearizeThreshold = 0.;
+  parameters.relinearizeThreshold = 0;
   // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
   //  default value for that is 10 (if you set that to zero the code will crash)
   parameters.relinearizeSkip = 1;
@@ -1182,7 +1182,7 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_1 )
 {
   // Create a set of optimizer parameters
   ISAM2Params parameters;
-  parameters.relinearizeThreshold = 0.;
+  parameters.relinearizeThreshold = 0;
   // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
   //  default value for that is 10 (if you set that to zero the code will crash)
   parameters.relinearizeSkip = 1;
@@ -1241,7 +1241,7 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_2 )
   // we try removing the last factor
 
   ISAM2Params parameters;
-  parameters.relinearizeThreshold = 0.;
+  parameters.relinearizeThreshold = 0;
   // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
   //  default value for that is 10 (if you set that to zero the code will crash)
   parameters.relinearizeSkip = 1;
@@ -1300,7 +1300,7 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_3 )
   // we try removing the first factor
 
   ISAM2Params parameters;
-  parameters.relinearizeThreshold = 0.;
+  parameters.relinearizeThreshold = 0;
   // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
   //  default value for that is 10 (if you set that to zero the code will crash)
   parameters.relinearizeSkip = 1;
@@ -1357,7 +1357,7 @@ TEST( ConcurrentIncrementalFilter, removeFactors_values )
   // we try removing the last factor
 
   ISAM2Params parameters;
-  parameters.relinearizeThreshold = 0.;
+  parameters.relinearizeThreshold = 0;
   // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
   //  default value for that is 10 (if you set that to zero the code will crash)
   parameters.relinearizeSkip = 1;

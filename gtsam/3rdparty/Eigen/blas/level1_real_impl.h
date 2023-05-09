@@ -23,28 +23,6 @@ RealScalar EIGEN_BLAS_FUNC(asum)(int *n, RealScalar *px, int *incx)
   else          return make_vector(x,*n,std::abs(*incx)).cwiseAbs().sum();
 }
 
-int EIGEN_CAT(i, EIGEN_BLAS_FUNC(amax))(int *n, RealScalar *px, int *incx)
-{
-  if(*n<=0) return 0;
-  Scalar* x = reinterpret_cast<Scalar*>(px);
-
-  DenseIndex ret;
-  if(*incx==1)  make_vector(x,*n).cwiseAbs().maxCoeff(&ret);
-  else          make_vector(x,*n,std::abs(*incx)).cwiseAbs().maxCoeff(&ret);
-  return int(ret)+1;
-}
-
-int EIGEN_CAT(i, EIGEN_BLAS_FUNC(amin))(int *n, RealScalar *px, int *incx)
-{
-  if(*n<=0) return 0;
-  Scalar* x = reinterpret_cast<Scalar*>(px);
-
-  DenseIndex ret;
-  if(*incx==1)  make_vector(x,*n).cwiseAbs().minCoeff(&ret);
-  else          make_vector(x,*n,std::abs(*incx)).cwiseAbs().minCoeff(&ret);
-  return int(ret)+1;
-}
-
 // computes a vector-vector dot product.
 Scalar EIGEN_BLAS_FUNC(dot)(int *n, RealScalar *px, int *incx, RealScalar *py, int *incy)
 {

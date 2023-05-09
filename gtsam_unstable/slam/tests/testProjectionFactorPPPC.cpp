@@ -136,11 +136,15 @@ TEST( ProjectionFactorPPPC, Jacobian ) {
 
   // Verify H2 and H4 with numerical derivatives
   Matrix H2Expected = numericalDerivative11<Vector, Pose3>(
-      [&factor, &point, &pose](const Pose3& pose_arg) { return factor.evaluateError(pose, pose_arg, point, *K1); },
+      std::bind(&TestProjectionFactor::evaluateError, &factor, pose,
+                std::placeholders::_1, point, *K1, boost::none, boost::none,
+                boost::none, boost::none),
       Pose3());
 
   Matrix H4Expected = numericalDerivative11<Vector, Cal3_S2>(
-      [&factor, &point, &pose](const Cal3_S2& K_arg) { return factor.evaluateError(pose, Pose3(), point, K_arg); },
+      std::bind(&TestProjectionFactor::evaluateError, &factor, pose, Pose3(),
+                point, std::placeholders::_1, boost::none, boost::none,
+                boost::none, boost::none),
       *K1);
 
   CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
@@ -172,16 +176,12 @@ TEST( ProjectionFactorPPPC, JacobianWithTransform ) {
 
   // Verify H2 and H4 with numerical derivatives
   Matrix H2Expected = numericalDerivative11<Vector, Pose3>(
-      [&factor, &pose, &point](const Pose3& body_P_sensor) {
-        return factor.evaluateError(pose, body_P_sensor, point, *K1);
-      },
-      body_P_sensor);
+      std::bind(&TestProjectionFactor::evaluateError, &factor, pose, std::placeholders::_1, point,
+          *K1, boost::none, boost::none, boost::none, boost::none), body_P_sensor);
 
   Matrix H4Expected = numericalDerivative11<Vector, Cal3_S2>(
-      [&factor, &pose, &body_P_sensor, &point](const Cal3_S2& K) {
-        return factor.evaluateError(pose, body_P_sensor, point, K);
-      },
-      *K1);
+      std::bind(&TestProjectionFactor::evaluateError, &factor, pose, body_P_sensor, point,
+          std::placeholders::_1, boost::none, boost::none, boost::none, boost::none), *K1);
 
   CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
   CHECK(assert_equal(H4Expected, H4Actual, 1e-5));

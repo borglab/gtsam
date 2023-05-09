@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file     QPSParser.h
+ * @file     QPParser.h
  * @brief    QPS parser implementation
  * @author   Ivan Dario Jimenez
  * @date     3/5/16

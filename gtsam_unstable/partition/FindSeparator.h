@@ -6,10 +6,9 @@
  *  Description: find the separator of bisectioning for a given graph
  */
 
-#pragma once
-
 #include <map>
 #include <vector>
+#include <boost/optional.hpp>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/Symbol.h>
 
@@ -30,7 +29,7 @@ namespace gtsam { namespace partition {
    * the size of dictionary mush be equal to the number of variables in the original graph (the largest one)
    */
   template<class GenericGraph>
-  std::optional<MetisResult> separatorPartitionByMetis(const GenericGraph& graph, const std::vector<size_t>& keys,
+  boost::optional<MetisResult> separatorPartitionByMetis(const GenericGraph& graph, const std::vector<size_t>& keys,
       WorkSpace& workspace, bool verbose);
 
   /**
@@ -39,7 +38,7 @@ namespace gtsam { namespace partition {
    */
   template<class GenericGraph>
   int findSeparator(const GenericGraph& graph, const std::vector<size_t>& keys,
-      const int minNodesPerMap, WorkSpace& workspace, bool verbose, const std::optional<std::vector<Symbol> >& int2symbol,
+      const int minNodesPerMap, WorkSpace& workspace, bool verbose, const boost::optional<std::vector<Symbol> >& int2symbol,
       const bool reduceGraph, const int minNrConstraintsPerCamera, const int minNrConstraintsPerLandmark);
 
 }} //namespace

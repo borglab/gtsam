@@ -14,7 +14,7 @@
 ; * - Eigen::Matrix<*,-1,+,*,*,*>
 ; * - Eigen::Matrix<*,+,+,*,*,*>
 ; *
-; * Matrices are displayed properly independently of the memory
+; * Matrices are displayed properly independantly of the memory
 ; * alignment (RowMajor vs. ColMajor).
 ; *
 ; * This file is distributed WITHOUT ANY WARRANTY. Please ensure

@@ -45,7 +45,7 @@ struct IMUHelper {
     }
 
     // expect IMU to be rotated in image space co-ords
-    auto p = std::make_shared<PreintegratedCombinedMeasurements::Params>(
+    auto p = boost::make_shared<PreintegratedCombinedMeasurements::Params>(
         Vector3(0.0, 9.8, 0.0));
 
     p->accelerometerCovariance =
@@ -129,8 +129,8 @@ int main(int argc, char* argv[]) {
   // Pose prior - at identity
   auto priorPoseNoise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.1)).finished());
-  graph.addPrior(X(1), Pose3::Identity(), priorPoseNoise);
-  initialEstimate.insert(X(0), Pose3::Identity());
+  graph.addPrior(X(1), Pose3::identity(), priorPoseNoise);
+  initialEstimate.insert(X(0), Pose3::identity());
 
   // Bias prior
   graph.addPrior(B(1), imu.priorImuBias,
@@ -157,7 +157,7 @@ int main(int argc, char* argv[]) {
     if (frame != lastFrame || in.eof()) {
       cout << "Running iSAM for frame: " << lastFrame << "\n";
 
-      initialEstimate.insert(X(lastFrame), Pose3::Identity());
+      initialEstimate.insert(X(lastFrame), Pose3::identity());
       initialEstimate.insert(V(lastFrame), Vector3(0, 0, 0));
       initialEstimate.insert(B(lastFrame), imu.prevBias);
 

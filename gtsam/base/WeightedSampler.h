@@ -69,7 +69,7 @@ class WeightedSampler {
     static const double kexp1 = std::exp(1.0);
     for (auto it = weights.begin(); it != weights.begin() + numSamples; ++it) {
       const double k_i = kexp1 / *it;
-      reservoir.push({k_i, it - weights.begin() + 1});
+      reservoir.push(std::make_pair(k_i, it - weights.begin() + 1));
     }
 
     // Step 4: Repeat Steps 5–10 until the population is exhausted
@@ -110,7 +110,7 @@ class WeightedSampler {
         // Step 8: The item in reservoir with the minimum key is replaced by
         // item v_i
         reservoir.pop();
-        reservoir.push({k_i, it - weights.begin() + 1});
+        reservoir.push(std::make_pair(k_i, it - weights.begin() + 1));
       }
     }
 

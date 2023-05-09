@@ -15,16 +15,12 @@ namespace gtsam {
 /**
  * Factor to measure a planar landmark from a given pose
  */
-class GTSAM_EXPORT OrientedPlane3Factor: public NoiseModelFactorN<Pose3, OrientedPlane3> {
+class OrientedPlane3Factor: public NoiseModelFactor2<Pose3, OrientedPlane3> {
  protected:
   OrientedPlane3 measured_p_;
-  typedef NoiseModelFactorN<Pose3, OrientedPlane3> Base;
+  typedef NoiseModelFactor2<Pose3, OrientedPlane3> Base;
 
  public:
-
-  // Provide access to the Matrix& version of evaluateError:
-  using NoiseModelFactor2<Pose3, OrientedPlane3>::evaluateError;
-
   /// Constructor
   OrientedPlane3Factor() {
   }
@@ -48,20 +44,17 @@ class GTSAM_EXPORT OrientedPlane3Factor: public NoiseModelFactorN<Pose3, Oriente
   /// evaluateError
   Vector evaluateError(
       const Pose3& pose, const OrientedPlane3& plane,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override;
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const override;
 };
 
 // TODO: Convert this factor to dimension two, three dimensions is redundant for direction prior
-class GTSAM_EXPORT OrientedPlane3DirectionPrior : public NoiseModelFactorN<OrientedPlane3> {
+class OrientedPlane3DirectionPrior : public NoiseModelFactor1<OrientedPlane3> {
  protected:
   OrientedPlane3 measured_p_;  /// measured plane parameters
-  typedef NoiseModelFactorN<OrientedPlane3> Base;
+  typedef NoiseModelFactor1<OrientedPlane3> Base;
 
  public:
-
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
-
   typedef OrientedPlane3DirectionPrior This;
   /// Constructor
   OrientedPlane3DirectionPrior() {
@@ -79,7 +72,8 @@ class GTSAM_EXPORT OrientedPlane3DirectionPrior : public NoiseModelFactorN<Orien
   /// equals
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
-  Vector evaluateError(const OrientedPlane3& plane, OptionalMatrixType H) const override;
+  Vector evaluateError(const OrientedPlane3& plane,
+      boost::optional<Matrix&> H = boost::none) const override;
 };
 
 } // gtsam

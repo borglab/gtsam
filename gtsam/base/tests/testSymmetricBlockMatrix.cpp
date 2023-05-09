@@ -17,12 +17,14 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
+#include <boost/assign/list_of.hpp>
 
 using namespace std;
 using namespace gtsam;
+using boost::assign::list_of;
 
 static SymmetricBlockMatrix testBlockMatrix(
-  std::vector<size_t>{3, 2, 1},
+  list_of(3)(2)(1),
   (Matrix(6, 6) <<
   1, 2, 3, 4, 5, 6,
   2, 8, 9, 10, 11, 12,
@@ -99,8 +101,7 @@ TEST(SymmetricBlockMatrix, Ranges)
 /* ************************************************************************* */
 TEST(SymmetricBlockMatrix, expressions)
 {
-  const std::vector<size_t> dimensions{2, 3, 1};
-  SymmetricBlockMatrix expected1(dimensions, (Matrix(6, 6) <<
+  SymmetricBlockMatrix expected1(list_of(2)(3)(1), (Matrix(6, 6) <<
     0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0,
     0, 0, 4, 6, 8, 0,
@@ -108,7 +109,7 @@ TEST(SymmetricBlockMatrix, expressions)
     0, 0, 0, 0, 16, 0,
     0, 0, 0, 0, 0, 0).finished());
 
-  SymmetricBlockMatrix expected2(dimensions, (Matrix(6, 6) <<
+  SymmetricBlockMatrix expected2(list_of(2)(3)(1), (Matrix(6, 6) <<
     0, 0, 10, 15, 20, 0,
     0, 0, 12, 18, 24, 0,
     0, 0, 0, 0, 0, 0,
@@ -119,32 +120,32 @@ TEST(SymmetricBlockMatrix, expressions)
   Matrix a = (Matrix(1, 3) << 2, 3, 4).finished();
   Matrix b = (Matrix(1, 2) << 5, 6).finished();
 
-  SymmetricBlockMatrix bm1(dimensions);
+  SymmetricBlockMatrix bm1(list_of(2)(3)(1));
   bm1.setZero();
   bm1.diagonalBlock(1).rankUpdate(a.transpose());
   EXPECT(assert_equal(Matrix(expected1.selfadjointView()), bm1.selfadjointView()));
 
-  SymmetricBlockMatrix bm2(dimensions);
+  SymmetricBlockMatrix bm2(list_of(2)(3)(1));
   bm2.setZero();
   bm2.updateOffDiagonalBlock(0, 1, b.transpose() * a);
   EXPECT(assert_equal(Matrix(expected2.selfadjointView()), bm2.selfadjointView()));
 
-  SymmetricBlockMatrix bm3(dimensions);
+  SymmetricBlockMatrix bm3(list_of(2)(3)(1));
   bm3.setZero();
   bm3.updateOffDiagonalBlock(1, 0, a.transpose() * b);
   EXPECT(assert_equal(Matrix(expected2.selfadjointView()), bm3.selfadjointView()));
 
-  SymmetricBlockMatrix bm4(dimensions);
+  SymmetricBlockMatrix bm4(list_of(2)(3)(1));
   bm4.setZero();
   bm4.updateDiagonalBlock(1, expected1.diagonalBlock(1));
   EXPECT(assert_equal(Matrix(expected1.selfadjointView()), bm4.selfadjointView()));
 
-  SymmetricBlockMatrix bm5(dimensions);
+  SymmetricBlockMatrix bm5(list_of(2)(3)(1));
   bm5.setZero();
   bm5.updateOffDiagonalBlock(0, 1, expected2.aboveDiagonalBlock(0, 1));
   EXPECT(assert_equal(Matrix(expected2.selfadjointView()), bm5.selfadjointView()));
 
-  SymmetricBlockMatrix bm6(dimensions);
+  SymmetricBlockMatrix bm6(list_of(2)(3)(1));
   bm6.setZero();
   bm6.updateOffDiagonalBlock(1, 0, expected2.aboveDiagonalBlock(0, 1).transpose());
   EXPECT(assert_equal(Matrix(expected2.selfadjointView()), bm6.selfadjointView()));
@@ -161,8 +162,7 @@ TEST(SymmetricBlockMatrix, inverseInPlace) {
   inputMatrix += c * c.transpose();
   const Matrix expectedInverse = inputMatrix.inverse();
 
-  const std::vector<size_t> dimensions{2, 1};
-  SymmetricBlockMatrix symmMatrix(dimensions, inputMatrix);
+  SymmetricBlockMatrix symmMatrix(list_of(2)(1), inputMatrix);
   // invert in place
   symmMatrix.invertInPlace();
   EXPECT(assert_equal(expectedInverse, symmMatrix.selfadjointView()));

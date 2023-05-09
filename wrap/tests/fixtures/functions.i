@@ -31,7 +31,7 @@ typedef TemplatedFunction<gtsam::Rot3> TemplatedFunctionRot3;
 void DefaultFuncInt(int a = 123, int b = 0);
 void DefaultFuncString(const string& s = "hello", const string& name = "");
 void DefaultFuncObj(const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
-void DefaultFuncZero(int a, int b, double c = 0.0, int d = 0, bool e = false);
+void DefaultFuncZero(int a = 0, int b, double c = 0.0, bool d = false, bool e);
 void DefaultFuncVector(const std::vector<int> &i = {1, 2, 3}, const std::vector<string> &s = {"borglab", "gtsam"});
 
 // Test for non-trivial default constructor

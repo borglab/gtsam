@@ -54,9 +54,9 @@ const double degree = M_PI / 180;
 
 //******************************************************************************
 TEST(Similarity3, Concepts) {
-  GTSAM_CONCEPT_ASSERT(IsGroup<Similarity3 >);
-  GTSAM_CONCEPT_ASSERT(IsManifold<Similarity3 >);
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<Similarity3 >);
+  BOOST_CONCEPT_ASSERT((IsGroup<Similarity3 >));
+  BOOST_CONCEPT_ASSERT((IsManifold<Similarity3 >));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Similarity3 >));
 }
 
 //******************************************************************************
@@ -203,11 +203,11 @@ TEST(Similarity3, ExpLogMap) {
 
   Vector7 zeros;
   zeros << 0, 0, 0, 0, 0, 0, 0;
-  Vector7 logIdentity = Similarity3::Logmap(Similarity3::Identity());
+  Vector7 logIdentity = Similarity3::Logmap(Similarity3::identity());
   EXPECT(assert_equal(zeros, logIdentity));
 
   Similarity3 expZero = Similarity3::Expmap(zeros);
-  Similarity3 ident = Similarity3::Identity();
+  Similarity3 ident = Similarity3::identity();
   EXPECT(assert_equal(expZero, ident));
 
   // Compare to matrix exponential, using expm in Lie.h
@@ -391,7 +391,7 @@ TEST(Similarity3, Optimization) {
   NonlinearFactorGraph graph;
   graph.addPrior(key, prior, model);
 
-  // Create initial estimate with Identity transform
+  // Create initial estimate with identity transform
   Values initial;
   initial.insert<Similarity3>(key, Similarity3());
 
@@ -458,18 +458,18 @@ TEST(Similarity3, Optimization2) {
   Values result;
   result = LevenbergMarquardtOptimizer(graph, initial).optimize();
   //result.print("Optimized Estimate\n");
-  Similarity3 p1, p2, p3, p4, p5;
-  p1 = result.at<Similarity3>(X(1));
-  p2 = result.at<Similarity3>(X(2));
-  p3 = result.at<Similarity3>(X(3));
-  p4 = result.at<Similarity3>(X(4));
-  p5 = result.at<Similarity3>(X(5));
+  Pose3 p1, p2, p3, p4, p5;
+  p1 = Pose3(result.at<Similarity3>(X(1)));
+  p2 = Pose3(result.at<Similarity3>(X(2)));
+  p3 = Pose3(result.at<Similarity3>(X(3)));
+  p4 = Pose3(result.at<Similarity3>(X(4)));
+  p5 = Pose3(result.at<Similarity3>(X(5)));
 
-  //p1.print("Similarity1");
-  //p2.print("Similarity2");
-  //p3.print("Similarity3");
-  //p4.print("Similarity4");
-  //p5.print("Similarity5");
+  //p1.print("Pose1");
+  //p2.print("Pose2");
+  //p3.print("Pose3");
+  //p4.print("Pose4");
+  //p5.print("Pose5");
 
   Similarity3 expected(0.7);
   EXPECT(assert_equal(expected, result.at<Similarity3>(X(5)), 0.4));

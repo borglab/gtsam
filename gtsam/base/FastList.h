@@ -20,14 +20,11 @@
 
 #include <gtsam/base/FastDefaultAllocator.h>
 #include <list>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/utility/enable_if.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/version.hpp>
-#if BOOST_VERSION >= 107400
-#include <boost/serialization/library_version_type.hpp>
-#endif
+#include <boost/serialization/optional.hpp>
 #include <boost/serialization/list.hpp>
-#endif
 
 namespace gtsam {
 
@@ -37,7 +34,7 @@ namespace gtsam {
  * convenience to avoid having lengthy types in the code.  Through timing,
  * we've seen that the fast_pool_allocator can lead to speedups of several
  * percent.
-   * @ingroup base
+   * @addtogroup base
  */
 template<typename VALUE>
 class FastList: public std::list<VALUE, typename internal::FastDefaultAllocator<VALUE>::type> {
@@ -59,9 +56,6 @@ public:
   /** Copy constructor from the base list class */
   FastList(const Base& x) : Base(x) {}
 
-  /// Construct from c++11 initializer list:
-  FastList(std::initializer_list<VALUE> l) : Base(l) {}
-
 #ifdef GTSAM_ALLOCATOR_BOOSTPOOL
   /** Copy constructor from a standard STL container */
   FastList(const std::list<VALUE>& x) {
@@ -79,14 +73,12 @@ public:
   }
 
 private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
-#endif
 
 };
 

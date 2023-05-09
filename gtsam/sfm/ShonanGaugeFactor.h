@@ -22,6 +22,8 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
+#include <boost/assign/list_of.hpp>
+
 namespace gtsam {
 /**
  * The ShonanGaugeFactor creates a constraint on a single SO(n) to avoid moving
@@ -47,7 +49,7 @@ class GTSAM_EXPORT ShonanGaugeFactor : public NonlinearFactor {
   size_t rows_;
 
   /// Constant Jacobian
-  std::shared_ptr<JacobianFactor> whitenedJacobian_;
+  boost::shared_ptr<JacobianFactor> whitenedJacobian_;
 
 public:
   /**
@@ -56,8 +58,8 @@ public:
    * the Jacobian will be multiplied with 1/sigma = sqrt(gamma).
    */
   ShonanGaugeFactor(Key key, size_t p, size_t d = 3,
-                    std::optional<double> gamma = {})
-      : NonlinearFactor(KeyVector{key}) {
+                    boost::optional<double> gamma = boost::none)
+      : NonlinearFactor(boost::assign::cref_list_of<1>(key)) {
     if (p < d) {
       throw std::invalid_argument("ShonanGaugeFactor must have p>=d.");
     }
@@ -84,7 +86,7 @@ public:
     }
     // TODO(frank): assign the right one in the right columns
     whitenedJacobian_ =
-        std::make_shared<JacobianFactor>(key, A, Vector::Zero(rows_));
+        boost::make_shared<JacobianFactor>(key, A, Vector::Zero(rows_));
   }
 
   /// Destructor
@@ -97,7 +99,7 @@ public:
   size_t dim() const override { return rows_; }
 
   /// linearize to a GaussianFactor
-  std::shared_ptr<GaussianFactor> linearize(const Values &c) const override {
+  boost::shared_ptr<GaussianFactor> linearize(const Values &c) const override {
     return whitenedJacobian_;
   }
 };

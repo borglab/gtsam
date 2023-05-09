@@ -90,12 +90,6 @@ namespace Eigen {
     {
       call_assignment_no_alias(dst.expression(), src, func);
     }
-
-    template<typename Dst, template <typename> class StorageBase, typename Src, typename Func>
-    EIGEN_DEVICE_FUNC void call_restricted_packet_assignment(const NoAlias<Dst,StorageBase>& dst, const Src& src, const Func& func)
-    {
-      call_restricted_packet_assignment_no_alias(dst.expression(), src, func);
-    }
   }
   
 }
@@ -107,7 +101,7 @@ using namespace std;
 #define VERIFY_IS_APPROX_EVALUATOR(DEST,EXPR) VERIFY_IS_APPROX(copy_using_evaluator(DEST,(EXPR)), (EXPR).eval());
 #define VERIFY_IS_APPROX_EVALUATOR2(DEST,EXPR,REF) VERIFY_IS_APPROX(copy_using_evaluator(DEST,(EXPR)), (REF).eval());
 
-EIGEN_DECLARE_TEST(evaluators)
+void test_evaluators()
 {
   // Testing Matrix evaluator and Transpose
   Vector2d v = Vector2d::Random();
@@ -501,25 +495,5 @@ EIGEN_DECLARE_TEST(evaluators)
     VERIFY_IS_EQUAL( get_cost(a.lazyProduct(a*b)), 15);
     VERIFY_IS_EQUAL( get_cost(a*(a+b)), 1);
     VERIFY_IS_EQUAL( get_cost(a.lazyProduct(a+b)), 15);
-  }
-
-  // regression test for PR 544 and bug 1622 (introduced in #71609c4)
-  {
-    // test restricted_packet_assignment with an unaligned destination
-    const size_t M = 2;
-    const size_t K = 2;
-    const size_t N = 5;
-    float *destMem = new float[(M*N) + 1];
-    float *dest = (internal::UIntPtr(destMem)%EIGEN_MAX_ALIGN_BYTES) == 0 ? destMem+1 : destMem;
-
-    const Matrix<float, Dynamic, Dynamic, RowMajor> a = Matrix<float, Dynamic, Dynamic, RowMajor>::Random(M, K);
-    const Matrix<float, Dynamic, Dynamic, RowMajor> b = Matrix<float, Dynamic, Dynamic, RowMajor>::Random(K, N);
-    
-    Map<Matrix<float, Dynamic, Dynamic, RowMajor> > z(dest, M, N);;
-    Product<Matrix<float, Dynamic, Dynamic, RowMajor>, Matrix<float, Dynamic, Dynamic, RowMajor>, LazyProduct> tmp(a,b);
-    internal::call_restricted_packet_assignment(z.noalias(), tmp.derived(), internal::assign_op<float, float>());
-    
-    VERIFY_IS_APPROX(z, a*b);
-    delete[] destMem;
   }
 }

@@ -42,20 +42,12 @@ TEST(SO4, Identity) {
 
 //******************************************************************************
 TEST(SO4, Concept) {
-  GTSAM_CONCEPT_ASSERT(IsGroup<SO4>);
-  GTSAM_CONCEPT_ASSERT(IsManifold<SO4>);
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<SO4>);
+  BOOST_CONCEPT_ASSERT((IsGroup<SO4>));
+  BOOST_CONCEPT_ASSERT((IsManifold<SO4>));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<SO4>));
 }
 
 //******************************************************************************
-TEST(SO4, Random) {
-  std::mt19937 rng(42);
-  auto Q = SO4::Random(rng);
-  EXPECT_LONGS_EQUAL(4, Q.matrix().rows());
-}
-
-//******************************************************************************
-namespace {
 SO4 id;
 Vector6 v1 = (Vector(6) << 0, 0, 0, 0.1, 0, 0).finished();
 SO4 Q1 = SO4::Expmap(v1);
@@ -63,8 +55,13 @@ Vector6 v2 = (Vector(6) << 0.00, 0.00, 0.00, 0.01, 0.02, 0.03).finished();
 SO4 Q2 = SO4::Expmap(v2);
 Vector6 v3 = (Vector(6) << 1, 2, 3, 4, 5, 6).finished();
 SO4 Q3 = SO4::Expmap(v3);
-}  // namespace
 
+//******************************************************************************
+TEST(SO4, Random) {
+  std::mt19937 rng(42);
+  auto Q = SO4::Random(rng);
+  EXPECT_LONGS_EQUAL(4, Q.matrix().rows());
+}
 //******************************************************************************
 TEST(SO4, Expmap) {
   // If we do exponential map in SO(3) subgroup, topleft should be equal to R1.
@@ -87,16 +84,16 @@ TEST(SO4, Expmap) {
 }
 
 //******************************************************************************
-// Check that Hat specialization is equal to dynamic version
 TEST(SO4, Hat) {
+  // Check that Hat specialization is equal to dynamic version
   EXPECT(assert_equal(SO4::Hat(v1), SOn::Hat(v1)));
   EXPECT(assert_equal(SO4::Hat(v2), SOn::Hat(v2)));
   EXPECT(assert_equal(SO4::Hat(v3), SOn::Hat(v3)));
 }
 
 //******************************************************************************
-// Check that Hat specialization is equal to dynamic version
 TEST(SO4, Vee) {
+  // Check that Hat specialization is equal to dynamic version
   auto X1 = SOn::Hat(v1), X2 = SOn::Hat(v2), X3 = SOn::Hat(v3);
   EXPECT(assert_equal(SO4::Vee(X1), SOn::Vee(X1)));
   EXPECT(assert_equal(SO4::Vee(X2), SOn::Vee(X2)));
@@ -119,8 +116,8 @@ TEST(SO4, Retract) {
 }
 
 //******************************************************************************
-// Check that Cayley is identical to dynamic version
 TEST(SO4, Local) {
+  // Check that Cayley is identical to dynamic version
   EXPECT(
       assert_equal(id.localCoordinates(Q1), SOn(4).localCoordinates(SOn(Q1))));
   EXPECT(
@@ -169,7 +166,9 @@ TEST(SO4, vec) {
   Matrix actualH;
   const Vector16 actual = Q2.vec(actualH);
   EXPECT(assert_equal(expected, actual));
-  std::function<Vector16(const SO4&)> f = [](const SO4& Q) { return Q.vec(); };
+  std::function<Vector16(const SO4&)> f = [](const SO4& Q) {
+    return Q.vec();
+  };
   const Matrix numericalH = numericalDerivative11(f, Q2, 1e-5);
   EXPECT(assert_equal(numericalH, actualH));
 }

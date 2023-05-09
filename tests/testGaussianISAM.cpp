@@ -22,6 +22,11 @@
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/inference/Ordering.h>
 
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
+#include <boost/range/adaptor/map.hpp>
+namespace br { using namespace boost::adaptors; using namespace boost::range; }
+
 using namespace std;
 using namespace gtsam;
 using namespace example;
@@ -33,14 +38,14 @@ using symbol_shorthand::L;
 TEST( ISAM, iSAM_smoother )
 {
   Ordering ordering;
-  for (int t = 1; t <= 7; t++) ordering.push_back(X(t));
+  for (int t = 1; t <= 7; t++) ordering += X(t);
 
   // Create smoother with 7 nodes
   GaussianFactorGraph smoother = createSmoother(7);
 
   // run iSAM for every factor
   GaussianISAM actual;
-  for(std::shared_ptr<GaussianFactor> factor: smoother) {
+  for(boost::shared_ptr<GaussianFactor> factor: smoother) {
     GaussianFactorGraph factorGraph;
     factorGraph.push_back(factor);
     actual.update(factorGraph);
@@ -50,7 +55,7 @@ TEST( ISAM, iSAM_smoother )
   GaussianBayesTree expected = *smoother.eliminateMultifrontal(ordering);
 
   // Verify sigmas in the bayes tree
-  for (const auto& [key, clique] : expected.nodes()) {
+  for(const GaussianBayesTree::sharedClique& clique: expected.nodes() | br::map_values) {
     GaussianConditional::shared_ptr conditional = clique->conditional();
     EXPECT(!conditional->get_model());
   }

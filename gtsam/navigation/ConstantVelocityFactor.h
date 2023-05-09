@@ -15,8 +15,6 @@
  * @author  Asa Hammond
  */
 
-#pragma once
-
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
@@ -26,19 +24,16 @@ namespace gtsam {
  * Binary factor for applying a constant velocity model to a moving body represented as a NavState.
  * The only measurement is dt, the time delta between the states.
  */
-class ConstantVelocityFactor : public NoiseModelFactorN<NavState, NavState> {
+class ConstantVelocityFactor : public NoiseModelFactor2<NavState, NavState> {
     double dt_;
 
    public:
     using Base = NoiseModelFactor2<NavState, NavState>;
 
-    // Provide access to the Matrix& version of evaluateError:
-    using Base::evaluateError;
-
    public:
     ConstantVelocityFactor(Key i, Key j, double dt, const SharedNoiseModel &model)
-        : NoiseModelFactorN<NavState, NavState>(model, i, j), dt_(dt) {}
-    ~ConstantVelocityFactor() override {}
+        : NoiseModelFactor2<NavState, NavState>(model, i, j), dt_(dt) {}
+    ~ConstantVelocityFactor() override{};
 
     /**
      * @brief Caclulate error: (x2 - x1.update(dt)))
@@ -51,7 +46,8 @@ class ConstantVelocityFactor : public NoiseModelFactorN<NavState, NavState> {
      * @return * Vector
      */
     gtsam::Vector evaluateError(const NavState &x1, const NavState &x2,
-                                OptionalMatrixType H1, OptionalMatrixType H2) const override {
+                                boost::optional<gtsam::Matrix &> H1 = boost::none,
+                                boost::optional<gtsam::Matrix &> H2 = boost::none) const override {
         // only used to use update() below
         static const Vector3 b_accel{0.0, 0.0, 0.0};
         static const Vector3 b_omega{0.0, 0.0, 0.0};

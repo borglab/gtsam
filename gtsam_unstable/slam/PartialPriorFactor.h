@@ -35,7 +35,7 @@ namespace gtsam {
    * @tparam VALUE is the type of variable the prior effects
    */
   template<class VALUE>
-  class PartialPriorFactor: public NoiseModelFactorN<VALUE> {
+  class PartialPriorFactor: public NoiseModelFactor1<VALUE> {
 
   public:
     typedef VALUE T;
@@ -44,7 +44,7 @@ namespace gtsam {
     // Concept checks on the variable type - currently requires Lie
     GTSAM_CONCEPT_LIE_TYPE(VALUE)
 
-    typedef NoiseModelFactorN<VALUE> Base;
+    typedef NoiseModelFactor1<VALUE> Base;
     typedef PartialPriorFactor<VALUE> This;
 
     Vector prior_;                 ///< Measurement on tangent space parameters, in compressed form.
@@ -61,9 +61,6 @@ namespace gtsam {
       : Base(model, key) {}
 
   public:
-
-    // Provide access to the Matrix& version of evaluateError:
-    using Base::evaluateError;
 
     ~PartialPriorFactor() override {}
 
@@ -87,7 +84,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return std::static_pointer_cast<gtsam::NonlinearFactor>(
+      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
@@ -109,7 +106,7 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** Returns a vector of errors for the measured tangent parameters.  */
-    Vector evaluateError(const T& p, OptionalMatrixType H) const override {
+    Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const override {
       Eigen::Matrix<double, T::dimension, T::dimension> H_local;
 
       // If the Rot3 Cayley map is used, Rot3::LocalCoordinates will throw a runtime error
@@ -140,19 +137,16 @@ namespace gtsam {
     const std::vector<size_t>& indices() const { return indices_; }
 
   private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
       ar & boost::serialization::make_nvp("NoiseModelFactor1",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);
       ar & BOOST_SERIALIZATION_NVP(indices_);
       // ar & BOOST_SERIALIZATION_NVP(H_);
     }
-#endif
   }; // \class PartialPriorFactor
 
 } /// namespace gtsam

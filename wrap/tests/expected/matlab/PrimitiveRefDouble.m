@@ -19,9 +19,9 @@ classdef PrimitiveRefDouble < handle
     function obj = PrimitiveRefDouble(varargin)
       if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
         my_ptr = varargin{2};
-        class_wrapper(49, my_ptr);
+        class_wrapper(40, my_ptr);
       elseif nargin == 0
-        my_ptr = class_wrapper(50);
+        my_ptr = class_wrapper(41);
       else
         error('Arguments do not match any overload of PrimitiveRefDouble constructor');
       end
@@ -29,7 +29,7 @@ classdef PrimitiveRefDouble < handle
     end
 
     function delete(obj)
-      class_wrapper(51, obj.ptr_PrimitiveRefDouble);
+      class_wrapper(42, obj.ptr_PrimitiveRefDouble);
     end
 
     function display(obj), obj.print(''); end
@@ -43,7 +43,7 @@ classdef PrimitiveRefDouble < handle
       % BRUTAL usage: Brutal(double t) : returns PrimitiveRefdouble
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = class_wrapper(52, varargin{:});
+        varargout{1} = class_wrapper(43, varargin{:});
         return
       end
 

@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 
     cout << "Loading data..." << endl;
 
-    string datasetFile = findExampleDataFile("w10000");
+    string datasetFile = findExampleDataFile("w10000-odom");
     std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> data =
       load2D(datasetFile);
 

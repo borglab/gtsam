@@ -30,7 +30,7 @@ public:
 // [function]
 template <class ArgType, class RowIndexType, class ColIndexType>
 CwiseNullaryOp<indexing_functor<ArgType,RowIndexType,ColIndexType>, typename indexing_functor<ArgType,RowIndexType,ColIndexType>::MatrixType>
-mat_indexing(const Eigen::MatrixBase<ArgType>& arg, const RowIndexType& row_indices, const ColIndexType& col_indices)
+indexing(const Eigen::MatrixBase<ArgType>& arg, const RowIndexType& row_indices, const ColIndexType& col_indices)
 {
   typedef indexing_functor<ArgType,RowIndexType,ColIndexType> Func;
   typedef typename Func::MatrixType MatrixType;
@@ -45,7 +45,7 @@ int main()
   Eigen::MatrixXi A = Eigen::MatrixXi::Random(4,4);
   Array3i ri(1,2,1);
   ArrayXi ci(6); ci << 3,2,1,0,0,2;
-  Eigen::MatrixXi B = mat_indexing(A, ri, ci);
+  Eigen::MatrixXi B = indexing(A, ri, ci);
   std::cout << "A =" << std::endl;
   std::cout << A << std::endl << std::endl;
   std::cout << "A([" << ri.transpose() << "], [" << ci.transpose() << "]) =" << std::endl;
@@ -53,11 +53,11 @@ int main()
   std::cout << "[main1]\n";
 
   std::cout << "[main2]\n";
-  B =  mat_indexing(A, ri+1, ci);
+  B =  indexing(A, ri+1, ci);
   std::cout << "A(ri+1,ci) =" << std::endl;
   std::cout << B << std::endl << std::endl;
-#if EIGEN_COMP_CXXVER >= 11
-  B =  mat_indexing(A, ArrayXi::LinSpaced(13,0,12).unaryExpr([](int x){return x%4;}), ArrayXi::LinSpaced(4,0,3));
+#if __cplusplus >= 201103L
+  B =  indexing(A, ArrayXi::LinSpaced(13,0,12).unaryExpr([](int x){return x%4;}), ArrayXi::LinSpaced(4,0,3));
   std::cout << "A(ArrayXi::LinSpaced(13,0,12).unaryExpr([](int x){return x%4;}), ArrayXi::LinSpaced(4,0,3)) =" << std::endl;
   std::cout << B << std::endl << std::endl;
 #endif

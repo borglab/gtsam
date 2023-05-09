@@ -372,8 +372,8 @@ TEST(ShonanAveraging2, noisyToyGraphWithHuber) {
 
   // test that each factor is actually robust
   for (size_t i=0; i<=4; i++) { // note: last is the Gauge factor and is not robust
-	  const auto &robust = std::dynamic_pointer_cast<noiseModel::Robust>(
-			  std::dynamic_pointer_cast<NoiseModelFactor>(graph[i])->noiseModel());
+	  const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
+			  boost::dynamic_pointer_cast<NoiseModelFactor>(graph[i])->noiseModel());
 	  EXPECT(robust); // we expect the factors to be use a robust noise model (in particular, Huber)
   }
 
@@ -404,7 +404,7 @@ TEST(ShonanAveraging3, PriorWeights) {
   for (auto i : {0,1,2}) {
     const auto& m = shonan.measurement(i);
     auto isotropic =
-        std::static_pointer_cast<noiseModel::Isotropic>(m.noiseModel());
+        boost::static_pointer_cast<noiseModel::Isotropic>(m.noiseModel());
     CHECK(isotropic != nullptr);
     EXPECT_LONGS_EQUAL(3, isotropic->dim());
     EXPECT_DOUBLES_EQUAL(0.2, isotropic->sigma(), 1e-9);

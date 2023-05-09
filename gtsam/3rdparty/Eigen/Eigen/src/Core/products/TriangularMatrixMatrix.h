@@ -45,24 +45,22 @@ template <typename Scalar, typename Index,
           int Mode, bool LhsIsTriangular,
           int LhsStorageOrder, bool ConjugateLhs,
           int RhsStorageOrder, bool ConjugateRhs,
-          int ResStorageOrder, int ResInnerStride,
-          int Version = Specialized>
+          int ResStorageOrder, int Version = Specialized>
 struct product_triangular_matrix_matrix;
 
 template <typename Scalar, typename Index,
           int Mode, bool LhsIsTriangular,
           int LhsStorageOrder, bool ConjugateLhs,
-          int RhsStorageOrder, bool ConjugateRhs,
-          int ResInnerStride, int Version>
+          int RhsStorageOrder, bool ConjugateRhs, int Version>
 struct product_triangular_matrix_matrix<Scalar,Index,Mode,LhsIsTriangular,
                                            LhsStorageOrder,ConjugateLhs,
-                                           RhsStorageOrder,ConjugateRhs,RowMajor,ResInnerStride,Version>
+                                           RhsStorageOrder,ConjugateRhs,RowMajor,Version>
 {
   static EIGEN_STRONG_INLINE void run(
     Index rows, Index cols, Index depth,
     const Scalar* lhs, Index lhsStride,
     const Scalar* rhs, Index rhsStride,
-    Scalar* res,       Index resIncr, Index resStride,
+    Scalar* res,       Index resStride,
     const Scalar& alpha, level3_blocking<Scalar,Scalar>& blocking)
   {
     product_triangular_matrix_matrix<Scalar, Index,
@@ -72,19 +70,18 @@ struct product_triangular_matrix_matrix<Scalar,Index,Mode,LhsIsTriangular,
       ConjugateRhs,
       LhsStorageOrder==RowMajor ? ColMajor : RowMajor,
       ConjugateLhs,
-      ColMajor, ResInnerStride>
-      ::run(cols, rows, depth, rhs, rhsStride, lhs, lhsStride, res, resIncr, resStride, alpha, blocking);
+      ColMajor>
+      ::run(cols, rows, depth, rhs, rhsStride, lhs, lhsStride, res, resStride, alpha, blocking);
   }
 };
 
 // implements col-major += alpha * op(triangular) * op(general)
 template <typename Scalar, typename Index, int Mode,
           int LhsStorageOrder, bool ConjugateLhs,
-          int RhsStorageOrder, bool ConjugateRhs,
-          int ResInnerStride, int Version>
+          int RhsStorageOrder, bool ConjugateRhs, int Version>
 struct product_triangular_matrix_matrix<Scalar,Index,Mode,true,
                                            LhsStorageOrder,ConjugateLhs,
-                                           RhsStorageOrder,ConjugateRhs,ColMajor,ResInnerStride,Version>
+                                           RhsStorageOrder,ConjugateRhs,ColMajor,Version>
 {
   
   typedef gebp_traits<Scalar,Scalar> Traits;
@@ -98,21 +95,20 @@ struct product_triangular_matrix_matrix<Scalar,Index,Mode,true,
     Index _rows, Index _cols, Index _depth,
     const Scalar* _lhs, Index lhsStride,
     const Scalar* _rhs, Index rhsStride,
-    Scalar* res,        Index resIncr, Index resStride,
+    Scalar* res,        Index resStride,
     const Scalar& alpha, level3_blocking<Scalar,Scalar>& blocking);
 };
 
 template <typename Scalar, typename Index, int Mode,
           int LhsStorageOrder, bool ConjugateLhs,
-          int RhsStorageOrder, bool ConjugateRhs,
-          int ResInnerStride, int Version>
+          int RhsStorageOrder, bool ConjugateRhs, int Version>
 EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,true,
                                                         LhsStorageOrder,ConjugateLhs,
-                                                        RhsStorageOrder,ConjugateRhs,ColMajor,ResInnerStride,Version>::run(
+                                                        RhsStorageOrder,ConjugateRhs,ColMajor,Version>::run(
     Index _rows, Index _cols, Index _depth,
     const Scalar* _lhs, Index lhsStride,
     const Scalar* _rhs, Index rhsStride,
-    Scalar* _res,       Index resIncr, Index resStride,
+    Scalar* _res,        Index resStride,
     const Scalar& alpha, level3_blocking<Scalar,Scalar>& blocking)
   {
     // strip zeros
@@ -123,10 +119,10 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,true,
     
     typedef const_blas_data_mapper<Scalar, Index, LhsStorageOrder> LhsMapper;
     typedef const_blas_data_mapper<Scalar, Index, RhsStorageOrder> RhsMapper;
-    typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride> ResMapper;
+    typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor> ResMapper;
     LhsMapper lhs(_lhs,lhsStride);
     RhsMapper rhs(_rhs,rhsStride);
-    ResMapper res(_res, resStride, resIncr);
+    ResMapper res(_res, resStride);
 
     Index kc = blocking.kc();                   // cache block size along the K direction
     Index mc = (std::min)(rows,blocking.mc());  // cache block size along the M direction
@@ -155,7 +151,7 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,true,
       triangularBuffer.diagonal().setOnes();
 
     gebp_kernel<Scalar, Scalar, Index, ResMapper, Traits::mr, Traits::nr, ConjugateLhs, ConjugateRhs> gebp_kernel;
-    gemm_pack_lhs<Scalar, Index, LhsMapper, Traits::mr, Traits::LhsProgress, typename Traits::LhsPacket4Packing, LhsStorageOrder> pack_lhs;
+    gemm_pack_lhs<Scalar, Index, LhsMapper, Traits::mr, Traits::LhsProgress, LhsStorageOrder> pack_lhs;
     gemm_pack_rhs<Scalar, Index, RhsMapper, Traits::nr,RhsStorageOrder> pack_rhs;
 
     for(Index k2=IsLower ? depth : 0;
@@ -226,7 +222,7 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,true,
         for(Index i2=start; i2<end; i2+=mc)
         {
           const Index actual_mc = (std::min)(i2+mc,end)-i2;
-          gemm_pack_lhs<Scalar, Index, LhsMapper, Traits::mr,Traits::LhsProgress, typename Traits::LhsPacket4Packing, LhsStorageOrder,false>()
+          gemm_pack_lhs<Scalar, Index, LhsMapper, Traits::mr,Traits::LhsProgress, LhsStorageOrder,false>()
             (blockA, lhs.getSubMapper(i2, actual_k2), actual_kc, actual_mc);
 
           gebp_kernel(res.getSubMapper(i2, 0), blockA, blockB, actual_mc,
@@ -239,11 +235,10 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,true,
 // implements col-major += alpha * op(general) * op(triangular)
 template <typename Scalar, typename Index, int Mode,
           int LhsStorageOrder, bool ConjugateLhs,
-          int RhsStorageOrder, bool ConjugateRhs,
-          int ResInnerStride, int Version>
+          int RhsStorageOrder, bool ConjugateRhs, int Version>
 struct product_triangular_matrix_matrix<Scalar,Index,Mode,false,
                                         LhsStorageOrder,ConjugateLhs,
-                                        RhsStorageOrder,ConjugateRhs,ColMajor,ResInnerStride,Version>
+                                        RhsStorageOrder,ConjugateRhs,ColMajor,Version>
 {
   typedef gebp_traits<Scalar,Scalar> Traits;
   enum {
@@ -256,21 +251,20 @@ struct product_triangular_matrix_matrix<Scalar,Index,Mode,false,
     Index _rows, Index _cols, Index _depth,
     const Scalar* _lhs, Index lhsStride,
     const Scalar* _rhs, Index rhsStride,
-    Scalar* res,        Index resIncr, Index resStride,
+    Scalar* res,        Index resStride,
     const Scalar& alpha, level3_blocking<Scalar,Scalar>& blocking);
 };
 
 template <typename Scalar, typename Index, int Mode,
           int LhsStorageOrder, bool ConjugateLhs,
-          int RhsStorageOrder, bool ConjugateRhs,
-          int ResInnerStride, int Version>
+          int RhsStorageOrder, bool ConjugateRhs, int Version>
 EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,false,
                                                         LhsStorageOrder,ConjugateLhs,
-                                                        RhsStorageOrder,ConjugateRhs,ColMajor,ResInnerStride,Version>::run(
+                                                        RhsStorageOrder,ConjugateRhs,ColMajor,Version>::run(
     Index _rows, Index _cols, Index _depth,
     const Scalar* _lhs, Index lhsStride,
     const Scalar* _rhs, Index rhsStride,
-    Scalar* _res,       Index resIncr, Index resStride,
+    Scalar* _res,        Index resStride,
     const Scalar& alpha, level3_blocking<Scalar,Scalar>& blocking)
   {
     const Index PacketBytes = packet_traits<Scalar>::size*sizeof(Scalar);
@@ -282,10 +276,10 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,false,
     
     typedef const_blas_data_mapper<Scalar, Index, LhsStorageOrder> LhsMapper;
     typedef const_blas_data_mapper<Scalar, Index, RhsStorageOrder> RhsMapper;
-    typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride> ResMapper;
+    typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor> ResMapper;
     LhsMapper lhs(_lhs,lhsStride);
     RhsMapper rhs(_rhs,rhsStride);
-    ResMapper res(_res, resStride, resIncr);
+    ResMapper res(_res, resStride);
 
     Index kc = blocking.kc();                   // cache block size along the K direction
     Index mc = (std::min)(rows,blocking.mc());  // cache block size along the M direction
@@ -305,7 +299,7 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<Scalar,Index,Mode,false,
       triangularBuffer.diagonal().setOnes();
 
     gebp_kernel<Scalar, Scalar, Index, ResMapper, Traits::mr, Traits::nr, ConjugateLhs, ConjugateRhs> gebp_kernel;
-    gemm_pack_lhs<Scalar, Index, LhsMapper, Traits::mr, Traits::LhsProgress, typename Traits::LhsPacket4Packing, LhsStorageOrder> pack_lhs;
+    gemm_pack_lhs<Scalar, Index, LhsMapper, Traits::mr, Traits::LhsProgress, LhsStorageOrder> pack_lhs;
     gemm_pack_rhs<Scalar, Index, RhsMapper, Traits::nr,RhsStorageOrder> pack_rhs;
     gemm_pack_rhs<Scalar, Index, RhsMapper, Traits::nr,RhsStorageOrder,false,true> pack_rhs_panel;
 
@@ -439,12 +433,12 @@ struct triangular_product_impl<Mode,LhsIsTriangular,Lhs,false,Rhs,false>
       Mode, LhsIsTriangular,
       (internal::traits<ActualLhsTypeCleaned>::Flags&RowMajorBit) ? RowMajor : ColMajor, LhsBlasTraits::NeedToConjugate,
       (internal::traits<ActualRhsTypeCleaned>::Flags&RowMajorBit) ? RowMajor : ColMajor, RhsBlasTraits::NeedToConjugate,
-      (internal::traits<Dest          >::Flags&RowMajorBit) ? RowMajor : ColMajor, Dest::InnerStrideAtCompileTime>
+      (internal::traits<Dest          >::Flags&RowMajorBit) ? RowMajor : ColMajor>
       ::run(
         stripedRows, stripedCols, stripedDepth,   // sizes
         &lhs.coeffRef(0,0), lhs.outerStride(),    // lhs info
         &rhs.coeffRef(0,0), rhs.outerStride(),    // rhs info
-        &dst.coeffRef(0,0), dst.innerStride(), dst.outerStride(),    // result info
+        &dst.coeffRef(0,0), dst.outerStride(),    // result info
         actualAlpha, blocking
       );
 

@@ -94,7 +94,7 @@ TEST(Basis, Manual) {
 
     auto linearizedFactor = predictFactor.linearize(values);
     auto linearizedJacobianFactor =
-        std::dynamic_pointer_cast<JacobianFactor>(linearizedFactor);
+        boost::dynamic_pointer_cast<JacobianFactor>(linearizedFactor);
     CHECK(linearizedJacobianFactor);  // makes sure it's indeed a JacobianFactor
     EXPECT(assert_equal(linearFactor, *linearizedJacobianFactor, 1e-9));
   }

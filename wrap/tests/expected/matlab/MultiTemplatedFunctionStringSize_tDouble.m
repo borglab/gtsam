@@ -4,4 +4,3 @@ function varargout = MultiTemplatedFunctionStringSize_tDouble(varargin)
       else
         error('Arguments do not match any overload of function MultiTemplatedFunctionStringSize_tDouble');
       end
-end

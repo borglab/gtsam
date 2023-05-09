@@ -36,7 +36,7 @@ int main(const int argc, const char *argv[]) {
   NonlinearFactorGraph::shared_ptr graph;
   Values::shared_ptr initial;
   bool is3D = true;
-  std::tie(graph, initial) = readG2o(g2oFile, is3D);
+  boost::tie(graph, initial) = readG2o(g2oFile, is3D);
 
   bool add = false;
   Key firstKey = 8646911284551352320;
@@ -55,27 +55,27 @@ int main(const int argc, const char *argv[]) {
     std::cout << "Rewriting input to file: " << inputFileRewritten << std::endl;
     // Additional: rewrite input with simplified keys 0,1,...
     Values simpleInitial;
-    for (const auto k : initial->keys()) {
+    for(const auto key_value: *initial) {
       Key key;
-      if (add)
-        key = k + firstKey;
+      if(add)
+        key = key_value.key + firstKey;
       else
-        key = k - firstKey;
+        key = key_value.key - firstKey;
 
-      simpleInitial.insert(key, initial->at(k));
+      simpleInitial.insert(key, initial->at(key_value.key));
     }
     NonlinearFactorGraph simpleGraph;
-    for(const std::shared_ptr<NonlinearFactor>& factor: *graph) {
-      std::shared_ptr<BetweenFactor<Pose3> > pose3Between =
-          std::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
+    for(const boost::shared_ptr<NonlinearFactor>& factor: *graph) {
+      boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
+          boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
       if (pose3Between){
         Key key1, key2;
         if(add){
-          key1 = pose3Between->key<1>() + firstKey;
-          key2 = pose3Between->key<2>() + firstKey;
+          key1 = pose3Between->key1() + firstKey;
+          key2 = pose3Between->key2() + firstKey;
         }else{
-          key1 = pose3Between->key<1>() - firstKey;
-          key2 = pose3Between->key<2>() - firstKey;
+          key1 = pose3Between->key1() - firstKey;
+          key2 = pose3Between->key2() - firstKey;
         }
         NonlinearFactor::shared_ptr simpleFactor(
             new BetweenFactor<Pose3>(key1, key2, pose3Between->measured(), pose3Between->noiseModel()));

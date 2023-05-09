@@ -60,7 +60,6 @@ GTSAM_MAKE_VECTOR_DEFS(9)
 GTSAM_MAKE_VECTOR_DEFS(10)
 GTSAM_MAKE_VECTOR_DEFS(11)
 GTSAM_MAKE_VECTOR_DEFS(12)
-GTSAM_MAKE_VECTOR_DEFS(15)
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
@@ -205,6 +204,26 @@ inline double inner_prod(const V1 &a, const V2& b) {
 }
 
 /**
+ * BLAS Level 1 scal: x <- alpha*x
+ * \deprecated: use operators instead
+ */
+inline void GTSAM_DEPRECATED scal(double alpha, Vector& x) { x *= alpha; }
+
+/**
+ * BLAS Level 1 axpy: y <- alpha*x + y
+ * \deprecated: use operators instead
+ */
+template<class V1, class V2>
+inline void GTSAM_DEPRECATED axpy(double alpha, const V1& x, V2& y) {
+  assert (y.size()==x.size());
+  y += alpha * x;
+}
+inline void axpy(double alpha, const Vector& x, SubVector y) {
+  assert (y.size()==x.size());
+  y += alpha * x;
+}
+
+/**
  * house(x,j) computes HouseHolder vector v and scaling factor beta
  *  from x, such that the corresponding Householder reflection zeroes out
  *  all but x.(j), j is base 0. Golub & Van Loan p 210.
@@ -243,4 +262,46 @@ GTSAM_EXPORT Vector concatVectors(const std::list<Vector>& vs);
  * concatenate Vectors
  */
 GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
-}  // namespace gtsam
+} // namespace gtsam
+
+#include <boost/serialization/nvp.hpp>
+#include <boost/serialization/array.hpp>
+#include <boost/serialization/split_free.hpp>
+
+namespace boost {
+  namespace serialization {
+
+    // split version - copies into an STL vector for serialization
+    template<class Archive>
+    void save(Archive & ar, const gtsam::Vector & v, unsigned int /*version*/) {
+      const size_t size = v.size();
+      ar << BOOST_SERIALIZATION_NVP(size);
+      ar << make_nvp("data", make_array(v.data(), v.size()));
+    }
+
+    template<class Archive>
+    void load(Archive & ar, gtsam::Vector & v, unsigned int /*version*/) {
+      size_t size;
+      ar >> BOOST_SERIALIZATION_NVP(size);
+      v.resize(size);
+      ar >> make_nvp("data", make_array(v.data(), v.size()));
+    }
+
+    // split version - copies into an STL vector for serialization
+    template<class Archive, int D>
+    void save(Archive & ar, const Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
+      ar << make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
+    }
+
+    template<class Archive, int D>
+    void load(Archive & ar, Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
+      ar >> make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
+    }
+
+  } // namespace serialization
+} // namespace boost
+
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector)
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector2)
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector3)
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector6)

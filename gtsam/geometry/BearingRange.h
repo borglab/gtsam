@@ -21,9 +21,7 @@
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/OptionalJacobian.h>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
-#include <boost/serialization/nvp.hpp>
-#endif
+#include <boost/concept/assert.hpp>
 #include <iostream>
 
 namespace gtsam {
@@ -78,8 +76,8 @@ public:
   /// Prediction function that stacks measurements
   static BearingRange Measure(
     const A1& a1, const A2& a2,
-    OptionalJacobian<dimension, traits<A1>::dimension> H1 = {},
-    OptionalJacobian<dimension, traits<A2>::dimension> H2 = {}) {
+    OptionalJacobian<dimension, traits<A1>::dimension> H1 = boost::none,
+    OptionalJacobian<dimension, traits<A2>::dimension> H2 = boost::none) {
     typename MakeJacobian<B, A1>::type HB1;
     typename MakeJacobian<B, A2>::type HB2;
     typename MakeJacobian<R, A1>::type HR1;
@@ -148,7 +146,6 @@ public:
   /// @{
 
 private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /// Serialization function
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
@@ -157,7 +154,6 @@ private:
   }
 
   friend class boost::serialization::access;
-#endif
 
   /// @}
 
@@ -184,8 +180,8 @@ struct HasBearing {
   typedef RT result_type;
   RT operator()(
       const A1& a1, const A2& a2,
-      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1={},
-      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2={}) {
+      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1=boost::none,
+      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2=boost::none) {
     return a1.bearing(a2, H1, H2);
   }
 };
@@ -198,8 +194,8 @@ struct HasRange {
   typedef RT result_type;
   RT operator()(
       const A1& a1, const A2& a2,
-      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1={},
-      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2={}) {
+      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1=boost::none,
+      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2=boost::none) {
     return a1.range(a2, H1, H2);
   }
 };

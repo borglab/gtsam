@@ -20,12 +20,12 @@
 #include <gtsam/dllexport.h>              // GTSAM_EXPORT
 #include <gtsam/inference/Key.h>          // Key, KeySet
 #include <gtsam/nonlinear/ISAM2Result.h>  //FactorIndices
-#include <optional>
+#include <boost/optional.hpp>
 
 namespace gtsam {
 
 /**
- * @ingroup isam2
+ * @addtogroup ISAM2
  * This struct is used by ISAM2::update() to pass additional parameters to
  * give the user a fine-grained control on how factors and relinearized, etc.
  */
@@ -37,16 +37,16 @@ struct ISAM2UpdateParams {
 
   /** An optional map of keys to group labels, such that a variable can be
    * constrained to a particular grouping in the BayesTree */
-  std::optional<FastMap<Key, int>> constrainedKeys;
+  boost::optional<FastMap<Key, int>> constrainedKeys{boost::none};
 
   /** An optional set of nonlinear keys that iSAM2 will hold at a constant
    * linearization point, regardless of the size of the linear delta */
-  std::optional<FastList<Key>> noRelinKeys;
+  boost::optional<FastList<Key>> noRelinKeys{boost::none};
 
   /** An optional set of nonlinear keys that iSAM2 will re-eliminate, regardless
    * of the size of the linear delta. This allows the provided keys to be
    * reordered. */
-  std::optional<FastList<Key>> extraReelimKeys;
+  boost::optional<FastList<Key>> extraReelimKeys{boost::none};
 
   /** Relinearize any variables whose delta magnitude is sufficiently large
    * (Params::relinearizeThreshold), regardless of the relinearization
@@ -63,7 +63,7 @@ struct ISAM2UpdateParams {
    *    depend on Keys `X(2)`, `X(3)`. Next call to ISAM2::update() must include
    *    its `newAffectedKeys` field with the map `13 -> {X(2), X(3)}`.
    */
-  std::optional<FastMap<FactorIndex, KeySet>> newAffectedKeys;
+  boost::optional<FastMap<FactorIndex, KeySet>> newAffectedKeys{boost::none};
 
   /** By default, iSAM2 uses a wildfire update scheme that stops updating when
    * the deltas become too small down in the tree. This flagg forces a full

@@ -22,14 +22,14 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/PinholeCamera.h>
-#include "gtsam/geometry/Cal3_S2.h"
+#include <boost/optional.hpp>
 
 namespace gtsam {
 
   /**
    * Non-linear factor for a constraint derived from a 2D measurement. The calibration is known here.
    * i.e. the main building block for visual SLAM.
-   * @ingroup slam
+   * @addtogroup SLAM
    */
   template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
   class MultiProjectionFactor: public NoiseModelFactor {
@@ -37,8 +37,8 @@ namespace gtsam {
 
     // Keep a copy of measurement and calibration for I/O
     Vector measured_;                    ///< 2D measurement for each of the n views
-    std::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
-    std::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
+    boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
+    boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
 
     // verbosity handling for Cheirality Exceptions
@@ -54,7 +54,7 @@ namespace gtsam {
     typedef MultiProjectionFactor<POSE, LANDMARK, CALIBRATION> This;
 
     /// shorthand for a smart pointer to a factor
-    typedef std::shared_ptr<This> shared_ptr;
+    typedef boost::shared_ptr<This> shared_ptr;
 
     /// Default constructor
     MultiProjectionFactor() : throwCheirality_(false), verboseCheirality_(false) {}
@@ -70,8 +70,8 @@ namespace gtsam {
      * @param body_P_sensor is the transform from body to sensor frame (default identity)
      */
     MultiProjectionFactor(const Vector& measured, const SharedNoiseModel& model,
-        KeySet poseKeys, Key pointKey, const std::shared_ptr<CALIBRATION>& K,
-        std::optional<POSE> body_P_sensor = {}) :
+        KeySet poseKeys, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
+        boost::optional<POSE> body_P_sensor = boost::none) :
           Base(model), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
           throwCheirality_(false), verboseCheirality_(false) {
       keys_.assign(poseKeys.begin(), poseKeys.end());
@@ -91,9 +91,9 @@ namespace gtsam {
      * @param body_P_sensor is the transform from body to sensor frame  (default identity)
      */
     MultiProjectionFactor(const Vector& measured, const SharedNoiseModel& model,
-        KeySet poseKeys, Key pointKey, const std::shared_ptr<CALIBRATION>& K,
+        KeySet poseKeys, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality,
-        std::optional<POSE> body_P_sensor = {}) :
+        boost::optional<POSE> body_P_sensor = boost::none) :
           Base(model), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
@@ -102,7 +102,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     NonlinearFactor::shared_ptr clone() const override {
-      return std::static_pointer_cast<NonlinearFactor>(
+      return boost::static_pointer_cast<NonlinearFactor>(
           NonlinearFactor::shared_ptr(new This(*this))); }
 
     /**
@@ -129,7 +129,7 @@ namespace gtsam {
     }
 
     /// Evaluate error h(x)-z and optionally derivatives
-    Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override {
+    Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const override {
 
       Vector a;
       return a;
@@ -164,7 +164,7 @@ namespace gtsam {
 
 
     Vector evaluateError(const Pose3& pose, const Point3& point,
-        OptionalJacobian<2, 6> H1 = {}, OptionalJacobian<2,3> H2 = {}) const {
+        boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
       try {
         if(body_P_sensor_) {
           if(H1) {
@@ -187,8 +187,8 @@ namespace gtsam {
         if (H1) *H1 = Matrix::Zero(2,6);
         if (H2) *H2 = Matrix::Zero(2,3);
         if (verboseCheirality_)
-          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->keys_.at(1)) <<
-              " moved behind camera " << DefaultKeyFormatter(this->keys_.at(0)) << std::endl;
+          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
+              " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
         if (throwCheirality_)
           throw e;
       }
@@ -201,7 +201,7 @@ namespace gtsam {
     }
 
     /** return the calibration object */
-    inline const std::shared_ptr<CALIBRATION> calibration() const {
+    inline const boost::shared_ptr<CALIBRATION> calibration() const {
       return K_;
     }
 
@@ -213,7 +213,6 @@ namespace gtsam {
 
   private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -225,6 +224,5 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
-#endif
   };
 } // \ namespace gtsam

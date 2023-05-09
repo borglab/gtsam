@@ -36,13 +36,16 @@ TEST(BetweenFactor, Rot3) {
   EXPECT(assert_equal(expected,actual/*, 1e-100*/)); // Uncomment to make unit test fail
 
   Matrix numericalH1 = numericalDerivative21<Vector3, Rot3, Rot3>(
-        [&factor](const Rot3& r1, const Rot3& r2) {return factor.evaluateError(r1, r2);},
+      std::function<Vector(const Rot3&, const Rot3&)>(std::bind(
+          &BetweenFactor<Rot3>::evaluateError, factor, std::placeholders::_1,
+          std::placeholders::_2, boost::none, boost::none)),
       R1, R2, 1e-5);
   EXPECT(assert_equal(numericalH1,actualH1, 1E-5));
 
   Matrix numericalH2 = numericalDerivative22<Vector3,Rot3,Rot3>(
-        [&factor](const Rot3& r1, const Rot3& r2) {return factor.evaluateError(r1, r2);},
-        R1, R2, 1e-5);
+      std::function<Vector(const Rot3&, const Rot3&)>(std::bind(
+          &BetweenFactor<Rot3>::evaluateError, factor, std::placeholders::_1, std::placeholders::_2, boost::none,
+          boost::none)), R1, R2, 1e-5);
   EXPECT(assert_equal(numericalH2,actualH2, 1E-5));
 }
 

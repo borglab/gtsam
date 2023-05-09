@@ -29,7 +29,7 @@ class Symmetric: private Eigen::PermutationMatrix<N> {
       Eigen::PermutationMatrix<N>(P) {
   }
 public:
-  static Symmetric Identity() { return Symmetric(); }
+  static Symmetric identity() { return Symmetric(); }
   Symmetric() {
     Eigen::PermutationMatrix<N>::setIdentity();
   }
@@ -80,7 +80,7 @@ using namespace gtsam;
 typedef Symmetric<2> S2;
 TEST(Group, S2) {
   S2 e, s1 = S2::Transposition(0, 1);
-  GTSAM_CONCEPT_ASSERT(IsGroup<S2>);
+  BOOST_CONCEPT_ASSERT((IsGroup<S2>));
   EXPECT(check_group_invariants(e, s1));
 }
 
@@ -88,7 +88,7 @@ TEST(Group, S2) {
 typedef Symmetric<3> S3;
 TEST(Group, S3) {
   S3 e, s1 = S3::Transposition(0, 1), s2 = S3::Transposition(1, 2);
-  GTSAM_CONCEPT_ASSERT(IsGroup<S3>);
+  BOOST_CONCEPT_ASSERT((IsGroup<S3>));
   EXPECT(check_group_invariants(e, s1));
   EXPECT(assert_equal(s1, s1 * e));
   EXPECT(assert_equal(s1, e * s1));
@@ -127,7 +127,7 @@ struct traits<Dih6> : internal::MultiplicativeGroupTraits<Dih6> {
 TEST(Group, Dih6) {
   Dih6 e, g(S2::Transposition(0, 1),
       S3::Transposition(0, 1) * S3::Transposition(1, 2));
-  GTSAM_CONCEPT_ASSERT(IsGroup<Dih6>);
+  BOOST_CONCEPT_ASSERT((IsGroup<Dih6>));
   EXPECT(check_group_invariants(e, g));
   EXPECT(assert_equal(e, compose_pow(g, 0)));
   EXPECT(assert_equal(g, compose_pow(g, 1)));

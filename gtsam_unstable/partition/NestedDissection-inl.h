@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <boost/make_shared.hpp>
 
 #include "partition/FindSeparator-inl.h"
 #include "OrderedSymbols.h"
@@ -20,7 +21,9 @@ namespace gtsam { namespace partition {
   NestedDissection<NLG, SubNLG, GenericGraph>::NestedDissection(
       const NLG& fg, const Ordering& ordering, const int numNodeStopPartition, const int minNodesPerMap, const bool verbose) :
   fg_(fg), ordering_(ordering){
-    const auto [unaryFactors, gfg] = fg.createGenericGraph(ordering);
+    GenericUnaryGraph unaryFactors;
+    GenericGraph gfg;
+    boost::tie(unaryFactors, gfg) = fg.createGenericGraph(ordering);
 
     // build reverse mapping from integer to symbol
     int numNodes = ordering.size();
@@ -35,14 +38,16 @@ namespace gtsam { namespace partition {
       keys.push_back(i);
 
     WorkSpace workspace(numNodes);
-    root_ = recursivePartition(gfg, unaryFactors, keys, vector<size_t>(), numNodeStopPartition, minNodesPerMap, std::shared_ptr<SubNLG>(), workspace, verbose);
+    root_ = recursivePartition(gfg, unaryFactors, keys, vector<size_t>(), numNodeStopPartition, minNodesPerMap, boost::shared_ptr<SubNLG>(), workspace, verbose);
   }
 
   /* ************************************************************************* */
   template <class NLG, class SubNLG, class GenericGraph>
   NestedDissection<NLG, SubNLG, GenericGraph>::NestedDissection(
-      const NLG& fg, const Ordering& ordering, const std::shared_ptr<Cuts>& cuts, const bool verbose) : fg_(fg), ordering_(ordering){
-    const auto [unaryFactors, gfg] = fg.createGenericGraph(ordering);
+      const NLG& fg, const Ordering& ordering, const boost::shared_ptr<Cuts>& cuts, const bool verbose) : fg_(fg), ordering_(ordering){
+    GenericUnaryGraph unaryFactors;
+    GenericGraph gfg;
+    boost::tie(unaryFactors, gfg) = fg.createGenericGraph(ordering);
 
     // build reverse mapping from integer to symbol
     int numNodes = ordering.size();
@@ -57,13 +62,13 @@ namespace gtsam { namespace partition {
       keys.push_back(i);
 
     WorkSpace workspace(numNodes);
-    root_ = recursivePartition(gfg, unaryFactors, keys, vector<size_t>(), cuts, std::shared_ptr<SubNLG>(), workspace, verbose);
+    root_ = recursivePartition(gfg, unaryFactors, keys, vector<size_t>(), cuts, boost::shared_ptr<SubNLG>(), workspace, verbose);
   }
 
   /* ************************************************************************* */
   template <class NLG, class SubNLG, class GenericGraph>
-  std::shared_ptr<SubNLG> NestedDissection<NLG, SubNLG, GenericGraph>::makeSubNLG(
-      const NLG& fg, const vector<size_t>& frontals, const vector<size_t>& sep, const std::shared_ptr<SubNLG>& parent) const {
+  boost::shared_ptr<SubNLG> NestedDissection<NLG, SubNLG, GenericGraph>::makeSubNLG(
+      const NLG& fg, const vector<size_t>& frontals, const vector<size_t>& sep, const boost::shared_ptr<SubNLG>& parent) const {
     OrderedSymbols frontalKeys;
     for(const size_t index: frontals)
       frontalKeys.push_back(int2symbol_[index]);
@@ -72,7 +77,7 @@ namespace gtsam { namespace partition {
     for(const size_t index: sep)
       sepKeys.insert(int2symbol_[index]);
 
-    return std::make_shared<SubNLG>(fg, frontalKeys, sepKeys, parent);
+    return boost::make_shared<SubNLG>(fg, frontalKeys, sepKeys, parent);
   }
 
   /* ************************************************************************* */
@@ -166,9 +171,9 @@ namespace gtsam { namespace partition {
 
   /* ************************************************************************* */
   template <class NLG, class SubNLG, class GenericGraph>
-  std::shared_ptr<SubNLG> NestedDissection<NLG, SubNLG, GenericGraph>::recursivePartition(
+  boost::shared_ptr<SubNLG> NestedDissection<NLG, SubNLG, GenericGraph>::recursivePartition(
       const GenericGraph& gfg, const GenericUnaryGraph& unaryFactors, const vector<size_t>& frontals, const vector<size_t>& sep,
-      const int numNodeStopPartition, const int minNodesPerMap, const std::shared_ptr<SubNLG>& parent, WorkSpace& workspace, const bool verbose) const {
+      const int numNodeStopPartition, const int minNodesPerMap, const boost::shared_ptr<SubNLG>& parent, WorkSpace& workspace, const bool verbose) const {
 
     // if no split needed
     NLG sepFactors; // factors that should remain in the current cluster
@@ -190,7 +195,7 @@ namespace gtsam { namespace partition {
         frontalFactors, frontalUnaryFactors, sepFactors, childFrontals, childSeps, localFrontals, weeklinks);
 
     // make a new cluster
-    std::shared_ptr<SubNLG> current = makeSubNLG(sepFactors, localFrontals, sep, parent);
+    boost::shared_ptr<SubNLG> current = makeSubNLG(sepFactors, localFrontals, sep, parent);
     current->setWeeklinks(weeklinks);
 
     // check whether all the submaps are fully constrained
@@ -200,7 +205,7 @@ namespace gtsam { namespace partition {
 
     // create child clusters
     for (int i=0; i<numSubmaps; i++) {
-      std::shared_ptr<SubNLG> child = recursivePartition(frontalFactors[i], frontalUnaryFactors[i], childFrontals[i], childSeps[i],
+      boost::shared_ptr<SubNLG> child = recursivePartition(frontalFactors[i], frontalUnaryFactors[i], childFrontals[i], childSeps[i],
           numNodeStopPartition, minNodesPerMap, current, workspace, verbose);
       current->addChild(child);
     }
@@ -210,9 +215,9 @@ namespace gtsam { namespace partition {
 
   /* ************************************************************************* */
   template <class NLG, class SubNLG, class GenericGraph>
-  std::shared_ptr<SubNLG> NestedDissection<NLG, SubNLG, GenericGraph>::recursivePartition(
+  boost::shared_ptr<SubNLG> NestedDissection<NLG, SubNLG, GenericGraph>::recursivePartition(
       const GenericGraph& gfg, const GenericUnaryGraph& unaryFactors, const vector<size_t>& frontals, const vector<size_t>& sep,
-      const std::shared_ptr<Cuts>& cuts, const std::shared_ptr<SubNLG>& parent, WorkSpace& workspace, const bool verbose) const {
+      const boost::shared_ptr<Cuts>& cuts, const boost::shared_ptr<SubNLG>& parent, WorkSpace& workspace, const bool verbose) const {
 
     // if there is no need to cut any more
     NLG sepFactors; // factors that should remain in the current cluster
@@ -232,13 +237,13 @@ namespace gtsam { namespace partition {
         frontalFactors, frontalUnaryFactors, sepFactors, childFrontals, childSeps, localFrontals, weeklinks);
 
     // make a new cluster
-    std::shared_ptr<SubNLG> current = makeSubNLG(sepFactors, localFrontals, sep, parent);
+    boost::shared_ptr<SubNLG> current = makeSubNLG(sepFactors, localFrontals, sep, parent);
     current->setWeeklinks(weeklinks);
 
     // create child clusters
     for (int i=0; i<2; i++) {
-      std::shared_ptr<SubNLG> child = recursivePartition(frontalFactors[i], frontalUnaryFactors[i], childFrontals[i], childSeps[i],
-          cuts->children.empty() ? std::shared_ptr<Cuts>() : cuts->children[i], current, workspace, verbose);
+      boost::shared_ptr<SubNLG> child = recursivePartition(frontalFactors[i], frontalUnaryFactors[i], childFrontals[i], childSeps[i],
+          cuts->children.empty() ? boost::shared_ptr<Cuts>() : cuts->children[i], current, workspace, verbose);
       current->addChild(child);
     }
     return current;

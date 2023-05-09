@@ -24,7 +24,6 @@
 
 #ifdef EIGEN_GOOGLEHASH_SUPPORT
   #include <google/dense_hash_map>
-  #include <google/sparse_hash_map>
 #endif
 
 /**

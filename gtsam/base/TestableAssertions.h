@@ -20,8 +20,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/global_includes.h>
 
-#include <functional>
-#include <optional>
+#include <boost/optional.hpp>
 #include <map>
 #include <iostream>
 #include <sstream>
@@ -41,21 +40,21 @@ inline bool assert_equal(const Key& expected, const Key& actual, double tol = 0.
 }
 
 /**
- * Comparisons for std.optional objects that checks whether objects exist
+ * Comparisons for boost.optional objects that checks whether objects exist
  * before comparing their values. First version allows for both to be
- * std::nullopt, but the second, with expected given rather than optional
+ * boost::none, but the second, with expected given rather than optional
  *
  * Concept requirement: V is testable
  */
 template<class V>
-bool assert_equal(const std::optional<V>& expected,
-                  const std::optional<V>& actual, double tol = 1e-9) {
+bool assert_equal(const boost::optional<V>& expected,
+                  const boost::optional<V>& actual, double tol = 1e-9) {
   if (!expected && actual) {
-    std::cout << "expected is {}, while actual is not" << std::endl;
+    std::cout << "expected is boost::none, while actual is not" << std::endl;
     return false;
   }
   if (expected && !actual) {
-    std::cout << "actual is {}, while expected is not" << std::endl;
+    std::cout << "actual is boost::none, while expected is not" << std::endl;
     return false;
   }
   if (!expected && !actual)
@@ -64,22 +63,50 @@ bool assert_equal(const std::optional<V>& expected,
 }
 
 template<class V>
-bool assert_equal(const V& expected, const std::optional<V>& actual, double tol = 1e-9) {
+bool assert_equal(const V& expected, const boost::optional<V>& actual, double tol = 1e-9) {
   if (!actual) {
-    std::cout << "actual is {}" << std::endl;
+    std::cout << "actual is boost::none" << std::endl;
     return false;
   }
   return assert_equal(expected, *actual, tol);
 }
 
 template<class V>
-bool assert_equal(const V& expected, 
-    const std::optional<std::reference_wrapper<const V>>& actual, double tol = 1e-9) {
+bool assert_equal(const V& expected, const boost::optional<const V&>& actual, double tol = 1e-9) {
   if (!actual) {
-    std::cout << "actual is std::nullopt" << std::endl;
+    std::cout << "actual is boost::none" << std::endl;
     return false;
   }
-  return assert_equal(expected, *actual.get(), tol);
+  return assert_equal(expected, *actual, tol);
+}
+
+/**
+ * Version of assert_equals to work with vectors
+ * \deprecated: use container equals instead
+ */
+template<class V>
+bool GTSAM_DEPRECATED assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, double tol = 1e-9) {
+  bool match = true;
+  if (expected.size() != actual.size())
+    match = false;
+  if(match) {
+    size_t i = 0;
+    for(const V& a: expected) {
+      if (!assert_equal(a, actual[i++], tol)) {
+        match = false;
+        break;
+      }
+    }
+  }
+  if(!match) {
+    std::cout << "expected: " << std::endl;
+    for(const V& a: expected) { std::cout << a << " "; }
+    std::cout << "\nactual: " << std::endl;
+    for(const V& a: actual) { std::cout << a << " "; }
+    std::cout << std::endl;
+    return false;
+  }
+  return true;
 }
 
 /**

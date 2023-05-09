@@ -36,7 +36,7 @@ For instance:
 
 You can also select a given set of actions defining the environment variable BTL_CONFIG this way:
   BTL_CONFIG="-a action1{:action2}*" ctest -V
-An example:
+An exemple:
   BTL_CONFIG="-a axpy:vector_matrix:trisolve:ata" ctest -V -R eigen2
 
 Finally, if bench results already exist (the bench*.dat files) then they merges by keeping the best for each matrix size. If you want to overwrite the previous ones you can simply add the "--overwrite" option:

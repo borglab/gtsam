@@ -12,7 +12,7 @@
 
 #include <Eigen/SuperLUSupport>
 
-EIGEN_DECLARE_TEST(superlu_support)
+void test_superlu_support()
 {
   SuperLU<SparseMatrix<double> > superlu_double_colmajor;
   SuperLU<SparseMatrix<std::complex<double> > > superlu_cplxdouble_colmajor;

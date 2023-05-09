@@ -74,7 +74,7 @@ classdef ClassA < handle
   end
 
   methods(Static = true)
-    function varargout = afunction(varargin)
+    function varargout = Afunction(varargin)
       % AFUNCTION usage: afunction() : returns double
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0

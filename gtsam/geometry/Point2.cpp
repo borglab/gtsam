@@ -52,7 +52,7 @@ double distance2(const Point2& p, const Point2& q, OptionalJacobian<1, 2> H1,
 
 /* ************************************************************************* */
 // Math inspired by http://paulbourke.net/geometry/circlesphere/
-std::optional<Point2> circleCircleIntersection(double R_d, double r_d,
+boost::optional<Point2> circleCircleIntersection(double R_d, double r_d,
     double tol) {
 
   double R2_d2 = R_d*R_d; // Yes, RD-D2 !
@@ -61,17 +61,17 @@ std::optional<Point2> circleCircleIntersection(double R_d, double r_d,
 
   // h^2<0 is equivalent to (d > (R + r) || d < (R - r))
   // Hence, there are only solutions if >=0
-  if (h2<-tol) return {}; // allow *slightly* negative
+  if (h2<-tol) return boost::none; // allow *slightly* negative
   else if (h2<tol) return Point2(f,0.0); // one solution
   else return Point2(f,std::sqrt(h2)); // two solutions
 }
 
 /* ************************************************************************* */
 list<Point2> circleCircleIntersection(Point2 c1, Point2 c2,
-    std::optional<Point2> fh) {
+    boost::optional<Point2> fh) {
 
   list<Point2> solutions;
-  // If fh==std::nullopt, there are no solutions, i.e., d > (R + r) || d < (R - r)
+  // If fh==boost::none, there are no solutions, i.e., d > (R + r) || d < (R - r)
   if (fh) {
     // vector between circle centers
     Point2 c12 = c2-c1;
@@ -107,24 +107,12 @@ list<Point2> circleCircleIntersection(Point2 c1, double r1, Point2 c2,
 
   // Calculate f and h given normalized radii
   double _d = 1.0/d, R_d = r1*_d, r_d=r2*_d;
-  std::optional<Point2> fh = circleCircleIntersection(R_d,r_d);
+  boost::optional<Point2> fh = circleCircleIntersection(R_d,r_d);
 
   // Call version that takes fh
   return circleCircleIntersection(c1, c2, fh);
 }
 
-Point2Pair means(const std::vector<Point2Pair> &abPointPairs) {
-  const size_t n = abPointPairs.size();
-  if (n == 0) throw std::invalid_argument("Point2::mean input Point2Pair vector is empty");
-  Point2 aSum(0, 0), bSum(0, 0);
-  for (const Point2Pair &abPair : abPointPairs) {
-    aSum += abPair.first;
-    bSum += abPair.second;
-  }
-  const double f = 1.0 / n;
-  return {aSum * f, bSum * f};
-}
-  
 /* ************************************************************************* */
 ostream &operator<<(ostream &os, const gtsam::Point2Pair &p) {
   os << p.first << " <-> " << p.second;

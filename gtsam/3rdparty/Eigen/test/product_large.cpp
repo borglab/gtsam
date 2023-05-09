@@ -8,7 +8,6 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "product.h"
-#include <Eigen/LU>
 
 template<typename T>
 void test_aliasing()
@@ -31,9 +30,19 @@ void test_aliasing()
   x = z;
 }
 
-template<int>
-void product_large_regressions()
+void test_product_large()
 {
+  for(int i = 0; i < g_repeat; i++) {
+    CALL_SUBTEST_1( product(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_2( product(MatrixXd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_3( product(MatrixXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_4( product(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
+    CALL_SUBTEST_5( product(Matrix<float,Dynamic,Dynamic,RowMajor>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+
+    CALL_SUBTEST_1( test_aliasing<float>() );
+  }
+
+#if defined EIGEN_TEST_PART_6
   {
     // test a specific issue in DiagonalProduct
     int N = 1000000;
@@ -86,40 +95,7 @@ void product_large_regressions()
                 * (((A*A)*(A*A))*((A*A)*(A*A))*((A*A)*(A*A))*((A*A)*(A*A))*((A*A)*(A*A)) * ((A*A)*(A*A))*((A*A)*(A*A))*((A*A)*(A*A))*((A*A)*(A*A))*((A*A)*(A*A)));
     VERIFY_IS_APPROX(B,C);
   }
-}
-
-template<int>
-void bug_1622() {
-  typedef Matrix<double, 2, -1, 0, 2, -1> Mat2X;
-  Mat2X x(2,2); x.setRandom();
-  MatrixXd y(2,2); y.setRandom();
-  const Mat2X K1 = x * y.inverse();
-  const Matrix2d K2 = x * y.inverse();
-  VERIFY_IS_APPROX(K1,K2);
-}
-
-EIGEN_DECLARE_TEST(product_large)
-{
-  for(int i = 0; i < g_repeat; i++) {
-    CALL_SUBTEST_1( product(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
-    CALL_SUBTEST_2( product(MatrixXd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
-    CALL_SUBTEST_2( product(MatrixXd(internal::random<int>(1,10), internal::random<int>(1,10))) );
-
-    CALL_SUBTEST_3( product(MatrixXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
-    CALL_SUBTEST_4( product(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
-    CALL_SUBTEST_5( product(Matrix<float,Dynamic,Dynamic,RowMajor>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
-
-    CALL_SUBTEST_1( test_aliasing<float>() );
-
-    CALL_SUBTEST_6( bug_1622<1>() );
-
-    CALL_SUBTEST_7( product(MatrixXcd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
-    CALL_SUBTEST_8( product(Matrix<double,Dynamic,Dynamic,RowMajor>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
-    CALL_SUBTEST_9( product(Matrix<std::complex<float>,Dynamic,Dynamic,RowMajor>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
-    CALL_SUBTEST_10( product(Matrix<std::complex<double>,Dynamic,Dynamic,RowMajor>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
-  }
-
-  CALL_SUBTEST_6( product_large_regressions<0>() );
+#endif
 
   // Regression test for bug 714:
 #if defined EIGEN_HAS_OPENMP

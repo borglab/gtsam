@@ -59,7 +59,7 @@ class TOAFactor : public ExpressionFactor<double> {
                   model, speed) {}
 
   static void InsertEvent(Key key, const Event& event,
-                          std::shared_ptr<Values> values) {
+                          boost::shared_ptr<Values> values) {
     values->insert(key, event);
   }
 };

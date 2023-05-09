@@ -13,7 +13,7 @@
 #include <vector>
 #include <stdexcept>
 #include <string>
-#include <memory>
+#include <boost/shared_ptr.hpp>
 
 #include "PartitionWorkSpace.h"
 
@@ -45,7 +45,7 @@ namespace gtsam { namespace partition {
   };
 
   /** graph is a collection of factors */
-  typedef std::shared_ptr<GenericFactor2D> sharedGenericFactor2D;
+  typedef boost::shared_ptr<GenericFactor2D> sharedGenericFactor2D;
   typedef std::vector<sharedGenericFactor2D> GenericGraph2D;
 
   /** merge nodes in DSF using constraints captured by the given graph */
@@ -93,7 +93,7 @@ namespace gtsam { namespace partition {
   };
 
   /** graph is a collection of factors */
-  typedef std::shared_ptr<GenericFactor3D> sharedGenericFactor3D;
+  typedef boost::shared_ptr<GenericFactor3D> sharedGenericFactor3D;
   typedef std::vector<sharedGenericFactor3D> GenericGraph3D;
 
   /** merge nodes in DSF using constraints captured by the given graph */
@@ -126,7 +126,7 @@ namespace gtsam { namespace partition {
   };
 
   /** graph is a collection of factors */
-  typedef std::shared_ptr<GenericUnaryFactor> sharedGenericUnaryFactor;
+  typedef boost::shared_ptr<GenericUnaryFactor> sharedGenericUnaryFactor;
   typedef std::vector<sharedGenericUnaryFactor> GenericUnaryGraph;
 
   /***************************************************

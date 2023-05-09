@@ -38,10 +38,11 @@ namespace gtsam {
   public:
     typedef GaussianBayesTreeClique This;
     typedef BayesTreeCliqueBase<GaussianBayesTreeClique, GaussianFactorGraph> Base;
-    typedef std::shared_ptr<This> shared_ptr;
-    typedef std::weak_ptr<This> weak_ptr;
+    typedef boost::shared_ptr<This> shared_ptr;
+    typedef boost::weak_ptr<This> weak_ptr;
     GaussianBayesTreeClique() {}
-    GaussianBayesTreeClique(const std::shared_ptr<GaussianConditional>& conditional) : Base(conditional) {}
+    virtual ~GaussianBayesTreeClique() {}
+    GaussianBayesTreeClique(const boost::shared_ptr<GaussianConditional>& conditional) : Base(conditional) {}
   };
 
   /* ************************************************************************* */
@@ -54,7 +55,7 @@ namespace gtsam {
 
   public:
     typedef GaussianBayesTree This;
-    typedef std::shared_ptr<This> shared_ptr;
+    typedef boost::shared_ptr<This> shared_ptr;
 
     /** Default constructor, creates an empty Bayes tree */
     GaussianBayesTree() {}

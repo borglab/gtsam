@@ -65,9 +65,8 @@ endif()
 
 # Optionally use pkg-config to detect include/library dirs (if pkg-config is available)
 # -------------------------------------------------------------------------------------
-include(CMakeFindDependencyMacro)
-# include(FindPkgConfig)
-find_dependency(PkgConfig QUIET)
+include(FindPkgConfig)
+find_package(PkgConfig QUIET)
 if( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
 
   pkg_search_module(HWLOC hwloc)
@@ -86,7 +85,7 @@ if( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
     endif()
   endif()
 
-endif()
+endif( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
 
 if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR (HWLOC_GIVEN_BY_USER) )
 
@@ -283,9 +282,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) O
     set(CMAKE_REQUIRED_INCLUDES)
     set(CMAKE_REQUIRED_FLAGS)
     set(CMAKE_REQUIRED_LIBRARIES)
-  endif()
+  endif(HWLOC_LIBRARIES)
 
-endif()
+endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR (HWLOC_GIVEN_BY_USER) )
 
 if (HWLOC_LIBRARIES)
   if (HWLOC_LIBRARY_DIRS)

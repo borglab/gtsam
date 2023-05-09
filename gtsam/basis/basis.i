@@ -44,6 +44,9 @@ class Chebyshev2 {
   static Matrix DerivativeWeights(size_t N, double x, double a, double b);
   static Matrix IntegrationWeights(size_t N, double a, double b);
   static Matrix DifferentiationMatrix(size_t N, double a, double b);
+
+  // TODO Needs OptionalJacobian
+  // static double Derivative(double x, Vector f);
 };
 
 #include <gtsam/basis/ParameterMatrix.h>
@@ -137,7 +140,7 @@ class FitBasis {
   static gtsam::GaussianFactorGraph::shared_ptr LinearGraph(
       const std::map<double, double>& sequence,
       const gtsam::noiseModel::Base* model, size_t N);
-  gtsam::This::Parameters parameters() const;
+  Parameters parameters() const;
 };
 
 }  // namespace gtsam

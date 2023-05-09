@@ -471,8 +471,7 @@ static void test_tensor_product()
   mat1.setRandom();
   mat2.setRandom();
 
-  Eigen::array<DimPair, 0> dims;
-  Tensor<float, 4, DataLayout> result = mat1.contract(mat2, dims);
+  Tensor<float, 4, DataLayout> result = mat1.contract(mat2, Eigen::array<DimPair, 0>{{}});
 
   VERIFY_IS_EQUAL(result.dimension(0), 2);
   VERIFY_IS_EQUAL(result.dimension(1), 3);
@@ -511,91 +510,36 @@ static void test_const_inputs()
   VERIFY_IS_APPROX(mat3(1,1), mat1(1,0)*mat2(0,1) + mat1(1,1)*mat2(1,1) + mat1(1,2)*mat2(2,1));
 }
 
-// Apply Sqrt to all output elements.
-struct SqrtOutputKernel {
-  template <typename Index, typename Scalar>
-  EIGEN_ALWAYS_INLINE void operator()(
-      const internal::blas_data_mapper<Scalar, Index, ColMajor>& output_mapper,
-      const TensorContractionParams&, Index, Index, Index num_rows,
-      Index num_cols) const {
-    for (int i = 0; i < num_rows; ++i) {
-      for (int j = 0; j < num_cols; ++j) {
-        output_mapper(i, j) = std::sqrt(output_mapper(i, j));
-      }
-    }
-  }
-};
-
-template <int DataLayout>
-static void test_large_contraction_with_output_kernel() {
-  Tensor<float, 4, DataLayout> t_left(30, 50, 8, 31);
-  Tensor<float, 5, DataLayout> t_right(8, 31, 7, 20, 10);
-  Tensor<float, 5, DataLayout> t_result(30, 50, 7, 20, 10);
-
-  t_left.setRandom();
-  t_right.setRandom();
-  // Put trash in mat4 to verify contraction clears output memory.
-  t_result.setRandom();
-
-  // Add a little offset so that the results won't be close to zero.
-  t_left += t_left.constant(1.0f);
-  t_right += t_right.constant(1.0f);
-
-  typedef Map<Eigen::Matrix<float, Dynamic, Dynamic, DataLayout>> MapXf;
-  MapXf m_left(t_left.data(), 1500, 248);
-  MapXf m_right(t_right.data(), 248, 1400);
-  Eigen::Matrix<float, Dynamic, Dynamic, DataLayout> m_result(1500, 1400);
-
-  // this contraction should be equivalent to a single matrix multiplication
-  Eigen::array<DimPair, 2> dims({{DimPair(2, 0), DimPair(3, 1)}});
-
-  // compute results by separate methods
-  t_result = t_left.contract(t_right, dims, SqrtOutputKernel());
-
-  m_result = m_left * m_right;
-
-  for (std::ptrdiff_t i = 0; i < t_result.dimensions().TotalSize(); i++) {
-    VERIFY(&t_result.data()[i] != &m_result.data()[i]);
-    VERIFY_IS_APPROX(t_result.data()[i], std::sqrt(m_result.data()[i]));
-  }
-}
-
-EIGEN_DECLARE_TEST(cxx11_tensor_contraction)
+void test_cxx11_tensor_contraction()
 {
-  CALL_SUBTEST_1(test_evals<ColMajor>());
-  CALL_SUBTEST_1(test_evals<RowMajor>());
-  CALL_SUBTEST_1(test_scalar<ColMajor>());
-  CALL_SUBTEST_1(test_scalar<RowMajor>());
-  CALL_SUBTEST_2(test_multidims<ColMajor>());
-  CALL_SUBTEST_2(test_multidims<RowMajor>());
-  CALL_SUBTEST_2(test_holes<ColMajor>());
-  CALL_SUBTEST_2(test_holes<RowMajor>());
-  CALL_SUBTEST_3(test_full_redux<ColMajor>());
-  CALL_SUBTEST_3(test_full_redux<RowMajor>());
-  CALL_SUBTEST_3(test_contraction_of_contraction<ColMajor>());
-  CALL_SUBTEST_3(test_contraction_of_contraction<RowMajor>());
-  CALL_SUBTEST_4(test_expr<ColMajor>());
-  CALL_SUBTEST_4(test_expr<RowMajor>());
-  CALL_SUBTEST_4(test_out_of_order_contraction<ColMajor>());
-  CALL_SUBTEST_4(test_out_of_order_contraction<RowMajor>());
-  CALL_SUBTEST_5(test_consistency<ColMajor>());
-  CALL_SUBTEST_5(test_consistency<RowMajor>());
-  CALL_SUBTEST_5(test_large_contraction<ColMajor>());
-  CALL_SUBTEST_5(test_large_contraction<RowMajor>());
-  CALL_SUBTEST_6(test_matrix_vector<ColMajor>());
-  CALL_SUBTEST_6(test_matrix_vector<RowMajor>());
-  CALL_SUBTEST_6(test_tensor_vector<ColMajor>());
-  CALL_SUBTEST_6(test_tensor_vector<RowMajor>());
-  CALL_SUBTEST_7(test_small_blocking_factors<ColMajor>());
-  CALL_SUBTEST_7(test_small_blocking_factors<RowMajor>());
-  CALL_SUBTEST_7(test_tensor_product<ColMajor>());
-  CALL_SUBTEST_7(test_tensor_product<RowMajor>());
-  CALL_SUBTEST_8(test_const_inputs<ColMajor>());
-  CALL_SUBTEST_8(test_const_inputs<RowMajor>());
-  CALL_SUBTEST_8(test_large_contraction_with_output_kernel<ColMajor>());
-  CALL_SUBTEST_8(test_large_contraction_with_output_kernel<RowMajor>());
-
-  // Force CMake to split this test.
-  // EIGEN_SUFFIXES;1;2;3;4;5;6;7;8
-
+  CALL_SUBTEST(test_evals<ColMajor>());
+  CALL_SUBTEST(test_evals<RowMajor>());
+  CALL_SUBTEST(test_scalar<ColMajor>());
+  CALL_SUBTEST(test_scalar<RowMajor>());
+  CALL_SUBTEST(test_multidims<ColMajor>());
+  CALL_SUBTEST(test_multidims<RowMajor>());
+  CALL_SUBTEST(test_holes<ColMajor>());
+  CALL_SUBTEST(test_holes<RowMajor>());
+  CALL_SUBTEST(test_full_redux<ColMajor>());
+  CALL_SUBTEST(test_full_redux<RowMajor>());
+  CALL_SUBTEST(test_contraction_of_contraction<ColMajor>());
+  CALL_SUBTEST(test_contraction_of_contraction<RowMajor>());
+  CALL_SUBTEST(test_expr<ColMajor>());
+  CALL_SUBTEST(test_expr<RowMajor>());
+  CALL_SUBTEST(test_out_of_order_contraction<ColMajor>());
+  CALL_SUBTEST(test_out_of_order_contraction<RowMajor>());
+  CALL_SUBTEST(test_consistency<ColMajor>());
+  CALL_SUBTEST(test_consistency<RowMajor>());
+  CALL_SUBTEST(test_large_contraction<ColMajor>());
+  CALL_SUBTEST(test_large_contraction<RowMajor>());
+  CALL_SUBTEST(test_matrix_vector<ColMajor>());
+  CALL_SUBTEST(test_matrix_vector<RowMajor>());
+  CALL_SUBTEST(test_tensor_vector<ColMajor>());
+  CALL_SUBTEST(test_tensor_vector<RowMajor>());
+  CALL_SUBTEST(test_small_blocking_factors<ColMajor>());
+  CALL_SUBTEST(test_small_blocking_factors<RowMajor>());
+  CALL_SUBTEST(test_tensor_product<ColMajor>());
+  CALL_SUBTEST(test_tensor_product<RowMajor>());
+  CALL_SUBTEST(test_const_inputs<ColMajor>());
+  CALL_SUBTEST(test_const_inputs<RowMajor>());
 }

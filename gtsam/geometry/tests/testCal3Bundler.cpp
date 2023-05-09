@@ -160,7 +160,7 @@ TEST(Cal3Bundler, retract) {
 }
 
 /* ************************************************************************* */
-TEST(Cal3Bundler, Print) {
+TEST(Cal3_S2, Print) {
   Cal3Bundler cal(1, 2, 3, 4, 5);
   std::stringstream os;
   os << "f: " << cal.fx() << ", k1: " << cal.k1() << ", k2: " << cal.k2()

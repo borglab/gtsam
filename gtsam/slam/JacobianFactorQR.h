@@ -44,9 +44,11 @@ public:
     //gfg.print("gfg");
 
     // eliminate the point
+    boost::shared_ptr<GaussianBayesNet> bn;
+    GaussianFactorGraph::shared_ptr fg;
     KeyVector variables;
     variables.push_back(pointKey);
-    const auto [bn, fg] = gfg.eliminatePartialSequential(variables, EliminateQR);
+    boost::tie(bn, fg) = gfg.eliminatePartialSequential(variables, EliminateQR);
     //fg->print("fg");
 
     JacobianFactor::operator=(JacobianFactor(*fg));

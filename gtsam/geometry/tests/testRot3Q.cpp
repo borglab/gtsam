@@ -1,4 +1,4 @@
-/* ------------------------------------------------------------------
+/* ----------------------------------------------------------------------------
 
  * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
@@ -30,6 +30,7 @@ using namespace gtsam;
 
 //******************************************************************************
 TEST(Rot3Q , Compare) {
+  using boost::none;
 
   // We set up expected values with quaternions
   typedef Quaternion Q;
@@ -46,8 +47,8 @@ TEST(Rot3Q , Compare) {
   R R1(q1), R2(q2);
 
   // Check Compose
-  Q q3 = TQ::Compose(q1, q2, {}, {});
-  R R3 = TR::Compose(R1, R2, {}, {});
+  Q q3 = TQ::Compose(q1, q2, none, none);
+  R R3 = TR::Compose(R1, R2, none, none);
   EXPECT(assert_equal(R(q3), R3));
 
   // Check Retract
@@ -85,8 +86,8 @@ TEST(Rot3Q , Compare) {
 
   // Check Compose Derivatives
   Matrix HQ, HR;
-  HQ = numericalDerivative42<Q, Q, Q, OJ, OJ>(TQ::Compose, q1, q2, {}, {});
-  HR = numericalDerivative42<R, R, R, OJ, OJ>(TR::Compose, R1, R2, {}, {});
+  HQ = numericalDerivative42<Q, Q, Q, OJ, OJ>(TQ::Compose, q1, q2, none, none);
+  HR = numericalDerivative42<R, R, R, OJ, OJ>(TR::Compose, R1, R2, none, none);
   EXPECT(assert_equal(HQ, HR));
 
 }

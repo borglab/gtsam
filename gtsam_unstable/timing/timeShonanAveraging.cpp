@@ -79,9 +79,9 @@ void saveG2oResult(string name, const Values& values, std::map<Key, Pose3> poses
         myfile << "VERTEX_SE3:QUAT" << " ";
         myfile << i << " ";
         myfile << poses[i].x() << " " << poses[i].y() << " " << poses[i].z() << " ";
-        Quaternion quaternion = Rot3(R).toQuaternion();
-        myfile << quaternion.x() << " " << quaternion.y() << " " << quaternion.z()
-               << " " << quaternion.w();
+        Vector quaternion = Rot3(R).quaternion();
+        myfile << quaternion(3) << " " << quaternion(2) << " " << quaternion(1)
+               << " " << quaternion(0);
         myfile << "\n";
     }
     myfile.close();

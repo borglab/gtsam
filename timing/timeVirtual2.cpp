@@ -18,9 +18,13 @@
 
 #include <gtsam/base/timing.h>
 
+#include <boost/shared_ptr.hpp>
+#include <boost/intrusive_ptr.hpp>
+
 #include <iostream>
 
 using namespace std;
+using namespace boost;
 using namespace gtsam;
 
 struct DtorTestBase {

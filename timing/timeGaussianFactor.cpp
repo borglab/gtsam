@@ -21,6 +21,8 @@
 #include <iostream>
 using namespace std;
 
+#include <boost/tuple/tuple.hpp>
+#include <boost/assign/list_of.hpp>
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/JacobianFactor.h>
@@ -29,6 +31,7 @@ using namespace std;
 #include <gtsam/linear/NoiseModel.h>
 
 using namespace gtsam;
+using namespace boost::assign;
 
 static const Key _x1_=1, _x2_=2, _l1_=3;
 
@@ -105,8 +108,8 @@ int main()
   JacobianFactor::shared_ptr factor;
 
   for(int i = 0; i < n; i++)
-    std::tie(conditional, factor) =
-        JacobianFactor(combined).eliminate(Ordering{_x2_});
+    boost::tie(conditional, factor) =
+        JacobianFactor(combined).eliminate(Ordering(boost::assign::list_of(_x2_)));
 
   long timeLog2 = clock();
   double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
@@ -115,7 +118,8 @@ int main()
   cout << ((double)n/seconds) << " calls/second" << endl;
 
   // time matrix_augmented
-//  const Ordering ordering{_x2_, _l1_, _x1_};
+//  Ordering ordering;
+//  ordering += _x2_, _l1_, _x1_;
 //  size_t n1 = 10000000;
 //  timeLog = clock();
 //

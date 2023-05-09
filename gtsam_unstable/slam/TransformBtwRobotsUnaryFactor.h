@@ -29,10 +29,10 @@ namespace gtsam {
   /**
    * A class for a measurement predicted by "between(config[key1],config[key2])"
    * @tparam VALUE the Value type
-   * @ingroup slam
+   * @addtogroup SLAM
    */
   template<class VALUE>
-  class TransformBtwRobotsUnaryFactor: public NonlinearFactor { // TODO why not NoiseModelFactorN ?
+  class TransformBtwRobotsUnaryFactor: public NonlinearFactor { // TODO why not NoiseModelFactor1 ?
 
   public:
 
@@ -61,7 +61,7 @@ namespace gtsam {
   public:
 
     // shorthand for a smart pointer to a factor
-    typedef typename std::shared_ptr<TransformBtwRobotsUnaryFactor> shared_ptr;
+    typedef typename boost::shared_ptr<TransformBtwRobotsUnaryFactor> shared_ptr;
 
     /** default constructor - only use for serialization */
     TransformBtwRobotsUnaryFactor() {}
@@ -70,7 +70,7 @@ namespace gtsam {
     TransformBtwRobotsUnaryFactor(Key key, const VALUE& measured, Key keyA, Key keyB,
         const gtsam::Values& valA, const gtsam::Values& valB,
         const SharedGaussian& model) :
-          Base(KeyVector{key}), key_(key), measured_(measured), keyA_(keyA), keyB_(keyB),
+          Base(cref_list_of<1>(key)), key_(key), measured_(measured), keyA_(keyA), keyB_(keyB),
           model_(model){
 
       setValAValB(valA, valB);
@@ -81,7 +81,7 @@ namespace gtsam {
 
 
     /** Clone */
-    gtsam::NonlinearFactor::shared_ptr clone() const override { return std::make_shared<This>(*this); }
+    gtsam::NonlinearFactor::shared_ptr clone() const override { return boost::make_shared<This>(*this); }
 
 
     /** implement functions needed for Testable */
@@ -139,10 +139,10 @@ namespace gtsam {
      * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
      */
     /* This version of linearize recalculates the noise model each time */
-    std::shared_ptr<gtsam::GaussianFactor> linearize(const gtsam::Values& x) const override {
+    boost::shared_ptr<gtsam::GaussianFactor> linearize(const gtsam::Values& x) const override {
       // Only linearize if the factor is active
       if (!this->active(x))
-        return std::shared_ptr<gtsam::JacobianFactor>();
+        return boost::shared_ptr<gtsam::JacobianFactor>();
 
       //std::cout<<"About to linearize"<<std::endl;
       gtsam::Matrix A1;
@@ -156,7 +156,8 @@ namespace gtsam {
 
 
     /* ************************************************************************* */
-    gtsam::Vector whitenedError(const gtsam::Values& x, OptionalMatrixVecType H = nullptr) const {
+    gtsam::Vector whitenedError(const gtsam::Values& x,
+        boost::optional<std::vector<gtsam::Matrix>&> H = boost::none) const {
 
       T orgA_T_currA = valA_.at<T>(keyA_);
       T orgB_T_currB = valB_.at<T>(keyB_);
@@ -165,8 +166,8 @@ namespace gtsam {
       T currA_T_currB_pred;
       if (H) {
         Matrix H_compose, H_between1;
-        T orgA_T_currB = orgA_T_orgB.compose(orgB_T_currB, H_compose, {});
-        currA_T_currB_pred = orgA_T_currA.between(orgA_T_currB, {}, H_between1);
+        T orgA_T_currB = orgA_T_orgB.compose(orgB_T_currB, H_compose, boost::none);
+        currA_T_currB_pred = orgA_T_currA.between(orgA_T_currB, boost::none, H_between1);
         (*H)[0] = H_compose * H_between1;
       }
       else {
@@ -183,14 +184,6 @@ namespace gtsam {
         model_->whitenInPlace(error);
 
       return error;
-    }
-
-    /* ************************************************************************* */
-    /** A function overload to accept a vector<matrix> instead of a pointer to
-     * the said type.
-     */
-    gtsam::Vector whitenedError(const gtsam::Values& x, std::vector<Matrix>& H) const {
-	  return whitenedError(x, &H);
     }
 
 
@@ -216,7 +209,6 @@ namespace gtsam {
 
   private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -225,7 +217,6 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       //ar & BOOST_SERIALIZATION_NVP(measured_);
     }
-#endif
   }; // \class TransformBtwRobotsUnaryFactor
 
   /// traits

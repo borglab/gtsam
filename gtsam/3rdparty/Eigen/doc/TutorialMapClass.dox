@@ -29,9 +29,9 @@ Map<const Vector4i> mi(pi);
 \endcode
 where \c pi is an \c int \c *. In this case the size does not have to be passed to the constructor, because it is already specified by the Matrix/Array type.
 
-Note that Map does not have a default constructor; you \em must pass a pointer to initialize the object. However, you can work around this requirement (see \ref TutorialMapPlacementNew).
+Note that Map does not have a default constructor; you \em must pass a pointer to intialize the object. However, you can work around this requirement (see \ref TutorialMapPlacementNew).
 
-Map is flexible enough to accommodate a variety of different data representations.  There are two other (optional) template parameters:
+Map is flexible enough to accomodate a variety of different data representations.  There are two other (optional) template parameters:
 \code
 Map<typename MatrixType,
     int MapOptions,

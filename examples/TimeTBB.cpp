@@ -18,11 +18,13 @@
 #include <gtsam/global_includes.h>
 #include <gtsam/base/Matrix.h>
 
+#include <boost/assign/list_of.hpp>
 #include <map>
 #include <iostream>
 
 using namespace std;
 using namespace gtsam;
+using boost::assign::list_of;
 
 #ifdef GTSAM_USE_TBB
 
@@ -79,7 +81,7 @@ map<int, double> testWithoutMemoryAllocation(int num_threads)
   // Now call it
   vector<double> results(numberOfProblems);
 
-  const vector<size_t> grainSizes = {1, 10, 100, 1000};
+  const vector<size_t> grainSizes = list_of(1)(10)(100)(1000);
   map<int, double> timingResults;
   for(size_t grainSize: grainSizes)
   {
@@ -143,7 +145,7 @@ map<int, double> testWithMemoryAllocation(int num_threads)
   // Now call it
   vector<double> results(numberOfProblems);
 
-  const vector<size_t> grainSizes = {1, 10, 100, 1000};
+  const vector<size_t> grainSizes = list_of(1)(10)(100)(1000);
   map<int, double> timingResults;
   for(size_t grainSize: grainSizes)
   {
@@ -170,7 +172,7 @@ int main(int argc, char* argv[])
   cout << "numberOfProblems = " << numberOfProblems << endl;
   cout << "problemSize = " << problemSize << endl;
 
-  const vector<int> numThreads = {1, 4, 8};
+  const vector<int> numThreads = list_of(1)(4)(8);
   Results results;
 
   for(size_t n: numThreads)

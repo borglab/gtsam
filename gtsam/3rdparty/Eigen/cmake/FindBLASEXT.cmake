@@ -41,19 +41,18 @@
 #  License text for the above reference.)
 
 # macro to factorize this call
-include(CMakeFindDependencyMacro)
 macro(find_package_blas)
   if(BLASEXT_FIND_REQUIRED)
     if(BLASEXT_FIND_QUIETLY)
-      find_dependency(BLAS REQUIRED QUIET)
+      find_package(BLAS REQUIRED QUIET)
     else()
-      find_dependency(BLAS REQUIRED)
+      find_package(BLAS REQUIRED)
     endif()
   else()
     if(BLASEXT_FIND_QUIETLY)
-      find_dependency(BLAS QUIET)
+      find_package(BLAS QUIET)
     else()
-      find_dependency(BLAS)
+      find_package(BLAS)
     endif()
   endif()
 endmacro()
@@ -317,7 +316,7 @@ if(BLA_VENDOR MATCHES "Intel*")
 	"\n   (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
       message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
     endif()
-    find_package_handle_standard_args(BLASEXT DEFAULT_MSG
+    find_package_handle_standard_args(BLAS DEFAULT_MSG
       BLAS_SEQ_LIBRARIES
       BLAS_LIBRARY_DIRS
       BLAS_INCLUDE_DIRS)
@@ -325,14 +324,14 @@ if(BLA_VENDOR MATCHES "Intel*")
       if(NOT BLASEXT_FIND_QUIETLY)
 	message(STATUS "BLAS parallel libraries stored in BLAS_PAR_LIBRARIES")
       endif()
-      find_package_handle_standard_args(BLASEXT DEFAULT_MSG
+      find_package_handle_standard_args(BLAS DEFAULT_MSG
 	BLAS_PAR_LIBRARIES)
     endif()
   else()
     if(NOT BLASEXT_FIND_QUIETLY)
       message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
     endif()
-    find_package_handle_standard_args(BLASEXT DEFAULT_MSG
+    find_package_handle_standard_args(BLAS DEFAULT_MSG
       BLAS_SEQ_LIBRARIES
       BLAS_LIBRARY_DIRS
       BLAS_INCLUDE_DIRS)
@@ -344,14 +343,14 @@ elseif(BLA_VENDOR MATCHES "ACML*")
       "\n   (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
     message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
   endif()
-  find_package_handle_standard_args(BLASEXT DEFAULT_MSG
+  find_package_handle_standard_args(BLAS DEFAULT_MSG
     BLAS_SEQ_LIBRARIES
     BLAS_LIBRARY_DIRS)
   if(BLAS_PAR_LIBRARIES)
     if(NOT BLASEXT_FIND_QUIETLY)
       message(STATUS "BLAS parallel libraries stored in BLAS_PAR_LIBRARIES")
     endif()
-    find_package_handle_standard_args(BLASEXT DEFAULT_MSG
+    find_package_handle_standard_args(BLAS DEFAULT_MSG
       BLAS_PAR_LIBRARIES)
   endif()
 elseif(BLA_VENDOR MATCHES "IBMESSL*")
@@ -361,24 +360,21 @@ elseif(BLA_VENDOR MATCHES "IBMESSL*")
       "\n   (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
     message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
   endif()
-  find_package_handle_standard_args(BLASEXT DEFAULT_MSG
+  find_package_handle_standard_args(BLAS DEFAULT_MSG
     BLAS_SEQ_LIBRARIES
     BLAS_LIBRARY_DIRS)
   if(BLAS_PAR_LIBRARIES)
     if(NOT BLASEXT_FIND_QUIETLY)
       message(STATUS "BLAS parallel libraries stored in BLAS_PAR_LIBRARIES")
     endif()
-    find_package_handle_standard_args(BLASEXT DEFAULT_MSG
+    find_package_handle_standard_args(BLAS DEFAULT_MSG
       BLAS_PAR_LIBRARIES)
   endif()
 else()
   if(NOT BLASEXT_FIND_QUIETLY)
     message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
   endif()
-  find_package_handle_standard_args(BLASEXT DEFAULT_MSG
+  find_package_handle_standard_args(BLAS DEFAULT_MSG
     BLAS_SEQ_LIBRARIES
     BLAS_LIBRARY_DIRS)
 endif()
-
-# Callers expect BLAS_FOUND to be set as well.
-set(BLAS_FOUND BLASEXT_FOUND)

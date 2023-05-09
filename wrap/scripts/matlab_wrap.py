@@ -43,24 +43,16 @@ if __name__ == "__main__":
         type=str,
         help="A space-separated list of classes to ignore. "
         "Class names must include their full namespaces.")
-    arg_parser.add_argument(
-        "--use-boost-serialization",
-        action="store_true",
-        help="Allow boost based serialization methods",
-    )
     args = arg_parser.parse_args()
 
     top_module_namespaces = args.top_module_namespaces.split("::")
     if top_module_namespaces[0]:
         top_module_namespaces = [''] + top_module_namespaces
 
-    print(f"[MatlabWrapper] Ignoring classes: {args.ignore}", file=sys.stderr)
-
-    wrapper = MatlabWrapper(
-        module_name=args.module_name,
-        top_module_namespace=top_module_namespaces,
-        ignore_classes=args.ignore,
-        use_boost_serialization=args.use_boost_serialization)
+    print("[MatlabWrapper] Ignoring classes: {}".format(args.ignore), file=sys.stderr)
+    wrapper = MatlabWrapper(module_name=args.module_name,
+                            top_module_namespace=top_module_namespaces,
+                            ignore_classes=args.ignore)
 
     sources = args.src.split(';')
     cc_content = wrapper.wrap(sources, path=args.out)

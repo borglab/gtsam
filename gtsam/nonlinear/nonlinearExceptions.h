@@ -17,6 +17,7 @@
  */
 #pragma once
 
+#include <boost/lexical_cast.hpp>
 #include <exception>
 
 #include <gtsam/inference/Key.h>

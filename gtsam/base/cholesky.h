@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <boost/shared_ptr.hpp>
 
 namespace gtsam {
 

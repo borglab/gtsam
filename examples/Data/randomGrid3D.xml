@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <!DOCTYPE boost_serialization>
-<boost_serialization signature="serialization::archive" version="19">
-<data class_id="0" tracking_level="0" version="0">
+<boost_serialization signature="serialization::archive" version="17">
+<graph class_id="0" tracking_level="0" version="0">
 	<Base class_id="1" tracking_level="0" version="0">
 		<factors_ class_id="2" tracking_level="0" version="0">
 			<count>32</count>
 			<item_version>1</item_version>
 			<item class_id="3" tracking_level="0" version="1">
-				<px class_id="4" class_name="gtsam::JacobianFactor" tracking_level="1" version="1" object_id="_0">
+				<px class_id="4" class_name="JacobianFactor" tracking_level="1" version="0" object_id="_0">
 					<Base class_id="5" tracking_level="0" version="0">
 						<Base class_id="6" tracking_level="0" version="0">
 							<keys_>
@@ -100,7 +100,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_ class_id="11" tracking_level="0" version="1">
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -197,7 +199,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -294,7 +298,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -391,7 +397,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -488,7 +496,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -585,7 +595,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -682,7 +694,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -779,7 +793,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -876,7 +892,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -973,7 +991,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -1070,7 +1090,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -1167,7 +1189,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -1264,7 +1288,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -1361,7 +1387,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -1458,7 +1486,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -1555,7 +1585,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -1652,7 +1684,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -1749,7 +1783,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -1846,7 +1882,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -1943,7 +1981,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -2040,7 +2080,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -2137,7 +2179,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -2234,7 +2278,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -2331,7 +2377,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -2428,7 +2476,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -2525,7 +2575,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -2622,7 +2674,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -2719,7 +2773,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -2816,7 +2872,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -2913,7 +2971,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -3010,7 +3070,9 @@
 						<rowEnd_>9</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 			<item>
@@ -3340,11 +3402,13 @@
 						<rowEnd_>3</rowEnd_>
 						<blockStart_>0</blockStart_>
 					</Ab_>
-					<model_null>1</model_null>
+					<model_>
+						<px class_id="-1"></px>
+					</model_>
 				</px>
 			</item>
 		</factors_>
 	</Base>
-</data>
+</graph>
 </boost_serialization>
 

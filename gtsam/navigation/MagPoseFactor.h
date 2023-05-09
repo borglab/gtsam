@@ -11,11 +11,8 @@
 
 #pragma once
 
-#include <gtsam/base/std_optional_serialization.h>
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-
-#include <optional>
 
 namespace gtsam {
 
@@ -28,34 +25,30 @@ namespace gtsam {
  * expressed in the sensor frame.
  */
 template <class POSE>
-class MagPoseFactor: public NoiseModelFactorN<POSE> {
+class MagPoseFactor: public NoiseModelFactor1<POSE> {
  private:
   using This = MagPoseFactor<POSE>;
-  using Base = NoiseModelFactorN<POSE>;
+  using Base = NoiseModelFactor1<POSE>;
   using Point = typename POSE::Translation; ///< Could be a Vector2 or Vector3 depending on POSE.
   using Rot = typename POSE::Rotation;
 
   const Point measured_; ///< The measured magnetometer data in the body frame.
   const Point nM_; ///< Local magnetic field (mag output units) in the nav frame.
   const Point bias_; ///< The bias vector (mag output units) in the body frame.
-  std::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame.
+  boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame.
 
   static const int MeasDim = Point::RowsAtCompileTime;
   static const int PoseDim = traits<POSE>::dimension;
   static const int RotDim = traits<Rot>::dimension;
 
   /// Shorthand for a smart pointer to a factor.
-  using shared_ptr = std::shared_ptr<MagPoseFactor<POSE>>;
+  using shared_ptr = boost::shared_ptr<MagPoseFactor<POSE>>;
 
   /// Concept check by type.
   GTSAM_CONCEPT_TESTABLE_TYPE(POSE)
   GTSAM_CONCEPT_POSE_TYPE(POSE)
 
  public:
-
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
-
   ~MagPoseFactor() override {}
 
   /// Default constructor - only use for serialization.
@@ -77,7 +70,7 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
                 const Point& direction,
                 const Point& bias,
                 const SharedNoiseModel& model,
-                const std::optional<POSE>& body_P_sensor)
+                const boost::optional<POSE>& body_P_sensor)
       : Base(model, pose_key),
         measured_(body_P_sensor ? body_P_sensor->rotation() * measured : measured),
         nM_(scale * direction.normalized()),
@@ -86,7 +79,7 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
 
   /// @return a deep copy of this factor.
   NonlinearFactor::shared_ptr clone() const override {
-    return std::static_pointer_cast<NonlinearFactor>(
+    return boost::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -115,11 +108,11 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
    * Return the factor's error h(x) - z, and the optional Jacobian. Note that
    * the measurement error is expressed in the body frame.
    */
-  Vector evaluateError(const POSE& nPb, OptionalMatrixType H) const override {
+  Vector evaluateError(const POSE& nPb, boost::optional<Matrix&> H = boost::none) const override {
     // Predict the measured magnetic field h(x) in the *body* frame.
     // If body_P_sensor was given, bias_ will have been rotated into the body frame.
     Matrix H_rot = Matrix::Zero(MeasDim, RotDim);
-    const Point hx = nPb.rotation().unrotate(nM_, H_rot, OptionalNone) + bias_;
+    const Point hx = nPb.rotation().unrotate(nM_, H_rot, boost::none) + bias_;
 
     if (H) {
       // Fill in the relevant part of the Jacobian (just rotation columns).
@@ -132,12 +125,10 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
   }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function.
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor1",
          boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);
@@ -145,7 +136,6 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
     ar & BOOST_SERIALIZATION_NVP(bias_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
-#endif
 };  // \class MagPoseFactor
 
 } /// namespace gtsam

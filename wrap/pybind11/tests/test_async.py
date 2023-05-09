@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pytest
 
 asyncio = pytest.importorskip("asyncio")

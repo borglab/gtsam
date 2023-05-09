@@ -17,6 +17,7 @@
  * @author  Christian Potthast
  */
 
+#include <boost/range/adaptor/map.hpp>
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/VectorValues.h>
 
@@ -25,18 +26,19 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Errors createErrors(const VectorValues& V) {
-  Errors result;
-  for (const auto& [key, e] : V) {
-    result.push_back(e);
+Errors::Errors(){}
+
+/* ************************************************************************* */
+Errors::Errors(const VectorValues& V) {
+  for(const Vector& e: V | boost::adaptors::map_values) {
+    push_back(e);
   }
-  return result;
 }
 
 /* ************************************************************************* */
-void print(const Errors& e, const string& s) {
+void Errors::print(const std::string& s) const {
   cout << s << endl;
-  for(const Vector& v: e)
+  for(const Vector& v: *this)
     gtsam::print(v);
 }
 
@@ -49,48 +51,49 @@ struct equalsVector : public std::function<bool(const Vector&, const Vector&)> {
   }
 };
 
-bool equality(const Errors& actual, const Errors& expected, double tol) {
-  if (actual.size() != expected.size()) return false;
-  return equal(actual.begin(), actual.end(), expected.begin(),
-               equalsVector(tol));
+bool Errors::equals(const Errors& expected, double tol) const {
+  if( size() != expected.size() ) return false;
+  return equal(begin(),end(),expected.begin(),equalsVector(tol));
 }
 
 /* ************************************************************************* */
-Errors operator+(const Errors& a, const Errors& b) {
+Errors Errors::operator+(const Errors& b) const {
 #ifndef NDEBUG
-  size_t m = a.size();
+  size_t m = size();
   if (b.size()!=m)
     throw(std::invalid_argument("Errors::operator+: incompatible sizes"));
 #endif
   Errors result;
   Errors::const_iterator it = b.begin();
-    for(const Vector& ai: a)
+    for(const Vector& ai: *this)
     result.push_back(ai + *(it++));
   return result;
 }
 
 
 /* ************************************************************************* */
-Errors operator-(const Errors& a, const Errors& b) {
+Errors Errors::operator-(const Errors& b) const {
 #ifndef NDEBUG
-  size_t m = a.size();
+  size_t m = size();
   if (b.size()!=m)
     throw(std::invalid_argument("Errors::operator-: incompatible sizes"));
 #endif
   Errors result;
   Errors::const_iterator it = b.begin();
-  for(const Vector& ai: a)
+  for(const Vector& ai: *this)
     result.push_back(ai - *(it++));
   return result;
 }
 
 /* ************************************************************************* */
-Errors operator-(const Errors& a) {
+Errors Errors::operator-() const {
   Errors result;
-  for(const Vector& ai: a)
+  for(const Vector& ai: *this)
     result.push_back(-ai);
   return result;
 }
+
+
 
 /* ************************************************************************* */
 double dot(const Errors& a, const Errors& b) {
@@ -102,15 +105,21 @@ double dot(const Errors& a, const Errors& b) {
   double result = 0.0;
   Errors::const_iterator it = b.begin();
   for(const Vector& ai: a)
-    result += gtsam::dot<Vector,Vector>(ai, *(it++));
+    result += gtsam::dot(ai, *(it++));
   return result;
 }
 
 /* ************************************************************************* */
+template<>
 void axpy(double alpha, const Errors& x, Errors& y) {
   Errors::const_iterator it = x.begin();
   for(Vector& yi: y)
     yi += alpha * (*(it++));
+}
+
+/* ************************************************************************* */
+void print(const Errors& a, const string& s) {
+  a.print(s);
 }
 
 /* ************************************************************************* */

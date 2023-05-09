@@ -66,7 +66,7 @@ GaussianFactorGraph::shared_ptr LPInitSolver::buildInitOfInitGraph() const {
 
   // create factor ||x||^2 and add to the graph
   const KeyDimMap& constrainedKeyDim = lp_.constrainedKeyDimMap();
-  for (const auto& [key, _] : constrainedKeyDim) {
+  for (Key key : constrainedKeyDim | boost::adaptors::map_keys) {
     size_t dim = constrainedKeyDim.at(key);
     initGraph->push_back(
         JacobianFactor(key, Matrix::Identity(dim, dim), Vector::Zero(dim)));

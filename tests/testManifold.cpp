@@ -29,6 +29,10 @@
 #undef CHECK
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/assign/list_of.hpp>
+using boost::assign::list_of;
+using boost::assign::map_list_of;
+
 using namespace std;
 using namespace gtsam;
 
@@ -37,27 +41,27 @@ typedef PinholeCamera<Cal3Bundler> Camera;
 
 //******************************************************************************
 TEST(Manifold, SomeManifoldsGTSAM) {
-  //GTSAM_CONCEPT_ASSERT(IsManifold<int>); // integer is not a manifold
-  GTSAM_CONCEPT_ASSERT(IsManifold<Camera>);
-  GTSAM_CONCEPT_ASSERT(IsManifold<Cal3_S2>);
-  GTSAM_CONCEPT_ASSERT(IsManifold<Cal3Bundler>);
-  GTSAM_CONCEPT_ASSERT(IsManifold<Camera>);
+  //BOOST_CONCEPT_ASSERT((IsManifold<int>)); // integer is not a manifold
+  BOOST_CONCEPT_ASSERT((IsManifold<Camera>));
+  BOOST_CONCEPT_ASSERT((IsManifold<Cal3_S2>));
+  BOOST_CONCEPT_ASSERT((IsManifold<Cal3Bundler>));
+  BOOST_CONCEPT_ASSERT((IsManifold<Camera>));
 }
 
 //******************************************************************************
 TEST(Manifold, SomeLieGroupsGTSAM) {
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<Rot2>);
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<Pose2>);
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<Rot3>);
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<Pose3>);
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Rot2>));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Pose2>));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Rot3>));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Pose3>));
 }
 
 //******************************************************************************
 TEST(Manifold, SomeVectorSpacesGTSAM) {
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<double>);
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<float>);
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Point2>);
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Matrix24>);
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<double>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<float>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<Point2>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<Matrix24>));
 }
 
 //******************************************************************************
@@ -135,7 +139,7 @@ TEST(Manifold, DefaultChart) {
 
   Vector v3(3);
   v3 << 1, 1, 1;
-  Rot3 I = Rot3::Identity();
+  Rot3 I = Rot3::identity();
   Rot3 R = I.retract(v3);
   //DefaultChart<Rot3> chart5;
   EXPECT(assert_equal(v3, traits<Rot3>::Local(I, R)));

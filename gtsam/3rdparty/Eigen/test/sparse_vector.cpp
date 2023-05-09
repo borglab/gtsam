@@ -145,7 +145,7 @@ template<typename Scalar,typename StorageIndex> void sparse_vector(int rows, int
 
 }
 
-EIGEN_DECLARE_TEST(sparse_vector)
+void test_sparse_vector()
 {
   for(int i = 0; i < g_repeat; i++) {
     int r = Eigen::internal::random<int>(1,500), c = Eigen::internal::random<int>(1,500);

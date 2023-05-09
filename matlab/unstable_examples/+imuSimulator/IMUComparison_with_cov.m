@@ -34,7 +34,7 @@ poses(1).R = currentPoseGlobal.rotation.matrix;
 
 %% Solver object
 isamParams = ISAM2Params;
-isamParams.relinearizeSkip = 1;
+isamParams.setRelinearizeSkip(1);
 isam = gtsam.ISAM2(isamParams);
 
 sigma_init_x = 1.0;
@@ -43,15 +43,15 @@ sigma_init_b = 1.0;
 
 initialValues = Values;
 initialValues.insert(symbol('x',0), currentPoseGlobal);
-initialValues.insert(symbol('v',0), currentVelocityGlobal);
+initialValues.insert(symbol('v',0), LieVector(currentVelocityGlobal));
 initialValues.insert(symbol('b',0), imuBias.ConstantBias([0;0;0],[0;0;0]));
 initialFactors = NonlinearFactorGraph;
 % Prior on initial pose
 initialFactors.add(PriorFactorPose3(symbol('x',0), ...
     currentPoseGlobal, noiseModel.Isotropic.Sigma(6, sigma_init_x)));
 % Prior on initial velocity 
-initialFactors.add(PriorFactorVector(symbol('v',0), ...
-    currentVelocityGlobal, noiseModel.Isotropic.Sigma(3, sigma_init_v)));
+initialFactors.add(PriorFactorLieVector(symbol('v',0), ...
+    LieVector(currentVelocityGlobal), noiseModel.Isotropic.Sigma(3, sigma_init_v)));
 % Prior on initial bias
 initialFactors.add(PriorFactorConstantBias(symbol('b',0), ...
     imuBias.ConstantBias([0;0;0],[0;0;0]), noiseModel.Isotropic.Sigma(6, sigma_init_b)));
@@ -91,7 +91,7 @@ for t = times
           initialVel = isam.calculateEstimate(symbol('v',lastSummaryIndex));
       else
           initialPose = Pose3;
-          initialVel = velocity;
+          initialVel = LieVector(velocity);
       end
       initialValues.insert(symbol('x',lastSummaryIndex+1), initialPose);
       initialValues.insert(symbol('v',lastSummaryIndex+1), initialVel); 

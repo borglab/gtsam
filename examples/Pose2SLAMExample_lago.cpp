@@ -37,7 +37,7 @@ int main(const int argc, const char *argv[]) {
 
   NonlinearFactorGraph::shared_ptr graph;
   Values::shared_ptr initial;
-  std::tie(graph, initial) = readG2o(g2oFile);
+  boost::tie(graph, initial) = readG2o(g2oFile);
 
   // Add prior on the pose having index (key) = 0
   auto priorModel = noiseModel::Diagonal::Variances(Vector3(1e-6, 1e-6, 1e-8));
@@ -55,7 +55,7 @@ int main(const int argc, const char *argv[]) {
     std::cout << "Writing results to file: " << outputFile << std::endl;
     NonlinearFactorGraph::shared_ptr graphNoKernel;
     Values::shared_ptr initial2;
-    std::tie(graphNoKernel, initial2) = readG2o(g2oFile);
+    boost::tie(graphNoKernel, initial2) = readG2o(g2oFile);
     writeG2o(*graphNoKernel, estimateLago, outputFile);
     std::cout << "done! " << std::endl;
   }

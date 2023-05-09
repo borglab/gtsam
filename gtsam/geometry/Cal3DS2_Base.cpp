@@ -40,9 +40,9 @@ std::ostream& operator<<(std::ostream& os, const Cal3DS2_Base& cal) {
 }
 
 /* ************************************************************************* */
-void Cal3DS2_Base::print(const std::string& s) const {
-  gtsam::print((Matrix)K(), s + ".K");
-  gtsam::print(Vector(k()), s + ".k");
+void Cal3DS2_Base::print(const std::string& s_) const {
+  gtsam::print((Matrix)K(), s_ + ".K");
+  gtsam::print(Vector(k()), s_ + ".k");
 }
 
 /* ************************************************************************* */

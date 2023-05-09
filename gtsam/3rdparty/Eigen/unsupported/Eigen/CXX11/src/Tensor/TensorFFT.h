@@ -10,6 +10,10 @@
 #ifndef EIGEN_CXX11_TENSOR_TENSOR_FFT_H
 #define EIGEN_CXX11_TENSOR_TENSOR_FFT_H
 
+// This code requires the ability to initialize arrays of constant
+// values directly inside a class.
+#if __cplusplus >= 201103L || EIGEN_COMP_MSVC >= 1900
+
 namespace Eigen {
 
 /** \class TensorFFT
@@ -67,7 +71,6 @@ struct traits<TensorFFTOp<FFT, XprType, FFTResultType, FFTDir> > : public traits
   typedef typename remove_reference<Nested>::type _Nested;
   static const int NumDimensions = XprTraits::NumDimensions;
   static const int Layout = XprTraits::Layout;
-  typedef typename traits<XprType>::PointerType PointerType;
 };
 
 template <typename FFT, typename XprType, int FFTResultType, int FFTDirection>
@@ -127,24 +130,17 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
   typedef OutputScalar CoeffReturnType;
   typedef typename PacketType<OutputScalar, Device>::type PacketReturnType;
   static const int PacketSize = internal::unpacket_traits<PacketReturnType>::size;
-    typedef StorageMemory<CoeffReturnType, Device> Storage;
-  typedef typename Storage::Type EvaluatorPointerType;
 
   enum {
     IsAligned = false,
     PacketAccess = true,
     BlockAccess = false,
-    PreferBlockAccess = false,
     Layout = TensorEvaluator<ArgType, Device>::Layout,
     CoordAccess = false,
     RawAccess = false
   };
 
-  //===- Tensor block evaluation strategy (see TensorBlock.h) -------------===//
-  typedef internal::TensorBlockNotImplemented TensorBlock;
-  //===--------------------------------------------------------------------===//
-
-  EIGEN_STRONG_INLINE TensorEvaluator(const XprType& op, const Device& device) : m_fft(op.fft()), m_impl(op.expression(), device), m_data(NULL), m_device(device) {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorEvaluator(const XprType& op, const Device& device) : m_fft(op.fft()), m_impl(op.expression(), device), m_data(NULL), m_device(device) {
     const typename TensorEvaluator<ArgType, Device>::Dimensions& input_dims = m_impl.dimensions();
     for (int i = 0; i < NumDims; ++i) {
       eigen_assert(input_dims[i] > 0);
@@ -169,19 +165,19 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
     return m_dimensions;
   }
 
-  EIGEN_STRONG_INLINE bool evalSubExprsIfNeeded(EvaluatorPointerType data) {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool evalSubExprsIfNeeded(OutputScalar* data) {
     m_impl.evalSubExprsIfNeeded(NULL);
     if (data) {
       evalToBuf(data);
       return false;
     } else {
-      m_data = (EvaluatorPointerType)m_device.get((CoeffReturnType*)(m_device.allocate_temp(sizeof(CoeffReturnType) * m_size)));
+      m_data = (CoeffReturnType*)m_device.allocate(sizeof(CoeffReturnType) * m_size);
       evalToBuf(m_data);
       return true;
     }
   }
 
-  EIGEN_STRONG_INLINE void cleanup() {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void cleanup() {
     if (m_data) {
       m_device.deallocate(m_data);
       m_data = NULL;
@@ -204,16 +200,11 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
     return TensorOpCost(sizeof(CoeffReturnType), 0, 0, vectorized, PacketSize);
   }
 
-  EIGEN_DEVICE_FUNC EvaluatorPointerType data() const { return m_data; }
-#ifdef EIGEN_USE_SYCL
-  // binding placeholder accessors to a command group handler for SYCL
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void bind(cl::sycl::handler &cgh) const {
-    m_data.bind(cgh);
-  }
-#endif
+  EIGEN_DEVICE_FUNC Scalar* data() const { return m_data; }
+
 
  private:
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void evalToBuf(EvaluatorPointerType data) {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void evalToBuf(OutputScalar* data) {
     const bool write_to_out = internal::is_same<OutputScalar, ComplexScalar>::value;
     ComplexScalar* buf = write_to_out ? (ComplexScalar*)data : (ComplexScalar*)m_device.allocate(sizeof(ComplexScalar) * m_size);
 
@@ -239,32 +230,20 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
         //   t_n = exp(sqrt(-1) * pi * n^2 / line_len)
         // for n = 0, 1,..., line_len-1.
         // For n > 2 we use the recurrence t_n = t_{n-1}^2 / t_{n-2} * t_1^2
-
-        // The recurrence is correct in exact arithmetic, but causes
-        // numerical issues for large transforms, especially in
-        // single-precision floating point.
-        //
-        // pos_j_base_powered[0] = ComplexScalar(1, 0);
-        // if (line_len > 1) {
-        //   const ComplexScalar pos_j_base = ComplexScalar(
-        //       numext::cos(M_PI / line_len), numext::sin(M_PI / line_len));
-        //   pos_j_base_powered[1] = pos_j_base;
-        //   if (line_len > 2) {
-        //     const ComplexScalar pos_j_base_sq = pos_j_base * pos_j_base;
-        //     for (int i = 2; i < line_len + 1; ++i) {
-        //       pos_j_base_powered[i] = pos_j_base_powered[i - 1] *
-        //           pos_j_base_powered[i - 1] /
-        //           pos_j_base_powered[i - 2] *
-        //           pos_j_base_sq;
-        //     }
-        //   }
-        // }
-        // TODO(rmlarsen): Find a way to use Eigen's vectorized sin
-        // and cosine functions here.
-        for (int j = 0; j < line_len + 1; ++j) {
-          double arg = ((EIGEN_PI * j) * j) / line_len;
-          std::complex<double> tmp(numext::cos(arg), numext::sin(arg));
-          pos_j_base_powered[j] = static_cast<ComplexScalar>(tmp);
+        pos_j_base_powered[0] = ComplexScalar(1, 0);
+        if (line_len > 1) {
+          const RealScalar pi_over_len(EIGEN_PI / line_len);
+          const ComplexScalar pos_j_base = ComplexScalar(
+	       std::cos(pi_over_len), std::sin(pi_over_len));
+          pos_j_base_powered[1] = pos_j_base;
+          if (line_len > 2) {
+            const ComplexScalar pos_j_base_sq = pos_j_base * pos_j_base;
+            for (int j = 2; j < line_len + 1; ++j) {
+              pos_j_base_powered[j] = pos_j_base_powered[j - 1] *
+                                      pos_j_base_powered[j - 1] /
+                                      pos_j_base_powered[j - 2] * pos_j_base_sq;
+            }
+          }
         }
       }
 
@@ -274,7 +253,7 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
         // get data into line_buf
         const Index stride = m_strides[dim];
         if (stride == 1) {
-          m_device.memcpy(line_buf, &buf[base_offset], line_len*sizeof(ComplexScalar));
+          memcpy(line_buf, &buf[base_offset], line_len*sizeof(ComplexScalar));
         } else {
           Index offset = base_offset;
           for (int j = 0; j < line_len; ++j, offset += stride) {
@@ -282,7 +261,7 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
           }
         }
 
-        // process the line
+        // processs the line
         if (is_power_of_two) {
           processDataLineCooleyTukey(line_buf, line_len, log_len);
         }
@@ -292,7 +271,7 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
 
         // write back
         if (FFTDir == FFT_FORWARD && stride == 1) {
-          m_device.memcpy(&buf[base_offset], line_buf, line_len*sizeof(ComplexScalar));
+          memcpy(&buf[base_offset], line_buf, line_len*sizeof(ComplexScalar));
         } else {
           Index offset = base_offset;
           const ComplexScalar div_factor =  ComplexScalar(1.0 / line_len, 0);
@@ -583,12 +562,12 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
 
  protected:
   Index m_size;
-  const FFT EIGEN_DEVICE_REF m_fft;
+  const FFT& m_fft;
   Dimensions m_dimensions;
   array<Index, NumDims> m_strides;
   TensorEvaluator<ArgType, Device> m_impl;
-  EvaluatorPointerType m_data;
-  const Device EIGEN_DEVICE_REF m_device;
+  CoeffReturnType* m_data;
+  const Device& m_device;
 
   // This will support a maximum FFT size of 2^32 for each dimension
   // m_sin_PI_div_n_LUT[i] = (-2) * std::sin(M_PI / std::pow(2,i)) ^ 2;
@@ -665,5 +644,8 @@ struct TensorEvaluator<const TensorFFTOp<FFT, ArgType, FFTResultType, FFTDir>, D
 };
 
 }  // end namespace Eigen
+
+#endif  // EIGEN_HAS_CONSTEXPR
+
 
 #endif  // EIGEN_CXX11_TENSOR_TENSOR_FFT_H

@@ -34,10 +34,7 @@ def report_on_progress(graph: gtsam.NonlinearFactorGraph, current_estimate: gtsa
 
     # Plot the newly updated iSAM2 inference.
     fig = plt.figure(0)
-    if not fig.axes:
-        axes = fig.add_subplot(projection='3d')
-    else:
-        axes = fig.axes[0]
+    axes = fig.gca(projection='3d')
     plt.cla()
 
     i = 1
@@ -143,7 +140,7 @@ def Pose3_ISAM2_example():
     # update calls are required to perform the relinearization.
     parameters = gtsam.ISAM2Params()
     parameters.setRelinearizeThreshold(0.1)
-    parameters.relinearizeSkip = 1
+    parameters.setRelinearizeSkip(1)
     isam = gtsam.ISAM2(parameters)
 
     # Create the ground truth poses of the robot trajectory.

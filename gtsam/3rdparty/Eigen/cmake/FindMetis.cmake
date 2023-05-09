@@ -238,7 +238,7 @@ if(METIS_LIBRARIES)
   set(CMAKE_REQUIRED_INCLUDES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
-endif()
+endif(METIS_LIBRARIES)
 
 if (METIS_LIBRARIES)
   list(GET METIS_LIBRARIES 0 first_lib)
@@ -258,8 +258,7 @@ mark_as_advanced(METIS_DIR_FOUND)
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(METIS DEFAULT_MSG
   METIS_LIBRARIES
-  METIS_WORKS
-  METIS_INCLUDE_DIRS)
+  METIS_WORKS)
 #
 # TODO: Add possibility to check for specific functions in the library
 #

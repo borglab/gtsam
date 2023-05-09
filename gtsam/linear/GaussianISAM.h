@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file GaussianISAM.h
+ * @file SymbolicISAM.h
  * @date July 29, 2013
  * @author Frank Dellaert
  * @author Richard Roberts
@@ -29,7 +29,7 @@ namespace gtsam {
   public:
     typedef ISAM<GaussianBayesTree> Base;
     typedef GaussianISAM This;
-    typedef std::shared_ptr<This> shared_ptr;
+    typedef boost::shared_ptr<This> shared_ptr;
 
     /// @name Standard Constructors
     /// @{

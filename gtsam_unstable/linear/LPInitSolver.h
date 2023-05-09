@@ -30,7 +30,7 @@ namespace gtsam {
  *    min y
  *    st Ax = b
  *       Cx - y <= d
- * where \f$y \in R\f$, \f$x \in R^n\f$, and Ax = b and Cx <= d is the constraints of the original problem.
+ * where y \in R, x \in R^n, and Ax = b and Cx <= d is the constraints of the original problem.
  *
  * If the solution for this problem {x*,y*} has y* <= 0, we'll have x* a feasible initial point
  * of the original problem

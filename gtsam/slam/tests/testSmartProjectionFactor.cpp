@@ -22,16 +22,18 @@
 #include "smartFactorScenarios.h"
 #include <gtsam/slam/SmartProjectionFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
+#include <boost/assign/std/map.hpp>
 #include <iostream>
 
-namespace {
+using namespace boost::assign;
+
 static const bool isDebugTest = false;
 static const Symbol l1('l', 1), l2('l', 2), l3('l', 3);
 static const Key c1 = 1, c2 = 2, c3 = 3;
 static const Point2 measurement1(323.0, 240.0);
 static const double rankTol = 1.0;
-}
 
 template<class CALIBRATION>
 PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
@@ -68,9 +70,8 @@ TEST(SmartProjectionFactor, Constructor) {
 /* ************************************************************************* */
 TEST(SmartProjectionFactor, Constructor2) {
   using namespace vanilla;
-  auto myParams = params;
-  myParams.setRankTolerance(rankTol);
-  SmartFactor factor1(unit2, myParams);
+  params.setRankTolerance(rankTol);
+  SmartFactor factor1(unit2, params);
 }
 
 /* ************************************************************************* */
@@ -83,9 +84,8 @@ TEST(SmartProjectionFactor, Constructor3) {
 /* ************************************************************************* */
 TEST(SmartProjectionFactor, Constructor4) {
   using namespace vanilla;
-  auto myParams = params;
-  myParams.setRankTolerance(rankTol);
-  SmartFactor factor1(unit2, myParams);
+  params.setRankTolerance(rankTol);
+  SmartFactor factor1(unit2, params);
   factor1.add(measurement1, c1);
 }
 
@@ -799,15 +799,34 @@ TEST(SmartProjectionFactor, implicitJacobianFactor ) {
   Implicit9& implicitSchurFactor =
       dynamic_cast<Implicit9&>(*gaussianImplicitSchurFactor);
 
-  VectorValues x{
-      {c1, (Vector(9) << 1, 2, 3, 4, 5, 6, 7, 8, 9).finished()},
-      {c2, (Vector(9) << 11, 12, 13, 14, 15, 16, 17, 18, 19).finished()}};
+  VectorValues x = map_list_of(c1,
+      (Vector(9) << 1, 2, 3, 4, 5, 6, 7, 8, 9).finished())(c2,
+      (Vector(9) << 11, 12, 13, 14, 15, 16, 17, 18, 19).finished());
 
   VectorValues yExpected, yActual;
   double alpha = 1.0;
   hessianFactor.multiplyHessianAdd(alpha, x, yActual);
   implicitSchurFactor.multiplyHessianAdd(alpha, x, yExpected);
   EXPECT(assert_equal(yActual, yExpected, 1e-7));
+}
+
+/* ************************************************************************* */
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic")
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel")
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal")
+
+TEST(SmartProjectionFactor, serialize) {
+  using namespace vanilla;
+  using namespace gtsam::serializationTestHelpers;
+  SmartFactor factor(unit2);
+
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
 }
 
 /* ************************************************************************* */

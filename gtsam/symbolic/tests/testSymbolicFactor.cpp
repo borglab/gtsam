@@ -21,9 +21,14 @@
 #include <gtsam/symbolic/SymbolicConditional.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 
+#include <boost/assign/std/vector.hpp>
+#include <boost/assign/list_of.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/tuple/tuple.hpp>
 
 using namespace std;
 using namespace gtsam;
+using namespace boost::assign;
 
 /* ************************************************************************* */
 #ifdef TRACK_ELIMINATE
@@ -65,17 +70,19 @@ TEST(SymbolicFactor, Constructors)
 /* ************************************************************************* */
 TEST(SymbolicFactor, EliminateSymbolic)
 {
-  const SymbolicFactorGraph factors = {
-      std::make_shared<SymbolicFactor>(2, 4, 6),
-      std::make_shared<SymbolicFactor>(1, 2, 5),
-      std::make_shared<SymbolicFactor>(0, 3)};
+  const SymbolicFactorGraph factors = list_of
+    (SymbolicFactor(2,4,6))
+    (SymbolicFactor(1,2,5))
+    (SymbolicFactor(0,3));
 
   const SymbolicFactor expectedFactor(4,5,6);
   const SymbolicConditional expectedConditional =
-    SymbolicConditional::FromKeys(KeyVector{0,1,2,3,4,5,6}, 4);
+    SymbolicConditional::FromKeys(list_of(0)(1)(2)(3)(4)(5)(6), 4);
 
-  const auto [actualConditional, actualFactor] =
-      EliminateSymbolic(factors, Ordering{0, 1, 2, 3});
+  SymbolicFactor::shared_ptr actualFactor;
+  SymbolicConditional::shared_ptr actualConditional;
+  boost::tie(actualConditional, actualFactor) =
+    EliminateSymbolic(factors, list_of(0)(1)(2)(3));
 
   CHECK(assert_equal(expectedConditional, *actualConditional));
   CHECK(assert_equal(expectedFactor, *actualFactor));

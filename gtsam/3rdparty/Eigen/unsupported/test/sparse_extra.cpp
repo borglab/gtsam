@@ -9,44 +9,9 @@
 
 
 // import basic and product tests for deprecated DynamicSparseMatrix
-#if 0 // sparse_basic(DynamicSparseMatrix) does not compile at all -> disabled
-static long g_realloc_count = 0;
-#define EIGEN_SPARSE_COMPRESSED_STORAGE_REALLOCATE_PLUGIN g_realloc_count++;
-
-static long g_dense_op_sparse_count = 0;
-#define EIGEN_SPARSE_ASSIGNMENT_FROM_DENSE_OP_SPARSE_PLUGIN g_dense_op_sparse_count++;
-#define EIGEN_SPARSE_ASSIGNMENT_FROM_SPARSE_ADD_DENSE_PLUGIN g_dense_op_sparse_count+=10;
-#define EIGEN_SPARSE_ASSIGNMENT_FROM_SPARSE_SUB_DENSE_PLUGIN g_dense_op_sparse_count+=20;
-
-#define EIGEN_SPARSE_TEST_INCLUDED_FROM_SPARSE_EXTRA 1
-#endif
-
 #define EIGEN_NO_DEPRECATED_WARNING
-// Disable counting of temporaries, since sparse_product(DynamicSparseMatrix)
-// has an extra copy-assignment.
-#define EIGEN_SPARSE_PRODUCT_IGNORE_TEMPORARY_COUNT
 #include "sparse_product.cpp"
-
-#if 0 // sparse_basic(DynamicSparseMatrix) does not compile at all -> disabled
 #include "sparse_basic.cpp"
-#endif
-
-#if EIGEN_HAS_CXX11
-
-#ifdef min
-#undef min
-#endif
-
-#ifdef max
-#undef max
-#endif
-
-#include <unordered_map>
-#define EIGEN_UNORDERED_MAP_SUPPORT
-
-#endif
-
-
 #include <Eigen/SparseExtra>
 
 template<typename SetterType,typename DenseType, typename Scalar, int Options>
@@ -139,8 +104,10 @@ template<typename SparseMatrixType> void sparse_extra(const SparseMatrixType& re
     #ifdef EIGEN_UNORDERED_MAP_SUPPORT
     VERIFY(( test_random_setter<RandomSetter<SparseMatrixType, StdUnorderedMapTraits> >(m,refMat,nonzeroCoords) ));
     #endif
-    #ifdef EIGEN_GOOGLEHASH_SUPPORT
+    #ifdef _DENSE_HASH_MAP_H_
     VERIFY(( test_random_setter<RandomSetter<SparseMatrixType, GoogleDenseHashMapTraits> >(m,refMat,nonzeroCoords) ));
+    #endif
+    #ifdef _SPARSE_HASH_MAP_H_
     VERIFY(( test_random_setter<RandomSetter<SparseMatrixType, GoogleSparseHashMapTraits> >(m,refMat,nonzeroCoords) ));
     #endif
 
@@ -162,32 +129,7 @@ template<typename SparseMatrixType> void sparse_extra(const SparseMatrixType& re
 
 }
 
-
-template<typename SparseMatrixType>
-void check_marketio()
-{
-  typedef Matrix<typename SparseMatrixType::Scalar, Dynamic, Dynamic> DenseMatrix;
-  Index rows = internal::random<Index>(1,100);
-  Index cols = internal::random<Index>(1,100);
-  SparseMatrixType m1, m2;
-  m1 = DenseMatrix::Random(rows, cols).sparseView();
-  saveMarket(m1, "sparse_extra.mtx");
-  loadMarket(m2, "sparse_extra.mtx");
-  VERIFY_IS_EQUAL(DenseMatrix(m1),DenseMatrix(m2));
-}
-
-template<typename VectorType>
-void check_marketio_vector()
-{
-  Index size = internal::random<Index>(1,100);
-  VectorType v1, v2;
-  v1 = VectorType::Random(size);
-  saveMarketVector(v1, "vector_extra.mtx");
-  loadMarketVector(v2, "vector_extra.mtx");
-  VERIFY_IS_EQUAL(v1,v2);
-}
-
-EIGEN_DECLARE_TEST(sparse_extra)
+void test_sparse_extra()
 {
   for(int i = 0; i < g_repeat; i++) {
     int s = Eigen::internal::random<int>(1,50);
@@ -201,26 +143,5 @@ EIGEN_DECLARE_TEST(sparse_extra)
 
     CALL_SUBTEST_3( (sparse_product<DynamicSparseMatrix<float, ColMajor> >()) );
     CALL_SUBTEST_3( (sparse_product<DynamicSparseMatrix<float, RowMajor> >()) );
-
-    CALL_SUBTEST_4( (check_marketio<SparseMatrix<float,ColMajor,int> >()) );
-    CALL_SUBTEST_4( (check_marketio<SparseMatrix<double,ColMajor,int> >()) );
-    CALL_SUBTEST_4( (check_marketio<SparseMatrix<std::complex<float>,ColMajor,int> >()) );
-    CALL_SUBTEST_4( (check_marketio<SparseMatrix<std::complex<double>,ColMajor,int> >()) );
-    CALL_SUBTEST_4( (check_marketio<SparseMatrix<float,ColMajor,long int> >()) );
-    CALL_SUBTEST_4( (check_marketio<SparseMatrix<double,ColMajor,long int> >()) );
-    CALL_SUBTEST_4( (check_marketio<SparseMatrix<std::complex<float>,ColMajor,long int> >()) );
-    CALL_SUBTEST_4( (check_marketio<SparseMatrix<std::complex<double>,ColMajor,long int> >()) );
-
-
-    CALL_SUBTEST_5( (check_marketio_vector<Matrix<float,1,Dynamic> >()) );
-    CALL_SUBTEST_5( (check_marketio_vector<Matrix<double,1,Dynamic> >()) );
-    CALL_SUBTEST_5( (check_marketio_vector<Matrix<std::complex<float>,1,Dynamic> >()) );
-    CALL_SUBTEST_5( (check_marketio_vector<Matrix<std::complex<double>,1,Dynamic> >()) );
-    CALL_SUBTEST_5( (check_marketio_vector<Matrix<float,Dynamic,1> >()) );
-    CALL_SUBTEST_5( (check_marketio_vector<Matrix<double,Dynamic,1> >()) );
-    CALL_SUBTEST_5( (check_marketio_vector<Matrix<std::complex<float>,Dynamic,1> >()) );
-    CALL_SUBTEST_5( (check_marketio_vector<Matrix<std::complex<double>,Dynamic,1> >()) );
-
-    TEST_SET_BUT_UNUSED_VARIABLE(s);
   }
 }

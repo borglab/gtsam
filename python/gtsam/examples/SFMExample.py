@@ -8,6 +8,7 @@ See LICENSE for the license information
 
 A structure-from-motion problem on a simulated dataset
 """
+from __future__ import print_function
 
 import gtsam
 import matplotlib.pyplot as plt
@@ -88,7 +89,7 @@ def main():
     point_noise = gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
     factor = PriorFactorPoint3(L(0), points[0], point_noise)
     graph.push_back(factor)
-    graph.print('Factor Graph:\n')
+    graph.print_('Factor Graph:\n')
 
     # Create the data structure to hold the initial estimate to the solution
     # Intentionally initialize the variables off from the ground truth
@@ -99,7 +100,7 @@ def main():
     for j, point in enumerate(points):
         transformed_point = point + 0.1*np.random.randn(3)
         initial_estimate.insert(L(j), transformed_point)
-    initial_estimate.print('Initial Estimates:\n')
+    initial_estimate.print_('Initial Estimates:\n')
 
     # Optimize the graph and print results
     params = gtsam.DoglegParams()
@@ -107,7 +108,7 @@ def main():
     optimizer = DoglegOptimizer(graph, initial_estimate, params)
     print('Optimizing:')
     result = optimizer.optimize()
-    result.print('Final results:\n')
+    result.print_('Final results:\n')
     print('initial error = {}'.format(graph.error(initial_estimate)))
     print('final error = {}'.format(graph.error(result)))
 

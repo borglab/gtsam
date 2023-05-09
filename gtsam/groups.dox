@@ -1,7 +1,7 @@
 /**
 
 \defgroup LinearSolving Solving of sparse linear systems with least-squares
-@{ @}
+@{
 
 \defgroup Multifrontal Solving by multifrontal variable elimination (QR and Cholesky)
 @{ @}
@@ -9,48 +9,6 @@
 \defgroup Sequential Solving by sequential variable elimination (QR and Cholesky)
 @{ @}
 
-\defgroup base Base
-@{ @}
-
-\defgroup basis Basis
-@{ @}
-
-\defgroup discrete Discrete
-@{ @}
-
-\defgroup geometry Geometry
-@{
-  Geometric primitives.
 @}
-
-\defgroup hybrid Hybrid
-@{ @}
-
-\defgroup inference Inference
-@{ @}
-
-\defgroup linear Linear
-@{ @}
-
-\defgroup navigation Navigation
-@{ @}
-
-\defgroup nonlinear Nonlinear
-@{ @}
-
-\defgroup sam SAM
-@{ @}
-
-\defgroup sfm SFM
-@{ @}
-
-\defgroup slam SLAM
-@{ Useful SLAM components @}
-
-\defgroup symbolic Symbolic
-@{ @}
-
-\defgroup isam2 ISAM2
-@{ @}
 
 */ 

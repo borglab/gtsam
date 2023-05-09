@@ -10,7 +10,7 @@ then
 fi
 
 TESTSLIST="@EIGEN_TESTS_LIST@"
-targets_to_make=$(echo "$TESTSLIST" | grep -E "$1" | xargs echo)
+targets_to_make=`echo "$TESTSLIST" | egrep "$1" | xargs echo`
 
 if [ -n "${EIGEN_MAKE_ARGS:+x}" ]
 then

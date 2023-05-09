@@ -31,7 +31,7 @@ std::ostream& operator<<(std::ostream& os, const Cal3DS2& cal) {
 }
 
 /* ************************************************************************* */
-void Cal3DS2::print(const std::string& s) const { Base::print(s); }
+void Cal3DS2::print(const std::string& s_) const { Base::print(s_); }
 
 /* ************************************************************************* */
 bool Cal3DS2::equals(const Cal3DS2& K, double tol) const {

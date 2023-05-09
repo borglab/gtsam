@@ -82,7 +82,7 @@ w_coriolis = [0;0;0];
 %% Solver object
 isamParams = ISAM2Params;
 isamParams.setFactorization('QR');
-isamParams.relinearizeSkip = 1;
+isamParams.setRelinearizeSkip(1);
 isam = gtsam.ISAM2(isamParams);
 newFactors = NonlinearFactorGraph;
 newValues = Values;

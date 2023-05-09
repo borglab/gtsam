@@ -15,7 +15,10 @@
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
+#include <boost/assign/std/vector.hpp>
+
 using namespace std;
+using namespace boost::assign;
 using namespace gtsam;
 
 const gtsam::noiseModel::Diagonal::shared_ptr diag_model2 = noiseModel::Diagonal::Sigmas(Vector2(1.0, 1.0));
@@ -322,7 +325,7 @@ TEST(TestLinearContainerFactor, hessian_relinearize)
 TEST(TestLinearContainerFactor, Rekey) {
   // Make an example factor
   auto nonlinear_factor =
-      std::make_shared<gtsam::BetweenFactor<gtsam::Point3>>(
+      boost::make_shared<gtsam::BetweenFactor<gtsam::Point3>>(
           gtsam::Symbol('x', 0), gtsam::Symbol('l', 0), gtsam::Point3(0, 0, 0),
           gtsam::noiseModel::Isotropic::Sigma(3, 1));
 
@@ -345,13 +348,13 @@ TEST(TestLinearContainerFactor, Rekey) {
 
   // Cast back to LCF ptr
   LinearContainerFactor::shared_ptr lcf_factor_rekey_ptr =
-      std::static_pointer_cast<LinearContainerFactor>(lcf_factor_rekeyed);
+      boost::static_pointer_cast<LinearContainerFactor>(lcf_factor_rekeyed);
   CHECK(lcf_factor_rekey_ptr);
 
   // For extra fun lets try linearizing this LCF
   gtsam::Values linearization_pt_rekeyed;
-  for (auto key : linearization_pt.keys()) {
-    linearization_pt_rekeyed.insert(key_map.at(key), linearization_pt.at(key));
+  for (auto key_val : linearization_pt) {
+    linearization_pt_rekeyed.insert(key_map.at(key_val.key), key_val.value);
   }
 
   // Check independent values since we don't want to unnecessarily sort
@@ -364,7 +367,7 @@ TEST(TestLinearContainerFactor, Rekey) {
 TEST(TestLinearContainerFactor, Rekey2) {
   // Make an example factor
   auto nonlinear_factor =
-      std::make_shared<gtsam::BetweenFactor<gtsam::Point3>>(
+      boost::make_shared<gtsam::BetweenFactor<gtsam::Point3>>(
           gtsam::Symbol('x', 0), gtsam::Symbol('l', 0), gtsam::Point3(0, 0, 0),
           gtsam::noiseModel::Isotropic::Sigma(3, 1));
 
@@ -383,7 +386,7 @@ TEST(TestLinearContainerFactor, Rekey2) {
 
   // Cast back to LCF ptr
   LinearContainerFactor::shared_ptr lcf_factor_rekey_ptr =
-      std::static_pointer_cast<LinearContainerFactor>(
+      boost::static_pointer_cast<LinearContainerFactor>(
           lcf_factor.rekey(key_map));
   CHECK(lcf_factor_rekey_ptr);
 }

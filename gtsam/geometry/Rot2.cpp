@@ -130,18 +130,5 @@ Rot2 Rot2::relativeBearing(const Point2& d, OptionalJacobian<1, 2> H) {
 }
 
 /* ************************************************************************* */
-Rot2 Rot2::ClosestTo(const Matrix2& M) {
-  Eigen::JacobiSVD<Matrix2> svd(M, Eigen::ComputeFullU | Eigen::ComputeFullV);
-  const Matrix2& U = svd.matrixU();
-  const Matrix2& V = svd.matrixV();
-  const double det = (U * V.transpose()).determinant();
-  Matrix2 M_prime = (U * Vector2(1, det).asDiagonal() * V.transpose());
-
-  double c = M_prime(0, 0);
-  double s = M_prime(1, 0);
-  return Rot2::fromCosSin(c, s);
-}
-
-/* ************************************************************************* */
 
 } // gtsam

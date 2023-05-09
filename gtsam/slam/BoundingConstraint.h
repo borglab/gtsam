@@ -27,16 +27,13 @@ namespace gtsam {
  * greater/less than a fixed threshold.  The function
  * will need to have its value function implemented to return
  * a scalar for comparison.
- * @ingroup slam
+ * @addtogroup SLAM
  */
 template<class VALUE>
-struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
+struct BoundingConstraint1: public NoiseModelFactor1<VALUE> {
   typedef VALUE X;
-  typedef NoiseModelFactorN<VALUE> Base;
-  typedef std::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
-
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
+  typedef NoiseModelFactor1<VALUE> Base;
+  typedef boost::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
 
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than
@@ -57,8 +54,8 @@ struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
    * Must have optional argument for derivative with 1xN matrix, where
    * N = X::dim()
    */
-  virtual double value(const X& x, OptionalMatrixType H =
-      OptionalNone) const = 0;
+  virtual double value(const X& x, boost::optional<Matrix&> H =
+      boost::none) const = 0;
 
   /** active when constraint *NOT* met */
   bool active(const Values& c) const override {
@@ -67,9 +64,10 @@ struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
     return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
   }
 
-  Vector evaluateError(const X& x, OptionalMatrixType H) const override {
+  Vector evaluateError(const X& x, boost::optional<Matrix&> H =
+      boost::none) const override {
     Matrix D;
-    double error = value(x, &D) - threshold_;
+    double error = value(x, D) - threshold_;
     if (H) {
       if (isGreaterThan_) *H = D;
       else *H = -1.0 * D;
@@ -83,18 +81,15 @@ struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor1",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(threshold_);
     ar & BOOST_SERIALIZATION_NVP(isGreaterThan_);
   }
-#endif
 };
 
 /**
@@ -102,15 +97,12 @@ private:
  * to implement for specific systems
  */
 template<class VALUE1, class VALUE2>
-struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
+struct BoundingConstraint2: public NoiseModelFactor2<VALUE1, VALUE2> {
   typedef VALUE1 X1;
   typedef VALUE2 X2;
 
-  typedef NoiseModelFactorN<VALUE1, VALUE2> Base;
-  typedef std::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
-
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
+  typedef NoiseModelFactor2<VALUE1, VALUE2> Base;
+  typedef boost::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
 
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than
@@ -130,8 +122,8 @@ struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
    * Must have optional argument for derivatives)
    */
   virtual double value(const X1& x1, const X2& x2,
-      OptionalMatrixType H1 = OptionalNone,
-      OptionalMatrixType H2 = OptionalNone) const = 0;
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const = 0;
 
   /** active when constraint *NOT* met */
   bool active(const Values& c) const override {
@@ -141,9 +133,10 @@ struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
   }
 
   Vector evaluateError(const X1& x1, const X2& x2,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const override {
     Matrix D1, D2;
-    double error = value(x1, x2, &D1, &D2) - threshold_;
+    double error = value(x1, x2, D1, D2) - threshold_;
     if (H1) {
       if (isGreaterThan_)  *H1 = D1;
       else *H1 = -1.0 * D1;
@@ -161,18 +154,15 @@ struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor2",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(threshold_);
     ar & BOOST_SERIALIZATION_NVP(isGreaterThan_);
   }
-#endif
 };
 
 } // \namespace gtsam

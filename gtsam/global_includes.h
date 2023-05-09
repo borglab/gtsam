@@ -13,7 +13,7 @@
  * @file     global_includes.h
  * @brief    Included from all GTSAM files
  * @author   Richard Roberts
- * @ingroup base
+ * @addtogroup base
  */
 
 #pragma once

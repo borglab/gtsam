@@ -16,7 +16,7 @@ class Point2 {
   bool equals(const gtsam::Point2& point, double tol) const;
 
   // Group
-  static gtsam::Point2 Identity();
+  static gtsam::Point2 identity();
 
   // Standard Interface
   double x() const;
@@ -27,6 +27,9 @@ class Point2 {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
   
 class Point2Pairs {
@@ -73,7 +76,7 @@ class StereoPoint2 {
   bool equals(const gtsam::StereoPoint2& point, double tol) const;
 
   // Group
-  static gtsam::StereoPoint2 Identity();
+  static gtsam::StereoPoint2 identity();
   gtsam::StereoPoint2 inverse() const;
   gtsam::StereoPoint2 compose(const gtsam::StereoPoint2& p2) const;
   gtsam::StereoPoint2 between(const gtsam::StereoPoint2& p2) const;
@@ -101,6 +104,9 @@ class StereoPoint2 {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/geometry/Point3.h>
@@ -115,7 +121,7 @@ class Point3 {
   bool equals(const gtsam::Point3& p, double tol) const;
 
   // Group
-  static gtsam::Point3 Identity();
+  static gtsam::Point3 identity();
 
   // Standard Interface
   Vector vector() const;
@@ -126,9 +132,8 @@ class Point3 {
   // enabling serialization functionality
   void serialize() const;
 
-  // Other methods
-  gtsam::Point3 normalize(const gtsam::Point3 &p) const;
-  gtsam::Point3 normalize(const gtsam::Point3 &p, Eigen::Ref<Eigen::MatrixXd> H) const;
+  // enable pickling in python
+  void pickle() const;
 };
 
 class Point3Pairs {
@@ -153,7 +158,7 @@ class Rot2 {
   bool equals(const gtsam::Rot2& rot, double tol) const;
 
   // Group
-  static gtsam::Rot2 Identity();
+  static gtsam::Rot2 identity();
   gtsam::Rot2 inverse();
   gtsam::Rot2 compose(const gtsam::Rot2& p2) const;
   gtsam::Rot2 between(const gtsam::Rot2& p2) const;
@@ -186,6 +191,9 @@ class Rot2 {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/geometry/SO3.h>
@@ -202,7 +210,7 @@ class SO3 {
   bool equals(const gtsam::SO3& other, double tol) const;
 
   // Group
-  static gtsam::SO3 Identity();
+  static gtsam::SO3 identity();
   gtsam::SO3 inverse() const;
   gtsam::SO3 between(const gtsam::SO3& R) const;
   gtsam::SO3 compose(const gtsam::SO3& R) const;
@@ -232,7 +240,7 @@ class SO4 {
   bool equals(const gtsam::SO4& other, double tol) const;
 
   // Group
-  static gtsam::SO4 Identity();
+  static gtsam::SO4 identity();
   gtsam::SO4 inverse() const;
   gtsam::SO4 between(const gtsam::SO4& Q) const;
   gtsam::SO4 compose(const gtsam::SO4& Q) const;
@@ -262,7 +270,7 @@ class SOn {
   bool equals(const gtsam::SOn& other, double tol) const;
 
   // Group
-  static gtsam::SOn Identity();
+  static gtsam::SOn identity();
   gtsam::SOn inverse() const;
   gtsam::SOn between(const gtsam::SOn& Q) const;
   gtsam::SOn compose(const gtsam::SOn& Q) const;
@@ -326,7 +334,7 @@ class Rot3 {
   bool equals(const gtsam::Rot3& rot, double tol) const;
 
   // Group
-  static gtsam::Rot3 Identity();
+  static gtsam::Rot3 identity();
   gtsam::Rot3 inverse() const;
   gtsam::Rot3 compose(const gtsam::Rot3& p2) const;
   gtsam::Rot3 between(const gtsam::Rot3& p2) const;
@@ -344,13 +352,6 @@ class Rot3 {
   gtsam::Point3 rotate(const gtsam::Point3& p) const;
   gtsam::Point3 unrotate(const gtsam::Point3& p) const;
 
-  // Group action on Unit3
-  gtsam::Unit3 rotate(const gtsam::Unit3& p) const;
-  gtsam::Unit3 rotate(const gtsam::Unit3& p,
-                      Eigen::Ref<Eigen::MatrixXd> HR,
-                      Eigen::Ref<Eigen::MatrixXd> Hp) const;
-  gtsam::Unit3 unrotate(const gtsam::Unit3& p) const;
-  
   // Standard Interface
   static gtsam::Rot3 Expmap(Vector v);
   static Vector Logmap(const gtsam::Rot3& p);
@@ -366,11 +367,14 @@ class Rot3 {
   double yaw() const;
   pair<gtsam::Unit3, double> axisAngle() const;
   gtsam::Quaternion toQuaternion() const;
-  // Vector quaternion() const; // @deprecated, see https://github.com/borglab/gtsam/pull/1219
+  Vector quaternion() const;
   gtsam::Rot3 slerp(double t, const gtsam::Rot3& other) const;
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/geometry/Pose2.h>
@@ -383,15 +387,12 @@ class Pose2 {
   Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
   Pose2(Vector v);
 
-  static std::optional<gtsam::Pose2> Align(const gtsam::Point2Pairs& abPointPairs);
-  static std::optional<gtsam::Pose2> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
-
   // Testable
   void print(string s = "") const;
   bool equals(const gtsam::Pose2& pose, double tol) const;
 
   // Group
-  static gtsam::Pose2 Identity();
+  static gtsam::Pose2 identity();
   gtsam::Pose2 inverse() const;
   gtsam::Pose2 compose(const gtsam::Pose2& p2) const;
   gtsam::Pose2 between(const gtsam::Pose2& p2) const;
@@ -420,10 +421,6 @@ class Pose2 {
   gtsam::Point2 transformFrom(const gtsam::Point2& p) const;
   gtsam::Point2 transformTo(const gtsam::Point2& p) const;
 
-  // Matrix versions
-  Matrix transformFrom(const Matrix& points) const;
-  Matrix transformTo(const Matrix& points) const;
-
   // Standard Interface
   double x() const;
   double y() const;
@@ -436,8 +433,13 @@ class Pose2 {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
   
+boost::optional<gtsam::Pose2> align(const gtsam::Point2Pairs& pairs);
+
 #include <gtsam/geometry/Pose3.h>
 class Pose3 {
   // Standard Constructors
@@ -447,53 +449,31 @@ class Pose3 {
   Pose3(const gtsam::Pose2& pose2);
   Pose3(Matrix mat);
 
-  static std::optional<gtsam::Pose3> Align(const gtsam::Point3Pairs& abPointPairs);
-  static std::optional<gtsam::Pose3> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
-
   // Testable
   void print(string s = "") const;
   bool equals(const gtsam::Pose3& pose, double tol) const;
 
   // Group
-  static gtsam::Pose3 Identity();
+  static gtsam::Pose3 identity();
   gtsam::Pose3 inverse() const;
-  gtsam::Pose3 inverse(Eigen::Ref<Eigen::MatrixXd> H) const;
   gtsam::Pose3 compose(const gtsam::Pose3& pose) const;
-  gtsam::Pose3 compose(const gtsam::Pose3& pose,
-                       Eigen::Ref<Eigen::MatrixXd> H1,
-                       Eigen::Ref<Eigen::MatrixXd> H2) const;
   gtsam::Pose3 between(const gtsam::Pose3& pose) const;
-  gtsam::Pose3 between(const gtsam::Pose3& pose,
-                       Eigen::Ref<Eigen::MatrixXd> H1,
-                       Eigen::Ref<Eigen::MatrixXd> H2) const;
-  gtsam::Pose3 slerp(double t, const gtsam::Pose3& pose) const;
-  gtsam::Pose3 slerp(double t, const gtsam::Pose3& pose,
-                           Eigen::Ref<Eigen::MatrixXd> Hx,
-                           Eigen::Ref<Eigen::MatrixXd> Hy) const;
 
   // Operator Overloads
   gtsam::Pose3 operator*(const gtsam::Pose3& pose) const;
 
   // Manifold
   gtsam::Pose3 retract(Vector v) const;
-  gtsam::Pose3 retract(Vector v, Eigen::Ref<Eigen::MatrixXd> Hxi) const;
   Vector localCoordinates(const gtsam::Pose3& pose) const;
-  Vector localCoordinates(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hxi) const;
 
   // Lie Group
   static gtsam::Pose3 Expmap(Vector v);
-  static gtsam::Pose3 Expmap(Vector v, Eigen::Ref<Eigen::MatrixXd> Hxi);
   static Vector Logmap(const gtsam::Pose3& pose);
-  static Vector Logmap(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hpose);
   gtsam::Pose3 expmap(Vector v);
   Vector logmap(const gtsam::Pose3& pose);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
-  Vector Adjoint(Vector xi, Eigen::Ref<Eigen::MatrixXd> H_this,
-                 Eigen::Ref<Eigen::MatrixXd> H_xib) const;
   Vector AdjointTranspose(Vector xi) const;
-  Vector AdjointTranspose(Vector xi, Eigen::Ref<Eigen::MatrixXd> H_this,
-                          Eigen::Ref<Eigen::MatrixXd> H_x) const;
   static Matrix adjointMap(Vector xi);
   static Vector adjoint(Vector xi, Vector y);
   static Matrix adjointMap_(Vector xi);
@@ -506,40 +486,25 @@ class Pose3 {
 
   // Group Action on Point3
   gtsam::Point3 transformFrom(const gtsam::Point3& point) const;
-  gtsam::Point3 transformFrom(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
-                              Eigen::Ref<Eigen::MatrixXd> Hpoint) const;
   gtsam::Point3 transformTo(const gtsam::Point3& point) const;
-  gtsam::Point3 transformTo(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
-                            Eigen::Ref<Eigen::MatrixXd> Hpoint) const;
-
-  // Matrix versions
-  Matrix transformFrom(const Matrix& points) const;
-  Matrix transformTo(const Matrix& points) const;
 
   // Standard Interface
   gtsam::Rot3 rotation() const;
-  gtsam::Rot3 rotation(Eigen::Ref<Eigen::MatrixXd> Hself) const;
   gtsam::Point3 translation() const;
-  gtsam::Point3 translation(Eigen::Ref<Eigen::MatrixXd> Hself) const;
   double x() const;
   double y() const;
   double z() const;
   Matrix matrix() const;
   gtsam::Pose3 transformPoseFrom(const gtsam::Pose3& pose) const;
-  gtsam::Pose3 transformPoseFrom(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hself,
-                                 Eigen::Ref<Eigen::MatrixXd> HaTb) const;
   gtsam::Pose3 transformPoseTo(const gtsam::Pose3& pose) const;
-  gtsam::Pose3 transformPoseTo(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hself,
-                               Eigen::Ref<Eigen::MatrixXd> HwTb) const;
   double range(const gtsam::Point3& point);
-  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
-               Eigen::Ref<Eigen::MatrixXd> Hpoint);
   double range(const gtsam::Pose3& pose);
-  double range(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hself,
-               Eigen::Ref<Eigen::MatrixXd> Hpose);
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 class Pose3Pairs {
@@ -570,30 +535,20 @@ class Unit3 {
 
   // Other functionality
   Matrix basis() const;
-  Matrix basis(Eigen::Ref<Eigen::MatrixXd> H) const;
   Matrix skew() const;
   gtsam::Point3 point3() const;
-  gtsam::Point3 point3(Eigen::Ref<Eigen::MatrixXd> H) const;
-
-  Vector3 unitVector() const;
-  Vector3 unitVector(Eigen::Ref<Eigen::MatrixXd> H) const;
-  double dot(const gtsam::Unit3& q) const;
-  double dot(const gtsam::Unit3& q, Eigen::Ref<Eigen::MatrixXd> H1,
-             Eigen::Ref<Eigen::MatrixXd> H2) const;
-  Vector2 errorVector(const gtsam::Unit3& q) const;
-  Vector2 errorVector(const gtsam::Unit3& q, Eigen::Ref<Eigen::MatrixXd> H_p,
-                      Eigen::Ref<Eigen::MatrixXd> H_q) const;
 
   // Manifold
   static size_t Dim();
   size_t dim() const;
   gtsam::Unit3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Unit3& s) const;
-  gtsam::Unit3 FromPoint3(const gtsam::Point3& point) const;
-  gtsam::Unit3 FromPoint3(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> H) const;
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 
   // enabling function to compare objects
   bool equals(const gtsam::Unit3& expected, double tol) const;
@@ -603,12 +558,6 @@ class Unit3 {
 class EssentialMatrix {
   // Standard Constructors
   EssentialMatrix(const gtsam::Rot3& aRb, const gtsam::Unit3& aTb);
-
-  // Constructors from Pose3
-  gtsam::EssentialMatrix FromPose3(const gtsam::Pose3& _1P2_);
-
-  gtsam::EssentialMatrix FromPose3(const gtsam::Pose3& _1P2_,
-                            Eigen::Ref<Eigen::MatrixXd> H);
 
   // Testable
   void print(string s = "") const;
@@ -647,13 +596,7 @@ class Cal3_S2 {
 
   // Action on Point2
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 calibrate(const gtsam::Point2& p,
-                          Eigen::Ref<Eigen::MatrixXd> Dcal,
-                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
-                            Eigen::Ref<Eigen::MatrixXd> Dcal,
-                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // Standard Interface
   double fx() const;
@@ -668,6 +611,9 @@ class Cal3_S2 {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/geometry/Cal3DS2_Base.h>
@@ -692,16 +638,13 @@ virtual class Cal3DS2_Base {
 
   // Action on Point2
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
-                            Eigen::Ref<Eigen::MatrixXd> Dcal,
-                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 calibrate(const gtsam::Point2& p,
-                          Eigen::Ref<Eigen::MatrixXd> Dcal,
-                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/geometry/Cal3DS2.h>
@@ -725,6 +668,9 @@ virtual class Cal3DS2 : gtsam::Cal3DS2_Base {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/geometry/Cal3Unified.h>
@@ -755,16 +701,13 @@ virtual class Cal3Unified : gtsam::Cal3DS2_Base {
   // Note: the signature of this functions differ from the functions
   // with equal name in the base class.
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 calibrate(const gtsam::Point2& p,
-                          Eigen::Ref<Eigen::MatrixXd> Dcal,
-                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
-                            Eigen::Ref<Eigen::MatrixXd> Dcal,
-                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/geometry/Cal3Fisheye.h>
@@ -787,13 +730,7 @@ class Cal3Fisheye {
 
   // Action on Point2
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 calibrate(const gtsam::Point2& p,
-                          Eigen::Ref<Eigen::MatrixXd> Dcal,
-                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
-                            Eigen::Ref<Eigen::MatrixXd> Dcal,
-                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // Standard Interface
   double fx() const;
@@ -813,6 +750,9 @@ class Cal3Fisheye {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/geometry/Cal3_S2Stereo.h>
@@ -856,13 +796,7 @@ class Cal3Bundler {
 
   // Action on Point2
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 calibrate(const gtsam::Point2& p,
-                          Eigen::Ref<Eigen::MatrixXd> Dcal,
-                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
-                            Eigen::Ref<Eigen::MatrixXd> Dcal,
-                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // Standard Interface
   double fx() const;
@@ -877,6 +811,9 @@ class Cal3Bundler {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/geometry/CalibratedCamera.h>
@@ -900,29 +837,19 @@ class CalibratedCamera {
 
   // Action on Point3
   gtsam::Point2 project(const gtsam::Point3& point) const;
-  gtsam::Point2 project(const gtsam::Point3& point,
-                        Eigen::Ref<Eigen::MatrixXd> Dcamera,
-                        Eigen::Ref<Eigen::MatrixXd> Dpoint);
-  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
-  gtsam::Point3 backproject(const gtsam::Point2& p, double depth,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dpose,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dp,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_ddepth);
-
   static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
 
   // Standard Interface
   gtsam::Pose3 pose() const;
   double range(const gtsam::Point3& point) const;
-  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
-               Eigen::Ref<Eigen::MatrixXd> Dpoint);
   double range(const gtsam::Pose3& pose) const;
-  double range(const gtsam::Pose3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
-               Eigen::Ref<Eigen::MatrixXd> Dpose);
   double range(const gtsam::CalibratedCamera& camera) const;
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/geometry/PinholeCamera.h>
@@ -930,7 +857,6 @@ template <CALIBRATION>
 class PinholeCamera {
   // Standard Constructors and Named Constructors
   PinholeCamera();
-  PinholeCamera(const This other);
   PinholeCamera(const gtsam::Pose3& pose);
   PinholeCamera(const gtsam::Pose3& pose, const CALIBRATION& K);
   static This Level(const CALIBRATION& K, const gtsam::Pose2& pose,
@@ -957,121 +883,15 @@ class PinholeCamera {
   static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
   pair<gtsam::Point2, bool> projectSafe(const gtsam::Point3& pw) const;
   gtsam::Point2 project(const gtsam::Point3& point);
-  gtsam::Point2 project(const gtsam::Point3& point,
-                        Eigen::Ref<Eigen::MatrixXd> Dpose,
-                        Eigen::Ref<Eigen::MatrixXd> Dpoint,
-                        Eigen::Ref<Eigen::MatrixXd> Dcal);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
-  gtsam::Point3 backproject(const gtsam::Point2& p, double depth,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dpose,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dp,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_ddepth,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dcal);
-
-  gtsam::Point2 reprojectionError(const gtsam::Point3& pw, const gtsam::Point2& measured,
-                                  Eigen::Ref<Eigen::MatrixXd> Dpose,
-                                  Eigen::Ref<Eigen::MatrixXd> Dpoint,
-                                  Eigen::Ref<Eigen::MatrixXd> Dcal);
-
   double range(const gtsam::Point3& point);
-  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
-               Eigen::Ref<Eigen::MatrixXd> Dpoint);
   double range(const gtsam::Pose3& pose);
-  double range(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Dcamera,
-               Eigen::Ref<Eigen::MatrixXd> Dpose);
 
   // enabling serialization functionality
   void serialize() const;
-};
 
-// Forward declaration of PinholeCameraCalX is defined here.
-#include <gtsam/geometry/SimpleCamera.h>
-// Some typedefs for common camera types
-// PinholeCameraCal3_S2 is the same as SimpleCamera above
-typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
-typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
-typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
-typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
-typedef gtsam::PinholeCamera<gtsam::Cal3Fisheye> PinholeCameraCal3Fisheye;
-
-#include <gtsam/geometry/PinholePose.h>
-template <CALIBRATION>
-class PinholePose {
-  // Standard Constructors and Named Constructors
-  PinholePose();
-  PinholePose(const This other);
-  PinholePose(const gtsam::Pose3& pose);
-  PinholePose(const gtsam::Pose3& pose, const CALIBRATION* K);
-  static This Level(const gtsam::Pose2& pose, double height);
-  static This Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
-                     const gtsam::Point3& upVector, const CALIBRATION* K);
-
-  // Testable
-  void print(string s = "PinholePose") const;
-  bool equals(const This& camera, double tol) const;
-
-  // Standard Interface
-  gtsam::Pose3 pose() const;
-  CALIBRATION calibration() const;
-
-  // Manifold
-  This retract(Vector d) const;
-  Vector localCoordinates(const This& T2) const;
-  size_t dim() const;
-  static size_t Dim();
-
-  // Transformations and measurement functions
-  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
-  pair<gtsam::Point2, bool> projectSafe(const gtsam::Point3& pw) const;
-  gtsam::Point2 project(const gtsam::Point3& point);
-  gtsam::Point2 project(const gtsam::Point3& point,
-                        Eigen::Ref<Eigen::MatrixXd> Dpose,
-                        Eigen::Ref<Eigen::MatrixXd> Dpoint,
-                        Eigen::Ref<Eigen::MatrixXd> Dcal);
-  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
-  gtsam::Point3 backproject(const gtsam::Point2& p, double depth,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dpose,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dp,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_ddepth,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dcal);
-  double range(const gtsam::Point3& point);
-  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
-               Eigen::Ref<Eigen::MatrixXd> Dpoint);
-  double range(const gtsam::Pose3& pose);
-  double range(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Dcamera,
-               Eigen::Ref<Eigen::MatrixXd> Dpose);
-
-  // enabling serialization functionality
-  void serialize() const;
-};
-
-typedef gtsam::PinholePose<gtsam::Cal3_S2> PinholePoseCal3_S2;
-typedef gtsam::PinholePose<gtsam::Cal3DS2> PinholePoseCal3DS2;
-typedef gtsam::PinholePose<gtsam::Cal3Unified> PinholePoseCal3Unified;
-typedef gtsam::PinholePose<gtsam::Cal3Bundler> PinholePoseCal3Bundler;
-typedef gtsam::PinholePose<gtsam::Cal3Fisheye> PinholePoseCal3Fisheye;
-
-#include <gtsam/geometry/Similarity2.h>
-class Similarity2 {
-  // Standard Constructors
-  Similarity2();
-  Similarity2(double s);
-  Similarity2(const gtsam::Rot2& R, const gtsam::Point2& t, double s);
-  Similarity2(const Matrix& R, const Vector& t, double s);
-  Similarity2(const Matrix& T);
-
-  gtsam::Point2 transformFrom(const gtsam::Point2& p) const;
-  gtsam::Pose2 transformFrom(const gtsam::Pose2& T);
-
-  static gtsam::Similarity2 Align(const gtsam::Point2Pairs& abPointPairs);
-  static gtsam::Similarity2 Align(const gtsam::Pose2Pairs& abPosePairs);
-
-  // Standard Interface
-  bool equals(const gtsam::Similarity2& sim, double tol) const;
-  Matrix matrix() const;
-  gtsam::Rot2& rotation();
-  gtsam::Point2& translation();
-  double scale() const;
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/geometry/Similarity3.h>
@@ -1090,12 +910,21 @@ class Similarity3 {
   static gtsam::Similarity3 Align(const gtsam::Pose3Pairs& abPosePairs);
 
   // Standard Interface
-  bool equals(const gtsam::Similarity3& sim, double tol) const;
-  Matrix matrix() const;
-  gtsam::Rot3& rotation();
-  gtsam::Point3& translation();
+  const Matrix matrix() const;
+  const gtsam::Rot3& rotation();
+  const gtsam::Point3& translation();
   double scale() const;
 };
+
+// Forward declaration of PinholeCameraCalX is defined here.
+#include <gtsam/geometry/SimpleCamera.h>
+// Some typedefs for common camera types
+// PinholeCameraCal3_S2 is the same as SimpleCamera above
+typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
+typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
+typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
+typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
+typedef gtsam::PinholeCamera<gtsam::Cal3Fisheye> PinholeCameraCal3Fisheye;
 
 template <T>
 class CameraSet {
@@ -1128,171 +957,62 @@ class StereoCamera {
   static size_t Dim();
 
   // Transformations and measurement functions
-  gtsam::StereoPoint2 project(const gtsam::Point3& point) const;
+  gtsam::StereoPoint2 project(const gtsam::Point3& point);
   gtsam::Point3 backproject(const gtsam::StereoPoint2& p) const;
-
-  // project with Jacobian
-  gtsam::StereoPoint2 project2(const gtsam::Point3& point,
-                              Eigen::Ref<Eigen::MatrixXd> H1,
-                              Eigen::Ref<Eigen::MatrixXd> H2) const;
-
-  gtsam::Point3 backproject2(const gtsam::StereoPoint2& p,
-                             Eigen::Ref<Eigen::MatrixXd> H1,
-                             Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/geometry/triangulation.h>
-class TriangulationResult {
-  enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
-  gtsam::TriangulationResult::Status status;
-  TriangulationResult(const gtsam::Point3& p);
-  const gtsam::Point3& get() const;
-  static gtsam::TriangulationResult Degenerate();
-  static gtsam::TriangulationResult Outlier();
-  static gtsam::TriangulationResult FarPoint();
-  static gtsam::TriangulationResult BehindCamera();
-  bool valid() const;
-  bool degenerate() const;
-  bool outlier() const;
-  bool farPoint() const;
-  bool behindCamera() const;
-};
-
-class TriangulationParameters {
-  double rankTolerance;
-  bool enableEPI;
-  double landmarkDistanceThreshold;
-  double dynamicOutlierRejectionThreshold;
-  gtsam::SharedNoiseModel noiseModel;
-  TriangulationParameters(const double rankTolerance = 1.0,
-                          const bool enableEPI = false,
-                          double landmarkDistanceThreshold = -1,
-                          double dynamicOutlierRejectionThreshold = -1,
-                          const gtsam::SharedNoiseModel& noiseModel = nullptr);
-};
 
 // Templates appear not yet supported for free functions - issue raised at
 // borglab/wrap#14 to add support
-
-// Cal3_S2 versions
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
                                 gtsam::Cal3_S2* sharedCal,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                double rank_tol, bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
+                                gtsam::Cal3DS2* sharedCal,
+                                const gtsam::Point2Vector& measurements,
+                                double rank_tol, bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
+                                gtsam::Cal3Bundler* sharedCal,
+                                const gtsam::Point2Vector& measurements,
+                                double rank_tol, bool optimize);
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr,
-                                const bool useLOST = false);
+                                double rank_tol, bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
+                                const gtsam::Point2Vector& measurements,
+                                double rank_tol, bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Fisheye& cameras,
+                                const gtsam::Point2Vector& measurements,
+                                double rank_tol, bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Unified& cameras,
+                                const gtsam::Point2Vector& measurements,
+                                double rank_tol, bool optimize);
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3_S2* sharedCal,
+                                   const gtsam::Point2Vector& measurements,
+                                   const gtsam::Point3& initialEstimate);
+gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
+                                   gtsam::Cal3DS2* sharedCal,
+                                   const gtsam::Point2Vector& measurements,
+                                   const gtsam::Point3& initialEstimate);
+gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
+                                   gtsam::Cal3Bundler* sharedCal,
                                    const gtsam::Point2Vector& measurements,
                                    const gtsam::Point3& initialEstimate);
 gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3_S2& cameras,
                                    const gtsam::Point2Vector& measurements,
                                    const gtsam::Point3& initialEstimate);
-gtsam::TriangulationResult triangulateSafe(
-    const gtsam::CameraSetCal3_S2& cameras,
-    const gtsam::Point2Vector& measurements,
-    const gtsam::TriangulationParameters& params);
-
-// Cal3DS2 versions
-gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
-                                gtsam::Cal3DS2* sharedCal,
-                                const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
-gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3DS2& cameras,
-                                const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr,
-                                const bool useLOST = false);
-gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
-                                   gtsam::Cal3DS2* sharedCal,
-                                   const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
-gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3DS2& cameras,
-                                   const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
-gtsam::TriangulationResult triangulateSafe(
-    const gtsam::CameraSetCal3DS2& cameras,
-    const gtsam::Point2Vector& measurements,
-    const gtsam::TriangulationParameters& params);
-
-// Cal3Bundler versions
-gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
-                                gtsam::Cal3Bundler* sharedCal,
-                                const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
-gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
-                                const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr,
-                                const bool useLOST = false);
-gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
-                                   gtsam::Cal3Bundler* sharedCal,
-                                   const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
 gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3Bundler& cameras,
                                    const gtsam::Point2Vector& measurements,
                                    const gtsam::Point3& initialEstimate);
-gtsam::TriangulationResult triangulateSafe(
-    const gtsam::CameraSetCal3Bundler& cameras,
-    const gtsam::Point2Vector& measurements,
-    const gtsam::TriangulationParameters& params);
-
-// Cal3Fisheye versions
-gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
-                                gtsam::Cal3Fisheye* sharedCal,
-                                const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
-gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Fisheye& cameras,
-                                const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr,
-                                const bool useLOST = false);
-gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
-                                   gtsam::Cal3Fisheye* sharedCal,
-                                   const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
-gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3Fisheye& cameras,
-                                   const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
-gtsam::TriangulationResult triangulateSafe(
-    const gtsam::CameraSetCal3Fisheye& cameras,
-    const gtsam::Point2Vector& measurements,
-    const gtsam::TriangulationParameters& params);
-
-// Cal3Unified versions                                
-gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
-                                gtsam::Cal3Unified* sharedCal,
-                                const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
-gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Unified& cameras,
-                                const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr,
-                                const bool useLOST = false);
-gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
-                                   gtsam::Cal3Unified* sharedCal,
-                                   const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
-gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3Unified& cameras,
-                                   const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
-gtsam::TriangulationResult triangulateSafe(
-    const gtsam::CameraSetCal3Unified& cameras,
-    const gtsam::Point2Vector& measurements,
-    const gtsam::TriangulationParameters& params);
-
-
 
 #include <gtsam/geometry/BearingRange.h>
 template <POSE, POINT, BEARING, RANGE>
@@ -1308,11 +1028,5 @@ class BearingRange {
 
 typedef gtsam::BearingRange<gtsam::Pose2, gtsam::Point2, gtsam::Rot2, double>
     BearingRange2D;
-typedef gtsam::BearingRange<gtsam::Pose2, gtsam::Pose2, gtsam::Rot2, double>
-    BearingRangePose2;
-typedef gtsam::BearingRange<gtsam::Pose3, gtsam::Point3, gtsam::Unit3, double>
-    BearingRange3D;
-typedef gtsam::BearingRange<gtsam::Pose3, gtsam::Pose3, gtsam::Unit3, double>
-    BearingRangePose3;
 
 }  // namespace gtsam

@@ -230,25 +230,19 @@ void bug_1204()
   SelfAdjointEigenSolver<Eigen::SparseMatrix<double> > eig(A);
 }
 
-EIGEN_DECLARE_TEST(eigensolver_selfadjoint)
+void test_eigensolver_selfadjoint()
 {
   int s = 0;
   for(int i = 0; i < g_repeat; i++) {
-
     // trivial test for 1x1 matrices:
     CALL_SUBTEST_1( selfadjointeigensolver(Matrix<float, 1, 1>()));
     CALL_SUBTEST_1( selfadjointeigensolver(Matrix<double, 1, 1>()));
-    CALL_SUBTEST_1( selfadjointeigensolver(Matrix<std::complex<double>, 1, 1>()));
-
     // very important to test 3x3 and 2x2 matrices since we provide special paths for them
     CALL_SUBTEST_12( selfadjointeigensolver(Matrix2f()) );
     CALL_SUBTEST_12( selfadjointeigensolver(Matrix2d()) );
-    CALL_SUBTEST_12( selfadjointeigensolver(Matrix2cd()) );
     CALL_SUBTEST_13( selfadjointeigensolver(Matrix3f()) );
     CALL_SUBTEST_13( selfadjointeigensolver(Matrix3d()) );
-    CALL_SUBTEST_13( selfadjointeigensolver(Matrix3cd()) );
     CALL_SUBTEST_2( selfadjointeigensolver(Matrix4d()) );
-    CALL_SUBTEST_2( selfadjointeigensolver(Matrix4cd()) );
     
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4);
     CALL_SUBTEST_3( selfadjointeigensolver(MatrixXf(s,s)) );
@@ -260,8 +254,6 @@ EIGEN_DECLARE_TEST(eigensolver_selfadjoint)
     // some trivial but implementation-wise tricky cases
     CALL_SUBTEST_4( selfadjointeigensolver(MatrixXd(1,1)) );
     CALL_SUBTEST_4( selfadjointeigensolver(MatrixXd(2,2)) );
-    CALL_SUBTEST_5( selfadjointeigensolver(MatrixXcd(1,1)) );
-    CALL_SUBTEST_5( selfadjointeigensolver(MatrixXcd(2,2)) );
     CALL_SUBTEST_6( selfadjointeigensolver(Matrix<double,1,1>()) );
     CALL_SUBTEST_7( selfadjointeigensolver(Matrix<double,2,2>()) );
   }

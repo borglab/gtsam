@@ -21,11 +21,9 @@
 #include <gtsam/base/types.h>
 #include <gtsam/dllexport.h>
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/nvp.hpp>
-#endif
-#include <memory>
+#include <boost/shared_ptr.hpp>
 
 #include <vector>
 
@@ -51,14 +49,12 @@ class GTSAM_EXPORT Subgraph {
     friend std::ostream &operator<<(std::ostream &os, const Edge &edge);
 
    private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     friend class boost::serialization::access;
     template <class Archive>
     void serialize(Archive &ar, const unsigned int /*version*/) {
       ar &BOOST_SERIALIZATION_NVP(index);
       ar &BOOST_SERIALIZATION_NVP(weight);
     }
-#endif
   };
 
   typedef std::vector<Edge> Edges;
@@ -84,23 +80,21 @@ class GTSAM_EXPORT Subgraph {
   iterator end() { return edges_.end(); }
   const_iterator end() const { return edges_.end(); }
 
+  void save(const std::string &fn) const;
+  static Subgraph load(const std::string &fn);
   friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph);
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_NVP(edges_);
   }
-  void save(const std::string &fn) const;
-  static Subgraph load(const std::string &fn);
-#endif
 };
 
 /****************************************************************************/
 struct GTSAM_EXPORT SubgraphBuilderParameters {
-  typedef std::shared_ptr<SubgraphBuilderParameters> shared_ptr;
+  typedef boost::shared_ptr<SubgraphBuilderParameters> shared_ptr;
 
   enum Skeleton {
     /* augmented tree */
@@ -163,11 +157,13 @@ class GTSAM_EXPORT SubgraphBuilder {
 
  private:
   std::vector<size_t> buildTree(const GaussianFactorGraph &gfg,
+                                const FastMap<Key, size_t> &ordering,
                                 const std::vector<double> &weights) const;
   std::vector<size_t> unary(const GaussianFactorGraph &gfg) const;
   std::vector<size_t> natural_chain(const GaussianFactorGraph &gfg) const;
   std::vector<size_t> bfs(const GaussianFactorGraph &gfg) const;
   std::vector<size_t> kruskal(const GaussianFactorGraph &gfg,
+                              const FastMap<Key, size_t> &ordering,
                               const std::vector<double> &weights) const;
   std::vector<size_t> sample(const std::vector<double> &weights,
                              const size_t t) const;
@@ -176,13 +172,12 @@ class GTSAM_EXPORT SubgraphBuilder {
 };
 
 /** Select the factors in a factor graph according to the subgraph. */
-GaussianFactorGraph buildFactorSubgraph(const GaussianFactorGraph &gfg,
-                                        const Subgraph &subgraph,
-                                        const bool clone);
+boost::shared_ptr<GaussianFactorGraph> buildFactorSubgraph(
+    const GaussianFactorGraph &gfg, const Subgraph &subgraph, const bool clone);
 
 /** Split the graph into a subgraph and the remaining edges. 
  * Note that the remaining factorgraph has null factors. */
-std::pair<GaussianFactorGraph, GaussianFactorGraph> splitFactorGraph(
-    const GaussianFactorGraph &factorGraph, const Subgraph &subgraph);
+std::pair<boost::shared_ptr<GaussianFactorGraph>, boost::shared_ptr<GaussianFactorGraph> > 
+splitFactorGraph(const GaussianFactorGraph &factorGraph, const Subgraph &subgraph);
 
 }  // namespace gtsam

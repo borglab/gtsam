@@ -123,10 +123,10 @@ TEST(Line3, localCoordinatesOfRetract) {
 // transform from world to camera test
 TEST(Line3, transformToExpressionJacobians) {
   Rot3 r = Rot3::Expmap(Vector3(0, M_PI / 3, 0));
-  Vector3 t(-2.0, 2.0, 3.0);
+  Vector3 t(0, 0, 0);
   Pose3 p(r, t);
 
-  Line3 l_c(r.inverse(), 3, -1);
+  Line3 l_c(r.inverse(), 1, 1);
   Line3 l_w(Rot3(), 1, 1);
   EXPECT(l_c.equals(transformTo(p, l_w)));
 

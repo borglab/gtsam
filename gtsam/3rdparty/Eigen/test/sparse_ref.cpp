@@ -126,7 +126,7 @@ void call_ref()
   VERIFY_EVALUATION_COUNT( call_ref_5(A.row(2), A.row(2).transpose()),  1);
 }
 
-EIGEN_DECLARE_TEST(sparse_ref)
+void test_sparse_ref()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( check_const_correctness(SparseMatrix<float>()) );

@@ -56,7 +56,7 @@ void bug_159()
   EIGEN_UNUSED_VARIABLE(m)
 }
 
-EIGEN_DECLARE_TEST(selfadjoint)
+void test_selfadjoint()
 {
   for(int i = 0; i < g_repeat ; i++)
   {

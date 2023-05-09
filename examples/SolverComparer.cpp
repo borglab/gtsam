@@ -49,6 +49,8 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/program_options.hpp>
 #include <boost/range/algorithm/set_algorithm.hpp>
+#include <boost/range/adaptor/reversed.hpp>
+#include <boost/serialization/export.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -67,8 +69,8 @@ namespace br = boost::range;
 
 typedef Pose2 Pose;
 
-typedef NoiseModelFactorN<Pose> NM1;
-typedef NoiseModelFactorN<Pose,Pose> NM2;
+typedef NoiseModelFactor1<Pose> NM1;
+typedef NoiseModelFactor2<Pose,Pose> NM2;
 typedef BearingRangeFactor<Pose,Point2> BR;
 
 double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& config) {
@@ -77,7 +79,7 @@ double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& c
   // the factor graph already includes a factor for the prior/equality constraint.
   //  double dof = graph.size() - config.size();
   int graph_dim = 0;
-  for(const std::shared_ptr<gtsam::NonlinearFactor>& nlf: graph) {
+  for(const boost::shared_ptr<gtsam::NonlinearFactor>& nlf: graph) {
     graph_dim += (int)nlf->dim();
   }
   double dof = double(graph_dim) - double(config.dim()); // kaess: changed to dim
@@ -257,9 +259,9 @@ void runIncremental()
   while(nextMeasurement < datasetMeasurements.size())
   {
     if(BetweenFactor<Pose>::shared_ptr factor =
-      std::dynamic_pointer_cast<BetweenFactor<Pose> >(datasetMeasurements[nextMeasurement]))
+      boost::dynamic_pointer_cast<BetweenFactor<Pose> >(datasetMeasurements[nextMeasurement]))
     {
-      Key key1 = factor->key<1>(), key2 = factor->key<2>();
+      Key key1 = factor->key1(), key2 = factor->key2();
       if(((int)key1 >= firstStep && key1 < key2) || ((int)key2 >= firstStep && key2 < key1)) {
         // We found an odometry starting at firstStep
         firstPose = std::min(key1, key2);
@@ -308,14 +310,14 @@ void runIncremental()
       NonlinearFactor::shared_ptr measurementf = datasetMeasurements[nextMeasurement];
 
       if(BetweenFactor<Pose>::shared_ptr factor =
-        std::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
+        boost::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
       {
         // Stop collecting measurements that are for future steps
-        if(factor->key<1>() > step || factor->key<2>() > step)
+        if(factor->key1() > step || factor->key2() > step)
           break;
 
         // Require that one of the nodes is the current one
-        if(factor->key<1>() != step && factor->key<2>() != step)
+        if(factor->key1() != step && factor->key2() != step)
           throw runtime_error("Problem in data file, out-of-sequence measurements");
 
         // Add a new factor
@@ -323,28 +325,28 @@ void runIncremental()
         const auto& measured = factor->measured();
 
         // Initialize the new variable
-        if(factor->key<1>() > factor->key<2>()) {
-          if(!newVariables.exists(factor->key<1>())) { // Only need to check newVariables since loop closures come after odometry
+        if(factor->key1() > factor->key2()) {
+          if(!newVariables.exists(factor->key1())) { // Only need to check newVariables since loop closures come after odometry
             if(step == 1)
-              newVariables.insert(factor->key<1>(), measured.inverse());
+              newVariables.insert(factor->key1(), measured.inverse());
             else {
-              Pose prevPose = isam2.calculateEstimate<Pose>(factor->key<2>());
-              newVariables.insert(factor->key<1>(), prevPose * measured.inverse());
+              Pose prevPose = isam2.calculateEstimate<Pose>(factor->key2());
+              newVariables.insert(factor->key1(), prevPose * measured.inverse());
             }
           }
         } else {
-          if(!newVariables.exists(factor->key<2>())) { // Only need to check newVariables since loop closures come after odometry
+          if(!newVariables.exists(factor->key2())) { // Only need to check newVariables since loop closures come after odometry
             if(step == 1)
-              newVariables.insert(factor->key<2>(), measured);
+              newVariables.insert(factor->key2(), measured);
             else {
-              Pose prevPose = isam2.calculateEstimate<Pose>(factor->key<1>());
-              newVariables.insert(factor->key<2>(), prevPose * measured);
+              Pose prevPose = isam2.calculateEstimate<Pose>(factor->key1());
+              newVariables.insert(factor->key2(), prevPose * measured);
             }
           }
         }
       }
       else if(BearingRangeFactor<Pose, Point2>::shared_ptr factor =
-        std::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
+        boost::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
       {
         Key poseKey = factor->keys()[0], lmKey = factor->keys()[1];
 
@@ -557,12 +559,12 @@ void runPerturb()
 
   // Perturb values
   VectorValues noise;
-  for(const auto& [key, dim]: initial.dims())
+  for(const Values::KeyValuePair key_val: initial)
   {
-    Vector noisev(dim);
+    Vector noisev(key_val.value.dim());
     for(Vector::Index i = 0; i < noisev.size(); ++i)
       noisev(i) = normal(rng);
-    noise.insert(key, noisev);
+    noise.insert(key_val.key, noisev);
   }
   Values perturbed = initial.retract(noise);
 

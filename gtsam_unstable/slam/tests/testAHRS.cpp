@@ -70,15 +70,17 @@ TEST (AHRS, constructor) {
 
 /* ************************************************************************* */
 // TODO make a testMechanization_bRn2
-TEST(AHRS, Mechanization_integrate) {
-  AHRS ahrs = AHRS(stationaryU, stationaryF, g_e);
-  // const auto [mech, state] = ahrs.initialize(g_e);
-  // Vector u = Vector3(0.05, 0.0, 0.0);
-  // double dt = 2;
-  // Rot3 expected;
-  // Mechanization_bRn2 mech2 = mech.integrate(u, dt);
-  // Rot3 actual = mech2.bRn();
-  // EXPECT(assert_equal(expected, actual));
+TEST (AHRS, Mechanization_integrate) {
+  AHRS ahrs = AHRS(stationaryU,stationaryF,g_e);
+  Mechanization_bRn2 mech;
+  KalmanFilter::State state;
+//  boost::tie(mech,state) = ahrs.initialize(g_e);
+//  Vector u = Vector3(0.05,0.0,0.0);
+//  double dt = 2;
+//  Rot3 expected;
+//  Mechanization_bRn2 mech2 = mech.integrate(u,dt);
+//  Rot3 actual = mech2.bRn();
+//  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

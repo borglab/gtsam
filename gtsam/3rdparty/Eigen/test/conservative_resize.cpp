@@ -10,7 +10,6 @@
 #include "main.h"
 
 #include <Eigen/Core>
-#include "AnnoyingScalar.h"
 
 using namespace Eigen;
 
@@ -110,33 +109,7 @@ void run_vector_tests()
   }
 }
 
-// Basic memory leak check with a non-copyable scalar type
-template<int> void noncopyable()
-{
-  typedef Eigen::Matrix<AnnoyingScalar,Dynamic,1> VectorType;
-  typedef Eigen::Matrix<AnnoyingScalar,Dynamic,Dynamic> MatrixType;
-
-  {
-#ifndef EIGEN_TEST_ANNOYING_SCALAR_DONT_THROW
-    AnnoyingScalar::dont_throw = true;
-#endif
-    int n = 50;
-    VectorType v0(n), v1(n);
-    MatrixType m0(n,n), m1(n,n), m2(n,n);
-    v0.setOnes(); v1.setOnes();
-    m0.setOnes(); m1.setOnes(); m2.setOnes();
-    VERIFY(m0==m1);
-    m0.conservativeResize(2*n,2*n);
-    VERIFY(m0.topLeftCorner(n,n) == m1);
-    
-    VERIFY(v0.head(n) == v1);
-    v0.conservativeResize(2*n);
-    VERIFY(v0.head(n) == v1);
-  }
-  VERIFY(AnnoyingScalar::instances==0 && "global memory leak detected in noncopyable");
-}
-
-EIGEN_DECLARE_TEST(conservative_resize)
+void test_conservative_resize()
 {
   for(int i=0; i<g_repeat; ++i)
   {
@@ -149,19 +122,12 @@ EIGEN_DECLARE_TEST(conservative_resize)
     CALL_SUBTEST_4((run_matrix_tests<std::complex<float>, Eigen::RowMajor>()));
     CALL_SUBTEST_4((run_matrix_tests<std::complex<float>, Eigen::ColMajor>()));
     CALL_SUBTEST_5((run_matrix_tests<std::complex<double>, Eigen::RowMajor>()));
-    CALL_SUBTEST_5((run_matrix_tests<std::complex<double>, Eigen::ColMajor>()));
-    CALL_SUBTEST_1((run_matrix_tests<int, Eigen::RowMajor | Eigen::DontAlign>()));
+    CALL_SUBTEST_6((run_matrix_tests<std::complex<double>, Eigen::ColMajor>()));
 
     CALL_SUBTEST_1((run_vector_tests<int>()));
     CALL_SUBTEST_2((run_vector_tests<float>()));
     CALL_SUBTEST_3((run_vector_tests<double>()));
     CALL_SUBTEST_4((run_vector_tests<std::complex<float> >()));
     CALL_SUBTEST_5((run_vector_tests<std::complex<double> >()));
-
-#ifndef EIGEN_TEST_ANNOYING_SCALAR_DONT_THROW
-    AnnoyingScalar::dont_throw = true;
-#endif
-    CALL_SUBTEST_6(( run_vector_tests<AnnoyingScalar>() ));
-    CALL_SUBTEST_6(( noncopyable<0>() ));
   }
 }

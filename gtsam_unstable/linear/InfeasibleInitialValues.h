@@ -33,10 +33,13 @@ public:
   }
 
   const char *what() const noexcept override {
-    if (description_->empty())
+    if (description_.empty())
       description_ =
           "An infeasible initial value was provided for the solver.\n";
-    return description_->c_str();
+    return description_.c_str();
   }
+
+private:
+  mutable std::string description_;
 };
 }

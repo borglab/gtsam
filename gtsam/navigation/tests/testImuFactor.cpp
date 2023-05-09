@@ -30,13 +30,14 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <CppUnitLite/TestHarness.h>
+#include <boost/bind/bind.hpp>
 #include <list>
 
 #include "imuFactorTesting.h"
 
 namespace testing {
 // Create default parameters with Z-down and above noise parameters
-static std::shared_ptr<PreintegrationParams> Params() {
+static boost::shared_ptr<PreintegrationParams> Params() {
   auto p = PreintegrationParams::MakeSharedD(kGravity);
   p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
   p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
@@ -148,7 +149,7 @@ TEST(ImuFactor, PreintegratedMeasurements) {
   std::function<Vector9(const NavState&, const NavState&, const Bias&)> f =
       std::bind(&PreintegrationBase::computeError, actual,
                   std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
-                  nullptr, nullptr, nullptr);
+                  boost::none, boost::none, boost::none);
   EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
   EXPECT(assert_equal(numericalDerivative32(f, x1, x2, bias), aH2, 1e-9));
   EXPECT(assert_equal(numericalDerivative33(f, x1, x2, bias), aH3, 1e-9));
@@ -204,7 +205,7 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
   pim.biasCorrectedDelta(kZeroBias, actualH);
   Matrix expectedH = numericalDerivative11<Vector9, Bias>(
       std::bind(&PreintegrationBase::biasCorrectedDelta, pim,
-          std::placeholders::_1, nullptr), kZeroBias);
+          std::placeholders::_1, boost::none), kZeroBias);
   EXPECT(assert_equal(expectedH, actualH));
 
   Matrix9 aH1;
@@ -212,11 +213,11 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
   NavState predictedState = pim.predict(state1, kZeroBias, aH1, aH2);
   Matrix eH1 = numericalDerivative11<NavState, NavState>(
       std::bind(&PreintegrationBase::predict, pim, std::placeholders::_1,
-          kZeroBias, nullptr, nullptr), state1);
+          kZeroBias, boost::none, boost::none), state1);
   EXPECT(assert_equal(eH1, aH1));
   Matrix eH2 = numericalDerivative11<NavState, Bias>(
       std::bind(&PreintegrationBase::predict, pim, state1,
-          std::placeholders::_1, nullptr, nullptr), kZeroBias);
+          std::placeholders::_1, boost::none, boost::none), kZeroBias);
   EXPECT(assert_equal(eH2, aH2));
 }
 
@@ -333,7 +334,7 @@ TEST(ImuFactor, ErrorAndJacobianWithBiases) {
   pim.biasCorrectedDelta(bias, actualH);
   Matrix expectedH = numericalDerivative11<Vector9, Bias>(
       std::bind(&PreintegrationBase::biasCorrectedDelta, pim,
-          std::placeholders::_1, nullptr), bias);
+          std::placeholders::_1, boost::none), bias);
   EXPECT(assert_equal(expectedH, actualH));
 
   // Create factor
@@ -519,7 +520,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   // Check updatedDeltaXij derivatives
   Matrix3 D_correctedAcc_measuredOmega = Z_3x3;
   pim.correctMeasurementsBySensorPose(measuredAcc, measuredOmega,
-      nullptr, D_correctedAcc_measuredOmega, nullptr);
+      boost::none, D_correctedAcc_measuredOmega, boost::none);
   Matrix3 expectedD = numericalDerivative11<Vector3, Vector3>(
       std::bind(correctedAcc, pim, measuredAcc, std::placeholders::_1),
       measuredOmega, 1e-6);
@@ -530,19 +531,19 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
 // TODO(frank): revive derivative tests
 //  Matrix93 G1, G2;
 //  Vector9 preint =
-//      pim.updatedDeltaXij(measuredAcc, measuredOmega, dt, {}, G1, G2);
+//      pim.updatedDeltaXij(measuredAcc, measuredOmega, dt, boost::none, G1, G2);
 //
 //  Matrix93 expectedG1 = numericalDerivative21<NavState, Vector3, Vector3>(
 //      std::bind(&PreintegratedImuMeasurements::updatedDeltaXij, pim,
 //          std::placeholders::_1, std::placeholders::_2,
-//          dt, {}, {}, {}), measuredAcc,
+//          dt, boost::none, boost::none, boost::none), measuredAcc,
 //      measuredOmega, 1e-6);
 //  EXPECT(assert_equal(expectedG1, G1, 1e-5));
 //
 //  Matrix93 expectedG2 = numericalDerivative22<NavState, Vector3, Vector3>(
 //      std::bind(&PreintegratedImuMeasurements::updatedDeltaXij, pim,
 //          std::placeholders::_1, std::placeholders::_2,
-//          dt, {}, {}, {}), measuredAcc,
+//          dt, boost::none, boost::none, boost::none), measuredAcc,
 //      measuredOmega, 1e-6);
 //  EXPECT(assert_equal(expectedG2, G2, 1e-5));
 
@@ -657,7 +658,7 @@ TEST(ImuFactor, PredictArbitrary) {
   p->integrationCovariance = Z_3x3; // MonteCarlo does not sample integration noise
   PreintegratedImuMeasurements pim(p, biasHat);
   Bias bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
-//  EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, 0.1, {}, measuredAcc, measuredOmega,
+//  EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, 0.1, boost::none, measuredAcc, measuredOmega,
 //                    Vector3::Constant(accNoiseVar), Vector3::Constant(omegaNoiseVar), 100000));
 
   double dt = 0.001;
@@ -809,7 +810,7 @@ TEST(ImuFactor, bodyPSensorWithBias) {
 static const double kVelocity = 2.0, kAngularVelocity = M_PI / 6;
 
 struct ImuFactorMergeTest {
-  std::shared_ptr<PreintegrationParams> p_;
+  boost::shared_ptr<PreintegrationParams> p_;
   const ConstantTwistScenario forward_, loop_;
 
   ImuFactorMergeTest()
@@ -852,10 +853,10 @@ struct ImuFactorMergeTest {
     EXPECT(assert_equal(pim02_expected, actual_pim02, tol));
 
     ImuFactor::shared_ptr factor01 =
-        std::make_shared<ImuFactor>(X(0), V(0), X(1), V(1), B(0), pim01);
+        boost::make_shared<ImuFactor>(X(0), V(0), X(1), V(1), B(0), pim01);
     ImuFactor::shared_ptr factor12 =
-        std::make_shared<ImuFactor>(X(1), V(1), X(2), V(2), B(0), pim12);
-    ImuFactor::shared_ptr factor02_expected = std::make_shared<ImuFactor>(
+        boost::make_shared<ImuFactor>(X(1), V(1), X(2), V(2), B(0), pim12);
+    ImuFactor::shared_ptr factor02_expected = boost::make_shared<ImuFactor>(
         X(0), V(0), X(2), V(2), B(0), pim02_expected);
 
     ImuFactor::shared_ptr factor02_merged = ImuFactor::Merge(factor01, factor12);

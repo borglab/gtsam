@@ -17,12 +17,23 @@ class ConstantBias {
   bool equals(const gtsam::imuBias::ConstantBias& expected, double tol) const;
 
   // Group
-  static gtsam::imuBias::ConstantBias Identity();
+  static gtsam::imuBias::ConstantBias identity();
+  gtsam::imuBias::ConstantBias inverse() const;
+  gtsam::imuBias::ConstantBias compose(const gtsam::imuBias::ConstantBias& b) const;
+  gtsam::imuBias::ConstantBias between(const gtsam::imuBias::ConstantBias& b) const;
 
   // Operator Overloads
   gtsam::imuBias::ConstantBias operator-() const;
   gtsam::imuBias::ConstantBias operator+(const gtsam::imuBias::ConstantBias& b) const;
   gtsam::imuBias::ConstantBias operator-(const gtsam::imuBias::ConstantBias& b) const;
+
+  // Manifold
+  gtsam::imuBias::ConstantBias retract(Vector v) const;
+  Vector localCoordinates(const gtsam::imuBias::ConstantBias& b) const;
+
+  // Lie Group
+  static gtsam::imuBias::ConstantBias Expmap(Vector v);
+  static Vector Logmap(const gtsam::imuBias::ConstantBias& b);
 
   // Standard Interface
   Vector vector() const;
@@ -33,6 +44,9 @@ class ConstantBias {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 }///\namespace imuBias
@@ -59,6 +73,9 @@ class NavState {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/navigation/PreintegratedRotation.h>
@@ -75,8 +92,8 @@ virtual class PreintegratedRotationParams {
 
   Matrix getGyroscopeCovariance() const;
 
-  std::optional<Vector> getOmegaCoriolis() const;
-  std::optional<gtsam::Pose3> getBodyPSensor() const;
+  boost::optional<Vector> getOmegaCoriolis() const;
+  boost::optional<gtsam::Pose3> getBodyPSensor() const;
 };
 
 #include <gtsam/navigation/PreintegrationParams.h>
@@ -104,6 +121,9 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/navigation/ImuFactor.h>
@@ -136,6 +156,9 @@ class PreintegratedImuMeasurements {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 virtual class ImuFactor: gtsam::NonlinearFactor {
@@ -165,11 +188,11 @@ virtual class PreintegrationCombinedParams : gtsam::PreintegrationParams {
 
   void setBiasAccCovariance(Matrix cov);
   void setBiasOmegaCovariance(Matrix cov);
-  void setBiasAccOmegaInit(Matrix cov);
+  void setBiasAccOmegaInt(Matrix cov);
   
   Matrix getBiasAccCovariance() const ;
   Matrix getBiasOmegaCovariance() const ;
-  Matrix getBiasAccOmegaInit() const;
+  Matrix getBiasAccOmegaInt() const;
  
 };
 
@@ -216,13 +239,7 @@ virtual class CombinedImuFactor: gtsam::NonlinearFactor {
 #include <gtsam/navigation/AHRSFactor.h>
 class PreintegratedAhrsMeasurements {
   // Standard Constructor
-  PreintegratedAhrsMeasurements(const gtsam::PreintegrationParams* params,
-                                const Vector& biasHat);
-  PreintegratedAhrsMeasurements(const gtsam::PreintegrationParams* p,
-                                const Vector& bias_hat, double deltaTij,
-                                const gtsam::Rot3& deltaRij,
-                                const Matrix& delRdelBiasOmega,
-                                const Matrix& preint_meas_cov);
+  PreintegratedAhrsMeasurements(Vector bias, Matrix measuredOmegaCovariance);
   PreintegratedAhrsMeasurements(const gtsam::PreintegratedAhrsMeasurements& rhs);
 
   // Testable

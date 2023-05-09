@@ -5,7 +5,8 @@
  *      Author: cbeall3
  */
 
-#pragma once
+#ifndef AHRS_H_
+#define AHRS_H_
 
 #include "Mechanization_bRn2.h"
 #include <gtsam_unstable/dllexport.h>
@@ -81,3 +82,4 @@ public:
 };
 
 } /* namespace gtsam */
+#endif /* AHRS_H_ */

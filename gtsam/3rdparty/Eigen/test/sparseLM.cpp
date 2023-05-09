@@ -168,7 +168,7 @@ void test_sparseLM_T()
       return ;
 
 }
-EIGEN_DECLARE_TEST(sparseLM)
+void test_sparseLM()
 {
   CALL_SUBTEST_1(test_sparseLM_T<double>());
   

@@ -59,7 +59,7 @@ template<typename MatrixType> void bandmatrix(const MatrixType& _m)
 
 using Eigen::internal::BandMatrix;
 
-EIGEN_DECLARE_TEST(bandmatrix)
+void test_bandmatrix()
 {
   for(int i = 0; i < 10*g_repeat ; i++) {
     Index rows = internal::random<Index>(1,10);

@@ -29,13 +29,6 @@ block_real_only(const MatrixType &, Index, Index, Index, Index, const Scalar&) {
   return Scalar(0);
 }
 
-// Check at compile-time that T1==T2, and at runtime-time that a==b
-template<typename T1,typename T2>
-typename internal::enable_if<internal::is_same<T1,T2>::value,bool>::type
-is_same_block(const T1& a, const T2& b)
-{
-  return a.isApprox(b);
-}
 
 template<typename MatrixType> void block(const MatrixType& m)
 {
@@ -93,9 +86,10 @@ template<typename MatrixType> void block(const MatrixType& m)
   m1.block(r1,c1,r2-r1+1,c2-c1+1) = s1 * m2.block(0, 0, r2-r1+1,c2-c1+1);
   m1.block(r1,c1,r2-r1+1,c2-c1+1)(r2-r1,c2-c1) = m2.block(0, 0, r2-r1+1,c2-c1+1)(0,0);
 
-  const Index BlockRows = 2;
-  const Index BlockCols = 5;
-
+  enum {
+    BlockRows = 2,
+    BlockCols = 5
+  };
   if (rows>=5 && cols>=8)
   {
     // test fixed block() as lvalue
@@ -111,11 +105,6 @@ template<typename MatrixType> void block(const MatrixType& m)
     m1.template block<BlockRows,Dynamic>(1,1,BlockRows,BlockCols)(0,3) = m1.template block<2,5>(1,1)(1,2);
     Matrix<Scalar,Dynamic,Dynamic> b2 = m1.template block<Dynamic,BlockCols>(3,3,2,5);
     VERIFY_IS_EQUAL(b2, m1.block(3,3,BlockRows,BlockCols));
-
-    VERIFY(is_same_block(m1.block(3,3,BlockRows,BlockCols), m1.block(3,3,fix<Dynamic>(BlockRows),fix<Dynamic>(BlockCols))));
-    VERIFY(is_same_block(m1.template block<BlockRows,Dynamic>(1,1,BlockRows,BlockCols), m1.block(1,1,fix<BlockRows>,BlockCols)));
-    VERIFY(is_same_block(m1.template block<BlockRows,BlockCols>(1,1,BlockRows,BlockCols), m1.block(1,1,fix<BlockRows>(),fix<BlockCols>)));
-    VERIFY(is_same_block(m1.template block<BlockRows,BlockCols>(1,1,BlockRows,BlockCols), m1.block(1,1,fix<BlockRows>,fix<BlockCols>(BlockCols))));
   }
 
   if (rows>2)
@@ -161,18 +150,9 @@ template<typename MatrixType> void block(const MatrixType& m)
   // expressions without direct access
   VERIFY_IS_APPROX( ((m1+m2).block(r1,c1,rows-r1,cols-c1).block(r2-r1,c2-c1,rows-r2,cols-c2)) , ((m1+m2).block(r2,c2,rows-r2,cols-c2)) );
   VERIFY_IS_APPROX( ((m1+m2).block(r1,c1,r2-r1+1,c2-c1+1).row(0)) , ((m1+m2).row(r1).segment(c1,c2-c1+1)) );
-  VERIFY_IS_APPROX( ((m1+m2).block(r1,c1,r2-r1+1,c2-c1+1).row(0)) , ((m1+m2).eval().row(r1).segment(c1,c2-c1+1)) );
   VERIFY_IS_APPROX( ((m1+m2).block(r1,c1,r2-r1+1,c2-c1+1).col(0)) , ((m1+m2).col(c1).segment(r1,r2-r1+1)) );
   VERIFY_IS_APPROX( ((m1+m2).block(r1,c1,r2-r1+1,c2-c1+1).transpose().col(0)) , ((m1+m2).row(r1).segment(c1,c2-c1+1)).transpose() );
   VERIFY_IS_APPROX( ((m1+m2).transpose().block(c1,r1,c2-c1+1,r2-r1+1).col(0)) , ((m1+m2).row(r1).segment(c1,c2-c1+1)).transpose() );
-  VERIFY_IS_APPROX( ((m1+m2).template block<Dynamic,1>(r1,c1,r2-r1+1,1)) , ((m1+m2).eval().col(c1).eval().segment(r1,r2-r1+1)) );
-  VERIFY_IS_APPROX( ((m1+m2).template block<1,Dynamic>(r1,c1,1,c2-c1+1)) , ((m1+m2).eval().row(r1).eval().segment(c1,c2-c1+1)) );
-  VERIFY_IS_APPROX( ((m1+m2).transpose().template block<1,Dynamic>(c1,r1,1,r2-r1+1)) , ((m1+m2).eval().col(c1).eval().segment(r1,r2-r1+1)).transpose() );
-  VERIFY_IS_APPROX( (m1+m2).row(r1).eval(), (m1+m2).eval().row(r1) );
-  VERIFY_IS_APPROX( (m1+m2).adjoint().col(r1).eval(), (m1+m2).adjoint().eval().col(r1) );
-  VERIFY_IS_APPROX( (m1+m2).adjoint().row(c1).eval(), (m1+m2).adjoint().eval().row(c1) );
-  VERIFY_IS_APPROX( (m1*1).row(r1).segment(c1,c2-c1+1).eval(), m1.row(r1).eval().segment(c1,c2-c1+1).eval() );
-  VERIFY_IS_APPROX( m1.col(c1).reverse().segment(r1,r2-r1+1).eval(),m1.col(c1).reverse().eval().segment(r1,r2-r1+1).eval() );
 
   VERIFY_IS_APPROX( (m1*1).topRows(r1),  m1.topRows(r1) );
   VERIFY_IS_APPROX( (m1*1).leftCols(c1), m1.leftCols(c1) );
@@ -219,23 +199,6 @@ template<typename MatrixType> void block(const MatrixType& m)
     VERIFY_RAISES_ASSERT( m1 -= m1.col(0) );
     VERIFY_RAISES_ASSERT( m1.array() *= m1.col(0).array() );
     VERIFY_RAISES_ASSERT( m1.array() /= m1.col(0).array() );
-  }
-
-  VERIFY_IS_EQUAL( m1.template subVector<Horizontal>(r1), m1.row(r1) );
-  VERIFY_IS_APPROX( (m1+m1).template subVector<Horizontal>(r1), (m1+m1).row(r1) );
-  VERIFY_IS_EQUAL( m1.template subVector<Vertical>(c1), m1.col(c1) );
-  VERIFY_IS_APPROX( (m1+m1).template subVector<Vertical>(c1), (m1+m1).col(c1) );
-  VERIFY_IS_EQUAL( m1.template subVectors<Horizontal>(), m1.rows() );
-  VERIFY_IS_EQUAL( m1.template subVectors<Vertical>(), m1.cols() );
-
-  if (rows>=2 || cols>=2) {
-    VERIFY_IS_EQUAL( int(m1.middleCols(0,0).IsRowMajor), int(m1.IsRowMajor) );
-    VERIFY_IS_EQUAL( m1.middleCols(0,0).outerSize(), m1.IsRowMajor ? rows : 0);
-    VERIFY_IS_EQUAL( m1.middleCols(0,0).innerSize(), m1.IsRowMajor ? 0 : rows);
-
-    VERIFY_IS_EQUAL( int(m1.middleRows(0,0).IsRowMajor), int(m1.IsRowMajor) );
-    VERIFY_IS_EQUAL( m1.middleRows(0,0).outerSize(), m1.IsRowMajor ? 0 : cols);
-    VERIFY_IS_EQUAL( m1.middleRows(0,0).innerSize(), m1.IsRowMajor ? cols : 0);
   }
 }
 
@@ -293,18 +256,15 @@ void data_and_stride(const MatrixType& m)
   compare_using_data_and_stride(m1.col(c1).transpose());
 }
 
-EIGEN_DECLARE_TEST(block)
+void test_block()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( block(Matrix<float, 1, 1>()) );
-    CALL_SUBTEST_1( block(Matrix<float, 1, Dynamic>(internal::random(2,50))) );
-    CALL_SUBTEST_1( block(Matrix<float, Dynamic, 1>(internal::random(2,50))) );
     CALL_SUBTEST_2( block(Matrix4d()) );
-    CALL_SUBTEST_3( block(MatrixXcf(internal::random(2,50), internal::random(2,50))) );
-    CALL_SUBTEST_4( block(MatrixXi(internal::random(2,50), internal::random(2,50))) );
-    CALL_SUBTEST_5( block(MatrixXcd(internal::random(2,50), internal::random(2,50))) );
-    CALL_SUBTEST_6( block(MatrixXf(internal::random(2,50), internal::random(2,50))) );
-    CALL_SUBTEST_7( block(Matrix<int,Dynamic,Dynamic,RowMajor>(internal::random(2,50), internal::random(2,50))) );
+    CALL_SUBTEST_3( block(MatrixXcf(3, 3)) );
+    CALL_SUBTEST_4( block(MatrixXi(8, 12)) );
+    CALL_SUBTEST_5( block(MatrixXcd(20, 20)) );
+    CALL_SUBTEST_6( block(MatrixXf(20, 20)) );
 
     CALL_SUBTEST_8( block(Matrix<float,Dynamic,4>(3, 4)) );
 

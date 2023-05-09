@@ -4,7 +4,7 @@
 
 if (SUPERLU_INCLUDES AND SUPERLU_LIBRARIES)
   set(SUPERLU_FIND_QUIETLY TRUE)
-endif ()
+endif (SUPERLU_INCLUDES AND SUPERLU_LIBRARIES)
 
 find_path(SUPERLU_INCLUDES
   NAMES
@@ -90,7 +90,7 @@ endif()
 endif()
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(SuperLU
+find_package_handle_standard_args(SUPERLU
                                   REQUIRED_VARS SUPERLU_INCLUDES SUPERLU_LIBRARIES SUPERLU_VERSION_OK
                                   VERSION_VAR SUPERLU_VERSION_VAR)
 

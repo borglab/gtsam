@@ -15,6 +15,7 @@
  * @date    Oct 17, 2010
  */
 
+#include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/symbolic/SymbolicConditional.h>
 
 namespace gtsam {
@@ -31,16 +32,5 @@ void SymbolicConditional::print(const std::string& str,
 bool SymbolicConditional::equals(const This& c, double tol) const {
   return BaseFactor::equals(c) && BaseConditional::equals(c);
 }
-
-/* ************************************************************************* */
-double SymbolicConditional::logProbability(const HybridValues& c) const {
-  throw std::runtime_error("SymbolicConditional::logProbability is not implemented");
-}
-
-/* ************************************************************************* */
-double SymbolicConditional::evaluate(const HybridValues& c) const {
-  throw std::runtime_error("SymbolicConditional::evaluate is not implemented");
-}
-
 
 }  // namespace gtsam

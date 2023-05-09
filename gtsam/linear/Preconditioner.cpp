@@ -12,7 +12,9 @@
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <memory>
+#include <boost/shared_ptr.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <iostream>
 #include <vector>
 
@@ -40,9 +42,7 @@ void PreconditionerParameters::print(ostream &os) const {
 
 /***************************************************************************************/
 PreconditionerParameters::Kernel PreconditionerParameters::kernelTranslator(const std::string &src) {
-  std::string s = src;
-  // convert string s to upper case
-  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+  std::string s = src;  boost::algorithm::to_upper(s);
   if (s == "GTSAM") return PreconditionerParameters::GTSAM;
   else if (s == "CHOLMOD") return PreconditionerParameters::CHOLMOD;
   /* default is cholmod */
@@ -51,9 +51,7 @@ PreconditionerParameters::Kernel PreconditionerParameters::kernelTranslator(cons
 
 /***************************************************************************************/
 PreconditionerParameters::Verbosity PreconditionerParameters::verbosityTranslator(const std::string &src)  {
-  std::string s = src;
-  // convert string to upper case
-  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+  std::string s = src;  boost::algorithm::to_upper(s);
   if (s == "SILENT") return PreconditionerParameters::SILENT;
   else if (s == "COMPLEXITY") return PreconditionerParameters::COMPLEXITY;
   else if (s == "ERROR") return PreconditionerParameters::ERROR;
@@ -147,9 +145,8 @@ void BlockJacobiPreconditioner::build(
 
   /* getting the block diagonals over the factors */
   std::map<Key, Matrix> hessianMap =gfg.hessianBlockDiagonal();
-  for (const auto& [key, hessian]: hessianMap) {
+  for (const Matrix& hessian: hessianMap | boost::adaptors::map_values)
     blocks.push_back(hessian);
-  }
 
   /* if necessary, allocating the memory for cacheing the factorization results */
   if ( nnz > bufferSize_ ) {
@@ -186,18 +183,18 @@ void BlockJacobiPreconditioner::clean() {
 }
 
 /***************************************************************************************/
-std::shared_ptr<Preconditioner> createPreconditioner(
-    const std::shared_ptr<PreconditionerParameters> params) {
-  using std::dynamic_pointer_cast;
+boost::shared_ptr<Preconditioner> createPreconditioner(
+    const boost::shared_ptr<PreconditionerParameters> params) {
+  using boost::dynamic_pointer_cast;
   if (dynamic_pointer_cast<DummyPreconditionerParameters>(params)) {
-    return std::make_shared<DummyPreconditioner>();
+    return boost::make_shared<DummyPreconditioner>();
   } else if (dynamic_pointer_cast<BlockJacobiPreconditionerParameters>(
                  params)) {
-    return std::make_shared<BlockJacobiPreconditioner>();
+    return boost::make_shared<BlockJacobiPreconditioner>();
   } else if (auto subgraph =
                  dynamic_pointer_cast<SubgraphPreconditionerParameters>(
                      params)) {
-    return std::make_shared<SubgraphPreconditioner>(*subgraph);
+    return boost::make_shared<SubgraphPreconditioner>(*subgraph);
   }
 
   throw invalid_argument(

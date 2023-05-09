@@ -27,7 +27,7 @@ echo '<ul>'\
   '<li>' `cat /proc/cpuinfo | grep "model name" | head -n 1`\
   '  (' `uname -m` ')</li>'\
   '<li> compiler: ' `cat compiler_version.txt` '</li>'\
-  '<li> eigen3: ' `git ls-remote --refs  -q $EIGENDIR HEAD | cut  -f 1` '</li>'\
+  '<li> eigen3: ' `hg identify -i $EIGENDIR` '</li>'\
   '</ul>' \
   '</p>'  >> $webpagefilename
 

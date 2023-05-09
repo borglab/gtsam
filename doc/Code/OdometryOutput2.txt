@@ -1,23 +1,11 @@
 Initial Estimate:
-
 Values with 3 values:
-Value 1: (gtsam::Pose2)
-(0.5, 0, 0.2)
-
-Value 2: (gtsam::Pose2)
-(2.3, 0.1, -0.2)
-
-Value 3: (gtsam::Pose2)
-(4.1, 0.1, 0.1)
+Value 1: (0.5, 0, 0.2)
+Value 2: (2.3, 0.1, -0.2)
+Value 3: (4.1, 0.1, 0.1)
 
 Final Result:
-
 Values with 3 values:
-Value 1: (gtsam::Pose2)
-(7.5-16, -5.3-16, -1.8-16)
-
-Value 2: (gtsam::Pose2)
-(2, -1.1-15, -2.5-16)
-
-Value 3: (gtsam::Pose2)
-(4, -1.7-15, -2.5-16)
+Value 1: (-1.8e-16, 8.7e-18, -9.1e-19)
+Value 2: (2, 7.4e-18, -2.5e-18)
+Value 3: (4, -1.8e-18, -3.1e-18)

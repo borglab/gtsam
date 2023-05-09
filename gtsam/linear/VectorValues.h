@@ -24,7 +24,7 @@
 #include <gtsam/base/FastVector.h>
 #include <gtsam/global_includes.h>
 
-#include <memory>
+#include <boost/shared_ptr.hpp>
 
 
 #include <map>
@@ -34,7 +34,7 @@
 namespace gtsam {
 
   /**
-   * VectorValues represents a collection of vector-valued variables associated
+   * This class represents a collection of vector-valued variables associated
    * each with a unique integer index.  It is typically used to store the variables
    * of a GaussianFactorGraph.  Optimizing a GaussianFactorGraph or GaussianBayesNet
    * returns this class.
@@ -69,7 +69,7 @@ namespace gtsam {
    * which is a view on the underlying data structure.
    *
    * This class is additionally used in gradient descent and dog leg to store the gradient.
-   * @ingroup linear
+   * \nosubgrouping
    */
   class GTSAM_EXPORT VectorValues {
    protected:
@@ -80,7 +80,7 @@ namespace gtsam {
    public:
     typedef Values::iterator iterator;              ///< Iterator over vector values
     typedef Values::const_iterator const_iterator;  ///< Const iterator over vector values
-    typedef std::shared_ptr<This> shared_ptr;       ///< shared_ptr to this class
+    typedef boost::shared_ptr<This> shared_ptr;     ///< shared_ptr to this class
     typedef Values::value_type value_type;          ///< Typedef to pair<Key, Vector>
     typedef value_type KeyValuePair;                ///< Typedef to pair<Key, Vector>
     typedef std::map<Key, size_t> Dims;             ///< Keyed vector dimensions
@@ -88,12 +88,10 @@ namespace gtsam {
     /// @name Standard Constructors
     /// @{
 
-    /// Default constructor creates an empty VectorValues.
+    /**
+     * Default constructor creates an empty VectorValues.
+     */
     VectorValues() {}
-
-    /// Construct from initializer list.
-    VectorValues(std::initializer_list<std::pair<Key, Vector>> init)
-        : values_(init.begin(), init.end()) {}
 
     /** Merge two VectorValues into one, this is more efficient than inserting
      * elements one by one. */
@@ -169,7 +167,7 @@ namespace gtsam {
     /** For all key/value pairs in \c values, replace values with corresponding keys in this class
     *   with those in \c values.  Throws std::out_of_range if any keys in \c values are not present
     *   in this class. */
-    VectorValues& update(const VectorValues& values);
+    void update(const VectorValues& values);
 
     /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
      *  j is already used.
@@ -186,7 +184,7 @@ namespace gtsam {
 #if ! defined(GTSAM_USE_TBB) || defined (TBB_GREATER_EQUAL_2020)
       return values_.emplace(std::piecewise_construct, std::forward_as_tuple(j), std::forward_as_tuple(args...));
 #else
-      return values_.insert({j, Vector(std::forward<Args>(args)...)});
+      return values_.insert(std::make_pair(j, Vector(std::forward<Args>(args)...)));
 #endif
     }
 
@@ -195,12 +193,12 @@ namespace gtsam {
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated. */
     iterator insert(Key j, const Vector& value) {
-      return insert({j, value});
+      return insert(std::make_pair(j, value));
     }
 
     /** Insert all values from \c values.  Throws an invalid_argument exception if any keys to be
      *  inserted are already used. */
-    VectorValues& insert(const VectorValues& values);
+    void insert(const VectorValues& values);
 
     /** insert that mimics the STL map insert - if the value already exists, the map is not modified
      *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
@@ -210,16 +208,8 @@ namespace gtsam {
 #ifdef TBB_GREATER_EQUAL_2020
       return values_.emplace(j, value);
 #else
-      return values_.insert({j, value});
+      return values_.insert(std::make_pair(j, value));
 #endif
-    }
-
-    /// insert_or_assign that mimics the STL map insert_or_assign - if the value already exists, the
-    /// map is updated, otherwise a new value is inserted at j.
-    void insert_or_assign(Key j, const Vector& value) {
-      if (!tryInsert(j, value).second) {
-        (*this)[j] = value;
-      }
     }
 
     /** Erase the vector with the given key, or throw std::out_of_range if it does not exist */
@@ -354,28 +344,21 @@ namespace gtsam {
 
     /// @}
 
-    /// @name Wrapper support
+    /// @}
+    /// @name Matlab syntactic sugar for linear algebra operations
     /// @{
 
-    /**
-     * @brief Output as a html table.
-     *
-     * @param keyFormatter function that formats keys.
-     */
-    std::string html(
-        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    //inline VectorValues scale(const double a, const VectorValues& c) const { return a * (*this); }
 
     /// @}
 
   private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(values_);
     }
-#endif
   }; // VectorValues definition
 
   /// traits

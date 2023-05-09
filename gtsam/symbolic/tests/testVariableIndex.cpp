@@ -22,6 +22,10 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/assign/std/list.hpp>
+#include <boost/assign/list_of.hpp>
+using namespace boost::assign;
+
 using namespace std;
 using namespace gtsam;
 
@@ -75,7 +79,7 @@ TEST(VariableIndex, augment2) {
 
   VariableIndex expected(fgCombined);
 
-  FactorIndices newIndices {5, 6, 7, 8};
+  FactorIndices newIndices = list_of(5)(6)(7)(8);
   VariableIndex actual(fg1);
   actual.augment(fg2, newIndices);
 
@@ -104,7 +108,7 @@ TEST(VariableIndex, remove) {
   vector<size_t> indices;
   indices.push_back(0); indices.push_back(1); indices.push_back(2); indices.push_back(3);
   actual.remove(indices.begin(), indices.end(), fg1);
-  std::list<Key> unusedVariables{0, 9};
+  std::list<Key> unusedVariables; unusedVariables += 0, 9;
   actual.removeUnusedVariables(unusedVariables.begin(), unusedVariables.end());
 
   CHECK(assert_equal(expected, actual));
@@ -131,7 +135,7 @@ TEST(VariableIndex, deep_copy) {
   vector<size_t> indices;
   indices.push_back(0); indices.push_back(1); indices.push_back(2); indices.push_back(3);
   clone.remove(indices.begin(), indices.end(), fg1);
-  std::list<Key> unusedVariables{0, 9};
+  std::list<Key> unusedVariables; unusedVariables += 0, 9;
   clone.removeUnusedVariables(unusedVariables.begin(), unusedVariables.end());
 
   // When modifying the clone, the original should have stayed the same

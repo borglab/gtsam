@@ -26,11 +26,9 @@
 #include <gtsam/nonlinear/ExpressionFactorGraph.h>
 
 // Header order is close to far
-#include <gtsam/sfm/SfmData.h>  // for loading BAL datasets !
-#include <gtsam/slam/dataset.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/inference/Symbol.h>
-
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/slam/dataset.h>  // for loading BAL datasets !
 #include <vector>
 
 using namespace std;
@@ -48,8 +46,10 @@ int main(int argc, char* argv[]) {
   if (argc > 1) filename = string(argv[1]);
 
   // Load the SfM data from file
-  SfmData mydata = SfmData::FromBalFile(filename);
-  cout << "read " << mydata.numberTracks() << " tracks on " << mydata.numberCameras() << " cameras" << endl;
+  SfmData mydata;
+  readBAL(filename, mydata);
+  cout << boost::format("read %1% tracks on %2% cameras\n") %
+              mydata.number_tracks() % mydata.number_cameras();
 
   // Create a factor graph
   ExpressionFactorGraph graph;
@@ -77,7 +77,9 @@ int main(int argc, char* argv[]) {
   for (const SfmTrack& track : mydata.tracks) {
     // Leaf expression for j^th point
     Point3_ point_('p', j);
-    for (const auto& [i, uv] : track.measurements) {
+    for (const SfmMeasurement& m : track.measurements) {
+      size_t i = m.first;
+      Point2 uv = m.second;
       // Leaf expression for i^th camera
       Expression<SfmCamera> camera_(C(i));
       // Below an expression for the prediction of the measurement:

@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
 
   // Build graph using conventional GeneralSFMFactor
   NonlinearFactorGraph graph;
-  for (size_t j = 0; j < db.numberTracks(); j++) {
+  for (size_t j = 0; j < db.number_tracks(); j++) {
     for (const SfmMeasurement& m: db.tracks[j].measurements) {
       size_t i = m.first;
       Point2 z = m.second;

@@ -99,9 +99,8 @@ template <>
 GTSAM_EXPORT
 Vector9 SO3::vec(OptionalJacobian<9, 3> H) const;
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
-template <class Archive>
 /** Serialization function */
+template <class Archive>
 void serialize(Archive& ar, SO3& R, const unsigned int /*version*/) {
   Matrix3& M = R.matrix_;
   ar& boost::serialization::make_nvp("R11", M(0, 0));
@@ -114,7 +113,6 @@ void serialize(Archive& ar, SO3& R, const unsigned int /*version*/) {
   ar& boost::serialization::make_nvp("R32", M(2, 1));
   ar& boost::serialization::make_nvp("R33", M(2, 2));
 }
-#endif
 
 namespace so3 {
 
@@ -123,7 +121,7 @@ namespace so3 {
  * We only provide the 9*9 derivative in the first argument M.
  */
 GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
-                OptionalJacobian<9, 9> H = {});
+                OptionalJacobian<9, 9> H = boost::none);
 
 /// (constant) Jacobian of compose wrpt M
 GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
@@ -172,13 +170,13 @@ class DexpFunctor : public ExpmapFunctor {
   const Matrix3& dexp() const { return dexp_; }
 
   /// Multiplies with dexp(), with optional derivatives
-  GTSAM_EXPORT Vector3 applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
-                    OptionalJacobian<3, 3> H2 = {}) const;
+  GTSAM_EXPORT Vector3 applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
+                    OptionalJacobian<3, 3> H2 = boost::none) const;
 
   /// Multiplies with dexp().inverse(), with optional derivatives
   GTSAM_EXPORT Vector3 applyInvDexp(const Vector3& v,
-                       OptionalJacobian<3, 3> H1 = {},
-                       OptionalJacobian<3, 3> H2 = {}) const;
+                       OptionalJacobian<3, 3> H1 = boost::none,
+                       OptionalJacobian<3, 3> H2 = boost::none) const;
 };
 }  //  namespace so3
 

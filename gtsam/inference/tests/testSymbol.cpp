@@ -18,8 +18,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <sstream>
-
 using namespace std;
 using namespace gtsam;
 

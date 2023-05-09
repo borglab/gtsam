@@ -26,7 +26,6 @@ if (GTSAM_BUILD_DOCS)
         gtsam/basis 
         gtsam/discrete
         gtsam/geometry
-        gtsam/hybrid
         gtsam/inference
         gtsam/linear
         gtsam/navigation
@@ -34,6 +33,7 @@ if (GTSAM_BUILD_DOCS)
         gtsam/sam
         gtsam/sfm
         gtsam/slam
+        gtsam/smart
         gtsam/symbolic
         gtsam
     )
@@ -42,12 +42,10 @@ if (GTSAM_BUILD_DOCS)
     set(gtsam_unstable_doc_subdirs
         gtsam_unstable/base
         gtsam_unstable/discrete
-        gtsam_unstable/dynamics
-        gtsam_unstable/geometry
         gtsam_unstable/linear
-        gtsam_unstable/nonlinear
-        gtsam_unstable/partition
-        gtsam_unstable/slam
+        gtsam_unstable/nonlinear 
+        gtsam_unstable/slam 
+        gtsam_unstable/dynamics 
         gtsam_unstable
     )
     

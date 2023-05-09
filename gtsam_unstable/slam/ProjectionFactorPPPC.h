@@ -18,66 +18,72 @@
 
 #pragma once
 
-#include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam_unstable/dllexport.h>
-
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <boost/optional.hpp>
 
 namespace gtsam {
 
   /**
    * Non-linear factor for a constraint derived from a 2D measurement. This factor
    * estimates the body pose, body-camera transform, 3D landmark, and calibration.
-   * @ingroup slam
+   * @addtogroup SLAM
    */
-template <class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
-class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
-    : public NoiseModelFactorN<POSE, POSE, LANDMARK, CALIBRATION> {
- protected:
-  Point2 measured_;  ///< 2D measurement
+  template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
+  class ProjectionFactorPPPC: public NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> {
+  protected:
 
-  // verbosity handling for Cheirality Exceptions
-  bool throwCheirality_;  ///< If true, rethrows Cheirality exceptions (default: false)
-  bool verboseCheirality_;  ///< If true, prints text for Cheirality exceptions (default: false)
+    Point2 measured_;                    ///< 2D measurement
 
- public:
-  /// shorthand for base class type
-  typedef NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> Base;
+    // verbosity handling for Cheirality Exceptions
+    bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
+    bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
 
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
+  public:
 
-  /// shorthand for this class
-  typedef ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> This;
+    /// shorthand for base class type
+    typedef NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> Base;
 
-  /// shorthand for a smart pointer to a factor
-  typedef std::shared_ptr<This> shared_ptr;
+    /// shorthand for this class
+    typedef ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> This;
 
-  /// Default constructor
+    /// shorthand for a smart pointer to a factor
+    typedef boost::shared_ptr<This> shared_ptr;
+
+    /// Default constructor
   ProjectionFactorPPPC() :
       measured_(0.0, 0.0), throwCheirality_(false), verboseCheirality_(false) {
   }
 
+    /**
+     * Constructor
+     * TODO: Mark argument order standard (keys, measurement, parameters)
+     * @param measured is the 2 dimensional location of point in image (the measurement)
+     * @param model is the standard deviation
+     * @param poseKey is the index of the camera
+     * @param pointKey is the index of the landmark
+     * @param K shared pointer to the constant calibration
+     */
+    ProjectionFactorPPPC(const Point2& measured, const SharedNoiseModel& model,
+        Key poseKey, Key transformKey,  Key pointKey, Key calibKey) :
+          Base(model, poseKey, transformKey, pointKey, calibKey), measured_(measured),
+          throwCheirality_(false), verboseCheirality_(false) {}
 
     /**
      * Constructor with exception-handling flags
      * TODO: Mark argument order standard (keys, measurement, parameters)
-     * @param measured is the 2 dimensional location of point in image (the
-     * measurement)
+     * @param measured is the 2 dimensional location of point in image (the measurement)
      * @param model is the standard deviation
      * @param poseKey is the index of the camera
-     * @param transformKey is the index of the extrinsic calibration
      * @param pointKey is the index of the landmark
-     * @param calibKey is the index of the intrinsic calibration
-     * @param throwCheirality determines whether Cheirality exceptions are
-     * rethrown
-     * @param verboseCheirality determines whether exceptions are printed for
-     * Cheirality
+     * @param K shared pointer to the constant calibration
+     * @param throwCheirality determines whether Cheirality exceptions are rethrown
+     * @param verboseCheirality determines whether exceptions are printed for Cheirality
      */
     ProjectionFactorPPPC(const Point2& measured, const SharedNoiseModel& model,
         Key poseKey, Key transformKey, Key pointKey, Key calibKey,
-        bool throwCheirality = false, bool verboseCheirality = false) :
+        bool throwCheirality, bool verboseCheirality) :
           Base(model, poseKey, transformKey, pointKey, calibKey), measured_(measured),
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
@@ -86,7 +92,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
 
     /// @return a deep copy of this factor
     NonlinearFactor::shared_ptr clone() const override {
-      return std::static_pointer_cast<NonlinearFactor>(
+      return boost::static_pointer_cast<NonlinearFactor>(
           NonlinearFactor::shared_ptr(new This(*this))); }
 
     /**
@@ -110,13 +116,15 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
 
     /// Evaluate error h(x)-z and optionally derivatives
     Vector evaluateError(const Pose3& pose, const Pose3& transform, const Point3& point, const CALIBRATION& K,
-        OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3,
-        OptionalMatrixType H4) const override {
+        boost::optional<Matrix&> H1 = boost::none,
+        boost::optional<Matrix&> H2 = boost::none,
+        boost::optional<Matrix&> H3 = boost::none,
+        boost::optional<Matrix&> H4 = boost::none) const override {
       try {
           if(H1 || H2 || H3 || H4) {
             Matrix H0, H02;
-            const PinholeCamera<CALIBRATION> camera(pose.compose(transform, H0, H02), K);
-            const Point2 reprojectionError(camera.project(point, H1, H3, H4) - measured_);
+            PinholeCamera<CALIBRATION> camera(pose.compose(transform, H0, H02), K);
+            Point2 reprojectionError(camera.project(point, H1, H3, H4) - measured_);
             *H2 = *H1 * H02;
             *H1 = *H1 * H0;
             return reprojectionError;
@@ -151,7 +159,6 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
 
   private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -161,8 +168,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
       ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
-#endif
-};
+  };
 
   /// traits
   template<class POSE, class LANDMARK, class CALIBRATION>

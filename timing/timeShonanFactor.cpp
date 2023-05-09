@@ -62,10 +62,10 @@ int main(int argc, char* argv[]) {
 
   // Build graph
   NonlinearFactorGraph graph;
-  // graph.add(NonlinearEquality<SOn>(0, SOn::Identity(4)));
+  // graph.add(NonlinearEquality<SOn>(0, SOn::identity(4)));
   auto priorModel = noiseModel::Isotropic::Sigma(6, 10000);
-  graph.add(PriorFactor<SOn>(0, SOn::Identity(4), priorModel));
-  auto G = std::make_shared<Matrix>(SOn::VectorizedGenerators(4));
+  graph.add(PriorFactor<SOn>(0, SOn::identity(4), priorModel));
+  auto G = boost::make_shared<Matrix>(SOn::VectorizedGenerators(4));
   for (const auto &m : measurements) {
     const auto &keys = m.keys();
     const Rot3 &Rij = m.measured();
@@ -82,17 +82,17 @@ int main(int argc, char* argv[]) {
   params.setLinearSolverType("MULTIFRONTAL_QR");
   // params.setVerbosityLM("SUMMARY");
   // params.linearSolverType = LevenbergMarquardtParams::Iterative;
-  // auto pcg = std::make_shared<PCGSolverParameters>();
+  // auto pcg = boost::make_shared<PCGSolverParameters>();
   // pcg->preconditioner_ =
-  // std::make_shared<SubgraphPreconditionerParameters>();
-  // std::make_shared<BlockJacobiPreconditionerParameters>();
+  // boost::make_shared<SubgraphPreconditionerParameters>();
+  // boost::make_shared<BlockJacobiPreconditionerParameters>();
   // params.iterativeParams = pcg;
 
   // Optimize
   for (size_t i = 0; i < 100; i++) {
     gttic_(optimize);
     Values initial;
-    initial.insert(0, SOn::Identity(4));
+    initial.insert(0, SOn::identity(4));
     for (size_t j = 1; j < poses.size(); j++) {
       initial.insert(j, SOn::Random(rng, 4));
     }

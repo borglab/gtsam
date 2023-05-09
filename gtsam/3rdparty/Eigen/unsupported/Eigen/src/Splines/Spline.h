@@ -191,7 +191,7 @@ namespace Eigen
     DenseIndex span(Scalar u) const;
 
     /**
-     * \brief Computes the span within the provided knot vector in which u is falling.
+     * \brief Computes the spang within the provided knot vector in which u is falling.
      **/
     static DenseIndex Span(typename SplineTraits<Spline>::Scalar u, DenseIndex degree, const typename SplineTraits<Spline>::KnotVectorType& knots);
     
@@ -255,7 +255,7 @@ namespace Eigen
     const KnotVectorType& U = knots;
 
     BasisVectorType left(p+1); left(0) = Scalar(0);
-    BasisVectorType right(p+1); right(0) = Scalar(0);
+    BasisVectorType right(p+1); right(0) = Scalar(0);        
 
     VectorBlock<BasisVectorType,Degree>(left,1,p) = u - VectorBlock<const KnotVectorType,Degree>(U,i+1-p,p).reverse();
     VectorBlock<BasisVectorType,Degree>(right,1,p) = VectorBlock<const KnotVectorType,Degree>(U,i+1,p) - u;

@@ -123,70 +123,7 @@ template<typename MatrixType> void reverse(const MatrixType& m)
   VERIFY_IS_APPROX(x, m1(r, cols - 1 - c));
 }
 
-template<int>
-void array_reverse_extra()
-{
-  Vector4f x; x << 1, 2, 3, 4;
-  Vector4f y; y << 4, 3, 2, 1;
-  VERIFY(x.reverse()[1] == 3);
-  VERIFY(x.reverse() == y);
-}
-
-// Simpler version of reverseInPlace leveraging a bug
-// in clang 6/7 with -O2 and AVX or AVX512 enabled.
-// This simpler version ensure that the clang bug is not simply hidden
-// through mis-inlining of reverseInPlace or other minor changes.
-template<typename MatrixType>
-EIGEN_DONT_INLINE
-void bug1684_job1(MatrixType& m1, MatrixType& m2)
-{
-  m2 = m1;
-  m2.col(0).swap(m2.col(3));
-  m2.col(1).swap(m2.col(2));
-}
-
-template<typename MatrixType>
-EIGEN_DONT_INLINE
-void bug1684_job2(MatrixType& m1, MatrixType& m2)
-{
-  m2 = m1; // load m1/m2 in AVX registers
-  m1.col(0) = m2.col(3); // perform 128 bits moves
-  m1.col(1) = m2.col(2);
-  m1.col(2) = m2.col(1);
-  m1.col(3) = m2.col(0);
-}
-
-template<typename MatrixType>
-EIGEN_DONT_INLINE
-void bug1684_job3(MatrixType& m1, MatrixType& m2)
-{
-  m2 = m1;
-  Vector4f tmp;
-  tmp = m2.col(0);
-  m2.col(0) = m2.col(3);
-  m2.col(3) = tmp;
-  tmp = m2.col(1);
-  m2.col(1) = m2.col(2);
-  m2.col(2) = tmp;
-  
-}
-
-template<int>
-void bug1684()
-{
-  Matrix4f m1 = Matrix4f::Random();
-  Matrix4f m2 = Matrix4f::Random();
-  bug1684_job1(m1,m2);
-  VERIFY_IS_APPROX(m2, m1.rowwise().reverse().eval());
-  bug1684_job2(m1,m2);
-  VERIFY_IS_APPROX(m2, m1.rowwise().reverse().eval());
-  // This one still fail after our swap's workaround,
-  // but I expect users not to implement their own swap.
-  // bug1684_job3(m1,m2);
-  // VERIFY_IS_APPROX(m2, m1.rowwise().reverse().eval());
-}
-
-EIGEN_DECLARE_TEST(array_reverse)
+void test_array_reverse()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( reverse(Matrix<float, 1, 1>()) );
@@ -198,7 +135,11 @@ EIGEN_DECLARE_TEST(array_reverse)
     CALL_SUBTEST_7( reverse(MatrixXcd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_8( reverse(Matrix<float, 100, 100>()) );
     CALL_SUBTEST_9( reverse(Matrix<float,Dynamic,Dynamic,RowMajor>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
-    CALL_SUBTEST_3( bug1684<0>() );
   }
-  CALL_SUBTEST_3( array_reverse_extra<0>() );
+#ifdef EIGEN_TEST_PART_3
+  Vector4f x; x << 1, 2, 3, 4;
+  Vector4f y; y << 4, 3, 2, 1;
+  VERIFY(x.reverse()[1] == 3);
+  VERIFY(x.reverse() == y);
+#endif
 }

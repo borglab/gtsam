@@ -101,7 +101,7 @@ template<typename MatrixType, int CRows, int CCols, int SRows, int SCols> void c
   VERIFY_IS_EQUAL((const_matrix.template rightCols<c>()), (const_matrix.template block<rows,c>(0,cols-c)));
 }
 
-EIGEN_DECLARE_TEST(corners)
+void test_corners()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( corners(Matrix<float, 1, 1>()) );

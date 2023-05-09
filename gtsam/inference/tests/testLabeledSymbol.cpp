@@ -19,7 +19,9 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <CppUnitLite/TestHarness.h>
+#include <boost/assign/std/list.hpp> // for operator +=
 
+using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 

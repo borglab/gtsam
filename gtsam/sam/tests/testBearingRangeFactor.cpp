@@ -21,13 +21,14 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/nonlinear/expressionTesting.h>
+#include <gtsam/base/serialization.h>
+#include <gtsam/base/serializationTestHelpers.h>
 
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
 
-namespace {
 Key poseKey(1);
 Key pointKey(2);
 
@@ -39,18 +40,43 @@ typedef BearingRangeFactor<Pose3, Point3> BearingRangeFactor3D;
 static SharedNoiseModel model3D(noiseModel::Isotropic::Sigma(3, 0.5));
 BearingRangeFactor3D factor3D(poseKey, pointKey,
                               Pose3().bearing(Point3(1, 0, 0)), 1, model3D);
+
+/* ************************************************************************* */
+// Export Noisemodels
+// See http://www.boost.org/doc/libs/1_32_0/libs/serialization/doc/special.html
+BOOST_CLASS_EXPORT(gtsam::noiseModel::Isotropic);
+
+/* ************************************************************************* */
+TEST(BearingRangeFactor, Serialization2D) {
+  EXPECT(serializationTestHelpers::equalsObj(factor2D));
+  EXPECT(serializationTestHelpers::equalsXML(factor2D));
+  EXPECT(serializationTestHelpers::equalsBinary(factor2D));
 }
 
 /* ************************************************************************* */
 TEST(BearingRangeFactor, 2D) {
+  // Serialize the factor
+  std::string serialized = serializeXML(factor2D);
+
+  // And de-serialize it
+  BearingRangeFactor2D factor;
+  deserializeXML(serialized, factor);
+
   // Set the linearization point
   Values values;
   values.insert(poseKey, Pose2(1.0, 2.0, 0.57));
   values.insert(pointKey, Point2(-4.0, 11.0));
 
-  EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor2D.expression({poseKey, pointKey}),
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor.expression({poseKey, pointKey}),
                                       values, 1e-7, 1e-5);
-  EXPECT_CORRECT_FACTOR_JACOBIANS(factor2D, values, 1e-7, 1e-5);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+TEST(BearingRangeFactor, Serialization3D) {
+  EXPECT(serializationTestHelpers::equalsObj(factor3D));
+  EXPECT(serializationTestHelpers::equalsXML(factor3D));
+  EXPECT(serializationTestHelpers::equalsBinary(factor3D));
 }
 
 /* ************************************************************************* */

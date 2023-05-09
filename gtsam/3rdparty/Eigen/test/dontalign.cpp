@@ -44,7 +44,7 @@ void dontalign(const MatrixType& m)
   internal::aligned_delete(array, rows);
 }
 
-EIGEN_DECLARE_TEST(dontalign)
+void test_dontalign()
 {
 #if defined EIGEN_TEST_PART_1 || defined EIGEN_TEST_PART_5
   dontalign(Matrix3d());

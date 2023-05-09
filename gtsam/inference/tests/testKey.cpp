@@ -21,8 +21,11 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/assign/std/list.hpp> // for operator +=
+
 #include <sstream>
 
+using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 

@@ -17,6 +17,7 @@
  */
 
 #include <iostream>
+#include <boost/format.hpp> // for key names
 #include "DiscreteKey.h"
 
 namespace gtsam {
@@ -25,20 +26,23 @@ namespace gtsam {
 
   DiscreteKeys::DiscreteKeys(const vector<int>& cs) {
     for (size_t i = 0; i < cs.size(); i++) {
-      string name = "v" + std::to_string(i);
+      string name = boost::str(boost::format("v%1%") % i);
       push_back(DiscreteKey(i, cs[i]));
     }
   }
 
   KeyVector DiscreteKeys::indices() const {
     KeyVector js;
-    for (const DiscreteKey& key : *this) js.push_back(key.first);
+    for(const DiscreteKey& key: *this)
+      js.push_back(key.first);
     return js;
   }
 
-  map<Key, size_t> DiscreteKeys::cardinalities() const {
-    map<Key, size_t> cs;
-    cs.insert(begin(), end());
+  map<Key,size_t> DiscreteKeys::cardinalities() const {
+    map<Key,size_t> cs;
+    cs.insert(begin(),end());
+//    for(const DiscreteKey& key: *this)
+//      cs.insert(key);
     return cs;
   }
 
@@ -47,25 +51,4 @@ namespace gtsam {
     return keys & key2;
   }
 
-  void DiscreteKeys::print(const std::string& s,
-                           const KeyFormatter& keyFormatter) const {
-    for (auto&& dkey : *this) {
-      std::cout << DefaultKeyFormatter(dkey.first) << " " << dkey.second
-                << std::endl;
-    }
-  }
-
-  bool DiscreteKeys::equals(const DiscreteKeys& other, double tol) const {
-    if (this->size() != other.size()) {
-      return false;
-    }
-
-    for (size_t i = 0; i < this->size(); i++) {
-      if (this->at(i).first != other.at(i).first ||
-          this->at(i).second != other.at(i).second) {
-        return false;
-      }
-    }
-    return true;
-  }
 }

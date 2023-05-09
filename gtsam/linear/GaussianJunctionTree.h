@@ -16,8 +16,6 @@
  * @author Richard Roberts
  */
 
-#pragma once
-
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/inference/JunctionTree.h>
@@ -32,7 +30,7 @@ namespace gtsam {
    * factors stored in each cluster. It can be eliminated into a Gaussian Bayes tree with the same
    * structure, which is essentially doing multifrontal sparse matrix factorization.
    *
-   * \ingroup Multifrontal
+   * \addtogroup Multifrontal
    * \nosubgrouping
    */
   class GTSAM_EXPORT GaussianJunctionTree :
@@ -40,7 +38,7 @@ namespace gtsam {
   public:
     typedef JunctionTree<GaussianBayesTree, GaussianFactorGraph> Base; ///< Base class
     typedef GaussianJunctionTree This; ///< This class
-    typedef std::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
+    typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
 
     /**
     * Build the elimination tree of a factor graph using pre-computed column structure.

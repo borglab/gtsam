@@ -22,7 +22,7 @@ set(EIGEN_DASHBOARD_BUILD_TARGET "buildtests" CACHE STRING "Target to be built i
 set(EIGEN_CTEST_ERROR_EXCEPTION "" CACHE STRING "Regular expression for build error messages to be filtered out")
 
 # Overwrite default DartConfiguration.tcl such that ctest can build our unit tests.
-# Recall that our unit tests are not in the "all" target, so we have to explicitly ask ctest to build our custom 'buildtests' target.
+# Recall that our unit tests are not in the "all" target, so we have to explicitely ask ctest to build our custom 'buildtests' target.
 # At this stage, we can also add custom flags to the build tool through the user defined EIGEN_TEST_BUILD_FLAGS variable.
 file(READ  "${CMAKE_CURRENT_BINARY_DIR}/DartConfiguration.tcl" EIGEN_DART_CONFIG_FILE)
 # try to grab the default flags
@@ -41,7 +41,7 @@ ei_init_testing()
 
 # configure Eigen related testing options
 option(EIGEN_NO_ASSERTION_CHECKING "Disable checking of assertions using exceptions" OFF)
-option(EIGEN_DEBUG_ASSERTS "Enable advanced debugging of assertions" OFF)
+option(EIGEN_DEBUG_ASSERTS "Enable advanced debuging of assertions" OFF)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
   option(EIGEN_COVERAGE_TESTING "Enable/disable gcov" OFF)
@@ -49,10 +49,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     set(COVERAGE_FLAGS "-fprofile-arcs -ftest-coverage")
     set(CTEST_CUSTOM_COVERAGE_EXCLUDE "/test/")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COVERAGE_FLAGS}")
-  endif()
+  endif(EIGEN_COVERAGE_TESTING)
   
 elseif(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_CRT_SECURE_NO_WARNINGS /D_SCL_SECURE_NO_WARNINGS")
-endif()
+endif(CMAKE_COMPILER_IS_GNUCXX)
 
 

@@ -45,7 +45,7 @@ template<typename T> void test_pastix_T_LU()
   check_sparse_square_solving(pastix_lu);
 }
 
-EIGEN_DECLARE_TEST(pastix_support)
+void test_pastix_support()
 {
   CALL_SUBTEST_1(test_pastix_T<float>());
   CALL_SUBTEST_2(test_pastix_T<double>());

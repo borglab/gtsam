@@ -560,8 +560,8 @@ TEST( ConcurrentBatchSmoother, synchronize_3 )
   GaussianFactorGraph::shared_ptr linearFactors = allFactors.linearize(allValues);
 
   KeySet eliminateKeys = linearFactors->keys();
-  for(const auto key: filterSeparatorValues.keys()) {
-    eliminateKeys.erase(key);
+  for(const auto key_value: filterSeparatorValues) {
+    eliminateKeys.erase(key_value.key);
   }
   KeyVector variables(eliminateKeys.begin(), eliminateKeys.end());
   GaussianFactorGraph result = *linearFactors->eliminatePartialMultifrontal(variables, EliminateCholesky).second;

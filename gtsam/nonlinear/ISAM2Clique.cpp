@@ -245,7 +245,7 @@ bool ISAM2Clique::optimizeWildfireNode(const KeySet& replaced, double threshold,
 
     // Back-substitute
     fastBackSubstitute(delta);
-    *count += conditional_->nrFrontals();
+    count += conditional_->nrFrontals();
 
     if (valuesChanged(replaced, originalValues, *delta, threshold)) {
       markFrontalsAsChanged(changed);
@@ -330,7 +330,9 @@ void ISAM2Clique::addGradientAtZero(VectorValues* g) const {
   for (auto it = conditional_->begin(); it != conditional_->end(); ++it) {
     const DenseIndex dim = conditional_->getDim(it);
     const Vector contribution = gradientContribution_.segment(position, dim);
-    auto [values_it, success] = g->tryInsert(*it, contribution);
+    VectorValues::iterator values_it;
+    bool success;
+    std::tie(values_it, success) = g->tryInsert(*it, contribution);
     if (!success) values_it->second += contribution;
     position += dim;
   }

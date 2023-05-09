@@ -74,7 +74,7 @@ TEST(BinaryMeasurement, Rot3MakeRobust) {
   EXPECT_LONGS_EQUAL(rot3Measurement.key1(), kKey1);
   EXPECT_LONGS_EQUAL(rot3Measurement.key2(), kKey2);
   EXPECT(rot3Measurement.measured().equals(rot3Measured));
-  const auto &robust = std::dynamic_pointer_cast<noiseModel::Robust>(
+  const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
       rot3Measurement.noiseModel());
   EXPECT(robust);
 }

@@ -27,8 +27,8 @@ namespace gtsam {
 /* ************************************************************************* */
 void EssentialMatrixConstraint::print(const std::string& s,
     const KeyFormatter& keyFormatter) const {
-  std::cout << s << "EssentialMatrixConstraint(" << keyFormatter(this->key<1>())
-      << "," << keyFormatter(this->key<2>()) << ")\n";
+  std::cout << s << "EssentialMatrixConstraint(" << keyFormatter(this->key1())
+      << "," << keyFormatter(this->key2()) << ")\n";
   measuredE_.print("  measured: ");
   this->noiseModel_->print("  noise model: ");
 }
@@ -43,20 +43,16 @@ bool EssentialMatrixConstraint::equals(const NonlinearFactor& expected,
 
 /* ************************************************************************* */
 Vector EssentialMatrixConstraint::evaluateError(const Pose3& p1,
-    const Pose3& p2, OptionalMatrixType Hp1,
-    OptionalMatrixType Hp2) const {
+    const Pose3& p2, boost::optional<Matrix&> Hp1,
+    boost::optional<Matrix&> Hp2) const {
 
   // compute relative Pose3 between p1 and p2
   Pose3 _1P2_ = p1.between(p2, Hp1, Hp2);
 
   // convert to EssentialMatrix
   Matrix D_hx_1P2;
-  EssentialMatrix hx;
-  if (Hp1 || Hp2) {
-    hx = EssentialMatrix::FromPose3(_1P2_, D_hx_1P2);
-  } else {
-      hx = EssentialMatrix::FromPose3(_1P2_, OptionalNone);
-  }
+  EssentialMatrix hx = EssentialMatrix::FromPose3(_1P2_,
+      (Hp1 || Hp2) ? boost::optional<Matrix&>(D_hx_1P2) : boost::none);
 
   // Calculate derivatives if needed
   if (Hp1) {

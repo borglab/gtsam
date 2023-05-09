@@ -7,16 +7,16 @@ import gtsam.*
 %% Initialize iSAM
 params = gtsam.ISAM2Params;
 if options.alwaysRelinearize
-    params.relinearizeSkip = 1;
+    params.setRelinearizeSkip(1);
 end
 isam = ISAM2(params);
 
 %% Set Noise parameters
-noiseModels.pose = noiseModel.Diagonal.Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]', true);
+noiseModels.pose = noiseModel.Diagonal.Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
 %noiseModels.odometry = noiseModel.Diagonal.Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
-noiseModels.odometry = noiseModel.Diagonal.Sigmas([0.05 0.05 0.05 0.2 0.2 0.2]', true);
-noiseModels.point = noiseModel.Isotropic.Sigma(3, 0.1, true);
-noiseModels.measurement = noiseModel.Isotropic.Sigma(2, 1.0, true);
+noiseModels.odometry = noiseModel.Diagonal.Sigmas([0.05 0.05 0.05 0.2 0.2 0.2]');
+noiseModels.point = noiseModel.Isotropic.Sigma(3, 0.1);
+noiseModels.measurement = noiseModel.Isotropic.Sigma(2, 1.0);
 
 %% Add constraints/priors
 % TODO: should not be from ground truth!

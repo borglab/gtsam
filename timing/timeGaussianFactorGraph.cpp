@@ -16,12 +16,14 @@
  */
 
 #include <time.h>
+#include <boost/assign/std/list.hpp> // for operator += in Ordering
 #include <CppUnitLite/TestHarness.h>
 #include <tests/smallExample.h>
 
 using namespace std;
 using namespace gtsam;
 using namespace example;
+using namespace boost::assign;
 
 /* ************************************************************************* */
 // Create a Kalman smoother for t=1:T and optimize
@@ -63,7 +65,7 @@ double timePlanarSmootherEliminate(int N, bool old = true) {
 //double timePlanarSmootherJoinAug(int N, size_t reps) {
 //  GaussianFactorGraph fgBase;
 //  VectorValues config;
-//  std::tie(fgBase,config) = planarGraph(N);
+//  boost::tie(fgBase,config) = planarGraph(N);
 //  Ordering ordering = fgBase.getOrdering();
 //  Symbol key = ordering.front();
 //
@@ -96,7 +98,7 @@ double timePlanarSmootherEliminate(int N, bool old = true) {
 //double timePlanarSmootherCombined(int N, size_t reps) {
 //  GaussianFactorGraph fgBase;
 //  VectorValues config;
-//  std::tie(fgBase,config) = planarGraph(N);
+//  boost::tie(fgBase,config) = planarGraph(N);
 //  Ordering ordering = fgBase.getOrdering();
 //  Symbol key = ordering.front();
 //

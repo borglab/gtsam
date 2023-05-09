@@ -20,10 +20,9 @@
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/testLie.h>
 #include <CppUnitLite/TestHarness.h>
+#include <boost/tuple/tuple.hpp>
 #include <iostream>
 #include <sstream>
-#include <optional>
-#include <functional>
 
 using namespace std;
 using namespace gtsam;
@@ -174,7 +173,7 @@ TEST(Matrix, stack )
 {
   Matrix A = (Matrix(2, 2) << -5.0, 3.0, 00.0, -5.0).finished();
   Matrix B = (Matrix(3, 2) << -0.5, 2.1, 1.1, 3.4, 2.6, 7.1).finished();
-  Matrix AB = gtsam::stack(2, &A, &B);
+  Matrix AB = stack(2, &A, &B);
   Matrix C(5, 2);
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
@@ -188,7 +187,7 @@ TEST(Matrix, stack )
   std::vector<gtsam::Matrix> matrices;
   matrices.push_back(A);
   matrices.push_back(B);
-  Matrix AB2 = gtsam::stack(matrices);
+  Matrix AB2 = stack(matrices);
   EQUALITY(C,AB2);
 }
 
@@ -857,7 +856,8 @@ TEST(Matrix, qr )
   Matrix expectedR = (Matrix(6, 4) << 15, 0, -8.3333, 0, 00, 11.1803, 0, -2.2361, 00, 0,
       7.4536, 0, 00, 0, 0, 10.9545, 00, 0, 0, 0, 00, 0, 0, 0).finished();
 
-  const auto [Q, R] = qr(A);
+  Matrix Q, R;
+  boost::tie(Q, R) = qr(A);
   EXPECT(assert_equal(expectedQ, Q, 1e-4));
   EXPECT(assert_equal(expectedR, R, 1e-4));
   EXPECT(assert_equal(A, Q*R, 1e-14));
@@ -909,12 +909,15 @@ TEST(Matrix, weighted_elimination )
   // perform elimination
   Matrix A1 = A;
   Vector b1 = b;
-  std::list<std::tuple<Vector, double, double> > solution =
+  std::list<boost::tuple<Vector, double, double> > solution =
       weighted_eliminate(A1, b1, sigmas);
 
   // unpack and verify
   size_t i = 0;
-  for (const auto& [r, di, sigma] : solution) {
+  for (const auto& tuple : solution) {
+    Vector r;
+    double di, sigma;
+    boost::tie(r, di, sigma) = tuple;
     EXPECT(assert_equal(r, expectedR.row(i))); // verify r
     DOUBLES_EQUAL(d(i), di, 1e-8); // verify d
     DOUBLES_EQUAL(newSigmas(i), sigma, 1e-5); // verify sigma
@@ -1138,7 +1141,10 @@ TEST(Matrix, DLT )
       1.89,         2.24,         3.99,         3.24,         3.84,         6.84,        18.09,        21.44,        38.19,
       2.24,         2.48,         6.24,         3.08,         3.41,         8.58,        24.64,        27.28,        68.64
   ).finished();
-  const auto [rank,error,actual] = DLT(A);
+  int rank;
+  double error;
+  Vector actual;
+  boost::tie(rank,error,actual) = DLT(A);
   Vector expected = (Vector(9) << -0.0, 0.2357, 0.4714, -0.2357, 0.0, - 0.4714,-0.4714, 0.4714, 0.0).finished();
   EXPECT_LONGS_EQUAL(8,rank);
   EXPECT_DOUBLES_EQUAL(0,error,1e-8);
@@ -1146,34 +1152,17 @@ TEST(Matrix, DLT )
 }
 
 //******************************************************************************
-TEST(Matrix, Matrix24IsVectorSpace) {
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Matrix24>);
+TEST(Matrix , IsVectorSpace) {
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<Matrix24>));
+  typedef Eigen::Matrix<double,2,3,Eigen::RowMajor> RowMajor;
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<RowMajor>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<Matrix>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector>));
+  typedef Eigen::Matrix<double,1,-1> RowVector;
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<RowVector>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector5>));
 }
 
-TEST(Matrix, RowMajorIsVectorSpace) {
-#ifdef GTSAM_USE_BOOST_FEATURES
-  typedef Eigen::Matrix<double, 2, 3, Eigen::RowMajor> RowMajor;
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowMajor>);
-#endif
-}
-
-TEST(Matrix, MatrixIsVectorSpace) {
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Matrix>);
-}
-
-TEST(Matrix, VectorIsVectorSpace) {
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector>);
-}
-
-TEST(Matrix, RowVectorIsVectorSpace) {
-#ifdef GTSAM_USE_BOOST_FEATURES
-  typedef Eigen::Matrix<double, 1, -1> RowVector;
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowVector>);
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector5>);
-#endif
-}
-
-//******************************************************************************
 TEST(Matrix, AbsoluteError) {
   double a = 2000, b = 1997, tol = 1e-1;
   bool isEqual;
@@ -1185,17 +1174,6 @@ TEST(Matrix, AbsoluteError) {
   // Test relative error as well
   isEqual = fpEqual(a, b, tol);
   EXPECT(isEqual);
-}
-
-// A test to check if a matrix and an optional reference_wrapper to
-// a matrix are equal.
-TEST(Matrix, MatrixRef) {
-  Matrix A = Matrix::Random(3, 3);
-  Matrix B = Matrix::Random(3, 3);
-
-  EXPECT(assert_equal(A, A));
-  EXPECT(assert_equal(A, std::cref(A)));
-  EXPECT(!assert_equal(A, std::cref(B)));
 }
 
 /* ************************************************************************* */

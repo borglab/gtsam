@@ -68,7 +68,7 @@ template<typename MatrixType> void replicate(const MatrixType& m)
   VERIFY_IS_APPROX(vx1, v1.colwise().replicate(f2));
 }
 
-EIGEN_DECLARE_TEST(array_replicate)
+void test_array_replicate()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( replicate(Matrix<float, 1, 1>()) );

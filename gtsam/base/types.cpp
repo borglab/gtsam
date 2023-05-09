@@ -14,7 +14,7 @@
  * @brief    Functions for handling type information
  * @author   Varun Agrawal
  * @date     May 18, 2020
- * @ingroup base
+ * @addtogroup base
  */
 
 #include <gtsam/base/types.h>
@@ -42,7 +42,7 @@ std::string demangle(const char* name) {
   // g++ version of demangle
   char* demangled = nullptr;
   int status = -1; // some arbitrary value to eliminate the compiler warning
-  demangled = abi::__cxa_demangle(name, nullptr, nullptr, &status);
+  demangled = abi::__cxa_demangle(name, nullptr, nullptr, &status),
   
   demangled_name = (status == 0) ? std::string(demangled) : std::string(name);
 

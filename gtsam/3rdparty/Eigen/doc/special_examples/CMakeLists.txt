@@ -3,7 +3,7 @@ if(NOT EIGEN_TEST_NOQT)
   if(QT4_FOUND)
     include(${QT_USE_FILE})
   endif()
-endif()
+endif(NOT EIGEN_TEST_NOQT)
 
 if(QT4_FOUND)
   add_executable(Tutorial_sparse_example Tutorial_sparse_example.cpp Tutorial_sparse_example_details.cpp)
@@ -17,7 +17,7 @@ if(QT4_FOUND)
   )
 
   add_dependencies(all_examples Tutorial_sparse_example)
-endif()
+endif(QT4_FOUND)
 
 if(EIGEN_COMPILER_SUPPORT_CPP11)
   add_executable(random_cpp11 random_cpp11.cpp)

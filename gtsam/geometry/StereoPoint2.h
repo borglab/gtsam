@@ -20,15 +20,13 @@
 
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/base/VectorSpace.h>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
-#endif
 
 namespace gtsam {
 
 /**
  * A 2D stereo point, v will be same for rectified images
- * @ingroup geometry
+ * @addtogroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT StereoPoint2 {
@@ -73,7 +71,7 @@ public:
   /// @{
 
   /// identity
-  inline static StereoPoint2 Identity() {
+  inline static StereoPoint2 identity() {
     return StereoPoint2();
   }
 
@@ -148,7 +146,6 @@ private:
   /// @name Advanced Interface
   /// @{
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -157,7 +154,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(uR_);
     ar & BOOST_SERIALIZATION_NVP(v_);
   }
-#endif
 
   /// @}
 

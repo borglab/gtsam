@@ -29,16 +29,25 @@
 #include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/timing.h>
 
+#include <boost/format.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/assign/list_of.hpp>
+#include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/adaptor/map.hpp>
+#include <boost/range/algorithm/copy.hpp>
+
 #include <sstream>
 #include <limits>
-#include "gtsam/base/Vector.h"
 
 using namespace std;
+using namespace boost::assign;
+namespace br {
+using namespace boost::range;
+using namespace boost::adaptors;
+}
 
 namespace gtsam {
-
-// Typedefs used in constructors below.
-using Dims = std::vector<Eigen::Index>;
 
 /* ************************************************************************* */
 void HessianFactor::Allocate(const Scatter& scatter) {
@@ -65,14 +74,14 @@ HessianFactor::HessianFactor(const Scatter& scatter) {
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor() :
-    info_(Dims{1}) {
+    info_(cref_list_of<1>(1)) {
   assert(info_.rows() == 1);
   constantTerm() = 0.0;
 }
 
 /* ************************************************************************* */
-HessianFactor::HessianFactor(Key j, const Matrix& G, const Vector& g, double f)
-    : GaussianFactor(KeyVector{j}), info_(Dims{G.cols(), 1}) {
+HessianFactor::HessianFactor(Key j, const Matrix& G, const Vector& g, double f) :
+    GaussianFactor(cref_list_of<1>(j)), info_(cref_list_of<2>(G.cols())(1)) {
   if (G.rows() != G.cols() || G.rows() != g.size())
     throw invalid_argument(
         "Attempting to construct HessianFactor with inconsistent matrix and/or vector dimensions");
@@ -84,8 +93,8 @@ HessianFactor::HessianFactor(Key j, const Matrix& G, const Vector& g, double f)
 /* ************************************************************************* */
 // error is 0.5*(x-mu)'*inv(Sigma)*(x-mu) = 0.5*(x'*G*x - 2*x'*G*mu + mu'*G*mu)
 // where G = inv(Sigma), g = G*mu, f = mu'*G*mu = mu'*g
-HessianFactor::HessianFactor(Key j, const Vector& mu, const Matrix& Sigma)
-    : GaussianFactor(KeyVector{j}), info_(Dims{Sigma.cols(), 1}) {
+HessianFactor::HessianFactor(Key j, const Vector& mu, const Matrix& Sigma) :
+    GaussianFactor(cref_list_of<1>(j)), info_(cref_list_of<2>(Sigma.cols())(1)) {
   if (Sigma.rows() != Sigma.cols() || Sigma.rows() != mu.size())
     throw invalid_argument(
         "Attempting to construct HessianFactor with inconsistent matrix and/or vector dimensions");
@@ -98,8 +107,8 @@ HessianFactor::HessianFactor(Key j, const Vector& mu, const Matrix& Sigma)
 HessianFactor::HessianFactor(Key j1, Key j2, const Matrix& G11,
     const Matrix& G12, const Vector& g1, const Matrix& G22, const Vector& g2,
     double f) :
-    GaussianFactor(KeyVector{j1,j2}), info_(
-        Dims{G11.cols(),G22.cols(),1}) {
+    GaussianFactor(cref_list_of<2>(j1)(j2)), info_(
+        cref_list_of<3>(G11.cols())(G22.cols())(1)) {
   info_.setDiagonalBlock(0, G11);
   info_.setOffDiagonalBlock(0, 1, G12);
   info_.setDiagonalBlock(1, G22);
@@ -112,8 +121,8 @@ HessianFactor::HessianFactor(Key j1, Key j2, Key j3, const Matrix& G11,
     const Matrix& G12, const Matrix& G13, const Vector& g1, const Matrix& G22,
     const Matrix& G23, const Vector& g2, const Matrix& G33, const Vector& g3,
     double f) :
-    GaussianFactor(KeyVector{j1,j2,j3}), info_(
-        Dims{G11.cols(),G22.cols(),G33.cols(),1}) {
+    GaussianFactor(cref_list_of<3>(j1)(j2)(j3)), info_(
+        cref_list_of<4>(G11.cols())(G22.cols())(G33.cols())(1)) {
   if (G11.rows() != G11.cols() || G11.rows() != G12.rows()
       || G11.rows() != G13.rows() || G11.rows() != g1.size()
       || G22.cols() != G12.cols() || G33.cols() != G13.cols()
@@ -132,19 +141,15 @@ HessianFactor::HessianFactor(Key j1, Key j2, Key j3, const Matrix& G11,
 
 /* ************************************************************************* */
 namespace {
-static std::vector<DenseIndex> _getSizeHFVec(const std::vector<Vector>& m) {
-  std::vector<DenseIndex> dims;
-  for (const Vector& v : m) {
-    dims.push_back(v.size());
-  }
-  return dims;
+DenseIndex _getSizeHF(const Vector& m) {
+  return m.size();
 }
-}  // namespace
+}
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const KeyVector& js,
     const std::vector<Matrix>& Gs, const std::vector<Vector>& gs, double f) :
-    GaussianFactor(js), info_(_getSizeHFVec(gs), true) {
+    GaussianFactor(js), info_(gs | br::transformed(&_getSizeHF), true) {
   // Get the number of variables
   size_t variable_count = js.size();
 
@@ -375,10 +380,10 @@ void HessianFactor::updateHessian(const KeyVector& infoKeys,
 
 /* ************************************************************************* */
 GaussianFactor::shared_ptr HessianFactor::negate() const {
-  shared_ptr result = std::make_shared<This>(*this);
+  shared_ptr result = boost::make_shared<This>(*this);
   // Negate the information matrix of the result
   result->info_.negate();
-  return std::move(result);
+  return result;
 }
 
 /* ************************************************************************* */
@@ -410,7 +415,9 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
 
   // copy to yvalues
   for (DenseIndex i = 0; i < (DenseIndex) size(); ++i) {
-    const auto [it, didNotExist] = yvalues.tryInsert(keys_[i], Vector());
+    bool didNotExist;
+    VectorValues::iterator it;
+    boost::tie(it, didNotExist) = yvalues.tryInsert(keys_[i], Vector());
     if (didNotExist)
       it->second = alpha * y[i]; // init
     else
@@ -456,7 +463,7 @@ Vector HessianFactor::gradient(Key key, const VectorValues& x) const {
 }
 
 /* ************************************************************************* */
-std::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Ordering& keys) {
+boost::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Ordering& keys) {
   gttic(HessianFactor_eliminateCholesky);
 
   GaussianConditional::shared_ptr conditional;
@@ -469,7 +476,7 @@ std::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Orde
 
     // TODO(frank): pre-allocate GaussianConditional and write into it
     const VerticalBlockMatrix Ab = info_.split(nFrontals);
-    conditional = std::make_shared<GaussianConditional>(keys_, nFrontals, Ab);
+    conditional = boost::make_shared<GaussianConditional>(keys_, nFrontals, Ab);
 
     // Erase the eliminated keys in this factor
     keys_.erase(begin(), begin() + nFrontals);
@@ -513,7 +520,7 @@ VectorValues HessianFactor::solve() {
 }
 
 /* ************************************************************************* */
-std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<HessianFactor> >
+std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
 EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys) {
   gttic(EliminateCholesky);
 
@@ -521,7 +528,7 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys) {
   HessianFactor::shared_ptr jointFactor;
   try {
     Scatter scatter(factors, keys);
-    jointFactor = std::make_shared<HessianFactor>(factors, scatter);
+    jointFactor = boost::make_shared<HessianFactor>(factors, scatter);
   } catch (std::invalid_argument&) {
     throw InvalidDenseElimination(
         "EliminateCholesky was called with a request to eliminate variables that are not\n"
@@ -536,8 +543,8 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys) {
 }
 
 /* ************************************************************************* */
-std::pair<std::shared_ptr<GaussianConditional>,
-    std::shared_ptr<GaussianFactor> > EliminatePreferCholesky(
+std::pair<boost::shared_ptr<GaussianConditional>,
+    boost::shared_ptr<GaussianFactor> > EliminatePreferCholesky(
     const GaussianFactorGraph& factors, const Ordering& keys) {
   gttic(EliminatePreferCholesky);
 

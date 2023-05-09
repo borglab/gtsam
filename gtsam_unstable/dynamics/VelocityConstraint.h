@@ -10,6 +10,8 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 
+#include <boost/bind/bind.hpp>
+
 namespace gtsam {
 
 namespace dynamics {
@@ -30,12 +32,9 @@ typedef enum {
  * NOTE: this approximation is insufficient for large timesteps, but is accurate
  * if timesteps are small.
  */
-class VelocityConstraint : public gtsam::NoiseModelFactorN<PoseRTV,PoseRTV> {
+class VelocityConstraint : public gtsam::NoiseModelFactor2<PoseRTV,PoseRTV> {
 public:
   typedef gtsam::NoiseModelFactor2<PoseRTV,PoseRTV> Base;
-
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
 
 protected:
 
@@ -77,14 +76,15 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new VelocityConstraint(*this))); }
 
   /**
    * Calculates the error for trapezoidal model given
    */
   gtsam::Vector evaluateError(const PoseRTV& x1, const PoseRTV& x2,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+      boost::optional<gtsam::Matrix&> H1=boost::none,
+      boost::optional<gtsam::Matrix&> H2=boost::none) const override {
     if (H1) *H1 = gtsam::numericalDerivative21<gtsam::Vector,PoseRTV,PoseRTV>(
         std::bind(VelocityConstraint::evaluateError_, std::placeholders::_1,
             std::placeholders::_2, dt_, integration_mode_), x1, x2, 1e-5);

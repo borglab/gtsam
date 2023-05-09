@@ -36,7 +36,7 @@ static void test_compound_assignment()
 }
 
 
-EIGEN_DECLARE_TEST(cxx11_tensor_lvalue)
+void test_cxx11_tensor_lvalue()
 {
   CALL_SUBTEST(test_compound_assignment());
 }

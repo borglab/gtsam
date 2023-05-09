@@ -24,6 +24,7 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/VectorSpace.h>
 
+#include <boost/make_shared.hpp>
 #include <map>
 
 // Forward declare tests
@@ -54,10 +55,10 @@ public:
 protected:
 
   // Paul's trick shared pointer, polymorphic root of entire expression tree
-  std::shared_ptr<internal::ExpressionNode<T> > root_;
+  boost::shared_ptr<internal::ExpressionNode<T> > root_;
 
   /// Construct with a custom root
-  Expression(const std::shared_ptr<internal::ExpressionNode<T> >& root) : root_(root) {}
+  Expression(const boost::shared_ptr<internal::ExpressionNode<T> >& root) : root_(root) {}
 
 public:
 
@@ -154,27 +155,20 @@ public:
    * Notes: this is not terribly efficient, and H should have correct size.
    * The order of the Jacobians is same as keys in either keys() or dims()
    */
-  T value(const Values& values, std::vector<Matrix>* H = nullptr) const;
-
-  /**
-   * An overload of the value function to accept reference to vector of matrices instead of
-   * a pointer to vector of matrices.
-   */
-  T value(const Values& values, std::vector<Matrix>& H) const {
-    return value(values, &H);
-  }
+  T value(const Values& values, boost::optional<std::vector<Matrix>&> H =
+      boost::none) const;
 
   /**
    *  @return a "deep" copy of this Expression
    *  "deep" is in quotes because the ExpressionNode hierarchy is *not* cloned.
    *  The intent is for derived classes to be copied using only a Base pointer.
    */
-  virtual std::shared_ptr<Expression> clone() const {
-    return std::make_shared<Expression>(*this);
+  virtual boost::shared_ptr<Expression> clone() const {
+    return boost::make_shared<Expression>(*this);
   }
 
   /// Return root
-  const std::shared_ptr<internal::ExpressionNode<T> >& root() const;
+  const boost::shared_ptr<internal::ExpressionNode<T> >& root() const;
 
   /// Return size needed for memory buffer in traceExecution
   size_t traceSize() const;
@@ -197,7 +191,7 @@ protected:
 
   /// trace execution, very unsafe
   T traceExecution(const Values& values, internal::ExecutionTrace<T>& trace,
-      char* traceStorage) const;
+      void* traceStorage) const;
 
   /// brief Return value and derivatives, reverse AD version
   T valueAndJacobianMap(const Values& values,
@@ -218,7 +212,7 @@ protected:
 template <typename T>
 class ScalarMultiplyExpression : public Expression<T> {
   // Check that T is a vector space
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<T>);
+  BOOST_CONCEPT_ASSERT((gtsam::IsVectorSpace<T>));
 
  public:
   explicit ScalarMultiplyExpression(double s, const Expression<T>& e);
@@ -231,7 +225,7 @@ class ScalarMultiplyExpression : public Expression<T> {
 template <typename T>
 class BinarySumExpression : public Expression<T> {
   // Check that T is a vector space
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<T>);
+  BOOST_CONCEPT_ASSERT((gtsam::IsVectorSpace<T>));
 
  public:
   explicit BinarySumExpression(const Expression<T>& e1, const Expression<T>& e2);

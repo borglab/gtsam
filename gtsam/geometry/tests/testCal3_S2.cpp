@@ -64,7 +64,7 @@ Point2 uncalibrate_(const Cal3_S2& k, const Point2& pt) {
 
 TEST(Cal3_S2, Duncalibrate1) {
   Matrix25 computed;
-  K.uncalibrate(p, computed, {});
+  K.uncalibrate(p, computed, boost::none);
   Matrix numerical = numericalDerivative21(uncalibrate_, K, p);
   CHECK(assert_equal(numerical, computed, 1e-8));
 }
@@ -72,7 +72,7 @@ TEST(Cal3_S2, Duncalibrate1) {
 /* ************************************************************************* */
 TEST(Cal3_S2, Duncalibrate2) {
   Matrix computed;
-  K.uncalibrate(p, {}, computed);
+  K.uncalibrate(p, boost::none, computed);
   Matrix numerical = numericalDerivative22(uncalibrate_, K, p);
   CHECK(assert_equal(numerical, computed, 1e-9));
 }
@@ -84,7 +84,7 @@ Point2 calibrate_(const Cal3_S2& k, const Point2& pt) {
 /* ************************************************************************* */
 TEST(Cal3_S2, Dcalibrate1) {
   Matrix computed;
-  Point2 expected = K.calibrate(p_uv, computed, {});
+  Point2 expected = K.calibrate(p_uv, computed, boost::none);
   Matrix numerical = numericalDerivative21(calibrate_, K, p_uv);
   CHECK(assert_equal(expected, p_xy, 1e-8));
   CHECK(assert_equal(numerical, computed, 1e-8));
@@ -93,7 +93,7 @@ TEST(Cal3_S2, Dcalibrate1) {
 /* ************************************************************************* */
 TEST(Cal3_S2, Dcalibrate2) {
   Matrix computed;
-  Point2 expected = K.calibrate(p_uv, {}, computed);
+  Point2 expected = K.calibrate(p_uv, boost::none, computed);
   Matrix numerical = numericalDerivative22(calibrate_, K, p_uv);
   CHECK(assert_equal(expected, p_xy, 1e-8));
   CHECK(assert_equal(numerical, computed, 1e-8));

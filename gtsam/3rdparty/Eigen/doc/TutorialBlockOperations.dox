@@ -167,20 +167,6 @@ matrix.rightCols(q);\endcode </td>
     <td>\code 
 matrix.rightCols<q>();\endcode </td>
 </tr>
-<tr><td>%Block containing the q columns starting from i
-                    \link DenseBase::middleCols() * \endlink</td>
-    <td>\code
-matrix.middleCols(i,q);\endcode </td>
-    <td>\code 
-matrix.middleCols<q>(i);\endcode </td>
-</tr>
-<tr><td>%Block containing the q rows starting from i
-                    \link DenseBase::middleRows() * \endlink</td>
-    <td>\code
-matrix.middleRows(i,q);\endcode </td>
-    <td>\code 
-matrix.middleRows<q>(i);\endcode </td>
-</tr>
 </table>
 
 Here is a simple example illustrating the use of the operations presented above:

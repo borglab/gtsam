@@ -12,7 +12,7 @@
 
 #include "SkylineUtil.h"
 
-namespace Eigen {
+namespace Eigen { 
 
 /** \ingroup Skyline_Module
  *
@@ -102,18 +102,18 @@ public:
 #endif // not EIGEN_PARSED_BY_DOXYGEN
 
     /** \returns the number of rows. \sa cols(), RowsAtCompileTime */
-    inline EIGEN_CONSTEXPR Index rows() const EIGEN_NOEXCEPT {
+    inline Index rows() const {
         return derived().rows();
     }
 
     /** \returns the number of columns. \sa rows(), ColsAtCompileTime*/
-    inline EIGEN_CONSTEXPR Index cols() const EIGEN_NOEXCEPT {
+    inline Index cols() const {
         return derived().cols();
     }
 
     /** \returns the number of coefficients, which is \a rows()*cols().
      * \sa rows(), cols(), SizeAtCompileTime. */
-    inline EIGEN_CONSTEXPR Index size() const EIGEN_NOEXCEPT {
+    inline Index size() const {
         return rows() * cols();
     }
 
@@ -209,4 +209,4 @@ protected:
 
 } // end namespace Eigen
 
-#endif // EIGEN_SKYLINEMATRIXBASE_H
+#endif // EIGEN_SkylineMatrixBase_H

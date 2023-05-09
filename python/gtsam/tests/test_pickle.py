@@ -37,8 +37,8 @@ class TestPickle(GtsamTestCase):
 
     def test_sfmTrack_roundtrip(self):
         obj = SfmTrack(Point3(1, 1, 0))
-        obj.addMeasurement(0, Point2(-1, 5))
-        obj.addMeasurement(1, Point2(6, 2))
+        obj.add_measurement(0, Point2(-1, 5))
+        obj.add_measurement(1, Point2(6, 2))
         self.assertEqualityOnPickleRoundtrip(obj)
 
     def test_unit3_roundtrip(self):

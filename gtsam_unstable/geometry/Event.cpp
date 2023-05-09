@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  Event.cpp
+ *  @file  Event
  *  @brief Space-time event
  *  @author Frank Dellaert
  *  @author Jay Chakravarty

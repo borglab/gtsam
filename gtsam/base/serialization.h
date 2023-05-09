@@ -25,7 +25,6 @@
 #include <string>
 
 // includes for standard serialization types
-#include <boost/serialization/version.hpp>
 #include <boost/serialization/optional.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>

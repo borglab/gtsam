@@ -79,21 +79,20 @@ if( PTSCOTCH_FIND_COMPONENTS )
 endif()
 
 # PTSCOTCH depends on Threads, try to find it
-include(CMakeFindDependencyMacro)
 if (NOT THREADS_FOUND)
   if (PTSCOTCH_FIND_REQUIRED)
-    find_dependency(Threads REQUIRED)
+    find_package(Threads REQUIRED)
   else()
-    find_dependency(Threads)
+    find_package(Threads)
   endif()
 endif()
 
 # PTSCOTCH depends on MPI, try to find it
 if (NOT MPI_FOUND)
   if (PTSCOTCH_FIND_REQUIRED)
-    find_dependency(MPI REQUIRED)
+    find_package(MPI REQUIRED)
   else()
-    find_dependency(MPI)
+    find_package(MPI)
   endif()
 endif()
 
@@ -149,18 +148,18 @@ else()
     foreach(ptscotch_hdr ${PTSCOTCH_hdrs_to_find})
       set(PTSCOTCH_${ptscotch_hdr}_DIRS "PTSCOTCH_${ptscotch_hdr}_DIRS-NOTFOUND")
       find_path(PTSCOTCH_${ptscotch_hdr}_DIRS
-        NAMES ${ptscotch_hdr}
-        HINTS ${PTSCOTCH_DIR}
-        PATH_SUFFIXES "include" "include/scotch")
+	NAMES ${ptscotch_hdr}
+	HINTS ${PTSCOTCH_DIR}
+	PATH_SUFFIXES "include" "include/scotch")
       mark_as_advanced(PTSCOTCH_${ptscotch_hdr}_DIRS)
     endforeach()
   else()
     foreach(ptscotch_hdr ${PTSCOTCH_hdrs_to_find})
       set(PTSCOTCH_${ptscotch_hdr}_DIRS "PTSCOTCH_${ptscotch_hdr}_DIRS-NOTFOUND")
       find_path(PTSCOTCH_${ptscotch_hdr}_DIRS
-        NAMES ${ptscotch_hdr}
-        HINTS ${_inc_env}
-        PATH_SUFFIXES "scotch")
+	NAMES ${ptscotch_hdr}
+	HINTS ${_inc_env}
+	PATH_SUFFIXES "scotch")
       mark_as_advanced(PTSCOTCH_${ptscotch_hdr}_DIRS)
     endforeach()
   endif()
@@ -172,6 +171,7 @@ foreach(ptscotch_hdr ${PTSCOTCH_hdrs_to_find})
   if (PTSCOTCH_${ptscotch_hdr}_DIRS)
     list(APPEND PTSCOTCH_INCLUDE_DIRS "${PTSCOTCH_${ptscotch_hdr}_DIRS}")
   else ()
+    set(PTSCOTCH_INCLUDE_DIRS "PTSCOTCH_INCLUDE_DIRS-NOTFOUND")
     if (NOT PTSCOTCH_FIND_QUIETLY)
       message(STATUS "Looking for ptscotch -- ${ptscotch_hdr} not found")
     endif()
@@ -229,16 +229,16 @@ else()
     foreach(ptscotch_lib ${PTSCOTCH_libs_to_find})
       set(PTSCOTCH_${ptscotch_lib}_LIBRARY "PTSCOTCH_${ptscotch_lib}_LIBRARY-NOTFOUND")
       find_library(PTSCOTCH_${ptscotch_lib}_LIBRARY
-        NAMES ${ptscotch_lib}
-        HINTS ${PTSCOTCH_DIR}
-        PATH_SUFFIXES lib lib32 lib64)
+	NAMES ${ptscotch_lib}
+	HINTS ${PTSCOTCH_DIR}
+	PATH_SUFFIXES lib lib32 lib64)
     endforeach()
   else()
     foreach(ptscotch_lib ${PTSCOTCH_libs_to_find})
       set(PTSCOTCH_${ptscotch_lib}_LIBRARY "PTSCOTCH_${ptscotch_lib}_LIBRARY-NOTFOUND")
       find_library(PTSCOTCH_${ptscotch_lib}_LIBRARY
-        NAMES ${ptscotch_lib}
-        HINTS ${_lib_env})
+	NAMES ${ptscotch_lib}
+	HINTS ${_lib_env})
     endforeach()
   endif()
 endif()
@@ -255,6 +255,7 @@ foreach(ptscotch_lib ${PTSCOTCH_libs_to_find})
     list(APPEND PTSCOTCH_LIBRARIES "${PTSCOTCH_${ptscotch_lib}_LIBRARY}")
     list(APPEND PTSCOTCH_LIBRARY_DIRS "${${ptscotch_lib}_lib_path}")
   else ()
+    list(APPEND PTSCOTCH_LIBRARIES "${PTSCOTCH_${ptscotch_lib}_LIBRARY}")
     if (NOT PTSCOTCH_FIND_QUIETLY)
       message(STATUS "Looking for ptscotch -- lib ${ptscotch_lib} not found")
     endif()
@@ -354,7 +355,7 @@ if(PTSCOTCH_LIBRARIES)
   set(CMAKE_REQUIRED_INCLUDES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
-endif()
+endif(PTSCOTCH_LIBRARIES)
 
 if (PTSCOTCH_LIBRARIES)
   list(GET PTSCOTCH_LIBRARIES 0 first_lib)

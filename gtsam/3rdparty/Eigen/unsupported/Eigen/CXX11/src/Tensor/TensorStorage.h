@@ -45,6 +45,8 @@ class TensorStorage
   static const std::size_t MinSize = max_n_1<Size>::size;
   EIGEN_ALIGN_MAX T m_data[MinSize];
 
+  FixedDimensions m_dimensions;
+
  public:
   EIGEN_DEVICE_FUNC
   EIGEN_STRONG_INLINE TensorStorage() {
@@ -55,16 +57,13 @@ class TensorStorage
   EIGEN_DEVICE_FUNC
   EIGEN_STRONG_INLINE const T *data() const { return m_data; }
 
-  static EIGEN_DEVICE_FUNC
-  EIGEN_STRONG_INLINE const FixedDimensions& dimensions()
-  {
-    static const FixedDimensions* singleton_dimensions = new FixedDimensions();
-    return *singleton_dimensions;
-  }
+  EIGEN_DEVICE_FUNC
+  EIGEN_STRONG_INLINE const FixedDimensions& dimensions() const { return m_dimensions; }
 
   EIGEN_DEVICE_FUNC
-  EIGEN_STRONG_INLINE DenseIndex size() const { return Size; }
+  EIGEN_STRONG_INLINE DenseIndex size() const { return m_dimensions.TotalSize(); }
 };
+
 
 // pure dynamic
 template<typename T, typename IndexType, int NumIndices_, int Options_>
@@ -107,20 +106,6 @@ class TensorStorage<T, DSizes<IndexType, NumIndices_>, Options_>
       }
       return *this;
     }
-
-#if EIGEN_HAS_RVALUE_REFERENCES
-    EIGEN_DEVICE_FUNC TensorStorage(Self&& other) : TensorStorage()
-    {
-      *this = std::move(other);
-    }
-    
-    EIGEN_DEVICE_FUNC Self& operator=(Self&& other)
-    {
-      numext::swap(m_data, other.m_data);
-      numext::swap(m_dimensions, other.m_dimensions);
-      return *this;
-    }
-#endif
 
     EIGEN_DEVICE_FUNC  ~TensorStorage() { internal::conditional_aligned_delete_auto<T,(Options_&DontAlign)==0>(m_data, internal::array_prod(m_dimensions)); }
     EIGEN_DEVICE_FUNC  void swap(Self& other)

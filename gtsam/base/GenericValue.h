@@ -23,6 +23,9 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/Value.h>
 
+#include <boost/make_shared.hpp>
+#include <boost/pool/pool_alloc.hpp>
+
 #include <cmath>
 #include <iostream>
 #include <typeinfo> // operator typeid
@@ -111,8 +114,8 @@ public:
     /**
      * Clone this value (normal clone on the heap, delete with 'delete' operator)
      */
-    std::shared_ptr<Value> clone() const override {
-		return std::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
+    boost::shared_ptr<Value> clone() const override {
+		return boost::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
     }
 
     /// Generic Value interface version of retract
@@ -173,7 +176,6 @@ public:
 
   private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -182,7 +184,6 @@ public:
               boost::serialization::base_object<Value>(*this));
       ar & boost::serialization::make_nvp("value", value_);
 	}
-#endif
 
 
   // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html

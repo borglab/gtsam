@@ -60,10 +60,11 @@ int main(int argc, char** argv) {
 
   // save factor graph as graphviz dot file
   // Render to PDF using "fdp Pose2SLAMExample.dot -Tpdf > graph.pdf"
-  graph.saveGraph("Pose2SLAMExample.dot", result);
+  ofstream os("Pose2SLAMExample.dot");
+  graph.saveGraph(os, result);
 
   // Also print out to console
-  graph.dot(cout, result);
+  graph.saveGraph(cout, result);
 
   return 0;
 }

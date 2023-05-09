@@ -1,17 +1,18 @@
-.. only:: latex
+.. only: not latex
 
-   Intro
-   =====
+    .. image:: pybind11-logo.png
 
-.. include:: readme.rst
+pybind11 --- Seamless operability between C++11 and Python
+==========================================================
 
-.. only:: not latex
+.. only: not latex
 
     Contents:
 
 .. toctree::
    :maxdepth: 1
 
+   intro
    changelog
    upgrade
 
@@ -19,7 +20,6 @@
    :caption: The Basics
    :maxdepth: 2
 
-   installing
    basics
    classes
    compiling
@@ -45,4 +45,3 @@
    benchmark
    limitations
    reference
-   cmake/index

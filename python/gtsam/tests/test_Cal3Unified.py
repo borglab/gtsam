@@ -139,17 +139,6 @@ class TestCal3Unified(GtsamTestCase):
         self.gtsamAssertEquals(z, np.zeros(2))
         self.gtsamAssertEquals(H @ H.T, 4*np.eye(2))
 
-        Dcal = np.zeros((2, 10), order='F')
-        Dp = np.zeros((2, 2), order='F')
-        camera.calibrate(img_point, Dcal, Dp)
-        
-        self.gtsamAssertEquals(Dcal, np.array(
-            [[ 0.,  0.,  0., -1.,  0.,  0.,  0.,  0.,  0.,  0.],
-            [ 0.,  0.,  0.,  0., -1.,  0.,  0.,  0.,  0.,  0.]]))
-        self.gtsamAssertEquals(Dp, np.array(
-            [[ 1., -0.],
-            [-0.,  1.]]))
-
     @unittest.skip("triangulatePoint3 currently seems to require perspective projections.")
     def test_triangulation(self):
         """Estimate spatial point from image measurements"""

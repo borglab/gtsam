@@ -33,7 +33,7 @@ static void test_empty_fixed_size_tensor()
 }
 
 
-EIGEN_DECLARE_TEST(cxx11_tensor_empty)
+void test_cxx11_tensor_empty()
 {
    CALL_SUBTEST(test_empty_tensor());
    CALL_SUBTEST(test_empty_fixed_size_tensor());

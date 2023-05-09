@@ -22,7 +22,10 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/OptionalJacobian.h>
-#include <gtsam/base/concepts.h>
+
+#include <boost/concept_check.hpp>
+#include <boost/concept/requires.hpp>
+#include <boost/type_traits/is_base_of.hpp>
 
 namespace gtsam {
 
@@ -92,7 +95,7 @@ template<class Class>
 struct ManifoldTraits: GetDimensionImpl<Class, Class::dimension> {
 
   // Check that Class has the necessary machinery
-  GTSAM_CONCEPT_ASSERT(HasManifoldPrereqs<Class>);
+  BOOST_CONCEPT_ASSERT((HasManifoldPrereqs<Class>));
 
   // Dimension of the manifold
   enum { dimension = Class::dimension };
@@ -120,7 +123,7 @@ template<class Class> struct Manifold: ManifoldTraits<Class>, Testable<Class> {}
 
 /// Check invariants for Manifold type
 template<typename T>
-GTSAM_CONCEPT_REQUIRES(IsTestable<T>, bool) //
+BOOST_CONCEPT_REQUIRES(((IsTestable<T>)),(bool)) //
 check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
   typename traits<T>::TangentVector v0 = traits<T>::Local(a,a);
   typename traits<T>::TangentVector v = traits<T>::Local(a,b);
@@ -140,10 +143,10 @@ public:
   typedef typename traits<T>::TangentVector TangentVector;
 
   BOOST_CONCEPT_USAGE(IsManifold) {
-    static_assert(
-        (std::is_base_of<manifold_tag, structure_category_tag>::value),
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<manifold_tag, structure_category_tag>::value),
         "This type's structure_category trait does not assert it as a manifold (or derived)");
-    static_assert(TangentVector::SizeAtCompileTime == dim);
+    BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
 
     // make sure Chart methods are defined
     v = traits<T>::Local(p, q);
@@ -161,7 +164,7 @@ template<typename T>
 struct FixedDimension {
   typedef const int value_type;
   static const int value = traits<T>::dimension;
-  static_assert(value != Eigen::Dynamic,
+  BOOST_STATIC_ASSERT_MSG(value != Eigen::Dynamic,
       "FixedDimension instantiated for dymanically-sized type.");
 };
 } // \ namespace gtsam

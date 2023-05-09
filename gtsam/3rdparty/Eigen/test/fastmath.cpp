@@ -43,11 +43,11 @@ void check_inf_nan(bool dryrun) {
   }
   else
   {
-    if( (std::isfinite)(m(3))) g_test_level=1;  VERIFY( !(numext::isfinite)(m(3)) ); g_test_level=0;
-    if( (std::isinf)   (m(3))) g_test_level=1;  VERIFY( !(numext::isinf)(m(3)) );    g_test_level=0;
-    if(!(std::isnan)   (m(3))) g_test_level=1;  VERIFY(  (numext::isnan)(m(3)) );    g_test_level=0;
-    if( (std::isfinite)(m(3))) g_test_level=1;  VERIFY( !m.allFinite() );            g_test_level=0;
-    if(!(std::isnan)   (m(3))) g_test_level=1;  VERIFY(  m.hasNaN() );               g_test_level=0;
+    VERIFY( !(numext::isfinite)(m(3)) );
+    VERIFY( !(numext::isinf)(m(3)) );
+    VERIFY(  (numext::isnan)(m(3)) );
+    VERIFY( !m.allFinite() );
+    VERIFY(  m.hasNaN() );
   }
   T hidden_zero = (std::numeric_limits<T>::min)()*(std::numeric_limits<T>::min)();
   m(4) /= hidden_zero;
@@ -62,33 +62,33 @@ void check_inf_nan(bool dryrun) {
   }
   else
   {
-    if( (std::isfinite)(m(3))) g_test_level=1;  VERIFY( !(numext::isfinite)(m(4)) );  g_test_level=0;
-    if(!(std::isinf)   (m(3))) g_test_level=1;  VERIFY(  (numext::isinf)(m(4)) );     g_test_level=0;
-    if( (std::isnan)   (m(3))) g_test_level=1;  VERIFY( !(numext::isnan)(m(4)) );     g_test_level=0;
-    if( (std::isfinite)(m(3))) g_test_level=1;  VERIFY( !m.allFinite() );             g_test_level=0;
-    if(!(std::isnan)   (m(3))) g_test_level=1;  VERIFY(  m.hasNaN() );                g_test_level=0;
+    VERIFY( !(numext::isfinite)(m(4)) );
+    VERIFY(  (numext::isinf)(m(4)) );
+    VERIFY( !(numext::isnan)(m(4)) );
+    VERIFY( !m.allFinite() );
+    VERIFY(  m.hasNaN() );
   }
   m(3) = 0;
   if(dryrun)
   {
     std::cout << "std::isfinite(" << m(3) << ") = "; check((std::isfinite)(m(3)),true); std::cout << "  ; numext::isfinite = "; check((numext::isfinite)(m(3)), true); std::cout << "\n";
-    std::cout << "std::isinf(" << m(3) << ")    = "; check((std::isinf)(m(3)),false);   std::cout << "  ; numext::isinf    = "; check((numext::isinf)(m(3)), false); std::cout << "\n";
-    std::cout << "std::isnan(" << m(3) << ")    = "; check((std::isnan)(m(3)),false);   std::cout << "  ; numext::isnan    = "; check((numext::isnan)(m(3)), false); std::cout << "\n";
+    std::cout << "std::isinf(" << m(3) << ")    = "; check((std::isinf)(m(3)),false);    std::cout << "  ; numext::isinf    = "; check((numext::isinf)(m(3)), false); std::cout << "\n";
+    std::cout << "std::isnan(" << m(3) << ")    = "; check((std::isnan)(m(3)),false);     std::cout << "  ; numext::isnan    = "; check((numext::isnan)(m(3)), false); std::cout << "\n";
     std::cout << "allFinite: "; check(m.allFinite(), 0); std::cout << "\n";
     std::cout << "hasNaN:    "; check(m.hasNaN(), 0);    std::cout << "\n";
     std::cout << "\n\n";
   }
   else
   {
-    if(!(std::isfinite)(m(3))) g_test_level=1;  VERIFY(  (numext::isfinite)(m(3)) );  g_test_level=0;
-    if( (std::isinf)   (m(3))) g_test_level=1;  VERIFY( !(numext::isinf)(m(3)) );     g_test_level=0;
-    if( (std::isnan)   (m(3))) g_test_level=1;  VERIFY( !(numext::isnan)(m(3)) );     g_test_level=0;
-    if( (std::isfinite)(m(3))) g_test_level=1;  VERIFY( !m.allFinite() );             g_test_level=0;
-    if( (std::isnan)   (m(3))) g_test_level=1;  VERIFY( !m.hasNaN() );                g_test_level=0;
+    VERIFY(  (numext::isfinite)(m(3)) );
+    VERIFY( !(numext::isinf)(m(3)) );
+    VERIFY( !(numext::isnan)(m(3)) );
+    VERIFY( !m.allFinite() );
+    VERIFY( !m.hasNaN() );
   }
 }
 
-EIGEN_DECLARE_TEST(fastmath) {
+void test_fastmath() {
   std::cout << "*** float *** \n\n"; check_inf_nan<float>(true);
   std::cout << "*** double ***\n\n"; check_inf_nan<double>(true);
   std::cout << "*** long double *** \n\n"; check_inf_nan<long double>(true);

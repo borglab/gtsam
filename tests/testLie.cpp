@@ -47,9 +47,9 @@ template<> struct traits<Product> : internal::LieGroupTraits<Product> {
 
 //******************************************************************************
 TEST(Lie, ProductLieGroup) {
-  GTSAM_CONCEPT_ASSERT(IsGroup<Product>);
-  GTSAM_CONCEPT_ASSERT(IsManifold<Product>);
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<Product>);
+  BOOST_CONCEPT_ASSERT((IsGroup<Product>));
+  BOOST_CONCEPT_ASSERT((IsManifold<Product>));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Product>));
   Product pair1;
   Vector5 d;
   d << 1, 2, 0.1, 0.2, 0.3;

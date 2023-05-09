@@ -6,6 +6,11 @@
  *  Description: unit tests for NestedDissection
  */
 
+#include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign/std/set.hpp> // for operator +=
+#include <boost/assign/std/vector.hpp> // for operator +=
+using namespace boost::assign;
+#include <boost/make_shared.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 #include "SubmapPlanarSLAM.h"
@@ -34,7 +39,7 @@ TEST ( NestedDissection, oneIsland )
   fg.addBearingRange(2, 1, Rot2(), 0., bearingRangeNoise);
   fg.addPoseConstraint(1, Pose2());
 
-  const Ordering ordering{x1, x2, l1};
+  Ordering ordering; ordering += x1, x2, l1;
 
   int numNodeStopPartition = 1e3;
   int minNodesPerMap = 1e3;
@@ -61,7 +66,7 @@ TEST ( NestedDissection, TwoIslands )
   fg.addOdometry(3, 5, Pose2(), odoNoise);
   fg.addPoseConstraint(1, Pose2());
   fg.addPoseConstraint(4, Pose2());
-  const Ordering ordering{x1, x2, x3, x4, x5};
+  Ordering ordering; ordering += x1, x2, x3, x4, x5;
 
   int numNodeStopPartition = 2;
   int minNodesPerMap = 1;
@@ -96,7 +101,7 @@ TEST ( NestedDissection, FourIslands )
   fg.addOdometry(3, 5, Pose2(), odoNoise);
   fg.addPoseConstraint(1, Pose2());
   fg.addPoseConstraint(4, Pose2());
-  const Ordering ordering{x1, x2, x3, x4, x5};
+  Ordering ordering; ordering += x1, x2, x3, x4, x5;
 
   int numNodeStopPartition = 2;
   int minNodesPerMap = 1;
@@ -144,7 +149,7 @@ TEST ( NestedDissection, weekLinks )
   fg.addPoseConstraint(1, Pose2());
   fg.addPoseConstraint(4, Pose2());
   fg.addPoseConstraint(5, Pose2());
-  const Ordering ordering{x1, x2, x3, x4, x5, l6};
+  Ordering ordering; ordering += x1, x2, x3, x4, x5, l6;
 
   int numNodeStopPartition = 2;
   int minNodesPerMap = 1;
@@ -206,20 +211,20 @@ TEST ( NestedDissection, manual_cuts )
   fg.addPrior(x0, Pose2(0.1, 0, 0), priorNoise);
 
   // generate ordering
-  const Ordering ordering{x0, x1, x2, l1, l2, l3, l4, l5, l6};
+  Ordering ordering; ordering += x0, x1, x2, l1, l2, l3, l4, l5, l6;
 
   // define cuts
-  std::shared_ptr<Cuts> cuts(new Cuts());
+  boost::shared_ptr<Cuts> cuts(new Cuts());
   cuts->partitionTable = PartitionTable(9, -1); PartitionTable* p = &cuts->partitionTable;
   //x0        x1         x2         l1         l2         l3         l4         l5         l6
   (*p)[0]=1; (*p)[1]=0; (*p)[2]=2; (*p)[3]=1; (*p)[4]=0; (*p)[5]=2; (*p)[6]=1; (*p)[7]=0; (*p)[8]=2;
 
-  cuts->children.push_back(std::shared_ptr<Cuts>(new Cuts()));
+  cuts->children.push_back(boost::shared_ptr<Cuts>(new Cuts()));
   cuts->children[0]->partitionTable = PartitionTable(9, -1); p = &cuts->children[0]->partitionTable;
   //x0        x1          x2          l1         l2          l3          l4         l5          l6
   (*p)[0]=0; (*p)[1]=-1; (*p)[2]=-1; (*p)[3]=1; (*p)[4]=-1; (*p)[5]=-1; (*p)[6]=2; (*p)[7]=-1; (*p)[8]=-1;
 
-  cuts->children.push_back(std::shared_ptr<Cuts>(new Cuts()));
+  cuts->children.push_back(boost::shared_ptr<Cuts>(new Cuts()));
   cuts->children[1]->partitionTable = PartitionTable(9, -1); p = &cuts->children[1]->partitionTable;
   //x0         x1          x2         l1          l2          l3         l4          l5          l6
   (*p)[0]=-1; (*p)[1]=-1; (*p)[2]=0; (*p)[3]=-1; (*p)[4]=-1; (*p)[5]=1; (*p)[6]=-1; (*p)[7]=-1; (*p)[8]=2;
@@ -301,9 +306,9 @@ TEST( NestedDissection, Graph3D) {
     graph.addMeasurement(3, j, cameras[3].project(points[j-1]).expmap(measurementZeroNoise->sample()), measurementNoise);
 
   // make an easy ordering
-  const Ordering ordering{x0, x1, x2, x3};
+  Ordering ordering; ordering += x0, x1, x2, x3;
   for (int j=1; j<=24; j++)
-    ordering.push_back(Symbol('l', j));
+    ordering += Symbol('l', j);
 
   // nested dissection
   const int numNodeStopPartition = 10;

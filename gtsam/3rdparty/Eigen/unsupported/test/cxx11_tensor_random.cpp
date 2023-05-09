@@ -11,10 +11,9 @@
 
 #include <Eigen/CXX11/Tensor>
 
-template<typename Scalar>
 static void test_default()
 {
-  Tensor<Scalar, 1> vec(6);
+  Tensor<float, 1> vec(6);
   vec.setRandom();
 
   // Fixme: we should check that the generated numbers follow a uniform
@@ -24,11 +23,10 @@ static void test_default()
   }
 }
 
-template<typename Scalar>
 static void test_normal()
 {
-  Tensor<Scalar, 1> vec(6);
-  vec.template setRandom<Eigen::internal::NormalRandomGenerator<Scalar>>();
+  Tensor<float, 1> vec(6);
+  vec.setRandom<Eigen::internal::NormalRandomGenerator<float>>();
 
   // Fixme: we should check that the generated numbers follow a gaussian
   // distribution instead.
@@ -72,15 +70,9 @@ static void test_custom()
   }
 }
 
-EIGEN_DECLARE_TEST(cxx11_tensor_random)
+void test_cxx11_tensor_random()
 {
-  CALL_SUBTEST((test_default<float>()));
-  CALL_SUBTEST((test_normal<float>()));
-  CALL_SUBTEST((test_default<double>()));
-  CALL_SUBTEST((test_normal<double>()));
-  CALL_SUBTEST((test_default<Eigen::half>()));
-  CALL_SUBTEST((test_normal<Eigen::half>()));
-  CALL_SUBTEST((test_default<Eigen::bfloat16>()));
-  CALL_SUBTEST((test_normal<Eigen::bfloat16>()));
+  CALL_SUBTEST(test_default());
+  CALL_SUBTEST(test_normal());
   CALL_SUBTEST(test_custom());
 }

@@ -25,12 +25,10 @@ from gtwrap.interface_parser import (ArgumentList, Class, Constructor, Enum,
                                      StaticMethod, TemplatedType, Type,
                                      TypedefTemplateInstantiation, Typename,
                                      Variable)
-from gtwrap.template_instantiator.classes import InstantiatedClass
 
 
 class TestInterfaceParser(unittest.TestCase):
     """Test driver for all classes in interface_parser.py."""
-
     def test_typename(self):
         """Test parsing of Typename."""
         typename = Typename.rule.parseString("size_t")[0]
@@ -89,7 +87,10 @@ class TestInterfaceParser(unittest.TestCase):
         self.assertEqual("Pose3", t.typename.name)
         self.assertEqual(["gtsam"], t.typename.namespaces)
         self.assertTrue(t.is_shared_ptr)
-        self.assertEqual("std::shared_ptr<gtsam::Pose3>", t.to_cpp())
+        self.assertEqual("std::shared_ptr<gtsam::Pose3>",
+                         t.to_cpp(use_boost=False))
+        self.assertEqual("boost::shared_ptr<gtsam::Pose3>",
+                         t.to_cpp(use_boost=True))
 
         # Check raw pointer
         t = Type.rule.parseString("gtsam::Pose3@ x")[0]
@@ -173,9 +174,11 @@ class TestInterfaceParser(unittest.TestCase):
         args_list = args.list()
         self.assertEqual(2, len(args_list))
         self.assertEqual("std::pair<string, double>",
-                         args_list[0].ctype.to_cpp())
+                         args_list[0].ctype.to_cpp(False))
         self.assertEqual("vector<std::shared_ptr<T>>",
-                         args_list[1].ctype.to_cpp())
+                         args_list[1].ctype.to_cpp(False))
+        self.assertEqual("vector<boost::shared_ptr<T>>",
+                         args_list[1].ctype.to_cpp(True))
 
     def test_default_arguments(self):
         """Tests any expression that is a valid default argument"""
@@ -498,8 +501,6 @@ class TestInterfaceParser(unittest.TestCase):
         ret = Class.rule.parseString(
             "class ForwardKinematicsFactor : gtsam::BetweenFactor<gtsam::Pose3> {};"
         )[0]
-        ret = InstantiatedClass(ret,
-                                [])  # Needed to correctly parse parent class
         self.assertEqual("ForwardKinematicsFactor", ret.name)
         self.assertEqual("BetweenFactor", ret.parent_class.name)
         self.assertEqual(["gtsam"], ret.parent_class.namespaces)
@@ -656,6 +657,8 @@ class TestInterfaceParser(unittest.TestCase):
         int globalVar;
         """)
 
+        # print("module: ", module)
+        # print(dir(module.content[0].name))
         self.assertEqual(["one", "Global", "globalVar"],
                          [x.name for x in module.content])
         self.assertEqual(["two", "two_dummy", "two", "oneVar"],

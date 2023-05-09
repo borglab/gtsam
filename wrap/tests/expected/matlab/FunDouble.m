@@ -3,7 +3,6 @@
 %
 %-------Methods-------
 %multiTemplatedMethodStringSize_t(double d, string t, size_t u) : returns Fun<double>
-%sets() : returns std::map<double,Fun<double>::double>
 %templatedMethodString(double d, string t) : returns Fun<double>
 %
 %-------Static Methods-------
@@ -47,21 +46,11 @@ classdef FunDouble < handle
       error('Arguments do not match any overload of function FunDouble.multiTemplatedMethodStringSize_t');
     end
 
-    function varargout = sets(this, varargin)
-      % SETS usage: sets() : returns std.mapdoubledouble
-      % Doxygen can be found at https://gtsam.org/doxygen/
-      if length(varargin) == 0
-        varargout{1} = class_wrapper(8, this, varargin{:});
-        return
-      end
-      error('Arguments do not match any overload of function FunDouble.sets');
-    end
-
     function varargout = templatedMethodString(this, varargin)
       % TEMPLATEDMETHODSTRING usage: templatedMethodString(double d, string t) : returns Fun<double>
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 2 && isa(varargin{1},'double') && isa(varargin{2},'char')
-        varargout{1} = class_wrapper(9, this, varargin{:});
+        varargout{1} = class_wrapper(8, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function FunDouble.templatedMethodString');
@@ -70,22 +59,22 @@ classdef FunDouble < handle
   end
 
   methods(Static = true)
-    function varargout = staticMethodWithThis(varargin)
+    function varargout = StaticMethodWithThis(varargin)
       % STATICMETHODWITHTHIS usage: staticMethodWithThis() : returns Fundouble
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        varargout{1} = class_wrapper(10, varargin{:});
+        varargout{1} = class_wrapper(9, varargin{:});
         return
       end
 
       error('Arguments do not match any overload of function FunDouble.staticMethodWithThis');
     end
 
-    function varargout = templatedStaticMethodInt(varargin)
+    function varargout = TemplatedStaticMethodInt(varargin)
       % TEMPLATEDSTATICMETHODINT usage: templatedStaticMethodInt(int m) : returns double
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'numeric')
-        varargout{1} = class_wrapper(11, varargin{:});
+        varargout{1} = class_wrapper(10, varargin{:});
         return
       end
 

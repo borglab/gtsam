@@ -10,7 +10,11 @@
 #include <gtsam/base/timing.h>
 #include <gtsam_unstable/discrete/Scheduler.h>
 
+#include <boost/assign/std/map.hpp>
+#include <boost/assign/std/vector.hpp>
+#include <boost/optional.hpp>
 
+using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
@@ -118,7 +122,7 @@ TEST(schedulingExample, test) {
 
   // Do exact inference
   gttic(small);
-  auto MPE = s.optimize();
+  DiscreteFactor::sharedValues MPE = s.optimalAssignment();
   gttoc(small);
 
   // print MPE, commented out as unit tests don't print
@@ -129,13 +133,13 @@ TEST(schedulingExample, test) {
 
   // find the assignment of students to slots with most possible committees
   // Commented out as not implemented yet
-  //  auto bestSchedule = s.bestSchedule();
-  //  GTSAM_PRINT(bestSchedule);
+  //  sharedValues bestSchedule = s.bestSchedule();
+  //  GTSAM_PRINT(*bestSchedule);
 
   //  find the corresponding most desirable committee assignment
   // Commented out as not implemented yet
-  //  auto bestAssignment = s.bestAssignment(bestSchedule);
-  //  GTSAM_PRINT(bestAssignment);
+  //  sharedValues bestAssignment = s.bestAssignment(bestSchedule);
+  //  GTSAM_PRINT(*bestAssignment);
 }
 
 /* ************************************************************************* */

@@ -229,8 +229,7 @@ ALIASES                = "only_for_vectors=This is only for vectors (either row-
                          "blank= " \
                          "cpp11=<span class='cpp11'>[c++11]</span>" \
                          "cpp14=<span class='cpp14'>[c++14]</span>" \
-                         "cpp17=<span class='cpp17'>[c++17]</span>" \
-                         "newin{1}=<span class='newin3x'>New in %Eigen \1.</span>"
+                         "cpp17=<span class='cpp17'>[c++17]</span>"
                          
 
 ALIASES += "eigenAutoToc=  "
@@ -410,7 +409,7 @@ EXTRACT_PACKAGE        = NO
 # If the EXTRACT_STATIC tag is set to YES all static members of a file
 # will be included in the documentation.
 
-EXTRACT_STATIC         = YES
+EXTRACT_STATIC         = NO
 
 # If the EXTRACT_LOCAL_CLASSES tag is set to YES classes (and structs)
 # defined locally in source files will be included in the documentation.
@@ -736,14 +735,6 @@ EXCLUDE                = "${Eigen_SOURCE_DIR}/Eigen/src/Core/products" \
                          "${Eigen_SOURCE_DIR}/doc/snippets" \
                          "${Eigen_SOURCE_DIR}/unsupported/doc/examples" \
                          "${Eigen_SOURCE_DIR}/unsupported/doc/snippets"
-
-# Forward declarations of class templates cause the title of the main page for
-# the class template to not contain the template signature.  This only happens
-# when the \class command is used to document the class.  Possibly caused
-# by https://github.com/doxygen/doxygen/issues/7698.  Confirmed fixed by
-# doxygen release 1.8.19.
-
-EXCLUDE += "${Eigen_SOURCE_DIR}/Eigen/src/Core/util/ForwardDeclarations.h"
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
@@ -1254,7 +1245,7 @@ FORMULA_TRANSPARENT    = YES
 # output. When enabled you may also need to install MathJax separately and
 # configure the path to it using the MATHJAX_RELPATH option.
 
-USE_MATHJAX            = @EIGEN_DOXY_USE_MATHJAX@
+USE_MATHJAX            = NO
 
 # When MathJax is enabled you need to specify the location relative to the
 # HTML output directory using the MATHJAX_RELPATH option. The destination
@@ -1266,12 +1257,12 @@ USE_MATHJAX            = @EIGEN_DOXY_USE_MATHJAX@
 # However, it is strongly recommended to install a local
 # copy of MathJax from http://www.mathjax.org before deployment.
 
-MATHJAX_RELPATH        = https://cdn.mathjax.org/mathjax/latest
+MATHJAX_RELPATH        = http://cdn.mathjax.org/mathjax/latest
 
 # The MATHJAX_EXTENSIONS tag can be used to specify one or MathJax extension
 # names that should be enabled during MathJax rendering.
 
-MATHJAX_EXTENSIONS     = TeX/AMSmath TeX/AMSsymbols
+MATHJAX_EXTENSIONS     =
 
 # When the SEARCHENGINE tag is enabled doxygen will generate a search box
 # for the HTML output. The underlying search engine uses javascript
@@ -1600,8 +1591,6 @@ PREDEFINED             = EIGEN_EMPTY_STRUCT \
                          EIGEN_QT_SUPPORT \
                          EIGEN_STRONG_INLINE=inline \
                          EIGEN_DEVICE_FUNC= \
-                         EIGEN_HAS_CXX11=1 \
-                         EIGEN_HAS_CXX11_MATH=1 \
                          "EIGEN_MAKE_CWISE_BINARY_OP(METHOD,FUNCTOR)=template<typename OtherDerived> const CwiseBinaryOp<FUNCTOR<Scalar>, const Derived, const OtherDerived> METHOD(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const;" \
                          "EIGEN_CWISE_PRODUCT_RETURN_TYPE(LHS,RHS)=CwiseBinaryOp<internal::scalar_product_op<LHS::Scalar,RHS::Scalar>, const LHS, const RHS>"\
                          "EIGEN_CAT2(a,b)= a ## b"\
@@ -1620,9 +1609,6 @@ PREDEFINED             = EIGEN_EMPTY_STRUCT \
 EXPAND_AS_DEFINED      = EIGEN_MAKE_TYPEDEFS \
                          EIGEN_MAKE_FIXED_TYPEDEFS \
                          EIGEN_MAKE_TYPEDEFS_ALL_SIZES \
-                         EIGEN_MAKE_ARRAY_TYPEDEFS \
-                         EIGEN_MAKE_ARRAY_FIXED_TYPEDEFS \
-                         EIGEN_MAKE_ARRAY_TYPEDEFS_ALL_SIZES \
                          EIGEN_CWISE_UNOP_RETURN_TYPE \
                          EIGEN_CWISE_BINOP_RETURN_TYPE \
                          EIGEN_CURRENT_STORAGE_BASE_CLASS \
@@ -1781,7 +1767,7 @@ UML_LOOK               = YES
 # the class node. If there are many fields or methods and many nodes the
 # graph may become too big to be useful. The UML_LIMIT_NUM_FIELDS
 # threshold limits the number of items for each type to make the size more
-# manageable. Set this to 0 for no limit. Note that the threshold may be
+# managable. Set this to 0 for no limit. Note that the threshold may be
 # exceeded by 50% before the limit is enforced.
 
 UML_LIMIT_NUM_FIELDS   = 10

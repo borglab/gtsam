@@ -19,6 +19,7 @@
 
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/triangulation.h>
+#include <boost/optional.hpp>
 
 namespace gtsam {
 
@@ -64,14 +65,12 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
-#endif
 };
 
 template<class CAMERA>

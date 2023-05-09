@@ -84,7 +84,7 @@ could be realized as follows (important changes highlighted):
         });
     }
 
-The ``call_go`` wrapper can also be simplified using the ``call_guard`` policy
+The ``call_go`` wrapper can also be simplified using the `call_guard` policy
 (see :ref:`call_policies`) which yields the same result:
 
 .. code-block:: cpp
@@ -132,7 +132,7 @@ However, it can be acquired as follows:
 
 .. code-block:: cpp
 
-    py::object pet = (py::object) py::module_::import("basic").attr("Pet");
+    py::object pet = (py::object) py::module::import("basic").attr("Pet");
 
     py::class_<Dog>(m, "Dog", pet)
         .def(py::init<const std::string &>())
@@ -146,7 +146,7 @@ has been executed:
 
 .. code-block:: cpp
 
-    py::module_::import("basic");
+    py::module::import("basic");
 
     py::class_<Dog, Pet>(m, "Dog")
         .def(py::init<const std::string &>())
@@ -223,7 +223,7 @@ avoids this issue involves weak reference with a cleanup callback:
 
 .. code-block:: cpp
 
-    // Register a callback function that is invoked when the BaseClass object is collected
+    // Register a callback function that is invoked when the BaseClass object is colelcted
     py::cpp_function cleanup_callback(
         [](py::handle weakref) {
             // perform cleanup here -- this function is called with the GIL held
@@ -237,13 +237,13 @@ avoids this issue involves weak reference with a cleanup callback:
 
 .. note::
 
-    PyPy does not garbage collect objects when the interpreter exits. An alternative
-    approach (which also works on CPython) is to use the :py:mod:`atexit` module [#f7]_,
-    for example:
+    PyPy (at least version 5.9) does not garbage collect objects when the
+    interpreter exits. An alternative approach (which also works on CPython) is to use
+    the :py:mod:`atexit` module [#f7]_, for example:
 
     .. code-block:: cpp
 
-        auto atexit = py::module_::import("atexit");
+        auto atexit = py::module::import("atexit");
         atexit.attr("register")(py::cpp_function([]() {
             // perform cleanup here -- this function is called with the GIL held
         }));
@@ -284,7 +284,7 @@ work, it is important that all lines are indented consistently, i.e.:
     )mydelimiter");
 
 By default, pybind11 automatically generates and prepends a signature to the docstring of a function
-registered with ``module_::def()`` and ``class_::def()``. Sometimes this
+registered with ``module::def()`` and ``class_::def()``. Sometimes this
 behavior is not desirable, because you want to provide your own signature or remove
 the docstring completely to exclude the function from the Sphinx documentation.
 The class ``options`` allows you to selectively suppress auto-generated signatures:

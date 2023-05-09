@@ -25,10 +25,7 @@
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
-#include <gtsam/base/VectorSerialization.h>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
-#endif
 #include <numeric>
 
 namespace gtsam {
@@ -36,7 +33,6 @@ namespace gtsam {
 /// As of GTSAM 4, in order to make GTSAM more lean,
 /// it is now possible to just typedef Point3 to Vector3
 typedef Vector3 Point3;
-typedef std::vector<Point3, Eigen::aligned_allocator<Point3> > Point3Vector;
 
 // Convenience typedef
 using Point3Pair = std::pair<Point3, Point3>;
@@ -46,24 +42,24 @@ using Point3Pairs = std::vector<Point3Pair>;
 
 /// distance between two points
 GTSAM_EXPORT double distance3(const Point3& p1, const Point3& q,
-	                          OptionalJacobian<1, 3> H1 = {},
-                              OptionalJacobian<1, 3> H2 = {});
+	                          OptionalJacobian<1, 3> H1 = boost::none,
+                              OptionalJacobian<1, 3> H2 = boost::none);
 
 /// Distance of the point from the origin, with Jacobian
-GTSAM_EXPORT double norm3(const Point3& p, OptionalJacobian<1, 3> H = {});
+GTSAM_EXPORT double norm3(const Point3& p, OptionalJacobian<1, 3> H = boost::none);
 
 /// normalize, with optional Jacobian
-GTSAM_EXPORT Point3 normalize(const Point3& p, OptionalJacobian<3, 3> H = {});
+GTSAM_EXPORT Point3 normalize(const Point3& p, OptionalJacobian<3, 3> H = boost::none);
 
 /// cross product @return this x q
 GTSAM_EXPORT Point3 cross(const Point3& p, const Point3& q,
-                          OptionalJacobian<3, 3> H_p = {},
-                          OptionalJacobian<3, 3> H_q = {});
+                          OptionalJacobian<3, 3> H_p = boost::none,
+                          OptionalJacobian<3, 3> H_q = boost::none);
 
 /// dot product
 GTSAM_EXPORT double dot(const Point3& p, const Point3& q,
-                        OptionalJacobian<1, 3> H_p = {},
-                        OptionalJacobian<1, 3> H_q = {});
+                        OptionalJacobian<1, 3> H_p = boost::none,
+                        OptionalJacobian<1, 3> H_q = boost::none);
 
 /// mean
 template <class CONTAINER>
@@ -84,8 +80,8 @@ template <>
 struct Range<Point3, Point3> {
   typedef double result_type;
   double operator()(const Point3& p, const Point3& q,
-                    OptionalJacobian<1, 3> H1 = {},
-                    OptionalJacobian<1, 3> H2 = {}) {
+                    OptionalJacobian<1, 3> H1 = boost::none,
+                    OptionalJacobian<1, 3> H2 = boost::none) {
     return distance3(p, q, H1, H2);
   }
 };

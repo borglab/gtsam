@@ -167,7 +167,7 @@ for i=1:size(trajectory)-1
     
     %% priors on first two poses
     if i < 3        
-        % fg.add(PriorFactorVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
+        % fg.add(PriorFactorLieVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
         fg.add(PriorFactorConstantBias(currentBiasKey, currentBias, sigma_init_b));
     end
    

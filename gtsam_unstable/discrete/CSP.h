@@ -20,20 +20,33 @@ namespace gtsam {
  */
 class GTSAM_UNSTABLE_EXPORT CSP : public DiscreteFactorGraph {
  public:
-  using Values = DiscreteValues; ///< backwards compatibility
+  /** A map from keys to values */
+  typedef KeyVector Indices;
+  typedef Assignment<Key> Values;
+  typedef boost::shared_ptr<Values> sharedValues;
+
+ public:
+  //    /// Constructor
+  //    CSP() {
+  //    }
 
   /// Add a unary constraint, allowing only a single value
   void addSingleValue(const DiscreteKey& dkey, size_t value) {
-    emplace_shared<SingleValue>(dkey, value);
+    boost::shared_ptr<SingleValue> factor(new SingleValue(dkey, value));
+    push_back(factor);
   }
 
   /// Add a binary AllDiff constraint
   void addAllDiff(const DiscreteKey& key1, const DiscreteKey& key2) {
-    emplace_shared<BinaryAllDiff>(key1, key2);
+    boost::shared_ptr<BinaryAllDiff> factor(new BinaryAllDiff(key1, key2));
+    push_back(factor);
   }
 
   /// Add a general AllDiff constraint
-  void addAllDiff(const DiscreteKeys& dkeys) { emplace_shared<AllDiff>(dkeys); }
+  void addAllDiff(const DiscreteKeys& dkeys) {
+    boost::shared_ptr<AllDiff> factor(new AllDiff(dkeys));
+    push_back(factor);
+  }
 
   //    /** return product of all factors as a single factor */
   //    DecisionTreeFactor product() const {
@@ -42,6 +55,12 @@ class GTSAM_UNSTABLE_EXPORT CSP : public DiscreteFactorGraph {
   //        if (factor) result = (*factor) * result;
   //      return result;
   //    }
+
+  /// Find the best total assignment - can be expensive
+  sharedValues optimalAssignment() const;
+
+  /// Find the best total assignment - can be expensive
+  sharedValues optimalAssignment(const Ordering& ordering) const;
 
   //    /*
   //     * Perform loopy belief propagation
@@ -53,24 +72,16 @@ class GTSAM_UNSTABLE_EXPORT CSP : public DiscreteFactorGraph {
   //     deep.
   //     * It will be very expensive to exclude values that way.
   //     */
-  //     void applyBeliefPropagation(size_t maxIterations = 10) const;
+  //     void applyBeliefPropagation(size_t nrIterations = 10) const;
 
   /*
    * Apply arc-consistency ~ Approximate loopy belief propagation
    * We need to give the domains to a constraint, and it returns
    * a domain whose values don't conflict in the arc-consistency way.
-   * TODO: should get cardinality from DiscreteKeys
+   * TODO: should get cardinality from Indices
    */
-  Domains runArcConsistency(size_t cardinality,
-                            size_t maxIterations = 10) const;
-
-  /// Run arc consistency for all variables, return true if any domain changed.
-  bool runArcConsistency(const VariableIndex& index, Domains* domains) const;
-
-  /*
-   * Create a new CSP, applying the given Domain constraints.
-   */
-  CSP partiallyApply(const Domains& domains) const;
+  void runArcConsistency(size_t cardinality, size_t nrIterations = 10,
+                         bool print = false) const;
 };  // CSP
 
 }  // namespace gtsam

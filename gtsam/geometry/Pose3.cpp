@@ -27,6 +27,7 @@
 namespace gtsam {
 
 using std::vector;
+using Point3Pairs = vector<Point3Pair>;
 
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose3)
@@ -58,7 +59,7 @@ Matrix6 Pose3::AdjointMap() const {
   const Matrix3 R = R_.matrix();
   Matrix3 A = skewSymmetric(t_.x(), t_.y(), t_.z()) * R;
   Matrix6 adj;
-  adj << R, Z_3x3, A, R;  // Gives [R 0; A R]
+  adj << R, Z_3x3, A, R;
   return adj;
 }
 
@@ -156,12 +157,6 @@ void Pose3::print(const std::string& s) const {
 /* ************************************************************************* */
 bool Pose3::equals(const Pose3& pose, double tol) const {
   return R_.equals(pose.R_, tol) && traits<Point3>::Equals(t_, pose.t_, tol);
-}
-
-/* ************************************************************************* */
-Pose3 Pose3::interpolateRt(const Pose3& T, double t) const {
-  return Pose3(interpolate<Rot3>(R_, T.R_, t),
-                interpolate<Point3>(t_, T.t_, t));
 }
 
 /* ************************************************************************* */
@@ -359,14 +354,6 @@ Point3 Pose3::transformFrom(const Point3& point, OptionalJacobian<3, 6> Hself,
   return R_ * point + t_;
 }
 
-Matrix Pose3::transformFrom(const Matrix& points) const {
-  if (points.rows() != 3) {
-    throw std::invalid_argument("Pose3:transformFrom expects 3*N matrix.");
-  }
-  const Matrix3 R = R_.matrix();
-  return (R * points).colwise() + t_;  // Eigen broadcasting!
-}
-
 /* ************************************************************************* */
 Point3 Pose3::transformTo(const Point3& point, OptionalJacobian<3, 6> Hself,
     OptionalJacobian<3, 3> Hpoint) const {
@@ -385,14 +372,6 @@ Point3 Pose3::transformTo(const Point3& point, OptionalJacobian<3, 6> Hself,
     *Hpoint = Rt;
   }
   return q;
-}
-
-Matrix Pose3::transformTo(const Matrix& points) const {
-  if (points.rows() != 3) {
-    throw std::invalid_argument("Pose3:transformTo expects 3*N matrix.");
-  }
-  const Matrix3 Rt = R_.transpose();
-  return Rt * (points.colwise() - t_);  // Eigen broadcasting!
 }
 
 /* ************************************************************************* */
@@ -445,14 +424,14 @@ Unit3 Pose3::bearing(const Pose3& pose, OptionalJacobian<2, 6> Hself,
     Hpose->setZero();
     return bearing(pose.translation(), Hself, Hpose.cols<3>(3));
   }
-  return bearing(pose.translation(), Hself, {});
+  return bearing(pose.translation(), Hself, boost::none);
 }
 
 /* ************************************************************************* */
-std::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
+boost::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
   const size_t n = abPointPairs.size();
   if (n < 3) {
-    return {};  // we need at least three pairs
+    return boost::none; // we need at least three pairs
   }
 
   // calculate centroids
@@ -472,21 +451,12 @@ std::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
   return Pose3(aRb, aTb);
 }
 
-std::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
-  if (a.rows() != 3 || b.rows() != 3 || a.cols() != b.cols()) {
-    throw std::invalid_argument(
-      "Pose3:Align expects 3*N matrices of equal shape.");
-  }
+boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
   Point3Pairs abPointPairs;
-  for (Eigen::Index j = 0; j < a.cols(); j++) {
-    abPointPairs.emplace_back(a.col(j), b.col(j));
+  for (const Point3Pair &baPair : baPointPairs) {
+    abPointPairs.emplace_back(baPair.second, baPair.first);
   }
   return Pose3::Align(abPointPairs);
-}
-
-/* ************************************************************************* */
-Pose3 Pose3::slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx, OptionalJacobian<6, 6> Hy) const {
-  return interpolate(*this, other, t, Hx, Hy);
 }
 
 /* ************************************************************************* */

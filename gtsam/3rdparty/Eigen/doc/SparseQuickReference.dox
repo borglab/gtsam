@@ -80,7 +80,7 @@ sm1.setZero();
 
 
 \section SparseBasicInfos Matrix properties
-Beyond the basic functions rows() and cols(), there are some useful functions that are available to easily get some information from the matrix. 
+Beyond the basic functions rows() and cols(), there are some useful functions that are available to easily get some informations from the matrix. 
 <table class="manual">
 <tr>
   <td> \code
@@ -244,7 +244,7 @@ As stated earlier, for a read-write sub-matrix (RW), the evaluation can be done 
 <td>
 \code
 sm1.valuePtr();      // Pointer to the values
-sm1.innerIndexPtr();  // Pointer to the indices.
+sm1.innerIndextr();  // Pointer to the indices.
 sm1.outerIndexPtr(); // Pointer to the beginning of each inner vector
 \endcode
 </td>

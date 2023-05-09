@@ -21,11 +21,10 @@
 #include <gtsam/dllexport.h>
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
-#ifdef GTSAM_USE_BOOST_FEATURES
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <boost/smart_ptr/weak_ptr.hpp>
 #include <boost/version.hpp>
-#endif
 
-#include <memory>
 #include <cstddef>
 #include <string>
 
@@ -107,7 +106,6 @@
 //   have matching gttic/gttoc statments.  You may want to consider reorganizing your timing
 //   outline to match the scope of your code.
 
-#ifdef GTSAM_USE_BOOST_FEATURES
 // Automatically use the new Boost timers if version is recent enough.
 #if BOOST_VERSION >= 104800
 #  ifndef GTSAM_DISABLE_NEW_TIMERS
@@ -120,7 +118,6 @@
 #else
 #  include <boost/timer.hpp>
 #  include <gtsam/base/types.h>
-#endif
 #endif
 
 #ifdef GTSAM_USE_TBB
@@ -150,7 +147,7 @@ namespace gtsam {
       size_t id_;
       size_t t_;
       size_t tWall_;
-      double t2_ ; ///< cache the \f$ \sum t_i^2 \f$
+      double t2_ ; ///< cache the \sum t_i^2
       size_t tIt_;
       size_t tMax_;
       size_t tMin_;
@@ -160,12 +157,10 @@ namespace gtsam {
       std::string label_;
 
       // Tree structure
-      std::weak_ptr<TimingOutline> parent_; ///< parent pointer
-      typedef FastMap<size_t, std::shared_ptr<TimingOutline> > ChildMap;
+      boost::weak_ptr<TimingOutline> parent_; ///< parent pointer
+      typedef FastMap<size_t, boost::shared_ptr<TimingOutline> > ChildMap;
       ChildMap children_; ///< subtrees
 
-// disable all timers if not using boost
-#ifdef GTSAM_USE_BOOST_FEATURES
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
       boost::timer::cpu_timer timer_;
 #else
@@ -175,7 +170,6 @@ namespace gtsam {
 #ifdef GTSAM_USE_TBB
       tbb::tick_count tbbTimer_;
 #endif
-#endif
       void add(size_t usecs, size_t usecsWall);
 
     public:
@@ -183,24 +177,15 @@ namespace gtsam {
       GTSAM_EXPORT TimingOutline(const std::string& label, size_t myId);
       GTSAM_EXPORT size_t time() const; ///< time taken, including children
       double secs() const { return double(time()) / 1000000.0;} ///< time taken, in seconds, including children
-#ifdef GTSAM_USE_BOOST_FEATURES
       double self() const { return double(t_)     / 1000000.0;} ///< self time only, in seconds
       double wall() const { return double(tWall_) / 1000000.0;} ///< wall time, in seconds
       double min()  const { return double(tMin_)  / 1000000.0;} ///< min time, in seconds
       double max()  const { return double(tMax_)  / 1000000.0;} ///< max time, in seconds
       double mean() const { return self() / double(n_); } ///< mean self time, in seconds
-#else
-      // make them no-ops if not using boost
-      double self() const { return -1.; } ///< self time only, in seconds
-      double wall() const { return -1.; } ///< wall time, in seconds
-      double min()  const { return -1.; } ///< min time, in seconds
-      double max()  const { return -1.; } ///< max time, in seconds
-      double mean() const { return -1.; } ///< mean self time, in seconds
-#endif
       GTSAM_EXPORT void print(const std::string& outline = "") const;
       GTSAM_EXPORT void print2(const std::string& outline = "", const double parentTotal = -1.0) const;
-      GTSAM_EXPORT const std::shared_ptr<TimingOutline>&
-        child(size_t child, const std::string& label, const std::weak_ptr<TimingOutline>& thisPtr);
+      GTSAM_EXPORT const boost::shared_ptr<TimingOutline>&
+        child(size_t child, const std::string& label, const boost::weak_ptr<TimingOutline>& thisPtr);
       GTSAM_EXPORT void tic();
       GTSAM_EXPORT void toc();
       GTSAM_EXPORT void finishedIteration();
@@ -231,8 +216,8 @@ namespace gtsam {
       }
     };
 
-    GTSAM_EXTERN_EXPORT std::shared_ptr<TimingOutline> gTimingRoot;
-    GTSAM_EXTERN_EXPORT std::weak_ptr<TimingOutline> gCurrentTimer;
+    GTSAM_EXTERN_EXPORT boost::shared_ptr<TimingOutline> gTimingRoot;
+    GTSAM_EXTERN_EXPORT boost::weak_ptr<TimingOutline> gCurrentTimer;
   }
 
 // Tic and toc functions that are always active (whether or not ENABLE_TIMING is defined)
@@ -275,7 +260,7 @@ inline void tictoc_print2_() {
 // get a node by label and assign it to variable
 #define tictoc_getNode(variable, label) \
   static const size_t label##_id_getnode = ::gtsam::internal::getTicTocID(#label); \
-  const std::shared_ptr<const ::gtsam::internal::TimingOutline> variable = \
+  const boost::shared_ptr<const ::gtsam::internal::TimingOutline> variable = \
   ::gtsam::internal::gCurrentTimer.lock()->child(label##_id_getnode, #label, ::gtsam::internal::gCurrentTimer);
 
 // reset

@@ -82,7 +82,7 @@ if options.useRealData == 1
       end
       
       % Add Values: velocity and bias
-      values.insert(currentVelKey, currentVel);
+      values.insert(currentVelKey, LieVector(currentVel));
       values.insert(currentBiasKey, metadata.imu.zeroBias);
     end
     

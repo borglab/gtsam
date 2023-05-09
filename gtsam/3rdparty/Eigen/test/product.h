@@ -111,17 +111,6 @@ template<typename MatrixType> void product(const MatrixType& m)
   vcres.noalias() -= m1.transpose() * v1;
   VERIFY_IS_APPROX(vcres, vc2 - m1.transpose() * v1);
 
-  // test scaled products
-  res = square;
-  res.noalias() = s1 * m1 * m2.transpose();
-  VERIFY_IS_APPROX(res, ((s1*m1).eval() * m2.transpose()));
-  res = square;
-  res.noalias() += s1 * m1 * m2.transpose();
-  VERIFY_IS_APPROX(res, square + ((s1*m1).eval() * m2.transpose()));
-  res = square;
-  res.noalias() -= s1 * m1 * m2.transpose();
-  VERIFY_IS_APPROX(res, square - ((s1*m1).eval() * m2.transpose()));
-
   // test d ?= a+b*c rules
   res.noalias() = square + m1 * m2.transpose();
   VERIFY_IS_APPROX(res, square + m1 * m2.transpose());
@@ -227,8 +216,6 @@ template<typename MatrixType> void product(const MatrixType& m)
     // CwiseBinaryOp
     VERIFY_IS_APPROX(x = y + A*x, A*z);
     x = z;
-    VERIFY_IS_APPROX(x = y - A*x, A*(-z));
-    x = z;
     // CwiseUnaryOp
     VERIFY_IS_APPROX(x = Scalar(1.)*(A*x), A*z);
   }
@@ -239,21 +226,6 @@ template<typename MatrixType> void product(const MatrixType& m)
     VERIFY_IS_APPROX(square * (-(square*square)), -square * square * square);
     VERIFY_IS_APPROX(square * (s1*(square*square)), s1 * square * square * square);
     VERIFY_IS_APPROX(square * (square*square).conjugate(), square * square.conjugate() * square.conjugate());
-  }
-
-  // destination with a non-default inner-stride
-  // see bug 1741
-  if(!MatrixType::IsRowMajor)
-  {
-    typedef Matrix<Scalar,Dynamic,Dynamic> MatrixX;
-    MatrixX buffer(2*rows,2*rows);
-    Map<RowSquareMatrixType,0,Stride<Dynamic,2> > map1(buffer.data(),rows,rows,Stride<Dynamic,2>(2*rows,2));
-    buffer.setZero();
-    VERIFY_IS_APPROX(map1 = m1 * m2.transpose(), (m1 * m2.transpose()).eval());
-    buffer.setZero();
-    VERIFY_IS_APPROX(map1.noalias() = m1 * m2.transpose(), (m1 * m2.transpose()).eval());
-    buffer.setZero();
-    VERIFY_IS_APPROX(map1.noalias() += m1 * m2.transpose(), (m1 * m2.transpose()).eval());
   }
 
 }

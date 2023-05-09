@@ -9,20 +9,18 @@
 
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam_unstable/discrete/Constraint.h>
-#include <optional>
 
 namespace gtsam {
 
 /**
- * The Domain class represents a constraint that restricts the possible values a
- * particular variable, with given key, can take on.
+ * Domain restriction constraint
  */
 class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   size_t cardinality_;       /// Cardinality
   std::set<size_t> values_;  /// allowed values
 
  public:
-  typedef std::shared_ptr<Domain> shared_ptr;
+  typedef boost::shared_ptr<Domain> shared_ptr;
 
   // Constructor on Discrete Key initializes an "all-allowed" domain
   Domain(const DiscreteKey& dkey)
@@ -37,16 +35,14 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
     values_.insert(v);
   }
 
-  /// The one key
-  Key key() const { return keys_[0]; }
+  /// Constructor
+  Domain(const Domain& other)
+      : Constraint(other.keys_[0]), values_(other.values_) {}
 
-  // The associated discrete key
-  DiscreteKey discreteKey() const { return DiscreteKey(key(), cardinality_); }
-
-  /// Insert a value, non const :-(
+  /// insert a value, non const :-(
   void insert(size_t value) { values_.insert(value); }
 
-  /// Erase a value, non const :-(
+  /// erase a value, non const :-(
   void erase(size_t value) { values_.erase(value); }
 
   size_t nrValues() const { return values_.size(); }
@@ -69,15 +65,10 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
     }
   }
 
-  // Return concise string representation, mostly to debug arc consistency.
-  // Converts from base 0 to base1.
-  std::string base1Str() const;
-
-  // Check whether domain cotains a specific value.
   bool contains(size_t value) const { return values_.count(value) > 0; }
 
   /// Calculate value
-  double operator()(const DiscreteValues& values) const override;
+  double operator()(const Values& values) const override;
 
   /// Convert into a decisiontree
   DecisionTreeFactor toDecisionTreeFactor() const override;
@@ -86,29 +77,27 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
   /*
-   * Ensure Arc-consistency by checking every possible value of domain j.
+   * Ensure Arc-consistency
    * @param j domain to be checked
-   * @param (in/out) domains all domains, but only domains->at(j) will be
-   * checked.
-   * @return true if domains->at(j) was changed, false otherwise.
+   * @param domains all other domains
    */
-  bool ensureArcConsistency(Key j, Domains* domains) const override;
+  bool ensureArcConsistency(size_t j,
+                            std::vector<Domain>& domains) const override;
 
   /**
-   * Check for a value in domain that does not occur in any other connected
-   * domain. If found, return a a new singleton domain...
-   * Called in AllDiff::ensureArcConsistency
-   * @param keys connected domains through alldiff
-   * @param keys other domains
+   *  Check for a value in domain that does not occur in any other connected
+   * domain. If found, we make this a singleton... Called in
+   * AllDiff::ensureArcConsistency
+   *  @param keys connected domains through alldiff
    */
-  std::optional<Domain> checkAllDiff(const KeyVector keys,
-                                       const Domains& domains) const;
+  bool checkAllDiff(const KeyVector keys, std::vector<Domain>& domains);
 
   /// Partially apply known values
-  Constraint::shared_ptr partiallyApply(const DiscreteValues& values) const override;
+  Constraint::shared_ptr partiallyApply(const Values& values) const override;
 
   /// Partially apply known values, domain version
-  Constraint::shared_ptr partiallyApply(const Domains& domains) const override;
+  Constraint::shared_ptr partiallyApply(
+      const std::vector<Domain>& domains) const override;
 };
 
 }  // namespace gtsam

@@ -14,11 +14,11 @@ endif()
 # or explicit instantiation will generate build errors.
 # See: https://bitbucket.org/gtborg/gtsam/issues/417/fail-to-build-on-msvc-2017
 #
-if(MSVC AND GTSAM_SHARED_LIB)
+if(MSVC AND BUILD_SHARED_LIBS)
     list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC EIGEN_NO_STATIC_ASSERT)
 endif()
 
-if (APPLE AND GTSAM_SHARED_LIB)
+if (APPLE AND BUILD_SHARED_LIBS)
     # Set the default install directory on macOS
     set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 endif()

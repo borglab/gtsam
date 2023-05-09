@@ -23,6 +23,9 @@
 #include <gtsam/symbolic/SymbolicEliminationTree.h>
 #include <gtsam/symbolic/SymbolicJunctionTree.h>
 
+#include <boost/assign/list_of.hpp>
+using namespace boost::assign;
+
 #include "symbolicExampleGraphs.h"
 
 using namespace gtsam;
@@ -35,14 +38,14 @@ using namespace std;
  ****************************************************************************/
 TEST( JunctionTree, constructor )
 {
-  const Ordering order{0, 1, 2, 3};
+  Ordering order; order += 0, 1, 2, 3;
 
   SymbolicJunctionTree actual(SymbolicEliminationTree(simpleChain, order));
 
   SymbolicJunctionTree::Node::Keys
-    frontal1 {2, 3},
-    frontal2 {0, 1},
-    sep1, sep2 {2};
+    frontal1 = list_of(2)(3),
+    frontal2 = list_of(0)(1),
+    sep1, sep2 = list_of(2);
   EXPECT(assert_container_equality(frontal1, actual.roots().front()->orderedFrontalKeys));
   //EXPECT(assert_equal(sep1,     actual.roots().front()->separator));
   LONGS_EQUAL(1,                (long)actual.roots().front()->factors.size());

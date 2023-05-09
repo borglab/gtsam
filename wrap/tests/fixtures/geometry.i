@@ -24,6 +24,9 @@ class Point2 {
  VectorNotEigen vectorConfusion();
 
  void serializable() const; // Sets flag and creates export, but does not make serialization functions
+
+ // enable pickling in python
+ void pickle() const;
 };
 
 #include <gtsam/geometry/Point3.h>
@@ -37,6 +40,9 @@ class Point3 {
 
   // enabling serialization functionality
   void serialize() const; // Just triggers a flag internally and removes actual function
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 }

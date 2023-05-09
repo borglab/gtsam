@@ -22,8 +22,7 @@ protected:
 public:
   static const size_t dimension = 2;
 
-  /// @name Constructors
-  /// @{
+  // constructors
 
   /** Default constructor - straight ahead */
   BearingS2() {}
@@ -90,7 +89,6 @@ private:
   /// @name Advanced Interface
   /// @{
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  //
   // Serialization function
   friend class boost::serialization::access;
   template<class Archive>
@@ -98,7 +96,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(azimuth_);
     ar & BOOST_SERIALIZATION_NVP(elevation_);
   }
-#endif
 
 };
 

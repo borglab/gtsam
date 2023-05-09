@@ -10,14 +10,6 @@
 #ifndef EIGEN_BLAS_COMMON_H
 #define EIGEN_BLAS_COMMON_H
 
-#ifdef __GNUC__
-# if __GNUC__<5
-// GCC < 5.0 does not like the global Scalar typedef
-// we just keep shadow-warnings disabled permanently
-#  define EIGEN_PERMANENTLY_DISABLE_STUPID_WARNINGS
-# endif
-#endif
-
 #include "../Eigen/Core"
 #include "../Eigen/Jacobi"
 
@@ -166,10 +158,6 @@ T* copy_back(T* x_cpy, T* x, int n, int incx)
   return x_cpy;
 }
 
-#ifndef EIGEN_BLAS_FUNC_SUFFIX
-#define EIGEN_BLAS_FUNC_SUFFIX _
-#endif
-
-#define EIGEN_BLAS_FUNC(X) EIGEN_CAT(SCALAR_SUFFIX, EIGEN_CAT(X, EIGEN_BLAS_FUNC_SUFFIX))
+#define EIGEN_BLAS_FUNC(X) EIGEN_CAT(SCALAR_SUFFIX,X##_)
 
 #endif // EIGEN_BLAS_COMMON_H

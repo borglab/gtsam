@@ -43,7 +43,7 @@ bool ConcurrentIncrementalFilter::equals(const ConcurrentFilter& rhs, double tol
 
 /* ************************************************************************* */
 ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const std::optional<FastList<Key> >& keysToMove, const std::optional< FactorIndices >& removeFactorIndices) {
+    const boost::optional<FastList<Key> >& keysToMove, const boost::optional< FactorIndices >& removeFactorIndices) {
 
   gttic(update);
 
@@ -63,20 +63,20 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
   }
 
   // Generate ordering constraints that force the 'keys to move' to the end
-  std::optional<FastMap<Key,int> > orderingConstraints = {};
+  boost::optional<FastMap<Key,int> > orderingConstraints = boost::none;
   if(keysToMove && keysToMove->size() > 0) {
     orderingConstraints = FastMap<Key,int>();
     int group = 1;
     // Set all existing variables to Group1
     if(isam2_.getLinearizationPoint().size() > 0) {
-      for(const auto key: isam2_.getLinearizationPoint().keys()) {
-        orderingConstraints->operator[](key) = group;
+      for(const auto key_value: isam2_.getLinearizationPoint()) {
+        orderingConstraints->operator[](key_value.key) = group;
       }
       ++group;
     }
     // Assign new variables to the root
-    for(const auto key: newTheta.keys()) {
-      orderingConstraints->operator[](key) = group;
+    for(const auto key_value: newTheta) {
+      orderingConstraints->operator[](key_value.key) = group;
     }
     // Set marginalizable variables to Group0
     for(Key key: *keysToMove){
@@ -86,10 +86,10 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
 
   // Create the set of linear keys that iSAM2 should hold constant
   // iSAM2 takes care of this for us; no need to specify additional noRelin keys
-  std::optional<FastList<Key> > noRelinKeys = {};
+  boost::optional<FastList<Key> > noRelinKeys = boost::none;
 
   // Mark additional keys between the 'keys to move' and the leaves
-  std::optional<FastList<Key> > additionalKeys = {};
+  boost::optional<FastList<Key> > additionalKeys = boost::none;
   if(keysToMove && keysToMove->size() > 0) {
     std::set<Key> markedKeys;
     for(Key key: *keysToMove) {
@@ -201,8 +201,8 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
 
   // Force iSAM2 not to relinearize anything during this iteration
   FastList<Key> noRelinKeys;
-  for(const auto key: isam2_.getLinearizationPoint().keys()) {
-    noRelinKeys.push_back(key);
+  for(const auto key_value: isam2_.getLinearizationPoint()) {
+    noRelinKeys.push_back(key_value.key);
   }
 
   // Calculate the summarized factor on just the new separator keys
@@ -211,7 +211,7 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
 
   // Remove the old factors on the separator and insert the new ones
   FactorIndices removeFactors(currentSmootherSummarizationSlots_.begin(), currentSmootherSummarizationSlots_.end());
-  ISAM2Result result = isam2_.update(currentSmootherSummarization, Values(), removeFactors, {}, noRelinKeys, {}, false);
+  ISAM2Result result = isam2_.update(currentSmootherSummarization, Values(), removeFactors, boost::none, noRelinKeys, boost::none, false);
   currentSmootherSummarizationSlots_ = result.newFactorsIndices;
 
   // Set the previous smoother summarization to the current smoother summarization and clear the smoother shortcut

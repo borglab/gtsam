@@ -30,7 +30,7 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT ConcurrentIncrementalSmoother : public virtual ConcurrentSmoother {
 
 public:
-  typedef std::shared_ptr<ConcurrentIncrementalSmoother> shared_ptr;
+  typedef boost::shared_ptr<ConcurrentIncrementalSmoother> shared_ptr;
   typedef ConcurrentSmoother Base; ///< typedef for base class
 
   /** Meta information returned about the update */
@@ -41,7 +41,7 @@ public:
     double error; ///< The final factor graph error
 
     /// Constructor
-    Result() : iterations(0), nonlinearVariables(0), linearVariables(0), error(0) {}
+    Result() : iterations(0), nonlinearVariables(0), linearVariables(0), error(0) {};
 
     /// Getter methods
     size_t getIterations() const { return iterations; }
@@ -51,10 +51,10 @@ public:
   };
 
   /** Default constructor */
-  ConcurrentIncrementalSmoother(const ISAM2Params& parameters = ISAM2Params()) : isam2_(parameters) {}
+  ConcurrentIncrementalSmoother(const ISAM2Params& parameters = ISAM2Params()) : isam2_(parameters) {};
 
   /** Default destructor */
-  ~ConcurrentIncrementalSmoother() override {}
+  ~ConcurrentIncrementalSmoother() override {};
 
   /** Implement a GTSAM standard 'print' function */
   void print(const std::string& s = "Concurrent Incremental Smoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
@@ -109,7 +109,7 @@ public:
    * and additionally, variables that were already in the system must not be included here.
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const std::optional<FactorIndices>& removeFactorIndices = {});
+      const boost::optional<FactorIndices>& removeFactorIndices = boost::none);
 
   /**
    * Perform any required operations before the synchronization process starts.

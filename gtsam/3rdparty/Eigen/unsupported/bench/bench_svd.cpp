@@ -70,7 +70,7 @@ void bench_svd(const MatrixType& a = MatrixType())
   std::cout<< std::endl;
   timerJacobi.reset();
   timerBDC.reset();
-  cout << " Computes rotation matrix" <<endl;
+  cout << " Computes rotaion matrix" <<endl;
   for (int k=1; k<=NUMBER_SAMPLE; ++k)
   {
     timerBDC.start();

@@ -31,21 +31,26 @@
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/cholesky.h>
 
+#include <boost/assign/list_of.hpp>
+#include <boost/format.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/array.hpp>
+#include <boost/range/algorithm/copy.hpp>
+#include <boost/range/adaptor/indirected.hpp>
+#include <boost/range/adaptor/map.hpp>
+
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
 
 using namespace std;
+using namespace boost::assign;
 
 namespace gtsam {
 
-// Typedefs used in constructors below.
-using Dims = std::vector<Eigen::Index>;
-using Pairs = std::vector<std::pair<Eigen::Index, Matrix>>;
-
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor() :
-    Ab_(Dims{1}, 0) {
+    Ab_(cref_list_of<1>(1), 0) {
   getb().setZero();
 }
 
@@ -63,27 +68,29 @@ JacobianFactor::JacobianFactor(const GaussianFactor& gf) {
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const Vector& b_in) :
-    Ab_(Dims{1}, b_in.size()) {
+    Ab_(cref_list_of<1>(1), b_in.size()) {
   getb() = b_in;
 }
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(Key i1, const Matrix& A1, const Vector& b,
     const SharedDiagonal& model) {
-  fillTerms(Pairs{{i1, A1}}, b, model);
+  fillTerms(cref_list_of<1>(make_pair(i1, A1)), b, model);
 }
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
     const Matrix& A2, const Vector& b, const SharedDiagonal& model) {
-  fillTerms(Pairs{{i1, A1}, {i2, A2}}, b, model);
+  fillTerms(cref_list_of<2>(make_pair(i1, A1))(make_pair(i2, A2)), b, model);
 }
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
     const Matrix& A2, Key i3, const Matrix& A3, const Vector& b,
     const SharedDiagonal& model) {
-  fillTerms(Pairs{{i1, A1}, {i2, A2}, {i3, A3}}, b, model);
+  fillTerms(
+      cref_list_of<3>(make_pair(i1, A1))(make_pair(i2, A2))(make_pair(i3, A3)),
+      b, model);
 }
 
 /* ************************************************************************* */
@@ -94,7 +101,9 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor)
   Ab_.full() = factor.info().selfadjointView();
 
   // Do Cholesky to get a Jacobian
-  const auto [maxrank, success] = choleskyCareful(Ab_.matrix());
+  size_t maxrank;
+  bool success;
+  boost::tie(maxrank, success) = choleskyCareful(Ab_.matrix());
 
   // Check that Cholesky succeeded OR it managed to factor the full Hessian.
   // THe latter case occurs with non-positive definite matrices arising from QP.
@@ -114,7 +123,7 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor)
 /* ************************************************************************* */
 // Helper functions for combine constructor
 namespace {
-std::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
+boost::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
     const FastVector<JacobianFactor::shared_ptr>& factors,
     const FastVector<VariableSlots::const_iterator>& variableSlots) {
   gttic(countDims);
@@ -180,7 +189,7 @@ std::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
   }
 #endif
 
-  return std::make_tuple(varDims, m, n);
+  return boost::make_tuple(varDims, m, n);
 }
 
 /* ************************************************************************* */
@@ -191,11 +200,11 @@ FastVector<JacobianFactor::shared_ptr> _convertOrCastToJacobians(
   jacobians.reserve(factors.size());
   for(const GaussianFactor::shared_ptr& factor: factors) {
     if (factor) {
-      if (JacobianFactor::shared_ptr jf = std::dynamic_pointer_cast<
+      if (JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<
           JacobianFactor>(factor))
         jacobians.push_back(jf);
       else
-        jacobians.push_back(std::make_shared<JacobianFactor>(*factor));
+        jacobians.push_back(boost::make_shared<JacobianFactor>(*factor));
     }
   }
   return jacobians;
@@ -211,16 +220,18 @@ void JacobianFactor::JacobianFactorHelper(const GaussianFactorGraph& graph,
       graph);
 
   // Count dimensions
-  const auto [varDims, m, n] = _countDims(jacobians, orderedSlots);
+  FastVector<DenseIndex> varDims;
+  DenseIndex m, n;
+  boost::tie(varDims, m, n) = _countDims(jacobians, orderedSlots);
 
   // Allocate matrix and copy keys in order
   gttic(allocate);
   Ab_ = VerticalBlockMatrix(varDims, m, true); // Allocate augmented matrix
   Base::keys_.resize(orderedSlots.size());
-  // Copy keys in order
-  std::transform(orderedSlots.begin(), orderedSlots.end(),
-      Base::keys_.begin(),
-      [](const VariableSlots::const_iterator& it) {return it->first;});
+  boost::range::copy(
+      // Get variable keys
+      orderedSlots | boost::adaptors::indirected | boost::adaptors::map_keys,
+      Base::keys_.begin());
   gttoc(allocate);
 
   // Loop over slots in combined factor and copy blocks from source factors
@@ -253,7 +264,7 @@ void JacobianFactor::JacobianFactorHelper(const GaussianFactorGraph& graph,
   // Copy the RHS vectors and sigmas
   gttic(copy_vectors);
   bool anyConstrained = false;
-  std::optional<Vector> sigmas;
+  boost::optional<Vector> sigmas;
   // Loop over source jacobians
   DenseIndex nextRow = 0;
   for (size_t factorI = 0; factorI < jacobians.size(); ++factorI) {
@@ -405,7 +416,7 @@ void JacobianFactor::print(const string& s,
   if (!s.empty())
     cout << s << "\n";
   for (const_iterator key = begin(); key != end(); ++key) {
-    cout << "  A[" << formatter(*key) << "] = ";
+    cout << boost::format("  A[%1%] = ") % formatter(*key);
     cout << getA(key).format(matlabFormat()) << endl;
   }
   cout << formatMatrixIndented("  b = ", getb(), true) << "\n";
@@ -781,7 +792,7 @@ std::pair<GaussianConditional::shared_ptr, JacobianFactor::shared_ptr> Eliminate
   // Combine and sort variable blocks in elimination order
   JacobianFactor::shared_ptr jointFactor;
   try {
-    jointFactor = std::make_shared<JacobianFactor>(factors, keys);
+    jointFactor = boost::make_shared<JacobianFactor>(factors, keys);
   } catch (std::invalid_argument&) {
     throw InvalidDenseElimination(
         "EliminateQR was called with a request to eliminate variables that are not\n"
@@ -844,7 +855,7 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFronta
   conditionalNoiseModel =
       noiseModel::Diagonal::Sigmas(model_->sigmas().segment(Ab_.rowStart(), Ab_.rows()));
   GaussianConditional::shared_ptr conditional =
-      std::make_shared<GaussianConditional>(Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
+      boost::make_shared<GaussianConditional>(Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
 
   const DenseIndex maxRemainingRows =
       std::min(Ab_.cols(), originalRowEnd) - Ab_.rowStart() - frontalDim;

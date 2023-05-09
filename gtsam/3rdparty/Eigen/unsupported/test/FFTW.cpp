@@ -225,7 +225,7 @@ void test_return_by_value(int len)
     VERIFY( (in1-in).norm() < test_precision<float>() );
 }
 
-EIGEN_DECLARE_TEST(FFTW)
+void test_FFTW()
 {
   CALL_SUBTEST( test_return_by_value(32) );
   //CALL_SUBTEST( ( test_complex2d<float,4,8> () ) ); CALL_SUBTEST( ( test_complex2d<double,4,8> () ) );

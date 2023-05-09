@@ -28,7 +28,7 @@ ConvertNoiseModel(const SharedNoiseModel &model, size_t d, bool defaultToUnit) {
   double sigma = 1.0;
 
   if (model != nullptr) {
-    const auto &robust = std::dynamic_pointer_cast<noiseModel::Robust>(model);
+    const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(model);
     Vector sigmas;
     if (robust) {
       sigmas = robust->noise()->sigmas();
@@ -56,12 +56,12 @@ ConvertNoiseModel(const SharedNoiseModel &model, size_t d, bool defaultToUnit) {
   }
   exit:
   auto isoModel = noiseModel::Isotropic::Sigma(d, sigma);
-  const auto &robust = std::dynamic_pointer_cast<noiseModel::Robust>(model);
+  const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(model);
   if (robust) {
     return noiseModel::Robust::Create(
         noiseModel::mEstimator::Huber::Create(1.345), isoModel);
   } else {
-    return std::move(isoModel);
+    return isoModel;
   }
 }
 

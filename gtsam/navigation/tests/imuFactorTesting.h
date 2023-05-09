@@ -28,7 +28,6 @@ using symbol_shorthand::X;
 using symbol_shorthand::V;
 using symbol_shorthand::B;
 
-namespace {
 static const Vector3 kZero = Z_3x1;
 typedef imuBias::ConstantBias Bias;
 static const Bias kZeroBiasHat, kZeroBias;
@@ -44,7 +43,6 @@ static const Vector3 kGravityAlongNavZDown(0, 0, kGravity);
 auto radians = [](double t) { return t * M_PI / 180; };
 static const double kGyroSigma = radians(0.5) / 60;  // 0.5 degree ARW
 static const double kAccelSigma = 0.1 / 60;          // 10 cm VRW
-}
 
 namespace testing {
 

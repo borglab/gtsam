@@ -316,7 +316,7 @@ static void test_resize()
   VERIFY_IS_EQUAL(epsilon.size(), 3*5*7);
 }
 
-EIGEN_DECLARE_TEST(cxx11_tensor_simple)
+void test_cxx11_tensor_simple()
 {
   CALL_SUBTEST(test_0d());
   CALL_SUBTEST(test_1d());

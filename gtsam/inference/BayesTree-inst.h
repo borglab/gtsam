@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    BayesTree-inst.h
+ * @file    BayesTree-inl.h
  * @brief   Bayes Tree is a tree of cliques of a Bayes Chain
  * @author  Frank Dellaert
  * @author  Michael Kaess
@@ -25,8 +25,11 @@
 #include <gtsam/base/treeTraversal-inst.h>
 #include <gtsam/base/timing.h>
 
+#include <boost/optional.hpp>
+#include <boost/assign/list_of.hpp>
 #include <fstream>
-#include <queue>
+
+using boost::assign::cref_list_of;
 
 namespace gtsam {
 
@@ -60,40 +63,20 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template <class CLIQUE>
-  void BayesTree<CLIQUE>::dot(std::ostream& os,
-                              const KeyFormatter& keyFormatter) const {
-    if (roots_.empty())
-      throw std::invalid_argument(
-          "the root of Bayes tree has not been initialized!");
-    os << "digraph G{\n";
-    for (const sharedClique& root : roots_) dot(os, root, keyFormatter);
-    os << "}";
-    std::flush(os);
-  }
-
-  /* ************************************************************************* */
-  template <class CLIQUE>
-  std::string BayesTree<CLIQUE>::dot(const KeyFormatter& keyFormatter) const {
-    std::stringstream ss;
-    dot(ss, keyFormatter);
-    return ss.str();
-  }
-
-  /* ************************************************************************* */
-  template <class CLIQUE>
-  void BayesTree<CLIQUE>::saveGraph(const std::string& filename,
-                                    const KeyFormatter& keyFormatter) const {
-    std::ofstream of(filename.c_str());
-    dot(of, keyFormatter);
+  template<class CLIQUE>
+  void BayesTree<CLIQUE>::saveGraph(const std::string &s, const KeyFormatter& keyFormatter) const {
+    if (roots_.empty()) throw std::invalid_argument("the root of Bayes tree has not been initialized!");
+    std::ofstream of(s.c_str());
+    of<< "digraph G{\n";
+    for(const sharedClique& root: roots_)
+      saveGraph(of, root, keyFormatter);
+    of<<"}";
     of.close();
   }
 
   /* ************************************************************************* */
-  template <class CLIQUE>
-  void BayesTree<CLIQUE>::dot(std::ostream& s, sharedClique clique,
-                              const KeyFormatter& keyFormatter,
-                              int parentnum) const {
+  template<class CLIQUE>
+  void BayesTree<CLIQUE>::saveGraph(std::ostream &s, sharedClique clique, const KeyFormatter& indexFormatter, int parentnum) const {
     static int num = 0;
     bool first = true;
     std::stringstream out;
@@ -101,10 +84,10 @@ namespace gtsam {
     std::string parent = out.str();
     parent += "[label=\"";
 
-    for (Key key : clique->conditional_->frontals()) {
-      if (!first) parent += ", ";
+    for (Key index : clique->conditional_->frontals()) {
+      if (!first) parent += ",";
       first = false;
-      parent += keyFormatter(key);
+      parent += indexFormatter(index);
     }
 
     if (clique->parent()) {
@@ -113,10 +96,10 @@ namespace gtsam {
     }
 
     first = true;
-    for (Key parentKey : clique->conditional_->parents()) {
-      if (!first) parent += ", ";
+    for (Key sep : clique->conditional_->parents()) {
+      if (!first) parent += ",";
       first = false;
-      parent += keyFormatter(parentKey);
+      parent += indexFormatter(sep);
     }
     parent += "\"];\n";
     s << parent;
@@ -124,7 +107,7 @@ namespace gtsam {
 
     for (sharedClique c : clique->children) {
       num++;
-      dot(s, c, keyFormatter, parentnum);
+      saveGraph(s, c, indexFormatter, parentnum);
     }
   }
 
@@ -156,7 +139,7 @@ namespace gtsam {
   struct _pushCliqueFunctor {
     _pushCliqueFunctor(FactorGraph<FACTOR>* graph_) : graph(graph_) {}
     FactorGraph<FACTOR>* graph;
-    int operator()(const std::shared_ptr<CLIQUE>& clique, int dummy) {
+    int operator()(const boost::shared_ptr<CLIQUE>& clique, int dummy) {
       graph->push_back(clique->conditional_);
       return 0;
     }
@@ -180,52 +163,13 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-
-  /** Destructor 
-   * Using default destructor causes stack overflow for large trees due to recursive destruction of nodes;
-   * so we manually decrease the reference count of each node in the tree through a BFS, and the nodes with
-   * reference count 0 will be deleted. Please see [PR-1441](https://github.com/borglab/gtsam/pull/1441) for more details.
-   */
-  template<class CLIQUE>
-  BayesTree<CLIQUE>::~BayesTree() {
-    /* Because tree nodes are hold by both root_ and nodes_, we need to clear nodes_ manually first and
-     * reduce the reference count of each node by 1. Otherwise, the nodes will not be properly deleted
-     * during the BFS process.
-     */
-    nodes_.clear();
-    for (auto&& root: roots_) {
-      std::queue<sharedClique> bfs_queue;
-      
-      // first, move the root to the queue
-      bfs_queue.push(root);
-      root = nullptr; // now the root node is owned by the queue
-
-      // do a BFS on the tree, for each node, add its children to the queue, and then delete it from the queue
-      // So if the reference count of the node is 1, it will be deleted, and because its children are in the queue,
-      // the deletion of the node will not trigger a recursive deletion of the children.
-      while (!bfs_queue.empty()) {
-        // move the ownership of the front node from the queue to the current variable
-        auto current = bfs_queue.front();
-        bfs_queue.pop();
-
-        // add the children of the current node to the queue, so that the queue will also own the children nodes.
-        for (auto child: current->children) {
-          bfs_queue.push(child);
-        } // leaving the scope of current will decrease the reference count of the current node by 1, and if the reference count is 0,
-          // the node will be deleted. Because the children are in the queue, the deletion of the node will not trigger a recursive
-          // deletion of the children.
-      }
-    }
-  }
-
-  /* ************************************************************************* */
   namespace {
     template<typename NODE>
-    std::shared_ptr<NODE>
-      BayesTreeCloneForestVisitorPre(const std::shared_ptr<NODE>& node, const std::shared_ptr<NODE>& parentPointer)
+    boost::shared_ptr<NODE>
+      BayesTreeCloneForestVisitorPre(const boost::shared_ptr<NODE>& node, const boost::shared_ptr<NODE>& parentPointer)
     {
       // Clone the current node and add it to its cloned parent
-      std::shared_ptr<NODE> clone = std::make_shared<NODE>(*node);
+      boost::shared_ptr<NODE> clone = boost::make_shared<NODE>(*node);
       clone->children.clear();
       clone->parent_ = parentPointer;
       parentPointer->children.push_back(clone);
@@ -237,7 +181,7 @@ namespace gtsam {
   template<class CLIQUE>
   BayesTree<CLIQUE>& BayesTree<CLIQUE>::operator=(const This& other) {
     this->clear();
-    std::shared_ptr<Clique> rootContainer = std::make_shared<Clique>();
+    boost::shared_ptr<Clique> rootContainer = boost::make_shared<Clique>();
     treeTraversal::DepthFirstForest(other, rootContainer, BayesTreeCloneForestVisitorPre<Clique>);
     for(const sharedClique& root: rootContainer->children) {
       root->parent_ = typename Clique::weak_ptr(); // Reset the parent since it's set to the dummy clique
@@ -285,7 +229,7 @@ namespace gtsam {
   void BayesTree<CLIQUE>::fillNodesIndex(const sharedClique& subtree) {
     // Add each frontal variable of this root node
     for(const Key& j: subtree->conditional()->frontals()) {
-      bool inserted = nodes_.insert({j, subtree}).second;
+      bool inserted = nodes_.insert(std::make_pair(j, subtree)).second;
       assert(inserted); (void)inserted;
     }
     // Fill index for each child
@@ -317,8 +261,8 @@ namespace gtsam {
     FactorGraphType cliqueMarginal = clique->marginal2(function);
 
     // Now, marginalize out everything that is not variable j
-    BayesNetType marginalBN =
-        *cliqueMarginal.marginalMultifrontalBayesNet(Ordering{j}, function);
+    BayesNetType marginalBN = *cliqueMarginal.marginalMultifrontalBayesNet(
+      Ordering(cref_list_of<1,Key>(j)), function);
 
     // The Bayes net should contain only one conditional for variable j, so return it
     return marginalBN.front();
@@ -332,7 +276,7 @@ namespace gtsam {
     BayesTree<CLIQUE>::joint(Key j1, Key j2, const Eliminate& function) const
   {
     gttic(BayesTree_joint);
-    return std::make_shared<FactorGraphType>(*jointBayesNet(j1, j2, function));
+    return boost::make_shared<FactorGraphType>(*jointBayesNet(j1, j2, function));
   }
 
   /* ************************************************************************* */
@@ -392,7 +336,7 @@ namespace gtsam {
       // Factor the shortcuts to be conditioned on the full root
       // Get the set of variables to eliminate, which is C1\B.
       gttic(Full_root_factoring);
-      std::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
+      boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
         KeyVector C1_minus_B; {
           KeySet C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
           for(const Key j: *B->conditional()) {
@@ -400,12 +344,11 @@ namespace gtsam {
           C1_minus_B.assign(C1_minus_B_set.begin(), C1_minus_B_set.end());
         }
         // Factor into C1\B | B.
-        p_C1_B =
-            FactorGraphType(p_C1_Bred)
-                .eliminatePartialMultifrontal(Ordering(C1_minus_B), function)
-                .first;
+        sharedFactorGraph temp_remaining;
+        boost::tie(p_C1_B, temp_remaining) =
+          FactorGraphType(p_C1_Bred).eliminatePartialMultifrontal(Ordering(C1_minus_B), function);
       }
-      std::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
+      boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
         KeyVector C2_minus_B; {
           KeySet C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
           for(const Key j: *B->conditional()) {
@@ -413,21 +356,20 @@ namespace gtsam {
           C2_minus_B.assign(C2_minus_B_set.begin(), C2_minus_B_set.end());
         }
         // Factor into C2\B | B.
-        p_C2_B =
-            FactorGraphType(p_C2_Bred)
-                .eliminatePartialMultifrontal(Ordering(C2_minus_B), function)
-                .first;
+        sharedFactorGraph temp_remaining;
+        boost::tie(p_C2_B, temp_remaining) =
+          FactorGraphType(p_C2_Bred).eliminatePartialMultifrontal(Ordering(C2_minus_B), function);
       }
       gttoc(Full_root_factoring);
 
       gttic(Variable_joint);
-      p_BC1C2.push_back(p_B);
-      p_BC1C2.push_back(*p_C1_B);
-      p_BC1C2.push_back(*p_C2_B);
+      p_BC1C2 += p_B;
+      p_BC1C2 += *p_C1_B;
+      p_BC1C2 += *p_C2_B;
       if(C1 != B)
-        p_BC1C2.push_back(C1->conditional());
+        p_BC1C2 += C1->conditional();
       if(C2 != B)
-        p_BC1C2.push_back(C2->conditional());
+        p_BC1C2 += C2->conditional();
       gttoc(Variable_joint);
     }
     else
@@ -435,13 +377,13 @@ namespace gtsam {
       // The nodes have no common ancestor, they're in different trees, so they're joint is just the
       // product of their marginals.
       gttic(Disjoint_marginals);
-      p_BC1C2.push_back(C1->marginal2(function));
-      p_BC1C2.push_back(C2->marginal2(function));
+      p_BC1C2 += C1->marginal2(function);
+      p_BC1C2 += C2->marginal2(function);
       gttoc(Disjoint_marginals);
     }
 
     // now, marginalize out everything that is not variable j1 or j2
-    return p_BC1C2.marginalMultifrontalBayesNet(Ordering{j1, j2}, function);
+    return p_BC1C2.marginalMultifrontalBayesNet(Ordering(cref_list_of<2,Key>(j1)(j2)), function);
   }
 
   /* ************************************************************************* */

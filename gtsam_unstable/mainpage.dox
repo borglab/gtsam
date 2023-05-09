@@ -4,16 +4,16 @@ namespace gtsam {
 
 /**
 
-\page GTSAM_UNSTABLE
+\mainpage GTSAM_UNSTABLE
 
-\section  gtsam_unstable_overview Overview
+\section  gtsam_unstable_overview GTSAM_UNSTABLE Overview
 
 GTSAM_UNSTABLE is a set of experimental additions to GTSAM that are not fully ready to be 
 integrated into the rest of the library.  This library is actively maintained,
 and should follow the same design procedures as GTSAM.
 
 Because parts of this library are supposed to be a part of GTSAM, all code should
-be in the gtsam namespace, rather than a gtsam_unstable namespace.
+be in the gtsam namespace, rather than a gtsam_unstable namespace.    
 
 */
 

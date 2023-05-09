@@ -51,15 +51,7 @@ namespace gtsam {
      * returns true if they intersect, with the intersection
      * point in the optional second argument
      */
-    bool intersects(const SimWall2D& wall, Point2* pt = nullptr) const;
-    
-    /**
-     * An overload of intersects that takes an l-value reference to a Point2
-     * instead of a pointer.
-     */
-    bool intersects(const SimWall2D& wall, Point2& pt) const {
-      return intersects(wall, &pt);
-    }
+    bool intersects(const SimWall2D& wall, boost::optional<Point2&> pt=boost::none) const;
 
     /**
      * norm is a 2D point representing the norm of the wall

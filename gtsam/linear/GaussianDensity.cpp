@@ -17,41 +17,39 @@
  */
 
 #include <gtsam/linear/GaussianDensity.h>
-#include <string>
 
-using std::cout;
-using std::endl;
-using std::string;
+using namespace std;
 
 namespace gtsam {
 
-/* ************************************************************************* */
-GaussianDensity GaussianDensity::FromMeanAndStddev(Key key, const Vector& mean,
-                                                   double sigma) {
-  return GaussianDensity(key, mean, Matrix::Identity(mean.size(), mean.size()),
-                         noiseModel::Isotropic::Sigma(mean.size(), sigma));
-}
-
-/* ************************************************************************* */
-void GaussianDensity::print(const string& s,
-                            const KeyFormatter& formatter) const {
-  cout << s << ": density on ";
-  for (const_iterator it = beginFrontals(); it != endFrontals(); ++it) {
-    cout << "[" << formatter(*it) << "] ";
+  /* ************************************************************************* */
+  GaussianDensity GaussianDensity::FromMeanAndStddev(Key key, const Vector& mean, const double& sigma)
+  {
+    return GaussianDensity(key, mean / sigma, Matrix::Identity(mean.size(), mean.size()) / sigma);
   }
-  cout << endl;
-  gtsam::print(mean(), "mean: ");
-  gtsam::print(covariance(), "covariance: ");
-  if (model_) model_->print("Noise model: ");
-}
 
-/* ************************************************************************* */
-Vector GaussianDensity::mean() const {
-  VectorValues soln = this->solve(VectorValues());
-  return soln[firstFrontalKey()];
-}
+  /* ************************************************************************* */
+  void GaussianDensity::print(const string &s, const KeyFormatter& formatter) const
+  {
+    cout << s << ": density on ";
+    for(const_iterator it = beginFrontals(); it != endFrontals(); ++it)
+      cout << (boost::format("[%1%]")%(formatter(*it))).str() << " ";
+    cout << endl;
+    gtsam::print(Matrix(R()), "R: ");
+    gtsam::print(Vector(d()), "d: ");
+    if(model_)
+      model_->print("Noise model: ");
+  }
 
-/* ************************************************************************* */
-Matrix GaussianDensity::covariance() const { return information().inverse(); }
+  /* ************************************************************************* */
+  Vector GaussianDensity::mean() const {
+    VectorValues soln = this->solve(VectorValues());
+    return soln[firstFrontalKey()];
+  }
 
-}  // namespace gtsam
+  /* ************************************************************************* */
+  Matrix GaussianDensity::covariance() const {
+    return information().inverse();
+  }
+
+} // gtsam

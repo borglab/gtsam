@@ -13,25 +13,27 @@
 namespace gtsam {
 
 /**
- * SingleValue constraint: ensures a variable takes on a certain value.
- * This could of course also be implemented by changing its `Domain`.
+ * SingleValue constraint
  */
 class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
-  size_t cardinality_;  /// < Number of values
-  size_t value_;        ///<  allowed value
+  /// Number of values
+  size_t cardinality_;
+
+  /// allowed value
+  size_t value_;
 
   DiscreteKey discreteKey() const {
     return DiscreteKey(keys_[0], cardinality_);
   }
 
  public:
-  typedef std::shared_ptr<SingleValue> shared_ptr;
+  typedef boost::shared_ptr<SingleValue> shared_ptr;
 
-  /// Construct from key, cardinality, and given value.
+  /// Constructor
   SingleValue(Key key, size_t n, size_t value)
       : Constraint(key), cardinality_(n), value_(value) {}
 
-  /// Construct from DiscreteKey and given value.
+  /// Constructor
   SingleValue(const DiscreteKey& dkey, size_t value)
       : Constraint(dkey.first), cardinality_(dkey.second), value_(value) {}
 
@@ -50,7 +52,7 @@ class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
   }
 
   /// Calculate value
-  double operator()(const DiscreteValues& values) const override;
+  double operator()(const Values& values) const override;
 
   /// Convert into a decisiontree
   DecisionTreeFactor toDecisionTreeFactor() const override;
@@ -59,19 +61,19 @@ class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
   /*
-   * Ensure Arc-consistency: just sets domain[j] to {value_}.
+   * Ensure Arc-consistency
    * @param j domain to be checked
-   * @param (in/out) domains all domains, but only domains->at(j) will be checked.
-   * @return true if domains->at(j) was changed, false otherwise.
+   * @param domains all other domains
    */
-  bool ensureArcConsistency(Key j, Domains* domains) const override;
+  bool ensureArcConsistency(size_t j,
+                            std::vector<Domain>& domains) const override;
 
   /// Partially apply known values
-  Constraint::shared_ptr partiallyApply(const DiscreteValues& values) const override;
+  Constraint::shared_ptr partiallyApply(const Values& values) const override;
 
   /// Partially apply known values, domain version
   Constraint::shared_ptr partiallyApply(
-      const Domains& domains) const override;
+      const std::vector<Domain>& domains) const override;
 };
 
 }  // namespace gtsam

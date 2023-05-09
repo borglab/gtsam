@@ -28,7 +28,7 @@ namespace gtsam {
 /**
  * Disjoint set forest using an STL map data structure underneath
  * Uses rank compression and union by rank, iterator version
- * @ingroup base
+ * @addtogroup base
  */
 template <class KEY>
 class DSFMap {
@@ -50,7 +50,7 @@ class DSFMap {
     iterator it = entries_.find(key);
     // if key does not exist, create and return itself
     if (it == entries_.end()) {
-      it = entries_.insert({key, empty}).first;
+      it = entries_.insert(std::make_pair(key, empty)).first;
       it->second.parent_ = it;
       it->second.rank_ = 0;
     }
@@ -118,8 +118,8 @@ class IndexPair : public std::pair<size_t,size_t> {
  public:
   inline IndexPair(): std::pair<size_t,size_t>(0,0) {}
   inline IndexPair(size_t i, size_t j) : std::pair<size_t,size_t>(i,j) {}
-  inline size_t i() const { return first; }
-  inline size_t j() const { return second; }
+  inline size_t i() const { return first; };
+  inline size_t j() const { return second; };
 };
 
 typedef std::vector<IndexPair> IndexPairVector;

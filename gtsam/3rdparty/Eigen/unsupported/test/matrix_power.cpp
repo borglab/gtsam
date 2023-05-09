@@ -19,7 +19,7 @@ void test2dRotation(const T& tol)
   MatrixPower<Matrix<T,2,2> > Apow(A);
 
   for (int i=0; i<=20; ++i) {
-    angle = std::pow(T(10), T(i-10) / T(5.));
+    angle = std::pow(T(10), (i-10) / T(5.));
     c = std::cos(angle);
     s = std::sin(angle);
     B << c, s, -s, c;
@@ -61,7 +61,7 @@ void test3dRotation(const T& tol)
   for (int i=0; i<=20; ++i) {
     v = Matrix<T,3,1>::Random();
     v.normalize();
-    angle = std::pow(T(10), T(i-10) / T(5.));
+    angle = std::pow(T(10), (i-10) / T(5.));
     VERIFY(AngleAxis<T>(angle, v).matrix().isApprox(AngleAxis<T>(1,v).matrix().pow(angle), tol));
   }
 }
@@ -150,55 +150,55 @@ typedef Matrix<double,3,3,RowMajor>         Matrix3dRowMajor;
 typedef Matrix<long double,3,3>             Matrix3e;
 typedef Matrix<long double,Dynamic,Dynamic> MatrixXe;
  
-EIGEN_DECLARE_TEST(matrix_power)
+void test_matrix_power()
 {
   CALL_SUBTEST_2(test2dRotation<double>(1e-13));
-  CALL_SUBTEST_1(test2dRotation<float>(2e-5f));  // was 1e-5, relaxed for clang 2.8 / linux / x86-64
+  CALL_SUBTEST_1(test2dRotation<float>(2e-5));  // was 1e-5, relaxed for clang 2.8 / linux / x86-64
   CALL_SUBTEST_9(test2dRotation<long double>(1e-13L));
   CALL_SUBTEST_2(test2dHyperbolicRotation<double>(1e-14));
-  CALL_SUBTEST_1(test2dHyperbolicRotation<float>(1e-5f));
+  CALL_SUBTEST_1(test2dHyperbolicRotation<float>(1e-5));
   CALL_SUBTEST_9(test2dHyperbolicRotation<long double>(1e-14L));
 
   CALL_SUBTEST_10(test3dRotation<double>(1e-13));
-  CALL_SUBTEST_11(test3dRotation<float>(1e-5f));
+  CALL_SUBTEST_11(test3dRotation<float>(1e-5));
   CALL_SUBTEST_12(test3dRotation<long double>(1e-13L));
 
   CALL_SUBTEST_2(testGeneral(Matrix2d(),         1e-13));
   CALL_SUBTEST_7(testGeneral(Matrix3dRowMajor(), 1e-13));
   CALL_SUBTEST_3(testGeneral(Matrix4cd(),        1e-13));
   CALL_SUBTEST_4(testGeneral(MatrixXd(8,8),      2e-12));
-  CALL_SUBTEST_1(testGeneral(Matrix2f(),         1e-4f));
-  CALL_SUBTEST_5(testGeneral(Matrix3cf(),        1e-4f));
-  CALL_SUBTEST_8(testGeneral(Matrix4f(),         1e-4f));
-  CALL_SUBTEST_6(testGeneral(MatrixXf(2,2),      1e-3f)); // see bug 614
+  CALL_SUBTEST_1(testGeneral(Matrix2f(),         1e-4));
+  CALL_SUBTEST_5(testGeneral(Matrix3cf(),        1e-4));
+  CALL_SUBTEST_8(testGeneral(Matrix4f(),         1e-4));
+  CALL_SUBTEST_6(testGeneral(MatrixXf(2,2),      1e-3)); // see bug 614
   CALL_SUBTEST_9(testGeneral(MatrixXe(7,7),      1e-13L));
   CALL_SUBTEST_10(testGeneral(Matrix3d(),        1e-13));
-  CALL_SUBTEST_11(testGeneral(Matrix3f(),        1e-4f));
+  CALL_SUBTEST_11(testGeneral(Matrix3f(),        1e-4));
   CALL_SUBTEST_12(testGeneral(Matrix3e(),        1e-13L));
 
   CALL_SUBTEST_2(testSingular(Matrix2d(),         1e-13));
   CALL_SUBTEST_7(testSingular(Matrix3dRowMajor(), 1e-13));
   CALL_SUBTEST_3(testSingular(Matrix4cd(),        1e-13));
   CALL_SUBTEST_4(testSingular(MatrixXd(8,8),      2e-12));
-  CALL_SUBTEST_1(testSingular(Matrix2f(),         1e-4f));
-  CALL_SUBTEST_5(testSingular(Matrix3cf(),        1e-4f));
-  CALL_SUBTEST_8(testSingular(Matrix4f(),         1e-4f));
-  CALL_SUBTEST_6(testSingular(MatrixXf(2,2),      1e-3f));
+  CALL_SUBTEST_1(testSingular(Matrix2f(),         1e-4));
+  CALL_SUBTEST_5(testSingular(Matrix3cf(),        1e-4));
+  CALL_SUBTEST_8(testSingular(Matrix4f(),         1e-4));
+  CALL_SUBTEST_6(testSingular(MatrixXf(2,2),      1e-3));
   CALL_SUBTEST_9(testSingular(MatrixXe(7,7),      1e-13L));
   CALL_SUBTEST_10(testSingular(Matrix3d(),        1e-13));
-  CALL_SUBTEST_11(testSingular(Matrix3f(),        1e-4f));
+  CALL_SUBTEST_11(testSingular(Matrix3f(),        1e-4));
   CALL_SUBTEST_12(testSingular(Matrix3e(),        1e-13L));
 
   CALL_SUBTEST_2(testLogThenExp(Matrix2d(),         1e-13));
   CALL_SUBTEST_7(testLogThenExp(Matrix3dRowMajor(), 1e-13));
   CALL_SUBTEST_3(testLogThenExp(Matrix4cd(),        1e-13));
   CALL_SUBTEST_4(testLogThenExp(MatrixXd(8,8),      2e-12));
-  CALL_SUBTEST_1(testLogThenExp(Matrix2f(),         1e-4f));
-  CALL_SUBTEST_5(testLogThenExp(Matrix3cf(),        1e-4f));
-  CALL_SUBTEST_8(testLogThenExp(Matrix4f(),         1e-4f));
-  CALL_SUBTEST_6(testLogThenExp(MatrixXf(2,2),      1e-3f));
+  CALL_SUBTEST_1(testLogThenExp(Matrix2f(),         1e-4));
+  CALL_SUBTEST_5(testLogThenExp(Matrix3cf(),        1e-4));
+  CALL_SUBTEST_8(testLogThenExp(Matrix4f(),         1e-4));
+  CALL_SUBTEST_6(testLogThenExp(MatrixXf(2,2),      1e-3));
   CALL_SUBTEST_9(testLogThenExp(MatrixXe(7,7),      1e-13L));
   CALL_SUBTEST_10(testLogThenExp(Matrix3d(),        1e-13));
-  CALL_SUBTEST_11(testLogThenExp(Matrix3f(),        1e-4f));
+  CALL_SUBTEST_11(testLogThenExp(Matrix3f(),        1e-4));
   CALL_SUBTEST_12(testLogThenExp(Matrix3e(),        1e-13L));
 }

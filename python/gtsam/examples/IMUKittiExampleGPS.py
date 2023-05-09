@@ -203,7 +203,7 @@ def optimize(gps_measurements: List[GpsMeasurement],
     # Set ISAM2 parameters and create ISAM2 solver object
     isam_params = gtsam.ISAM2Params()
     isam_params.setFactorization("CHOLESKY")
-    isam_params.relinearizeSkip = 10
+    isam_params.setRelinearizeSkip(10)
 
     isam = gtsam.ISAM2(isam_params)
 

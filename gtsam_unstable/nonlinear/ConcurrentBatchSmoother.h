@@ -31,7 +31,7 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT ConcurrentBatchSmoother : public ConcurrentSmoother {
 
 public:
-  typedef std::shared_ptr<ConcurrentBatchSmoother> shared_ptr;
+  typedef boost::shared_ptr<ConcurrentBatchSmoother> shared_ptr;
   typedef ConcurrentSmoother Base; ///< typedef for base class
 
   /** Meta information returned about the update */
@@ -43,7 +43,7 @@ public:
     double error; ///< The final factor graph error
 
     /// Constructor
-    Result() : iterations(0), lambdas(0), nonlinearVariables(0), linearVariables(0), error(0) {}
+    Result() : iterations(0), lambdas(0), nonlinearVariables(0), linearVariables(0), error(0) {};
 
     /// Getter methods
     size_t getIterations() const { return iterations; }
@@ -54,10 +54,10 @@ public:
   };
 
   /** Default constructor */
-  ConcurrentBatchSmoother(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) : parameters_(parameters) {}
+  ConcurrentBatchSmoother(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) : parameters_(parameters) {};
 
   /** Default destructor */
-  ~ConcurrentBatchSmoother() override {}
+  ~ConcurrentBatchSmoother() override {};
 
   /** Implement a GTSAM standard 'print' function */
   void print(const std::string& s = "Concurrent Batch Smoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
@@ -118,7 +118,7 @@ public:
    * and additionally, variables that were already in the system must not be included here.
    */
   virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const std::optional< std::vector<size_t> >& removeFactorIndices = {});
+      const boost::optional< std::vector<size_t> >& removeFactorIndices = boost::none);
 
   /**
    * Perform any required operations before the synchronization process starts.

@@ -50,13 +50,7 @@ static void test_static_dimension_failure()
       .reshape(Tensor<int, 3>::Dimensions(2, 3, 1))
       .concatenate(right, 0);
   Tensor<int, 2, DataLayout> alternative = left
-   // Clang compiler break with {{{}}} with an ambiguous error on copy constructor
-  // the variadic DSize constructor added for #ifndef EIGEN_EMULATE_CXX11_META_H.
-  // Solution:
-  // either the code should change to 
-  //  Tensor<int, 2>::Dimensions{{2, 3}}
-  // or Tensor<int, 2>::Dimensions{Tensor<int, 2>::Dimensions{{2, 3}}}
-      .concatenate(right.reshape(Tensor<int, 2>::Dimensions(2, 3)), 0);
+      .concatenate(right.reshape(Tensor<int, 2>::Dimensions{{{2, 3}}}), 0);
 }
 
 template<int DataLayout>
@@ -129,7 +123,7 @@ static void test_concatenation_as_lvalue()
 }
 
 
-EIGEN_DECLARE_TEST(cxx11_tensor_concatenation)
+void test_cxx11_tensor_concatenation()
 {
    CALL_SUBTEST(test_dimension_failures<ColMajor>());
    CALL_SUBTEST(test_dimension_failures<RowMajor>());

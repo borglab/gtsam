@@ -36,15 +36,15 @@ int main(const int argc, const char* argv[]) {
   NonlinearFactorGraph::shared_ptr graph;
   Values::shared_ptr initial;
   bool is3D = true;
-  std::tie(graph, initial) = readG2o(g2oFile, is3D);
+  boost::tie(graph, initial) = readG2o(g2oFile, is3D);
 
   // Add prior on the first key
   auto priorModel = noiseModel::Diagonal::Variances(
       (Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
   Key firstKey = 0;
-  for (const auto key : initial->keys()) {
+  for (const auto key_value : *initial) {
     std::cout << "Adding prior to g2o file " << std::endl;
-    firstKey = key;
+    firstKey = key_value.key;
     graph->addPrior(firstKey, Pose3(), priorModel);
     break;
   }
@@ -66,7 +66,7 @@ int main(const int argc, const char* argv[]) {
     std::cout << "Writing results to file: " << outputFile << std::endl;
     NonlinearFactorGraph::shared_ptr graphNoKernel;
     Values::shared_ptr initial2;
-    std::tie(graphNoKernel, initial2) = readG2o(g2oFile);
+    boost::tie(graphNoKernel, initial2) = readG2o(g2oFile);
     writeG2o(*graphNoKernel, initialization, outputFile);
     std::cout << "done! " << std::endl;
   }

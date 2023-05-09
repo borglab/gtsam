@@ -28,7 +28,7 @@
 #include <gtsam_unstable/nonlinear/ConcurrentBatchSmoother.h>
 
 // We will compare the results to a similar Fixed-Lag Smoother
-#include <gtsam/nonlinear/BatchFixedLagSmoother.h>
+#include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.
@@ -308,12 +308,12 @@ int main(int argc, char** argv) {
   // And to demonstrate the fixed-lag aspect, print the keys contained in each smoother after 3.0 seconds
   cout << "After 15.0 seconds, each version contains to the following keys:" << endl;
   cout << "  Concurrent Filter Keys: " << endl;
-  for(const auto key: concurrentFilter.getLinearizationPoint().keys()) {
-    cout << setprecision(5) << "    Key: " << key << endl;
+  for(const auto key_value: concurrentFilter.getLinearizationPoint()) {
+    cout << setprecision(5) << "    Key: " << key_value.key << endl;
   }
   cout << "  Concurrent Smoother Keys: " << endl;
-  for(const auto key: concurrentSmoother.getLinearizationPoint().keys()) {
-    cout << setprecision(5) << "    Key: " << key << endl;
+  for(const auto key_value: concurrentSmoother.getLinearizationPoint()) {
+    cout << setprecision(5) << "    Key: " << key_value.key << endl;
   }
   cout << "  Fixed-Lag Smoother Keys: " << endl;
   for(const auto& key_timestamp: fixedlagSmoother.timestamps()) {

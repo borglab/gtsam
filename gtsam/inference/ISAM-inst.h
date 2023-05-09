@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    ISAM-inst.h
+ * @file    ISAM-inl.h
  * @brief   Incremental update functionality (iSAM) for BayesTree.
  * @author  Michael Kaess
  */
@@ -36,12 +36,12 @@ void ISAM<BAYESTREE>::updateInternal(const FactorGraphType& newFactors,
 
   // Add the removed top and the new factors
   FactorGraphType factors;
-  factors.push_back(bn);
-  factors.push_back(newFactors);
+  factors += bn;
+  factors += newFactors;
 
   // Add the orphaned subtrees
   for (const sharedClique& orphan : *orphans)
-    factors.template emplace_shared<BayesTreeOrphanWrapper<Clique> >(orphan);
+    factors += boost::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan);
 
   // Get an ordering where the new keys are eliminated last
   const VariableIndex index(factors);
@@ -49,7 +49,7 @@ void ISAM<BAYESTREE>::updateInternal(const FactorGraphType& newFactors,
       KeyVector(newFactorKeys.begin(), newFactorKeys.end()));
 
   // eliminate all factors (top, added, orphans) into a new Bayes tree
-  auto bayesTree = factors.eliminateMultifrontal(ordering, function, std::cref(index));
+  auto bayesTree = factors.eliminateMultifrontal(ordering, function, index);
 
   // Re-add into Bayes tree data structures
   this->roots_.insert(this->roots_.end(), bayesTree->roots().begin(),

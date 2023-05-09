@@ -26,6 +26,9 @@
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
 #include <gtsam/base/numericalDerivative.h>
 
+#include <boost/bind/bind.hpp>
+#include <boost/optional.hpp>
+
 #include <ostream>
 
 namespace gtsam {
@@ -74,12 +77,12 @@ namespace gtsam {
  *            vehicle
  */
 template<class POSE, class VELOCITY, class IMUBIAS>
-class InertialNavFactor_GlobalVelocity : public NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
+class InertialNavFactor_GlobalVelocity : public NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
 
 private:
 
   typedef InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> This;
-  typedef NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
+  typedef NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
 
   Vector measurement_acc_;
   Vector measurement_gyro_;
@@ -89,15 +92,12 @@ private:
   Vector world_rho_;
   Vector world_omega_earth_;
 
-  std::optional<POSE> body_P_sensor_; // The pose of the sensor in the body frame
+  boost::optional<POSE> body_P_sensor_; // The pose of the sensor in the body frame
 
 public:
 
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
-
   // shorthand for a smart pointer to a factor
-  typedef typename std::shared_ptr<InertialNavFactor_GlobalVelocity> shared_ptr;
+  typedef typename boost::shared_ptr<InertialNavFactor_GlobalVelocity> shared_ptr;
 
   /** default constructor - only use for serialization */
   InertialNavFactor_GlobalVelocity() {}
@@ -105,7 +105,7 @@ public:
   /** Constructor */
   InertialNavFactor_GlobalVelocity(const Key& Pose1, const Key& Vel1, const Key& IMUBias1, const Key& Pose2, const Key& Vel2,
       const Vector& measurement_acc, const Vector& measurement_gyro, const double measurement_dt, const Vector world_g, const Vector world_rho,
-      const Vector& world_omega_earth, const noiseModel::Gaussian::shared_ptr& model_continuous, std::optional<POSE> body_P_sensor = {}) :
+      const Vector& world_omega_earth, const noiseModel::Gaussian::shared_ptr& model_continuous, boost::optional<POSE> body_P_sensor = boost::none) :
         Base(calc_descrete_noise_model(model_continuous, measurement_dt ),
             Pose1, Vel1, IMUBias1, Pose2, Vel2), measurement_acc_(measurement_acc), measurement_gyro_(measurement_gyro),
             dt_(measurement_dt), world_g_(world_g), world_rho_(world_rho), world_omega_earth_(world_omega_earth), body_P_sensor_(body_P_sensor) {  }
@@ -226,8 +226,11 @@ public:
 
   /** implement functions needed to derive from Factor */
   Vector evaluateError(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, const POSE& Pose2, const VELOCITY& Vel2,
-      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3, OptionalMatrixType H4,
-      OptionalMatrixType H5) const override {
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none,
+      boost::optional<Matrix&> H3 = boost::none,
+      boost::optional<Matrix&> H4 = boost::none,
+      boost::optional<Matrix&> H5 = boost::none) const override {
 
     // TODO: Write analytical derivative calculations
     // Jacobian w.r.t. Pose1
@@ -411,7 +414,6 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -419,7 +421,6 @@ private:
     ar & boost::serialization::make_nvp("NonlinearFactor2",
         boost::serialization::base_object<Base>(*this));
   }
-#endif
 
 }; // \class InertialNavFactor_GlobalVelocity
 

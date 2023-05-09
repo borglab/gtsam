@@ -60,14 +60,13 @@ namespace po = boost::program_options;
 
 po::variables_map parseOptions(int argc, char* argv[]) {
   po::options_description desc;
-  desc.add_options()("help,h", "produce help message")  // help message
-      ("data_csv_path", po::value<string>()->default_value("imuAndGPSdata.csv"),
-       "path to the CSV file with the IMU data")  // path to the data file
-      ("output_filename",
-       po::value<string>()->default_value("imuFactorExampleResults.csv"),
-       "path to the result file to use")  // filename to save results to
-      ("use_isam", po::bool_switch(),
-       "use ISAM as the optimizer");  // flag for ISAM optimizer
+  desc.add_options()("help,h", "produce help message")(
+      "data_csv_path", po::value<string>()->default_value("imuAndGPSdata.csv"),
+      "path to the CSV file with the IMU data")(
+      "output_filename",
+      po::value<string>()->default_value("imuFactorExampleResults.csv"),
+      "path to the result file to use")("use_isam", po::bool_switch(),
+                                        "use ISAM as the optimizer");
 
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -95,7 +94,7 @@ Vector10 readInitialState(ifstream& file) {
   return initial_state;
 }
 
-std::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
+boost::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
   // We use the sensor specs to build the noise model for the IMU factor.
   double accel_noise_sigma = 0.0003924;
   double gyro_noise_sigma = 0.000205689024915;
@@ -107,7 +106,7 @@ std::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
       I_3x3 * 1e-8;  // error committed in integrating position from velocities
   Matrix33 bias_acc_cov = I_3x3 * pow(accel_bias_rw_sigma, 2);
   Matrix33 bias_omega_cov = I_3x3 * pow(gyro_bias_rw_sigma, 2);
-  Matrix66 bias_acc_omega_init =
+  Matrix66 bias_acc_omega_int =
       I_6x6 * 1e-5;  // error in the bias used for preintegration
 
   auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(0.0);
@@ -123,7 +122,7 @@ std::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
   // PreintegrationCombinedMeasurements params:
   p->biasAccCovariance = bias_acc_cov;      // acc bias in continuous
   p->biasOmegaCovariance = bias_omega_cov;  // gyro bias in continuous
-  p->biasAccOmegaInt = bias_acc_omega_init;
+  p->biasAccOmegaInt = bias_acc_omega_int;
 
   return p;
 }

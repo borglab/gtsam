@@ -22,6 +22,7 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/numericalDerivative.h>
 
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 

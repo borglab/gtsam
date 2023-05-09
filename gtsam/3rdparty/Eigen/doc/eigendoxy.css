@@ -93,7 +93,7 @@ table th.inter {
 	border-color: #cccccc;
 }
 
-/** class for example / output tables **/
+/** class for exemple / output tables **/
 
 table.example {
 }
@@ -181,18 +181,6 @@ div.toc ul {
 span.cpp11,span.cpp14,span.cpp17 {
   color: #119911;
   font-weight: bold;
-}
-
-.newin3x {
-  color: #a37c1a;
-  font-weight: bold;
-}
-
-div.warningbox {
-  max-width:60em;
-  border-style: solid solid solid solid;
-  border-color: red;
-  border-width: 3px;
 }
 
 /**** old Eigen's styles ****/

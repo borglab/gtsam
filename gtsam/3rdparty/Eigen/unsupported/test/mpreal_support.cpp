@@ -1,4 +1,3 @@
-#include <mpreal.h>  // Must be included before main.h.
 #include "main.h"
 #include <Eigen/MPRealSupport>
 #include <Eigen/LU>
@@ -8,7 +7,7 @@
 using namespace mpfr;
 using namespace Eigen;
 
-EIGEN_DECLARE_TEST(mpreal_support)
+void test_mpreal_support()
 {
   // set precision to 256 bits (double has only 53 bits)
   mpreal::set_default_prec(256);

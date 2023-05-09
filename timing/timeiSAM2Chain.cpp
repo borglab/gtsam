@@ -36,8 +36,8 @@ using namespace gtsam::symbol_shorthand;
 
 typedef Pose2 Pose;
 
-typedef NoiseModelFactorN<Pose> NM1;
-typedef NoiseModelFactorN<Pose,Pose> NM2;
+typedef NoiseModelFactor1<Pose> NM1;
+typedef NoiseModelFactor2<Pose,Pose> NM2;
 noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(3);
 
 int main(int argc, char *argv[]) {

@@ -21,6 +21,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 #include <iostream>
@@ -45,7 +46,7 @@ TEST( simulated3D, Values )
 TEST( simulated3D, Dprior )
 {
   Point3 x(1,-9, 7);
-  Matrix numerical = numericalDerivative11<Point3, Point3>(std::bind(simulated3D::prior, std::placeholders::_1, nullptr),x);
+  Matrix numerical = numericalDerivative11<Point3, Point3>(std::bind(simulated3D::prior, std::placeholders::_1, boost::none),x);
   Matrix computed;
   simulated3D::prior(x,computed);
   EXPECT(assert_equal(numerical,computed,1e-9));
@@ -59,12 +60,12 @@ TEST( simulated3D, DOdo )
   simulated3D::odo(x1, x2, H1, H2);
   Matrix A1 = numericalDerivative21<Point3, Point3, Point3>(
       std::bind(simulated3D::odo, std::placeholders::_1, std::placeholders::_2,
-                nullptr, nullptr),
+                boost::none, boost::none),
       x1, x2);
   EXPECT(assert_equal(A1, H1, 1e-9));
   Matrix A2 = numericalDerivative22<Point3, Point3, Point3>(
       std::bind(simulated3D::odo, std::placeholders::_1, std::placeholders::_2,
-                nullptr, nullptr),
+                boost::none, boost::none),
       x1, x2);
   EXPECT(assert_equal(A2, H2, 1e-9));
 }

@@ -44,7 +44,7 @@ struct TestFunc1
   int m_inputs, m_values;
 
   TestFunc1() : m_inputs(InputsAtCompileTime), m_values(ValuesAtCompileTime) {}
-  TestFunc1(int inputs_, int values_) : m_inputs(inputs_), m_values(values_) {}
+  TestFunc1(int inputs, int values) : m_inputs(inputs), m_values(values) {}
 
   int inputs() const { return m_inputs; }
   int values() const { return m_values; }
@@ -352,24 +352,9 @@ double bug_1264() {
   return v2(0).value();
 }
 
-// check with expressions on constants
-double bug_1281() {
-  int n = 2;
-  typedef AutoDiffScalar<VectorXd> AD;
-  const AD c = 1.;
-  AD x0(2,n,0);
-  AD y1 = (AD(c)+AD(c))*x0;
-  y1 = x0 * (AD(c)+AD(c));
-  AD y2 = (-AD(c))+x0;
-  y2 = x0+(-AD(c));
-  AD y3 = (AD(c)*(-AD(c))+AD(c))*x0;
-  y3 = x0 * (AD(c)*(-AD(c))+AD(c));
-  return (y1+y2+y3).value();
-}
-
 #endif
 
-EIGEN_DECLARE_TEST(autodiff)
+void test_autodiff()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( test_autodiff_scalar<1>() );
@@ -382,6 +367,5 @@ EIGEN_DECLARE_TEST(autodiff)
   CALL_SUBTEST_5( bug_1223() );
   CALL_SUBTEST_5( bug_1260() );
   CALL_SUBTEST_5( bug_1261() );
-  CALL_SUBTEST_5( bug_1281() );
 }
 

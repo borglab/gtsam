@@ -1,12 +1,12 @@
 from __future__ import print_function
-
-import math
-from math import pi
 from typing import Tuple
 
-import gtsam
+import math
 import numpy as np
-from gtsam import Cal3_S2, PinholeCameraCal3_S2, Point3, Pose3
+from math import pi
+
+import gtsam
+from gtsam import Point3, Pose3, PinholeCameraCal3_S2, Cal3_S2
 
 
 class Options:
@@ -36,7 +36,7 @@ class GroundTruth:
         self.cameras = [Pose3()] * nrCameras
         self.points = [Point3(0, 0, 0)] * nrPoints
 
-    def print(self, s: str = "") -> None:
+    def print_(self, s="") -> None:
         print(s)
         print("K = ", self.K)
         print("Cameras: ", len(self.cameras))
@@ -88,8 +88,7 @@ def generate_data(options) -> Tuple[Data, GroundTruth]:
         r = 10
         for j in range(len(truth.points)):
             theta = j * 2 * pi / nrPoints
-            truth.points[j] = Point3(
-                r * math.cos(theta), r * math.sin(theta), 0)
+            truth.points[j] = Point3(r * math.cos(theta), r * math.sin(theta), 0)
     else:  # 3D landmarks as vertices of a cube
         truth.points = [
             Point3(10, 10, 10), Point3(-10, 10, 10),

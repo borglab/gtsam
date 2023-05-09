@@ -9,7 +9,7 @@
 #pragma once
 
 #include <vector>
-#include <memory>
+#include <boost/shared_ptr.hpp>
 
 namespace gtsam { namespace partition {
 
@@ -18,7 +18,7 @@ namespace gtsam { namespace partition {
   // the work space, preallocated memory
   struct WorkSpace {
     std::vector<int> dictionary;                          // a mapping from the integer key in the original graph to 0-based index in the subgraph, useful when handling a subset of keys and graphs
-    std::shared_ptr<std::vector<size_t> > dsf;          // a block memory pre-allocated for DSFVector
+    boost::shared_ptr<std::vector<size_t> > dsf;          // a block memory pre-allocated for DSFVector
     PartitionTable partitionTable;                        // a mapping from a key to the submap index, 0 means the separator, i means the ith submap
 
     // constructor
@@ -38,7 +38,7 @@ namespace gtsam { namespace partition {
   // manually defined cuts
   struct Cuts {
     PartitionTable partitionTable;
-    std::vector<std::shared_ptr<Cuts> > children;
+    std::vector<boost::shared_ptr<Cuts> > children;
   };
 
 }} // namespace

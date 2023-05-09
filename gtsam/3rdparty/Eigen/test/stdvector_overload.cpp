@@ -28,10 +28,10 @@ EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Quaterniond)
 template<typename MatrixType>
 void check_stdvector_matrix(const MatrixType& m)
 {
-  Index rows = m.rows();
-  Index cols = m.cols();
+  typename MatrixType::Index rows = m.rows();
+  typename MatrixType::Index cols = m.cols();
   MatrixType x = MatrixType::Random(rows,cols), y = MatrixType::Random(rows,cols);
-  std::vector<MatrixType> v(10, MatrixType::Zero(rows,cols)), w(20, y);
+  std::vector<MatrixType> v(10, MatrixType(rows,cols)), w(20, y);
   v[5] = x;
   w[6] = v[5];
   VERIFY_IS_APPROX(w[6], v[5]);
@@ -100,8 +100,8 @@ template<typename QuaternionType>
 void check_stdvector_quaternion(const QuaternionType&)
 {
   typedef typename QuaternionType::Coefficients Coefficients;
-  QuaternionType x(Coefficients::Random()), y(Coefficients::Random()), qi=QuaternionType::Identity();
-  std::vector<QuaternionType> v(10,qi), w(20, y);
+  QuaternionType x(Coefficients::Random()), y(Coefficients::Random());
+  std::vector<QuaternionType> v(10), w(20, y);
   v[5] = x;
   w[6] = v[5];
   VERIFY_IS_APPROX(w[6], v[5]);
@@ -131,7 +131,7 @@ void check_stdvector_quaternion(const QuaternionType&)
   }
 }
 
-EIGEN_DECLARE_TEST(stdvector_overload)
+void test_stdvector_overload()
 {
   // some non vectorizable fixed sizes
   CALL_SUBTEST_1(check_stdvector_matrix(Vector2f()));

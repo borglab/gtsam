@@ -57,14 +57,7 @@ template<typename MatrixType> void array_for_matrix(const MatrixType& m)
   VERIFY_IS_APPROX(m3.rowwise() -= rv1, m1.rowwise() - rv1);
   
   // empty objects
-  VERIFY_IS_APPROX((m1.template block<0,Dynamic>(0,0,0,cols).colwise().sum()), RowVectorType::Zero(cols));
-  VERIFY_IS_APPROX((m1.template block<Dynamic,0>(0,0,rows,0).rowwise().sum()), ColVectorType::Zero(rows));
-  VERIFY_IS_APPROX((m1.template block<0,Dynamic>(0,0,0,cols).colwise().prod()), RowVectorType::Ones(cols));
-  VERIFY_IS_APPROX((m1.template block<Dynamic,0>(0,0,rows,0).rowwise().prod()), ColVectorType::Ones(rows));
-
-  VERIFY_IS_APPROX(m1.block(0,0,0,cols).colwise().sum(), RowVectorType::Zero(cols));
-  VERIFY_IS_APPROX(m1.block(0,0,rows,0).rowwise().sum(), ColVectorType::Zero(rows));
-  VERIFY_IS_APPROX(m1.block(0,0,0,cols).colwise().prod(), RowVectorType::Ones(cols));
+  VERIFY_IS_APPROX(m1.block(0,0,0,cols).colwise().sum(),  RowVectorType::Zero(cols));
   VERIFY_IS_APPROX(m1.block(0,0,rows,0).rowwise().prod(), ColVectorType::Ones(rows));
   
   // verify the const accessors exist
@@ -145,7 +138,7 @@ template<typename MatrixType> void comparisons(const MatrixType& m)
   RealScalar a = m1.cwiseAbs().mean();
   VERIFY( ((m1.array()<-a).matrix() || (m1.array()>a).matrix()).count() == (m1.cwiseAbs().array()>a).count());
 
-  typedef Matrix<Index, Dynamic, 1> VectorOfIndices;
+  typedef Matrix<typename MatrixType::Index, Dynamic, 1> VectorOfIndices;
 
   // TODO allows colwise/rowwise for array
   VERIFY_IS_APPROX(((m1.array().abs()+1)>RealScalar(0.1)).matrix().colwise().count(), VectorOfIndices::Constant(cols,rows).transpose());
@@ -263,7 +256,7 @@ void regrrssion_bug_1410()
   VERIFY((internal::traits<MatrixWrapper<Array4i> >::Flags&LvalueBit)==LvalueBit);
 }
 
-EIGEN_DECLARE_TEST(array_for_matrix)
+void test_array_for_matrix()
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( array_for_matrix(Matrix<float, 1, 1>()) );

@@ -39,7 +39,7 @@ enum GncLossType {
 };
 
 template<class BaseOptimizerParameters>
-class GncParams {
+class GTSAM_EXPORT GncParams {
  public:
   /// For each parameter, specify the corresponding optimizer: e.g., GaussNewtonParams -> GaussNewtonOptimizer.
   typedef typename BaseOptimizerParameters::OptimizerType OptimizerType;
@@ -48,8 +48,6 @@ class GncParams {
   enum Verbosity {
     SILENT = 0,
     SUMMARY,
-    MU,
-    WEIGHTS,
     VALUES
   };
 
@@ -72,14 +70,8 @@ class GncParams {
   double relativeCostTol = 1e-5;  ///< If relative cost change is below this threshold, stop iterating
   double weightsTol = 1e-4;  ///< If the weights are within weightsTol from being binary, stop iterating (only for TLS)
   Verbosity verbosity = SILENT;  ///< Verbosity level
-
-  //TODO(Varun) replace IndexVector with vector<size_t> once pybind11/stl.h is globally enabled.
-  /// Use IndexVector for inliers and outliers since it is fast + wrapping
-  using IndexVector = FastVector<uint64_t>;
-  ///< Slots in the factor graph corresponding to measurements that we know are inliers
-  IndexVector knownInliers = IndexVector();
-  ///< Slots in the factor graph corresponding to measurements that we know are outliers
-  IndexVector knownOutliers = IndexVector();
+  std::vector<size_t> knownInliers = std::vector<size_t>();  ///< Slots in the factor graph corresponding to measurements that we know are inliers
+  std::vector<size_t> knownOutliers = std::vector<size_t>();  ///< Slots in the factor graph corresponding to measurements that we know are outliers
 
   /// Set the robust loss function to be used in GNC (chosen among the ones in GncLossType).
   void setLossType(const GncLossType type) {
@@ -120,7 +112,7 @@ class GncParams {
    * This functionality is commonly used in SLAM when one may assume the odometry is outlier free, and
    * only apply GNC to prune outliers from the loop closures.
    * */
-  void setKnownInliers(const IndexVector& knownIn) {
+  void setKnownInliers(const std::vector<size_t>& knownIn) {
     for (size_t i = 0; i < knownIn.size(); i++){
       knownInliers.push_back(knownIn[i]);
     }
@@ -131,7 +123,7 @@ class GncParams {
    * corresponds to the slots in the factor graph. For instance, if you have a nonlinear factor graph nfg,
    * and you provide  knownOut = {0, 2, 15}, GNC will not apply outlier rejection to nfg[0], nfg[2], and nfg[15].
    * */
-  void setKnownOutliers(const IndexVector& knownOut) {
+  void setKnownOutliers(const std::vector<size_t>& knownOut) {
     for (size_t i = 0; i < knownOut.size(); i++){
       knownOutliers.push_back(knownOut[i]);
     }
@@ -169,7 +161,7 @@ class GncParams {
       std::cout << "knownInliers: " << knownInliers[i] << "\n";
     for (size_t i = 0; i < knownOutliers.size(); i++)
       std::cout << "knownOutliers: " << knownOutliers[i] << "\n";
-    baseOptimizerParams.print("Base optimizer params: ");
+    baseOptimizerParams.print(str);
   }
 };
 

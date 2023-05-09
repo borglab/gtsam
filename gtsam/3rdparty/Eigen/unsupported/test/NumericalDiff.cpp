@@ -24,7 +24,7 @@ struct Functor
   int m_inputs, m_values;
   
   Functor() : m_inputs(InputsAtCompileTime), m_values(ValuesAtCompileTime) {}
-  Functor(int inputs_, int values_) : m_inputs(inputs_), m_values(values_) {}
+  Functor(int inputs, int values) : m_inputs(inputs), m_values(values) {}
   
   int inputs() const { return m_inputs; }
   int values() const { return m_values; }
@@ -107,7 +107,7 @@ void test_central()
     VERIFY_IS_APPROX(jac, actual_jac);
 }
 
-EIGEN_DECLARE_TEST(NumericalDiff)
+void test_NumericalDiff()
 {
     CALL_SUBTEST(test_forward());
     CALL_SUBTEST(test_central());
