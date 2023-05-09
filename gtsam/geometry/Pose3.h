@@ -126,10 +126,7 @@ public:
    * @param T End point of interpolation.
    * @param t A value in [0, 1].
    */
-  Pose3 interpolateRt(const Pose3& T, double t) const {
-    return Pose3(interpolate<Rot3>(R_, T.R_, t),
-                 interpolate<Point3>(t_, T.t_, t));
-  }
+  Pose3 interpolateRt(const Pose3& T, double t) const;
 
   /// @}
   /// @name Lie Group

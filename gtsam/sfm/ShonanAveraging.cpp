@@ -207,9 +207,9 @@ Matrix ShonanAveraging<d>::StiefelElementMatrix(const Values &values) {
   const size_t N = values.size();
   const size_t p = values.at<SOn>(0).rows();
   Matrix S(p, N * d);
-  for (const auto it : values.filter<SOn>()) {
-    S.middleCols<d>(it.key * d) =
-        it.value.matrix().leftCols<d>();  // project Qj to Stiefel
+  for (const auto& it : values.extract<SOn>()) {
+    S.middleCols<d>(it.first * d) =
+        it.second.matrix().leftCols<d>();  // project Qj to Stiefel
   }
   return S;
 }
@@ -218,11 +218,11 @@ Matrix ShonanAveraging<d>::StiefelElementMatrix(const Values &values) {
 template <>
 Values ShonanAveraging<2>::projectFrom(size_t p, const Values &values) const {
   Values result;
-  for (const auto it : values.filter<SOn>()) {
-    assert(it.value.rows() == p);
-    const auto &M = it.value.matrix();
+  for (const auto& it : values.extract<SOn>()) {
+    assert(it.second.rows() == p);
+    const auto &M = it.second.matrix();
     const Rot2 R = Rot2::atan2(M(1, 0), M(0, 0));
-    result.insert(it.key, R);
+    result.insert(it.first, R);
   }
   return result;
 }
@@ -230,11 +230,11 @@ Values ShonanAveraging<2>::projectFrom(size_t p, const Values &values) const {
 template <>
 Values ShonanAveraging<3>::projectFrom(size_t p, const Values &values) const {
   Values result;
-  for (const auto it : values.filter<SOn>()) {
-    assert(it.value.rows() == p);
-    const auto &M = it.value.matrix();
+  for (const auto& it : values.extract<SOn>()) {
+    assert(it.second.rows() == p);
+    const auto &M = it.second.matrix();
     const Rot3 R = Rot3::ClosestTo(M.topLeftCorner<3, 3>());
-    result.insert(it.key, R);
+    result.insert(it.first, R);
   }
   return result;
 }
@@ -326,8 +326,8 @@ double ShonanAveraging<d>::cost(const Values &values) const {
   }
   // Finally, project each dxd rotation block to SO(d)
   Values result;
-  for (const auto it : values.filter<Rot>()) {
-    result.insert(it.key, SO<d>(it.value.matrix()));
+  for (const auto& it : values.extract<Rot>()) {
+    result.insert(it.first, SO<d>(it.second.matrix()));
   }
   return graph.error(result);
 }

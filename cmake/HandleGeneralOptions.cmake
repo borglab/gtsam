@@ -25,7 +25,7 @@ option(GTSAM_WITH_EIGEN_MKL_OPENMP          "Eigen, when using Intel MKL, will a
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION     "Throw exception when a triangulated point is behind a camera" ON)
 option(GTSAM_BUILD_PYTHON                   "Enable/Disable building & installation of Python module with pybind11" OFF)
 option(GTSAM_INSTALL_MATLAB_TOOLBOX         "Enable/Disable installation of matlab toolbox"  OFF)
-option(GTSAM_ALLOW_DEPRECATED_SINCE_V41     "Allow use of methods/functions deprecated in GTSAM 4.1" ON)
+option(GTSAM_ALLOW_DEPRECATED_SINCE_V42     "Allow use of methods/functions deprecated in GTSAM 4.2" ON)
 option(GTSAM_SUPPORT_NESTED_DISSECTION      "Support Metis-based nested dissection" ON)
 option(GTSAM_TANGENT_PREINTEGRATION         "Use new ImuFactor with integration on tangent space" ON)
 option(GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR "Use the slower but correct version of BetweenFactor" OFF)

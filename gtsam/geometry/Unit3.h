@@ -66,21 +66,14 @@ public:
   }
 
   /// Construct from point
-  explicit Unit3(const Vector3& p) :
-      p_(p.normalized()) {
-  }
+  explicit Unit3(const Vector3& p);
 
   /// Construct from x,y,z
-  Unit3(double x, double y, double z) :
-      p_(x, y, z) {
-    p_.normalize();
-  }
+  Unit3(double x, double y, double z);
 
   /// Construct from 2D point in plane at focal length f
   /// Unit3(p,1) can be viewed as normalized homogeneous coordinates of 2D point
-  explicit Unit3(const Point2& p, double f) : p_(p.x(), p.y(), f) {
-    p_.normalize();
-  }
+  explicit Unit3(const Point2& p, double f);
 
   /// Copy constructor
   Unit3(const Unit3& u) {

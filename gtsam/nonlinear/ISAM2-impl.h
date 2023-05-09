@@ -436,36 +436,6 @@ struct GTSAM_EXPORT UpdateImpl {
     }
   }
 
-  /**
-   * Apply expmap to the given values, but only for indices appearing in
-   * \c mask.  Values are expmapped in-place.
-   * \param mask Mask on linear indices, only \c true entries are expmapped
-   */
-  static void ExpmapMasked(const VectorValues& delta, const KeySet& mask,
-                           Values* theta) {
-    gttic(ExpmapMasked);
-    assert(theta->size() == delta.size());
-    Values::iterator key_value;
-    VectorValues::const_iterator key_delta;
-#ifdef GTSAM_USE_TBB
-    for (key_value = theta->begin(); key_value != theta->end(); ++key_value) {
-      key_delta = delta.find(key_value->key);
-#else
-    for (key_value = theta->begin(), key_delta = delta.begin();
-         key_value != theta->end(); ++key_value, ++key_delta) {
-      assert(key_value->key == key_delta->first);
-#endif
-      Key var = key_value->key;
-      assert(static_cast<size_t>(delta[var].size()) == key_value->value.dim());
-      assert(delta[var].allFinite());
-      if (mask.exists(var)) {
-        Value* retracted = key_value->value.retract_(delta[var]);
-        key_value->value = *retracted;
-        retracted->deallocate_();
-      }
-    }
-  }
-
   // Linearize new factors
   void linearizeNewFactors(const NonlinearFactorGraph& newFactors,
                            const Values& theta, size_t numNonlinearFactors,

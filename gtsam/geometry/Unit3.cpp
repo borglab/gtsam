@@ -33,6 +33,14 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
+Unit3::Unit3(const Vector3& p) : p_(p.normalized()) {}
+
+Unit3::Unit3(double x, double y, double z) : p_(x, y, z) { p_.normalize(); }
+
+Unit3::Unit3(const Point2& p, double f) : p_(p.x(), p.y(), f) {
+  p_.normalize();
+}
+/* ************************************************************************* */
 Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2, 3> H) {
   // 3*3 Derivative of representation with respect to point is 3*3:
   Matrix3 D_p_point;
