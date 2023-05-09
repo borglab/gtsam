@@ -264,6 +264,19 @@ namespace gtsam {
     /** update the current available values without adding new ones */
     void update(const Values& values);
 
+    /// If key j exists, update value, else perform an insert.
+    void insert_or_assign(Key j, const Value& val);
+
+    /**
+     * Update a set of variables.
+     * If any variable key doe not exist, then perform an insert.
+     */
+    void insert_or_assign(const Values& values);
+
+    /// Templated version to insert_or_assign a variable with the given j.
+    template <typename ValueType>
+    void insert_or_assign(Key j, const ValueType& val);
+
     /** Remove a variable from the config, throws KeyDoesNotExist<J> if j is not present */
     void erase(Key j);
 
@@ -309,13 +322,13 @@ namespace gtsam {
 
     /**
      * Extract a subset of values of the given type \c ValueType.
-     * 
+     *
      * In this templated version, only key-value pairs whose value matches the
      * template argument \c ValueType and whose key causes the function argument
      * \c filterFcn to return true are visited when iterating over the filtered
      * view. This replaces the fancier but very boost-dependent \c filter methods
      * that were previously available up to GTSAM 4.2.
-     * 
+     *
      * @tparam ValueType The type that the value in a key-value pair must match
      * to be included in the filtered view.  Currently, base classes are not
      * resolved so the type must match exactly, except if ValueType = Value, in
