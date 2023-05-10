@@ -168,7 +168,7 @@ class IncompleteGamma {
    * @brief Reverse continued fraction expansion
    * See: https://functions.wolfram.com/GammaBetaErf/Gamma2/10/0003/
    *
-   * @param a
+   * @param a Degrees of freedom
    * @param z
    * @param depth
    * @return constexpr T
@@ -186,7 +186,7 @@ class IncompleteGamma {
   /**
    * @brief Lower (regularized) incomplete gamma function
    *
-   * @param a
+   * @param a Degrees of freedom
    * @param z
    * @return constexpr T
    */
@@ -198,7 +198,7 @@ class IncompleteGamma {
    * @brief Continued fraction expansion of Gamma function
    * See: http://functions.wolfram.com/GammaBetaErf/Gamma2/10/0009/
    *
-   * @param a
+   * @param a Degrees of freedom
    * @param z
    * @param depth
    * @return constexpr T
@@ -217,7 +217,7 @@ class IncompleteGamma {
   /**
    * @brief Lower (regularized) incomplete gamma function
    *
-   * @param a
+   * @param a Degrees of freedom
    * @param z
    * @return constexpr T
    */
@@ -229,7 +229,7 @@ class IncompleteGamma {
   /**
    * @brief Compute the CDF for the Gamma distribution.
    *
-   * @param a
+   * @param a Degrees of freedom
    * @param z
    * @return constexpr T
    */
@@ -287,7 +287,7 @@ class IncompleteGammaInverse {
    * @brief Compute an initial value for the inverse gamma function which is
    * then iteratively updated.
    *
-   * @param a
+   * @param a Degrees of freedom
    * @param p
    * @return constexpr T
    */
@@ -322,7 +322,7 @@ class IncompleteGammaInverse {
    * @brief Compute the error value `f(x)` which we can use for root-finding.
    *
    * @param value
-   * @param a
+   * @param a Degrees of freedom
    * @param p
    * @return constexpr T
    */
@@ -334,12 +334,12 @@ class IncompleteGammaInverse {
    * @brief Derivative of the incomplete gamma function w.r.t. value
    *
    * @param value
-   * @param a
+   * @param a Degrees of freedom
    * @param log_val
    * @return constexpr T
    */
-  static constexpr T derivative(const T value, const T a,
-                                const T lg_val) noexcept {
+  static constexpr T first_derivative(const T value, const T a,
+                                      const T lg_val) noexcept {
     return (exp(-value + (a - T(1)) * log(value) - lg_val));
   }
 
@@ -347,7 +347,7 @@ class IncompleteGammaInverse {
    * @brief Second derivative of the incomplete gamma function w.r.t. value
    *
    * @param value
-   * @param a
+   * @param a Degrees of freedom
    * @param derivative
    * @return constexpr T
    */
@@ -361,7 +361,7 @@ class IncompleteGammaInverse {
    * of the update denominator.
    *
    * @param value
-   * @param a
+   * @param a Degrees of freedom
    * @param p
    * @param derivative
    * @return constexpr T
@@ -376,7 +376,7 @@ class IncompleteGammaInverse {
    * of the update denominator.
    *
    * @param value
-   * @param a
+   * @param a Degrees of freedom
    * @param derivative
    * @return constexpr T
    */
@@ -386,7 +386,7 @@ class IncompleteGammaInverse {
   }
 
   /**
-   * @brief Halley's method update step
+   * @brief Halley's method update delta
    *
    * @param ratio_val_1
    * @param ratio_val_2
@@ -397,60 +397,37 @@ class IncompleteGammaInverse {
             std::max(T(0.8), std::min(T(1.2), T(1) - T(0.5) * ratio_val_1 *
                                                          ratio_val_2)));
   }
+
   /**
-   * @brief Recursive method for computing the iterative solution for the
+   * @brief Compute the iterative solution for the
    * incomplete inverse gamma function.
    *
-   * @param value
-   * @param a
-   * @param p
-   * @param derivative
-   * @param lg_val
-   * @param iter_count
-   * @return constexpr T
-   */
-  static constexpr T recurse(const T value, const T a, const T p,
-                             const T derivative, const T lg_val,
-                             const int iter_count) noexcept {
-    return decision(value, a, p,
-                    halley(ratio_val_1(value, a, p, derivative),
-                           ratio_val_2(value, a, derivative)),
-                    lg_val, iter_count);
-  }
-
-  static constexpr T decision(const T value, const T a, const T p,
-                              const T direc, const T lg_val,
-                              const int iter_count) noexcept {
-    const int GAMMA_INV_MAX_ITER = 35;
-    if (iter_count <= GAMMA_INV_MAX_ITER) {
-      return recurse(value - direc, a, p, derivative(value, a, lg_val), lg_val,
-                     iter_count + 1);
-    } else {
-      return value - direc;
-    }
-  }
-
-  /**
-   * @brief Start point for numerical computation of the incomplete gamma
-   * inverse funtion.
-   *
    * @param initial_val Initial value guess
-   * @param a
+   * @param a Degrees of freedom
    * @param p
    * @param lg_val
    * @return constexpr T
    */
-  static constexpr T begin(const T initial_val, const T a, const T p,
-                           const T lg_val) noexcept {
-    return recurse(initial_val, a, p, derivative(initial_val, a, lg_val),
-                   lg_val, 1);
+  static constexpr T find_root(const T initial_val, const T a, const T p,
+                               const T lg_val) noexcept {
+    const int GAMMA_INV_MAX_ITER = 35;
+    T x = initial_val;
+    T derivative = first_derivative(initial_val, a, lg_val);
+    for (size_t counter = 1; counter <= GAMMA_INV_MAX_ITER; counter++) {
+      T direc = halley(ratio_val_1(x, a, p, derivative),
+                       ratio_val_2(x, a, derivative));
+      derivative = first_derivative(x, a, lg_val);
+      x = x - direc;
+    }
+    return x - halley(ratio_val_1(x, a, p, derivative),
+                      ratio_val_2(x, a, derivative));
   }
 
  public:
   /**
    * @brief Compute the percent point function for the Gamma distribution.
    *
-   * @param a
+   * @param a Degrees of freedom
    * @param p
    * @return constexpr T
    */
@@ -467,7 +444,7 @@ class IncompleteGammaInverse {
     } else if (LIM<T>::min() > a) {  // Check lower bound for degrees of freedom
       return T(0);
     } else {
-      return begin(initial_val(a, p), a, p, lgamma(a));
+      return find_root(initial_val(a, p), a, p, lgamma(a));
     }
   }
 };
