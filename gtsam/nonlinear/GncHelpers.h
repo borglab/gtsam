@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 
 namespace gtsam {
 
@@ -105,13 +106,14 @@ namespace internal {
 
 template <typename T>
 class IncompleteGamma {
-  /// 50 point Gauss-Legendre quadrature
+  /// 50 point Gauss-Legendre quadrature values
   static constexpr T quadrature_inp_vals(const T lb, const T ub,
                                          const int counter) noexcept {
     return (ub - lb) * gauss_legendre_50_points[counter] / T(2) +
            (ub + lb) / T(2);
   }
 
+  /// 50 point Gauss-Legendre quadrature weights
   static constexpr T quadrature_weight_vals(const T lb, const T ub,
                                             const int counter) noexcept {
     return (ub - lb) * gauss_legendre_50_weights[counter] / T(2);
@@ -120,19 +122,6 @@ class IncompleteGamma {
   static constexpr T quadrature_fn(const T x, const T a,
                                    const T lg_term) noexcept {
     return exp(-x + (a - T(1)) * log(x) - lg_term);
-  }
-
-  static constexpr T quadrature_recur(const T lb, const T ub, const T a,
-                                      const T lg_term,
-                                      const int counter) noexcept {
-    if (counter < 49) {
-      return quadrature_fn(quadrature_inp_vals(lb, ub, counter), a, lg_term) *
-                 quadrature_weight_vals(lb, ub, counter) +
-             quadrature_recur(lb, ub, a, lg_term, counter + 1);
-    } else {
-      return quadrature_fn(quadrature_inp_vals(lb, ub, counter), a, lg_term) *
-             quadrature_weight_vals(lb, ub, counter);
-    }
   }
 
   static constexpr T quadrature_lb(const T a, const T z) noexcept {
@@ -163,12 +152,27 @@ class IncompleteGamma {
   }
 
   static constexpr T quadrature(const T a, const T z) noexcept {
-    return quadrature_recur(quadrature_lb(a, z), quadrature_ub(a, z), a,
-                            lgamma(a), 0);
+    T lb = quadrature_lb(a, z);
+    T ub = quadrature_ub(a, z);
+    T lg_term = lgamma(a);
+    T value = quadrature_fn(quadrature_inp_vals(lb, ub, 49), a, lg_term) *
+              quadrature_weight_vals(lb, ub, 49);
+    for (size_t counter = 48; counter >= 0; counter--) {
+      value += quadrature_fn(quadrature_inp_vals(lb, ub, counter), a, lg_term) *
+               quadrature_weight_vals(lb, ub, counter);
+    }
+    return value;
   }
 
-  // reverse cf expansion
-  // see: https://functions.wolfram.com/GammaBetaErf/Gamma2/10/0003/
+  /**
+   * @brief Reverse continued fraction expansion
+   * See: https://functions.wolfram.com/GammaBetaErf/Gamma2/10/0003/
+   *
+   * @param a
+   * @param z
+   * @param depth
+   * @return constexpr T
+   */
   static constexpr T cf_2_recur(const T a, const T z,
                                 const int depth) noexcept {
     if (depth < 100) {
@@ -186,22 +190,25 @@ class IncompleteGamma {
    * @param z
    * @return constexpr T
    */
-  static constexpr T cf_2(const T a, const T z) noexcept {
+  static constexpr T continued_fraction_2(const T a, const T z) noexcept {
     return T(1.0) - exp(a * log(z) - z - lgamma(a)) / cf_2_recur(a, z, 1);
   }
 
-  // continued fraction expansion
-  // see: http://functions.wolfram.com/GammaBetaErf/Gamma2/10/0009/
-  static constexpr T cf_1_coef(const T a, const T z, const int depth) noexcept {
-    return (is_odd(depth) ? -(a - 1 + T(depth + 1) / T(2)) * z
-                          : T(depth) / T(2) * z);
-  }
-
+  /**
+   * @brief Continued fraction expansion of Gamma function
+   * See: http://functions.wolfram.com/GammaBetaErf/Gamma2/10/0009/
+   *
+   * @param a
+   * @param z
+   * @param depth
+   * @return constexpr T
+   */
   static constexpr T cf_1_recur(const T a, const T z,
                                 const int depth) noexcept {
     if (depth < 55) {
-      return (a + depth - 1) +
-             cf_1_coef(a, z, depth) / cf_1_recur(a, z, depth + 1);
+      T cf_coef = is_odd(depth) ? -(a - 1 + T(depth + 1) / T(2)) * z
+                                : T(depth) / T(2) * z;
+      return (a + depth - 1) + cf_coef / cf_1_recur(a, z, depth + 1);
     } else {
       return (a + depth - 1);
     }
@@ -214,7 +221,7 @@ class IncompleteGamma {
    * @param z
    * @return constexpr T
    */
-  static constexpr T cf_1(const T a, const T z) noexcept {
+  static constexpr T continued_fraction_1(const T a, const T z) noexcept {
     return exp(a * log(z) - z - lgamma(a)) / cf_1_recur(a, z, 1);
   }
 
@@ -236,9 +243,9 @@ class IncompleteGamma {
     } else if (LIM<T>::min() > a) {
       return T(1);
     } else if (a < T(10) && z - a < T(10)) {
-      return cf_1(a, z);
+      return continued_fraction_1(a, z);
     } else if (a < T(10) || z / a > T(3)) {
-      return cf_2(a, z);
+      return continued_fraction_2(a, z);
     } else {
       return quadrature(a, z);
     }
