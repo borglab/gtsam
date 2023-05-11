@@ -18,7 +18,6 @@
 #pragma once
 
 #include <algorithm>
-#include <iostream>
 
 namespace gtsam {
 
@@ -103,153 +102,154 @@ static const long double gauss_legendre_50_weights[50] = {
 
 namespace internal {
 
+/// 50 point Gauss-Legendre quadrature
 template <typename T>
-class IncompleteGamma {
-  /// 50 point Gauss-Legendre quadrature values
-  static constexpr T quadrature_inp_vals(const T lb, const T ub,
-                                         const int counter) noexcept {
-    return (ub - lb) * gauss_legendre_50_points[counter] / T(2) +
-           (ub + lb) / T(2);
-  }
+constexpr T incomplete_gamma_quad_inp_vals(const T lb, const T ub,
+                                           const int counter) noexcept {
+  return (ub - lb) * gauss_legendre_50_points[counter] / T(2) +
+         (ub + lb) / T(2);
+}
 
-  /// 50 point Gauss-Legendre quadrature weights
-  static constexpr T quadrature_weight_vals(const T lb, const T ub,
-                                            const int counter) noexcept {
-    return (ub - lb) * gauss_legendre_50_weights[counter] / T(2);
-  }
+template <typename T>
+constexpr T incomplete_gamma_quad_weight_vals(const T lb, const T ub,
+                                              const int counter) noexcept {
+  return (ub - lb) * gauss_legendre_50_weights[counter] / T(2);
+}
 
-  static constexpr T quadrature_fn(const T x, const T a,
-                                   const T lg_term) noexcept {
-    return exp(-x + (a - T(1)) * log(x) - lg_term);
-  }
+template <typename T>
+constexpr T incomplete_gamma_quad_fn(const T x, const T a,
+                                     const T lg_term) noexcept {
+  return exp(-x + (a - T(1)) * log(x) - lg_term);
+}
 
-  static constexpr T quadrature_lb(const T a, const T z) noexcept {
-    // break integration into ranges
-    return a > T(1000)  ? std::max(T(0), std::min(z, a) - 11 * sqrt(a))
-           : a > T(800) ? std::max(T(0), std::min(z, a) - 11 * sqrt(a))
-           : a > T(500) ? std::max(T(0), std::min(z, a) - 10 * sqrt(a))
-           : a > T(300) ? std::max(T(0), std::min(z, a) - 10 * sqrt(a))
-           : a > T(100) ? std::max(T(0), std::min(z, a) - 9 * sqrt(a))
-           : a > T(90)  ? std::max(T(0), std::min(z, a) - 9 * sqrt(a))
-           : a > T(70)  ? std::max(T(0), std::min(z, a) - 8 * sqrt(a))
-           : a > T(50)  ? std::max(T(0), std::min(z, a) - 7 * sqrt(a))
-           : a > T(40)  ? std::max(T(0), std::min(z, a) - 6 * sqrt(a))
-           : a > T(30)  ? std::max(T(0), std::min(z, a) - 5 * sqrt(a))
-                        : std::max(T(0), std::min(z, a) - 4 * sqrt(a));
-  }
+template <typename T>
+constexpr T incomplete_gamma_quad_recur(const T lb, const T ub, const T a,
+                                        const T lg_term,
+                                        const int counter) noexcept {
+  return (counter < 49 ?  // if
+              incomplete_gamma_quad_fn(
+                  incomplete_gamma_quad_inp_vals(lb, ub, counter), a, lg_term) *
+                      incomplete_gamma_quad_weight_vals(lb, ub, counter) +
+                  incomplete_gamma_quad_recur(lb, ub, a, lg_term, counter + 1)
+                       :
+                       // else
+              incomplete_gamma_quad_fn(
+                  incomplete_gamma_quad_inp_vals(lb, ub, counter), a, lg_term) *
+                  incomplete_gamma_quad_weight_vals(lb, ub, counter));
+}
 
-  static constexpr T quadrature_ub(const T a, const T z) noexcept {
-    return a > T(1000)  ? std::min(z, a + 10 * sqrt(a))
-           : a > T(800) ? std::min(z, a + 10 * sqrt(a))
-           : a > T(500) ? std::min(z, a + 9 * sqrt(a))
-           : a > T(300) ? std::min(z, a + 9 * sqrt(a))
-           : a > T(100) ? std::min(z, a + 8 * sqrt(a))
-           : a > T(90)  ? std::min(z, a + 8 * sqrt(a))
-           : a > T(70)  ? std::min(z, a + 7 * sqrt(a))
-           : a > T(50)  ? std::min(z, a + 6 * sqrt(a))
-                        : std::min(z, a + 5 * sqrt(a));
-  }
+template <typename T>
+constexpr T incomplete_gamma_quad_lb(const T a, const T z) noexcept {
+  // break integration into ranges
+  return (a > T(1000)  ? std::max(T(0), std::min(z, a) - 11 * sqrt(a))
+          : a > T(800) ? std::max(T(0), std::min(z, a) - 11 * sqrt(a))
+          : a > T(500) ? std::max(T(0), std::min(z, a) - 10 * sqrt(a))
+          : a > T(300) ? std::max(T(0), std::min(z, a) - 10 * sqrt(a))
+          : a > T(100) ? std::max(T(0), std::min(z, a) - 9 * sqrt(a))
+          : a > T(90)  ? std::max(T(0), std::min(z, a) - 9 * sqrt(a))
+          : a > T(70)  ? std::max(T(0), std::min(z, a) - 8 * sqrt(a))
+          : a > T(50)  ? std::max(T(0), std::min(z, a) - 7 * sqrt(a))
+          : a > T(40)  ? std::max(T(0), std::min(z, a) - 6 * sqrt(a))
+          : a > T(30)  ? std::max(T(0), std::min(z, a) - 5 * sqrt(a))
+                       : std::max(T(0), std::min(z, a) - 4 * sqrt(a)));
+}
 
-  static constexpr T quadrature(const T a, const T z) noexcept {
-    T lb = quadrature_lb(a, z);
-    T ub = quadrature_ub(a, z);
-    T lg_term = lgamma(a);
-    T value = quadrature_fn(quadrature_inp_vals(lb, ub, 49), a, lg_term) *
-              quadrature_weight_vals(lb, ub, 49);
-    for (size_t counter = 48; counter >= 0; counter--) {
-      value += quadrature_fn(quadrature_inp_vals(lb, ub, counter), a, lg_term) *
-               quadrature_weight_vals(lb, ub, counter);
-    }
-    return value;
-  }
+template <typename T>
+constexpr T incomplete_gamma_quad_ub(const T a, const T z) noexcept {
+  return (a > T(1000)  ? std::min(z, a + 10 * sqrt(a))
+          : a > T(800) ? std::min(z, a + 10 * sqrt(a))
+          : a > T(500) ? std::min(z, a + 9 * sqrt(a))
+          : a > T(300) ? std::min(z, a + 9 * sqrt(a))
+          : a > T(100) ? std::min(z, a + 8 * sqrt(a))
+          : a > T(90)  ? std::min(z, a + 8 * sqrt(a))
+          : a > T(70)  ? std::min(z, a + 7 * sqrt(a))
+          : a > T(50)  ? std::min(z, a + 6 * sqrt(a))
+                       : std::min(z, a + 5 * sqrt(a)));
+}
 
-  /**
-   * @brief Reverse continued fraction expansion
-   * See: https://functions.wolfram.com/GammaBetaErf/Gamma2/10/0003/
-   *
-   * @param a Degrees of freedom
-   * @param z
-   * @param depth
-   * @return constexpr T
-   */
-  static constexpr T cf_2_recur(const T a, const T z,
-                                const int depth) noexcept {
-    if (depth < 100) {
-      return (1 + (depth - 1) * 2 - a + z) +
-             depth * (a - depth) / cf_2_recur(a, z, depth + 1);
-    } else {
-      return 1 + (depth - 1) * 2 - a + z;
-    }
-  }
+template <typename T>
+constexpr T incomplete_gamma_quad(const T a, const T z) noexcept {
+  return incomplete_gamma_quad_recur(incomplete_gamma_quad_lb(a, z),
+                                     incomplete_gamma_quad_ub(a, z), a,
+                                     lgamma(a), 0);
+}
 
-  /**
-   * @brief Lower (regularized) incomplete gamma function
-   *
-   * @param a Degrees of freedom
-   * @param z
-   * @return constexpr T
-   */
-  static constexpr T continued_fraction_2(const T a, const T z) noexcept {
-    return T(1.0) - exp(a * log(z) - z - lgamma(a)) / cf_2_recur(a, z, 1);
-  }
+// reverse cf expansion
+// see: https://functions.wolfram.com/GammaBetaErf/Gamma2/10/0003/
 
-  /**
-   * @brief Continued fraction expansion of Gamma function
-   * See: http://functions.wolfram.com/GammaBetaErf/Gamma2/10/0009/
-   *
-   * @param a Degrees of freedom
-   * @param z
-   * @param depth
-   * @return constexpr T
-   */
-  static constexpr T cf_1_recur(const T a, const T z,
-                                const int depth) noexcept {
-    if (depth < 55) {
-      T cf_coef = is_odd(depth) ? -(a - 1 + T(depth + 1) / T(2)) * z
-                                : T(depth) / T(2) * z;
-      return (a + depth - 1) + cf_coef / cf_1_recur(a, z, depth + 1);
-    } else {
-      return (a + depth - 1);
-    }
-  }
+template <typename T>
+constexpr T incomplete_gamma_cf_2_recur(const T a, const T z,
+                                        const int depth) noexcept {
+  return (depth < 100 ? (1 + (depth - 1) * 2 - a + z) +
+                            depth * (a - depth) /
+                                incomplete_gamma_cf_2_recur(a, z, depth + 1)
+                      : (1 + (depth - 1) * 2 - a + z));
+}
 
-  /**
-   * @brief Lower (regularized) incomplete gamma function
-   *
-   * @param a Degrees of freedom
-   * @param z
-   * @return constexpr T
-   */
-  static constexpr T continued_fraction_1(const T a, const T z) noexcept {
-    return exp(a * log(z) - z - lgamma(a)) / cf_1_recur(a, z, 1);
-  }
+template <typename T>
+constexpr T incomplete_gamma_cf_2(
+    const T a,
+    const T z) noexcept {  // lower (regularized) incomplete gamma function
+  return (T(1.0) - exp(a * log(z) - z - lgamma(a)) /
+                       incomplete_gamma_cf_2_recur(a, z, 1));
+}
 
- public:
-  /**
-   * @brief Compute the CDF for the Gamma distribution.
-   *
-   * @param a Degrees of freedom
-   * @param z
-   * @return constexpr T
-   */
-  static constexpr T compute(const T a, const T z) noexcept {
-    if (is_nan(a) || is_nan(z)) {  // NaN check
-      return LIM<T>::quiet_NaN();
-    } else if (a < T(0)) {
-      return LIM<T>::quiet_NaN();
-    } else if (LIM<T>::min() > z) {
-      return T(0);
-    } else if (LIM<T>::min() > a) {
-      return T(1);
-    } else if (a < T(10) && z - a < T(10)) {
-      return continued_fraction_1(a, z);
-    } else if (a < T(10) || z / a > T(3)) {
-      return continued_fraction_2(a, z);
-    } else {
-      return quadrature(a, z);
-    }
-  }
-};
+// cf expansion
+// see: http://functions.wolfram.com/GammaBetaErf/Gamma2/10/0009/
+
+template <typename T>
+constexpr T incomplete_gamma_cf_1_coef(const T a, const T z,
+                                       const int depth) noexcept {
+  return (is_odd(depth) ? -(a - 1 + T(depth + 1) / T(2)) * z
+                        : T(depth) / T(2) * z);
+}
+
+template <typename T>
+constexpr T incomplete_gamma_cf_1_recur(const T a, const T z,
+                                        const int depth) noexcept {
+  return (depth < 55 ?  // if
+              (a + depth - 1) + incomplete_gamma_cf_1_coef(a, z, depth) /
+                                    incomplete_gamma_cf_1_recur(a, z, depth + 1)
+                     :
+                     // else
+              (a + depth - 1));
+}
+
+template <typename T>
+constexpr T incomplete_gamma_cf_1(
+    const T a,
+    const T z) noexcept {  // lower (regularized) incomplete gamma function
+  return (exp(a * log(z) - z - lgamma(a)) /
+          incomplete_gamma_cf_1_recur(a, z, 1));
+}
+
+//
+
+template <typename T>
+constexpr T incomplete_gamma_check(const T a, const T z) noexcept {
+  return (  // NaN check
+      (is_nan(a) || is_nan(z)) ? LIM<T>::quiet_NaN() :
+                               //
+          a < T(0) ? LIM<T>::quiet_NaN()
+                   :
+                   //
+          LIM<T>::min() > z ? T(0)
+                            :
+                            //
+          LIM<T>::min() > a ? T(1)
+                            :
+                            // cf or quadrature
+          (a < T(10)) && (z - a < T(10)) ? incomplete_gamma_cf_1(a, z)
+      : (a < T(10)) || (z / a > T(3))    ? incomplete_gamma_cf_2(a, z)
+                                         :
+                                      // else
+          incomplete_gamma_quad(a, z));
+}
+
+template <typename T1, typename T2, typename TC = common_return_t<T1, T2>>
+constexpr TC incomplete_gamma_type_check(const T1 a, const T2 p) noexcept {
+  return incomplete_gamma_check(static_cast<TC>(a), static_cast<TC>(p));
+}
 
 }  // namespace internal
 
@@ -270,212 +270,208 @@ class IncompleteGamma {
  * \frac{\Gamma(a,x)}{\Gamma(a)} = 1 \f] When \f$ a > 10 \f$, a 50-point
  * Gauss-Legendre quadrature scheme is employed.
  */
+
 template <typename T1, typename T2>
 constexpr common_return_t<T1, T2> incomplete_gamma(const T1 a,
                                                    const T2 x) noexcept {
-  using TC = common_return_t<T1, T2>;
-  return internal::IncompleteGamma<TC>::compute(static_cast<TC>(a),
-                                                static_cast<TC>(x));
+  return internal::incomplete_gamma_type_check(a, x);
 }
 
 namespace internal {
 
 template <typename T>
-class IncompleteGammaInverse {
-  /**
-   * @brief Compute an initial value for the inverse gamma function which is
-   * then iteratively updated.
-   *
-   * @param a Degrees of freedom
-   * @param p
-   * @return constexpr T
-   */
-  static constexpr T initial_val(const T a, const T p) noexcept {
-    if (a > T(1)) {
-      // Inverse gamma function initial value when a > 1.0
-      const T t_val = p > T(0.5) ? sqrt(-2 * log(T(1) - p)) : sqrt(-2 * log(p));
-      const T sgn_term = p > T(0.5) ? T(-1) : T(1);
-      const T initial_val_1 =
-          t_val -
+constexpr T incomplete_gamma_inv_decision(const T value, const T a, const T p,
+                                          const T direc, const T lg_val,
+                                          const int iter_count) noexcept;
+
+//
+// initial value for Halley's method
+template <typename T>
+constexpr T incomplete_gamma_inv_t_val_1(const T p) noexcept {  // a > 1.0
+  return (p > T(0.5) ? sqrt(-2 * log(T(1) - p)) : sqrt(-2 * log(p)));
+}
+
+template <typename T>
+constexpr T incomplete_gamma_inv_t_val_2(const T a) noexcept {  // a <= 1.0
+  return (T(1) - T(0.253) * a - T(0.12) * a * a);
+}
+
+//
+template <typename T>
+constexpr T incomplete_gamma_inv_initial_val_1_int_begin(
+    const T t_val) noexcept {  // internal for a > 1.0
+  return (t_val -
           (T(2.515517L) + T(0.802853L) * t_val + T(0.010328L) * t_val * t_val) /
               (T(1) + T(1.432788L) * t_val + T(0.189269L) * t_val * t_val +
-               T(0.001308L) * t_val * t_val * t_val);
-      const T signed_initial_val_1 = sgn_term * initial_val_1;
+               T(0.001308L) * t_val * t_val * t_val));
+}
 
-      return std::max(
-          T(1e-04),
-          a * pow(T(1) - T(1) / (9 * a) - signed_initial_val_1 / (3 * sqrt(a)),
-                  3));
-    } else {
-      // Inverse gamma function initial value when a <= 1.0
-      T t_val = T(1) - T(0.253) * a - T(0.12) * a * a;
-      if (p < t_val) {
-        return pow(p / t_val, T(1) / a);
-      } else {
-        return T(1) - log(T(1) - (p - t_val) / (T(1) - t_val));
-      }
-    }
-  }
+template <typename T>
+constexpr T incomplete_gamma_inv_initial_val_1_int_end(
+    const T value_inp, const T a) noexcept {  // internal for a > 1.0
+  return std::max(
+      T(1E-04), a * pow(T(1) - T(1) / (9 * a) - value_inp / (3 * sqrt(a)), 3));
+}
 
-  /**
-   * @brief Compute the error value `f(x)` which we can use for root-finding.
-   *
-   * @param value
-   * @param a Degrees of freedom
-   * @param p
-   * @return constexpr T
-   */
-  static constexpr T err_val(const T value, const T a, const T p) noexcept {
-    return (incomplete_gamma(a, value) - p);
-  }
+template <typename T>
+constexpr T incomplete_gamma_inv_initial_val_1(
+    const T a, const T t_val, const T sgn_term) noexcept {  // a > 1.0
+  return incomplete_gamma_inv_initial_val_1_int_end(
+      sgn_term * incomplete_gamma_inv_initial_val_1_int_begin(t_val), a);
+}
 
-  /**
-   * @brief Derivative of the incomplete gamma function w.r.t. value
-   *
-   * @param value
-   * @param a Degrees of freedom
-   * @param log_val
-   * @return constexpr T
-   */
-  static constexpr T first_derivative(const T value, const T a,
-                                      const T lg_val) noexcept {
-    return (exp(-value + (a - T(1)) * log(value) - lg_val));
-  }
+template <typename T>
+constexpr T incomplete_gamma_inv_initial_val_2(
+    const T a, const T p, const T t_val) noexcept {  // a <= 1.0
+  return (p < t_val ?                                // if
+              pow(p / t_val, T(1) / a)
+                    :
+                    // else
+              T(1) - log(T(1) - (p - t_val) / (T(1) - t_val)));
+}
 
-  /**
-   * @brief Second derivative of the incomplete gamma function w.r.t. value
-   *
-   * @param value
-   * @param a Degrees of freedom
-   * @param derivative
-   * @return constexpr T
-   */
-  static constexpr T second_derivative(const T value, const T a,
-                                       const T derivative) noexcept {
-    return (derivative * ((a - T(1)) / value - T(1)));
-  }
+// initial value
 
-  /**
-   * @brief Compute \f[ \frac{f(x_n)}{f'(x_n)} \f] as part
-   * of the update denominator.
-   *
-   * @param value
-   * @param a Degrees of freedom
-   * @param p
-   * @param derivative
-   * @return constexpr T
-   */
-  static constexpr T ratio_val_1(const T value, const T a, const T p,
-                                 const T derivative) noexcept {
-    return (err_val(value, a, p) / derivative);
-  }
+template <typename T>
+constexpr T incomplete_gamma_inv_initial_val(const T a, const T p) noexcept {
+  return (a > T(1) ?  // if
+              incomplete_gamma_inv_initial_val_1(
+                  a, incomplete_gamma_inv_t_val_1(p), p > T(0.5) ? T(-1) : T(1))
+                   :
+                   // else
+              incomplete_gamma_inv_initial_val_2(
+                  a, p, incomplete_gamma_inv_t_val_2(a)));
+}
 
-  /**
-   * @brief Compute \f[ \frac{f''(x_n)}{f'(x_n)} \f] as part
-   * of the update denominator.
-   *
-   * @param value
-   * @param a Degrees of freedom
-   * @param derivative
-   * @return constexpr T
-   */
-  static constexpr T ratio_val_2(const T value, const T a,
-                                 const T derivative) noexcept {
-    return (second_derivative(value, a, derivative) / derivative);
-  }
+//
+// Halley recursion
 
-  /**
-   * @brief Halley's method update delta
-   *
-   * @param ratio_val_1
-   * @param ratio_val_2
-   * @return constexpr T
-   */
-  static constexpr T halley(const T ratio_val_1, const T ratio_val_2) noexcept {
-    return (ratio_val_1 /
-            std::max(T(0.8), std::min(T(1.2), T(1) - T(0.5) * ratio_val_1 *
-                                                         ratio_val_2)));
-  }
+template <typename T>
+constexpr T incomplete_gamma_inv_err_val(
+    const T value, const T a, const T p) noexcept {  // err_val = f(x)
+  return (incomplete_gamma(a, value) - p);
+}
 
-  /**
-   * @brief Compute the iterative solution for the
-   * incomplete inverse gamma function.
-   *
-   * @param initial_val Initial value guess
-   * @param a Degrees of freedom
-   * @param p
-   * @param lg_val
-   * @return constexpr T
-   */
-  static constexpr T find_root(const T initial_val, const T a, const T p,
-                               const T lg_val) noexcept {
-    const int GAMMA_INV_MAX_ITER = 35;
-    T x = initial_val;
-    T derivative = first_derivative(initial_val, a, lg_val);
-    for (size_t counter = 1; counter <= GAMMA_INV_MAX_ITER; counter++) {
-      T direc = halley(ratio_val_1(x, a, p, derivative),
-                       ratio_val_2(x, a, derivative));
-      derivative = first_derivative(x, a, lg_val);
-      x = x - direc;
-    }
-    return x - halley(ratio_val_1(x, a, p, derivative),
-                      ratio_val_2(x, a, derivative));
-  }
+template <typename T>
+constexpr T incomplete_gamma_inv_deriv_1(
+    const T value, const T a,
+    const T lg_val) noexcept {  // derivative of the incomplete gamma function
+                                // w.r.t. x
+  return (exp(-value + (a - T(1)) * log(value) - lg_val));
+}
 
- public:
-  /**
-   * @brief Compute the percent point function for the Gamma distribution.
-   *
-   * @param a Degrees of freedom
-   * @param p
-   * @return constexpr T
-   */
-  static constexpr T compute(const T a, const T p) noexcept {
-    // Perform checks on the input and return the corresponding best answer
-    if (is_nan(a) || is_nan(p)) {  // NaN check
-      return LIM<T>::quiet_NaN();
-    } else if (LIM<T>::min() > p) {  // Check lower bound
-      return T(0);
-    } else if (p > T(1)) {  // Check upper bound
-      return LIM<T>::quiet_NaN();
-    } else if (LIM<T>::min() > abs(T(1) - p)) {
-      return LIM<T>::infinity();
-    } else if (LIM<T>::min() > a) {  // Check lower bound for degrees of freedom
-      return T(0);
-    } else {
-      return find_root(initial_val(a, p), a, p, lgamma(a));
-    }
-  }
-};
+template <typename T>
+constexpr T incomplete_gamma_inv_deriv_2(
+    const T value, const T a,
+    const T deriv_1) noexcept {  // second derivative of the incomplete gamma
+                                 // function w.r.t. x
+  return (deriv_1 * ((a - T(1)) / value - T(1)));
+}
+
+template <typename T>
+constexpr T incomplete_gamma_inv_ratio_val_1(const T value, const T a,
+                                             const T p,
+                                             const T deriv_1) noexcept {
+  return (incomplete_gamma_inv_err_val(value, a, p) / deriv_1);
+}
+
+template <typename T>
+constexpr T incomplete_gamma_inv_ratio_val_2(const T value, const T a,
+                                             const T deriv_1) noexcept {
+  return (incomplete_gamma_inv_deriv_2(value, a, deriv_1) / deriv_1);
+}
+
+template <typename T>
+constexpr T incomplete_gamma_inv_halley(const T ratio_val_1,
+                                        const T ratio_val_2) noexcept {
+  return (ratio_val_1 /
+          std::max(T(0.8), std::min(T(1.2), T(1) - T(0.5) * ratio_val_1 *
+                                                       ratio_val_2)));
+}
+
+template <typename T>
+constexpr T incomplete_gamma_inv_recur(const T value, const T a, const T p,
+                                       const T deriv_1, const T lg_val,
+                                       const int iter_count) noexcept {
+  return incomplete_gamma_inv_decision(
+      value, a, p,
+      incomplete_gamma_inv_halley(
+          incomplete_gamma_inv_ratio_val_1(value, a, p, deriv_1),
+          incomplete_gamma_inv_ratio_val_2(value, a, deriv_1)),
+      lg_val, iter_count);
+}
+
+template <typename T>
+constexpr T incomplete_gamma_inv_decision(const T value, const T a, const T p,
+                                          const T direc, const T lg_val,
+                                          const int iter_count) noexcept {
+// return( abs(direc) > GCEM_INCML_GAMMA_INV_TOL ?
+// incomplete_gamma_inv_recur(value - direc, a, p,
+// incomplete_gamma_inv_deriv_1(value,a,lg_val), lg_val) : value - direc );
+#define INCML_GAMMA_INV_MAX_ITER 35
+  return (iter_count <= INCML_GAMMA_INV_MAX_ITER ?  // if
+              incomplete_gamma_inv_recur(
+                  value - direc, a, p,
+                  incomplete_gamma_inv_deriv_1(value, a, lg_val), lg_val,
+                  iter_count + 1)
+                                                 :
+                                                 // else
+              value - direc);
+}
+
+template <typename T>
+constexpr T incomplete_gamma_inv_begin(const T initial_val, const T a,
+                                       const T p, const T lg_val) noexcept {
+  return incomplete_gamma_inv_recur(
+      initial_val, a, p, incomplete_gamma_inv_deriv_1(initial_val, a, lg_val),
+      lg_val, 1);
+}
+
+template <typename T>
+constexpr T incomplete_gamma_inv_check(const T a, const T p) noexcept {
+  return (  // NaN check
+      (is_nan(a) || is_nan(p)) ? LIM<T>::quiet_NaN() :
+                             //
+          LIM<T>::min() > p           ? T(0)
+      : p > T(1)                      ? LIM<T>::quiet_NaN()
+      : LIM<T>::min() > abs(T(1) - p) ? LIM<T>::infinity()
+                                      :
+                                      //
+          LIM<T>::min() > a ? T(0)
+                            :
+                            // else
+          incomplete_gamma_inv_begin(incomplete_gamma_inv_initial_val(a, p), a,
+                                     p, lgamma(a)));
+}
+
+template <typename T1, typename T2, typename TC = common_return_t<T1, T2>>
+constexpr TC incomplete_gamma_inv_type_check(const T1 a, const T2 p) noexcept {
+  return incomplete_gamma_inv_check(static_cast<TC>(a), static_cast<TC>(p));
+}
 
 }  // namespace internal
 
 /**
  * Compile-time inverse incomplete gamma function
  *
- * Compute the value \f$ x \f$
- * such that \f[ f(x) := \frac{\gamma(a,x)}{\Gamma(a)} - p \f] equal to zero,
- * for a given \c p.
+ * @param a a real-valued, non-negative input.
+ * @param p a real-valued input with values in the unit-interval.
  *
- * We find this root using Halley's method:
- * \f[ x_{n+1} = x_n - \frac{f(x_n)/f'(x_n)}{1 - 0.5 \frac{f(x_n)}{f'(x_n)}
- * \frac{f''(x_n)}{f'(x_n)} } \f] where
- * \f[ \frac{\partial}{\partial x} \left(\frac{\gamma(a,x)}{\Gamma(a)}\right) =
- * \frac{1}{\Gamma(a)} x^{a-1} \exp(-x) \f] \f[ \frac{\partial^2}{\partial x^2}
+ * @return Computes the inverse incomplete gamma function, a value \f$ x \f$
+ * such that \f[ f(x) := \frac{\gamma(a,x)}{\Gamma(a)} - p \f] equal to zero,
+ * for a given \c p. GCE-Math finds this root using Halley's method: \f[ x_{n+1}
+ * = x_n - \frac{f(x_n)/f'(x_n)}{1 - 0.5 \frac{f(x_n)}{f'(x_n)}
+ * \frac{f''(x_n)}{f'(x_n)} } \f] where \f[ \frac{\partial}{\partial x}
+ * \left(\frac{\gamma(a,x)}{\Gamma(a)}\right) = \frac{1}{\Gamma(a)} x^{a-1}
+ * \exp(-x) \f] \f[ \frac{\partial^2}{\partial x^2}
  * \left(\frac{\gamma(a,x)}{\Gamma(a)}\right) = \frac{1}{\Gamma(a)} x^{a-1}
  * \exp(-x) \left( \frac{a-1}{x} - 1 \right) \f]
- *
- * @param a The degrees of freedom for the gamma distribution.
- * @param p The quantile value for computing the percent point function.
- *
- * @return Computes the inverse incomplete gamma function.
  */
+
 template <typename T1, typename T2>
 constexpr common_return_t<T1, T2> incomplete_gamma_inv(const T1 a,
                                                        const T2 p) noexcept {
-  using TC = common_return_t<T1, T2>;
-  return internal::IncompleteGammaInverse<TC>::compute(static_cast<TC>(a),
-                                                       static_cast<TC>(p));
+  return internal::incomplete_gamma_inv_type_check(a, p);
 }
 
 /**
