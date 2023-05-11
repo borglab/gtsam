@@ -18,7 +18,6 @@
 #pragma once
 
 #include <algorithm>
-#include <cmath>
 #include <iostream>
 
 namespace gtsam {
@@ -433,7 +432,7 @@ class IncompleteGammaInverse {
    */
   static constexpr T compute(const T a, const T p) noexcept {
     // Perform checks on the input and return the corresponding best answer
-    if (isnan(a) || isnan(p)) {  // NaN check
+    if (is_nan(a) || is_nan(p)) {  // NaN check
       return LIM<T>::quiet_NaN();
     } else if (LIM<T>::min() > p) {  // Check lower bound
       return T(0);
