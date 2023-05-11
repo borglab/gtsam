@@ -59,7 +59,6 @@ endif()
 # if GTSAM_USE_BOOST_FEATURES is not set, then we need to exclude the following:
 if(NOT GTSAM_USE_BOOST_FEATURES)
     list (APPEND excluded_sources
-        "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/GncOptimizer.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/inference/graph.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/inference/graph-inl.h"
     )
