@@ -1,3 +1,5 @@
+"""Code generation templates for the Matlab wrapper."""
+
 import textwrap
 
 
