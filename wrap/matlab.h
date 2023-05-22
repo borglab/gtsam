@@ -228,8 +228,22 @@ mxArray* wrap<gtsam::Matrix >(const gtsam::Matrix& A) {
   return wrap_Matrix(A);
 }
 
+template <typename T>
+mxArray* wrap_enum(const T x, const std::string& classname) {
+  // create double array to store value in
+  mxArray* a = mxCreateDoubleMatrix(1, 1, mxREAL);
+  double* data = mxGetPr(a);
+  data[0] = static_cast<double>(x);
+
+  // convert to Matlab enumeration type
+  mxArray* result;
+  mexCallMATLAB(1, &result, 1, &a, classname.c_str());
+
+  return result;
+}
+
 //*****************************************************************************
-// unwrapping MATLAB arrays into C++ basis types
+// unwrapping MATLAB arrays into C++ basic types
 //*****************************************************************************
 
 // default unwrapping throws an error
@@ -238,6 +252,22 @@ template <typename T>
 T unwrap(const mxArray* array) {
   error("wrap internal error: attempted unwrap of invalid type");
   return T();
+}
+
+template <typename T>
+shared_ptr<T> unwrap_enum(const mxArray* array) {
+  // Make duplicate to remove const-ness
+  mxArray* a = mxDuplicateArray(array);
+  std::cout << "unwrap enum type: " << typeid(array).name() << std::endl;
+
+  // convert void* to int32* array
+  mxArray* a_int32;
+  mexCallMATLAB(1, &a_int32, 1, &a, "int32");
+
+  // Get the value in the input array
+  int32_T* value = (int32_T*)mxGetData(a_int32);
+  // cast int32 to enum type
+  return std::make_shared<T>(static_cast<T>(*value));
 }
 
 // specialization to string

@@ -60,6 +60,11 @@ class CheckMixin:
                arg_type.typename.name not in self.not_ptr_type and \
                arg_type.is_ref
 
+    def is_class_enum(self, arg_type: parser.Type, class_: parser.Class):
+        """Check if `arg_type` is an enum in the class `class_`."""
+        enums = (enum.name for enum in class_.enums)
+        return arg_type.ctype.typename.name in enums
+
 
 class FormatMixin:
     """Mixin to provide formatting utilities."""
