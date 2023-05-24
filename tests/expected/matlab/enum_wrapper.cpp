@@ -93,8 +93,8 @@ void Pet_constructor_1(int nargout, mxArray *out[], int nargin, const mxArray *i
   typedef std::shared_ptr<Pet> Shared;
 
   string& name = *unwrap_shared_ptr< string >(in[0], "ptr_string");
-  std::shared_ptr<Pet::Kind> type = unwrap_enum<Pet::Kind>(in[1]);
-  Shared *self = new Shared(new Pet(name,*type));
+  Pet::Kind type = unwrap_enum<Pet::Kind>(in[1]);
+  Shared *self = new Shared(new Pet(name,type));
   collector_Pet.insert(self);
   out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
   *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
@@ -113,14 +113,29 @@ void Pet_deconstructor_2(int nargout, mxArray *out[], int nargin, const mxArray 
   delete self;
 }
 
-void Pet_get_name_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Pet_getColor_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("getColor",nargout,nargin-1,0);
+  auto obj = unwrap_shared_ptr<Pet>(in[0], "ptr_Pet");
+  out[0] = wrap_enum(obj->getColor(),"Color");
+}
+
+void Pet_setColor_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("setColor",nargout,nargin-1,1);
+  auto obj = unwrap_shared_ptr<Pet>(in[0], "ptr_Pet");
+  Color color = unwrap_enum<Color>(in[1]);
+  obj->setColor(color);
+}
+
+void Pet_get_name_5(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("name",nargout,nargin-1,0);
   auto obj = unwrap_shared_ptr<Pet>(in[0], "ptr_Pet");
   out[0] = wrap< string >(obj->name);
 }
 
-void Pet_set_name_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Pet_set_name_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("name",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<Pet>(in[0], "ptr_Pet");
@@ -128,22 +143,22 @@ void Pet_set_name_4(int nargout, mxArray *out[], int nargin, const mxArray *in[]
   obj->name = name;
 }
 
-void Pet_get_type_5(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Pet_get_type_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("type",nargout,nargin-1,0);
   auto obj = unwrap_shared_ptr<Pet>(in[0], "ptr_Pet");
   out[0] = wrap_enum(obj->type,"Pet.Kind");
 }
 
-void Pet_set_type_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void Pet_set_type_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("type",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<Pet>(in[0], "ptr_Pet");
-  std::shared_ptr<Pet::Kind> type = unwrap_enum<Pet::Kind>(in[1]);
-  obj->type = *type;
+  Pet::Kind type = unwrap_enum<Pet::Kind>(in[1]);
+  obj->type = type;
 }
 
-void gtsamMCU_collectorInsertAndMakeBase_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamMCU_collectorInsertAndMakeBase_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef std::shared_ptr<gtsam::MCU> Shared;
@@ -152,7 +167,7 @@ void gtsamMCU_collectorInsertAndMakeBase_7(int nargout, mxArray *out[], int narg
   collector_gtsamMCU.insert(self);
 }
 
-void gtsamMCU_constructor_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamMCU_constructor_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef std::shared_ptr<gtsam::MCU> Shared;
@@ -163,7 +178,7 @@ void gtsamMCU_constructor_8(int nargout, mxArray *out[], int nargin, const mxArr
   *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
 }
 
-void gtsamMCU_deconstructor_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamMCU_deconstructor_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef std::shared_ptr<gtsam::MCU> Shared;
   checkArguments("delete_gtsamMCU",nargout,nargin,1);
@@ -176,7 +191,7 @@ void gtsamMCU_deconstructor_9(int nargout, mxArray *out[], int nargin, const mxA
   delete self;
 }
 
-void gtsamOptimizerGaussNewtonParams_collectorInsertAndMakeBase_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamOptimizerGaussNewtonParams_collectorInsertAndMakeBase_12(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef std::shared_ptr<gtsam::Optimizer<gtsam::GaussNewtonParams>> Shared;
@@ -185,7 +200,19 @@ void gtsamOptimizerGaussNewtonParams_collectorInsertAndMakeBase_10(int nargout, 
   collector_gtsamOptimizerGaussNewtonParams.insert(self);
 }
 
-void gtsamOptimizerGaussNewtonParams_deconstructor_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamOptimizerGaussNewtonParams_constructor_13(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef std::shared_ptr<gtsam::Optimizer<gtsam::GaussNewtonParams>> Shared;
+
+  Optimizer<gtsam::GaussNewtonParams>::Verbosity verbosity = unwrap_enum<Optimizer<gtsam::GaussNewtonParams>::Verbosity>(in[0]);
+  Shared *self = new Shared(new gtsam::Optimizer<gtsam::GaussNewtonParams>(verbosity));
+  collector_gtsamOptimizerGaussNewtonParams.insert(self);
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
+}
+
+void gtsamOptimizerGaussNewtonParams_deconstructor_14(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef std::shared_ptr<gtsam::Optimizer<gtsam::GaussNewtonParams>> Shared;
   checkArguments("delete_gtsamOptimizerGaussNewtonParams",nargout,nargin,1);
@@ -198,12 +225,26 @@ void gtsamOptimizerGaussNewtonParams_deconstructor_11(int nargout, mxArray *out[
   delete self;
 }
 
-void gtsamOptimizerGaussNewtonParams_setVerbosity_12(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamOptimizerGaussNewtonParams_getVerbosity_15(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("getVerbosity",nargout,nargin-1,0);
+  auto obj = unwrap_shared_ptr<gtsam::Optimizer<gtsam::GaussNewtonParams>>(in[0], "ptr_gtsamOptimizerGaussNewtonParams");
+  out[0] = wrap_enum(obj->getVerbosity(),"gtsam.OptimizerGaussNewtonParams.Verbosity");
+}
+
+void gtsamOptimizerGaussNewtonParams_getVerbosity_16(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("getVerbosity",nargout,nargin-1,0);
+  auto obj = unwrap_shared_ptr<gtsam::Optimizer<gtsam::GaussNewtonParams>>(in[0], "ptr_gtsamOptimizerGaussNewtonParams");
+  out[0] = wrap_enum(obj->getVerbosity(),"gtsam.VerbosityLM");
+}
+
+void gtsamOptimizerGaussNewtonParams_setVerbosity_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("setVerbosity",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<gtsam::Optimizer<gtsam::GaussNewtonParams>>(in[0], "ptr_gtsamOptimizerGaussNewtonParams");
-  std::shared_ptr<Optimizer<gtsam::GaussNewtonParams>::Verbosity> value = unwrap_enum<Optimizer<gtsam::GaussNewtonParams>::Verbosity>(in[1]);
-  obj->setVerbosity(*value);
+  Optimizer<gtsam::GaussNewtonParams>::Verbosity value = unwrap_enum<Optimizer<gtsam::GaussNewtonParams>::Verbosity>(in[1]);
+  obj->setVerbosity(value);
 }
 
 
@@ -228,34 +269,49 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       Pet_deconstructor_2(nargout, out, nargin-1, in+1);
       break;
     case 3:
-      Pet_get_name_3(nargout, out, nargin-1, in+1);
+      Pet_getColor_3(nargout, out, nargin-1, in+1);
       break;
     case 4:
-      Pet_set_name_4(nargout, out, nargin-1, in+1);
+      Pet_setColor_4(nargout, out, nargin-1, in+1);
       break;
     case 5:
-      Pet_get_type_5(nargout, out, nargin-1, in+1);
+      Pet_get_name_5(nargout, out, nargin-1, in+1);
       break;
     case 6:
-      Pet_set_type_6(nargout, out, nargin-1, in+1);
+      Pet_set_name_6(nargout, out, nargin-1, in+1);
       break;
     case 7:
-      gtsamMCU_collectorInsertAndMakeBase_7(nargout, out, nargin-1, in+1);
+      Pet_get_type_7(nargout, out, nargin-1, in+1);
       break;
     case 8:
-      gtsamMCU_constructor_8(nargout, out, nargin-1, in+1);
+      Pet_set_type_8(nargout, out, nargin-1, in+1);
       break;
     case 9:
-      gtsamMCU_deconstructor_9(nargout, out, nargin-1, in+1);
+      gtsamMCU_collectorInsertAndMakeBase_9(nargout, out, nargin-1, in+1);
       break;
     case 10:
-      gtsamOptimizerGaussNewtonParams_collectorInsertAndMakeBase_10(nargout, out, nargin-1, in+1);
+      gtsamMCU_constructor_10(nargout, out, nargin-1, in+1);
       break;
     case 11:
-      gtsamOptimizerGaussNewtonParams_deconstructor_11(nargout, out, nargin-1, in+1);
+      gtsamMCU_deconstructor_11(nargout, out, nargin-1, in+1);
       break;
     case 12:
-      gtsamOptimizerGaussNewtonParams_setVerbosity_12(nargout, out, nargin-1, in+1);
+      gtsamOptimizerGaussNewtonParams_collectorInsertAndMakeBase_12(nargout, out, nargin-1, in+1);
+      break;
+    case 13:
+      gtsamOptimizerGaussNewtonParams_constructor_13(nargout, out, nargin-1, in+1);
+      break;
+    case 14:
+      gtsamOptimizerGaussNewtonParams_deconstructor_14(nargout, out, nargin-1, in+1);
+      break;
+    case 15:
+      gtsamOptimizerGaussNewtonParams_getVerbosity_15(nargout, out, nargin-1, in+1);
+      break;
+    case 16:
+      gtsamOptimizerGaussNewtonParams_getVerbosity_16(nargout, out, nargin-1, in+1);
+      break;
+    case 17:
+      gtsamOptimizerGaussNewtonParams_setVerbosity_17(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

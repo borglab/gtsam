@@ -211,8 +211,8 @@ void gtsamGeneralSFMFactorCal3Bundler_set_verbosity_12(int nargout, mxArray *out
 {
   checkArguments("verbosity",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>>(in[0], "ptr_gtsamGeneralSFMFactorCal3Bundler");
-  std::shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>::Verbosity> verbosity = unwrap_enum<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>::Verbosity>(in[1]);
-  obj->verbosity = *verbosity;
+  gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>::Verbosity verbosity = unwrap_enum<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>::Verbosity>(in[1]);
+  obj->verbosity = verbosity;
 }
 
 
