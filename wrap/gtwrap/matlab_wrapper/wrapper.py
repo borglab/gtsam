@@ -341,23 +341,14 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
         return check_statement
 
-    def _unwrap_argument(self,
-                         arg,
-                         arg_id=0,
-                         constructor=False,
-                         instantiated_class=None):
+    def _unwrap_argument(self, arg, arg_id=0, instantiated_class=None):
         ctype_camel = self._format_type_name(arg.ctype.typename, separator='')
         ctype_sep = self._format_type_name(arg.ctype.typename)
 
         if instantiated_class and \
-            self.is_class_enum(arg, instantiated_class):
-
-            if instantiated_class.original.template:
-                enum_type = f"{arg.ctype.typename}"
-            else:
-                enum_type = f"{instantiated_class.name}::{arg.ctype}"
-
-            arg_type = f"std::shared_ptr<{enum_type}>"
+            self.is_enum(arg.ctype, instantiated_class):
+            enum_type = f"{arg.ctype.typename}"
+            arg_type = f"{enum_type}"
             unwrap = f'unwrap_enum<{enum_type}>(in[{arg_id}]);'
 
         elif self.is_ref(arg.ctype):  # and not constructor:
@@ -390,7 +381,6 @@ class MatlabWrapper(CheckMixin, FormatMixin):
     def _wrapper_unwrap_arguments(self,
                                   args,
                                   arg_id=0,
-                                  constructor=False,
                                   instantiated_class=None):
         """Format the interface_parser.Arguments.
 
@@ -403,10 +393,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
         for arg in args.list():
             arg_type, unwrap = self._unwrap_argument(
-                arg,
-                arg_id,
-                constructor,
-                instantiated_class=instantiated_class)
+                arg, arg_id, instantiated_class=instantiated_class)
 
             body_args += textwrap.indent(textwrap.dedent('''\
                     {arg_type} {name} = {unwrap}
@@ -428,7 +415,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 continue
 
             if not self.is_ref(arg.ctype) and (self.is_shared_ptr(arg.ctype) or \
-                self.is_ptr(arg.ctype) or self.can_be_pointer(arg.ctype))and \
+                self.is_ptr(arg.ctype) or self.can_be_pointer(arg.ctype)) and \
+                    not self.is_enum(arg.ctype, instantiated_class) and \
                     arg.ctype.typename.name not in self.ignore_namespace:
                 if arg.ctype.is_shared_ptr:
                     call_type = arg.ctype.is_shared_ptr
@@ -1147,7 +1135,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
     def wrap_enum(self, enum):
         """
-        Wrap an enum definition.
+        Wrap an enum definition as a Matlab class.
 
         Args:
             enum: The interface_parser.Enum instance
@@ -1285,15 +1273,23 @@ class MatlabWrapper(CheckMixin, FormatMixin):
     def _collector_return(self,
                           obj: str,
                           ctype: parser.Type,
-                          class_property: parser.Variable = None,
                           instantiated_class: InstantiatedClass = None):
         """Helper method to get the final statement before the return in the collector function."""
         expanded = ''
 
-        if class_property and instantiated_class and \
-            self.is_class_enum(class_property, instantiated_class):
-            class_name = ".".join(instantiated_class.namespaces()[1:] + [instantiated_class.name])
-            enum_type = f"{class_name}.{ctype.typename.name}"
+        if instantiated_class and \
+            self.is_enum(ctype, instantiated_class):
+            if self.is_class_enum(ctype, instantiated_class):
+                class_name = ".".join(instantiated_class.namespaces()[1:] +
+                                      [instantiated_class.name])
+            else:
+                # Get the full namespace
+                class_name = ".".join(instantiated_class.parent.full_namespaces()[1:])
+
+            if class_name != "":
+                class_name += '.'
+
+            enum_type = f"{class_name}{ctype.typename.name}"
             expanded = textwrap.indent(
                 f'out[0] = wrap_enum({obj},\"{enum_type}\");', prefix='  ')
 
@@ -1340,13 +1336,14 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
         return expanded
 
-    def wrap_collector_function_return(self, method):
+    def wrap_collector_function_return(self, method, instantiated_class=None):
         """
         Wrap the complete return type of the function.
         """
         expanded = ''
 
-        params = self._wrapper_unwrap_arguments(method.args, arg_id=1)[0]
+        params = self._wrapper_unwrap_arguments(
+            method.args, arg_id=1, instantiated_class=instantiated_class)[0]
 
         return_1 = method.return_type.type1
         return_count = self._return_count(method.return_type)
@@ -1382,7 +1379,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
         if return_1_name != 'void':
             if return_count == 1:
-                expanded += self._collector_return(obj, return_1)
+                expanded += self._collector_return(
+                    obj, return_1, instantiated_class=instantiated_class)
 
             elif return_count == 2:
                 return_2 = method.return_type.type2
@@ -1405,10 +1403,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         property_name = class_property.name
         obj = 'obj->{}'.format(property_name)
 
-        ctype = class_property.ctype
         return self._collector_return(obj,
-                                      ctype,
-                                      class_property=class_property,
+                                      class_property.ctype,
                                       instantiated_class=instantiated_class)
 
     def wrap_collector_function_upcast_from_void(self, class_name, func_id,
@@ -1468,9 +1464,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             elif collector_func[2] == 'constructor':
                 base = ''
                 params, body_args = self._wrapper_unwrap_arguments(
-                    extra.args,
-                    constructor=True,
-                    instantiated_class=collector_func[1])
+                    extra.args, instantiated_class=collector_func[1])
 
                 if collector_func[1].parent_class:
                     base += textwrap.indent(textwrap.dedent('''
@@ -1534,7 +1528,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                     extra.args,
                     arg_id=1 if is_method else 0,
                     instantiated_class=collector_func[1])
-                return_body = self.wrap_collector_function_return(extra)
+
+                return_body = self.wrap_collector_function_return(
+                    extra, collector_func[1])
 
                 shared_obj = ''
 
@@ -1591,7 +1587,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
                 # Setter
                 if "_set_" in method_name:
-                    is_ptr_type = self.can_be_pointer(extra.ctype)
+                    is_ptr_type = self.can_be_pointer(extra.ctype) and \
+                        not self.is_enum(extra.ctype, collector_func[1])
                     return_body = '  obj->{0} = {1}{0};'.format(
                         extra.name, '*' if is_ptr_type else '')
 
@@ -1930,4 +1927,3 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             self.generate_content(self.content, path)
 
         return self.content
-

@@ -23,7 +23,9 @@ PYBIND11_MODULE(enum_py, m_) {
 
     py::class_<Pet, std::shared_ptr<Pet>> pet(m_, "Pet");
     pet
-        .def(py::init<const string&, Kind>(), py::arg("name"), py::arg("type"))
+        .def(py::init<const string&, Pet::Kind>(), py::arg("name"), py::arg("type"))
+        .def("setColor",[](Pet* self, const Color& color){ self->setColor(color);}, py::arg("color"))
+        .def("getColor",[](Pet* self){return self->getColor();})
         .def_readwrite("name", &Pet::name)
         .def_readwrite("type", &Pet::type);
 
@@ -65,7 +67,10 @@ PYBIND11_MODULE(enum_py, m_) {
 
     py::class_<gtsam::Optimizer<gtsam::GaussNewtonParams>, std::shared_ptr<gtsam::Optimizer<gtsam::GaussNewtonParams>>> optimizergaussnewtonparams(m_gtsam, "OptimizerGaussNewtonParams");
     optimizergaussnewtonparams
-        .def("setVerbosity",[](gtsam::Optimizer<gtsam::GaussNewtonParams>* self, const Optimizer<gtsam::GaussNewtonParams>::Verbosity value){ self->setVerbosity(value);}, py::arg("value"));
+        .def(py::init<const Optimizer<gtsam::GaussNewtonParams>::Verbosity&>(), py::arg("verbosity"))
+        .def("setVerbosity",[](gtsam::Optimizer<gtsam::GaussNewtonParams>* self, const Optimizer<gtsam::GaussNewtonParams>::Verbosity value){ self->setVerbosity(value);}, py::arg("value"))
+        .def("getVerbosity",[](gtsam::Optimizer<gtsam::GaussNewtonParams>* self){return self->getVerbosity();})
+        .def("getVerbosity",[](gtsam::Optimizer<gtsam::GaussNewtonParams>* self){return self->getVerbosity();});
 
     py::enum_<gtsam::Optimizer<gtsam::GaussNewtonParams>::Verbosity>(optimizergaussnewtonparams, "Verbosity", py::arithmetic())
         .value("SILENT", gtsam::Optimizer<gtsam::GaussNewtonParams>::Verbosity::SILENT)
