@@ -38,7 +38,7 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_basic_type(self):
         """Tests for BasicType."""
-        # Check basis type
+        # Check basic type
         t = Type.rule.parseString("int x")[0]
         self.assertEqual("int", t.typename.name)
         self.assertTrue(t.is_basic)
@@ -243,7 +243,7 @@ class TestInterfaceParser(unittest.TestCase):
         self.assertEqual("void", return_type.type1.typename.name)
         self.assertTrue(return_type.type1.is_basic)
 
-        # Test basis type
+        # Test basic type
         return_type = ReturnType.rule.parseString("size_t")[0]
         self.assertEqual("size_t", return_type.type1.typename.name)
         self.assertTrue(not return_type.type2)
