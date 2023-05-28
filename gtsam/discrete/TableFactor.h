@@ -81,6 +81,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   }
 
   /// Convert probability table given as doubles to SparseVector.
+  /// Example) {0, 1, 1, 0, 0, 1, 0} -> values: {1, 1, 1}, indices: {1, 2, 5} 
   static Eigen::SparseVector<double> Convert(const std::vector<double>& table);
 
   /// Convert probability table given as string to SparseVector.
