@@ -32,12 +32,14 @@
 
 namespace gtsam {
 
-  class SparseDiscreteConditional;
   class HybridValues;
 
   /**
    * A discrete probabilistic factor optimized for sparsity.
-   *
+   * Uses sparse_table_ to store only the non-zero probabilities.
+   * Computes the assigned value for the key using the ordering which the 
+   * non-zero probabilties are stored in.
+   * 
    * @ingroup discrete
    */
   class GTSAM_EXPORT TableFactor : public DiscreteFactor {
@@ -129,8 +131,6 @@ namespace gtsam {
     TableFactor(const DiscreteKey& key, const std::vector<double>& row)
         : TableFactor(DiscreteKeys{key}, row) {}
 
-    /** Construct from a DiscreteTableConditional type */
-    explicit TableFactor(const SparseDiscreteConditional& c);
 
     /// @}
     /// @name Testable

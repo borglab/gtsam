@@ -20,7 +20,6 @@
 #include <gtsam/base/FastSet.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/discrete/TableFactor.h>
-#include <gtsam/discrete/SparseDiscreteConditional.h>
 
 #include <boost/format.hpp>
 #include <utility>
@@ -57,16 +56,6 @@ namespace gtsam {
     sorted_dkeys_ = discreteKeys();
     sort(sorted_dkeys_.begin(), sorted_dkeys_.end());
   }
-
-  /* ************************************************************************ */
-  TableFactor::TableFactor(const SparseDiscreteConditional& c)
-      : DiscreteFactor(c.keys()),
-        sparse_table_(c.sparse_table_),
-        denominators_(c.denominators_) {
-          cardinalities_ = c.cardinalities_;
-          sorted_dkeys_ = discreteKeys();
-          sort(sorted_dkeys_.begin(), sorted_dkeys_.end());
-        }
 
   /* ************************************************************************ */
   Eigen::SparseVector<double> TableFactor::Convert(
