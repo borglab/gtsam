@@ -36,23 +36,23 @@ namespace gtsam {
 
   /**
    * A discrete probabilistic factor optimized for sparsity.
-   * Uses sparse_table_ to store only the non-zero probabilities.
+   * Uses sparse_table_ to store only the nonzero probabilities.
    * Computes the assigned value for the key using the ordering which the 
-   * non-zero probabilties are stored in.
+   * nonzero probabilties are stored in. (lazy cartesian product)
    * 
    * @ingroup discrete
    */
   class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    protected:
-    std::map<Key, size_t> cardinalities_;
-    Eigen::SparseVector<double> sparse_table_;
+    std::map<Key, size_t> cardinalities_; /// Map of Keys and their cardinalities.
+    Eigen::SparseVector<double> sparse_table_; /// SparseVector of nonzero probabilities.
    
    private:
-    std::map<Key, size_t> denominators_;
-    DiscreteKeys sorted_dkeys_;
+    std::map<Key, size_t> denominators_; /// Map of Keys and their denominators used in keyValueForIndex.
+    DiscreteKeys sorted_dkeys_; /// Sorted DiscreteKeys to use internally.
     
      /**
-      * @brief Finds nth entry in the cartesian product of arrays in O(1)
+      * @brief Uses lazy cartesian product to find nth entry in the cartesian product of arrays in O(1)
       * Example)
       *   v0 | v1 | val
       *    0 |  0 |  10
