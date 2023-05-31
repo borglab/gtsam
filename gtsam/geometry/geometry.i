@@ -575,13 +575,13 @@ class Unit3 {
   gtsam::Point3 point3() const;
   gtsam::Point3 point3(Eigen::Ref<Eigen::MatrixXd> H) const;
 
-  Vector3 unitVector() const;
-  Vector3 unitVector(Eigen::Ref<Eigen::MatrixXd> H) const;
+  gtsam::Vector3 unitVector() const;
+  gtsam::Vector3 unitVector(Eigen::Ref<Eigen::MatrixXd> H) const;
   double dot(const gtsam::Unit3& q) const;
   double dot(const gtsam::Unit3& q, Eigen::Ref<Eigen::MatrixXd> H1,
              Eigen::Ref<Eigen::MatrixXd> H2) const;
-  Vector2 errorVector(const gtsam::Unit3& q) const;
-  Vector2 errorVector(const gtsam::Unit3& q, Eigen::Ref<Eigen::MatrixXd> H_p,
+  gtsam::Vector2 errorVector(const gtsam::Unit3& q) const;
+  gtsam::Vector2 errorVector(const gtsam::Unit3& q, Eigen::Ref<Eigen::MatrixXd> H_p,
                       Eigen::Ref<Eigen::MatrixXd> H_q) const;
 
   // Manifold
