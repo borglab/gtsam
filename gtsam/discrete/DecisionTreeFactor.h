@@ -63,11 +63,46 @@ namespace gtsam {
     /** Constructor from DiscreteKeys and AlgebraicDecisionTree */
     DecisionTreeFactor(const DiscreteKeys& keys, const ADT& potentials);
 
-    /** Constructor from doubles */
+    /**
+     * @brief Constructor from doubles
+     *
+     * @param keys The discrete keys.
+     * @param table The table of values.
+     *
+     * @throw std::invalid_argument if the size of `table` does not match the
+     * number of assignments.
+     *
+     * Example:
+     * @code{.cpp}
+     * DiscreteKey X(0,2), Y(1,3);
+     * const std::vector<double> table {2, 5, 3, 6, 4, 7};
+     * DecisionTreeFactor f1({X, Y}, table);
+     * @endcode
+     *
+     * The values in the table should be laid out so that the first key varies
+     * the slowest. and the last key the fastest.
+     */
     DecisionTreeFactor(const DiscreteKeys& keys,
-                      const std::vector<double>& table);
+                       const std::vector<double>& table);
 
-    /** Constructor from string */
+    /**
+     * @brief Constructor from string
+     *
+     * @param keys The discrete keys.
+     * @param table The table of values.
+     *
+     * @throw std::invalid_argument if the size of `table` does not match the
+     * number of assignments.
+     *
+     * Example:
+     * @code{.cpp}
+     * DiscreteKey X(0,2), Y(1,3);
+     * DecisionTreeFactor factor({X, Y}, "2 5 3 6 4 7");
+     * @endcode
+     *
+     * The values in the table should be laid out so that the first key varies
+     * the slowest. and the last key the fastest.
+     */
     DecisionTreeFactor(const DiscreteKeys& keys, const std::string& table);
 
     /// Single-key specialization
