@@ -138,6 +138,22 @@ class SymbolicBayesNet {
 };
 
 #include <gtsam/symbolic/SymbolicBayesTree.h>
+
+class SymbolicBayesTreeClique {
+  SymbolicBayesTreeClique();
+  SymbolicBayesTreeClique(const gtsam::SymbolicConditional* conditional);
+  bool equals(const gtsam::SymbolicBayesTreeClique& other, double tol) const;
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter);
+  const gtsam::SymbolicConditional* conditional() const;
+  bool isRoot() const;
+  gtsam::SymbolicBayesTreeClique* parent() const;
+  size_t treeSize() const;
+  size_t numCachedSeparatorMarginals() const;
+  void deleteCachedShortcuts();
+};
+
+
 class SymbolicBayesTree {
   // Constructors
   SymbolicBayesTree();
@@ -149,9 +165,14 @@ class SymbolicBayesTree {
   bool equals(const gtsam::SymbolicBayesTree& other, double tol) const;
 
   // Standard Interface
-  // size_t findParentClique(const gtsam::IndexVector& parents) const;
-  size_t size();
-  void saveGraph(string s) const;
+  bool empty() const;
+  size_t size() const;
+
+  const gtsam::SymbolicBayesTreeClique* operator[](size_t j) const;
+
+  void saveGraph(string s,
+                const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
   void clear();
   void deleteCachedShortcuts();
   size_t numCachedSeparatorMarginals() const;
@@ -162,28 +183,6 @@ class SymbolicBayesTree {
 
   string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-};
-
-class SymbolicBayesTreeClique {
-  SymbolicBayesTreeClique();
-  // SymbolicBayesTreeClique(gtsam::sharedConditional* conditional);
-
-  bool equals(const gtsam::SymbolicBayesTreeClique& other, double tol) const;
-  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
-                                gtsam::DefaultKeyFormatter) const;
-  size_t numCachedSeparatorMarginals() const;
-  // gtsam::sharedConditional* conditional() const;
-  bool isRoot() const;
-  size_t treeSize() const;
-  gtsam::SymbolicBayesTreeClique* parent() const;
-
-  //   // TODO: need wrapped versions graphs, BayesNet
-  //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function)
-  //  const; FactorGraph<FactorType> marginal(derived_ptr root, Eliminate
-  //  function) const; FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr
-  //  root, Eliminate function) const;
-  //
-  void deleteCachedShortcuts();
 };
 
 }  // namespace gtsam
