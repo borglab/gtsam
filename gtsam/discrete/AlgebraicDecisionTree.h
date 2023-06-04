@@ -28,9 +28,9 @@
 namespace gtsam {
 
   /**
-   * Algebraic Decision Trees fix the range to double
-   * Just has some nice constructors and some syntactic sugar
-   * TODO: consider eliminating this class altogether?
+   * An algebraic decision tree fixes the range of a DecisionTree to double.
+   * Just has some nice constructors and some syntactic sugar.
+   * TODO(dellaert): consider eliminating this class altogether?
    *
    * @ingroup discrete
    */
@@ -80,20 +80,62 @@ namespace gtsam {
     AlgebraicDecisionTree(const L& label, double y1, double y2)
         : Base(label, y1, y2) {}
 
-    /** Create a new leaf function splitting on a variable */
+    /**
+     * @brief Create a new leaf function splitting on a variable
+     *
+     * @param labelC: The label with cardinality 2
+     * @param y1: The value for the first key
+     * @param y2: The value for the second key
+     *
+     * Example:
+     * @code{.cpp}
+     * std::pair<string, size_t> A {"a", 2};
+     * AlgebraicDecisionTree<string> a(A, 0.6, 0.4);
+     * @endcode
+     */
     AlgebraicDecisionTree(const typename Base::LabelC& labelC, double y1,
                           double y2)
         : Base(labelC, y1, y2) {}
 
-    /** Create from keys and vector table */
+    /** 
+     * @brief Create from keys with cardinalities and a vector table
+     * 
+     * @param labelCs: The keys, with cardinalities, given as pairs
+     * @param ys: The vector table
+     *
+     * Example with three keys, A, B, and C, with cardinalities 2, 3, and 2,
+     * respectively, and a vector table of size 12:
+     * @code{.cpp}
+     * DiscreteKey A(0, 2), B(1, 3), C(2, 2);
+     * const vector<double> cpt{
+     *   1.0 / 3, 2.0 / 3, 3.0 / 7, 4.0 / 7, 5.0 / 11, 6.0 / 11,  //
+     *   1.0 / 9, 8.0 / 9, 3.0 / 6, 3.0 / 6, 5.0 / 10, 5.0 / 10};
+     * AlgebraicDecisionTree<Key> expected(A & B & C, cpt);
+     * @endcode
+     * The table is given in the following order:
+     *   A=0, B=0, C=0
+     *   A=0, B=0, C=1
+     *   ...
+     *   A=1, B=1, C=1
+     * Hence, the first line in the table is for A==0, and the second for A==1.
+     * In each line, the first two entries are for B==0, the next two for B==1,
+     * and the last two for B==2. Each pair is for a C value of 0 and 1.
+     */
     AlgebraicDecisionTree  //
         (const std::vector<typename Base::LabelC>& labelCs,
-        const std::vector<double>& ys) {
+         const std::vector<double>& ys) {
       this->root_ =
           Base::create(labelCs.begin(), labelCs.end(), ys.begin(), ys.end());
     }
 
-    /** Create from keys and string table */
+    /** 
+     * @brief Create from keys and string table
+     * 
+     * @param labelCs: The keys, with cardinalities, given as pairs
+     * @param table: The string table, given as a string of doubles.
+     * 
+     * @note Table needs to be in same order as the vector table in the other constructor.
+     */
     AlgebraicDecisionTree  //
         (const std::vector<typename Base::LabelC>& labelCs,
         const std::string& table) {
@@ -108,7 +150,13 @@ namespace gtsam {
           Base::create(labelCs.begin(), labelCs.end(), ys.begin(), ys.end());
     }
 
-    /** Create a new function splitting on a variable */
+    /** 
+     * @brief Create a range of decision trees, splitting on a single variable.
+     * 
+     * @param begin: Iterator to beginning of a range of decision trees
+     * @param end: Iterator to end of a range of decision trees
+     * @param label: The label to split on
+     */
     template <typename Iterator>
     AlgebraicDecisionTree(Iterator begin, Iterator end, const L& label)
         : Base(nullptr) {
