@@ -31,13 +31,11 @@ string html(const gtsam::DiscreteValues& values,
             std::map<gtsam::Key, std::vector<std::string>> names);
 
 #include <gtsam/discrete/DiscreteFactor.h>
-class DiscreteFactor {
+virtual class DiscreteFactor : gtsam::Factor {
   void print(string s = "DiscreteFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteFactor& other, double tol = 1e-9) const;
-  bool empty() const;
-  size_t size() const;
   double operator()(const gtsam::DiscreteValues& values) const;
 };
 
@@ -224,6 +222,8 @@ class DiscreteBayesTree {
   size_t size() const;
   bool empty() const;
   const DiscreteBayesTreeClique* operator[](size_t j) const;
+
+  double evaluate(const gtsam::DiscreteValues& values) const;
 
   string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;

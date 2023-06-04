@@ -4,7 +4,7 @@
 namespace gtsam {
 
 #include <gtsam/symbolic/SymbolicFactor.h>
-virtual class SymbolicFactor {
+virtual class SymbolicFactor : gtsam::Factor {
   // Standard Constructors and Named Constructors
   SymbolicFactor(const gtsam::SymbolicFactor& f);
   SymbolicFactor();
@@ -18,12 +18,10 @@ virtual class SymbolicFactor {
   static gtsam::SymbolicFactor FromKeys(const gtsam::KeyVector& js);
 
   // From Factor
-  size_t size() const;
   void print(string s = "SymbolicFactor",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::SymbolicFactor& other, double tol) const;
-  gtsam::KeyVector keys();
 };
 
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
@@ -161,6 +159,9 @@ class SymbolicBayesTree {
   gtsam::SymbolicConditional* marginalFactor(size_t key) const;
   gtsam::SymbolicFactorGraph* joint(size_t key1, size_t key2) const;
   gtsam::SymbolicBayesNet* jointBayesNet(size_t key1, size_t key2) const;
+
+  string dot(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 class SymbolicBayesTreeClique {

@@ -197,4 +197,15 @@ class VariableIndex {
   size_t nEntries() const;
 };
 
+#include <gtsam/inference/Factor.h>
+virtual class Factor {
+  void print(string s = "Factor\n", const gtsam::KeyFormatter& keyFormatter =
+                                        gtsam::DefaultKeyFormatter) const;
+  void printKeys(string s = "") const;
+  bool equals(const gtsam::Factor& other, double tol = 1e-9) const;
+  bool empty() const;
+  size_t size() const;
+  gtsam::KeyVector keys() const;
+};
+
 }  // namespace gtsam
