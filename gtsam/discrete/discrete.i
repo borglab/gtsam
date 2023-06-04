@@ -44,14 +44,19 @@ class DiscreteFactor {
 #include <gtsam/discrete/DecisionTreeFactor.h>
 virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
   DecisionTreeFactor();
-  
+
   DecisionTreeFactor(const gtsam::DiscreteKey& key,
                      const std::vector<double>& spec);
   DecisionTreeFactor(const gtsam::DiscreteKey& key, string table);
-  
+
+  DecisionTreeFactor(const gtsam::DiscreteKeys& keys,
+                     const std::vector<double>& table);
   DecisionTreeFactor(const gtsam::DiscreteKeys& keys, string table);
+
+  DecisionTreeFactor(const std::vector<gtsam::DiscreteKey>& keys,
+                     const std::vector<double>& table);
   DecisionTreeFactor(const std::vector<gtsam::DiscreteKey>& keys, string table);
-  
+
   DecisionTreeFactor(const gtsam::DiscreteConditional& c);
   
   void print(string s = "DecisionTreeFactor\n",
