@@ -148,7 +148,7 @@ class Ordering {
 
   // Standard interface
   size_t size() const;
-  size_t at(size_t key) const;
+  size_t at(size_t i) const;
   void push_back(size_t key);
 
   // enabling serialization functionality
