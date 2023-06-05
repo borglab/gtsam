@@ -137,6 +137,43 @@ class SymbolicBayesNet {
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
 };
 
+#include <gtsam/symbolic/SymbolicEliminationTree.h>
+
+class SymbolicEliminationTree {
+  SymbolicEliminationTree(const gtsam::SymbolicFactorGraph& factorGraph,
+                          const gtsam::VariableIndex& structure,
+                          const gtsam::Ordering& order);
+
+  SymbolicEliminationTree(const gtsam::SymbolicFactorGraph& factorGraph,
+                          const gtsam::Ordering& order);
+
+  void print(
+      string name = "EliminationTree: ",
+      const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::SymbolicEliminationTree& other,
+              double tol = 1e-9) const;
+};
+
+#include <gtsam/symbolic/SymbolicJunctionTree.h>
+
+class SymbolicCluster {
+  gtsam::Ordering orderedFrontalKeys;
+  gtsam::SymbolicFactorGraph factors;
+  const gtsam::SymbolicCluster& operator[](size_t i) const;
+  size_t nrChildren() const;
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+};
+
+class SymbolicJunctionTree {
+  SymbolicJunctionTree(const gtsam::SymbolicEliminationTree& eliminationTree);
+  void print(
+      string name = "JunctionTree: ",
+      const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
+  size_t nrRoots() const;
+  const gtsam::SymbolicCluster& operator[](size_t i) const;
+};
+
 #include <gtsam/symbolic/SymbolicBayesTree.h>
 
 class SymbolicBayesTreeClique {
