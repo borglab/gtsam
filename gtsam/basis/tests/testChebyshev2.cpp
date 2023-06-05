@@ -17,14 +17,15 @@
  *        methods
  */
 
-#include <cstddef>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/basis/Chebyshev2.h>
 #include <gtsam/basis/FitBasis.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/base/Testable.h>
 
-#include <CppUnitLite/TestHarness.h>
+#include <cstddef>
 #include <functional>
 
 using namespace std;
@@ -119,8 +120,9 @@ TEST(Chebyshev2, InterpolateVector) {
   EXPECT(assert_equal(expected, fx(X, actualH), 1e-9));
 
   // Check derivative
-  std::function<Vector2(ParameterMatrix<2>)> f = std::bind(
-      &Chebyshev2::VectorEvaluationFunctor<2>::operator(), fx, std::placeholders::_1, nullptr);
+  std::function<Vector2(ParameterMatrix<2>)> f =
+      std::bind(&Chebyshev2::VectorEvaluationFunctor<2>::operator(), fx,
+                std::placeholders::_1, nullptr);
   Matrix numericalH =
       numericalDerivative11<Vector2, ParameterMatrix<2>, 2 * N>(f, X);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
@@ -138,10 +140,49 @@ TEST(Chebyshev2, InterpolatePose2) {
 
   Vector xi(3);
   xi << t, 0, 0.1;
+  Eigen::Matrix<double, /*3x3N*/ -1, -1> actualH(3, 3 * N);
+
   Chebyshev2::ManifoldEvaluationFunctor<Pose2> fx(N, t, a, b);
   // We use xi as canonical coordinates via exponential map
   Pose2 expected = Pose2::ChartAtOrigin::Retract(xi);
-  EXPECT(assert_equal(expected, fx(X)));
+  EXPECT(assert_equal(expected, fx(X, actualH)));
+
+  // Check derivative
+  std::function<Pose2(ParameterMatrix<3>)> f =
+      std::bind(&Chebyshev2::ManifoldEvaluationFunctor<Pose2>::operator(), fx,
+                std::placeholders::_1, nullptr);
+  Matrix numericalH =
+      numericalDerivative11<Pose2, ParameterMatrix<3>, 3 * N>(f, X);
+  EXPECT(assert_equal(numericalH, actualH, 1e-9));
+}
+
+//******************************************************************************
+// Interpolating poses using the exponential map
+TEST(Chebyshev2, InterpolatePose3) {
+  double a = 10, b = 100;
+  double t = Chebyshev2::Points(N, a, b)(11);
+
+  Rot3 R = Rot3::Ypr(-2.21366492e-05, -9.35353636e-03, -5.90463598e-04);
+  Pose3 pose(R, Point3(1, 2, 3));
+
+  Vector6 xi = Pose3::ChartAtOrigin::Local(pose);
+  Eigen::Matrix<double, /*6x6N*/ -1, -1> actualH(6, 6 * N);
+
+  ParameterMatrix<6> X(N);
+  X.col(11) = xi;
+
+  Chebyshev2::ManifoldEvaluationFunctor<Pose3> fx(N, t, a, b);
+  // We use xi as canonical coordinates via exponential map
+  Pose3 expected = Pose3::ChartAtOrigin::Retract(xi);
+  EXPECT(assert_equal(expected, fx(X, actualH)));
+
+  // Check derivative
+  std::function<Pose3(ParameterMatrix<6>)> f =
+      std::bind(&Chebyshev2::ManifoldEvaluationFunctor<Pose3>::operator(), fx,
+                std::placeholders::_1, nullptr);
+  Matrix numericalH =
+      numericalDerivative11<Pose3, ParameterMatrix<6>, 6 * N>(f, X);
+  EXPECT(assert_equal(numericalH, actualH, 1e-8));
 }
 
 //******************************************************************************
@@ -149,7 +190,7 @@ TEST(Chebyshev2, Decomposition) {
   // Create example sequence
   Sequence sequence;
   for (size_t i = 0; i < 16; i++) {
-    double x = (1.0/ 16)*i - 0.99, y = x;
+    double x = (1.0 / 16) * i - 0.99, y = x;
     sequence[x] = y;
   }
 

@@ -170,6 +170,8 @@ TEST(BasisFactors, ManifoldEvaluationFactor) {
       LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
 
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-9);
+  // Check Jacobians
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, initial, 1e-7, 1e-5);
 }
 
 //******************************************************************************
