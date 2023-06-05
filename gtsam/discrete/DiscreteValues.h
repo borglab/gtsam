@@ -120,6 +120,11 @@ class GTSAM_EXPORT DiscreteValues : public Assignment<Key> {
   /// @}
 };
 
+/// Free version of CartesianProduct.
+inline std::vector<DiscreteValues> cartesianProduct(const DiscreteKeys& keys) {
+  return DiscreteValues::CartesianProduct(keys);
+}
+
 /// Free version of markdown.
 std::string markdown(const DiscreteValues& values,
                      const KeyFormatter& keyFormatter = DefaultKeyFormatter,
