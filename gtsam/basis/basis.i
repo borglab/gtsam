@@ -121,6 +121,13 @@ virtual class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
                            double x, double a, double b);
 };
 
+#include <gtsam/geometry/Pose3.h>
+
+typedef gtsam::ManifoldEvaluationFactor<gtsam::Chebyshev2, gtsam::Rot3>
+    ManifoldEvaluationFactorChebyshev2Rot3;
+typedef gtsam::ManifoldEvaluationFactor<gtsam::Chebyshev2, gtsam::Pose3>
+    ManifoldEvaluationFactorChebyshev2Pose3;
+
 // TODO(gerry): Add `DerivativeFactor`, `VectorDerivativeFactor`, and
 // `ComponentDerivativeFactor`
 
