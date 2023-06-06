@@ -96,7 +96,9 @@ jobs:
         shell: powershell
         run: |
           choco install eigen
-          Get-ChildItem -Force "$env:ChocolateyInstall\lib\eigen\include"
+          echo "EIGEN3_INCLUDE_DIR=$env:ChocolateyInstall\lib\eigen\include" >> $env:GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=$env:CMAKE_PREFIX_PATH;$env:ChocolateyInstall\lib\eigen\cmake\share" >> $env:GITHUB_ENV
+          Get-ChildItem -Force "$env:ChocolateyInstall\lib\eigen\cmake\share"
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -104,7 +106,7 @@ jobs:
       - name: Configuration
         run: |
           cmake -E remove_directory build
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib" -DGTSAM_USE_SYSTEM_EIGEN=ON -DEIGEN_INCLUDE_DIR="$env:ChocolateyInstall\lib\eigen\include"
+          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib" -DGTSAM_USE_SYSTEM_EIGEN=ON -DEIGEN3_INCLUDE_DIR="$env:ChocolateyInstall\lib\eigen\include"
 
       - name: Build
         run: |
