@@ -156,6 +156,7 @@ TEST(Chebyshev2, InterpolatePose2) {
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }
 
+#ifdef GTSAM_POSE3_EXPMAP
 //******************************************************************************
 // Interpolating poses using the exponential map
 TEST(Chebyshev2, InterpolatePose3) {
@@ -184,6 +185,7 @@ TEST(Chebyshev2, InterpolatePose3) {
       numericalDerivative11<Pose3, ParameterMatrix<6>, 6 * N>(f, X);
   EXPECT(assert_equal(numericalH, actualH, 1e-8));
 }
+#endif
 
 //******************************************************************************
 TEST(Chebyshev2, Decomposition) {
