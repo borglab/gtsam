@@ -28,8 +28,7 @@ jobs:
 
         build_type: [
             Debug,
-            #TODO(Varun) The release build takes over 2.5 hours, need to figure out why.
-            # Release
+            Release
           ]
         build_unstable: [ON]
         include:
@@ -93,13 +92,19 @@ jobs:
           # Set the BOOST_ROOT variable
           echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
 
+      - name: Install Eigen
+        shell: powershell
+        run: |
+          choco install eigen
+          Get-ChildItem -Force "$env:ChocolateyInstall\lib\eigen\include"
+
       - name: Checkout
         uses: actions/checkout@v3
 
       - name: Configuration
         run: |
           cmake -E remove_directory build
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
+          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib" -DGTSAM_USE_SYSTEM_EIGEN=ON -DEIGEN_INCLUDE_DIR="$env:ChocolateyInstall\lib\eigen\include"
 
       - name: Build
         run: |
@@ -125,4 +130,3 @@ jobs:
 
           # Run GTSAM_UNSTABLE tests
           #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base_unstable
-          
