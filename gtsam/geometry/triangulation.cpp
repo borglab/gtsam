@@ -25,9 +25,9 @@
 namespace gtsam {
 
 Vector4 triangulateHomogeneousDLT(
-    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
-    const Point2Vector& measurements,
-    double rank_tol) {
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& 
+    projection_matrices,
+    const Point2Vector& measurements, double rank_tol) {
   // number of cameras
   size_t m = projection_matrices.size();
 
@@ -56,9 +56,9 @@ Vector4 triangulateHomogeneousDLT(
 }
 
 Vector4 triangulateHomogeneousDLT(
-    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
-    const std::vector<Unit3>& measurements,
-    double rank_tol) {
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& 
+    projection_matrices,
+    const std::vector<Unit3>& measurements, double rank_tol) {
   // number of cameras
   size_t m = projection_matrices.size();
 
@@ -68,7 +68,9 @@ Vector4 triangulateHomogeneousDLT(
   for (size_t i = 0; i < m; i++) {
     size_t row = i * 2;
     const Matrix34& projection = projection_matrices.at(i);
-    const Point3& p = measurements.at(i).point3();  // to get access to x,y,z of the bearing vector
+    const Point3& p = 
+        measurements.at(i)
+            .point3();  // to get access to x,y,z of the bearing vector
 
     // build system of equations
     A.row(row) = p.x() * projection.row(2) - p.z() * projection.row(0);
@@ -104,8 +106,9 @@ Point3 triangulateLOST(const std::vector<Pose3>& poses,
     double num_i = wZi.cross(wZj).norm();
     double den_i = d_ij.cross(wZj).norm();
 
-    // Handle q_i = 0 (or NaN), which arises if the measurement vectors, wZi and wZj, coincide
-    // (or the baseline vector coincides with the jth measurement vector).
+    // Handle q_i = 0 (or NaN), which arises if the measurement vectors, wZi and 
+    // wZj, coincide (or the baseline vector coincides with the jth measurement 
+    // vector).
     if (num_i == 0 || den_i == 0) {
       bool success = false;
       for (size_t k = 2; k < m; k++) {
@@ -127,9 +130,9 @@ Point3 triangulateLOST(const std::vector<Pose3>& poses,
     // Note: Setting q_i = 1.0 gives same results as DLT.
     const double q_i = num_i / (measurementNoise->sigma() * den_i);
 
-    const Matrix23 coefficientMat = q_i *
-                                    skewSymmetric(calibratedMeasurements[i]).topLeftCorner(2, 3) *
-                                    wTi.rotation().matrix().transpose();
+    const Matrix23 coefficientMat = 
+        q_i * skewSymmetric(calibratedMeasurements[i]).topLeftCorner(2, 3) *
+        wTi.rotation().matrix().transpose();
 
     A.block<2, 3>(2 * i, 0) << coefficientMat;
     b.block<2, 1>(2 * i, 0) << coefficientMat * wTi.translation();
@@ -144,20 +147,22 @@ Point3 triangulateLOST(const std::vector<Pose3>& poses,
 }
 
 Point3 triangulateDLT(
-    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
-    const Point2Vector& measurements,
-    double rank_tol) {
-  Vector4 v = triangulateHomogeneousDLT(projection_matrices, measurements, rank_tol);
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& 
+    projection_matrices,
+    const Point2Vector& measurements, double rank_tol) {
+  Vector4 v = 
+      triangulateHomogeneousDLT(projection_matrices, measurements, rank_tol);
   // Create 3D point from homogeneous coordinates
   return Point3(v.head<3>() / v[3]);
 }
 
 Point3 triangulateDLT(
-    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
-    const std::vector<Unit3>& measurements,
-    double rank_tol) {
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& 
+    projection_matrices,
+    const std::vector<Unit3>& measurements, double rank_tol) {
   // contrary to previous triangulateDLT, this is now taking Unit3 inputs
-  Vector4 v = triangulateHomogeneousDLT(projection_matrices, measurements, rank_tol);
+  Vector4 v = 
+      triangulateHomogeneousDLT(projection_matrices, measurements, rank_tol);
   // Create 3D point from homogeneous coordinates
   return Point3(v.head<3>() / v[3]);
 }
@@ -169,7 +174,8 @@ Point3 triangulateDLT(
  * @param landmarkKey to refer to landmark
  * @return refined Point3
  */
-Point3 optimize(const NonlinearFactorGraph& graph, const Values& values, Key landmarkKey) {
+Point3 optimize(const NonlinearFactorGraph& graph, const Values& values, 
+                Key landmarkKey) {
   // Maybe we should consider Gauss-Newton?
   LevenbergMarquardtParams params;
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
