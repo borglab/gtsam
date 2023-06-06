@@ -150,15 +150,15 @@ Point3 triangulateDLT(
     const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>&
         projection_matrices,
     const Point2Vector& measurements, double rank_tol) {
-  Vector4 v = 
+  Vector4 v =
       triangulateHomogeneousDLT(projection_matrices, measurements, rank_tol);
   // Create 3D point from homogeneous coordinates
   return Point3(v.head<3>() / v[3]);
 }
 
 Point3 triangulateDLT(
-    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& 
-    projection_matrices,
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>&
+        projection_matrices,
     const std::vector<Unit3>& measurements, double rank_tol) {
   // contrary to previous triangulateDLT, this is now taking Unit3 inputs
   Vector4 v =
