@@ -73,6 +73,7 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
   gtsam::DecisionTreeFactor* sum(size_t nrFrontals) const;
   gtsam::DecisionTreeFactor* sum(const gtsam::Ordering& keys) const;
   gtsam::DecisionTreeFactor* max(size_t nrFrontals) const;
+  gtsam::DecisionTreeFactor* max(const gtsam::Ordering& keys) const;
 
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
