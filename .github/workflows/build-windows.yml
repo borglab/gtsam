@@ -97,8 +97,8 @@ jobs:
         run: |
           choco install eigen
           echo "EIGEN3_INCLUDE_DIR=$env:ChocolateyInstall\lib\eigen\include" >> $env:GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=$env:CMAKE_PREFIX_PATH;$env:ChocolateyInstall\lib\eigen\cmake\share" >> $env:GITHUB_ENV
-          Get-ChildItem -Force "$env:ChocolateyInstall\lib\eigen\cmake\share"
+          echo "CMAKE_PREFIX_PATH=$env:CMAKE_PREFIX_PATH;$env:ChocolateyInstall\lib\eigen\share\cmake" >> $env:GITHUB_ENV
+          Get-ChildItem -Force "$env:ChocolateyInstall\lib\eigen\share\cmake"
 
       - name: Checkout
         uses: actions/checkout@v3
