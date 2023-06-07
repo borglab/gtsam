@@ -125,6 +125,10 @@ class Point3 {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // Other methods
+  gtsam::Point3 normalize(const gtsam::Point3 &p) const;
+  gtsam::Point3 normalize(const gtsam::Point3 &p, Eigen::Ref<Eigen::MatrixXd> H) const;
 };
 
 class Point3Pairs {
@@ -342,6 +346,9 @@ class Rot3 {
 
   // Group action on Unit3
   gtsam::Unit3 rotate(const gtsam::Unit3& p) const;
+  gtsam::Unit3 rotate(const gtsam::Unit3& p,
+                      Eigen::Ref<Eigen::MatrixXd> HR,
+                      Eigen::Ref<Eigen::MatrixXd> Hp) const;
   gtsam::Unit3 unrotate(const gtsam::Unit3& p) const;
   
   // Standard Interface
@@ -563,14 +570,27 @@ class Unit3 {
 
   // Other functionality
   Matrix basis() const;
+  Matrix basis(Eigen::Ref<Eigen::MatrixXd> H) const;
   Matrix skew() const;
   gtsam::Point3 point3() const;
+  gtsam::Point3 point3(Eigen::Ref<Eigen::MatrixXd> H) const;
+
+  gtsam::Vector3 unitVector() const;
+  gtsam::Vector3 unitVector(Eigen::Ref<Eigen::MatrixXd> H) const;
+  double dot(const gtsam::Unit3& q) const;
+  double dot(const gtsam::Unit3& q, Eigen::Ref<Eigen::MatrixXd> H1,
+             Eigen::Ref<Eigen::MatrixXd> H2) const;
+  gtsam::Vector2 errorVector(const gtsam::Unit3& q) const;
+  gtsam::Vector2 errorVector(const gtsam::Unit3& q, Eigen::Ref<Eigen::MatrixXd> H_p,
+                      Eigen::Ref<Eigen::MatrixXd> H_q) const;
 
   // Manifold
   static size_t Dim();
   size_t dim() const;
   gtsam::Unit3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Unit3& s) const;
+  gtsam::Unit3 FromPoint3(const gtsam::Point3& point) const;
+  gtsam::Unit3 FromPoint3(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> H) const;
 
   // enabling serialization functionality
   void serialize() const;

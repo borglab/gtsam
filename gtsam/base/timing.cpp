@@ -272,20 +272,21 @@ void tic(size_t id, const char *labelC) {
 }
 
 /* ************************************************************************* */
-void toc(size_t id, const char *label) {
+void toc(size_t id, const char *labelC) {
 // disable anything which refers to TimingOutline as well, for good measure
 #ifdef GTSAM_USE_BOOST_FEATURES
+  const std::string label(labelC);
   std::shared_ptr<TimingOutline> current(gCurrentTimer.lock());
   if (id != current->id_) {
     gTimingRoot->print();
     throw std::invalid_argument(
-        "gtsam timing:  Mismatched tic/toc: gttoc(\"" + std::string(label) +
+        "gtsam timing:  Mismatched tic/toc: gttoc(\"" + label +
         "\") called when last tic was \"" + current->label_ + "\".");
   }
   if (!current->parent_.lock()) {
     gTimingRoot->print();
     throw std::invalid_argument(
-        "gtsam timing:  Mismatched tic/toc: extra gttoc(\"" + std::string(label) +
+        "gtsam timing:  Mismatched tic/toc: extra gttoc(\"" + label +
         "\"), already at the root");
   }
   current->toc();

@@ -8,32 +8,13 @@
 # install TBB with _debug.so files
 function install_tbb()
 {
-  TBB_BASEURL=https://github.com/oneapi-src/oneTBB/releases/download
-  TBB_VERSION=4.4.5
-  TBB_DIR=tbb44_20160526oss
-  TBB_SAVEPATH="/tmp/tbb.tgz"
-
   if [ "$(uname)" == "Linux" ]; then
-    OS_SHORT="lin"
-    TBB_LIB_DIR="intel64/gcc4.4"
-    SUDO="sudo"
+    sudo apt-get -y install libtbb-dev
 
   elif [ "$(uname)" == "Darwin" ]; then
-    OS_SHORT="osx"
-    TBB_LIB_DIR=""
-    SUDO=""
+    brew install tbb
 
   fi
-
-  wget "${TBB_BASEURL}/${TBB_VERSION}/${TBB_DIR}_${OS_SHORT}.tgz" -O $TBB_SAVEPATH
-  tar -C /tmp -xf $TBB_SAVEPATH
-
-  TBBROOT=/tmp/$TBB_DIR
-  # Copy the needed files to the correct places.
-  # This works correctly for CI builds, instead of setting path variables.
-  # This is what Homebrew does to install TBB on Macs
-  $SUDO cp -R $TBBROOT/lib/$TBB_LIB_DIR/* /usr/local/lib/
-  $SUDO cp -R $TBBROOT/include/ /usr/local/include/
 
 }
 

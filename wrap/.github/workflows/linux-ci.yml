@@ -5,12 +5,12 @@ on: [pull_request]
 jobs:
   build:
     name: Tests for 🐍 ${{ matrix.python-version }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
 
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
 
     steps:
       - name: Checkout
@@ -19,7 +19,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get -y update
-          sudo apt install cmake build-essential pkg-config libpython-dev python-numpy libboost-all-dev
+          sudo apt install cmake build-essential pkg-config libpython3-dev python3-numpy libboost-all-dev
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
