@@ -92,21 +92,13 @@ jobs:
           # Set the BOOST_ROOT variable
           echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
 
-      - name: Install Eigen
-        shell: powershell
-        run: |
-          choco install eigen
-          echo "EIGEN3_INCLUDE_DIR=$env:ChocolateyInstall\lib\eigen\include" >> $env:GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=$env:CMAKE_PREFIX_PATH;$env:ChocolateyInstall\lib\eigen\share\cmake" >> $env:GITHUB_ENV
-          Get-ChildItem -Force "$env:ChocolateyInstall\lib\eigen\share\cmake"
-
       - name: Checkout
         uses: actions/checkout@v3
 
       - name: Configuration
         run: |
           cmake -E remove_directory build
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib" -DGTSAM_USE_SYSTEM_EIGEN=ON -DEIGEN3_INCLUDE_DIR="$env:ChocolateyInstall\lib\eigen\include"
+          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
 
       - name: Build
         run: |
