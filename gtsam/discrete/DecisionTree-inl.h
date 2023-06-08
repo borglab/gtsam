@@ -93,7 +93,7 @@ namespace gtsam {
     /// print
     void print(const std::string& s, const LabelFormatter& labelFormatter,
                const ValueFormatter& valueFormatter) const override {
-      std::cout << s << " Leaf " << valueFormatter(constant_) << std::endl;
+      std::cout << s << " Leaf " << valueFormatter(constant_) << " | nrAssignments: " << nrAssignments_ << std::endl;
     }
 
     /** Write graphviz format to stream `os`. */
@@ -207,9 +207,9 @@ namespace gtsam {
 
         size_t nrAssignments = 0;
         for(auto branch: f->branches()) {
-          assert(branch->isLeaf());
-          nrAssignments +=
-              std::dynamic_pointer_cast<const Leaf>(branch)->nrAssignments();
+          if (auto leaf = std::dynamic_pointer_cast<const Leaf>(branch)) {
+            nrAssignments += leaf->nrAssignments();
+          }
         }
         NodePtr newLeaf(
             new Leaf(std::dynamic_pointer_cast<const Leaf>(f0)->constant(),
@@ -217,7 +217,33 @@ namespace gtsam {
         return newLeaf;
       } else
 #endif
+          // {
+          //   Choice choice_node;
+
+          //   for (auto branch : f->branches()) {
+          //     if (auto choice = std::dynamic_pointer_cast<const
+          //     Choice>(branch)) {
+          //       // `branch` is a Choice node so we apply Unique to it.
+          //       choice_node.push_back(Unique(choice));
+
+          //     } else if (auto leaf =
+          //                    std::dynamic_pointer_cast<const Leaf>(branch)) {
+          //       choice_node.push_back(leaf);
+          //     }
+          //   }
+          //   return std::make_shared<const Choice>(choice_node);
+          // }
         return f;
+    }
+
+    static NodePtr UpdateNrAssignments(const NodePtr& f) {
+      if (auto choice = std::dynamic_pointer_cast<const Choice>(f)) {
+        // `f` is a Choice node so we recurse.
+        return UpdateNrAssignments(f);
+
+      } else if (auto leaf = std::dynamic_pointer_cast<const Leaf>(f)) {
+        
+      }
     }
 
     bool isLeaf() const override { return false; }
@@ -282,7 +308,7 @@ namespace gtsam {
     void print(const std::string& s, const LabelFormatter& labelFormatter,
                const ValueFormatter& valueFormatter) const override {
       std::cout << s << " Choice(";
-      std::cout << labelFormatter(label_) << ") " << std::endl;
+      std::cout << labelFormatter(label_) << ") " << " | All Same: " << allSame_ << " | nrBranches: " << branches_.size() << std::endl;
       for (size_t i = 0; i < branches_.size(); i++) {
         branches_[i]->print(s + " " + std::to_string(i), labelFormatter, valueFormatter);
       }
@@ -569,16 +595,16 @@ namespace gtsam {
     // find highest label among branches
     std::optional<L> highestLabel;
     size_t nrChoices = 0;
-    for (Iterator it = begin; it != end; it++) {
-      if (it->root_->isLeaf())
-        continue;
-      std::shared_ptr<const Choice> c =
-          std::dynamic_pointer_cast<const Choice>(it->root_);
-      if (!highestLabel || c->label() > *highestLabel) {
-        highestLabel = c->label();
-        nrChoices = c->nrChoices();
-      }
-    }
+    // for (Iterator it = begin; it != end; it++) {
+    //   if (it->root_->isLeaf())
+    //     continue;
+    //   std::shared_ptr<const Choice> c =
+    //       std::dynamic_pointer_cast<const Choice>(it->root_);
+    //   if (!highestLabel || c->label() > *highestLabel) {
+    //     highestLabel = c->label();
+    //     nrChoices = c->nrChoices();
+    //   }
+    // }
 
     // if label is already in correct order, just put together a choice on label
     if (!nrChoices || !highestLabel || label > *highestLabel) {
@@ -604,6 +630,7 @@ namespace gtsam {
         NodePtr fi = compose(functions.begin(), functions.end(), label);
         choiceOnHighestLabel->push_back(fi);
       }
+      // return Choice::ComputeNrAssignments(Choice::Unique(choiceOnHighestLabel));
       return Choice::Unique(choiceOnHighestLabel);
     }
   }
