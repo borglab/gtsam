@@ -627,7 +627,6 @@ namespace gtsam {
         NodePtr fi = compose(functions.begin(), functions.end(), label);
         choiceOnHighestLabel->push_back(fi);
       }
-      // return Choice::ComputeNrAssignments(Choice::Unique(choiceOnHighestLabel));
       return Choice::Unique(choiceOnHighestLabel);
     }
   }
