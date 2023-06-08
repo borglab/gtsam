@@ -136,10 +136,16 @@ namespace gtsam {
     NodePtr root_;
 
    protected:
-    /** Internal recursive function to create from keys, cardinalities, 
-     * and Y values 
+    /** Internal recursive function to create from keys, cardinalities,
+     * and Y values
      */
-    template<typename It, typename ValueIt>
+    template <typename It, typename ValueIt>
+    NodePtr build(It begin, It end, ValueIt beginY, ValueIt endY) const;
+
+    /** Internal helper function to create from keys, cardinalities,
+     * and Y values
+     */
+    template <typename It, typename ValueIt>
     NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY) const;
 
     /**
