@@ -18,7 +18,7 @@
  */
 
 // #define DT_DEBUG_MEMORY
-// #define GTSAM_DT_NO_PRUNING
+// #define GTSAM_DT_NO_MERGING
 #define DISABLE_DOT
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>

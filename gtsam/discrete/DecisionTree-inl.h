@@ -200,7 +200,7 @@ namespace gtsam {
 
     /// If all branches of a choice node f are the same, just return a branch.
     static NodePtr Unique(const ChoicePtr& f) {
-#ifndef GTSAM_DT_NO_PRUNING
+#ifndef GTSAM_DT_NO_MERGING
       // If all the branches are the same, we can merge them into one
       if (f->allSame_) {
         assert(f->branches().size() > 0);

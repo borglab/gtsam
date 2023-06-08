@@ -20,7 +20,7 @@
 #include <gtsam/discrete/DiscreteKey.h>  // make sure we have traits
 #include <gtsam/discrete/DiscreteValues.h>
 // headers first to make sure no missing headers
-//#define GTSAM_DT_NO_PRUNING
+//#define GTSAM_DT_NO_MERGING
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DecisionTree-inl.h>  // for convert only
 #define DISABLE_TIMING
