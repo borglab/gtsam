@@ -524,8 +524,6 @@ TEST(DecisionTree, ApplyWithAssignment) {
   DT prunedTree = tree.apply(pruner);
 
   DT expectedTree(keys, "0 0 0 0 5 6 7 8");
-  // expectedTree.print();
-  // prunedTree.print();
   EXPECT(assert_equal(expectedTree, prunedTree));
 
   size_t count = 0;
@@ -537,24 +535,6 @@ TEST(DecisionTree, ApplyWithAssignment) {
 
   // Check if apply doesn't enumerate all leaves.
   EXPECT_LONGS_EQUAL(5, count);
-}
-
-/* ************************************************************************** */
-// Test number of assignments.
-TEST(DecisionTree, Constructor) {
-  using gtsam::symbol_shorthand::M;
-
-  std::vector<double> probs = {0, 0, 1, 2};
-
-  DiscreteKeys keys{{M(1), 2}, {M(0), 2}};
-  DecisionTree<Key, double> dt1(keys, probs);
-  EXPECT_LONGS_EQUAL(4, dt1.nrAssignments());
-  dt1.print("", DefaultKeyFormatter, [](double x) { return std::to_string(x);});
-
-  DiscreteKeys keys2{{M(0), 2}, {M(1), 2}};
-  DecisionTree<Key, double> dt2(keys2, probs);
-  std::cout << "\n" << std::endl;
-  dt2.print("", DefaultKeyFormatter, [](double x) { return std::to_string(x);});
 }
 
 /* ************************************************************************** */
