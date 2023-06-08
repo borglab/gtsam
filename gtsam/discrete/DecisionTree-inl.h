@@ -199,47 +199,41 @@ namespace gtsam {
     }
 
     /// If all branches of a choice node f are the same, just return a branch.
-    static NodePtr Unique(const ChoicePtr& f) {
-#ifndef GTSAM_DT_NO_MERGING
-      // If all the branches are the same, we can merge them into one
-      if (f->allSame_) {
-        assert(f->branches().size() > 0);
-        NodePtr f0 = f->branches_[0];
-
-        size_t nrAssignments = 0;
-        for(auto branch: f->branches()) {
-          if (auto leaf = std::dynamic_pointer_cast<const Leaf>(branch)) {
-            nrAssignments += leaf->nrAssignments();
-          }
-        }
-        NodePtr newLeaf(
-            new Leaf(std::dynamic_pointer_cast<const Leaf>(f0)->constant(),
-                     nrAssignments));
-        return newLeaf;
-
-      } else
-      // Else we recurse
-#endif
-      {
-
+    static NodePtr Unique(const NodePtr& node) {
+      if (auto choice = std::dynamic_pointer_cast<const Choice>(node)) {
+        // Choice node, we recurse!
         // Make non-const copy
-        auto ff = std::make_shared<Choice>(f->label(), f->nrChoices());
+        auto f = std::make_shared<Choice>(choice->label(), choice->nrChoices());
 
         // Iterate over all the branches
-        for (size_t i = 0; i < f->nrChoices(); i++) {
-          auto branch = f->branches_[i];
-          if (auto leaf = std::dynamic_pointer_cast<const Leaf>(branch)) {
-            // Leaf node, simply assign
-            ff->push_back(branch);
-
-          } else if (auto choice =
-                         std::dynamic_pointer_cast<const Choice>(branch)) {
-            // Choice node, we recurse
-            ff->push_back(Unique(choice));
-          }
+        for (size_t i = 0; i < choice->nrChoices(); i++) {
+          auto branch = choice->branches_[i];
+          f->push_back(Unique(branch));
         }
 
-        return ff;
+#ifndef GTSAM_DT_NO_MERGING
+        // If all the branches are the same, we can merge them into one
+        if (f->allSame_) {
+          assert(f->branches().size() > 0);
+          NodePtr f0 = f->branches_[0];
+
+          // Compute total number of assignments
+          size_t nrAssignments = 0;
+          for (auto branch : f->branches()) {
+            if (auto leaf = std::dynamic_pointer_cast<const Leaf>(branch)) {
+              nrAssignments += leaf->nrAssignments();
+            }
+          }
+          NodePtr newLeaf(
+              new Leaf(std::dynamic_pointer_cast<const Leaf>(f0)->constant(),
+                       nrAssignments));
+          return newLeaf;
+        }
+#endif
+        return f;
+      } else {
+        // Leaf node, return as is
+        return node;
       }
     }
 
@@ -549,7 +543,7 @@ namespace gtsam {
   template<typename L, typename Y>
   template<typename Iterator> DecisionTree<L, Y>::DecisionTree(
       Iterator begin, Iterator end, const L& label) {
-    root_ = compose(begin, end, label);
+    root_ = Choice::Unique(compose(begin, end, label));
   }
 
   /****************************************************************************/
@@ -557,7 +551,7 @@ namespace gtsam {
   DecisionTree<L, Y>::DecisionTree(const L& label,
       const DecisionTree& f0, const DecisionTree& f1)  {
     const std::vector<DecisionTree> functions{f0, f1};
-    root_ = compose(functions.begin(), functions.end(), label);
+    root_ = Choice::Unique(compose(functions.begin(), functions.end(), label));
   }
 
   /****************************************************************************/
@@ -608,7 +602,7 @@ namespace gtsam {
       auto choiceOnLabel = std::make_shared<Choice>(label, end - begin);
       for (Iterator it = begin; it != end; it++)
         choiceOnLabel->push_back(it->root_);
-      return Choice::Unique(choiceOnLabel);
+      return choiceOnLabel;
     } else {
       // Set up a new choice on the highest label
       auto choiceOnHighestLabel =
@@ -737,7 +731,7 @@ namespace gtsam {
     for (auto&& branch : choice->branches()) {
       functions.emplace_back(convertFrom<M, X>(branch, L_of_M, Y_of_X));
     }
-    return LY::compose(functions.begin(), functions.end(), newLabel);
+    return Choice::Unique(LY::compose(functions.begin(), functions.end(), newLabel));
   }
 
   /****************************************************************************/
