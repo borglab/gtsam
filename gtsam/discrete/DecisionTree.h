@@ -142,8 +142,10 @@ namespace gtsam {
     template <typename It, typename ValueIt>
     NodePtr build(It begin, It end, ValueIt beginY, ValueIt endY) const;
 
-    /** Internal helper function to create from keys, cardinalities,
-     * and Y values
+    /** Internal helper function to create from
+     * keys, cardinalities, and Y values.
+     * Calls `build` which builds thetree bottom-up,
+     * before we prune in a top-down fashion.
      */
     template <typename It, typename ValueIt>
     NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY) const;

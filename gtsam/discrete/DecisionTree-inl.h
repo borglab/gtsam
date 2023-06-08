@@ -627,7 +627,7 @@ namespace gtsam {
         NodePtr fi = compose(functions.begin(), functions.end(), label);
         choiceOnHighestLabel->push_back(fi);
       }
-      return Choice::Unique(choiceOnHighestLabel);
+      return choiceOnHighestLabel;
     }
   }
 
@@ -691,8 +691,8 @@ namespace gtsam {
   }
 
   /****************************************************************************/
-  // Take a range of labels and a corresponding range of values,
-  // and creates a decision tree.
+  // Top-level factory method, which takes a range of labels and a corresponding
+  // range of values, and creates a decision tree.
   template<typename L, typename Y>
   template<typename It, typename ValueIt>
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::create(
