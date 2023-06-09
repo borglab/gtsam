@@ -57,8 +57,16 @@ Ordering HybridSmoother::getOrdering(
 
 /* ************************************************************************* */
 void HybridSmoother::update(HybridGaussianFactorGraph graph,
-                            const Ordering &ordering,
-                            std::optional<size_t> maxNrLeaves) {
+                            std::optional<size_t> maxNrLeaves,
+                            const std::optional<Ordering> given_ordering) {
+  Ordering ordering;
+  // If no ordering provided, then we compute one
+  if (!given_ordering.has_value()) {
+    ordering = this->getOrdering(graph);
+  } else {
+    ordering = *given_ordering;
+  }
+
   // Add the necessary conditionals from the previous timestep(s).
   std::tie(graph, hybridBayesNet_) =
       addConditionals(graph, hybridBayesNet_, ordering);

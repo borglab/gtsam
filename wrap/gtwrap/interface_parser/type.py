@@ -17,15 +17,13 @@ from typing import List, Sequence, Union
 from pyparsing import ParseResults  # type: ignore
 from pyparsing import Forward, Optional, Or, delimitedList
 
-from .tokens import (BASIS_TYPES, CONST, IDENT, LOPBRACK, RAW_POINTER, REF,
+from .tokens import (BASIC_TYPES, CONST, IDENT, LOPBRACK, RAW_POINTER, REF,
                      ROPBRACK, SHARED_POINTER)
 
 
 class Typename:
     """
-    Generic type which can be either a basic type or a class type,
-    similar to C++'s `typename` aka a qualified dependent type.
-    Contains type name with full namespace and template arguments.
+    Class which holds a type's name, full namespace, and template arguments.
 
     E.g.
     ```
@@ -89,7 +87,6 @@ class Typename:
 
     def to_cpp(self) -> str:
         """Generate the C++ code for wrapping."""
-        idx = 1 if self.namespaces and not self.namespaces[0] else 0
         if self.instantiations:
             cpp_name = self.name + "<{}>".format(", ".join(
                 [inst.to_cpp() for inst in self.instantiations]))
@@ -116,7 +113,7 @@ class BasicType:
     """
     Basic types are the fundamental built-in types in C++ such as double, int, char, etc.
 
-    When using templates, the basis type will take on the same form as the template.
+    When using templates, the basic type will take on the same form as the template.
 
     E.g.
     ```
@@ -127,16 +124,16 @@ class BasicType:
     will give
 
     ```
-    m_.def("CoolFunctionDoubleDouble",[](const double& s) {
-        return wrap_example::CoolFunction<double,double>(s);
-    }, py::arg("s"));
+    m_.def("funcDouble",[](const double& x){
+        ::func<double>(x);
+    }, py::arg("x"));
     ```
     """
 
-    rule = (Or(BASIS_TYPES)("typename")).setParseAction(lambda t: BasicType(t))
+    rule = (Or(BASIC_TYPES)("typename")).setParseAction(lambda t: BasicType(t))
 
     def __init__(self, t: ParseResults):
-        self.typename = Typename(t.asList())
+        self.typename = Typename(t)
 
 
 class CustomType:
@@ -160,9 +157,9 @@ class CustomType:
 
 class Type:
     """
-    Parsed datatype, can be either a fundamental type or a custom datatype.
+    Parsed datatype, can be either a fundamental/basic type or a custom datatype.
     E.g. void, double, size_t, Matrix.
-    Think of this as a high-level type which encodes the typename and other 
+    Think of this as a high-level type which encodes the typename and other
     characteristics of the type.
 
     The type can optionally be a raw pointer, shared pointer or reference.
@@ -170,7 +167,7 @@ class Type:
     """
     rule = (
         Optional(CONST("is_const"))  #
-        + (BasicType.rule("basis") | CustomType.rule("qualified"))  # BR
+        + (BasicType.rule("basic") | CustomType.rule("qualified"))  # BR
         + Optional(
             SHARED_POINTER("is_shared_ptr") | RAW_POINTER("is_ptr")
             | REF("is_ref"))  #
@@ -188,9 +185,10 @@ class Type:
     @staticmethod
     def from_parse_result(t: ParseResults):
         """Return the resulting Type from parsing the source."""
-        if t.basis:
+        # If the type is a basic/fundamental c++ type (e.g int, bool)
+        if t.basic:
             return Type(
-                typename=t.basis.typename,
+                typename=t.basic.typename,
                 is_const=t.is_const,
                 is_shared_ptr=t.is_shared_ptr,
                 is_ptr=t.is_ptr,

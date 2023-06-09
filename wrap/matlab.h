@@ -118,10 +118,10 @@ void checkArguments(const string& name, int nargout, int nargin, int expected) {
 }
 
 //*****************************************************************************
-// wrapping C++ basis types in MATLAB arrays
+// wrapping C++ basic types in MATLAB arrays
 //*****************************************************************************
 
-// default wrapping throws an error: only basis types are allowed in wrap
+// default wrapping throws an error: only basic types are allowed in wrap
 template <typename Class>
 mxArray* wrap(const Class& value) {
   error("wrap internal error: attempted wrap of invalid type");
@@ -228,8 +228,26 @@ mxArray* wrap<gtsam::Matrix >(const gtsam::Matrix& A) {
   return wrap_Matrix(A);
 }
 
+/// @brief Wrap the C++ enum to Matlab mxArray
+/// @tparam T The C++ enum type
+/// @param x C++ enum
+/// @param classname Matlab enum classdef used to call Matlab constructor
+template <typename T>
+mxArray* wrap_enum(const T x, const std::string& classname) {
+  // create double array to store value in
+  mxArray* a = mxCreateDoubleMatrix(1, 1, mxREAL);
+  double* data = mxGetPr(a);
+  data[0] = static_cast<double>(x);
+
+  // convert to Matlab enumeration type
+  mxArray* result;
+  mexCallMATLAB(1, &result, 1, &a, classname.c_str());
+
+  return result;
+}
+
 //*****************************************************************************
-// unwrapping MATLAB arrays into C++ basis types
+// unwrapping MATLAB arrays into C++ basic types
 //*****************************************************************************
 
 // default unwrapping throws an error
@@ -238,6 +256,24 @@ template <typename T>
 T unwrap(const mxArray* array) {
   error("wrap internal error: attempted unwrap of invalid type");
   return T();
+}
+
+/// @brief Unwrap from matlab array to C++ enum type
+/// @tparam T The C++ enum type
+/// @param array Matlab mxArray
+template <typename T>
+T unwrap_enum(const mxArray* array) {
+  // Make duplicate to remove const-ness
+  mxArray* a = mxDuplicateArray(array);
+
+  // convert void* to int32* array
+  mxArray* a_int32;
+  mexCallMATLAB(1, &a_int32, 1, &a, "int32");
+
+  // Get the value in the input array
+  int32_T* value = (int32_T*)mxGetData(a_int32);
+  // cast int32 to enum type
+  return static_cast<T>(*value);
 }
 
 // specialization to string

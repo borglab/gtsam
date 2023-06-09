@@ -5,12 +5,12 @@ on: [pull_request]
 jobs:
   build:
     name: Tests for 🐍 ${{ matrix.python-version }}
-    runs-on: macos-10.15
+    runs-on: macos-12
 
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
 
     steps:
       - name: Checkout

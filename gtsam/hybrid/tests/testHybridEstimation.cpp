@@ -46,35 +46,6 @@ using namespace gtsam;
 using symbol_shorthand::X;
 using symbol_shorthand::Z;
 
-Ordering getOrdering(HybridGaussianFactorGraph& factors,
-                     const HybridGaussianFactorGraph& newFactors) {
-  factors.push_back(newFactors);
-  // Get all the discrete keys from the factors
-  KeySet allDiscrete = factors.discreteKeySet();
-
-  // Create KeyVector with continuous keys followed by discrete keys.
-  KeyVector newKeysDiscreteLast;
-  const KeySet newFactorKeys = newFactors.keys();
-  // Insert continuous keys first.
-  for (auto& k : newFactorKeys) {
-    if (!allDiscrete.exists(k)) {
-      newKeysDiscreteLast.push_back(k);
-    }
-  }
-
-  // Insert discrete keys at the end
-  std::copy(allDiscrete.begin(), allDiscrete.end(),
-            std::back_inserter(newKeysDiscreteLast));
-
-  const VariableIndex index(factors);
-
-  // Get an ordering where the new keys are eliminated last
-  Ordering ordering = Ordering::ColamdConstrainedLast(
-      index, KeyVector(newKeysDiscreteLast.begin(), newKeysDiscreteLast.end()),
-      true);
-  return ordering;
-}
-
 TEST(HybridEstimation, Full) {
   size_t K = 6;
   std::vector<double> measurements = {0, 1, 2, 2, 2, 3};
@@ -117,7 +88,7 @@ TEST(HybridEstimation, Full) {
 
 /****************************************************************************/
 // Test approximate inference with an additional pruning step.
-TEST(HybridEstimation, Incremental) {
+TEST(HybridEstimation, IncrementalSmoother) {
   size_t K = 15;
   std::vector<double> measurements = {0, 1, 2, 2, 2, 2,  3,  4,  5,  6, 6,
                                       7, 8, 9, 9, 9, 10, 11, 11, 11, 11};
@@ -136,7 +107,6 @@ TEST(HybridEstimation, Incremental) {
   initial.insert(X(0), switching.linearizationPoint.at<double>(X(0)));
 
   HybridGaussianFactorGraph linearized;
-  HybridGaussianFactorGraph bayesNet;
 
   for (size_t k = 1; k < K; k++) {
     // Motion Model
@@ -146,11 +116,10 @@ TEST(HybridEstimation, Incremental) {
 
     initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
 
-    bayesNet = smoother.hybridBayesNet();
     linearized = *graph.linearize(initial);
-    Ordering ordering = getOrdering(bayesNet, linearized);
+    Ordering ordering = smoother.getOrdering(linearized);
 
-    smoother.update(linearized, ordering, 3);
+    smoother.update(linearized, 3, ordering);
     graph.resize(0);
   }
 

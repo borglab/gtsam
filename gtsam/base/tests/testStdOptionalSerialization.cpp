@@ -149,6 +149,9 @@ TEST(StdOptionalSerialization, SerializTestOptionalStructPointerPointer) {
   // Check that it worked
   EXPECT(opt2.has_value());
   EXPECT(**opt2 == TestOptionalStruct(42));
+
+  delete (*opt);
+  delete (*opt2);
 }
 
 int main() {

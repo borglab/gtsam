@@ -150,7 +150,7 @@ if (NOT CMAKE_VERSION VERSION_LESS 3.8)
     set(CMAKE_CXX_EXTENSIONS OFF)
     if (MSVC)
       # NOTE(jlblanco): seems to be required in addition to the cxx_std_17 above?
-      list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC /std:c++latest)
+      list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC /std:c++17)
     endif()
 else()
   # Old cmake versions:

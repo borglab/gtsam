@@ -2034,13 +2034,13 @@ class TestRot3(GtsamTestCase):
 
     def test_rotate(self) -> None:
         """Test that rotate() works for both Point3 and Unit3."""
-        R = Rot3(np.array([[1, 0, 0], [0, -1, 0], [0, 0, 1]]))
+        R = Rot3(np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]]))
         p = Point3(1., 1., 1.)
         u = Unit3(np.array([1, 1, 1]))
         actual_p = R.rotate(p)
         actual_u = R.rotate(u)
-        expected_p = Point3(np.array([1, -1, 1]))
-        expected_u = Unit3(np.array([1, -1, 1]))
+        expected_p = Point3(np.array([1, -1, -1]))
+        expected_u = Unit3(np.array([1, -1, -1]))
         np.testing.assert_array_equal(actual_p, expected_p)
         np.testing.assert_array_equal(actual_u.point3(), expected_u.point3())
 
