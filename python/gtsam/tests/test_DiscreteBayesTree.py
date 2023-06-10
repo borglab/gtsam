@@ -13,16 +13,14 @@ Author: Frank Dellaert
 
 import unittest
 
+import numpy as np
+from gtsam.symbol_shorthand import A, X
 from gtsam.utils.test_case import GtsamTestCase
 
-from gtsam import (
-    DiscreteBayesNet,
-    DiscreteBayesTreeClique,
-    DiscreteConditional,
-    DiscreteFactorGraph,
-    DiscreteValues,
-    Ordering,
-)
+import gtsam
+from gtsam import (DiscreteBayesNet, DiscreteBayesTreeClique,
+                   DiscreteConditional, DiscreteFactorGraph,
+                   DiscreteKeys, DiscreteValues, Ordering)
 
 
 class TestDiscreteBayesNet(GtsamTestCase):
@@ -100,6 +98,56 @@ class TestDiscreteBayesNet(GtsamTestCase):
         self.assertFalse(bayesTree.empty())
         self.assertEqual(12, bayesTree.size())
 
+    def test_discrete_bayes_tree_lookup(self):
+        """Check that we can have a multi-frontal lookup table."""
+        # Make a small planning-like graph: 3 states, 2 actions
+        graph = DiscreteFactorGraph()
+        x1, x2, x3 = (X(1), 3), (X(2), 3), (X(3), 3)
+        a1, a2 = (A(1), 2), (A(2), 2)
+
+        # Constraint on start and goal
+        graph.add([x1], np.array([1, 0, 0]))
+        graph.add([x3], np.array([0, 0, 1]))
+
+        # Should I stay or should I go?
+        # "Reward" (exp(-cost)) for an action is 10, and rewards multiply:
+        r = 10
+        table = np.array([
+            r, 0, 0, 0, r, 0,  # x1 = 0
+            0, r, 0, 0, 0, r,  # x1 = 1
+            0, 0, r, 0, 0, r   # x1 = 2
+        ])
+        graph.add([x1, a1, x2], table)
+        graph.add([x2, a2, x3], table)
+
+        # Eliminate for MPE (maximum probable explanation).
+        ordering = Ordering([A(2), X(3), X(1), A(1), X(2)])
+        lookup = graph.eliminateMultifrontal(ordering, gtsam.EliminateForMPE)
+
+        # Check that the lookup table is correct
+        assert len(lookup) == 2
+        lookup_x1_a1_x2 = lookup[X(1)].conditional()
+        assert len(lookup_x1_a1_x2.frontals()) == 3
+        # Check that sum is 100
+        empty = gtsam.DiscreteValues()
+        assert np.isclose(lookup_x1_a1_x2.sum(3)(empty), 100, atol=1e-9)
+        # And that only non-zero reward is for x1 a1 x2 == 0 1 1
+        assert np.isclose(lookup_x1_a1_x2({X(1): 0, A(1): 1, X(2): 1}), 100, atol=1e-9)
+
+        lookup_a2_x3 = lookup[X(3)].conditional()
+        # Check that the sum depends on x2 and is non-zero only for x2 in {1, 2}
+        sum_x2 = lookup_a2_x3.sum(2)
+        assert np.isclose(sum_x2({X(2): 0}), 0, atol=1e-9)
+        assert np.isclose(sum_x2({X(2): 1}), 10, atol=1e-9)
+        assert np.isclose(sum_x2({X(2): 2}), 20, atol=1e-9)
+        assert len(lookup_a2_x3.frontals()) == 2
+        # And that the non-zero rewards are for
+        # x2 a2 x3 == 1 1 2
+        assert np.isclose(lookup_a2_x3({X(2): 1, A(2): 1, X(3): 2}), 10, atol=1e-9)
+        # x2 a2 x3 == 2 0 2
+        assert np.isclose(lookup_a2_x3({X(2): 2, A(2): 0, X(3): 2}), 10, atol=1e-9)
+        # x2 a2 x3 == 2 1 2
+        assert np.isclose(lookup_a2_x3({X(2): 2, A(2): 1, X(3): 2}), 10, atol=1e-9)
 
 if __name__ == "__main__":
     unittest.main()

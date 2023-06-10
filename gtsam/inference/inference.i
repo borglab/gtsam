@@ -104,6 +104,7 @@ class Ordering {
   // Standard Constructors and Named Constructors
   Ordering();
   Ordering(const gtsam::Ordering& other);
+  Ordering(const std::vector<size_t>& keys);
 
   template <
       FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,

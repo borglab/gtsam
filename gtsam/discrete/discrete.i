@@ -275,6 +275,14 @@ class DiscreteLookupDAG {
 };
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+std::pair<gtsam::DiscreteConditional*, gtsam::DecisionTreeFactor*>
+EliminateDiscrete(const gtsam::DiscreteFactorGraph& factors,
+                  const gtsam::Ordering& frontalKeys);
+
+std::pair<gtsam::DiscreteConditional*, gtsam::DecisionTreeFactor*>
+EliminateForMPE(const gtsam::DiscreteFactorGraph& factors,
+                const gtsam::Ordering& frontalKeys);
+
 class DiscreteFactorGraph {
   DiscreteFactorGraph();
   DiscreteFactorGraph(const gtsam::DiscreteBayesNet& bayesNet);
@@ -289,6 +297,7 @@ class DiscreteFactorGraph {
   void add(const gtsam::DiscreteKey& j, const std::vector<double>& spec);
   void add(const gtsam::DiscreteKeys& keys, string spec);
   void add(const std::vector<gtsam::DiscreteKey>& keys, string spec);
+  void add(const std::vector<gtsam::DiscreteKey>& keys, const std::vector<double>& spec);
 
   bool empty() const;
   size_t size() const;
@@ -302,25 +311,46 @@ class DiscreteFactorGraph {
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
 
-  gtsam::DiscreteBayesNet sumProduct();
-  gtsam::DiscreteBayesNet sumProduct(gtsam::Ordering::OrderingType type);
+  gtsam::DiscreteBayesNet sumProduct(
+      gtsam::Ordering::OrderingType type = gtsam::Ordering::COLAMD);
   gtsam::DiscreteBayesNet sumProduct(const gtsam::Ordering& ordering);
 
-  gtsam::DiscreteLookupDAG maxProduct();
-  gtsam::DiscreteLookupDAG maxProduct(gtsam::Ordering::OrderingType type);
+  gtsam::DiscreteLookupDAG maxProduct(
+      gtsam::Ordering::OrderingType type = gtsam::Ordering::COLAMD);
   gtsam::DiscreteLookupDAG maxProduct(const gtsam::Ordering& ordering);
 
-  gtsam::DiscreteBayesNet* eliminateSequential();
-  gtsam::DiscreteBayesNet* eliminateSequential(gtsam::Ordering::OrderingType type);
+  gtsam::DiscreteBayesNet* eliminateSequential(
+      gtsam::Ordering::OrderingType type = gtsam::Ordering::COLAMD);
+  gtsam::DiscreteBayesNet* eliminateSequential(
+      gtsam::Ordering::OrderingType type,
+      const gtsam::DiscreteFactorGraph::Eliminate& function);
   gtsam::DiscreteBayesNet* eliminateSequential(const gtsam::Ordering& ordering);
+  gtsam::DiscreteBayesNet* eliminateSequential(
+      const gtsam::Ordering& ordering,
+      const gtsam::DiscreteFactorGraph::Eliminate& function);
   pair<gtsam::DiscreteBayesNet*, gtsam::DiscreteFactorGraph*>
-      eliminatePartialSequential(const gtsam::Ordering& ordering);
+  eliminatePartialSequential(const gtsam::Ordering& ordering);
+  pair<gtsam::DiscreteBayesNet*, gtsam::DiscreteFactorGraph*>
+  eliminatePartialSequential(
+      const gtsam::Ordering& ordering,
+      const gtsam::DiscreteFactorGraph::Eliminate& function);
 
-  gtsam::DiscreteBayesTree* eliminateMultifrontal();
-  gtsam::DiscreteBayesTree* eliminateMultifrontal(gtsam::Ordering::OrderingType type);  
-  gtsam::DiscreteBayesTree* eliminateMultifrontal(const gtsam::Ordering& ordering);  
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(
+      gtsam::Ordering::OrderingType type = gtsam::Ordering::COLAMD);
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(
+      gtsam::Ordering::OrderingType type,
+      const gtsam::DiscreteFactorGraph::Eliminate& function);
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(
+      const gtsam::Ordering& ordering);
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(
+      const gtsam::Ordering& ordering,
+      const gtsam::DiscreteFactorGraph::Eliminate& function);
   pair<gtsam::DiscreteBayesTree*, gtsam::DiscreteFactorGraph*>
-      eliminatePartialMultifrontal(const gtsam::Ordering& ordering);
+  eliminatePartialMultifrontal(const gtsam::Ordering& ordering);
+  pair<gtsam::DiscreteBayesTree*, gtsam::DiscreteFactorGraph*>
+  eliminatePartialMultifrontal(
+      const gtsam::Ordering& ordering,
+      const gtsam::DiscreteFactorGraph::Eliminate& function);
 
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,

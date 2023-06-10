@@ -323,10 +323,11 @@ TEST(DiscreteBayesTree, Lookup) {
   DiscreteFactorGraph graph;
   const DiscreteKey x1{X(1), 3}, x2{X(2), 3}, x3{X(3), 3};
   const DiscreteKey a1{A(1), 2}, a2{A(2), 2};
-  const DiscreteKeys keys{x1, x2, x3, a1, a2};
+
   // Constraint on start and goal
   graph.add(DiscreteKeys{x1}, std::vector<double>{1, 0, 0});
   graph.add(DiscreteKeys{x3}, std::vector<double>{0, 0, 1});
+
   // Should I stay or should I go?
   // "Reward" (exp(-cost)) for an action is 10, and rewards multiply:
   const double r = 10;
