@@ -215,6 +215,7 @@ class DiscreteBayesTreeClique {
       const string& s = "Clique: ",
       const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
   double evaluate(const gtsam::DiscreteValues& values) const;
+  double operator()(const gtsam::DiscreteValues& values) const;
 };
 
 class DiscreteBayesTree {
@@ -229,6 +230,7 @@ class DiscreteBayesTree {
   const DiscreteBayesTreeClique* operator[](size_t j) const;
 
   double evaluate(const gtsam::DiscreteValues& values) const;
+  double operator()(const gtsam::DiscreteValues& values) const;
 
   string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
