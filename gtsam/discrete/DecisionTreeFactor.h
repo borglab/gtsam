@@ -80,7 +80,7 @@ namespace gtsam {
      * @endcode
      *
      * The values in the table should be laid out so that the first key varies
-     * the slowest. and the last key the fastest.
+     * the slowest, and the last key the fastest.
      */
     DecisionTreeFactor(const DiscreteKeys& keys,
                        const std::vector<double>& table);
@@ -101,7 +101,7 @@ namespace gtsam {
      * @endcode
      *
      * The values in the table should be laid out so that the first key varies
-     * the slowest. and the last key the fastest.
+     * the slowest, and the last key the fastest.
      */
     DecisionTreeFactor(const DiscreteKeys& keys, const std::string& table);
 
