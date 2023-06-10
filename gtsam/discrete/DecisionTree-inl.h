@@ -212,7 +212,7 @@ namespace gtsam {
           f->push_back(Unique(branch));
         }
 
-#ifndef GTSAM_DT_NO_MERGING
+#ifdef GTSAM_DT_MERGING
         // If all the branches are the same, we can merge them into one
         if (f->allSame_) {
           assert(f->branches().size() > 0);
