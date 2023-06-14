@@ -544,7 +544,7 @@ namespace gtsam {
   template<typename L, typename Y>
   template<typename Iterator> DecisionTree<L, Y>::DecisionTree(
       Iterator begin, Iterator end, const L& label) {
-    root_ = Choice::Unique(compose(begin, end, label));
+    root_ = compose(begin, end, label);
   }
 
   /****************************************************************************/
@@ -552,7 +552,7 @@ namespace gtsam {
   DecisionTree<L, Y>::DecisionTree(const L& label,
       const DecisionTree& f0, const DecisionTree& f1)  {
     const std::vector<DecisionTree> functions{f0, f1};
-    root_ = Choice::Unique(compose(functions.begin(), functions.end(), label));
+    root_ = compose(functions.begin(), functions.end(), label);
   }
 
   /****************************************************************************/
@@ -603,6 +603,7 @@ namespace gtsam {
       auto choiceOnLabel = std::make_shared<Choice>(label, end - begin);
       for (Iterator it = begin; it != end; it++)
         choiceOnLabel->push_back(it->root_);
+      // If no reordering, no need to call Choice::Unique
       return choiceOnLabel;
     } else {
       // Set up a new choice on the highest label

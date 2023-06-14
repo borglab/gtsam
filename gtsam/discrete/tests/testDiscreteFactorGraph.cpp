@@ -400,7 +400,6 @@ factor 1:  f[ (m0,2), (m1,2), (m2,2), (m3,2), ]
       1, 1, 1, 1, 0.015366387, 0.0094115739, 1,           1,
       1, 1, 1, 1, 0.015366387, 0.0094115652, 0.015365663, 0.009321081};
   DecisionTreeFactor f1(d1, p1);
-  DecisionTree<Key, double> dt1(d1, p1);
 
   DiscreteFactorGraph dfg;
   dfg.add(f0);
