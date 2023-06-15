@@ -23,7 +23,7 @@
  *     void print(const std::string& name) const = 0;
  *
  * equality up to tolerance
- * tricky to implement, see NoiseModelFactor1 for an example
+ * tricky to implement, see PriorFactor for an example
  * equals is not supposed to print out *anything*, just return true|false
  *     bool equals(const Derived& expected, double tol) const = 0;
  *
@@ -33,7 +33,8 @@
 
 #pragma once
 
-#include <boost/concept_check.hpp>
+#include <gtsam/base/concepts.h>
+
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -51,7 +52,7 @@ namespace gtsam {
    * tests and in generic algorithms.
    *
    * See macros for details on using this structure
-   * @addtogroup base
+   * @ingroup base
    * @tparam T is the objectype this constrains to be testable - assumes print() and equals()
    */
   template <class T>
@@ -151,7 +152,7 @@ namespace gtsam {
   struct Testable {
 
     // Check that T has the necessary methods
-    BOOST_CONCEPT_ASSERT((HasTestablePrereqs<T>));
+    GTSAM_CONCEPT_ASSERT(HasTestablePrereqs<T>);
 
     static void Print(const T& m, const std::string& str = "") {
       m.print(str);
@@ -170,7 +171,7 @@ namespace gtsam {
  *
  * NOTE: intentionally not in the gtsam namespace to allow for classes not in
  * the gtsam namespace to be more easily enforced as testable
- * @deprecated please use BOOST_CONCEPT_ASSERT and
+ * @deprecated please use GTSAM_CONCEPT_ASSERT and
  */
 #define GTSAM_CONCEPT_TESTABLE_INST(T) template class gtsam::IsTestable<T>;
 #define GTSAM_CONCEPT_TESTABLE_TYPE(T) using _gtsam_Testable_##T = gtsam::IsTestable<T>;

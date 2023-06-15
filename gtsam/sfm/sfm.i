@@ -4,10 +4,23 @@
 
 namespace gtsam {
 
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmTrack.h>
-class SfmTrack {
+class SfmTrack2d {
+  std::vector<pair<size_t, gtsam::Point2>> measurements;
+
+  SfmTrack2d();
+  SfmTrack2d(const std::vector<gtsam::SfmMeasurement>& measurements);
+  size_t numberMeasurements() const;
+  pair<size_t, gtsam::Point2> measurement(size_t idx) const;
+  pair<size_t, size_t> siftIndex(size_t idx) const;
+  void addMeasurement(size_t idx, const gtsam::Point2& m);
+  gtsam::SfmMeasurement measurement(size_t idx) const;
+  bool hasUniqueCameras() const;
+  Eigen::MatrixX2d measurementMatrix() const;
+  Eigen::VectorXi indexVector() const;
+};
+
+virtual class SfmTrack : gtsam::SfmTrack2d {
   SfmTrack();
   SfmTrack(const gtsam::Point3& pt);
   const Point3& point3() const;
@@ -18,13 +31,6 @@ class SfmTrack {
   double g;
   double b;
 
-  std::vector<pair<size_t, gtsam::Point2>> measurements;
-
-  size_t numberMeasurements() const;
-  pair<size_t, gtsam::Point2> measurement(size_t idx) const;
-  pair<size_t, size_t> siftIndex(size_t idx) const;
-  void addMeasurement(size_t idx, const gtsam::Point2& m);
-
   // enabling serialization functionality
   void serialize() const;
 
@@ -32,6 +38,8 @@ class SfmTrack {
   bool equals(const gtsam::SfmTrack& expected, double tol) const;
 };
 
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/sfm/SfmData.h>
 class SfmData {
   SfmData();
@@ -95,7 +103,7 @@ typedef gtsam::BinaryMeasurement<gtsam::Point3> BinaryMeasurementPoint3;
 #include <gtsam/slam/dataset.h>
 #include <gtsam/sfm/ShonanAveraging.h>
 
-// TODO(frank): copy/pasta below until we have integer template paremeters in
+// TODO(frank): copy/pasta below until we have integer template parameters in
 // wrap!
 
 class ShonanAveragingParameters2 {
@@ -277,5 +285,40 @@ class TranslationRecovery {
   gtsam::Values run(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
                     const double scale = 1.0) const;
 };
+
+namespace gtsfm {
+
+#include <gtsam/sfm/DsfTrackGenerator.h>
+
+class MatchIndicesMap {
+  MatchIndicesMap();
+  MatchIndicesMap(const gtsam::gtsfm::MatchIndicesMap& other);
+
+  size_t size() const;
+  bool empty() const;
+  void clear();
+  gtsam::gtsfm::CorrespondenceIndices at(const gtsam::IndexPair& keypair) const;
+};
+
+class Keypoints {
+  Keypoints(const Eigen::MatrixX2d& coordinates);
+  Eigen::MatrixX2d coordinates;
+};
+
+class KeypointsVector {
+  KeypointsVector();
+  KeypointsVector(const gtsam::gtsfm::KeypointsVector& other);
+  void push_back(const gtsam::gtsfm::Keypoints& keypoints);
+  size_t size() const;
+  bool empty() const;
+  void clear();
+  gtsam::gtsfm::Keypoints at(const size_t& index) const;
+};
+
+gtsam::SfmTrack2dVector tracksFromPairwiseMatches(
+    const gtsam::gtsfm::MatchIndicesMap& matches_dict,
+    const gtsam::gtsfm::KeypointsVector& keypoints_list, bool verbose = false);
+
+}  // namespace gtsfm
 
 }  // namespace gtsam

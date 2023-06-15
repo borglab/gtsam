@@ -36,9 +36,9 @@ TEST(SO3, Identity) {
 
 //******************************************************************************
 TEST(SO3, Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<SO3>));
-  BOOST_CONCEPT_ASSERT((IsManifold<SO3>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<SO3>));
+  GTSAM_CONCEPT_ASSERT(IsGroup<SO3>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<SO3>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<SO3>);
 }
 
 //******************************************************************************
@@ -210,7 +210,7 @@ TEST(SO3, ExpmapDerivative) {
 TEST(SO3, ExpmapDerivative2) {
   const Vector3 theta(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-      std::bind(&SO3::Expmap, std::placeholders::_1, boost::none), theta);
+      std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
 
   CHECK(assert_equal(Jexpected, SO3::ExpmapDerivative(theta)));
   CHECK(assert_equal(Matrix3(Jexpected.transpose()),
@@ -221,7 +221,7 @@ TEST(SO3, ExpmapDerivative2) {
 TEST(SO3, ExpmapDerivative3) {
   const Vector3 theta(10, 20, 30);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-      std::bind(&SO3::Expmap, std::placeholders::_1, boost::none), theta);
+      std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
 
   CHECK(assert_equal(Jexpected, SO3::ExpmapDerivative(theta)));
   CHECK(assert_equal(Matrix3(Jexpected.transpose()),
@@ -276,7 +276,7 @@ TEST(SO3, ExpmapDerivative5) {
 TEST(SO3, ExpmapDerivative6) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-      std::bind(&SO3::Expmap, std::placeholders::_1, boost::none), thetahat);
+      std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), thetahat);
   Matrix3 Jactual;
   SO3::Expmap(thetahat, Jactual);
   EXPECT(assert_equal(Jexpected, Jactual));
@@ -287,7 +287,7 @@ TEST(SO3, LogmapDerivative) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const SO3 R = SO3::Expmap(thetahat);  // some rotation
   const Matrix Jexpected = numericalDerivative11<Vector, SO3>(
-      std::bind(&SO3::Logmap, std::placeholders::_1, boost::none), R);
+      std::bind(&SO3::Logmap, std::placeholders::_1, nullptr), R);
   const Matrix3 Jactual = SO3::LogmapDerivative(thetahat);
   EXPECT(assert_equal(Jexpected, Jactual));
 }
@@ -297,7 +297,7 @@ TEST(SO3, JacobianLogmap) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const SO3 R = SO3::Expmap(thetahat);  // some rotation
   const Matrix Jexpected = numericalDerivative11<Vector, SO3>(
-      std::bind(&SO3::Logmap, std::placeholders::_1, boost::none), R);
+      std::bind(&SO3::Logmap, std::placeholders::_1, nullptr), R);
   Matrix3 Jactual;
   SO3::Logmap(R, Jactual);
   EXPECT(assert_equal(Jexpected, Jactual));

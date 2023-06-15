@@ -29,9 +29,10 @@
 #include <gtsam/linear/RegularHessianFactor.h>
 #include <gtsam/geometry/CameraSet.h>
 
-#include <boost/optional.hpp>
+#include <optional>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/optional.hpp>
-#include <boost/make_shared.hpp>
+#endif
 #include <vector>
 
 namespace gtsam {
@@ -78,7 +79,7 @@ protected:
    */
   ZVector measured_;
 
-  boost::optional<Pose3>
+  std::optional<Pose3>
       body_P_sensor_;  ///< Pose of the camera in the body frame
 
   // Cache for Fblocks, to avoid a malloc ever time we re-linearize
@@ -88,7 +89,7 @@ protected:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 
   /// shorthand for a smart pointer to a factor.
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// The CameraSet data structure is used to refer to a set of cameras.
   typedef CameraSet<CAMERA> Cameras;
@@ -98,14 +99,14 @@ protected:
 
   /// Construct with given noise model and optional arguments.
   SmartFactorBase(const SharedNoiseModel& sharedNoiseModel,
-                  boost::optional<Pose3> body_P_sensor = boost::none,
+                  std::optional<Pose3> body_P_sensor = {},
                   size_t expectedNumberCameras = 10)
       : body_P_sensor_(body_P_sensor), Fs(expectedNumberCameras) {
 
     if (!sharedNoiseModel)
       throw std::runtime_error("SmartFactorBase: sharedNoiseModel is required");
 
-    SharedIsotropic sharedIsotropic = boost::dynamic_pointer_cast<
+    SharedIsotropic sharedIsotropic = std::dynamic_pointer_cast<
         noiseModel::Isotropic>(sharedNoiseModel);
 
     if (!sharedIsotropic)
@@ -198,13 +199,16 @@ protected:
     }
   }
 
-  /// Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and
-  /// derivatives. This is the error before the noise model is applied.
+  /** Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and
+  * derivatives. This is the error before the noise model is applied.
+  * The templated version described above must finally get resolved to this
+  * function.
+  */
   template <class POINT>
   Vector unwhitenedError(
       const Cameras& cameras, const POINT& point,
-      boost::optional<typename Cameras::FBlocks&> Fs = boost::none,  //
-      boost::optional<Matrix&> E = boost::none) const {
+      typename Cameras::FBlocks* Fs = nullptr,  //
+      Matrix* E = nullptr) const {
     // Reproject, with optional derivatives.
     Vector error = cameras.reprojectionError(point, measured_, Fs, E);
 
@@ -233,6 +237,19 @@ protected:
     return error;
   }
 
+  /** 
+   * An overload of unwhitenedError. This allows
+   * end users to provide optional arguments that are l-value references
+   * to the matrices and vectors that will be used to store the results instead
+   * of pointers.
+   */
+  template<class POINT, class ...OptArgs, typename = std::enable_if_t<sizeof...(OptArgs)!=0>>
+  Vector unwhitenedError(
+      const Cameras& cameras, const POINT& point,
+      OptArgs&&... optArgs) const {
+    return unwhitenedError(cameras, point, (&optArgs)...);
+  }
+
   /**
    * This corrects the Jacobians for the case in which some 2D measurement is
    * missing (nan). In practice, this does not do anything in the monocular
@@ -240,8 +257,21 @@ protected:
    */
   virtual void correctForMissingMeasurements(
       const Cameras& cameras, Vector& ue,
-      boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
-      boost::optional<Matrix&> E = boost::none) const {}
+      typename Cameras::FBlocks* Fs = nullptr,
+      Matrix* E = nullptr) const {}
+
+  /**
+   * An overload of correctForMissingMeasurements. This allows
+   * end users to provide optional arguments that are l-value references
+   * to the matrices and vectors that will be used to store the results instead
+   * of pointers.
+   */
+  template<class ...OptArgs>
+  void correctForMissingMeasurements(
+      const Cameras& cameras, Vector& ue,
+      OptArgs&&... optArgs) const {
+    correctForMissingMeasurements(cameras, ue, (&optArgs)...);
+  }
 
   /**
    * Calculate vector of re-projection errors [h(x)-z] = [cameras.project(p) -
@@ -288,7 +318,7 @@ protected:
     // As in expressionFactor, RHS vector b = - (h(x_bar) - z) = z-h(x_bar)
     // Indeed, nonlinear error |h(x_bar+dx)-z| ~ |h(x_bar) + A*dx - z|
     //                                         = |A*dx - (z-h(x_bar))|
-    b = -unwhitenedError(cameras, point, Fs, E);
+    b = -unwhitenedError(cameras, point, &Fs, &E);
   }
 
   /**
@@ -313,7 +343,7 @@ protected:
 
   /// Linearize to a Hessianfactor.
   // TODO(dellaert): Not used/tested anywhere and not properly whitened.
-  boost::shared_ptr<RegularHessianFactor<Dim> > createHessianFactor(
+  std::shared_ptr<RegularHessianFactor<Dim> > createHessianFactor(
       const Cameras& cameras, const Point3& point, const double lambda = 0.0,
       bool diagonalDamping = false) const {
 
@@ -324,7 +354,7 @@ protected:
     // build augmented hessian
     SymmetricBlockMatrix augmentedHessian = Cameras::SchurComplement(Fs, E, b);
 
-    return boost::make_shared<RegularHessianFactor<Dim> >(keys_,
+    return std::make_shared<RegularHessianFactor<Dim> >(keys_,
         augmentedHessian);
   }
 
@@ -352,7 +382,7 @@ protected:
   }
 
   /// Return Jacobians as RegularImplicitSchurFactor with raw access
-  boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> > //
+  std::shared_ptr<RegularImplicitSchurFactor<CAMERA> > //
   createRegularImplicitSchurFactor(const Cameras& cameras, const Point3& point,
       double lambda = 0.0, bool diagonalDamping = false) const {
     Matrix E;
@@ -361,12 +391,12 @@ protected:
     computeJacobians(F, E, b, cameras, point);
     whitenJacobians(F, E, b);
     Matrix P = Cameras::PointCov(E, lambda, diagonalDamping);
-    return boost::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_, F, E,
+    return std::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_, F, E,
         P, b);
   }
 
   /// Return Jacobians as JacobianFactorQ.
-  boost::shared_ptr<JacobianFactorQ<Dim, ZDim> > createJacobianQFactor(
+  std::shared_ptr<JacobianFactorQ<Dim, ZDim> > createJacobianQFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0,
       bool diagonalDamping = false) const {
     Matrix E;
@@ -376,14 +406,14 @@ protected:
     const size_t M = b.size();
     Matrix P = Cameras::PointCov(E, lambda, diagonalDamping);
     SharedIsotropic n = noiseModel::Isotropic::Sigma(M, noiseModel_->sigma());
-    return boost::make_shared<JacobianFactorQ<Dim, ZDim> >(keys_, F, E, P, b, n);
+    return std::make_shared<JacobianFactorQ<Dim, ZDim> >(keys_, F, E, P, b, n);
   }
 
   /**
    * Return Jacobians as JacobianFactorSVD.
    * TODO(dellaert): lambda is currently ignored
    */
-  boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
+  std::shared_ptr<JacobianFactor> createJacobianSVDFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0) const {
     size_t m = this->keys_.size();
     FBlocks F;
@@ -393,7 +423,7 @@ protected:
     computeJacobiansSVD(F, E0, b, cameras, point);
     SharedIsotropic n = noiseModel::Isotropic::Sigma(M - 3,
         noiseModel_->sigma());
-    return boost::make_shared<JacobianFactorSVD<Dim, ZDim> >(keys_, F, E0, b, n);
+    return std::make_shared<JacobianFactorSVD<Dim, ZDim> >(keys_, F, E0, b, n);
   }
 
   /// Create BIG block-diagonal matrix F from Fblocks
@@ -415,6 +445,7 @@ protected:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION///
 /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -424,6 +455,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
+#endif
 };
 // end class SmartFactorBase
 

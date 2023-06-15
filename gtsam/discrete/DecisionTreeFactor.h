@@ -24,7 +24,7 @@
 #include <gtsam/inference/Ordering.h>
 
 #include <algorithm>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -34,9 +34,12 @@
 namespace gtsam {
 
   class DiscreteConditional;
+  class HybridValues;
 
   /**
-   * A discrete probabilistic factor
+   * A discrete probabilistic factor.
+   *
+   * @ingroup discrete
    */
   class GTSAM_EXPORT DecisionTreeFactor : public DiscreteFactor,
                                           public AlgebraicDecisionTree<Key> {
@@ -44,7 +47,7 @@ namespace gtsam {
     // typedefs needed to play nice with gtsam
     typedef DecisionTreeFactor This;
     typedef DiscreteFactor Base;  ///< Typedef to base class
-    typedef boost::shared_ptr<DecisionTreeFactor> shared_ptr;
+    typedef std::shared_ptr<DecisionTreeFactor> shared_ptr;
     typedef AlgebraicDecisionTree<Key> ADT;
 
    protected:
@@ -95,10 +98,19 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
-    /// Value is just look up in AlgebraicDecisonTree
+    /// Calculate probability for given values `x`, 
+    /// is just look up in AlgebraicDecisionTree.
+    double evaluate(const DiscreteValues& values) const  {
+      return ADT::operator()(values);
+    }
+
+    /// Evaluate probability distribution, sugar.
     double operator()(const DiscreteValues& values) const override {
       return ADT::operator()(values);
     }
+
+    /// Calculate error for DiscreteValues `x`, is -log(probability).
+    double error(const DiscreteValues& values) const;
 
     /// multiply two factors
     DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override {
@@ -228,11 +240,32 @@ namespace gtsam {
     std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                     const Names& names = {}) const override;
 
-    /// @}
+  /// @}
+  /// @name HybridValues methods.
+  /// @{
+
+  /**
+   * Calculate error for HybridValues `x`, is -log(probability)
+   * Simply dispatches to DiscreteValues version.
+   */
+  double error(const HybridValues& values) const override;
+
+  /// @}
+
+   private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+      ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(ADT);
+      ar& BOOST_SERIALIZATION_NVP(cardinalities_);
+    }
+#endif
   };
 
 // traits
 template <>
 struct traits<DecisionTreeFactor> : public Testable<DecisionTreeFactor> {};
-
 }  // namespace gtsam

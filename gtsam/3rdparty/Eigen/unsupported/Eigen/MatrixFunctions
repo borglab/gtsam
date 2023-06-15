@@ -14,9 +14,9 @@
 #include <cfloat>
 #include <list>
 
-#include <Eigen/Core>
-#include <Eigen/LU>
-#include <Eigen/Eigenvalues>
+#include "../../Eigen/Core"
+#include "../../Eigen/LU"
+#include "../../Eigen/Eigenvalues"
 
 /**
   * \defgroup MatrixFunctions_Module Matrix functions module
@@ -53,11 +53,15 @@
   *
   */
 
+#include "../../Eigen/src/Core/util/DisableStupidWarnings.h"
+
 #include "src/MatrixFunctions/MatrixExponential.h"
 #include "src/MatrixFunctions/MatrixFunction.h"
 #include "src/MatrixFunctions/MatrixSquareRoot.h"
 #include "src/MatrixFunctions/MatrixLogarithm.h"
 #include "src/MatrixFunctions/MatrixPower.h"
+
+#include "../../Eigen/src/Core/util/ReenableStupidWarnings.h"
 
 
 /** 

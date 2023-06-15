@@ -78,6 +78,8 @@ using Weights = Eigen::Matrix<double, 1, -1>; /* 1xN vector */
  * @tparam M Size of the identity matrix.
  * @param w The weights of the polynomial.
  * @return Mx(M*N) kronecker product [w(0)*I, w(1)*I, ..., w(N-1)*I]
+ *
+ * @ingroup basis
  */
 template <size_t M>
 Matrix kroneckerProductIdentity(const Weights& w) {
@@ -90,7 +92,10 @@ Matrix kroneckerProductIdentity(const Weights& w) {
   return result;
 }
 
-/// CRTP Base class for function bases
+/**
+ * CRTP Base class for function bases
+ *  @ingroup basis
+ */
 template <typename DERIVED>
 class Basis {
  public:
@@ -147,14 +152,14 @@ class Basis {
 
     /// Regular 1D evaluation
     double apply(const typename DERIVED::Parameters& p,
-                 OptionalJacobian<-1, -1> H = boost::none) const {
+                 OptionalJacobian<-1, -1> H = {}) const {
       if (H) *H = weights_;
       return (weights_ * p)(0);
     }
 
     /// c++ sugar
     double operator()(const typename DERIVED::Parameters& p,
-                      OptionalJacobian<-1, -1> H = boost::none) const {
+                      OptionalJacobian<-1, -1> H = {}) const {
       return apply(p, H);  // might call apply in derived
     }
 
@@ -207,14 +212,14 @@ class Basis {
 
     /// M-dimensional evaluation
     VectorM apply(const ParameterMatrix<M>& P,
-                  OptionalJacobian</*MxN*/ -1, -1> H = boost::none) const {
+                  OptionalJacobian</*MxN*/ -1, -1> H = {}) const {
       if (H) *H = H_;
       return P.matrix() * this->weights_.transpose();
     }
 
     /// c++ sugar
     VectorM operator()(const ParameterMatrix<M>& P,
-                       OptionalJacobian</*MxN*/ -1, -1> H = boost::none) const {
+                       OptionalJacobian</*MxN*/ -1, -1> H = {}) const {
       return apply(P, H);
     }
   };
@@ -266,14 +271,14 @@ class Basis {
 
     /// Calculate component of component rowIndex_ of P
     double apply(const ParameterMatrix<M>& P,
-                 OptionalJacobian</*1xMN*/ -1, -1> H = boost::none) const {
+                 OptionalJacobian</*1xMN*/ -1, -1> H = {}) const {
       if (H) *H = H_;
       return P.row(rowIndex_) * EvaluationFunctor::weights_.transpose();
     }
 
     /// c++ sugar
     double operator()(const ParameterMatrix<M>& P,
-                      OptionalJacobian</*1xMN*/ -1, -1> H = boost::none) const {
+                      OptionalJacobian</*1xMN*/ -1, -1> H = {}) const {
       return apply(P, H);
     }
   };
@@ -310,7 +315,7 @@ class Basis {
 
     /// Manifold evaluation
     T apply(const ParameterMatrix<M>& P,
-            OptionalJacobian</*MxMN*/ -1, -1> H = boost::none) const {
+            OptionalJacobian</*MxMN*/ -1, -1> H = {}) const {
       // Interpolate the M-dimensional vector to yield a vector in tangent space
       Eigen::Matrix<double, M, 1> xi = Base::operator()(P, H);
 
@@ -329,7 +334,7 @@ class Basis {
 
     /// c++ sugar
     T operator()(const ParameterMatrix<M>& P,
-                 OptionalJacobian</*MxN*/ -1, -1> H = boost::none) const {
+                 OptionalJacobian</*MxN*/ -1, -1> H = {}) const {
       return apply(P, H);  // might call apply in derived
     }
   };
@@ -372,13 +377,13 @@ class Basis {
         : DerivativeFunctorBase(N, x, a, b) {}
 
     double apply(const typename DERIVED::Parameters& p,
-                 OptionalJacobian</*1xN*/ -1, -1> H = boost::none) const {
+                 OptionalJacobian</*1xN*/ -1, -1> H = {}) const {
       if (H) *H = this->weights_;
       return (this->weights_ * p)(0);
     }
     /// c++ sugar
     double operator()(const typename DERIVED::Parameters& p,
-                      OptionalJacobian</*1xN*/ -1, -1> H = boost::none) const {
+                      OptionalJacobian</*1xN*/ -1, -1> H = {}) const {
       return apply(p, H);  // might call apply in derived
     }
   };
@@ -428,14 +433,14 @@ class Basis {
     }
 
     VectorM apply(const ParameterMatrix<M>& P,
-                  OptionalJacobian</*MxMN*/ -1, -1> H = boost::none) const {
+                  OptionalJacobian</*MxMN*/ -1, -1> H = {}) const {
       if (H) *H = H_;
       return P.matrix() * this->weights_.transpose();
     }
     /// c++ sugar
     VectorM operator()(
         const ParameterMatrix<M>& P,
-        OptionalJacobian</*MxMN*/ -1, -1> H = boost::none) const {
+        OptionalJacobian</*MxMN*/ -1, -1> H = {}) const {
       return apply(P, H);
     }
   };
@@ -486,13 +491,13 @@ class Basis {
     }
     /// Calculate derivative of component rowIndex_ of F
     double apply(const ParameterMatrix<M>& P,
-                 OptionalJacobian</*1xMN*/ -1, -1> H = boost::none) const {
+                 OptionalJacobian</*1xMN*/ -1, -1> H = {}) const {
       if (H) *H = H_;
       return P.row(rowIndex_) * this->weights_.transpose();
     }
     /// c++ sugar
     double operator()(const ParameterMatrix<M>& P,
-                      OptionalJacobian</*1xMN*/ -1, -1> H = boost::none) const {
+                      OptionalJacobian</*1xMN*/ -1, -1> H = {}) const {
       return apply(P, H);
     }
   };

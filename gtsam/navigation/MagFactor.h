@@ -30,13 +30,16 @@ namespace gtsam {
  * and assumes scale, direction, and the bias are given.
  * Rotation is around negative Z axis, i.e. positive is yaw to right!
  */
-class MagFactor: public NoiseModelFactor1<Rot2> {
+class MagFactor: public NoiseModelFactorN<Rot2> {
 
   const Point3 measured_; ///< The measured magnetometer values
   const Point3 nM_; ///< Local magnetic field (mag output units)
   const Point3 bias_; ///< bias
 
 public:
+
+  // Provide access to Matrix& version of evaluateError:
+  using NoiseModelFactor1<Rot2>::evaluateError;
 
   /**
    * Constructor of factor that estimates nav to body rotation bRn
@@ -50,19 +53,19 @@ public:
   MagFactor(Key key, const Point3& measured, double scale,
       const Unit3& direction, const Point3& bias,
       const SharedNoiseModel& model) :
-      NoiseModelFactor1<Rot2>(model, key), //
+      NoiseModelFactorN<Rot2>(model, key), //
       measured_(measured), nM_(scale * direction), bias_(bias) {
   }
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new MagFactor(*this)));
   }
 
   static Point3 unrotate(const Rot2& R, const Point3& p,
-      boost::optional<Matrix&> HR = boost::none) {
-    Point3 q = Rot3::Yaw(R.theta()).unrotate(p, HR, boost::none);
+      OptionalMatrixType HR = OptionalNone) {
+    Point3 q = Rot3::Yaw(R.theta()).unrotate(p, HR, {});
     if (HR) {
       // assign to temporary first to avoid error in Win-Debug mode
       Matrix H = HR->col(2);
@@ -74,8 +77,7 @@ public:
   /**
    * @brief vector of errors
    */
-  Vector evaluateError(const Rot2& nRb,
-      boost::optional<Matrix&> H = boost::none) const override {
+  Vector evaluateError(const Rot2& nRb, OptionalMatrixType H) const override {
     // measured bM = nRb� * nM + b
     Point3 hx = unrotate(nRb, nM_, H) + bias_;
     return (hx - measured_);
@@ -87,7 +89,7 @@ public:
  * This version uses model measured bM = scale * bRn * direction + bias
  * and assumes scale, direction, and the bias are given
  */
-class MagFactor1: public NoiseModelFactor1<Rot3> {
+class MagFactor1: public NoiseModelFactorN<Rot3> {
 
   const Point3 measured_; ///< The measured magnetometer values
   const Point3 nM_; ///< Local magnetic field (mag output units)
@@ -95,27 +97,30 @@ class MagFactor1: public NoiseModelFactor1<Rot3> {
 
 public:
 
+  // Provide access to Matrix& version of evaluateError:
+  using NoiseModelFactor1<Rot3>::evaluateError;
+
+
   /** Constructor */
   MagFactor1(Key key, const Point3& measured, double scale,
       const Unit3& direction, const Point3& bias,
       const SharedNoiseModel& model) :
-      NoiseModelFactor1<Rot3>(model, key), //
+      NoiseModelFactorN<Rot3>(model, key), //
       measured_(measured), nM_(scale * direction), bias_(bias) {
   }
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new MagFactor1(*this)));
   }
 
   /**
    * @brief vector of errors
    */
-  Vector evaluateError(const Rot3& nRb,
-      boost::optional<Matrix&> H = boost::none) const override {
+  Vector evaluateError(const Rot3& nRb, OptionalMatrixType H) const override {
     // measured bM = nRb� * nM + b
-    Point3 hx = nRb.unrotate(nM_, H, boost::none) + bias_;
+    Point3 hx = nRb.unrotate(nM_, H, OptionalNone) + bias_;
     return (hx - measured_);
   }
 };
@@ -125,23 +130,27 @@ public:
  * This version uses model measured bM = bRn * nM + bias
  * and optimizes for both nM and the bias, where nM is in units defined by magnetometer
  */
-class MagFactor2: public NoiseModelFactor2<Point3, Point3> {
+class MagFactor2: public NoiseModelFactorN<Point3, Point3> {
 
   const Point3 measured_; ///< The measured magnetometer values
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
 
 public:
 
+  // Provide access to Matrix& version of evaluateError:
+  using NoiseModelFactor2<Point3, Point3>::evaluateError;
+
+
   /** Constructor */
   MagFactor2(Key key1, Key key2, const Point3& measured, const Rot3& nRb,
       const SharedNoiseModel& model) :
-      NoiseModelFactor2<Point3, Point3>(model, key1, key2), //
+      NoiseModelFactorN<Point3, Point3>(model, key1, key2), //
       measured_(measured), bRn_(nRb.inverse()) {
   }
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new MagFactor2(*this)));
   }
 
@@ -151,10 +160,9 @@ public:
    * @param bias (unknown) 3D bias
    */
   Vector evaluateError(const Point3& nM, const Point3& bias,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     // measured bM = nRb� * nM + b, where b is unknown bias
-    Point3 hx = bRn_.rotate(nM, boost::none, H1) + bias;
+    Point3 hx = bRn_.rotate(nM, OptionalNone, H1) + bias;
     if (H2)
       *H2 = I_3x3;
     return (hx - measured_);
@@ -166,23 +174,27 @@ public:
  * This version uses model measured bM = scale * bRn * direction + bias
  * and optimizes for both scale, direction, and the bias.
  */
-class MagFactor3: public NoiseModelFactor3<double, Unit3, Point3> {
+class MagFactor3: public NoiseModelFactorN<double, Unit3, Point3> {
 
   const Point3 measured_; ///< The measured magnetometer values
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
 
 public:
 
+  // Provide access to Matrix& version of evaluateError:
+  using NoiseModelFactor3<double, Unit3, Point3>::evaluateError;
+
+
   /** Constructor */
   MagFactor3(Key key1, Key key2, Key key3, const Point3& measured,
       const Rot3& nRb, const SharedNoiseModel& model) :
-      NoiseModelFactor3<double, Unit3, Point3>(model, key1, key2, key3), //
+      NoiseModelFactorN<double, Unit3, Point3>(model, key1, key2, key3), //
       measured_(measured), bRn_(nRb.inverse()) {
   }
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new MagFactor3(*this)));
   }
 
@@ -192,11 +204,10 @@ public:
    * @param bias (unknown) 3D bias
    */
   Vector evaluateError(const double& scale, const Unit3& direction,
-      const Point3& bias, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 =
-          boost::none) const override {
+      const Point3& bias, OptionalMatrixType H1,
+      OptionalMatrixType H2, OptionalMatrixType H3) const override {
     // measured bM = nRb� * nM + b, where b is unknown bias
-    Unit3 rotated = bRn_.rotate(direction, boost::none, H2);
+    Unit3 rotated = bRn_.rotate(direction, OptionalNone, H2);
     Point3 hx = scale * rotated.point3() + bias;
     if (H1)
       *H1 = rotated.point3();

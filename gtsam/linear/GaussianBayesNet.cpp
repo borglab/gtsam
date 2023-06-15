@@ -20,8 +20,8 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
-#include <boost/range/adaptor/reversed.hpp>
 #include <fstream>
+#include <iterator>
 
 using namespace std;
 using namespace gtsam;
@@ -46,14 +46,15 @@ namespace gtsam {
     return optimize(solution);
   }
 
-  VectorValues GaussianBayesNet::optimize(VectorValues solution) const {
+  VectorValues GaussianBayesNet::optimize(const VectorValues& given) const {
+    VectorValues solution = given;
     // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
     // solve each node in reverse topological sort order (parents first)
-    for (auto cg : boost::adaptors::reverse(*this)) {
+    for (auto it = std::make_reverse_iterator(end()); it != std::make_reverse_iterator(begin()); ++it) {
       // i^th part of R*x=y, x=inv(R)*y
       // (Rii*xi + R_i*x(i+1:))./si = yi =>
       // xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
-      solution.insert(cg->solve(solution));
+      solution.insert((*it)->solve(solution));
     }
     return solution;
   }
@@ -64,11 +65,12 @@ namespace gtsam {
     return sample(result, rng);
   }
 
-  VectorValues GaussianBayesNet::sample(VectorValues result,
+  VectorValues GaussianBayesNet::sample(const VectorValues& given,
                                         std::mt19937_64* rng) const {
+    VectorValues result(given);
     // sample each node in reverse topological sort order (parents first)
-    for (auto cg : boost::adaptors::reverse(*this)) {
-      const VectorValues sampled = cg->sample(result, rng);
+    for (auto it = std::make_reverse_iterator(end()); it != std::make_reverse_iterator(begin()); ++it) {
+      const VectorValues sampled = (*it)->sample(result, rng);
       result.insert(sampled);
     }
     return result;
@@ -79,7 +81,7 @@ namespace gtsam {
     return sample(&kRandomNumberGenerator);
   }
 
-  VectorValues GaussianBayesNet::sample(VectorValues given) const {
+  VectorValues GaussianBayesNet::sample(const VectorValues& given) const {
     return sample(given, &kRandomNumberGenerator);
   }
 
@@ -102,7 +104,25 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double GaussianBayesNet::error(const VectorValues& x) const {
-    return GaussianFactorGraph(*this).error(x);
+    double sum = 0.;
+    for (const auto& gc : *this) {
+      if (gc) sum += gc->error(x);
+    }
+    return sum;
+  }
+
+  /* ************************************************************************* */
+  double GaussianBayesNet::logProbability(const VectorValues& x) const {
+    double sum = 0.;
+    for (const auto& gc : *this) {
+      if (gc) sum += gc->logProbability(x);
+    }
+    return sum;
+  }
+
+  /* ************************************************************************* */
+  double GaussianBayesNet::evaluate(const VectorValues& x) const {
+    return exp(logProbability(x));
   }
 
   /* ************************************************************************* */
@@ -111,8 +131,8 @@ namespace gtsam {
     VectorValues result;
     // TODO this looks pretty sketchy. result is passed as the parents argument
     //  as it's filled up by solving the gaussian conditionals.
-    for (auto cg: boost::adaptors::reverse(*this)) {
-      result.insert(cg->solveOtherRHS(result, rhs));
+    for (auto it = std::make_reverse_iterator(end()); it != std::make_reverse_iterator(begin()); ++it) {
+      result.insert((*it)->solveOtherRHS(result, rhs));
     }
     return result;
   }
@@ -217,14 +237,7 @@ namespace gtsam {
   double GaussianBayesNet::logDeterminant() const {
     double logDet = 0.0;
     for (const sharedConditional& cg : *this) {
-      if (cg->get_model()) {
-        Vector diag = cg->R().diagonal();
-        cg->get_model()->whitenInPlace(diag);
-        logDet += diag.unaryExpr([](double x) { return log(x); }).sum();
-      } else {
-        logDet +=
-            cg->R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
-      }
+      logDet += cg->logDeterminant();
     }
     return logDet;
   }

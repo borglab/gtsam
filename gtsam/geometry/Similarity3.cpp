@@ -31,9 +31,9 @@ namespace internal {
 static Point3Pairs subtractCentroids(const Point3Pairs &abPointPairs,
                                     const Point3Pair &centroids) {
   Point3Pairs d_abPointPairs;
-  for (const Point3Pair& abPair : abPointPairs) {
-    Point3 da = abPair.first - centroids.first;
-    Point3 db = abPair.second - centroids.second;
+  for (const auto& [a, b] : abPointPairs) {
+    Point3 da = a - centroids.first;
+    Point3 db = b - centroids.second;
     d_abPointPairs.emplace_back(da, db);
   }
   return d_abPointPairs;
@@ -46,8 +46,7 @@ static double calculateScale(const Point3Pairs &d_abPointPairs,
                              const Rot3 &aRb) {
   double x = 0, y = 0;
   Point3 da, db;
-  for (const Point3Pair& d_abPair : d_abPointPairs) {
-    std::tie(da, db) = d_abPair;
+  for (const auto& [da, db] : d_abPointPairs) {
     const Vector3 da_prime = aRb * db;
     y += da.transpose() * da_prime;
     x += da_prime.transpose() * da_prime;
@@ -59,8 +58,8 @@ static double calculateScale(const Point3Pairs &d_abPointPairs,
 /// Form outer product H.
 static Matrix3 calculateH(const Point3Pairs &d_abPointPairs) {
   Matrix3 H = Z_3x3;
-  for (const Point3Pair& d_abPair : d_abPointPairs) {
-    H += d_abPair.first * d_abPair.second.transpose();
+  for (const auto& [da, db] : d_abPointPairs) {
+    H += da * db.transpose();
   }
   return H;
 }
@@ -122,7 +121,7 @@ void Similarity3::print(const std::string& s) const {
   std::cout << "t: " << translation().transpose() << " s: " << scale() << std::endl;
 }
 
-Similarity3 Similarity3::identity() {
+Similarity3 Similarity3::Identity() {
   return Similarity3();
 }
 Similarity3 Similarity3::operator*(const Similarity3& S) const {
@@ -184,8 +183,7 @@ Similarity3 Similarity3::Align(const vector<Pose3Pair> &abPosePairs) {
   abPointPairs.reserve(n);
   // Below denotes the pose of the i'th object/camera/etc in frame "a" or frame "b"
   Pose3 aTi, bTi;
-  for (const Pose3Pair &abPair : abPosePairs) {
-    std::tie(aTi, bTi) = abPair;
+  for (const auto &[aTi, bTi] : abPosePairs) {
     const Rot3 aRb = aTi.rotation().compose(bTi.rotation().inverse());
     rotations.emplace_back(aRb);
     abPointPairs.emplace_back(aTi.translation(), bTi.translation());

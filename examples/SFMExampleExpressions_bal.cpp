@@ -31,7 +31,6 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/inference/Symbol.h>
 
-#include <boost/format.hpp>
 #include <vector>
 
 using namespace std;
@@ -50,8 +49,7 @@ int main(int argc, char* argv[]) {
 
   // Load the SfM data from file
   SfmData mydata = SfmData::FromBalFile(filename);
-  cout << boost::format("read %1% tracks on %2% cameras\n") %
-              mydata.numberTracks() % mydata.numberCameras();
+  cout << "read " << mydata.numberTracks() << " tracks on " << mydata.numberCameras() << " cameras" << endl;
 
   // Create a factor graph
   ExpressionFactorGraph graph;
@@ -79,9 +77,7 @@ int main(int argc, char* argv[]) {
   for (const SfmTrack& track : mydata.tracks) {
     // Leaf expression for j^th point
     Point3_ point_('p', j);
-    for (const SfmMeasurement& m : track.measurements) {
-      size_t i = m.first;
-      Point2 uv = m.second;
+    for (const auto& [i, uv] : track.measurements) {
       // Leaf expression for i^th camera
       Expression<SfmCamera> camera_(C(i));
       // Below an expression for the prediction of the measurement:

@@ -20,8 +20,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/bind/bind.hpp>
-
 #include <CppUnitLite/TestHarness.h>
 
 #include <GeographicLib/Config.h>
@@ -71,7 +69,7 @@ TEST( GPSFactor, Constructor ) {
 
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector, Pose3>(
-      std::bind(&GPSFactor::evaluateError, &factor, std::placeholders::_1, boost::none), T);
+      [&factor](const Pose3& T) { return factor.evaluateError(T); }, T);
 
   // Use the factor to calculate the derivative
   Matrix actualH;
@@ -100,7 +98,7 @@ TEST( GPSFactor2, Constructor ) {
 
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector, NavState>(
-      std::bind(&GPSFactor2::evaluateError, &factor, std::placeholders::_1, boost::none), T);
+      [&factor](const NavState& T) { return factor.evaluateError(T); }, T);
 
   // Use the factor to calculate the derivative
   Matrix actualH;
@@ -125,9 +123,7 @@ TEST(GPSData, init) {
   Point3 NED2(N, E, -U);
 
   // Estimate initial state
-  Pose3 T;
-  Vector3 nV;
-  boost::tie(T, nV) = GPSFactor::EstimateState(t1, NED1, t2, NED2, 84831.0796);
+  const auto [T, nV] = GPSFactor::EstimateState(t1, NED1, t2, NED2, 84831.0796);
 
   // Check values values
   EXPECT(assert_equal((Vector )Vector3(29.9575, -29.0564, -1.95993), nV, 1e-4));

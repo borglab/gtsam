@@ -21,7 +21,6 @@
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
-#include <boost/math/constants/constants.hpp>
 
 #include <cmath>
 #include <random>
@@ -170,13 +169,13 @@ Vector3 Rot3::xyz(OptionalJacobian<3, 3> H) const {
 #endif
 
     Matrix39 qHm;
-    boost::tie(I, q) = RQ(m, qHm);
+    std::tie(I, q) = RQ(m, qHm);
 
     // TODO : Explore whether this expression can be optimized as both
     // qHm and mH are super-sparse
     *H = qHm * mH;
   } else
-    boost::tie(I, q) = RQ(matrix());
+    std::tie(I, q) = RQ(matrix());
   return q;
 }
 
@@ -226,19 +225,6 @@ double Rot3::yaw(OptionalJacobian<1, 3> H) const {
     y = xyz()(2);
   return y;
 }
-
-/* ************************************************************************* */
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-Vector Rot3::quaternion() const {
-  gtsam::Quaternion q = toQuaternion();
-  Vector v(4);
-  v(0) = q.w();
-  v(1) = q.x();
-  v(2) = q.y();
-  v(3) = q.z();
-  return v;
-}
-#endif
 
 /* ************************************************************************* */
 pair<Unit3, double> Rot3::axisAngle() const {

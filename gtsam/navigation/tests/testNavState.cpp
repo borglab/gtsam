@@ -20,7 +20,6 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std::placeholders;
@@ -41,7 +40,7 @@ static const Vector9 kZeroXi = Vector9::Zero();
 TEST(NavState, Constructor) {
   std::function<NavState(const Rot3&, const Point3&, const Vector3&)> create =
       std::bind(&NavState::Create, std::placeholders::_1, std::placeholders::_2,
-                std::placeholders::_3, boost::none, boost::none, boost::none);
+                std::placeholders::_3, nullptr, nullptr, nullptr);
   Matrix aH1, aH2, aH3;
   EXPECT(
       assert_equal(kState1,
@@ -61,7 +60,7 @@ TEST(NavState, Constructor) {
 TEST(NavState, Constructor2) {
   std::function<NavState(const Pose3&, const Vector3&)> construct =
       std::bind(&NavState::FromPoseVelocity, std::placeholders::_1,
-                std::placeholders::_2, boost::none, boost::none);
+                std::placeholders::_2, nullptr, nullptr);
   Matrix aH1, aH2;
   EXPECT(
       assert_equal(kState1,
@@ -76,7 +75,7 @@ TEST( NavState, Attitude) {
   Rot3 actual = kState1.attitude(aH);
   EXPECT(assert_equal(actual, kAttitude));
   eH = numericalDerivative11<Rot3, NavState>(
-      std::bind(&NavState::attitude, std::placeholders::_1, boost::none), kState1);
+      std::bind(&NavState::attitude, std::placeholders::_1, nullptr), kState1);
   EXPECT(assert_equal((Matrix )eH, aH));
 }
 
@@ -86,7 +85,7 @@ TEST( NavState, Position) {
   Point3 actual = kState1.position(aH);
   EXPECT(assert_equal(actual, kPosition));
   eH = numericalDerivative11<Point3, NavState>(
-      std::bind(&NavState::position, std::placeholders::_1, boost::none),
+      std::bind(&NavState::position, std::placeholders::_1, nullptr),
       kState1);
   EXPECT(assert_equal((Matrix )eH, aH));
 }
@@ -97,7 +96,7 @@ TEST( NavState, Velocity) {
   Velocity3 actual = kState1.velocity(aH);
   EXPECT(assert_equal(actual, kVelocity));
   eH = numericalDerivative11<Velocity3, NavState>(
-      std::bind(&NavState::velocity, std::placeholders::_1, boost::none),
+      std::bind(&NavState::velocity, std::placeholders::_1, nullptr),
       kState1);
   EXPECT(assert_equal((Matrix )eH, aH));
 }
@@ -108,7 +107,7 @@ TEST( NavState, BodyVelocity) {
   Velocity3 actual = kState1.bodyVelocity(aH);
   EXPECT(assert_equal<Velocity3>(actual, kAttitude.unrotate(kVelocity)));
   eH = numericalDerivative11<Velocity3, NavState>(
-      std::bind(&NavState::bodyVelocity, std::placeholders::_1, boost::none),
+      std::bind(&NavState::bodyVelocity, std::placeholders::_1, nullptr),
       kState1);
   EXPECT(assert_equal((Matrix )eH, aH));
 }
@@ -142,7 +141,7 @@ TEST( NavState, Manifold ) {
   kState1.retract(xi, aH1, aH2);
   std::function<NavState(const NavState&, const Vector9&)> retract =
       std::bind(&NavState::retract, std::placeholders::_1,
-                std::placeholders::_2, boost::none, boost::none);
+                std::placeholders::_2, nullptr, nullptr);
   EXPECT(assert_equal(numericalDerivative21(retract, kState1, xi), aH1));
   EXPECT(assert_equal(numericalDerivative22(retract, kState1, xi), aH2));
 
@@ -155,7 +154,7 @@ TEST( NavState, Manifold ) {
   // Check localCoordinates derivatives
   std::function<Vector9(const NavState&, const NavState&)> local =
       std::bind(&NavState::localCoordinates, std::placeholders::_1,
-                std::placeholders::_2, boost::none, boost::none);
+                std::placeholders::_2, nullptr, nullptr);
   // from state1 to state2
   kState1.localCoordinates(state2, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(local, kState1, state2), aH1));
@@ -174,7 +173,7 @@ TEST( NavState, Manifold ) {
 static const double dt = 2.0;
 std::function<Vector9(const NavState&, const bool&)> coriolis =
     std::bind(&NavState::coriolis, std::placeholders::_1, dt, kOmegaCoriolis,
-              std::placeholders::_2, boost::none);
+              std::placeholders::_2, nullptr);
 
 TEST(NavState, Coriolis) {
   Matrix9 aH;
@@ -252,7 +251,7 @@ TEST(NavState, CorrectPIM) {
   std::function<Vector9(const NavState&, const Vector9&)> correctPIM =
       std::bind(&NavState::correctPIM, std::placeholders::_1,
                 std::placeholders::_2, dt, kGravity, kOmegaCoriolis, false,
-                boost::none, boost::none);
+                nullptr, nullptr);
   kState1.correctPIM(xi, dt, kGravity, kOmegaCoriolis, false, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(correctPIM, kState1, xi), aH1));
   EXPECT(assert_equal(numericalDerivative22(correctPIM, kState1, xi), aH2));

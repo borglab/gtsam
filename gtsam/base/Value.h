@@ -21,8 +21,10 @@
 #include <gtsam/config.h>      // Configuration from CMake
 
 #include <gtsam/base/Vector.h>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/assume_abstract.hpp>
+#endif
 #include <memory>
 
 namespace gtsam {
@@ -44,7 +46,7 @@ namespace gtsam {
     virtual void deallocate_() const = 0;
 
     /** Clone this value (normal clone on the heap, delete with 'delete' operator) */
-    virtual boost::shared_ptr<Value> clone() const = 0;
+    virtual std::shared_ptr<Value> clone() const = 0;
 
     /** Compare this Value with another for equality. */
     virtual bool equals_(const Value& other, double tol = 1e-9) const = 0;
@@ -119,13 +121,17 @@ namespace gtsam {
      *       The last two links explain why these export lines have to be in the same source module that includes
      *       any of the archive class headers.
      * */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & /*ar*/, const unsigned int /*version*/) {
     }
+#endif
 
   };
 
 } /* namespace gtsam */
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(gtsam::Value)
+#endif

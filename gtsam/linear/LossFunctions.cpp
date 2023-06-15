@@ -40,6 +40,10 @@ Vector Base::weight(const Vector& error) const {
   return w;
 }
 
+Vector Base::sqrtWeight(const Vector &error) const {
+  return weight(error).cwiseSqrt();
+}
+
 // The following three functions re-weight block matrices and a vector
 // according to their weight implementation
 

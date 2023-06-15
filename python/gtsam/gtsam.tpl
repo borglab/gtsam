@@ -7,8 +7,7 @@
  * ** THIS FILE IS AUTO-GENERATED, DO NOT MODIFY! **
  */
 
-// Include relevant boost libraries required by GTSAM
-{include_boost}
+#define PYBIND11_DETAILED_ERROR_MESSAGES
 
 #include <pybind11/eigen.h>
 #include <pybind11/stl_bind.h>
@@ -28,11 +27,7 @@
 // Export classes for serialization
 {boost_class_export}
 
-// Holder type for pybind11
-{holder_type}
-
 // Preamble for STL classes
-// TODO(fan): make this automatic
 #include "python/gtsam/preamble/{module_name}.h"
 
 using namespace std;
@@ -49,7 +44,6 @@ namespace py = pybind11;
 {wrapped_namespace}
 
 // Specializations for STL classes
-// TODO(fan): make this automatic
 #include "python/gtsam/specializations/{module_name}.h"
 
 }}

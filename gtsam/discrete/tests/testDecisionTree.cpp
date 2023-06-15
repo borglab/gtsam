@@ -20,17 +20,17 @@
 // #define DT_DEBUG_MEMORY
 // #define GTSAM_DT_NO_PRUNING
 #define DISABLE_DOT
-#include <gtsam/discrete/DecisionTree-inl.h>
-
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/serializationTestHelpers.h>
+#include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/discrete/Signature.h>
 
-#include <CppUnitLite/TestHarness.h>
+#include <iomanip>
 
-#include <boost/assign/std/vector.hpp>
-using namespace boost::assign;
-
-using namespace std;
+using std::vector;
+using std::string;
+using std::map;
 using namespace gtsam;
 
 template <typename T>
@@ -52,7 +52,9 @@ struct CrazyDecisionTree : public DecisionTree<string, Crazy> {
   void print(const std::string& s = "") const {
     auto keyFormatter = [](const std::string& s) { return s; };
     auto valueFormatter = [](const Crazy& v) {
-      return (boost::format("{%d,%4.2g}") % v.a % v.b).str();
+      std::stringstream ss;
+      ss << "{" << v.a << "," << std::setw(4) << std::setprecision(2) << v.b << "}";
+      return ss.str();
     };
     DecisionTree<string, Crazy>::print("", keyFormatter, valueFormatter);
   }
@@ -88,7 +90,7 @@ struct DT : public DecisionTree<string, int> {
   void print(const std::string& s = "") const {
     auto keyFormatter = [](const std::string& s) { return s; };
     auto valueFormatter = [](const int& v) {
-      return (boost::format("%d") % v).str();
+      return std::to_string(v);
     };
     std::cout << s;
     Base::print("", keyFormatter, valueFormatter);
@@ -284,8 +286,7 @@ TEST(DecisionTree, Compose) {
   DT f1(B, DT(A, 0, 1), DT(A, 2, 3));
 
   // Create from string
-  vector<DT::LabelC> keys;
-  keys += DT::LabelC(A, 2), DT::LabelC(B, 2);
+  vector<DT::LabelC> keys{DT::LabelC(A, 2), DT::LabelC(B, 2)};
   DT f2(keys, "0 2 1 3");
   EXPECT(assert_equal(f2, f1, 1e-9));
 
@@ -295,7 +296,7 @@ TEST(DecisionTree, Compose) {
   DOT(f4);
 
   // a bigger tree
-  keys += DT::LabelC(C, 2);
+  keys.push_back(DT::LabelC(C, 2));
   DT f5(keys, "0 4 2 6 1 5 3 7");
   EXPECT(assert_equal(f5, f4, 1e-9));
   DOT(f5);
@@ -326,10 +327,10 @@ TEST(DecisionTree, Containers) {
 /* ************************************************************************** */
 // Test nrAssignments.
 TEST(DecisionTree, NrAssignments) {
-  pair<string, size_t> A("A", 2), B("B", 2), C("C", 2);
+  const std::pair<string, size_t> A("A", 2), B("B", 2), C("C", 2);
   DT tree({A, B, C}, "1 1 1 1 1 1 1 1");
   EXPECT(tree.root_->isLeaf());
-  auto leaf = boost::dynamic_pointer_cast<const DT::Leaf>(tree.root_);
+  auto leaf = std::dynamic_pointer_cast<const DT::Leaf>(tree.root_);
   EXPECT_LONGS_EQUAL(8, leaf->nrAssignments());
 
   DT tree2({C, B, A}, "1 1 1 2 3 4 5 5");
@@ -347,20 +348,20 @@ TEST(DecisionTree, NrAssignments) {
     1 1 Leaf 5
   */
 
-  auto root = boost::dynamic_pointer_cast<const DT::Choice>(tree2.root_);
+  auto root = std::dynamic_pointer_cast<const DT::Choice>(tree2.root_);
   CHECK(root);
-  auto choice0 = boost::dynamic_pointer_cast<const DT::Choice>(root->branches()[0]);
+  auto choice0 = std::dynamic_pointer_cast<const DT::Choice>(root->branches()[0]);
   CHECK(choice0);
   EXPECT(choice0->branches()[0]->isLeaf());
-  auto choice00 = boost::dynamic_pointer_cast<const DT::Leaf>(choice0->branches()[0]);
+  auto choice00 = std::dynamic_pointer_cast<const DT::Leaf>(choice0->branches()[0]);
   CHECK(choice00);
   EXPECT_LONGS_EQUAL(2, choice00->nrAssignments());
 
-  auto choice1 = boost::dynamic_pointer_cast<const DT::Choice>(root->branches()[1]);
+  auto choice1 = std::dynamic_pointer_cast<const DT::Choice>(root->branches()[1]);
   CHECK(choice1);
-  auto choice10 = boost::dynamic_pointer_cast<const DT::Choice>(choice1->branches()[0]);
+  auto choice10 = std::dynamic_pointer_cast<const DT::Choice>(choice1->branches()[0]);
   CHECK(choice10);
-  auto choice11 = boost::dynamic_pointer_cast<const DT::Leaf>(choice1->branches()[1]);
+  auto choice11 = std::dynamic_pointer_cast<const DT::Leaf>(choice1->branches()[1]);
   CHECK(choice11);
   EXPECT(choice11->isLeaf());
   EXPECT_LONGS_EQUAL(2, choice11->nrAssignments());
@@ -461,9 +462,7 @@ TEST(DecisionTree, unzip) {
   DTP tree(B, DTP(A, {0, "zero"}, {1, "one"}),
            DTP(A, {2, "two"}, {1337, "l33t"}));
 
-  DT1 dt1;
-  DT2 dt2;
-  std::tie(dt1, dt2) = unzip(tree);
+  const auto [dt1, dt2] = unzip(tree);
 
   DT1 tree1(B, DT1(A, 0, 1), DT1(A, 2, 1337));
   DT2 tree2(B, DT2(A, "zero", "one"), DT2(A, "two", "l33t"));
@@ -476,8 +475,8 @@ TEST(DecisionTree, unzip) {
 // Test thresholding.
 TEST(DecisionTree, threshold) {
   // Create three level tree
-  vector<DT::LabelC> keys;
-  keys += DT::LabelC("C", 2), DT::LabelC("B", 2), DT::LabelC("A", 2);
+  const vector<DT::LabelC> keys{DT::LabelC("C", 2), DT::LabelC("B", 2),
+                                DT::LabelC("A", 2)};
   DT tree(keys, "0 1 2 3 4 5 6 7");
 
   // Check number of leaves equal to zero
@@ -499,8 +498,8 @@ TEST(DecisionTree, threshold) {
 // Test apply with assignment.
 TEST(DecisionTree, ApplyWithAssignment) {
   // Create three level tree
-  vector<DT::LabelC> keys;
-  keys += DT::LabelC("C", 2), DT::LabelC("B", 2), DT::LabelC("A", 2);
+  const vector<DT::LabelC> keys{DT::LabelC("C", 2), DT::LabelC("B", 2),
+                                DT::LabelC("A", 2)};
   DT tree(keys, "1 2 3 4 5 6 7 8");
 
   DecisionTree<string, double> probTree(

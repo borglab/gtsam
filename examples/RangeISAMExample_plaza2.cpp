@@ -92,7 +92,7 @@ std::list<TimedOdometry> readOdometry() {
 
 // load the ranges from TD
 //    Time (sec)  Sender / Antenna ID Receiver Node ID  Range (m)
-using RangeTriple = boost::tuple<double, size_t, double>;
+using RangeTriple = std::tuple<double, size_t, double>;
 std::vector<RangeTriple> readTriples() {
   std::vector<RangeTriple> triples;
   std::string data_file = gtsam::findExampleDataFile("Plaza2_TD.txt");
@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
     //--------------------------------- odometry loop --------------------------
     double t;
     Pose2 odometry;
-    boost::tie(t, odometry) = timedOdometry;
+    std::tie(t, odometry) = timedOdometry;
 
     // add odometry factor
     newFactors.emplace_shared<gtsam::BetweenFactor<Pose2>>(i - 1, i, odometry,
@@ -178,10 +178,10 @@ int main(int argc, char** argv) {
     initial.insert(i, predictedPose);
 
     // Check if there are range factors to be added
-    while (k < K && t >= boost::get<0>(triples[k])) {
-      size_t j = boost::get<1>(triples[k]);
+    while (k < K && t >= std::get<0>(triples[k])) {
+      size_t j = std::get<1>(triples[k]);
       Symbol landmark_key('L', j);
-      double range = boost::get<2>(triples[k]);
+      double range = std::get<2>(triples[k]);
       newFactors.emplace_shared<gtsam::RangeFactor<Pose2, Point2>>(
           i, landmark_key, range, rangeNoise);
       if (initializedLandmarks.count(landmark_key) == 0) {

@@ -33,20 +33,20 @@ TEST(testIMUSystem, instantiations) {
   // just checking for compilation
   PoseRTV x1_v;
 
-  gtsam::SharedNoiseModel model1 = gtsam::noiseModel::Unit::Create(1);
-  gtsam::SharedNoiseModel model3 = gtsam::noiseModel::Unit::Create(3);
-  gtsam::SharedNoiseModel model6 = gtsam::noiseModel::Unit::Create(6);
-  gtsam::SharedNoiseModel model9 = gtsam::noiseModel::Unit::Create(9);
+  SharedNoiseModel model1 = noiseModel::Unit::Create(1);
+  SharedNoiseModel model3 = noiseModel::Unit::Create(3);
+  SharedNoiseModel model6 = noiseModel::Unit::Create(6);
+  SharedNoiseModel model9 = noiseModel::Unit::Create(9);
 
   Vector accel = Vector::Ones(3), gyro = Vector::Ones(3);
 
   IMUFactor<PoseRTV> imu(accel, gyro, 0.01, x1, x2, model6);
   FullIMUFactor<PoseRTV> full_imu(accel, gyro, 0.01, x1, x2, model9);
-  NonlinearEquality<gtsam::PoseRTV> poseHardPrior(x1, x1_v);
-  BetweenFactor<gtsam::PoseRTV> odom(x1, x2, x1_v, model9);
-  RangeFactor<gtsam::PoseRTV, gtsam::PoseRTV> range(x1, x2, 1.0, model1);
+  NonlinearEquality<PoseRTV> poseHardPrior(x1, x1_v);
+  BetweenFactor<PoseRTV> odom(x1, x2, x1_v, model9);
+  RangeFactor<PoseRTV, PoseRTV> range(x1, x2, 1.0, model1);
   VelocityConstraint constraint(x1, x2, 0.1, 10000);
-  PriorFactor<gtsam::PoseRTV> posePrior(x1, x1_v, model9);
+  PriorFactor<PoseRTV> posePrior(x1, x1_v, model9);
   DHeightPrior heightPrior(x1, 0.1, model1);
   VelocityPrior velPrior(x1, Vector::Ones(3), model3);
 }
@@ -68,13 +68,13 @@ TEST( testIMUSystem, optimize_chain ) {
 
   // assemble simple graph with IMU measurements and velocity constraints
   NonlinearFactorGraph graph;
-  graph += NonlinearEquality<gtsam::PoseRTV>(x1, pose1);
-  graph += IMUFactor<PoseRTV>(imu12, dt, x1, x2, model);
-  graph += IMUFactor<PoseRTV>(imu23, dt, x2, x3, model);
-  graph += IMUFactor<PoseRTV>(imu34, dt, x3, x4, model);
-  graph += VelocityConstraint(x1, x2, dt);
-  graph += VelocityConstraint(x2, x3, dt);
-  graph += VelocityConstraint(x3, x4, dt);
+  graph.emplace_shared<NonlinearEquality<PoseRTV>>(x1, pose1);
+  graph.emplace_shared<IMUFactor<PoseRTV>>(imu12, dt, x1, x2, model);
+  graph.emplace_shared<IMUFactor<PoseRTV>>(imu23, dt, x2, x3, model);
+  graph.emplace_shared<IMUFactor<PoseRTV>>(imu34, dt, x3, x4, model);
+  graph.emplace_shared<VelocityConstraint>(x1, x2, dt);
+  graph.emplace_shared<VelocityConstraint>(x2, x3, dt);
+  graph.emplace_shared<VelocityConstraint>(x3, x4, dt);
 
   // ground truth values
   Values true_values;
@@ -114,10 +114,10 @@ TEST( testIMUSystem, optimize_chain_fullfactor ) {
 
   // assemble simple graph with IMU measurements and velocity constraints
   NonlinearFactorGraph graph;
-  graph += NonlinearEquality<gtsam::PoseRTV>(x1, pose1);
-  graph += FullIMUFactor<PoseRTV>(imu12, dt, x1, x2, model);
-  graph += FullIMUFactor<PoseRTV>(imu23, dt, x2, x3, model);
-  graph += FullIMUFactor<PoseRTV>(imu34, dt, x3, x4, model);
+  graph.emplace_shared<NonlinearEquality<PoseRTV>>(x1, pose1);
+  graph.emplace_shared<FullIMUFactor<PoseRTV>>(imu12, dt, x1, x2, model);
+  graph.emplace_shared<FullIMUFactor<PoseRTV>>(imu23, dt, x2, x3, model);
+  graph.emplace_shared<FullIMUFactor<PoseRTV>>(imu34, dt, x3, x4, model);
 
   // ground truth values
   Values true_values;
@@ -156,7 +156,7 @@ TEST( testIMUSystem, linear_trajectory) {
   Values true_traj, init_traj;
   NonlinearFactorGraph graph;
 
-  graph += NonlinearEquality<gtsam::PoseRTV>(x0, start);
+  graph.emplace_shared<NonlinearEquality<PoseRTV>>(x0, start);
   true_traj.insert(x0, start);
   init_traj.insert(x0, start);
 
@@ -165,7 +165,7 @@ TEST( testIMUSystem, linear_trajectory) {
   for (size_t i=1; i<nrPoses; ++i) {
     Key xA = i-1, xB = i;
     cur_pose = cur_pose.generalDynamics(accel, gyro, dt);
-    graph += FullIMUFactor<PoseRTV>(accel - g, gyro, dt, xA, xB, model);
+    graph.emplace_shared<FullIMUFactor<PoseRTV>>(accel - g, gyro, dt, xA, xB, model);
     true_traj.insert(xB, cur_pose);
     init_traj.insert(xB, PoseRTV());
   }

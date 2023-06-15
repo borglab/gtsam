@@ -340,7 +340,7 @@ static void test_array_misc()
   VERIFY_IS_EQUAL((instantiate_by_c_array<dummy_inst, int, 5>(data).c), 5);
 }
 
-void test_cxx11_meta()
+EIGEN_DECLARE_TEST(cxx11_meta)
 {
   CALL_SUBTEST(test_gen_numeric_list());
   CALL_SUBTEST(test_concat());

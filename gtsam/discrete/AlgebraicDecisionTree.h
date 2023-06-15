@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <map>
 #include <string>
+#include <iomanip>
 #include <vector>
 namespace gtsam {
 
@@ -31,6 +32,8 @@ namespace gtsam {
    * Algebraic Decision Trees fix the range to double
    * Just has some nice constructors and some syntactic sugar
    * TODO: consider eliminating this class altogether?
+   *
+   * @ingroup discrete
    */
   template <typename L>
   class GTSAM_EXPORT AlgebraicDecisionTree : public DecisionTree<L, double> {
@@ -69,7 +72,7 @@ namespace gtsam {
       static inline double id(const double& x) { return x; }
     };
 
-    AlgebraicDecisionTree() : Base(1.0) {}
+    AlgebraicDecisionTree(double leaf = 1.0) : Base(leaf) {}
 
     // Explicitly non-explicit constructor
     AlgebraicDecisionTree(const Base& add) : Base(add) {}
@@ -156,11 +159,13 @@ namespace gtsam {
     }
 
     /// print method customized to value type `double`.
-    void print(const std::string& s,
-              const typename Base::LabelFormatter& labelFormatter =
-                  &DefaultFormatter) const {
+    void print(const std::string& s = "",
+               const typename Base::LabelFormatter& labelFormatter =
+                   &DefaultFormatter) const {
       auto valueFormatter = [](const double& v) {
-        return (boost::format("%4.8g") % v).str();
+        std::stringstream ss;
+        ss << std::setw(4) << std::setprecision(8) << v;
+        return ss.str();
       };
       Base::print(s, labelFormatter, valueFormatter);
     }

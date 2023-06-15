@@ -11,5 +11,9 @@
  * mutations on Python side will not be reflected on C++.
  */
 
+PYBIND11_MAKE_OPAQUE(std::vector<gtsam::SfmMeasurement>);
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::SfmTrack>);
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::SfmCamera>);
+PYBIND11_MAKE_OPAQUE(
+    std::vector<gtsam::gtsfm::Keypoints>);
+PYBIND11_MAKE_OPAQUE(gtsam::gtsfm::MatchIndicesMap);

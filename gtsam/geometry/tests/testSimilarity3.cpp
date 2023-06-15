@@ -54,9 +54,9 @@ const double degree = M_PI / 180;
 
 //******************************************************************************
 TEST(Similarity3, Concepts) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Similarity3 >));
-  BOOST_CONCEPT_ASSERT((IsManifold<Similarity3 >));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Similarity3 >));
+  GTSAM_CONCEPT_ASSERT(IsGroup<Similarity3 >);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Similarity3 >);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Similarity3 >);
 }
 
 //******************************************************************************
@@ -203,11 +203,11 @@ TEST(Similarity3, ExpLogMap) {
 
   Vector7 zeros;
   zeros << 0, 0, 0, 0, 0, 0, 0;
-  Vector7 logIdentity = Similarity3::Logmap(Similarity3::identity());
+  Vector7 logIdentity = Similarity3::Logmap(Similarity3::Identity());
   EXPECT(assert_equal(zeros, logIdentity));
 
   Similarity3 expZero = Similarity3::Expmap(zeros);
-  Similarity3 ident = Similarity3::identity();
+  Similarity3 ident = Similarity3::Identity();
   EXPECT(assert_equal(expZero, ident));
 
   // Compare to matrix exponential, using expm in Lie.h
@@ -391,7 +391,7 @@ TEST(Similarity3, Optimization) {
   NonlinearFactorGraph graph;
   graph.addPrior(key, prior, model);
 
-  // Create initial estimate with identity transform
+  // Create initial estimate with Identity transform
   Values initial;
   initial.insert<Similarity3>(key, Similarity3());
 

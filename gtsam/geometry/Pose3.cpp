@@ -27,7 +27,6 @@
 namespace gtsam {
 
 using std::vector;
-using Point3Pairs = vector<Point3Pair>;
 
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose3)
@@ -157,6 +156,12 @@ void Pose3::print(const std::string& s) const {
 /* ************************************************************************* */
 bool Pose3::equals(const Pose3& pose, double tol) const {
   return R_.equals(pose.R_, tol) && traits<Point3>::Equals(t_, pose.t_, tol);
+}
+
+/* ************************************************************************* */
+Pose3 Pose3::interpolateRt(const Pose3& T, double t) const {
+  return Pose3(interpolate<Rot3>(R_, T.R_, t),
+                interpolate<Point3>(t_, T.t_, t));
 }
 
 /* ************************************************************************* */
@@ -440,14 +445,14 @@ Unit3 Pose3::bearing(const Pose3& pose, OptionalJacobian<2, 6> Hself,
     Hpose->setZero();
     return bearing(pose.translation(), Hself, Hpose.cols<3>(3));
   }
-  return bearing(pose.translation(), Hself, boost::none);
+  return bearing(pose.translation(), Hself, {});
 }
 
 /* ************************************************************************* */
-boost::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
+std::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
   const size_t n = abPointPairs.size();
   if (n < 3) {
-    return boost::none;  // we need at least three pairs
+    return {};  // we need at least three pairs
   }
 
   // calculate centroids
@@ -467,7 +472,7 @@ boost::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
   return Pose3(aRb, aTb);
 }
 
-boost::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
+std::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
   if (a.rows() != 3 || b.rows() != 3 || a.cols() != b.cols()) {
     throw std::invalid_argument(
       "Pose3:Align expects 3*N matrices of equal shape.");
@@ -478,16 +483,6 @@ boost::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
   }
   return Pose3::Align(abPointPairs);
 }
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
-  Point3Pairs abPointPairs;
-  for (const Point3Pair &baPair : baPointPairs) {
-    abPointPairs.emplace_back(baPair.second, baPair.first);
-  }
-  return Pose3::Align(abPointPairs);
-}
-#endif
 
 /* ************************************************************************* */
 Pose3 Pose3::slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx, OptionalJacobian<6, 6> Hy) const {

@@ -26,7 +26,7 @@
 namespace gtsam {
 /**
  *
- * @addtogroup SLAM
+ * @ingroup slam
  *
  * If you are using the factor, please cite:
  * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert,
@@ -41,13 +41,13 @@ namespace gtsam {
  * has its own calibration.
  * The factor only constrains poses (variable dimension is 6).
  * This factor requires that values contains the involved poses (Pose3).
- * @addtogroup SLAM
+ * @ingroup slam
  */
 class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
     : public SmartStereoProjectionFactor {
  protected:
   /// shared pointer to calibration object (one for each camera)
-  std::vector<boost::shared_ptr<Cal3_S2Stereo>> K_all_;
+  std::vector<std::shared_ptr<Cal3_S2Stereo>> K_all_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -59,7 +59,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
   typedef SmartStereoProjectionPoseFactor This;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /**
    * Constructor
@@ -69,10 +69,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
   SmartStereoProjectionPoseFactor(
       const SharedNoiseModel& sharedNoiseModel,
       const SmartStereoProjectionParams& params = SmartStereoProjectionParams(),
-      const boost::optional<Pose3>& body_P_sensor = boost::none);
-
-  /** Virtual destructor */
-  ~SmartStereoProjectionPoseFactor() override = default;
+      const std::optional<Pose3>& body_P_sensor = {});
 
   /**
    * add a new measurement and pose key
@@ -83,7 +80,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
    * @param K is the (fixed) camera calibration
    */
   void add(const StereoPoint2& measured, const Key& poseKey,
-           const boost::shared_ptr<Cal3_S2Stereo>& K);
+           const std::shared_ptr<Cal3_S2Stereo>& K);
 
   /**
    *  Variant of the previous one in which we include a set of measurements
@@ -95,7 +92,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
    */
   void add(const std::vector<StereoPoint2>& measurements,
            const KeyVector& poseKeys,
-           const std::vector<boost::shared_ptr<Cal3_S2Stereo>>& Ks);
+           const std::vector<std::shared_ptr<Cal3_S2Stereo>>& Ks);
 
   /**
    * Variant of the previous one in which we include a set of measurements with
@@ -108,7 +105,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
    */
   void add(const std::vector<StereoPoint2>& measurements,
            const KeyVector& poseKeys,
-           const boost::shared_ptr<Cal3_S2Stereo>& K);
+           const std::shared_ptr<Cal3_S2Stereo>& K);
 
   /**
    * print
@@ -127,7 +124,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
   double error(const Values& values) const override;
 
   /** return the calibration object */
-  inline std::vector<boost::shared_ptr<Cal3_S2Stereo>> calibration() const {
+  inline std::vector<std::shared_ptr<Cal3_S2Stereo>> calibration() const {
     return K_all_;
   }
 
@@ -141,6 +138,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
   Base::Cameras cameras(const Values& values) const override;
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -148,6 +146,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(K_all_);
   }
+#endif
 
 };  // end of class declaration
 

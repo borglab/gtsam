@@ -82,6 +82,7 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
 };
 
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/hybrid/HybridValues.h>
 virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   DiscreteConditional();
   DiscreteConditional(size_t nFrontals, const gtsam::DecisionTreeFactor& f);
@@ -95,6 +96,12 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   DiscreteConditional(const gtsam::DecisionTreeFactor& joint,
                       const gtsam::DecisionTreeFactor& marginal,
                       const gtsam::Ordering& orderedKeys);
+
+  // Standard interface
+  double logNormalizationConstant() const;
+  double logProbability(const gtsam::DiscreteValues& values) const;
+  double evaluate(const gtsam::DiscreteValues& values) const;
+  double error(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteConditional operator*(
       const gtsam::DiscreteConditional& other) const;
   gtsam::DiscreteConditional marginal(gtsam::Key key) const;
@@ -116,6 +123,8 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   size_t sample(size_t value) const;
   size_t sample() const;
   void sampleInPlace(gtsam::DiscreteValues @parentsValues) const;
+
+  // Markdown and HTML
   string markdown(const gtsam::KeyFormatter& keyFormatter =
                       gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
@@ -124,6 +133,11 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
                   gtsam::DefaultKeyFormatter) const;
   string html(const gtsam::KeyFormatter& keyFormatter,
               std::map<gtsam::Key, std::vector<std::string>> names) const;
+
+  // Expose HybridValues versions
+  double logProbability(const gtsam::HybridValues& x) const;
+  double evaluate(const gtsam::HybridValues& x) const;
+  double error(const gtsam::HybridValues& x) const;
 };
 
 #include <gtsam/discrete/DiscreteDistribution.h>
@@ -157,7 +171,12 @@ class DiscreteBayesNet {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteBayesNet& other, double tol = 1e-9) const;
+
+  // Standard interface.
+  double logProbability(const gtsam::DiscreteValues& values) const;
+  double evaluate(const gtsam::DiscreteValues& values) const;
   double operator()(const gtsam::DiscreteValues& values) const;
+
   gtsam::DiscreteValues sample() const;
   gtsam::DiscreteValues sample(gtsam::DiscreteValues given) const;
 
@@ -219,6 +238,16 @@ class DiscreteBayesTree {
 };
 
 #include <gtsam/discrete/DiscreteLookupDAG.h>
+
+class DiscreteLookupTable : gtsam::DiscreteConditional{
+  DiscreteLookupTable(size_t nFrontals, const gtsam::DiscreteKeys& keys,
+                      const gtsam::DecisionTreeFactor::ADT& potentials);
+  void print(
+    const std::string& s = "Discrete Lookup Table: ",
+    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const;
+  size_t argmax(const gtsam::DiscreteValues& parentsValues) const;
+};
+
 class DiscreteLookupDAG {
   DiscreteLookupDAG();
   void push_back(const gtsam::DiscreteLookupTable* table);

@@ -21,7 +21,19 @@ include(PybindWrap)
 ## Load the necessary files to compile the wrapper
 
 # Load the pybind11 code
-add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
+
+
+# This is required to avoid an error in modern pybind11 cmake scripts:
+if(POLICY CMP0057)
+  cmake_policy(SET CMP0057 NEW)
+endif()
+
+# Prefer system pybind11 first, if not found, rely on bundled version:
+find_package(pybind11 CONFIG QUIET)
+if (NOT pybind11_FOUND)
+        add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
+endif()
+
 # Set the wrapping script variable
 set(PYBIND_WRAP_SCRIPT "${PROJECT_SOURCE_DIR}/wrap/scripts/pybind_wrap.py")
 ############################################################
@@ -34,7 +46,28 @@ set(ignore
     gtsam::Point2
     gtsam::Point3
     gtsam::ISAM2ThresholdMapValue
-    gtsam::DiscreteKey)
+    gtsam::FactorIndices
+    gtsam::FactorIndexSet
+    gtsam::IndexPairSetMap
+    gtsam::IndexPairVector
+    gtsam::BetweenFactorPose2s
+    gtsam::BetweenFactorPose3s
+    gtsam::FixedLagSmootherKeyTimestampMapValue
+    gtsam::Point2Vector
+    gtsam::Point2Pairs
+    gtsam::Point3Pairs
+    gtsam::Pose3Pairs
+    gtsam::Pose3Vector
+    gtsam::Rot3Vector
+    gtsam::KeyVector
+    gtsam::BinaryMeasurementsPoint3
+    gtsam::BinaryMeasurementsUnit3
+    gtsam::BinaryMeasurementsRot3
+    gtsam::DiscreteKey
+    gtsam::KeyPairDoubleMap
+    gtsam::gtsfm::MatchIndicesMap
+    gtsam::gtsfm::KeypointsVector
+    gtsam::gtsfm::SfmTrack2dVector)
 
 set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i
@@ -44,6 +77,8 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/geometry/geometry.i
     ${PROJECT_SOURCE_DIR}/gtsam/linear/linear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
+    ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/values.i
+    ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/custom.i
     ${PROJECT_SOURCE_DIR}/gtsam/symbolic/symbolic.i
     ${PROJECT_SOURCE_DIR}/gtsam/sam/sam.i
     ${PROJECT_SOURCE_DIR}/gtsam/slam/slam.i
@@ -65,7 +100,7 @@ pybind_wrap(${GTSAM_PYTHON_TARGET} # target
             ${PROJECT_SOURCE_DIR}/python/gtsam/gtsam.tpl
             gtsam # libs
             "gtsam;gtsam_header" # dependencies
-            ON # use_boost
+            ${GTSAM_ENABLE_BOOST_SERIALIZATION} # use_boost_serialization
             )
 
 set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
@@ -116,12 +151,25 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::Point2
             gtsam::Point3
             gtsam::ISAM2ThresholdMapValue
-            gtsam::FixedLagSmootherKeyTimestampMapValue
+            gtsam::FactorIndices
+            gtsam::FactorIndexSet
+            gtsam::BetweenFactorPose3s
+            gtsam::Point2Vector
+            gtsam::Pose3Vector
+            gtsam::KeyVector
+            gtsam::BinaryMeasurementsPoint3
+            gtsam::BinaryMeasurementsUnit3
+            gtsam::BinaryMeasurementsRot3
             gtsam::CameraSetCal3_S2
             gtsam::CameraSetCal3Bundler
             gtsam::CameraSetCal3Unified
-            gtsam::CameraSetCal3Fisheye)
-            
+            gtsam::CameraSetCal3Fisheye
+            gtsam::KeyPairDoubleMap
+            gtsam::gtsfm::MatchIndicesMap
+            gtsam::gtsfm::KeypointsVector
+            gtsam::gtsfm::SfmTrack2dVector)
+
+
     pybind_wrap(${GTSAM_PYTHON_UNSTABLE_TARGET} # target
             ${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i # interface_header
             "gtsam_unstable.cpp" # generated_cpp
@@ -131,7 +179,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             ${PROJECT_SOURCE_DIR}/python/gtsam_unstable/gtsam_unstable.tpl
             gtsam_unstable # libs
             "gtsam_unstable;gtsam_unstable_header" # dependencies
-            ON # use_boost
+            ${GTSAM_ENABLE_BOOST_SERIALIZATION} # use_boost_serialization
             )
 
     set_target_properties(${GTSAM_PYTHON_UNSTABLE_TARGET} PROPERTIES
@@ -150,9 +198,9 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             "${GTSAM_UNSTABLE_MODULE_PATH}")
 
     # Hack to get python test files copied every time they are modified
-    file(GLOB GTSAM_UNSTABLE_PYTHON_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable/tests/*.py")
+    file(GLOB GTSAM_UNSTABLE_PYTHON_TEST_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable/" "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable/tests/*.py")
     foreach(test_file ${GTSAM_UNSTABLE_PYTHON_TEST_FILES})
-        configure_file(${test_file} "${GTSAM_UNSTABLE_MODULE_PATH}/tests/${test_file}" COPYONLY)
+        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable/${test_file}" "${GTSAM_UNSTABLE_MODULE_PATH}/${test_file}" COPYONLY)
     endforeach()
 
     # Add gtsam_unstable to the install target

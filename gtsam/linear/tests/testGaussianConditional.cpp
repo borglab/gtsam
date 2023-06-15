@@ -25,12 +25,8 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianDensity.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/hybrid/HybridValues.h>
 
-#include <boost/assign/std/list.hpp>
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/list_inserter.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/assign/list_of.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -38,7 +34,6 @@
 
 using namespace gtsam;
 using namespace std;
-using namespace boost::assign;
 using symbol_shorthand::X;
 using symbol_shorthand::Y;
 
@@ -47,6 +42,8 @@ static const double tol = 1e-5;
 static Matrix R = (Matrix(2, 2) <<
     -12.1244,  -5.1962,
           0.,   4.6904).finished();
+
+using Dims = std::vector<Eigen::Index>;
 
 /* ************************************************************************* */
 TEST(GaussianConditional, constructor)
@@ -64,11 +61,7 @@ TEST(GaussianConditional, constructor)
   Vector d = Vector2(1.0, 2.0);
   SharedDiagonal s = noiseModel::Diagonal::Sigmas(Vector2(3.0, 4.0));
 
-  vector<pair<Key, Matrix> > terms = pair_list_of
-      (1, R)
-      (3, S1)
-      (5, S2)
-      (7, S3);
+  vector<pair<Key, Matrix> > terms = {{1, R}, {3, S1}, {5, S2}, {7, S3}};
 
   GaussianConditional actual(terms, 1, d, s);
 
@@ -131,6 +124,89 @@ TEST( GaussianConditional, equals )
 }
 
 /* ************************************************************************* */
+namespace density {
+static const Key key = 77;
+static constexpr double sigma = 3.0;
+static const auto unitPrior =
+                      GaussianConditional(key, Vector1::Constant(5), I_1x1),
+                  widerPrior = GaussianConditional(
+                      key, Vector1::Constant(5), I_1x1,
+                      noiseModel::Isotropic::Sigma(1, sigma));
+}  // namespace density
+
+/* ************************************************************************* */
+// Check that the evaluate function matches direct calculation with R.
+TEST(GaussianConditional, Evaluate1) {
+  // Let's evaluate at the mean
+  const VectorValues mean = density::unitPrior.solve(VectorValues());
+
+  // We get the Hessian matrix, which has noise model applied!
+  const Matrix invSigma = density::unitPrior.information();
+
+  // A Gaussian density ~ exp (-0.5*(Rx-d)'*(Rx-d))
+  // which at the mean is 1.0! So, the only thing we need to calculate is
+  // the normalization constant 1.0/sqrt((2*pi*Sigma).det()).
+  // The covariance matrix inv(Sigma) = R'*R, so the determinant is
+  const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
+  const double actual = density::unitPrior.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
+
+  using density::key;
+  using density::sigma;
+
+  // Check Invariants at the mean and a different value
+  for (auto vv : {mean, VectorValues{{key, Vector1(4)}}}) {
+    EXPECT(GaussianConditional::CheckInvariants(density::unitPrior, vv));
+    EXPECT(GaussianConditional::CheckInvariants(density::unitPrior,
+                                                HybridValues{vv, {}, {}}));
+  }
+
+  // Let's numerically integrate and see that we integrate to 1.0.
+  double integral = 0.0;
+  // Loop from -5*sigma to 5*sigma in 0.1*sigma steps:
+  for (double x = -5.0 * sigma; x <= 5.0 * sigma; x += 0.1 * sigma) {
+    VectorValues xValues;
+    xValues.insert(key, mean.at(key) + Vector1(x));
+    const double density = density::unitPrior.evaluate(xValues);
+    integral += 0.1 * sigma * density;
+  }
+  EXPECT_DOUBLES_EQUAL(1.0, integral, 1e-9);
+}
+
+/* ************************************************************************* */
+// Check the evaluate with non-unit noise.
+TEST(GaussianConditional, Evaluate2) {
+  // See comments in test above.
+  const VectorValues mean = density::widerPrior.solve(VectorValues());
+  const Matrix R = density::widerPrior.R();
+  const Matrix invSigma = density::widerPrior.information();
+  const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
+  const double actual = density::widerPrior.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
+
+  using density::key;
+  using density::sigma;
+
+  // Check Invariants at the mean and a different value
+  for (auto vv : {mean, VectorValues{{key, Vector1(4)}}}) {
+    EXPECT(GaussianConditional::CheckInvariants(density::widerPrior, vv));
+    EXPECT(GaussianConditional::CheckInvariants(density::widerPrior,
+                                                HybridValues{vv, {}, {}}));
+  }
+
+  // Let's numerically integrate and see that we integrate to 1.0.
+  double integral = 0.0;
+  // Loop from -5*sigma to 5*sigma in 0.1*sigma steps:
+  for (double x = -5.0 * sigma; x <= 5.0 * sigma; x += 0.1 * sigma) {
+    VectorValues xValues;
+    xValues.insert(key, mean.at(key) + Vector1(x));
+    const double density = density::widerPrior.evaluate(xValues);
+    integral += 0.1 * sigma * density;
+  }
+  EXPECT_DOUBLES_EQUAL(1.0, integral, 1e-5);
+}
+
+/* ************************************************************************* */
 TEST( GaussianConditional, solve )
 {
   //expected solution
@@ -154,14 +230,10 @@ TEST( GaussianConditional, solve )
   Vector sx1(2); sx1 << 1.0, 1.0;
   Vector sl1(2); sl1 << 1.0, 1.0;
 
-  VectorValues expected = map_list_of
-    (1, expectedX)
-    (2, sx1)
-    (10, sl1);
+  VectorValues expected = {{1, expectedX}, {2, sx1}, {10, sl1}};
 
-  VectorValues solution = map_list_of
-    (2, sx1) // parents
-    (10, sl1);
+  VectorValues solution = {{2, sx1},  // parents
+                           {10, sl1}};
   solution.insert(cg.solve(solution));
 
   EXPECT(assert_equal(expected, solution, tol));
@@ -171,7 +243,7 @@ TEST( GaussianConditional, solve )
 TEST( GaussianConditional, solve_simple )
 {
   // 2 variables, frontal has dim=4
-  VerticalBlockMatrix blockMatrix(list_of(4)(2)(1), 4);
+  VerticalBlockMatrix blockMatrix(Dims{4, 2, 1}, 4);
   blockMatrix.matrix() <<
       1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
       0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
@@ -179,18 +251,16 @@ TEST( GaussianConditional, solve_simple )
       0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4;
 
   // solve system as a non-multifrontal version first
-  GaussianConditional cg(list_of(1)(2), 1, blockMatrix);
+  GaussianConditional cg(KeyVector{1,2}, 1, blockMatrix);
 
   // partial solution
   Vector sx1 = Vector2(9.0, 10.0);
 
   // elimination order: 1, 2
-  VectorValues actual = map_list_of
-    (2, sx1); // parent
+  VectorValues actual = {{2, sx1}};  // parent
 
-  VectorValues expected = map_list_of<Key, Vector>
-    (2, sx1)
-    (1, (Vector(4) << -3.1,-3.4,-11.9,-13.2).finished());
+  VectorValues expected = {
+      {2, sx1}, {1, (Vector(4) << -3.1, -3.4, -11.9, -13.2).finished()}};
 
   // verify indices/size
   EXPECT_LONGS_EQUAL(2, (long)cg.size());
@@ -205,7 +275,7 @@ TEST( GaussianConditional, solve_simple )
 TEST( GaussianConditional, solve_multifrontal )
 {
   // create full system, 3 variables, 2 frontals, all 2 dim
-  VerticalBlockMatrix blockMatrix(list_of(2)(2)(2)(1), 4);
+  VerticalBlockMatrix blockMatrix(Dims{2, 2, 2, 1}, 4);
   blockMatrix.matrix() <<
       1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
       0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
@@ -213,7 +283,7 @@ TEST( GaussianConditional, solve_multifrontal )
       0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4;
 
   // 3 variables, all dim=2
-  GaussianConditional cg(list_of(1)(2)(10), 2, blockMatrix);
+  GaussianConditional cg(KeyVector{1, 2, 10}, 2, blockMatrix);
 
   EXPECT(assert_equal(Vector(blockMatrix.full().rightCols(1)), cg.d()));
 
@@ -221,13 +291,10 @@ TEST( GaussianConditional, solve_multifrontal )
   Vector sl1 = Vector2(9.0, 10.0);
 
   // elimination order; _x_, _x1_, _l1_
-  VectorValues actual = map_list_of
-    (10, sl1); // parent
+  VectorValues actual = {{10, sl1}};  // parent
 
-  VectorValues expected = map_list_of<Key, Vector>
-    (1, Vector2(-3.1,-3.4))
-    (2, Vector2(-11.9,-13.2))
-    (10, sl1);
+  VectorValues expected = {
+      {1, Vector2(-3.1, -3.4)}, {2, Vector2(-11.9, -13.2)}, {10, sl1}};
 
   // verify indices/size
   EXPECT_LONGS_EQUAL(3, (long)cg.size());
@@ -253,21 +320,18 @@ TEST( GaussianConditional, solveTranspose ) {
   d2(0) = 5;
 
   // define nodes and specify in reverse topological sort (i.e. parents last)
-  GaussianBayesNet cbn = list_of
-    (GaussianConditional(1, d1, R11, 2, S12))
-    (GaussianConditional(1, d2, R22));
+  GaussianBayesNet cbn;
+  cbn.emplace_shared<GaussianConditional>(1, d1, R11, 2, S12);
+  cbn.emplace_shared<GaussianConditional>(1, d2, R22);
 
   // x=R'*y, y=inv(R')*x
   // 2 = 1    2
   // 5   1 1  3
 
-  VectorValues
-    x = map_list_of<Key, Vector>
-      (1, (Vector(1) << 2.).finished())
-      (2, (Vector(1) << 5.).finished()),
-    y = map_list_of<Key, Vector>
-      (1, (Vector(1) << 2.).finished())
-      (2, (Vector(1) << 3.).finished());
+  VectorValues x = {{1, (Vector(1) << 2.).finished()},
+                    {2, (Vector(1) << 5.).finished()}},
+               y = {{1, (Vector(1) << 2.).finished()},
+                    {2, (Vector(1) << 3.).finished()}};
 
   // test functional version
   VectorValues actual = cbn.backSubstituteTranspose(x);
@@ -326,7 +390,7 @@ TEST(GaussianConditional, FromMeanAndStddev) {
   const Vector2 b(20, 40), x0(1, 2), x1(3, 4), x2(5, 6);
   const double sigma = 3;
 
-  VectorValues values = map_list_of(X(0), x0)(X(1), x1)(X(2), x2);
+  VectorValues values{{X(0), x0}, {X(1), x1}, {X(2), x2}};
 
   auto conditional1 =
       GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
@@ -339,6 +403,13 @@ TEST(GaussianConditional, FromMeanAndStddev) {
   Vector2 e2 = (x0 - (A1 * x1 + A2 * x2 + b)) / sigma;
   double expected2 = 0.5 * e2.dot(e2);
   EXPECT_DOUBLES_EQUAL(expected2, conditional2.error(values), 1e-9);
+
+  // Check Invariants for both conditionals
+  for (auto conditional : {conditional1, conditional2}) {
+    EXPECT(GaussianConditional::CheckInvariants(conditional, values));
+    EXPECT(GaussianConditional::CheckInvariants(conditional,
+                                                HybridValues{values, {}, {}}));
+  }
 }
 
 /* ************************************************************************* */
@@ -398,6 +469,36 @@ TEST(GaussianConditional, sample) {
 }
 
 /* ************************************************************************* */
+TEST(GaussianConditional, Error) {
+  // Create univariate standard gaussian conditional
+  auto stdGaussian =
+      GaussianConditional::FromMeanAndStddev(X(0), Vector1::Zero(), 1.0);
+  VectorValues values;
+  values.insert(X(0), Vector1::Zero());
+  double logProbability = stdGaussian.logProbability(values);
+
+  // Regression.
+  // These values were computed by hand for a univariate standard gaussian.
+  EXPECT_DOUBLES_EQUAL(-0.9189385332046727, logProbability, 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.3989422804014327, exp(logProbability), 1e-9);
+  EXPECT_DOUBLES_EQUAL(stdGaussian(values), exp(logProbability), 1e-9);
+}
+
+/* ************************************************************************* */
+// Similar test for multivariate gaussian but with sigma 2.0
+TEST(GaussianConditional, LogNormalizationConstant) {
+  double sigma = 2.0;
+  auto conditional = GaussianConditional::FromMeanAndStddev(X(0), Vector3::Zero(), sigma);
+  VectorValues x;
+  x.insert(X(0), Vector3::Zero());
+  Matrix3 Sigma = I_3x3 * sigma * sigma;
+  double expectedLogNormalizingConstant = log(1 / sqrt((2 * M_PI * Sigma).determinant()));
+
+  EXPECT_DOUBLES_EQUAL(expectedLogNormalizingConstant,
+                       conditional.logNormalizationConstant(), 1e-9);
+}
+
+/* ************************************************************************* */
 TEST(GaussianConditional, Print) {
   Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
   Matrix A2 = (Matrix(2, 2) << 5., 6., 7., 8.).finished();
@@ -413,6 +514,8 @@ TEST(GaussianConditional, Print) {
     "  R = [ 1 0 ]\n"
     "      [ 0 1 ]\n"
     "  d = [ 20 40 ]\n"
+    "  mean: 1 elements\n"
+    "  x0: 20 40\n"
     "isotropic dim=2 sigma=3\n";
   EXPECT(assert_print_equal(expected, conditional, "GaussianConditional"));
 

@@ -12,14 +12,8 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std/map.hpp>
-#include <boost/optional.hpp>
-#include <boost/format.hpp>
-
 #include <algorithm>
 
-using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
@@ -175,8 +169,8 @@ void solveStaged(size_t addMutex = 2) {
 
     // remove this slot from consideration
     slotsAvailable[bestSlot] = 0.0;
-    cout << boost::format("%s = %d (%d), count = %d") % scheduler.studentName(6-s)
-        % scheduler.slotName(bestSlot) % bestSlot % count << endl;
+    cout << scheduler.studentName(6 - s) << " = " << scheduler.slotName(bestSlot) << " (" << bestSlot
+         << "), count = " << count << endl;
   }
   tictoc_print_();
 
@@ -217,8 +211,7 @@ void sampleSolutions() {
   vector<DiscreteBayesNet::shared_ptr> samplers(7);
 
   // Given the time-slots, we can create 7 independent samplers
-  vector<size_t> slots;
-  slots += 16, 17, 11, 2, 0, 5, 9; // given slots
+  vector<size_t> slots{16, 17, 11, 2, 0, 5, 9}; // given slots
   for (size_t i = 0; i < 7; i++)
     samplers[i] = createSampler(i, slots[i], schedulers);
 
@@ -234,9 +227,8 @@ void sampleSolutions() {
     size_t min = *min_element(stats.begin(), stats.end());
     size_t nz = count_if(stats.begin(), stats.end(), NonZero);
     if (nz >= 15 && max <= 2) {
-      cout << boost::format(
-          "Sampled schedule %d, min = %d, nz = %d, max = %d\n") % (n + 1) % min
-          % nz % max;
+      cout << "Sampled schedule " << (n + 1) << ", min = " << min << ", nz = " << nz
+           << ", max = " << max << endl;
       for (size_t i = 0; i < 7; i++) {
         cout << schedulers[i].studentName(0) << " : " << schedulers[i].slotName(
             slots[i]) << endl;
@@ -299,8 +291,7 @@ void accomodateStudent() {
   scheduler.print("scheduler");
 
   // rule out all occupied slots
-  vector<size_t> slots;
-  slots += 16, 17, 11, 2, 0, 5, 9, 14;
+  vector<size_t> slots{16, 17, 11, 2, 0, 5, 9, 14};
   vector<double> slotsAvailable(scheduler.nrTimeSlots(), 1.0);
   for(size_t s: slots)
   slotsAvailable[s] = 0;
@@ -326,9 +317,8 @@ void accomodateStudent() {
   DiscreteValues values;
   values[dkey.first] = bestSlot;
   size_t count = (*root)(values);
-  cout << boost::format("%s = %d (%d), count = %d") % scheduler.studentName(0)
-      % scheduler.slotName(bestSlot) % bestSlot % count << endl;
-
+  cout << scheduler.studentName(0) << " = " << scheduler.slotName(bestSlot) << " (" << bestSlot
+       << "), count = " << count << endl;
   // sample schedules
   for (size_t n = 0; n < 10; n++) {
     auto sample0 = chordal->sample();

@@ -60,6 +60,31 @@ class CheckMixin:
                arg_type.typename.name not in self.not_ptr_type and \
                arg_type.is_ref
 
+    def is_class_enum(self, arg_type: parser.Type, class_: parser.Class):
+        """Check if arg_type is an enum in the class `class_`."""
+        if class_:
+            class_enums = [enum.name for enum in class_.enums]
+            return arg_type.typename.name in class_enums
+        else:
+            return False
+
+    def is_global_enum(self, arg_type: parser.Type, class_: parser.Class):
+        """Check if arg_type is a global enum."""
+        if class_:
+            # Get the enums in the class' namespace
+            global_enums = [
+                member.name for member in class_.parent.content
+                if isinstance(member, parser.Enum)
+            ]
+            return arg_type.typename.name in global_enums
+        else:
+            return False
+
+    def is_enum(self, arg_type: parser.Type, class_: parser.Class):
+        """Check if `arg_type` is an enum."""
+        return self.is_class_enum(arg_type, class_) or self.is_global_enum(
+            arg_type, class_)
+
 
 class FormatMixin:
     """Mixin to provide formatting utilities."""

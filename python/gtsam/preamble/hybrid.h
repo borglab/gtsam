@@ -10,5 +10,11 @@
  * Without this they will be automatically converted to a Python object, and all
  * mutations on Python side will not be reflected on C++.
  */
+#include <pybind11/stl.h>
 
-PYBIND11_MAKE_OPAQUE(std::vector<gtsam::GaussianFactor::shared_ptr>);
+// NOTE: Needed since we are including pybind11/stl.h.
+#ifdef GTSAM_ALLOCATOR_TBB
+PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Key, tbb::tbb_allocator<gtsam::Key>>);
+#else
+PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Key>);
+#endif

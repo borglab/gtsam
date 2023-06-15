@@ -19,6 +19,8 @@
 
 #include <gtsam_unstable/nonlinear/expressionTesting.h>
 #include <CppUnitLite/TestHarness.h>
+#include <type_traits>
+
 
 using namespace gtsam;
 
@@ -46,8 +48,8 @@ struct ProjectionChart {
 
 namespace gtsam {
 namespace traits {
-template<> struct is_chart<ProjectionChart> : public boost::true_type {};
-template<> struct dimension<ProjectionChart> : public boost::integral_constant<int, 2> {};
+template<> struct is_chart<ProjectionChart> : public std::true_type {};
+template<> struct dimension<ProjectionChart> : public std::integral_constant<int, 2> {};
 }  // namespace traits
 }  // namespace gtsam
 
@@ -80,17 +82,17 @@ TEST(ExpressionCustomChart, projection) {
 
   ExpressionFactor<Eigen::Vector3d> f(noiseModel::Unit::Create(pval.size()), pval, point);
 
-  boost::shared_ptr<GaussianFactor> gfstandard = f.linearize(standard);
-  boost::shared_ptr<JacobianFactor> jfstandard = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gfstandard);
+  std::shared_ptr<GaussianFactor> gfstandard = f.linearize(standard);
+  std::shared_ptr<JacobianFactor> jfstandard = //
+      std::dynamic_pointer_cast<JacobianFactor>(gfstandard);
 
   typedef std::pair<Eigen::MatrixXd, Eigen::VectorXd> Jacobian;
   Jacobian Jstandard = jfstandard->jacobianUnweighted();
   EXPECT(assert_equal(Eigen::Matrix3d::Identity(), Jstandard.first, 1e-10));
 
-  boost::shared_ptr<GaussianFactor> gfcustom = f.linearize(custom);
-  boost::shared_ptr<JacobianFactor> jfcustom = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gfcustom);
+  std::shared_ptr<GaussianFactor> gfcustom = f.linearize(custom);
+  std::shared_ptr<JacobianFactor> jfcustom = //
+      std::dynamic_pointer_cast<JacobianFactor>(gfcustom);
 
   Eigen::MatrixXd expectedJacobian = Eigen::MatrixXd::Zero(3,2);
   expectedJacobian(0,0) = 2.0;

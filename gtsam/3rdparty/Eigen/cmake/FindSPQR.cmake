@@ -6,7 +6,7 @@
 
 if (SPQR_INCLUDES AND SPQR_LIBRARIES)
   set(SPQR_FIND_QUIETLY TRUE)
-endif (SPQR_INCLUDES AND SPQR_LIBRARIES)
+endif ()
 
 find_path(SPQR_INCLUDES
   NAMES
@@ -33,7 +33,7 @@ if(SPQR_LIBRARIES)
     set(SPQR_LIBRARIES ${SPQR_LIBRARIES} ${CHOLMOD_LIBRARY})
   endif()
   
-endif(SPQR_LIBRARIES)
+endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(SPQR DEFAULT_MSG SPQR_INCLUDES SPQR_LIBRARIES)
