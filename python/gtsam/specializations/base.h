@@ -11,4 +11,3 @@
  * and saves one copy operation.
  */
 
-py::bind_vector<std::vector<gtsam::Matrix> >(m_, "JacobianVector");

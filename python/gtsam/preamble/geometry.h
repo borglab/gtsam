@@ -11,8 +11,6 @@
  * mutations on Python side will not be reflected on C++.
  */
 
-#include <pybind11/stl.h>
-
 PYBIND11_MAKE_OPAQUE(gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3_S2>>);
 PYBIND11_MAKE_OPAQUE(gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Bundler>>);
 PYBIND11_MAKE_OPAQUE(gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Unified>>);

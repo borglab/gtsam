@@ -52,6 +52,7 @@ set(ignore
     gtsam::IndexPairVector
     gtsam::BetweenFactorPose2s
     gtsam::BetweenFactorPose3s
+    gtsam::FixedLagSmootherKeyTimestampMap
     gtsam::FixedLagSmootherKeyTimestampMapValue
     gtsam::Point2Vector
     gtsam::Point2Pairs

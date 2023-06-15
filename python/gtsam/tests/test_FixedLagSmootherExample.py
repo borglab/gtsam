@@ -11,10 +11,11 @@ Author: Frank Dellaert & Duy Nguyen Ta (Python)
 import unittest
 
 import numpy as np
+from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
 import gtsam_unstable
-from gtsam.utils.test_case import GtsamTestCase
+
 
 class TestFixedLagSmootherExample(GtsamTestCase):
     '''
@@ -36,7 +37,7 @@ class TestFixedLagSmootherExample(GtsamTestCase):
         # that will be sent to the smoothers
         new_factors = gtsam.NonlinearFactorGraph()
         new_values = gtsam.Values()
-        new_timestamps = gtsam.FixedLagSmootherKeyTimestampMap()
+        new_timestamps = {}
 
         # Create  a prior on the first pose, placing it at the origin
         prior_mean = gtsam.Pose2(0, 0, 0)
@@ -47,7 +48,7 @@ class TestFixedLagSmootherExample(GtsamTestCase):
             gtsam.PriorFactorPose2(
                 X1, prior_mean, prior_noise))
         new_values.insert(X1, prior_mean)
-        new_timestamps.insert((X1, 0.0))
+        new_timestamps[X1] = 0.0
 
         delta_time = 0.25
         time = 0.25
@@ -77,7 +78,7 @@ class TestFixedLagSmootherExample(GtsamTestCase):
             current_key = int(1000 * time)
 
             # assign current key to the current timestamp
-            new_timestamps.insert((current_key, time))
+            new_timestamps[current_key] = time
 
             # Add a guess for this pose to the new values
             # Assume that the robot moves at 2 m/s. Position is time[s] *
