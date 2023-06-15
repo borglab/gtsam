@@ -225,10 +225,9 @@ class ShonanAveraging3 {
   ShonanAveraging3(string g2oFile,
                    const gtsam::ShonanAveragingParameters3& parameters);
 
-  // TODO(frank): deprecate once we land pybind wrapper
-  ShonanAveraging3(const gtsam::BetweenFactorPose3s& factors);
   ShonanAveraging3(const gtsam::BetweenFactorPose3s& factors,
-                   const gtsam::ShonanAveragingParameters3& parameters);
+                   const gtsam::ShonanAveragingParameters3& parameters =
+                       gtsam::ShonanAveragingParameters3());
 
   // Query properties
   size_t nrUnknowns() const;

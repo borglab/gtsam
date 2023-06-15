@@ -305,8 +305,8 @@ virtual class GncParams {
   double relativeCostTol;
   double weightsTol;
   gtsam::This::Verbosity verbosity;
-  gtsam::KeyVector knownInliers;
-  gtsam::KeyVector knownOutliers;
+  gtsam::This::IndexVector knownInliers;
+  gtsam::This::IndexVector knownOutliers;
 
   void setLossType(const gtsam::GncLossType type);
   void setMaxIterations(const size_t maxIter);
@@ -314,8 +314,8 @@ virtual class GncParams {
   void setRelativeCostTol(double value);
   void setWeightsTol(double value);
   void setVerbosityGNC(const gtsam::This::Verbosity value);
-  void setKnownInliers(const gtsam::KeyVector& knownIn);
-  void setKnownOutliers(const gtsam::KeyVector& knownOut);
+  void setKnownInliers(const gtsam::This::IndexVector& knownIn);
+  void setKnownOutliers(const gtsam::This::IndexVector& knownOut);
   void print(const string& str = "GncParams: ") const;
   
   enum Verbosity {
