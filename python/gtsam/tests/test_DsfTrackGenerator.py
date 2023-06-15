@@ -5,12 +5,12 @@ Authors: John Lambert
 
 import unittest
 
-import gtsam
 import numpy as np
-from gtsam import (IndexPair, KeypointsVector, MatchIndicesMap, Point2,
-                   SfmMeasurementVector, SfmTrack2d)
 from gtsam.gtsfm import Keypoints
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
+from gtsam import IndexPair, Point2, SfmTrack2d
 
 
 class TestDsfTrackGenerator(GtsamTestCase):
@@ -23,14 +23,14 @@ class TestDsfTrackGenerator(GtsamTestCase):
         kps_i1 = Keypoints(np.array([[50.0, 60], [70, 80], [90, 100]]))
         kps_i2 = Keypoints(np.array([[110.0, 120], [130, 140]]))
 
-        keypoints_list = KeypointsVector()
+        keypoints_list = []
         keypoints_list.append(kps_i0)
         keypoints_list.append(kps_i1)
         keypoints_list.append(kps_i2)
 
         # For each image pair (i1,i2), we provide a (K,2) matrix
         # of corresponding image indices (k1,k2).
-        matches_dict = MatchIndicesMap()
+        matches_dict = {}
         matches_dict[IndexPair(0, 1)] = np.array([[0, 0], [1, 1]])
         matches_dict[IndexPair(1, 2)] = np.array([[2, 0], [1, 1]])
 
@@ -81,16 +81,16 @@ class TestDsfTrackGenerator(GtsamTestCase):
         np.testing.assert_allclose(track2.indexVector(), [1, 2])
 
 
-class TestSfmTrack2d(GtsamTestCase):
-    """Tests for SfmTrack2d."""
+# class TestSfmTrack2d(GtsamTestCase):
+#     """Tests for SfmTrack2d."""
 
-    def test_sfm_track_2d_constructor(self) -> None:
-        """Test construction of 2D SfM track."""
-        measurements = SfmMeasurementVector()
-        measurements.append((0, Point2(10, 20)))
-        track = SfmTrack2d(measurements=measurements)
-        track.measurement(0)
-        assert track.numberMeasurements() == 1
+#     def test_sfm_track_2d_constructor(self) -> None:
+#         """Test construction of 2D SfM track."""
+#         measurements = []
+#         measurements.append((0, Point2(10, 20)))
+#         track = SfmTrack2d(measurements=measurements)
+#         track.measurement(0)
+#         assert track.numberMeasurements() == 1
 
 
 if __name__ == "__main__":

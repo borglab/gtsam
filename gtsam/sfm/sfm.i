@@ -6,15 +6,14 @@ namespace gtsam {
 
 #include <gtsam/sfm/SfmTrack.h>
 class SfmTrack2d {
-  std::vector<pair<size_t, gtsam::Point2>> measurements;
+  std::vector<gtsam::SfmMeasurement> measurements;
 
   SfmTrack2d();
   SfmTrack2d(const std::vector<gtsam::SfmMeasurement>& measurements);
   size_t numberMeasurements() const;
-  pair<size_t, gtsam::Point2> measurement(size_t idx) const;
+  gtsam::SfmMeasurement measurement(size_t idx) const;
   pair<size_t, size_t> siftIndex(size_t idx) const;
   void addMeasurement(size_t idx, const gtsam::Point2& m);
-  gtsam::SfmMeasurement measurement(size_t idx) const;
   bool hasUniqueCameras() const;
   Eigen::MatrixX2d measurementMatrix() const;
   Eigen::VectorXi indexVector() const;
