@@ -99,6 +99,30 @@ typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
 typedef gtsam::BinaryMeasurement<gtsam::Rot3> BinaryMeasurementRot3;
 typedef gtsam::BinaryMeasurement<gtsam::Point3> BinaryMeasurementPoint3;
 
+// Used in Matlab wrapper
+class BinaryMeasurementsUnit3 {
+  BinaryMeasurementsUnit3();
+  size_t size() const;
+  gtsam::BinaryMeasurement<gtsam::Unit3> at(size_t idx) const;
+  void push_back(const gtsam::BinaryMeasurement<gtsam::Unit3>& measurement);
+};
+
+// Used in Matlab wrapper
+class BinaryMeasurementsPoint3 {
+  BinaryMeasurementsPoint3();
+  size_t size() const;
+  gtsam::BinaryMeasurement<gtsam::Point3> at(size_t idx) const;
+  void push_back(const gtsam::BinaryMeasurement<gtsam::Point3>& measurement);
+};
+
+// Used in Matlab wrapper
+class BinaryMeasurementsRot3 {
+  BinaryMeasurementsRot3();
+  size_t size() const;
+  gtsam::BinaryMeasurement<gtsam::Rot3> at(size_t idx) const;
+  void push_back(const gtsam::BinaryMeasurement<gtsam::Rot3>& measurement);
+};
+
 #include <gtsam/slam/dataset.h>
 #include <gtsam/sfm/ShonanAveraging.h>
 
@@ -246,6 +270,16 @@ class ShonanAveraging3 {
 
 #include <gtsam/sfm/MFAS.h>
 
+// Used in Matlab wrapper
+class KeyPairDoubleMap {
+  KeyPairDoubleMap();
+  KeyPairDoubleMap(const gtsam::KeyPairDoubleMap& other);
+
+  size_t size() const;
+  bool empty() const;
+  void clear();
+  size_t at(const pair<size_t, size_t>& keypair) const;
+};
 
 class MFAS {
   MFAS(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,

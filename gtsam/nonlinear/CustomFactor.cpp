@@ -28,7 +28,7 @@ Vector CustomFactor::unwhitenedError(const Values& x, OptionalMatrixVecType H) c
     if(H) {
       /*
        * In this case, we pass the raw pointer to the `std::vector<Matrix>` object directly to pybind.
-       * As the type `std::vector<Matrix>` has been marked as opaque in `preamble/base.h`, any changes in
+       * As the type `std::vector<Matrix>` has been marked as opaque in `preamble/custom.h`, any changes in
        * Python will be immediately reflected on the C++ side.
        *
        * Example:

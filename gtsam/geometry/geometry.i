@@ -28,7 +28,41 @@ class Point2 {
   // enabling serialization functionality
   void serialize() const;
 };
-  
+
+// Used in Matlab wrapper
+class Point2Pairs {
+  Point2Pairs();
+  size_t size() const;
+  bool empty() const;
+  gtsam::Point2Pair at(size_t n) const;
+  void push_back(const gtsam::Point2Pair& point_pair);
+};
+
+// std::vector<gtsam::Point2>
+// Used in Matlab wrapper
+class Point2Vector {
+  // Constructors
+  Point2Vector();
+  Point2Vector(const gtsam::Point2Vector& v);
+
+  // Capacity
+  size_t size() const;
+  size_t max_size() const;
+  void resize(size_t sz);
+  size_t capacity() const;
+  bool empty() const;
+  void reserve(size_t n);
+
+  // Element access
+  gtsam::Point2 at(size_t n) const;
+  gtsam::Point2 front() const;
+  gtsam::Point2 back() const;
+
+  // Modifiers
+  void assign(size_t n, const gtsam::Point2& u);
+  void push_back(const gtsam::Point2& x);
+  void pop_back();
+};
 
 #include <gtsam/geometry/StereoPoint2.h>
 class StereoPoint2 {
@@ -99,6 +133,14 @@ class Point3 {
   gtsam::Point3 normalize(const gtsam::Point3 &p, Eigen::Ref<Eigen::MatrixXd> H) const;
 };
 
+// Used in Matlab wrapper
+class Point3Pairs {
+  Point3Pairs();
+  size_t size() const;
+  bool empty() const;
+  gtsam::Point3Pair at(size_t n) const;
+  void push_back(const gtsam::Point3Pair& point_pair);
+};
 
 #include <gtsam/geometry/Rot2.h>
 class Rot2 {
@@ -503,6 +545,23 @@ class Pose3 {
   void serialize() const;
 };
 
+// Used in Matlab wrapper
+class Pose3Pairs {
+  Pose3Pairs();
+  size_t size() const;
+  bool empty() const;
+  gtsam::Pose3Pair at(size_t n) const;
+  void push_back(const gtsam::Pose3Pair& pose_pair);
+};
+
+// Used in Matlab wrapper
+class Pose3Vector {
+  Pose3Vector();
+  size_t size() const;
+  bool empty() const;
+  gtsam::Pose3 at(size_t n) const;
+  void push_back(const gtsam::Pose3& pose);
+};
 
 #include <gtsam/geometry/Unit3.h>
 class Unit3 {
