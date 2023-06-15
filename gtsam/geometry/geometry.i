@@ -434,7 +434,9 @@ class Pose2 {
   gtsam::Rot2 bearing(const gtsam::Point2& point) const;
   double range(const gtsam::Point2& point) const;
   gtsam::Point2 translation() const;
+  gtsam::Point2 translation(Eigen::Ref<Eigen::MatrixXd> Hself) const;
   gtsam::Rot2 rotation() const;
+  gtsam::Rot2 rotation(Eigen::Ref<Eigen::MatrixXd> Hself) const;
   Matrix matrix() const;
 
   // enabling serialization functionality
