@@ -41,8 +41,48 @@ class DSFMap {
   std::map<KEY, This::Set> sets();
 };
 
+// Used in Matlab wrapper
+class IndexPairSet {
+  IndexPairSet();
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  void insert(gtsam::IndexPair key);
+  bool erase(gtsam::IndexPair key);        // returns true if value was removed
+  bool count(gtsam::IndexPair key) const;  // returns true if value exists
+};
+
+// Used in Matlab wrapper
+class IndexPairVector {
+  IndexPairVector();
+  IndexPairVector(const gtsam::IndexPairVector& other);
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  gtsam::IndexPair at(size_t i) const;
+  void push_back(gtsam::IndexPair key) const;
+};
 
 gtsam::IndexPairVector IndexPairSetAsArray(gtsam::IndexPairSet& set);
+
+// Used in Matlab wrapper
+class IndexPairSetMap {
+  IndexPairSetMap();
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  gtsam::IndexPairSet at(gtsam::IndexPair& key);
+};
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/MatrixSerialization.h>
