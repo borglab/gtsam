@@ -81,16 +81,16 @@ class TestDsfTrackGenerator(GtsamTestCase):
         np.testing.assert_allclose(track2.indexVector(), [1, 2])
 
 
-# class TestSfmTrack2d(GtsamTestCase):
-#     """Tests for SfmTrack2d."""
+class TestSfmTrack2d(GtsamTestCase):
+    """Tests for SfmTrack2d."""
 
-#     def test_sfm_track_2d_constructor(self) -> None:
-#         """Test construction of 2D SfM track."""
-#         measurements = []
-#         measurements.append((0, Point2(10, 20)))
-#         track = SfmTrack2d(measurements=measurements)
-#         track.measurement(0)
-#         assert track.numberMeasurements() == 1
+    def test_sfm_track_2d_constructor(self) -> None:
+        """Test construction of 2D SfM track."""
+        measurements = []
+        measurements.append((0, Point2(10, 20)))
+        track = SfmTrack2d(measurements=measurements)
+        track.measurement(0)
+        assert track.numberMeasurements() == 1
 
 
 if __name__ == "__main__":
