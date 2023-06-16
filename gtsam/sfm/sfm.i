@@ -126,18 +126,16 @@ class BinaryMeasurementsRot3 {
 #include <gtsam/slam/dataset.h>
 #include <gtsam/sfm/ShonanAveraging.h>
 
-// TODO(frank): copy/pasta below until we have integer template parameters in
-// wrap!
-
-class ShonanAveragingParameters2 {
-  ShonanAveragingParameters2(const gtsam::LevenbergMarquardtParams& lm);
-  ShonanAveragingParameters2(const gtsam::LevenbergMarquardtParams& lm,
+template <d={2, 3}>
+class ShonanAveragingParameters {
+  ShonanAveragingParameters(const gtsam::LevenbergMarquardtParams& lm);
+  ShonanAveragingParameters(const gtsam::LevenbergMarquardtParams& lm,
                              string method);
   gtsam::LevenbergMarquardtParams getLMParams() const;
   void setOptimalityThreshold(double value);
   double getOptimalityThreshold() const;
-  void setAnchor(size_t index, const gtsam::Rot2& value);
-  pair<size_t, gtsam::Rot2> getAnchor();
+  void setAnchor(size_t index, const gtsam::This::Rot& value);
+  pair<size_t, gtsam::This::Rot> getAnchor();
   void setAnchorWeight(double value);
   double getAnchorWeight() const;
   void setKarcherWeight(double value);
@@ -150,27 +148,7 @@ class ShonanAveragingParameters2 {
   bool getCertifyOptimality() const;
 };
 
-class ShonanAveragingParameters3 {
-  ShonanAveragingParameters3(const gtsam::LevenbergMarquardtParams& lm);
-  ShonanAveragingParameters3(const gtsam::LevenbergMarquardtParams& lm,
-                             string method);
-  gtsam::LevenbergMarquardtParams getLMParams() const;
-  void setOptimalityThreshold(double value);
-  double getOptimalityThreshold() const;
-  void setAnchor(size_t index, const gtsam::Rot3& value);
-  pair<size_t, gtsam::Rot3> getAnchor();
-  void setAnchorWeight(double value);
-  double getAnchorWeight() const;
-  void setKarcherWeight(double value);
-  double getKarcherWeight() const;
-  void setGaugesWeight(double value);
-  double getGaugesWeight() const;
-  void setUseHuber(bool value);
-  bool getUseHuber() const;
-  void setCertifyOptimality(bool value);
-  bool getCertifyOptimality() const;
-};
-
+// NOTE(Varun): Not templated because each class has specializations defined.
 class ShonanAveraging2 {
   ShonanAveraging2(string g2oFile);
   ShonanAveraging2(string g2oFile,
@@ -217,10 +195,9 @@ class ShonanAveraging2 {
 };
 
 class ShonanAveraging3 {
-  ShonanAveraging3(
-      const std::vector<gtsam::BinaryMeasurement<gtsam::Rot3>>& measurements,
-      const gtsam::ShonanAveragingParameters3& parameters =
-          gtsam::ShonanAveragingParameters3());
+  ShonanAveraging3(const gtsam::This::Measurements& measurements,
+                   const gtsam::ShonanAveragingParameters3& parameters =
+                       gtsam::ShonanAveragingParameters3());
   ShonanAveraging3(string g2oFile);
   ShonanAveraging3(string g2oFile,
                    const gtsam::ShonanAveragingParameters3& parameters);

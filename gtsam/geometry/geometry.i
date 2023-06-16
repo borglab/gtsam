@@ -1181,8 +1181,8 @@ class TriangulationParameters {
                           const gtsam::SharedNoiseModel& noiseModel = nullptr);
 };
 
-// Templates appear not yet supported for free functions - issue raised at
-// borglab/wrap#14 to add support
+// Can be templated but overloaded for convenience.
+// We can now call `triangulatePoint3` with any template type.
 
 // Cal3_S2 versions
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
