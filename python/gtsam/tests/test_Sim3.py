@@ -12,10 +12,9 @@ Author: John Lambert
 import unittest
 from typing import List, Optional
 
-import numpy as np
-
 import gtsam
-from gtsam import Point3, Pose3, Pose3Pairs, Rot3, Similarity3
+import numpy as np
+from gtsam import Point3, Pose3, Rot3, Similarity3
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -49,7 +48,7 @@ class TestSim3(GtsamTestCase):
 
         wToi_list = [wTo0, wTo1, wTo2]
 
-        we_pairs = Pose3Pairs(list(zip(wToi_list, eToi_list)))
+        we_pairs = list(zip(wToi_list, eToi_list))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
         wSe = Similarity3.Align(we_pairs)
@@ -84,7 +83,7 @@ class TestSim3(GtsamTestCase):
 
         wToi_list = [wTo0, wTo1, wTo2]
 
-        we_pairs = Pose3Pairs(list(zip(wToi_list, eToi_list)))
+        we_pairs = list(zip(wToi_list, eToi_list))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
         wSe = Similarity3.Align(we_pairs)
@@ -122,7 +121,7 @@ class TestSim3(GtsamTestCase):
 
         bTi_list = [bTi0, bTi1, bTi2, bTi3]
 
-        ab_pairs = Pose3Pairs(list(zip(aTi_list, bTi_list)))
+        ab_pairs = list(zip(aTi_list, bTi_list))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
         aSb = Similarity3.Align(ab_pairs)
@@ -689,7 +688,7 @@ def align_poses_sim3(aTi_list: List[Pose3], bTi_list: List[Pose3]) -> Similarity
     assert len(aTi_list) == len(bTi_list)
     assert n_to_align >= 2, "SIM(3) alignment uses at least 2 frames"
 
-    ab_pairs = Pose3Pairs(list(zip(aTi_list, bTi_list)))
+    ab_pairs = list(zip(aTi_list, bTi_list))
 
     aSb = Similarity3.Align(ab_pairs)
 

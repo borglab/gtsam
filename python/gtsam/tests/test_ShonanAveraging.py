@@ -14,16 +14,9 @@ import unittest
 
 import gtsam
 import numpy as np
-from gtsam import (
-    BetweenFactorPose2,
-    LevenbergMarquardtParams,
-    Rot2,
-    Pose2,
-    ShonanAveraging2,
-    ShonanAveragingParameters2,
-    ShonanAveraging3,
-    ShonanAveragingParameters3,
-)
+from gtsam import (BetweenFactorPose2, LevenbergMarquardtParams, Pose2, Rot2,
+                   ShonanAveraging2, ShonanAveraging3,
+                   ShonanAveragingParameters2, ShonanAveragingParameters3)
 from gtsam.utils.test_case import GtsamTestCase
 
 DEFAULT_PARAMS = ShonanAveragingParameters3(
@@ -183,7 +176,7 @@ class TestShonanAveraging(GtsamTestCase):
         shonan_params.setCertifyOptimality(True)
 
         noise_model = gtsam.noiseModel.Unit.Create(3)
-        between_factors = gtsam.BetweenFactorPose2s()
+        between_factors = []
         for (i1, i2), i2Ri1 in i2Ri1_dict.items():
             i2Ti1 = Pose2(i2Ri1, np.zeros(2))
             between_factors.append(

@@ -11,9 +11,8 @@ Author: Frank Dellaert & Duy Nguyen Ta & John Lambert
 import math
 import unittest
 
-import gtsam
 import numpy as np
-from gtsam import Point2, Point2Pairs, Pose2
+from gtsam import Point2, Pose2
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -83,7 +82,7 @@ class TestPose2(GtsamTestCase):
         ]
 
         # fmt: on
-        ab_pairs = Point2Pairs(list(zip(pts_a, pts_b)))
+        ab_pairs = list(zip(pts_a, pts_b))
         aTb = Pose2.Align(ab_pairs)
         self.assertIsNotNone(aTb)
 

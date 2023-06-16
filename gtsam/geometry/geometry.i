@@ -28,7 +28,8 @@ class Point2 {
   // enabling serialization functionality
   void serialize() const;
 };
-  
+
+// Used in Matlab wrapper
 class Point2Pairs {
   Point2Pairs();
   size_t size() const;
@@ -38,6 +39,7 @@ class Point2Pairs {
 };
 
 // std::vector<gtsam::Point2>
+// Used in Matlab wrapper
 class Point2Vector {
   // Constructors
   Point2Vector();
@@ -131,6 +133,7 @@ class Point3 {
   gtsam::Point3 normalize(const gtsam::Point3 &p, Eigen::Ref<Eigen::MatrixXd> H) const;
 };
 
+// Used in Matlab wrapper
 class Point3Pairs {
   Point3Pairs();
   size_t size() const;
@@ -544,6 +547,7 @@ class Pose3 {
   void serialize() const;
 };
 
+// Used in Matlab wrapper
 class Pose3Pairs {
   Pose3Pairs();
   size_t size() const;
@@ -552,6 +556,7 @@ class Pose3Pairs {
   void push_back(const gtsam::Pose3Pair& pose_pair);
 };
 
+// Used in Matlab wrapper
 class Pose3Vector {
   Pose3Vector();
   size_t size() const;
@@ -1176,8 +1181,8 @@ class TriangulationParameters {
                           const gtsam::SharedNoiseModel& noiseModel = nullptr);
 };
 
-// Templates appear not yet supported for free functions - issue raised at
-// borglab/wrap#14 to add support
+// Can be templated but overloaded for convenience.
+// We can now call `triangulatePoint3` with any template type.
 
 // Cal3_S2 versions
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
