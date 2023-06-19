@@ -96,21 +96,7 @@ class Values {
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert(size_t j, const gtsam::NavState& nav_state);
   void insert(size_t j, double c);
-  void insert(size_t j, const gtsam::ParameterMatrix<1>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<2>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<3>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<4>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<5>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<6>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<7>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<8>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<9>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<10>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<11>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<12>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<13>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<14>& X);
-  void insert(size_t j, const gtsam::ParameterMatrix<15>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix& X);
 
   template <T = {gtsam::Point2, gtsam::Point3}>
   void insert(size_t j, const T& val);
@@ -144,21 +130,7 @@ class Values {
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
   void update(size_t j, double c);
-  void update(size_t j, const gtsam::ParameterMatrix<1>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<2>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<3>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<4>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<5>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<6>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<7>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<8>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<9>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<10>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<11>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<12>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<13>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<14>& X);
-  void update(size_t j, const gtsam::ParameterMatrix<15>& X);
+  void update(size_t j, const gtsam::ParameterMatrix& X);
 
   void insert_or_assign(size_t j, const gtsam::Point2& point2);
   void insert_or_assign(size_t j, const gtsam::Point3& point3);
@@ -199,21 +171,7 @@ class Values {
   void insert_or_assign(size_t j, Vector vector);
   void insert_or_assign(size_t j, Matrix matrix);
   void insert_or_assign(size_t j, double c);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<1>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<2>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<3>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<4>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<5>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<6>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<7>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<8>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<9>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<10>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<11>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<12>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<13>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<14>& X);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<15>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix& X);
 
   template <T = {gtsam::Point2,
                  gtsam::Point3,
@@ -244,21 +202,7 @@ class Values {
                  Vector,
                  Matrix,
                  double,
-                 gtsam::ParameterMatrix<1>,
-                 gtsam::ParameterMatrix<2>,
-                 gtsam::ParameterMatrix<3>,
-                 gtsam::ParameterMatrix<4>,
-                 gtsam::ParameterMatrix<5>,
-                 gtsam::ParameterMatrix<6>,
-                 gtsam::ParameterMatrix<7>,
-                 gtsam::ParameterMatrix<8>,
-                 gtsam::ParameterMatrix<9>,
-                 gtsam::ParameterMatrix<10>,
-                 gtsam::ParameterMatrix<11>,
-                 gtsam::ParameterMatrix<12>,
-                 gtsam::ParameterMatrix<13>,
-                 gtsam::ParameterMatrix<14>,
-                 gtsam::ParameterMatrix<15>}>
+                 gtsam::ParameterMatrix}>
   T at(size_t j);
 };
 

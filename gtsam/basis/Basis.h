@@ -169,7 +169,7 @@ class Basis {
   };
 
   /**
-   * VectorEvaluationFunctor at a given x, applied to ParameterMatrix<M>.
+   * VectorEvaluationFunctor at a given x, applied to ParameterMatrix.
    * This functor is used to evaluate a parameterized function at a given scalar
    * value x. When given a specific M*N parameters, returns an M-vector the M
    * corresponding functions at x, possibly with Jacobians wrpt the parameters.
@@ -211,14 +211,14 @@ class Basis {
     }
 
     /// M-dimensional evaluation
-    VectorM apply(const ParameterMatrix<M>& P,
+    VectorM apply(const ParameterMatrix& P,
                   OptionalJacobian</*MxN*/ -1, -1> H = {}) const {
       if (H) *H = H_;
       return P.matrix() * this->weights_.transpose();
     }
 
     /// c++ sugar
-    VectorM operator()(const ParameterMatrix<M>& P,
+    VectorM operator()(const ParameterMatrix& P,
                        OptionalJacobian</*MxN*/ -1, -1> H = {}) const {
       return apply(P, H);
     }
@@ -270,21 +270,21 @@ class Basis {
     }
 
     /// Calculate component of component rowIndex_ of P
-    double apply(const ParameterMatrix<M>& P,
+    double apply(const ParameterMatrix& P,
                  OptionalJacobian</*1xMN*/ -1, -1> H = {}) const {
       if (H) *H = H_;
       return P.row(rowIndex_) * EvaluationFunctor::weights_.transpose();
     }
 
     /// c++ sugar
-    double operator()(const ParameterMatrix<M>& P,
+    double operator()(const ParameterMatrix& P,
                       OptionalJacobian</*1xMN*/ -1, -1> H = {}) const {
       return apply(P, H);
     }
   };
 
   /**
-   * Manifold EvaluationFunctor at a given x, applied to ParameterMatrix<M>.
+   * Manifold EvaluationFunctor at a given x, applied to ParameterMatrix.
    * This functor is used to evaluate a parameterized function at a given scalar
    * value x. When given a specific M*N parameters, returns an M-vector the M
    * corresponding functions at x, possibly with Jacobians wrpt the parameters.
@@ -314,7 +314,7 @@ class Basis {
         : Base(N, x, a, b) {}
 
     /// Manifold evaluation
-    T apply(const ParameterMatrix<M>& P,
+    T apply(const ParameterMatrix& P,
             OptionalJacobian</*MxMN*/ -1, -1> H = {}) const {
       // Interpolate the M-dimensional vector to yield a vector in tangent space
       Eigen::Matrix<double, M, 1> xi = Base::operator()(P, H);
@@ -333,7 +333,7 @@ class Basis {
     }
 
     /// c++ sugar
-    T operator()(const ParameterMatrix<M>& P,
+    T operator()(const ParameterMatrix& P,
                  OptionalJacobian</*MxN*/ -1, -1> H = {}) const {
       return apply(P, H);  // might call apply in derived
     }
@@ -389,7 +389,7 @@ class Basis {
   };
 
   /**
-   * VectorDerivativeFunctor at a given x, applied to ParameterMatrix<M>.
+   * VectorDerivativeFunctor at a given x, applied to ParameterMatrix.
    *
    * This functor is used to evaluate the derivatives of a parameterized
    * function at a given scalar value x. When given a specific M*N parameters,
@@ -432,15 +432,14 @@ class Basis {
       calculateJacobian();
     }
 
-    VectorM apply(const ParameterMatrix<M>& P,
+    VectorM apply(const ParameterMatrix& P,
                   OptionalJacobian</*MxMN*/ -1, -1> H = {}) const {
       if (H) *H = H_;
       return P.matrix() * this->weights_.transpose();
     }
     /// c++ sugar
-    VectorM operator()(
-        const ParameterMatrix<M>& P,
-        OptionalJacobian</*MxMN*/ -1, -1> H = {}) const {
+    VectorM operator()(const ParameterMatrix& P,
+                       OptionalJacobian</*MxMN*/ -1, -1> H = {}) const {
       return apply(P, H);
     }
   };
@@ -490,18 +489,17 @@ class Basis {
       calculateJacobian(N);
     }
     /// Calculate derivative of component rowIndex_ of F
-    double apply(const ParameterMatrix<M>& P,
+    double apply(const ParameterMatrix& P,
                  OptionalJacobian</*1xMN*/ -1, -1> H = {}) const {
       if (H) *H = H_;
       return P.row(rowIndex_) * this->weights_.transpose();
     }
     /// c++ sugar
-    double operator()(const ParameterMatrix<M>& P,
+    double operator()(const ParameterMatrix& P,
                       OptionalJacobian</*1xMN*/ -1, -1> H = {}) const {
       return apply(P, H);
     }
   };
-
 };
 
 }  // namespace gtsam

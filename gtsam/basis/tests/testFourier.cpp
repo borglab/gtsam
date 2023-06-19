@@ -190,7 +190,7 @@ TEST(Basis, VecDerivativeFunctor) {
   Matrix23 theta_mat = (Matrix32() << 0, 0, 0.7071, 0.7071, 0.7071, -0.7071)
                            .finished()
                            .transpose();
-  ParameterMatrix<2> theta(theta_mat);
+  ParameterMatrix theta(theta_mat);
   EXPECT(assert_equal(Vector(dotShape), dotShapeFunction(theta), 1e-4));
 }
 

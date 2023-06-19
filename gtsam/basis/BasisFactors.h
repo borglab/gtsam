@@ -93,9 +93,9 @@ class EvaluationFactor : public FunctorizedFactor<double, Vector> {
  */
 template <class BASIS, int M>
 class VectorEvaluationFactor
-    : public FunctorizedFactor<Vector, ParameterMatrix<M>> {
+    : public FunctorizedFactor<Vector, ParameterMatrix> {
  private:
-  using Base = FunctorizedFactor<Vector, ParameterMatrix<M>>;
+  using Base = FunctorizedFactor<Vector, ParameterMatrix>;
 
  public:
   VectorEvaluationFactor() {}
@@ -156,11 +156,12 @@ class VectorEvaluationFactor
  *
  * @ingroup basis
  */
+// TODO(Varun) remove template P
 template <class BASIS, size_t P>
 class VectorComponentFactor
-    : public FunctorizedFactor<double, ParameterMatrix<P>> {
+    : public FunctorizedFactor<double, ParameterMatrix> {
  private:
-  using Base = FunctorizedFactor<double, ParameterMatrix<P>>;
+  using Base = FunctorizedFactor<double, ParameterMatrix>;
 
  public:
   VectorComponentFactor() {}
@@ -226,10 +227,9 @@ class VectorComponentFactor
  * where `x` is the value (e.g. timestep) at which the rotation was evaluated.
  */
 template <class BASIS, typename T>
-class ManifoldEvaluationFactor
-    : public FunctorizedFactor<T, ParameterMatrix<traits<T>::dimension>> {
+class ManifoldEvaluationFactor : public FunctorizedFactor<T, ParameterMatrix> {
  private:
-  using Base = FunctorizedFactor<T, ParameterMatrix<traits<T>::dimension>>;
+  using Base = FunctorizedFactor<T, ParameterMatrix>;
 
  public:
   ManifoldEvaluationFactor() {}
@@ -326,11 +326,12 @@ class DerivativeFactor
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param M: Size of the evaluated state vector derivative.
  */
+//TODO(Varun) remove template M
 template <class BASIS, int M>
 class VectorDerivativeFactor
-    : public FunctorizedFactor<Vector, ParameterMatrix<M>> {
+    : public FunctorizedFactor<Vector, ParameterMatrix> {
  private:
-  using Base = FunctorizedFactor<Vector, ParameterMatrix<M>>;
+  using Base = FunctorizedFactor<Vector, ParameterMatrix>;
   using Func = typename BASIS::template VectorDerivativeFunctor<M>;
 
  public:
@@ -379,11 +380,12 @@ class VectorDerivativeFactor
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param P: Size of the control component derivative.
  */
+// TODO(Varun) remove template P
 template <class BASIS, int P>
 class ComponentDerivativeFactor
-    : public FunctorizedFactor<double, ParameterMatrix<P>> {
+    : public FunctorizedFactor<double, ParameterMatrix> {
  private:
-  using Base = FunctorizedFactor<double, ParameterMatrix<P>>;
+  using Base = FunctorizedFactor<double, ParameterMatrix>;
   using Func = typename BASIS::template ComponentDerivativeFunctor<P>;
 
  public:

@@ -17,30 +17,29 @@
  * @brief unit tests for factors in BasisFactors.h
  */
 
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/Vector.h>
 #include <gtsam/basis/Basis.h>
 #include <gtsam/basis/BasisFactors.h>
 #include <gtsam/basis/Chebyshev2.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/FunctorizedFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/TestableAssertions.h>
-#include <gtsam/base/Vector.h>
 
-#include <CppUnitLite/TestHarness.h>
-
-using gtsam::noiseModel::Isotropic;
-using gtsam::Pose2;
-using gtsam::Vector;
-using gtsam::Values;
 using gtsam::Chebyshev2;
-using gtsam::ParameterMatrix;
-using gtsam::LevenbergMarquardtParams;
 using gtsam::LevenbergMarquardtOptimizer;
+using gtsam::LevenbergMarquardtParams;
 using gtsam::NonlinearFactorGraph;
 using gtsam::NonlinearOptimizerParams;
+using gtsam::ParameterMatrix;
+using gtsam::Pose2;
+using gtsam::Values;
+using gtsam::Vector;
+using gtsam::noiseModel::Isotropic;
 
 constexpr size_t N = 2;
 
@@ -86,10 +85,10 @@ TEST(BasisFactors, VectorEvaluationFactor) {
   NonlinearFactorGraph graph;
   graph.add(factor);
 
-  ParameterMatrix<M> stateMatrix(N);
+  ParameterMatrix stateMatrix(M, N);
 
   Values initial;
-  initial.insert<ParameterMatrix<M>>(key, stateMatrix);
+  initial.insert<ParameterMatrix>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
   parameters.setMaxIterations(20);
@@ -128,16 +127,16 @@ TEST(BasisFactors, VectorComponentFactor) {
   const size_t i = 2;
   const double measured = 0.0, t = 3.0, a = 2.0, b = 4.0;
   auto model = Isotropic::Sigma(1, 1.0);
-  VectorComponentFactor<Chebyshev2, P> factor(key, measured, model, N, i,
-                                                    t, a, b);
+  VectorComponentFactor<Chebyshev2, P> factor(key, measured, model, N, i, t, a,
+                                              b);
 
   NonlinearFactorGraph graph;
   graph.add(factor);
 
-  ParameterMatrix<P> stateMatrix(N);
+  ParameterMatrix stateMatrix(P, N);
 
   Values initial;
-  initial.insert<ParameterMatrix<P>>(key, stateMatrix);
+  initial.insert<ParameterMatrix>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
   parameters.setMaxIterations(20);
@@ -153,16 +152,16 @@ TEST(BasisFactors, ManifoldEvaluationFactor) {
   const Pose2 measured;
   const double t = 3.0, a = 2.0, b = 4.0;
   auto model = Isotropic::Sigma(3, 1.0);
-  ManifoldEvaluationFactor<Chebyshev2, Pose2> factor(key, measured, model, N,
-                                                     t, a, b);
+  ManifoldEvaluationFactor<Chebyshev2, Pose2> factor(key, measured, model, N, t,
+                                                     a, b);
 
   NonlinearFactorGraph graph;
   graph.add(factor);
 
-  ParameterMatrix<3> stateMatrix(N);
+  ParameterMatrix stateMatrix(3, N);
 
   Values initial;
-  initial.insert<ParameterMatrix<3>>(key, stateMatrix);
+  initial.insert<ParameterMatrix>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
   parameters.setMaxIterations(20);
@@ -186,10 +185,10 @@ TEST(BasisFactors, VecDerivativePrior) {
   NonlinearFactorGraph graph;
   graph.add(vecDPrior);
 
-  ParameterMatrix<M> stateMatrix(N);
+  ParameterMatrix stateMatrix(M, N);
 
   Values initial;
-  initial.insert<ParameterMatrix<M>>(key, stateMatrix);
+  initial.insert<ParameterMatrix>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
   parameters.setMaxIterations(20);
@@ -213,8 +212,8 @@ TEST(BasisFactors, ComponentDerivativeFactor) {
   graph.add(controlDPrior);
 
   Values initial;
-  ParameterMatrix<M> stateMatrix(N);
-  initial.insert<ParameterMatrix<M>>(key, stateMatrix);
+  ParameterMatrix stateMatrix(M, N);
+  initial.insert<ParameterMatrix>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
   parameters.setMaxIterations(20);

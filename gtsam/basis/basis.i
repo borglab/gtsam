@@ -48,9 +48,8 @@ class Chebyshev2 {
 
 #include <gtsam/basis/ParameterMatrix.h>
 
-template <M = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}>
 class ParameterMatrix {
-  ParameterMatrix(const size_t N);
+  ParameterMatrix(const size_t M, const size_t N);
   ParameterMatrix(const Matrix& matrix);
 
   Matrix matrix() const;
