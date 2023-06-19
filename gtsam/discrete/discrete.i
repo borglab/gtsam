@@ -211,6 +211,11 @@ class DiscreteBayesTreeClique {
   DiscreteBayesTreeClique(const gtsam::DiscreteConditional* conditional);
   const gtsam::DiscreteConditional* conditional() const;
   bool isRoot() const;
+  size_t nrChildren() const;
+  const gtsam::DiscreteBayesTreeClique* operator[](size_t i) const;
+  void print(string s = "DiscreteBayesTreeClique",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
   void printSignature(
       const string& s = "Clique: ",
       const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
