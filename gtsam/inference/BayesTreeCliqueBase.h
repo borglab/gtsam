@@ -140,8 +140,14 @@ namespace gtsam {
     /** Access the conditional */
     const sharedConditional& conditional() const { return conditional_; }
 
-    /** is this the root of a Bayes tree ? */
+    /// Is this the root of a Bayes tree? 
     inline bool isRoot() const { return parent_.expired(); }
+
+    /// Return the number of children.
+    size_t nrChildren() const { return children.size(); }
+
+    /// Return the child at index i.
+    const derived_ptr operator[](size_t i) const { return children[i]; }
 
     /** The size of subtree rooted at this clique, i.e., nr of Cliques */
     size_t treeSize() const;
