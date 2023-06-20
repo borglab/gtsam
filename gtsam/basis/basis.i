@@ -71,7 +71,8 @@ virtual class EvaluationFactor : gtsam::NoiseModelFactor {
                    double x, double a, double b);
 };
 
-template <BASIS = {gtsam::Chebyshev2}>
+template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
+                   gtsam::Chebyshev2Basis, gtsam::Chebyshev2}>
 virtual class VectorEvaluationFactor : gtsam::NoiseModelFactor {
   VectorEvaluationFactor();
   VectorEvaluationFactor(gtsam::Key key, const Vector& z,
@@ -82,7 +83,8 @@ virtual class VectorEvaluationFactor : gtsam::NoiseModelFactor {
                          const size_t N, double x, double a, double b);
 };
 
-template <BASIS = {gtsam::Chebyshev2}>
+template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
+                   gtsam::Chebyshev2Basis, gtsam::Chebyshev2}>
 virtual class VectorComponentFactor : gtsam::NoiseModelFactor {
   VectorComponentFactor();
   VectorComponentFactor(gtsam::Key key, const double z,
@@ -93,7 +95,12 @@ virtual class VectorComponentFactor : gtsam::NoiseModelFactor {
                         const size_t N, size_t i, double x, double a, double b);
 };
 
-template <BASIS, T>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
+
+template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
+                   gtsam::Chebyshev2Basis, gtsam::Chebyshev2},
+          T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 virtual class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
   ManifoldEvaluationFactor();
   ManifoldEvaluationFactor(gtsam::Key key, const T& z,
@@ -104,14 +111,8 @@ virtual class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
                            double x, double a, double b);
 };
 
-#include <gtsam/geometry/Pose3.h>
-
-typedef gtsam::ManifoldEvaluationFactor<gtsam::Chebyshev2, gtsam::Rot3>
-    ManifoldEvaluationFactorChebyshev2Rot3;
-typedef gtsam::ManifoldEvaluationFactor<gtsam::Chebyshev2, gtsam::Pose3>
-    ManifoldEvaluationFactorChebyshev2Pose3;
-
-template <BASIS = {gtsam::Chebyshev2}>
+template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
+                   gtsam::Chebyshev2Basis, gtsam::Chebyshev2}>
 virtual class DerivativeFactor : gtsam::NoiseModelFactor {
   DerivativeFactor();
   DerivativeFactor(gtsam::Key key, const double z,
@@ -122,7 +123,8 @@ virtual class DerivativeFactor : gtsam::NoiseModelFactor {
                    double x, double a, double b);
 };
 
-template <BASIS = {gtsam::Chebyshev2}>
+template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
+                   gtsam::Chebyshev2Basis, gtsam::Chebyshev2}>
 virtual class VectorDerivativeFactor : gtsam::NoiseModelFactor {
   VectorDerivativeFactor();
   VectorDerivativeFactor(gtsam::Key key, const Vector& z,
@@ -133,7 +135,8 @@ virtual class VectorDerivativeFactor : gtsam::NoiseModelFactor {
                          const size_t N, double x, double a, double b);
 };
 
-template <BASIS = {gtsam::Chebyshev2}>
+template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
+                   gtsam::Chebyshev2Basis, gtsam::Chebyshev2}>
 virtual class ComponentDerivativeFactor : gtsam::NoiseModelFactor {
   ComponentDerivativeFactor();
   ComponentDerivativeFactor(gtsam::Key key, const double z,
