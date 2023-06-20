@@ -201,10 +201,9 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
   }
 
   /// linearize and return a Hessianfactor that is an approximation of error(p)
-  std::shared_ptr<RegularHessianFactor<DimPose> > createHessianFactor(
-      const Values& values, const double lambda = 0.0, bool diagonalDamping =
-          false) const {
-
+  std::shared_ptr<RegularHessianFactor<DimPose>> createHessianFactor(
+      const Values& values, const double lambda = 0.0,
+      bool diagonalDamping = false) const {
     // we may have multiple cameras sharing the same extrinsic cals, hence the number
     // of keys may be smaller than 2 * nrMeasurements (which is the upper bound where we
     // have a body key and an extrinsic calibration key for each measurement)
@@ -212,23 +211,22 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
 
     // Create structures for Hessian Factors
     KeyVector js;
-    std::vector < Matrix > Gs(nrUniqueKeys * (nrUniqueKeys + 1) / 2);
+    std::vector<Matrix> Gs(nrUniqueKeys * (nrUniqueKeys + 1) / 2);
     std::vector<Vector> gs(nrUniqueKeys);
 
     if (this->measured_.size() != cameras(values).size())
       throw std::runtime_error("SmartStereoProjectionHessianFactor: this->"
-                               "measured_.size() inconsistent with input");
+          "measured_.size() inconsistent with input");
 
     // triangulate 3D point at given linearization point
     triangulateSafe(cameras(values));
 
-    if (!result_) { // failed: return "empty/zero" Hessian
-      for (Matrix& m : Gs)
-        m = Matrix::Zero(DimPose, DimPose);
-      for (Vector& v : gs)
-        v = Vector::Zero(DimPose);
-      return std::make_shared < RegularHessianFactor<DimPose>
-          > (keys_, Gs, gs, 0.0);
+    // failed: return "empty/zero" Hessian
+    if (!result_) {
+      for (Matrix& m : Gs) m = Matrix::Zero(DimPose, DimPose);
+      for (Vector& v : gs) v = Vector::Zero(DimPose);
+      return std::make_shared<RegularHessianFactor<DimPose>>(keys_, Gs, gs,
+                                                             0.0);
     }
 
     // compute Jacobian given triangulated 3D Point
@@ -239,12 +237,13 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
 
     // Whiten using noise model
     noiseModel_->WhitenSystem(E, b);
-    for (size_t i = 0; i < Fs.size(); i++)
+    for (size_t i = 0; i < Fs.size(); i++) {
       Fs[i] = noiseModel_->Whiten(Fs[i]);
+    }
 
     // build augmented Hessian (with last row/column being the information vector)
     Matrix3 P;
-    Cameras::ComputePointCovariance <3> (P, E, lambda, diagonalDamping);
+    Cameras::ComputePointCovariance<3>(P, E, lambda, diagonalDamping);
 
     // these are the keys that correspond to the blocks in augmentedHessian (output of SchurComplement)
     KeyVector nonuniqueKeys;
@@ -253,12 +252,15 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
       nonuniqueKeys.push_back(body_P_cam_keys_.at(i));
     }
     // but we need to get the augumented hessian wrt the unique keys in key_
-    SymmetricBlockMatrix augmentedHessianUniqueKeys =
-        Cameras::SchurComplementAndRearrangeBlocks<3,DimBlock,DimPose>(Fs,E,P,b,
-                  nonuniqueKeys, keys_);
+    //TODO(Varun) SchurComplementAndRearrangeBlocks is causing the multiply defined symbol error
+    // SymmetricBlockMatrix augmentedHessianUniqueKeys =
+    //     Base::Cameras::template SchurComplementAndRearrangeBlocks<3, DimBlock,
+    //                                                               DimPose>(
+    //         Fs, E, P, b, nonuniqueKeys, keys_);
 
-    return std::make_shared < RegularHessianFactor<DimPose>
-        > (keys_, augmentedHessianUniqueKeys);
+    // return std::make_shared<RegularHessianFactor<DimPose>>(
+    //     keys_, augmentedHessianUniqueKeys);
+    return nullptr;
   }
 
   /**
