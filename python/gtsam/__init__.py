@@ -4,9 +4,49 @@
 
 import sys
 
+from gtsam.utils import findExampleDataFile
+
 from gtsam import gtsam, utils
 from gtsam.gtsam import *
-from gtsam.utils import findExampleDataFile
+
+#### Typedefs to allow for backwards compatibility
+#TODO(Varun) deprecate in future release
+# gtsam
+KeyVector = list
+# base
+IndexPairSetMap = dict
+IndexPairVector = list
+# geometry
+Point2Vector = list
+Pose3Vector = list
+Rot3Vector = list
+Point2Pairs = list
+Point3Pairs = list
+Pose2Pairs = list
+Pose3Pairs = list
+# sfm
+BinaryMeasurementsPoint3 = list
+BinaryMeasurementsUnit3 = list
+BinaryMeasurementsRot3 = list
+KeyPairDoubleMap = dict
+SfmTrack2dVector = list
+SfmTracks = list
+SfmCameras = list
+SfmMeasurementVector = list
+MatchIndicesMap = dict
+KeypointsVector = list
+# slam
+BetweenFactorPose3s = list
+BetweenFactorPose2s = list
+
+
+class FixedLagSmootherKeyTimestampMap(dict):
+
+    def insert(self, key_value):
+        self[key_value[0]] = key_value[1]
+
+
+#### End typedefs
 
 
 def _init():
