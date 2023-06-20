@@ -116,12 +116,12 @@ TEST(Chebyshev2, InterpolateVector) {
   expected << t, 0;
   Eigen::Matrix<double, /*2x2N*/ -1, -1> actualH(2, 2 * N);
 
-  Chebyshev2::VectorEvaluationFunctor<2> fx(N, t, a, b);
+  Chebyshev2::VectorEvaluationFunctor fx(2, N, t, a, b);
   EXPECT(assert_equal(expected, fx(X, actualH), 1e-9));
 
   // Check derivative
   std::function<Vector2(ParameterMatrix)> f =
-      std::bind(&Chebyshev2::VectorEvaluationFunctor<2>::operator(), fx,
+      std::bind(&Chebyshev2::VectorEvaluationFunctor::operator(), fx,
                 std::placeholders::_1, nullptr);
   Matrix numericalH =
       numericalDerivative11<Vector2, ParameterMatrix, 2 * N>(f, X);
@@ -413,8 +413,8 @@ TEST(Chebyshev2, Derivative6_03) {
 TEST(Chebyshev2, VectorDerivativeFunctor) {
   const size_t N = 3, M = 2;
   const double x = 0.2;
-  using VecD = Chebyshev2::VectorDerivativeFunctor<M>;
-  VecD fx(N, x, 0, 3);
+  using VecD = Chebyshev2::VectorDerivativeFunctor;
+  VecD fx(M, N, x, 0, 3);
   ParameterMatrix X(M, N);
   Matrix actualH(M, M * N);
   EXPECT(assert_equal(Vector::Zero(M), (Vector)fx(X, actualH), 1e-8));
@@ -429,7 +429,7 @@ TEST(Chebyshev2, VectorDerivativeFunctor) {
 // Test VectorDerivativeFunctor with polynomial function
 TEST(Chebyshev2, VectorDerivativeFunctor2) {
   const size_t N = 64, M = 1, T = 15;
-  using VecD = Chebyshev2::VectorDerivativeFunctor<M>;
+  using VecD = Chebyshev2::VectorDerivativeFunctor;
 
   const Vector points = Chebyshev2::Points(N, 0, T);
 
@@ -443,14 +443,14 @@ TEST(Chebyshev2, VectorDerivativeFunctor2) {
   // Evaluate the derivative at the chebyshev points using
   // VectorDerivativeFunctor.
   for (size_t i = 0; i < N; ++i) {
-    VecD d(N, points(i), 0, T);
+    VecD d(M, N, points(i), 0, T);
     Vector1 Dx = d(X);
     EXPECT_DOUBLES_EQUAL(fprime(points(i)), Dx(0), 1e-6);
   }
 
   // Test Jacobian at the first chebyshev point.
   Matrix actualH(M, M * N);
-  VecD vecd(N, points(0), 0, T);
+  VecD vecd(M, N, points(0), 0, T);
   vecd(X, actualH);
   Matrix expectedH = numericalDerivative11<Vector1, ParameterMatrix, M * N>(
       std::bind(&VecD::operator(), vecd, std::placeholders::_1, nullptr), X);
@@ -462,9 +462,9 @@ TEST(Chebyshev2, VectorDerivativeFunctor2) {
 TEST(Chebyshev2, ComponentDerivativeFunctor) {
   const size_t N = 6, M = 2;
   const double x = 0.2;
-  using CompFunc = Chebyshev2::ComponentDerivativeFunctor<M>;
+  using CompFunc = Chebyshev2::ComponentDerivativeFunctor;
   size_t row = 1;
-  CompFunc fx(N, row, x, 0, 3);
+  CompFunc fx(M, N, row, x, 0, 3);
   ParameterMatrix X(M, N);
   Matrix actualH(1, M * N);
   EXPECT_DOUBLES_EQUAL(0, fx(X, actualH), 1e-8);

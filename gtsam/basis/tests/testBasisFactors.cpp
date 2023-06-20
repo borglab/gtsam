@@ -80,7 +80,7 @@ TEST(BasisFactors, VectorEvaluationFactor) {
   const Vector measured = Vector::Zero(M);
 
   auto model = Isotropic::Sigma(M, 1.0);
-  VectorEvaluationFactor<Chebyshev2, M> factor(key, measured, model, N, 0);
+  VectorEvaluationFactor<Chebyshev2> factor(key, measured, model, M, N, 0);
 
   NonlinearFactorGraph graph;
   graph.add(factor);
@@ -106,7 +106,7 @@ TEST(BasisFactors, Print) {
   const Vector measured = Vector::Ones(M) * 42;
 
   auto model = Isotropic::Sigma(M, 1.0);
-  VectorEvaluationFactor<Chebyshev2, M> factor(key, measured, model, N, 0);
+  VectorEvaluationFactor<Chebyshev2> factor(key, measured, model, M, N, 0);
 
   std::string expected =
       "  keys = { X0 }\n"
@@ -127,8 +127,8 @@ TEST(BasisFactors, VectorComponentFactor) {
   const size_t i = 2;
   const double measured = 0.0, t = 3.0, a = 2.0, b = 4.0;
   auto model = Isotropic::Sigma(1, 1.0);
-  VectorComponentFactor<Chebyshev2, P> factor(key, measured, model, N, i, t, a,
-                                              b);
+  VectorComponentFactor<Chebyshev2> factor(key, measured, model, P, N, i, t, a,
+                                           b);
 
   NonlinearFactorGraph graph;
   graph.add(factor);
@@ -180,7 +180,7 @@ TEST(BasisFactors, VecDerivativePrior) {
 
   const Vector measured = Vector::Zero(M);
   auto model = Isotropic::Sigma(M, 1.0);
-  VectorDerivativeFactor<Chebyshev2, M> vecDPrior(key, measured, model, N, 0);
+  VectorDerivativeFactor<Chebyshev2> vecDPrior(key, measured, model, M, N, 0);
 
   NonlinearFactorGraph graph;
   graph.add(vecDPrior);
@@ -205,8 +205,8 @@ TEST(BasisFactors, ComponentDerivativeFactor) {
 
   double measured = 0;
   auto model = Isotropic::Sigma(1, 1.0);
-  ComponentDerivativeFactor<Chebyshev2, M> controlDPrior(key, measured, model,
-                                                         N, 0, 0);
+  ComponentDerivativeFactor<Chebyshev2> controlDPrior(key, measured, model, M,
+                                                      N, 0, 0);
 
   NonlinearFactorGraph graph;
   graph.add(controlDPrior);
