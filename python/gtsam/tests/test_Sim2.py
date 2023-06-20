@@ -12,8 +12,9 @@ Author: John Lambert
 import unittest
 
 import numpy as np
-from gtsam import Pose2, Rot2, Similarity2
 from gtsam.utils.test_case import GtsamTestCase
+
+from gtsam import Pose2, Pose2Pairs, Rot2, Similarity2
 
 
 class TestSim2(GtsamTestCase):
@@ -46,7 +47,7 @@ class TestSim2(GtsamTestCase):
 
         wToi_list = [wTo0, wTo1, wTo2]
 
-        we_pairs = list(zip(wToi_list, eToi_list))
+        we_pairs = Pose2Pairs(list(zip(wToi_list, eToi_list)))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
         wSe = Similarity2.Align(we_pairs)
@@ -81,7 +82,7 @@ class TestSim2(GtsamTestCase):
 
         wToi_list = [wTo0, wTo1, wTo2]
 
-        we_pairs = list(zip(wToi_list, eToi_list))
+        we_pairs = Pose2Pairs(list(zip(wToi_list, eToi_list)))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
         wSe = Similarity2.Align(we_pairs)
@@ -119,7 +120,7 @@ class TestSim2(GtsamTestCase):
 
         bTi_list = [bTi0, bTi1, bTi2, bTi3]
 
-        ab_pairs = list(zip(aTi_list, bTi_list))
+        ab_pairs = Pose2Pairs(list(zip(aTi_list, bTi_list)))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
         aSb = Similarity2.Align(ab_pairs)

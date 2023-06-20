@@ -11,10 +11,11 @@ Refactored: Roderick Koehle
 """
 import unittest
 
-import gtsam
 import numpy as np
 from gtsam.symbol_shorthand import K, L, P
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
 
 
 def ulp(ftype=np.float64):
@@ -26,7 +27,7 @@ def ulp(ftype=np.float64):
 
 
 class TestCal3Fisheye(GtsamTestCase):
-    
+
     @classmethod
     def setUpClass(cls):
         """
@@ -50,10 +51,11 @@ class TestCal3Fisheye(GtsamTestCase):
         camera1 = gtsam.PinholeCameraCal3Fisheye(pose1)
         camera2 = gtsam.PinholeCameraCal3Fisheye(pose2)
         cls.origin = np.array([0.0, 0.0, 0.0])
-        cls.poses = [pose1, pose2]
-        cls.cameras = [camera1, camera2]
-        cls.measurements = [k.project(cls.origin) for k in cls.cameras]
-        
+        cls.poses = gtsam.Pose3Vector([pose1, pose2])
+        cls.cameras = gtsam.CameraSetCal3Fisheye([camera1, camera2])
+        cls.measurements = gtsam.Point2Vector(
+            [k.project(cls.origin) for k in cls.cameras])
+
     def test_Cal3Fisheye(self):
         K = gtsam.Cal3Fisheye()
         self.assertEqual(K.fx(), 1.)
@@ -62,7 +64,7 @@ class TestCal3Fisheye(GtsamTestCase):
     def test_distortion(self):
         """Fisheye distortion and rectification"""
         equidistant = gtsam.Cal3Fisheye()
-        perspective_pt = self.obj_point[0:2]/self.obj_point[2]
+        perspective_pt = self.obj_point[0:2] / self.obj_point[2]
         distorted_pt = equidistant.uncalibrate(perspective_pt)
         rectified_pt = equidistant.calibrate(distorted_pt)
         self.gtsamAssertEquals(distorted_pt, self.img_point)
@@ -166,7 +168,7 @@ class TestCal3Fisheye(GtsamTestCase):
         pose = gtsam.Pose3()
         camera = gtsam.Cal3Fisheye()
         state = gtsam.Values()
-        camera_key, pose_key, landmark_key = K(0), P(0), L(0)
+        pose_key, landmark_key = P(0), L(0)
         state.insert_point3(landmark_key, obj_point)
         state.insert_pose3(pose_key, pose)
         g = gtsam.NonlinearFactorGraph()
