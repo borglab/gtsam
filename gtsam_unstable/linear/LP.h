@@ -81,9 +81,23 @@ public:
     if (!cachedConstrainedKeyDimMap_.empty())
       return cachedConstrainedKeyDimMap_;
     // Collect key-dim map of all variables in the constraints
-    cachedConstrainedKeyDimMap_ = collectKeyDim(equalities);
-    KeyDimMap keysDim2 = collectKeyDim(inequalities);
-    cachedConstrainedKeyDimMap_.insert(keysDim2.begin(), keysDim2.end());
+    //TODO(Varun) seems like the templated function is causing the multiple symbols error on Windows
+    // cachedConstrainedKeyDimMap_ = collectKeyDim(equalities);
+    // KeyDimMap keysDim2 = collectKeyDim(inequalities);
+    // cachedConstrainedKeyDimMap_.insert(keysDim2.begin(), keysDim2.end());
+    cachedConstrainedKeyDimMap_.clear();
+    for (auto&& factor : equalities) {
+      if (!factor) continue;
+      for (Key key : factor->keys()) {
+        cachedConstrainedKeyDimMap_[key] = factor->getDim(factor->find(key));
+      }
+    }
+    for (auto&& factor : inequalities) {
+      if (!factor) continue;
+      for (Key key : factor->keys()) {
+        cachedConstrainedKeyDimMap_[key] = factor->getDim(factor->find(key));
+      }
+    }
     return cachedConstrainedKeyDimMap_;
   }
 
