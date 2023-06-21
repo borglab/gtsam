@@ -77,9 +77,11 @@ public:
    * @param keys The key vector to append to this ordering.
    * @return The ordering variable with appended keys.
    */
+  GTSAM_EXPORT
   This& operator+=(KeyVector& keys);
 
   /// Check if key exists in ordering.
+  GTSAM_EXPORT
   bool contains(const Key& key) const;
 
   /**
