@@ -41,7 +41,7 @@ BetweenFactorPose2s = list
 
 
 class FixedLagSmootherKeyTimestampMap(dict):
-
+    """Class to provide backwards compatibility"""
     def insert(self, key_value):
         self[key_value[0]] = key_value[1]
 
