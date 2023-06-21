@@ -47,7 +47,7 @@ namespace gtsam {
  *
  * Also fails if the rows are not of the same size.
  */
-struct SignatureParser {
+struct GTSAM_EXPORT SignatureParser {
   using Row = std::vector<double>;
   using Table = std::vector<Row>;
 
