@@ -223,7 +223,7 @@ class TestPose3(GtsamTestCase):
         sTt = Pose3(Rot3.Rodrigues(0, 0, -math.pi), Point3(2, 4, 0))
         transformed = sTt.transformTo(square)
 
-        st_pairs = gtsam.Point3Pairs()
+        st_pairs = []
         for j in range(4):
             st_pairs.append((square[:,j], transformed[:,j]))
 

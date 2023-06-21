@@ -51,10 +51,9 @@ class TestCal3Fisheye(GtsamTestCase):
         camera1 = gtsam.PinholeCameraCal3Fisheye(pose1)
         camera2 = gtsam.PinholeCameraCal3Fisheye(pose2)
         cls.origin = np.array([0.0, 0.0, 0.0])
-        cls.poses = gtsam.Pose3Vector([pose1, pose2])
-        cls.cameras = gtsam.CameraSetCal3Fisheye([camera1, camera2])
-        cls.measurements = gtsam.Point2Vector(
-            [k.project(cls.origin) for k in cls.cameras])
+        cls.poses = [pose1, pose2]
+        cls.cameras = [camera1, camera2]
+        cls.measurements = [k.project(cls.origin) for k in cls.cameras]
 
     def test_Cal3Fisheye(self):
         K = gtsam.Cal3Fisheye()

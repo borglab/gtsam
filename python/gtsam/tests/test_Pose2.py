@@ -19,6 +19,7 @@ from gtsam import Point2, Point2Pairs, Pose2
 
 class TestPose2(GtsamTestCase):
     """Test selected Pose2 methods."""
+
     def test_adjoint(self) -> None:
         """Test adjoint method."""
         xi = np.array([1, 2, 3])
@@ -28,7 +29,7 @@ class TestPose2(GtsamTestCase):
 
     def test_transformTo(self):
         """Test transformTo method."""
-        pose = Pose2(2, 4, -math.pi/2)
+        pose = Pose2(2, 4, -math.pi / 2)
         actual = pose.transformTo(Point2(3, 2))
         expected = Point2(2, 1)
         self.gtsamAssertEquals(actual, expected, 1e-6)
@@ -42,7 +43,7 @@ class TestPose2(GtsamTestCase):
 
     def test_transformFrom(self):
         """Test transformFrom method."""
-        pose = Pose2(2, 4, -math.pi/2)
+        pose = Pose2(2, 4, -math.pi / 2)
         actual = pose.transformFrom(Point2(2, 1))
         expected = Point2(3, 2)
         self.gtsamAssertEquals(actual, expected, 1e-6)
@@ -83,7 +84,7 @@ class TestPose2(GtsamTestCase):
         ]
 
         # fmt: on
-        ab_pairs = Point2Pairs(list(zip(pts_a, pts_b)))
+        ab_pairs = list(zip(pts_a, pts_b))
         aTb = Pose2.Align(ab_pairs)
         self.assertIsNotNone(aTb)
 

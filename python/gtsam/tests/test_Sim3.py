@@ -23,7 +23,7 @@ class TestSim3(GtsamTestCase):
     """Test selected Sim3 methods."""
 
     def test_align_poses_along_straight_line(self):
-        """Test Align Pose3Pairs method.
+        """Test Pose3 Align method.
 
         Scenario:
            3 object poses
@@ -49,7 +49,7 @@ class TestSim3(GtsamTestCase):
 
         wToi_list = [wTo0, wTo1, wTo2]
 
-        we_pairs = gtsam.Pose3Pairs(list(zip(wToi_list, eToi_list)))
+        we_pairs = list(zip(wToi_list, eToi_list))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
         wSe = Similarity3.Align(we_pairs)
@@ -58,7 +58,7 @@ class TestSim3(GtsamTestCase):
             self.gtsamAssertEquals(wToi, wSe.transformFrom(eToi))
 
     def test_align_poses_along_straight_line_gauge(self):
-        """Test if Align Pose3Pairs method can account for gauge ambiguity.
+        """Test if Pose3 Align method can account for gauge ambiguity.
 
         Scenario:
            3 object poses
@@ -84,7 +84,7 @@ class TestSim3(GtsamTestCase):
 
         wToi_list = [wTo0, wTo1, wTo2]
 
-        we_pairs = gtsam.Pose3Pairs(list(zip(wToi_list, eToi_list)))
+        we_pairs = list(zip(wToi_list, eToi_list))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
         wSe = Similarity3.Align(we_pairs)
@@ -93,7 +93,7 @@ class TestSim3(GtsamTestCase):
             self.gtsamAssertEquals(wToi, wSe.transformFrom(eToi))
 
     def test_align_poses_scaled_squares(self):
-        """Test if Align Pose3Pairs method can account for gauge ambiguity.
+        """Test if Pose3 Align method can account for gauge ambiguity.
 
         Make sure a big and small square can be aligned.
         The u's represent a big square (10x10), and v's represents a small square (4x4).
@@ -122,7 +122,7 @@ class TestSim3(GtsamTestCase):
 
         bTi_list = [bTi0, bTi1, bTi2, bTi3]
 
-        ab_pairs = gtsam.Pose3Pairs(list(zip(aTi_list, bTi_list)))
+        ab_pairs = list(zip(aTi_list, bTi_list))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
         aSb = Similarity3.Align(ab_pairs)
@@ -689,7 +689,7 @@ def align_poses_sim3(aTi_list: List[Pose3], bTi_list: List[Pose3]) -> Similarity
     assert len(aTi_list) == len(bTi_list)
     assert n_to_align >= 2, "SIM(3) alignment uses at least 2 frames"
 
-    ab_pairs = gtsam.Pose3Pairs(list(zip(aTi_list, bTi_list)))
+    ab_pairs = list(zip(aTi_list, bTi_list))
 
     aSb = Similarity3.Align(ab_pairs)
 
