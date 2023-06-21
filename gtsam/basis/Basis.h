@@ -81,16 +81,7 @@ using Weights = Eigen::Matrix<double, 1, -1>; /* 1xN vector */
  *
  * @ingroup basis
  */
-template <size_t M>
-Matrix kroneckerProductIdentity(const Weights& w) {
-  Matrix result(M, w.cols() * M);
-  result.setZero();
-
-  for (int i = 0; i < w.cols(); i++) {
-    result.block(0, i * M, M, M).diagonal().array() = w(i);
-  }
-  return result;
-}
+Matrix kroneckerProductIdentity(size_t M, const Weights& w);
 
 /**
  * CRTP Base class for function bases
@@ -169,17 +160,17 @@ class Basis {
   };
 
   /**
-   * VectorEvaluationFunctor at a given x, applied to ParameterMatrix<M>.
+   * VectorEvaluationFunctor at a given x, applied to ParameterMatrix.
    * This functor is used to evaluate a parameterized function at a given scalar
    * value x. When given a specific M*N parameters, returns an M-vector the M
    * corresponding functions at x, possibly with Jacobians wrpt the parameters.
    */
-  template <int M>
   class VectorEvaluationFunctor : protected EvaluationFunctor {
    protected:
-    using VectorM = Eigen::Matrix<double, M, 1>;
-    using Jacobian = Eigen::Matrix<double, /*MxMN*/ M, -1>;
+    using Jacobian = Eigen::Matrix<double, /*MxMN*/ -1, -1>;
     Jacobian H_;
+
+    size_t M_;
 
     /**
      * Calculate the `M*(M*N)` Jacobian of this functor with respect to
@@ -190,7 +181,7 @@ class Basis {
      * i.e., the Kronecker product of weights_ with the MxM identity matrix.
      */
     void calculateJacobian() {
-      H_ = kroneckerProductIdentity<M>(this->weights_);
+      H_ = kroneckerProductIdentity(M_, this->weights_);
     }
 
    public:
@@ -200,26 +191,27 @@ class Basis {
     VectorEvaluationFunctor() {}
 
     /// Default Constructor
-    VectorEvaluationFunctor(size_t N, double x) : EvaluationFunctor(N, x) {
+    VectorEvaluationFunctor(size_t M, size_t N, double x)
+        : EvaluationFunctor(N, x), M_(M) {
       calculateJacobian();
     }
 
     /// Constructor, with interval [a,b]
-    VectorEvaluationFunctor(size_t N, double x, double a, double b)
-        : EvaluationFunctor(N, x, a, b) {
+    VectorEvaluationFunctor(size_t M, size_t N, double x, double a, double b)
+        : EvaluationFunctor(N, x, a, b), M_(M) {
       calculateJacobian();
     }
 
     /// M-dimensional evaluation
-    VectorM apply(const ParameterMatrix<M>& P,
-                  OptionalJacobian</*MxN*/ -1, -1> H = {}) const {
+    Vector apply(const ParameterMatrix& P,
+                 OptionalJacobian</*MxN*/ -1, -1> H = {}) const {
       if (H) *H = H_;
       return P.matrix() * this->weights_.transpose();
     }
 
     /// c++ sugar
-    VectorM operator()(const ParameterMatrix<M>& P,
-                       OptionalJacobian</*MxN*/ -1, -1> H = {}) const {
+    Vector operator()(const ParameterMatrix& P,
+                      OptionalJacobian</*MxN*/ -1, -1> H = {}) const {
       return apply(P, H);
     }
   };
@@ -231,12 +223,13 @@ class Basis {
    *
    * This component is specified by the row index i, with 0<i<M.
    */
-  template <int M>
   class VectorComponentFunctor : public EvaluationFunctor {
    protected:
     using Jacobian = Eigen::Matrix<double, /*1xMN*/ 1, -1>;
-    size_t rowIndex_;
     Jacobian H_;
+
+    size_t M_;
+    size_t rowIndex_;
 
     /*
      * Calculate the `1*(M*N)` Jacobian of this functor with respect to
@@ -248,9 +241,9 @@ class Basis {
      * MxM identity matrix. See also VectorEvaluationFunctor.
      */
     void calculateJacobian(size_t N) {
-      H_.setZero(1, M * N);
+      H_.setZero(1, M_ * N);
       for (int j = 0; j < EvaluationFunctor::weights_.size(); j++)
-        H_(0, rowIndex_ + j * M) = EvaluationFunctor::weights_(j);
+        H_(0, rowIndex_ + j * M_) = EvaluationFunctor::weights_(j);
     }
 
    public:
@@ -258,33 +251,34 @@ class Basis {
     VectorComponentFunctor() {}
 
     /// Construct with row index
-    VectorComponentFunctor(size_t N, size_t i, double x)
-        : EvaluationFunctor(N, x), rowIndex_(i) {
+    VectorComponentFunctor(size_t M, size_t N, size_t i, double x)
+        : EvaluationFunctor(N, x), M_(M), rowIndex_(i) {
       calculateJacobian(N);
     }
 
     /// Construct with row index and interval
-    VectorComponentFunctor(size_t N, size_t i, double x, double a, double b)
-        : EvaluationFunctor(N, x, a, b), rowIndex_(i) {
+    VectorComponentFunctor(size_t M, size_t N, size_t i, double x, double a,
+                           double b)
+        : EvaluationFunctor(N, x, a, b), M_(M), rowIndex_(i) {
       calculateJacobian(N);
     }
 
     /// Calculate component of component rowIndex_ of P
-    double apply(const ParameterMatrix<M>& P,
+    double apply(const ParameterMatrix& P,
                  OptionalJacobian</*1xMN*/ -1, -1> H = {}) const {
       if (H) *H = H_;
       return P.row(rowIndex_) * EvaluationFunctor::weights_.transpose();
     }
 
     /// c++ sugar
-    double operator()(const ParameterMatrix<M>& P,
+    double operator()(const ParameterMatrix& P,
                       OptionalJacobian</*1xMN*/ -1, -1> H = {}) const {
       return apply(P, H);
     }
   };
 
   /**
-   * Manifold EvaluationFunctor at a given x, applied to ParameterMatrix<M>.
+   * Manifold EvaluationFunctor at a given x, applied to ParameterMatrix.
    * This functor is used to evaluate a parameterized function at a given scalar
    * value x. When given a specific M*N parameters, returns an M-vector the M
    * corresponding functions at x, possibly with Jacobians wrpt the parameters.
@@ -297,24 +291,23 @@ class Basis {
    * 3D rotation.
    */
   template <class T>
-  class ManifoldEvaluationFunctor
-      : public VectorEvaluationFunctor<traits<T>::dimension> {
+  class ManifoldEvaluationFunctor : public VectorEvaluationFunctor {
     enum { M = traits<T>::dimension };
-    using Base = VectorEvaluationFunctor<M>;
+    using Base = VectorEvaluationFunctor;
 
    public:
     /// For serialization
     ManifoldEvaluationFunctor() {}
 
     /// Default Constructor
-    ManifoldEvaluationFunctor(size_t N, double x) : Base(N, x) {}
+    ManifoldEvaluationFunctor(size_t N, double x) : Base(M, N, x) {}
 
     /// Constructor, with interval [a,b]
     ManifoldEvaluationFunctor(size_t N, double x, double a, double b)
-        : Base(N, x, a, b) {}
+        : Base(M, N, x, a, b) {}
 
     /// Manifold evaluation
-    T apply(const ParameterMatrix<M>& P,
+    T apply(const ParameterMatrix& P,
             OptionalJacobian</*MxMN*/ -1, -1> H = {}) const {
       // Interpolate the M-dimensional vector to yield a vector in tangent space
       Eigen::Matrix<double, M, 1> xi = Base::operator()(P, H);
@@ -333,7 +326,7 @@ class Basis {
     }
 
     /// c++ sugar
-    T operator()(const ParameterMatrix<M>& P,
+    T operator()(const ParameterMatrix& P,
                  OptionalJacobian</*MxN*/ -1, -1> H = {}) const {
       return apply(P, H);  // might call apply in derived
     }
@@ -389,19 +382,19 @@ class Basis {
   };
 
   /**
-   * VectorDerivativeFunctor at a given x, applied to ParameterMatrix<M>.
+   * VectorDerivativeFunctor at a given x, applied to ParameterMatrix.
    *
    * This functor is used to evaluate the derivatives of a parameterized
    * function at a given scalar value x. When given a specific M*N parameters,
    * returns an M-vector the M corresponding function derivatives at x, possibly
    * with Jacobians wrpt the parameters.
    */
-  template <int M>
   class VectorDerivativeFunctor : protected DerivativeFunctorBase {
    protected:
-    using VectorM = Eigen::Matrix<double, M, 1>;
-    using Jacobian = Eigen::Matrix<double, /*MxMN*/ M, -1>;
+    using Jacobian = Eigen::Matrix<double, /*MxMN*/ -1, -1>;
     Jacobian H_;
+
+    size_t M_;
 
     /**
      * Calculate the `M*(M*N)` Jacobian of this functor with respect to
@@ -412,7 +405,7 @@ class Basis {
      * i.e., the Kronecker product of weights_ with the MxM identity matrix.
      */
     void calculateJacobian() {
-      H_ = kroneckerProductIdentity<M>(this->weights_);
+      H_ = kroneckerProductIdentity(M_, this->weights_);
     }
 
    public:
@@ -422,25 +415,25 @@ class Basis {
     VectorDerivativeFunctor() {}
 
     /// Default Constructor
-    VectorDerivativeFunctor(size_t N, double x) : DerivativeFunctorBase(N, x) {
+    VectorDerivativeFunctor(size_t M, size_t N, double x)
+        : DerivativeFunctorBase(N, x), M_(M) {
       calculateJacobian();
     }
 
     /// Constructor, with optional interval [a,b]
-    VectorDerivativeFunctor(size_t N, double x, double a, double b)
-        : DerivativeFunctorBase(N, x, a, b) {
+    VectorDerivativeFunctor(size_t M, size_t N, double x, double a, double b)
+        : DerivativeFunctorBase(N, x, a, b), M_(M) {
       calculateJacobian();
     }
 
-    VectorM apply(const ParameterMatrix<M>& P,
-                  OptionalJacobian</*MxMN*/ -1, -1> H = {}) const {
+    Vector apply(const ParameterMatrix& P,
+                 OptionalJacobian</*MxMN*/ -1, -1> H = {}) const {
       if (H) *H = H_;
       return P.matrix() * this->weights_.transpose();
     }
     /// c++ sugar
-    VectorM operator()(
-        const ParameterMatrix<M>& P,
-        OptionalJacobian</*MxMN*/ -1, -1> H = {}) const {
+    Vector operator()(const ParameterMatrix& P,
+                      OptionalJacobian</*MxMN*/ -1, -1> H = {}) const {
       return apply(P, H);
     }
   };
@@ -452,12 +445,13 @@ class Basis {
    *
    * This component is specified by the row index i, with 0<i<M.
    */
-  template <int M>
   class ComponentDerivativeFunctor : protected DerivativeFunctorBase {
    protected:
     using Jacobian = Eigen::Matrix<double, /*1xMN*/ 1, -1>;
-    size_t rowIndex_;
     Jacobian H_;
+
+    size_t M_;
+    size_t rowIndex_;
 
     /*
      * Calculate the `1*(M*N)` Jacobian of this functor with respect to
@@ -469,9 +463,9 @@ class Basis {
      * MxM identity matrix. See also VectorDerivativeFunctor.
      */
     void calculateJacobian(size_t N) {
-      H_.setZero(1, M * N);
+      H_.setZero(1, M_ * N);
       for (int j = 0; j < this->weights_.size(); j++)
-        H_(0, rowIndex_ + j * M) = this->weights_(j);
+        H_(0, rowIndex_ + j * M_) = this->weights_(j);
     }
 
    public:
@@ -479,29 +473,29 @@ class Basis {
     ComponentDerivativeFunctor() {}
 
     /// Construct with row index
-    ComponentDerivativeFunctor(size_t N, size_t i, double x)
-        : DerivativeFunctorBase(N, x), rowIndex_(i) {
+    ComponentDerivativeFunctor(size_t M, size_t N, size_t i, double x)
+        : DerivativeFunctorBase(N, x), M_(M), rowIndex_(i) {
       calculateJacobian(N);
     }
 
     /// Construct with row index and interval
-    ComponentDerivativeFunctor(size_t N, size_t i, double x, double a, double b)
-        : DerivativeFunctorBase(N, x, a, b), rowIndex_(i) {
+    ComponentDerivativeFunctor(size_t M, size_t N, size_t i, double x, double a,
+                               double b)
+        : DerivativeFunctorBase(N, x, a, b), M_(M), rowIndex_(i) {
       calculateJacobian(N);
     }
     /// Calculate derivative of component rowIndex_ of F
-    double apply(const ParameterMatrix<M>& P,
+    double apply(const ParameterMatrix& P,
                  OptionalJacobian</*1xMN*/ -1, -1> H = {}) const {
       if (H) *H = H_;
       return P.row(rowIndex_) * this->weights_.transpose();
     }
     /// c++ sugar
-    double operator()(const ParameterMatrix<M>& P,
+    double operator()(const ParameterMatrix& P,
                       OptionalJacobian</*1xMN*/ -1, -1> H = {}) const {
       return apply(P, H);
     }
   };
-
 };
 
 }  // namespace gtsam

@@ -30,16 +30,12 @@ namespace gtsam {
 /**
  * A matrix abstraction of MxN values at the Basis points.
  * This class serves as a wrapper over an Eigen matrix.
- * @tparam M: The dimension of the type you wish to evaluate.
  * @param N: the number of Basis points (e.g. Chebyshev points of the second
  * kind).
  */
-template <int M>
 class ParameterMatrix {
-  using MatrixType = Eigen::Matrix<double, M, -1>;
-
  private:
-  MatrixType matrix_;
+  Matrix matrix_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -48,15 +44,18 @@ class ParameterMatrix {
 
   /**
    * Create ParameterMatrix using the number of basis points.
+   * @param M: The dimension size of the type you wish to evaluate.
    * @param N: The number of basis points (the columns).
    */
-  ParameterMatrix(const size_t N) : matrix_(M, N) { matrix_.setZero(); }
+  ParameterMatrix(const size_t M, const size_t N) : matrix_(M, N) {
+    matrix_.setZero();
+  }
 
   /**
    * Create ParameterMatrix from an MxN Eigen Matrix.
    * @param matrix: An Eigen matrix used to initialze the ParameterMatrix.
    */
-  ParameterMatrix(const MatrixType& matrix) : matrix_(matrix) {}
+  ParameterMatrix(const Matrix& matrix) : matrix_(matrix) {}
 
   /// Get the number of rows.
   size_t rows() const { return matrix_.rows(); }
@@ -65,10 +64,10 @@ class ParameterMatrix {
   size_t cols() const { return matrix_.cols(); }
 
   /// Get the underlying matrix.
-  MatrixType matrix() const { return matrix_; }
+  Matrix matrix() const { return matrix_; }
 
   /// Return the tranpose of the underlying matrix.
-  Eigen::Matrix<double, -1, M> transpose() const { return matrix_.transpose(); }
+  Matrix transpose() const { return matrix_.transpose(); }
 
   /**
    * Get the matrix row specified by `index`.
@@ -82,7 +81,7 @@ class ParameterMatrix {
    * Set the matrix row specified by `index`.
    * @param index: The row index to set.
    */
-  auto row(size_t index) -> Eigen::Block<MatrixType, 1, -1, false> {
+  auto row(size_t index) -> Eigen::Block<Matrix, 1, -1, false> {
     return matrix_.row(index);
   }
 
@@ -90,7 +89,7 @@ class ParameterMatrix {
    * Get the matrix column specified by `index`.
    * @param index: The column index to retrieve.
    */
-  Eigen::Matrix<double, M, 1> col(size_t index) const {
+  Eigen::Matrix<double, -1, 1> col(size_t index) const {
     return matrix_.col(index);
   }
 
@@ -98,7 +97,7 @@ class ParameterMatrix {
    * Set the matrix column specified by `index`.
    * @param index: The column index to set.
    */
-  auto col(size_t index) -> Eigen::Block<MatrixType, M, 1, true> {
+  auto col(size_t index) -> Eigen::Block<Matrix, -1, 1, true> {
     return matrix_.col(index);
   }
 
@@ -111,37 +110,35 @@ class ParameterMatrix {
    * Add a ParameterMatrix to another.
    * @param other: ParameterMatrix to add.
    */
-  ParameterMatrix<M> operator+(const ParameterMatrix<M>& other) const {
-    return ParameterMatrix<M>(matrix_ + other.matrix());
+  ParameterMatrix operator+(const ParameterMatrix& other) const {
+    return ParameterMatrix(matrix_ + other.matrix());
   }
 
   /**
    * Add a MxN-sized vector to the ParameterMatrix.
    * @param other: Vector which is reshaped and added.
    */
-  ParameterMatrix<M> operator+(
-      const Eigen::Matrix<double, -1, 1>& other) const {
+  ParameterMatrix operator+(const Eigen::Matrix<double, -1, 1>& other) const {
     // This form avoids a deep copy and instead typecasts `other`.
-    Eigen::Map<const MatrixType> other_(other.data(), M, cols());
-    return ParameterMatrix<M>(matrix_ + other_);
+    Eigen::Map<const Matrix> other_(other.data(), rows(), cols());
+    return ParameterMatrix(matrix_ + other_);
   }
 
   /**
    * Subtract a ParameterMatrix from another.
    * @param other: ParameterMatrix to subtract.
    */
-  ParameterMatrix<M> operator-(const ParameterMatrix<M>& other) const {
-    return ParameterMatrix<M>(matrix_ - other.matrix());
+  ParameterMatrix operator-(const ParameterMatrix& other) const {
+    return ParameterMatrix(matrix_ - other.matrix());
   }
 
   /**
    * Subtract a MxN-sized vector from the ParameterMatrix.
    * @param other: Vector which is reshaped and subracted.
    */
-  ParameterMatrix<M> operator-(
-      const Eigen::Matrix<double, -1, 1>& other) const {
-    Eigen::Map<const MatrixType> other_(other.data(), M, cols());
-    return ParameterMatrix<M>(matrix_ - other_);
+  ParameterMatrix operator-(const Eigen::Matrix<double, -1, 1>& other) const {
+    Eigen::Map<const Matrix> other_(other.data(), rows(), cols());
+    return ParameterMatrix(matrix_ - other_);
   }
 
   /**
@@ -149,9 +146,7 @@ class ParameterMatrix {
    * @param other: Eigen matrix which should be multiplication compatible with
    * the ParameterMatrix.
    */
-  MatrixType operator*(const Eigen::Matrix<double, -1, -1>& other) const {
-    return matrix_ * other;
-  }
+  Matrix operator*(const Matrix& other) const { return matrix_ * other; }
 
   /// @name Vector Space requirements
   /// @{
@@ -169,7 +164,7 @@ class ParameterMatrix {
    * @param other: The ParameterMatrix to check equality with.
    * @param tol: The absolute tolerance threshold.
    */
-  bool equals(const ParameterMatrix<M>& other, double tol = 1e-8) const {
+  bool equals(const ParameterMatrix& other, double tol = 1e-8) const {
     return gtsam::equal_with_abs_tol(matrix_, other.matrix(), tol);
   }
 
@@ -189,25 +184,22 @@ class ParameterMatrix {
    * NOTE: The size at compile time is unknown so this identity is zero
    * length and thus not valid.
    */
-  inline static ParameterMatrix Identity() {
-    // throw std::runtime_error(
-    //     "ParameterMatrix::Identity(): Don't use this function");
-    return ParameterMatrix(0);
+  inline static ParameterMatrix Identity(size_t M = 0, size_t N = 0) {
+    return ParameterMatrix(M, N);
   }
 
   /// @}
 };
 
-// traits for ParameterMatrix
-template <int M>
-struct traits<ParameterMatrix<M>>
-    : public internal::VectorSpace<ParameterMatrix<M>> {};
+/// traits for ParameterMatrix
+template <>
+struct traits<ParameterMatrix> : public internal::VectorSpace<ParameterMatrix> {
+};
 
 /* ************************************************************************* */
 // Stream operator that takes a ParameterMatrix. Used for printing.
-template <int M>
 inline std::ostream& operator<<(std::ostream& os,
-                                const ParameterMatrix<M>& parameterMatrix) {
+                                const ParameterMatrix& parameterMatrix) {
   os << parameterMatrix.matrix();
   return os;
 }
