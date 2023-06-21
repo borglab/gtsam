@@ -252,15 +252,13 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
       nonuniqueKeys.push_back(body_P_cam_keys_.at(i));
     }
     // but we need to get the augumented hessian wrt the unique keys in key_
-    //TODO(Varun) SchurComplementAndRearrangeBlocks is causing the multiply defined symbol error
-    // SymmetricBlockMatrix augmentedHessianUniqueKeys =
-    //     Base::Cameras::template SchurComplementAndRearrangeBlocks<3, DimBlock,
-    //                                                               DimPose>(
-    //         Fs, E, P, b, nonuniqueKeys, keys_);
+    SymmetricBlockMatrix augmentedHessianUniqueKeys =
+        Base::Cameras::template SchurComplementAndRearrangeBlocks<3, DimBlock,
+                                                                  DimPose>(
+            Fs, E, P, b, nonuniqueKeys, keys_);
 
-    // return std::make_shared<RegularHessianFactor<DimPose>>(
-    //     keys_, augmentedHessianUniqueKeys);
-    return nullptr;
+    return std::make_shared<RegularHessianFactor<DimPose>>(
+        keys_, augmentedHessianUniqueKeys);
   }
 
   /**
