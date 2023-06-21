@@ -35,7 +35,6 @@ using gtsam::LevenbergMarquardtOptimizer;
 using gtsam::LevenbergMarquardtParams;
 using gtsam::NonlinearFactorGraph;
 using gtsam::NonlinearOptimizerParams;
-using gtsam::ParameterMatrix;
 using gtsam::Pose2;
 using gtsam::Values;
 using gtsam::Vector;
@@ -85,10 +84,10 @@ TEST(BasisFactors, VectorEvaluationFactor) {
   NonlinearFactorGraph graph;
   graph.add(factor);
 
-  ParameterMatrix stateMatrix(M, N);
+  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(M, N);
 
   Values initial;
-  initial.insert<ParameterMatrix>(key, stateMatrix);
+  initial.insert<gtsam::Matrix>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
   parameters.setMaxIterations(20);
@@ -133,10 +132,10 @@ TEST(BasisFactors, VectorComponentFactor) {
   NonlinearFactorGraph graph;
   graph.add(factor);
 
-  ParameterMatrix stateMatrix(P, N);
+  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(P, N);
 
   Values initial;
-  initial.insert<ParameterMatrix>(key, stateMatrix);
+  initial.insert<gtsam::Matrix>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
   parameters.setMaxIterations(20);
@@ -158,10 +157,10 @@ TEST(BasisFactors, ManifoldEvaluationFactor) {
   NonlinearFactorGraph graph;
   graph.add(factor);
 
-  ParameterMatrix stateMatrix(3, N);
+  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(3, N);
 
   Values initial;
-  initial.insert<ParameterMatrix>(key, stateMatrix);
+  initial.insert<gtsam::Matrix>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
   parameters.setMaxIterations(20);
@@ -185,10 +184,10 @@ TEST(BasisFactors, VecDerivativePrior) {
   NonlinearFactorGraph graph;
   graph.add(vecDPrior);
 
-  ParameterMatrix stateMatrix(M, N);
+  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(M, N);
 
   Values initial;
-  initial.insert<ParameterMatrix>(key, stateMatrix);
+  initial.insert<gtsam::Matrix>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
   parameters.setMaxIterations(20);
@@ -212,8 +211,8 @@ TEST(BasisFactors, ComponentDerivativeFactor) {
   graph.add(controlDPrior);
 
   Values initial;
-  ParameterMatrix stateMatrix(M, N);
-  initial.insert<ParameterMatrix>(key, stateMatrix);
+  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(M, N);
+  initial.insert<gtsam::Matrix>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
   parameters.setMaxIterations(20);

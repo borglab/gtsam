@@ -25,7 +25,6 @@ namespace gtsam {
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/NavState.h>
-#include <gtsam/basis/ParameterMatrix.h>
 
 #include <gtsam/linear/VectorValues.h>
 
@@ -96,7 +95,6 @@ class Values {
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert(size_t j, const gtsam::NavState& nav_state);
   void insert(size_t j, double c);
-  void insert(size_t j, const gtsam::ParameterMatrix& X);
 
   template <T = {gtsam::Point2, gtsam::Point3}>
   void insert(size_t j, const T& val);
@@ -130,7 +128,6 @@ class Values {
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
   void update(size_t j, double c);
-  void update(size_t j, const gtsam::ParameterMatrix& X);
 
   void insert_or_assign(size_t j, const gtsam::Point2& point2);
   void insert_or_assign(size_t j, const gtsam::Point3& point3);
@@ -171,7 +168,6 @@ class Values {
   void insert_or_assign(size_t j, Vector vector);
   void insert_or_assign(size_t j, Matrix matrix);
   void insert_or_assign(size_t j, double c);
-  void insert_or_assign(size_t j, const gtsam::ParameterMatrix& X);
 
   template <T = {gtsam::Point2,
                  gtsam::Point3,
@@ -201,8 +197,7 @@ class Values {
                  gtsam::NavState,
                  Vector,
                  Matrix,
-                 double,
-                 gtsam::ParameterMatrix}>
+                 double}>
   T at(size_t j);
 };
 

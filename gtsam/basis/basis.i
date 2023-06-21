@@ -46,17 +46,6 @@ class Chebyshev2 {
   static Matrix DifferentiationMatrix(size_t N, double a, double b);
 };
 
-#include <gtsam/basis/ParameterMatrix.h>
-
-class ParameterMatrix {
-  ParameterMatrix(const size_t M, const size_t N);
-  ParameterMatrix(const Matrix& matrix);
-
-  Matrix matrix() const;
-
-  void print(const string& s = "") const;
-};
-
 #include <gtsam/basis/BasisFactors.h>
 
 template <BASIS = {gtsam::Chebyshev2, gtsam::Chebyshev1Basis,

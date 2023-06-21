@@ -187,10 +187,9 @@ TEST(Basis, VecDerivativeFunctor) {
   double h = 2 * M_PI / 16;
   Vector2 dotShape(0.5556, -0.8315);  // at h/2
   DotShape dotShapeFunction(2, N, h / 2);
-  Matrix23 theta_mat = (Matrix32() << 0, 0, 0.7071, 0.7071, 0.7071, -0.7071)
-                           .finished()
-                           .transpose();
-  ParameterMatrix theta(theta_mat);
+  Matrix theta = (Matrix32() << 0, 0, 0.7071, 0.7071, 0.7071, -0.7071)
+                     .finished()
+                     .transpose();
   EXPECT(assert_equal(Vector(dotShape), dotShapeFunction(theta), 1e-4));
 }
 

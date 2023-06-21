@@ -25,7 +25,6 @@ namespace gtsam {
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/NavState.h>
-#include <gtsam/basis/ParameterMatrix.h>
 
 #include <gtsam/nonlinear/GraphvizFormatting.h>
 class GraphvizFormatting : gtsam::DotWriter {
