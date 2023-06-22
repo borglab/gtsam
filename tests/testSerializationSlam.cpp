@@ -52,8 +52,6 @@
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/base/std_optional_serialization.h>
 
-#ifdef GTSAM_USE_BOOST_FEATURES
-
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/export.hpp>
 
@@ -675,8 +673,6 @@ TEST(SubgraphSolver, Solves) {
     EXPECT(assert_equal(values_x2.vector(ordering), solveT_x));
   }
 }
-
-#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
