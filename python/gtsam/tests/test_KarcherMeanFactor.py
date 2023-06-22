@@ -13,14 +13,14 @@ Author: Frank Dellaert
 
 import unittest
 
-import gtsam
 import numpy as np
-from gtsam import Rot3
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
+from gtsam import Rot3
 
 KEY = 0
 MODEL = gtsam.noiseModel.Unit.Create(3)
-
 
 # Rot3 version
 R = Rot3.Expmap(np.array([0.1, 0, 0]))
@@ -29,8 +29,10 @@ R = Rot3.Expmap(np.array([0.1, 0, 0]))
 class TestKarcherMean(GtsamTestCase):
 
     def test_find(self):
-        # Check that optimizing for Karcher mean (which minimizes Between distance)
-        # gets correct result.
+        """
+        Check that optimizing for Karcher mean (which minimizes Between distance)
+        gets correct result.
+        """
         rotations = [R, R.inverse()]
         expected = Rot3()
         actual = gtsam.FindKarcherMean(rotations)
@@ -69,8 +71,7 @@ class TestKarcherMean(GtsamTestCase):
         result = gtsam.GaussNewtonOptimizer(graph, initial).optimize()
         actual = gtsam.FindKarcherMean([result.atRot3(1), result.atRot3(2)])
         self.gtsamAssertEquals(expected, actual)
-        self.gtsamAssertEquals(
-            R12, result.atRot3(1).between(result.atRot3(2)))
+        self.gtsamAssertEquals(R12, result.atRot3(1).between(result.atRot3(2)))
 
 
 if __name__ == "__main__":

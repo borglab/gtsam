@@ -12,17 +12,18 @@ Author: John Lambert
 import unittest
 from typing import List, Optional
 
-import gtsam
 import numpy as np
-from gtsam import Point3, Pose3, Rot3, Similarity3
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
+from gtsam import Point3, Pose3, Rot3, Similarity3
 
 
 class TestSim3(GtsamTestCase):
     """Test selected Sim3 methods."""
 
     def test_align_poses_along_straight_line(self):
-        """Test Align Pose3Pairs method.
+        """Test Pose3 Align method.
 
         Scenario:
            3 object poses
@@ -57,7 +58,7 @@ class TestSim3(GtsamTestCase):
             self.gtsamAssertEquals(wToi, wSe.transformFrom(eToi))
 
     def test_align_poses_along_straight_line_gauge(self):
-        """Test if Align Pose3Pairs method can account for gauge ambiguity.
+        """Test if Pose3 Align method can account for gauge ambiguity.
 
         Scenario:
            3 object poses
@@ -92,7 +93,7 @@ class TestSim3(GtsamTestCase):
             self.gtsamAssertEquals(wToi, wSe.transformFrom(eToi))
 
     def test_align_poses_scaled_squares(self):
-        """Test if Align Pose3Pairs method can account for gauge ambiguity.
+        """Test if Pose3 Align method can account for gauge ambiguity.
 
         Make sure a big and small square can be aligned.
         The u's represent a big square (10x10), and v's represents a small square (4x4).
