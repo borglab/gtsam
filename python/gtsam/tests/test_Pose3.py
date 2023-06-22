@@ -13,10 +13,10 @@ import math
 import unittest
 
 import numpy as np
+from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
-from gtsam import Point3, Pose3, Rot3, Point3Pairs
-from gtsam.utils.test_case import GtsamTestCase
+from gtsam import Point3, Pose3, Rot3
 
 
 def numerical_derivative_pose(pose, method, delta=1e-5):
@@ -223,7 +223,7 @@ class TestPose3(GtsamTestCase):
         sTt = Pose3(Rot3.Rodrigues(0, 0, -math.pi), Point3(2, 4, 0))
         transformed = sTt.transformTo(square)
 
-        st_pairs = Point3Pairs()
+        st_pairs = []
         for j in range(4):
             st_pairs.append((square[:,j], transformed[:,j]))
 

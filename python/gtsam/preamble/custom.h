@@ -10,3 +10,6 @@
  * Without this they will be automatically converted to a Python object, and all
  * mutations on Python side will not be reflected on C++.
  */
+
+// Added so that CustomFactor can pass the JacobianVector to the C++ side
+PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Matrix>); // JacobianVector
