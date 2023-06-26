@@ -288,8 +288,12 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
       std::make_shared<DecisionTreeFactor>(
           discreteConditionals->prune(maxNrLeaves));
 
+#ifdef GTSAM_DT_MERGING
   EXPECT_LONGS_EQUAL(maxNrLeaves + 2 /*2 zero leaves*/,
                      prunedDecisionTree->nrLeaves());
+#else
+  EXPECT_LONGS_EQUAL(8 /*full tree*/, prunedDecisionTree->nrLeaves());
+#endif
 
   auto original_discrete_conditionals = *(posterior->at(4)->asDiscrete());
 

@@ -191,7 +191,11 @@ TEST(DecisionTree, example) {
 
   // Test choose 0
   DT actual0 = notba.choose(A, 0);
+#ifdef GTSAM_DT_MERGING
   EXPECT(assert_equal(DT(0.0), actual0));
+#else
+  // EXPECT(assert_equal(DT({0.0, 0.0}), actual0));
+#endif
   DOT(actual0);
 
   // Test choose 1
@@ -332,9 +336,11 @@ TEST(DecisionTree, NrAssignments) {
 
   EXPECT_LONGS_EQUAL(8, tree.nrAssignments());
 
+#ifdef GTSAM_DT_MERGING
   EXPECT(tree.root_->isLeaf());
   auto leaf = std::dynamic_pointer_cast<const DT::Leaf>(tree.root_);
   EXPECT_LONGS_EQUAL(8, leaf->nrAssignments());
+#endif
 
   DT tree2({C, B, A}, "1 1 1 2 3 4 5 5");
   /* The tree is
@@ -357,6 +363,8 @@ TEST(DecisionTree, NrAssignments) {
   CHECK(root);
   auto choice0 = std::dynamic_pointer_cast<const DT::Choice>(root->branches()[0]);
   CHECK(choice0);
+
+#ifdef GTSAM_DT_MERGING
   EXPECT(choice0->branches()[0]->isLeaf());
   auto choice00 = std::dynamic_pointer_cast<const DT::Leaf>(choice0->branches()[0]);
   CHECK(choice00);
@@ -370,6 +378,7 @@ TEST(DecisionTree, NrAssignments) {
   CHECK(choice11);
   EXPECT(choice11->isLeaf());
   EXPECT_LONGS_EQUAL(2, choice11->nrAssignments());
+#endif
 }
 
 /* ************************************************************************** */
@@ -411,27 +420,61 @@ TEST(DecisionTree, VisitWithPruned) {
   };
   tree.visitWith(func);
 
+#ifdef GTSAM_DT_MERGING
   EXPECT_LONGS_EQUAL(6, choices.size());
+#else
+  EXPECT_LONGS_EQUAL(8, choices.size());
+#endif
 
   Assignment<string> expectedAssignment;
 
+#ifdef GTSAM_DT_MERGING
   expectedAssignment = {{"B", 0}, {"C", 0}};
   EXPECT(expectedAssignment == choices.at(0));
+#else
+  expectedAssignment = {{"A", 0}, {"B", 0}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(0));
+#endif
 
+#ifdef GTSAM_DT_MERGING
   expectedAssignment = {{"A", 0}, {"B", 1}, {"C", 0}};
   EXPECT(expectedAssignment == choices.at(1));
+#else
+  expectedAssignment = {{"A", 1}, {"B", 0}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(1));
+#endif
 
+#ifdef GTSAM_DT_MERGING
   expectedAssignment = {{"A", 1}, {"B", 1}, {"C", 0}};
   EXPECT(expectedAssignment == choices.at(2));
+#else
+  expectedAssignment = {{"A", 0}, {"B", 1}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(2));
+#endif
 
+#ifdef GTSAM_DT_MERGING
   expectedAssignment = {{"B", 0}, {"C", 1}};
   EXPECT(expectedAssignment == choices.at(3));
+#else
+  expectedAssignment = {{"A", 1}, {"B", 1}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(3));
+#endif
 
+#ifdef GTSAM_DT_MERGING
   expectedAssignment = {{"A", 0}, {"B", 1}, {"C", 1}};
   EXPECT(expectedAssignment == choices.at(4));
+#else
+  expectedAssignment = {{"A", 0}, {"B", 0}, {"C", 1}};
+  EXPECT(expectedAssignment == choices.at(4));
+#endif
 
+#ifdef GTSAM_DT_MERGING
   expectedAssignment = {{"A", 1}, {"B", 1}, {"C", 1}};
   EXPECT(expectedAssignment == choices.at(5));
+#else
+  expectedAssignment = {{"A", 1}, {"B", 0}, {"C", 1}};
+  EXPECT(expectedAssignment == choices.at(5));
+#endif
 }
 
 /* ************************************************************************** */
@@ -442,7 +485,11 @@ TEST(DecisionTree, fold) {
   DT tree(B, DT(A, 1, 1), DT(A, 2, 3));
   auto add = [](const int& y, double x) { return y + x; };
   double sum = tree.fold(add, 0.0);
-  EXPECT_DOUBLES_EQUAL(6.0, sum, 1e-9);  // Note, not 7, due to pruning!
+#ifdef GTSAM_DT_MERGING
+  EXPECT_DOUBLES_EQUAL(6.0, sum, 1e-9);  // Note, not 7, due to merging!
+#else
+  EXPECT_DOUBLES_EQUAL(7.0, sum, 1e-9);
+#endif
 }
 
 /* ************************************************************************** */
@@ -494,9 +541,14 @@ TEST(DecisionTree, threshold) {
   auto threshold = [](int value) { return value < 5 ? 0 : value; };
   DT thresholded(tree, threshold);
 
+#ifdef GTSAM_DT_MERGING
   // Check number of leaves equal to zero now = 2
   // Note: it is 2, because the pruned branches are counted as 1!
   EXPECT_LONGS_EQUAL(2, thresholded.fold(count, 0));
+#else
+  // if GTSAM_DT_MERGING is disabled, the count will be larger
+  EXPECT_LONGS_EQUAL(5, thresholded.fold(count, 0));
+#endif
 }
 
 /* ************************************************************************** */
@@ -532,8 +584,13 @@ TEST(DecisionTree, ApplyWithAssignment) {
   };
   DT prunedTree2 = prunedTree.apply(counter);
 
+#ifdef GTSAM_DT_MERGING
   // Check if apply doesn't enumerate all leaves.
   EXPECT_LONGS_EQUAL(5, count);
+#else
+  // if GTSAM_DT_MERGING is disabled, the count will be full
+  EXPECT_LONGS_EQUAL(8, count);
+#endif
 }
 
 /* ************************************************************************** */

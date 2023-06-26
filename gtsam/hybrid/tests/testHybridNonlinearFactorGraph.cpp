@@ -481,6 +481,7 @@ TEST(HybridFactorGraph, Printing) {
   const auto [hybridBayesNet, remainingFactorGraph] =
       linearizedFactorGraph.eliminatePartialSequential(ordering);
 
+#ifdef GTSAM_DT_MERGING
   string expected_hybridFactorGraph = R"(
 size: 7
 factor 0: 
@@ -562,6 +563,92 @@ factor 6:  P( m1 | m0 ):
  1 1 Leaf [1] 0.4
 
 )";
+#else
+string expected_hybridFactorGraph = R"(
+size: 7
+factor 0: 
+  A[x0] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+factor 1: 
+Hybrid [x0 x1; m0]{
+ Choice(m0) 
+ 0 Leaf [1]:
+  A[x0] = [
+	-1
+]
+  A[x1] = [
+	1
+]
+  b = [ -1 ]
+  No noise model
+
+ 1 Leaf [1]:
+  A[x0] = [
+	-1
+]
+  A[x1] = [
+	1
+]
+  b = [ -0 ]
+  No noise model
+
+}
+factor 2: 
+Hybrid [x1 x2; m1]{
+ Choice(m1) 
+ 0 Leaf [1]:
+  A[x1] = [
+	-1
+]
+  A[x2] = [
+	1
+]
+  b = [ -1 ]
+  No noise model
+
+ 1 Leaf [1]:
+  A[x1] = [
+	-1
+]
+  A[x2] = [
+	1
+]
+  b = [ -0 ]
+  No noise model
+
+}
+factor 3: 
+  A[x1] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+factor 4: 
+  A[x2] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+factor 5:  P( m0 ):
+ Choice(m0) 
+ 0 Leaf [1] 0.5
+ 1 Leaf [1] 0.5
+
+factor 6:  P( m1 | m0 ):
+ Choice(m1) 
+ 0 Choice(m0) 
+ 0 0 Leaf [1]0.33333333
+ 0 1 Leaf [1] 0.6
+ 1 Choice(m0) 
+ 1 0 Leaf [1]0.66666667
+ 1 1 Leaf [1] 0.4
+
+)";
+#endif
+
   EXPECT(assert_print_equal(expected_hybridFactorGraph, linearizedFactorGraph));
 
   // Expected output for hybridBayesNet.
