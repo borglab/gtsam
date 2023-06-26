@@ -199,11 +199,26 @@ namespace gtsam {
 #endif
     }
 
-    /// If all branches of a choice node f are the same, just return a branch.
+    /**
+     * @brief Merge branches with equal leaf values for every choice node in a
+     * decision tree. If all branches are the same (i.e. have the same leaf
+     * value), replace the choice node with the equivalent leaf node.
+     *
+     * This function applies the branch merging (if enabled) recursively on the
+     * decision tree represented by the root node passed in as the argument. It
+     * recurses to the leaf nodes and merges branches with equal leaf values in
+     * a bottom-up fashion.
+     *
+     * Thus, if all branches of a choice node `f` are the same,
+     * just return a single branch at each recursion step.
+     *
+     * @param node The root node of the decision tree.
+     * @return NodePtr
+     */
     static NodePtr Unique(const NodePtr& node) {
       if (auto choice = std::dynamic_pointer_cast<const Choice>(node)) {
         // Choice node, we recurse!
-        // Make non-const copy
+        // Make non-const copy so we can update
         auto f = std::make_shared<Choice>(choice->label(), choice->nrChoices());
 
         // Iterate over all the branches
