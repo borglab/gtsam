@@ -10,3 +10,6 @@
  * with `PYBIND11_MAKE_OPAQUE` this allows the types to be modified with Python,
  * and saves one copy operation.
  */
+
+// Added so that CustomFactor can pass the JacobianVector to the C++ side
+py::bind_vector<std::vector<gtsam::Matrix> >(m_, "JacobianVector");

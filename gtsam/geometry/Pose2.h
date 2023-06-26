@@ -258,10 +258,19 @@ public:
   inline const Rot2&   r() const { return r_; }
 
   /// translation
-  inline const Point2& translation() const { return t_; }
+  inline const Point2& translation(OptionalJacobian<2, 3> Hself={}) const {
+    if (Hself) {
+      *Hself = Matrix::Zero(2, 3);
+      (*Hself).block<2, 2>(0, 0) = rotation().matrix();
+    }
+    return t_;
+  }
 
   /// rotation
-  inline const Rot2&   rotation() const { return r_; }
+  inline const Rot2&   rotation(OptionalJacobian<1, 3> Hself={}) const {
+    if (Hself) *Hself << 0, 0, 1;
+    return r_;
+  }
 
   //// return transformation matrix
   GTSAM_EXPORT Matrix3 matrix() const;

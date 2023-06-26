@@ -21,24 +21,15 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-            #TODO This build fails, need to understand why.
-            # windows-2016-cl,
             windows-2019-cl,
           ]
 
         build_type: [
             Debug,
-            #TODO(Varun) The release build takes over 2.5 hours, need to figure out why.
-            # Release
+            Release
           ]
         build_unstable: [ON]
         include:
-          #TODO This build fails, need to understand why.
-          # - name: windows-2016-cl
-          #   os: windows-2016
-          #   compiler: cl
-          #   platform: 32
-
           - name: windows-2019-cl
             os: windows-2019
             compiler: cl
@@ -125,4 +116,3 @@ jobs:
 
           # Run GTSAM_UNSTABLE tests
           #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base_unstable
-          
