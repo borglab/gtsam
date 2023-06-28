@@ -119,6 +119,8 @@ namespace gtsam {
 
     static double safe_div(const double& a, const double& b);
 
+    std::map<Key, size_t> cardinalities() const { return cardinalities_; }
+
     size_t cardinality(Key j) const { return cardinalities_.at(j); }
 
     /// divide by factor f (safely)
