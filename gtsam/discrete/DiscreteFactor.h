@@ -130,7 +130,6 @@ class GTSAM_EXPORT DiscreteFactor: public Factor {
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(ADT);
   }
 #endif
 };
