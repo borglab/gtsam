@@ -20,7 +20,6 @@
 #include <gtsam/discrete/DiscreteKey.h>  // make sure we have traits
 #include <gtsam/discrete/DiscreteValues.h>
 // headers first to make sure no missing headers
-//#define GTSAM_DT_NO_PRUNING
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DecisionTree-inl.h>  // for convert only
 #define DISABLE_TIMING
@@ -179,7 +178,11 @@ TEST(ADT, joint) {
   dot(joint, "Asia-ASTLBEX");
   joint = apply(joint, pD, &mul);
   dot(joint, "Asia-ASTLBEXD");
+#ifdef GTSAM_DT_MERGING
   EXPECT_LONGS_EQUAL(346, muls);
+#else
+  EXPECT_LONGS_EQUAL(508, muls);
+#endif
   gttoc_(asiaJoint);
   tictoc_getNode(asiaJointNode, asiaJoint);
   elapsed = asiaJointNode->secs() + asiaJointNode->wall();
@@ -240,7 +243,11 @@ TEST(ADT, inference) {
   dot(joint, "Joint-Product-ASTLBEX");
   joint = apply(joint, pD, &mul);
   dot(joint, "Joint-Product-ASTLBEXD");
+#ifdef GTSAM_DT_MERGING
   EXPECT_LONGS_EQUAL(370, (long)muls);  // different ordering
+#else
+  EXPECT_LONGS_EQUAL(508, (long)muls);  // different ordering
+#endif
   gttoc_(asiaProd);
   tictoc_getNode(asiaProdNode, asiaProd);
   elapsed = asiaProdNode->secs() + asiaProdNode->wall();
@@ -258,7 +265,11 @@ TEST(ADT, inference) {
   dot(marginal, "Joint-Sum-ADBLE");
   marginal = marginal.combine(E, &add_);
   dot(marginal, "Joint-Sum-ADBL");
+#ifdef GTSAM_DT_MERGING
   EXPECT_LONGS_EQUAL(161, (long)adds);
+#else
+  EXPECT_LONGS_EQUAL(240, (long)adds);
+#endif
   gttoc_(asiaSum);
   tictoc_getNode(asiaSumNode, asiaSum);
   elapsed = asiaSumNode->secs() + asiaSumNode->wall();
@@ -296,7 +307,11 @@ TEST(ADT, factor_graph) {
   fg = apply(fg, pX, &mul);
   fg = apply(fg, pD, &mul);
   dot(fg, "FactorGraph");
+#ifdef GTSAM_DT_MERGING
   EXPECT_LONGS_EQUAL(158, (long)muls);
+#else
+  EXPECT_LONGS_EQUAL(188, (long)muls);
+#endif
   gttoc_(asiaFG);
   tictoc_getNode(asiaFGNode, asiaFG);
   elapsed = asiaFGNode->secs() + asiaFGNode->wall();
@@ -315,7 +330,11 @@ TEST(ADT, factor_graph) {
   dot(fg, "Marginalized-3E");
   fg = fg.combine(L, &add_);
   dot(fg, "Marginalized-2L");
+#ifdef GTSAM_DT_MERGING
   LONGS_EQUAL(49, adds);
+#else
+  LONGS_EQUAL(62, adds);
+#endif
   gttoc_(marg);
   tictoc_getNode(margNode, marg);
   elapsed = margNode->secs() + margNode->wall();

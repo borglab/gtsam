@@ -307,7 +307,7 @@ namespace gtsam {
     // Get the probabilities in the decision tree so we can threshold.
     std::vector<double> probabilities;
     this->visitLeaf([&](const Leaf& leaf) {
-      size_t nrAssignments = leaf.nrAssignments();
+      const size_t nrAssignments = leaf.nrAssignments();
       double prob = leaf.constant();
       probabilities.insert(probabilities.end(), nrAssignments, prob);
     });

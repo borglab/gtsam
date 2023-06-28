@@ -93,7 +93,8 @@ namespace gtsam {
     /// print
     void print(const std::string& s, const LabelFormatter& labelFormatter,
                const ValueFormatter& valueFormatter) const override {
-      std::cout << s << " Leaf " << valueFormatter(constant_) << std::endl;
+      std::cout << s << " Leaf [" << nrAssignments() << "]"
+                << valueFormatter(constant_) << std::endl;
     }
 
     /** Write graphviz format to stream `os`. */
@@ -136,7 +137,9 @@ namespace gtsam {
     // Applying binary operator to two leaves results in a leaf
     NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const override {
       // fL op gL
-      NodePtr h(new Leaf(op(fL.constant_, constant_), nrAssignments_));
+      // TODO(Varun) nrAssignments setting is not correct.
+      // Depending on f and g, the nrAssignments can be different. This is a bug!
+      NodePtr h(new Leaf(op(fL.constant_, constant_), fL.nrAssignments()));
       return h;
     }
 
@@ -198,48 +201,57 @@ namespace gtsam {
 #endif
     }
 
-    /// If all branches of a choice node f are the same, just return a branch.
-    static NodePtr Unique(const ChoicePtr& f) {
-#ifndef GTSAM_DT_NO_PRUNING
-      // If all the branches are the same, we can merge them into one
-      if (f->allSame_) {
-        assert(f->branches().size() > 0);
-        NodePtr f0 = f->branches_[0];
-
-        size_t nrAssignments = 0;
-        for(auto branch: f->branches()) {
-          if (auto leaf = std::dynamic_pointer_cast<const Leaf>(branch)) {
-            nrAssignments += leaf->nrAssignments();
-          }
-        }
-        NodePtr newLeaf(
-            new Leaf(std::dynamic_pointer_cast<const Leaf>(f0)->constant(),
-                     nrAssignments));
-        return newLeaf;
-
-      } else
-      // Else we recurse
-#endif
-      {
-
-        // Make non-const copy
-        auto ff = std::make_shared<Choice>(f->label(), f->nrChoices());
+    /**
+     * @brief Merge branches with equal leaf values for every choice node in a
+     * decision tree. If all branches are the same (i.e. have the same leaf
+     * value), replace the choice node with the equivalent leaf node.
+     *
+     * This function applies the branch merging (if enabled) recursively on the
+     * decision tree represented by the root node passed in as the argument. It
+     * recurses to the leaf nodes and merges branches with equal leaf values in
+     * a bottom-up fashion.
+     *
+     * Thus, if all branches of a choice node `f` are the same,
+     * just return a single branch at each recursion step.
+     *
+     * @param node The root node of the decision tree.
+     * @return NodePtr
+     */
+    static NodePtr Unique(const NodePtr& node) {
+      if (auto choice = std::dynamic_pointer_cast<const Choice>(node)) {
+        // Choice node, we recurse!
+        // Make non-const copy so we can update
+        auto f = std::make_shared<Choice>(choice->label(), choice->nrChoices());
 
         // Iterate over all the branches
-        for (size_t i = 0; i < f->nrChoices(); i++) {
-          auto branch = f->branches_[i];
-          if (auto leaf = std::dynamic_pointer_cast<const Leaf>(branch)) {
-            // Leaf node, simply assign
-            ff->push_back(branch);
-
-          } else if (auto choice =
-                         std::dynamic_pointer_cast<const Choice>(branch)) {
-            // Choice node, we recurse
-            ff->push_back(Unique(choice));
-          }
+        for (size_t i = 0; i < choice->nrChoices(); i++) {
+          auto branch = choice->branches_[i];
+          f->push_back(Unique(branch));
         }
 
-        return ff;
+#ifdef GTSAM_DT_MERGING
+        // If all the branches are the same, we can merge them into one
+        if (f->allSame_) {
+          assert(f->branches().size() > 0);
+          NodePtr f0 = f->branches_[0];
+
+          // Compute total number of assignments
+          size_t nrAssignments = 0;
+          for (auto branch : f->branches()) {
+            if (auto leaf = std::dynamic_pointer_cast<const Leaf>(branch)) {
+              nrAssignments += leaf->nrAssignments();
+            }
+          }
+          NodePtr newLeaf(
+              new Leaf(std::dynamic_pointer_cast<const Leaf>(f0)->constant(),
+                       nrAssignments));
+          return newLeaf;
+        }
+#endif
+        return f;
+      } else {
+        // Leaf node, return as is
+        return node;
       }
     }
 
@@ -486,13 +498,11 @@ namespace gtsam {
   // DecisionTree
   /****************************************************************************/
   template<typename L, typename Y>
-  DecisionTree<L, Y>::DecisionTree() {
-  }
+  DecisionTree<L, Y>::DecisionTree() {}
 
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const NodePtr& root) :
-    root_(root) {
-  }
+    root_(root) {}
 
   /****************************************************************************/
   template<typename L, typename Y>
@@ -608,7 +618,8 @@ namespace gtsam {
       auto choiceOnLabel = std::make_shared<Choice>(label, end - begin);
       for (Iterator it = begin; it != end; it++)
         choiceOnLabel->push_back(it->root_);
-      return Choice::Unique(choiceOnLabel);
+      // If no reordering, no need to call Choice::Unique
+      return choiceOnLabel;
     } else {
       // Set up a new choice on the highest label
       auto choiceOnHighestLabel =
@@ -737,7 +748,7 @@ namespace gtsam {
     for (auto&& branch : choice->branches()) {
       functions.emplace_back(convertFrom<M, X>(branch, L_of_M, Y_of_X));
     }
-    return LY::compose(functions.begin(), functions.end(), newLabel);
+    return Choice::Unique(LY::compose(functions.begin(), functions.end(), newLabel));
   }
 
   /****************************************************************************/

@@ -481,6 +481,7 @@ TEST(HybridFactorGraph, Printing) {
   const auto [hybridBayesNet, remainingFactorGraph] =
       linearizedFactorGraph.eliminatePartialSequential(ordering);
 
+#ifdef GTSAM_DT_MERGING
   string expected_hybridFactorGraph = R"(
 size: 7
 factor 0: 
@@ -492,7 +493,7 @@ factor 0:
 factor 1: 
 Hybrid [x0 x1; m0]{
  Choice(m0) 
- 0 Leaf :
+ 0 Leaf [1]:
   A[x0] = [
 	-1
 ]
@@ -502,7 +503,7 @@ Hybrid [x0 x1; m0]{
   b = [ -1 ]
   No noise model
 
- 1 Leaf :
+ 1 Leaf [1]:
   A[x0] = [
 	-1
 ]
@@ -516,7 +517,7 @@ Hybrid [x0 x1; m0]{
 factor 2: 
 Hybrid [x1 x2; m1]{
  Choice(m1) 
- 0 Leaf :
+ 0 Leaf [1]:
   A[x1] = [
 	-1
 ]
@@ -526,7 +527,7 @@ Hybrid [x1 x2; m1]{
   b = [ -1 ]
   No noise model
 
- 1 Leaf :
+ 1 Leaf [1]:
   A[x1] = [
 	-1
 ]
@@ -550,18 +551,104 @@ factor 4:
   b = [ -10 ]
   No noise model
 factor 5:  P( m0 ):
- Leaf  0.5
+ Leaf [2] 0.5
 
 factor 6:  P( m1 | m0 ):
  Choice(m1) 
  0 Choice(m0) 
- 0 0 Leaf 0.33333333
- 0 1 Leaf  0.6
+ 0 0 Leaf [1]0.33333333
+ 0 1 Leaf [1] 0.6
  1 Choice(m0) 
- 1 0 Leaf 0.66666667
- 1 1 Leaf  0.4
+ 1 0 Leaf [1]0.66666667
+ 1 1 Leaf [1] 0.4
 
 )";
+#else
+string expected_hybridFactorGraph = R"(
+size: 7
+factor 0: 
+  A[x0] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+factor 1: 
+Hybrid [x0 x1; m0]{
+ Choice(m0) 
+ 0 Leaf [1]:
+  A[x0] = [
+	-1
+]
+  A[x1] = [
+	1
+]
+  b = [ -1 ]
+  No noise model
+
+ 1 Leaf [1]:
+  A[x0] = [
+	-1
+]
+  A[x1] = [
+	1
+]
+  b = [ -0 ]
+  No noise model
+
+}
+factor 2: 
+Hybrid [x1 x2; m1]{
+ Choice(m1) 
+ 0 Leaf [1]:
+  A[x1] = [
+	-1
+]
+  A[x2] = [
+	1
+]
+  b = [ -1 ]
+  No noise model
+
+ 1 Leaf [1]:
+  A[x1] = [
+	-1
+]
+  A[x2] = [
+	1
+]
+  b = [ -0 ]
+  No noise model
+
+}
+factor 3: 
+  A[x1] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+factor 4: 
+  A[x2] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+factor 5:  P( m0 ):
+ Choice(m0) 
+ 0 Leaf [1] 0.5
+ 1 Leaf [1] 0.5
+
+factor 6:  P( m1 | m0 ):
+ Choice(m1) 
+ 0 Choice(m0) 
+ 0 0 Leaf [1]0.33333333
+ 0 1 Leaf [1] 0.6
+ 1 Choice(m0) 
+ 1 0 Leaf [1]0.66666667
+ 1 1 Leaf [1] 0.4
+
+)";
+#endif
+
   EXPECT(assert_print_equal(expected_hybridFactorGraph, linearizedFactorGraph));
 
   // Expected output for hybridBayesNet.
@@ -570,13 +657,13 @@ size: 3
 conditional 0: Hybrid  P( x0 | x1 m0)
  Discrete Keys = (m0, 2), 
  Choice(m0) 
- 0 Leaf  p(x0 | x1)
+ 0 Leaf [1] p(x0 | x1)
   R = [ 10.0499 ]
   S[x1] = [ -0.0995037 ]
   d = [ -9.85087 ]
   No noise model
 
- 1 Leaf  p(x0 | x1)
+ 1 Leaf [1] p(x0 | x1)
   R = [ 10.0499 ]
   S[x1] = [ -0.0995037 ]
   d = [ -9.95037 ]
@@ -586,26 +673,26 @@ conditional 1: Hybrid  P( x1 | x2 m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
  Choice(m1) 
  0 Choice(m0) 
- 0 0 Leaf  p(x1 | x2)
+ 0 0 Leaf [1] p(x1 | x2)
   R = [ 10.099 ]
   S[x2] = [ -0.0990196 ]
   d = [ -9.99901 ]
   No noise model
 
- 0 1 Leaf  p(x1 | x2)
+ 0 1 Leaf [1] p(x1 | x2)
   R = [ 10.099 ]
   S[x2] = [ -0.0990196 ]
   d = [ -9.90098 ]
   No noise model
 
  1 Choice(m0) 
- 1 0 Leaf  p(x1 | x2)
+ 1 0 Leaf [1] p(x1 | x2)
   R = [ 10.099 ]
   S[x2] = [ -0.0990196 ]
   d = [ -10.098 ]
   No noise model
 
- 1 1 Leaf  p(x1 | x2)
+ 1 1 Leaf [1] p(x1 | x2)
   R = [ 10.099 ]
   S[x2] = [ -0.0990196 ]
   d = [ -10 ]
@@ -615,14 +702,14 @@ conditional 2: Hybrid  P( x2 | m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
  Choice(m1) 
  0 Choice(m0) 
- 0 0 Leaf  p(x2)
+ 0 0 Leaf [1] p(x2)
   R = [ 10.0494 ]
   d = [ -10.1489 ]
   mean: 1 elements
   x2: -1.0099
   No noise model
 
- 0 1 Leaf  p(x2)
+ 0 1 Leaf [1] p(x2)
   R = [ 10.0494 ]
   d = [ -10.1479 ]
   mean: 1 elements
@@ -630,14 +717,14 @@ conditional 2: Hybrid  P( x2 | m0 m1)
   No noise model
 
  1 Choice(m0) 
- 1 0 Leaf  p(x2)
+ 1 0 Leaf [1] p(x2)
   R = [ 10.0494 ]
   d = [ -10.0504 ]
   mean: 1 elements
   x2: -1.0001
   No noise model
 
- 1 1 Leaf  p(x2)
+ 1 1 Leaf [1] p(x2)
   R = [ 10.0494 ]
   d = [ -10.0494 ]
   mean: 1 elements
