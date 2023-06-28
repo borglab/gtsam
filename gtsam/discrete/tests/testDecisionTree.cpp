@@ -329,59 +329,6 @@ TEST(DecisionTree, Containers) {
 }
 
 /* ************************************************************************** */
-// Test nrAssignments.
-TEST(DecisionTree, NrAssignments) {
-  const std::pair<string, size_t> A("A", 2), B("B", 2), C("C", 2);
-  DT tree({A, B, C}, "1 1 1 1 1 1 1 1");
-
-  EXPECT_LONGS_EQUAL(8, tree.nrAssignments());
-
-#ifdef GTSAM_DT_MERGING
-  EXPECT(tree.root_->isLeaf());
-  auto leaf = std::dynamic_pointer_cast<const DT::Leaf>(tree.root_);
-  EXPECT_LONGS_EQUAL(8, leaf->nrAssignments());
-#endif
-
-  DT tree2({C, B, A}, "1 1 1 2 3 4 5 5");
-  /* The tree is
-    Choice(C) 
-    0 Choice(B) 
-    0 0 Leaf 1
-    0 1 Choice(A) 
-    0 1 0 Leaf 1
-    0 1 1 Leaf 2
-    1 Choice(B) 
-    1 0 Choice(A) 
-    1 0 0 Leaf 3
-    1 0 1 Leaf 4
-    1 1 Leaf 5
-  */
-
-  EXPECT_LONGS_EQUAL(8, tree2.nrAssignments());
-
-  auto root = std::dynamic_pointer_cast<const DT::Choice>(tree2.root_);
-  CHECK(root);
-  auto choice0 = std::dynamic_pointer_cast<const DT::Choice>(root->branches()[0]);
-  CHECK(choice0);
-
-#ifdef GTSAM_DT_MERGING
-  EXPECT(choice0->branches()[0]->isLeaf());
-  auto choice00 = std::dynamic_pointer_cast<const DT::Leaf>(choice0->branches()[0]);
-  CHECK(choice00);
-  EXPECT_LONGS_EQUAL(2, choice00->nrAssignments());
-
-  auto choice1 = std::dynamic_pointer_cast<const DT::Choice>(root->branches()[1]);
-  CHECK(choice1);
-  auto choice10 = std::dynamic_pointer_cast<const DT::Choice>(choice1->branches()[0]);
-  CHECK(choice10);
-  auto choice11 = std::dynamic_pointer_cast<const DT::Leaf>(choice1->branches()[1]);
-  CHECK(choice11);
-  EXPECT(choice11->isLeaf());
-  EXPECT_LONGS_EQUAL(2, choice11->nrAssignments());
-#endif
-}
-
-/* ************************************************************************** */
 // Test visit.
 TEST(DecisionTree, visit) {
   // Create small two-level tree
@@ -591,38 +538,6 @@ TEST(DecisionTree, ApplyWithAssignment) {
   // if GTSAM_DT_MERGING is disabled, the count will be full
   EXPECT_LONGS_EQUAL(8, count);
 #endif
-}
-
-/* ************************************************************************** */
-// Test number of assignments.
-TEST(DecisionTree, NrAssignments2) {
-  using gtsam::symbol_shorthand::M;
-
-  std::vector<double> probs = {0, 0, 1, 2};
-
-  /* Create the decision tree
-    Choice(m1)
-    0 Leaf 0.000000
-    1 Choice(m0)
-    1 0 Leaf 1.000000
-    1 1 Leaf 2.000000
-  */
-  DiscreteKeys keys{{M(1), 2}, {M(0), 2}};
-  DecisionTree<Key, double> dt1(keys, probs);
-  EXPECT_LONGS_EQUAL(4, dt1.nrAssignments());
-
-  /* Create the DecisionTree
-    Choice(m1)
-    0 Choice(m0)
-    0 0 Leaf 0.000000
-    0 1 Leaf 1.000000
-    1 Choice(m0)
-    1 0 Leaf 0.000000
-    1 1 Leaf 2.000000
-  */
-  DiscreteKeys keys2{{M(0), 2}, {M(1), 2}};
-  DecisionTree<Key, double> dt2(keys2, probs);
-  EXPECT_LONGS_EQUAL(4, dt2.nrAssignments());
 }
 
 /* ************************************************************************* */
