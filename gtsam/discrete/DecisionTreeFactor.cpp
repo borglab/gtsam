@@ -306,11 +306,12 @@ namespace gtsam {
 
     // Get the probabilities in the decision tree so we can threshold.
     std::vector<double> probabilities;
-    this->visitLeaf([&](const Leaf& leaf) {
-      const size_t nrAssignments = leaf.nrAssignments();
-      double prob = leaf.constant();
-      probabilities.insert(probabilities.end(), nrAssignments, prob);
-    });
+    // NOTE(Varun) this is potentially slow due to the cartesian product
+    auto allValues = DiscreteValues::CartesianProduct(this->discreteKeys());
+    for (auto&& val : allValues) {
+      double prob = (*this)(val);
+      probabilities.push_back(prob);
+    }
 
     // The number of probabilities can be lower than max_leaves
     if (probabilities.size() <= N) {
