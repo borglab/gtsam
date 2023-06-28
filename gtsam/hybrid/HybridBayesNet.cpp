@@ -154,9 +154,10 @@ void HybridBayesNet::updateDiscreteConditionals(
     if (conditional->isDiscrete()) {
       auto discrete = conditional->asDiscrete();
 
-      // Apply prunerFunc to the underlying AlgebraicDecisionTree
+      // Convert pointer from conditional to factor
       auto discreteTree =
           std::dynamic_pointer_cast<DecisionTreeFactor::ADT>(discrete);
+      // Apply prunerFunc to the underlying AlgebraicDecisionTree
       DecisionTreeFactor::ADT prunedDiscreteTree =
           discreteTree->apply(prunerFunc(prunedDiscreteProbs, *conditional));
 
