@@ -190,7 +190,8 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
 /* ************************************************************************ */
 // If any GaussianFactorGraph in the decision tree contains a nullptr, convert
 // that leaf to an empty GaussianFactorGraph. Needed since the DecisionTree will
-// otherwise create a GFG with a single (null) factor, which doesn't register as null.
+// otherwise create a GFG with a single (null) factor,
+// which doesn't register as null.
 GaussianFactorGraphTree removeEmpty(const GaussianFactorGraphTree &sum) {
   auto emptyGaussian = [](const GaussianFactorGraph &graph) {
     bool hasNull =
@@ -245,10 +246,6 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
   // Perform elimination!
   DecisionTree<Key, Result> eliminationResults(factorGraphTree, eliminate);
-
-#ifdef HYBRID_TIMING
-  tictoc_print_();
-#endif
 
   // Separate out decision tree into conditionals and remaining factors.
   const auto [conditionals, newFactors] = unzip(eliminationResults);
