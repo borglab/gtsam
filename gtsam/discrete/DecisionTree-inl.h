@@ -137,7 +137,9 @@ namespace gtsam {
     // Applying binary operator to two leaves results in a leaf
     NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const override {
       // fL op gL
-      NodePtr h(new Leaf(op(fL.constant_, constant_), nrAssignments_));
+      // TODO(Varun) nrAssignments setting is not correct.
+      // Depending on f and g, the nrAssignments can be different. This is a bug!
+      NodePtr h(new Leaf(op(fL.constant_, constant_), fL.nrAssignments()));
       return h;
     }
 
@@ -496,13 +498,11 @@ namespace gtsam {
   // DecisionTree
   /****************************************************************************/
   template<typename L, typename Y>
-  DecisionTree<L, Y>::DecisionTree() {
-  }
+  DecisionTree<L, Y>::DecisionTree() {}
 
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const NodePtr& root) :
-    root_(root) {
-  }
+    root_(root) {}
 
   /****************************************************************************/
   template<typename L, typename Y>
