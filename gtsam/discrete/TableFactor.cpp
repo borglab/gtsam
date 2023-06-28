@@ -13,11 +13,12 @@
  * @file TableFactor.cpp
  * @brief discrete factor
  * @date May 4, 2023
- * @author Yoonwoo Kim
+ * @author Yoonwoo Kim, Varun Agrawal
  */
 
 #include <gtsam/base/FastSet.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/TableFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 
@@ -55,6 +56,10 @@ TableFactor::TableFactor(const DiscreteKeys& dkeys,
   sorted_dkeys_ = discreteKeys();
   sort(sorted_dkeys_.begin(), sorted_dkeys_.end());
 }
+
+/* ************************************************************************ */
+TableFactor::TableFactor(const DiscreteConditional& c)
+    : TableFactor(c.discreteKeys(), c.probabilities()) {}
 
 /* ************************************************************************ */
 Eigen::SparseVector<double> TableFactor::Convert(

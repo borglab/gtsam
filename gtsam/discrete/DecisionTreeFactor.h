@@ -181,6 +181,9 @@ namespace gtsam {
     /// Enumerate all values into a map from values to double.
     std::vector<std::pair<DiscreteValues, double>> enumerate() const;
 
+    /// Get all the probabilities in order of assignment values
+    std::vector<double> probabilities() const;
+
     /// Return all the discrete keys associated with this factor.
     DiscreteKeys discreteKeys() const;
 

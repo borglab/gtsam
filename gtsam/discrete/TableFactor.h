@@ -12,7 +12,7 @@
 /**
  * @file TableFactor.h
  * @date May 4, 2023
- * @author Yoonwoo Kim
+ * @author Yoonwoo Kim, Varun Agrawal
  */
 
 #pragma once
@@ -32,6 +32,7 @@
 
 namespace gtsam {
 
+class DiscreteConditional;
 class HybridValues;
 
 /**
@@ -57,10 +58,10 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
 
   /**
    * @brief Uses lazy cartesian product to find nth entry in the cartesian
-   * product of arrays in O(1) 
-   * Example) 
-   *   v0 | v1 | val 
-   *    0 |  0 |  10 
+   * product of arrays in O(1)
+   * Example)
+   *   v0 | v1 | val
+   *    0 |  0 |  10
    *    0 |  1 |  21
    *    1 |  0 |  32
    *    1 |  1 |  43
@@ -75,13 +76,13 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * @brief Return ith key in keys_ as a DiscreteKey
    * @param i ith key in keys_
    * @return DiscreteKey
-   * */ 
+   */
   DiscreteKey discreteKey(size_t i) const {
     return DiscreteKey(keys_[i], cardinalities_.at(keys_[i]));
   }
 
   /// Convert probability table given as doubles to SparseVector.
-  /// Example) {0, 1, 1, 0, 0, 1, 0} -> values: {1, 1, 1}, indices: {1, 2, 5} 
+  /// Example) {0, 1, 1, 0, 0, 1, 0} -> values: {1, 1, 1}, indices: {1, 2, 5}
   static Eigen::SparseVector<double> Convert(const std::vector<double>& table);
 
   /// Convert probability table given as string to SparseVector.
@@ -141,6 +142,9 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// Single-key specialization, with vector of doubles.
   TableFactor(const DiscreteKey& key, const std::vector<double>& row)
       : TableFactor(DiscreteKeys{key}, row) {}
+
+  /** Construct from a DiscreteConditional type */
+  explicit TableFactor(const DiscreteConditional& c);
 
   /// @}
   /// @name Testable
