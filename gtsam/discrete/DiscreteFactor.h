@@ -36,18 +36,16 @@ class HybridValues;
  * @ingroup discrete
  */
 class GTSAM_EXPORT DiscreteFactor: public Factor {
-
-public:
-
+ public:
   // typedefs needed to play nice with gtsam
-  typedef DiscreteFactor This; ///< This class
-  typedef std::shared_ptr<DiscreteFactor> shared_ptr; ///< shared_ptr to this class
-  typedef Factor Base; ///< Our base class
+  typedef DiscreteFactor This;  ///< This class
+  typedef std::shared_ptr<DiscreteFactor>
+      shared_ptr;       ///< shared_ptr to this class
+  typedef Factor Base;  ///< Our base class
 
-  using Values = DiscreteValues; ///< backwards compatibility
+  using Values = DiscreteValues;  ///< backwards compatibility
 
-public:
-
+ public:
   /// @name Standard Constructors
   /// @{
 
@@ -124,6 +122,17 @@ public:
       const Names& names = {}) const = 0;
 
   /// @}
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(ADT);
+  }
+#endif
 };
 // DiscreteFactor
 
