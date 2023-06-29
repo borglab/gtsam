@@ -197,6 +197,20 @@ TEST(Ordering, csr_format_3) {
 }
 
 /* ************************************************************************* */
+TEST(Ordering, AppendKey) {
+  using symbol_shorthand::X;
+  Ordering actual;
+  actual += X(0);
+
+  Ordering expected1{X(0)};
+  EXPECT(assert_equal(expected1, actual));
+
+  actual += X(1), X(2), X(3);
+  Ordering expected2{X(0), X(1), X(2), X(3)};
+  EXPECT(assert_equal(expected2, actual));
+}
+
+/* ************************************************************************* */
 TEST(Ordering, AppendVector) {
   using symbol_shorthand::X;
   KeyVector keys{X(0), X(1), X(2)};

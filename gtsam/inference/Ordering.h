@@ -25,10 +25,6 @@
 #include <gtsam/inference/MetisIndex.h>
 #include <gtsam/base/FastSet.h>
 
-#ifdef GTSAM_USE_BOOST_FEATURES
-#include <boost/assign/list_inserter.hpp>
-#endif
-
 #include <algorithm>
 #include <vector>
 
@@ -61,15 +57,13 @@ public:
       Base(keys.begin(), keys.end()) {
   }
 
-#ifdef GTSAM_USE_BOOST_FEATURES
-  /// Add new variables to the ordering as ordering += key1, key2, ...  Equivalent to calling
-  /// push_back.
-  boost::assign::list_inserter<boost::assign_detail::call_push_back<This> > operator+=(
-      Key key) {
-    return boost::assign::make_list_inserter(
-        boost::assign_detail::call_push_back<This>(*this))(key);
-  }
-#endif
+  /// Add new variables to the ordering as
+  /// `ordering += key1, key2, ...`.
+  This& operator+=(Key key);
+
+  /// Overloading the comma operator allows for chaining appends
+  // e.g. keys += key1, key2
+  This& operator,(Key key);
 
   /**
    * @brief Append new keys to the ordering as `ordering += keys`.
