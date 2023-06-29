@@ -22,13 +22,6 @@
 
 #include <gtsam/base/Testable.h>
 
-#ifdef GTSAM_USE_BOOST_FEATURES
-#include <boost/concept_check.hpp>
-#include <boost/concept/requires.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/static_assert.hpp>
-#endif
-
 #include <utility>
 
 namespace gtsam {
