@@ -21,6 +21,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <gtsam/dllexport.h>
 
 namespace gtsam {
 /**
