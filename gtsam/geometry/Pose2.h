@@ -198,9 +198,9 @@ public:
   GTSAM_EXPORT static Matrix3 LogmapDerivative(const Pose2& v);
 
   // Chart at origin, depends on compile-time flag SLOW_BUT_CORRECT_EXPMAP
-  struct ChartAtOrigin {
-	GTSAM_EXPORT static Pose2 Retract(const Vector3& v, ChartJacobian H = {});
-	GTSAM_EXPORT static Vector3 Local(const Pose2& r, ChartJacobian H = {});
+  struct GTSAM_EXPORT ChartAtOrigin {
+    static Pose2 Retract(const Vector3& v, ChartJacobian H = {});
+    static Vector3 Local(const Pose2& r, ChartJacobian H = {});
   };
 
   using LieGroup<Pose2, 3>::inverse; // version with derivative
