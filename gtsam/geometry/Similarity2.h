@@ -150,7 +150,7 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
                             OptionalJacobian<4, 4> Hm = {});
 
   /// Chart at the origin
-  struct ChartAtOrigin {
+  struct GTSAM_EXPORT ChartAtOrigin {
     static Similarity2 Retract(const Vector4& v,
                                ChartJacobian H = {}) {
       return Similarity2::Expmap(v, H);

@@ -24,7 +24,7 @@ jobs:
       matrix:
         build_type: 
           - Debug
-          # - Release
+          - Release
           
         build_unstable: 
           - ON
