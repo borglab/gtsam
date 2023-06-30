@@ -12,10 +12,11 @@ Author: Frank Dellaert, Duy Nguyen Ta
 import math
 import unittest
 
-import gtsam
 import numpy as np
-from gtsam import Point3, Pose3, Rot3
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
+from gtsam import Point3, Pose3, Rot3
 
 
 def numerical_derivative_pose(pose, method, delta=1e-5):

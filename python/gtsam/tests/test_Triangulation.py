@@ -12,13 +12,14 @@ Authors: Frank Dellaert & Fan Jiang (Python) & Sushmita Warrier & John Lambert
 import unittest
 from typing import Iterable, List, Optional, Tuple, Union
 
-import gtsam
 import numpy as np
+from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
 from gtsam import (Cal3_S2, Cal3Bundler, CameraSetCal3_S2,
                    CameraSetCal3Bundler, PinholeCameraCal3_S2,
                    PinholeCameraCal3Bundler, Point2, Point3, Pose3, Rot3,
                    TriangulationParameters, TriangulationResult)
-from gtsam.utils.test_case import GtsamTestCase
 
 UPRIGHT = Rot3.Ypr(-np.pi / 2, 0.0, -np.pi / 2)
 

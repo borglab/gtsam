@@ -12,12 +12,13 @@ Author: Frank Dellaert
 
 import unittest
 
-import gtsam
 import numpy as np
+from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
 from gtsam import (BetweenFactorPose2, LevenbergMarquardtParams, Pose2, Rot2,
                    ShonanAveraging2, ShonanAveraging3,
                    ShonanAveragingParameters2, ShonanAveragingParameters3)
-from gtsam.utils.test_case import GtsamTestCase
 
 DEFAULT_PARAMS = ShonanAveragingParameters3(
     gtsam.LevenbergMarquardtParams.CeresDefaults()
@@ -139,7 +140,6 @@ class TestShonanAveraging(GtsamTestCase):
         self.assertAlmostEqual(3.0756, shonan.cost(initial), places=3)
         result, _lambdaMin = shonan.run(initial, 3, 3)
         self.assertAlmostEqual(0.0015, shonan.cost(result), places=3)
-    
 
     def test_constructorBetweenFactorPose2s(self) -> None:
         """Check if ShonanAveraging2 constructor works when not initialized from g2o file.
@@ -189,11 +189,11 @@ class TestShonanAveraging(GtsamTestCase):
 
         wRi_list = [result_values.atRot2(i) for i in range(num_images)]
         thetas_deg = np.array([wRi.degrees() for wRi in wRi_list])
-        
+
         # map all angles to [0,360)
         thetas_deg = thetas_deg % 360
         thetas_deg -= thetas_deg[0]
-        
+
         expected_thetas_deg = np.array([0.0, 90.0, 0.0])
         np.testing.assert_allclose(thetas_deg, expected_thetas_deg, atol=0.1)
 

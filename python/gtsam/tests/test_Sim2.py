@@ -12,8 +12,9 @@ Author: John Lambert
 import unittest
 
 import numpy as np
-from gtsam import Pose2, Rot2, Similarity2
 from gtsam.utils.test_case import GtsamTestCase
+
+from gtsam import Pose2, Rot2, Similarity2
 
 
 class TestSim2(GtsamTestCase):
@@ -55,7 +56,7 @@ class TestSim2(GtsamTestCase):
             self.gtsamAssertEquals(wToi, wSe.transformFrom(eToi))
 
     def test_align_poses_along_straight_line_gauge(self):
-        """Test if Align Pose3Pairs method can account for gauge ambiguity.
+        """Test if Pose2 Align method can account for gauge ambiguity.
 
         Scenario:
            3 object poses
@@ -90,7 +91,7 @@ class TestSim2(GtsamTestCase):
             self.gtsamAssertEquals(wToi, wSe.transformFrom(eToi))
 
     def test_align_poses_scaled_squares(self):
-        """Test if Align Pose2Pairs method can account for gauge ambiguity.
+        """Test if Align method can account for gauge ambiguity.
 
         Make sure a big and small square can be aligned.
         The u's represent a big square (10x10), and v's represents a small square (4x4).

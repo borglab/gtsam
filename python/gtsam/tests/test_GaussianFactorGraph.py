@@ -14,10 +14,11 @@ from __future__ import print_function
 
 import unittest
 
-import gtsam
 import numpy as np
 from gtsam.symbol_shorthand import X
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
 
 
 def create_graph():
@@ -40,6 +41,7 @@ def create_graph():
 
 class TestGaussianFactorGraph(GtsamTestCase):
     """Tests for Gaussian Factor Graphs."""
+
     def test_fg(self):
         """Test solving a linear factor graph"""
         graph, X = create_graph()
@@ -98,12 +100,11 @@ class TestGaussianFactorGraph(GtsamTestCase):
         bn = gfg.eliminateSequential(ordering)
         self.assertEqual(bn.size(), 3)
 
-        keyVector = []
-        keyVector.append(keys[2])
-        #TODO(Varun) Below code causes segfault in Debug config
-        # ordering = gtsam.Ordering.ColamdConstrainedLastGaussianFactorGraph(gfg, keyVector)
-        # bn = gfg.eliminateSequential(ordering)
-        # self.assertEqual(bn.size(), 3)
+        keyVector = [keys[2]]
+        ordering = gtsam.Ordering.ColamdConstrainedLastGaussianFactorGraph(
+            gfg, keyVector)
+        bn = gfg.eliminateSequential(ordering)
+        self.assertEqual(bn.size(), 3)
 
 
 if __name__ == '__main__':

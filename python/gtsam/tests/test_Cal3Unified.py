@@ -10,10 +10,11 @@ Author: Frank Dellaert & Duy Nguyen Ta (Python)
 """
 import unittest
 
-import gtsam
 import numpy as np
 from gtsam.symbol_shorthand import K, L, P
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
 
 
 class TestCal3Unified(GtsamTestCase):
@@ -106,7 +107,7 @@ class TestCal3Unified(GtsamTestCase):
         state = gtsam.Values()
         measured = self.img_point
         noise_model = gtsam.noiseModel.Isotropic.Sigma(2, 1)
-        camera_key, pose_key, landmark_key = K(0), P(0), L(0)      
+        camera_key, pose_key, landmark_key = K(0), P(0), L(0)
         k = self.stereographic
         state.insert_cal3unified(camera_key, k)
         state.insert_pose3(pose_key, gtsam.Pose3())
@@ -141,7 +142,7 @@ class TestCal3Unified(GtsamTestCase):
         Dcal = np.zeros((2, 10), order='F')
         Dp = np.zeros((2, 2), order='F')
         camera.calibrate(img_point, Dcal, Dp)
-        
+
         self.gtsamAssertEquals(Dcal, np.array(
             [[ 0.,  0.,  0., -1.,  0.,  0.,  0.,  0.,  0.,  0.],
             [ 0.,  0.,  0.,  0., -1.,  0.,  0.,  0.,  0.,  0.]]))

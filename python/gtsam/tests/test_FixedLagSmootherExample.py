@@ -14,7 +14,6 @@ import numpy as np
 from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
-import gtsam_unstable
 
 
 class TestFixedLagSmootherExample(GtsamTestCase):
