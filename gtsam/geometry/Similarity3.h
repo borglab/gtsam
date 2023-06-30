@@ -33,7 +33,7 @@ class Pose3;
 /**
  * 3D similarity transform
  */
-class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
+class Similarity3 : public LieGroup<Similarity3, 7> {
   /// @name Pose Concept
   /// @{
   typedef Rot3 Rotation;

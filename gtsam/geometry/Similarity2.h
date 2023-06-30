@@ -32,7 +32,7 @@ class Pose2;
 /**
  * 2D similarity transform
  */
-class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
+class Similarity2 : public LieGroup<Similarity2, 4> {
   /// @name Pose Concept
   /// @{
   typedef Rot2 Rotation;

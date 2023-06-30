@@ -32,7 +32,7 @@ namespace gtsam {
    * @ingroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT Rot2 : public LieGroup<Rot2, 1> {
+  class Rot2 : public LieGroup<Rot2, 1> {
 
     /** we store cos(theta) and sin(theta) */
     double c_, s_;

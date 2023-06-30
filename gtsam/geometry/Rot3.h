@@ -55,7 +55,7 @@ namespace gtsam {
  * if it is defined.
  * @ingroup geometry
  */
-class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
+class Rot3 : public LieGroup<Rot3, 3> {
  private:
 
 #ifdef GTSAM_USE_QUATERNIONS
