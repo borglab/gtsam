@@ -43,6 +43,7 @@
 #include <iostream>
 #include <iterator>
 #include <vector>
+#include <numeric>
 
 #include "Switching.h"
 #include "TinyHybridExample.h"
