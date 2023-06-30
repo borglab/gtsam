@@ -21,7 +21,6 @@
 #include <gtsam/discrete/TableFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 
-#include <boost/format.hpp>
 #include <utility>
 
 using namespace std;
@@ -203,7 +202,7 @@ void TableFactor::print(const string& s, const KeyFormatter& formatter) const {
   cout << s;
   cout << " f[";
   for (auto&& key : keys())
-    cout << boost::format(" (%1%,%2%),") % formatter(key) % cardinality(key);
+    cout << " (" << formatter(key) << "," << cardinality(key) << "),";
   cout << " ]" << endl;
   for (SparseIt it(sparse_table_); it; ++it) {
     DiscreteValues assignment = findAssignments(it.index());

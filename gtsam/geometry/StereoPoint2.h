@@ -46,7 +46,9 @@ public:
       uL_(0), uR_(0), v_(0) {
   }
 
-  /** constructor */
+  /** uL and uR represent the x-axis value of left and right frame coordinates respectively.
+      v represents the y coordinate value. The y-axis value should be the same under the
+      stereo constraint. */
   StereoPoint2(double uL, double uR, double v) :
       uL_(uL), uR_(uR), v_(v) {
   }

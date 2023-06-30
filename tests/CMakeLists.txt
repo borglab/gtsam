@@ -13,7 +13,7 @@ if (NOT GTSAM_USE_BOOST_FEATURES)
 endif()
 
 if (NOT GTSAM_ENABLE_BOOST_SERIALIZATION)
-	list(APPEND excluded_tests "testSerializationSLAM.cpp")
+	list(APPEND excluded_tests "testSerializationSlam.cpp")
 endif()
 
 # Build tests
