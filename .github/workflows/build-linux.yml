@@ -1,6 +1,12 @@
 name: Linux CI
 
-on: [pull_request]
+on: 
+  push:
+    branches: 
+      - develop
+  pull_request:
+    branches: 
+      - "*" # Pull request for all branches
 
 # Every time you make a push to your PR, it cancel immediately the previous checks, 
 # and start a new one. The other runner will be available more quickly to your PR. 
@@ -20,39 +26,36 @@ jobs:
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
-        # Github Actions requires a single row to be added to the build matrix.
-        # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
-        name: [
-          ubuntu-20.04-gcc-9,
-          ubuntu-20.04-clang-9,
-          ubuntu-22.04-gcc-11,
-          ubuntu-22.04-clang-14,
-        ]
-
-        build_type: [Release]
-        build_unstable: [ON]
         include:
           - name: ubuntu-20.04-gcc-9
             os: ubuntu-20.04
             compiler: gcc
             version: "9"
+            build_type: Release
+            build_unstable: ON
 
           - name: ubuntu-20.04-clang-9
             os: ubuntu-20.04
             compiler: clang
             version: "9"
+            build_type: Release
+            build_unstable: ON
 
           - name: ubuntu-22.04-gcc-11
             os: ubuntu-22.04
             compiler: gcc
             version: "11"
+            build_type: Release
+            build_unstable: ON
 
           - name: ubuntu-22.04-clang-14
             os: ubuntu-22.04
             compiler: clang
             version: "14"
+            build_type: Release
+            build_unstable: ON
 
     steps:
       - name: Checkout

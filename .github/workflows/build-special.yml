@@ -1,6 +1,12 @@
 name: Special Cases CI
 
-on: [pull_request]
+on: 
+  push:
+    branches: 
+      - develop
+  pull_request:
+    branches: 
+      - "*" # Pull request for all branches
 
 # Every time you make a push to your PR, it cancel immediately the previous checks, 
 # and start a new one. The other runner will be available more quickly to your PR. 
@@ -21,22 +27,21 @@ jobs:
 
     strategy:
       fail-fast: false
-
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name:
-          [
-            ubuntu-clang-deprecated,
-            ubuntu-clang-quaternions,
-            ubuntu-clang-tbb,
-            ubuntu-clang-cayleymap,
-            ubuntu-clang-system-libs,
-            ubuntu-no-boost,
-            ubuntu-no-unstable,
-          ]
-
-        build_type: [Debug, Release]
+          - ubuntu-clang-deprecated
+          - ubuntu-clang-quaternions
+          - ubuntu-clang-tbb
+          - ubuntu-clang-cayleymap
+          - ubuntu-clang-system-libs
+          - ubuntu-no-boost
+          - ubuntu-no-unstable
+    
+        build_type: 
+          - Debug
+          - Release
 
         include:
           - name: ubuntu-clang-deprecated

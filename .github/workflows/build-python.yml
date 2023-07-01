@@ -1,6 +1,12 @@
 name: Python CI
 
-on: [pull_request]
+on: 
+  push:
+    branches: 
+      - develop
+  pull_request:
+    branches: 
+      - "*" # Pull request for all branches
 
 # Every time you make a push to your PR, it cancel immediately the previous checks, 
 # and start a new one. The other runner will be available more quickly to your PR. 
@@ -20,41 +26,37 @@ jobs:
       PYTHON_VERSION: ${{ matrix.python_version }}
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
-        # Github Actions requires a single row to be added to the build matrix.
-        # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
-        name:
-          [
-            ubuntu-20.04-gcc-9,
-            ubuntu-20.04-gcc-9-tbb,
-            ubuntu-20.04-clang-9,
-            macOS-11-xcode-13.4.1,
-          ]
-
-        build_type: [Release]
-        python_version: [3]
         include:
           - name: ubuntu-20.04-gcc-9
             os: ubuntu-20.04
             compiler: gcc
             version: "9"
+            build_type: Release
+            python_version: 3
 
           - name: ubuntu-20.04-gcc-9-tbb
             os: ubuntu-20.04
             compiler: gcc
             version: "9"
             flag: tbb
+            build_type: Release
+            python_version: 3
 
           - name: ubuntu-20.04-clang-9
             os: ubuntu-20.04
             compiler: clang
             version: "9"
+            build_type: Release
+            python_version: 3
 
           - name: macOS-11-xcode-13.4.1
             os: macOS-11
             compiler: xcode
             version: "13.4.1"
+            build_type: Release
+            python_version: 3
 
     steps:
       - name: Checkout

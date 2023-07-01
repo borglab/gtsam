@@ -1,6 +1,12 @@
 name: Windows CI
 
-on: [pull_request]
+on: 
+  push:
+    branches: 
+      - develop
+  pull_request:
+    branches: 
+      - "*" # Pull request for all branches
 
 # Every time you make a push to your PR, it cancel immediately the previous checks, 
 # and start a new one. The other runner will be available more quickly to your PR. 
@@ -22,24 +28,18 @@ jobs:
       BOOST_EXE: boost_1_72_0-msvc-14.2
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
-        # Github Actions requires a single row to be added to the build matrix.
-        # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
-        name: [
-            windows-2019-cl,
-          ]
+        build_type: 
+          - Debug
+          - Release
 
-        build_type: [
-            Debug,
-            Release
-          ]
-        build_unstable: [ON]
         include:
           - name: windows-2019-cl
             os: windows-2019
             compiler: cl
             platform: 64
+            build_unstable: ON
 
     steps:
       - name: Install Dependencies
