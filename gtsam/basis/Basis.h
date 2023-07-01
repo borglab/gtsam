@@ -80,7 +80,7 @@ using Weights = Eigen::Matrix<double, 1, -1>; /* 1xN vector */
  *
  * @ingroup basis
  */
-Matrix kroneckerProductIdentity(size_t M, const Weights& w);
+Matrix GTSAM_EXPORT kroneckerProductIdentity(size_t M, const Weights& w);
 
 /**
  * CRTP Base class for function bases

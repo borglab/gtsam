@@ -204,7 +204,7 @@ public:
   static Matrix6 LogmapDerivative(const Pose3& xi);
 
   // Chart at origin, depends on compile-time flag GTSAM_POSE3_EXPMAP
-  struct ChartAtOrigin {
+  struct GTSAM_EXPORT ChartAtOrigin {
     static Pose3 Retract(const Vector6& xi, ChartJacobian Hxi = {});
     static Vector6 Local(const Pose3& pose, ChartJacobian Hpose = {});
   };

@@ -2,6 +2,12 @@ name: Windows CI
 
 on: [pull_request]
 
+# Every time you make a push to your PR, it cancel immediately the previous checks, 
+# and start a new one. The other runner will be available more quickly to your PR. 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: ${{ matrix.name }} ${{ matrix.build_type }}
@@ -16,19 +22,15 @@ jobs:
       BOOST_EXE: boost_1_72_0-msvc-14.2
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
-        # Github Actions requires a single row to be added to the build matrix.
-        # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
-        name: [
-            windows-2019-cl,
-          ]
-
-        build_type: [
-            Debug,
-            Release
-          ]
-        build_unstable: [ON]
+        build_type: 
+          - Debug
+          - Release
+          
+        build_unstable: 
+          - ON
+          # - OFF 
         include:
           - name: windows-2019-cl
             os: windows-2019
@@ -87,10 +89,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Setup msbuild
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x${{ matrix.platform }}
+
       - name: Configuration
         run: |
           cmake -E remove_directory build
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
+          cmake -G Ninja -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
 
       - name: Build
         run: |
