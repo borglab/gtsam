@@ -123,11 +123,11 @@ jobs:
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam
 
           # Run GTSAM_UNSTABLE tests
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.geometry_unstable
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.linear_unstable
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.discrete_unstable
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.dynamics_unstable
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear_unstable
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam_unstable
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.partition
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.base_unstable
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.geometry_unstable
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.linear_unstable
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.discrete_unstable
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.dynamics_unstable
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear_unstable
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam_unstable
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.partition
