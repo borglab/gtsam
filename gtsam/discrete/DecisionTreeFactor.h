@@ -147,6 +147,9 @@ namespace gtsam {
     /// @name Advanced Interface
     /// @{
 
+    /// Inherit all the `apply` methods from AlgebraicDecisionTree
+    using ADT::apply;
+
     /**
      * Apply binary operator (*this) "op" f
      * @param f the second argument for op
