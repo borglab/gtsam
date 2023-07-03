@@ -22,15 +22,20 @@ jobs:
       BOOST_EXE: boost_1_72_0-msvc-14.2
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
-        build_type: 
-          - Debug
-          - Release
-          
-        build_unstable: 
-          - ON
-          # - OFF 
+        # Github Actions requires a single row to be added to the build matrix.
+        # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
+        name: [
+            windows-2019-cl,
+          ]
+
+        build_type: [
+            Debug,
+            Release
+          ]
+
+        build_unstable: [ON]
         include:
           - name: windows-2019-cl
             os: windows-2019
@@ -123,6 +128,7 @@ jobs:
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam
 
           # Run GTSAM_UNSTABLE tests
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.base_unstable
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.geometry_unstable
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.linear_unstable
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.discrete_unstable
@@ -130,4 +136,3 @@ jobs:
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear_unstable
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam_unstable
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.partition
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.base_unstable
