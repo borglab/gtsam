@@ -155,18 +155,18 @@ void HybridBayesNet::updateDiscreteConditionals(
       auto discrete = conditional->asDiscrete();
 
       // Convert pointer from conditional to factor
-      auto discreteTree =
-          std::dynamic_pointer_cast<DecisionTreeFactor::ADT>(discrete);
+      auto discreteFactor =
+          std::dynamic_pointer_cast<DecisionTreeFactor>(discrete);
       // Apply prunerFunc to the underlying AlgebraicDecisionTree
-      DecisionTreeFactor::ADT prunedDiscreteTree =
-          discreteTree->apply(prunerFunc(prunedDiscreteProbs, *conditional));
+      DecisionTreeFactor::ADT prunedDiscreteFactor =
+          discreteFactor->apply(prunerFunc(prunedDiscreteProbs, *conditional));
 
       gttic_(HybridBayesNet_MakeConditional);
       // Create the new (hybrid) conditional
       KeyVector frontals(discrete->frontals().begin(),
                          discrete->frontals().end());
       auto prunedDiscrete = std::make_shared<DiscreteLookupTable>(
-          frontals.size(), conditional->discreteKeys(), prunedDiscreteTree);
+          frontals.size(), conditional->discreteKeys(), prunedDiscreteFactor);
       conditional = std::make_shared<HybridConditional>(prunedDiscrete);
       gttoc_(HybridBayesNet_MakeConditional);
 
