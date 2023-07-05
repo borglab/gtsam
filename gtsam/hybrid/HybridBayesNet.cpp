@@ -146,8 +146,7 @@ std::function<double(const Assignment<Key> &, double)> prunerFunc(
 /* ************************************************************************* */
 void HybridBayesNet::updateDiscreteConditionals(
     const DecisionTreeFactor &prunedDiscreteProbs) {
-  KeyVector prunedTreeKeys = prunedDiscreteProbs.keys();
-
+  //TODO(Varun) Should prune the joint conditional, maybe during elimination?
   // Loop with index since we need it later.
   for (size_t i = 0; i < this->size(); i++) {
     HybridConditional::shared_ptr conditional = this->at(i);
