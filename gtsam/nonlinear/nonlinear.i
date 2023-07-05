@@ -512,16 +512,10 @@ class ISAM2 {
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
                             const gtsam::Values& newTheta,
                             const gtsam::FactorIndices& removeFactorIndices,
-                            const gtsam::KeyGroupMap& constrainedKeys,
-                            const gtsam::KeyList& noRelinKeys,
-                            const gtsam::KeyList& extraReelimKeys);
-  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
-                            const gtsam::Values& newTheta,
-                            const gtsam::FactorIndices& removeFactorIndices,
-                            const gtsam::KeyGroupMap& constrainedKeys,
+                            gtsam::KeyGroupMap& constrainedKeys,
                             const gtsam::KeyList& noRelinKeys,
                             const gtsam::KeyList& extraReelimKeys,
-                            bool force_relinearize);
+                            bool force_relinearize=false);
 
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
                             const gtsam::Values& newTheta,

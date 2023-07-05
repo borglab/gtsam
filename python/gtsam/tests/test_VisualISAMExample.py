@@ -16,6 +16,7 @@ import gtsam.utils.visual_data_generator as generator
 import gtsam.utils.visual_isam as visual_isam
 from gtsam.utils.test_case import GtsamTestCase
 
+import gtsam
 from gtsam import symbol
 
 
@@ -60,10 +61,8 @@ class TestVisualISAMExample(GtsamTestCase):
             point_j = result.atPoint3(symbol('l', j))
             self.gtsamAssertEquals(point_j, expected_point, 1e-5)
 
-    @unittest.skip(
-        "Need to understand how to calculate error using VectorValues correctly"
-    )
     def test_isam2_error(self):
+        """Test for isam2 error() method."""
         #TODO(Varun) fix
         # Initialize iSAM with the first pose and points
         isam, result, nextPose = visual_isam.initialize(
@@ -78,17 +77,19 @@ class TestVisualISAMExample(GtsamTestCase):
 
         estimate = isam.calculateBestEstimate()
 
-        keys = estimate.keys()
-
-        for k in range(keys.size()):
-            key = keys.at(k)
+        for key in estimate.keys():
             try:
-                v = estimate.atPose3(key).matrix()
-
+                v = gtsam.Pose3.Logmap(estimate.atPose3(key))
             except RuntimeError:
-                v = estimate.atPoint3(key).vector()
+                v = estimate.atPoint3(key)
+
+            print(key)
+            print(type(v))
+            print(v)
             values.insert(key, v)
-        # print(isam.error(values))
+        print(isam.error(values))
+
+        self.assertEqual(isam.error(values), 34212421.14731998)
 
     def test_isam2_update(self):
         """
@@ -98,7 +99,7 @@ class TestVisualISAMExample(GtsamTestCase):
         isam, result, nextPose = visual_isam.initialize(
             self.data, self.truth, self.isamOptions)
 
-        remove_factor_indices = gtsam.FactorIndices()
+        remove_factor_indices = []
         constrained_keys = gtsam.KeyGroupMap()
         no_relin_keys = gtsam.KeyList()
         extra_reelim_keys = gtsam.KeyList()
@@ -111,11 +112,11 @@ class TestVisualISAMExample(GtsamTestCase):
                                             self.truth, currentPose, isamArgs)
 
         for i in range(len(self.truth.cameras)):
-            pose_i = result.atPose3(symbol(ord('x'), i))
+            pose_i = result.atPose3(symbol('x', i))
             self.gtsamAssertEquals(pose_i, self.truth.cameras[i].pose(), 1e-5)
 
         for j in range(len(self.truth.points)):
-            point_j = result.atPoint3(symbol(ord('l'), j))
+            point_j = result.atPoint3(symbol('l', j))
             self.gtsamAssertEquals(point_j, self.truth.points[j], 1e-5)
 
 
