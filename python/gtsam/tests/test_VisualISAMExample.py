@@ -63,7 +63,6 @@ class TestVisualISAMExample(GtsamTestCase):
 
     def test_isam2_error(self):
         """Test for isam2 error() method."""
-        #TODO(Varun) fix
         # Initialize iSAM with the first pose and points
         isam, result, nextPose = visual_isam.initialize(
             self.data, self.truth, self.isamOptions)
@@ -83,13 +82,9 @@ class TestVisualISAMExample(GtsamTestCase):
             except RuntimeError:
                 v = estimate.atPoint3(key)
 
-            print(key)
-            print(type(v))
-            print(v)
             values.insert(key, v)
-        print(isam.error(values))
 
-        self.assertEqual(isam.error(values), 34212421.14731998)
+        self.assertAlmostEqual(isam.error(values), 34212421.14731998)
 
     def test_isam2_update(self):
         """

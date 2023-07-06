@@ -515,7 +515,7 @@ class ISAM2 {
                             gtsam::KeyGroupMap& constrainedKeys,
                             const gtsam::KeyList& noRelinKeys,
                             const gtsam::KeyList& extraReelimKeys,
-                            bool force_relinearize=false);
+                            bool force_relinearize = false);
 
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
                             const gtsam::Values& newTheta,
@@ -548,9 +548,8 @@ class ISAM2 {
 
   string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-  void saveGraph(string s,
-                const gtsam::KeyFormatter& keyFormatter =
-                 gtsam::DefaultKeyFormatter) const;
+  void saveGraph(string s, const gtsam::KeyFormatter& keyFormatter =
+                               gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/nonlinear/NonlinearISAM.h>
