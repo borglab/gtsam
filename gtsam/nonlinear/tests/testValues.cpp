@@ -135,6 +135,44 @@ TEST( Values, insert_good )
 }
 
 /* ************************************************************************* */
+TEST( Values, insert_expression )
+{
+  Point2 p1(0.1, 0.2);
+  Point2 p2(0.3, 0.4);
+  Point2 p3(0.5, 0.6);
+  Point2 p4(p1 + p2 + p3);
+  Point2 p5(-p1);
+  Point2 p6(2.0*p1);
+
+  Values cfg1, cfg2;
+  cfg1.insert(key1, p1 + p2 + p3);
+  cfg1.insert(key2, -p1);
+  cfg1.insert(key3, 2.0*p1);
+  cfg2.insert(key1, p4);
+  cfg2.insert(key2, p5);
+  cfg2.insert(key3, p6);
+
+  CHECK(assert_equal(cfg1, cfg2));
+
+  Point3 p7(0.1, 0.2, 0.3);
+  Point3 p8(0.4, 0.5, 0.6);
+  Point3 p9(0.7, 0.8, 0.9);
+  Point3 p10(p7 + p8 + p9);
+  Point3 p11(-p7);
+  Point3 p12(2.0*p7);
+
+  Values cfg3, cfg4;
+  cfg3.insert(key1, p7 + p8 + p9);
+  cfg3.insert(key2, -p7);
+  cfg3.insert(key3, 2.0*p7);
+  cfg4.insert(key1, p10);
+  cfg4.insert(key2, p11);
+  cfg4.insert(key3, p12);
+
+  CHECK(assert_equal(cfg3, cfg4));
+}
+
+/* ************************************************************************* */
 TEST( Values, insert_bad )
 {
   Values cfg1, cfg2;
@@ -167,6 +205,23 @@ TEST( Values, update_element )
   CHECK(assert_equal((Vector)v2, cfg.at<Vector3>(key1)));
 }
 
+/* ************************************************************************* */
+TEST(Values, update_element_with_expression)
+{
+  Values cfg;
+  Vector3 v1(5.0, 6.0, 7.0);
+  Vector3 v2(8.0, 9.0, 1.0);
+
+  cfg.insert(key1, v1);
+  CHECK(cfg.size() == 1);
+  CHECK(assert_equal((Vector)v1, cfg.at<Vector3>(key1)));
+
+  cfg.update(key1, 2.0*v1 + v2);
+  CHECK(cfg.size() == 1);
+  CHECK(assert_equal((2.0*v1 + v2).eval(), cfg.at<Vector3>(key1)));
+}
+
+/* ************************************************************************* */
 TEST(Values, InsertOrAssign) {
   Values values;
   Key X(0);
@@ -181,6 +236,25 @@ TEST(Values, InsertOrAssign) {
   double y = 2;
   values.insert_or_assign(X, y);
   EXPECT(assert_equal(values.at<double>(X), y));
+}
+
+/* ************************************************************************* */
+TEST(Values, InsertOrAssignWithExpression) {
+  Values values,expected;
+  Key X(0);
+  Vector3 x{1.0, 2.0, 3.0};
+  Vector3 y{4.0, 5.0, 6.0};
+
+  CHECK(values.size() == 0);
+  // This should perform an insert.
+  Vector3 z = x + y;
+  values.insert_or_assign(X, x + y);
+  EXPECT(assert_equal(values.at<Vector3>(X), z));
+
+  // This should perform an update.
+  z = 2.0*x - 3.0*y;
+  values.insert_or_assign(X, 2.0*x - 3.0*y);
+  EXPECT(assert_equal(values.at<Vector3>(X), z));
 }
 
 /* ************************************************************************* */

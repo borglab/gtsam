@@ -29,11 +29,6 @@
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/VectorSpace.h>
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
-#include <boost/serialization/unique_ptr.hpp>
-#endif
-
-
 #include <memory>
 #include <string>
 #include <utility>
@@ -245,6 +240,31 @@ namespace gtsam {
     template <typename ValueType>
     void insert(Key j, const ValueType& val);
 
+    /** Partial specialization that allows passing a unary Eigen expression for val.
+      *
+      * A unary expression is an expression such as 2*a or -a, where a is a valid Vector or Matrix type.
+      * The typical usage is for types Point2 (i.e. Eigen::Vector2d) or Point3 (i.e. Eigen::Vector3d).
+      * For example, together with the partial specialization for binary operators, a user may call insert(j, 2*a + M*b - c),
+      * where M is an appropriately sized matrix (such as a rotation matrix).
+      * Thus, it isn't necessary to explicitly evaluate the Eigen expression, as in insert(j, (2*a + M*b - c).eval()),
+      * nor is it necessary to first assign the expression to a separate variable.
+      */
+    template <typename UnaryOp, typename ValueType>
+    void insert(Key j, const Eigen::CwiseUnaryOp<UnaryOp, const ValueType>& val);
+
+    /** Partial specialization that allows passing a binary Eigen expression for val.
+      *
+      * A binary expression is an expression such as a + b, where a and b are valid Vector or Matrix
+      * types of compatible size.
+      * The typical usage is for types Point2 (i.e. Eigen::Vector2d) or Point3 (i.e. Eigen::Vector3d).
+      * For example, together with the partial specialization for binary operators, a user may call insert(j, 2*a + M*b - c),
+      * where M is an appropriately sized matrix (such as a rotation matrix).
+      * Thus, it isn't necessary to explicitly evaluate the Eigen expression, as in insert(j, (2*a + M*b - c).eval()),
+      * nor is it necessary to first assign the expression to a separate variable.
+      */
+    template <typename BinaryOp, typename ValueType1, typename ValueType2>
+    void insert(Key j, const Eigen::CwiseBinaryOp<BinaryOp, const ValueType1, const ValueType2>& val);
+
     /// version for double
     void insertDouble(Key j, double c) { insert<double>(j,c); }
 
@@ -258,6 +278,18 @@ namespace gtsam {
     template <typename T>
     void update(Key j, const T& val);
 
+    /** Partial specialization that allows passing a unary Eigen expression for val,
+      * similar to the partial specialization for insert.
+      */
+    template <typename UnaryOp, typename ValueType>
+    void update(Key j, const Eigen::CwiseUnaryOp<UnaryOp, const ValueType>& val);
+
+    /** Partial specialization that allows passing a binary Eigen expression for val,
+      * similar to the partial specialization for insert.
+      */
+    template <typename BinaryOp, typename ValueType1, typename ValueType2>
+    void update(Key j, const Eigen::CwiseBinaryOp<BinaryOp, const ValueType1, const ValueType2>& val);
+
     /** update the current available values without adding new ones */
     void update(const Values& values);
 
@@ -266,13 +298,25 @@ namespace gtsam {
 
     /**
      * Update a set of variables.
-     * If any variable key doe not exist, then perform an insert.
+     * If any variable key does not exist, then perform an insert.
      */
     void insert_or_assign(const Values& values);
 
     /// Templated version to insert_or_assign a variable with the given j.
     template <typename ValueType>
     void insert_or_assign(Key j, const ValueType& val);
+
+    /** Partial specialization that allows passing a unary Eigen expression for val,
+      * similar to the partial specialization for insert.
+      */
+    template <typename UnaryOp, typename ValueType>
+    void insert_or_assign(Key j, const Eigen::CwiseUnaryOp<UnaryOp, const ValueType>& val);
+
+    /** Partial specialization that allows passing a binary Eigen expression for val,
+      * similar to the partial specialization for insert.
+      */
+    template <typename BinaryOp, typename ValueType1, typename ValueType2>
+    void insert_or_assign(Key j, const Eigen::CwiseBinaryOp<BinaryOp, const ValueType1, const ValueType2>& val);
 
     /** Remove a variable from the config, throws KeyDoesNotExist<J> if j is not present */
     void erase(Key j);
