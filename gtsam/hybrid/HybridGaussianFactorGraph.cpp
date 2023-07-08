@@ -48,8 +48,6 @@
 #include <utility>
 #include <vector>
 
-// #define HYBRID_TIMING
-
 namespace gtsam {
 
 /// Specialize EliminateableFactorGraph for HybridGaussianFactorGraph:
@@ -120,7 +118,7 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
         // TODO(dellaert): in C++20, we can use std::visit.
         continue;
       }
-    } else if (dynamic_pointer_cast<DecisionTreeFactor>(f)) {
+    } else if (dynamic_pointer_cast<DiscreteFactor>(f)) {
       // Don't do anything for discrete-only factors
       // since we want to eliminate continuous values only.
       continue;
@@ -167,8 +165,8 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
   DiscreteFactorGraph dfg;
 
   for (auto &f : factors) {
-    if (auto dtf = dynamic_pointer_cast<DecisionTreeFactor>(f)) {
-      dfg.push_back(dtf);
+    if (auto df = dynamic_pointer_cast<DiscreteFactor>(f)) {
+      dfg.push_back(df);
     } else if (auto orphan = dynamic_pointer_cast<OrphanWrapper>(f)) {
       // Ignore orphaned clique.
       // TODO(dellaert): is this correct? If so explain here.
@@ -262,9 +260,13 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     };
 
     DecisionTree<Key, double> probabilities(eliminationResults, probability);
+
+    auto dtf =
+        std::make_shared<DecisionTreeFactor>(discreteSeparator, probabilities);
+
     return {
         std::make_shared<HybridConditional>(gaussianMixture),
-        std::make_shared<DecisionTreeFactor>(discreteSeparator, probabilities)};
+        std::make_shared<TableFactor>(discreteSeparator, dtf->probabilities())};
   } else {
     // Otherwise, we create a resulting GaussianMixtureFactor on the separator,
     // taking care to correct for conditional constant.
@@ -433,7 +435,7 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
       // Add the gaussian factor error to every leaf of the error tree.
       error_tree = error_tree.apply(
           [error](double leaf_value) { return leaf_value + error; });
-    } else if (dynamic_pointer_cast<DecisionTreeFactor>(f)) {
+    } else if (dynamic_pointer_cast<DiscreteFactor>(f)) {
       // If factor at `idx` is discrete-only, we skip.
       continue;
     } else {
