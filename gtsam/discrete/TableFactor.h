@@ -45,8 +45,6 @@ class HybridValues;
  */
 class GTSAM_EXPORT TableFactor : public DiscreteFactor {
  protected:
-  /// Map of Keys and their cardinalities.
-  std::map<Key, size_t> cardinalities_;
   /// SparseVector of nonzero probabilities.
   Eigen::SparseVector<double> sparse_table_;
 
@@ -184,8 +182,6 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
 
   static double safe_div(const double& a, const double& b);
 
-  size_t cardinality(Key j) const { return cardinalities_.at(j); }
-
   /// divide by factor f (safely)
   TableFactor operator/(const TableFactor& f) const {
     return apply(f, safe_div);
@@ -277,9 +273,6 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
 
   /// Enumerate all values into a map from values to double.
   std::vector<std::pair<DiscreteValues, double>> enumerate() const;
-
-  /// Return all the discrete keys associated with this factor.
-  DiscreteKeys discreteKeys() const;
 
   /**
    * @brief Prune the decision tree of discrete variables.

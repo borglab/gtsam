@@ -45,6 +45,10 @@ class GTSAM_EXPORT DiscreteFactor: public Factor {
 
   using Values = DiscreteValues;  ///< backwards compatibility
 
+ protected:
+  /// Map of Keys and their cardinalities.
+  std::map<Key, size_t> cardinalities_;
+
  public:
   /// @name Standard Constructors
   /// @{
@@ -52,10 +56,15 @@ class GTSAM_EXPORT DiscreteFactor: public Factor {
   /** Default constructor creates empty factor */
   DiscreteFactor() {}
 
-  /** Construct from container of keys.  This constructor is used internally from derived factor
-   *  constructors, either from a container of keys or from a boost::assign::list_of. */
-  template<typename CONTAINER>
-  DiscreteFactor(const CONTAINER& keys) : Base(keys) {}
+  /**
+   * Construct from container of keys and map of cardinalities.
+   * This constructor is used internally from derived factor constructors,
+   * either from a container of keys or from a boost::assign::list_of.
+   */
+  template <typename CONTAINER>
+  DiscreteFactor(const CONTAINER& keys,
+                 const std::map<Key, size_t> cardinalities = {})
+      : Base(keys), cardinalities_(cardinalities) {}
 
   /// @}
   /// @name Testable
@@ -74,6 +83,13 @@ class GTSAM_EXPORT DiscreteFactor: public Factor {
   /// @}
   /// @name Standard Interface
   /// @{
+
+  /// Return all the discrete keys associated with this factor.
+  DiscreteKeys discreteKeys() const;
+
+  std::map<Key, size_t> cardinalities() const { return cardinalities_; }
+
+  size_t cardinality(Key j) const { return cardinalities_.at(j); }
 
   /// Find value for given assignment of values to variables
   virtual double operator()(const DiscreteValues&) const = 0;
@@ -130,6 +146,7 @@ class GTSAM_EXPORT DiscreteFactor: public Factor {
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar& BOOST_SERIALIZATION_NVP(cardinalities_);
   }
 #endif
 };

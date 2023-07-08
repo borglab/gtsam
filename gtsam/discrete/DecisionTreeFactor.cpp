@@ -33,16 +33,13 @@ namespace gtsam {
 
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys& keys,
-                                        const ADT& potentials)
-      : DiscreteFactor(keys.indices()),
-        ADT(potentials),
-        cardinalities_(keys.cardinalities()) {}
+                                         const ADT& potentials)
+      : DiscreteFactor(keys.indices(), keys.cardinalities()), ADT(potentials) {}
 
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteConditional& c)
-      : DiscreteFactor(c.keys()),
-        AlgebraicDecisionTree<Key>(c),
-        cardinalities_(c.cardinalities_) {}
+      : DiscreteFactor(c.keys(), c.cardinalities()),
+        AlgebraicDecisionTree<Key>(c) {}
 
   /* ************************************************************************ */
   bool DecisionTreeFactor::equals(const DiscreteFactor& other,
@@ -191,18 +188,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  DiscreteKeys DecisionTreeFactor::discreteKeys() const {
-    DiscreteKeys result;
-    for (auto&& key : keys()) {
-      DiscreteKey dkey(key, cardinality(key));
-      if (std::find(result.begin(), result.end(), dkey) == result.end()) {
-        result.push_back(dkey);
-      }
-    }
-    return result;
-  }
-
-  /* ************************************************************************ */
   static std::string valueFormatter(const double& v) {
     std::stringstream ss;
     ss << std::setw(4) << std::setprecision(2) << std::fixed << v;
@@ -297,17 +282,15 @@ namespace gtsam {
 
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys& keys,
-                                        const vector<double>& table)
-      : DiscreteFactor(keys.indices()),
-        AlgebraicDecisionTree<Key>(keys, table),
-        cardinalities_(keys.cardinalities()) {}
+                                         const vector<double>& table)
+      : DiscreteFactor(keys.indices(), keys.cardinalities()),
+        AlgebraicDecisionTree<Key>(keys, table) {}
 
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys& keys,
-                                        const string& table)
-      : DiscreteFactor(keys.indices()),
-        AlgebraicDecisionTree<Key>(keys, table),
-        cardinalities_(keys.cardinalities()) {}
+                                         const string& table)
+      : DiscreteFactor(keys.indices(), keys.cardinalities()),
+        AlgebraicDecisionTree<Key>(keys, table) {}
 
   /* ************************************************************************ */
   DecisionTreeFactor DecisionTreeFactor::prune(size_t maxNrAssignments) const {
