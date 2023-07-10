@@ -567,7 +567,7 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
   Values initial;
   initial.insert(X(1), p0);
 
-  FastVector<size_t> knownInliers;
+  GncParams<GaussNewtonParams>::IndexVector knownInliers;
   knownInliers.push_back(0);
   knownInliers.push_back(1);
   knownInliers.push_back(2);
@@ -644,7 +644,7 @@ TEST(GncOptimizer, barcsq) {
   Values initial;
   initial.insert(X(1), p0);
 
-  FastVector<size_t> knownInliers;
+  GncParams<GaussNewtonParams>::IndexVector knownInliers;
   knownInliers.push_back(0);
   knownInliers.push_back(1);
   knownInliers.push_back(2);
@@ -691,7 +691,7 @@ TEST(GncOptimizer, setInlierCostThresholds) {
   Values initial;
   initial.insert(X(1), p0);
 
-  FastVector<size_t> knownInliers;
+  GncParams<GaussNewtonParams>::IndexVector knownInliers;
   knownInliers.push_back(0);
   knownInliers.push_back(1);
   knownInliers.push_back(2);
@@ -761,7 +761,7 @@ TEST(GncOptimizer, optimizeSmallPoseGraph) {
   // GNC
   // Note: in difficult instances, we set the odometry measurements to be
   // inliers, but this problem is simple enought to succeed even without that
-  // assumption;
+  // assumption GncParams<GaussNewtonParams>::IndexVector knownInliers;
   GncParams<GaussNewtonParams> gncParams;
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(*graph, *initial,
                                                         gncParams);
@@ -782,12 +782,12 @@ TEST(GncOptimizer, knownInliersAndOutliers) {
   // nonconvexity with known inliers and known outliers (check early stopping
   // when all measurements are known to be inliers or outliers)
   {
-    FastVector<size_t> knownInliers;
+    GncParams<GaussNewtonParams>::IndexVector knownInliers;
     knownInliers.push_back(0);
     knownInliers.push_back(1);
     knownInliers.push_back(2);
 
-    FastVector<size_t> knownOutliers;
+    GncParams<GaussNewtonParams>::IndexVector knownOutliers;
     knownOutliers.push_back(3);
 
     GncParams<GaussNewtonParams> gncParams;
@@ -811,11 +811,11 @@ TEST(GncOptimizer, knownInliersAndOutliers) {
 
   // nonconvexity with known inliers and known outliers
   {
-    FastVector<size_t> knownInliers;
+    GncParams<GaussNewtonParams>::IndexVector knownInliers;
     knownInliers.push_back(2);
     knownInliers.push_back(0);
 
-    FastVector<size_t> knownOutliers;
+    GncParams<GaussNewtonParams>::IndexVector knownOutliers;
     knownOutliers.push_back(3);
 
     GncParams<GaussNewtonParams> gncParams;
@@ -839,7 +839,7 @@ TEST(GncOptimizer, knownInliersAndOutliers) {
 
   // only known outliers
   {
-    FastVector<size_t> knownOutliers;
+    GncParams<GaussNewtonParams>::IndexVector knownOutliers;
     knownOutliers.push_back(3);
 
     GncParams<GaussNewtonParams> gncParams;
@@ -914,11 +914,11 @@ TEST(GncOptimizer, setWeights) {
   // initialize weights and also set known inliers/outliers
   {
     GncParams<GaussNewtonParams> gncParams;
-    FastVector<size_t> knownInliers;
+    GncParams<GaussNewtonParams>::IndexVector knownInliers;
     knownInliers.push_back(2);
     knownInliers.push_back(0);
 
-    FastVector<size_t> knownOutliers;
+    GncParams<GaussNewtonParams>::IndexVector knownOutliers;
     knownOutliers.push_back(3);
     gncParams.setKnownInliers(knownInliers);
     gncParams.setKnownOutliers(knownOutliers);
