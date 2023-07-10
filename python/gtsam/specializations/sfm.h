@@ -11,18 +11,3 @@
  * and saves one copy operation.
  */
 
-py::bind_vector<std::vector<gtsam::BinaryMeasurement<gtsam::Point3> > >(
-    m_, "BinaryMeasurementsPoint3");
-py::bind_vector<std::vector<gtsam::BinaryMeasurement<gtsam::Unit3> > >(
-    m_, "BinaryMeasurementsUnit3");
-py::bind_vector<std::vector<gtsam::BinaryMeasurement<gtsam::Rot3> > >(
-    m_, "BinaryMeasurementsRot3");
-py::bind_map<gtsam::KeyPairDoubleMap>(m_, "KeyPairDoubleMap");
-py::bind_vector<std::vector<gtsam::SfmTrack2d>>(m_, "SfmTrack2dVector");
-py::bind_vector<std::vector<gtsam::SfmTrack>>(m_, "SfmTracks");
-py::bind_vector<std::vector<gtsam::SfmCamera>>(m_, "SfmCameras");
-py::bind_vector<std::vector<std::pair<size_t, gtsam::Point2>>>(
-    m_, "SfmMeasurementVector");
-
-py::bind_map<gtsam::gtsfm::MatchIndicesMap>(m_, "MatchIndicesMap");
-py::bind_vector<std::vector<gtsam::gtsfm::Keypoints>>(m_, "KeypointsVector");

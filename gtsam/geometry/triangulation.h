@@ -110,7 +110,8 @@ GTSAM_EXPORT Point3 triangulateDLT(
  */
 GTSAM_EXPORT Point3 triangulateLOST(const std::vector<Pose3>& poses,
                                     const Point3Vector& calibratedMeasurements,
-                                    const SharedIsotropic& measurementNoise);
+                                    const SharedIsotropic& measurementNoise,
+                                    double rank_tol = 1e-9);
 
 /**
  * Create a factor graph with projection factors from poses and one calibration
@@ -439,7 +440,8 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     auto calibratedMeasurements =
         calibrateMeasurementsShared<CALIBRATION>(*sharedCal, measurements);
 
-    point = triangulateLOST(poses, calibratedMeasurements, measurementNoise);
+    point = triangulateLOST(poses, calibratedMeasurements, measurementNoise, 
+                            rank_tol);
   } else {
     // construct projection matrices from poses & calibration
     auto projection_matrices = projectionMatricesFromPoses(poses, sharedCal);
@@ -512,7 +514,8 @@ Point3 triangulatePoint3(const CameraSet<CAMERA>& cameras,
     auto calibratedMeasurements =
         calibrateMeasurements<CAMERA>(cameras, measurements);
 
-    point = triangulateLOST(poses, calibratedMeasurements, measurementNoise);
+    point = triangulateLOST(poses, calibratedMeasurements, measurementNoise, 
+                            rank_tol);
   } else {
     // construct projection matrices from poses & calibration
     auto projection_matrices = projectionMatricesFromCameras(cameras);
@@ -750,4 +753,3 @@ using CameraSetCal3Fisheye = CameraSet<PinholeCamera<Cal3Fisheye>>;
 using CameraSetCal3Unified = CameraSet<PinholeCamera<Cal3Unified>>;
 using CameraSetSpherical = CameraSet<SphericalCamera>;
 } // \namespace gtsam
-

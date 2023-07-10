@@ -66,7 +66,7 @@ TEST(Pose2, manifold) {
 /* ************************************************************************* */
 TEST(Pose2, retract) {
   Pose2 pose(M_PI/2.0, Point2(1, 2));
-#ifdef SLOW_BUT_CORRECT_EXPMAP
+#ifdef GTSAM_SLOW_BUT_CORRECT_EXPMAP
   Pose2 expected(1.00811, 2.01528, 2.5608);
 #else
   Pose2 expected(M_PI/2.0+0.99, Point2(1.015, 2.01));
@@ -204,7 +204,7 @@ TEST(Pose2, Adjoint_hat) {
 TEST(Pose2, logmap) {
   Pose2 pose0(M_PI/2.0, Point2(1, 2));
   Pose2 pose(M_PI/2.0+0.018, Point2(1.015, 2.01));
-#ifdef SLOW_BUT_CORRECT_EXPMAP
+#ifdef GTSAM_SLOW_BUT_CORRECT_EXPMAP
   Vector3 expected(0.00986473, -0.0150896, 0.018);
 #else
   Vector3 expected(0.01, -0.015, 0.018);
@@ -473,6 +473,33 @@ TEST( Pose2, compose_matrix )
   Matrix gM1(matrix(gT1)),_1M2(matrix(_1T2));
   EXPECT(assert_equal(gM1*_1M2,matrix(gT1.compose(_1T2)))); // RIGHT DOES NOT
 }
+
+
+
+/* ************************************************************************* */
+TEST( Pose2, translation )  {
+  Pose2 pose(3.5, -8.2, 4.2);
+
+  Matrix actualH;
+  EXPECT(assert_equal((Vector2() << 3.5, -8.2).finished(), pose.translation(actualH), 1e-8));
+
+  std::function<Point2(const Pose2&)> f = [](const Pose2& T) { return T.translation(); };
+  Matrix numericalH = numericalDerivative11<Point2, Pose2>(f, pose);
+  EXPECT(assert_equal(numericalH, actualH, 1e-6));
+}
+
+/* ************************************************************************* */
+TEST( Pose2, rotation ) {
+  Pose2 pose(3.5, -8.2, 4.2);
+
+  Matrix actualH(4, 3);
+  EXPECT(assert_equal(Rot2(4.2), pose.rotation(actualH), 1e-8));
+
+  std::function<Rot2(const Pose2&)> f = [](const Pose2& T) { return T.rotation(); };
+  Matrix numericalH = numericalDerivative11<Rot2, Pose2>(f, pose);
+  EXPECT(assert_equal(numericalH, actualH, 1e-6));
+}
+
 
 /* ************************************************************************* */
 TEST( Pose2, between )

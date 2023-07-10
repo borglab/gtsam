@@ -83,3 +83,5 @@
 
 // Toggle switch for BetweenFactor jacobian computation
 #cmakedefine GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+
+#cmakedefine GTSAM_SLOW_BUT_CORRECT_EXPMAP

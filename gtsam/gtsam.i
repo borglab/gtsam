@@ -105,6 +105,7 @@ class KeyGroupMap {
 };
 
 // Actually a FastSet<FactorIndex>
+// Used in Matlab wrapper
 class FactorIndexSet {
   FactorIndexSet();
   FactorIndexSet(const gtsam::FactorIndexSet& set);
@@ -121,6 +122,7 @@ class FactorIndexSet {
 };
 
 // Actually a vector<FactorIndex>
+// Used in Matlab wrapper
 class FactorIndices {
   FactorIndices();
   FactorIndices(const gtsam::FactorIndices& other);

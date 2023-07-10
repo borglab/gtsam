@@ -12,7 +12,6 @@ from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=unused-import
 import gtsam
 from gtsam import Marginals, Point2, Point3, Pose2, Pose3, Values
 
-
 # For translation between a scaling of the uncertainty ellipse and the 
 # percentage of inliers see discussion in 
 #   [PR 1067](https://github.com/borglab/gtsam/pull/1067)
@@ -557,7 +556,7 @@ def plot_incremental_trajectory(fignum: int,
         axes = fig.axes[0]
 
     poses = gtsam.utilities.allPose3s(values)
-    keys = gtsam.KeyVector(poses.keys())
+    keys = poses.keys()
 
     for key in keys[start:]:
         if values.exists(key):
