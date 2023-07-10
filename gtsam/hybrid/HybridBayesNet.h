@@ -139,9 +139,9 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /**
    * @brief Get all the discrete conditionals as a decision tree factor.
    *
-   * @return DecisionTreeFactor::shared_ptr
+   * @return DiscreteConditional::shared_ptr
    */
-  DecisionTreeFactor::shared_ptr discreteConditionals() const;
+  DiscreteConditional::shared_ptr discreteConditionals() const;
 
   /**
    * @brief Sample from an incomplete BayesNet, given missing variables.
