@@ -300,6 +300,42 @@ namespace gtsam {
     size_t nrLeaves() const;
 
     /**
+     * @brief This is a convenience function which returns the total number of
+     * leaf assignments in the decision tree.
+     * This function is not used for anymajor operations within the discrete
+     * factor graph framework.
+     *
+     * Leaf assignments represent the cardinality of each leaf node, e.g. in a
+     * binary tree each leaf has 2 assignments. This includes counts removed
+     * from implicit pruning hence, it will always be >= nrLeaves().
+     *
+     * E.g. we have a decision tree as below, where each node has 2 branches:
+     *
+     * Choice(m1)
+     * 0 Choice(m0)
+     * 0 0 Leaf 0.0
+     * 0 1 Leaf 0.0
+     * 1 Choice(m0)
+     * 1 0 Leaf 1.0
+     * 1 1 Leaf 2.0
+     *
+     * In the unpruned form, the tree will have 4 assignments, 2 for each key,
+     * and 4 leaves.
+     *
+     * In the pruned form, the number of assignments is still 4 but the number
+     * of leaves is now 3, as below:
+     *
+     * Choice(m1)
+     * 0 Leaf 0.0
+     * 1 Choice(m0)
+     * 1 0 Leaf 1.0
+     * 1 1 Leaf 2.0
+     *
+     * @return size_t
+     */
+    size_t nrAssignments() const;
+
+    /**
      * @brief Fold a binary function over the tree, returning accumulator.
      *
      * @tparam X type for accumulator.

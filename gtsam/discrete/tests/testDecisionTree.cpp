@@ -531,6 +531,38 @@ TEST(DecisionTree, ApplyWithAssignment) {
   EXPECT_LONGS_EQUAL(5, count);
 }
 
+/* ************************************************************************** */
+// Test number of assignments.
+TEST(DecisionTree, NrAssignments2) {
+  using gtsam::symbol_shorthand::M;
+
+  std::vector<double> probs = {0, 0, 1, 2};
+
+  /* Create the decision tree
+    Choice(m1)
+    0 Leaf 0.000000
+    1 Choice(m0)
+    1 0 Leaf 1.000000
+    1 1 Leaf 2.000000
+  */
+  DiscreteKeys keys{{M(1), 2}, {M(0), 2}};
+  DecisionTree<Key, double> dt1(keys, probs);
+  EXPECT_LONGS_EQUAL(4, dt1.nrAssignments());
+
+  /* Create the DecisionTree
+    Choice(m1)
+    0 Choice(m0)
+    0 0 Leaf 0.000000
+    0 1 Leaf 1.000000
+    1 Choice(m0)
+    1 0 Leaf 0.000000
+    1 1 Leaf 2.000000
+  */
+  DiscreteKeys keys2{{M(0), 2}, {M(1), 2}};
+  DecisionTree<Key, double> dt2(keys2, probs);
+  EXPECT_LONGS_EQUAL(4, dt2.nrAssignments());
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

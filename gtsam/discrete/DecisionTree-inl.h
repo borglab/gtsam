@@ -93,7 +93,8 @@ namespace gtsam {
     /// print
     void print(const std::string& s, const LabelFormatter& labelFormatter,
                const ValueFormatter& valueFormatter) const override {
-      std::cout << s << " Leaf " << valueFormatter(constant_) << std::endl;
+      std::cout << s << " Leaf [" << nrAssignments() << "]"
+                << valueFormatter(constant_) << std::endl;
     }
 
     /** Write graphviz format to stream `os`. */
@@ -825,6 +826,16 @@ namespace gtsam {
     size_t total = 0;
     visit([&total](const Y& node) { total += 1; });
     return total;
+  }
+
+  /****************************************************************************/
+  template <typename L, typename Y>
+  size_t DecisionTree<L, Y>::nrAssignments() const {
+    size_t n = 0;
+    this->visitLeaf([&n](const DecisionTree<L, Y>::Leaf& leaf) {
+      n += leaf.nrAssignments();
+    });
+    return n;
   }
 
   /****************************************************************************/
