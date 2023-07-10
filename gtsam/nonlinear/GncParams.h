@@ -73,13 +73,12 @@ class GncParams {
   double weightsTol = 1e-4;  ///< If the weights are within weightsTol from being binary, stop iterating (only for TLS)
   Verbosity verbosity = SILENT;  ///< Verbosity level
 
-  //TODO(Varun) replace IndexVector with vector<size_t> once pybind11/stl.h is globally enabled.
-  /// Use IndexVector for inliers and outliers since it is fast + wrapping
+  /// Use IndexVector for inliers and outliers since it is fast
   using IndexVector = FastVector<uint64_t>;
   ///< Slots in the factor graph corresponding to measurements that we know are inliers
-  IndexVector knownInliers = IndexVector();
+  IndexVector knownInliers;
   ///< Slots in the factor graph corresponding to measurements that we know are outliers
-  IndexVector knownOutliers = IndexVector();
+  IndexVector knownOutliers;
 
   /// Set the robust loss function to be used in GNC (chosen among the ones in GncLossType).
   void setLossType(const GncLossType type) {
