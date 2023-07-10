@@ -108,7 +108,7 @@ TEST(GaussianMixtureFactor, Printing) {
   std::string expected =
       R"(Hybrid [x1 x2; 1]{
  Choice(1) 
- 0 Leaf :
+ 0 Leaf [1]:
   A[x1] = [
 	0;
 	0
@@ -120,7 +120,7 @@ TEST(GaussianMixtureFactor, Printing) {
   b = [ 0 0 ]
   No noise model
 
- 1 Leaf :
+ 1 Leaf [1]:
   A[x1] = [
 	0;
 	0
