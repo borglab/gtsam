@@ -63,8 +63,8 @@ TEST(MixtureFactor, Printing) {
       R"(Hybrid [x1 x2; 1]
 MixtureFactor
  Choice(1) 
- 0 Leaf  Nonlinear factor on 2 keys
- 1 Leaf  Nonlinear factor on 2 keys
+ 0 Leaf [1] Nonlinear factor on 2 keys
+ 1 Leaf [1] Nonlinear factor on 2 keys
 )";
   EXPECT(assert_print_equal(expected, mixtureFactor));
 }
