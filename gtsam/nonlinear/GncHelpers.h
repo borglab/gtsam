@@ -29,9 +29,11 @@ template <typename T>
 using return_t =
     typename std::conditional<std::is_integral<T>::value, double, T>::type;
 
+/// Get common type amongst all arguments
 template <typename... T>
 using common_t = typename std::common_type<T...>::type;
 
+/// Helper template for finding common return type
 template <typename... T>
 using common_return_t = return_t<common_t<T...>>;
 
@@ -126,16 +128,14 @@ template <typename T>
 constexpr T incomplete_gamma_quad_recur(const T lb, const T ub, const T a,
                                         const T lg_term,
                                         const int counter) noexcept {
-  return (counter < 49 ?  // if
-              incomplete_gamma_quad_fn(
-                  incomplete_gamma_quad_inp_vals(lb, ub, counter), a, lg_term) *
-                      incomplete_gamma_quad_weight_vals(lb, ub, counter) +
-                  incomplete_gamma_quad_recur(lb, ub, a, lg_term, counter + 1)
-                       :
-                       // else
-              incomplete_gamma_quad_fn(
-                  incomplete_gamma_quad_inp_vals(lb, ub, counter), a, lg_term) *
-                  incomplete_gamma_quad_weight_vals(lb, ub, counter));
+  T val = incomplete_gamma_quad_fn(
+              incomplete_gamma_quad_inp_vals(lb, ub, counter), a, lg_term) *
+          incomplete_gamma_quad_weight_vals(lb, ub, counter);
+  if (counter < 49) {
+    return val + incomplete_gamma_quad_recur(lb, ub, a, lg_term, counter + 1);
+  } else {
+    return val;
+  }
 }
 
 template <typename T>
@@ -180,10 +180,13 @@ constexpr T incomplete_gamma_quad(const T a, const T z) noexcept {
 template <typename T>
 constexpr T incomplete_gamma_cf_2_recur(const T a, const T z,
                                         const int depth) noexcept {
-  return (depth < 100 ? (1 + (depth - 1) * 2 - a + z) +
-                            depth * (a - depth) /
-                                incomplete_gamma_cf_2_recur(a, z, depth + 1)
-                      : (1 + (depth - 1) * 2 - a + z));
+  T val = 1 + (depth - 1) * 2 - a + z;
+  if (depth < 100) {
+    return val +
+           depth * (a - depth) / incomplete_gamma_cf_2_recur(a, z, depth + 1);
+  } else {
+    return val;
+  }
 }
 
 template <typename T>
@@ -200,50 +203,49 @@ constexpr T incomplete_gamma_cf_2(
 template <typename T>
 constexpr T incomplete_gamma_cf_1_coef(const T a, const T z,
                                        const int depth) noexcept {
-  return (is_odd(depth) ? -(a - 1 + T(depth + 1) / T(2)) * z
-                        : T(depth) / T(2) * z);
+  if (is_odd(depth)) {
+    return -(a - 1 + T(depth + 1) / T(2)) * z;
+  } else {
+    return T(depth) / T(2) * z;
+  }
 }
 
 template <typename T>
 constexpr T incomplete_gamma_cf_1_recur(const T a, const T z,
                                         const int depth) noexcept {
-  return (depth < 55 ?  // if
-              (a + depth - 1) + incomplete_gamma_cf_1_coef(a, z, depth) /
-                                    incomplete_gamma_cf_1_recur(a, z, depth + 1)
-                     :
-                     // else
-              (a + depth - 1));
+  T val = a + depth - 1;
+  if (depth < 55) {
+    return val + incomplete_gamma_cf_1_coef(a, z, depth) /
+                     incomplete_gamma_cf_1_recur(a, z, depth + 1);
+  } else {
+    return val;
+  }
 }
 
+/// lower (regularized) incomplete gamma function
 template <typename T>
-constexpr T incomplete_gamma_cf_1(
-    const T a,
-    const T z) noexcept {  // lower (regularized) incomplete gamma function
-  return (exp(a * log(z) - z - lgamma(a)) /
-          incomplete_gamma_cf_1_recur(a, z, 1));
+constexpr T incomplete_gamma_cf_1(const T a, const T z) noexcept {
+  return exp(a * log(z) - z - lgamma(a)) / incomplete_gamma_cf_1_recur(a, z, 1);
 }
 
-//
-
+/// Perform NaN check
 template <typename T>
 constexpr T incomplete_gamma_check(const T a, const T z) noexcept {
-  return (  // NaN check
-      (is_nan(a) || is_nan(z)) ? LIM<T>::quiet_NaN() :
-                               //
-          a < T(0) ? LIM<T>::quiet_NaN()
-                   :
-                   //
-          LIM<T>::min() > z ? T(0)
-                            :
-                            //
-          LIM<T>::min() > a ? T(1)
-                            :
-                            // cf or quadrature
-          (a < T(10)) && (z - a < T(10)) ? incomplete_gamma_cf_1(a, z)
-      : (a < T(10)) || (z / a > T(3))    ? incomplete_gamma_cf_2(a, z)
-                                         :
-                                      // else
-          incomplete_gamma_quad(a, z));
+  if (is_nan(a) || is_nan(z)) {
+    return LIM<T>::quiet_NaN();
+  } else if (a < T(0)) {
+    return LIM<T>::quiet_NaN();
+  } else if (LIM<T>::min() > z) {
+    return T(0);
+  } else if (LIM<T>::min() > a) {
+    return T(1);
+  } else if (a < T(10) && z - a < T(10)) {  // cf or quadrature
+    return incomplete_gamma_cf_1(a, z);
+  } else if (a < T(10) || z / a > T(3)) {
+    return incomplete_gamma_cf_2(a, z);
+  } else {
+    return incomplete_gamma_quad(a, z);
+  }
 }
 
 template <typename T1, typename T2, typename TC = common_return_t<T1, T2>>
@@ -323,24 +325,24 @@ constexpr T incomplete_gamma_inv_initial_val_1(
 template <typename T>
 constexpr T incomplete_gamma_inv_initial_val_2(
     const T a, const T p, const T t_val) noexcept {  // a <= 1.0
-  return (p < t_val ?                                // if
-              pow(p / t_val, T(1) / a)
-                    :
-                    // else
-              T(1) - log(T(1) - (p - t_val) / (T(1) - t_val)));
+  if (p < t_val) {
+    return pow(p / t_val, T(1) / a);
+  } else {
+    return T(1) - log(T(1) - (p - t_val) / (T(1) - t_val));
+  }
 }
 
-// initial value
+// Initial value
 
 template <typename T>
 constexpr T incomplete_gamma_inv_initial_val(const T a, const T p) noexcept {
-  return (a > T(1) ?  // if
-              incomplete_gamma_inv_initial_val_1(
-                  a, incomplete_gamma_inv_t_val_1(p), p > T(0.5) ? T(-1) : T(1))
-                   :
-                   // else
-              incomplete_gamma_inv_initial_val_2(
-                  a, p, incomplete_gamma_inv_t_val_2(a)));
+  if (a > T(1)) {
+    return incomplete_gamma_inv_initial_val_1(
+        a, incomplete_gamma_inv_t_val_1(p), p > T(0.5) ? T(-1) : T(1));
+  } else {
+    return incomplete_gamma_inv_initial_val_2(a, p,
+                                              incomplete_gamma_inv_t_val_2(a));
+  }
 }
 
 //
@@ -405,18 +407,15 @@ template <typename T>
 constexpr T incomplete_gamma_inv_decision(const T value, const T a, const T p,
                                           const T direc, const T lg_val,
                                           const int iter_count) noexcept {
-// return( abs(direc) > GCEM_INCML_GAMMA_INV_TOL ?
-// incomplete_gamma_inv_recur(value - direc, a, p,
-// incomplete_gamma_inv_deriv_1(value,a,lg_val), lg_val) : value - direc );
-#define INCML_GAMMA_INV_MAX_ITER 35
-  return (iter_count <= INCML_GAMMA_INV_MAX_ITER ?  // if
-              incomplete_gamma_inv_recur(
-                  value - direc, a, p,
-                  incomplete_gamma_inv_deriv_1(value, a, lg_val), lg_val,
-                  iter_count + 1)
-                                                 :
-                                                 // else
-              value - direc);
+  constexpr int INCML_GAMMA_INV_MAX_ITER = 35;
+
+  if (iter_count <= INCML_GAMMA_INV_MAX_ITER) {
+    return incomplete_gamma_inv_recur(
+        value - direc, a, p, incomplete_gamma_inv_deriv_1(value, a, lg_val),
+        lg_val, iter_count + 1);
+  } else {
+    return value - direc;
+  }
 }
 
 template <typename T>
@@ -429,19 +428,20 @@ constexpr T incomplete_gamma_inv_begin(const T initial_val, const T a,
 
 template <typename T>
 constexpr T incomplete_gamma_inv_check(const T a, const T p) noexcept {
-  return (  // NaN check
-      (is_nan(a) || is_nan(p)) ? LIM<T>::quiet_NaN() :
-                             //
-          LIM<T>::min() > p           ? T(0)
-      : p > T(1)                      ? LIM<T>::quiet_NaN()
-      : LIM<T>::min() > abs(T(1) - p) ? LIM<T>::infinity()
-                                      :
-                                      //
-          LIM<T>::min() > a ? T(0)
-                            :
-                            // else
-          incomplete_gamma_inv_begin(incomplete_gamma_inv_initial_val(a, p), a,
-                                     p, lgamma(a)));
+  if (is_nan(a) || is_nan(p)) {
+    return LIM<T>::quiet_NaN();
+  } else if (LIM<T>::min() > p) {
+    return T(0);
+  } else if (p > T(1)) {
+    return LIM<T>::quiet_NaN();
+  } else if (LIM<T>::min() > fabs(T(1) - p)) {
+    return LIM<T>::infinity();
+  } else if (LIM<T>::min() > a) {
+    return T(0);
+  } else {
+    return incomplete_gamma_inv_begin(incomplete_gamma_inv_initial_val(a, p), a,
+                                      p, lgamma(a));
+  }
 }
 
 template <typename T1, typename T2, typename TC = common_return_t<T1, T2>>
