@@ -74,7 +74,7 @@ TableFactor::TableFactor(const DiscreteConditional& c)
 Eigen::SparseVector<double> TableFactor::Convert(
     const std::vector<double>& table) {
   Eigen::SparseVector<double> sparse_table(table.size());
-  // Count number of nonzero elements in table and reserving the space.
+  // Count number of nonzero elements in table and reserve the space.
   const uint64_t nnz = std::count_if(table.begin(), table.end(),
                                      [](uint64_t i) { return i != 0; });
   sparse_table.reserve(nnz);
@@ -226,6 +226,45 @@ void TableFactor::print(const string& s, const KeyFormatter& formatter) const {
     cout << " | " << it.value() << " | " << it.index() << endl;
   }
   cout << "number of nnzs: " << sparse_table_.nonZeros() << endl;
+}
+
+/* ************************************************************************ */
+TableFactor TableFactor::apply(Unary op) const {
+  // Initialize new factor.
+  uint64_t cardi = 1;
+  for (auto [key, c] : cardinalities_) cardi *= c;
+  Eigen::SparseVector<double> sparse_table(cardi);
+  sparse_table.reserve(sparse_table_.nonZeros());
+
+  // Populate
+  for (SparseIt it(sparse_table_); it; ++it) {
+    sparse_table.coeffRef(it.index()) = op(it.value());
+  }
+
+  // Free unused memory and return.
+  sparse_table.pruned();
+  sparse_table.data().squeeze();
+  return TableFactor(discreteKeys(), sparse_table);
+}
+
+/* ************************************************************************ */
+TableFactor TableFactor::apply(UnaryAssignment op) const {
+  // Initialize new factor.
+  uint64_t cardi = 1;
+  for (auto [key, c] : cardinalities_) cardi *= c;
+  Eigen::SparseVector<double> sparse_table(cardi);
+  sparse_table.reserve(sparse_table_.nonZeros());
+
+  // Populate
+  for (SparseIt it(sparse_table_); it; ++it) {
+    DiscreteValues assignment = findAssignments(it.index());
+    sparse_table.coeffRef(it.index()) = op(assignment, it.value());
+  }
+
+  // Free unused memory and return.
+  sparse_table.pruned();
+  sparse_table.data().squeeze();
+  return TableFactor(discreteKeys(), sparse_table);
 }
 
 /* ************************************************************************ */
