@@ -93,6 +93,9 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   typedef std::shared_ptr<TableFactor> shared_ptr;
   typedef Eigen::SparseVector<double>::InnerIterator SparseIt;
   typedef std::vector<std::pair<DiscreteValues, double>> AssignValList;
+  using Unary = std::function<double(const double&)>;
+  using UnaryAssignment =
+      std::function<double(const Assignment<Key>&, const double&)>;
   using Binary = std::function<double(const double, const double)>;
 
  public:
@@ -219,16 +222,37 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// @{
 
   /**
+   * Apply unary operator `op(*this)` where `op` accepts the discrete value.
+   * @param op a unary operator that operates on TableFactor
+   */
+  TableFactor apply(Unary op) const;
+  /**
+   * Apply unary operator `op(*this)` where `op` accepts the discrete assignment
+   * and the value at that assignment.
+   * @param op a unary operator that operates on TableFactor
+   */
+  TableFactor apply(UnaryAssignment op) const;
+
+  /**
    * Apply binary operator (*this) "op" f
    * @param f the second argument for op
    * @param op a binary operator that operates on TableFactor
    */
   TableFactor apply(const TableFactor& f, Binary op) const;
 
-  /// Return keys in contract mode.
+  /**
+   * Return keys in contract mode.
+   *
+   * Modes are each of the dimensions of a sparse tensor,
+   * and the contract modes represent which dimensions will
+   * be involved in contraction (aka tensor multiplication).
+   */
   DiscreteKeys contractDkeys(const TableFactor& f) const;
 
-  /// Return keys in free mode.
+  /**
+   * @brief Return keys in free mode which are the dimensions
+   * not involved in the contraction operation.
+   */
   DiscreteKeys freeDkeys(const TableFactor& f) const;
 
   /// Return union of DiscreteKeys in two factors.
