@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/global_includes.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridValues.h>

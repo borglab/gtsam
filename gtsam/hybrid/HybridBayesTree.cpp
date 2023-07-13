@@ -175,14 +175,15 @@ VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
 void HybridBayesTree::prune(const size_t maxNrLeaves) {
   auto discreteProbs = this->roots_.at(0)->conditional()->asDiscrete();
 
-  DecisionTreeFactor prunedDiscreteProbs = discreteProbs->prune(maxNrLeaves);
-  discreteProbs->root_ = prunedDiscreteProbs.root_;
+  // TODO(Varun)
+  //  TableFactor prunedDiscreteProbs = discreteProbs->prune(maxNrLeaves);
+  //  discreteProbs->root_ = prunedDiscreteProbs.root_;
 
   /// Helper struct for pruning the hybrid bayes tree.
   struct HybridPrunerData {
     /// The discrete decision tree after pruning.
-    DecisionTreeFactor prunedDiscreteProbs;
-    HybridPrunerData(const DecisionTreeFactor& prunedDiscreteProbs,
+    TableFactor prunedDiscreteProbs;
+    HybridPrunerData(const TableFactor& prunedDiscreteProbs,
                      const HybridBayesTree::sharedNode& parentClique)
         : prunedDiscreteProbs(prunedDiscreteProbs) {}
 
@@ -210,15 +211,16 @@ void HybridBayesTree::prune(const size_t maxNrLeaves) {
     }
   };
 
-  HybridPrunerData rootData(prunedDiscreteProbs, 0);
-  {
-    treeTraversal::no_op visitorPost;
-    // Limits OpenMP threads since we're mixing TBB and OpenMP
-    TbbOpenMPMixedScope threadLimiter;
-    treeTraversal::DepthFirstForestParallel(
-        *this, rootData, HybridPrunerData::AssignmentPreOrderVisitor,
-        visitorPost);
-  }
+  // TODO(Varun)
+  //  HybridPrunerData rootData(prunedDiscreteProbs, 0);
+  //  {
+  //    treeTraversal::no_op visitorPost;
+  //    // Limits OpenMP threads since we're mixing TBB and OpenMP
+  //    TbbOpenMPMixedScope threadLimiter;
+  //    treeTraversal::DepthFirstForestParallel(
+  //        *this, rootData, HybridPrunerData::AssignmentPreOrderVisitor,
+  //        visitorPost);
+  //  }
 }
 
 }  // namespace gtsam

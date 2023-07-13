@@ -234,7 +234,7 @@ std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys) {
  */
 std::function<GaussianConditional::shared_ptr(
     const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
-GaussianMixture::prunerFunc(const DecisionTreeFactor &discreteProbs) {
+GaussianMixture::prunerFunc(const TableFactor &discreteProbs) {
   // Get the discrete keys as sets for the decision tree
   // and the gaussian mixture.
   auto discreteProbsKeySet = DiscreteKeysAsSet(discreteProbs.discreteKeys());
@@ -285,9 +285,7 @@ GaussianMixture::prunerFunc(const DecisionTreeFactor &discreteProbs) {
 }
 
 /* *******************************************************************************/
-void GaussianMixture::prune(const DecisionTreeFactor &discreteProbs) {
-  auto discreteProbsKeySet = DiscreteKeysAsSet(discreteProbs.discreteKeys());
-  auto gmKeySet = DiscreteKeysAsSet(this->discreteKeys());
+void GaussianMixture::prune(const TableFactor &discreteProbs) {
   // Functional which loops over all assignments and create a set of
   // GaussianConditionals
   auto pruner = prunerFunc(discreteProbs);

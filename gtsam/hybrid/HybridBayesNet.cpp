@@ -64,7 +64,7 @@ DecisionTreeFactor::shared_ptr HybridBayesNet::discreteConditionals() const {
  * @return std::function<double(const Assignment<Key> &, double)>
  */
 std::function<double(const Assignment<Key> &, double)> prunerFunc(
-    const DecisionTreeFactor &prunedDiscreteProbs,
+    const TableFactor &prunedDiscreteProbs,
     const HybridConditional &conditional) {
   // Get the discrete keys as sets for the decision tree
   // and the Gaussian mixture.
