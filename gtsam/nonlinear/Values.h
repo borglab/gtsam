@@ -29,6 +29,11 @@
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/VectorSpace.h>
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/unique_ptr.hpp>
+#endif
+
+
 #include <memory>
 #include <string>
 #include <utility>
