@@ -97,7 +97,8 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &originalGraph,
   HybridGaussianFactorGraph graph(originalGraph);
   HybridBayesNet hybridBayesNet(originalHybridBayesNet);
 
-  // If we are not at the first iteration, means we have conditionals to add.
+  // If hybridBayesNet is not empty,
+  // it means we have conditionals to add to the factor graph.
   if (!hybridBayesNet.empty()) {
     // We add all relevant conditional mixtures on the last continuous variable
     // in the previous `hybridBayesNet` to the graph

@@ -39,8 +39,7 @@ bool HybridBayesNet::equals(const This &bn, double tol) const {
 
 /* ************************************************************************* */
 DiscreteConditional::shared_ptr HybridBayesNet::discreteConditionals() const {
-  // The canonical decision tree factor which will get
-  // the discrete conditionals added to it.
+  // The joint discrete probability.
   DiscreteConditional discreteProbs;
 
   for (auto &&conditional : *this) {
@@ -152,7 +151,7 @@ void HybridBayesNet::updateDiscreteConditionals(
       // Convert pointer from conditional to factor
       auto discreteFactor =
           std::dynamic_pointer_cast<DecisionTreeFactor>(discrete);
-      // Apply prunerFunc to the underlying AlgebraicDecisionTree
+      // Apply prunerFunc to the underlying conditional
       DecisionTreeFactor::ADT prunedDiscreteFactor =
           discreteFactor->apply(prunerFunc(prunedDiscreteProbs, *conditional));
 
@@ -173,7 +172,7 @@ void HybridBayesNet::updateDiscreteConditionals(
 
 /* ************************************************************************* */
 HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
-  // Get the decision tree of only the discrete keys
+  // Get the joint distribution of only the discrete keys
   gttic_(HybridBayesNet_PruneDiscreteConditionals);
   DiscreteConditional::shared_ptr discreteConditionals =
       this->discreteConditionals();
