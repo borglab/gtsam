@@ -98,7 +98,7 @@ static GaussianFactorGraphTree addGaussian(
 // TODO(dellaert): it's probably more efficient to first collect the discrete
 // keys, and then loop over all assignments to populate a vector.
 GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
-  gttic(assembleGraphTree);
+  gttic_(assembleGraphTree);
 
   GaussianFactorGraphTree result;
 
@@ -131,7 +131,7 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
     }
   }
 
-  gttoc(assembleGraphTree);
+  gttoc_(assembleGraphTree);
 
   return result;
 }
@@ -235,7 +235,9 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     gttic_(hybrid_eliminate);
 #endif
 
+    gttic_(hybrid_continuous_eliminate);
     auto result = EliminatePreferCholesky(graph, frontalKeys);
+    gttoc_(hybrid_continuous_eliminate);
 
 #ifdef HYBRID_TIMING
     gttoc_(hybrid_eliminate);

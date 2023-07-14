@@ -161,12 +161,14 @@ void HybridBayesNet::updateDiscreteConditionals(
       DecisionTreeFactor::ADT prunedDiscreteTree =
           discreteTree->apply(prunerFunc(prunedDiscreteProbs, *conditional));
 
+      gttic_(HybridBayesNet_MakeConditional);
       // Create the new (hybrid) conditional
       KeyVector frontals(discrete->frontals().begin(),
                          discrete->frontals().end());
       auto prunedDiscrete = std::make_shared<DiscreteLookupTable>(
           frontals.size(), conditional->discreteKeys(), prunedDiscreteTree);
       conditional = std::make_shared<HybridConditional>(prunedDiscrete);
+      gttoc_(HybridBayesNet_MakeConditional);
 
       // Add it back to the BayesNet
       this->at(i) = conditional;
@@ -177,12 +179,16 @@ void HybridBayesNet::updateDiscreteConditionals(
 /* ************************************************************************* */
 HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
   // Get the decision tree of only the discrete keys
+  gttic_(HybridBayesNet_PruneDiscreteConditionals);
   DecisionTreeFactor::shared_ptr discreteConditionals =
       this->discreteConditionals();
   const DecisionTreeFactor prunedDiscreteProbs =
       discreteConditionals->prune(maxNrLeaves);
+  gttoc_(HybridBayesNet_PruneDiscreteConditionals);
 
+  gttic_(HybridBayesNet_UpdateDiscreteConditionals);
   this->updateDiscreteConditionals(prunedDiscreteProbs);
+  gttoc_(HybridBayesNet_UpdateDiscreteConditionals);
 
   /* To Prune, we visitWith every leaf in the GaussianMixture.
    * For each leaf, using the assignment we can check the discrete decision tree
@@ -193,6 +199,7 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
 
   HybridBayesNet prunedBayesNetFragment;
 
+  gttic_(HybridBayesNet_PruneMixtures);
   // Go through all the conditionals in the
   // Bayes Net and prune them as per prunedDiscreteProbs.
   for (auto &&conditional : *this) {
@@ -209,6 +216,7 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
       prunedBayesNetFragment.push_back(conditional);
     }
   }
+  gttoc_(HybridBayesNet_PruneMixtures);
 
   return prunedBayesNetFragment;
 }
