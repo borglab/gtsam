@@ -140,7 +140,7 @@ namespace gtsam {
     /** Access the conditional */
     const sharedConditional& conditional() const { return conditional_; }
 
-    /// Is this the root of a Bayes tree? 
+    /// Return true if this clique is the root of a Bayes tree. 
     inline bool isRoot() const { return parent_.expired(); }
 
     /// Return the number of children.

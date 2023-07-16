@@ -20,7 +20,7 @@ from gtsam.utils.test_case import GtsamTestCase
 import gtsam
 from gtsam import (DiscreteBayesNet, DiscreteBayesTreeClique,
                    DiscreteConditional, DiscreteFactorGraph,
-                   DiscreteKeys, DiscreteValues, Ordering)
+                   DiscreteValues, Ordering)
 
 
 class TestDiscreteBayesNet(GtsamTestCase):
@@ -32,7 +32,7 @@ class TestDiscreteBayesNet(GtsamTestCase):
         # Define DiscreteKey pairs.
         keys = [(j, 2) for j in range(15)]
 
-        # Create thin-tree Bayesnet.
+        # Create thin-tree Bayes net.
         bayesNet = DiscreteBayesNet()
 
         bayesNet.add(keys[0], [keys[8], keys[12]], "2/3 1/4 3/2 4/1")
@@ -121,7 +121,7 @@ class TestDiscreteBayesNet(GtsamTestCase):
         graph.add([x2, a2, x3], table)
 
         # Eliminate for MPE (maximum probable explanation).
-        ordering = Ordering([A(2), X(3), X(1), A(1), X(2)])
+        ordering = Ordering(keys=[A(2), X(3), X(1), A(1), X(2)])
         lookup = graph.eliminateMultifrontal(ordering, gtsam.EliminateForMPE)
 
         # Check that the lookup table is correct
