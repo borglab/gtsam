@@ -35,14 +35,11 @@ class HybridValues {
 };
 
 #include <gtsam/hybrid/HybridFactor.h>
-virtual class HybridFactor {
+virtual class HybridFactor : gtsam::Factor {
   void print(string s = "HybridFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::HybridFactor& other, double tol = 1e-9) const;
-  bool empty() const;
-  size_t size() const;
-  gtsam::KeyVector keys() const;
 
   // Standard interface:
   double error(const gtsam::HybridValues &values) const;
