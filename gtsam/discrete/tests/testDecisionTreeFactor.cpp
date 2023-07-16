@@ -28,7 +28,7 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST(DecisionTreeFactor, constructors_match) {
+TEST(DecisionTreeFactor, ConstructorsMatch) {
   // Declare two keys
   DiscreteKey X(0, 2), Y(1, 3);
 

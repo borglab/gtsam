@@ -80,7 +80,7 @@ GTSAM_CONCEPT_TESTABLE_INST(CrazyDecisionTree)
 /* ************************************************************************** */
 
 // Create a decision stump one one variable 'a' with values 10 and 20.
-TEST(DecisionTree, constructor) {
+TEST(DecisionTree, Constructor) {
   DecisionTree<char, int> tree('a', 10, 20);
 
   // Evaluate the tree on an assignment to the variable.
@@ -133,7 +133,7 @@ struct Ring {
 
 /* ************************************************************************** */
 // Check that creating decision trees respects key order.
-TEST(DecisionTree, constructor_order) {
+TEST(DecisionTree, ConstructorOrder) {
   // Create labels
   string A("A"), B("B");
 
@@ -163,7 +163,7 @@ TEST(DecisionTree, constructor_order) {
 
 /* ************************************************************************** */
 // test DT
-TEST(DecisionTree, example) {
+TEST(DecisionTree, Example) {
   // Create labels
   string A("A"), B("B"), C("C");
 
