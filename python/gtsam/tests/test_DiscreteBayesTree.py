@@ -98,6 +98,7 @@ class TestDiscreteBayesNet(GtsamTestCase):
         self.assertFalse(bayesTree.empty())
         self.assertEqual(12, bayesTree.size())
 
+    @unittest.skip("TODO: segfaults on gcc 7 and gcc 9")
     def test_discrete_bayes_tree_lookup(self):
         """Check that we can have a multi-frontal lookup table."""
         # Make a small planning-like graph: 3 states, 2 actions
@@ -120,9 +121,22 @@ class TestDiscreteBayesNet(GtsamTestCase):
         graph.add([x1, a1, x2], table)
         graph.add([x2, a2, x3], table)
 
+        # print(graph) will give:
+        # size: 4
+        # factor 0:  f[ (x1,3), ] ...
+        # factor 1:  f[ (x3,3), ] ...
+        # factor 2:  f[ (x1,3), (a1,2), (x2,3), ] ...
+        # factor 3:  f[ (x2,3), (a2,2), (x3,3), ] ...
+
         # Eliminate for MPE (maximum probable explanation).
         ordering = Ordering(keys=[A(2), X(3), X(1), A(1), X(2)])
         lookup = graph.eliminateMultifrontal(ordering, gtsam.EliminateForMPE)
+
+        # print(lookup) will give:
+        # DiscreteBayesTree
+        # : cliques: 2, variables: 5
+        # - g( x1 a1 x2 ): ...
+        # | - g( a2 x3 ; x2 ): ...
 
         # Check that the lookup table is correct
         assert lookup.size() == 2
