@@ -33,16 +33,13 @@ namespace gtsam {
 
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys& keys,
-                                        const ADT& potentials)
-      : DiscreteFactor(keys.indices()),
-        ADT(potentials),
-        cardinalities_(keys.cardinalities()) {}
+                                         const ADT& potentials)
+      : DiscreteFactor(keys.indices(), keys.cardinalities()), ADT(potentials) {}
 
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteConditional& c)
-      : DiscreteFactor(c.keys()),
-        AlgebraicDecisionTree<Key>(c),
-        cardinalities_(c.cardinalities_) {}
+      : DiscreteFactor(c.keys(), c.cardinalities()),
+        AlgebraicDecisionTree<Key>(c) {}
 
   /* ************************************************************************ */
   bool DecisionTreeFactor::equals(const DiscreteFactor& other,
@@ -182,15 +179,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  DiscreteKeys DecisionTreeFactor::discreteKeys() const {
-    DiscreteKeys result;
-    for (auto&& key : keys()) {
-      DiscreteKey dkey(key, cardinality(key));
-      if (std::find(result.begin(), result.end(), dkey) == result.end()) {
-        result.push_back(dkey);
-      }
+  std::vector<double> DecisionTreeFactor::probabilities() const {
+    std::vector<double> probs;
+    for (auto&& [key, value] : enumerate()) {
+      probs.push_back(value);
     }
-    return result;
+    return probs;
   }
 
   /* ************************************************************************ */
@@ -288,17 +282,15 @@ namespace gtsam {
 
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys& keys,
-                                        const vector<double>& table)
-      : DiscreteFactor(keys.indices()),
-        AlgebraicDecisionTree<Key>(keys, table),
-        cardinalities_(keys.cardinalities()) {}
+                                         const vector<double>& table)
+      : DiscreteFactor(keys.indices(), keys.cardinalities()),
+        AlgebraicDecisionTree<Key>(keys, table) {}
 
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys& keys,
-                                        const string& table)
-      : DiscreteFactor(keys.indices()),
-        AlgebraicDecisionTree<Key>(keys, table),
-        cardinalities_(keys.cardinalities()) {}
+                                         const string& table)
+      : DiscreteFactor(keys.indices(), keys.cardinalities()),
+        AlgebraicDecisionTree<Key>(keys, table) {}
 
   /* ************************************************************************ */
   DecisionTreeFactor DecisionTreeFactor::prune(size_t maxNrAssignments) const {
@@ -306,11 +298,10 @@ namespace gtsam {
 
     // Get the probabilities in the decision tree so we can threshold.
     std::vector<double> probabilities;
-    this->visitLeaf([&](const Leaf& leaf) {
-      size_t nrAssignments = leaf.nrAssignments();
-      double prob = leaf.constant();
-      probabilities.insert(probabilities.end(), nrAssignments, prob);
-    });
+    // NOTE(Varun) this is potentially slow due to the cartesian product
+    for (auto&& [assignment, prob] : this->enumerate()) {
+      probabilities.push_back(prob);
+    }
 
     // The number of probabilities can be lower than max_leaves
     if (probabilities.size() <= N) {

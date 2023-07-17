@@ -173,19 +173,18 @@ VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
 
 /* ************************************************************************* */
 void HybridBayesTree::prune(const size_t maxNrLeaves) {
-  auto decisionTree =
-      this->roots_.at(0)->conditional()->asDiscrete();
+  auto discreteProbs = this->roots_.at(0)->conditional()->asDiscrete();
 
-  DecisionTreeFactor prunedDecisionTree = decisionTree->prune(maxNrLeaves);
-  decisionTree->root_ = prunedDecisionTree.root_;
+  DecisionTreeFactor prunedDiscreteProbs = discreteProbs->prune(maxNrLeaves);
+  discreteProbs->root_ = prunedDiscreteProbs.root_;
 
   /// Helper struct for pruning the hybrid bayes tree.
   struct HybridPrunerData {
     /// The discrete decision tree after pruning.
-    DecisionTreeFactor prunedDecisionTree;
-    HybridPrunerData(const DecisionTreeFactor& prunedDecisionTree,
+    DecisionTreeFactor prunedDiscreteProbs;
+    HybridPrunerData(const DecisionTreeFactor& prunedDiscreteProbs,
                      const HybridBayesTree::sharedNode& parentClique)
-        : prunedDecisionTree(prunedDecisionTree) {}
+        : prunedDiscreteProbs(prunedDiscreteProbs) {}
 
     /**
      * @brief A function used during tree traversal that operates on each node
@@ -205,13 +204,13 @@ void HybridBayesTree::prune(const size_t maxNrLeaves) {
       if (conditional->isHybrid()) {
         auto gaussianMixture = conditional->asMixture();
 
-        gaussianMixture->prune(parentData.prunedDecisionTree);
+        gaussianMixture->prune(parentData.prunedDiscreteProbs);
       }
       return parentData;
     }
   };
 
-  HybridPrunerData rootData(prunedDecisionTree, 0);
+  HybridPrunerData rootData(prunedDiscreteProbs, 0);
   {
     treeTraversal::no_op visitorPost;
     // Limits OpenMP threads since we're mixing TBB and OpenMP

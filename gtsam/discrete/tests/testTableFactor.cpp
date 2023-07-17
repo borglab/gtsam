@@ -93,7 +93,8 @@ void printTime(map<double, pair<chrono::microseconds, chrono::microseconds>>
   for (auto&& kv : measured_time) {
     cout << "dropout: " << kv.first
          << " | TableFactor time: " << kv.second.first.count()
-         << " | DecisionTreeFactor time: " << kv.second.second.count() << endl;
+         << " | DecisionTreeFactor time: " << kv.second.second.count() <<
+         endl;
   }
 }
 
@@ -124,6 +125,13 @@ TEST(TableFactor, constructors) {
 
   // Assert that error = -log(value)
   EXPECT_DOUBLES_EQUAL(-log(f1(values)), f1.error(values), 1e-9);
+
+  // Construct from DiscreteConditional
+  DiscreteConditional conditional(X | Y = "1/1 2/3 1/4");
+  TableFactor f4(conditional);
+  // Manually constructed via inspection and comparison to DecisionTreeFactor
+  TableFactor expected(X & Y, "0.5 0.4 0.2 0.5 0.6 0.8");
+  EXPECT(assert_equal(expected, f4));
 }
 
 /* ************************************************************************* */
@@ -156,7 +164,8 @@ TEST(TableFactor, multiplication) {
 /* ************************************************************************* */
 // Benchmark which compares runtime of multiplication of two TableFactors
 // and two DecisionTreeFactors given sparsity from dense to 90% sparsity.
-TEST(TableFactor, benchmark) {
+// NOTE: Enable to run.
+TEST_DISABLED(TableFactor, benchmark) {
   DiscreteKey A(0, 5), B(1, 2), C(2, 5), D(3, 2), E(4, 5), F(5, 2), G(6, 3),
       H(7, 2), I(8, 5), J(9, 7), K(10, 2), L(11, 3);
 
