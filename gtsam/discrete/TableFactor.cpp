@@ -57,6 +57,16 @@ TableFactor::TableFactor(const DiscreteKeys& dkeys,
 }
 
 /* ************************************************************************ */
+TableFactor::TableFactor(const DiscreteKeys& dkeys,
+                         const DecisionTreeFactor& dtf)
+    : TableFactor(dkeys, dtf.probabilities()) {}
+
+/* ************************************************************************ */
+TableFactor::TableFactor(const DiscreteKeys& dkeys,
+                         const DecisionTree<Key, double>& dtree)
+    : TableFactor(dkeys, DecisionTreeFactor(dkeys, dtree)) {}
+
+/* ************************************************************************ */
 TableFactor::TableFactor(const DiscreteConditional& c)
     : TableFactor(c.discreteKeys(), c.probabilities()) {}
 

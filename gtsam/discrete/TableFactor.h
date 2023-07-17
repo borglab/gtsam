@@ -141,6 +141,12 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   TableFactor(const DiscreteKey& key, const std::vector<double>& row)
       : TableFactor(DiscreteKeys{key}, row) {}
 
+  /// Constructor from DecisionTreeFactor
+  TableFactor(const DiscreteKeys& keys, const DecisionTreeFactor& dtf);
+
+  /// Constructor from DecisionTree<Key, double>/AlgebraicDecisionTree
+  TableFactor(const DiscreteKeys& keys, const DecisionTree<Key, double>& dtree);
+
   /** Construct from a DiscreteConditional type */
   explicit TableFactor(const DiscreteConditional& c);
 
@@ -177,7 +183,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
     return apply(f, Ring::mul);
   };
 
-  /// multiple with DecisionTreeFactor
+  /// multiply with DecisionTreeFactor
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
   static double safe_div(const double& a, const double& b);
