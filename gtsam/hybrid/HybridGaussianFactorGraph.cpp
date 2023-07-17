@@ -231,17 +231,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
       return {nullptr, nullptr};
     }
 
-#ifdef HYBRID_TIMING
-    gttic_(hybrid_eliminate);
-#endif
-
-    gttic_(hybrid_continuous_eliminate);
     auto result = EliminatePreferCholesky(graph, frontalKeys);
-    gttoc_(hybrid_continuous_eliminate);
-
-#ifdef HYBRID_TIMING
-    gttoc_(hybrid_eliminate);
-#endif
 
     return result;
   };
