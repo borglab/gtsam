@@ -19,9 +19,10 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
+#include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstddef>
-#include <cassert>
 #include <iomanip>
 #include <iostream>
 #include <map>

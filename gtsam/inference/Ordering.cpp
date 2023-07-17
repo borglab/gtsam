@@ -282,6 +282,18 @@ void Ordering::print(const std::string& str,
 }
 
 /* ************************************************************************* */
+Ordering::This& Ordering::operator+=(Key key) {
+  this->push_back(key);
+  return *this;
+}
+
+/* ************************************************************************* */
+Ordering::This& Ordering::operator,(Key key) {
+  this->push_back(key);
+  return *this;
+}
+
+/* ************************************************************************* */
 Ordering::This& Ordering::operator+=(KeyVector& keys) {
   this->insert(this->end(), keys.begin(), keys.end());
   return *this;
