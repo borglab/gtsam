@@ -347,26 +347,26 @@ TEST(DiscreteBayesTree, Lookup) {
   EXPECT_LONGS_EQUAL(2, lookup->size());
   auto lookup_x1_a1_x2 = (*lookup)[X(1)]->conditional();
   EXPECT_LONGS_EQUAL(3, lookup_x1_a1_x2->frontals().size());
-  // check that sum is 100
+  // check that sum is 1.0 (not 100, as we now normalize)
   DiscreteValues empty;
-  EXPECT_DOUBLES_EQUAL(100, (*lookup_x1_a1_x2->sum(3))(empty), 1e-9);
+  EXPECT_DOUBLES_EQUAL(1.0, (*lookup_x1_a1_x2->sum(3))(empty), 1e-9);
   // And that only non-zero reward is for x1 a1 x2 == 0 1 1
-  EXPECT_DOUBLES_EQUAL(100, (*lookup_x1_a1_x2)({{X(1),0},{A(1),1},{X(2),1}}), 1e-9);
+  EXPECT_DOUBLES_EQUAL(1.0, (*lookup_x1_a1_x2)({{X(1),0},{A(1),1},{X(2),1}}), 1e-9);
 
   auto lookup_a2_x3 = (*lookup)[X(3)]->conditional();
   // check that the sum depends on x2 and is non-zero only for x2 \in {1,2}
   auto sum_x2 = lookup_a2_x3->sum(2);
   EXPECT_DOUBLES_EQUAL(0, (*sum_x2)({{X(2),0}}), 1e-9);
-  EXPECT_DOUBLES_EQUAL(10, (*sum_x2)({{X(2),1}}), 1e-9);
-  EXPECT_DOUBLES_EQUAL(20, (*sum_x2)({{X(2),2}}), 1e-9);
+  EXPECT_DOUBLES_EQUAL(1.0, (*sum_x2)({{X(2),1}}), 1e-9);
+  EXPECT_DOUBLES_EQUAL(2.0, (*sum_x2)({{X(2),2}}), 1e-9);
   EXPECT_LONGS_EQUAL(2, lookup_a2_x3->frontals().size());
   // And that the non-zero rewards are for 
   // x2 a2 x3 == 1 1 2
-  EXPECT_DOUBLES_EQUAL(10, (*lookup_a2_x3)({{X(2),1},{A(2),1},{X(3),2}}), 1e-9);
+  EXPECT_DOUBLES_EQUAL(1.0, (*lookup_a2_x3)({{X(2),1},{A(2),1},{X(3),2}}), 1e-9);
   // x2 a2 x3 == 2 0 2
-  EXPECT_DOUBLES_EQUAL(10, (*lookup_a2_x3)({{X(2),2},{A(2),0},{X(3),2}}), 1e-9);
+  EXPECT_DOUBLES_EQUAL(1.0, (*lookup_a2_x3)({{X(2),2},{A(2),0},{X(3),2}}), 1e-9);
   // x2 a2 x3 == 2 1 2
-  EXPECT_DOUBLES_EQUAL(10, (*lookup_a2_x3)({{X(2),2},{A(2),1},{X(3),2}}), 1e-9);
+  EXPECT_DOUBLES_EQUAL(1.0, (*lookup_a2_x3)({{X(2),2},{A(2),1},{X(3),2}}), 1e-9);
 }
 
 /* ************************************************************************* */

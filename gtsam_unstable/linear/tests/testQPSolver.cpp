@@ -181,7 +181,7 @@ TEST(QPSolver, iterate) {
   QPSolver::State state(currentSolution, VectorValues(), workingSet, false,
                         100);
 
-  int it = 0;
+  // int it = 0;
   while (!state.converged) {
     state = solver.iterate(state);
     // These checks will fail because the expected solutions obtained from
@@ -190,7 +190,7 @@ TEST(QPSolver, iterate) {
     // do not recompute dual variables after every step!!!
     //    CHECK(assert_equal(expected[it], state.values, 1e-10));
     //    CHECK(assert_equal(expectedDuals[it], state.duals, 1e-10));
-    it++;
+    // it++;
   }
 
   CHECK(assert_equal(expected[3], state.values, 1e-10));

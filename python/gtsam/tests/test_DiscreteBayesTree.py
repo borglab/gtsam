@@ -128,15 +128,15 @@ class TestDiscreteBayesNet(GtsamTestCase):
         assert lookup.size() == 2
         lookup_x1_a1_x2 = lookup[X(1)].conditional()
         assert lookup_x1_a1_x2.nrFrontals() == 3
-        # Check that sum is 100
+        # Check that sum is 1.0 (not 100, as we now normalize to prevent underflow)
         empty = gtsam.DiscreteValues()
-        self.assertAlmostEqual(lookup_x1_a1_x2.sum(3)(empty), 100)
+        self.assertAlmostEqual(lookup_x1_a1_x2.sum(3)(empty), 1.0)
         # And that only non-zero reward is for x1 a1 x2 == 0 1 1
         values = DiscreteValues()
         values[X(1)] = 0
         values[A(1)] = 1
         values[X(2)] = 1
-        self.assertAlmostEqual(lookup_x1_a1_x2(values), 100)
+        self.assertAlmostEqual(lookup_x1_a1_x2(values), 1.0)
 
         lookup_a2_x3 = lookup[X(3)].conditional()
         # Check that the sum depends on x2 and is non-zero only for x2 in {1, 2}
@@ -145,16 +145,16 @@ class TestDiscreteBayesNet(GtsamTestCase):
         values[X(2)] = 0
         self.assertAlmostEqual(sum_x2(values), 0)
         values[X(2)] = 1
-        self.assertAlmostEqual(sum_x2(values), 10)
+        self.assertAlmostEqual(sum_x2(values), 1.0)  # not 10, as we normalize
         values[X(2)] = 2
-        self.assertAlmostEqual(sum_x2(values), 20)
+        self.assertAlmostEqual(sum_x2(values), 2.0)  # not 20, as we normalize
         assert lookup_a2_x3.nrFrontals() == 2
         # And that the non-zero rewards are for x2 a2 x3 == 1 1 2
         values = DiscreteValues()
         values[X(2)] = 1
         values[A(2)] = 1
         values[X(3)] = 2
-        self.assertAlmostEqual(lookup_a2_x3(values), 10)
+        self.assertAlmostEqual(lookup_a2_x3(values), 1.0)  # not 10...
 
 if __name__ == "__main__":
     unittest.main()
