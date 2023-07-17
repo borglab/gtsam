@@ -147,7 +147,7 @@ namespace gtsam {
     size_t nrChildren() const { return children.size(); }
 
     /// Return the child at index i.
-    const derived_ptr operator[](size_t i) const { return children[i]; }
+    const derived_ptr operator[](size_t i) const { return children.at(i); }
 
     /** The size of subtree rooted at this clique, i.e., nr of Cliques */
     size_t treeSize() const;
