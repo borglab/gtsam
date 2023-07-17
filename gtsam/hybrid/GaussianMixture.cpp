@@ -228,19 +228,19 @@ std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys) {
 /**
  * @brief Helper function to get the pruner functional.
  *
- * @param decisionTree The probability decision tree of only discrete keys.
+ * @param discreteProbs The probabilities of only discrete keys.
  * @return std::function<GaussianConditional::shared_ptr(
  * const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
  */
 std::function<GaussianConditional::shared_ptr(
     const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
-GaussianMixture::prunerFunc(const DecisionTreeFactor &decisionTree) {
+GaussianMixture::prunerFunc(const DecisionTreeFactor &discreteProbs) {
   // Get the discrete keys as sets for the decision tree
   // and the gaussian mixture.
-  auto decisionTreeKeySet = DiscreteKeysAsSet(decisionTree.discreteKeys());
+  auto discreteProbsKeySet = DiscreteKeysAsSet(discreteProbs.discreteKeys());
   auto gaussianMixtureKeySet = DiscreteKeysAsSet(this->discreteKeys());
 
-  auto pruner = [decisionTree, decisionTreeKeySet, gaussianMixtureKeySet](
+  auto pruner = [discreteProbs, discreteProbsKeySet, gaussianMixtureKeySet](
                     const Assignment<Key> &choices,
                     const GaussianConditional::shared_ptr &conditional)
       -> GaussianConditional::shared_ptr {
@@ -249,8 +249,8 @@ GaussianMixture::prunerFunc(const DecisionTreeFactor &decisionTree) {
 
     // Case where the gaussian mixture has the same
     // discrete keys as the decision tree.
-    if (gaussianMixtureKeySet == decisionTreeKeySet) {
-      if (decisionTree(values) == 0.0) {
+    if (gaussianMixtureKeySet == discreteProbsKeySet) {
+      if (discreteProbs(values) == 0.0) {
         // empty aka null pointer
         std::shared_ptr<GaussianConditional> null;
         return null;
@@ -259,10 +259,10 @@ GaussianMixture::prunerFunc(const DecisionTreeFactor &decisionTree) {
       }
     } else {
       std::vector<DiscreteKey> set_diff;
-      std::set_difference(decisionTreeKeySet.begin(), decisionTreeKeySet.end(),
-                          gaussianMixtureKeySet.begin(),
-                          gaussianMixtureKeySet.end(),
-                          std::back_inserter(set_diff));
+      std::set_difference(
+          discreteProbsKeySet.begin(), discreteProbsKeySet.end(),
+          gaussianMixtureKeySet.begin(), gaussianMixtureKeySet.end(),
+          std::back_inserter(set_diff));
 
       const std::vector<DiscreteValues> assignments =
           DiscreteValues::CartesianProduct(set_diff);
@@ -272,7 +272,7 @@ GaussianMixture::prunerFunc(const DecisionTreeFactor &decisionTree) {
 
         // If any one of the sub-branches are non-zero,
         // we need this conditional.
-        if (decisionTree(augmented_values) > 0.0) {
+        if (discreteProbs(augmented_values) > 0.0) {
           return conditional;
         }
       }
@@ -285,12 +285,12 @@ GaussianMixture::prunerFunc(const DecisionTreeFactor &decisionTree) {
 }
 
 /* *******************************************************************************/
-void GaussianMixture::prune(const DecisionTreeFactor &decisionTree) {
-  auto decisionTreeKeySet = DiscreteKeysAsSet(decisionTree.discreteKeys());
+void GaussianMixture::prune(const DecisionTreeFactor &discreteProbs) {
+  auto discreteProbsKeySet = DiscreteKeysAsSet(discreteProbs.discreteKeys());
   auto gmKeySet = DiscreteKeysAsSet(this->discreteKeys());
   // Functional which loops over all assignments and create a set of
   // GaussianConditionals
-  auto pruner = prunerFunc(decisionTree);
+  auto pruner = prunerFunc(discreteProbs);
 
   auto pruned_conditionals = conditionals_.apply(pruner);
   conditionals_.root_ = pruned_conditionals.root_;

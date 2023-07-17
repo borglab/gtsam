@@ -28,6 +28,18 @@ using namespace std;
 
 namespace gtsam {
 
+/* ************************************************************************ */
+DiscreteKeys DiscreteFactor::discreteKeys() const {
+  DiscreteKeys result;
+  for (auto&& key : keys()) {
+    DiscreteKey dkey(key, cardinality(key));
+    if (std::find(result.begin(), result.end(), dkey) == result.end()) {
+      result.push_back(dkey);
+    }
+  }
+  return result;
+}
+
 /* ************************************************************************* */
 double DiscreteFactor::error(const DiscreteValues& values) const {
   return -std::log((*this)(values));

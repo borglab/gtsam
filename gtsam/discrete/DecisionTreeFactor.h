@@ -50,10 +50,6 @@ namespace gtsam {
     typedef std::shared_ptr<DecisionTreeFactor> shared_ptr;
     typedef AlgebraicDecisionTree<Key> ADT;
 
-   protected:
-    std::map<Key, size_t> cardinalities_;
-
-   public:
     /// @name Standard Constructors
     /// @{
 
@@ -154,8 +150,6 @@ namespace gtsam {
 
     static double safe_div(const double& a, const double& b);
 
-    size_t cardinality(Key j) const { return cardinalities_.at(j); }
-
     /// divide by factor f (safely)
     DecisionTreeFactor operator/(const DecisionTreeFactor& f) const {
       return apply(f, safe_div);
@@ -214,8 +208,8 @@ namespace gtsam {
     /// Enumerate all values into a map from values to double.
     std::vector<std::pair<DiscreteValues, double>> enumerate() const;
 
-    /// Return all the discrete keys associated with this factor.
-    DiscreteKeys discreteKeys() const;
+    /// Get all the probabilities in order of assignment values
+    std::vector<double> probabilities() const;
 
     /**
      * @brief Prune the decision tree of discrete variables.
@@ -295,7 +289,6 @@ namespace gtsam {
     void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
       ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(ADT);
-      ar& BOOST_SERIALIZATION_NVP(cardinalities_);
     }
 #endif
   };

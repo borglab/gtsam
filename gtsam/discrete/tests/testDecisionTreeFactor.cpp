@@ -60,6 +60,11 @@ TEST( DecisionTreeFactor, constructors)
 
   // Assert that error = -log(value)
   EXPECT_DOUBLES_EQUAL(-log(f1(x121)), f1.error(x121), 1e-9);
+
+  // Construct from DiscreteConditional
+  DiscreteConditional conditional(X | Y = "1/1 2/3 1/4");
+  DecisionTreeFactor f4(conditional);
+  EXPECT_DOUBLES_EQUAL(0.8, f4(x121), 1e-9);
 }
 
 /* ************************************************************************* */

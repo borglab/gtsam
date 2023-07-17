@@ -74,13 +74,13 @@ class GTSAM_EXPORT GaussianMixture
   /**
    * @brief Helper function to get the pruner functor.
    *
-   * @param decisionTree The pruned discrete probability decision tree.
+   * @param discreteProbs The pruned discrete probabilities.
    * @return std::function<GaussianConditional::shared_ptr(
    * const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
    */
   std::function<GaussianConditional::shared_ptr(
       const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
-  prunerFunc(const DecisionTreeFactor &decisionTree);
+  prunerFunc(const DecisionTreeFactor &discreteProbs);
 
  public:
   /// @name Constructors
@@ -234,12 +234,11 @@ class GTSAM_EXPORT GaussianMixture
 
   /**
    * @brief Prune the decision tree of Gaussian factors as per the discrete
-   * `decisionTree`.
+   * `discreteProbs`.
    *
-   * @param decisionTree A pruned decision tree of discrete keys where the
-   * leaves are probabilities.
+   * @param discreteProbs A pruned set of probabilities for the discrete keys.
    */
-  void prune(const DecisionTreeFactor &decisionTree);
+  void prune(const DecisionTreeFactor &discreteProbs);
 
   /**
    * @brief Merge the Gaussian Factor Graphs in `this` and `sum` while

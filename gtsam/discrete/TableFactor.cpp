@@ -13,11 +13,12 @@
  * @file TableFactor.cpp
  * @brief discrete factor
  * @date May 4, 2023
- * @author Yoonwoo Kim
+ * @author Yoonwoo Kim, Varun Agrawal
  */
 
 #include <gtsam/base/FastSet.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/TableFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 
@@ -33,8 +34,7 @@ TableFactor::TableFactor() {}
 /* ************************************************************************ */
 TableFactor::TableFactor(const DiscreteKeys& dkeys,
                          const TableFactor& potentials)
-    : DiscreteFactor(dkeys.indices()),
-      cardinalities_(potentials.cardinalities_) {
+    : DiscreteFactor(dkeys.indices(), dkeys.cardinalities()) {
   sparse_table_ = potentials.sparse_table_;
   denominators_ = potentials.denominators_;
   sorted_dkeys_ = discreteKeys();
@@ -44,17 +44,21 @@ TableFactor::TableFactor(const DiscreteKeys& dkeys,
 /* ************************************************************************ */
 TableFactor::TableFactor(const DiscreteKeys& dkeys,
                          const Eigen::SparseVector<double>& table)
-    : DiscreteFactor(dkeys.indices()), sparse_table_(table.size()) {
+    : DiscreteFactor(dkeys.indices(), dkeys.cardinalities()),
+      sparse_table_(table.size()) {
   sparse_table_ = table;
   double denom = table.size();
   for (const DiscreteKey& dkey : dkeys) {
-    cardinalities_.insert(dkey);
     denom /= dkey.second;
     denominators_.insert(std::pair<Key, double>(dkey.first, denom));
   }
   sorted_dkeys_ = discreteKeys();
   sort(sorted_dkeys_.begin(), sorted_dkeys_.end());
 }
+
+/* ************************************************************************ */
+TableFactor::TableFactor(const DiscreteConditional& c)
+    : TableFactor(c.discreteKeys(), c.probabilities()) {}
 
 /* ************************************************************************ */
 Eigen::SparseVector<double> TableFactor::Convert(
@@ -431,18 +435,6 @@ std::vector<std::pair<DiscreteValues, double>> TableFactor::enumerate() const {
   std::vector<std::pair<DiscreteValues, double>> result;
   for (const auto& assignment : assignments) {
     result.emplace_back(assignment, operator()(assignment));
-  }
-  return result;
-}
-
-/* ************************************************************************ */
-DiscreteKeys TableFactor::discreteKeys() const {
-  DiscreteKeys result;
-  for (auto&& key : keys()) {
-    DiscreteKey dkey(key, cardinality(key));
-    if (std::find(result.begin(), result.end(), dkey) == result.end()) {
-      result.push_back(dkey);
-    }
   }
   return result;
 }
