@@ -29,7 +29,7 @@ namespace gtsam {
  * full elimination routine was called with an ordering that does not include
  * all of the variables. */
 class InconsistentEliminationRequested : public std::exception {
-  KeySet keys_;
+  KeyVector keys_;
   const KeyFormatter& keyFormatter = DefaultKeyFormatter;
 
  public:
@@ -38,21 +38,26 @@ class InconsistentEliminationRequested : public std::exception {
   InconsistentEliminationRequested(
       const KeySet& keys,
       const KeyFormatter& key_formatter = DefaultKeyFormatter)
-      : keys_(keys), keyFormatter(key_formatter) {}
+      : keys_(keys.begin(), keys.end()), keyFormatter(key_formatter) {}
 
   ~InconsistentEliminationRequested() noexcept override {}
   const char* what() const noexcept override {
     // Format keys for printing
     std::stringstream sstr;
-    for (auto key : keys_) {
-      sstr << keyFormatter(key) << ", ";
+    size_t nrKeysToDisplay = std::min(size_t(4), keys_.size());
+    for (size_t i = 0; i < nrKeysToDisplay; i++) {
+      sstr << keyFormatter(keys_.at(i));
+      if (i < nrKeysToDisplay - 1) {
+        sstr << ", ";
+      }
     }
+    if (keys_.size() > nrKeysToDisplay) {
+      sstr << ", ... (total " << keys_.size() << " keys)";
+    }
+    sstr << ".";
     std::string keys = sstr.str();
-    // remove final comma and space.
-    keys.pop_back();
-    keys.pop_back();
 
-    static std::string msg =
+    std::string msg =
         "An inference algorithm was called with inconsistent "
         "arguments.  "
         "The\n"
@@ -64,7 +69,8 @@ class InconsistentEliminationRequested : public std::exception {
         "that\n"
         "does not include all of the variables.\n";
     msg += ("Leftover keys after elimination: " + keys);
-    return msg.c_str();
+    // `new` to allocate memory on heap instead of stack
+    return (new std::string(msg))->c_str();
   }
 };
 }  // namespace gtsam

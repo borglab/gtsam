@@ -465,7 +465,31 @@ TEST(GaussianFactorGraph, InconsistentEliminationMessage) {
         "an ordering "
         "that\n"
         "does not include all of the variables.\n"
-        "Leftover keys after elimination: 2, x3";
+        "Leftover keys after elimination: 2, x3.";
+    EXPECT(expected_exception_message == exc.what());
+  }
+
+  // Test large number of keys
+  fg = GaussianFactorGraph();
+  for (size_t i = 0; i < 1000; i++) {
+    fg.emplace_shared<JacobianFactor>(i, -I_2x2, i + 1, I_2x2,
+                                      Vector2(2.0, -1.0), unit2);
+  }
+
+  try {
+    fg.eliminateSequential(ordering);
+  } catch (const exception& exc) {
+    std::string expected_exception_message = "An inference algorithm was called with inconsistent "
+        "arguments.  "
+        "The\n"
+        "factor graph, ordering, or variable index were "
+        "inconsistent with "
+        "each\n"
+        "other, or a full elimination routine was called with "
+        "an ordering "
+        "that\n"
+        "does not include all of the variables.\n"
+        "Leftover keys after elimination: 2, 3, 4, 5, ... (total 999 keys).";
     EXPECT(expected_exception_message == exc.what());
   }
 }
