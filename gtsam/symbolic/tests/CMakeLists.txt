@@ -6,4 +6,7 @@ else()
   set(EXCLUDE_TESTS "")
 endif()
 
+list(APPEND EXCLUDE_TESTS testSymbolicConditional.cpp)
+
 gtsamAddTestsGlob(symbolic "test*.cpp" "${EXCLUDE_TESTS}" "gtsam")
+gtsamAddTestsGlob(symbolic2 "testSymbolicConditional.cpp" "" "gtsam")
