@@ -93,7 +93,7 @@ namespace gtsam {
     /// print
     void print(const std::string& s, const LabelFormatter& labelFormatter,
                const ValueFormatter& valueFormatter) const override {
-      std::cout << s << " Leaf [" << nrAssignments() << "]"
+      std::cout << s << " Leaf [" << nrAssignments() << "] "
                 << valueFormatter(constant_) << std::endl;
     }
 
