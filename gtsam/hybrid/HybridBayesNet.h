@@ -224,9 +224,9 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /**
    * @brief Update the discrete conditionals with the pruned versions.
    *
-   * @param prunedDecisionTree
+   * @param prunedDiscreteProbs
    */
-  void updateDiscreteConditionals(const DecisionTreeFactor &prunedDecisionTree);
+  void updateDiscreteConditionals(const DecisionTreeFactor &prunedDiscreteProbs);
 
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */

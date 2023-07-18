@@ -138,6 +138,8 @@ void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre) {
 /** Traverse a forest depth-first with pre-order and post-order visits.
  *  @param forest The forest of trees to traverse.  The method \c forest.roots() should exist
  *         and return a collection of (shared) pointers to \c FOREST::Node.
+ *  @param rootData The data to pass by reference to \c visitorPre when it is called on each
+ *         root node.
  *  @param visitorPre \c visitorPre(node, parentData) will be called at every node, before
  *         visiting its children, and will be passed, by reference, the \c DATA object returned
  *         by the visit to its parent.  Likewise, \c visitorPre should return the \c DATA object
@@ -147,8 +149,8 @@ void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre) {
  *  @param visitorPost \c visitorPost(node, data) will be called at every node, after visiting
  *         its children, and will be passed, by reference, the \c DATA object returned by the
  *         call to \c visitorPre (the \c DATA object may be modified by visiting the children).
- *  @param rootData The data to pass by reference to \c visitorPre when it is called on each
- *         root node. */
+ *  @param problemSizeThreshold
+ */
 template<class FOREST, typename DATA, typename VISITOR_PRE,
     typename VISITOR_POST>
 void DepthFirstForestParallel(FOREST& forest, DATA& rootData,

@@ -166,7 +166,9 @@ class Rot2 {
 
   // Manifold
   gtsam::Rot2 retract(Vector v) const;
+  gtsam::Rot2 retract(Vector v, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
   Vector localCoordinates(const gtsam::Rot2& p) const;
+  Vector localCoordinates(const gtsam::Rot2& p, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // Lie Group
   static gtsam::Rot2 Expmap(Vector v);
@@ -397,19 +399,24 @@ class Pose2 {
   static gtsam::Pose2 Identity();
   gtsam::Pose2 inverse() const;
   gtsam::Pose2 compose(const gtsam::Pose2& p2) const;
+  gtsam::Pose2 compose(const gtsam::Pose2& p2, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
   gtsam::Pose2 between(const gtsam::Pose2& p2) const;
+  gtsam::Pose2 between(const gtsam::Pose2& p2, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // Operator Overloads
   gtsam::Pose2 operator*(const gtsam::Pose2& p2) const;
 
   // Manifold
   gtsam::Pose2 retract(Vector v) const;
+  gtsam::Pose2 retract(Vector v, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
   Vector localCoordinates(const gtsam::Pose2& p) const;
+  Vector localCoordinates(const gtsam::Pose2& p, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // Lie Group
   static gtsam::Pose2 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose2& p);
   Vector logmap(const gtsam::Pose2& p);
+  Vector logmap(const gtsam::Pose2& p, Eigen::Ref<Eigen::MatrixXd> H);
   static Matrix ExpmapDerivative(Vector v);
   static Matrix LogmapDerivative(const gtsam::Pose2& v);
   Matrix AdjointMap() const;

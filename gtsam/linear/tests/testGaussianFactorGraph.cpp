@@ -71,6 +71,28 @@ TEST(GaussianFactorGraph, initialization) {
 }
 
 /* ************************************************************************* */
+TEST(GaussianFactorGraph, Append) {
+  // Create empty graph
+  GaussianFactorGraph fg;
+  SharedDiagonal unit2 = noiseModel::Unit::Create(2);
+
+  auto f1 =
+      make_shared<JacobianFactor>(0, 10 * I_2x2, -1.0 * Vector::Ones(2), unit2);
+  auto f2 = make_shared<JacobianFactor>(0, -10 * I_2x2, 1, 10 * I_2x2,
+                                        Vector2(2.0, -1.0), unit2);
+  auto f3 = make_shared<JacobianFactor>(0, -5 * I_2x2, 2, 5 * I_2x2,
+                                        Vector2(0.0, 1.0), unit2);
+
+  fg += f1;
+  fg += f2;
+  EXPECT_LONGS_EQUAL(2, fg.size());
+
+  fg = GaussianFactorGraph();
+  fg += f1, f2, f3;
+  EXPECT_LONGS_EQUAL(3, fg.size());
+}
+
+/* ************************************************************************* */
 TEST(GaussianFactorGraph, sparseJacobian) {
   // Create factor graph:
   // x1 x2 x3 x4 x5  b

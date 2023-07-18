@@ -98,7 +98,7 @@ static GaussianFactorGraphTree addGaussian(
 // TODO(dellaert): it's probably more efficient to first collect the discrete
 // keys, and then loop over all assignments to populate a vector.
 GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
-  gttic(assembleGraphTree);
+  gttic_(assembleGraphTree);
 
   GaussianFactorGraphTree result;
 
@@ -131,7 +131,7 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
     }
   }
 
-  gttoc(assembleGraphTree);
+  gttoc_(assembleGraphTree);
 
   return result;
 }
@@ -190,7 +190,8 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
 /* ************************************************************************ */
 // If any GaussianFactorGraph in the decision tree contains a nullptr, convert
 // that leaf to an empty GaussianFactorGraph. Needed since the DecisionTree will
-// otherwise create a GFG with a single (null) factor, which doesn't register as null.
+// otherwise create a GFG with a single (null) factor,
+// which doesn't register as null.
 GaussianFactorGraphTree removeEmpty(const GaussianFactorGraphTree &sum) {
   auto emptyGaussian = [](const GaussianFactorGraph &graph) {
     bool hasNull =
@@ -230,25 +231,13 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
       return {nullptr, nullptr};
     }
 
-#ifdef HYBRID_TIMING
-    gttic_(hybrid_eliminate);
-#endif
-
     auto result = EliminatePreferCholesky(graph, frontalKeys);
-
-#ifdef HYBRID_TIMING
-    gttoc_(hybrid_eliminate);
-#endif
 
     return result;
   };
 
   // Perform elimination!
   DecisionTree<Key, Result> eliminationResults(factorGraphTree, eliminate);
-
-#ifdef HYBRID_TIMING
-  tictoc_print_();
-#endif
 
   // Separate out decision tree into conditionals and remaining factors.
   const auto [conditionals, newFactors] = unzip(eliminationResults);
