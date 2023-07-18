@@ -6,7 +6,4 @@ else()
   set(EXCLUDE_TESTS "")
 endif()
 
-list(APPEND EXCLUDE_TESTS testExpression.cpp)
-
 gtsamAddTestsGlob(nonlinear "test*.cpp" "${EXCLUDE_TESTS}" "gtsam")
-gtsamAddTestsGlob(nonlinear2 "testExpression.cpp" "" "gtsam")

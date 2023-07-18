@@ -120,15 +120,11 @@ jobs:
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.inference
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.linear
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.navigation
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.navigation2
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.sam
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.sfm
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.sfm2
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.symbolic
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.symbolic2
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.hybrid
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear2
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam
 
           # Run GTSAM_UNSTABLE tests
@@ -140,3 +136,7 @@ jobs:
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear_unstable
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam_unstable
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.partition
+
+      - name: Test
+        run: |
+           cmake --build build -j4 --config ${{ matrix.build_type }} --target check
