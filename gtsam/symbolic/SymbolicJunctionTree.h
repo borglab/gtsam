@@ -65,4 +65,6 @@ namespace gtsam {
     SymbolicJunctionTree(const SymbolicEliminationTree& eliminationTree);
   };
 
+  /// typedef for wrapper:
+  using SymbolicCluster = SymbolicJunctionTree::Cluster;
 }
