@@ -18,16 +18,17 @@
  *  @author Richard Roberts
  **/
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/TestableAssertions.h>
-#include <gtsam/base/VerticalBlockMatrix.h>
-#include <gtsam/base/debug.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/inference/VariableIndex.h>
-#include <gtsam/inference/VariableSlots.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/inference/VariableSlots.h>
+#include <gtsam/inference/VariableIndex.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/base/VerticalBlockMatrix.h>
+
+#include <gtsam/base/TestableAssertions.h>
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
