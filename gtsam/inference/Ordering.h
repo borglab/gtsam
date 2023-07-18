@@ -240,10 +240,8 @@ public:
   /// @name Testable
   /// @{
 
-  
   void print(const std::string& str = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const;
-
   
   bool equals(const Ordering& other, double tol = 1e-9) const;
 
