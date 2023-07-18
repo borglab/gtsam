@@ -45,7 +45,6 @@ public:
   typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
   /// Create an empty ordering
-  
   Ordering() {
   }
 
@@ -71,11 +70,9 @@ public:
    * @param keys The key vector to append to this ordering.
    * @return The ordering variable with appended keys.
    */
-  
   This& operator+=(KeyVector& keys);
 
   /// Check if key exists in ordering.
-  
   bool contains(const Key& key) const;
 
   /**
@@ -101,7 +98,7 @@ public:
   }
 
   /// Compute a fill-reducing ordering using COLAMD from a VariableIndex.
-  static  Ordering Colamd(const VariableIndex& variableIndex);
+  static Ordering Colamd(const VariableIndex& variableIndex);
 
   /// Compute a fill-reducing ordering using constrained COLAMD from a factor graph (see details
   /// for note on performance).  This internally builds a VariableIndex so if you already have a
@@ -126,7 +123,7 @@ public:
   /// variables in \c constrainLast will be ordered in the same order specified in the KeyVector
   /// \c constrainLast.   If \c forceOrder is false, the variables in \c constrainLast will be
   /// ordered after all the others, but will be rearranged by CCOLAMD to reduce fill-in as well.
-  static  Ordering ColamdConstrainedLast(
+  static Ordering ColamdConstrainedLast(
       const VariableIndex& variableIndex, const KeyVector& constrainLast,
       bool forceOrder = false);
 
@@ -154,7 +151,7 @@ public:
   /// KeyVector \c constrainFirst.   If \c forceOrder is false, the variables in \c
   /// constrainFirst will be ordered before all the others, but will be rearranged by CCOLAMD to
   /// reduce fill-in as well.
-  static  Ordering ColamdConstrainedFirst(
+  static Ordering ColamdConstrainedFirst(
       const VariableIndex& variableIndex,
       const KeyVector& constrainFirst, bool forceOrder = false);
 
@@ -183,7 +180,7 @@ public:
   /// appear in \c groups in arbitrary order.  Any variables not present in \c groups will be
   /// assigned to group 0.  This function simply fills the \c cmember argument to CCOLAMD with the
   /// supplied indices, see the CCOLAMD documentation for more information.
-  static  Ordering ColamdConstrained(
+  static Ordering ColamdConstrained(
       const VariableIndex& variableIndex, const FastMap<Key, int>& groups);
 
   /// Return a natural Ordering. Typically used by iterative solvers
@@ -197,11 +194,11 @@ public:
 
   /// METIS Formatting function
   template<class FACTOR_GRAPH>
-  static  void CSRFormat(std::vector<int>& xadj,
+  static void CSRFormat(std::vector<int>& xadj,
       std::vector<int>& adj, const FACTOR_GRAPH& graph);
 
   /// Compute an ordering determined by METIS from a VariableIndex
-  static  Ordering Metis(const MetisIndex& met);
+  static Ordering Metis(const MetisIndex& met);
 
   template<class FACTOR_GRAPH>
   static Ordering Metis(const FACTOR_GRAPH& graph) {
@@ -254,7 +251,7 @@ public:
 
 private:
   /// Internal COLAMD function
-  static  Ordering ColamdConstrained(
+  static Ordering ColamdConstrained(
       const VariableIndex& variableIndex, std::vector<int>& cmember);
 
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
