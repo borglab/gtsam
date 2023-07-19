@@ -21,6 +21,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/inference/VariableSlots.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/base/debug.h>
@@ -457,6 +458,64 @@ TEST(GaussianFactorGraph, ProbPrime) {
   EXPECT_DOUBLES_EQUAL(expected, gfg.probPrime(values), 1e-12);
 }
 
+TEST(GaussianFactorGraph, InconsistentEliminationMessage) {
+  // Create empty graph
+  GaussianFactorGraph fg;
+  SharedDiagonal unit2 = noiseModel::Unit::Create(2);
+
+  using gtsam::symbol_shorthand::X;
+  fg.emplace_shared<JacobianFactor>(0, 10 * I_2x2, -1.0 * Vector::Ones(2),
+                                    unit2);
+  fg.emplace_shared<JacobianFactor>(0, -10 * I_2x2, 1, 10 * I_2x2,
+                                    Vector2(2.0, -1.0), unit2);
+  fg.emplace_shared<JacobianFactor>(1, -5 * I_2x2, 2, 5 * I_2x2,
+                                    Vector2(-1.0, 1.5), unit2);
+  fg.emplace_shared<JacobianFactor>(2, -5 * I_2x2, X(3), 5 * I_2x2,
+                                    Vector2(-1.0, 1.5), unit2);
+
+  Ordering ordering{0, 1};
+
+  try {
+    fg.eliminateSequential(ordering);
+  } catch (const exception& exc) {
+    std::string expected_exception_message = "An inference algorithm was called with inconsistent "
+        "arguments.  "
+        "The\n"
+        "factor graph, ordering, or variable index were "
+        "inconsistent with "
+        "each\n"
+        "other, or a full elimination routine was called with "
+        "an ordering "
+        "that\n"
+        "does not include all of the variables.\n"
+        "Leftover keys after elimination: 2, x3.";
+    EXPECT(expected_exception_message == exc.what());
+  }
+
+  // Test large number of keys
+  fg = GaussianFactorGraph();
+  for (size_t i = 0; i < 1000; i++) {
+    fg.emplace_shared<JacobianFactor>(i, -I_2x2, i + 1, I_2x2,
+                                      Vector2(2.0, -1.0), unit2);
+  }
+
+  try {
+    fg.eliminateSequential(ordering);
+  } catch (const exception& exc) {
+    std::string expected_exception_message = "An inference algorithm was called with inconsistent "
+        "arguments.  "
+        "The\n"
+        "factor graph, ordering, or variable index were "
+        "inconsistent with "
+        "each\n"
+        "other, or a full elimination routine was called with "
+        "an ordering "
+        "that\n"
+        "does not include all of the variables.\n"
+        "Leftover keys after elimination: 2, 3, 4, 5, ... (total 999 keys).";
+    EXPECT(expected_exception_message == exc.what());
+  }
+}
 /* ************************************************************************* */
 int main() {
   TestResult tr;
