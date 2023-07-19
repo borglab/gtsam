@@ -74,8 +74,9 @@ namespace gtsam {
       EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
       const auto [bayesNet, factorGraph] = etree.eliminate(function);
       // If any factors are remaining, the ordering was incomplete
-      if(!factorGraph->empty())
-        throw InconsistentEliminationRequested();
+      if(!factorGraph->empty()) {
+        throw InconsistentEliminationRequested(factorGraph->keys());
+      }
       // Return the Bayes net
       return bayesNet;
     }
@@ -136,8 +137,9 @@ namespace gtsam {
       JunctionTreeType junctionTree(etree);
       const auto [bayesTree, factorGraph] = junctionTree.eliminate(function);
       // If any factors are remaining, the ordering was incomplete
-      if(!factorGraph->empty())
-        throw InconsistentEliminationRequested();
+      if(!factorGraph->empty()) {
+        throw InconsistentEliminationRequested(factorGraph->keys());
+      }
       // Return the Bayes tree
       return bayesTree;
     }
