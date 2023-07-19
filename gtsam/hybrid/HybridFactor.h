@@ -20,6 +20,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/inference/Factor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>

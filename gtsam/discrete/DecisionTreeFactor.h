@@ -148,6 +148,12 @@ namespace gtsam {
     /// @{
 
     /**
+     * Apply unary operator (*this) "op" f
+     * @param op a unary operator that operates on AlgebraicDecisionTree
+     */
+    DecisionTreeFactor apply(ADT::UnaryAssignment op) const;
+
+    /**
      * Apply binary operator (*this) "op" f
      * @param f the second argument for op
      * @param op a binary operator that operates on AlgebraicDecisionTree
