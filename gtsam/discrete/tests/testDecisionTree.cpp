@@ -25,6 +25,7 @@
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/discrete/Signature.h>
+#include <gtsam/inference/Symbol.h>
 
 #include <iomanip>
 

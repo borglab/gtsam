@@ -202,31 +202,16 @@ struct Switching {
    * @brief Add "mode chain" to HybridNonlinearFactorGraph from M(0) to M(K-2).
    * E.g. if K=4, we want M0, M1 and M2.
    *
-   * @param fg The nonlinear factor graph to which the mode chain is added.
+   * @param fg The factor graph to which the mode chain is added.
    */
-  void addModeChain(HybridNonlinearFactorGraph *fg,
+  template <typename FACTORGRAPH>
+  void addModeChain(FACTORGRAPH *fg,
                     std::string discrete_transition_prob = "1/2 3/2") {
-    fg->emplace_shared<DiscreteDistribution>(modes[0], "1/1");
+    fg->template emplace_shared<DiscreteDistribution>(modes[0], "1/1");
     for (size_t k = 0; k < K - 2; k++) {
       auto parents = {modes[k]};
-      fg->emplace_shared<DiscreteConditional>(modes[k + 1], parents,
-                                              discrete_transition_prob);
-    }
-  }
-
-  /**
-   * @brief Add "mode chain" to HybridGaussianFactorGraph from M(0) to M(K-2).
-   * E.g. if K=4, we want M0, M1 and M2.
-   *
-   * @param fg The gaussian factor graph to which the mode chain is added.
-   */
-  void addModeChain(HybridGaussianFactorGraph *fg,
-                    std::string discrete_transition_prob = "1/2 3/2") {
-    fg->emplace_shared<DiscreteDistribution>(modes[0], "1/1");
-    for (size_t k = 0; k < K - 2; k++) {
-      auto parents = {modes[k]};
-      fg->emplace_shared<DiscreteConditional>(modes[k + 1], parents,
-                                              discrete_transition_prob);
+      fg->template emplace_shared<DiscreteConditional>(
+          modes[k + 1], parents, discrete_transition_prob);
     }
   }
 };

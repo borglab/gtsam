@@ -146,7 +146,7 @@ TEST(HybridBayesTree, Optimize) {
 
   DiscreteFactorGraph dfg;
   for (auto&& f : *remainingFactorGraph) {
-    auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(f);
+    auto discreteFactor = dynamic_pointer_cast<DiscreteFactor>(f);
     assert(discreteFactor);
     dfg.push_back(discreteFactor);
   }
