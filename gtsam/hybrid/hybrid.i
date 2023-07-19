@@ -176,6 +176,7 @@ class HybridGaussianFactorGraph {
   void push_back(const gtsam::HybridBayesTree& bayesTree);
   void push_back(const gtsam::GaussianMixtureFactor* gmm);
   void push_back(gtsam::DecisionTreeFactor* factor);
+  void push_back(gtsam::TableFactor* factor);
   void push_back(gtsam::JacobianFactor* factor);
 
   bool empty() const;
