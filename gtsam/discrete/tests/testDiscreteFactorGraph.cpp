@@ -356,37 +356,37 @@ size: 2
 factor 0:  f[ (m0,2), (m1,2), (m2,2), ]
  Choice(m2) 
  0 Choice(m1) 
- 0 0 Leaf [2]   0
+ 0 0 Leaf [2]    0
  0 1 Choice(m0) 
- 0 1 0 Leaf [1]0.27527634
- 0 1 1 Leaf [1]   0
+ 0 1 0 Leaf [1] 0.27527634
+ 0 1 1 Leaf [1]    0
  1 Choice(m1) 
- 1 0 Leaf [2]   0
+ 1 0 Leaf [2]    0
  1 1 Choice(m0) 
- 1 1 0 Leaf [1]0.44944733
- 1 1 1 Leaf [1]0.27527634
+ 1 1 0 Leaf [1] 0.44944733
+ 1 1 1 Leaf [1] 0.27527634
 factor 1:  f[ (m0,2), (m1,2), (m2,2), (m3,2), ]
  Choice(m3) 
  0 Choice(m2) 
  0 0 Choice(m1) 
- 0 0 0 Leaf [2]   1
- 0 0 1 Leaf [2]0.015366387
+ 0 0 0 Leaf [2]    1
+ 0 0 1 Leaf [2] 0.015366387
  0 1 Choice(m1) 
- 0 1 0 Leaf [2]   1
+ 0 1 0 Leaf [2]    1
  0 1 1 Choice(m0) 
- 0 1 1 0 Leaf [1]   1
- 0 1 1 1 Leaf [1]0.015365663
+ 0 1 1 0 Leaf [1]    1
+ 0 1 1 1 Leaf [1] 0.015365663
  1 Choice(m2) 
  1 0 Choice(m1) 
- 1 0 0 Leaf [2]   1
+ 1 0 0 Leaf [2]    1
  1 0 1 Choice(m0) 
- 1 0 1 0 Leaf [1]0.0094115739
- 1 0 1 1 Leaf [1]0.0094115652
+ 1 0 1 0 Leaf [1] 0.0094115739
+ 1 0 1 1 Leaf [1] 0.0094115652
  1 1 Choice(m1) 
- 1 1 0 Leaf [2]   1
+ 1 1 0 Leaf [2]    1
  1 1 1 Choice(m0) 
- 1 1 1 0 Leaf [1]   1
- 1 1 1 1 Leaf [1]0.009321081
+ 1 1 1 0 Leaf [1]    1
+ 1 1 1 1 Leaf [1] 0.009321081
 )";
 #else
   string expected_dfg = R"(
@@ -395,50 +395,50 @@ factor 0:  f[ (m0,2), (m1,2), (m2,2), ]
  Choice(m2) 
  0 Choice(m1) 
  0 0 Choice(m0) 
- 0 0 0 Leaf [1]   0
- 0 0 1 Leaf [1]   0
+ 0 0 0 Leaf [1]    0
+ 0 0 1 Leaf [1]    0
  0 1 Choice(m0) 
- 0 1 0 Leaf [1]0.27527634
- 0 1 1 Leaf [1]0.44944733
+ 0 1 0 Leaf [1] 0.27527634
+ 0 1 1 Leaf [1] 0.44944733
  1 Choice(m1) 
  1 0 Choice(m0) 
- 1 0 0 Leaf [1]   0
- 1 0 1 Leaf [1]   0
+ 1 0 0 Leaf [1]    0
+ 1 0 1 Leaf [1]    0
  1 1 Choice(m0) 
- 1 1 0 Leaf [1]   0
- 1 1 1 Leaf [1]0.27527634
+ 1 1 0 Leaf [1]    0
+ 1 1 1 Leaf [1] 0.27527634
 factor 1:  f[ (m0,2), (m1,2), (m2,2), (m3,2), ]
  Choice(m3) 
  0 Choice(m2) 
  0 0 Choice(m1) 
  0 0 0 Choice(m0) 
- 0 0 0 0 Leaf [1]   1
- 0 0 0 1 Leaf [1]   1
+ 0 0 0 0 Leaf [1]    1
+ 0 0 0 1 Leaf [1]    1
  0 0 1 Choice(m0) 
- 0 0 1 0 Leaf [1]0.015366387
- 0 0 1 1 Leaf [1]0.015366387
+ 0 0 1 0 Leaf [1] 0.015366387
+ 0 0 1 1 Leaf [1] 0.015366387
  0 1 Choice(m1) 
  0 1 0 Choice(m0) 
- 0 1 0 0 Leaf [1]   1
- 0 1 0 1 Leaf [1]   1
+ 0 1 0 0 Leaf [1]    1
+ 0 1 0 1 Leaf [1]    1
  0 1 1 Choice(m0) 
- 0 1 1 0 Leaf [1]   1
- 0 1 1 1 Leaf [1]0.015365663
+ 0 1 1 0 Leaf [1]    1
+ 0 1 1 1 Leaf [1] 0.015365663
  1 Choice(m2) 
  1 0 Choice(m1) 
  1 0 0 Choice(m0) 
- 1 0 0 0 Leaf [1]   1
- 1 0 0 1 Leaf [1]   1
+ 1 0 0 0 Leaf [1]    1
+ 1 0 0 1 Leaf [1]    1
  1 0 1 Choice(m0) 
- 1 0 1 0 Leaf [1]0.0094115739
- 1 0 1 1 Leaf [1]0.0094115652
+ 1 0 1 0 Leaf [1] 0.0094115739
+ 1 0 1 1 Leaf [1] 0.0094115652
  1 1 Choice(m1) 
  1 1 0 Choice(m0) 
- 1 1 0 0 Leaf [1]   1
- 1 1 0 1 Leaf [1]   1
+ 1 1 0 0 Leaf [1]    1
+ 1 1 0 1 Leaf [1]    1
  1 1 1 Choice(m0) 
- 1 1 1 0 Leaf [1]   1
- 1 1 1 1 Leaf [1]0.009321081
+ 1 1 1 0 Leaf [1]    1
+ 1 1 1 1 Leaf [1] 0.009321081
 )";
 #endif
 

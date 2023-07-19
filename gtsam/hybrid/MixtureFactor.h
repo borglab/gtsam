@@ -191,7 +191,7 @@ class MixtureFactor : public HybridFactor {
     std::cout << "\nMixtureFactor\n";
     auto valueFormatter = [](const sharedFactor& v) {
       if (v) {
-        return " Nonlinear factor on " + std::to_string(v->size()) + " keys";
+        return "Nonlinear factor on " + std::to_string(v->size()) + " keys";
       } else {
         return std::string("nullptr");
       }
