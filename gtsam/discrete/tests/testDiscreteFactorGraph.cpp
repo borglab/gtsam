@@ -349,6 +349,7 @@ TEST(DiscreteFactorGraph, markdown) {
   EXPECT_DOUBLES_EQUAL(0.3, graph[0]->operator()(values), 1e-9);
 }
 
+/* ************************************************************************* */
 TEST(DiscreteFactorGraph, NrAssignments) {
 #ifdef GTSAM_DT_MERGING
   string expected_dfg = R"(
@@ -358,13 +359,13 @@ factor 0:  f[ (m0,2), (m1,2), (m2,2), ]
  0 Choice(m1) 
  0 0 Leaf [2]    0
  0 1 Choice(m0) 
- 0 1 0 Leaf [1] 0.27527634
+ 0 1 0 Leaf [1] 0.17054468
  0 1 1 Leaf [1]    0
  1 Choice(m1) 
  1 0 Leaf [2]    0
  1 1 Choice(m0) 
- 1 1 0 Leaf [1] 0.44944733
- 1 1 1 Leaf [1] 0.27527634
+ 1 1 0 Leaf [1] 0.27845056
+ 1 1 1 Leaf [1] 0.17054468
 factor 1:  f[ (m0,2), (m1,2), (m2,2), (m3,2), ]
  Choice(m3) 
  0 Choice(m2) 
@@ -445,9 +446,7 @@ factor 1:  f[ (m0,2), (m1,2), (m2,2), (m3,2), ]
   DiscreteKeys d0{{M(0), 2}, {M(1), 2}, {M(2), 2}};
   std::vector<double> p0 = {0, 0, 0.17054468, 0.27845056, 0, 0, 0, 0.17054468};
   AlgebraicDecisionTree<Key> dt(d0, p0);
-  //TODO(Varun) Passing ADT to DiscreteConditional causes nrAssignments to get messed up
-  // Issue seems to be in DecisionTreeFactor.cpp L104
-  DiscreteConditional f0(3, DecisionTreeFactor(d0, dt));
+  DiscreteConditional f0(3, d0, dt);
 
   DiscreteKeys d1{{M(0), 2}, {M(1), 2}, {M(2), 2}, {M(3), 2}};
   std::vector<double> p1 = {

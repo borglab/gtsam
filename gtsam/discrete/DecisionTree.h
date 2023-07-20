@@ -129,7 +129,8 @@ namespace gtsam {
       virtual Ptr apply_f_op_g(const Node&, const Binary&) const = 0;
       virtual Ptr apply_g_op_fL(const Leaf&, const Binary&) const = 0;
       virtual Ptr apply_g_op_fC(const Choice&, const Binary&) const = 0;
-      virtual Ptr choose(const L& label, size_t index) const = 0;
+      virtual Ptr choose(const L& label, size_t index,
+                         bool make_unique = true) const = 0;
       virtual bool isLeaf() const = 0;
 
      private:
@@ -403,8 +404,9 @@ namespace gtsam {
 
     /** create a new function where value(label)==index
      * It's like "restrict" in Darwiche09book pg329, 330? */
-    DecisionTree choose(const L& label, size_t index) const {
-      NodePtr newRoot = root_->choose(label, index);
+    DecisionTree choose(const L& label, size_t index,
+                        bool make_unique = true) const {
+      NodePtr newRoot = root_->choose(label, index, make_unique);
       return DecisionTree(newRoot);
     }
 

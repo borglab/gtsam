@@ -236,7 +236,7 @@ TEST(DecisionTree, Example) {
 #ifdef GTSAM_DT_MERGING
   EXPECT(assert_equal(DT(0.0), actual0));
 #else
-  // EXPECT(assert_equal(DT({0.0, 0.0}), actual0));
+  EXPECT(assert_equal(DT({0.0, 0.0}), actual0));
 #endif
   DOT(actual0);
 

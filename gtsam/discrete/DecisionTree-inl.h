@@ -137,8 +137,8 @@ namespace gtsam {
     // Applying binary operator to two leaves results in a leaf
     NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const override {
       // fL op gL
-      // TODO(Varun) nrAssignments setting is not correct.
-      // Depending on f and g, the nrAssignments can be different. This is a bug!
+      // The nrAssignments is always set to fL since we consider g operating on
+      // (or modifying) f.
       NodePtr h(new Leaf(op(fL.constant_, constant_), fL.nrAssignments()));
       return h;
     }
@@ -149,8 +149,9 @@ namespace gtsam {
     }
 
     /** choose a branch, create new memory ! */
-    NodePtr choose(const L& label, size_t index) const override {
-      return NodePtr(new Leaf(constant(), nrAssignments()));
+    NodePtr choose(const L& label, size_t index,
+                   bool make_unique = true) const override {
+      return NodePtr(new Leaf(constant(), 1));
     }
 
     bool isLeaf() const override { return true; }
@@ -468,14 +469,22 @@ namespace gtsam {
     }
 
     /** choose a branch, recursively */
-    NodePtr choose(const L& label, size_t index) const override {
+    NodePtr choose(const L& label, size_t index,
+                   bool make_unique = true) const override {
       if (label_ == label) return branches_[index];  // choose branch
 
       // second case, not label of interest, just recurse
       auto r = std::make_shared<Choice>(label_, branches_.size());
-      for (auto&& branch : branches_)
-        r->push_back(branch->choose(label, index));
-      return Unique(r);
+      for (auto&& branch : branches_) {
+        r->push_back(branch->choose(label, index, make_unique));
+      }
+
+      if (make_unique) {
+        return Unique(r);
+      } else {
+        return r;
+      }
+      // return Unique(r);
     }
 
    private:
@@ -997,9 +1006,9 @@ namespace gtsam {
   template<typename L, typename Y>
   DecisionTree<L, Y> DecisionTree<L, Y>::combine(const L& label,
       size_t cardinality, const Binary& op) const {
-    DecisionTree result = choose(label, 0);
+    DecisionTree result = choose(label, 0, false);
     for (size_t index = 1; index < cardinality; index++) {
-      DecisionTree chosen = choose(label, index);
+      DecisionTree chosen = choose(label, index, false);
       result = result.apply(chosen, op);
     }
     return result;
