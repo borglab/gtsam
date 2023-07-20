@@ -178,7 +178,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
       throwRuntimeError("continuousElimination", f);
     }
   }
-
+  dfg.print("The DFG to eliminate");
   // NOTE: This does sum-product. For max-product, use EliminateForMPE.
   auto result = EliminateDiscrete(dfg, frontalKeys);
 

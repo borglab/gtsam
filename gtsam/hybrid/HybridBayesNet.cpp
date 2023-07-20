@@ -140,15 +140,26 @@ DecisionTreeFactor HybridBayesNet::pruneDiscreteConditionals(
   for (size_t i = 0; i < this->size(); i++) {
     auto conditional = this->at(i);
     if (conditional->isDiscrete()) {
+      std::cout << ">>>" << std::endl;
+      conditional->print();
       discreteProbs = discreteProbs * (*conditional->asDiscrete());
+      // discreteProbs.print();
+      // std::cout << "================\n" << std::endl;
 
       Ordering conditional_keys(conditional->frontals());
       discrete_frontals += conditional_keys;
       discrete_factor_idxs.push_back(i);
     }
   }
+  std::cout << "Original Joint Prob:" << std::endl;
+  std::cout << discreteProbs.nrAssignments() << std::endl;
+  discreteProbs.print();
   const DecisionTreeFactor prunedDiscreteProbs =
       discreteProbs.prune(maxNrLeaves);
+  std::cout << "Pruned Joint Prob:" << std::endl;
+  std::cout << prunedDiscreteProbs.nrAssignments() << std::endl;
+  prunedDiscreteProbs.print();
+  std::cout << "\n\n\n";
   gttoc_(HybridBayesNet_PruneDiscreteConditionals);
 
   // Eliminate joint probability back into conditionals
@@ -159,6 +170,8 @@ DecisionTreeFactor HybridBayesNet::pruneDiscreteConditionals(
   // Assign pruned discrete conditionals back at the correct indices.
   for (size_t i = 0; i < discrete_factor_idxs.size(); i++) {
     size_t idx = discrete_factor_idxs.at(i);
+    // std::cout << i << std::endl;
+    // dbn->at(i)->print();
     this->at(idx) = std::make_shared<HybridConditional>(dbn->at(i));
   }
   gttoc_(HybridBayesNet_UpdateDiscreteConditionals);
