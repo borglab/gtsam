@@ -196,18 +196,12 @@ namespace gtsam {
 
   /* ************************************************************************ */
   std::vector<double> DecisionTreeFactor::probabilities() const {
-    std::vector<double> probs;
-
-    // Get all the key cardinalities
-    std::map<Key, size_t> cardins;
-    for (auto [key, cardinality] : discreteKeys()) {
-      cardins[key] = cardinality;
-    }
     // Set of all keys
     std::set<Key> allKeys(keys().begin(), keys().end());
 
+    std::vector<double> probs;
+
     // Go through the tree
-    std::vector<double> ys;
     this->apply([&](const Assignment<Key> a, double p) {
       // Get all the keys in the current assignment
       std::set<Key> assignment_keys;
@@ -224,7 +218,7 @@ namespace gtsam {
       // Compute the total number of assignments in the (pruned) subtree
       size_t nrAssignments = 1;
       for (auto&& k : diff) {
-        nrAssignments *= cardins.at(k);
+        nrAssignments *= cardinalities_.at(k);
       }
       probs.insert(probs.end(), nrAssignments, p);
       return p;
