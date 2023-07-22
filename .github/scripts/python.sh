@@ -9,14 +9,13 @@ set -x -e
 # install TBB with _debug.so files
 function install_tbb()
 {
+  echo install_tbb
   if [ "$(uname)" == "Linux" ]; then
     sudo apt-get -y install libtbb-dev
 
   elif [ "$(uname)" == "Darwin" ]; then
     brew install tbb
-
   fi
-
 }
 
 if [ -z ${PYTHON_VERSION+x} ]; then
@@ -37,19 +36,20 @@ function install_dependencies()
 
   export PATH=$PATH:$($PYTHON -c "import site; print(site.USER_BASE)")/bin
 
-  [ "${GTSAM_WITH_TBB:-OFF}" = "ON" ] && install_tbb
+  if [ "${GTSAM_WITH_TBB:-OFF}" == "ON" ]; then
+    install_tbb
+  fi
 
   $PYTHON -m pip install -r $GITHUB_WORKSPACE/python/requirements.txt
 }
 
 function build()
 {
-  mkdir $GITHUB_WORKSPACE/build
-  cd $GITHUB_WORKSPACE/build
-
   BUILD_PYBIND="ON"
-
-  cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+  export CMAKE_GENERATOR=Ninja
+  cmake $GITHUB_WORKSPACE \
+      -B $GITHUB_WORKSPACE/build \
+      -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
       -DGTSAM_BUILD_TESTS=OFF \
       -DGTSAM_BUILD_UNSTABLE=${GTSAM_BUILD_UNSTABLE:-ON} \
       -DGTSAM_USE_QUATERNIONS=OFF \
@@ -65,7 +65,7 @@ function build()
 
 
   # Set to 2 cores so that Actions does not error out during resource provisioning.
-  make -j2 install
+  cmake --build $GITHUB_WORKSPACE/build -j2
 
   cd $GITHUB_WORKSPACE/build/python
   $PYTHON -m pip install --user .
