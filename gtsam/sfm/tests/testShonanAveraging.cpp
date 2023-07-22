@@ -415,6 +415,20 @@ TEST(ShonanAveraging3, PriorWeights) {
   auto result = shonan.run(initial, 3, 3);
   EXPECT_DOUBLES_EQUAL(0.0015, shonan.cost(result.first), 1e-4);
 }
+
+/* ************************************************************************* */
+// Check a small graph created using binary measurements
+TEST(ShonanAveraging3, BinaryMeasurements) {
+  std::vector<BinaryMeasurement<Rot3>> measurements;
+  auto unit3 = noiseModel::Unit::Create(3);
+  measurements.emplace_back(0, 1, Rot3::Yaw(M_PI_2), unit3);
+  measurements.emplace_back(1, 2, Rot3::Yaw(M_PI_2), unit3);
+  ShonanAveraging3 shonan(measurements);
+  Values initial = shonan.initializeRandomly();
+  auto result = shonan.run(initial, 3, 5);
+  EXPECT_DOUBLES_EQUAL(0.0, shonan.cost(result.first), 1e-4);
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
