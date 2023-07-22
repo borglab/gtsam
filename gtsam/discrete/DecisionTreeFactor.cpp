@@ -83,6 +83,22 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
+  DecisionTreeFactor DecisionTreeFactor::apply(ADT::Unary op) const {
+    // apply operand
+    ADT result = ADT::apply(op);
+    // Make a new factor
+    return DecisionTreeFactor(discreteKeys(), result);
+  }
+
+  /* ************************************************************************ */
+  DecisionTreeFactor DecisionTreeFactor::apply(ADT::UnaryAssignment op) const {
+    // apply operand
+    ADT result = ADT::apply(op);
+    // Make a new factor
+    return DecisionTreeFactor(discreteKeys(), result);
+  }
+
+  /* ************************************************************************ */
   DecisionTreeFactor DecisionTreeFactor::apply(const DecisionTreeFactor& f,
                                               ADT::Binary op) const {
     map<Key, size_t> cs;  // new cardinalities

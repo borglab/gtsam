@@ -147,8 +147,18 @@ namespace gtsam {
     /// @name Advanced Interface
     /// @{
 
-    /// Inherit all the `apply` methods from AlgebraicDecisionTree
-    using ADT::apply;
+    /**
+     * Apply unary operator (*this) "op" f
+     * @param op a unary operator that operates on AlgebraicDecisionTree
+     */
+    DecisionTreeFactor apply(ADT::Unary op) const;
+
+    /**
+     * Apply unary operator (*this) "op" f
+     * @param op a unary operator that operates on AlgebraicDecisionTree. Takes
+     * both the assignment and the value.
+     */
+    DecisionTreeFactor apply(ADT::UnaryAssignment op) const;
 
     /**
      * Apply binary operator (*this) "op" f
