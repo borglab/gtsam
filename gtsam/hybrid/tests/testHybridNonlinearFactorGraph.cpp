@@ -420,7 +420,7 @@ TEST(HybridFactorGraph, Full_Elimination) {
     DiscreteFactorGraph discrete_fg;
     // TODO(Varun) Make this a function of HybridGaussianFactorGraph?
     for (auto& factor : (*remainingFactorGraph_partial)) {
-      auto df = dynamic_pointer_cast<DecisionTreeFactor>(factor);
+      auto df = dynamic_pointer_cast<DiscreteFactor>(factor);
       assert(df);
       discrete_fg.push_back(df);
     }
