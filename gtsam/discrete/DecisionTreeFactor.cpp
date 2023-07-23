@@ -118,14 +118,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  DecisionTreeFactor DecisionTreeFactor::apply(ADT::UnaryAssignment op) const {
-    // apply operand
-    ADT result = ADT::apply(op);
-    // Make a new factor
-    return DecisionTreeFactor(discreteKeys(), result);
-  }
-
-  /* ************************************************************************ */
   DecisionTreeFactor::shared_ptr DecisionTreeFactor::combine(
       size_t nrFrontals, ADT::Binary op) const {
     if (nrFrontals > size()) {
