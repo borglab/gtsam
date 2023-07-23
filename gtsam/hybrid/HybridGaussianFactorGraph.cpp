@@ -273,8 +273,9 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
     DecisionTree<Key, double> probabilities(eliminationResults, probability);
 
-    return {std::make_shared<HybridConditional>(gaussianMixture),
-            std::make_shared<TableFactor>(discreteSeparator, probabilities)};
+    return {
+        std::make_shared<HybridConditional>(gaussianMixture),
+        std::make_shared<DecisionTreeFactor>(discreteSeparator, probabilities)};
   } else {
     // Otherwise, we create a resulting GaussianMixtureFactor on the separator,
     // taking care to correct for conditional constant.
