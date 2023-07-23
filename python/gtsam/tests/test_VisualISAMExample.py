@@ -84,7 +84,7 @@ class TestVisualISAMExample(GtsamTestCase):
 
             values.insert(key, v)
 
-        self.assertAlmostEqual(isam.error(values), 34212421.14731998)
+        self.assertAlmostEqual(isam.error(values), 34212421.14732)
 
     def test_isam2_update(self):
         """

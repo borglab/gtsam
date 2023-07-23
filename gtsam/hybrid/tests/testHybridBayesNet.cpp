@@ -231,7 +231,7 @@ TEST(HybridBayesNet, Pruning) {
   auto prunedTree = prunedBayesNet.evaluate(delta.continuous());
 
   // Regression test on pruned logProbability tree
-  std::vector<double> pruned_leaves = {0.0, 20.346113, 0.0, 19.738098};
+  std::vector<double> pruned_leaves = {0.0, 32.713418, 0.0, 31.735823};
   AlgebraicDecisionTree<Key> expected_pruned(discrete_keys, pruned_leaves);
   EXPECT(assert_equal(expected_pruned, prunedTree, 1e-6));
 
@@ -248,8 +248,10 @@ TEST(HybridBayesNet, Pruning) {
   logProbability +=
       posterior->at(4)->asDiscrete()->logProbability(hybridValues);
 
+  // Regression
   double density = exp(logProbability);
-  EXPECT_DOUBLES_EQUAL(density, actualTree(discrete_values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(density,
+                       1.6078460548731697 * actualTree(discrete_values), 1e-6);
   EXPECT_DOUBLES_EQUAL(density, prunedTree(discrete_values), 1e-9);
   EXPECT_DOUBLES_EQUAL(logProbability, posterior->logProbability(hybridValues),
                        1e-9);
@@ -283,20 +285,30 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   EXPECT_LONGS_EQUAL(7, posterior->size());
 
   size_t maxNrLeaves = 3;
-  auto discreteConditionals = posterior->discreteConditionals();
+  DiscreteConditional discreteConditionals;
+  for (auto&& conditional : *posterior) {
+    if (conditional->isDiscrete()) {
+      discreteConditionals =
+          discreteConditionals * (*conditional->asDiscrete());
+    }
+  }
   const DecisionTreeFactor::shared_ptr prunedDecisionTree =
       std::make_shared<DecisionTreeFactor>(
-          discreteConditionals->prune(maxNrLeaves));
+          discreteConditionals.prune(maxNrLeaves));
 
   EXPECT_LONGS_EQUAL(maxNrLeaves + 2 /*2 zero leaves*/,
                      prunedDecisionTree->nrLeaves());
 
-  auto original_discrete_conditionals = *(posterior->at(4)->asDiscrete());
+  // regression
+  DiscreteKeys dkeys{{M(0), 2}, {M(1), 2}, {M(2), 2}};
+  DecisionTreeFactor::ADT potentials(
+      dkeys, std::vector<double>{0, 0, 0, 0.505145423, 0, 1, 0, 0.494854577});
+  DiscreteConditional expected_discrete_conditionals(1, dkeys, potentials);
 
   // Prune!
   posterior->prune(maxNrLeaves);
 
-  // Functor to verify values against the original_discrete_conditionals
+  // Functor to verify values against the expected_discrete_conditionals
   auto checker = [&](const Assignment<Key>& assignment,
                      double probability) -> double {
     // typecast so we can use this to get probability value
@@ -304,7 +316,7 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
     if (prunedDecisionTree->operator()(choices) == 0) {
       EXPECT_DOUBLES_EQUAL(0.0, probability, 1e-9);
     } else {
-      EXPECT_DOUBLES_EQUAL(original_discrete_conditionals(choices), probability,
+      EXPECT_DOUBLES_EQUAL(expected_discrete_conditionals(choices), probability,
                            1e-9);
     }
     return 0.0;

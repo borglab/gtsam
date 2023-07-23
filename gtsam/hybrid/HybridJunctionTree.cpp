@@ -66,7 +66,7 @@ struct HybridConstructorTraversalData {
         for (auto& k : hf->discreteKeys()) {
           data.discreteKeys.insert(k.first);
         }
-      } else if (auto hf = std::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
+      } else if (auto hf = std::dynamic_pointer_cast<DiscreteFactor>(f)) {
         for (auto& k : hf->discreteKeys()) {
           data.discreteKeys.insert(k.first);
         }
@@ -161,7 +161,7 @@ HybridJunctionTree::HybridJunctionTree(
   Data rootData(0);
   rootData.junctionTreeNode =
       std::make_shared<typename Base::Node>();  // Make a dummy node to gather
-                                                  // the junction tree roots
+                                                // the junction tree roots
   treeTraversal::DepthFirstForest(eliminationTree, rootData,
                                   Data::ConstructorTraversalVisitorPre,
                                   Data::ConstructorTraversalVisitorPost);
