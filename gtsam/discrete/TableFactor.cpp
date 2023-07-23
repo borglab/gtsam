@@ -58,17 +58,43 @@ TableFactor::TableFactor(const DiscreteKeys& dkeys,
 
 /* ************************************************************************ */
 TableFactor::TableFactor(const DiscreteKeys& dkeys,
-                         const DecisionTreeFactor& dtf)
-    : TableFactor(dkeys, dtf.probabilities()) {}
-
-/* ************************************************************************ */
-TableFactor::TableFactor(const DiscreteKeys& dkeys,
                          const DecisionTree<Key, double>& dtree)
     : TableFactor(dkeys, DecisionTreeFactor(dkeys, dtree)) {}
 
+/**
+ * @brief Compute the correct ordering of the leaves in the decision tree.
+ *
+ * This is done by first taking all the values which have modulo 0 value with
+ * the cardinality of the innermost key `n`, and we go up to modulo n.
+ *
+ * @param dt The DecisionTree
+ * @return std::vector<double>
+ */
+std::vector<double> ComputeLeafOrdering(const DiscreteKeys& dkeys,
+                                        const DecisionTreeFactor& dt) {
+  std::vector<double> probs = dt.probabilities();
+  std::vector<double> ordered;
+
+  size_t n = dkeys[0].second;
+
+  for (size_t k = 0; k < n; ++k) {
+    for (size_t idx = 0; idx < probs.size(); ++idx) {
+      if (idx % n == k) {
+        ordered.push_back(probs[idx]);
+      }
+    }
+  }
+  return ordered;
+}
+
+/* ************************************************************************ */
+TableFactor::TableFactor(const DiscreteKeys& dkeys,
+                         const DecisionTreeFactor& dtf)
+    : TableFactor(dkeys, ComputeLeafOrdering(dkeys, dtf)) {}
+
 /* ************************************************************************ */
 TableFactor::TableFactor(const DiscreteConditional& c)
-    : TableFactor(c.discreteKeys(), c.probabilities()) {}
+    : TableFactor(c.discreteKeys(), c) {}
 
 /* ************************************************************************ */
 Eigen::SparseVector<double> TableFactor::Convert(
