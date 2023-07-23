@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/global_includes.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridValues.h>
@@ -225,7 +226,8 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    *
    * @param prunedDiscreteProbs
    */
-  void updateDiscreteConditionals(const DecisionTreeFactor &prunedDiscreteProbs);
+  void updateDiscreteConditionals(
+      const DecisionTreeFactor &prunedDiscreteProbs);
 
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */

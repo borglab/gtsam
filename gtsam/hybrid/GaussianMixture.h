@@ -23,7 +23,6 @@
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/Conditional.h>
@@ -81,7 +80,7 @@ class GTSAM_EXPORT GaussianMixture
    */
   std::function<GaussianConditional::shared_ptr(
       const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
-  prunerFunc(const TableFactor &discreteProbs);
+  prunerFunc(const DecisionTreeFactor &discreteProbs);
 
  public:
   /// @name Constructors
@@ -239,7 +238,7 @@ class GTSAM_EXPORT GaussianMixture
    *
    * @param discreteProbs A pruned set of probabilities for the discrete keys.
    */
-  void prune(const TableFactor &discreteProbs);
+  void prune(const DecisionTreeFactor &discreteProbs);
 
   /**
    * @brief Merge the Gaussian Factor Graphs in `this` and `sum` while
