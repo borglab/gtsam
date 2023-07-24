@@ -99,6 +99,7 @@ jobs:
           cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
 
       - name: Build
+        shell: bash
         run: |
           # Since Visual Studio is a multi-generator, we need to use --config
           # https://stackoverflow.com/a/24470998/1236990
@@ -109,6 +110,7 @@ jobs:
           # cmake --build build -j4 --config ${{ matrix.build_type }} --target wrap
 
       - name: Test
+        shell: bash
         run: |
           # Run GTSAM tests
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.base
