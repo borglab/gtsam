@@ -201,8 +201,14 @@ namespace gtsam {
 
     std::vector<double> probs;
 
-    // Go through the tree
-    this->apply([&](const Assignment<Key> a, double p) {
+    /* An operation that takes each leaf probability, and computes the
+     * nrAssignments by checking the difference between the keys in the factor
+     * and the keys in the assignment.
+     * The nrAssignments is then used to append
+     * the correct number of leaf probability values to the `probs` vector
+     * defined above.
+     */
+    auto op = [&](const Assignment<Key>& a, double p) {
       // Get all the keys in the current assignment
       std::set<Key> assignment_keys;
       for (auto&& [k, _] : a) {
@@ -220,9 +226,14 @@ namespace gtsam {
       for (auto&& k : diff) {
         nrAssignments *= cardinalities_.at(k);
       }
+      // Add p `nrAssignments` times to the probs vector.
       probs.insert(probs.end(), nrAssignments, p);
+
       return p;
-    });
+    };
+
+    // Go through the tree
+    this->apply(op);
 
     return probs;
   }
