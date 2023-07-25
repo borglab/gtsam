@@ -78,6 +78,18 @@ class GTSAM_EXPORT DiscreteConditional
       : DiscreteConditional(Signature(key, parents, table)) {}
 
   /**
+   * Construct from key, parents, and a vector<double> specifying the
+   * conditional probability table (CPT) in 00 01 10 11 order. For
+   * three-valued, it would be 00 01 02 10 11 12 20 21 22, etc....
+   *
+   * Example: DiscreteConditional P(D, {B,E}, table);
+   */
+  DiscreteConditional(const DiscreteKey& key, const DiscreteKeys& parents,
+                      const std::vector<double>& table)
+      : DiscreteConditional(1, DiscreteKeys{key} & parents,
+                            ADT(DiscreteKeys{key} & parents, table)) {}
+
+  /**
    * Construct from key, parents, and a string specifying the conditional
    * probability table (CPT) in 00 01 10 11 order. For three-valued, it would
    * be 00 01 02 10 11 12 20 21 22, etc....
