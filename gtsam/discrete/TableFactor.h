@@ -175,12 +175,12 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// Calculate error for DiscreteValues `x`, is -log(probability).
   double error(const DiscreteValues& values) const;
 
-  /// multiple two TableFactors
+  /// multiply two TableFactors
   TableFactor operator*(const TableFactor& f) const {
     return apply(f, Ring::mul);
   };
 
-  /// multiply with DecisionTreeFactor
+  /// multiple with DecisionTreeFactor
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
   static double safe_div(const double& a, const double& b);
