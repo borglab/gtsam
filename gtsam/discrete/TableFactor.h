@@ -144,12 +144,6 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   TableFactor(const DiscreteKey& key, const std::vector<double>& row)
       : TableFactor(DiscreteKeys{key}, row) {}
 
-  /// Constructor from DecisionTreeFactor
-  TableFactor(const DiscreteKeys& keys, const DecisionTreeFactor& dtf);
-
-  /// Constructor from DecisionTree<Key, double>/AlgebraicDecisionTree
-  TableFactor(const DiscreteKeys& keys, const DecisionTree<Key, double>& dtree);
-
   /** Construct from a DiscreteConditional type */
   explicit TableFactor(const DiscreteConditional& c);
 
@@ -181,7 +175,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// Calculate error for DiscreteValues `x`, is -log(probability).
   double error(const DiscreteValues& values) const;
 
-  /// multiply two TableFactors
+  /// multiple two TableFactors
   TableFactor operator*(const TableFactor& f) const {
     return apply(f, Ring::mul);
   };

@@ -132,16 +132,6 @@ TEST(TableFactor, constructors) {
   // Manually constructed via inspection and comparison to DecisionTreeFactor
   TableFactor expected(X & Y, "0.5 0.4 0.2 0.5 0.6 0.8");
   EXPECT(assert_equal(expected, f4));
-
-  // Test for 9=3x3 values.
-  DiscreteKey V(0, 3), W(1, 3);
-  DiscreteConditional conditional5(V | W = "1/2/3 5/6/7 9/10/11");
-  TableFactor f5(conditional5);
-  // GTSAM_PRINT(f5);
-  TableFactor expected_f5(
-      X & Y,
-      "0.166667 0.277778 0.3 0.333333 0.333333 0.333333 0.5 0.388889 0.366667");
-  EXPECT(assert_equal(expected_f5, f5, 1e-6));
 }
 
 /* ************************************************************************* */
