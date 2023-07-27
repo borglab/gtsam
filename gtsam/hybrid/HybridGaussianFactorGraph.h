@@ -40,6 +40,7 @@ class HybridEliminationTree;
 class HybridBayesTree;
 class HybridJunctionTree;
 class DecisionTreeFactor;
+class TableFactor;
 class JacobianFactor;
 class HybridValues;
 

@@ -17,7 +17,6 @@
  * @date   January, 2023
  */
 
-#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 
 namespace gtsam {
@@ -26,7 +25,7 @@ namespace gtsam {
 std::set<DiscreteKey> HybridFactorGraph::discreteKeys() const {
   std::set<DiscreteKey> keys;
   for (auto& factor : factors_) {
-    if (auto p = std::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
+    if (auto p = std::dynamic_pointer_cast<DiscreteFactor>(factor)) {
       for (const DiscreteKey& key : p->discreteKeys()) {
         keys.insert(key);
       }
@@ -67,6 +66,8 @@ const KeySet HybridFactorGraph::continuousKeySet() const {
       for (const Key& key : p->continuousKeys()) {
         keys.insert(key);
       }
+    } else if (auto p = std::dynamic_pointer_cast<GaussianFactor>(factor)) {
+      keys.insert(p->keys().begin(), p->keys().end());
     }
   }
   return keys;

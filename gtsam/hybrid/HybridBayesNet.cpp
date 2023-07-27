@@ -38,24 +38,6 @@ bool HybridBayesNet::equals(const This &bn, double tol) const {
 }
 
 /* ************************************************************************* */
-DecisionTreeFactor::shared_ptr HybridBayesNet::discreteConditionals() const {
-  AlgebraicDecisionTree<Key> discreteProbs;
-
-  // The canonical decision tree factor which will get
-  // the discrete conditionals added to it.
-  DecisionTreeFactor discreteProbsFactor;
-
-  for (auto &&conditional : *this) {
-    if (conditional->isDiscrete()) {
-      // Convert to a DecisionTreeFactor and add it to the main factor.
-      DecisionTreeFactor f(*conditional->asDiscrete());
-      discreteProbsFactor = discreteProbsFactor * f;
-    }
-  }
-  return std::make_shared<DecisionTreeFactor>(discreteProbsFactor);
-}
-
-/* ************************************************************************* */
 /**
  * @brief Helper function to get the pruner functional.
  *
@@ -144,53 +126,52 @@ std::function<double(const Assignment<Key> &, double)> prunerFunc(
 }
 
 /* ************************************************************************* */
-void HybridBayesNet::updateDiscreteConditionals(
-    const DecisionTreeFactor &prunedDiscreteProbs) {
-  KeyVector prunedTreeKeys = prunedDiscreteProbs.keys();
+DecisionTreeFactor HybridBayesNet::pruneDiscreteConditionals(
+    size_t maxNrLeaves) {
+  // Get the joint distribution of only the discrete keys
+  gttic_(HybridBayesNet_PruneDiscreteConditionals);
+  // The joint discrete probability.
+  DiscreteConditional discreteProbs;
 
-  // Loop with index since we need it later.
+  std::vector<size_t> discrete_factor_idxs;
+  // Record frontal keys so we can maintain ordering
+  Ordering discrete_frontals;
+
   for (size_t i = 0; i < this->size(); i++) {
-    HybridConditional::shared_ptr conditional = this->at(i);
+    auto conditional = this->at(i);
     if (conditional->isDiscrete()) {
-      auto discrete = conditional->asDiscrete();
+      discreteProbs = discreteProbs * (*conditional->asDiscrete());
 
-      // Convert pointer from conditional to factor
-      auto discreteTree =
-          std::dynamic_pointer_cast<DecisionTreeFactor::ADT>(discrete);
-      // Apply prunerFunc to the underlying AlgebraicDecisionTree
-      DecisionTreeFactor::ADT prunedDiscreteTree =
-          discreteTree->apply(prunerFunc(prunedDiscreteProbs, *conditional));
-
-      gttic_(HybridBayesNet_MakeConditional);
-      // Create the new (hybrid) conditional
-      KeyVector frontals(discrete->frontals().begin(),
-                         discrete->frontals().end());
-      auto prunedDiscrete = std::make_shared<DiscreteLookupTable>(
-          frontals.size(), conditional->discreteKeys(), prunedDiscreteTree);
-      conditional = std::make_shared<HybridConditional>(prunedDiscrete);
-      gttoc_(HybridBayesNet_MakeConditional);
-
-      // Add it back to the BayesNet
-      this->at(i) = conditional;
+      Ordering conditional_keys(conditional->frontals());
+      discrete_frontals += conditional_keys;
+      discrete_factor_idxs.push_back(i);
     }
   }
+  const DecisionTreeFactor prunedDiscreteProbs =
+      discreteProbs.prune(maxNrLeaves);
+  gttoc_(HybridBayesNet_PruneDiscreteConditionals);
+
+  // Eliminate joint probability back into conditionals
+  gttic_(HybridBayesNet_UpdateDiscreteConditionals);
+  DiscreteFactorGraph dfg{prunedDiscreteProbs};
+  DiscreteBayesNet::shared_ptr dbn = dfg.eliminateSequential(discrete_frontals);
+
+  // Assign pruned discrete conditionals back at the correct indices.
+  for (size_t i = 0; i < discrete_factor_idxs.size(); i++) {
+    size_t idx = discrete_factor_idxs.at(i);
+    this->at(idx) = std::make_shared<HybridConditional>(dbn->at(i));
+  }
+  gttoc_(HybridBayesNet_UpdateDiscreteConditionals);
+
+  return prunedDiscreteProbs;
 }
 
 /* ************************************************************************* */
 HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
-  // Get the decision tree of only the discrete keys
-  gttic_(HybridBayesNet_PruneDiscreteConditionals);
-  DecisionTreeFactor::shared_ptr discreteConditionals =
-      this->discreteConditionals();
-  const DecisionTreeFactor prunedDiscreteProbs =
-      discreteConditionals->prune(maxNrLeaves);
-  gttoc_(HybridBayesNet_PruneDiscreteConditionals);
+  DecisionTreeFactor prunedDiscreteProbs =
+      this->pruneDiscreteConditionals(maxNrLeaves);
 
-  gttic_(HybridBayesNet_UpdateDiscreteConditionals);
-  this->updateDiscreteConditionals(prunedDiscreteProbs);
-  gttoc_(HybridBayesNet_UpdateDiscreteConditionals);
-
-  /* To Prune, we visitWith every leaf in the GaussianMixture.
+  /* To prune, we visitWith every leaf in the GaussianMixture.
    * For each leaf, using the assignment we can check the discrete decision tree
    * for 0.0 probability, then just set the leaf to a nullptr.
    *

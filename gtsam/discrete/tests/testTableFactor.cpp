@@ -93,8 +93,7 @@ void printTime(map<double, pair<chrono::microseconds, chrono::microseconds>>
   for (auto&& kv : measured_time) {
     cout << "dropout: " << kv.first
          << " | TableFactor time: " << kv.second.first.count()
-         << " | DecisionTreeFactor time: " << kv.second.second.count() <<
-         endl;
+         << " | DecisionTreeFactor time: " << kv.second.second.count() << endl;
   }
 }
 
@@ -359,6 +358,39 @@ TEST(TableFactor, htmlWithValueFormatter) {
   TableFactor::Names names{{12, {"Zero", "One", "Two"}}, {5, {"-", "+"}}};
   string actual = f.html(keyFormatter, names);
   EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
+TEST(TableFactor, Unary) {
+  // Declare a bunch of keys
+  DiscreteKey X(0, 2), Y(1, 3);
+
+  // Create factors
+  TableFactor f(X & Y, "2 5 3 6 2 7");
+  auto op = [](const double x) { return 2 * x; };
+  auto g = f.apply(op);
+
+  TableFactor expected(X & Y, "4 10 6 12 4 14");
+  EXPECT(assert_equal(g, expected));
+
+  auto sq_op = [](const double x) { return x * x; };
+  auto g_sq = f.apply(sq_op);
+  TableFactor expected_sq(X & Y, "4 25 9 36 4 49");
+  EXPECT(assert_equal(g_sq, expected_sq));
+}
+
+/* ************************************************************************* */
+TEST(TableFactor, UnaryAssignment) {
+  // Declare a bunch of keys
+  DiscreteKey X(0, 2), Y(1, 3);
+
+  // Create factors
+  TableFactor f(X & Y, "2 5 3 6 2 7");
+  auto op = [](const Assignment<Key>& key, const double x) { return 2 * x; };
+  auto g = f.apply(op);
+
+  TableFactor expected(X & Y, "4 10 6 12 4 14");
+  EXPECT(assert_equal(g, expected));
 }
 
 /* ************************************************************************* */

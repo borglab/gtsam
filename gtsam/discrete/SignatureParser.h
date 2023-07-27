@@ -23,6 +23,8 @@
 #include <vector>
 #include <gtsam/dllexport.h>
 
+#include <gtsam/dllexport.h>
+
 namespace gtsam {
 /**
  * @brief A simple parser that replaces the boost spirit parser.

@@ -903,7 +903,7 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   // Test resulting posterior Bayes net has correct size:
   EXPECT_LONGS_EQUAL(8, posterior->size());
 
-  // TODO(dellaert): this test fails - no idea why.
+  // Ratio test
   EXPECT(ratioTest(bn, measurements, *posterior));
 }
 

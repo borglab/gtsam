@@ -99,7 +99,7 @@ namespace gtsam {
 
   /* ************************************************************************ */
   void GaussianConditional::print(const string &s, const KeyFormatter& formatter) const {
-    cout << s << " p(";
+    cout << (s.empty() ? "" : s + " ") << "p(";
     for (const_iterator it = beginFrontals(); it != endFrontals(); ++it) {
       cout << formatter(*it) << (nrFrontals() > 1 ? " " : "");
     }

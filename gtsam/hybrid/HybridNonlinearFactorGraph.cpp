@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
@@ -67,7 +68,7 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
     } else if (auto nlf = dynamic_pointer_cast<NonlinearFactor>(f)) {
       const GaussianFactor::shared_ptr& gf = nlf->linearize(continuousValues);
       linearFG->push_back(gf);
-    } else if (dynamic_pointer_cast<DecisionTreeFactor>(f)) {
+    } else if (dynamic_pointer_cast<DiscreteFactor>(f)) {
       // If discrete-only: doesn't need linearization.
       linearFG->push_back(f);
     } else if (auto gmf = dynamic_pointer_cast<GaussianMixtureFactor>(f)) {

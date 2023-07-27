@@ -109,13 +109,10 @@ class NonlinearFactorGraph {
 };
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-virtual class NonlinearFactor {
+virtual class NonlinearFactor : gtsam::Factor {
   // Factor base class
-  size_t size() const;
-  gtsam::KeyVector keys() const;
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
-  void printKeys(string s) const;
   // NonlinearFactor
   bool equals(const gtsam::NonlinearFactor& other, double tol) const;
   double error(const gtsam::Values& c) const;
