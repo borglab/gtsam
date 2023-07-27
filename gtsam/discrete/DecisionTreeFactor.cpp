@@ -83,6 +83,22 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
+  DecisionTreeFactor DecisionTreeFactor::apply(ADT::Unary op) const {
+    // apply operand
+    ADT result = ADT::apply(op);
+    // Make a new factor
+    return DecisionTreeFactor(discreteKeys(), result);
+  }
+
+  /* ************************************************************************ */
+  DecisionTreeFactor DecisionTreeFactor::apply(ADT::UnaryAssignment op) const {
+    // apply operand
+    ADT result = ADT::apply(op);
+    // Make a new factor
+    return DecisionTreeFactor(discreteKeys(), result);
+  }
+
+  /* ************************************************************************ */
   DecisionTreeFactor DecisionTreeFactor::apply(const DecisionTreeFactor& f,
                                               ADT::Binary op) const {
     map<Key, size_t> cs;  // new cardinalities
@@ -99,14 +115,6 @@ namespace gtsam {
     ADT result = ADT::apply(f, op);
     // Make a new factor
     return DecisionTreeFactor(keys, result);
-  }
-
-  /* ************************************************************************ */
-  DecisionTreeFactor DecisionTreeFactor::apply(ADT::UnaryAssignment op) const {
-    // apply operand
-    ADT result = ADT::apply(op);
-    // Make a new factor
-    return DecisionTreeFactor(discreteKeys(), result);
   }
 
   /* ************************************************************************ */
@@ -188,10 +196,45 @@ namespace gtsam {
 
   /* ************************************************************************ */
   std::vector<double> DecisionTreeFactor::probabilities() const {
+    // Set of all keys
+    std::set<Key> allKeys(keys().begin(), keys().end());
+
     std::vector<double> probs;
-    for (auto&& [key, value] : enumerate()) {
-      probs.push_back(value);
-    }
+
+    /* An operation that takes each leaf probability, and computes the
+     * nrAssignments by checking the difference between the keys in the factor
+     * and the keys in the assignment.
+     * The nrAssignments is then used to append
+     * the correct number of leaf probability values to the `probs` vector
+     * defined above.
+     */
+    auto op = [&](const Assignment<Key>& a, double p) {
+      // Get all the keys in the current assignment
+      std::set<Key> assignment_keys;
+      for (auto&& [k, _] : a) {
+        assignment_keys.insert(k);
+      }
+
+      // Find the keys missing in the assignment
+      std::vector<Key> diff;
+      std::set_difference(allKeys.begin(), allKeys.end(),
+                          assignment_keys.begin(), assignment_keys.end(),
+                          std::back_inserter(diff));
+
+      // Compute the total number of assignments in the (pruned) subtree
+      size_t nrAssignments = 1;
+      for (auto&& k : diff) {
+        nrAssignments *= cardinalities_.at(k);
+      }
+      // Add p `nrAssignments` times to the probs vector.
+      probs.insert(probs.end(), nrAssignments, p);
+
+      return p;
+    };
+
+    // Go through the tree
+    this->apply(op);
+
     return probs;
   }
 
@@ -305,11 +348,7 @@ namespace gtsam {
     const size_t N = maxNrAssignments;
 
     // Get the probabilities in the decision tree so we can threshold.
-    std::vector<double> probabilities;
-    // NOTE(Varun) this is potentially slow due to the cartesian product
-    for (auto&& [assignment, prob] : this->enumerate()) {
-      probabilities.push_back(prob);
-    }
+    std::vector<double> probabilities = this->probabilities();
 
     // The number of probabilities can be lower than max_leaves
     if (probabilities.size() <= N) {

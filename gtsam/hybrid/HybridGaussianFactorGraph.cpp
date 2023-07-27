@@ -96,7 +96,6 @@ static GaussianFactorGraphTree addGaussian(
 // TODO(dellaert): it's probably more efficient to first collect the discrete
 // keys, and then loop over all assignments to populate a vector.
 GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
-  gttic_(assembleGraphTree);
 
   GaussianFactorGraphTree result;
 
@@ -128,8 +127,6 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
       throwRuntimeError("gtsam::assembleGraphTree", f);
     }
   }
-
-  gttoc_(assembleGraphTree);
 
   return result;
 }

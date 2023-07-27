@@ -286,8 +286,6 @@ GaussianMixture::prunerFunc(const DecisionTreeFactor &discreteProbs) {
 
 /* *******************************************************************************/
 void GaussianMixture::prune(const DecisionTreeFactor &discreteProbs) {
-  auto discreteProbsKeySet = DiscreteKeysAsSet(discreteProbs.discreteKeys());
-  auto gmKeySet = DiscreteKeysAsSet(this->discreteKeys());
   // Functional which loops over all assignments and create a set of
   // GaussianConditionals
   auto pruner = prunerFunc(discreteProbs);
