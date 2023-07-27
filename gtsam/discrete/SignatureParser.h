@@ -22,6 +22,8 @@
 #include <string>
 #include <vector>
 
+#include <gtsam/dllexport.h>
+
 namespace gtsam {
 /**
  * @brief A simple parser that replaces the boost spirit parser.
@@ -47,7 +49,7 @@ namespace gtsam {
  *
  * Also fails if the rows are not of the same size.
  */
-struct SignatureParser {
+struct GTSAM_EXPORT SignatureParser {
   using Row = std::vector<double>;
   using Table = std::vector<Row>;
 
