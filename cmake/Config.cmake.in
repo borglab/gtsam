@@ -21,6 +21,10 @@ else()
 find_dependency(Boost @BOOST_FIND_MINIMUM_VERSION@ COMPONENTS @BOOST_FIND_MINIMUM_COMPONENTS@)
 endif()
 
+if(@GTSAM_USE_TBB@)
+    find_dependency(TBB 4.4 COMPONENTS tbb tbbmalloc)
+endif()
+
 if(@GTSAM_USE_SYSTEM_EIGEN@)
 find_dependency(Eigen3 REQUIRED)
 endif()
