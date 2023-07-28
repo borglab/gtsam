@@ -473,47 +473,37 @@ TEST(DecisionTree, VisitWithPruned) {
 #ifdef GTSAM_DT_MERGING
   expectedAssignment = {{"B", 0}, {"C", 0}};
   EXPECT(expectedAssignment == choices.at(0));
-#else
-  expectedAssignment = {{"A", 0}, {"B", 0}, {"C", 0}};
-  EXPECT(expectedAssignment == choices.at(0));
-#endif
 
-#ifdef GTSAM_DT_MERGING
   expectedAssignment = {{"A", 0}, {"B", 1}, {"C", 0}};
   EXPECT(expectedAssignment == choices.at(1));
-#else
-  expectedAssignment = {{"A", 1}, {"B", 0}, {"C", 0}};
-  EXPECT(expectedAssignment == choices.at(1));
-#endif
 
-#ifdef GTSAM_DT_MERGING
   expectedAssignment = {{"A", 1}, {"B", 1}, {"C", 0}};
   EXPECT(expectedAssignment == choices.at(2));
-#else
-  expectedAssignment = {{"A", 0}, {"B", 1}, {"C", 0}};
-  EXPECT(expectedAssignment == choices.at(2));
-#endif
 
-#ifdef GTSAM_DT_MERGING
   expectedAssignment = {{"B", 0}, {"C", 1}};
   EXPECT(expectedAssignment == choices.at(3));
-#else
-  expectedAssignment = {{"A", 1}, {"B", 1}, {"C", 0}};
-  EXPECT(expectedAssignment == choices.at(3));
-#endif
 
-#ifdef GTSAM_DT_MERGING
   expectedAssignment = {{"A", 0}, {"B", 1}, {"C", 1}};
   EXPECT(expectedAssignment == choices.at(4));
-#else
-  expectedAssignment = {{"A", 0}, {"B", 0}, {"C", 1}};
-  EXPECT(expectedAssignment == choices.at(4));
-#endif
 
-#ifdef GTSAM_DT_MERGING
   expectedAssignment = {{"A", 1}, {"B", 1}, {"C", 1}};
   EXPECT(expectedAssignment == choices.at(5));
 #else
+  expectedAssignment = {{"A", 0}, {"B", 0}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(0));
+
+  expectedAssignment = {{"A", 1}, {"B", 0}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(1));
+
+  expectedAssignment = {{"A", 0}, {"B", 1}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(2));
+
+  expectedAssignment = {{"A", 1}, {"B", 1}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(3));
+
+  expectedAssignment = {{"A", 0}, {"B", 0}, {"C", 1}};
+  EXPECT(expectedAssignment == choices.at(4));
+
   expectedAssignment = {{"A", 1}, {"B", 0}, {"C", 1}};
   EXPECT(expectedAssignment == choices.at(5));
 #endif

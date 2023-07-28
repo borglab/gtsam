@@ -30,7 +30,7 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST_DISABLED(DiscreteConditional, constructors) {
+TEST(DiscreteConditional, constructors) {
   DiscreteKey X(0, 2), Y(2, 3), Z(1, 2);  // watch ordering !
 
   DiscreteConditional actual(X | Y = "1/1 2/3 1/4");
@@ -51,7 +51,7 @@ TEST_DISABLED(DiscreteConditional, constructors) {
 }
 
 /* ************************************************************************* */
-TEST_DISABLED(DiscreteConditional, constructors_alt_interface) {
+TEST(DiscreteConditional, constructors_alt_interface) {
   DiscreteKey X(0, 2), Y(2, 3), Z(1, 2);  // watch ordering !
 
   const Signature::Row r1{1, 1}, r2{2, 3}, r3{1, 4};
@@ -70,7 +70,7 @@ TEST_DISABLED(DiscreteConditional, constructors_alt_interface) {
 }
 
 /* ************************************************************************* */
-TEST_DISABLED(DiscreteConditional, constructors2) {
+TEST(DiscreteConditional, constructors2) {
   DiscreteKey C(0, 2), B(1, 2);
   Signature signature((C | B) = "4/1 3/1");
   DiscreteConditional actual(signature);
@@ -80,7 +80,7 @@ TEST_DISABLED(DiscreteConditional, constructors2) {
 }
 
 /* ************************************************************************* */
-TEST_DISABLED(DiscreteConditional, constructors3) {
+TEST(DiscreteConditional, constructors3) {
   DiscreteKey C(0, 2), B(1, 2), A(2, 2);
   Signature signature((C | B, A) = "4/1 1/1 1/1 1/4");
   DiscreteConditional actual(signature);
@@ -91,7 +91,7 @@ TEST_DISABLED(DiscreteConditional, constructors3) {
 
 /* ****************************************************************************/
 // Test evaluate for a discrete Prior P(Asia).
-TEST_DISABLED(DiscreteConditional, PriorProbability) {
+TEST(DiscreteConditional, PriorProbability) {
   constexpr Key asiaKey = 0;
   const DiscreteKey Asia(asiaKey, 2);
   DiscreteConditional dc(Asia, "4/6");
@@ -102,7 +102,7 @@ TEST_DISABLED(DiscreteConditional, PriorProbability) {
 
 /* ************************************************************************* */
 // Check that error, logProbability, evaluate all work as expected.
-TEST_DISABLED(DiscreteConditional, probability) {
+TEST(DiscreteConditional, probability) {
   DiscreteKey C(2, 2), D(4, 2), E(3, 2);
   DiscreteConditional C_given_DE((C | D, E) = "4/1 1/1 1/1 1/4");
 
@@ -116,7 +116,7 @@ TEST_DISABLED(DiscreteConditional, probability) {
 
 /* ************************************************************************* */
 // Check calculation of joint P(A,B)
-TEST_DISABLED(DiscreteConditional, Multiply) {
+TEST(DiscreteConditional, Multiply) {
   DiscreteKey A(1, 2), B(0, 2);
   DiscreteConditional conditional(A | B = "1/2 2/1");
   DiscreteConditional prior(B % "1/2");
@@ -141,7 +141,7 @@ TEST_DISABLED(DiscreteConditional, Multiply) {
 
 /* ************************************************************************* */
 // Check calculation of conditional joint P(A,B|C)
-TEST_DISABLED(DiscreteConditional, Multiply2) {
+TEST(DiscreteConditional, Multiply2) {
   DiscreteKey A(0, 2), B(1, 2), C(2, 2);
   DiscreteConditional A_given_B(A | B = "1/3 3/1");
   DiscreteConditional B_given_C(B | C = "1/3 3/1");
@@ -161,7 +161,7 @@ TEST_DISABLED(DiscreteConditional, Multiply2) {
 
 /* ************************************************************************* */
 // Check calculation of conditional joint P(A,B|C), double check keys
-TEST_DISABLED(DiscreteConditional, Multiply3) {
+TEST(DiscreteConditional, Multiply3) {
   DiscreteKey A(1, 2), B(2, 2), C(0, 2);  // different keys!!!
   DiscreteConditional A_given_B(A | B = "1/3 3/1");
   DiscreteConditional B_given_C(B | C = "1/3 3/1");
@@ -181,7 +181,7 @@ TEST_DISABLED(DiscreteConditional, Multiply3) {
 
 /* ************************************************************************* */
 // Check calculation of conditional joint P(A,B,C|D,E) = P(A,B|D) P(C|D,E)
-TEST_DISABLED(DiscreteConditional, Multiply4) {
+TEST(DiscreteConditional, Multiply4) {
   DiscreteKey A(0, 2), B(1, 2), C(2, 2), D(4, 2), E(3, 2);
   DiscreteConditional A_given_B(A | B = "1/3 3/1");
   DiscreteConditional B_given_D(B | D = "1/3 3/1");
@@ -205,7 +205,7 @@ TEST_DISABLED(DiscreteConditional, Multiply4) {
 
 /* ************************************************************************* */
 // Check calculation of marginals for joint P(A,B)
-TEST_DISABLED(DiscreteConditional, marginals) {
+TEST(DiscreteConditional, marginals) {
   DiscreteKey A(1, 2), B(0, 2);
   DiscreteConditional conditional(A | B = "1/2 2/1");
   DiscreteConditional prior(B % "1/2");
@@ -227,7 +227,7 @@ TEST_DISABLED(DiscreteConditional, marginals) {
 
 /* ************************************************************************* */
 // Check calculation of marginals in case branches are pruned
-TEST_DISABLED(DiscreteConditional, marginals2) {
+TEST(DiscreteConditional, marginals2) {
   DiscreteKey A(0, 2), B(1, 2);  // changing keys need to make pruning happen!
   DiscreteConditional conditional(A | B = "2/2 3/1");
   DiscreteConditional prior(B % "1/2");
@@ -243,7 +243,7 @@ TEST_DISABLED(DiscreteConditional, marginals2) {
 }
 
 /* ************************************************************************* */
-TEST_DISABLED(DiscreteConditional, likelihood) {
+TEST(DiscreteConditional, likelihood) {
   DiscreteKey X(0, 2), Y(1, 3);
   DiscreteConditional conditional(X | Y = "2/8 4/6 5/5");
 
@@ -258,7 +258,7 @@ TEST_DISABLED(DiscreteConditional, likelihood) {
 
 /* ************************************************************************* */
 // Check choose on P(C|D,E)
-TEST_DISABLED(DiscreteConditional, choose) {
+TEST(DiscreteConditional, choose) {
   DiscreteKey C(2, 2), D(4, 2), E(3, 2);
   DiscreteConditional C_given_DE((C | D, E) = "4/1 1/1 1/1 1/4");
 
@@ -286,7 +286,7 @@ TEST_DISABLED(DiscreteConditional, choose) {
 
 /* ************************************************************************* */
 // Check markdown representation looks as expected, no parents.
-TEST_DISABLED(DiscreteConditional, markdown_prior) {
+TEST(DiscreteConditional, markdown_prior) {
   DiscreteKey A(Symbol('x', 1), 3);
   DiscreteConditional conditional(A % "1/2/2");
   string expected =
@@ -302,7 +302,7 @@ TEST_DISABLED(DiscreteConditional, markdown_prior) {
 
 /* ************************************************************************* */
 // Check markdown representation looks as expected, no parents + names.
-TEST_DISABLED(DiscreteConditional, markdown_prior_names) {
+TEST(DiscreteConditional, markdown_prior_names) {
   Symbol x1('x', 1);
   DiscreteKey A(x1, 3);
   DiscreteConditional conditional(A % "1/2/2");
@@ -320,7 +320,7 @@ TEST_DISABLED(DiscreteConditional, markdown_prior_names) {
 
 /* ************************************************************************* */
 // Check markdown representation looks as expected, multivalued.
-TEST_DISABLED(DiscreteConditional, markdown_multivalued) {
+TEST(DiscreteConditional, markdown_multivalued) {
   DiscreteKey A(Symbol('a', 1), 3), B(Symbol('b', 1), 5);
   DiscreteConditional conditional(
       A | B = "2/88/10 2/20/78 33/33/34 33/33/34 95/2/3");
@@ -339,7 +339,7 @@ TEST_DISABLED(DiscreteConditional, markdown_multivalued) {
 
 /* ************************************************************************* */
 // Check markdown representation looks as expected, two parents + names.
-TEST_DISABLED(DiscreteConditional, markdown) {
+TEST(DiscreteConditional, markdown) {
   DiscreteKey A(2, 2), B(1, 2), C(0, 3);
   DiscreteConditional conditional(A, {B, C}, "0/1 1/3  1/1 3/1  0/1 1/0");
   string expected =
@@ -362,7 +362,7 @@ TEST_DISABLED(DiscreteConditional, markdown) {
 
 /* ************************************************************************* */
 // Check html representation looks as expected, two parents + names.
-TEST_DISABLED(DiscreteConditional, html) {
+TEST(DiscreteConditional, html) {
   DiscreteKey A(2, 2), B(1, 2), C(0, 3);
   DiscreteConditional conditional(A, {B, C}, "0/1 1/3  1/1 3/1  0/1 1/0");
   string expected =
