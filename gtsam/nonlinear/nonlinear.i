@@ -86,7 +86,10 @@ class NonlinearFactorGraph {
                 const gtsam::noiseModel::Base* noiseModel);
 
   // NonlinearFactorGraph
-  void printErrors(const gtsam::Values& values) const;
+  void printErrors(const gtsam::Values& values,
+                   const string& str = "NonlinearFactorGraph: ",
+                   const gtsam::KeyFormatter& keyFormatter =
+                       gtsam::DefaultKeyFormatter) const;
   double error(const gtsam::Values& values) const;
   double probPrime(const gtsam::Values& values) const;
   gtsam::Ordering orderingCOLAMD() const;
