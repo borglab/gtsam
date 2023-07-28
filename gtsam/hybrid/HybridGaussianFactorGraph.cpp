@@ -96,7 +96,6 @@ static GaussianFactorGraphTree addGaussian(
 // TODO(dellaert): it's probably more efficient to first collect the discrete
 // keys, and then loop over all assignments to populate a vector.
 GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
-
   GaussianFactorGraphTree result;
 
   for (auto &f : factors_) {
@@ -175,7 +174,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
       throwRuntimeError("continuousElimination", f);
     }
   }
-  dfg.print("The DFG to eliminate");
+
   // NOTE: This does sum-product. For max-product, use EliminateForMPE.
   auto result = EliminateDiscrete(dfg, frontalKeys);
 
