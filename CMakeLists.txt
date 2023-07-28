@@ -32,6 +32,14 @@ set (CMAKE_PROJECT_VERSION_PATCH ${GTSAM_VERSION_PATCH})
 ###############################################################################
 # Gather information, perform checks, set defaults
 
+if(MSVC)
+  set(MSVC_LINKER_FLAGS "/FORCE:MULTIPLE")
+  set(CMAKE_EXE_LINKER_FLAGS ${MSVC_LINKER_FLAGS})
+  set(CMAKE_MODULE_LINKER_FLAGS ${MSVC_LINKER_FLAGS})
+  set(CMAKE_SHARED_LINKER_FLAGS ${MSVC_LINKER_FLAGS})
+  set(CMAKE_STATIC_LINKER_FLAGS ${MSVC_LINKER_FLAGS})
+endif()
+
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(GtsamMakeConfigFile)
 include(GNUInstallDirs)

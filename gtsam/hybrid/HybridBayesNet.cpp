@@ -129,7 +129,6 @@ std::function<double(const Assignment<Key> &, double)> prunerFunc(
 DecisionTreeFactor HybridBayesNet::pruneDiscreteConditionals(
     size_t maxNrLeaves) {
   // Get the joint distribution of only the discrete keys
-  gttic_(HybridBayesNet_PruneDiscreteConditionals);
   // The joint discrete probability.
   DiscreteConditional discreteProbs;
 
@@ -163,7 +162,6 @@ DecisionTreeFactor HybridBayesNet::pruneDiscreteConditionals(
   gttoc_(HybridBayesNet_PruneDiscreteConditionals);
 
   // Eliminate joint probability back into conditionals
-  gttic_(HybridBayesNet_UpdateDiscreteConditionals);
   DiscreteFactorGraph dfg{prunedDiscreteProbs};
   DiscreteBayesNet::shared_ptr dbn = dfg.eliminateSequential(discrete_frontals);
 
@@ -174,7 +172,6 @@ DecisionTreeFactor HybridBayesNet::pruneDiscreteConditionals(
     // dbn->at(i)->print();
     this->at(idx) = std::make_shared<HybridConditional>(dbn->at(i));
   }
-  gttoc_(HybridBayesNet_UpdateDiscreteConditionals);
 
   return prunedDiscreteProbs;
 }
@@ -193,7 +190,6 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
 
   HybridBayesNet prunedBayesNetFragment;
 
-  gttic_(HybridBayesNet_PruneMixtures);
   // Go through all the conditionals in the
   // Bayes Net and prune them as per prunedDiscreteProbs.
   for (auto &&conditional : *this) {
@@ -210,7 +206,6 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
       prunedBayesNetFragment.push_back(conditional);
     }
   }
-  gttoc_(HybridBayesNet_PruneMixtures);
 
   return prunedBayesNetFragment;
 }

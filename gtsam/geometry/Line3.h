@@ -146,7 +146,7 @@ class GTSAM_EXPORT Line3 {
    * @param Dline -  OptionalJacobian of transformed line with respect to l
    * @return Transformed line in camera frame
    */
-  friend Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
+  GTSAM_EXPORT friend Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
                            OptionalJacobian<4, 6> Dpose,
                            OptionalJacobian<4, 4> Dline);
 };

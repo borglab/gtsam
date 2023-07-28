@@ -36,7 +36,7 @@ namespace gtsam {
  * @ingroup geometry
  * \nosubgrouping
  */
-class Pose2: public LieGroup<Pose2, 3> {
+class GTSAM_EXPORT Pose2: public LieGroup<Pose2, 3> {
 
 public:
 
@@ -112,10 +112,10 @@ public:
   /// @{
 
   /** print with optional string */
-  GTSAM_EXPORT void print(const std::string& s = "") const;
+  void print(const std::string& s = "") const;
 
   /** assert equality up to a tolerance */
-  GTSAM_EXPORT bool equals(const Pose2& pose, double tol = 1e-9) const;
+  bool equals(const Pose2& pose, double tol = 1e-9) const;
 
   /// @}
   /// @name Group
@@ -125,7 +125,7 @@ public:
   inline static Pose2 Identity() { return Pose2(); }
 
   /// inverse
-  GTSAM_EXPORT Pose2 inverse() const;
+  Pose2 inverse() const;
 
   /// compose syntactic sugar
   inline Pose2 operator*(const Pose2& p2) const {
@@ -137,16 +137,16 @@ public:
   /// @{
 
   ///Exponential map at identity - create a rotation from canonical coordinates \f$ [T_x,T_y,\theta] \f$
-  GTSAM_EXPORT static Pose2 Expmap(const Vector3& xi, ChartJacobian H = {});
+  static Pose2 Expmap(const Vector3& xi, ChartJacobian H = {});
 
   ///Log map at identity - return the canonical coordinates \f$ [T_x,T_y,\theta] \f$ of this rotation
-  GTSAM_EXPORT static Vector3 Logmap(const Pose2& p, ChartJacobian H = {});
+  static Vector3 Logmap(const Pose2& p, ChartJacobian H = {});
 
   /**
    * Calculate Adjoint map
    * Ad_pose is 3*3 matrix that when applied to twist xi \f$ [T_x,T_y,\theta] \f$, returns Ad_pose(xi)
    */
-  GTSAM_EXPORT Matrix3 AdjointMap() const;
+  Matrix3 AdjointMap() const;
 
   /// Apply AdjointMap to twist xi
   inline Vector3 Adjoint(const Vector3& xi) const {
@@ -156,7 +156,7 @@ public:
   /**
    * Compute the [ad(w,v)] operator for SE2 as in [Kobilarov09siggraph], pg 19
    */
-  GTSAM_EXPORT static Matrix3 adjointMap(const Vector3& v);
+  static Matrix3 adjointMap(const Vector3& v);
 
   /**
    * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
@@ -192,15 +192,15 @@ public:
   }
 
   /// Derivative of Expmap
-  GTSAM_EXPORT static Matrix3 ExpmapDerivative(const Vector3& v);
+  static Matrix3 ExpmapDerivative(const Vector3& v);
 
   /// Derivative of Logmap
-  GTSAM_EXPORT static Matrix3 LogmapDerivative(const Pose2& v);
+  static Matrix3 LogmapDerivative(const Pose2& v);
 
   // Chart at origin, depends on compile-time flag SLOW_BUT_CORRECT_EXPMAP
-  struct ChartAtOrigin {
-	GTSAM_EXPORT static Pose2 Retract(const Vector3& v, ChartJacobian H = {});
-	GTSAM_EXPORT static Vector3 Local(const Pose2& r, ChartJacobian H = {});
+  struct GTSAM_EXPORT ChartAtOrigin {
+    static Pose2 Retract(const Vector3& v, ChartJacobian H = {});
+    static Vector3 Local(const Pose2& r, ChartJacobian H = {});
   };
 
   using LieGroup<Pose2, 3>::inverse; // version with derivative
@@ -210,7 +210,7 @@ public:
   /// @{
 
   /** Return point coordinates in pose coordinate frame */
-  GTSAM_EXPORT Point2 transformTo(const Point2& point,
+  Point2 transformTo(const Point2& point,
       OptionalJacobian<2, 3> Dpose = {},
       OptionalJacobian<2, 2> Dpoint = {}) const;
 
@@ -222,7 +222,7 @@ public:
   Matrix transformTo(const Matrix& points) const;
 
   /** Return point coordinates in global frame */
-  GTSAM_EXPORT Point2 transformFrom(const Point2& point,
+  Point2 transformFrom(const Point2& point,
       OptionalJacobian<2, 3> Dpose = {},
       OptionalJacobian<2, 2> Dpoint = {}) const;
 
@@ -273,14 +273,14 @@ public:
   }
 
   //// return transformation matrix
-  GTSAM_EXPORT Matrix3 matrix() const;
+  Matrix3 matrix() const;
 
   /**
    * Calculate bearing to a landmark
    * @param point 2D location of landmark
    * @return 2D rotation \f$ \in SO(2) \f$
    */
-  GTSAM_EXPORT Rot2 bearing(const Point2& point,
+  Rot2 bearing(const Point2& point,
                OptionalJacobian<1, 3> H1={}, OptionalJacobian<1, 2> H2={}) const;
 
   /**
@@ -288,7 +288,7 @@ public:
    * @param point SO(2) location of other pose
    * @return 2D rotation \f$ \in SO(2) \f$
    */
-  GTSAM_EXPORT Rot2 bearing(const Pose2& pose,
+  Rot2 bearing(const Pose2& pose,
                OptionalJacobian<1, 3> H1={}, OptionalJacobian<1, 3> H2={}) const;
 
   /**
@@ -296,7 +296,7 @@ public:
    * @param point 2D location of landmark
    * @return range (double)
    */
-  GTSAM_EXPORT double range(const Point2& point,
+  double range(const Point2& point,
       OptionalJacobian<1, 3> H1={},
       OptionalJacobian<1, 2> H2={}) const;
 
@@ -305,7 +305,7 @@ public:
    * @param point 2D location of other pose
    * @return range (double)
    */
-  GTSAM_EXPORT double range(const Pose2& point,
+  double range(const Pose2& point,
       OptionalJacobian<1, 3> H1={},
       OptionalJacobian<1, 3> H2={}) const;
 

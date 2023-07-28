@@ -598,6 +598,25 @@ TEST(Rot3, quaternion) {
 }
 
 /* ************************************************************************* */
+TEST(Rot3, ConvertQuaternion) {
+  Eigen::Quaterniond eigenQuaternion;
+  eigenQuaternion.w() = 1.0;
+  eigenQuaternion.x() = 2.0;
+  eigenQuaternion.y() = 3.0;
+  eigenQuaternion.z() = 4.0;
+  EXPECT_DOUBLES_EQUAL(1, eigenQuaternion.w(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(2, eigenQuaternion.x(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(3, eigenQuaternion.y(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(4, eigenQuaternion.z(), 1e-9);
+
+  Rot3 R(eigenQuaternion);
+  EXPECT_DOUBLES_EQUAL(1, R.toQuaternion().w(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(2, R.toQuaternion().x(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(3, R.toQuaternion().y(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(4, R.toQuaternion().z(), 1e-9);
+}
+
+/* ************************************************************************* */
 Matrix Cayley(const Matrix& A) {
   Matrix::Index n = A.cols();
   const Matrix I = Matrix::Identity(n,n);
