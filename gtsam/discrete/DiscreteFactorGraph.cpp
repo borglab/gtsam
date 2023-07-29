@@ -204,17 +204,11 @@ namespace gtsam {
   std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
   EliminateDiscrete(const DiscreteFactorGraph& factors,
                     const Ordering& frontalKeys) {
-    factors.print("The Factors to eliminate:");
     // PRODUCT: multiply all factors
     gttic(product);
     DecisionTreeFactor product;
     for (auto&& factor : factors) product = (*factor) * product;
     gttoc(product);
-
-    std::cout << "\n\n==========" << std::endl;
-    std::cout << "Product" << std::endl;
-    std::cout << std::endl;
-    product.print();
 
     // Max over all the potentials by pretending all keys are frontal:
     auto normalization = product.max(product.size());
@@ -226,10 +220,6 @@ namespace gtsam {
     gttic(sum);
     DecisionTreeFactor::shared_ptr sum = product.sum(frontalKeys);
     gttoc(sum);
-
-    std::cout << "\n->Sum" << std::endl;
-    sum->print();
-    std::cout << "----------------------" << std::endl;
 
     // Ordering keys for the conditional so that frontalKeys are really in front
     Ordering orderedKeys;
