@@ -149,8 +149,7 @@ namespace gtsam {
     }
 
     /** choose a branch, create new memory ! */
-    NodePtr choose(const L& label, size_t index,
-                   bool make_unique = true) const override {
+    NodePtr choose(const L& label, size_t index) const override {
       return NodePtr(new Leaf(constant(), 1));
     }
 
@@ -469,22 +468,16 @@ namespace gtsam {
     }
 
     /** choose a branch, recursively */
-    NodePtr choose(const L& label, size_t index,
-                   bool make_unique = true) const override {
+    NodePtr choose(const L& label, size_t index) const override {
       if (label_ == label) return branches_[index];  // choose branch
 
       // second case, not label of interest, just recurse
       auto r = std::make_shared<Choice>(label_, branches_.size());
       for (auto&& branch : branches_) {
-        r->push_back(branch->choose(label, index, make_unique));
+        r->push_back(branch->choose(label, index));
       }
 
-      if (make_unique) {
-        return Unique(r);
-      } else {
-        return r;
-      }
-      // return Unique(r);
+      return Unique(r);
     }
 
    private:
@@ -1006,9 +999,9 @@ namespace gtsam {
   template<typename L, typename Y>
   DecisionTree<L, Y> DecisionTree<L, Y>::combine(const L& label,
       size_t cardinality, const Binary& op) const {
-    DecisionTree result = choose(label, 0, false);
+    DecisionTree result = choose(label, 0);
     for (size_t index = 1; index < cardinality; index++) {
-      DecisionTree chosen = choose(label, index, false);
+      DecisionTree chosen = choose(label, index);
       result = result.apply(chosen, op);
     }
     return result;
