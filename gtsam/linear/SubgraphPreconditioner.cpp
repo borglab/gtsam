@@ -24,9 +24,6 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/Vector.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/range/adaptor/reversed.hpp>
-
 #include <stdexcept>
 
 using std::cout;
@@ -77,16 +74,16 @@ static void setSubvector(const Vector &src, const KeyInfo &keyInfo,
 /* ************************************************************************* */
 // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with
 // Cholesky)
-static GaussianFactorGraph::shared_ptr convertToJacobianFactors(
+static GaussianFactorGraph convertToJacobianFactors(
     const GaussianFactorGraph &gfg) {
-  auto result = boost::make_shared<GaussianFactorGraph>();
+  GaussianFactorGraph result;
   for (const auto &factor : gfg) 
     if (factor) {
-      auto jf = boost::dynamic_pointer_cast<JacobianFactor>(factor);
+      auto jf = std::dynamic_pointer_cast<JacobianFactor>(factor);
       if (!jf) {
-        jf = boost::make_shared<JacobianFactor>(*factor);
+        jf = std::make_shared<JacobianFactor>(*factor);
       }
-      result->push_back(jf);
+      result.push_back(jf);
     }
   return result;
 }
@@ -96,42 +93,42 @@ SubgraphPreconditioner::SubgraphPreconditioner(const SubgraphPreconditionerParam
          parameters_(p) {}
 
 /* ************************************************************************* */
-SubgraphPreconditioner::SubgraphPreconditioner(const sharedFG& Ab2,
-    const sharedBayesNet& Rc1, const sharedValues& xbar, const SubgraphPreconditionerParameters &p) :
-        Ab2_(convertToJacobianFactors(*Ab2)), Rc1_(Rc1), xbar_(xbar),
-        b2bar_(new Errors(-Ab2_->gaussianErrors(*xbar))), parameters_(p) {
+SubgraphPreconditioner::SubgraphPreconditioner(const GaussianFactorGraph& Ab2,
+    const GaussianBayesNet& Rc1, const VectorValues& xbar, const SubgraphPreconditionerParameters &p) :
+        Ab2_(convertToJacobianFactors(Ab2)), Rc1_(Rc1), xbar_(xbar),
+        b2bar_(-Ab2_.gaussianErrors(xbar)), parameters_(p) {
 }
 
 /* ************************************************************************* */
 // x = xbar + inv(R1)*y
 VectorValues SubgraphPreconditioner::x(const VectorValues& y) const {
-  return *xbar_ + Rc1_->backSubstitute(y);
+  return xbar_ + Rc1_.backSubstitute(y);
 }
 
 /* ************************************************************************* */
 double SubgraphPreconditioner::error(const VectorValues& y) const {
-  Errors e(y);
+  Errors e = createErrors(y);
   VectorValues x = this->x(y);
-  Errors e2 = Ab2()->gaussianErrors(x);
+  Errors e2 = Ab2_.gaussianErrors(x);
   return 0.5 * (dot(e, e) + dot(e2,e2));
 }
 
 /* ************************************************************************* */
 // gradient is y + inv(R1')*A2'*(A2*inv(R1)*y-b2bar),
 VectorValues SubgraphPreconditioner::gradient(const VectorValues &y) const {
-  VectorValues x = Rc1()->backSubstitute(y); /* inv(R1)*y */
-  Errors e = (*Ab2() * x - *b2bar());        /* (A2*inv(R1)*y-b2bar) */
+  VectorValues x = Rc1_.backSubstitute(y); /* inv(R1)*y */
+  Errors e = Ab2_ * x - b2bar_;              /* (A2*inv(R1)*y-b2bar) */
   VectorValues v = VectorValues::Zero(x);
-  Ab2()->transposeMultiplyAdd(1.0, e, v);    /* A2'*(A2*inv(R1)*y-b2bar) */
-  return y + Rc1()->backSubstituteTranspose(v);
+  Ab2_.transposeMultiplyAdd(1.0, e, v); /* A2'*(A2*inv(R1)*y-b2bar) */
+  return y + Rc1_.backSubstituteTranspose(v);
 }
 
 /* ************************************************************************* */
 // Apply operator A, A*y = [I;A2*inv(R1)]*y = [y; A2*inv(R1)*y]
-Errors SubgraphPreconditioner::operator*(const VectorValues& y) const {
-  Errors e(y);
-  VectorValues x = Rc1()->backSubstitute(y);   /* x=inv(R1)*y */
-  Errors e2 = *Ab2() * x;                      /* A2*x */
+Errors SubgraphPreconditioner::operator*(const VectorValues &y) const {
+  Errors e = createErrors(y);
+  VectorValues x = Rc1_.backSubstitute(y); /* x=inv(R1)*y */
+  Errors e2 = Ab2_ * x;                      /* A2*x */
   e.splice(e.end(), e2);
   return e;
 }
@@ -147,8 +144,8 @@ void SubgraphPreconditioner::multiplyInPlace(const VectorValues& y, Errors& e) c
   }
 
   // Add A2 contribution
-  VectorValues x = Rc1()->backSubstitute(y);      // x=inv(R1)*y
-  Ab2()->multiplyInPlace(x, ei);                  // use iterator version
+  VectorValues x = Rc1_.backSubstitute(y);      // x=inv(R1)*y
+  Ab2_.multiplyInPlace(x, ei);                  // use iterator version
 }
 
 /* ************************************************************************* */
@@ -173,7 +170,7 @@ void SubgraphPreconditioner::transposeMultiplyAdd
   Errors::const_iterator it = e.begin();
   for(auto& key_value: y) {
     const Vector& ei = *it;
-    axpy(alpha, ei, key_value.second);
+    key_value.second += alpha * ei;
     ++it;
   }
   transposeMultiplyAdd2(alpha, it, e.end(), y);
@@ -190,14 +187,14 @@ void SubgraphPreconditioner::transposeMultiplyAdd2 (double alpha,
   while (it != end) e2.push_back(*(it++));
 
   VectorValues x = VectorValues::Zero(y); // x = 0
-  Ab2_->transposeMultiplyAdd(1.0,e2,x);   // x += A2'*e2
-  axpy(alpha, Rc1_->backSubstituteTranspose(x), y); // y += alpha*inv(R1')*x
+  Ab2_.transposeMultiplyAdd(1.0,e2,x);   // x += A2'*e2
+  y += alpha * Rc1_.backSubstituteTranspose(x); // y += alpha*inv(R1')*x
 }
 
 /* ************************************************************************* */
 void SubgraphPreconditioner::print(const std::string& s) const {
   cout << s << endl;
-  Ab2_->print();
+  Ab2_.print();
 }
 
 /*****************************************************************************/
@@ -205,7 +202,8 @@ void SubgraphPreconditioner::solve(const Vector &y, Vector &x) const {
   assert(x.size() == y.size());
 
   /* back substitute */
-  for (const auto &cg : boost::adaptors::reverse(*Rc1_)) {
+  for (auto it = std::make_reverse_iterator(Rc1_.end()); it != std::make_reverse_iterator(Rc1_.begin()); ++it) {
+    auto& cg = *it;
     /* collect a subvector of x that consists of the parents of cg (S) */
     const KeyVector parentKeys(cg->beginParents(), cg->endParents());
     const KeyVector frontalKeys(cg->beginFrontals(), cg->endFrontals());
@@ -228,7 +226,7 @@ void SubgraphPreconditioner::transposeSolve(const Vector &y, Vector &x) const {
   std::copy(y.data(), y.data() + y.rows(), x.data());
 
   /* in place back substitute */
-  for (const auto &cg : *Rc1_) {
+  for (const auto &cg : Rc1_) {
     const KeyVector frontalKeys(cg->beginFrontals(), cg->endFrontals());
     const Vector rhsFrontal = getSubvector(x, keyInfo_, frontalKeys);
     const Vector solFrontal =
@@ -261,10 +259,10 @@ void SubgraphPreconditioner::build(const GaussianFactorGraph &gfg, const KeyInfo
   keyInfo_ = keyInfo;
 
   /* build factor subgraph */
-  GaussianFactorGraph::shared_ptr gfg_subgraph = buildFactorSubgraph(gfg, subgraph, true);
+  auto gfg_subgraph = buildFactorSubgraph(gfg, subgraph, true);
 
   /* factorize and cache BayesNet */
-  Rc1_ = gfg_subgraph->eliminateSequential();
+  Rc1_ = *gfg_subgraph.eliminateSequential();
 }
 
 /*****************************************************************************/

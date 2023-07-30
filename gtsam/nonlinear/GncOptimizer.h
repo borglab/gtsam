@@ -65,9 +65,9 @@ class GncOptimizer {
     nfg_.resize(graph.size());
     for (size_t i = 0; i < graph.size(); i++) {
       if (graph[i]) {
-        NoiseModelFactor::shared_ptr factor = boost::dynamic_pointer_cast<
+        NoiseModelFactor::shared_ptr factor = std::dynamic_pointer_cast<
             NoiseModelFactor>(graph[i]);
-        auto robust = boost::dynamic_pointer_cast<
+        auto robust = std::dynamic_pointer_cast<
             noiseModel::Robust>(factor->noiseModel());
         // if the factor has a robust loss, we remove the robust loss
         nfg_[i] = robust ? factor-> cloneWithNewNoiseModel(robust->noise()) : factor;
@@ -142,8 +142,9 @@ class GncOptimizer {
    * provides an extra interface for the user to initialize the weightst
    * */
   void setWeights(const Vector w) {
-    if(w.size() != nfg_.size()){
-      throw std::runtime_error("GncOptimizer::setWeights: the number of specified weights"
+    if (size_t(w.size()) != nfg_.size()) {
+      throw std::runtime_error(
+          "GncOptimizer::setWeights: the number of specified weights"
           " does not match the size of the factor graph.");
     }
     weights_ = w;
@@ -183,7 +184,8 @@ class GncOptimizer {
   /// Compute optimal solution using graduated non-convexity.
   Values optimize() {
     NonlinearFactorGraph graph_initial = this->makeWeightedGraph(weights_);
-    BaseOptimizer baseOptimizer(graph_initial, state_);
+    BaseOptimizer baseOptimizer(
+        graph_initial, state_, params_.baseOptimizerParams);
     Values result = baseOptimizer.optimize();
     double mu = initializeMu();
     double prev_cost = graph_initial.error(result);
@@ -205,9 +207,11 @@ class GncOptimizer {
         std::cout << "GNC Optimizer stopped because all measurements are already known to be inliers or outliers"
                   << std::endl;
       }
+      if (params_.verbosity >= GncParameters::Verbosity::MU) {
+        std::cout << "mu: " << mu << std::endl;
+      }
       if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
         result.print("result\n");
-        std::cout << "mu: " << mu << std::endl;
       }
       return result;
     }
@@ -216,18 +220,23 @@ class GncOptimizer {
     for (iter = 0; iter < params_.maxIterations; iter++) {
 
       // display info
-      if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
+      if (params_.verbosity >= GncParameters::Verbosity::MU) {
         std::cout << "iter: " << iter << std::endl;
-        result.print("result\n");
         std::cout << "mu: " << mu << std::endl;
+      }
+      if (params_.verbosity >= GncParameters::Verbosity::WEIGHTS) {
         std::cout << "weights: " << weights_ << std::endl;
+      }
+      if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
+        result.print("result\n");
       }
       // weights update
       weights_ = calculateWeights(result, mu);
 
       // variable/values update
       NonlinearFactorGraph graph_iter = this->makeWeightedGraph(weights_);
-      BaseOptimizer baseOptimizer_iter(graph_iter, state_);
+      BaseOptimizer baseOptimizer_iter(
+          graph_iter, state_, params_.baseOptimizerParams);
       result = baseOptimizer_iter.optimize();
 
       // stopping condition
@@ -252,9 +261,11 @@ class GncOptimizer {
     if (params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
       std::cout << "final iterations: " << iter << std::endl;
       std::cout << "final mu: " << mu << std::endl;
-      std::cout << "final weights: " << weights_ << std::endl;
       std::cout << "previous cost: " << prev_cost << std::endl;
       std::cout << "current cost: " << cost << std::endl;
+    }
+    if (params_.verbosity >= GncParameters::Verbosity::WEIGHTS) {
+      std::cout << "final weights: " << weights_ << std::endl;
     }
     return result;
   }
@@ -290,6 +301,11 @@ class GncOptimizer {
                 std::min(mu_init, barcSq_[k] / (2 * rk - barcSq_[k]) ) : mu_init;
           }
         }
+        if (mu_init >= 0 && mu_init < 1e-6){
+          mu_init = 1e-6; // if mu ~ 0 (but positive), that means we have measurements with large errors,
+          // i.e., rk > barcSq_[k] and rk very large, hence we threshold to 1e-6 to avoid mu = 0
+        }
+  
         return mu_init > 0 && !std::isinf(mu_init) ? mu_init : -1; // if mu <= 0 or mu = inf, return -1,
         // which leads to termination of the main gnc loop. In this case, all residuals are already below the threshold
         // and there is no need to robustify (TLS = least squares)
@@ -337,8 +353,10 @@ class GncOptimizer {
   bool checkCostConvergence(const double cost, const double prev_cost) const {
     bool costConverged = std::fabs(cost - prev_cost) / std::max(prev_cost, 1e-7)
         < params_.relativeCostTol;
-    if (costConverged && params_.verbosity >= GncParameters::Verbosity::SUMMARY)
-      std::cout << "checkCostConvergence = true " << std::endl;
+    if (costConverged && params_.verbosity >= GncParameters::Verbosity::SUMMARY){
+      std::cout << "checkCostConvergence = true (prev. cost = " << prev_cost
+                << ", curr. cost = " << cost << ")" << std::endl;
+    }
     return costConverged;
   }
 
@@ -383,10 +401,10 @@ class GncOptimizer {
     newGraph.resize(nfg_.size());
     for (size_t i = 0; i < nfg_.size(); i++) {
       if (nfg_[i]) {
-        auto factor = boost::dynamic_pointer_cast<
+        auto factor = std::dynamic_pointer_cast<
             NoiseModelFactor>(nfg_[i]);
         auto noiseModel =
-            boost::dynamic_pointer_cast<noiseModel::Gaussian>(
+            std::dynamic_pointer_cast<noiseModel::Gaussian>(
                 factor->noiseModel());
         if (noiseModel) {
           Matrix newInfo = weights[i] * noiseModel->information();
@@ -433,18 +451,16 @@ class GncOptimizer {
         return weights;
       }
       case GncLossType::TLS: {  // use eq (14) in GNC paper
-        double upperbound = (mu + 1) / mu * barcSq_.maxCoeff();
-        double lowerbound = mu / (mu + 1) * barcSq_.minCoeff();
         for (size_t k : unknownWeights) {
           if (nfg_[k]) {
             double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
-            if (u2_k >= upperbound) {
+            double upperbound = (mu + 1) / mu * barcSq_[k];
+            double lowerbound = mu / (mu + 1) * barcSq_[k];
+            weights[k] = std::sqrt(barcSq_[k] * mu * (mu + 1) / u2_k) - mu;
+            if (u2_k >= upperbound || weights[k] < 0) {
               weights[k] = 0;
-            } else if (u2_k <= lowerbound) {
+            } else if (u2_k <= lowerbound || weights[k] > 1) {
               weights[k] = 1;
-            } else {
-              weights[k] = std::sqrt(barcSq_[k] * mu * (mu + 1) / u2_k)
-                  - mu;
             }
           }
         }

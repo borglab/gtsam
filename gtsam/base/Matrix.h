@@ -26,12 +26,8 @@
 
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/config.h>
 
-#include <boost/format.hpp>
-#include <functional>
-#include <boost/tuple/tuple.hpp>
-#include <boost/math/special_functions/fpclassify.hpp>
+#include <vector>
 
 /**
  * Matrix is a typedef in the gtsam namespace
@@ -46,28 +42,28 @@ typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> M
 // Create handy typedefs and constants for square-size matrices
 // MatrixMN, MatrixN = MatrixNN, I_NxN, and Z_NxN, for M,N=1..9
 #define GTSAM_MAKE_MATRIX_DEFS(N)   \
-typedef Eigen::Matrix<double, N, N> Matrix##N;  \
-typedef Eigen::Matrix<double, 1, N> Matrix1##N;  \
-typedef Eigen::Matrix<double, 2, N> Matrix2##N;  \
-typedef Eigen::Matrix<double, 3, N> Matrix3##N;  \
-typedef Eigen::Matrix<double, 4, N> Matrix4##N;  \
-typedef Eigen::Matrix<double, 5, N> Matrix5##N;  \
-typedef Eigen::Matrix<double, 6, N> Matrix6##N;  \
-typedef Eigen::Matrix<double, 7, N> Matrix7##N;  \
-typedef Eigen::Matrix<double, 8, N> Matrix8##N;  \
-typedef Eigen::Matrix<double, 9, N> Matrix9##N;  \
+using Matrix##N = Eigen::Matrix<double, N, N>;  \
+using Matrix1##N = Eigen::Matrix<double, 1, N>;  \
+using Matrix2##N = Eigen::Matrix<double, 2, N>;  \
+using Matrix3##N = Eigen::Matrix<double, 3, N>;  \
+using Matrix4##N = Eigen::Matrix<double, 4, N>;  \
+using Matrix5##N = Eigen::Matrix<double, 5, N>;  \
+using Matrix6##N = Eigen::Matrix<double, 6, N>;  \
+using Matrix7##N = Eigen::Matrix<double, 7, N>;  \
+using Matrix8##N = Eigen::Matrix<double, 8, N>;  \
+using Matrix9##N = Eigen::Matrix<double, 9, N>;  \
 static const Eigen::MatrixBase<Matrix##N>::IdentityReturnType I_##N##x##N = Matrix##N::Identity(); \
 static const Eigen::MatrixBase<Matrix##N>::ConstantReturnType Z_##N##x##N = Matrix##N::Zero();
 
-GTSAM_MAKE_MATRIX_DEFS(1);
-GTSAM_MAKE_MATRIX_DEFS(2);
-GTSAM_MAKE_MATRIX_DEFS(3);
-GTSAM_MAKE_MATRIX_DEFS(4);
-GTSAM_MAKE_MATRIX_DEFS(5);
-GTSAM_MAKE_MATRIX_DEFS(6);
-GTSAM_MAKE_MATRIX_DEFS(7);
-GTSAM_MAKE_MATRIX_DEFS(8);
-GTSAM_MAKE_MATRIX_DEFS(9);
+GTSAM_MAKE_MATRIX_DEFS(1)
+GTSAM_MAKE_MATRIX_DEFS(2)
+GTSAM_MAKE_MATRIX_DEFS(3)
+GTSAM_MAKE_MATRIX_DEFS(4)
+GTSAM_MAKE_MATRIX_DEFS(5)
+GTSAM_MAKE_MATRIX_DEFS(6)
+GTSAM_MAKE_MATRIX_DEFS(7)
+GTSAM_MAKE_MATRIX_DEFS(8)
+GTSAM_MAKE_MATRIX_DEFS(9)
 
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
@@ -283,7 +279,7 @@ struct Reshape<N, M, InOptions, M, N, InOptions> {
 
 template <int OutM, int OutN, int OutOptions, int InM, int InN, int InOptions>
 inline typename Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & m){
-  BOOST_STATIC_ASSERT(InM * InN == OutM * OutN);
+  static_assert(InM * InN == OutM * OutN);
   return Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::reshape(m);
 }
 
@@ -310,7 +306,7 @@ GTSAM_EXPORT void inplace_QR(Matrix& A);
  * @param sigmas is a vector of the measurement standard deviation
  * @return list of r vectors, d  and sigma
  */
-GTSAM_EXPORT std::list<boost::tuple<Vector, double, double> >
+GTSAM_EXPORT std::list<std::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas);
 
 /**
@@ -437,7 +433,7 @@ GTSAM_EXPORT void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V);
  * Returns rank of A, minimum error (singular value),
  * and corresponding eigenvector (column of V, with A=U*S*V')
  */
-GTSAM_EXPORT boost::tuple<int, double, Vector>
+GTSAM_EXPORT std::tuple<int, double, Vector>
 DLT(const Matrix& A, double rank_tol = 1e-9);
 
 /**
@@ -462,8 +458,8 @@ struct MultiplyWithInverse {
 
   /// A.inverse() * b, with optional derivatives
   VectorN operator()(const MatrixN& A, const VectorN& b,
-                     OptionalJacobian<N, N* N> H1 = boost::none,
-                     OptionalJacobian<N, N> H2 = boost::none) const {
+                     OptionalJacobian<N, N* N> H1 = {},
+                     OptionalJacobian<N, N> H2 = {}) const {
     const MatrixN invA = A.inverse();
     const VectorN c = invA * b;
     // The derivative in A is just -[c[0]*invA c[1]*invA ... c[N-1]*invA]
@@ -498,16 +494,16 @@ struct MultiplyWithInverseFunction {
 
   /// f(a).inverse() * b, with optional derivatives
   VectorN operator()(const T& a, const VectorN& b,
-                     OptionalJacobian<N, M> H1 = boost::none,
-                     OptionalJacobian<N, N> H2 = boost::none) const {
+                     OptionalJacobian<N, M> H1 = {},
+                     OptionalJacobian<N, N> H2 = {}) const {
     MatrixN A;
-    phi_(a, b, boost::none, A);  // get A = f(a) by calling f once
+    phi_(a, b, {}, A);  // get A = f(a) by calling f once
     const MatrixN invA = A.inverse();
     const VectorN c = invA * b;
 
     if (H1) {
       Eigen::Matrix<double, N, M> H;
-      phi_(a, c, H, boost::none);  // get derivative H of forward mapping
+      phi_(a, c, H, {});  // get derivative H of forward mapping
       *H1 = -invA* H;
     }
     if (H2) *H2 = invA;
@@ -523,82 +519,4 @@ GTSAM_EXPORT Matrix LLt(const Matrix& A);
 GTSAM_EXPORT Matrix RtR(const Matrix& A);
 
 GTSAM_EXPORT Vector columnNormSquare(const Matrix &A);
-} // namespace gtsam
-
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/array.hpp>
-#include <boost/serialization/split_free.hpp>
-
-namespace boost {
-  namespace serialization {
-
-    /**
-     * Ref. https://stackoverflow.com/questions/18382457/eigen-and-boostserialize/22903063#22903063
-     * 
-     * Eigen supports calling resize() on both static and dynamic matrices.
-     * This allows for a uniform API, with resize having no effect if the static matrix
-     * is already the correct size.
-     * https://eigen.tuxfamily.org/dox/group__TutorialMatrixClass.html#TutorialMatrixSizesResizing
-     * 
-     * We use all the Matrix template parameters to ensure wide compatibility.
-     * 
-     * eigen_typekit in ROS uses the same code
-     * http://docs.ros.org/lunar/api/eigen_typekit/html/eigen__mqueue_8cpp_source.html
-     */
-
-    // split version - sends sizes ahead
-    template<class Archive,
-             typename Scalar_,
-             int Rows_,
-             int Cols_,
-             int Ops_,
-             int MaxRows_,
-             int MaxCols_>
-    void save(Archive & ar,
-              const Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
-              const unsigned int /*version*/) {
-      const size_t rows = m.rows(), cols = m.cols();
-      ar << BOOST_SERIALIZATION_NVP(rows);
-      ar << BOOST_SERIALIZATION_NVP(cols);
-      ar << make_nvp("data", make_array(m.data(), m.size()));
-    }
-
-    template<class Archive,
-             typename Scalar_,
-             int Rows_,
-             int Cols_,
-             int Ops_,
-             int MaxRows_,
-             int MaxCols_>
-    void load(Archive & ar,
-              Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
-              const unsigned int /*version*/) {
-      size_t rows, cols;
-      ar >> BOOST_SERIALIZATION_NVP(rows);
-      ar >> BOOST_SERIALIZATION_NVP(cols);
-      m.resize(rows, cols);
-      ar >> make_nvp("data", make_array(m.data(), m.size()));
-    }
-
-    // templated version of BOOST_SERIALIZATION_SPLIT_FREE(Eigen::Matrix);
-    template<class Archive,
-             typename Scalar_,
-             int Rows_,
-             int Cols_,
-             int Ops_,
-             int MaxRows_,
-             int MaxCols_>
-    void serialize(Archive & ar,
-              Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
-              const unsigned int version) {
-      split_free(ar, m, version);
-    }
-
-    // specialized to Matrix for MATLAB wrapper
-    template <class Archive>
-    void serialize(Archive& ar, gtsam::Matrix& m, const unsigned int version) {
-      split_free(ar, m, version);
-    }
-
-  } // namespace serialization
-} // namespace boost
+}  // namespace gtsam

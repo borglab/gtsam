@@ -3,17 +3,25 @@ class FunRange {
   This range(double d);
 
   static This create();
+
+  void serialize() const;
 };
 
 template<M={double}>
 class Fun {
+
   static This staticMethodWithThis();
+
+  template<T={int}>
+  static double templatedStaticMethod(const T& m);
 
   template<T={string}>
   This templatedMethod(double d, T t);
 
   template<T={string}, U={size_t}>
   This multiTemplatedMethod(double d, T t, U u);
+
+  std::map<M, This::M> sets();
 };
 
 
@@ -28,6 +36,10 @@ class Test {
 
   // Test a shared ptr property
   gtsam::noiseModel::Base* model_ptr;
+
+  // Test adding more than 1 property
+  double value;
+  string name;
 
   pair<Vector,Matrix> return_pair (Vector v, Matrix A) const; // intentionally the first method
   pair<Vector,Matrix> return_pair (Vector v) const; // overload
@@ -70,6 +82,10 @@ class Test {
   void set_container(std::vector<testing::Test*> container);
   void set_container(std::vector<testing::Test&> container);
   std::vector<testing::Test*> get_container() const;
+
+  // special ipython method
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 
   // comments at the end!
 
@@ -117,6 +133,15 @@ class ForwardKinematics {
                     const gtsam::Values& joint_angles,
                     const gtsam::Pose3& l2Tp = gtsam::Pose3());
 };
+
+// Test for templated constructor
+class TemplatedConstructor {
+  TemplatedConstructor();
+
+  template<T={string, int, double}>
+  TemplatedConstructor(const T& arg);
+};
+
 
 class SuperCoolFactor;
 typedef SuperCoolFactor<gtsam::Pose3> SuperCoolFactorPose3;

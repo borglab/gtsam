@@ -17,23 +17,12 @@ class ConstantBias {
   bool equals(const gtsam::imuBias::ConstantBias& expected, double tol) const;
 
   // Group
-  static gtsam::imuBias::ConstantBias identity();
-  gtsam::imuBias::ConstantBias inverse() const;
-  gtsam::imuBias::ConstantBias compose(const gtsam::imuBias::ConstantBias& b) const;
-  gtsam::imuBias::ConstantBias between(const gtsam::imuBias::ConstantBias& b) const;
+  static gtsam::imuBias::ConstantBias Identity();
 
   // Operator Overloads
   gtsam::imuBias::ConstantBias operator-() const;
   gtsam::imuBias::ConstantBias operator+(const gtsam::imuBias::ConstantBias& b) const;
   gtsam::imuBias::ConstantBias operator-(const gtsam::imuBias::ConstantBias& b) const;
-
-  // Manifold
-  gtsam::imuBias::ConstantBias retract(Vector v) const;
-  Vector localCoordinates(const gtsam::imuBias::ConstantBias& b) const;
-
-  // Lie Group
-  static gtsam::imuBias::ConstantBias Expmap(Vector v);
-  static Vector Logmap(const gtsam::imuBias::ConstantBias& b);
 
   // Standard Interface
   Vector vector() const;
@@ -41,6 +30,9 @@ class ConstantBias {
   Vector gyroscope() const;
   Vector correctAccelerometer(Vector measurement) const;
   Vector correctGyroscope(Vector measurement) const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 }///\namespace imuBias
@@ -64,6 +56,9 @@ class NavState {
 
   gtsam::NavState retract(const Vector& x) const;
   Vector localCoordinates(const gtsam::NavState& g) const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 #include <gtsam/navigation/PreintegratedRotation.h>
@@ -80,13 +75,15 @@ virtual class PreintegratedRotationParams {
 
   Matrix getGyroscopeCovariance() const;
 
-  boost::optional<Vector> getOmegaCoriolis() const;
-  boost::optional<gtsam::Pose3> getBodyPSensor() const;
+  std::optional<Vector> getOmegaCoriolis() const;
+  std::optional<gtsam::Pose3> getBodyPSensor() const;
 };
 
 #include <gtsam/navigation/PreintegrationParams.h>
 virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   PreintegrationParams(Vector n_gravity);
+
+  gtsam::Vector n_gravity;
 
   static gtsam::PreintegrationParams* MakeSharedD(double g);
   static gtsam::PreintegrationParams* MakeSharedU(double g);
@@ -104,6 +101,9 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   Matrix getAccelerometerCovariance() const;
   Matrix getIntegrationCovariance()   const;
   bool   getUse2ndOrderCoriolis()     const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 #include <gtsam/navigation/ImuFactor.h>
@@ -133,6 +133,9 @@ class PreintegratedImuMeasurements {
   Vector biasHatVector() const;
   gtsam::NavState predict(const gtsam::NavState& state_i,
       const gtsam::imuBias::ConstantBias& bias) const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 virtual class ImuFactor: gtsam::NonlinearFactor {
@@ -162,11 +165,11 @@ virtual class PreintegrationCombinedParams : gtsam::PreintegrationParams {
 
   void setBiasAccCovariance(Matrix cov);
   void setBiasOmegaCovariance(Matrix cov);
-  void setBiasAccOmegaInt(Matrix cov);
+  void setBiasAccOmegaInit(Matrix cov);
   
   Matrix getBiasAccCovariance() const ;
   Matrix getBiasOmegaCovariance() const ;
-  Matrix getBiasAccOmegaInt() const;
+  Matrix getBiasAccOmegaInit() const;
  
 };
 
@@ -213,7 +216,13 @@ virtual class CombinedImuFactor: gtsam::NonlinearFactor {
 #include <gtsam/navigation/AHRSFactor.h>
 class PreintegratedAhrsMeasurements {
   // Standard Constructor
-  PreintegratedAhrsMeasurements(Vector bias, Matrix measuredOmegaCovariance);
+  PreintegratedAhrsMeasurements(const gtsam::PreintegrationParams* params,
+                                const Vector& biasHat);
+  PreintegratedAhrsMeasurements(const gtsam::PreintegrationParams* p,
+                                const Vector& bias_hat, double deltaTij,
+                                const gtsam::Rot3& deltaRij,
+                                const Matrix& delRdelBiasOmega,
+                                const Matrix& preint_meas_cov);
   PreintegratedAhrsMeasurements(const gtsam::PreintegratedAhrsMeasurements& rhs);
 
   // Testable

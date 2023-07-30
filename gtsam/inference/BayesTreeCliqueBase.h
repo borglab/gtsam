@@ -21,10 +21,10 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastVector.h>
-#include <boost/optional.hpp>
 
 #include <string>
 #include <mutex>
+#include <optional>
 
 namespace gtsam {
 
@@ -52,16 +52,16 @@ namespace gtsam {
     typedef BayesTreeCliqueBase<DERIVED, FACTORGRAPH> This;
     typedef DERIVED DerivedType;
     typedef EliminationTraits<FACTORGRAPH> EliminationTraitsType;
-    typedef boost::shared_ptr<This> shared_ptr;
-    typedef boost::weak_ptr<This> weak_ptr;
-    typedef boost::shared_ptr<DerivedType> derived_ptr;
-    typedef boost::weak_ptr<DerivedType> derived_weak_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
+    typedef std::weak_ptr<This> weak_ptr;
+    typedef std::shared_ptr<DerivedType> derived_ptr;
+    typedef std::weak_ptr<DerivedType> derived_weak_ptr;
 
   public:
     typedef FACTORGRAPH FactorGraphType;
     typedef typename EliminationTraitsType::BayesNetType BayesNetType;
     typedef typename BayesNetType::ConditionalType ConditionalType;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef std::shared_ptr<ConditionalType> sharedConditional;
     typedef typename FactorGraphType::FactorType FactorType;
     typedef typename FactorGraphType::Eliminate Eliminate;
 
@@ -70,16 +70,23 @@ namespace gtsam {
     /// @name Standard Constructors
     /// @{
 
-    /** Default constructor */
+    /// Default constructor
     BayesTreeCliqueBase() : problemSize_(1) {}
 
-    /** Construct from a conditional, leaving parent and child pointers uninitialized */
-    BayesTreeCliqueBase(const sharedConditional& conditional) : conditional_(conditional), problemSize_(1) {}
+    /// Construct from a conditional, leaving parent and child pointers
+    /// uninitialized.
+    BayesTreeCliqueBase(const sharedConditional& conditional)
+        : conditional_(conditional), problemSize_(1) {}
 
-    /** Shallow copy constructor */
-    BayesTreeCliqueBase(const BayesTreeCliqueBase& c) : conditional_(c.conditional_), parent_(c.parent_), children(c.children), problemSize_(c.problemSize_), is_root(c.is_root) {}
+    /// Shallow copy constructor.
+    BayesTreeCliqueBase(const BayesTreeCliqueBase& c)
+        : conditional_(c.conditional_),
+          parent_(c.parent_),
+          children(c.children),
+          problemSize_(c.problemSize_),
+          is_root(c.is_root) {}
 
-    /** Shallow copy assignment constructor */
+    /// Shallow copy assignment constructor
     BayesTreeCliqueBase& operator=(const BayesTreeCliqueBase& c) {
       conditional_ = c.conditional_;
       parent_ = c.parent_;
@@ -89,10 +96,13 @@ namespace gtsam {
       return *this;
     }
 
+    // Virtual destructor.
+    virtual ~BayesTreeCliqueBase() {}
+
     /// @}
 
     /// This stores the Cached separator marginal P(S)
-    mutable boost::optional<FactorGraphType> cachedSeparatorMarginal_;
+    mutable std::optional<FactorGraphType> cachedSeparatorMarginal_;
     /// This protects Cached seperator marginal P(S) from concurrent read/writes
     /// as many the functions which access it are const (hence the mutable)
     /// leading to the false impression that these const functions are thread-safe
@@ -119,7 +129,9 @@ namespace gtsam {
     bool equals(const DERIVED& other, double tol = 1e-9) const;
 
     /** print this node */
-    virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    virtual void print(
+        const std::string& s = "",
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /// @}
     /// @name Standard Interface
@@ -128,8 +140,14 @@ namespace gtsam {
     /** Access the conditional */
     const sharedConditional& conditional() const { return conditional_; }
 
-    /** is this the root of a Bayes tree ? */
+    /// Return true if this clique is the root of a Bayes tree. 
     inline bool isRoot() const { return parent_.expired(); }
+
+    /// Return the number of children.
+    size_t nrChildren() const { return children.size(); }
+
+    /// Return the child at index i.
+    const derived_ptr operator[](size_t i) const { return children.at(i); }
 
     /** The size of subtree rooted at this clique, i.e., nr of Cliques */
     size_t treeSize() const;
@@ -162,7 +180,7 @@ namespace gtsam {
      */
     void deleteCachedShortcuts();
 
-    const boost::optional<FactorGraphType>& cachedSeparatorMarginal() const {
+    const std::optional<FactorGraphType>& cachedSeparatorMarginal() const {
       std::lock_guard<std::mutex> marginalLock(cachedSeparatorMarginalMutex_);
       return cachedSeparatorMarginal_; 
     }
@@ -182,11 +200,12 @@ namespace gtsam {
     /** Non-recursive delete cached shortcuts and marginals - internal only. */
     void deleteCachedShortcutsNonRecursive() { 
       std::lock_guard<std::mutex> marginalLock(cachedSeparatorMarginalMutex_);
-      cachedSeparatorMarginal_ = boost::none; 
+      cachedSeparatorMarginal_ = {}; 
     }
 
   private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -201,6 +220,7 @@ namespace gtsam {
       }
       ar & BOOST_SERIALIZATION_NVP(children);
     }
+#endif
 
     /// @}
 

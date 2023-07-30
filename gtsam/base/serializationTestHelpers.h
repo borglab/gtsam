@@ -17,6 +17,7 @@
  * @date Feb 7, 2012
  */
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #pragma once
 
 #include <iostream>
@@ -24,6 +25,7 @@
 #include <string>
 
 #include <gtsam/base/serialization.h>
+#include <gtsam/base/TestableAssertions.h>
 
 #include <boost/serialization/serialization.hpp>
 #include <boost/filesystem.hpp>
@@ -42,7 +44,7 @@ T create() {
 }
 
 // Creates or empties a folder in the build folder and returns the relative path
-boost::filesystem::path resetFilesystem(
+inline boost::filesystem::path resetFilesystem(
     boost::filesystem::path folder = "actual") {
   boost::filesystem::remove_all(folder);
   boost::filesystem::create_directory(folder);
@@ -174,3 +176,4 @@ bool equalsDereferencedBinary(const T& input = T()) {
 
 } // \namespace serializationTestHelpers
 } // \namespace gtsam
+#endif

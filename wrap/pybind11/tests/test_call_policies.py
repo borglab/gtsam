@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
 import pytest
 
 import env  # noqa: F401
-
-from pybind11_tests import call_policies as m
 from pybind11_tests import ConstructorStats
+from pybind11_tests import call_policies as m
 
 
 @pytest.mark.xfail("env.PYPY", reason="sometimes comes out 1 off on PyPy", strict=False)
@@ -16,10 +14,13 @@ def test_keep_alive_argument(capture):
     with capture:
         p.addChild(m.Child())
         assert ConstructorStats.detail_reg_inst() == n_inst + 1
-    assert capture == """
+    assert (
+        capture
+        == """
         Allocating child.
         Releasing child.
     """
+    )
     with capture:
         del p
         assert ConstructorStats.detail_reg_inst() == n_inst
@@ -35,10 +36,26 @@ def test_keep_alive_argument(capture):
     with capture:
         del p
         assert ConstructorStats.detail_reg_inst() == n_inst
-    assert capture == """
+    assert (
+        capture
+        == """
         Releasing parent.
         Releasing child.
     """
+    )
+
+    p = m.Parent()
+    c = m.Child()
+    assert ConstructorStats.detail_reg_inst() == n_inst + 2
+    m.free_function(p, c)
+    del c
+    assert ConstructorStats.detail_reg_inst() == n_inst + 2
+    del p
+    assert ConstructorStats.detail_reg_inst() == n_inst
+
+    with pytest.raises(RuntimeError) as excinfo:
+        m.invalid_arg_index()
+    assert str(excinfo.value) == "Could not activate keep_alive!"
 
 
 def test_keep_alive_return_value(capture):
@@ -49,10 +66,13 @@ def test_keep_alive_return_value(capture):
     with capture:
         p.returnChild()
         assert ConstructorStats.detail_reg_inst() == n_inst + 1
-    assert capture == """
+    assert (
+        capture
+        == """
         Allocating child.
         Releasing child.
     """
+    )
     with capture:
         del p
         assert ConstructorStats.detail_reg_inst() == n_inst
@@ -68,10 +88,30 @@ def test_keep_alive_return_value(capture):
     with capture:
         del p
         assert ConstructorStats.detail_reg_inst() == n_inst
-    assert capture == """
+    assert (
+        capture
+        == """
         Releasing parent.
         Releasing child.
     """
+    )
+
+    p = m.Parent()
+    assert ConstructorStats.detail_reg_inst() == n_inst + 1
+    with capture:
+        m.Parent.staticFunction(p)
+        assert ConstructorStats.detail_reg_inst() == n_inst + 2
+    assert capture == "Allocating child."
+    with capture:
+        del p
+        assert ConstructorStats.detail_reg_inst() == n_inst
+    assert (
+        capture
+        == """
+        Releasing parent.
+        Releasing child.
+    """
+    )
 
 
 # https://foss.heptapod.net/pypy/pypy/-/issues/2447
@@ -82,14 +122,17 @@ def test_alive_gc(capture):
     p.addChildKeepAlive(m.Child())
     assert ConstructorStats.detail_reg_inst() == n_inst + 2
     lst = [p]
-    lst.append(lst)   # creates a circular reference
+    lst.append(lst)  # creates a circular reference
     with capture:
         del p, lst
         assert ConstructorStats.detail_reg_inst() == n_inst
-    assert capture == """
+    assert (
+        capture
+        == """
         Releasing parent.
         Releasing child.
     """
+    )
 
 
 def test_alive_gc_derived(capture):
@@ -101,14 +144,17 @@ def test_alive_gc_derived(capture):
     p.addChildKeepAlive(m.Child())
     assert ConstructorStats.detail_reg_inst() == n_inst + 2
     lst = [p]
-    lst.append(lst)   # creates a circular reference
+    lst.append(lst)  # creates a circular reference
     with capture:
         del p, lst
         assert ConstructorStats.detail_reg_inst() == n_inst
-    assert capture == """
+    assert (
+        capture
+        == """
         Releasing parent.
         Releasing child.
     """
+    )
 
 
 def test_alive_gc_multi_derived(capture):
@@ -123,15 +169,18 @@ def test_alive_gc_multi_derived(capture):
     # +3 rather than +2 because Derived corresponds to two registered instances
     assert ConstructorStats.detail_reg_inst() == n_inst + 3
     lst = [p]
-    lst.append(lst)   # creates a circular reference
+    lst.append(lst)  # creates a circular reference
     with capture:
         del p, lst
         assert ConstructorStats.detail_reg_inst() == n_inst
-    assert capture == """
+    assert (
+        capture
+        == """
         Releasing parent.
         Releasing child.
         Releasing child.
     """
+    )
 
 
 def test_return_none(capture):
@@ -167,17 +216,23 @@ def test_keep_alive_constructor(capture):
     with capture:
         p = m.Parent(m.Child())
         assert ConstructorStats.detail_reg_inst() == n_inst + 2
-    assert capture == """
+    assert (
+        capture
+        == """
         Allocating child.
         Allocating parent.
     """
+    )
     with capture:
         del p
         assert ConstructorStats.detail_reg_inst() == n_inst
-    assert capture == """
+    assert (
+        capture
+        == """
         Releasing parent.
         Releasing child.
     """
+    )
 
 
 def test_call_guard():

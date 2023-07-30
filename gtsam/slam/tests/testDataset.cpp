@@ -22,8 +22,6 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/TestableAssertions.h>
 
-#include <boost/algorithm/string.hpp>
-
 #include <CppUnitLite/TestHarness.h>
 
 #include <iostream>
@@ -38,7 +36,8 @@ TEST(dataSet, findExampleDataFile) {
   const string expected_end = "examples/Data/example.graph";
   const string actual = findExampleDataFile("example");
   string actual_end = actual.substr(actual.size() - expected_end.size(), expected_end.size());
-  boost::replace_all(actual_end, "\\", "/"); // Convert directory separators to forward-slash
+  // replace all ocurrences of \\ with / use stl
+  std::replace(actual_end.begin(), actual_end.end(), '\\', '/');
   EXPECT(assert_equal(expected_end, actual_end));
 }
 
@@ -92,16 +91,14 @@ TEST( dataSet, parseEdge)
 TEST(dataSet, load2D) {
   ///< The structure where we will save the SfM data
   const string filename = findExampleDataFile("w100.graph");
-  NonlinearFactorGraph::shared_ptr graph;
-  Values::shared_ptr initial;
-  boost::tie(graph, initial) = load2D(filename);
+  const auto [graph, initial] = load2D(filename);
   EXPECT_LONGS_EQUAL(300, graph->size());
   EXPECT_LONGS_EQUAL(100, initial->size());
   auto model = noiseModel::Unit::Create(3);
   BetweenFactor<Pose2> expected(1, 0, Pose2(-0.99879, 0.0417574, -0.00818381),
                                 model);
   BetweenFactor<Pose2>::shared_ptr actual =
-      boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(0));
+      std::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(0));
   EXPECT(assert_equal(expected, *actual));
 
   // Check binary measurements, Pose2
@@ -117,7 +114,7 @@ TEST(dataSet, load2D) {
   const auto actualFactors = parseFactors<Pose2>(filename);
   for (size_t i : {0, 1, 2, 3, 4, 5}) {
     EXPECT(assert_equal(
-        *boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(i)),
+        *std::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(i)),
         *actualFactors[i], 1e-5));
   }
 
@@ -135,41 +132,17 @@ TEST(dataSet, load2D) {
 /* ************************************************************************* */
 TEST(dataSet, load2DVictoriaPark) {
   const string filename = findExampleDataFile("victoria_park.txt");
-  NonlinearFactorGraph::shared_ptr graph;
-  Values::shared_ptr initial;
-
   // Load all
-  boost::tie(graph, initial) = load2D(filename);
-  EXPECT_LONGS_EQUAL(10608, graph->size());
-  EXPECT_LONGS_EQUAL(7120, initial->size());
+  const auto [graph1, initial1] = load2D(filename);
+  EXPECT_LONGS_EQUAL(10608, graph1->size());
+  EXPECT_LONGS_EQUAL(7120, initial1->size());
 
   // Restrict keys
   size_t maxIndex = 5;
-  boost::tie(graph, initial) = load2D(filename, nullptr, maxIndex);
-  EXPECT_LONGS_EQUAL(5, graph->size());
-  EXPECT_LONGS_EQUAL(6, initial->size()); // file has 0 as well
-  EXPECT_LONGS_EQUAL(L(5), graph->at(4)->keys()[1]);
-}
-
-/* ************************************************************************* */
-TEST( dataSet, Balbianello)
-{
-  ///< The structure where we will save the SfM data
-  const string filename = findExampleDataFile("Balbianello");
-  SfmData mydata;
-  CHECK(readBundler(filename, mydata));
-
-  // Check number of things
-  EXPECT_LONGS_EQUAL(5,mydata.number_cameras());
-  EXPECT_LONGS_EQUAL(544,mydata.number_tracks());
-  const SfmTrack& track0 = mydata.tracks[0];
-  EXPECT_LONGS_EQUAL(3,track0.number_measurements());
-
-  // Check projection of a given point
-  EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
-  const SfmCamera& camera0 = mydata.cameras[0];
-  Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
-  EXPECT(assert_equal(expected,actual,1));
+  const auto [graph2, initial2] = load2D(filename, nullptr, maxIndex);
+  EXPECT_LONGS_EQUAL(5, graph2->size());
+  EXPECT_LONGS_EQUAL(6, initial2->size()); // file has 0 as well
+  EXPECT_LONGS_EQUAL(L(5), graph2->at(4)->keys()[1]);
 }
 
 /* ************************************************************************* */
@@ -222,7 +195,7 @@ TEST(dataSet, readG2o3D) {
   const auto actualFactors = parseFactors<Pose3>(g2oFile);
   for (size_t i : {0, 1, 2, 3, 4, 5}) {
     EXPECT(assert_equal(
-        *boost::dynamic_pointer_cast<BetweenFactor<Pose3>>(expectedGraph[i]),
+        *std::dynamic_pointer_cast<BetweenFactor<Pose3>>(expectedGraph[i]),
         *actualFactors[i], 1e-5));
   }
 
@@ -239,10 +212,8 @@ TEST(dataSet, readG2o3D) {
   }
 
   // Check graph version
-  NonlinearFactorGraph::shared_ptr actualGraph;
-  Values::shared_ptr actualValues;
   bool is3D = true;
-  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D);
+  const auto [actualGraph, actualValues] = readG2o(g2oFile, is3D);
   EXPECT(assert_equal(expectedGraph, *actualGraph, 1e-5));
   for (size_t j : {0, 1, 2, 3, 4}) {
     EXPECT(assert_equal(poses[j], actualValues->at<Pose3>(j), 1e-5));
@@ -253,10 +224,8 @@ TEST(dataSet, readG2o3D) {
 TEST( dataSet, readG2o3DNonDiagonalNoise)
 {
   const string g2oFile = findExampleDataFile("pose3example-offdiagonal.txt");
-  NonlinearFactorGraph::shared_ptr actualGraph;
-  Values::shared_ptr actualValues;
   bool is3D = true;
-  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D);
+  const auto [actualGraph, actualValues] = readG2o(g2oFile, is3D);
 
   Values expectedValues;
   Rot3 R0 = Rot3::Quaternion(1.000000, 0.000000, 0.000000, 0.000000 );
@@ -348,9 +317,7 @@ static NonlinearFactorGraph expectedGraph(const SharedNoiseModel& model) {
 /* ************************************************************************* */
 TEST(dataSet, readG2o) {
   const string g2oFile = findExampleDataFile("pose2example");
-  NonlinearFactorGraph::shared_ptr actualGraph;
-  Values::shared_ptr actualValues;
-  boost::tie(actualGraph, actualValues) = readG2o(g2oFile);
+  const auto [actualGraph, actualValues] = readG2o(g2oFile);
 
   auto model = noiseModel::Diagonal::Precisions(
       Vector3(44.721360, 44.721360, 30.901699));
@@ -374,10 +341,8 @@ TEST(dataSet, readG2o) {
 /* ************************************************************************* */
 TEST(dataSet, readG2oHuber) {
   const string g2oFile = findExampleDataFile("pose2example");
-  NonlinearFactorGraph::shared_ptr actualGraph;
-  Values::shared_ptr actualValues;
   bool is3D = false;
-  boost::tie(actualGraph, actualValues) =
+  const auto [actualGraph, actualValues] =
       readG2o(g2oFile, is3D, KernelFunctionTypeHUBER);
 
   auto baseModel = noiseModel::Diagonal::Precisions(
@@ -391,10 +356,8 @@ TEST(dataSet, readG2oHuber) {
 /* ************************************************************************* */
 TEST(dataSet, readG2oTukey) {
   const string g2oFile = findExampleDataFile("pose2example");
-  NonlinearFactorGraph::shared_ptr actualGraph;
-  Values::shared_ptr actualValues;
   bool is3D = false;
-  boost::tie(actualGraph, actualValues) =
+  const auto [actualGraph, actualValues] =
       readG2o(g2oFile, is3D, KernelFunctionTypeTUKEY);
 
   auto baseModel = noiseModel::Diagonal::Precisions(
@@ -409,16 +372,12 @@ TEST(dataSet, readG2oTukey) {
 TEST( dataSet, writeG2o)
 {
   const string g2oFile = findExampleDataFile("pose2example");
-  NonlinearFactorGraph::shared_ptr expectedGraph;
-  Values::shared_ptr expectedValues;
-  boost::tie(expectedGraph, expectedValues) = readG2o(g2oFile);
+  const auto [expectedGraph, expectedValues] = readG2o(g2oFile);
 
   const string filenameToWrite = createRewrittenFileName(g2oFile);
   writeG2o(*expectedGraph, *expectedValues, filenameToWrite);
 
-  NonlinearFactorGraph::shared_ptr actualGraph;
-  Values::shared_ptr actualValues;
-  boost::tie(actualGraph, actualValues) = readG2o(filenameToWrite);
+  const auto [actualGraph, actualValues] = readG2o(filenameToWrite);
   EXPECT(assert_equal(*expectedValues,*actualValues,1e-5));
   EXPECT(assert_equal(*expectedGraph,*actualGraph,1e-5));
 }
@@ -427,17 +386,13 @@ TEST( dataSet, writeG2o)
 TEST( dataSet, writeG2o3D)
 {
   const string g2oFile = findExampleDataFile("pose3example");
-  NonlinearFactorGraph::shared_ptr expectedGraph;
-  Values::shared_ptr expectedValues;
   bool is3D = true;
-  boost::tie(expectedGraph, expectedValues) = readG2o(g2oFile, is3D);
+  const auto [expectedGraph, expectedValues] = readG2o(g2oFile, is3D);
 
   const string filenameToWrite = createRewrittenFileName(g2oFile);
   writeG2o(*expectedGraph, *expectedValues, filenameToWrite);
 
-  NonlinearFactorGraph::shared_ptr actualGraph;
-  Values::shared_ptr actualValues;
-  boost::tie(actualGraph, actualValues) = readG2o(filenameToWrite, is3D);
+  const auto [actualGraph, actualValues] = readG2o(filenameToWrite, is3D);
   EXPECT(assert_equal(*expectedValues,*actualValues,1e-4));
   EXPECT(assert_equal(*expectedGraph,*actualGraph,1e-4));
 }
@@ -446,174 +401,16 @@ TEST( dataSet, writeG2o3D)
 TEST( dataSet, writeG2o3DNonDiagonalNoise)
 {
   const string g2oFile = findExampleDataFile("pose3example-offdiagonal");
-  NonlinearFactorGraph::shared_ptr expectedGraph;
-  Values::shared_ptr expectedValues;
   bool is3D = true;
-  boost::tie(expectedGraph, expectedValues) = readG2o(g2oFile, is3D);
+  const auto [expectedGraph, expectedValues] = readG2o(g2oFile, is3D);
 
   const string filenameToWrite = createRewrittenFileName(g2oFile);
   writeG2o(*expectedGraph, *expectedValues, filenameToWrite);
 
-  NonlinearFactorGraph::shared_ptr actualGraph;
-  Values::shared_ptr actualValues;
-  boost::tie(actualGraph, actualValues) = readG2o(filenameToWrite, is3D);
+  const auto [actualGraph, actualValues] = readG2o(filenameToWrite, is3D);
   EXPECT(assert_equal(*expectedValues,*actualValues,1e-4));
   EXPECT(assert_equal(*expectedGraph,*actualGraph,1e-4));
 }
-
-/* ************************************************************************* */
-TEST( dataSet, readBAL_Dubrovnik)
-{
-  ///< The structure where we will save the SfM data
-  const string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfmData mydata;
-  CHECK(readBAL(filename, mydata));
-
-  // Check number of things
-  EXPECT_LONGS_EQUAL(3,mydata.number_cameras());
-  EXPECT_LONGS_EQUAL(7,mydata.number_tracks());
-  const SfmTrack& track0 = mydata.tracks[0];
-  EXPECT_LONGS_EQUAL(3,track0.number_measurements());
-
-  // Check projection of a given point
-  EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
-  const SfmCamera& camera0 = mydata.cameras[0];
-  Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
-  EXPECT(assert_equal(expected,actual,12));
-}
-
-/* ************************************************************************* */
-TEST( dataSet, openGL2gtsam)
-{
-  Vector3 rotVec(0.2, 0.7, 1.1);
-  Rot3 R = Rot3::Expmap(rotVec);
-  Point3 t = Point3(0.0,0.0,0.0);
-  Pose3 poseGTSAM = Pose3(R,t);
-
-  Pose3 expected = openGL2gtsam(R, t.x(), t.y(), t.z());
-
-  Point3 r1 = R.r1(), r2 = R.r2(), r3 = R.r3(); //columns!
-  Rot3 cRw(
-      r1.x(),  r2.x(),  r3.x(),
-     -r1.y(), -r2.y(), -r3.y(),
-      -r1.z(), -r2.z(), -r3.z());
-  Rot3 wRc = cRw.inverse();
-  Pose3 actual = Pose3(wRc,t);
-
-  EXPECT(assert_equal(expected,actual));
-}
-
-/* ************************************************************************* */
-TEST( dataSet, gtsam2openGL)
-{
-  Vector3 rotVec(0.2, 0.7, 1.1);
-  Rot3 R = Rot3::Expmap(rotVec);
-  Point3 t = Point3(1.0,20.0,10.0);
-  Pose3 actual = Pose3(R,t);
-  Pose3 poseGTSAM = openGL2gtsam(R, t.x(), t.y(), t.z());
-
-  Pose3 expected = gtsam2openGL(poseGTSAM);
-  EXPECT(assert_equal(expected,actual));
-}
-
-/* ************************************************************************* */
-TEST( dataSet, writeBAL_Dubrovnik)
-{
-  ///< Read a file using the unit tested readBAL
-  const string filenameToRead = findExampleDataFile("dubrovnik-3-7-pre");
-  SfmData readData;
-  readBAL(filenameToRead, readData);
-
-  // Write readData to file filenameToWrite
-  const string filenameToWrite = createRewrittenFileName(filenameToRead);
-  CHECK(writeBAL(filenameToWrite, readData));
-
-  // Read what we wrote
-  SfmData writtenData;
-  CHECK(readBAL(filenameToWrite, writtenData));
-
-  // Check that what we read is the same as what we wrote
-  EXPECT_LONGS_EQUAL(readData.number_cameras(),writtenData.number_cameras());
-  EXPECT_LONGS_EQUAL(readData.number_tracks(),writtenData.number_tracks());
-
-  for (size_t i = 0; i < readData.number_cameras(); i++){
-    PinholeCamera<Cal3Bundler> expectedCamera = writtenData.cameras[i];
-    PinholeCamera<Cal3Bundler> actualCamera = readData.cameras[i];
-    EXPECT(assert_equal(expectedCamera,actualCamera));
-  }
-
-  for (size_t j = 0; j < readData.number_tracks(); j++){
-    // check point
-    SfmTrack expectedTrack  = writtenData.tracks[j];
-    SfmTrack actualTrack = readData.tracks[j];
-    Point3 expectedPoint = expectedTrack.p;
-    Point3 actualPoint = actualTrack.p;
-    EXPECT(assert_equal(expectedPoint,actualPoint));
-
-    // check rgb
-    Point3 expectedRGB = Point3( expectedTrack.r,  expectedTrack.g, expectedTrack.b );
-    Point3 actualRGB = Point3(  actualTrack.r,  actualTrack.g, actualTrack.b);
-    EXPECT(assert_equal(expectedRGB,actualRGB));
-
-    // check measurements
-    for (size_t k = 0; k < actualTrack.number_measurements(); k++){
-      EXPECT_LONGS_EQUAL(expectedTrack.measurements[k].first,actualTrack.measurements[k].first);
-      EXPECT(assert_equal(expectedTrack.measurements[k].second,actualTrack.measurements[k].second));
-    }
-  }
-}
-
-
-/* ************************************************************************* */
-TEST( dataSet, writeBALfromValues_Dubrovnik){
-
-  ///< Read a file using the unit tested readBAL
-  const string filenameToRead = findExampleDataFile("dubrovnik-3-7-pre");
-  SfmData readData;
-  readBAL(filenameToRead, readData);
-
-  Pose3 poseChange = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.3,0.1,0.3));
-
-  Values value;
-  for(size_t i=0; i < readData.number_cameras(); i++){ // for each camera
-    Pose3 pose = poseChange.compose(readData.cameras[i].pose());
-    value.insert(X(i), pose);
-  }
-  for(size_t j=0; j < readData.number_tracks(); j++){ // for each point
-    Point3 point = poseChange.transformFrom( readData.tracks[j].p );
-    value.insert(P(j), point);
-  }
-
-  // Write values and readData to a file
-  const string filenameToWrite = createRewrittenFileName(filenameToRead);
-  writeBALfromValues(filenameToWrite, readData, value);
-
-  // Read the file we wrote
-  SfmData writtenData;
-  readBAL(filenameToWrite, writtenData);
-
-  // Check that the reprojection errors are the same and the poses are correct
-  // Check number of things
-  EXPECT_LONGS_EQUAL(3,writtenData.number_cameras());
-  EXPECT_LONGS_EQUAL(7,writtenData.number_tracks());
-  const SfmTrack& track0 = writtenData.tracks[0];
-  EXPECT_LONGS_EQUAL(3,track0.number_measurements());
-
-  // Check projection of a given point
-  EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
-  const SfmCamera& camera0 = writtenData.cameras[0];
-  Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
-  EXPECT(assert_equal(expected,actual,12));
-
-  Pose3 expectedPose = camera0.pose();
-  Pose3 actualPose = value.at<Pose3>(X(0));
-  EXPECT(assert_equal(expectedPose,actualPose, 1e-7));
-
-  Point3 expectedPoint = track0.p;
-  Point3 actualPoint = value.at<Point3>(P(0));
-  EXPECT(assert_equal(expectedPoint,actualPoint, 1e-6));
-}
-
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

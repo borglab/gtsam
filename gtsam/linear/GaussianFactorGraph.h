@@ -21,12 +21,14 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph.h>
+#include <cstddef>
 #include <gtsam/inference/EliminateableFactorGraph.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/linear/Errors.h>  // Included here instead of fw-declared so we can use Errors::iterator
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/Errors.h> // Included here instead of fw-declared so we can use Errors::iterator
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
@@ -50,9 +52,15 @@ namespace gtsam {
     typedef GaussianBayesTree BayesTreeType;             ///< Type of Bayes tree
     typedef GaussianJunctionTree JunctionTreeType;       ///< Type of Junction tree
     /// The default dense elimination function
-    static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
+    static std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType> >
       DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
         return EliminatePreferCholesky(factors, keys); }
+    /// The default ordering generation function
+    static Ordering DefaultOrderingFunc(
+        const FactorGraphType& graph,
+        std::optional<std::reference_wrapper<const VariableIndex>> variableIndex) {
+      return Ordering::Colamd((*variableIndex).get());
+    }
   };
 
   /* ************************************************************************* */
@@ -71,10 +79,21 @@ namespace gtsam {
     typedef GaussianFactorGraph This; ///< Typedef to this class
     typedef FactorGraph<GaussianFactor> Base; ///< Typedef to base factor graph type
     typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
+    /// @name Constructors
+    /// @{
+    
     /** Default constructor */
     GaussianFactorGraph() {}
+
+    /**
+     * Construct from an initializer lists of GaussianFactor shared pointers.
+     * Example:
+     *   GaussianFactorGraph graph = { factor1, factor2, factor3 };
+     */
+    GaussianFactorGraph(std::initializer_list<sharedFactor> factors) : Base(factors) {}
+    
 
     /** Construct from iterator over factors */
     template<typename ITERATOR>
@@ -88,15 +107,19 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     GaussianFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
-    /** Virtual destructor */
-    virtual ~GaussianFactorGraph() {}
-
+    /// @}
     /// @name Testable
     /// @{
 
     bool equals(const This& fg, double tol = 1e-9) const;
 
     /// @}
+
+    /// Check exact equality.
+    friend bool operator==(const GaussianFactorGraph& lhs,
+                            const GaussianFactorGraph& rhs) {
+      return lhs.isEqual(rhs);
+    }
 
     /** Add a factor by value - makes a copy */
     void add(const GaussianFactor& factor) { push_back(factor.clone()); }
@@ -142,19 +165,10 @@ namespace gtsam {
     std::map<Key, size_t> getKeyDimMap() const;
 
     /** unnormalized error */
-    double error(const VectorValues& x) const {
-      double total_error = 0.;
-      for(const sharedFactor& factor: *this){
-        if(factor)
-          total_error += factor->error(x);
-      }
-      return total_error;
-    }
+    double error(const VectorValues& x) const;
 
     /** Unnormalized probability. O(n) */
-    double probPrime(const VectorValues& c) const {
-      return exp(-0.5 * error(c));
-    }
+    double probPrime(const VectorValues& c) const;
 
     /**
      * Clone() performs a deep-copy of the graph, including all of the factors.
@@ -375,22 +389,25 @@ namespace gtsam {
     /** In-place version e <- A*x that takes an iterator. */
     void multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const;
 
+    void printErrors(
+        const VectorValues& x,
+        const std::string& str = "GaussianFactorGraph: ",
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+        const std::function<bool(const Factor* /*factor*/,
+                                 double /*whitenedError*/, size_t /*index*/)>&
+            printCondition =
+                [](const Factor*, double, size_t) { return true; }) const;
     /// @}
 
   private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
-
-  public:
-
-    /** \deprecated */
-    VectorValues optimize(boost::none_t,
-      const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
-
+#endif
   };
 
   /**
@@ -399,7 +416,7 @@ namespace gtsam {
    */
   GTSAM_EXPORT bool hasConstraints(const GaussianFactorGraph& factors);
 
-  /****** Linear Algebra Opeations ******/
+  /****** Linear Algebra Operations ******/
 
   ///* matrix-vector operations */
   //GTSAM_EXPORT void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);

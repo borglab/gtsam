@@ -76,8 +76,18 @@ void trmm(int rows=get_random_size<Scalar>(),
     VERIFY_IS_APPROX( ge_xs = (s1*mat).adjoint().template triangularView<Mode>() * ge_left.adjoint(), numext::conj(s1) * triTr.conjugate() * ge_left.adjoint());
   VERIFY_IS_APPROX( ge_xs = (s1*mat).transpose().template triangularView<Mode>() * ge_left.adjoint(), s1triTr * ge_left.adjoint());
 
-  
   // TODO check with sub-matrix expressions ?
+
+  // destination with a non-default inner-stride
+  // see bug 1741
+  {
+    VERIFY_IS_APPROX( ge_xs.noalias() = mat.template triangularView<Mode>() * ge_right, tri * ge_right);
+    typedef Matrix<Scalar,Dynamic,Dynamic> MatrixX;
+    MatrixX buffer(2*ge_xs.rows(),2*ge_xs.cols());
+    Map<ResXS,0,Stride<Dynamic,2> > map1(buffer.data(),ge_xs.rows(),ge_xs.cols(),Stride<Dynamic,2>(2*ge_xs.outerStride(),2));
+    buffer.setZero();
+    VERIFY_IS_APPROX( map1.noalias() = mat.template triangularView<Mode>() * ge_right, tri * ge_right);
+  }
 }
 
 template<typename Scalar, int Mode, int TriOrder>
@@ -115,7 +125,7 @@ void trmm(int rows=get_random_size<Scalar>(), int cols=get_random_size<Scalar>()
   CALL_ALL_ORDERS(EIGEN_CAT(3,NB),SCALAR,StrictlyLower)
   
 
-void test_product_trmm()
+EIGEN_DECLARE_TEST(product_trmm)
 {
   for(int i = 0; i < g_repeat ; i++)
   {

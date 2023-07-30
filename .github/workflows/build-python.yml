@@ -2,6 +2,12 @@ name: Python CI
 
 on: [pull_request]
 
+# Every time you make a push to your PR, it cancel immediately the previous checks, 
+# and start a new one. The other runner will be available more quickly to your PR. 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: ${{ matrix.name }} ${{ matrix.build_type }} Python ${{ matrix.python_version }}
@@ -14,58 +20,46 @@ jobs:
       PYTHON_VERSION: ${{ matrix.python_version }}
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
-        name: [
-          ubuntu-18.04-gcc-5,
-          ubuntu-18.04-gcc-9,
-          ubuntu-18.04-clang-9,
-          macOS-10.15-xcode-11.3.1,
-          ubuntu-18.04-gcc-5-tbb,
-        ]
+        name:
+          [
+            ubuntu-20.04-gcc-9,
+            ubuntu-20.04-gcc-9-tbb,
+            ubuntu-20.04-clang-9,
+            macOS-11-xcode-13.4.1,
+          ]
 
-        build_type: [Debug, Release]
+        build_type: [Release]
         python_version: [3]
         include:
-          - name: ubuntu-18.04-gcc-5
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "5"
-
-          - name: ubuntu-18.04-gcc-9
-            os: ubuntu-18.04
+          - name: ubuntu-20.04-gcc-9
+            os: ubuntu-20.04
             compiler: gcc
             version: "9"
 
-          - name: ubuntu-18.04-clang-9
-            os: ubuntu-18.04
-            compiler: clang
-            version: "9"
-
-          # NOTE temporarily added this as it is a required check.
-          - name: ubuntu-18.04-clang-9
-            os: ubuntu-18.04
-            compiler: clang
-            version: "9"
-            build_type: Debug
-            python_version: "3"
-
-          - name: macOS-10.15-xcode-11.3.1
-            os: macOS-10.15
-            compiler: xcode
-            version: "11.3.1"
-
-          - name: ubuntu-18.04-gcc-5-tbb
-            os: ubuntu-18.04
+          - name: ubuntu-20.04-gcc-9-tbb
+            os: ubuntu-20.04
             compiler: gcc
-            version: "5"
+            version: "9"
             flag: tbb
+
+          - name: ubuntu-20.04-clang-9
+            os: ubuntu-20.04
+            compiler: clang
+            version: "9"
+
+          - name: macOS-11-xcode-13.4.1
+            os: macOS-11
+            compiler: xcode
+            version: "13.4.1"
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
       - name: Install (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -79,10 +73,10 @@ jobs:
             gpg -a --export $LLVM_KEY | sudo apt-key add -
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
           fi
+
           sudo apt-get -y update
-          
-          sudo apt-get -y install cmake build-essential pkg-config libpython-dev python-numpy libboost-all-dev
-          
+          sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libboost-all-dev
+
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
             echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
@@ -92,31 +86,37 @@ jobs:
             echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
             echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
           fi
+
       - name: Install (macOS)
         if: runner.os == 'macOS'
         run: |
           brew tap ProfFan/robotics
           brew install cmake ninja
           brew install boost
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            brew install gcc@${{ matrix.version }}
-            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
-          else
-            sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXX=clang++" >> $GITHUB_ENV
-          fi
+          sudo xcode-select -switch /Applications/Xcode.app
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+
       - name: Set GTSAM_WITH_TBB Flag
         if: matrix.flag == 'tbb'
         run: |
           echo "GTSAM_WITH_TBB=ON" >> $GITHUB_ENV
           echo "GTSAM Uses TBB"
-      - name: Build (Linux)
+
+      - name: Set Swap Space
         if: runner.os == 'Linux'
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 6
+
+      - name: Install Dependencies
         run: |
-          bash .github/scripts/python.sh
-      - name: Build (macOS)
-        if: runner.os == 'macOS'
+          bash .github/scripts/python.sh -d
+
+      - name: Build
         run: |
-          bash .github/scripts/python.sh
+          bash .github/scripts/python.sh -b
+
+      - name: Test
+        run: |
+          bash .github/scripts/python.sh -t

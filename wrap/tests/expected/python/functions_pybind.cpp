@@ -1,14 +1,8 @@
-
-
 #include <pybind11/eigen.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
-
-
-#include "wrap/serialization.h"
-#include <boost/serialization/export.hpp>
 
 
 
@@ -33,10 +27,10 @@ PYBIND11_MODULE(functions_py, m_) {
     m_.def("DefaultFuncInt",[](int a, int b){ ::DefaultFuncInt(a, b);}, py::arg("a") = 123, py::arg("b") = 0);
     m_.def("DefaultFuncString",[](const string& s, const string& name){ ::DefaultFuncString(s, name);}, py::arg("s") = "hello", py::arg("name") = "");
     m_.def("DefaultFuncObj",[](const gtsam::KeyFormatter& keyFormatter){ ::DefaultFuncObj(keyFormatter);}, py::arg("keyFormatter") = gtsam::DefaultKeyFormatter);
-    m_.def("DefaultFuncZero",[](int a, int b, double c, bool d, bool e){ ::DefaultFuncZero(a, b, c, d, e);}, py::arg("a") = 0, py::arg("b"), py::arg("c") = 0.0, py::arg("d") = false, py::arg("e"));
+    m_.def("DefaultFuncZero",[](int a, int b, double c, int d, bool e){ ::DefaultFuncZero(a, b, c, d, e);}, py::arg("a"), py::arg("b"), py::arg("c") = 0.0, py::arg("d") = 0, py::arg("e") = false);
     m_.def("DefaultFuncVector",[](const std::vector<int>& i, const std::vector<string>& s){ ::DefaultFuncVector(i, s);}, py::arg("i") = {1, 2, 3}, py::arg("s") = {"borglab", "gtsam"});
     m_.def("setPose",[](const gtsam::Pose3& pose){ ::setPose(pose);}, py::arg("pose") = gtsam::Pose3());
-    m_.def("TemplatedFunctionRot3",[](const gtsam::Rot3& t){ ::TemplatedFunction<Rot3>(t);}, py::arg("t"));
+    m_.def("TemplatedFunctionRot3",[](const gtsam::Rot3& t){ ::TemplatedFunction<gtsam::Rot3>(t);}, py::arg("t"));
 
 #include "python/specializations.h"
 

@@ -31,20 +31,25 @@ class TestWrap(unittest.TestCase):
     # Create the `actual/python` directory
     os.makedirs(PYTHON_ACTUAL_DIR, exist_ok=True)
 
-    def wrap_content(self, sources, module_name, output_dir):
+    def wrap_content(self,
+                     sources,
+                     module_name,
+                     output_dir,
+                     use_boost_serialization=False):
         """
         Common function to wrap content in `sources`.
         """
-        with open(osp.join(self.TEST_DIR,
-                           "pybind_wrapper.tpl")) as template_file:
+        with open(osp.join(self.TEST_DIR, "pybind_wrapper.tpl"),
+                  encoding="UTF-8") as template_file:
             module_template = template_file.read()
 
         # Create Pybind wrapper instance
-        wrapper = PybindWrapper(module_name=module_name,
-                                use_boost=False,
-                                top_module_namespaces=[''],
-                                ignore_classes=[''],
-                                module_template=module_template)
+        wrapper = PybindWrapper(
+            module_name=module_name,
+            top_module_namespaces=[''],
+            ignore_classes=[''],
+            module_template=module_template,
+            use_boost_serialization=use_boost_serialization)
 
         output = osp.join(self.TEST_DIR, output_dir, module_name + ".cpp")
 
@@ -64,8 +69,8 @@ class TestWrap(unittest.TestCase):
         success = filecmp.cmp(actual, expected)
 
         if not success:
-            os.system("diff {} {}".format(actual, expected))
-        self.assertTrue(success, "Mismatch for file {0}".format(file))
+            os.system(f"diff {actual} {expected}")
+        self.assertTrue(success, f"Mismatch for file {file}")
 
     def test_geometry(self):
         """
@@ -74,8 +79,10 @@ class TestWrap(unittest.TestCase):
             geometry_py --out output/geometry_py.cc
         """
         source = osp.join(self.INTERFACE_DIR, 'geometry.i')
-        output = self.wrap_content([source], 'geometry_py',
-                                   self.PYTHON_ACTUAL_DIR)
+        output = self.wrap_content([source],
+                                   'geometry_py',
+                                   self.PYTHON_ACTUAL_DIR,
+                                   use_boost_serialization=True)
 
         self.compare_and_diff('geometry_pybind.cpp', output)
 
@@ -94,6 +101,14 @@ class TestWrap(unittest.TestCase):
                                    self.PYTHON_ACTUAL_DIR)
 
         self.compare_and_diff('class_pybind.cpp', output)
+
+    def test_templates(self):
+        """Test interface file with templated class."""
+        source = osp.join(self.INTERFACE_DIR, 'templates.i')
+        output = self.wrap_content([source], 'templates_py',
+                                   self.PYTHON_ACTUAL_DIR)
+
+        self.compare_and_diff('templates_pybind.cpp', output)
 
     def test_inheritance(self):
         """Test interface file with class inheritance definitions."""

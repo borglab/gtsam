@@ -2,6 +2,12 @@ name: Windows CI
 
 on: [pull_request]
 
+# Every time you make a push to your PR, it cancel immediately the previous checks, 
+# and start a new one. The other runner will be available more quickly to your PR. 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: ${{ matrix.name }} ${{ matrix.build_type }}
@@ -16,25 +22,20 @@ jobs:
       BOOST_EXE: boost_1_72_0-msvc-14.2
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-            #TODO This build fails, need to understand why.
-            # windows-2016-cl,
             windows-2019-cl,
           ]
 
-        build_type: [Debug, Release]
+        build_type: [
+            Debug,
+            Release
+          ]
         build_unstable: [ON]
         include:
-          #TODO This build fails, need to understand why.
-          # - name: windows-2016-cl
-          #   os: windows-2016
-          #   compiler: cl
-          #   platform: 32
-
           - name: windows-2019-cl
             os: windows-2019
             compiler: cl
@@ -44,7 +45,9 @@ jobs:
       - name: Install Dependencies
         shell: powershell
         run: |
-          Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+          iwr -useb get.scoop.sh -outfile 'install_scoop.ps1'
+          .\install_scoop.ps1 -RunAsAdmin
+
           scoop install cmake --global  # So we don't get issues with CMP0074 policy
           scoop install ninja --global
 
@@ -88,15 +91,75 @@ jobs:
           echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Build
+      - name: Configuration
         run: |
           cmake -E remove_directory build
           cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
-          cmake --build build --config ${{ matrix.build_type }} --target gtsam
-          cmake --build build --config ${{ matrix.build_type }} --target gtsam_unstable
-          cmake --build build --config ${{ matrix.build_type }} --target wrap
-          cmake --build build --config ${{ matrix.build_type }} --target check.base
-          cmake --build build --config ${{ matrix.build_type }} --target check.base_unstable
-          cmake --build build --config ${{ matrix.build_type }} --target check.linear
+
+      - name: Build
+        shell: bash
+        run: |
+          # Since Visual Studio is a multi-generator, we need to use --config
+          # https://stackoverflow.com/a/24470998/1236990
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target gtsam
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target gtsam_unstable
+
+          # Target doesn't exist
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target wrap
+
+      - name: Test
+        shell: bash
+        run: |
+          # Run GTSAM tests
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.base
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.basis
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.discrete
+
+          # Compilation error
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.geometry
+
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.inference
+
+          # Compile. Fail with exception
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.linear
+          
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.navigation          
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.sam
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.sfm          
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.symbolic
+
+          # Compile. Fail with exception
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.hybrid
+
+          # Compile. Fail with exception
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear
+
+          # Compilation error
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam
+
+
+          # Run GTSAM_UNSTABLE tests
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.base_unstable
+
+          # Compile. Fail with exception
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.geometry_unstable
+
+          # Compile. Fail with exception
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.linear_unstable
+
+          # Compile. Fail with exception
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.discrete_unstable
+
+          # Compile. Fail with exception
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.dynamics_unstable
+
+          # Compile. Fail with exception
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear_unstable
+
+          # Compilation error
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam_unstable
+
+          # Compilation error
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.partition          

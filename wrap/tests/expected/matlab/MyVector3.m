@@ -12,9 +12,9 @@ classdef MyVector3 < handle
     function obj = MyVector3(varargin)
       if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
         my_ptr = varargin{2};
-        class_wrapper(43, my_ptr);
+        class_wrapper(53, my_ptr);
       elseif nargin == 0
-        my_ptr = class_wrapper(44);
+        my_ptr = class_wrapper(54);
       else
         error('Arguments do not match any overload of MyVector3 constructor');
       end
@@ -22,7 +22,7 @@ classdef MyVector3 < handle
     end
 
     function delete(obj)
-      class_wrapper(45, obj.ptr_MyVector3);
+      class_wrapper(55, obj.ptr_MyVector3);
     end
 
     function display(obj), obj.print(''); end

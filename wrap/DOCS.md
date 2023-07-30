@@ -15,8 +15,8 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
     - Eigen types: `Matrix`, `Vector`.
     - C/C++ basic types: `string`, `bool`, `size_t`, `int`, `double`, `char`, `unsigned char`.
     - `void`
-    - Any class with which be copied with `boost::make_shared()`.
-    - `boost::shared_ptr` of any object type.
+    - Any class with which be copied with `std::make_shared()`.
+    - `std::shared_ptr` of any object type.
 
 - Constructors
     - Overloads are supported, but arguments of different types *have* to have different names.
@@ -37,8 +37,8 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
     - Eigen types: `Matrix`, `Vector`.
     - Eigen types and classes as an optionally const reference.
     - C/C++ basic types: `string`, `bool`, `size_t`, `size_t`, `double`, `char`, `unsigned char`.
-    - Any class with which be copied with `boost::make_shared()` (except Eigen).
-    - `boost::shared_ptr` of any object type (except Eigen).
+    - Any class with which be copied with `std::make_shared()` (except Eigen).
+    - `std::shared_ptr` of any object type (except Eigen).
 
 - Properties or Variables
     - You can specify class variables in the interface file as long as they are in the `public` scope, e.g.
@@ -50,6 +50,32 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
     ```
 
     - Class variables are read-write so they can be updated directly in Python.
+    - For the Matlab wrapper, specifying the full property type (including namespaces) is required.
+
+    ```cpp
+    class TriangulationResult {
+      gtsam::SharedNoiseModel noiseModel;
+    };
+    ```
+
+    - If the property is part of an enum within the class, the type should be specified as `gtsam::Class::Enum`. Similarly for templated types where `This` is used, e.g. `gtsam::This::Enum`.
+
+    ```cpp
+    class TriangulationResult {
+      enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
+      gtsam::TriangulationResult::Status status;
+    };
+
+    template<PARAMS>
+    virtual class GncParams {
+      enum Verbosity {
+        SILENT,
+        SUMMARY,
+        VALUES
+      };
+      gtsam::This::Verbosity verbosity;
+    };
+    ```
 
 - Operator Overloading (Python only)
     - You can overload operators just like in C++.
@@ -116,7 +142,7 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
     - Signature of clone function - `clone()` will be called virtually, so must appear at least at the top of the inheritance tree
 
         ```cpp
-        virtual boost::shared_ptr<CLASS_NAME> clone() const;
+        virtual std::shared_ptr<CLASS_NAME> clone() const;
         ```
 
 - Templates
@@ -133,9 +159,10 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
       template<T, U> class Class2 { ... };
       typedef Class2<Type1, Type2> MyInstantiatedClass;
       ```
-    - Templates can also be defined for methods, properties and static methods.
+    - Templates can also be defined for constructors, methods, properties and static methods.
     - In the class definition, appearances of the template argument(s) will be replaced with their
       instantiated types, e.g. `void setValue(const T& value);`.
+    - Values scoped within templates are supported. E.g. one can use the form `T::Value` where T is a template, as an argument to a method.
     - To refer to the instantiation of the template class itself, use `This`, i.e. `static This Create();`.
     - To create new instantiations in other modules, you must copy-and-paste the whole class definition
       into the new module, but use only your new instantiation types.

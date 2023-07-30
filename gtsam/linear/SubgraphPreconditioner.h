@@ -19,12 +19,14 @@
 
 #include <gtsam/linear/SubgraphBuilder.h>
 #include <gtsam/linear/Errors.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/IterativeSolver.h>
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/dllexport.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <map>
 
@@ -36,7 +38,7 @@ namespace gtsam {
   class VectorValues;
 
   struct GTSAM_EXPORT SubgraphPreconditionerParameters : public PreconditionerParameters {
-    typedef boost::shared_ptr<SubgraphPreconditionerParameters> shared_ptr;
+    typedef std::shared_ptr<SubgraphPreconditionerParameters> shared_ptr;
     SubgraphPreconditionerParameters(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
       : builderParams(p) {}
     SubgraphBuilderParameters builderParams;
@@ -52,17 +54,13 @@ namespace gtsam {
   class GTSAM_EXPORT SubgraphPreconditioner : public Preconditioner {
 
   public:
-    typedef boost::shared_ptr<SubgraphPreconditioner> shared_ptr;
-    typedef boost::shared_ptr<const GaussianBayesNet> sharedBayesNet;
-    typedef boost::shared_ptr<const GaussianFactorGraph> sharedFG;
-    typedef boost::shared_ptr<const VectorValues> sharedValues;
-    typedef boost::shared_ptr<const Errors> sharedErrors;
+    typedef std::shared_ptr<SubgraphPreconditioner> shared_ptr;
 
   private:
-    sharedFG Ab2_;
-    sharedBayesNet Rc1_;
-    sharedValues xbar_;  ///< A1 \ b1
-    sharedErrors b2bar_; ///< A2*xbar - b2
+    GaussianFactorGraph Ab2_;
+    GaussianBayesNet Rc1_;
+    VectorValues xbar_;  ///< A1 \ b1
+    Errors b2bar_; ///< A2*xbar - b2
 
     KeyInfo keyInfo_;
     SubgraphPreconditionerParameters parameters_;
@@ -77,7 +75,7 @@ namespace gtsam {
      * @param Rc1: the Bayes Net R1*x=c1
      * @param xbar: the solution to R1*x=c1
      */
-    SubgraphPreconditioner(const sharedFG& Ab2, const sharedBayesNet& Rc1, const sharedValues& xbar,
+    SubgraphPreconditioner(const GaussianFactorGraph& Ab2, const GaussianBayesNet& Rc1, const VectorValues& xbar,
                            const SubgraphPreconditionerParameters &p = SubgraphPreconditionerParameters());
 
     ~SubgraphPreconditioner() override {}
@@ -86,13 +84,13 @@ namespace gtsam {
     void print(const std::string& s = "SubgraphPreconditioner") const;
 
     /** Access Ab2 */
-    const sharedFG& Ab2() const { return Ab2_; }
+    const GaussianFactorGraph& Ab2() const { return Ab2_; }
 
     /** Access Rc1 */
-    const sharedBayesNet& Rc1() const { return Rc1_; }
+    const GaussianBayesNet& Rc1() const { return Rc1_; }
 
     /** Access b2bar */
-    const sharedErrors b2bar() const { return b2bar_; }
+    const Errors b2bar() const { return b2bar_; }
 
     /**
      * Add zero-mean i.i.d. Gaussian prior terms to each variable
@@ -104,8 +102,7 @@ namespace gtsam {
 
     /* A zero VectorValues with the structure of xbar */
     VectorValues zero() const {
-      assert(xbar_);
-      return VectorValues::Zero(*xbar_);
+      return VectorValues::Zero(xbar_);
     }
 
     /**

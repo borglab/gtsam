@@ -77,7 +77,7 @@ list<TimedOdometry> readOdometry() {
 
 // load the ranges from TD
 //    Time (sec)  Sender / Antenna ID Receiver Node ID  Range (m)
-typedef boost::tuple<double, size_t, double> RangeTriple;
+typedef std::tuple<double, size_t, double> RangeTriple;
 vector<RangeTriple> readTriples() {
   vector<RangeTriple> triples;
   string tdFile = findExampleDataFile("Plaza1_TD.txt");
@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
 
   //  initialize smart range factors
   size_t ids[] = { 1, 6, 0, 5 };
-  typedef boost::shared_ptr<SmartRangeFactor> SmartPtr;
+  typedef std::shared_ptr<SmartRangeFactor> SmartPtr;
   map<size_t, SmartPtr> smartFactors;
   if (smart) {
     for(size_t jj: ids) {
@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
     //--------------------------------- odometry loop -----------------------------------------
     double t;
     Pose2 odometry;
-    boost::tie(t, odometry) = timedOdometry;
+    std::tie(t, odometry) = timedOdometry;
     printf("step %d, time = %g\n",(int)i,t);
 
     // add odometry factor
@@ -179,9 +179,9 @@ int main(int argc, char** argv) {
     landmarkEstimates.insert(i, predictedPose);
 
     // Check if there are range factors to be added
-    while (k < K && t >= boost::get<0>(triples[k])) {
-      size_t j = boost::get<1>(triples[k]);
-      double range = boost::get<2>(triples[k]);
+    while (k < K && t >= std::get<0>(triples[k])) {
+      size_t j = std::get<1>(triples[k]);
+      double range = std::get<2>(triples[k]);
       if (i > start) {
         if (smart && totalCount < minK) {
           try {
@@ -234,9 +234,8 @@ int main(int argc, char** argv) {
         }
       }
       countK = 0;
-      for(const auto it: result.filter<Point2>())
-        os2 << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t1"
-            << endl;
+      for (const auto& [key, point] : result.extract<Point2>())
+        os2 << key << "\t" << point.x() << "\t" << point.y() << "\t1" << endl;
       if (smart) {
         for(size_t jj: ids) {
           Point2 landmark = smartFactors[jj]->triangulate(result);
@@ -257,9 +256,8 @@ int main(int argc, char** argv) {
   // Write result to file
   Values result = isam.calculateEstimate();
   ofstream os("rangeResult.txt");
-  for(const auto it: result.filter<Pose2>())
-    os << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t"
-        << it.value.theta() << endl;
+  for (const auto& [key, pose] : result.extract<Pose2>())
+    os << key << "\t" << pose.x() << "\t" << pose.y() << "\t" << pose.theta() << endl;
   exit(0);
 }
 

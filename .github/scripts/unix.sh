@@ -8,32 +8,13 @@
 # install TBB with _debug.so files
 function install_tbb()
 {
-  TBB_BASEURL=https://github.com/oneapi-src/oneTBB/releases/download
-  TBB_VERSION=4.4.5
-  TBB_DIR=tbb44_20160526oss
-  TBB_SAVEPATH="/tmp/tbb.tgz"
-
   if [ "$(uname)" == "Linux" ]; then
-    OS_SHORT="lin"
-    TBB_LIB_DIR="intel64/gcc4.4"
-    SUDO="sudo"
+    sudo apt-get -y install libtbb-dev
 
   elif [ "$(uname)" == "Darwin" ]; then
-    OS_SHORT="osx"
-    TBB_LIB_DIR=""
-    SUDO=""
+    brew install tbb
 
   fi
-
-  wget "${TBB_BASEURL}/${TBB_VERSION}/${TBB_DIR}_${OS_SHORT}.tgz" -O $TBB_SAVEPATH
-  tar -C /tmp -xf $TBB_SAVEPATH
-
-  TBBROOT=/tmp/$TBB_DIR
-  # Copy the needed files to the correct places.
-  # This works correctly for CI builds, instead of setting path variables.
-  # This is what Homebrew does to install TBB on Macs
-  $SUDO cp -R $TBBROOT/lib/$TBB_LIB_DIR/* /usr/local/lib/
-  $SUDO cp -R $TBBROOT/include/ /usr/local/include/
 
 }
 
@@ -58,20 +39,22 @@ function configure()
   fi
 
   # GTSAM_BUILD_WITH_MARCH_NATIVE=OFF: to avoid crashes in builder VMs
+  # CMAKE_CXX_FLAGS="-w": Suppress warnings to avoid IO latency in CI logs
   cmake $SOURCE_DIR \
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} \
+      -DCMAKE_CXX_FLAGS="-w" \
       -DGTSAM_BUILD_TESTS=${GTSAM_BUILD_TESTS:-OFF} \
       -DGTSAM_BUILD_UNSTABLE=${GTSAM_BUILD_UNSTABLE:-ON} \
       -DGTSAM_WITH_TBB=${GTSAM_WITH_TBB:-OFF} \
       -DGTSAM_BUILD_EXAMPLES_ALWAYS=${GTSAM_BUILD_EXAMPLES_ALWAYS:-ON} \
-      -DGTSAM_ALLOW_DEPRECATED_SINCE_V41=${GTSAM_ALLOW_DEPRECATED_SINCE_V41:-OFF} \
+      -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=${GTSAM_ALLOW_DEPRECATED_SINCE_V43:-OFF} \
       -DGTSAM_USE_QUATERNIONS=${GTSAM_USE_QUATERNIONS:-OFF} \
       -DGTSAM_ROT3_EXPMAP=${GTSAM_ROT3_EXPMAP:-ON} \
       -DGTSAM_POSE3_EXPMAP=${GTSAM_POSE3_EXPMAP:-ON} \
+      -DGTSAM_USE_SYSTEM_EIGEN=${GTSAM_USE_SYSTEM_EIGEN:-OFF} \
+      -DGTSAM_USE_SYSTEM_METIS=${GTSAM_USE_SYSTEM_METIS:-OFF} \
       -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
-      -DBOOST_ROOT=$BOOST_ROOT \
-      -DBoost_NO_SYSTEM_PATHS=ON \
-      -DBoost_ARCHITECTURE=-x64
+      -DGTSAM_SINGLE_TEST_EXE=OFF
 }
 
 
@@ -93,7 +76,11 @@ function build ()
   configure
 
   if [ "$(uname)" == "Linux" ]; then
-    make -j$(nproc)
+    if (($(nproc) > 2)); then
+      make -j4
+    else
+      make -j2
+    fi
   elif [ "$(uname)" == "Darwin" ]; then
     make -j$(sysctl -n hw.physicalcpu)
   fi
@@ -111,9 +98,13 @@ function test ()
 
   # Actual testing
   if [ "$(uname)" == "Linux" ]; then
-    make -j$(nproc)
+    if (($(nproc) > 2)); then
+      make -j$(nproc) check
+    else
+      make -j2 check
+    fi
   elif [ "$(uname)" == "Darwin" ]; then
-    make -j$(sysctl -n hw.physicalcpu)
+    make -j$(sysctl -n hw.physicalcpu) check
   fi
 
   finish

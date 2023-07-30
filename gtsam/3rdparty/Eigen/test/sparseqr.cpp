@@ -43,6 +43,7 @@ int generate_sparse_rectangular_problem(MatrixType& A, DenseMat& dA, int maxRows
 
 template<typename Scalar> void test_sparseqr_scalar()
 {
+  typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef SparseMatrix<Scalar,ColMajor> MatrixType; 
   typedef Matrix<Scalar,Dynamic,Dynamic> DenseMat;
   typedef Matrix<Scalar,Dynamic,1> DenseVector;
@@ -91,14 +92,34 @@ template<typename Scalar> void test_sparseqr_scalar()
     exit(0);
     return;
   }
-  
-  VERIFY_IS_APPROX(A * x, b);
-  
-  //Compare with a dense QR solver
+
+  // Compare with a dense QR solver
   ColPivHouseholderQR<DenseMat> dqr(dA);
   refX = dqr.solve(b);
   
-  VERIFY_IS_EQUAL(dqr.rank(), solver.rank());
+  bool rank_deficient = A.cols()>A.rows() || dqr.rank()<A.cols();
+  if(rank_deficient)
+  {
+    // rank deficient problem -> we might have to increase the threshold
+    // to get a correct solution.
+    RealScalar th = RealScalar(20)*dA.colwise().norm().maxCoeff()*(A.rows()+A.cols()) * NumTraits<RealScalar>::epsilon();
+    for(Index k=0; (k<16) && !test_isApprox(A*x,b); ++k)
+    {
+      th *= RealScalar(10);
+      solver.setPivotThreshold(th);
+      solver.compute(A);
+      x = solver.solve(b);
+    }
+  }
+
+  VERIFY_IS_APPROX(A * x, b);
+  
+  // For rank deficient problem, the estimated rank might
+  // be slightly off, so let's only raise a warning in such cases.
+  if(rank_deficient) ++g_test_level;
+  VERIFY_IS_EQUAL(solver.rank(), dqr.rank());
+  if(rank_deficient) --g_test_level;
+
   if(solver.rank()==A.cols()) // full rank
     VERIFY_IS_APPROX(x, refX);
 //   else
@@ -117,7 +138,7 @@ template<typename Scalar> void test_sparseqr_scalar()
   dQ = solver.matrixQ();
   VERIFY_IS_APPROX(Q, dQ);
 }
-void test_sparseqr()
+EIGEN_DECLARE_TEST(sparseqr)
 {
   for(int i=0; i<g_repeat; ++i)
   {

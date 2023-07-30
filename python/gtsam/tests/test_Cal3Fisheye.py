@@ -12,13 +12,22 @@ Refactored: Roderick Koehle
 import unittest
 
 import numpy as np
+from gtsam.symbol_shorthand import K, L, P
+from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
-from gtsam.utils.test_case import GtsamTestCase
-from gtsam.symbol_shorthand import K, L, P
+
+
+def ulp(ftype=np.float64):
+    """
+    Unit in the last place of floating point datatypes
+    """
+    f = np.finfo(ftype)
+    return f.tiny / ftype(1 << f.nmant)
+
 
 class TestCal3Fisheye(GtsamTestCase):
-    
+
     @classmethod
     def setUpClass(cls):
         """
@@ -42,10 +51,10 @@ class TestCal3Fisheye(GtsamTestCase):
         camera1 = gtsam.PinholeCameraCal3Fisheye(pose1)
         camera2 = gtsam.PinholeCameraCal3Fisheye(pose2)
         cls.origin = np.array([0.0, 0.0, 0.0])
-        cls.poses = gtsam.Pose3Vector([pose1, pose2])
-        cls.cameras = gtsam.CameraSetCal3Fisheye([camera1, camera2])
-        cls.measurements = gtsam.Point2Vector([k.project(cls.origin) for k in cls.cameras])
-        
+        cls.poses = [pose1, pose2]
+        cls.cameras = [camera1, camera2]
+        cls.measurements = [k.project(cls.origin) for k in cls.cameras]
+
     def test_Cal3Fisheye(self):
         K = gtsam.Cal3Fisheye()
         self.assertEqual(K.fx(), 1.)
@@ -54,7 +63,7 @@ class TestCal3Fisheye(GtsamTestCase):
     def test_distortion(self):
         """Fisheye distortion and rectification"""
         equidistant = gtsam.Cal3Fisheye()
-        perspective_pt = self.obj_point[0:2]/self.obj_point[2]
+        perspective_pt = self.obj_point[0:2] / self.obj_point[2]
         distorted_pt = equidistant.uncalibrate(perspective_pt)
         rectified_pt = equidistant.calibrate(distorted_pt)
         self.gtsamAssertEquals(distorted_pt, self.img_point)
@@ -105,6 +114,71 @@ class TestCal3Fisheye(GtsamTestCase):
         score = graph.error(state)
         self.assertAlmostEqual(score, 0)
 
+    def test_jacobian_on_axis(self):
+        """Check of jacobian at optical axis"""
+        obj_point_on_axis = np.array([0, 0, 1])
+        img_point = np.array([0, 0])
+        f, z, H = self.evaluate_jacobian(obj_point_on_axis, img_point)
+        self.assertAlmostEqual(f, 0)
+        self.gtsamAssertEquals(z, np.zeros(2))
+        self.gtsamAssertEquals(H @ H.T, 3*np.eye(2))
+
+    def test_jacobian_convergence(self):
+        """Test stability of jacobian close to optical axis"""
+        t = ulp(np.float64)
+        obj_point_close_to_axis = np.array([t, 0, 1])
+        img_point = np.array([np.sqrt(t), 0])
+        f, z, H = self.evaluate_jacobian(obj_point_close_to_axis, img_point)
+        self.assertAlmostEqual(f, 0)
+        self.gtsamAssertEquals(z, np.zeros(2))
+        self.gtsamAssertEquals(H @ H.T, 3*np.eye(2))
+
+        # With a height of sqrt(ulp), this may cause an overflow
+        t = ulp(np.float64)
+        obj_point_close_to_axis = np.array([np.sqrt(t), 0, 1])
+        img_point = np.array([np.sqrt(t), 0])
+        f, z, H = self.evaluate_jacobian(obj_point_close_to_axis, img_point)
+        self.assertAlmostEqual(f, 0)
+        self.gtsamAssertEquals(z, np.zeros(2))
+        self.gtsamAssertEquals(H @ H.T, 3*np.eye(2))
+
+    def test_scaling_factor(self):
+        """Check convergence of atan2(r, z)/r ~ 1/z for small r"""
+        r = ulp(np.float64)
+        s = np.arctan(r) / r
+        self.assertEqual(s, 1.0)
+        z = 1
+        s = self.scaling_factor(r, z)
+        self.assertEqual(s, 1.0/z)
+        z = 2
+        s = self.scaling_factor(r, z)
+        self.assertEqual(s, 1.0/z)
+        s = self.scaling_factor(2*r, z)
+        self.assertEqual(s, 1.0/z)
+
+    @staticmethod
+    def scaling_factor(r, z):
+        """Projection factor theta/r for equidistant fisheye lens model"""
+        return np.arctan2(r, z) / r if r/z != 0 else 1.0/z
+
+    @staticmethod
+    def evaluate_jacobian(obj_point, img_point):
+        """Evaluate jacobian at given object point"""
+        pose = gtsam.Pose3()
+        camera = gtsam.Cal3Fisheye()
+        state = gtsam.Values()
+        pose_key, landmark_key = P(0), L(0)
+        state.insert_point3(landmark_key, obj_point)
+        state.insert_pose3(pose_key, pose)
+        g = gtsam.NonlinearFactorGraph()
+        noise_model = gtsam.noiseModel.Unit.Create(2)
+        factor = gtsam.GenericProjectionFactorCal3Fisheye(img_point, noise_model, pose_key, landmark_key, camera)
+        g.add(factor)
+        f = g.error(state)
+        gaussian_factor_graph = g.linearize(state)
+        H, z = gaussian_factor_graph.jacobian()
+        return f, z, H
+
     @unittest.skip("triangulatePoint3 currently seems to require perspective projections.")
     def test_triangulation_skipped(self):
         """Estimate spatial point from image measurements"""
@@ -113,7 +187,7 @@ class TestCal3Fisheye(GtsamTestCase):
 
     def test_triangulation_rectify(self):
         """Estimate spatial point from image measurements using rectification"""
-        rectified = gtsam.Point2Vector([k.calibration().calibrate(pt) for k, pt in zip(self.cameras, self.measurements)])
+        rectified = [k.calibration().calibrate(pt) for k, pt in zip(self.cameras, self.measurements)]
         shared_cal = gtsam.Cal3_S2()
         triangulated = gtsam.triangulatePoint3(self.poses, shared_cal, rectified, rank_tol=1e-9, optimize=False)
         self.gtsamAssertEquals(triangulated, self.origin)
