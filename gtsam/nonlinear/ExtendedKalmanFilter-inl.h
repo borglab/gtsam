@@ -82,7 +82,7 @@ namespace gtsam {
     const auto keys = motionFactor.keys();
 
     // Create a Gaussian Factor Graph
-    GaussianFactorGraph::shared_ptr linearFactorGraph = boost::make_shared<GaussianFactorGraph>();
+    GaussianFactorGraph::shared_ptr linearFactorGraph = std::make_shared<GaussianFactorGraph>();
 
     // Add in previous posterior as prior on the first state
     linearFactorGraph->push_back(priorFactor_);
@@ -90,8 +90,9 @@ namespace gtsam {
     // Linearize motion model and add it to the Kalman Filter graph
     Values linearizationPoint;
 
+    // If we have already run once
     if (lastLinearization != nullptr) {
-      auto new_prior = boost::make_shared<JacobianFactor>(*priorFactor_);
+      auto new_prior = std::make_shared<JacobianFactor>(*priorFactor_);
       new_prior->keys()[0] = lastLinearizationPointKey;
 
       Values lastLinearizationPoint;
