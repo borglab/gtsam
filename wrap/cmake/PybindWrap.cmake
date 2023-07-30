@@ -29,7 +29,7 @@ set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHON_VERSION})
 # module_template: The template file (.tpl) from which to generate the Pybind11 module.
 # libs: Libraries to link with.
 # dependencies: Dependencies which need to be built before the wrapper.
-# use_boost (optional): Flag indicating whether to include Boost.
+# use_boost_serialization (optional): Flag indicating whether to include Boost.
 function(
   pybind_wrap
   target
@@ -42,12 +42,12 @@ function(
   libs
   dependencies)
   set(ExtraMacroArgs ${ARGN})
-  list(GET ExtraMacroArgs 0 USE_BOOST)
-  if(USE_BOOST)
-    set(_WRAP_BOOST_ARG "--use-boost")
-  else(USE_BOOST)
+  list(GET ExtraMacroArgs 0 USE_BOOST_SERIALIZATION)
+  if(USE_BOOST_SERIALIZATION)
+    set(_WRAP_BOOST_ARG "--use-boost-serialization")
+  else(USE_BOOST_SERIALIZATION)
     set(_WRAP_BOOST_ARG "")
-  endif(USE_BOOST)
+  endif(USE_BOOST_SERIALIZATION)
 
   if(UNIX)
     set(GTWRAP_PATH_SEPARATOR ":")

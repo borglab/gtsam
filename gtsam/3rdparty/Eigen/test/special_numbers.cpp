@@ -49,7 +49,7 @@ template<typename Scalar> void special_numbers()
   VERIFY(!mboth.array().allFinite());
 }
 
-void test_special_numbers()
+EIGEN_DECLARE_TEST(special_numbers)
 {
   for(int i = 0; i < 10*g_repeat; i++) {
     CALL_SUBTEST_1( special_numbers<float>() );

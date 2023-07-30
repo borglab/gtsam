@@ -1,0 +1,719 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 11
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Hybrid Inference
+\end_layout
+
+\begin_layout Author
+Frank Dellaert & Varun Agrawal
+\end_layout
+
+\begin_layout Date
+January 2023
+\end_layout
+
+\begin_layout Section
+Hybrid Conditionals
+\end_layout
+
+\begin_layout Standard
+Here we develop a hybrid conditional density, on continuous variables (typically
+ a measurement 
+\begin_inset Formula $x$
+\end_inset
+
+), given a mix of continuous variables 
+\begin_inset Formula $y$
+\end_inset
+
+ and discrete variables 
+\begin_inset Formula $m$
+\end_inset
+
+.
+ We start by reviewing a Gaussian conditional density and its invariants
+ (relationship between density, error, and normalization constant), and
+ then work out what needs to happen for a hybrid version.
+\end_layout
+
+\begin_layout Subsubsection*
+GaussianConditional
+\end_layout
+
+\begin_layout Standard
+A 
+\emph on
+GaussianConditional
+\emph default
+ is a properly normalized, multivariate Gaussian conditional density:
+\begin_inset Formula 
+\[
+P(x|y)=\frac{1}{\sqrt{|2\pi\Sigma|}}\exp\left\{ -\frac{1}{2}\|Rx+Sy-d\|_{\Sigma}^{2}\right\} 
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $R$
+\end_inset
+
+ is square and upper-triangular.
+ For every 
+\emph on
+GaussianConditional
+\emph default
+, we have the following 
+\series bold
+invariant
+\series default
+,
+\begin_inset Formula 
+\begin{equation}
+\log P(x|y)=K_{gc}-E_{gc}(x,y),\label{eq:gc_invariant}
+\end{equation}
+
+\end_inset
+
+with the 
+\series bold
+log-normalization constant
+\series default
+ 
+\begin_inset Formula $K_{gc}$
+\end_inset
+
+ equal to
+\begin_inset Formula 
+\begin{equation}
+K_{gc}=\log\frac{1}{\sqrt{|2\pi\Sigma|}}\label{eq:log_constant}
+\end{equation}
+
+\end_inset
+
+ and the 
+\series bold
+error
+\series default
+ 
+\begin_inset Formula $E_{gc}(x,y)$
+\end_inset
+
+ equal to the negative log-density, up to a constant: 
+\begin_inset Formula 
+\begin{equation}
+E_{gc}(x,y)=\frac{1}{2}\|Rx+Sy-d\|_{\Sigma}^{2}.\label{eq:gc_error}
+\end{equation}
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection*
+GaussianMixture
+\end_layout
+
+\begin_layout Standard
+A 
+\emph on
+GaussianMixture
+\emph default
+ (maybe to be renamed to 
+\emph on
+GaussianMixtureComponent
+\emph default
+) just indexes into a number of 
+\emph on
+GaussianConditional
+\emph default
+ instances, that are each properly normalized:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+P(x|y,m)=P_{m}(x|y).
+\]
+
+\end_inset
+
+We store one 
+\emph on
+GaussianConditional
+\emph default
+ 
+\begin_inset Formula $P_{m}(x|y)$
+\end_inset
+
+ for every possible assignment 
+\begin_inset Formula $m$
+\end_inset
+
+ to a set of discrete variables.
+ As 
+\emph on
+GaussianMixture
+\emph default
+ is a 
+\emph on
+Conditional
+\emph default
+, it needs to satisfy the a similar invariant to 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:gc_invariant"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{equation}
+\log P(x|y,m)=K_{gm}-E_{gm}(x,y,m).\label{eq:gm_invariant}
+\end{equation}
+
+\end_inset
+
+If we take the log of 
+\begin_inset Formula $P(x|y,m)$
+\end_inset
+
+ we get
+\begin_inset Formula 
+\begin{equation}
+\log P(x|y,m)=\log P_{m}(x|y)=K_{gcm}-E_{gcm}(x,y).\label{eq:gm_log}
+\end{equation}
+
+\end_inset
+
+Equating 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:gm_invariant"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:gm_log"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ we see that this can be achieved by defining the error 
+\begin_inset Formula $E_{gm}(x,y,m)$
+\end_inset
+
+ as
+\begin_inset Formula 
+\begin{equation}
+E_{gm}(x,y,m)=E_{gcm}(x,y)+K_{gm}-K_{gcm}\label{eq:gm_error}
+\end{equation}
+
+\end_inset
+
+where choose 
+\begin_inset Formula $K_{gm}=\max K_{gcm}$
+\end_inset
+
+, as then the error will always be positive.
+\end_layout
+
+\begin_layout Section
+Hybrid Factors
+\end_layout
+
+\begin_layout Standard
+In GTSAM, we typically condition on known measurements, and factors encode
+ the resulting negative log-likelihood of the unknown variables 
+\begin_inset Formula $y$
+\end_inset
+
+ given the measurements 
+\begin_inset Formula $x$
+\end_inset
+
+.
+ We review how a Gaussian conditional density is converted into a Gaussian
+ factor, and then develop a hybrid version satisfying the correct invariants
+ as well.
+\end_layout
+
+\begin_layout Subsubsection*
+JacobianFactor
+\end_layout
+
+\begin_layout Standard
+A 
+\emph on
+JacobianFactor
+\emph default
+ typically results from a 
+\emph on
+GaussianConditional
+\emph default
+ by having known values 
+\begin_inset Formula $\bar{x}$
+\end_inset
+
+ for the 
+\begin_inset Quotes eld
+\end_inset
+
+measurement
+\begin_inset Quotes erd
+\end_inset
+
+ 
+\begin_inset Formula $x$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{equation}
+L(y)\propto P(\bar{x}|y)\label{eq:likelihood}
+\end{equation}
+
+\end_inset
+
+In GTSAM factors represent the negative log-likelihood 
+\begin_inset Formula $E_{jf}(y)$
+\end_inset
+
+ and hence we have
+\begin_inset Formula 
+\[
+E_{jf}(y)=-\log L(y)=C-\log P(\bar{x}|y),
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $C$
+\end_inset
+
+ the log of the proportionality constant in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:likelihood"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+ Substituting in 
+\begin_inset Formula $\log P(\bar{x}|y)$
+\end_inset
+
+ from the invariant 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:gc_invariant"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ we obtain
+\begin_inset Formula 
+\[
+E_{jf}(y)=C-K_{gc}+E_{gc}(\bar{x},y).
+\]
+
+\end_inset
+
+The 
+\emph on
+likelihood
+\emph default
+ function in 
+\emph on
+GaussianConditional
+\emph default
+ chooses 
+\begin_inset Formula $C=K_{gc}$
+\end_inset
+
+, and the 
+\emph on
+JacobianFactor
+\emph default
+ does not store any constant; it just implements:
+\begin_inset Formula 
+\[
+E_{jf}(y)=E_{gc}(\bar{x},y)=\frac{1}{2}\|R\bar{x}+Sy-d\|_{\Sigma}^{2}=\frac{1}{2}\|Ay-b\|_{\Sigma}^{2}
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $A=S$
+\end_inset
+
+ and 
+\begin_inset Formula $b=d-R\bar{x}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection*
+GaussianMixtureFactor
+\end_layout
+
+\begin_layout Standard
+Analogously, a 
+\emph on
+GaussianMixtureFactor
+\emph default
+ typically results from a GaussianMixture by having known values 
+\begin_inset Formula $\bar{x}$
+\end_inset
+
+ for the 
+\begin_inset Quotes eld
+\end_inset
+
+measurement
+\begin_inset Quotes erd
+\end_inset
+
+ 
+\begin_inset Formula $x$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+L(y,m)\propto P(\bar{x}|y,m).
+\]
+
+\end_inset
+
+We will similarly implement the negative log-likelihood 
+\begin_inset Formula $E_{mf}(y,m)$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+E_{mf}(y,m)=-\log L(y,m)=C-\log P(\bar{x}|y,m).
+\]
+
+\end_inset
+
+Since we know the log-density from the invariant 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:gm_invariant"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+, we obtain
+\begin_inset Formula 
+\[
+\log P(\bar{x}|y,m)=K_{gm}-E_{gm}(\bar{x},y,m),
+\]
+
+\end_inset
+
+ and hence
+\begin_inset Formula 
+\[
+E_{mf}(y,m)=C+E_{gm}(\bar{x},y,m)-K_{gm}.
+\]
+
+\end_inset
+
+Substituting in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:gm_error"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ we finally have an expression where 
+\begin_inset Formula $K_{gm}$
+\end_inset
+
+ canceled out, but we have a dependence on the individual component constants
+ 
+\begin_inset Formula $K_{gcm}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+E_{mf}(y,m)=C+E_{gcm}(\bar{x},y)-K_{gcm}.
+\]
+
+\end_inset
+
+Unfortunately, we can no longer choose 
+\begin_inset Formula $C$
+\end_inset
+
+ independently from 
+\begin_inset Formula $m$
+\end_inset
+
+ to make the constant disappear.
+ There are two possibilities:
+\end_layout
+
+\begin_layout Enumerate
+Implement likelihood to yield both a hybrid factor 
+\emph on
+and
+\emph default
+ a discrete factor.
+\end_layout
+
+\begin_layout Enumerate
+Hide the constant inside the collection of JacobianFactor instances, which
+ is the possibility we implement.
+\end_layout
+
+\begin_layout Standard
+In either case, we implement the mixture factor 
+\begin_inset Formula $E_{mf}(y,m)$
+\end_inset
+
+ as a set of 
+\emph on
+JacobianFactor
+\emph default
+ instances 
+\begin_inset Formula $E_{mf}(y,m)$
+\end_inset
+
+, indexed by the discrete assignment 
+\begin_inset Formula $m$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+E_{mf}(y,m)=E_{jfm}(y)=\frac{1}{2}\|A_{m}y-b_{m}\|_{\Sigma_{mfm}}^{2}.
+\]
+
+\end_inset
+
+In GTSAM, we define 
+\begin_inset Formula $A_{m}$
+\end_inset
+
+ and 
+\begin_inset Formula $b_{m}$
+\end_inset
+
+ strategically to make the 
+\emph on
+JacobianFactor
+\emph default
+ compute the constant, as well:
+\begin_inset Formula 
+\[
+\frac{1}{2}\|A_{m}y-b_{m}\|_{\Sigma_{mfm}}^{2}=C+E_{gcm}(\bar{x},y)-K_{gcm}.
+\]
+
+\end_inset
+
+Substituting in the definition 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:gc_error"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ for 
+\begin_inset Formula $E_{gcm}(\bar{x},y)$
+\end_inset
+
+ we need
+\begin_inset Formula 
+\[
+\frac{1}{2}\|A_{m}y-b_{m}\|_{\Sigma_{mfm}}^{2}=C+\frac{1}{2}\|R_{m}\bar{x}+S_{m}y-d_{m}\|_{\Sigma_{m}}^{2}-K_{gcm}
+\]
+
+\end_inset
+
+which can achieved by setting
+\begin_inset Formula 
+\[
+A_{m}=\left[\begin{array}{c}
+S_{m}\\
+0
+\end{array}\right],~b_{m}=\left[\begin{array}{c}
+d_{m}-R_{m}\bar{x}\\
+c_{m}
+\end{array}\right],~\Sigma_{mfm}=\left[\begin{array}{cc}
+\Sigma_{m}\\
+ & 1
+\end{array}\right]
+\]
+
+\end_inset
+
+and setting the mode-dependent scalar 
+\begin_inset Formula $c_{m}$
+\end_inset
+
+ such that 
+\begin_inset Formula $c_{m}^{2}=C-K_{gcm}$
+\end_inset
+
+.
+ This can be achieved by 
+\begin_inset Formula $C=\max K_{gcm}=K_{gm}$
+\end_inset
+
+ and 
+\begin_inset Formula $c_{m}=\sqrt{2(C-K_{gcm})}$
+\end_inset
+
+.
+ Note that in case that all constants 
+\begin_inset Formula $K_{gcm}$
+\end_inset
+
+ are equal, we can just use 
+\begin_inset Formula $C=K_{gm}$
+\end_inset
+
+ and
+\begin_inset Formula 
+\[
+A_{m}=S_{m},~b_{m}=d_{m}-R_{m}\bar{x},~\Sigma_{mfm}=\Sigma_{m}
+\]
+
+\end_inset
+
+as before.
+\end_layout
+
+\begin_layout Standard
+In summary, we have
+\begin_inset Formula 
+\begin{equation}
+E_{mf}(y,m)=\frac{1}{2}\|A_{m}y-b_{m}\|_{\Sigma_{mfm}}^{2}=E_{gcm}(\bar{x},y)+K_{gm}-K_{gcm}.\label{eq:mf_invariant}
+\end{equation}
+
+\end_inset
+
+which is identical to the GaussianMixture error 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:gm_error"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
+\end_layout
+
+\end_body
+\end_document

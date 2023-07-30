@@ -26,9 +26,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
+#include <memory>
 
 #include <iostream>
 
@@ -47,8 +45,7 @@ TEST ( Ordering, predecessorMap2Keys ) {
   p_map.insert(4,3);
   p_map.insert(5,1);
 
-  list<Key> expected;
-  expected += 4,5,3,2,1;
+  list<Key> expected{4, 5, 3, 2, 1};
 
   list<Key> actual = predecessorMap2Keys<Key>(p_map);
   LONGS_EQUAL((long)expected.size(), (long)actual.size());
@@ -71,7 +68,7 @@ TEST( Graph, predecessorMap2Graph )
   p_map.insert(1, 2);
   p_map.insert(2, 2);
   p_map.insert(3, 2);
-  boost::tie(graph, root, key2vertex) = predecessorMap2Graph<SGraph<Key>, SVertex, Key>(p_map);
+  std::tie(graph, root, key2vertex) = predecessorMap2Graph<SGraph<Key>, SVertex, Key>(p_map);
 
   LONGS_EQUAL(3, (long)boost::num_vertices(graph));
   CHECK(root == key2vertex[2]);
@@ -96,7 +93,7 @@ TEST( Graph, composePoses )
 
   Pose2 rootPose = p2;
 
-  boost::shared_ptr<Values> actual = composePoses<NonlinearFactorGraph, BetweenFactor<Pose2>, Pose2, Key> (graph, tree, rootPose);
+  std::shared_ptr<Values> actual = composePoses<NonlinearFactorGraph, BetweenFactor<Pose2>, Pose2, Key> (graph, tree, rootPose);
 
   Values expected;
   expected.insert(1, p1);
@@ -177,7 +174,7 @@ TEST( GaussianFactorGraph, findMinimumSpanningTree )
 //  G.push_factor("x3", "x4");
 //
 //  SymbolicFactorGraph T, C;
-//  boost::tie(T, C) = G.splitMinimumSpanningTree();
+//  std::tie(T, C) = G.splitMinimumSpanningTree();
 //
 //  SymbolicFactorGraph expectedT, expectedC;
 //  expectedT.push_factor("x1", "x2");
@@ -210,7 +207,7 @@ TEST( GaussianFactorGraph, findMinimumSpanningTree )
 //
 //  SymbolicFactorGraph singletonGraph;
 //  set<Symbol> singletons;
-//  boost::tie(singletonGraph, singletons) = G.removeSingletons();
+//  std::tie(singletonGraph, singletons) = G.removeSingletons();
 //
 //  set<Symbol> singletons_excepted; singletons_excepted += "x1", "x2", "x5", "l1", "l3";
 //  CHECK(singletons_excepted == singletons);

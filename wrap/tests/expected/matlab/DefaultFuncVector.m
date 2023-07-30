@@ -8,3 +8,4 @@ function varargout = DefaultFuncVector(varargin)
       else
         error('Arguments do not match any overload of function DefaultFuncVector');
       end
+end

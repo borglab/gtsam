@@ -39,7 +39,7 @@ void testDefaultChart(TestResult& result_,
 
   // First, check the basic chart concept. This checks that the interface is satisfied.
   // The rest of the function is even more detailed, checking the correctness of the chart.
-  BOOST_CONCEPT_ASSERT((ChartConcept<Chart>));
+  GTSAM_CONCEPT_ASSERT(ChartConcept<Chart>);
 
   T other = value;
 

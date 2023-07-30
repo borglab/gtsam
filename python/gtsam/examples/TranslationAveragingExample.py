@@ -17,9 +17,8 @@ Date: September 2020
 from collections import defaultdict
 from typing import List, Tuple
 
-import numpy as np
-
 import gtsam
+import numpy as np
 from gtsam.examples import SFMdata
 
 # Hyperparameters for 1dsfm, values used from Kyle Wilson's code.
@@ -59,7 +58,7 @@ def get_data() -> Tuple[gtsam.Values, List[gtsam.BinaryMeasurementUnit3]]:
     return wRc_values, i_iZj_list
 
 
-def filter_outliers(w_iZj_list: gtsam.BinaryMeasurementsUnit3) -> gtsam.BinaryMeasurementsUnit3:
+def filter_outliers(w_iZj_list: List[gtsam.BinaryMeasurementUnit3]) -> List[gtsam.BinaryMeasurementUnit3]:
     """Removes outliers from a list of Unit3 measurements that are the 
     translation directions from camera i to camera j in the world frame."""
 
@@ -89,14 +88,14 @@ def filter_outliers(w_iZj_list: gtsam.BinaryMeasurementsUnit3) -> gtsam.BinaryMe
             avg_outlier_weights[keypair] += weight / len(outlier_weights)
 
     # Remove w_iZj that have weight greater than threshold, these are outliers.
-    w_iZj_inliers = gtsam.BinaryMeasurementsUnit3()
+    w_iZj_inliers = []
     [w_iZj_inliers.append(w_iZj) for w_iZj in w_iZj_list if avg_outlier_weights[(
         w_iZj.key1(), w_iZj.key2())] < OUTLIER_WEIGHT_THRESHOLD]
 
     return w_iZj_inliers
 
 
-def estimate_poses(i_iZj_list: gtsam.BinaryMeasurementsUnit3,
+def estimate_poses(i_iZj_list: List[gtsam.BinaryMeasurementUnit3],
                    wRc_values: gtsam.Values) -> gtsam.Values:
     """Estimate poses given rotations and normalized translation directions between cameras.
 
@@ -112,7 +111,7 @@ def estimate_poses(i_iZj_list: gtsam.BinaryMeasurementsUnit3,
     """
 
     # Convert the translation direction measurements to world frame using the rotations.
-    w_iZj_list = gtsam.BinaryMeasurementsUnit3()
+    w_iZj_list = []
     for i_iZj in i_iZj_list:
         w_iZj = gtsam.Unit3(wRc_values.atRot3(i_iZj.key1())
                                       .rotate(i_iZj.measured().point3()))
@@ -123,7 +122,7 @@ def estimate_poses(i_iZj_list: gtsam.BinaryMeasurementsUnit3,
     w_iZj_inliers = filter_outliers(w_iZj_list)
 
     # Run the optimizer to obtain translations for normalized directions.
-    wtc_values = gtsam.TranslationRecovery(w_iZj_inliers).run()
+    wtc_values = gtsam.TranslationRecovery().run(w_iZj_inliers)
 
     wTc_values = gtsam.Values()
     for key in wRc_values.keys():

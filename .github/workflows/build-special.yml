@@ -2,6 +2,12 @@ name: Special Cases CI
 
 on: [pull_request]
 
+# Every time you make a push to your PR, it cancel immediately the previous checks, 
+# and start a new one. The other runner will be available more quickly to your PR. 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: ${{ matrix.name }} ${{ matrix.build_type }}
@@ -12,7 +18,6 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ON
-      BOOST_VERSION: 1.67.0
 
     strategy:
       fail-fast: false
@@ -22,61 +27,83 @@ jobs:
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name:
           [
-            ubuntu-gcc-deprecated,
-            ubuntu-gcc-quaternions,
-            ubuntu-gcc-tbb,
-            ubuntu-cayleymap,
+            ubuntu-clang-deprecated,
+            ubuntu-clang-quaternions,
+            ubuntu-clang-tbb,
+            ubuntu-clang-cayleymap,
+            ubuntu-clang-system-libs,
+            ubuntu-no-boost,
+            ubuntu-no-unstable,
           ]
 
         build_type: [Debug, Release]
 
         include:
-          - name: ubuntu-gcc-deprecated
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "9"
+          - name: ubuntu-clang-deprecated
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
             flag: deprecated
 
-          - name: ubuntu-gcc-quaternions
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "9"
+          - name: ubuntu-clang-quaternions
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
             flag: quaternions
 
-          - name: ubuntu-gcc-tbb
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "9"
+          - name: ubuntu-clang-tbb
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
             flag: tbb
 
-          - name: ubuntu-cayleymap
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "9"
+          - name: ubuntu-clang-cayleymap
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
             flag: cayley
 
-          - name: ubuntu-system-libs
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "9"
-            flag: system-libs
+          - name: ubuntu-clang-system-libs
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
+            flag: system
+
+          - name: ubuntu-no-boost
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
+            flag: no_boost
+
+          - name: ubuntu-no-unstable
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
+            flag: no_unstable
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install (Linux)
         if: runner.os == 'Linux'
         run: |
-          # LLVM 9 is not in Bionic's repositories so we add the official LLVM repository.
-          if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
-            gpg --keyserver keyserver.ubuntu.com --recv-key $LLVM_KEY || gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key $LLVM_KEY
-            gpg -a --export 15CF4D18AF4F7421 | sudo apt-key add -
-            sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
-          fi
           sudo apt-get -y update
+          sudo apt-get -y install software-properties-common
 
-          sudo apt-get -y install cmake build-essential pkg-config libpython-dev python-numpy libicu-dev
+          # LLVM (clang) 9/14 is not in 22.04 (jammy)'s repositories so we add the official LLVM repository.
+          if [ "${{ matrix.compiler }}" = "clang" ]; then
+            # (ipv4|ha).pool.sks-keyservers.net is the SKS GPG global keyserver pool
+            # ipv4 avoids potential timeouts because of crappy IPv6 infrastructure
+            # 15CF4D18AF4F7421 is the GPG key for the LLVM apt repository
+            # This key is not in the keystore by default for Ubuntu so we need to add it.
+            LLVM_KEY=15CF4D18AF4F7421
+            gpg --keyserver keyserver.ubuntu.com --recv-key $LLVM_KEY || gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key $LLVM_KEY
+            gpg -a --export $LLVM_KEY | sudo apt-key add -
+            sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy main"
+          fi
+
+          sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libicu-dev
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
@@ -91,27 +118,21 @@ jobs:
       - name: Install Boost
         if: runner.os == 'Linux'
         run: |
-          bash .github/scripts/boost.sh
+          sudo apt-get -y install libboost-all-dev
 
       - name: Install (macOS)
         if: runner.os == 'macOS'
         run: |
           brew install cmake ninja boost
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            brew install gcc@${{ matrix.version }}
-            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
-          else
-            sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXX=clang++" >> $GITHUB_ENV
-            fi
+          sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
 
       - name: Set Allow Deprecated Flag
         if: matrix.flag == 'deprecated'
         run: |
-          echo "GTSAM_ALLOW_DEPRECATED_SINCE_V42=ON" >> $GITHUB_ENV
-          echo "Allow deprecated since version 4.1"
+          echo "GTSAM_ALLOW_DEPRECATED_SINCE_V43=ON" >> $GITHUB_ENV
+          echo "Allow deprecated since version 4.3"
 
       - name: Set Use Quaternions Flag
         if: matrix.flag == 'quaternions'
@@ -135,8 +156,31 @@ jobs:
       - name: Use system versions of 3rd party libraries
         if: matrix.flag == 'system'
         run: |
+          sudo apt-get install libeigen3-dev
           echo "GTSAM_USE_SYSTEM_EIGEN=ON" >> $GITHUB_ENV
-          echo "GTSAM_USE_SYSTEM_METIS=ON" >> $GITHUB_ENV
+          # TODO(dellaert): This does not work yet?
+          # sudo apt-get install metis
+          # echo "GTSAM_USE_SYSTEM_METIS=ON" >> $GITHUB_ENV
+
+      - name: Turn off boost
+        if: matrix.flag == 'no_boost'
+        run: |
+          echo "GTSAM_ENABLE_BOOST_SERIALIZATION=OFF" >> $GITHUB_ENV
+          echo "GTSAM_USE_BOOST_FEATURES=OFF" >> $GITHUB_ENV
+          echo "GTSAM will not use BOOST"
+
+      - name: Turn off unstable
+        if: matrix.flag == 'no_unstable'
+        run: |
+          echo "GTSAM_BUILD_UNSTABLE=OFF" >> $GITHUB_ENV
+          echo "GTSAM 'unstable' will not be built."
+
+      - name: Set Swap Space
+        if: runner.os == 'Linux'
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 12
+
 
       - name: Build & Test
         run: |

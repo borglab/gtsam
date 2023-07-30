@@ -21,9 +21,7 @@ virtual class gtsam::noiseModel::Isotropic;
 virtual class gtsam::imuBias::ConstantBias;
 virtual class gtsam::NonlinearFactor;
 virtual class gtsam::NoiseModelFactor;
-virtual class gtsam::NoiseModelFactor2;
-virtual class gtsam::NoiseModelFactor3;
-virtual class gtsam::NoiseModelFactor4;
+virtual class gtsam::NoiseModelFactorN;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
@@ -42,6 +40,7 @@ class gtsam::LevenbergMarquardtParams;
 class gtsam::ISAM2Params;
 class gtsam::GaussianDensity;
 class gtsam::LevenbergMarquardtOptimizer;
+class gtsam::FixedLagSmoother;
 
 namespace gtsam {
 
@@ -130,7 +129,7 @@ class Pose3Upright {
   gtsam::Pose3Upright retract(Vector v) const;
   Vector localCoordinates(const gtsam::Pose3Upright& p2) const;
 
-  static gtsam::Pose3Upright identity();
+  static gtsam::Pose3Upright Identity();
   gtsam::Pose3Upright inverse() const;
   gtsam::Pose3Upright compose(const gtsam::Pose3Upright& p2) const;
   gtsam::Pose3Upright between(const gtsam::Pose3Upright& p2) const;
@@ -181,7 +180,7 @@ class SimWall2D {
   gtsam::Point2 midpoint() const;
 
   bool intersects(const gtsam::SimWall2D& wall) const;
-  //   bool intersects(const gtsam::SimWall2D& wall, boost::optional<gtsam::Point2&> pt=boost::none) const;
+  //   bool intersects(const gtsam::SimWall2D& wall, gtsam::Point2* pt = nullptr) const;
 
   gtsam::Point2 norm() const;
   gtsam::Rot2 reflection(const gtsam::Point2& init, const gtsam::Point2& intersection) const;
@@ -430,8 +429,9 @@ virtual class IMUFactor : gtsam::NoiseModelFactor {
   Vector gyro() const;
   Vector accel() const;
   Vector z() const;
-  size_t key1() const;
-  size_t key2() const;
+
+  template <I = {1, 2}>
+  size_t key() const;
 };
 
 #include <gtsam_unstable/dynamics/FullIMUFactor.h>
@@ -448,8 +448,9 @@ virtual class FullIMUFactor : gtsam::NoiseModelFactor {
   Vector gyro() const;
   Vector accel() const;
   Vector z() const;
-  size_t key1() const;
-  size_t key2() const;
+
+  template <I = {1, 2}>
+  size_t key() const;
 };
 
 #include <gtsam_unstable/dynamics/DynamicsPriors.h>
@@ -530,67 +531,7 @@ virtual class DiscreteEulerPoincareHelicopter : gtsam::NoiseModelFactor {
 //*************************************************************************
 // nonlinear
 //*************************************************************************
-#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
-class FixedLagSmootherKeyTimestampMapValue {
-  FixedLagSmootherKeyTimestampMapValue(size_t key, double timestamp);
-  FixedLagSmootherKeyTimestampMapValue(const gtsam::FixedLagSmootherKeyTimestampMapValue& other);
-};
-
-class FixedLagSmootherKeyTimestampMap {
-  FixedLagSmootherKeyTimestampMap();
-  FixedLagSmootherKeyTimestampMap(const gtsam::FixedLagSmootherKeyTimestampMap& other);
-
-  // Note: no print function
-
-  // common STL methods
-  size_t size() const;
-  bool empty() const;
-  void clear();
-
-  double at(const size_t key) const;
-  void insert(const gtsam::FixedLagSmootherKeyTimestampMapValue& value);
-};
-
-class FixedLagSmootherResult {
-  size_t getIterations() const;
-  size_t getNonlinearVariables() const;
-  size_t getLinearVariables() const;
-  double getError() const;
-};
-
-#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
-virtual class FixedLagSmoother {
-  void print(string s) const;
-  bool equals(const gtsam::FixedLagSmoother& rhs, double tol) const;
-
-  gtsam::FixedLagSmootherKeyTimestampMap timestamps() const;
-  double smootherLag() const;
-
-  gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph &newFactors,
-                                       const gtsam::Values &newTheta,
-                                       const gtsam::FixedLagSmootherKeyTimestampMap &timestamps);
-  gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph &newFactors,
-                                       const gtsam::Values &newTheta,
-                                       const gtsam::FixedLagSmootherKeyTimestampMap &timestamps,
-                                       const gtsam::FactorIndices &factorsToRemove);
-  gtsam::Values calculateEstimate() const;
-};
-
-#include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
-virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
-  BatchFixedLagSmoother();
-  BatchFixedLagSmoother(double smootherLag);
-  BatchFixedLagSmoother(double smootherLag, const gtsam::LevenbergMarquardtParams& params);
-
-  void print(string s = "BatchFixedLagSmoother:\n") const;
-
-  gtsam::LevenbergMarquardtParams params() const;
-  template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
-                     gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
-                     Vector, Matrix}>
-  VALUE calculateEstimate(size_t key) const;
-};
-
+#include <gtsam/nonlinear/FixedLagSmoother.h>
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
 virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
   IncrementalFixedLagSmoother();
@@ -733,14 +674,14 @@ class AHRS {
 // Tectonic SAM Factors
 
 #include <gtsam_unstable/slam/TSAMFactors.h>
-//typedef gtsam::NoiseModelFactor2<gtsam::Pose2, gtsam::Point2> NLPosePose;
+//typedef gtsam::NoiseModelFactorN<gtsam::Pose2, gtsam::Point2> NLPosePose;
 virtual class DeltaFactor : gtsam::NoiseModelFactor {
   DeltaFactor(size_t i, size_t j, const gtsam::Point2& measured,
       const gtsam::noiseModel::Base* noiseModel);
   //void print(string s) const;
 };
 
-//typedef gtsam::NoiseModelFactor4<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
+//typedef gtsam::NoiseModelFactorN<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
 //    gtsam::Point2> NLPosePosePosePoint;
 virtual class DeltaFactorBase : gtsam::NoiseModelFactor {
   DeltaFactorBase(size_t b1, size_t i, size_t b2, size_t j,
@@ -748,7 +689,7 @@ virtual class DeltaFactorBase : gtsam::NoiseModelFactor {
   //void print(string s) const;
 };
 
-//typedef gtsam::NoiseModelFactor4<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
+//typedef gtsam::NoiseModelFactorN<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
 //    gtsam::Pose2> NLPosePosePosePose;
 virtual class OdometryFactorBase : gtsam::NoiseModelFactor {
   OdometryFactorBase(size_t b1, size_t i, size_t b2, size_t j,
@@ -796,5 +737,31 @@ virtual class ProjectionFactorPPPC : gtsam::NoiseModelFactor {
 };
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> ProjectionFactorPPPCCal3_S2;
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> ProjectionFactorPPPCCal3DS2;
+
+#include <gtsam_unstable/slam/ProjectionFactorRollingShutter.h>
+virtual class ProjectionFactorRollingShutter : gtsam::NoiseModelFactor {
+  ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K);
+
+  ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
+    size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K, gtsam::Pose3& body_P_sensor);
+
+  ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
+        size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K, bool throwCheirality,
+        bool verboseCheirality);
+
+  ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K, bool throwCheirality,
+      bool verboseCheirality, gtsam::Pose3& body_P_sensor);
+
+  gtsam::Point2 measured() const;
+  double alpha() const;
+  gtsam::Cal3_S2* calibration() const;
+  bool verboseCheirality() const;
+  bool throwCheirality() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
 
 } //\namespace gtsam

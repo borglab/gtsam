@@ -11,15 +11,17 @@
 
 /**
  * @file    Assignment.h
- * @brief    An assignment from labels to a discrete value index (size_t)
+ * @brief   An assignment from labels to a discrete value index (size_t)
  * @author  Frank Dellaert
  * @date    Feb 5, 2012
  */
 
 #pragma once
 
+#include <functional>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -29,14 +31,41 @@ namespace gtsam {
  * An assignment from labels to value index (size_t).
  * Assigns to each label a value. Implemented as a simple map.
  * A discrete factor takes an Assignment and returns a value.
+ * @ingroup discrete
  */
 template <class L>
 class Assignment : public std::map<L, size_t> {
+  /**
+   * @brief Default method used by `labelFormatter` or `valueFormatter` when
+   * printing.
+   *
+   * @param x The value passed to format.
+   * @return std::string
+   */
+  static std::string DefaultFormatter(const L& x) {
+    std::stringstream ss;
+    ss << x;
+    return ss.str();
+  }
+
  public:
-  void print(const std::string& s = "Assignment: ") const {
+  using std::map<L, size_t>::operator=;
+
+  // Define the implicit default constructor.
+  Assignment() = default;
+
+  // Construct from initializer list.
+  Assignment(std::initializer_list<std::pair<const L, size_t>> init)
+      : std::map<L, size_t>{init} {}
+
+  void print(const std::string& s = "Assignment: ",
+             const std::function<std::string(L)>& labelFormatter =
+                 &DefaultFormatter) const {
     std::cout << s << ": ";
-    for (const typename Assignment::value_type& keyValue : *this)
-      std::cout << "(" << keyValue.first << ", " << keyValue.second << ")";
+    for (const typename Assignment::value_type& keyValue : *this) {
+      std::cout << "(" << labelFormatter(keyValue.first) << ", "
+                << keyValue.second << ")";
+    }
     std::cout << std::endl;
   }
 

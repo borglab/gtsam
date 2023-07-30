@@ -27,14 +27,9 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/assign/list_of.hpp>
-#include <boost/assign/std/vector.hpp>
-#include <boost/range/iterator_range.hpp>
-#include <boost/range/adaptor/map.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
-using namespace boost::assign;
 using namespace gtsam;
 
 // F
@@ -68,17 +63,15 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   Matrix3 P = (E.transpose() * E).inverse();
 
   double alpha = 0.5;
-  VectorValues xvalues = map_list_of //
-  (0, Vector::Constant(6, 2))//
-  (1, Vector::Constant(6, 4))//
-  (2, Vector::Constant(6, 0))// distractor
-  (3, Vector::Constant(6, 8));
+  VectorValues xvalues{{0, Vector::Constant(6, 2)},  //
+                       {1, Vector::Constant(6, 4)},  //
+                       {2, Vector::Constant(6, 0)},  // distractor
+                       {3, Vector::Constant(6, 8)}};
 
-  VectorValues yExpected = map_list_of//
-  (0, Vector::Constant(6, 27))//
-  (1, Vector::Constant(6, -40))//
-  (2, Vector::Constant(6, 0))// distractor
-  (3, Vector::Constant(6, 279));
+  VectorValues yExpected{{0, Vector::Constant(6, 27)},   //
+                         {1, Vector::Constant(6, -40)},  //
+                         {2, Vector::Constant(6, 0)},    // distractor
+                         {3, Vector::Constant(6, 279)}};
 
   // Create full F
   size_t M=4, m = 3, d = 6;

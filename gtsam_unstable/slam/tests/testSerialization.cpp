@@ -7,9 +7,6 @@
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <iostream>
-
 #include <gtsam_unstable/slam/serialization.h>
 
 #include <gtsam/geometry/Pose2.h>
@@ -18,15 +15,17 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 
-#include <stdlib.h>
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/filesystem.hpp>
+
+#include <iostream>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
-#include <boost/assign/std/vector.hpp>
-#include <boost/filesystem.hpp>
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 namespace fs = boost::filesystem;
 #ifdef TOPSRCDIR
 static string topdir = TOPSRCDIR;

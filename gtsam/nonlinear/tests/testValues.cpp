@@ -25,15 +25,10 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/assign/std/list.hpp> // for operator +=
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/list_of.hpp>
-#include <boost/bind/bind.hpp>
 #include <stdexcept>
 #include <limits>
 #include <type_traits>
 
-using namespace boost::assign;
 using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;
@@ -64,13 +59,13 @@ public:
   bool equals(const TestValue& other, double tol = 1e-9) const { return true; }
   size_t dim() const { return 0; }
   TestValue retract(const Vector&,
-                    OptionalJacobian<dimension,dimension> H1=boost::none,
-                    OptionalJacobian<dimension,dimension> H2=boost::none) const {
+                    OptionalJacobian<dimension,dimension> H1={},
+                    OptionalJacobian<dimension,dimension> H2={}) const {
     return TestValue();
   }
   Vector localCoordinates(const TestValue&,
-                          OptionalJacobian<dimension,dimension> H1=boost::none,
-                          OptionalJacobian<dimension,dimension> H2=boost::none) const {
+                          OptionalJacobian<dimension,dimension> H1={},
+                          OptionalJacobian<dimension,dimension> H2={}) const {
     return Vector();
   }
 };
@@ -140,6 +135,44 @@ TEST( Values, insert_good )
 }
 
 /* ************************************************************************* */
+TEST( Values, insert_expression )
+{
+  Point2 p1(0.1, 0.2);
+  Point2 p2(0.3, 0.4);
+  Point2 p3(0.5, 0.6);
+  Point2 p4(p1 + p2 + p3);
+  Point2 p5(-p1);
+  Point2 p6(2.0*p1);
+
+  Values cfg1, cfg2;
+  cfg1.insert(key1, p1 + p2 + p3);
+  cfg1.insert(key2, -p1);
+  cfg1.insert(key3, 2.0*p1);
+  cfg2.insert(key1, p4);
+  cfg2.insert(key2, p5);
+  cfg2.insert(key3, p6);
+
+  CHECK(assert_equal(cfg1, cfg2));
+
+  Point3 p7(0.1, 0.2, 0.3);
+  Point3 p8(0.4, 0.5, 0.6);
+  Point3 p9(0.7, 0.8, 0.9);
+  Point3 p10(p7 + p8 + p9);
+  Point3 p11(-p7);
+  Point3 p12(2.0*p7);
+
+  Values cfg3, cfg4;
+  cfg3.insert(key1, p7 + p8 + p9);
+  cfg3.insert(key2, -p7);
+  cfg3.insert(key3, 2.0*p7);
+  cfg4.insert(key1, p10);
+  cfg4.insert(key2, p11);
+  cfg4.insert(key3, p12);
+
+  CHECK(assert_equal(cfg3, cfg4));
+}
+
+/* ************************************************************************* */
 TEST( Values, insert_bad )
 {
   Values cfg1, cfg2;
@@ -172,6 +205,23 @@ TEST( Values, update_element )
   CHECK(assert_equal((Vector)v2, cfg.at<Vector3>(key1)));
 }
 
+/* ************************************************************************* */
+TEST(Values, update_element_with_expression)
+{
+  Values cfg;
+  Vector3 v1(5.0, 6.0, 7.0);
+  Vector3 v2(8.0, 9.0, 1.0);
+
+  cfg.insert(key1, v1);
+  CHECK(cfg.size() == 1);
+  CHECK(assert_equal((Vector)v1, cfg.at<Vector3>(key1)));
+
+  cfg.update(key1, 2.0*v1 + v2);
+  CHECK(cfg.size() == 1);
+  CHECK(assert_equal((2.0*v1 + v2).eval(), cfg.at<Vector3>(key1)));
+}
+
+/* ************************************************************************* */
 TEST(Values, InsertOrAssign) {
   Values values;
   Key X(0);
@@ -189,32 +239,59 @@ TEST(Values, InsertOrAssign) {
 }
 
 /* ************************************************************************* */
+TEST(Values, InsertOrAssignWithExpression) {
+  Values values,expected;
+  Key X(0);
+  Vector3 x{1.0, 2.0, 3.0};
+  Vector3 y{4.0, 5.0, 6.0};
+
+  CHECK(values.size() == 0);
+  // This should perform an insert.
+  Vector3 z = x + y;
+  values.insert_or_assign(X, x + y);
+  EXPECT(assert_equal(values.at<Vector3>(X), z));
+
+  // This should perform an update.
+  z = 2.0*x - 3.0*y;
+  values.insert_or_assign(X, 2.0*x - 3.0*y);
+  EXPECT(assert_equal(values.at<Vector3>(X), z));
+}
+
+/* ************************************************************************* */
 TEST(Values, basic_functions)
 {
   Values values;
-  const Values& values_c = values;
   Matrix23 M1 = Matrix23::Zero(), M2 = Matrix23::Zero();
   values.insert(2, Vector3(0, 0, 0));
   values.insert(4, Vector3(0, 0, 0));
   values.insert(6, M1);
   values.insert(8, M2);
 
+
+  EXPECT(!values.exists(1));
+  EXPECT(values.exists(2));
+  EXPECT(values.exists(4));
+  EXPECT(values.exists(6));
+  EXPECT(values.exists(8));
+
+  size_t count = 0;
+  for (const auto& [key, value] : values) {
+    count += 1;
+    if (key == 2 || key == 4) EXPECT_LONGS_EQUAL(3, value.dim());
+    if (key == 6 || key == 8) EXPECT_LONGS_EQUAL(6, value.dim());
+  }
+  EXPECT_LONGS_EQUAL(4, count);
+
   // find
   EXPECT_LONGS_EQUAL(4, values.find(4)->key);
-  EXPECT_LONGS_EQUAL(4, values_c.find(4)->key);
 
   // lower_bound
   EXPECT_LONGS_EQUAL(4, values.lower_bound(4)->key);
-  EXPECT_LONGS_EQUAL(4, values_c.lower_bound(4)->key);
   EXPECT_LONGS_EQUAL(4, values.lower_bound(3)->key);
-  EXPECT_LONGS_EQUAL(4, values_c.lower_bound(3)->key);
 
   // upper_bound
   EXPECT_LONGS_EQUAL(6, values.upper_bound(4)->key);
-  EXPECT_LONGS_EQUAL(6, values_c.upper_bound(4)->key);
   EXPECT_LONGS_EQUAL(4, values.upper_bound(3)->key);
-  EXPECT_LONGS_EQUAL(4, values_c.upper_bound(3)->key);
-
 }
 
 /* ************************************************************************* */
@@ -224,9 +301,8 @@ TEST(Values, retract_full)
   config0.insert(key1, Vector3(1.0, 2.0, 3.0));
   config0.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues delta = pair_list_of<Key, Vector>
-    (key1, Vector3(1.0, 1.1, 1.2))
-    (key2, Vector3(1.3, 1.4, 1.5));
+  const VectorValues delta{{key1, Vector3(1.0, 1.1, 1.2)},
+                           {key2, Vector3(1.3, 1.4, 1.5)}};
 
   Values expected;
   expected.insert(key1, Vector3(2.0, 3.1, 4.2));
@@ -243,8 +319,7 @@ TEST(Values, retract_partial)
   config0.insert(key1, Vector3(1.0, 2.0, 3.0));
   config0.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues delta = pair_list_of<Key, Vector>
-    (key2, Vector3(1.3, 1.4, 1.5));
+  const VectorValues delta{{key2, Vector3(1.3, 1.4, 1.5)}};
 
   Values expected;
   expected.insert(key1, Vector3(1.0, 2.0, 3.0));
@@ -252,6 +327,24 @@ TEST(Values, retract_partial)
 
   CHECK(assert_equal(expected, config0.retract(delta)));
   CHECK(assert_equal(expected, Values(config0, delta)));
+}
+
+/* ************************************************************************* */
+TEST(Values, retract_masked)
+{
+  Values config0;
+  config0.insert(key1, Vector3(1.0, 2.0, 3.0));
+  config0.insert(key2, Vector3(5.0, 6.0, 7.0));
+
+  const VectorValues delta{{key1, Vector3(1.0, 1.1, 1.2)},
+                           {key2, Vector3(1.3, 1.4, 1.5)}};
+
+  Values expected;
+  expected.insert(key1, Vector3(1.0, 2.0, 3.0));
+  expected.insert(key2, Vector3(6.3, 7.4, 8.5));
+
+  config0.retractMasked(delta, {key2});
+  CHECK(assert_equal(expected, config0));
 }
 
 /* ************************************************************************* */
@@ -279,9 +372,8 @@ TEST(Values, localCoordinates)
   valuesA.insert(key1, Vector3(1.0, 2.0, 3.0));
   valuesA.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues expDelta = pair_list_of<Key, Vector>
-    (key1, Vector3(0.1, 0.2, 0.3))
-    (key2, Vector3(0.4, 0.5, 0.6));
+  VectorValues expDelta{{key1, Vector3(0.1, 0.2, 0.3)},
+                        {key2, Vector3(0.4, 0.5, 0.6)}};
 
   Values valuesB = valuesA.retract(expDelta);
 
@@ -315,7 +407,7 @@ TEST(Values, exists_)
   config0.insert(key1, 1.0);
   config0.insert(key2, 2.0);
 
-  boost::optional<const double&> v = config0.exists<double>(key1);
+  const double* v = config0.exists<double>(key1);
   DOUBLES_EQUAL(1.0,*v,1e-9);
 }
 
@@ -350,67 +442,13 @@ TEST(Values, filter) {
   values.insert(2, pose2);
   values.insert(3, pose3);
 
-  // Filter by key
-  int i = 0;
-  Values::Filtered<Value> filtered = values.filter(std::bind(std::greater_equal<Key>(), std::placeholders::_1, 2));
-  EXPECT_LONGS_EQUAL(2, (long)filtered.size());
-  for(const auto key_value: filtered) {
-    if(i == 0) {
-      LONGS_EQUAL(2, (long)key_value.key);
-      try {key_value.value.cast<Pose2>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose2");}
-      THROWS_EXCEPTION(key_value.value.cast<Pose3>());
-      EXPECT(assert_equal(pose2, key_value.value.cast<Pose2>()));
-    } else if(i == 1) {
-      LONGS_EQUAL(3, (long)key_value.key);
-      try {key_value.value.cast<Pose3>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose3");}
-      THROWS_EXCEPTION(key_value.value.cast<Pose2>());
-      EXPECT(assert_equal(pose3, key_value.value.cast<Pose3>()));
-    } else {
-      EXPECT(false);
-    }
-    ++ i;
-  }
-  EXPECT_LONGS_EQUAL(2, (long)i);
-
-  // construct a values with the view
-  Values actualSubValues1(filtered);
-  Values expectedSubValues1;
-  expectedSubValues1.insert(2, pose2);
-  expectedSubValues1.insert(3, pose3);
-  EXPECT(assert_equal(expectedSubValues1, actualSubValues1));
-
-  // ConstFilter by Key
-  Values::ConstFiltered<Value> constfiltered = values.filter(std::bind(std::greater_equal<Key>(), std::placeholders::_1, 2));
-  EXPECT_LONGS_EQUAL(2, (long)constfiltered.size());
-  Values fromconstfiltered(constfiltered);
-  EXPECT(assert_equal(expectedSubValues1, fromconstfiltered));
-
-  // Filter by type
-  i = 0;
-  Values::ConstFiltered<Pose3> pose_filtered = values.filter<Pose3>();
-  EXPECT_LONGS_EQUAL(2, (long)pose_filtered.size());
-  for(const auto key_value: pose_filtered) {
-    if(i == 0) {
-      EXPECT_LONGS_EQUAL(1, (long)key_value.key);
-      EXPECT(assert_equal(pose1, key_value.value));
-    } else if(i == 1) {
-      EXPECT_LONGS_EQUAL(3, (long)key_value.key);
-      EXPECT(assert_equal(pose3, key_value.value));
-    } else {
-      EXPECT(false);
-    }
-    ++ i;
-  }
-  EXPECT_LONGS_EQUAL(2, (long)i);
+  // Test counting by type.
   EXPECT_LONGS_EQUAL(2, (long)values.count<Pose3>());
   EXPECT_LONGS_EQUAL(2, (long)values.count<Pose2>());
 
-  // construct a values with the view
-  Values actualSubValues2(pose_filtered);
-  Values expectedSubValues2;
-  expectedSubValues2.insert(1, pose1);
-  expectedSubValues2.insert(3, pose3);
-  EXPECT(assert_equal(expectedSubValues2, actualSubValues2));
+  // Filter by type using extract.
+  auto extracted_pose3s = values.extract<Pose3>();
+  EXPECT_LONGS_EQUAL(2, (long)extracted_pose3s.size());
 }
 
 /* ************************************************************************* */
@@ -426,20 +464,9 @@ TEST(Values, Symbol_filter) {
   values.insert(X(2), pose2);
   values.insert(Symbol('y', 3), pose3);
 
-  int i = 0;
-  for(const auto key_value: values.filter(Symbol::ChrTest('y'))) {
-    if(i == 0) {
-      LONGS_EQUAL(Symbol('y', 1), (long)key_value.key);
-      EXPECT(assert_equal(pose1, key_value.value.cast<Pose3>()));
-    } else if(i == 1) {
-      LONGS_EQUAL(Symbol('y', 3), (long)key_value.key);
-      EXPECT(assert_equal(pose3, key_value.value.cast<Pose3>()));
-    } else {
-      EXPECT(false);
-    }
-    ++ i;
-  }
-  LONGS_EQUAL(2, (long)i);
+  // Test extract with filter on symbol:
+  auto extracted_pose3s = values.extract<Pose3>(Symbol::ChrTest('y'));
+  EXPECT_LONGS_EQUAL(2, (long)extracted_pose3s.size());
 }
 
 /* ************************************************************************* */
@@ -540,13 +567,13 @@ TEST(Values, std_move) {
       EXPECT_LONGS_EQUAL(2, (long)TestValueData::DestructorCount);
       EXPECT_LONGS_EQUAL(2, values.size());
       TestValues moved(std::move(values));   // Move happens here !
-      EXPECT_LONGS_EQUAL(2, values.size());  // Uh oh! Should be 0 !
+      EXPECT_LONGS_EQUAL(0, values.size());  // Should be 0 !
       EXPECT_LONGS_EQUAL(2, moved.size());
-      EXPECT_LONGS_EQUAL(8, (long)TestValueData::ConstructorCount);  // Uh oh! Should be 6 :-(
+      EXPECT_LONGS_EQUAL(6, (long)TestValueData::ConstructorCount);  // Should be 6 :-)
       EXPECT_LONGS_EQUAL(2, (long)TestValueData::DestructorCount);   // extra insert copies
     }
-    EXPECT_LONGS_EQUAL(8, (long)TestValueData::ConstructorCount);
-    EXPECT_LONGS_EQUAL(8, (long)TestValueData::DestructorCount);
+    EXPECT_LONGS_EQUAL(6, (long)TestValueData::ConstructorCount);
+    EXPECT_LONGS_EQUAL(6, (long)TestValueData::DestructorCount);
   }
 }
 

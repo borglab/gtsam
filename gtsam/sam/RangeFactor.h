@@ -29,7 +29,7 @@ struct Range;
 /**
  * Binary factor for a range measurement
  * Works for any two types A1,A2 for which the functor Range<A1,A2>() is defined
- * @addtogroup SAM
+ * @ingroup sam
  */
 template <typename A1, typename A2 = A1, typename T = double>
 class RangeFactor : public ExpressionFactorN<T, A1, A2> {
@@ -48,7 +48,7 @@ class RangeFactor : public ExpressionFactorN<T, A1, A2> {
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -58,16 +58,15 @@ class RangeFactor : public ExpressionFactorN<T, A1, A2> {
     Expression<A2> a2_(keys[1]);
     return Expression<T>(Range<A1, A2>(), a1_, a2_);
   }
-  
-  Vector evaluateError(const A1& a1, const A2& a2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const
-  {
+
+  Vector evaluateError(const A1& a1, const A2& a2, 
+      OptionalMatrixType H1 = OptionalNone,
+      OptionalMatrixType H2 = OptionalNone) const {
     std::vector<Matrix> Hs(2);
-    const auto &keys = Factor::keys();
+    const auto& keys = Factor::keys();
     const Vector error = Base::unwhitenedError(
-      {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}}, 
-      Hs);
+        {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}},
+        Hs);
     if (H1) *H1 = Hs[0];
     if (H2) *H2 = Hs[1];
     return error;
@@ -81,12 +80,14 @@ class RangeFactor : public ExpressionFactorN<T, A1, A2> {
   }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& boost::serialization::make_nvp(
         "Base", boost::serialization::base_object<Base>(*this));
   }
+#endif
 };  // \ RangeFactor
 
 /// traits
@@ -96,7 +97,7 @@ struct traits<RangeFactor<A1, A2, T> >
 
 /**
  * Binary factor for a range measurement, with a transform applied
- * @addtogroup SAM
+ * @ingroup sam
  */
 template <typename A1, typename A2 = A1,
           typename T = typename Range<A1, A2>::result_type>
@@ -122,7 +123,7 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -137,9 +138,7 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
   }
 
   Vector evaluateError(const A1& a1, const A2& a2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const
-  {
+      OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 = OptionalNone) const {
     std::vector<Matrix> Hs(2);
     const auto &keys = Factor::keys();
     const Vector error = Base::unwhitenedError(
@@ -148,6 +147,12 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
     if (H1) *H1 = Hs[0];
     if (H2) *H2 = Hs[1];
     return error;
+  }
+
+  // An evaluateError overload to accept matrices (Matrix&) and pass it to the
+  // OptionalMatrixType evaluateError overload
+  Vector evaluateError(const A1& a1, const A2& a2, Matrix& H1, Matrix& H2) const {
+	return evaluateError(a1, a2, &H1, &H2);
   }
 
   /** print contents */
@@ -159,8 +164,9 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
   }
 
  private:
-  /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
+  /** Serialization function */
   template <typename ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     // **IMPORTANT** We need to (de)serialize parameters before the base class,
@@ -170,6 +176,7 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
     ar& boost::serialization::make_nvp(
         "Base", boost::serialization::base_object<Base>(*this));
   }
+#endif
 };  // \ RangeFactorWithTransform
 
 /// traits

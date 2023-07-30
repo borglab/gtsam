@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/Errors.h>  // Included here instead of fw-declared so we can use Errors::iterator
@@ -51,9 +52,15 @@ namespace gtsam {
     typedef GaussianBayesTree BayesTreeType;             ///< Type of Bayes tree
     typedef GaussianJunctionTree JunctionTreeType;       ///< Type of Junction tree
     /// The default dense elimination function
-    static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
+    static std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType> >
       DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
         return EliminatePreferCholesky(factors, keys); }
+    /// The default ordering generation function
+    static Ordering DefaultOrderingFunc(
+        const FactorGraphType& graph,
+        std::optional<std::reference_wrapper<const VariableIndex>> variableIndex) {
+      return Ordering::Colamd((*variableIndex).get());
+    }
   };
 
   /* ************************************************************************* */
@@ -72,10 +79,21 @@ namespace gtsam {
     typedef GaussianFactorGraph This; ///< Typedef to this class
     typedef FactorGraph<GaussianFactor> Base; ///< Typedef to base factor graph type
     typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
+    /// @name Constructors
+    /// @{
+    
     /** Default constructor */
     GaussianFactorGraph() {}
+
+    /**
+     * Construct from an initializer lists of GaussianFactor shared pointers.
+     * Example:
+     *   GaussianFactorGraph graph = { factor1, factor2, factor3 };
+     */
+    GaussianFactorGraph(std::initializer_list<sharedFactor> factors) : Base(factors) {}
+    
 
     /** Construct from iterator over factors */
     template<typename ITERATOR>
@@ -89,9 +107,7 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     GaussianFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
-    /** Virtual destructor */
-    virtual ~GaussianFactorGraph() {}
-
+    /// @}
     /// @name Testable
     /// @{
 
@@ -149,20 +165,10 @@ namespace gtsam {
     std::map<Key, size_t> getKeyDimMap() const;
 
     /** unnormalized error */
-    double error(const VectorValues& x) const {
-      double total_error = 0.;
-      for(const sharedFactor& factor: *this){
-        if(factor)
-          total_error += factor->error(x);
-      }
-      return total_error;
-    }
+    double error(const VectorValues& x) const;
 
     /** Unnormalized probability. O(n) */
-    double probPrime(const VectorValues& c) const {
-      // NOTE the 0.5 constant is handled by the factor error.
-      return exp(-error(c));
-    }
+    double probPrime(const VectorValues& c) const;
 
     /**
      * Clone() performs a deep-copy of the graph, including all of the factors.
@@ -394,24 +400,14 @@ namespace gtsam {
     /// @}
 
   private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
-
-  public:
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-   /** @deprecated */
-   VectorValues GTSAM_DEPRECATED
-   optimize(boost::none_t, const Eliminate& function =
-                               EliminationTraitsType::DefaultEliminate) const {
-     return optimize(function);
-   }
 #endif
-
   };
 
   /**

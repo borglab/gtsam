@@ -94,7 +94,7 @@ TEST(Basis, Manual) {
 
     auto linearizedFactor = predictFactor.linearize(values);
     auto linearizedJacobianFactor =
-        boost::dynamic_pointer_cast<JacobianFactor>(linearizedFactor);
+        std::dynamic_pointer_cast<JacobianFactor>(linearizedFactor);
     CHECK(linearizedJacobianFactor);  // makes sure it's indeed a JacobianFactor
     EXPECT(assert_equal(linearFactor, *linearizedJacobianFactor, 1e-9));
   }
@@ -180,17 +180,16 @@ TEST(Basis, Derivative7) {
 
 //******************************************************************************
 TEST(Basis, VecDerivativeFunctor) {
-  using DotShape = typename FourierBasis::VectorDerivativeFunctor<2>;
+  using DotShape = typename FourierBasis::VectorDerivativeFunctor;
   const size_t N = 3;
 
   // MATLAB example, Dec 27 2019, commit 014eded5
   double h = 2 * M_PI / 16;
   Vector2 dotShape(0.5556, -0.8315);  // at h/2
-  DotShape dotShapeFunction(N, h / 2);
-  Matrix23 theta_mat = (Matrix32() << 0, 0, 0.7071, 0.7071, 0.7071, -0.7071)
-                           .finished()
-                           .transpose();
-  ParameterMatrix<2> theta(theta_mat);
+  DotShape dotShapeFunction(2, N, h / 2);
+  Matrix theta = (Matrix32() << 0, 0, 0.7071, 0.7071, 0.7071, -0.7071)
+                     .finished()
+                     .transpose();
   EXPECT(assert_equal(Vector(dotShape), dotShapeFunction(theta), 1e-4));
 }
 

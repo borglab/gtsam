@@ -34,7 +34,7 @@ typedef PinholeCamera<Cal3Bundler> SfmCamera;
 
 /**
  * @brief SfmData stores a bunch of SfmTracks
- * @addtogroup sfm
+ * @ingroup sfm
  */
 struct GTSAM_EXPORT SfmData {
   std::vector<SfmCamera> cameras;  ///< Set of cameras
@@ -77,10 +77,14 @@ struct GTSAM_EXPORT SfmData {
   size_t numberCameras() const { return cameras.size(); }
 
   /// The track formed by series of landmark measurements
-  SfmTrack track(size_t idx) const { return tracks[idx]; }
+  const SfmTrack& track(size_t idx) const { return tracks[idx]; }
 
   /// The camera pose at frame index `idx`
-  SfmCamera camera(size_t idx) const { return cameras[idx]; }
+  const SfmCamera& camera(size_t idx) const { return cameras[idx]; }
+
+  /// Getters
+  const std::vector<SfmCamera>& cameraList() const { return cameras; }
+  const std::vector<SfmTrack>& trackList() const { return tracks; }
 
   /**
    * @brief Create projection factors using keys i and P(j)
@@ -98,14 +102,14 @@ struct GTSAM_EXPORT SfmData {
    * Note: pose keys are simply integer indices, points use Symbol('p', j).
    *
    * @param model a noise model for projection errors
-   * @param fixedCamera which camera to fix, if any (use boost::none if none)
-   * @param fixedPoint which point to fix, if any (use boost::none if none)
+   * @param fixedCamera which camera to fix, if any (use std::nullopt if none)
+   * @param fixedPoint which point to fix, if any (use std::nullopt if none)
    * @return NonlinearFactorGraph
    */
   NonlinearFactorGraph sfmFactorGraph(
       const SharedNoiseModel& model = noiseModel::Isotropic::Sigma(2, 1.0),
-      boost::optional<size_t> fixedCamera = 0,
-      boost::optional<size_t> fixedPoint = 0) const;
+      std::optional<size_t> fixedCamera = 0,
+      std::optional<size_t> fixedPoint = 0) const;
 
   /// @}
   /// @name Testable
@@ -118,27 +122,19 @@ struct GTSAM_EXPORT SfmData {
   bool equals(const SfmData& sfmData, double tol = 1e-9) const;
 
   /// @}
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  /// @name Deprecated
-  /// @{
-  void GTSAM_DEPRECATED add_track(const SfmTrack& t) { tracks.push_back(t); }
-  void GTSAM_DEPRECATED add_camera(const SfmCamera& cam) {
-    cameras.push_back(cam);
-  }
-  size_t GTSAM_DEPRECATED number_tracks() const { return tracks.size(); }
-  size_t GTSAM_DEPRECATED number_cameras() const { return cameras.size(); }
-  /// @}
-#endif
   /// @name Serialization
   /// @{
 
-  /** Serialization function */
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
+  /** Serialization function */
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_NVP(cameras);
     ar& BOOST_SERIALIZATION_NVP(tracks);
   }
+#endif
+
 
   /// @}
 };
@@ -146,13 +142,6 @@ struct GTSAM_EXPORT SfmData {
 /// traits
 template <>
 struct traits<SfmData> : public Testable<SfmData> {};
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-GTSAM_EXPORT bool GTSAM_DEPRECATED readBundler(const std::string& filename,
-                                               SfmData& data);
-GTSAM_EXPORT bool GTSAM_DEPRECATED readBAL(const std::string& filename,
-                                           SfmData& data);
-#endif
 
 /**
  * @brief This function parses a "Bundle Adjustment in the Large" (BAL) file and

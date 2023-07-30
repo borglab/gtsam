@@ -19,8 +19,10 @@
 #pragma once
 
 #include <gtsam/base/FastDefaultAllocator.h>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/map.hpp>
+#endif
 #include <map>
 
 namespace gtsam {
@@ -31,7 +33,7 @@ namespace gtsam {
  * convenience to avoid having lengthy types in the code.  Through timing,
  * we've seen that the fast_pool_allocator can lead to speedups of several
  * percent.
- * @addtogroup base
+ * @ingroup base
  */
 template<typename KEY, typename VALUE>
 class FastMap : public std::map<KEY, VALUE, std::less<KEY>,
@@ -61,18 +63,20 @@ public:
   }
 
   /** Handy 'insert' function for Matlab wrapper */
-  bool insert2(const KEY& key, const VALUE& val) { return Base::insert(std::make_pair(key, val)).second; }
+  bool insert2(const KEY& key, const VALUE& val) { return Base::insert({key, val}).second; }
 
   /** Handy 'exists' function */
   bool exists(const KEY& e) const { return this->find(e) != this->end(); }
 
 private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
+#endif
 };
 
 }

@@ -13,7 +13,7 @@ import unittest
 import numpy as np
 
 import gtsam
-from gtsam import Rot3
+from gtsam import Point3, Rot3, Unit3
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -2031,6 +2031,31 @@ class TestRot3(GtsamTestCase):
             axis, angle = i1Ri2.axisAngle()
             angle_deg = np.rad2deg(angle)
             assert angle_deg < 180
+
+    def test_rotate(self) -> None:
+        """Test that rotate() works for both Point3 and Unit3."""
+        R = Rot3(np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]]))
+        p = Point3(1., 1., 1.)
+        u = Unit3(np.array([1, 1, 1]))
+        actual_p = R.rotate(p)
+        actual_u = R.rotate(u)
+        expected_p = Point3(np.array([1, -1, -1]))
+        expected_u = Unit3(np.array([1, -1, -1]))
+        np.testing.assert_array_equal(actual_p, expected_p)
+        np.testing.assert_array_equal(actual_u.point3(), expected_u.point3())
+
+    def test_unrotate(self) -> None:
+        """Test that unrotate() after rotate() yields original Point3/Unit3."""
+        wRc = Rot3(np.array(R1_R2_pairs[0][0]))
+        c_p = Point3(1., 1., 1.)
+        c_u = Unit3(np.array([1, 1, 1]))
+        w_p = wRc.rotate(c_p)
+        w_u = wRc.rotate(c_u)
+        actual_p = wRc.unrotate(w_p)
+        actual_u = wRc.unrotate(w_u)
+
+        np.testing.assert_almost_equal(actual_p, c_p, decimal=6)
+        np.testing.assert_almost_equal(actual_u.point3(), c_u.point3(), decimal=6)
 
 
 if __name__ == "__main__":

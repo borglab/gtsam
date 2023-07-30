@@ -372,8 +372,8 @@ TEST(ShonanAveraging2, noisyToyGraphWithHuber) {
 
   // test that each factor is actually robust
   for (size_t i=0; i<=4; i++) { // note: last is the Gauge factor and is not robust
-	  const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
-			  boost::dynamic_pointer_cast<NoiseModelFactor>(graph[i])->noiseModel());
+	  const auto &robust = std::dynamic_pointer_cast<noiseModel::Robust>(
+			  std::dynamic_pointer_cast<NoiseModelFactor>(graph[i])->noiseModel());
 	  EXPECT(robust); // we expect the factors to be use a robust noise model (in particular, Huber)
   }
 
@@ -404,7 +404,7 @@ TEST(ShonanAveraging3, PriorWeights) {
   for (auto i : {0,1,2}) {
     const auto& m = shonan.measurement(i);
     auto isotropic =
-        boost::static_pointer_cast<noiseModel::Isotropic>(m.noiseModel());
+        std::static_pointer_cast<noiseModel::Isotropic>(m.noiseModel());
     CHECK(isotropic != nullptr);
     EXPECT_LONGS_EQUAL(3, isotropic->dim());
     EXPECT_DOUBLES_EQUAL(0.2, isotropic->sigma(), 1e-9);
@@ -415,6 +415,20 @@ TEST(ShonanAveraging3, PriorWeights) {
   auto result = shonan.run(initial, 3, 3);
   EXPECT_DOUBLES_EQUAL(0.0015, shonan.cost(result.first), 1e-4);
 }
+
+/* ************************************************************************* */
+// Check a small graph created using binary measurements
+TEST(ShonanAveraging3, BinaryMeasurements) {
+  std::vector<BinaryMeasurement<Rot3>> measurements;
+  auto unit3 = noiseModel::Unit::Create(3);
+  measurements.emplace_back(0, 1, Rot3::Yaw(M_PI_2), unit3);
+  measurements.emplace_back(1, 2, Rot3::Yaw(M_PI_2), unit3);
+  ShonanAveraging3 shonan(measurements);
+  Values initial = shonan.initializeRandomly();
+  auto result = shonan.run(initial, 3, 5);
+  EXPECT_DOUBLES_EQUAL(0.0, shonan.cost(result.first), 1e-4);
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

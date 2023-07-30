@@ -23,6 +23,9 @@
 #include <gtsam/nonlinear/ISAM2.h>
 
 #include <CppUnitLite/TestHarness.h>
+#include "gtsam/base/Vector.h"
+#include "gtsam/geometry/OrientedPlane3.h"
+#include "gtsam/geometry/Pose3.h"
 
 using namespace std::placeholders;
 using namespace gtsam;
@@ -44,8 +47,8 @@ TEST(LocalOrientedPlane3Factor, lm_translation_error) {
 
   // Init pose and prior.  Pose Prior is needed since a single plane measurement
   // does not fully constrain the pose
-  Pose3 init_pose = Pose3::identity();
-  Pose3 anchor_pose = Pose3::identity();
+  Pose3 init_pose = Pose3::Identity();
+  Pose3 anchor_pose = Pose3::Identity();
   graph.addPrior(X(0), init_pose, noiseModel::Isotropic::Sigma(6, 0.001));
   graph.addPrior(X(1), anchor_pose, noiseModel::Isotropic::Sigma(6, 0.001));
 
@@ -89,7 +92,7 @@ TEST (LocalOrientedPlane3Factor, lm_rotation_error) {
 
   // Init pose and prior.  Pose Prior is needed since a single plane measurement
   // does not fully constrain the pose
-  Pose3 init_pose = Pose3::identity();
+  Pose3 init_pose = Pose3::Identity();
   graph.addPrior(X(0), init_pose, noiseModel::Isotropic::Sigma(6, 0.001));
 
   // Add two landmark measurements, differing in angle
@@ -141,10 +144,10 @@ TEST(LocalOrientedPlane3Factor, Derivatives) {
   LocalOrientedPlane3Factor factor(p, noise, poseKey, anchorPoseKey, planeKey);
 
   // Calculate numerical derivatives
-  auto f =
-      std::bind(&LocalOrientedPlane3Factor::evaluateError, factor,
-                std::placeholders::_1, std::placeholders::_2,
-                std::placeholders::_3, boost::none, boost::none, boost::none);
+  auto f = [&factor] (const Pose3& p1, const Pose3& p2, const OrientedPlane3& a_plane) {
+	  return factor.evaluateError(p1, p2, a_plane);
+  };
+
   Matrix numericalH1 = numericalDerivative31<Vector3, Pose3, Pose3,
     OrientedPlane3>(f, poseLin, anchorPoseLin, pLin);
   Matrix numericalH2 = numericalDerivative32<Vector3, Pose3, Pose3,
@@ -180,8 +183,8 @@ TEST(LocalOrientedPlane3Factor, Issue561Simplified) {
   NonlinearFactorGraph graph;
 
   // Setup prior factors
-  Pose3 x0(Rot3::identity(), Vector3(100, 30, 10));  // the "sensor pose"
-  Pose3 x1(Rot3::identity(), Vector3(90, 40,  5) );  // the "anchor pose"
+  Pose3 x0(Rot3::Identity(), Vector3(100, 30, 10));  // the "sensor pose"
+  Pose3 x1(Rot3::Identity(), Vector3(90, 40,  5) );  // the "anchor pose"
 
   auto x0_noise = noiseModel::Isotropic::Sigma(6, 0.01);
   auto x1_noise = noiseModel::Isotropic::Sigma(6, 0.01);
@@ -213,7 +216,7 @@ TEST(LocalOrientedPlane3Factor, Issue561Simplified) {
   // Initial values
   // Just offset the initial pose by 1m. This is what we are trying to optimize.
   Values initialEstimate;
-  Pose3 x0_initial = x0.compose(Pose3(Rot3::identity(), Vector3(1, 0, 0)));
+  Pose3 x0_initial = x0.compose(Pose3(Rot3::Identity(), Vector3(1, 0, 0)));
   initialEstimate.insert(P(1), p1_in_x1);
   initialEstimate.insert(P(2), p2_in_x1);
   initialEstimate.insert(X(0), x0_initial);

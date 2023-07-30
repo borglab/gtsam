@@ -21,13 +21,14 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-#include <boost/variant.hpp>
+
 #include <string>
+#include <variant>
 
 namespace gtsam {
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * Parameters for ISAM2 using Gauss-Newton optimization.  Either this class or
  * ISAM2DoglegParams should be specified as the optimizationParams in
  * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
@@ -59,7 +60,7 @@ struct GTSAM_EXPORT ISAM2GaussNewtonParams {
 };
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * Parameters for ISAM2 using Dogleg optimization.  Either this class or
  * ISAM2GaussNewtonParams should be specified as the optimizationParams in
  * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
@@ -126,17 +127,17 @@ struct GTSAM_EXPORT ISAM2DoglegParams {
 };
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * Parameters for the ISAM2 algorithm.  Default parameter values are listed
  * below.
  */
 typedef FastMap<char, Vector> ISAM2ThresholdMap;
 typedef ISAM2ThresholdMap::value_type ISAM2ThresholdMapValue;
 struct GTSAM_EXPORT ISAM2Params {
-  typedef boost::variant<ISAM2GaussNewtonParams, ISAM2DoglegParams>
+  typedef std::variant<ISAM2GaussNewtonParams, ISAM2DoglegParams>
       OptimizationParams;  ///< Either ISAM2GaussNewtonParams or
                            ///< ISAM2DoglegParams
-  typedef boost::variant<double, FastMap<char, Vector> >
+  typedef std::variant<double, FastMap<char, Vector> >
       RelinearizationThreshold;  ///< Either a constant relinearization
                                  ///< threshold or a per-variable-type set of
                                  ///< thresholds
@@ -254,20 +255,21 @@ struct GTSAM_EXPORT ISAM2Params {
     cout << str << "\n";
 
     static const std::string kStr("optimizationParams:                ");
-    if (optimizationParams.type() == typeid(ISAM2GaussNewtonParams))
-      boost::get<ISAM2GaussNewtonParams>(optimizationParams).print();
-    else if (optimizationParams.type() == typeid(ISAM2DoglegParams))
-      boost::get<ISAM2DoglegParams>(optimizationParams).print(kStr);
-    else
+    if (std::holds_alternative<ISAM2GaussNewtonParams>(optimizationParams)) {
+      std::get<ISAM2GaussNewtonParams>(optimizationParams).print();
+    } else if (std::holds_alternative<ISAM2DoglegParams>(optimizationParams)) {
+      std::get<ISAM2DoglegParams>(optimizationParams).print(kStr);
+    } else {
       cout << kStr << "{unknown type}\n";
+    }
 
     cout << "relinearizeThreshold:              ";
-    if (relinearizeThreshold.type() == typeid(double)) {
-      cout << boost::get<double>(relinearizeThreshold) << "\n";
+    if (std::holds_alternative<double>(relinearizeThreshold)) {
+      cout << std::get<double>(relinearizeThreshold) << "\n";
     } else {
       cout << "{mapped}\n";
       for (const ISAM2ThresholdMapValue& value :
-           boost::get<ISAM2ThresholdMap>(relinearizeThreshold)) {
+           std::get<ISAM2ThresholdMap>(relinearizeThreshold)) {
         cout << "                                   '" << value.first
              << "' -> [" << value.second.transpose() << " ]\n";
       }

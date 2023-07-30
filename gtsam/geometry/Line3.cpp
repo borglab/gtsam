@@ -111,10 +111,10 @@ Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
   }
   if (Dline) {
     Dline->setIdentity();
-    (*Dline)(0, 3) = -t[2];
-    (*Dline)(1, 2) = t[2];
+    (*Dline)(3, 0) = -t[2];
+    (*Dline)(2, 1) = t[2];
   }
   return Line3(cRl, c_ab[0], c_ab[1]);
 }
 
-}
+}  // namespace gtsam

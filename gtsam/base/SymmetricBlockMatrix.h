@@ -21,7 +21,9 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/types.h>
 #include <gtsam/dllexport.h>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 #include <cassert>
 #include <stdexcept>
 #include <array>
@@ -47,7 +49,7 @@ namespace gtsam {
   * matrix view.  firstBlock() determines the block that appears to have index 0 for all operations
   * (except re-setting firstBlock()).
   *
-  * @addtogroup base */
+  * @ingroup base */
   class GTSAM_EXPORT SymmetricBlockMatrix
   {
   public:
@@ -63,12 +65,7 @@ namespace gtsam {
 
   public:
     /// Construct from an empty matrix (asserts that the matrix is empty)
-    SymmetricBlockMatrix() :
-      blockStart_(0)
-    {
-      variableColOffsets_.push_back(0);
-      assertInvariants();
-    }
+    SymmetricBlockMatrix();
 
     /// Construct from a container of the sizes of each block.
     template<typename CONTAINER>
@@ -265,19 +262,10 @@ namespace gtsam {
     }
 
     /// Negate the entire active matrix.
-    void negate() {
-      full().triangularView<Eigen::Upper>() *= -1.0;
-    }
+    void negate();
 
     /// Invert the entire active matrix in place.
-    void invertInPlace() {
-      const auto identity = Matrix::Identity(rows(), rows());
-      full().triangularView<Eigen::Upper>() =
-          selfadjointView()
-              .llt()
-              .solve(identity)
-              .triangularView<Eigen::Upper>();
-    }
+    void invertInPlace();
 
     /// @}
 
@@ -398,6 +386,7 @@ namespace gtsam {
     template<typename SymmetricBlockMatrixType> friend class SymmetricBlockMatrixBlockExpr;
 
   private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -410,6 +399,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
       ar & BOOST_SERIALIZATION_NVP(blockStart_);
     }
+#endif
   };
 
   /// Foward declare exception class

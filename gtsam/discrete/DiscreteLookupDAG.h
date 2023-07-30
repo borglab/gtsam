@@ -21,7 +21,7 @@
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -32,21 +32,22 @@ class DiscreteBayesNet;
 
 /**
  * @brief DiscreteLookupTable table for max-product
+ * @ingroup discrete
  *
  * Inherits from discrete conditional for convenience, but is not normalized.
  * Is used in the max-product algorithm.
  */
-class DiscreteLookupTable : public DiscreteConditional {
+class GTSAM_EXPORT DiscreteLookupTable : public DiscreteConditional {
  public:
   using This = DiscreteLookupTable;
-  using shared_ptr = boost::shared_ptr<This>;
+  using shared_ptr = std::shared_ptr<This>;
   using BaseConditional = Conditional<DecisionTreeFactor, This>;
 
   /**
    * @brief Construct a new Discrete Lookup Table object
    *
    * @param nFrontals number of frontal variables
-   * @param keys a orted list of gtsam::Keys
+   * @param keys a sorted list of gtsam::Keys
    * @param potentials the algebraic decision tree with lookup values
    */
   DiscreteLookupTable(size_t nFrontals, const DiscreteKeys& keys,
@@ -77,7 +78,7 @@ class GTSAM_EXPORT DiscreteLookupDAG : public BayesNet<DiscreteLookupTable> {
  public:
   using Base = BayesNet<DiscreteLookupTable>;
   using This = DiscreteLookupDAG;
-  using shared_ptr = boost::shared_ptr<This>;
+  using shared_ptr = std::shared_ptr<This>;
 
   /// @name Standard Constructors
   /// @{
@@ -87,9 +88,6 @@ class GTSAM_EXPORT DiscreteLookupDAG : public BayesNet<DiscreteLookupTable> {
 
   /// Create from BayesNet with LookupTables
   static DiscreteLookupDAG FromBayesNet(const DiscreteBayesNet& bayesNet);
-
-  /// Destructor
-  virtual ~DiscreteLookupDAG() {}
 
   /// @}
 
@@ -125,12 +123,14 @@ class GTSAM_EXPORT DiscreteLookupDAG : public BayesNet<DiscreteLookupTable> {
   /// @}
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
+#endif
 };
 
 // traits

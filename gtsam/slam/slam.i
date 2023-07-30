@@ -90,6 +90,22 @@ typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Unified>,
                                 gtsam::Point3>
     GeneralSFMFactorCal3Unified;
 
+typedef gtsam::GeneralSFMFactor<gtsam::PinholePose<gtsam::Cal3_S2>,
+                                gtsam::Point3>
+    GeneralSFMFactorPoseCal3_S2;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholePose<gtsam::Cal3DS2>,
+                                gtsam::Point3>
+    GeneralSFMFactorPoseCal3DS2;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholePose<gtsam::Cal3Bundler>,
+                                gtsam::Point3>
+    GeneralSFMFactorPoseCal3Bundler;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholePose<gtsam::Cal3Fisheye>,
+                                gtsam::Point3>
+    GeneralSFMFactorPoseCal3Fisheye;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholePose<gtsam::Cal3Unified>,
+                                gtsam::Point3>
+    GeneralSFMFactorPoseCal3Unified;
+
 template <CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler,
                          gtsam::Cal3Fisheye, gtsam::Cal3Unified}>
 virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
@@ -235,7 +251,7 @@ void save2D(const gtsam::NonlinearFactorGraph& graph,
             string filename);
 
 // std::vector<gtsam::BetweenFactor<Pose2>::shared_ptr>
-// Ignored by pybind -> will be List[BetweenFactorPose2]
+// Used in Matlab wrapper
 class BetweenFactorPose2s {
   BetweenFactorPose2s();
   size_t size() const;
@@ -245,13 +261,14 @@ class BetweenFactorPose2s {
 gtsam::BetweenFactorPose2s parse2DFactors(string filename);
 
 // std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>
-// Ignored by pybind -> will be List[BetweenFactorPose3]
+// Used in Matlab wrapper
 class BetweenFactorPose3s {
   BetweenFactorPose3s();
   size_t size() const;
   gtsam::BetweenFactor<gtsam::Pose3>* at(size_t i) const;
   void push_back(const gtsam::BetweenFactor<gtsam::Pose3>* factor);
 };
+
 gtsam::BetweenFactorPose3s parse3DFactors(string filename);
 
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load3D(string filename);

@@ -1,4 +1,3 @@
-project(GTSAM CXX C)
 cmake_minimum_required(VERSION 3.0)
 
 # new feature to Cmake Version > 2.8.12
@@ -9,9 +8,9 @@ endif()
 
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 4)
-set (GTSAM_VERSION_MINOR 2)
+set (GTSAM_VERSION_MINOR 3)
 set (GTSAM_VERSION_PATCH 0)
-set (GTSAM_PRERELEASE_VERSION "a5")
+set (GTSAM_PRERELEASE_VERSION "a0")
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 
 if (${GTSAM_VERSION_PATCH} EQUAL 0)
@@ -19,6 +18,11 @@ if (${GTSAM_VERSION_PATCH} EQUAL 0)
 else()
     set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}${GTSAM_PRERELEASE_VERSION}")
 endif()
+
+project(GTSAM
+        LANGUAGES CXX C
+        VERSION "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
+
 message(STATUS "GTSAM Version: ${GTSAM_VERSION_STRING}")
 
 set (CMAKE_PROJECT_VERSION_MAJOR ${GTSAM_VERSION_MAJOR})
@@ -27,6 +31,14 @@ set (CMAKE_PROJECT_VERSION_PATCH ${GTSAM_VERSION_PATCH})
 
 ###############################################################################
 # Gather information, perform checks, set defaults
+
+if(MSVC)
+  set(MSVC_LINKER_FLAGS "/FORCE:MULTIPLE")
+  set(CMAKE_EXE_LINKER_FLAGS ${MSVC_LINKER_FLAGS})
+  set(CMAKE_MODULE_LINKER_FLAGS ${MSVC_LINKER_FLAGS})
+  set(CMAKE_SHARED_LINKER_FLAGS ${MSVC_LINKER_FLAGS})
+  set(CMAKE_STATIC_LINKER_FLAGS ${MSVC_LINKER_FLAGS})
+endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(GtsamMakeConfigFile)
@@ -46,8 +58,24 @@ endif()
 
 include(cmake/HandleGeneralOptions.cmake)   # CMake build options
 
-# Libraries:
-include(cmake/HandleBoost.cmake)            # Boost
+############### Decide on BOOST ######################################
+# Enable or disable serialization with GTSAM_ENABLE_BOOST_SERIALIZATION
+option(GTSAM_ENABLE_BOOST_SERIALIZATION "Enable Boost serialization" ON)
+if(GTSAM_ENABLE_BOOST_SERIALIZATION)
+  add_definitions(-DGTSAM_ENABLE_BOOST_SERIALIZATION)
+endif()
+
+option(GTSAM_USE_BOOST_FEATURES "Enable Features that use Boost" ON)
+if(GTSAM_USE_BOOST_FEATURES)
+  add_definitions(-DGTSAM_USE_BOOST_FEATURES)
+endif()
+
+if(GTSAM_ENABLE_BOOST_SERIALIZATION OR GTSAM_USE_BOOST_FEATURES)
+include(cmake/HandleBoost.cmake)
+endif()
+######################################################################
+
+# Other Libraries:
 include(cmake/HandleCCache.cmake)           # ccache
 include(cmake/HandleCPack.cmake)            # CPack
 include(cmake/HandleEigen.cmake)            # Eigen3
@@ -83,7 +111,7 @@ add_subdirectory(timing)
 
 # Build gtsam_unstable
 if (GTSAM_BUILD_UNSTABLE)
-    add_subdirectory(gtsam_unstable)
+  add_subdirectory(gtsam_unstable)
 endif()
 
 # This is the new wrapper
@@ -97,8 +125,6 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Copy matlab.h to the correct folder.
     configure_file(${PROJECT_SOURCE_DIR}/wrap/matlab.h
                ${PROJECT_BINARY_DIR}/wrap/matlab.h COPYONLY)
-    # Add the include directories so that matlab.h can be found
-    include_directories("${PROJECT_BINARY_DIR}" "${GTSAM_EIGEN_INCLUDE_FOR_BUILD}")
 
     add_subdirectory(wrap)
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wrap/cmake")

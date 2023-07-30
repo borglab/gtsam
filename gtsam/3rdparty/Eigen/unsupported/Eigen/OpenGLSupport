@@ -10,7 +10,7 @@
 #ifndef EIGEN_OPENGL_MODULE
 #define EIGEN_OPENGL_MODULE
 
-#include <Eigen/Geometry>
+#include "../../Eigen/Geometry"
 
 #if defined(__APPLE_CC__)
   #include <OpenGL/gl.h>
@@ -25,7 +25,7 @@ namespace Eigen {
   *
   * This module provides wrapper functions for a couple of OpenGL functions
   * which simplify the way to pass Eigen's object to openGL.
-  * Here is an exmaple:
+  * Here is an example:
   * 
   * \code
   * // You need to add path_to_eigen/unsupported to your include path.

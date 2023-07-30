@@ -19,15 +19,25 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/Signature.h>
 
-#include <boost/assign/std/map.hpp>
-using namespace boost::assign;
-
 using namespace std;
 using namespace gtsam;
+
+/* ************************************************************************* */
+TEST(DecisionTreeFactor, ConstructorsMatch) {
+  // Declare two keys
+  DiscreteKey X(0, 2), Y(1, 3);
+
+  // Create with vector and with string
+  const std::vector<double> table {2, 5, 3, 6, 4, 7};
+  DecisionTreeFactor f1({X, Y}, table);
+  DecisionTreeFactor f2({X, Y}, "2 5 3 6 4 7");
+  EXPECT(assert_equal(f1, f2));
+}
 
 /* ************************************************************************* */
 TEST( DecisionTreeFactor, constructors)
@@ -43,13 +53,18 @@ TEST( DecisionTreeFactor, constructors)
   EXPECT_LONGS_EQUAL(2,f2.size());
   EXPECT_LONGS_EQUAL(3,f3.size());
 
-  DiscreteValues values;
-  values[0] = 1; // x
-  values[1] = 2; // y
-  values[2] = 1; // z
-  EXPECT_DOUBLES_EQUAL(8, f1(values), 1e-9);
-  EXPECT_DOUBLES_EQUAL(7, f2(values), 1e-9);
-  EXPECT_DOUBLES_EQUAL(75, f3(values), 1e-9);
+  DiscreteValues x121{{0, 1}, {1, 2}, {2, 1}};
+  EXPECT_DOUBLES_EQUAL(8, f1(x121), 1e-9);
+  EXPECT_DOUBLES_EQUAL(7, f2(x121), 1e-9);
+  EXPECT_DOUBLES_EQUAL(75, f3(x121), 1e-9);
+
+  // Assert that error = -log(value)
+  EXPECT_DOUBLES_EQUAL(-log(f1(x121)), f1.error(x121), 1e-9);
+
+  // Construct from DiscreteConditional
+  DiscreteConditional conditional(X | Y = "1/1 2/3 1/4");
+  DecisionTreeFactor f4(conditional);
+  EXPECT_DOUBLES_EQUAL(0.8, f4(x121), 1e-9);
 }
 
 /* ************************************************************************* */
@@ -107,12 +122,47 @@ TEST(DecisionTreeFactor, enumerate) {
 }
 
 /* ************************************************************************* */
-TEST(DiscreteFactorGraph, DotWithNames) {
+// Check pruning of the decision tree works as expected.
+TEST(DecisionTreeFactor, Prune) {
+  DiscreteKey A(1, 2), B(2, 2), C(3, 2);
+  DecisionTreeFactor f(A & B & C, "1 5 3 7 2 6 4 8");
+
+  // Only keep the leaves with the top 5 values.
+  size_t maxNrAssignments = 5;
+  auto pruned5 = f.prune(maxNrAssignments);
+
+  // Pruned leaves should be 0
+  DecisionTreeFactor expected(A & B & C, "0 5 0 7 0 6 4 8");
+  EXPECT(assert_equal(expected, pruned5));
+
+  // Check for more extreme pruning where we only keep the top 2 leaves
+  maxNrAssignments = 2;
+  auto pruned2 = f.prune(maxNrAssignments);
+  DecisionTreeFactor expected2(A & B & C, "0 0 0 7 0 0 0 8");
+  EXPECT(assert_equal(expected2, pruned2));
+
+  DiscreteKey D(4, 2);
+  DecisionTreeFactor factor(
+      D & C & B & A,
+      "0.0 0.0 0.0 0.60658897 0.61241912 0.61241969 0.61247685 0.61247742 0.0 "
+      "0.0 0.0 0.99995287 1.0 1.0 1.0 1.0");
+
+  DecisionTreeFactor expected3(
+      D & C & B & A,
+      "0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 "
+      "0.999952870000 1.0 1.0 1.0 1.0");
+  maxNrAssignments = 5;
+  auto pruned3 = factor.prune(maxNrAssignments);
+  EXPECT(assert_equal(expected3, pruned3));
+}
+
+/* ************************************************************************* */
+TEST(DecisionTreeFactor, DotWithNames) {
   DiscreteKey A(12, 3), B(5, 2);
   DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
   auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };
 
-  for (bool showZero:{true, false}) {  
+  for (bool showZero:{true, false}) {
     string actual = f.dot(formatter, showZero);
     // pretty weak test, as ids are pointers and not stable across platforms.
     string expected = "digraph G {";
@@ -194,4 +244,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

@@ -17,8 +17,8 @@
  */
 
 #include <gtsam/base/DSFVector.h>
-#include <boost/make_shared.hpp>
 #include <algorithm>
+#include <cassert>
 
 using namespace std;
 
@@ -26,14 +26,14 @@ namespace gtsam {
 
 /* ************************************************************************* */
 DSFBase::DSFBase(const size_t numNodes) {
-  v_ = boost::make_shared < V > (numNodes);
+  v_ = std::make_shared < V > (numNodes);
   int index = 0;
   for (V::iterator it = v_->begin(); it != v_->end(); it++, index++)
     *it = index;
 }
 
 /* ************************************************************************* */
-DSFBase::DSFBase(const boost::shared_ptr<V>& v_in) {
+DSFBase::DSFBase(const std::shared_ptr<V>& v_in) {
   v_ = v_in;
   int index = 0;
   for (V::iterator it = v_->begin(); it != v_->end(); it++, index++)
@@ -69,7 +69,7 @@ DSFVector::DSFVector(const std::vector<size_t>& keys) :
 }
 
 /* ************************************************************************* */
-DSFVector::DSFVector(const boost::shared_ptr<V>& v_in,
+DSFVector::DSFVector(const std::shared_ptr<V>& v_in,
     const std::vector<size_t>& keys) :
     DSFBase(v_in), keys_(keys) {
   assert(*(std::max_element(keys.begin(), keys.end()))<v_in->size());

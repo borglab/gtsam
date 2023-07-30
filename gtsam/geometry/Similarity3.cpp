@@ -26,14 +26,14 @@ namespace gtsam {
 
 using std::vector;
 
-namespace {
+namespace internal {
 /// Subtract centroids from point pairs.
 static Point3Pairs subtractCentroids(const Point3Pairs &abPointPairs,
                                     const Point3Pair &centroids) {
   Point3Pairs d_abPointPairs;
-  for (const Point3Pair& abPair : abPointPairs) {
-    Point3 da = abPair.first - centroids.first;
-    Point3 db = abPair.second - centroids.second;
+  for (const auto& [a, b] : abPointPairs) {
+    Point3 da = a - centroids.first;
+    Point3 db = b - centroids.second;
     d_abPointPairs.emplace_back(da, db);
   }
   return d_abPointPairs;
@@ -46,8 +46,7 @@ static double calculateScale(const Point3Pairs &d_abPointPairs,
                              const Rot3 &aRb) {
   double x = 0, y = 0;
   Point3 da, db;
-  for (const Point3Pair& d_abPair : d_abPointPairs) {
-    std::tie(da, db) = d_abPair;
+  for (const auto& [da, db] : d_abPointPairs) {
     const Vector3 da_prime = aRb * db;
     y += da.transpose() * da_prime;
     x += da_prime.transpose() * da_prime;
@@ -59,8 +58,8 @@ static double calculateScale(const Point3Pairs &d_abPointPairs,
 /// Form outer product H.
 static Matrix3 calculateH(const Point3Pairs &d_abPointPairs) {
   Matrix3 H = Z_3x3;
-  for (const Point3Pair& d_abPair : d_abPointPairs) {
-    H += d_abPair.first * d_abPair.second.transpose();
+  for (const auto& [da, db] : d_abPointPairs) {
+    H += da * db.transpose();
   }
   return H;
 }
@@ -81,10 +80,10 @@ static Similarity3 align(const Point3Pairs &d_abPointPairs, const Rot3 &aRb,
 static Similarity3 alignGivenR(const Point3Pairs &abPointPairs,
                                const Rot3 &aRb) {
   auto centroids = means(abPointPairs);
-  auto d_abPointPairs = subtractCentroids(abPointPairs, centroids);
+  auto d_abPointPairs = internal::subtractCentroids(abPointPairs, centroids);
   return align(d_abPointPairs, aRb, centroids);
 }
-}  // namespace
+}  // namespace internal
 
 Similarity3::Similarity3() :
     t_(0,0,0), s_(1) {
@@ -122,7 +121,7 @@ void Similarity3::print(const std::string& s) const {
   std::cout << "t: " << translation().transpose() << " s: " << scale() << std::endl;
 }
 
-Similarity3 Similarity3::identity() {
+Similarity3 Similarity3::Identity() {
   return Similarity3();
 }
 Similarity3 Similarity3::operator*(const Similarity3& S) const {
@@ -165,11 +164,11 @@ Similarity3 Similarity3::Align(const Point3Pairs &abPointPairs) {
   if (abPointPairs.size() < 3)
     throw std::runtime_error("input should have at least 3 pairs of points");
   auto centroids = means(abPointPairs);
-  auto d_abPointPairs = subtractCentroids(abPointPairs, centroids);
-  Matrix3 H = calculateH(d_abPointPairs);
+  auto d_abPointPairs = internal::subtractCentroids(abPointPairs, centroids);
+  Matrix3 H = internal::calculateH(d_abPointPairs);
   // ClosestTo finds rotation matrix closest to H in Frobenius sense
   Rot3 aRb = Rot3::ClosestTo(H);
-  return align(d_abPointPairs, aRb, centroids);
+  return internal::align(d_abPointPairs, aRb, centroids);
 }
 
 Similarity3 Similarity3::Align(const vector<Pose3Pair> &abPosePairs) {
@@ -184,15 +183,14 @@ Similarity3 Similarity3::Align(const vector<Pose3Pair> &abPosePairs) {
   abPointPairs.reserve(n);
   // Below denotes the pose of the i'th object/camera/etc in frame "a" or frame "b"
   Pose3 aTi, bTi;
-  for (const Pose3Pair &abPair : abPosePairs) {
-    std::tie(aTi, bTi) = abPair;
+  for (const auto &[aTi, bTi] : abPosePairs) {
     const Rot3 aRb = aTi.rotation().compose(bTi.rotation().inverse());
     rotations.emplace_back(aRb);
     abPointPairs.emplace_back(aTi.translation(), bTi.translation());
   }
   const Rot3 aRb_estimate = FindKarcherMean<Rot3>(rotations);
 
-  return alignGivenR(abPointPairs, aRb_estimate);
+  return internal::alignGivenR(abPointPairs, aRb_estimate);
 }
 
 Matrix4 Similarity3::wedge(const Vector7 &xi) {
@@ -283,15 +281,11 @@ std::ostream &operator<<(std::ostream &os, const Similarity3& p) {
   return os;
 }
 
-const Matrix4 Similarity3::matrix() const {
+Matrix4 Similarity3::matrix() const {
   Matrix4 T;
   T.topRows<3>() << R_.matrix(), t_;
   T.bottomRows<1>() << 0, 0, 0, 1.0 / s_;
   return T;
-}
-
-Similarity3::operator Pose3() const {
-  return Pose3(R_, s_ * t_);
 }
 
 } // namespace gtsam

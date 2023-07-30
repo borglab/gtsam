@@ -23,9 +23,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/map.hpp>
-using namespace boost::assign;
-
 using namespace std;
 using namespace gtsam;
 
@@ -49,9 +46,7 @@ TEST_UNSAFE(DiscreteFactorGraph, debugScheduler) {
 
   // Check MPE.
   auto actualMPE = graph.optimize();
-  DiscreteValues mpe;
-  insert(mpe)(0, 2)(1, 1)(2, 0)(3, 0);
-  EXPECT(assert_equal(mpe, actualMPE));
+  EXPECT(assert_equal({{0, 2}, {1, 1}, {2, 0}, {3, 0}}, actualMPE));
 }
 
 /* ************************************************************************* */
@@ -112,11 +107,15 @@ TEST(DiscreteFactorGraph, test) {
   graph.add(C & B, "3 1 1 3");
 
   // Test EliminateDiscrete
-  Ordering frontalKeys;
-  frontalKeys += Key(0);
-  DiscreteConditional::shared_ptr conditional;
-  DecisionTreeFactor::shared_ptr newFactor;
-  boost::tie(conditional, newFactor) = EliminateDiscrete(graph, frontalKeys);
+  const Ordering frontalKeys{0};
+  const auto [conditional, newFactorPtr] = EliminateDiscrete(graph, frontalKeys);
+
+  DecisionTreeFactor newFactor = *newFactorPtr;
+
+  // Normalize newFactor by max for comparison with expected
+  auto normalization = newFactor.max(newFactor.size());
+
+  newFactor = newFactor / *normalization;
 
   // Check Conditional
   CHECK(conditional);
@@ -125,17 +124,18 @@ TEST(DiscreteFactorGraph, test) {
   EXPECT(assert_equal(expectedConditional, *conditional));
 
   // Check Factor
-  CHECK(newFactor);
+  CHECK(&newFactor);
   DecisionTreeFactor expectedFactor(B & A, "10 6 6 10");
-  EXPECT(assert_equal(expectedFactor, *newFactor));
+  // Normalize by max.
+  normalization = expectedFactor.max(expectedFactor.size());
+  // Ensure normalization is correct.
+  expectedFactor = expectedFactor / *normalization;
+  EXPECT(assert_equal(expectedFactor, newFactor));
 
   // Test using elimination tree
-  Ordering ordering;
-  ordering += Key(0), Key(1), Key(2);
+  const Ordering ordering{0, 1, 2};
   DiscreteEliminationTree etree(graph, ordering);
-  DiscreteBayesNet::shared_ptr actual;
-  DiscreteFactorGraph::shared_ptr remainingGraph;
-  boost::tie(actual, remainingGraph) = etree.eliminate(&EliminateDiscrete);
+  const auto [actual, remainingGraph] = etree.eliminate(&EliminateDiscrete);
 
   // Check Bayes net
   DiscreteBayesNet expectedBayesNet;
@@ -149,8 +149,7 @@ TEST(DiscreteFactorGraph, test) {
   EXPECT(assert_equal(expectedBayesNet, *actual2));
 
   // Test mpe
-  DiscreteValues mpe;
-  insert(mpe)(0, 0)(1, 0)(2, 0);
+  DiscreteValues mpe { {0, 0}, {1, 0}, {2, 0}};
   auto actualMPE = graph.optimize();
   EXPECT(assert_equal(mpe, actualMPE));
   EXPECT_DOUBLES_EQUAL(9, graph(mpe), 1e-5);  // regression
@@ -182,8 +181,7 @@ TEST_UNSAFE(DiscreteFactorGraph, testMaxProduct) {
   graph.add(C & B, "0.1 0.9 0.4 0.6");
 
   // Created expected MPE
-  DiscreteValues mpe;
-  insert(mpe)(0, 0)(1, 1)(2, 1);
+  DiscreteValues mpe{{0, 0}, {1, 1}, {2, 1}};
 
   // Do max-product with different orderings
   for (Ordering::OrderingType orderingType :
@@ -209,21 +207,13 @@ TEST(DiscreteFactorGraph, marginalIsNotMPE) {
   bayesNet.add(A % "10/9");
 
   // The expected MPE is A=1, B=1
-  DiscreteValues mpe;
-  insert(mpe)(0, 1)(1, 1);
+  DiscreteValues mpe { {0, 1}, {1, 1} };
 
   // Which we verify using max-product:
   DiscreteFactorGraph graph(bayesNet);
   auto actualMPE = graph.optimize();
   EXPECT(assert_equal(mpe, actualMPE));
   EXPECT_DOUBLES_EQUAL(0.315789, graph(mpe), 1e-5);  // regression
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  // Optimize on BayesNet maximizes marginal, then the conditional marginals:
-  auto notOptimal = bayesNet.optimize();
-  EXPECT(graph(notOptimal) < graph(mpe));
-  EXPECT_DOUBLES_EQUAL(0.263158, graph(notOptimal), 1e-5);  // regression
-#endif
 }
 
 /* ************************************************************************* */
@@ -240,8 +230,7 @@ TEST(DiscreteFactorGraph, testMPE_Darwiche09book_p244) {
   graph.add(T1 & T2 & A, "1 0 0 1 0 1 1 0");
   graph.add(A, "1 0");  // evidence, A = yes (first choice in Darwiche)
 
-  DiscreteValues mpe;
-  insert(mpe)(4, 0)(2, 1)(3, 1)(0, 1)(1, 1);
+  DiscreteValues mpe { {0, 1}, {1, 1}, {2, 1}, {3, 1}, {4, 0}};
   EXPECT_DOUBLES_EQUAL(0.33858, graph(mpe), 1e-5);  // regression
   // You can check visually by printing product:
   // graph.product().print("Darwiche-product");
@@ -251,14 +240,9 @@ TEST(DiscreteFactorGraph, testMPE_Darwiche09book_p244) {
   EXPECT(assert_equal(mpe, actualMPE));
 
   // Check Bayes Net
-  Ordering ordering;
-  ordering += Key(0), Key(1), Key(2), Key(3), Key(4);
+  const Ordering ordering{0, 1, 2, 3, 4};
   auto chordal = graph.eliminateSequential(ordering);
   EXPECT_LONGS_EQUAL(5, chordal->size());
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  auto notOptimal = chordal->optimize();  // not MPE !
-  EXPECT(graph(notOptimal) < graph(mpe));
-#endif
 
   // Let us create the Bayes tree here, just for fun, because we don't use it
   DiscreteBayesTree::shared_ptr bayesTree =
@@ -266,112 +250,6 @@ TEST(DiscreteFactorGraph, testMPE_Darwiche09book_p244) {
   //  bayesTree->print("Bayes Tree");
   EXPECT_LONGS_EQUAL(2, bayesTree->size());
 }
-
-#ifdef OLD
-
-/* ************************************************************************* */
-/**
- * Key type for discrete conditionals
- * Includes name and cardinality
- */
-class Key2 {
-private:
-std::string wff_;
-size_t cardinality_;
-public:
-/** Constructor, defaults to binary */
-Key2(const std::string& name, size_t cardinality = 2) :
-wff_(name), cardinality_(cardinality) {
-}
-const std::string& name() const {
-  return wff_;
-}
-
-/** provide streaming */
-friend std::ostream& operator <<(std::ostream &os, const Key2 &key);
-};
-
-struct Factor2 {
-std::string wff_;
-Factor2() :
-wff_("@") {
-}
-Factor2(const std::string& s) :
-wff_(s) {
-}
-Factor2(const Key2& key) :
-wff_(key.name()) {
-}
-
-friend std::ostream& operator <<(std::ostream &os, const Factor2 &f);
-friend Factor2 operator -(const Key2& key);
-};
-
-std::ostream& operator <<(std::ostream &os, const Factor2 &f) {
-os << f.wff_;
-return os;
-}
-
-/** negation */
-Factor2 operator -(const Key2& key) {
-return Factor2("-" + key.name());
-}
-
-/** OR */
-Factor2 operator ||(const Factor2 &factor1, const Factor2 &factor2) {
-return Factor2(std::string("(") + factor1.wff_ + " || " + factor2.wff_ + ")");
-}
-
-/** AND */
-Factor2 operator &&(const Factor2 &factor1, const Factor2 &factor2) {
-return Factor2(std::string("(") + factor1.wff_ + " && " + factor2.wff_ + ")");
-}
-
-/** implies */
-Factor2 operator >>(const Factor2 &factor1, const Factor2 &factor2) {
-return Factor2(std::string("(") + factor1.wff_ + " >> " + factor2.wff_ + ")");
-}
-
-struct Graph2: public std::list<Factor2> {
-
-/** Add a factor graph*/
-//  void operator +=(const Graph2& graph) {
-//    for(const Factor2& f: graph)
-//        push_back(f);
-//  }
-friend std::ostream& operator <<(std::ostream &os, const Graph2& graph);
-
-};
-
-/** Add a factor */
-//Graph2 operator +=(Graph2& graph, const Factor2& factor) {
-//  graph.push_back(factor);
-//  return graph;
-//}
-std::ostream& operator <<(std::ostream &os, const Graph2& graph) {
-for(const Factor2& f: graph)
-os << f << endl;
-return os;
-}
-
-/* ************************************************************************* */
-TEST(DiscreteFactorGraph, Sugar)
-{
-Key2 M("Mythical"), I("Immortal"), A("Mammal"), H("Horned"), G("Magical");
-
-// Test this desired construction
-Graph2 unicorns;
-unicorns += M >> -A;
-unicorns += (-M) >> (-I && A);
-unicorns += (I || A) >> H;
-unicorns += H >> G;
-
-// should be done by adapting boost::assign:
-// unicorns += (-M) >> (-I && A), (I || A) >> H , H >> G;
-
-cout << unicorns;
-}
-#endif
 
 /* ************************************************************************* */
 TEST(DiscreteFactorGraph, Dot) {
@@ -415,16 +293,16 @@ TEST(DiscreteFactorGraph, DotWithNames) {
       "graph {\n"
       "  size=\"5,5\";\n"
       "\n"
-      "  varC[label=\"C\"];\n"
-      "  varA[label=\"A\"];\n"
-      "  varB[label=\"B\"];\n"
+      "  var0[label=\"C\"];\n"
+      "  var1[label=\"A\"];\n"
+      "  var2[label=\"B\"];\n"
       "\n"
       "  factor0[label=\"\", shape=point];\n"
-      "  varC--factor0;\n"
-      "  varA--factor0;\n"
+      "  var0--factor0;\n"
+      "  var1--factor0;\n"
       "  factor1[label=\"\", shape=point];\n"
-      "  varC--factor1;\n"
-      "  varB--factor1;\n"
+      "  var0--factor1;\n"
+      "  var2--factor1;\n"
       "}\n";
   EXPECT(actual == expected);
 }

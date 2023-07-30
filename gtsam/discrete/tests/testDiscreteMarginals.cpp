@@ -19,9 +19,6 @@
 
 #include <gtsam/discrete/DiscreteMarginals.h>
 
-#include <boost/assign/std/vector.hpp>
-using namespace boost::assign;
-
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -122,11 +119,11 @@ TEST_UNSAFE( DiscreteMarginals, truss ) {
 //  bayesTree->print("Bayes Tree");
   typedef DiscreteBayesTreeClique Clique;
 
-  Clique expected0(boost::make_shared<DiscreteConditional>((key[0] | key[2], key[4]) = "2/1 2/1 2/1 2/1"));
+  Clique expected0(std::make_shared<DiscreteConditional>((key[0] | key[2], key[4]) = "2/1 2/1 2/1 2/1"));
   Clique::shared_ptr actual0 = (*bayesTree)[0];
 //  EXPECT(assert_equal(expected0, *actual0)); // TODO, correct but fails
 
-  Clique expected1(boost::make_shared<DiscreteConditional>((key[1] | key[3], key[4]) = "1/2 1/2 1/2 1/2"));
+  Clique expected1(std::make_shared<DiscreteConditional>((key[1] | key[3], key[4]) = "1/2 1/2 1/2 1/2"));
   Clique::shared_ptr actual1 = (*bayesTree)[1];
 //  EXPECT(assert_equal(expected1, *actual1)); // TODO, correct but fails
 
@@ -136,12 +133,12 @@ TEST_UNSAFE( DiscreteMarginals, truss ) {
   // test 0
   DecisionTreeFactor expectedM0(key[0],"0.666667 0.333333");
   DiscreteFactor::shared_ptr actualM0 = marginals(0);
-  EXPECT(assert_equal(expectedM0, *boost::dynamic_pointer_cast<DecisionTreeFactor>(actualM0),1e-5));
+  EXPECT(assert_equal(expectedM0, *std::dynamic_pointer_cast<DecisionTreeFactor>(actualM0),1e-5));
 
   // test 1
   DecisionTreeFactor expectedM1(key[1],"0.333333 0.666667");
   DiscreteFactor::shared_ptr actualM1 = marginals(1);
-  EXPECT(assert_equal(expectedM1, *boost::dynamic_pointer_cast<DecisionTreeFactor>(actualM1),1e-5));
+  EXPECT(assert_equal(expectedM1, *std::dynamic_pointer_cast<DecisionTreeFactor>(actualM1),1e-5));
 }
 
 /* ************************************************************************* */
@@ -186,12 +183,11 @@ TEST_UNSAFE(DiscreteMarginals, truss2) {
     F[j] /= sum;
 
     // Marginals
-    vector<double> table;
-    table += F[j], T[j];
+    const vector<double> table{F[j], T[j]};
     DecisionTreeFactor expectedM(key[j], table);
     DiscreteFactor::shared_ptr actualM = marginals(j);
     EXPECT(assert_equal(
-        expectedM, *boost::dynamic_pointer_cast<DecisionTreeFactor>(actualM)));
+        expectedM, *std::dynamic_pointer_cast<DecisionTreeFactor>(actualM)));
   }
 }
 

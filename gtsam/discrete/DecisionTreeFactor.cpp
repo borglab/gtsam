@@ -18,11 +18,10 @@
  */
 
 #include <gtsam/base/FastSet.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 
-#include <boost/make_shared.hpp>
-#include <boost/format.hpp>
 #include <utility>
 
 using namespace std;
@@ -34,16 +33,13 @@ namespace gtsam {
 
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys& keys,
-                                        const ADT& potentials)
-      : DiscreteFactor(keys.indices()),
-        ADT(potentials),
-        cardinalities_(keys.cardinalities()) {}
+                                         const ADT& potentials)
+      : DiscreteFactor(keys.indices(), keys.cardinalities()), ADT(potentials) {}
 
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteConditional& c)
-      : DiscreteFactor(c.keys()),
-        AlgebraicDecisionTree<Key>(c),
-        cardinalities_(c.cardinalities_) {}
+      : DiscreteFactor(c.keys(), c.cardinalities()),
+        AlgebraicDecisionTree<Key>(c) {}
 
   /* ************************************************************************ */
   bool DecisionTreeFactor::equals(const DiscreteFactor& other,
@@ -54,6 +50,16 @@ namespace gtsam {
       const auto& f(static_cast<const DecisionTreeFactor&>(other));
       return ADT::equals(f, tol);
     }
+  }
+
+  /* ************************************************************************ */
+  double DecisionTreeFactor::error(const DiscreteValues& values) const {
+    return -std::log(evaluate(values));
+  }
+  
+  /* ************************************************************************ */
+  double DecisionTreeFactor::error(const HybridValues& values) const {
+    return error(values.discrete());
   }
 
   /* ************************************************************************ */
@@ -69,10 +75,27 @@ namespace gtsam {
                                  const KeyFormatter& formatter) const {
     cout << s;
     cout << " f[";
-    for (auto&& key : keys())
-      cout << boost::format(" (%1%,%2%),") % formatter(key) % cardinality(key);
+    for (auto&& key : keys()) {
+      cout << " (" << formatter(key) << "," << cardinality(key) << "),";
+    }
     cout << " ]" << endl;
     ADT::print("", formatter);
+  }
+
+  /* ************************************************************************ */
+  DecisionTreeFactor DecisionTreeFactor::apply(ADT::Unary op) const {
+    // apply operand
+    ADT result = ADT::apply(op);
+    // Make a new factor
+    return DecisionTreeFactor(discreteKeys(), result);
+  }
+
+  /* ************************************************************************ */
+  DecisionTreeFactor DecisionTreeFactor::apply(ADT::UnaryAssignment op) const {
+    // apply operand
+    ADT result = ADT::apply(op);
+    // Make a new factor
+    return DecisionTreeFactor(discreteKeys(), result);
   }
 
   /* ************************************************************************ */
@@ -84,7 +107,10 @@ namespace gtsam {
     for (Key j : f.keys()) cs[j] = f.cardinality(j);
     // Convert map into keys
     DiscreteKeys keys;
-    for (const std::pair<const Key, size_t>& key : cs) keys.push_back(key);
+    keys.reserve(cs.size());
+    for (const auto& key : cs) {
+      keys.emplace_back(key);
+    }
     // apply operand
     ADT result = ADT::apply(f, op);
     // Make a new factor
@@ -94,13 +120,12 @@ namespace gtsam {
   /* ************************************************************************ */
   DecisionTreeFactor::shared_ptr DecisionTreeFactor::combine(
       size_t nrFrontals, ADT::Binary op) const {
-    if (nrFrontals > size())
+    if (nrFrontals > size()) {
       throw invalid_argument(
-          (boost::format(
-               "DecisionTreeFactor::combine: invalid number of frontal "
-               "keys %d, nr.keys=%d") %
-           nrFrontals % size())
-              .str());
+          "DecisionTreeFactor::combine: invalid number of frontal "
+          "keys " +
+          std::to_string(nrFrontals) + ", nr.keys=" + std::to_string(size()));
+    }
 
     // sum over nrFrontals keys
     size_t i;
@@ -116,19 +141,19 @@ namespace gtsam {
       Key j = keys()[i];
       dkeys.push_back(DiscreteKey(j, cardinality(j)));
     }
-    return boost::make_shared<DecisionTreeFactor>(dkeys, result);
+    return std::make_shared<DecisionTreeFactor>(dkeys, result);
   }
 
   /* ************************************************************************ */
   DecisionTreeFactor::shared_ptr DecisionTreeFactor::combine(
       const Ordering& frontalKeys, ADT::Binary op) const {
-    if (frontalKeys.size() > size())
+    if (frontalKeys.size() > size()) {
       throw invalid_argument(
-          (boost::format(
-               "DecisionTreeFactor::combine: invalid number of frontal "
-               "keys %d, nr.keys=%d") %
-           frontalKeys.size() % size())
-              .str());
+          "DecisionTreeFactor::combine: invalid number of frontal "
+          "keys " +
+          std::to_string(frontalKeys.size()) + ", nr.keys=" +
+          std::to_string(size()));
+    }
 
     // sum over nrFrontals keys
     size_t i;
@@ -149,19 +174,16 @@ namespace gtsam {
         continue;
       dkeys.push_back(DiscreteKey(j, cardinality(j)));
     }
-    return boost::make_shared<DecisionTreeFactor>(dkeys, result);
+    return std::make_shared<DecisionTreeFactor>(dkeys, result);
   }
 
   /* ************************************************************************ */
   std::vector<std::pair<DiscreteValues, double>> DecisionTreeFactor::enumerate()
       const {
     // Get all possible assignments
-    std::vector<std::pair<Key, size_t>> pairs;
-    for (auto& key : keys()) {
-      pairs.emplace_back(key, cardinalities_.at(key));
-    }
+    DiscreteKeys pairs = discreteKeys();
     // Reverse to make cartesian product output a more natural ordering.
-    std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
+    DiscreteKeys rpairs(pairs.rbegin(), pairs.rend());
     const auto assignments = DiscreteValues::CartesianProduct(rpairs);
 
     // Construct unordered_map with values
@@ -173,20 +195,54 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  DiscreteKeys DecisionTreeFactor::discreteKeys() const {
-    DiscreteKeys result;
-    for (auto&& key : keys()) {
-      DiscreteKey dkey(key, cardinality(key));
-      if (std::find(result.begin(), result.end(), dkey) == result.end()) {
-        result.push_back(dkey);
+  std::vector<double> DecisionTreeFactor::probabilities() const {
+    // Set of all keys
+    std::set<Key> allKeys(keys().begin(), keys().end());
+
+    std::vector<double> probs;
+
+    /* An operation that takes each leaf probability, and computes the
+     * nrAssignments by checking the difference between the keys in the factor
+     * and the keys in the assignment.
+     * The nrAssignments is then used to append
+     * the correct number of leaf probability values to the `probs` vector
+     * defined above.
+     */
+    auto op = [&](const Assignment<Key>& a, double p) {
+      // Get all the keys in the current assignment
+      std::set<Key> assignment_keys;
+      for (auto&& [k, _] : a) {
+        assignment_keys.insert(k);
       }
-    }
-    return result;
+
+      // Find the keys missing in the assignment
+      std::vector<Key> diff;
+      std::set_difference(allKeys.begin(), allKeys.end(),
+                          assignment_keys.begin(), assignment_keys.end(),
+                          std::back_inserter(diff));
+
+      // Compute the total number of assignments in the (pruned) subtree
+      size_t nrAssignments = 1;
+      for (auto&& k : diff) {
+        nrAssignments *= cardinalities_.at(k);
+      }
+      // Add p `nrAssignments` times to the probs vector.
+      probs.insert(probs.end(), nrAssignments, p);
+
+      return p;
+    };
+
+    // Go through the tree
+    this->apply(op);
+
+    return probs;
   }
 
   /* ************************************************************************ */
   static std::string valueFormatter(const double& v) {
-    return (boost::format("%4.2g") % v).str();
+    std::stringstream ss;
+    ss << std::setw(4) << std::setprecision(2) << std::fixed << v;
+    return ss.str();
   }
 
   /** output to graphviz format, stream version */
@@ -277,17 +333,48 @@ namespace gtsam {
 
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys& keys,
-                                        const vector<double>& table)
-      : DiscreteFactor(keys.indices()),
-        AlgebraicDecisionTree<Key>(keys, table),
-        cardinalities_(keys.cardinalities()) {}
+                                         const vector<double>& table)
+      : DiscreteFactor(keys.indices(), keys.cardinalities()),
+        AlgebraicDecisionTree<Key>(keys, table) {}
 
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys& keys,
-                                        const string& table)
-      : DiscreteFactor(keys.indices()),
-        AlgebraicDecisionTree<Key>(keys, table),
-        cardinalities_(keys.cardinalities()) {}
+                                         const string& table)
+      : DiscreteFactor(keys.indices(), keys.cardinalities()),
+        AlgebraicDecisionTree<Key>(keys, table) {}
+
+  /* ************************************************************************ */
+  DecisionTreeFactor DecisionTreeFactor::prune(size_t maxNrAssignments) const {
+    const size_t N = maxNrAssignments;
+
+    // Get the probabilities in the decision tree so we can threshold.
+    std::vector<double> probabilities = this->probabilities();
+
+    // The number of probabilities can be lower than max_leaves
+    if (probabilities.size() <= N) {
+      return *this;
+    }
+
+    std::sort(probabilities.begin(), probabilities.end(),
+              std::greater<double>{});
+
+    double threshold = probabilities[N - 1];
+
+    // Now threshold the decision tree
+    size_t total = 0;
+    auto thresholdFunc = [threshold, &total, N](const double& value) {
+      if (value < threshold || total >= N) {
+        return 0.0;
+      } else {
+        total += 1;
+        return value;
+      }
+    };
+    DecisionTree<Key, double> thresholded(*this, thresholdFunc);
+
+    // Create pruned decision tree factor and return.
+    return DecisionTreeFactor(this->discreteKeys(), thresholded);
+  }
 
   /* ************************************************************************ */
 }  // namespace gtsam

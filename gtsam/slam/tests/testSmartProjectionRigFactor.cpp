@@ -25,13 +25,11 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/PoseTranslationPrior.h>
 
-#include <boost/assign/std/map.hpp>
 #include <iostream>
 
 #include "smartFactorScenarios.h"
 #define DISABLE_TIMING
 
-using namespace boost::assign;
 using namespace std::placeholders;
 
 static const double rankTol = 1.0;
@@ -68,8 +66,8 @@ SmartProjectionParams params(
 /* ************************************************************************* */
 TEST(SmartProjectionRigFactor, Constructor) {
   using namespace vanillaRig;
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());
+  cameraRig->push_back(Camera(Pose3(), sharedK));
   SmartRigFactor::shared_ptr factor1(
       new SmartRigFactor(model, cameraRig, params));
 }
@@ -77,7 +75,7 @@ TEST(SmartProjectionRigFactor, Constructor) {
 /* ************************************************************************* */
 TEST(SmartProjectionRigFactor, Constructor2) {
   using namespace vanillaRig;
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());
+  std::shared_ptr<Cameras> cameraRig(new Cameras());
   SmartProjectionParams params2(
       gtsam::HESSIAN,
       gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
@@ -88,8 +86,8 @@ TEST(SmartProjectionRigFactor, Constructor2) {
 /* ************************************************************************* */
 TEST(SmartProjectionRigFactor, Constructor3) {
   using namespace vanillaRig;
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());
+  cameraRig->push_back(Camera(Pose3(), sharedK));
   SmartRigFactor::shared_ptr factor1(
       new SmartRigFactor(model, cameraRig, params));
   factor1->add(measurement1, x1, cameraId1);
@@ -98,8 +96,8 @@ TEST(SmartProjectionRigFactor, Constructor3) {
 /* ************************************************************************* */
 TEST(SmartProjectionRigFactor, Constructor4) {
   using namespace vanillaRig;
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());
+  cameraRig->push_back(Camera(Pose3(), sharedK));
   SmartProjectionParams params2(
       gtsam::HESSIAN,
       gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
@@ -111,8 +109,8 @@ TEST(SmartProjectionRigFactor, Constructor4) {
 /* ************************************************************************* */
 TEST(SmartProjectionRigFactor, Equals) {
   using namespace vanillaRig;
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedK));
 
   SmartRigFactor::shared_ptr factor1(
       new SmartRigFactor(model, cameraRig, params));
@@ -139,8 +137,8 @@ TEST(SmartProjectionRigFactor, noiseless) {
   Point2 level_uv = level_camera.project(landmark1);
   Point2 level_uv_right = level_camera_right.project(landmark1);
 
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedK));
 
   SmartRigFactor factor(model, cameraRig, params);
   factor.add(level_uv, x1);  // both taken from the same camera
@@ -168,7 +166,7 @@ TEST(SmartProjectionRigFactor, noiseless) {
   factor.triangulateAndComputeE(actualE, values);
 
   // get point
-  boost::optional<Point3> point = factor.point();
+  auto point = factor.point();
   CHECK(point);
 
   // calculate numerical derivative with triangulated point
@@ -196,8 +194,8 @@ TEST(SmartProjectionRigFactor, noiseless) {
 TEST(SmartProjectionRigFactor, noisy) {
   using namespace vanillaRig;
 
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedK));
 
   // Project two landmarks into two cameras
   Point2 pixelError(0.2, 0.2);
@@ -240,7 +238,7 @@ TEST(SmartProjectionRigFactor, smartFactorWithSensorBodyTransform) {
   // create arbitrary body_T_sensor (transforms from sensor to body)
   Pose3 body_T_sensor =
       Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(1, 1, 1));
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
   cameraRig->push_back(Camera(body_T_sensor, sharedK));
 
   // These are the poses we want to estimate, from camera measurements
@@ -323,9 +321,9 @@ TEST(SmartProjectionRigFactor, smartFactorWithMultipleCameras) {
       Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(1, 1, 1));
   Pose3 body_T_sensor2 =
       Pose3(Rot3::Ypr(-M_PI / 5, 0., -M_PI / 2), Point3(0, 0, 1));
-  Pose3 body_T_sensor3 = Pose3::identity();
+  Pose3 body_T_sensor3 = Pose3();
 
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
   cameraRig->push_back(Camera(body_T_sensor1, sharedK));
   cameraRig->push_back(Camera(body_T_sensor2, sharedK));
   cameraRig->push_back(Camera(body_T_sensor3, sharedK));
@@ -406,8 +404,8 @@ TEST(SmartProjectionRigFactor, 3poses_smart_projection_factor) {
   using namespace vanillaPose2;
   Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK2));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedK2));
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
@@ -494,10 +492,10 @@ TEST(SmartProjectionRigFactor, Factors) {
   KeyVector views{x1, x2};
   FastVector<size_t> cameraIds{0, 0};
 
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedK));
 
-  SmartRigFactor::shared_ptr smartFactor1 = boost::make_shared<SmartRigFactor>(
+  SmartRigFactor::shared_ptr smartFactor1 = std::make_shared<SmartRigFactor>(
       model, cameraRig, params);
   smartFactor1->add(measurements_cam1,
                     views);  // we have a single camera so use default cameraIds
@@ -510,7 +508,7 @@ TEST(SmartProjectionRigFactor, Factors) {
   CHECK(smartFactor1->triangulateSafe(cameras));
   CHECK(!smartFactor1->isDegenerate());
   CHECK(!smartFactor1->isPointBehindCamera());
-  boost::optional<Point3> p = smartFactor1->point();
+  auto p = smartFactor1->point();
   CHECK(p);
   EXPECT(assert_equal(landmark1, *p));
 
@@ -554,7 +552,7 @@ TEST(SmartProjectionRigFactor, Factors) {
     values.insert(x1, cam1.pose());
     values.insert(x2, cam2.pose());
 
-    boost::shared_ptr<RegularHessianFactor<6>> actual =
+    std::shared_ptr<RegularHessianFactor<6>> actual =
         smartFactor1->createHessianFactor(values, 0.0);
     EXPECT(assert_equal(expectedInformation, actual->information(), 1e-6));
     EXPECT(assert_equal(expected, *actual, 1e-6));
@@ -577,8 +575,8 @@ TEST(SmartProjectionRigFactor, 3poses_iterative_smart_projection_factor) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   // create smart factor
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedK));
   FastVector<size_t> cameraIds{0, 0, 0};
   SmartRigFactor::shared_ptr smartFactor1(
       new SmartRigFactor(model, cameraRig, params));
@@ -645,8 +643,8 @@ TEST(SmartProjectionRigFactor, landmarkDistance) {
   params.setLandmarkDistanceThreshold(excludeLandmarksFutherThanDist);
   params.setEnableEPI(false);
 
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedK));
   FastVector<size_t> cameraIds{0, 0, 0};
 
   SmartRigFactor::shared_ptr smartFactor1(
@@ -716,8 +714,8 @@ TEST(SmartProjectionRigFactor, dynamicOutlierRejection) {
   params.setLandmarkDistanceThreshold(excludeLandmarksFutherThanDist);
   params.setDynamicOutlierRejectionThreshold(dynamicOutlierRejectionThreshold);
 
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedK));
   FastVector<size_t> cameraIds{0, 0, 0};
 
   SmartRigFactor::shared_ptr smartFactor1(
@@ -782,8 +780,8 @@ TEST(SmartProjectionRigFactor, CheckHessian) {
   params.setRankTolerance(10);
   params.setDegeneracyMode(gtsam::ZERO_ON_DEGENERACY);
 
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedK));
   FastVector<size_t> cameraIds{0, 0, 0};
 
   SmartRigFactor::shared_ptr smartFactor1(
@@ -819,14 +817,14 @@ TEST(SmartProjectionRigFactor, CheckHessian) {
                             Point3(0.0897734171, -0.110201006, 0.901022872)),
                       values.at<Pose3>(x3)));
 
-  boost::shared_ptr<GaussianFactor> factor1 = smartFactor1->linearize(values);
-  boost::shared_ptr<GaussianFactor> factor2 = smartFactor2->linearize(values);
-  boost::shared_ptr<GaussianFactor> factor3 = smartFactor3->linearize(values);
+  std::shared_ptr<GaussianFactor> factor1 = smartFactor1->linearize(values);
+  std::shared_ptr<GaussianFactor> factor2 = smartFactor2->linearize(values);
+  std::shared_ptr<GaussianFactor> factor3 = smartFactor3->linearize(values);
 
   Matrix CumulativeInformation =
       factor1->information() + factor2->information() + factor3->information();
 
-  boost::shared_ptr<GaussianFactorGraph> GaussianGraph =
+  std::shared_ptr<GaussianFactorGraph> GaussianGraph =
       graph.linearize(values);
   Matrix GraphInformation = GaussianGraph->hessian().first;
 
@@ -858,8 +856,8 @@ TEST(SmartProjectionRigFactor, Hessian) {
   measurements_cam1.push_back(cam1_uv1);
   measurements_cam1.push_back(cam2_uv1);
 
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK2));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedK2));
   FastVector<size_t> cameraIds{0, 0};
 
   SmartProjectionParams params(
@@ -876,7 +874,7 @@ TEST(SmartProjectionRigFactor, Hessian) {
   values.insert(x1, cam1.pose());
   values.insert(x2, cam2.pose());
 
-  boost::shared_ptr<GaussianFactor> factor = smartFactor1->linearize(values);
+  std::shared_ptr<GaussianFactor> factor = smartFactor1->linearize(values);
 
   // compute triangulation from linearization point
   // compute reprojection errors (sum squared)
@@ -888,8 +886,8 @@ TEST(SmartProjectionRigFactor, Hessian) {
 /* ************************************************************************* */
 TEST(SmartProjectionRigFactor, ConstructorWithCal3Bundler) {
   using namespace bundlerPose;
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedBundlerK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedBundlerK));
 
   SmartProjectionParams params;
   params.setDegeneracyMode(gtsam::ZERO_ON_DEGENERACY);
@@ -916,8 +914,8 @@ TEST(SmartProjectionRigFactor, Cal3Bundler) {
 
   KeyVector views{x1, x2, x3};
 
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedBundlerK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedBundlerK));
   FastVector<size_t> cameraIds{0, 0, 0};
 
   SmartRigFactor::shared_ptr smartFactor1(
@@ -987,8 +985,8 @@ TEST(SmartProjectionRigFactor,
   // create inputs
   KeyVector keys{x1, x2, x3, x1};
 
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedK));
   FastVector<size_t> cameraIds{0, 0, 0, 0};
 
   SmartRigFactor::shared_ptr smartFactor1(
@@ -1017,7 +1015,7 @@ TEST(SmartProjectionRigFactor,
 
   // ==== check Hessian of smartFactor1 =====
   // -- compute actual Hessian
-  boost::shared_ptr<GaussianFactor> linearfactor1 =
+  std::shared_ptr<GaussianFactor> linearfactor1 =
       smartFactor1->linearize(values);
   Matrix actualHessian = linearfactor1->information();
 
@@ -1115,8 +1113,8 @@ TEST(SmartProjectionRigFactor, optimization_3poses_measurementsFromSamePose) {
 
   // create inputs
   KeyVector keys{x1, x2, x3};
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
-  cameraRig->push_back(Camera(Pose3::identity(), sharedK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  cameraRig->push_back(Camera(Pose3(), sharedK));
   FastVector<size_t> cameraIds{0, 0, 0};
   FastVector<size_t> cameraIdsRedundant{0, 0, 0, 0};
 
@@ -1195,13 +1193,13 @@ TEST(SmartProjectionRigFactor, timing) {
   // Default cameras for simple derivatives
   static Cal3_S2::shared_ptr sharedKSimple(new Cal3_S2(100, 100, 0, 0, 0));
 
-  Rot3 R = Rot3::identity();
+  Rot3 R = Rot3::Identity();
   Pose3 pose1 = Pose3(R, Point3(0, 0, 0));
   Pose3 pose2 = Pose3(R, Point3(1, 0, 0));
   Camera cam1(pose1, sharedKSimple), cam2(pose2, sharedKSimple);
-  Pose3 body_P_sensorId = Pose3::identity();
+  Pose3 body_P_sensorId = Pose3();
 
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
+  std::shared_ptr<Cameras> cameraRig(new Cameras());  // single camera in the rig
   cameraRig->push_back(Camera(body_P_sensorId, sharedKSimple));
 
   // one landmarks 1m in front of camera
@@ -1266,8 +1264,8 @@ TEST(SmartProjectionFactorP, optimization_3poses_sphericalCamera) {
   keys.push_back(x2);
   keys.push_back(x3);
 
-  boost::shared_ptr<Cameras> cameraRig(new Cameras());
-  cameraRig->push_back(Camera(Pose3::identity(), emptyK));
+  std::shared_ptr<Cameras> cameraRig(new Cameras());
+  cameraRig->push_back(Camera(Pose3(), emptyK));
 
   SmartProjectionParams params(
       gtsam::HESSIAN,
@@ -1330,10 +1328,10 @@ TEST(SmartProjectionFactorP, optimization_3poses_sphericalCamera) {
 /* *************************************************************************/
 TEST(SmartProjectionFactorP, timing_sphericalCamera) {
   // create common data
-  Rot3 R = Rot3::identity();
+  Rot3 R = Rot3::Identity();
   Pose3 pose1 = Pose3(R, Point3(0, 0, 0));
   Pose3 pose2 = Pose3(R, Point3(1, 0, 0));
-  Pose3 body_P_sensorId = Pose3::identity();
+  Pose3 body_P_sensorId = Pose3();
   Point3 landmark1(0, 0, 10);
 
   // create spherical data
@@ -1359,7 +1357,7 @@ TEST(SmartProjectionFactorP, timing_sphericalCamera) {
   size_t nrTests = 1000;
 
   for (size_t i = 0; i < nrTests; i++) {
-    boost::shared_ptr<CameraSet<SphericalCamera>> cameraRig(
+    std::shared_ptr<CameraSet<SphericalCamera>> cameraRig(
         new CameraSet<SphericalCamera>());  // single camera in the rig
     cameraRig->push_back(SphericalCamera(body_P_sensorId, emptyK));
 
@@ -1378,7 +1376,7 @@ TEST(SmartProjectionFactorP, timing_sphericalCamera) {
   }
 
   for (size_t i = 0; i < nrTests; i++) {
-    boost::shared_ptr<CameraSet<PinholePose<Cal3_S2>>> cameraRig(
+    std::shared_ptr<CameraSet<PinholePose<Cal3_S2>>> cameraRig(
         new CameraSet<PinholePose<Cal3_S2>>());  // single camera in the rig
     cameraRig->push_back(PinholePose<Cal3_S2>(body_P_sensorId, sharedKSimple));
 
@@ -1421,9 +1419,9 @@ TEST(SmartProjectionFactorP, 2poses_rankTol) {
         gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
     params.setRankTolerance(1);
 
-    boost::shared_ptr<CameraSet<PinholePose<Cal3_S2>>> cameraRig(
+    std::shared_ptr<CameraSet<PinholePose<Cal3_S2>>> cameraRig(
         new CameraSet<PinholePose<Cal3_S2>>());  // single camera in the rig
-    cameraRig->push_back(PinholePose<Cal3_S2>(Pose3::identity(), sharedK));
+    cameraRig->push_back(PinholePose<Cal3_S2>(Pose3(), sharedK));
 
     SmartRigFactor::shared_ptr smartFactor1(
         new SmartRigFactor(model, cameraRig, params));
@@ -1459,9 +1457,9 @@ TEST(SmartProjectionFactorP, 2poses_rankTol) {
         gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
     params.setRankTolerance(0.1);
 
-    boost::shared_ptr<CameraSet<PinholePose<Cal3_S2>>> cameraRig(
+    std::shared_ptr<CameraSet<PinholePose<Cal3_S2>>> cameraRig(
             new CameraSet<PinholePose<Cal3_S2>>());  // single camera in the rig
-    cameraRig->push_back(PinholePose<Cal3_S2>(Pose3::identity(), canonicalK));
+    cameraRig->push_back(PinholePose<Cal3_S2>(Pose3(), canonicalK));
 
     SmartRigFactor::shared_ptr smartFactor1(
         new SmartRigFactor(model, cameraRig, params));
@@ -1496,9 +1494,9 @@ TEST(SmartProjectionFactorP, 2poses_rankTol) {
         gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
     params.setRankTolerance(0.01);
 
-    boost::shared_ptr<CameraSet<PinholePose<Cal3_S2>>> cameraRig(
+    std::shared_ptr<CameraSet<PinholePose<Cal3_S2>>> cameraRig(
         new CameraSet<PinholePose<Cal3_S2>>());  // single camera in the rig
-    cameraRig->push_back(PinholePose<Cal3_S2>(Pose3::identity(), canonicalK));
+    cameraRig->push_back(PinholePose<Cal3_S2>(Pose3(), canonicalK));
 
     SmartRigFactor::shared_ptr smartFactor1(
         new SmartRigFactor(model, cameraRig, params));
@@ -1535,9 +1533,9 @@ TEST(SmartProjectionFactorP, 2poses_sphericalCamera_rankTol) {
   Camera cam1(poseA);
   Camera cam2(poseB);
 
-  boost::shared_ptr<CameraSet<SphericalCamera>> cameraRig(
+  std::shared_ptr<CameraSet<SphericalCamera>> cameraRig(
           new CameraSet<SphericalCamera>());  // single camera in the rig
-  cameraRig->push_back(SphericalCamera(Pose3::identity(), emptyK));
+  cameraRig->push_back(SphericalCamera(Pose3(), emptyK));
 
   // TRIANGULATION TEST WITH DEFAULT RANK TOL
   {  // rankTol = 1 or 0.1 gives a degenerate point, which is undesirable for a

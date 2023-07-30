@@ -23,7 +23,7 @@
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/linear/VectorValues.h>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <chrono>
 
 class NonlinearOptimizerMoreOptimizationTest;
 
@@ -36,12 +36,14 @@ class GTSAM_EXPORT LevenbergMarquardtOptimizer: public NonlinearOptimizer {
 
 protected:
   const LevenbergMarquardtParams params_; ///< LM parameters
-  boost::posix_time::ptime startTime_;
+  
+  // startTime_ is a chrono time point
+  std::chrono::time_point<std::chrono::high_resolution_clock> startTime_; ///< time when optimization started
 
   void initTime();
 
 public:
-  typedef boost::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
+  typedef std::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
 
   /// @name Constructors/Destructor
   /// @{

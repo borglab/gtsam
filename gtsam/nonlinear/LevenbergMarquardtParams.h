@@ -35,7 +35,7 @@ class LevenbergMarquardtOptimizer;
 class GTSAM_EXPORT LevenbergMarquardtParams: public NonlinearOptimizerParams {
 
 public:
-  /** See LevenbergMarquardtParams::lmVerbosity */
+  /** See LevenbergMarquardtParams::verbosityLM */
   enum VerbosityLM {
     SILENT = 0, SUMMARY, TERMINATION, LAMBDA, TRYLAMBDA, TRYCONFIG, DAMPED, TRYDELTA
   };
@@ -117,8 +117,8 @@ public:
   }
 
   static LevenbergMarquardtParams ReplaceOrdering(LevenbergMarquardtParams params,
-                                                  const Ordering& ordering) {
-    params.ordering = ordering;
+                                                  const Ordering& ord) {
+    params.ordering = ord;
     return params;
   }
 
@@ -149,8 +149,8 @@ public:
   /// @{
 
   /// @return a deep copy of this object
-  boost::shared_ptr<NonlinearOptimizerParams> clone() const {
-    return boost::shared_ptr<NonlinearOptimizerParams>(new LevenbergMarquardtParams(*this));
+  std::shared_ptr<NonlinearOptimizerParams> clone() const {
+    return std::shared_ptr<NonlinearOptimizerParams>(new LevenbergMarquardtParams(*this));
   }
 
   /// @}
