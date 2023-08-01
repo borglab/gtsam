@@ -128,8 +128,7 @@ jobs:
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.symbolic
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.hybrid
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear
-          # Compilation error or test failure
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam
 
           # Run GTSAM_UNSTABLE tests
           cmake --build build -j4 --config ${{ matrix.build_type }} --target check.base_unstable
