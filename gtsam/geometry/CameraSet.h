@@ -273,7 +273,7 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
 
       // Get map from key to location in the new augmented Hessian matrix (the
       // one including only unique keys).
-      std::map<Key, uint32_t> keyToSlotMap;
+      std::map<Key, size_t> keyToSlotMap;
       for (size_t k = 0; k < nrUniqueKeys; k++) {
         keyToSlotMap[hessianKeys[k]] = k;
       }
