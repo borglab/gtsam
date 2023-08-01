@@ -424,6 +424,99 @@ L2WithDeadZone::shared_ptr L2WithDeadZone::Create(double k, const ReweightScheme
   return shared_ptr(new L2WithDeadZone(k, reweight));
 }
 
+
+/* ************************************************************************* */
+// AsymmetricTukey
+/* ************************************************************************* */
+
+AsymmetricTukey::AsymmetricTukey(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {
+  if (c <= 0) {
+    throw runtime_error("mEstimator AsymmetricTukey takes only positive double in constructor.");
+  }
+}
+
+double AsymmetricTukey::weight(double distance) const {
+  distance = -distance;
+  if (distance >= 0.0) {
+    return distance;
+  } else if (distance > -c_) {
+    const double one_minus_xc2 = 1.0 - distance * distance / csquared_;
+    return one_minus_xc2 * one_minus_xc2;
+  }
+  return 0.0;
+}
+
+double AsymmetricTukey::loss(double distance) const {
+  distance = -distance;
+  if (distance >= 0.0) {
+    return distance * distance / 2.0;
+  } else if (distance >= -c_) {
+    const double one_minus_xc2 = 1.0 - distance * distance / csquared_;
+    const double t = one_minus_xc2 * one_minus_xc2 * one_minus_xc2;
+    return csquared_ * (1 - t) / 6.0;
+  }
+  return csquared_ / 6.0;
+}
+
+void AsymmetricTukey::print(const std::string &s="") const {
+  std::cout << s << ": AsymmetricTukey (" << c_ << ")" << std::endl;
+}
+
+bool AsymmetricTukey::equals(const Base &expected, double tol) const {
+  const AsymmetricTukey* p = dynamic_cast<const AsymmetricTukey*>(&expected);
+  if (p == nullptr) return false;
+  return std::abs(c_ - p->c_) < tol;
+}
+
+AsymmetricTukey::shared_ptr AsymmetricTukey::Create(double c, const ReweightScheme reweight) {
+  return shared_ptr(new AsymmetricTukey(c, reweight));
+}
+
+
+/* ************************************************************************* */
+// AsymmetricCauchy
+/* ************************************************************************* */
+
+AsymmetricCauchy::AsymmetricCauchy(double k, const ReweightScheme reweight) : Base(reweight), k_(k), ksquared_(k * k) {
+  if (k <= 0) {
+    throw runtime_error("mEstimator AsymmetricCauchy takes only positive double in constructor.");
+  }
+}
+
+double AsymmetricCauchy::weight(double distance) const {
+  distance = -distance;
+  if (distance >= 0.0) {
+    return distance;
+  }
+  
+    return ksquared_ / (ksquared_ + distance*distance);
+  
+}
+
+double AsymmetricCauchy::loss(double distance) const {
+  distance = -distance;
+  if (distance >= 0.0) {
+    return distance * distance / 2.0;
+  }
+  const double val = std::log1p(distance * distance / ksquared_);
+  return ksquared_ * val * 0.5;
+}
+
+void AsymmetricCauchy::print(const std::string &s="") const {
+  std::cout << s << ": AsymmetricCauchy (" << k_ << ")" << std::endl;
+}
+
+bool AsymmetricCauchy::equals(const Base &expected, double tol) const {
+  const AsymmetricCauchy* p = dynamic_cast<const AsymmetricCauchy*>(&expected);
+  if (p == nullptr) return false;
+  return std::abs(k_ - p->k_) < tol;
+}
+
+AsymmetricCauchy::shared_ptr AsymmetricCauchy::Create(double k, const ReweightScheme reweight) {
+  return shared_ptr(new AsymmetricCauchy(k, reweight));
+}
+
+
 } // namespace mEstimator
 } // namespace noiseModel
 } // gtsam

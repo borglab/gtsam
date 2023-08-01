@@ -89,6 +89,7 @@ virtual class Unit : gtsam::noiseModel::Isotropic {
 
 namespace mEstimator {
 virtual class Base {
+  enum ReweightScheme { Scalar, Block };
   void print(string s = "") const;
 };
 
@@ -190,6 +191,18 @@ virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
   double weight(double error) const;
   double loss(double error) const;
 };
+
+virtual class AsymmetricTukey: gtsam::noiseModel::mEstimator::Base {
+  AsymmetricTukey(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  static gtsam::noiseModel::mEstimator::AsymmetricTukey* Create(double k);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double loss(double error) const;
+};
+
 
 }///\namespace mEstimator
 
