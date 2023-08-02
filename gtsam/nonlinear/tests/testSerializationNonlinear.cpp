@@ -183,7 +183,7 @@ TEST(Serialization, ISAM2) {
 
   std::string binaryPath = "saved_solver.dat";
   try {
-    std::ofstream outputStream(binaryPath);
+    std::ofstream outputStream(binaryPath, std::ios::out | std::ios::binary);
     boost::archive::binary_oarchive outputArchive(outputStream);
     outputArchive << solver;
   } catch(...) {
@@ -192,7 +192,7 @@ TEST(Serialization, ISAM2) {
 
   gtsam::ISAM2 solverFromDisk;
   try {
-    std::ifstream ifs(binaryPath);
+    std::ifstream ifs(binaryPath, std::ios::in | std::ios::binary);
     boost::archive::binary_iarchive inputArchive(ifs);
     inputArchive >> solverFromDisk;
   } catch(...) {

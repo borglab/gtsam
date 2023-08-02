@@ -665,8 +665,8 @@ class TriangulationResult : public std::optional<Point3> {
     return value();
   }
   // stream to output
-  friend std::ostream& operator<<(std::ostream& os,
-                                  const TriangulationResult& result) {
+  GTSAM_EXPORT friend std::ostream& operator<<(
+      std::ostream& os, const TriangulationResult& result) {
     if (result)
       os << "point = " << *result << std::endl;
     else

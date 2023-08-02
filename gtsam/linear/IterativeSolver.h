@@ -72,8 +72,8 @@ public:
   GTSAM_EXPORT virtual void print(std::ostream &os) const;
 
   /* for serialization */
-  friend std::ostream& operator<<(std::ostream &os,
-      const IterativeOptimizationParameters &p);
+  GTSAM_EXPORT friend std::ostream &operator<<(
+      std::ostream &os, const IterativeOptimizationParameters &p);
 
   GTSAM_EXPORT static Verbosity verbosityTranslator(const std::string &s);
   GTSAM_EXPORT static std::string verbosityTranslator(Verbosity v);

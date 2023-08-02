@@ -581,7 +581,7 @@ TEST(Values, std_move) {
 TEST(Values, VectorDynamicInsertFixedRead) {
   Values values;
   Vector v(3); v << 5.0, 6.0, 7.0;
-  values.insert(key1, v);
+  values.insert<Vector3>(key1, v);
   Vector3 expected(5.0, 6.0, 7.0);
   Vector3 actual = values.at<Vector3>(key1);
   CHECK(assert_equal(expected, actual));
@@ -629,7 +629,7 @@ TEST(Values, VectorFixedInsertFixedRead) {
 TEST(Values, MatrixDynamicInsertFixedRead) {
   Values values;
   Matrix v(1,3); v << 5.0, 6.0, 7.0;
-  values.insert(key1, v);
+  values.insert<Matrix13>(key1, v);
   Vector3 expected(5.0, 6.0, 7.0);
   CHECK(assert_equal((Vector)expected, values.at<Matrix13>(key1)));
   CHECK_EXCEPTION(values.at<Matrix23>(key1), exception);
@@ -639,7 +639,15 @@ TEST(Values, Demangle) {
   Values values;
   Matrix13 v; v << 5.0, 6.0, 7.0;
   values.insert(key1, v);
-  string expected = "Values with 1 values:\nValue v1: (Eigen::Matrix<double, 1, 3, 1, 1, 3>)\n[\n	5, 6, 7\n]\n\n";
+#ifdef __GNUG__
+  string expected =
+      "Values with 1 values:\nValue v1: (Eigen::Matrix<double, 1, 3, 1, 1, "
+      "3>)\n[\n	5, 6, 7\n]\n\n";
+#elif _WIN32
+  string expected =
+      "Values with 1 values:\nValue v1: "
+      "(class Eigen::Matrix<double,1,3,1,1,3>)\n[\n	5, 6, 7\n]\n\n";
+#endif
 
   EXPECT(assert_print_equal(expected, values));
 }
