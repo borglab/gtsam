@@ -203,6 +203,24 @@ virtual class AsymmetricTukey: gtsam::noiseModel::mEstimator::Base {
   double loss(double error) const;
 };
 
+virtual class Custom: gtsam::noiseModel::mEstimator::Base {
+  Custom(gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
+         gtsam::noiseModel::mEstimator::CustomLossFunction loss,
+         gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
+         std::string name);
+  static gtsam::noiseModel::mEstimator::Custom* Create(
+      gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
+      gtsam::noiseModel::mEstimator::CustomLossFunction loss,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
+      std::string name);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double loss(double error) const;
+};
+
 
 }///\namespace mEstimator
 

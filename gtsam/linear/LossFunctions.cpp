@@ -19,6 +19,7 @@
 #include <gtsam/linear/LossFunctions.h>
 
 #include <iostream>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -438,7 +439,7 @@ AsymmetricTukey::AsymmetricTukey(double c, const ReweightScheme reweight) : Base
 double AsymmetricTukey::weight(double distance) const {
   distance = -distance;
   if (distance >= 0.0) {
-    return distance;
+    return 1.0;
   } else if (distance > -c_) {
     const double one_minus_xc2 = 1.0 - distance * distance / csquared_;
     return one_minus_xc2 * one_minus_xc2;
@@ -486,7 +487,7 @@ AsymmetricCauchy::AsymmetricCauchy(double k, const ReweightScheme reweight) : Ba
 double AsymmetricCauchy::weight(double distance) const {
   distance = -distance;
   if (distance >= 0.0) {
-    return distance;
+    return 1.0;
   }
   
     return ksquared_ / (ksquared_ + distance*distance);
@@ -516,6 +517,39 @@ AsymmetricCauchy::shared_ptr AsymmetricCauchy::Create(double k, const ReweightSc
   return shared_ptr(new AsymmetricCauchy(k, reweight));
 }
 
+
+/* ************************************************************************* */
+// Custom
+/* ************************************************************************* */
+
+Custom::Custom(std::function<double(double)> weight, std::function<double(double)> loss, const ReweightScheme reweight,
+               std::string name)
+    : Base(reweight), weight_(std::move(weight)), loss_(loss), name_(std::move(name)) {}
+
+double Custom::weight(double distance) const {
+  return weight_(distance);
+}
+
+double Custom::loss(double distance) const {
+  return loss_(distance);
+}
+
+void Custom::print(const std::string &s = "") const {
+  std::cout << s << ": Custom (" << name_ << ")" << std::endl;
+}
+
+bool Custom::equals(const Base &expected, double tol) const {
+  const auto *p = dynamic_cast<const Custom *>(&expected);
+  if (p == nullptr)
+    return false;
+  return name_ == p->name_ && weight_.target<double(double)>() == p->weight_.target<double(double)>() &&
+         loss_.target<double(double)>() == p->loss_.target<double(double)>() && reweight_ == p->reweight_;
+}
+
+Custom::shared_ptr Custom::Create(std::function<double(double)> weight, std::function<double(double)> loss,
+                                  const ReweightScheme reweight, const std::string &name) {
+  return std::make_shared<Custom>(std::move(weight), std::move(loss), reweight, name);
+}
 
 } // namespace mEstimator
 } // namespace noiseModel
