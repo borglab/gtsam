@@ -544,6 +544,50 @@ class GTSAM_EXPORT AsymmetricCauchy : public Base {
 #endif
 };
 
+// Type alias for the custom loss and weight functions
+using CustomLossFunction = std::function<double(double)>;
+using CustomWeightFunction = std::function<double(double)>;
+
+/** Implementation of the "Custom" robust error model.
+ *
+ *  This model just takes two functions as input, one for the loss and one for the weight.
+ */
+class GTSAM_EXPORT Custom : public Base {
+ protected:
+  std::function<double(double)> weight_, loss_;
+  std::string name_;
+
+ public:
+  typedef std::shared_ptr<Custom> shared_ptr;
+
+  Custom(CustomWeightFunction weight, CustomLossFunction loss,
+         const ReweightScheme reweight = Block, std::string name = "Custom");
+  double weight(double distance) const override;
+  double loss(double distance) const override;
+  void print(const std::string &s) const override;
+  bool equals(const Base &expected, double tol = 1e-8) const override;
+  static shared_ptr Create(std::function<double(double)> weight, std::function<double(double)> loss,
+                           const ReweightScheme reweight = Block, const std::string &name = "Custom");
+  inline std::string& name() { return name_; }
+
+  inline std::function<double(double)>& weightFunction() { return weight_; }
+  inline std::function<double(double)>& lossFunction() { return loss_; }
+
+  // Default constructor for serialization
+  inline Custom() = default;
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(name_);
+  }
+#endif
+};
+
 }  // namespace mEstimator
 }  // namespace noiseModel
 }  // namespace gtsam
