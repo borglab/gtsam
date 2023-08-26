@@ -45,6 +45,7 @@ function install_dependencies()
 
 function build()
 {
+  export CMAKE_GENERATOR=Ninja
   BUILD_PYBIND="ON"
   cmake $GITHUB_WORKSPACE \
       -B build \
