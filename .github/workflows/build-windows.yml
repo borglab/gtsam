@@ -100,9 +100,17 @@ jobs:
           arch: x${{ matrix.platform }}
 
       - name: Configuration
+        shell: bash
         run: |
+          export CMAKE_GENERATOR=Ninja 
           cmake -E remove_directory build
-          cmake -G Ninja -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
+          cmake -B build \
+                -S . \
+                -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+                -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+                -DBOOST_ROOT="${BOOST_ROOT}" \
+                -DBOOST_INCLUDEDIR="${BOOST_ROOT}\boost\include" \
+                -DBOOST_LIBRARYDIR="${BOOST_ROOT}\lib"
 
       - name: Build
         shell: bash
