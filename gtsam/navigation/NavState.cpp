@@ -77,10 +77,10 @@ Vector3 NavState::bodyVelocity(OptionalJacobian<3, 9> H) const {
 }
 
 //------------------------------------------------------------------------------
-Matrix7 NavState::matrix() const {
+Matrix5 NavState::matrix() const {
   Matrix3 R = this->R();
-  Matrix7 T;
-  T << R, Z_3x3, t(), Z_3x3, R, v(), Vector6::Zero().transpose(), 1.0;
+  Matrix5 T;
+  T << R, t(), v(), Z_3x1.transpose(), 1.0, 0.0, Z_3x1.transpose(), 0.0, 1.0;
   return T;
 }
 
@@ -101,6 +101,246 @@ void NavState::print(const std::string& s) const {
 bool NavState::equals(const NavState& other, double tol) const {
   return R_.equals(other.R_, tol) && traits<Point3>::Equals(t_, other.t_, tol)
       && equal_with_abs_tol(v_, other.v_, tol);
+}
+
+//------------------------------------------------------------------------------
+NavState NavState::inverse() const {
+  Rot3 Rt = R_.inverse();
+  return NavState(Rt, Rt * (-t_), Rt * -(v_));
+}
+
+//------------------------------------------------------------------------------
+NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi) {
+  if (Hxi) *Hxi = ExpmapDerivative(xi);
+
+  // Order is ω, velocity, position which represent by φ,ρ,ν
+  Vector3 phi(xi(0), xi(1), xi(2)), rho(xi(3), xi(4), xi(5)),
+      nu(xi(6), xi(7), xi(8));
+
+  Rot3 R = Rot3::Expmap(phi);
+
+  double phi_norm = phi.norm();
+  if (phi_norm < 1e-8)
+    return NavState(Rot3(), Point3(rho), Point3(nu));
+  else {
+    Matrix W = skewSymmetric(phi / phi_norm);
+    Matrix A = I_3x3 + ((1 - cos(phi_norm)) / phi_norm) * W +
+               ((phi_norm - sin(phi_norm)) / phi_norm) * (W * W);
+    return NavState(Rot3::Expmap(phi), Point3(A * rho), Point3(A * nu));
+  }
+}
+
+//------------------------------------------------------------------------------
+Vector9 NavState::Logmap(const NavState& state, OptionalJacobian<9, 9> Hstate) {
+  if (Hstate) *Hstate = LogmapDerivative(state);
+  const Vector3 phi = Rot3::Logmap(state.rotation());
+  const Vector3& p = state.position();
+  const Vector3& v = state.velocity();
+  const double t = phi.norm();
+  if (t < 1e-8) {
+    Vector9 log;
+    log << phi, p, v;
+    return log;
+
+  } else {
+    const Matrix3 W = skewSymmetric(phi / t);
+
+    const double Tan = tan(0.5 * t);
+    const Vector3 Wp = W * p;
+    const Vector3 Wv = W * v;
+    const Vector3 nu = v - (0.5 * t) * Wv + (1 - t / (2. * Tan)) * (W * Wv);
+    const Vector3 rho = p - (0.5 * t) * Wp + (1 - t / (2. * Tan)) * (W * Wp);
+    Vector9 log;
+    // Order is ω, p, v
+    log << phi, rho, nu;
+    return log;
+  }
+}
+
+//------------------------------------------------------------------------------
+Matrix9 NavState::AdjointMap() const {
+  const Matrix3 R = R_.matrix();
+  Matrix3 A = skewSymmetric(t_.x(), t_.y(), t_.z()) * R;
+  Matrix3 B = skewSymmetric(v_.x(), v_.y(), v_.z()) * R;
+  // Eqn 2 in Barrau20icra
+  Matrix9 adj;
+  adj << R, Z_3x3, Z_3x3, A, R, Z_3x3, B, Z_3x3, R;
+  return adj;
+}
+
+//------------------------------------------------------------------------------
+Vector9 NavState::Adjoint(const Vector9& xi_b, OptionalJacobian<9, 9> H_state,
+                          OptionalJacobian<9, 9> H_xib) const {
+  const Matrix9 Ad = AdjointMap();
+
+  // Jacobians
+  if (H_state) *H_state = -Ad * adjointMap(xi_b);
+  if (H_xib) *H_xib = Ad;
+
+  return Ad * xi_b;
+}
+
+//------------------------------------------------------------------------------
+/// The dual version of Adjoint
+Vector9 NavState::AdjointTranspose(const Vector9& x, OptionalJacobian<9, 9> H_state,
+                                OptionalJacobian<9, 9> H_x) const {
+  const Matrix9 Ad = AdjointMap();
+  const Vector9 AdTx = Ad.transpose() * x;
+
+  // Jacobians
+  if (H_state) {
+    const auto w_T_hat = skewSymmetric(AdTx.head<3>()),
+               v_T_hat = skewSymmetric(AdTx.segment<3>(3)),
+               a_T_hat = skewSymmetric(AdTx.tail<3>());
+    //TODO(Varun)
+    //   *H_state << w_T_hat, v_T_hat,  //
+    //       /*  */ v_T_hat, Z_3x3;
+  }
+  if (H_x) {
+    *H_x = Ad.transpose();
+  }
+
+  return AdTx;
+}
+
+//------------------------------------------------------------------------------
+Matrix9 NavState::adjointMap(const Vector9& xi) {
+  Matrix3 w_hat = skewSymmetric(xi(0), xi(1), xi(2));
+  Matrix3 v_hat = skewSymmetric(xi(3), xi(4), xi(5));
+  Matrix3 a_hat = skewSymmetric(xi(6), xi(7), xi(8));
+  Matrix9 adj;
+  adj << w_hat, Z_3x3, Z_3x3, v_hat, w_hat, Z_3x3, a_hat, Z_3x3, w_hat;
+  return adj;
+}
+
+//------------------------------------------------------------------------------
+Vector9 NavState::adjoint(const Vector9& xi, const Vector9& y,
+                          OptionalJacobian<9, 9> Hxi,
+                          OptionalJacobian<9, 9> H_y) {
+  if (Hxi) {
+    Hxi->setZero();
+    for (int i = 0; i < 9; ++i) {
+      Vector9 dxi;
+      dxi.setZero();
+      dxi(i) = 1.0;
+      Matrix9 Gi = adjointMap(dxi);
+      Hxi->col(i) = Gi * y;
+    }
+  }
+
+  const Matrix9& ad_xi = adjointMap(xi);
+  if (H_y) *H_y = ad_xi;
+
+  return ad_xi * y;
+}
+
+//------------------------------------------------------------------------------
+Vector9 NavState::adjointTranspose(const Vector9& xi, const Vector9& y,
+                                   OptionalJacobian<9, 9> Hxi,
+                                   OptionalJacobian<9, 9> H_y) {
+  if (Hxi) {
+    Hxi->setZero();
+    for (int i = 0; i < 9; ++i) {
+      Vector9 dxi;
+      dxi.setZero();
+      dxi(i) = 1.0;
+      Matrix9 GTi = adjointMap(dxi).transpose();
+      Hxi->col(i) = GTi * y;
+    }
+  }
+  const Matrix9& adT_xi = adjointMap(xi).transpose();
+  if (H_y) *H_y = adT_xi;
+  return adT_xi * y;
+}
+
+/* ************************************************************************* */
+Matrix63 NavState::ComputeQforExpmapDerivative(const Vector9& xi,
+                                               double nearZeroThreshold) {
+  const auto omega = xi.head<3>();
+  const auto nu = xi.segment<3>(3);
+  const auto rho = xi.tail<3>();
+  const Matrix3 V = skewSymmetric(nu);
+  const Matrix3 P = skewSymmetric(rho);
+  const Matrix3 W = skewSymmetric(omega);
+
+  Matrix3 Qv, Qp;
+  Matrix63 Q;
+
+  // The closed-form formula in Barfoot14tro eq. (102)
+  double phi = omega.norm();
+  if (std::abs(phi) > 1e-5) {
+    const double sinPhi = sin(phi), cosPhi = cos(phi);
+    const double phi2 = phi * phi, phi3 = phi2 * phi, phi4 = phi3 * phi,
+                 phi5 = phi4 * phi;
+    // Invert the sign of odd-order terms to have the right Jacobian
+    Qv = -0.5 * V + (phi - sinPhi) / phi3 * (W * V + V * W - W * V * W) +
+         (1 - phi2 / 2 - cosPhi) / phi4 *
+             (W * W * V + V * W * W - 3 * W * V * W) -
+         0.5 *
+             ((1 - phi2 / 2 - cosPhi) / phi4 -
+              3 * (phi - sinPhi - phi3 / 6.) / phi5) *
+             (W * V * W * W + W * W * V * W);
+    Qp = -0.5 * P + (phi - sinPhi) / phi3 * (W * P + P * W - W * P * W) +
+         (1 - phi2 / 2 - cosPhi) / phi4 *
+             (W * W * P + P * W * W - 3 * W * P * W) -
+         0.5 *
+             ((1 - phi2 / 2 - cosPhi) / phi4 -
+              3 * (phi - sinPhi - phi3 / 6.) / phi5) *
+             (W * P * W * W + W * W * P * W);
+  } else {
+    Qv = -0.5 * V + 1. / 6. * (W * V + V * W - W * V * W) +
+         1. / 24. * (W * W * V + V * W * W - 3 * W * V * W) -
+         0.5 * (1. / 24. + 3. / 120.) * (W * V * W * W + W * W * V * W);
+    Qp = -0.5 * P + 1. / 6. * (W * P + P * W - W * P * W) +
+         1. / 24. * (W * W * P + P * W * W - 3 * W * P * W) -
+         0.5 * (1. / 24. + 3. / 120.) * (W * P * W * W + W * W * P * W);
+  }
+
+  Q << Qv, Qp;
+  return Q;
+}
+
+//------------------------------------------------------------------------------
+Matrix9 NavState::ExpmapDerivative(const Vector9& xi) {
+  const Vector3 w = xi.head<3>();
+  const Matrix3 Jw = Rot3::ExpmapDerivative(w);
+  const Matrix63 Q = ComputeQforExpmapDerivative(xi);
+  const Matrix3 Qv = Q.topRows<3>();
+  const Matrix3 Qp = Q.bottomRows<3>();
+
+  Matrix9 J;
+  J << Jw, Z_3x3, Z_3x3, Qp, Jw, Z_3x3, Qv, Z_3x3, Jw;
+
+  return J;
+}
+
+//------------------------------------------------------------------------------
+Matrix9 NavState::LogmapDerivative(const NavState& state) {
+  const Vector9 xi = Logmap(state);
+  const Vector3 w = xi.head<3>();
+  const Matrix3 Jw = Rot3::LogmapDerivative(w);
+  const Matrix63 Q = ComputeQforExpmapDerivative(xi);
+  const Matrix3 Qv = Q.topRows<3>();
+  const Matrix3 Qp = Q.bottomRows<3>();
+  const Matrix3 Qv2 = -Jw * Qv * Jw;
+  const Matrix3 Qp2 = -Jw * Qp * Jw;
+
+  Matrix9 J;
+  J << Jw, Z_3x3, Z_3x3, Qp2, Jw, Z_3x3, Qv2, Z_3x3, Jw;
+  return J;
+}
+
+
+//------------------------------------------------------------------------------
+NavState NavState::ChartAtOrigin::Retract(const Vector9& xi,
+                                          ChartJacobian Hxi) {
+  return Expmap(xi, Hxi);
+}
+
+//------------------------------------------------------------------------------
+Vector9 NavState::ChartAtOrigin::Local(const NavState& state,
+                                       ChartJacobian Hstate) {
+  return Logmap(state, Hstate);
 }
 
 //------------------------------------------------------------------------------
