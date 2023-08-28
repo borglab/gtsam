@@ -71,11 +71,14 @@ public:
   }
   /// Named constructor with derivatives
   static NavState Create(const Rot3& R, const Point3& t, const Velocity3& v,
-      OptionalJacobian<9, 3> H1, OptionalJacobian<9, 3> H2,
-      OptionalJacobian<9, 3> H3);
+                         OptionalJacobian<9, 3> H1 = {},
+                         OptionalJacobian<9, 3> H2 = {},
+                         OptionalJacobian<9, 3> H3 = {});
+
   /// Named constructor with derivatives
   static NavState FromPoseVelocity(const Pose3& pose, const Vector3& vel,
-      OptionalJacobian<9, 6> H1, OptionalJacobian<9, 3> H2);
+                                   OptionalJacobian<9, 6> H1 = {},
+                                   OptionalJacobian<9, 3> H2 = {});
 
   /// @}
   /// @name Component Access
@@ -264,8 +267,9 @@ public:
   /// Integrate forward in time given angular velocity and acceleration in body frame
   /// Uses second order integration for position, returns derivatives except dt.
   NavState update(const Vector3& b_acceleration, const Vector3& b_omega,
-      const double dt, OptionalJacobian<9, 9> F, OptionalJacobian<9, 3> G1,
-      OptionalJacobian<9, 3> G2) const;
+                  const double dt, OptionalJacobian<9, 9> F = {},
+                  OptionalJacobian<9, 3> G1 = {},
+                  OptionalJacobian<9, 3> G2 = {}) const;
 
   /// Compute tangent space contribution due to Coriolis forces
   Vector9 coriolis(double dt, const Vector3& omega, bool secondOrder = false,
