@@ -170,6 +170,34 @@ TEST( NavState, Manifold ) {
 }
 
 /* ************************************************************************* */
+TEST(NavState, Compose) {
+  NavState nav_state_a(Rot3::Identity(), {0.0, 1.0, 2.0}, {1.0, -1.0, 1.0});
+  NavState nav_state_b(Rot3::Rx(M_PI_4), {0.0, 1.0, 3.0}, {1.0, -1.0, 2.0});
+  NavState nav_state_c(Rot3::Ry(M_PI / 180.0), {1.0, 1.0, 2.0},
+                       {3.0, -1.0, 1.0});
+
+  auto ab_c = (nav_state_a * nav_state_b) * nav_state_c;
+  auto a_bc = nav_state_a * (nav_state_b * nav_state_c);
+  CHECK(assert_equal(ab_c, a_bc));
+}
+
+/* ************************************************************************* */
+TEST(NavState, Inverse) {
+  NavState nav_state_a(Rot3::Identity(), {0.0, 1.0, 2.0}, {1.0, -1.0, 1.0});
+  NavState nav_state_b(Rot3::Rx(M_PI_4), {0.0, 1.0, 3.0}, {1.0, -1.0, 2.0});
+  NavState nav_state_c(Rot3::Ry(M_PI / 180.0), {1.0, 1.0, 2.0},
+                       {3.0, -1.0, 1.0});
+
+  auto a_inv = nav_state_a.inverse();
+  auto a_a_inv = nav_state_a * a_inv;
+  CHECK(assert_equal(a_a_inv, NavState()));
+
+  auto b_inv = nav_state_b.inverse();
+  auto b_b_inv = nav_state_b * b_inv;
+  CHECK(assert_equal(b_b_inv, NavState()));
+}
+
+/* ************************************************************************* */
 TEST(NavState, Between) {
   NavState s1, s2(Rot3(), Point3(1, 2, 3), Velocity3(0, 0, 0));
 
@@ -186,20 +214,6 @@ TEST(NavState, Lie) {
   NavState nav_state_b(Rot3::Rx(M_PI_4), {0.0, 1.0, 3.0}, {1.0, -1.0, 2.0});
   NavState nav_state_c(Rot3::Ry(M_PI / 180.0), {1.0, 1.0, 2.0},
                        {3.0, -1.0, 1.0});
-
-  // test compose
-  auto ab_c = (nav_state_a * nav_state_b) * nav_state_c;
-  auto a_bc = nav_state_a * (nav_state_b * nav_state_c);
-  CHECK(assert_equal(ab_c, a_bc));
-
-  // test inverse
-  auto a_inv = nav_state_a.inverse();
-  auto a_a_inv = nav_state_a * a_inv;
-  CHECK(assert_equal(a_a_inv, NavState()));
-
-  auto b_inv = nav_state_b.inverse();
-  auto b_b_inv = nav_state_b * b_inv;
-  CHECK(assert_equal(b_b_inv, NavState()));
 
   // logmap
   Matrix9 H1, H2;
