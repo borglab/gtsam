@@ -133,6 +133,7 @@ NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi) {
 //------------------------------------------------------------------------------
 Vector9 NavState::Logmap(const NavState& state, OptionalJacobian<9, 9> Hstate) {
   if (Hstate) *Hstate = LogmapDerivative(state);
+
   const Vector3 phi = Rot3::Logmap(state.rotation());
   const Vector3& p = state.position();
   const Vector3& v = state.velocity();
@@ -148,8 +149,8 @@ Vector9 NavState::Logmap(const NavState& state, OptionalJacobian<9, 9> Hstate) {
     const double Tan = tan(0.5 * t);
     const Vector3 Wp = W * p;
     const Vector3 Wv = W * v;
-    const Vector3 nu = v - (0.5 * t) * Wv + (1 - t / (2. * Tan)) * (W * Wv);
     const Vector3 rho = p - (0.5 * t) * Wp + (1 - t / (2. * Tan)) * (W * Wp);
+    const Vector3 nu = v - (0.5 * t) * Wv + (1 - t / (2. * Tan)) * (W * Wv);
     Vector9 log;
     // Order is ω, p, v
     log << phi, rho, nu;
@@ -189,12 +190,14 @@ Vector9 NavState::AdjointTranspose(const Vector9& x, OptionalJacobian<9, 9> H_st
 
   // Jacobians
   if (H_state) {
-    const auto w_T_hat = skewSymmetric(AdTx.head<3>()),
-               v_T_hat = skewSymmetric(AdTx.segment<3>(3)),
-               a_T_hat = skewSymmetric(AdTx.tail<3>());
     //TODO(Varun)
+    // const auto w_T_hat = skewSymmetric(AdTx.head<3>()),
+    //            v_T_hat = skewSymmetric(AdTx.segment<3>(3)),
+    //            a_T_hat = skewSymmetric(AdTx.tail<3>());
     //   *H_state << w_T_hat, v_T_hat,  //
     //       /*  */ v_T_hat, Z_3x3;
+    throw std::runtime_error(
+        "AdjointTranpose H_state Jacobian not implemented.");
   }
   if (H_x) {
     *H_x = Ad.transpose();
@@ -316,6 +319,8 @@ Matrix9 NavState::ExpmapDerivative(const Vector9& xi) {
 
 //------------------------------------------------------------------------------
 Matrix9 NavState::LogmapDerivative(const NavState& state) {
+  const Matrix3 R = state.rotation().matrix();
+
   const Vector9 xi = Logmap(state);
   const Vector3 w = xi.head<3>();
   const Matrix3 Jw = Rot3::LogmapDerivative(w);
@@ -326,7 +331,10 @@ Matrix9 NavState::LogmapDerivative(const NavState& state) {
   const Matrix3 Qp2 = -Jw * Qp * Jw;
 
   Matrix9 J;
+  // TODO(Varun) If we remove the custom localCoordinates, first one mirrors
+  // Pose3, but the second one gives the correct values as per unit tests
   J << Jw, Z_3x3, Z_3x3, Qp2, Jw, Z_3x3, Qv2, Z_3x3, Jw;
+  // J << Jw, Z_3x3, Z_3x3, Z_3x3, R, Z_3x3, Z_3x3, Z_3x3, R;
   return J;
 }
 
@@ -381,15 +389,16 @@ Vector9 NavState::localCoordinates(const NavState& g, //
   Matrix3 D_xi_R;
   xi << Rot3::Logmap(dR, (H1 || H2) ? &D_xi_R : 0), dP, dV;
   if (H1) {
-    *H1 << D_xi_R * D_dR_R, Z_3x3, Z_3x3, //
-    D_dt_R, -I_3x3, Z_3x3, //
-    D_dv_R, Z_3x3, -I_3x3;
+    *H1 << D_xi_R * D_dR_R, Z_3x3, Z_3x3,  //
+        D_dt_R, -I_3x3, Z_3x3,             //
+        D_dv_R, Z_3x3, -I_3x3;
   }
   if (H2) {
-    *H2 << D_xi_R, Z_3x3, Z_3x3, //
-    Z_3x3, dR.matrix(), Z_3x3, //
-    Z_3x3, Z_3x3, dR.matrix();
+    *H2 << D_xi_R, Z_3x3, Z_3x3,    //
+        Z_3x3, dR.matrix(), Z_3x3,  //
+        Z_3x3, Z_3x3, dR.matrix();
   }
+
   return xi;
 }
 

@@ -170,6 +170,73 @@ TEST( NavState, Manifold ) {
 }
 
 /* ************************************************************************* */
+TEST(NavState, Between) {
+  NavState s1, s2(Rot3(), Point3(1, 2, 3), Velocity3(0, 0, 0));
+
+  NavState actual = s1.compose(s2);
+  EXPECT(assert_equal(s2, actual));
+
+  NavState between = s2.between(s1);
+  NavState expected_between(Rot3(), Point3(-1, -2, -3), Velocity3(0, 0, 0));
+  EXPECT(assert_equal(expected_between, between));
+}
+
+TEST(NavState, Lie) {
+  NavState nav_state_a(Rot3::Identity(), {0.0, 1.0, 2.0}, {1.0, -1.0, 1.0});
+  NavState nav_state_b(Rot3::Rx(M_PI_4), {0.0, 1.0, 3.0}, {1.0, -1.0, 2.0});
+  NavState nav_state_c(Rot3::Ry(M_PI / 180.0), {1.0, 1.0, 2.0},
+                       {3.0, -1.0, 1.0});
+
+  // test compose
+  auto ab_c = (nav_state_a * nav_state_b) * nav_state_c;
+  auto a_bc = nav_state_a * (nav_state_b * nav_state_c);
+  CHECK(assert_equal(ab_c, a_bc));
+
+  // test inverse
+  auto a_inv = nav_state_a.inverse();
+  auto a_a_inv = nav_state_a * a_inv;
+  CHECK(assert_equal(a_a_inv, NavState()));
+
+  auto b_inv = nav_state_b.inverse();
+  auto b_b_inv = nav_state_b * b_inv;
+  CHECK(assert_equal(b_b_inv, NavState()));
+
+  // logmap
+  Matrix9 H1, H2;
+  auto logmap_b = NavState::Create(Rot3::Identity(),
+                                          Vector3::Zero(), Vector3::Zero())
+                      .localCoordinates(nav_state_b, H1, H2);
+
+  Matrix6 J1, J2;
+  auto logmap_pose_b = Pose3::Create(Rot3(), Vector3::Zero())
+                           .localCoordinates(nav_state_b.pose(), J1, J2);
+
+  // Check retraction
+  auto retraction_b = NavState().retract(logmap_b);
+  CHECK(assert_equal(retraction_b, nav_state_b));
+
+  // // Test if the sum of the logmap is the same as the logmap of the product
+  // auto logmap_c = NavState::Create(Rot3::Identity(),
+  //                                         Vector3::Zero(), Vector3::Zero())
+  //                     .localCoordinates(nav_state_c);
+
+  // auto logmap_bc = NavState::Create(
+  //                       gtsam::Rot3::Identity(), Eigen::Vector3d::Zero(),
+  //                       Eigen::Vector3d::Zero(), {}, {}, {})
+  //                       .localCoordinates(nav_state_b * nav_state_c);
+  // Vector9 logmap_bc2 = NavState::Logmap(nav_state_b * nav_state_c);
+
+  // Vector9 logmap_bc_sum = logmap_b + logmap_c;
+  // std::cout << "logmap_bc = " << logmap_bc.transpose() << std::endl;
+  // std::cout << "logmap_bc2 = " << logmap_bc2.transpose() << std::endl;
+
+  // // std::cout << "logmap_bc + logmap_c = " << logmap_bc_sum.transpose() << std::endl;
+  // // std::cout << "logmap_b + logmap_c = " << (NavState::Logmap(nav_state_b) + NavState::Logmap(nav_state_c)).transpose() << std::endl;
+  // // std::cout << "logmap_bc = " << logmap_bc.transpose() << std::endl;
+  // // CHECK(assert_equal(logmap_bc_sum, logmap_bc));
+}
+
+/* ************************************************************************* */
 static const double dt = 2.0;
 std::function<Vector9(const NavState&, const bool&)> coriolis =
     std::bind(&NavState::coriolis, std::placeholders::_1, dt, kOmegaCoriolis,
