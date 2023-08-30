@@ -29,8 +29,8 @@ class TestDsfTrackGenerator(GtsamTestCase):
 
         # For each image pair (i1,i2), we provide a (K,2) matrix
         # of corresponding keypoint indices (k1,k2).
+        matches_dict = {}
         for (i1,i2), corr_idxs in nontransitive_matches_dict.items():
-            matches_dict = {}
             matches_dict[IndexPair(i1, i2)] = corr_idxs
 
         tracks = gtsam.gtsfm.tracksFromPairwiseMatches(
@@ -163,7 +163,6 @@ def get_dummy_keypoints_list() -> List[Keypoints]:
         Keypoints(coordinates=img4_kp_coords),
     ]
     return keypoints_list
-
 
 
 def get_nontransitive_matches() -> Dict[Tuple[int, int], np.ndarray]:
