@@ -119,11 +119,11 @@ class TestSfmTrack2d(GtsamTestCase):
 
 def get_dummy_keypoints_list() -> List[Keypoints]:
     """ """
-    img1_kp_coords = np.array([[1, 1], [2, 2], [3, 3]])
+    img1_kp_coords = np.array([[1, 1], [2, 2], [3, 3.]])
     img1_kp_scale = np.array([6.0, 9.0, 8.5])
     img2_kp_coords = np.array(
         [
-            [1, 1],
+            [1, 1.],
             [2, 2],
             [3, 3],
             [4, 4],
@@ -135,7 +135,7 @@ def get_dummy_keypoints_list() -> List[Keypoints]:
     )
     img3_kp_coords = np.array(
         [
-            [1, 1],
+            [1, 1.],
             [2, 2],
             [3, 3],
             [4, 4],
@@ -149,7 +149,7 @@ def get_dummy_keypoints_list() -> List[Keypoints]:
     )
     img4_kp_coords = np.array(
         [
-            [1, 1],
+            [1, 1.],
             [2, 2],
             [3, 3],
             [4, 4],
@@ -157,7 +157,7 @@ def get_dummy_keypoints_list() -> List[Keypoints]:
         ]
     )
     keypoints_list = [
-        Keypoints(coordinates=img1_kp_coords, scales=img1_kp_scale),
+        Keypoints(coordinates=img1_kp_coords),
         Keypoints(coordinates=img2_kp_coords),
         Keypoints(coordinates=img3_kp_coords),
         Keypoints(coordinates=img4_kp_coords),
