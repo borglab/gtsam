@@ -130,7 +130,7 @@ std::vector<SfmTrack2d> tracksFromPairwiseMatches(
   }
 
   // TODO(johnwlambert): return the Transitivity failure percentage here.
-  return tracks2d; // validTracks;
+  return validTracks;
 }
 
 }  // namespace gtsfm

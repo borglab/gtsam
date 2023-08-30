@@ -36,7 +36,7 @@ class TestDsfTrackGenerator(GtsamTestCase):
         tracks = gtsam.gtsfm.tracksFromPairwiseMatches(
             matches_dict,
             keypoints_list,
-            verbose=False,
+            verbose=True,
         )
         self.assertEqual(len(tracks), 0, "Tracks not filtered correctly")
 
