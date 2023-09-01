@@ -148,6 +148,8 @@ public:
   /// inverse transformation with derivatives
   NavState inverse() const;
 
+  using LieGroup<NavState, 9>::inverse;  // version with derivative
+
   /// compose syntactic sugar
   NavState operator*(const NavState& T) const {
     return NavState(R_ * T.R_, t_ + R_ * T.t_, v_ + R_ * T.v_);
