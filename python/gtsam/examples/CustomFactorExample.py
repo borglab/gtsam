@@ -15,7 +15,7 @@ from typing import List, Optional
 import gtsam
 import numpy as np
 
-I = np.eye(1)
+I = np.eye(1) # Creates a 1-element, 2D array
 
 
 def simulate_car() -> List[float]:
@@ -44,7 +44,7 @@ def error_gps(measurement: np.ndarray, this: gtsam.CustomFactor,
     if jacobians is not None:
         jacobians[0] = I
 
-    return error
+    return error # with input types this is a 1D np.ndarray
 
 
 def error_odom(measurement: np.ndarray, this: gtsam.CustomFactor,
