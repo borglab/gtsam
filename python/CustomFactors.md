@@ -11,7 +11,7 @@ import gtsam
 import numpy as np
 from typing import List
 
-def error_func(this: gtsam.CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
+def error_func(this: gtsam.CustomFactor, v: gtsam.Values, H: List[np.ndarray]) -> np.ndarray:
     ...
 ```
 
@@ -21,7 +21,7 @@ def error_func(this: gtsam.CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
 
 If `H` is `None`, it means the current factor evaluation does not need Jacobians. For example, the `error`
 method on a factor does not need Jacobians, so we don't evaluate them to save CPU. If `H` is not `None`,
-each entry of `H` can be assigned a `numpy` array, as the Jacobian for the corresponding variable.
+each entry of `H` can be assigned a (2D) `numpy` array, as the Jacobian for the corresponding variable.
 
 After defining `error_func`, one can create a `CustomFactor` just like any other factor in GTSAM:
 
@@ -42,7 +42,7 @@ from typing import List
 
 expected = Pose2(2, 2, np.pi / 2)
 
-def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
+def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]) -> np.ndarray:
     """
     Error function that mimics a BetweenFactor
     :param this: reference to the current CustomFactor being evaluated
