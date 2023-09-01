@@ -30,7 +30,7 @@ def simulate_car() -> List[float]:
 
 def error_gps(measurement: np.ndarray, this: gtsam.CustomFactor,
               values: gtsam.Values,
-              jacobians: Optional[List[np.ndarray]]) -> float:
+              jacobians: Optional[List[np.ndarray]]) -> np.ndarray:
     """GPS Factor error function
     :param measurement: GPS measurement, to be filled with `partial`
     :param this: gtsam.CustomFactor handle
@@ -49,7 +49,7 @@ def error_gps(measurement: np.ndarray, this: gtsam.CustomFactor,
 
 def error_odom(measurement: np.ndarray, this: gtsam.CustomFactor,
                values: gtsam.Values,
-               jacobians: Optional[List[np.ndarray]]) -> float:
+               jacobians: Optional[List[np.ndarray]]) -> np.ndarray:
     """Odometry Factor error function
     :param measurement: Odometry measurement, to be filled with `partial`
     :param this: gtsam.CustomFactor handle
@@ -70,7 +70,7 @@ def error_odom(measurement: np.ndarray, this: gtsam.CustomFactor,
 
 def error_lm(measurement: np.ndarray, this: gtsam.CustomFactor,
              values: gtsam.Values,
-             jacobians: Optional[List[np.ndarray]]) -> float:
+             jacobians: Optional[List[np.ndarray]]) -> np.ndarray:
     """Landmark Factor error function
     :param measurement: Landmark measurement, to be filled with `partial`
     :param this: gtsam.CustomFactor handle
