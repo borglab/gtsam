@@ -1180,11 +1180,13 @@ class TriangulationParameters {
   bool enableEPI;
   double landmarkDistanceThreshold;
   double dynamicOutlierRejectionThreshold;
+  bool useLOST;
   gtsam::SharedNoiseModel noiseModel;
   TriangulationParameters(const double rankTolerance = 1.0,
                           const bool enableEPI = false,
                           double landmarkDistanceThreshold = -1,
                           double dynamicOutlierRejectionThreshold = -1,
+                          const bool useLOST = false,
                           const gtsam::SharedNoiseModel& noiseModel = nullptr);
 };
 
