@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 
 namespace gtsam {
 
@@ -38,7 +39,8 @@ static DSFMapIndexPair generateDSF(const MatchIndicesMap& matches) {
     // Image pair is (i1,i2).
     size_t i1 = pair_indices.first;
     size_t i2 = pair_indices.second;
-    for (size_t k = 0; k < corr_indices.rows(); k++) {
+    size_t m = static_cast<size_t>(corr_indices.rows());
+    for (size_t k = 0; k < m; k++) {
       // Measurement indices are found in a single matrix row, as (k1,k2).
       size_t k1 = corr_indices(k, 0), k2 = corr_indices(k, 1);
       // Unique key for DSF is (i,k), representing keypoint index in an image.
@@ -128,7 +130,7 @@ std::vector<SfmTrack2d> tracksFromPairwiseMatches(
   }
 
   // TODO(johnwlambert): return the Transitivity failure percentage here.
-  return tracks2d;
+  return validTracks;
 }
 
 }  // namespace gtsfm

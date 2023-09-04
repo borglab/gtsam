@@ -66,4 +66,6 @@ namespace gtsam {
     DiscreteJunctionTree(const DiscreteEliminationTree& eliminationTree);
   };
 
+  /// typedef for wrapper:
+  using DiscreteCluster = DiscreteJunctionTree::Cluster;
 }

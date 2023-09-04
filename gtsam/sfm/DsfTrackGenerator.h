@@ -20,9 +20,10 @@
 #include <gtsam/base/DSFMap.h>
 #include <gtsam/sfm/SfmTrack.h>
 
+#include <boost/optional.hpp>
+
 #include <Eigen/Core>
 #include <map>
-#include <optional>
 #include <vector>
 
 namespace gtsam {

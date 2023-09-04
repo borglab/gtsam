@@ -37,9 +37,23 @@
 namespace gtsam {
 
   /**
-   * Decision Tree
-   * L = label for variables
-   * Y = function range (any algebra), e.g., bool, int, double
+   * @brief a decision tree is a function from assignments to values.
+   * @tparam L label for variables
+   * @tparam Y function range (any algebra), e.g., bool, int, double
+   * 
+   * After creating a decision tree on some variables, the tree can be evaluated
+   * on an assignment to those variables. Example:
+   * 
+   * @code{.cpp}
+   * // Create a decision stump one one variable 'a' with values 10 and 20.
+   * DecisionTree<char, int> tree('a', 10, 20);
+   * 
+   * // Evaluate the tree on an assignment to the variable.
+   * int value0 = tree({{'a', 0}}); // value0 = 10
+   * int value1 = tree({{'a', 1}}); // value1 = 20
+   * @endcode
+   * 
+   * More examples can be found in testDecisionTree.cpp
    *
    * @ingroup discrete
    */
@@ -132,7 +146,8 @@ namespace gtsam {
     NodePtr root_;
 
    protected:
-    /** Internal recursive function to create from keys, cardinalities, 
+    /** 
+     * Internal recursive function to create from keys, cardinalities, 
      * and Y values 
      */
     template<typename It, typename ValueIt>
@@ -163,7 +178,13 @@ namespace gtsam {
     /** Create a constant */
     explicit DecisionTree(const Y& y);
 
-    /// Create tree with 2 assignments `y1`, `y2`, splitting on variable `label`
+    /**
+     * @brief Create tree with 2 assignments `y1`, `y2`, splitting on variable `label`
+     * 
+     * @param label The variable to split on.
+     * @param y1 The value for the first assignment.
+     * @param y2 The value for the second assignment.
+     */
     DecisionTree(const L& label, const Y& y1, const Y& y2);
 
     /** Allow Label+Cardinality for convenience */
