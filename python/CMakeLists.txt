@@ -1,8 +1,15 @@
 set(GTSAM_PYTHON_BUILD_DIRECTORY ${PROJECT_BINARY_DIR}/python)
+set(PROJECT_PYTHON_SOURCE_DIR ${PROJECT_SOURCE_DIR}/python)
 
 if (NOT GTSAM_BUILD_PYTHON)
     return()
 endif()
+
+# Install development dependencies to build wrapper
+message(STATUS "Installing Python development dependencies")
+execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-m" "pip" "install" "-r" "dev_requirements.txt"
+                WORKING_DIRECTORY ${PROJECT_PYTHON_SOURCE_DIR}
+                OUTPUT_QUIET)
 
 # Generate setup.py.
 file(READ "${PROJECT_SOURCE_DIR}/README.md" README_CONTENTS)
