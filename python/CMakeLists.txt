@@ -1,5 +1,5 @@
-set(GTSAM_PYTHON_BUILD_DIRECTORY ${PROJECT_BINARY_DIR}/python)
 set(PROJECT_PYTHON_SOURCE_DIR ${PROJECT_SOURCE_DIR}/python)
+set(GTSAM_PYTHON_BUILD_DIRECTORY ${PROJECT_BINARY_DIR}/python)
 
 if (NOT GTSAM_BUILD_PYTHON)
     return()
@@ -13,11 +13,11 @@ execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-m" "pip" "install" "-r" "dev_re
 
 # Generate setup.py.
 file(READ "${PROJECT_SOURCE_DIR}/README.md" README_CONTENTS)
-configure_file(${PROJECT_SOURCE_DIR}/python/setup.py.in
+configure_file(${PROJECT_PYTHON_SOURCE_DIR}/setup.py.in
                 ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py)
 
 # Supply MANIFEST.in for older versions of Python
-file(COPY ${PROJECT_SOURCE_DIR}/python/MANIFEST.in
+file(COPY ${PROJECT_PYTHON_SOURCE_DIR}/MANIFEST.in
      DESTINATION ${GTSAM_PYTHON_BUILD_DIRECTORY})
 
 set(WRAP_BUILD_TYPE_POSTFIXES ${GTSAM_BUILD_TYPE_POSTFIXES})
@@ -106,7 +106,7 @@ pybind_wrap(${GTSAM_PYTHON_TARGET} # target
             "gtsam" # module_name
             "gtsam" # top_namespace
             "${ignore}" # ignore_classes
-            ${PROJECT_SOURCE_DIR}/python/gtsam/gtsam.tpl
+            ${PROJECT_PYTHON_SOURCE_DIR}/gtsam/gtsam.tpl
             gtsam # libs
             "gtsam;gtsam_header" # dependencies
             ${GTSAM_ENABLE_BOOST_SERIALIZATION} # use_boost_serialization
@@ -185,7 +185,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             "gtsam_unstable" # module_name
             "gtsam" # top_namespace
             "${ignore}" # ignore_classes
-            ${PROJECT_SOURCE_DIR}/python/gtsam_unstable/gtsam_unstable.tpl
+            ${PROJECT_PYTHON_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.tpl
             gtsam_unstable # libs
             "gtsam_unstable;gtsam_unstable_header" # dependencies
             ${GTSAM_ENABLE_BOOST_SERIALIZATION} # use_boost_serialization
