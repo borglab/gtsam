@@ -280,11 +280,11 @@ class DiscreteLookupDAG {
 };
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-std::pair<gtsam::DiscreteConditional*, gtsam::DecisionTreeFactor*>
+pair<gtsam::DiscreteConditional*, gtsam::DecisionTreeFactor*>
 EliminateDiscrete(const gtsam::DiscreteFactorGraph& factors,
                   const gtsam::Ordering& frontalKeys);
 
-std::pair<gtsam::DiscreteConditional*, gtsam::DecisionTreeFactor*>
+pair<gtsam::DiscreteConditional*, gtsam::DecisionTreeFactor*>
 EliminateForMPE(const gtsam::DiscreteFactorGraph& factors,
                 const gtsam::Ordering& frontalKeys);
 
