@@ -15,7 +15,14 @@
  * @author Achintya Mohan
  */
 
-#include <gtsam/geometry/Point2.h>
+/**
+ * A simple 2D pose graph optimization example
+ * - The robot is initially at origin (0.0, 0.0, 0.0) 
+ * - We have full odometry measurements for 2 motions
+ * - The robot first moves to (1.0, 0.0, 0.1) and then to (1.0, 1.0, 0.2) 
+ */
+
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/GncOptimizer.h>
 #include <gtsam/nonlinear/GncParams.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -34,20 +41,20 @@ int main() {
   NonlinearFactorGraph graph;
 
   // Add a prior to the first point, set to the origin
-  auto priorNoise = noiseModel::Isotropic::Sigma(2, 0.1);
-  graph.addPrior(1, Point2(0.0, 0.0), priorNoise);
+  auto priorNoise = noiseModel::Isotropic::Sigma(3, 0.1);
+  graph.addPrior(1, Pose2(0.0, 0.0, 0.0), priorNoise);
 
   // Add additional factors, noise models must be Gaussian 
-  Point2 x1(1.0, 0.0);
-  graph.emplace_shared<BetweenFactor<Point2>>(1, 2, x1, noiseModel::Isotropic::Sigma(2, 0.2));
-  Point2 x2(1.1, 0.1);
-  graph.emplace_shared<BetweenFactor<Point2>>(2, 3, x2, noiseModel::Isotropic::Sigma(2, 0.4));
+  Pose2 x1(1.0, 0.0, 0.1);
+  graph.emplace_shared<BetweenFactor<Pose2>>(1, 2, x1, noiseModel::Isotropic::Sigma(3, 0.2));
+  Pose2 x2(0.0, 1.0, 0.1);
+  graph.emplace_shared<BetweenFactor<Pose2>>(2, 3, x2, noiseModel::Isotropic::Sigma(3, 0.4));
 
   // Initial estimates
   Values initial;
-  initial.insert(1, Point2(0.5, -0.1));
-  initial.insert(2, Point2(1.3, 0.1));
-  initial.insert(3, Point2(0.8, 0.2));
+  initial.insert(1, Pose2(0.2, 0.5, -0.1));
+  initial.insert(2, Pose2(0.8, 0.3, 0.1));
+  initial.insert(3, Pose2(0.8, 0.2, 0.3));
 
   // Set options for the non-minimal solver
   LevenbergMarquardtParams lmParams;
@@ -65,3 +72,4 @@ int main() {
 
   return 0;
 }
+
