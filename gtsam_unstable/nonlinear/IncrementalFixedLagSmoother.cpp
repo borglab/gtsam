@@ -118,6 +118,11 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   std::set<Key> additionalKeys;
   for(Key key: marginalizableKeys) {
     ISAM2Clique::shared_ptr clique = isam_[key];
+    // Mark all frontal keys of the current clique.
+    for(Key i: clique->conditional()->frontals()) {
+      additionalKeys.insert(i);
+    }
+    // Recursively mark all of the children key that contain the marginal key.
     for(const ISAM2Clique::shared_ptr& child: clique->children) {
       recursiveMarkAffectedKeys(key, child, additionalKeys);
     }
