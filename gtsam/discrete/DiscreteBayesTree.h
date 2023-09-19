@@ -110,4 +110,12 @@ class GTSAM_EXPORT DiscreteBayesTree
   /// @}
 };
 
+/// traits
+template <>
+struct traits<DiscreteBayesTreeClique>
+    : public Testable<DiscreteBayesTreeClique> {};
+
+template <>
+struct traits<DiscreteBayesTree> : public Testable<DiscreteBayesTree> {};
+
 }  // namespace gtsam
