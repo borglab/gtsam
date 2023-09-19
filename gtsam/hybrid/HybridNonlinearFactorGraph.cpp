@@ -56,8 +56,6 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
   for (auto& f : factors_) {
     // First check if it is a valid factor
     if (!f) {
-      // TODO(dellaert): why?
-      linearFG->push_back(GaussianFactor::shared_ptr());
       continue;
     }
     // Check if it is a nonlinear mixture factor
