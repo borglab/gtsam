@@ -51,27 +51,30 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
   using Parameters = Eigen::Matrix<double, /*Nx1*/ -1, 1>;
   using DiffMatrix = Eigen::Matrix<double, /*NxN*/ -1, -1>;
 
-  /// Specific Chebyshev point
-  static double Point(size_t N, int j) {
+  /**
+   * @brief Specific Chebyshev point, within [a,b] interval.
+   * Default interval is [-1, 1]
+   * 
+   * @param N The degree of the polynomial
+   * @param j The index of the Chebyshev point
+   * @param a Lower bound of interval (default: -1)
+   * @param b Upper bound of interval (default: 1)
+   * @return double
+   */
+  static double Point(size_t N, int j, double a = -1, double b = 1) {
     assert(j >= 0 && size_t(j) < N);
     const double dtheta = M_PI / (N > 1 ? (N - 1) : 1);
     // We add -PI so that we get values ordered from -1 to +1
-    // sin(- M_PI_2 + dtheta*j); also works
-    return cos(-M_PI + dtheta * j);
-  }
-
-  /// Specific Chebyshev point, within [a,b] interval
-  static double Point(size_t N, int j, double a, double b) {
-    assert(j >= 0 && size_t(j) < N);
-    const double dtheta = M_PI / (N - 1);
-    // We add -PI so that we get values ordered from -1 to +1
+    // sin(-M_PI_2 + dtheta*j); also works
     return a + (b - a) * (1. + cos(-M_PI + dtheta * j)) / 2;
   }
 
   /// All Chebyshev points
   static Vector Points(size_t N) {
     Vector points(N);
-    for (size_t j = 0; j < N; j++) points(j) = Point(N, j);
+    for (size_t j = 0; j < N; j++) {
+      points(j) = Point(N, j);
+    }
     return points;
   }
 
