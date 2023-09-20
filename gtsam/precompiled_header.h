@@ -42,8 +42,10 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/ProductLieGroup.h>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <gtsam/base/serialization.h>
 #include <gtsam/base/serializationTestHelpers.h>
+#endif
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
