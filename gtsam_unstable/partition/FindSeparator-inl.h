@@ -39,7 +39,7 @@ namespace gtsam { namespace partition {
    * whether node j is in the left part of the graph, the right part, or the
    * separator, respectively
    */
-  std::pair<int, sharedInts> separatorMetis(idx_t n, const sharedInts& xadj,
+  std::pair<idx_t, sharedInts> separatorMetis(idx_t n, const sharedInts& xadj,
     const sharedInts& adjncy, const sharedInts& adjwgt, bool verbose) {
 
     // control parameters
@@ -277,7 +277,7 @@ namespace gtsam { namespace partition {
       //throw runtime_error("separatorPartitionByMetis:stop for debug");
     }
 
-    if(result.C.size() != sepsize) {
+    if(result.C.size() != size_t(sepsize)) {
       std::cout << "total key: " << keys.size()
           << " result(A,B,C) = " << result.A.size() << ", " << result.B.size() << ", " << result.C.size()
           << "; sepsize from Metis = " << sepsize << std::endl;
