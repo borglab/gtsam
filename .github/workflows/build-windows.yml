@@ -22,7 +22,7 @@ jobs:
       BOOST_EXE: boost_1_72_0-msvc-14.2
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
@@ -123,37 +123,5 @@ jobs:
       - name: Test
         shell: bash
         run: |
-          # Run GTSAM tests
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.base
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.basis
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.discrete
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.geometry
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.inference
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.linear
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.navigation
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.sam
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.sfm
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.symbolic
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.hybrid
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam
-
-          # Run GTSAM_UNSTABLE tests
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.base_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.geometry_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.linear_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.discrete_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.dynamics_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.partition
-
-          # Run all tests
-          # cmake --build build -j1 --config ${{ matrix.build_type }} --target check
+          # Run all GTSAM tests
+          cmake --build build -j2 --config ${{ matrix.build_type }} --target check
