@@ -171,7 +171,7 @@ Similarity3 Similarity3::Align(const Point3Pairs &abPointPairs) {
   return internal::align(d_abPointPairs, aRb, centroids);
 }
 
-Similarity3 Similarity3::Align(const vector<Pose3Pair> &abPosePairs) {
+Similarity3 Similarity3::Align(const Pose3Pairs &abPosePairs) {
   const size_t n = abPosePairs.size();
   if (n < 2)
     throw std::runtime_error("input should have at least 2 pairs of poses");
