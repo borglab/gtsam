@@ -1284,7 +1284,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                                       [instantiated_class.name])
             else:
                 # Get the full namespace
-                class_name = ".".join(instantiated_class.parent.full_namespaces()[1:])
+                class_name = ".".join(
+                    instantiated_class.parent.full_namespaces()[1:])
 
             if class_name != "":
                 class_name += '.'
@@ -1860,6 +1861,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         """
         for c in cc_content:
             if isinstance(c, list):
+                # c is a namespace
                 if len(c) == 0:
                     continue
 
@@ -1875,6 +1877,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                     self.generate_content(sub_content[1], path_to_folder)
 
             elif isinstance(c[1], list):
+                # c is a wrapped function
                 path_to_folder = osp.join(path, c[0])
 
                 if not osp.isdir(path_to_folder):
@@ -1882,11 +1885,13 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                         os.makedirs(path_to_folder, exist_ok=True)
                     except OSError:
                         pass
+
                 for sub_content in c[1]:
                     path_to_file = osp.join(path_to_folder, sub_content[0])
                     with open(path_to_file, 'w') as f:
                         f.write(sub_content[1])
             else:
+                # c is a wrapped class
                 path_to_file = osp.join(path, c[0])
 
                 if not osp.isdir(path_to_file):
@@ -1921,6 +1926,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         for module in modules.values():
             # Wrap the full namespace
             self.wrap_namespace(module)
+
+            # Generate the wrapping code (both C++ and .m files)
             self.generate_wrapper(module)
 
             # Generate the corresponding .m and .cpp files

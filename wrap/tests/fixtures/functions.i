@@ -36,3 +36,7 @@ void DefaultFuncVector(const std::vector<int> &i = {1, 2, 3}, const std::vector<
 
 // Test for non-trivial default constructor
 void setPose(const gtsam::Pose3& pose = gtsam::Pose3());
+
+std::pair<gtsam::DiscreteConditional*, gtsam::DecisionTreeFactor*>
+EliminateDiscrete(const gtsam::DiscreteFactorGraph& factors,
+                  const gtsam::Ordering& frontalKeys);
