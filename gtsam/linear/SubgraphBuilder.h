@@ -182,7 +182,7 @@ GaussianFactorGraph buildFactorSubgraph(const GaussianFactorGraph &gfg,
 
 /** Split the graph into a subgraph and the remaining edges. 
  * Note that the remaining factorgraph has null factors. */
-std::pair<GaussianFactorGraph, GaussianFactorGraph> splitFactorGraph(
+std::pair<GaussianFactorGraph, GaussianFactorGraph> GTSAM_EXPORT splitFactorGraph(
     const GaussianFactorGraph &factorGraph, const Subgraph &subgraph);
 
 }  // namespace gtsam

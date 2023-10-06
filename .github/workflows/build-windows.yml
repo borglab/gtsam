@@ -150,7 +150,10 @@ jobs:
           # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.dynamics_unstable
           # Compile. Fail with exception
           # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear_unstable
-          # Compilation error
+          # Compile. Fail with exception
           # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam_unstable
-          # Compilation error
+          # Compile. Fail with exception
           # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.partition
+
+          # Run all tests
+          # cmake --build build -j1 --config ${{ matrix.build_type }} --target check
