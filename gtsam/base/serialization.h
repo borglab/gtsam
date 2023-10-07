@@ -16,6 +16,7 @@
  * @author Richard Roberts
  * @date Feb 7, 2012
  */
+
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #pragma once
 
