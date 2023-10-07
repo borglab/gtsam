@@ -114,7 +114,7 @@ jobs:
           bash .github/scripts/python.sh -d
 
       - name: Install Python Dependencies
-        run: $PYTHON -m pip install -r python/dev_requirements.txt
+        run: python$PYTHON_VERSION -m pip install -r python/dev_requirements.txt
 
       - name: Build
         run: |
