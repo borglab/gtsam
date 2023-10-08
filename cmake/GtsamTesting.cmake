@@ -91,12 +91,12 @@ enable_testing()
 #TODO(Varun) Move to HandlePrintConfiguration.cmake. This will require additional changes.
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)	
 
-# Add option for combining unit tests	
-if(MSVC OR XCODE_VERSION)	
-	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" ON)	
-else()	
-	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)	
-endif()	
+# Add option for combining unit tests
+if(MSVC OR XCODE_VERSION)
+	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" ON)
+else()
+	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)
+endif()
 mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
 
 # Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
