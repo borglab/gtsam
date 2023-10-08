@@ -8,6 +8,27 @@ else()
     set(GTSAM_UNSTABLE_AVAILABLE 0)
 endif()
 
+### GtsamTesting related options
+option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
+option(GTSAM_BUILD_EXAMPLES_ALWAYS       "Build examples with 'make all' (build with 'make examples' if not)"       ON)
+option(GTSAM_BUILD_TIMING_ALWAYS         "Build timing scripts with 'make all' (build with 'make timing' if not"    OFF)
+
+# Add option for combining unit tests
+if(MSVC OR XCODE_VERSION)
+    option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" ON)
+else()
+    option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)
+endif()
+mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
+###
+
+# Add option for using build type postfixes to allow installing multiple build modes
+option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" ON)
+
+if (NOT MSVC)
+    option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" OFF)
+endif()
+
 # Configurable Options
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
