@@ -16,7 +16,7 @@ For instructions on updating the version of the [wrap library](https://github.co
 - This wrapper needs `pyparsing(>=2.4.2)`, and `numpy(>=1.11.0)`. These can be installed as follows:
 
   ```bash
-  pip install -r <gtsam_folder>/python/requirements.txt
+  pip install -r <gtsam_folder>/python/dev_requirements.txt
   ```
 
 ## Install

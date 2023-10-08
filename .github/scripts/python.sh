@@ -39,8 +39,6 @@ function install_dependencies()
   if [ "${GTSAM_WITH_TBB:-OFF}" == "ON" ]; then
     install_tbb
   fi
-
-  $PYTHON -m pip install -r $GITHUB_WORKSPACE/python/requirements.txt
 }
 
 function build()
