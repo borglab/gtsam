@@ -109,9 +109,12 @@ jobs:
         with:
           swap-size-gb: 6
 
-      - name: Install Dependencies
+      - name: Install System Dependencies
         run: |
           bash .github/scripts/python.sh -d
+
+      - name: Install Python Dependencies
+        run: python$PYTHON_VERSION -m pip install -r python/dev_requirements.txt
 
       - name: Build
         run: |
