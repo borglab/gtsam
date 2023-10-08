@@ -88,6 +88,17 @@ endmacro()
 # Build macros for using tests
 enable_testing()
 
+#TODO(Varun) Move to HandlePrintConfiguration.cmake. This will require additional changes.
+option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)	
+
+# Add option for combining unit tests	
+if(MSVC OR XCODE_VERSION)	
+	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" ON)	
+else()	
+	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)	
+endif()	
+mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
+
 # Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
 if(GTSAM_BUILD_TESTS)
 	add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
@@ -113,6 +124,7 @@ add_custom_target(timing)
 # Implementations of this file's macros:
 
 macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
+	#TODO(Varun) Building of tests should not depend on global gtsam flag
 	if(GTSAM_BUILD_TESTS)
 		# Add group target if it doesn't already exist
 		if(NOT TARGET check.${groupName})
