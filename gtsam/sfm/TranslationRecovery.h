@@ -48,7 +48,7 @@ namespace gtsam {
 // where s is an arbitrary scale that can be supplied, default 1.0. Hence, two
 // versions are supplied below corresponding to whether we have initial values
 // or not.
-class TranslationRecovery {
+class GTSAM_EXPORT TranslationRecovery {
  public:
   using KeyPair = std::pair<Key, Key>;
   using TranslationEdges = std::vector<BinaryMeasurement<Unit3>>;

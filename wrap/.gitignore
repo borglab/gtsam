@@ -5,6 +5,8 @@ __pycache__/
 *dist*
 *.egg-info
 
+**/.DS_Store
+
 # Files related to code coverage stats
 **/.coverage
 
