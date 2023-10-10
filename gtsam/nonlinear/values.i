@@ -59,13 +59,17 @@ class Values {
   // enabling serialization functionality
   void serialize() const;
 
-  // New in 4.0, we have to specialize every insert/update/at to generate
-  // wrappers Instead of the old: void insert(size_t j, const gtsam::Value&
-  // value); void update(size_t j, const gtsam::Value& val); gtsam::Value
-  // at(size_t j) const;
+  // New in 4.0, we have to specialize every insert/update/at
+  // to generate wrappers.
+  // Instead of the old:
+  // void insert(size_t j, const gtsam::Value& value);
+  // void update(size_t j, const gtsam::Value& val);
+  // gtsam::Value at(size_t j) const;
 
   // The order is important: Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors.
+  void insert(size_t j, Vector vector);
+  void insert(size_t j, Matrix matrix);
   void insert(size_t j, const gtsam::Point2& point2);
   void insert(size_t j, const gtsam::Point3& point3);
   void insert(size_t j, const gtsam::Rot2& rot2);
@@ -92,15 +96,15 @@ class Values {
   void insert(size_t j, const gtsam::PinholePose<gtsam::Cal3Unified>& camera);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert(size_t j, const gtsam::NavState& nav_state);
-  // Vector and Matrix versions should go at the end
-  // to avoid collisions with Point2 and Point3
-  void insert(size_t j, Vector vector);
-  void insert(size_t j, Matrix matrix);
   void insert(size_t j, double c);
 
   template <T = {gtsam::Point2, gtsam::Point3}>
   void insert(size_t j, const T& val);
 
+  // The order is important: Vector has to precede Point2/Point3 so `atVector`
+  // can work for those fixed-size vectors.
+  void update(size_t j, Vector vector);
+  void update(size_t j, Matrix matrix);
   void update(size_t j, const gtsam::Point2& point2);
   void update(size_t j, const gtsam::Point3& point3);
   void update(size_t j, const gtsam::Rot2& rot2);
@@ -127,12 +131,12 @@ class Values {
   void update(size_t j, const gtsam::PinholePose<gtsam::Cal3Unified>& camera);
   void update(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void update(size_t j, const gtsam::NavState& nav_state);
-  // Vector and Matrix versions should go at the end
-  // to avoid collisions with Point2 and Point3
-  void update(size_t j, Vector vector);
-  void update(size_t j, Matrix matrix);
   void update(size_t j, double c);
 
+  // The order is important: Vector has to precede Point2/Point3 so `atVector`
+  // can work for those fixed-size vectors.
+  void insert_or_assign(size_t j, Vector vector);
+  void insert_or_assign(size_t j, Matrix matrix);
   void insert_or_assign(size_t j, const gtsam::Point2& point2);
   void insert_or_assign(size_t j, const gtsam::Point3& point3);
   void insert_or_assign(size_t j, const gtsam::Rot2& rot2);
@@ -169,10 +173,6 @@ class Values {
   void insert_or_assign(size_t j,
                         const gtsam::imuBias::ConstantBias& constant_bias);
   void insert_or_assign(size_t j, const gtsam::NavState& nav_state);
-  // Vector and Matrix versions should go at the end
-  // to avoid collisions with Point2 and Point3
-  void insert_or_assign(size_t j, Vector vector);
-  void insert_or_assign(size_t j, Matrix matrix);
   void insert_or_assign(size_t j, double c);
 
   template <T = {gtsam::Point2,
