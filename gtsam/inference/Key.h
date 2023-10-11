@@ -37,10 +37,16 @@ using KeyFormatter = std::function<std::string(Key)>;
 // Helper function for DefaultKeyFormatter
 GTSAM_EXPORT std::string _defaultKeyFormatter(Key key);
 
-/// The default KeyFormatter, which is used if no KeyFormatter is passed to
-/// a nonlinear 'print' function.  Automatically detects plain integer keys
-/// and Symbol keys.
-static const KeyFormatter DefaultKeyFormatter = &_defaultKeyFormatter;
+/**
+ * The default KeyFormatter, which is used if no KeyFormatter is passed
+ * to a 'print' function.
+ *
+ * Automatically detects plain integer keys and Symbol keys.
+ * 
+ * Marked as `extern` so that it can be updated by external libraries.
+ *
+ */
+extern KeyFormatter DefaultKeyFormatter;
 
 // Helper function for Multi-robot Key Formatter
 GTSAM_EXPORT std::string _multirobotKeyFormatter(gtsam::Key key);
@@ -124,7 +130,3 @@ struct traits<Key> {
 };
 
 } // namespace gtsam
-
-
-
-

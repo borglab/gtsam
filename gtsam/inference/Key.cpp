@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Key.h
+ * @file Key.cpp
  * @brief
  * @author Richard Roberts
  * @author Alex Cunningham
@@ -25,6 +25,9 @@
 using namespace std;
 
 namespace gtsam {
+
+// KeyFormatter DefaultKeyFormatter = &_dynamicsKeyFormatter;
+KeyFormatter DefaultKeyFormatter = &_defaultKeyFormatter;
 
 /* ************************************************************************* */
 string _defaultKeyFormatter(Key key) {
