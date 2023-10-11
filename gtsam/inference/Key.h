@@ -46,7 +46,7 @@ GTSAM_EXPORT std::string _defaultKeyFormatter(Key key);
  * Marked as `extern` so that it can be updated by external libraries.
  *
  */
-extern KeyFormatter DefaultKeyFormatter;
+extern GTSAM_EXPORT KeyFormatter DefaultKeyFormatter;
 
 // Helper function for Multi-robot Key Formatter
 GTSAM_EXPORT std::string _multirobotKeyFormatter(gtsam::Key key);
