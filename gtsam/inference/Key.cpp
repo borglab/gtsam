@@ -26,7 +26,7 @@ using namespace std;
 
 namespace gtsam {
 
-// KeyFormatter DefaultKeyFormatter = &_dynamicsKeyFormatter;
+/// Assign default key formatter
 KeyFormatter DefaultKeyFormatter = &_defaultKeyFormatter;
 
 /* ************************************************************************* */
