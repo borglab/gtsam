@@ -312,6 +312,12 @@ namespace gtsam {
     /** Get a view of the A matrix */
     ABlock getA() { return Ab_.range(0, size()); }
 
+    /**
+     * Get a view of the A matrix for the variable
+     * pointed to by the given key.
+     */
+    ABlock getA(const Key& key) { return Ab_(find(key) - begin()); }
+
     /** Update an information matrix by adding the information corresponding to this factor
      * (used internally during elimination).
      * @param scatter A mapping from variable index to slot index in this HessianFactor
