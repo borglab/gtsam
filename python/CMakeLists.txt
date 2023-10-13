@@ -23,14 +23,8 @@ include(PybindWrap)
 
 # Load the pybind11 code
 
-
-# This is required to avoid an error in modern pybind11 cmake scripts:
-if(POLICY CMP0057)
-  cmake_policy(SET CMP0057 NEW)
-endif()
-
 # Prefer system pybind11 first, if not found, rely on bundled version:
-find_package(pybind11 CONFIG QUIET)
+find_package(pybind11 CONFIG)
 if (NOT pybind11_FOUND)
         add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
 endif()
@@ -94,6 +88,14 @@ set(interface_headers
 set(GTSAM_PYTHON_TARGET gtsam_py)
 set(GTSAM_PYTHON_UNSTABLE_TARGET gtsam_unstable_py)
 
+set(GTSAM_OUTPUT_NAME "gtsam")
+set(GTSAM_UNSTABLE_OUTPUT_NAME "gtsam_unstable")
+
+if(MSVC)
+    set(GTSAM_OUTPUT_NAME "gtsam_py")
+    set(GTSAM_UNSTABLE_OUTPUT_NAME "gtsam_unstable_py")
+endif()
+
 pybind_wrap(${GTSAM_PYTHON_TARGET} # target
             "${interface_headers}" # interface_headers
             "gtsam.cpp" # generated_cpp
@@ -109,11 +111,41 @@ pybind_wrap(${GTSAM_PYTHON_TARGET} # target
 set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
     INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
     INSTALL_RPATH_USE_LINK_PATH TRUE
-    OUTPUT_NAME "gtsam"
+    OUTPUT_NAME "${GTSAM_OUTPUT_NAME}"
     LIBRARY_OUTPUT_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam"
     DEBUG_POSTFIX "" # Otherwise you will have a wrong name
     RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
     )
+
+if(WIN32)
+    set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
+        SUFFIX ".pyd"
+    )
+    ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_TARGET} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/${GTSAM_OUTPUT_NAME}.pyd"
+        "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/gtsam.pyd"   
+    )
+    ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_TARGET} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE:gtsam>;$<TARGET_RUNTIME_DLLS:gtsam>"
+        "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/"   
+        COMMAND_EXPAND_LISTS
+        VERBATIM              
+    )
+
+    if(DEFINED VCPKG_INSTALLED_DIR)
+        list(GET CMAKE_FIND_ROOT_PATH 0 VCPKG_BINARIES)
+        file(GLOB VCPKG_BINARIES "${VCPKG_BINARIES}/bin/*.dll")
+        ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_TARGET} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${VCPKG_BINARIES}"
+            "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/"   
+            COMMAND_EXPAND_LISTS
+            VERBATIM              
+        )
+    endif()
+endif()
 
 # Set the path for the GTSAM python module
 set(GTSAM_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam)
@@ -188,7 +220,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
     set_target_properties(${GTSAM_PYTHON_UNSTABLE_TARGET} PROPERTIES
             INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
             INSTALL_RPATH_USE_LINK_PATH TRUE
-            OUTPUT_NAME "gtsam_unstable"
+            OUTPUT_NAME "${GTSAM_UNSTABLE_OUTPUT_NAME}"
             LIBRARY_OUTPUT_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable"
             DEBUG_POSTFIX "" # Otherwise you will have a wrong name
             RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
@@ -208,13 +240,50 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
 
     # Add gtsam_unstable to the install target
     list(APPEND GTSAM_PYTHON_DEPENDENCIES ${GTSAM_PYTHON_UNSTABLE_TARGET})
-
+    if(WIN32)
+        set_target_properties(${GTSAM_PYTHON_UNSTABLE_TARGET} PROPERTIES
+            SUFFIX ".pyd"
+        )    
+        ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_UNSTABLE_TARGET} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable/${GTSAM_UNSTABLE_OUTPUT_NAME}.pyd"
+            "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable/gtsam_unstable.pyd"
+        )
+        ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_UNSTABLE_TARGET} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:gtsam_unstable>;$<TARGET_RUNTIME_DLLS:gtsam_unstable>"
+            "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable/"
+            COMMAND_EXPAND_LISTS
+            VERBATIM            
+        )
+        if(DEFINED VCPKG_INSTALLED_DIR)
+            list(GET CMAKE_FIND_ROOT_PATH 0 VCPKG_BINARIES)
+            file(GLOB VCPKG_BINARIES "${VCPKG_BINARIES}/bin/*.dll")
+            ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_UNSTABLE_TARGET} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${VCPKG_BINARIES}"
+                "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable/"   
+                COMMAND_EXPAND_LISTS
+                VERBATIM              
+            )
+        endif()
+    endif()
+    # Custom make command to run all GTSAM_UNSTABLE Python tests
+    add_custom_target(
+        python-test-unstable
+        COMMAND
+          ${CMAKE_COMMAND} -E env # add package to python path so no need to install
+          "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
+        ${PYTHON_EXECUTABLE} -m unittest discover -v -s .
+        DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES}
+        WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable/tests"
+    )
 endif()
 
 # Add custom target so we can install with `make python-install`
 set(GTSAM_PYTHON_INSTALL_TARGET python-install)
 add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-        COMMAND ${PYTHON_EXECUTABLE} -m pip install .
+        COMMAND ${PYTHON_EXECUTABLE} -m pip install --user .
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
 

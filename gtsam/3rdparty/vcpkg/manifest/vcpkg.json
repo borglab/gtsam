@@ -1,0 +1,30 @@
+{
+  "name": "gtsam",
+  "description": "Georgia Tech Smoothing and Mapping Library.",
+  "homepage": "gtsam.org",
+  "dependencies": [
+    "boost-assign",
+    "boost-bimap",
+    "boost-chrono",
+    "boost-date-time",
+    "boost-filesystem",
+    "boost-format",
+    "boost-graph",
+    "boost-math",
+    "boost-program-options",
+    "boost-regex",
+    "boost-serialization",
+    "boost-system",
+    "boost-thread",
+    "boost-timer",
+    "eigen3",
+    "metis",
+    "tbb",
+    "pybind11",
+    "geographiclib",
+    {
+      "name":"intel-mkl",
+      "platform": "!windows"
+    }
+  ]
+}

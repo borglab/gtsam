@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
 
+# This is required to avoid an error in modern pybind11 cmake scripts:
+if(POLICY CMP0057)
+    cmake_policy(SET CMP0057 NEW)
+endif()
+
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 4)
 set (GTSAM_VERSION_MINOR 3)
