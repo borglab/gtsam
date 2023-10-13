@@ -32,7 +32,7 @@ Weights Chebyshev2::CalculateWeights(size_t N, double x, double a, double b) {
     const double dj =
         x - Point(N, j, a, b);  // only thing that depends on [a,b]
 
-    if (std::abs(dj) < 1e-12) {
+    if (std::abs(dj) < 1e-10) {
       // exceptional case: x coincides with a Chebyshev point
       weights.setZero();
       weights(j) = 1;
@@ -73,7 +73,7 @@ Weights Chebyshev2::DerivativeWeights(size_t N, double x, double a, double b) {
   for (size_t j = 0; j < N; j++) {
     const double dj =
         x - Point(N, j, a, b);  // only thing that depends on [a,b]
-    if (std::abs(dj) < 1e-12) {
+    if (std::abs(dj) < 1e-10) {
       // exceptional case: x coincides with a Chebyshev point
       weightDerivatives.setZero();
       // compute the jth row of the differentiation matrix for this point
