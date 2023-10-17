@@ -64,6 +64,10 @@ set(ignore
     gtsam::Point3
     gtsam::CustomFactor)
 
+if (APPLE OR WIN32)
+  list(APPEND ignore gtsam::Symbol)
+endif()
+
 set(interface_files
     ${GTSAM_SOURCE_DIR}/gtsam/gtsam.i
     ${GTSAM_SOURCE_DIR}/gtsam/base/base.i
