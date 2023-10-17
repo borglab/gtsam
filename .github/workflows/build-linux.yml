@@ -31,7 +31,7 @@ jobs:
           ubuntu-22.04-clang-14,
         ]
 
-        build_type: [Debug, Release]
+        build_type: [Release]
         build_unstable: [ON]
         include:
           - name: ubuntu-20.04-gcc-9
