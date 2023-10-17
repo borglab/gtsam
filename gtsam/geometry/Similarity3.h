@@ -75,7 +75,7 @@ class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
   bool operator==(const Similarity3& other) const;
 
   /// Print with optional string
-  void print(const std::string& s) const;
+  void print(const std::string& s = "") const;
 
   GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
                                                const Similarity3& p);
@@ -133,7 +133,7 @@ class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
    * computed using the algorithm described here:
    * http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
    */
-  static Similarity3 Align(const std::vector<Pose3Pair>& abPosePairs);
+  static Similarity3 Align(const Pose3Pairs& abPosePairs);
 
   /// @}
   /// @name Lie Group

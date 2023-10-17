@@ -438,8 +438,7 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
 
       // (DxD) += (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
       // add contribution of current factor
-      // TODO(gareth): Eigen doesn't let us pass the expression. Call eval() for
-      // now...
+      // Eigen doesn't let us pass the expression so we call eval()
       augmentedHessian.updateDiagonalBlock(
           aug_i,
           ((FiT *

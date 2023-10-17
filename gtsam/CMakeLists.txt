@@ -145,10 +145,6 @@ if (GTSAM_USE_EIGEN_MKL)
   target_include_directories(gtsam PUBLIC ${MKL_INCLUDE_DIR})
 endif()
 
-if(GTSAM_USE_TBB)
-  target_include_directories(gtsam PUBLIC ${TBB_INCLUDE_DIRS})
-endif()
-
 # Add includes for source directories 'BEFORE' boost and any system include
 # paths so that the compiler uses GTSAM headers in our source directory instead
 # of any previously installed GTSAM headers.

@@ -124,6 +124,10 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
 
 /// traits
 template <>
+struct traits<HybridBayesTreeClique> : public Testable<HybridBayesTreeClique> {
+};
+
+template <>
 struct traits<HybridBayesTree> : public Testable<HybridBayesTree> {};
 
 /**
