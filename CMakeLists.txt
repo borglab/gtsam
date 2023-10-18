@@ -36,19 +36,19 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
 include(GtsamMakeConfigFile)
 include(GNUInstallDirs)
 
-# Load build type flags and default to Debug mode
-include(GtsamBuildTypes)
-
-# Use macros for creating tests/timing scripts
-include(GtsamTesting)
-include(GtsamPrinting)
-
 # guard against in-source builds
 if(${GTSAM_SOURCE_DIR} STREQUAL ${GTSAM_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
 
 include(cmake/HandleGeneralOptions.cmake)   # CMake build options
+
+# Load build type flags and default to Debug mode
+include(GtsamBuildTypes)
+
+# Use macros for creating tests/timing scripts
+include(GtsamTesting)
+include(GtsamPrinting)
 
 ############### Decide on BOOST ######################################
 # Enable or disable serialization with GTSAM_ENABLE_BOOST_SERIALIZATION
