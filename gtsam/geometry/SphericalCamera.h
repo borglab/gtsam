@@ -238,9 +238,9 @@ class GTSAM_EXPORT SphericalCamera {
 // end of class SphericalCamera
 
 template <>
-struct traits<SphericalCamera> : public internal::LieGroup<Pose3> {};
+struct traits<SphericalCamera> : public internal::Manifold<SphericalCamera> {};
 
 template <>
-struct traits<const SphericalCamera> : public internal::LieGroup<Pose3> {};
+struct traits<const SphericalCamera> : public internal::Manifold<SphericalCamera> {};
 
 }  // namespace gtsam

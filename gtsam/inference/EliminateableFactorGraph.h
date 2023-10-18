@@ -51,12 +51,12 @@ namespace gtsam {
    *  algorithms.  Any factor graph holding eliminateable factors can derive from this class to
    *  expose functions for computing marginals, conditional marginals, doing multifrontal and
    *  sequential elimination, etc. */
-  template<class FACTORGRAPH>
+  template<class FACTOR_GRAPH>
   class EliminateableFactorGraph
   {
   private:
-    typedef EliminateableFactorGraph<FACTORGRAPH> This; ///< Typedef to this class.
-    typedef FACTORGRAPH FactorGraphType; ///< Typedef to factor graph type
+    typedef EliminateableFactorGraph<FACTOR_GRAPH> This; ///< Typedef to this class.
+    typedef FACTOR_GRAPH FactorGraphType; ///< Typedef to factor graph type
     // Base factor type stored in this graph (private because derived classes will get this from
     // their FactorGraph base class)
     typedef typename EliminationTraits<FactorGraphType>::FactorType _FactorType;

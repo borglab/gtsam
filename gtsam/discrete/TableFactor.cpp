@@ -13,11 +13,12 @@
  * @file TableFactor.cpp
  * @brief discrete factor
  * @date May 4, 2023
- * @author Yoonwoo Kim
+ * @author Yoonwoo Kim, Varun Agrawal
  */
 
 #include <gtsam/base/FastSet.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/TableFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 
@@ -33,8 +34,7 @@ TableFactor::TableFactor() {}
 /* ************************************************************************ */
 TableFactor::TableFactor(const DiscreteKeys& dkeys,
                          const TableFactor& potentials)
-    : DiscreteFactor(dkeys.indices()),
-      cardinalities_(potentials.cardinalities_) {
+    : DiscreteFactor(dkeys.indices(), dkeys.cardinalities()) {
   sparse_table_ = potentials.sparse_table_;
   denominators_ = potentials.denominators_;
   sorted_dkeys_ = discreteKeys();
@@ -44,11 +44,11 @@ TableFactor::TableFactor(const DiscreteKeys& dkeys,
 /* ************************************************************************ */
 TableFactor::TableFactor(const DiscreteKeys& dkeys,
                          const Eigen::SparseVector<double>& table)
-    : DiscreteFactor(dkeys.indices()), sparse_table_(table.size()) {
+    : DiscreteFactor(dkeys.indices(), dkeys.cardinalities()),
+      sparse_table_(table.size()) {
   sparse_table_ = table;
   double denom = table.size();
   for (const DiscreteKey& dkey : dkeys) {
-    cardinalities_.insert(dkey);
     denom /= dkey.second;
     denominators_.insert(std::pair<Key, double>(dkey.first, denom));
   }
@@ -57,10 +57,50 @@ TableFactor::TableFactor(const DiscreteKeys& dkeys,
 }
 
 /* ************************************************************************ */
+TableFactor::TableFactor(const DiscreteKeys& dkeys,
+                         const DecisionTree<Key, double>& dtree)
+    : TableFactor(dkeys, DecisionTreeFactor(dkeys, dtree)) {}
+
+/**
+ * @brief Compute the correct ordering of the leaves in the decision tree.
+ *
+ * This is done by first taking all the values which have modulo 0 value with
+ * the cardinality of the innermost key `n`, and we go up to modulo n.
+ *
+ * @param dt The DecisionTree
+ * @return std::vector<double>
+ */
+std::vector<double> ComputeLeafOrdering(const DiscreteKeys& dkeys,
+                                        const DecisionTreeFactor& dt) {
+  std::vector<double> probs = dt.probabilities();
+  std::vector<double> ordered;
+
+  size_t n = dkeys[0].second;
+
+  for (size_t k = 0; k < n; ++k) {
+    for (size_t idx = 0; idx < probs.size(); ++idx) {
+      if (idx % n == k) {
+        ordered.push_back(probs[idx]);
+      }
+    }
+  }
+  return ordered;
+}
+
+/* ************************************************************************ */
+TableFactor::TableFactor(const DiscreteKeys& dkeys,
+                         const DecisionTreeFactor& dtf)
+    : TableFactor(dkeys, ComputeLeafOrdering(dkeys, dtf)) {}
+
+/* ************************************************************************ */
+TableFactor::TableFactor(const DiscreteConditional& c)
+    : TableFactor(c.discreteKeys(), c) {}
+
+/* ************************************************************************ */
 Eigen::SparseVector<double> TableFactor::Convert(
     const std::vector<double>& table) {
   Eigen::SparseVector<double> sparse_table(table.size());
-  // Count number of nonzero elements in table and reserving the space.
+  // Count number of nonzero elements in table and reserve the space.
   const uint64_t nnz = std::count_if(table.begin(), table.end(),
                                      [](uint64_t i) { return i != 0; });
   sparse_table.reserve(nnz);
@@ -212,6 +252,45 @@ void TableFactor::print(const string& s, const KeyFormatter& formatter) const {
     cout << " | " << it.value() << " | " << it.index() << endl;
   }
   cout << "number of nnzs: " << sparse_table_.nonZeros() << endl;
+}
+
+/* ************************************************************************ */
+TableFactor TableFactor::apply(Unary op) const {
+  // Initialize new factor.
+  uint64_t cardi = 1;
+  for (auto [key, c] : cardinalities_) cardi *= c;
+  Eigen::SparseVector<double> sparse_table(cardi);
+  sparse_table.reserve(sparse_table_.nonZeros());
+
+  // Populate
+  for (SparseIt it(sparse_table_); it; ++it) {
+    sparse_table.coeffRef(it.index()) = op(it.value());
+  }
+
+  // Free unused memory and return.
+  sparse_table.pruned();
+  sparse_table.data().squeeze();
+  return TableFactor(discreteKeys(), sparse_table);
+}
+
+/* ************************************************************************ */
+TableFactor TableFactor::apply(UnaryAssignment op) const {
+  // Initialize new factor.
+  uint64_t cardi = 1;
+  for (auto [key, c] : cardinalities_) cardi *= c;
+  Eigen::SparseVector<double> sparse_table(cardi);
+  sparse_table.reserve(sparse_table_.nonZeros());
+
+  // Populate
+  for (SparseIt it(sparse_table_); it; ++it) {
+    DiscreteValues assignment = findAssignments(it.index());
+    sparse_table.coeffRef(it.index()) = op(assignment, it.value());
+  }
+
+  // Free unused memory and return.
+  sparse_table.pruned();
+  sparse_table.data().squeeze();
+  return TableFactor(discreteKeys(), sparse_table);
 }
 
 /* ************************************************************************ */
@@ -431,18 +510,6 @@ std::vector<std::pair<DiscreteValues, double>> TableFactor::enumerate() const {
   std::vector<std::pair<DiscreteValues, double>> result;
   for (const auto& assignment : assignments) {
     result.emplace_back(assignment, operator()(assignment));
-  }
-  return result;
-}
-
-/* ************************************************************************ */
-DiscreteKeys TableFactor::discreteKeys() const {
-  DiscreteKeys result;
-  for (auto&& key : keys()) {
-    DiscreteKey dkey(key, cardinality(key));
-    if (std::find(result.begin(), result.end(), dkey) == result.end()) {
-      result.push_back(dkey);
-    }
   }
   return result;
 }

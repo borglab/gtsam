@@ -131,12 +131,15 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
     return z;
   }
 
-  /** An overload o the project2 function to accept
+  /** An overload of the project2 function to accept
    * full matrices and vectors and pass it to the pointer
-   * version of the function
+   * version of the function.
+   *
+   * Use SFINAE to resolve overload ambiguity.
    */
   template <class POINT, class... OptArgs>
-  ZVector project2(const POINT& point, OptArgs&... args) const {
+  typename std::enable_if<(sizeof...(OptArgs) != 0), ZVector>::type project2(
+      const POINT& point, OptArgs&... args) const {
     // pass it to the pointer version of the function
     return project2(point, (&args)...);
   }
@@ -435,8 +438,7 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
 
       // (DxD) += (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
       // add contribution of current factor
-      // TODO(gareth): Eigen doesn't let us pass the expression. Call eval() for
-      // now...
+      // Eigen doesn't let us pass the expression so we call eval()
       augmentedHessian.updateDiagonalBlock(
           aug_i,
           ((FiT *

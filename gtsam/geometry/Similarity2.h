@@ -74,9 +74,10 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
   bool operator==(const Similarity2& other) const;
 
   /// Print with optional string
-  void print(const std::string& s) const;
+  void print(const std::string& s = "") const;
 
-  friend std::ostream& operator<<(std::ostream& os, const Similarity2& p);
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                               const Similarity2& p);
 
   /// @}
   /// @name Group

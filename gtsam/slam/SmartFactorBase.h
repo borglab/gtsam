@@ -162,8 +162,9 @@ protected:
   /// Collect all cameras: important that in key order.
   virtual Cameras cameras(const Values& values) const {
     Cameras cameras;
-    for(const Key& k: this->keys_)
+    for(const Key& k: this->keys_) {
       cameras.push_back(values.at<CAMERA>(k));
+    }
     return cameras;
   }
 

@@ -29,10 +29,6 @@
 
 #include <Eigen/Core>  // for Eigen::aligned_allocator
 
-#ifdef GTSAM_USE_BOOST_FEATURES
-#include <boost/assign/list_inserter.hpp>
-#endif
-
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/vector.hpp>
@@ -52,45 +48,6 @@ template <class CLIQUE>
 class BayesTree;
 
 class HybridValues;
-
-/** Helper */
-template <class C>
-class CRefCallPushBack {
-  C& obj;
-
- public:
-  explicit CRefCallPushBack(C& obj) : obj(obj) {}
-  template <typename A>
-  void operator()(const A& a) {
-    obj.push_back(a);
-  }
-};
-
-/** Helper */
-template <class C>
-class RefCallPushBack {
-  C& obj;
-
- public:
-  explicit RefCallPushBack(C& obj) : obj(obj) {}
-  template <typename A>
-  void operator()(A& a) {
-    obj.push_back(a);
-  }
-};
-
-/** Helper */
-template <class C>
-class CRefCallAddCopy {
-  C& obj;
-
- public:
-  explicit CRefCallAddCopy(C& obj) : obj(obj) {}
-  template <typename A>
-  void operator()(const A& a) {
-    obj.addCopy(a);
-  }
-};
 
 /**
  * A factor graph is a bipartite graph with factor nodes connected to variable
@@ -215,17 +172,26 @@ class FactorGraph {
     push_back(factor);
   }
 
-#ifdef GTSAM_USE_BOOST_FEATURES
-  /// `+=` works well with boost::assign list inserter.
+  /// Append factor to factor graph
   template <class DERIVEDFACTOR>
-  typename std::enable_if<
-      std::is_base_of<FactorType, DERIVEDFACTOR>::value,
-      boost::assign::list_inserter<RefCallPushBack<This>>>::type
+  typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value,
+                          This>::type&
   operator+=(std::shared_ptr<DERIVEDFACTOR> factor) {
-    return boost::assign::make_list_inserter(RefCallPushBack<This>(*this))(
-        factor);
+    push_back(factor);
+    return *this;
   }
-#endif
+
+  /**
+   * @brief Overload comma operator to allow for append chaining.
+   *
+   * E.g. fg += factor1, factor2, ...
+   */
+  template <class DERIVEDFACTOR>
+  typename std::enable_if<std::is_base_of<FactorType, DERIVEDFACTOR>::value, This>::type& operator,(
+      std::shared_ptr<DERIVEDFACTOR> factor) {
+    push_back(factor);
+    return *this;
+  }
 
   /// @}
   /// @name Adding via iterators
@@ -276,18 +242,15 @@ class FactorGraph {
     push_back(factorOrContainer);
   }
 
-#ifdef GTSAM_USE_BOOST_FEATURES
   /**
    * Add a factor or container of factors, including STL collections,
    * BayesTrees, etc.
    */
   template <class FACTOR_OR_CONTAINER>
-  boost::assign::list_inserter<CRefCallPushBack<This>> operator+=(
-      const FACTOR_OR_CONTAINER& factorOrContainer) {
-    return boost::assign::make_list_inserter(CRefCallPushBack<This>(*this))(
-        factorOrContainer);
+  This& operator+=(const FACTOR_OR_CONTAINER& factorOrContainer) {
+    push_back(factorOrContainer);
+    return *this;
   }
-#endif
 
   /// @}
   /// @name Specialized versions
@@ -346,6 +309,21 @@ class FactorGraph {
    * an exception, as opposed to operator[] which does not).
    */
   sharedFactor& at(size_t i) { return factors_.at(i); }
+
+  /** Get a specific factor by index and typecast to factor type F
+   * (this checks array bounds and may throw
+   * an exception, as opposed to operator[] which does not).
+   */
+  template <typename F>
+  std::shared_ptr<F> at(size_t i) {
+    return std::dynamic_pointer_cast<F>(factors_.at(i));
+  }
+
+  /// Const version of templated `at` method.
+  template <typename F>
+  const std::shared_ptr<F> at(size_t i) const {
+    return std::dynamic_pointer_cast<F>(factors_.at(i));
+  }
 
   /** Get a specific factor by index (this does not check array bounds, as
    * opposed to at() which does).

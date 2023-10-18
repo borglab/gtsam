@@ -42,6 +42,7 @@
 #include <functional>
 #include <iostream>
 #include <iterator>
+#include <numeric>
 #include <vector>
 
 #include "Switching.h"
@@ -612,11 +613,11 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   // Create expected decision tree with two factor graphs:
 
   // Get mixture factor:
-  auto mixture = std::dynamic_pointer_cast<GaussianMixtureFactor>(fg.at(0));
+  auto mixture = fg.at<GaussianMixtureFactor>(0);
   CHECK(mixture);
 
   // Get prior factor:
-  const auto gf = std::dynamic_pointer_cast<HybridConditional>(fg.at(1));
+  const auto gf = fg.at<HybridConditional>(1);
   CHECK(gf);
   using GF = GaussianFactor::shared_ptr;
   const GF prior = gf->asGaussian();
@@ -902,7 +903,7 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   // Test resulting posterior Bayes net has correct size:
   EXPECT_LONGS_EQUAL(8, posterior->size());
 
-  // TODO(dellaert): this test fails - no idea why.
+  // Ratio test
   EXPECT(ratioTest(bn, measurements, *posterior));
 }
 

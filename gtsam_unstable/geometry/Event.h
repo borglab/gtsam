@@ -34,7 +34,7 @@ namespace gtsam {
  * SLAM, where we have "time of arrival" measurements at a set of sensors. The
  * TOA functor below provides a measurement function for those applications.
  */
-class Event {
+class GTSAM_UNSTABLE_EXPORT Event {
   double time_;      ///< Time event was generated
   Point3 location_;  ///< Location at time event was generated
 
@@ -62,10 +62,10 @@ class Event {
   }
 
   /** print with optional string */
-  GTSAM_UNSTABLE_EXPORT void print(const std::string& s = "") const;
+  void print(const std::string& s = "") const;
 
   /** equals with an tolerance */
-  GTSAM_UNSTABLE_EXPORT bool equals(const Event& other,
+  bool equals(const Event& other,
                                     double tol = 1e-9) const;
 
   /// Updates a with tangent space delta

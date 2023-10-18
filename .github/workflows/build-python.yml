@@ -75,7 +75,7 @@ jobs:
           fi
 
           sudo apt-get -y update
-          sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libboost-all-dev
+          sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libboost-all-dev ninja-build
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
@@ -109,9 +109,12 @@ jobs:
         with:
           swap-size-gb: 6
 
-      - name: Install Dependencies
+      - name: Install System Dependencies
         run: |
           bash .github/scripts/python.sh -d
+
+      - name: Install Python Dependencies
+        run: python$PYTHON_VERSION -m pip install -r python/dev_requirements.txt
 
       - name: Build
         run: |

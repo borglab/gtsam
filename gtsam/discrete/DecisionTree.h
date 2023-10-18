@@ -39,9 +39,23 @@
 namespace gtsam {
 
   /**
-   * Decision Tree
-   * L = label for variables
-   * Y = function range (any algebra), e.g., bool, int, double
+   * @brief a decision tree is a function from assignments to values.
+   * @tparam L label for variables
+   * @tparam Y function range (any algebra), e.g., bool, int, double
+   * 
+   * After creating a decision tree on some variables, the tree can be evaluated
+   * on an assignment to those variables. Example:
+   * 
+   * @code{.cpp}
+   * // Create a decision stump one one variable 'a' with values 10 and 20.
+   * DecisionTree<char, int> tree('a', 10, 20);
+   * 
+   * // Evaluate the tree on an assignment to the variable.
+   * int value0 = tree({{'a', 0}}); // value0 = 10
+   * int value1 = tree({{'a', 1}}); // value1 = 20
+   * @endcode
+   * 
+   * More examples can be found in testDecisionTree.cpp
    *
    * @ingroup discrete
    */
@@ -136,7 +150,8 @@ namespace gtsam {
     NodePtr root_;
 
    protected:
-    /** Internal recursive function to create from keys, cardinalities, 
+    /** 
+     * Internal recursive function to create from keys, cardinalities, 
      * and Y values 
      */
     template<typename It, typename ValueIt>
@@ -167,7 +182,13 @@ namespace gtsam {
     /** Create a constant */
     explicit DecisionTree(const Y& y);
 
-    /// Create tree with 2 assignments `y1`, `y2`, splitting on variable `label`
+    /**
+     * @brief Create tree with 2 assignments `y1`, `y2`, splitting on variable `label`
+     * 
+     * @param label The variable to split on.
+     * @param y1 The value for the first assignment.
+     * @param y2 The value for the second assignment.
+     */
     DecisionTree(const L& label, const Y& y1, const Y& y2);
 
     /** Allow Label+Cardinality for convenience */
@@ -298,6 +319,42 @@ namespace gtsam {
 
     /// Return the number of leaves in the tree.
     size_t nrLeaves() const;
+
+    /**
+     * @brief This is a convenience function which returns the total number of
+     * leaf assignments in the decision tree.
+     * This function is not used for anymajor operations within the discrete
+     * factor graph framework.
+     *
+     * Leaf assignments represent the cardinality of each leaf node, e.g. in a
+     * binary tree each leaf has 2 assignments. This includes counts removed
+     * from implicit pruning hence, it will always be >= nrLeaves().
+     *
+     * E.g. we have a decision tree as below, where each node has 2 branches:
+     *
+     * Choice(m1)
+     * 0 Choice(m0)
+     * 0 0 Leaf 0.0
+     * 0 1 Leaf 0.0
+     * 1 Choice(m0)
+     * 1 0 Leaf 1.0
+     * 1 1 Leaf 2.0
+     *
+     * In the unpruned form, the tree will have 4 assignments, 2 for each key,
+     * and 4 leaves.
+     *
+     * In the pruned form, the number of assignments is still 4 but the number
+     * of leaves is now 3, as below:
+     *
+     * Choice(m1)
+     * 0 Leaf 0.0
+     * 1 Choice(m0)
+     * 1 0 Leaf 1.0
+     * 1 1 Leaf 2.0
+     *
+     * @return size_t
+     */
+    size_t nrAssignments() const;
 
     /**
      * @brief Fold a binary function over the tree, returning accumulator.

@@ -40,6 +40,7 @@ class HybridEliminationTree;
 class HybridBayesTree;
 class HybridJunctionTree;
 class DecisionTreeFactor;
+class TableFactor;
 class JacobianFactor;
 class HybridValues;
 
@@ -112,8 +113,8 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
  public:
   using Base = HybridFactorGraph;
   using This = HybridGaussianFactorGraph;  ///< this class
-  using BaseEliminateable =
-      EliminateableFactorGraph<This>;          ///< for elimination
+  ///< for elimination
+  using BaseEliminateable = EliminateableFactorGraph<This>;
   using shared_ptr = std::shared_ptr<This>;  ///< shared_ptr to This
 
   using Values = gtsam::Values;  ///< backwards compatibility
@@ -148,7 +149,8 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   /// @name Standard Interface
   /// @{
 
-  using Base::error; // Expose error(const HybridValues&) method..
+  /// Expose error(const HybridValues&) method.
+  using Base::error;
 
   /**
    * @brief Compute error for each discrete assignment,

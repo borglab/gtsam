@@ -29,7 +29,8 @@
 namespace gtsam {
 
 /**
- * @brief 
+ * @brief Incremental Smoothing and Mapping (ISAM) algorithm
+ * for hybrid factor graphs.
  *
  * @ingroup hybrid
  */

@@ -74,6 +74,12 @@ namespace gtsam {
       return *this;
     }
 
+    /// Add multiple keys (non-const!)
+    DiscreteKeys& operator&(const DiscreteKeys& keys) {
+      this->insert(this->end(), keys.begin(), keys.end());
+      return *this;
+    }
+
     /// Print the keys and cardinalities.
     void print(const std::string& s = "",
                const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;

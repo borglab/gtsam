@@ -11,6 +11,7 @@
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Marginals.h>
@@ -657,6 +658,77 @@ namespace {
     bool ok = treeEqual && /*linEqual &&*/ nonlinEqual && /*linCorrect &&*/ /*afterLinCorrect &&*/ afterNonlinCorrect;
     return ok;
   }
+
+  std::optional<FastMap<Key, int>> createOrderingConstraints(const ISAM2& isam, const KeyVector& newKeys, const KeySet& marginalizableKeys)
+  {
+    if (marginalizableKeys.empty()) {
+      return {};
+    } else {
+      FastMap<Key, int> constrainedKeys = FastMap<Key, int>();
+      // Generate ordering constraints so that the marginalizable variables will be eliminated first
+      // Set all existing and new variables to Group1
+      for (const auto& key_val : isam.getDelta()) {
+        constrainedKeys.emplace(key_val.first, 1);
+      }
+      for (const auto& key : newKeys) {
+        constrainedKeys.emplace(key, 1);
+      }
+      // And then re-assign the marginalizable variables to Group0 so that they'll all be leaf nodes
+      for (const auto& key : marginalizableKeys) {
+        constrainedKeys.at(key) = 0;
+      }
+      return constrainedKeys;
+    }
+  }
+
+  void markAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& rootClique, KeyList& additionalKeys)
+  {
+    std::stack<ISAM2Clique::shared_ptr> frontier;
+    frontier.push(rootClique);
+    // Basic DFS to find additional keys
+    while (!frontier.empty()) {
+      // Get the top of the stack
+      const ISAM2Clique::shared_ptr clique = frontier.top();
+      frontier.pop();
+      // Check if we have more keys and children to add
+      if (std::find(clique->conditional()->beginParents(), clique->conditional()->endParents(), key) !=
+          clique->conditional()->endParents()) {
+        for (Key i : clique->conditional()->frontals()) {
+          additionalKeys.push_back(i);
+        }
+        for (const ISAM2Clique::shared_ptr& child : clique->children) {
+          frontier.push(child);
+        }
+      }
+    }
+  }
+
+  bool updateAndMarginalize(const NonlinearFactorGraph& newFactors, const Values& newValues, const KeySet& marginalizableKeys, ISAM2& isam)
+  {
+    // Force ISAM2 to put marginalizable variables at the beginning
+    auto orderingConstraints = createOrderingConstraints(isam, newValues.keys(), marginalizableKeys);
+
+    // Mark additional keys between the marginalized keys and the leaves
+    KeyList markedKeys;
+    for (Key key : marginalizableKeys) {
+      markedKeys.push_back(key);
+      ISAM2Clique::shared_ptr clique = isam[key];
+      for (const ISAM2Clique::shared_ptr& child : clique->children) {
+        markAffectedKeys(key, child, markedKeys);
+      }
+    }
+
+    // Update
+    isam.update(newFactors, newValues, FactorIndices{}, orderingConstraints, {}, markedKeys);
+
+    if (!marginalizableKeys.empty()) {
+      FastList<Key> leafKeys(marginalizableKeys.begin(), marginalizableKeys.end());
+      return checkMarginalizeLeaves(isam, leafKeys);
+    }
+    else {
+      return true;
+    }
+  }
 }
 
 /* ************************************************************************* */
@@ -788,6 +860,116 @@ TEST(ISAM2, marginalizeLeaves5)
   // Marginalize
   FastList<Key> marginalizeKeys {0};
   EXPECT(checkMarginalizeLeaves(isam, marginalizeKeys));
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, marginalizeLeaves6)
+{
+  auto nm = noiseModel::Isotropic::Sigma(6, 1.0);
+
+  int gridDim = 10;
+
+  auto idxToKey = [gridDim](int i, int j){return i * gridDim + j;};
+
+  NonlinearFactorGraph factors;
+  Values values;
+  ISAM2 isam;
+
+  // Create a grid of pose variables
+  for (int i = 0; i < gridDim; ++i) {
+    for (int j = 0; j < gridDim; ++j) {
+      Pose3 pose = Pose3(Rot3::Identity(), Point3(i, j, 0));
+      Key key = idxToKey(i, j);
+      // Place a prior on the first pose
+      factors.addPrior(key, Pose3(Rot3::Identity(), Point3(i, j, 0)), nm);
+      values.insert(key, pose);
+      if (i > 0) {
+        factors.emplace_shared<BetweenFactor<Pose3>>(idxToKey(i - 1, j), key, Pose3(Rot3::Identity(), Point3(1, 0, 0)),nm);
+      }
+      if (j > 0) {
+        factors.emplace_shared<BetweenFactor<Pose3>>(idxToKey(i, j - 1), key, Pose3(Rot3::Identity(), Point3(0, 1, 0)),nm);
+      }
+    }
+  }
+
+  // Optimize the graph
+  EXPECT(updateAndMarginalize(factors, values, {}, isam));
+  auto estimate = isam.calculateBestEstimate();
+
+  // Get the list of keys
+  std::vector<Key> key_list(gridDim * gridDim);
+  std::iota(key_list.begin(), key_list.end(), 0);
+
+  // Shuffle the keys -> we will marginalize the keys one by one in this order
+  std::shuffle(key_list.begin(), key_list.end(), std::default_random_engine(1234));
+
+  for (const auto& key : key_list) {
+    KeySet marginalKeys;
+    marginalKeys.insert(key);
+    EXPECT(updateAndMarginalize({}, {}, marginalKeys, isam));
+    estimate = isam.calculateBestEstimate();
+  }
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, MarginalizeRoot)
+{
+  auto nm = noiseModel::Isotropic::Sigma(6, 1.0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  ISAM2 isam;
+
+  // Create a factor graph with one variable and a prior
+  Pose3 root = Pose3::Identity();
+  Key rootKey(0);
+  values.insert(rootKey, root);
+  factors.addPrior(rootKey, Pose3::Identity(), nm);
+
+  // Optimize the graph
+  EXPECT(updateAndMarginalize(factors, values, {}, isam));
+  auto estimate = isam.calculateBestEstimate();
+  EXPECT(estimate.size() == 1);
+
+  // And remove the node from the graph
+  KeySet marginalizableKeys;
+  marginalizableKeys.insert(rootKey);
+
+  EXPECT(updateAndMarginalize({}, {}, marginalizableKeys, isam));
+
+  estimate = isam.calculateBestEstimate();
+  EXPECT(estimate.empty());
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, marginalizationSize)
+{
+  auto nm = noiseModel::Isotropic::Sigma(6, 1.0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  ISAM2Params params;
+  params.findUnusedFactorSlots = true;
+  ISAM2 isam{params};
+
+  // Create a pose variable
+  Key aKey(0);
+  values.insert(aKey, Pose3::Identity());
+  factors.addPrior(aKey, Pose3::Identity(), nm);
+  // Create another pose variable linked to the first
+  Pose3 b = Pose3::Identity();
+  Key bKey(1);
+  values.insert(bKey, Pose3::Identity());
+  factors.emplace_shared<BetweenFactor<Pose3>>(aKey, bKey, Pose3::Identity(), nm);
+  // Optimize the graph
+  EXPECT(updateAndMarginalize(factors, values, {}, isam));
+
+  // Now remove a variable -> we should not see the number of factors increase
+  gtsam::KeySet to_remove;
+  to_remove.insert(aKey);
+  const auto numFactorsBefore = isam.getFactorsUnsafe().size();
+  updateAndMarginalize({}, {}, to_remove, isam);
+  EXPECT(numFactorsBefore == isam.getFactorsUnsafe().size());
 }
 
 /* ************************************************************************* */

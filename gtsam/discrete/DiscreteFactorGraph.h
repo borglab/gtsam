@@ -41,16 +41,30 @@ class DiscreteJunctionTree;
 
 /**
  * @brief Main elimination function for DiscreteFactorGraph.
- * 
- * @param factors 
- * @param keys 
- * @return GTSAM_EXPORT
+ *
+ * @param factors The factor graph to eliminate.
+ * @param frontalKeys An ordering for which variables to eliminate.
+ * @return A pair of the resulting conditional and the separator factor.
  * @ingroup discrete
  */
-GTSAM_EXPORT std::pair<std::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
-EliminateDiscrete(const DiscreteFactorGraph& factors, const Ordering& keys);
+GTSAM_EXPORT
+std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>
+EliminateDiscrete(const DiscreteFactorGraph& factors,
+                  const Ordering& frontalKeys);
 
-/* ************************************************************************* */
+/**
+ * @brief Alternate elimination function for that creates non-normalized lookup tables.
+ *
+ * @param factors The factor graph to eliminate.
+ * @param frontalKeys An ordering for which variables to eliminate.
+ * @return A pair of the resulting lookup table and the separator factor.
+ * @ingroup discrete
+ */
+GTSAM_EXPORT
+std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>
+EliminateForMPE(const DiscreteFactorGraph& factors,
+                const Ordering& frontalKeys);
+
 template<> struct EliminationTraits<DiscreteFactorGraph>
 {
   typedef DiscreteFactor FactorType;                   ///< Type of factors in factor graph
@@ -60,12 +74,14 @@ template<> struct EliminationTraits<DiscreteFactorGraph>
   typedef DiscreteEliminationTree EliminationTreeType; ///< Type of elimination tree
   typedef DiscreteBayesTree BayesTreeType;             ///< Type of Bayes tree
   typedef DiscreteJunctionTree JunctionTreeType;       ///< Type of Junction tree
+  
   /// The default dense elimination function
   static std::pair<std::shared_ptr<ConditionalType>,
                    std::shared_ptr<FactorType> >
   DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
     return EliminateDiscrete(factors, keys);
   }
+  
   /// The default ordering generation function
   static Ordering DefaultOrderingFunc(
       const FactorGraphType& graph,
@@ -74,7 +90,6 @@ template<> struct EliminationTraits<DiscreteFactorGraph>
   }
 };
 
-/* ************************************************************************* */
 /**
  * A Discrete Factor Graph is a factor graph where all factors are Discrete, i.e.
  *   Factor == DiscreteFactor
@@ -108,8 +123,8 @@ class GTSAM_EXPORT DiscreteFactorGraph
 
   /** Implicit copy/downcast constructor to override explicit template container
    * constructor */
-  template <class DERIVEDFACTOR>
-  DiscreteFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
+  template <class DERIVED_FACTOR>
+  DiscreteFactorGraph(const FactorGraph<DERIVED_FACTOR>& graph) : Base(graph) {}
 
   /// @name Testable
   /// @{
@@ -226,10 +241,6 @@ class GTSAM_EXPORT DiscreteFactorGraph
 
   /// @}
 };  // \ DiscreteFactorGraph
-
-std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
-EliminateForMPE(const DiscreteFactorGraph& factors,
-                const Ordering& frontalKeys);
 
 /// traits
 template <>

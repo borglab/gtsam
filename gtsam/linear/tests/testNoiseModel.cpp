@@ -14,6 +14,7 @@
  * @date Jan 13, 2010
  * @author Richard Roberts
  * @author Frank Dellaert
+ * @author Fan Jiang
  */
 
 
@@ -504,6 +505,22 @@ TEST(NoiseModel, robustFunctionCauchy)
   DOUBLES_EQUAL(0.490258914416017, cauchy->loss(error4), 1e-8);
 }
 
+TEST(NoiseModel, robustFunctionAsymmetricCauchy)
+{
+  const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
+  const mEstimator::AsymmetricCauchy::shared_ptr cauchy = mEstimator::AsymmetricCauchy::Create(k);
+  DOUBLES_EQUAL(0.961538461538461, cauchy->weight(error1), 1e-8);
+  DOUBLES_EQUAL(0.2000, cauchy->weight(error2), 1e-8);
+  // Test negative value to ensure we take absolute value of error.
+  DOUBLES_EQUAL(1.0, cauchy->weight(error3), 1e-8);
+  DOUBLES_EQUAL(1.0, cauchy->weight(error4), 1e-8);
+
+  DOUBLES_EQUAL(0.490258914416017, cauchy->loss(error1), 1e-8);
+  DOUBLES_EQUAL(20.117973905426254, cauchy->loss(error2), 1e-8);
+  DOUBLES_EQUAL(50.0, cauchy->loss(error3), 1e-8);
+  DOUBLES_EQUAL(0.5, cauchy->loss(error4), 1e-8);
+}
+
 TEST(NoiseModel, robustFunctionGemanMcClure)
 {
   const double k = 1.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
@@ -549,6 +566,22 @@ TEST(NoiseModel, robustFunctionTukey)
   DOUBLES_EQUAL(4.166666666666667, tukey->loss(error2), 1e-8);
   DOUBLES_EQUAL(4.166666666666667, tukey->loss(error3), 1e-8);
   DOUBLES_EQUAL(0.480266666666667, tukey->loss(error4), 1e-8);
+}
+
+TEST(NoiseModel, robustFunctionAsymmetricTukey)
+{
+  const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
+  const mEstimator::AsymmetricTukey::shared_ptr tukey = mEstimator::AsymmetricTukey::Create(k);
+  DOUBLES_EQUAL(0.9216, tukey->weight(error1), 1e-8);
+  DOUBLES_EQUAL(0.0, tukey->weight(error2), 1e-8);
+  // Test negative value to ensure we take absolute value of error.
+  DOUBLES_EQUAL(1.0, tukey->weight(error3), 1e-8);
+  DOUBLES_EQUAL(1.0, tukey->weight(error4), 1e-8);
+
+  DOUBLES_EQUAL(0.480266666666667, tukey->loss(error1), 1e-8);
+  DOUBLES_EQUAL(4.166666666666667, tukey->loss(error2), 1e-8);
+  DOUBLES_EQUAL(50.0, tukey->loss(error3), 1e-8);
+  DOUBLES_EQUAL(0.5, tukey->loss(error4), 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionDCS)
@@ -670,6 +703,35 @@ TEST(NoiseModel, robustNoiseL2WithDeadZone)
   }
 }
 
+/* ************************************************************************* */
+TEST(NoiseModel, robustNoiseCustomHuber) {
+  const double k = 10.0, error1 = 1.0, error2 = 100.0;
+  Matrix A = (Matrix(2, 2) << 1.0, 10.0, 100.0, 1000.0).finished();
+  Vector b = Vector2(error1, error2);
+  const Robust::shared_ptr robust =
+      Robust::Create(mEstimator::Custom::Create(
+                         [k](double e) {
+                           const auto abs_e = std::abs(e);
+                           return abs_e <= k ? 1.0 : k / abs_e;
+                         },
+                         [k](double e) {
+                           const auto abs_e = std::abs(e);
+                           return abs_e <= k ? abs_e * abs_e / 2.0 : k * abs_e - k * k / 2.0;
+                         },
+                         noiseModel::mEstimator::Custom::Scalar, "Huber"),
+                     Unit::Create(2));
+
+  robust->WhitenSystem(A, b);
+
+  DOUBLES_EQUAL(error1, b(0), 1e-8);
+  DOUBLES_EQUAL(sqrt(k * error2), b(1), 1e-8);
+
+  DOUBLES_EQUAL(1.0, A(0, 0), 1e-8);
+  DOUBLES_EQUAL(10.0, A(0, 1), 1e-8);
+  DOUBLES_EQUAL(sqrt(k * 100.0), A(1, 0), 1e-8);
+  DOUBLES_EQUAL(sqrt(k / 100.0) * 1000.0, A(1, 1), 1e-8);
+}
+
 TEST(NoiseModel, lossFunctionAtZero)
 {
   const double k = 5.0;
@@ -695,6 +757,12 @@ TEST(NoiseModel, lossFunctionAtZero)
   DOUBLES_EQUAL(dcs->loss(0), 0, 1e-8);
   DOUBLES_EQUAL(dcs->weight(0), 1, 1e-8);
   auto lsdz = mEstimator::L2WithDeadZone::Create(k);
+  DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
+  auto assy_cauchy = mEstimator::AsymmetricCauchy::Create(k);
+  DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
+  auto assy_tukey = mEstimator::AsymmetricTukey::Create(k);
   DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
   DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
 }
