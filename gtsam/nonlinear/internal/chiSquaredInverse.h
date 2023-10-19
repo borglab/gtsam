@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    GncHelpers.h
+ * @file    chiSquaredInverse.h
  * @brief   Helper functions for use with the GncOptimizer
  * @author  Varun Agrawal
  */

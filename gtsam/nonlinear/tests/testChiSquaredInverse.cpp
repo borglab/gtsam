@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @file testGncHelpers.cpp
+ * @file testChiSquaredInverse.cpp
  * @date July 10, 2023
  * @author Varun Agrawal
  * @brief Tests for Chi-squared distribution.
@@ -18,12 +18,12 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/nonlinear/GncHelpers.h>
+#include <gtsam/nonlinear/internal/chiSquaredInverse.h>
 
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST(GncHelpers, ChiSqInv) {
+TEST(ChiSquaredInverse, ChiSqInv) {
   double barcSq = chi_squared_quantile(2, 0.99);
   EXPECT_DOUBLES_EQUAL(9.21034, barcSq, 1e-5);
 }
