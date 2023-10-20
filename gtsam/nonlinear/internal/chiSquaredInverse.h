@@ -25,13 +25,13 @@
 #pragma once
 
 #include <gtsam/nonlinear/internal/Gamma.h>
-#include <gtsam/nonlinear/internal/Halley.h>
 #include <gtsam/nonlinear/internal/Utils.h>
 
 #include <algorithm>
 
 // TODO(Varun) remove
-#include <boost/math/distributions/gamma.hpp>
+// #include <gtsam/nonlinear/internal/Halley.h>
+#include <boost/math/tools/roots.hpp>
 
 namespace gtsam {
 
@@ -320,13 +320,15 @@ T gamma_p_inv_imp(const T a, const T p) {
   //  Get an initial guess (https://dl.acm.org/doi/abs/10.1145/22721.23109)
   bool has_10_digits = false;
   T guess = find_inverse_gamma<T>(a, p, 1 - p, &has_10_digits);
+  if (has_10_digits) {
+    return guess;
+  }
 
   T lower = LIM<T>::min();
   if (guess <= lower) {
     guess = LIM<T>::min();
   }
 
-  // TODO
   // The number of digits to converge to.
   // This is an arbitrary but reasonable number,
   // though Boost does more sophisticated things
@@ -334,20 +336,17 @@ T gamma_p_inv_imp(const T a, const T p) {
   unsigned digits = 25;
 
   //  Number of Halley iterations
-  //  The default used in Boost is 200
-  //  uint_fast16_t max_iter = 200;
+  uintmax_t max_iter = 200;
 
+  // TODO
   // // Perform Halley iteration for root-finding to get a more refined answer
   // guess = halley_iterate(gamma_p_inverse_func<T>(a, p, false), guess, lower,
   //                        LIM<T>::max(), digits, max_iter);
 
   // Go ahead and iterate:
-  std::uintmax_t max_iter = boost::math::policies::get_max_root_iterations<
-      boost::math::policies::policy<>>();
   guess = boost::math::tools::halley_iterate(
-      boost::math::detail::gamma_p_inverse_func<
-          T, boost::math::policies::policy<>>(a, p, false),
-      guess, lower, boost::math::tools::max_value<T>(), digits, max_iter);
+      internal::gamma_p_inverse_func<T>(a, p, false), guess, lower,
+      LIM<T>::max(), digits, max_iter);
 
   if (guess == lower) {
     throw std::runtime_error(
