@@ -36,7 +36,7 @@ namespace gtsam {
  * Equivalent to chi2inv in Matlab.
  */
 static double Chi2inv(const double alpha, const size_t dofs) {
-  return chi_squared_quantile(dofs, alpha);
+  return internal::chi_squared_quantile(dofs, alpha);
 }
 
 /* ************************************************************************* */

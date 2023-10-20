@@ -24,7 +24,7 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 TEST(ChiSquaredInverse, ChiSqInv) {
-  double barcSq = chi_squared_quantile(2, 0.99);
+  double barcSq = internal::chi_squared_quantile(2, 0.99);
   EXPECT_DOUBLES_EQUAL(9.21034, barcSq, 1e-5);
 }
 
