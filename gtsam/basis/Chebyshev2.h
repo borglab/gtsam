@@ -62,8 +62,8 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
    * @return double
    */
   static double Point(size_t N, int j, double a = -1, double b = 1) {
-    assert(j >= 0 && size_t(j) < N);
-    const double dtheta = M_PI / (N > 1 ? (N - 1) : 1);
+    assert(j >= 0 && size_t(j) <= N);
+    const double dtheta = M_PI / (N > 1 ? N : 1);
     // We add -PI so that we get values ordered from -1 to +1
     // sin(-M_PI_2 + dtheta*j); also works
     return a + (b - a) * (1. + cos(-M_PI + dtheta * j)) / 2;
@@ -71,8 +71,8 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
 
   /// All Chebyshev points
   static Vector Points(size_t N) {
-    Vector points(N);
-    for (size_t j = 0; j < N; j++) {
+    Vector points(N + 1);
+    for (size_t j = 0; j <= N; j++) {
       points(j) = Point(N, j);
     }
     return points;
@@ -92,7 +92,7 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
   }
 
   /**
-   * Evaluate Chebyshev Weights on [-1,1] at any x up to order N-1 (N values)
+   * Evaluate Chebyshev Weights on [-1,1] at any x up to order N (N+1 values)
    * These weights implement barycentric interpolation at a specific x.
    * More precisely, f(x) ~ [w0;...;wN] * [f0;...;fN], where the fj are the
    * values of the function f at the Chebyshev points. As such, for a given x we
@@ -142,8 +142,8 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
   template <size_t M>
   static Matrix matrix(std::function<Eigen::Matrix<double, M, 1>(double)> f,
                        size_t N, double a = -1, double b = 1) {
-    Matrix Xmat(M, N);
-    for (size_t j = 0; j < N; j++) {
+    Matrix Xmat(M, N + 1);
+    for (size_t j = 0; j <= N; j++) {
       Xmat.col(j) = f(Point(N, j, a, b));
     }
     return Xmat;

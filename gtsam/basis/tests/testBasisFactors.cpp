@@ -57,7 +57,7 @@ TEST(BasisFactors, EvaluationFactor) {
   NonlinearFactorGraph graph;
   graph.add(factor);
 
-  Vector functionValues(N);
+  Vector functionValues(N + 1);
   functionValues.setZero();
 
   Values initial;
@@ -84,7 +84,7 @@ TEST(BasisFactors, VectorEvaluationFactor) {
   NonlinearFactorGraph graph;
   graph.add(factor);
 
-  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(M, N);
+  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(M, N + 1);
 
   Values initial;
   initial.insert<gtsam::Matrix>(key, stateMatrix);
@@ -132,7 +132,7 @@ TEST(BasisFactors, VectorComponentFactor) {
   NonlinearFactorGraph graph;
   graph.add(factor);
 
-  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(P, N);
+  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(P, N + 1);
 
   Values initial;
   initial.insert<gtsam::Matrix>(key, stateMatrix);
@@ -157,7 +157,7 @@ TEST(BasisFactors, ManifoldEvaluationFactor) {
   NonlinearFactorGraph graph;
   graph.add(factor);
 
-  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(3, N);
+  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(3, N + 1);
 
   Values initial;
   initial.insert<gtsam::Matrix>(key, stateMatrix);
@@ -184,7 +184,7 @@ TEST(BasisFactors, VecDerivativePrior) {
   NonlinearFactorGraph graph;
   graph.add(vecDPrior);
 
-  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(M, N);
+  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(M, N + 1);
 
   Values initial;
   initial.insert<gtsam::Matrix>(key, stateMatrix);
@@ -211,7 +211,7 @@ TEST(BasisFactors, ComponentDerivativeFactor) {
   graph.add(controlDPrior);
 
   Values initial;
-  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(M, N);
+  gtsam::Matrix stateMatrix = gtsam::Matrix::Zero(M, N + 1);
   initial.insert<gtsam::Matrix>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
