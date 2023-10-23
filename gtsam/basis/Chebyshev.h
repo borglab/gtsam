@@ -34,6 +34,11 @@ struct GTSAM_EXPORT Chebyshev1Basis : Basis<Chebyshev1Basis> {
 
   Parameters parameters_;
 
+  /// Return a zero initialized Parameter matrix.
+  static Parameters ParameterMatrix(size_t N) {
+    return Parameters::Zero(N);
+  }
+
   /**
    * @brief Evaluate Chebyshev Weights on [-1,1] at x up to order N-1 (N values)
    *
@@ -79,6 +84,11 @@ struct GTSAM_EXPORT Chebyshev1Basis : Basis<Chebyshev1Basis> {
  */
 struct GTSAM_EXPORT Chebyshev2Basis : Basis<Chebyshev2Basis> {
   using Parameters = Eigen::Matrix<double, -1, 1 /*Nx1*/>;
+
+  /// Return a zero initialized Parameter matrix.
+  static Parameters ParameterMatrix(size_t N) {
+    return Parameters::Zero(N);
+  }
 
   /**
    *  Evaluate Chebyshev Weights on [-1,1] at any x up to order N-1 (N values).

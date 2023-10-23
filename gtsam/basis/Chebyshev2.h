@@ -54,7 +54,7 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
   /**
    * @brief Specific Chebyshev point, within [a,b] interval.
    * Default interval is [-1, 1]
-   * 
+   *
    * @param N The degree of the polynomial
    * @param j The index of the Chebyshev point
    * @param a Lower bound of interval (default: -1)
@@ -84,6 +84,11 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
     const double T1 = (a + b) / 2, T2 = (b - a) / 2;
     points = T1 + (T2 * points).array();
     return points;
+  }
+
+  /// Return a zero initialized Parameter matrix.
+  static Parameters ParameterMatrix(size_t N) {
+    return Parameters::Zero(N + 1);
   }
 
   /**

@@ -74,7 +74,7 @@ class FitBasis {
       const Sequence& sequence, const SharedNoiseModel& model, size_t N) {
     NonlinearFactorGraph graph = NonlinearGraph(sequence, model, N);
     Values values;
-    values.insert<Parameters>(0, Parameters::Zero(N));
+    values.insert<Parameters>(0, Basis::ParameterMatrix(N));
     GaussianFactorGraph::shared_ptr gfg = graph.linearize(values);
     return gfg;
   }
