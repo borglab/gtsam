@@ -239,8 +239,8 @@ class Basis {
      * i.e., one row of the Kronecker product of weights_ with the
      * MxM identity matrix. See also VectorEvaluationFunctor.
      */
-    void calculateJacobian(size_t N) {
-      H_.setZero(1, M_ * N);
+    void calculateJacobian() {
+      H_.setZero(1, M_ * EvaluationFunctor::weights_.size());
       for (int j = 0; j < EvaluationFunctor::weights_.size(); j++)
         H_(0, rowIndex_ + j * M_) = EvaluationFunctor::weights_(j);
     }
@@ -252,14 +252,14 @@ class Basis {
     /// Construct with row index
     VectorComponentFunctor(size_t M, size_t N, size_t i, double x)
         : EvaluationFunctor(N, x), M_(M), rowIndex_(i) {
-      calculateJacobian(N);
+      calculateJacobian();
     }
 
     /// Construct with row index and interval
     VectorComponentFunctor(size_t M, size_t N, size_t i, double x, double a,
                            double b)
         : EvaluationFunctor(N, x, a, b), M_(M), rowIndex_(i) {
-      calculateJacobian(N);
+      calculateJacobian();
     }
 
     /// Calculate component of component rowIndex_ of P
@@ -460,8 +460,8 @@ class Basis {
      * i.e., one row of the Kronecker product of weights_ with the
      * MxM identity matrix. See also VectorDerivativeFunctor.
      */
-    void calculateJacobian(size_t N) {
-      H_.setZero(1, M_ * N);
+    void calculateJacobian() {
+      H_.setZero(1, M_ * this->weights_.size());
       for (int j = 0; j < this->weights_.size(); j++)
         H_(0, rowIndex_ + j * M_) = this->weights_(j);
     }
@@ -473,14 +473,14 @@ class Basis {
     /// Construct with row index
     ComponentDerivativeFunctor(size_t M, size_t N, size_t i, double x)
         : DerivativeFunctorBase(N, x), M_(M), rowIndex_(i) {
-      calculateJacobian(N);
+      calculateJacobian();
     }
 
     /// Construct with row index and interval
     ComponentDerivativeFunctor(size_t M, size_t N, size_t i, double x, double a,
                                double b)
         : DerivativeFunctorBase(N, x, a, b), M_(M), rowIndex_(i) {
-      calculateJacobian(N);
+      calculateJacobian();
     }
     /// Calculate derivative of component rowIndex_ of F
     double apply(const Matrix& P,
