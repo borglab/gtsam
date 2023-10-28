@@ -59,6 +59,15 @@ Weights Chebyshev2::CalculateWeights(size_t N, double x, double a, double b) {
   return weights / d;
 }
 
+Matrix Chebyshev2::WeightMatrix(size_t N, const Vector& X, double a, double b) {
+  // Chebyshev points go from 0 to N, hence N+1 points.
+  Matrix W(X.size(), N + 1);
+  for (int i = 0; i < X.size(); i++) {
+    W.row(i) = CalculateWeights(N, X(i), a, b);
+  }
+  return W;
+}
+
 Weights Chebyshev2::DerivativeWeights(size_t N, double x, double a, double b) {
   // Allocate space for weights
   Weights weightDerivatives(N + 1);
