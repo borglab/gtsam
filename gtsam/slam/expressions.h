@@ -157,7 +157,7 @@ namespace internal {
 template <class CALIBRATION, class POINT>
 inline Point2 project6(const Pose3& x, const POINT& p, const CALIBRATION& K,
                        OptionalJacobian<2, 6> Dpose, OptionalJacobian<2, 3> Dpoint,
-                       OptionalJacobian<2, 5> Dcal) {
+                       OptionalJacobian<2, CALIBRATION::dimension> Dcal) {
   return PinholeCamera<CALIBRATION>(x, K).project(p, Dpose, Dpoint, Dcal);
 }
 }
