@@ -323,7 +323,7 @@ TEST( NonlinearFactor, cloneWithNewNoiseModel )
   // create actual
   NonlinearFactorGraph actual;
   SharedNoiseModel noise2 = noiseModel::Isotropic::Sigma(2,sigma2);
-  actual.push_back( std::dynamic_pointer_cast<NoiseModelFactor>(nfg[0])->cloneWithNewNoiseModel(noise2) );
+  actual.push_back(nfg.at<NoiseModelFactor>(0)->cloneWithNewNoiseModel(noise2));
 
   // check it's all good
   CHECK(assert_equal(expected, actual));

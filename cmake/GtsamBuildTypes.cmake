@@ -55,9 +55,6 @@ if(NOT CMAKE_BUILD_TYPE AND NOT MSVC AND NOT XCODE_VERSION)
       "Choose the type of build, options are: None Debug Release Timing Profiling RelWithDebInfo." FORCE)
 endif()
 
-# Add option for using build type postfixes to allow installing multiple build modes
-option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" ON)
-
 # Define all cache variables, to be populated below depending on the OS/compiler:
 set(GTSAM_COMPILE_OPTIONS_PRIVATE        "" CACHE INTERNAL "(Do not edit) Private compiler flags for all build configurations." FORCE)
 set(GTSAM_COMPILE_OPTIONS_PUBLIC         "" CACHE INTERNAL "(Do not edit) Public compiler flags (exported to user projects) for all build configurations."  FORCE)
@@ -82,6 +79,13 @@ set(GTSAM_COMPILE_DEFINITIONS_PRIVATE_RELWITHDEBINFO  "NDEBUG" CACHE STRING "(Us
 set(GTSAM_COMPILE_DEFINITIONS_PRIVATE_RELEASE         "NDEBUG" CACHE STRING "(User editable) Private preprocessor macros for Release configuration.")
 set(GTSAM_COMPILE_DEFINITIONS_PRIVATE_PROFILING       "NDEBUG" CACHE STRING "(User editable) Private preprocessor macros for Profiling configuration.")
 set(GTSAM_COMPILE_DEFINITIONS_PRIVATE_TIMING          "NDEBUG;ENABLE_TIMING" CACHE STRING "(User editable) Private preprocessor macros for Timing configuration.")
+
+mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_DEBUG)
+mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_RELWITHDEBINFO)
+mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_RELEASE)
+mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_PROFILING)
+mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_TIMING)
+
 if(MSVC)
   # Common to all configurations:
   list_append_cache(GTSAM_COMPILE_DEFINITIONS_PRIVATE
@@ -143,6 +147,13 @@ else()
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          -g -O3  CACHE STRING "(User editable) Private compiler flags for Timing configuration.")
 endif()
 
+mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON)
+mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG)
+mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO)
+mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE)
+mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_PROFILING)
+mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING)
+
 # Enable C++17:
 if (NOT CMAKE_VERSION VERSION_LESS 3.8)
     set(GTSAM_COMPILE_FEATURES_PUBLIC "cxx_std_17" CACHE STRING "CMake compile features property for all gtsam targets.")
@@ -198,7 +209,6 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 endif()
 
 if (NOT MSVC)
-  option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" OFF)
   if(GTSAM_BUILD_WITH_MARCH_NATIVE)
     # Check if Apple OS and compiler is [Apple]Clang
     if(APPLE AND (${CMAKE_CXX_COMPILER_ID} MATCHES "^(Apple)?Clang$"))

@@ -14,6 +14,6 @@ if (NOT GTSAM_USE_BOOST_FEATURES)
       )
 endif()
 
-gtsamAddTimingGlob("*.cpp" "${excluded_scripts}" "gtsam")
+gtsamAddTimingGlob("*.cpp" "${excluded_scripts}" "gtsam" ${GTSAM_BUILD_TIMING_ALWAYS})
 
 target_link_libraries(timeGaussianFactorGraph CppUnitLite)

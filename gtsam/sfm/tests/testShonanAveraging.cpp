@@ -372,9 +372,11 @@ TEST(ShonanAveraging2, noisyToyGraphWithHuber) {
 
   // test that each factor is actually robust
   for (size_t i=0; i<=4; i++) { // note: last is the Gauge factor and is not robust
-	  const auto &robust = std::dynamic_pointer_cast<noiseModel::Robust>(
-			  std::dynamic_pointer_cast<NoiseModelFactor>(graph[i])->noiseModel());
-	  EXPECT(robust); // we expect the factors to be use a robust noise model (in particular, Huber)
+    const auto &robust = std::dynamic_pointer_cast<noiseModel::Robust>(
+        graph.at<NoiseModelFactor>(i)->noiseModel());
+    // we expect the factors to be use a robust noise model
+    // (in particular, Huber)
+    EXPECT(robust);
   }
 
   // test result

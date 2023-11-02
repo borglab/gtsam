@@ -12,4 +12,4 @@ endif()
 
 
 
-gtsamAddExamplesGlob("*.cpp" "${excluded_examples}" "gtsam_unstable")
+gtsamAddExamplesGlob("*.cpp" "${excluded_examples}" "gtsam_unstable" ${GTSAM_BUILD_EXAMPLES_ALWAYS})

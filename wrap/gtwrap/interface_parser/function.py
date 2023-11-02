@@ -12,7 +12,8 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 from typing import Any, Iterable, List, Union
 
-from pyparsing import Optional, ParseResults, delimitedList  # type: ignore
+from pyparsing import (Literal, Optional, ParseResults,  # type: ignore
+                       delimitedList)
 
 from .template import Template
 from .tokens import (COMMA, DEFAULT_ARG, EQUAL, IDENT, LOPBRACK, LPAREN, PAIR,
@@ -105,8 +106,10 @@ class ReturnType:
 
     The return type can either be a single type or a pair such as <type1, type2>.
     """
+    # rule to parse optional std:: in front of `pair`
+    optional_std = Optional(Literal('std::')).suppress()
     _pair = (
-        PAIR.suppress()  #
+        optional_std + PAIR.suppress()  #
         + LOPBRACK  #
         + Type.rule("type1")  #
         + COMMA  #

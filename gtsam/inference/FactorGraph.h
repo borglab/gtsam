@@ -310,6 +310,21 @@ class FactorGraph {
    */
   sharedFactor& at(size_t i) { return factors_.at(i); }
 
+  /** Get a specific factor by index and typecast to factor type F
+   * (this checks array bounds and may throw
+   * an exception, as opposed to operator[] which does not).
+   */
+  template <typename F>
+  std::shared_ptr<F> at(size_t i) {
+    return std::dynamic_pointer_cast<F>(factors_.at(i));
+  }
+
+  /// Const version of templated `at` method.
+  template <typename F>
+  const std::shared_ptr<F> at(size_t i) const {
+    return std::dynamic_pointer_cast<F>(factors_.at(i));
+  }
+
   /** Get a specific factor by index (this does not check array bounds, as
    * opposed to at() which does).
    */

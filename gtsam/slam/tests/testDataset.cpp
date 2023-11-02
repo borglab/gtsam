@@ -97,8 +97,7 @@ TEST(dataSet, load2D) {
   auto model = noiseModel::Unit::Create(3);
   BetweenFactor<Pose2> expected(1, 0, Pose2(-0.99879, 0.0417574, -0.00818381),
                                 model);
-  BetweenFactor<Pose2>::shared_ptr actual =
-      std::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(0));
+  BetweenFactor<Pose2>::shared_ptr actual = graph->at<BetweenFactor<Pose2>>(0);
   EXPECT(assert_equal(expected, *actual));
 
   // Check binary measurements, Pose2
@@ -113,9 +112,8 @@ TEST(dataSet, load2D) {
   // // Check factor parsing
   const auto actualFactors = parseFactors<Pose2>(filename);
   for (size_t i : {0, 1, 2, 3, 4, 5}) {
-    EXPECT(assert_equal(
-        *std::dynamic_pointer_cast<BetweenFactor<Pose2>>(graph->at(i)),
-        *actualFactors[i], 1e-5));
+    EXPECT(assert_equal(*graph->at<BetweenFactor<Pose2>>(i), *actualFactors[i],
+                        1e-5));
   }
 
   // Check pose parsing
@@ -194,9 +192,8 @@ TEST(dataSet, readG2o3D) {
   // Check factor parsing
   const auto actualFactors = parseFactors<Pose3>(g2oFile);
   for (size_t i : {0, 1, 2, 3, 4, 5}) {
-    EXPECT(assert_equal(
-        *std::dynamic_pointer_cast<BetweenFactor<Pose3>>(expectedGraph[i]),
-        *actualFactors[i], 1e-5));
+    EXPECT(assert_equal(*expectedGraph.at<BetweenFactor<Pose3>>(i),
+                        *actualFactors[i], 1e-5));
   }
 
   // Check pose parsing

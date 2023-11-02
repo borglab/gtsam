@@ -42,8 +42,8 @@
 #include <functional>
 #include <iostream>
 #include <iterator>
-#include <vector>
 #include <numeric>
+#include <vector>
 
 #include "Switching.h"
 #include "TinyHybridExample.h"
@@ -613,11 +613,11 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   // Create expected decision tree with two factor graphs:
 
   // Get mixture factor:
-  auto mixture = std::dynamic_pointer_cast<GaussianMixtureFactor>(fg.at(0));
+  auto mixture = fg.at<GaussianMixtureFactor>(0);
   CHECK(mixture);
 
   // Get prior factor:
-  const auto gf = std::dynamic_pointer_cast<HybridConditional>(fg.at(1));
+  const auto gf = fg.at<HybridConditional>(1);
   CHECK(gf);
   using GF = GaussianFactor::shared_ptr;
   const GF prior = gf->asGaussian();
