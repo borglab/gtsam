@@ -61,7 +61,7 @@ Weights Chebyshev2::CalculateWeights(size_t N, double x, double a, double b) {
 
 Matrix Chebyshev2::WeightMatrix(size_t N, const Vector& X, double a, double b) {
   // Chebyshev points go from 0 to N, hence N+1 points.
-  Matrix W(X.size(), N + 1);
+  Matrix W(X.size(), N);
   for (int i = 0; i < X.size(); i++) {
     W.row(i) = CalculateWeights(N, X(i), a, b);
   }
