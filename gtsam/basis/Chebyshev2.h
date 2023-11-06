@@ -88,7 +88,7 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
 
   /// Return a zero initialized Parameter matrix.
   static Parameters ParameterMatrix(size_t N) {
-    return Parameters::Zero(N + 1);
+    return Parameters::Zero(N);
   }
 
   /**
