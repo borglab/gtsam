@@ -14,7 +14,7 @@ if (GTSAM_WITH_TBB)
         endif()
         # all definitions and link requisites will go via imported targets:
         # tbb & tbbmalloc
-        list(APPEND GTSAM_ADDITIONAL_LIBRARIES tbb tbbmalloc)
+        list(APPEND GTSAM_ADDITIONAL_LIBRARIES TBB::tbb TBB::tbbmalloc)
     else()
         set(GTSAM_USE_TBB 0)  # This will go into config.h
     endif()

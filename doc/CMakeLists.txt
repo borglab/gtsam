@@ -56,7 +56,7 @@ if (GTSAM_BUILD_DOCS)
     if (GTSAM_BUILD_UNSTABLE)
         list(APPEND doc_subdirs ${gtsam_unstable_doc_subdirs})
     endif()
-    if (GTSAM_BUILD_EXAMPLES)
+    if (GTSAM_BUILD_EXAMPLES_ALWAYS)
         list(APPEND doc_subdirs examples)
     endif()
     

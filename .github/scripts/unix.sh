@@ -5,33 +5,30 @@
 # Specifically Linux and macOS.
 ##########################################################
 
+set -e   # Make sure any error makes the script to return an error code
+set -x   # echo
+
 # install TBB with _debug.so files
 function install_tbb()
 {
+  echo install_tbb  
   if [ "$(uname)" == "Linux" ]; then
     sudo apt-get -y install libtbb-dev
 
   elif [ "$(uname)" == "Darwin" ]; then
     brew install tbb
-
   fi
-
 }
 
 # common tasks before either build or test
 function configure()
 {
-  set -e   # Make sure any error makes the script to return an error code
-  set -x   # echo
+  # delete old build
+  rm -rf build
 
-  SOURCE_DIR=$GITHUB_WORKSPACE
-  BUILD_DIR=$GITHUB_WORKSPACE/build
-
-  #env
-  rm -fr $BUILD_DIR || true
-  mkdir $BUILD_DIR && cd $BUILD_DIR
-
-  [ "${GTSAM_WITH_TBB:-OFF}" = "ON" ] && install_tbb
+  if [ "${GTSAM_WITH_TBB:-OFF}" == "ON" ]; then
+    install_tbb
+  fi
 
   if [ ! -z "$GCC_VERSION" ]; then
     export CC=gcc-$GCC_VERSION
@@ -40,7 +37,9 @@ function configure()
 
   # GTSAM_BUILD_WITH_MARCH_NATIVE=OFF: to avoid crashes in builder VMs
   # CMAKE_CXX_FLAGS="-w": Suppress warnings to avoid IO latency in CI logs
-  cmake $SOURCE_DIR \
+  export CMAKE_GENERATOR=Ninja
+  cmake $GITHUB_WORKSPACE \
+      -B build \
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} \
       -DCMAKE_CXX_FLAGS="-w" \
       -DGTSAM_BUILD_TESTS=${GTSAM_BUILD_TESTS:-OFF} \
@@ -62,9 +61,9 @@ function configure()
 function finish ()
 {
   # Print ccache stats
-  [ -x "$(command -v ccache)" ] && ccache -s
-
-  cd $SOURCE_DIR
+  if [ -x "$(command -v ccache)" ]; then
+    ccache -s
+  fi
 }
 
 # compile the code with the intent of populating the cache
@@ -77,12 +76,12 @@ function build ()
 
   if [ "$(uname)" == "Linux" ]; then
     if (($(nproc) > 2)); then
-      make -j4
+      cmake --build build -j4
     else
-      make -j2
+      cmake --build build -j2
     fi
   elif [ "$(uname)" == "Darwin" ]; then
-    make -j$(sysctl -n hw.physicalcpu)
+    cmake --build build -j$(sysctl -n hw.physicalcpu)
   fi
 
   finish
@@ -99,12 +98,12 @@ function test ()
   # Actual testing
   if [ "$(uname)" == "Linux" ]; then
     if (($(nproc) > 2)); then
-      make -j$(nproc) check
+      cmake --build build -j$(nproc) --target check
     else
-      make -j2 check
+      cmake --build build -j2 --target check
     fi
   elif [ "$(uname)" == "Darwin" ]; then
-    make -j$(sysctl -n hw.physicalcpu) check
+    cmake --build build -j$(sysctl -n hw.physicalcpu) --target check
   fi
 
   finish

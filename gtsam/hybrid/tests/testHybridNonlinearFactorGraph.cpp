@@ -420,7 +420,7 @@ TEST(HybridFactorGraph, Full_Elimination) {
     DiscreteFactorGraph discrete_fg;
     // TODO(Varun) Make this a function of HybridGaussianFactorGraph?
     for (auto& factor : (*remainingFactorGraph_partial)) {
-      auto df = dynamic_pointer_cast<DecisionTreeFactor>(factor);
+      auto df = dynamic_pointer_cast<DiscreteFactor>(factor);
       assert(df);
       discrete_fg.push_back(df);
     }
@@ -493,7 +493,7 @@ factor 0:
 factor 1: 
 Hybrid [x0 x1; m0]{
  Choice(m0) 
- 0 Leaf [1]:
+ 0 Leaf [1] :
   A[x0] = [
 	-1
 ]
@@ -503,7 +503,7 @@ Hybrid [x0 x1; m0]{
   b = [ -1 ]
   No noise model
 
- 1 Leaf [1]:
+ 1 Leaf [1] :
   A[x0] = [
 	-1
 ]
@@ -517,7 +517,7 @@ Hybrid [x0 x1; m0]{
 factor 2: 
 Hybrid [x1 x2; m1]{
  Choice(m1) 
- 0 Leaf [1]:
+ 0 Leaf [1] :
   A[x1] = [
 	-1
 ]
@@ -527,7 +527,7 @@ Hybrid [x1 x2; m1]{
   b = [ -1 ]
   No noise model
 
- 1 Leaf [1]:
+ 1 Leaf [1] :
   A[x1] = [
 	-1
 ]
@@ -551,16 +551,16 @@ factor 4:
   b = [ -10 ]
   No noise model
 factor 5:  P( m0 ):
- Leaf [2] 0.5
+ Leaf [2]  0.5
 
 factor 6:  P( m1 | m0 ):
  Choice(m1) 
  0 Choice(m0) 
- 0 0 Leaf [1]0.33333333
- 0 1 Leaf [1] 0.6
+ 0 0 Leaf [1] 0.33333333
+ 0 1 Leaf [1]  0.6
  1 Choice(m0) 
- 1 0 Leaf [1]0.66666667
- 1 1 Leaf [1] 0.4
+ 1 0 Leaf [1] 0.66666667
+ 1 1 Leaf [1]  0.4
 
 )";
 #else

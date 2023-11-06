@@ -35,7 +35,7 @@ using SharedFactor = std::shared_ptr<Factor>;
  * Hybrid Factor Graph
  * Factor graph with utilities for hybrid factors.
  */
-class HybridFactorGraph : public FactorGraph<Factor> {
+class GTSAM_EXPORT HybridFactorGraph : public FactorGraph<Factor> {
  public:
   using Base = FactorGraph<Factor>;
   using This = HybridFactorGraph;              ///< this class

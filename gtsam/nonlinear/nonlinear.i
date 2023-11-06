@@ -86,7 +86,10 @@ class NonlinearFactorGraph {
                 const gtsam::noiseModel::Base* noiseModel);
 
   // NonlinearFactorGraph
-  void printErrors(const gtsam::Values& values) const;
+  void printErrors(const gtsam::Values& values,
+                   const string& str = "NonlinearFactorGraph: ",
+                   const gtsam::KeyFormatter& keyFormatter =
+                       gtsam::DefaultKeyFormatter) const;
   double error(const gtsam::Values& values) const;
   double probPrime(const gtsam::Values& values) const;
   gtsam::Ordering orderingCOLAMD() const;
@@ -109,13 +112,10 @@ class NonlinearFactorGraph {
 };
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-virtual class NonlinearFactor {
+virtual class NonlinearFactor : gtsam::Factor {
   // Factor base class
-  size_t size() const;
-  gtsam::KeyVector keys() const;
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
-  void printKeys(string s) const;
   // NonlinearFactor
   bool equals(const gtsam::NonlinearFactor& other, double tol) const;
   double error(const gtsam::Values& c) const;
@@ -507,25 +507,21 @@ class ISAM2 {
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
                             const gtsam::Values& newTheta,
                             const gtsam::FactorIndices& removeFactorIndices,
-                            gtsam::KeyGroupMap& constrainedKeys,
+                            const gtsam::KeyGroupMap& constrainedKeys,
                             const gtsam::KeyList& noRelinKeys);
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
                             const gtsam::Values& newTheta,
                             const gtsam::FactorIndices& removeFactorIndices,
                             gtsam::KeyGroupMap& constrainedKeys,
                             const gtsam::KeyList& noRelinKeys,
-                            const gtsam::KeyList& extraReelimKeys);
-  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
-                            const gtsam::Values& newTheta,
-                            const gtsam::FactorIndices& removeFactorIndices,
-                            gtsam::KeyGroupMap& constrainedKeys,
-                            const gtsam::KeyList& noRelinKeys,
                             const gtsam::KeyList& extraReelimKeys,
-                            bool force_relinearize);
+                            bool force_relinearize = false);
 
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
                             const gtsam::Values& newTheta,
                             const gtsam::ISAM2UpdateParams& updateParams);
+
+  double error(const gtsam::VectorValues& values) const;
 
   gtsam::Values getLinearizationPoint() const;
   bool valueExists(gtsam::Key key) const;
@@ -552,9 +548,8 @@ class ISAM2 {
 
   string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-  void saveGraph(string s,
-                const gtsam::KeyFormatter& keyFormatter =
-                 gtsam::DefaultKeyFormatter) const;
+  void saveGraph(string s, const gtsam::KeyFormatter& keyFormatter =
+                               gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/nonlinear/NonlinearISAM.h>

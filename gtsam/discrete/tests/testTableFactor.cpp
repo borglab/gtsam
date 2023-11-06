@@ -19,6 +19,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/serializationTestHelpers.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/discrete/TableFactor.h>
@@ -124,6 +125,23 @@ TEST(TableFactor, constructors) {
 
   // Assert that error = -log(value)
   EXPECT_DOUBLES_EQUAL(-log(f1(values)), f1.error(values), 1e-9);
+
+  // Construct from DiscreteConditional
+  DiscreteConditional conditional(X | Y = "1/1 2/3 1/4");
+  TableFactor f4(conditional);
+  // Manually constructed via inspection and comparison to DecisionTreeFactor
+  TableFactor expected(X & Y, "0.5 0.4 0.2 0.5 0.6 0.8");
+  EXPECT(assert_equal(expected, f4));
+
+  // Test for 9=3x3 values.
+  DiscreteKey V(0, 3), W(1, 3);
+  DiscreteConditional conditional5(V | W = "1/2/3 5/6/7 9/10/11");
+  TableFactor f5(conditional5);
+  // GTSAM_PRINT(f5);
+  TableFactor expected_f5(
+      X & Y,
+      "0.166667 0.277778 0.3 0.333333 0.333333 0.333333 0.5 0.388889 0.366667");
+  EXPECT(assert_equal(expected_f5, f5, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -156,7 +174,8 @@ TEST(TableFactor, multiplication) {
 /* ************************************************************************* */
 // Benchmark which compares runtime of multiplication of two TableFactors
 // and two DecisionTreeFactors given sparsity from dense to 90% sparsity.
-TEST(TableFactor, benchmark) {
+// NOTE: Enable to run.
+TEST_DISABLED(TableFactor, benchmark) {
   DiscreteKey A(0, 5), B(1, 2), C(2, 5), D(3, 2), E(4, 5), F(5, 2), G(6, 3),
       H(7, 2), I(8, 5), J(9, 7), K(10, 2), L(11, 3);
 
@@ -350,6 +369,39 @@ TEST(TableFactor, htmlWithValueFormatter) {
   TableFactor::Names names{{12, {"Zero", "One", "Two"}}, {5, {"-", "+"}}};
   string actual = f.html(keyFormatter, names);
   EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
+TEST(TableFactor, Unary) {
+  // Declare a bunch of keys
+  DiscreteKey X(0, 2), Y(1, 3);
+
+  // Create factors
+  TableFactor f(X & Y, "2 5 3 6 2 7");
+  auto op = [](const double x) { return 2 * x; };
+  auto g = f.apply(op);
+
+  TableFactor expected(X & Y, "4 10 6 12 4 14");
+  EXPECT(assert_equal(g, expected));
+
+  auto sq_op = [](const double x) { return x * x; };
+  auto g_sq = f.apply(sq_op);
+  TableFactor expected_sq(X & Y, "4 25 9 36 4 49");
+  EXPECT(assert_equal(g_sq, expected_sq));
+}
+
+/* ************************************************************************* */
+TEST(TableFactor, UnaryAssignment) {
+  // Declare a bunch of keys
+  DiscreteKey X(0, 2), Y(1, 3);
+
+  // Create factors
+  TableFactor f(X & Y, "2 5 3 6 2 7");
+  auto op = [](const Assignment<Key>& key, const double x) { return 2 * x; };
+  auto g = f.apply(op);
+
+  TableFactor expected(X & Y, "4 10 6 12 4 14");
+  EXPECT(assert_equal(g, expected));
 }
 
 /* ************************************************************************* */

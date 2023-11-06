@@ -229,7 +229,16 @@ void setPose_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
   checkArguments("setPose",nargout,nargin,0);
   setPose(gtsam::Pose3());
 }
-void TemplatedFunctionRot3_25(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void EliminateDiscrete_25(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("EliminateDiscrete",nargout,nargin,2);
+  gtsam::DiscreteFactorGraph& factors = *unwrap_shared_ptr< gtsam::DiscreteFactorGraph >(in[0], "ptr_gtsamDiscreteFactorGraph");
+  gtsam::Ordering& frontalKeys = *unwrap_shared_ptr< gtsam::Ordering >(in[1], "ptr_gtsamOrdering");
+  auto pairResult = EliminateDiscrete(factors,frontalKeys);
+  out[0] = wrap_shared_ptr(pairResult.first,"gtsam.DiscreteConditional", false);
+  out[1] = wrap_shared_ptr(pairResult.second,"gtsam.DecisionTreeFactor", false);
+}
+void TemplatedFunctionRot3_26(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("TemplatedFunctionRot3",nargout,nargin,1);
   gtsam::Rot3& t = *unwrap_shared_ptr< gtsam::Rot3 >(in[0], "ptr_gtsamRot3");
@@ -323,7 +332,10 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       setPose_24(nargout, out, nargin-1, in+1);
       break;
     case 25:
-      TemplatedFunctionRot3_25(nargout, out, nargin-1, in+1);
+      EliminateDiscrete_25(nargout, out, nargin-1, in+1);
+      break;
+    case 26:
+      TemplatedFunctionRot3_26(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

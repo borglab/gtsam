@@ -24,7 +24,7 @@
 
 namespace gtsam {
 
-class HybridSmoother {
+class GTSAM_EXPORT HybridSmoother {
  private:
   HybridBayesNet hybridBayesNet_;
   HybridGaussianFactorGraph remainingFactorGraph_;

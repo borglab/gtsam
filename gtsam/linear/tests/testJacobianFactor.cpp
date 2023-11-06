@@ -65,7 +65,10 @@ TEST(JacobianFactor, constructors_and_accessors)
     JacobianFactor actual(terms[0].first, terms[0].second, b, noise);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[0].first, (long)actual.keys().back());
+    // Key iterator
     EXPECT(assert_equal(terms[0].second, actual.getA(actual.end() - 1)));
+    // Key
+    EXPECT(assert_equal(terms[0].second, actual.getA(terms[0].first)));
     EXPECT(assert_equal(b, expected.getb()));
     EXPECT(assert_equal(b, actual.getb()));
     EXPECT(noise == expected.get_model());
@@ -78,7 +81,10 @@ TEST(JacobianFactor, constructors_and_accessors)
       terms[1].first, terms[1].second, b, noise);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[1].first, (long)actual.keys().back());
+    // Key iterator
     EXPECT(assert_equal(terms[1].second, actual.getA(actual.end() - 1)));
+    // Key
+    EXPECT(assert_equal(terms[1].second, actual.getA(terms[1].first)));
     EXPECT(assert_equal(b, expected.getb()));
     EXPECT(assert_equal(b, actual.getb()));
     EXPECT(noise == expected.get_model());
@@ -91,7 +97,10 @@ TEST(JacobianFactor, constructors_and_accessors)
       terms[1].first, terms[1].second, terms[2].first, terms[2].second, b, noise);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[2].first, (long)actual.keys().back());
+    // Key iterator
     EXPECT(assert_equal(terms[2].second, actual.getA(actual.end() - 1)));
+    // Key
+    EXPECT(assert_equal(terms[2].second, actual.getA(terms[2].first)));
     EXPECT(assert_equal(b, expected.getb()));
     EXPECT(assert_equal(b, actual.getb()));
     EXPECT(noise == expected.get_model());

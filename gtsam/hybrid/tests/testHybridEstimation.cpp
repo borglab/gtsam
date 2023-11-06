@@ -140,6 +140,61 @@ TEST(HybridEstimation, IncrementalSmoother) {
   EXPECT(assert_equal(expected_continuous, result));
 }
 
+/****************************************************************************/
+// Test approximate inference with an additional pruning step.
+TEST(HybridEstimation, ISAM) {
+  size_t K = 15;
+  std::vector<double> measurements = {0, 1, 2, 2, 2, 2,  3,  4,  5,  6, 6,
+                                      7, 8, 9, 9, 9, 10, 11, 11, 11, 11};
+  // Ground truth discrete seq
+  std::vector<size_t> discrete_seq = {1, 1, 0, 0, 0, 1, 1, 1, 1, 0,
+                                      1, 1, 1, 0, 0, 1, 1, 0, 0, 0};
+  // Switching example of robot moving in 1D
+  // with given measurements and equal mode priors.
+  Switching switching(K, 1.0, 0.1, measurements, "1/1 1/1");
+  HybridNonlinearISAM isam;
+  HybridNonlinearFactorGraph graph;
+  Values initial;
+
+  // gttic_(Estimation);
+
+  // Add the X(0) prior
+  graph.push_back(switching.nonlinearFactorGraph.at(0));
+  initial.insert(X(0), switching.linearizationPoint.at<double>(X(0)));
+
+  HybridGaussianFactorGraph linearized;
+
+  for (size_t k = 1; k < K; k++) {
+    // Motion Model
+    graph.push_back(switching.nonlinearFactorGraph.at(k));
+    // Measurement
+    graph.push_back(switching.nonlinearFactorGraph.at(k + K - 1));
+
+    initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
+
+    isam.update(graph, initial, 3);
+    // isam.bayesTree().print("\n\n");
+
+    graph.resize(0);
+    initial.clear();
+  }
+
+  Values result = isam.estimate();
+  DiscreteValues assignment = isam.assignment();
+
+  DiscreteValues expected_discrete;
+  for (size_t k = 0; k < K - 1; k++) {
+    expected_discrete[M(k)] = discrete_seq[k];
+  }
+  EXPECT(assert_equal(expected_discrete, assignment));
+
+  Values expected_continuous;
+  for (size_t k = 0; k < K; k++) {
+    expected_continuous.insert(X(k), measurements[k]);
+  }
+  EXPECT(assert_equal(expected_continuous, result));
+}
+
 /**
  * @brief A function to get a specific 1D robot motion problem as a linearized
  * factor graph. This is the problem P(X|Z, M), i.e. estimating the continuous

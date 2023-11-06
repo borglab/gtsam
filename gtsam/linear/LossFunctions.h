@@ -15,6 +15,7 @@
  * @date  Jan 13, 2010
  * @author Richard Roberts
  * @author Frank Dellaert
+ * @author Fan Jiang
  */
 
 #pragma once
@@ -91,7 +92,7 @@ class GTSAM_EXPORT Base {
    * functions. It would be better for this function to accept the vector and
    * internally call the norm if necessary.
    *
-   * This returns \rho(x) in \ref mEstimator
+   * This returns \f$\rho(x)\f$ in \ref mEstimator
    */
   virtual double loss(double distance) const { return 0; }
 
@@ -143,9 +144,9 @@ class GTSAM_EXPORT Base {
  *
  *  This model has no additional parameters.
  *
- * - Loss       \rho(x)          = 0.5 x²
- * - Derivative \phi(x)          = x
- * - Weight     w(x) = \phi(x)/x = 1
+ * - Loss       \f$ \rho(x)          = 0.5 x² \f$
+ * - Derivative \f$ \phi(x)          = x \f$
+ * - Weight     \f$ w(x) = \phi(x)/x = 1 \f$
  */
 class GTSAM_EXPORT Null : public Base {
  public:
@@ -285,9 +286,9 @@ class GTSAM_EXPORT Cauchy : public Base {
  *
  *  This model has a scalar parameter "c".
  *
- * - Loss       \rho(x) = c² (1 - (1-x²/c²)³)/6  if |x|<c,  c²/6   otherwise
- * - Derivative \phi(x) = x(1-x²/c²)² if |x|<c,  0   otherwise
- * - Weight     w(x) = \phi(x)/x = (1-x²/c²)² if |x|<c,  0   otherwise
+ * - Loss       \f$ \rho(x) = c² (1 - (1-x²/c²)³)/6 \f$  if |x|<c,  c²/6   otherwise
+ * - Derivative \f$ \phi(x) = x(1-x²/c²)² if |x|<c \f$,  0   otherwise
+ * - Weight     \f$ w(x) = \phi(x)/x = (1-x²/c²)² \f$ if |x|<c,  0   otherwise
  */
 class GTSAM_EXPORT Tukey : public Base {
  protected:
@@ -320,9 +321,9 @@ class GTSAM_EXPORT Tukey : public Base {
  *
  *  This model has a scalar parameter "c".
  *
- * - Loss       \rho(x) = -0.5 c² (exp(-x²/c²) - 1)
- * - Derivative \phi(x) = x exp(-x²/c²)
- * - Weight     w(x) = \phi(x)/x = exp(-x²/c²)
+ * - Loss       \f$ \rho(x) = -0.5 c² (exp(-x²/c²) - 1) \f$
+ * - Derivative \f$ \phi(x) = x exp(-x²/c²) \f$
+ * - Weight     \f$ w(x) = \phi(x)/x = exp(-x²/c²) \f$
  */
 class GTSAM_EXPORT Welsch : public Base {
  protected:
@@ -439,9 +440,9 @@ class GTSAM_EXPORT DCS : public Base {
  *
  *  This model has a scalar parameter "k".
  *
- * - Loss       \rho(x) = 0 if |x|<k,    0.5(k-|x|)² otherwise
- * - Derivative \phi(x) = 0 if |x|<k, (-k+x) if x>k,  (k+x) if x<-k
- * - Weight     w(x) = \phi(x)/x = 0 if |x|<k, (-k+x)/x if x>k,  (k+x)/x if x<-k
+ * - Loss       \f$ \rho(x) = 0 \f$ if |x|<k,    0.5(k-|x|)² otherwise
+ * - Derivative \f$ \phi(x) = 0 \f$ if |x|<k, (-k+x) if x>k,  (k+x) if x<-k
+ * - Weight     \f$ w(x) = \phi(x)/x = 0 \f$ if |x|<k, (-k+x)/x if x>k,  (k+x)/x if x<-k
  */
 class GTSAM_EXPORT L2WithDeadZone : public Base {
  protected:
@@ -466,6 +467,123 @@ class GTSAM_EXPORT L2WithDeadZone : public Base {
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(k_);
+  }
+#endif
+};
+
+/** Implementation of the "AsymmetricTukey" robust error model.
+ *
+ *  This model has a scalar parameter "c".
+ *
+ * - Following are all for one side, the other is standard L2
+ * - Loss       \rho(x) = c² (1 - (1-x²/c²)³)/6  if |x|<c,  c²/6   otherwise
+ * - Derivative \phi(x) = x(1-x²/c²)² if |x|<c,  0   otherwise
+ * - Weight     w(x) = \phi(x)/x = (1-x²/c²)² if |x|<c,  0   otherwise
+ */
+class GTSAM_EXPORT AsymmetricTukey : public Base {
+ protected:
+  double c_, csquared_;
+
+ public:
+  typedef std::shared_ptr<AsymmetricTukey> shared_ptr;
+
+  AsymmetricTukey(double c = 4.6851, const ReweightScheme reweight = Block);
+  double weight(double distance) const override;
+  double loss(double distance) const override;
+  void print(const std::string &s) const override;
+  bool equals(const Base &expected, double tol = 1e-8) const override;
+  static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+  double modelParameter() const { return c_; }
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(c_);
+  }
+#endif
+};
+
+/** Implementation of the "AsymmetricCauchy" robust error model.
+ *
+ *  This model has a scalar parameter "k".
+ *
+ * - Following are all for one side, the other is standard L2
+ * - Loss       \rho(x) = 0.5 k² log(1+x²/k²)
+ * - Derivative \phi(x) = (k²x)/(x²+k²)
+ * - Weight     w(x) = \phi(x)/x = k²/(x²+k²)
+ */
+class GTSAM_EXPORT AsymmetricCauchy : public Base {
+ protected:
+  double k_, ksquared_;
+
+ public:
+  typedef std::shared_ptr<AsymmetricCauchy> shared_ptr;
+
+  AsymmetricCauchy(double k = 0.1, const ReweightScheme reweight = Block);
+  double weight(double distance) const override;
+  double loss(double distance) const override;
+  void print(const std::string &s) const override;
+  bool equals(const Base &expected, double tol = 1e-8) const override;
+  static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+  double modelParameter() const { return k_; }
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(k_);
+    ar &BOOST_SERIALIZATION_NVP(ksquared_);
+  }
+#endif
+};
+
+// Type alias for the custom loss and weight functions
+using CustomLossFunction = std::function<double(double)>;
+using CustomWeightFunction = std::function<double(double)>;
+
+/** Implementation of the "Custom" robust error model.
+ *
+ *  This model just takes two functions as input, one for the loss and one for the weight.
+ */
+class GTSAM_EXPORT Custom : public Base {
+ protected:
+  std::function<double(double)> weight_, loss_;
+  std::string name_;
+
+ public:
+  typedef std::shared_ptr<Custom> shared_ptr;
+
+  Custom(CustomWeightFunction weight, CustomLossFunction loss,
+         const ReweightScheme reweight = Block, std::string name = "Custom");
+  double weight(double distance) const override;
+  double loss(double distance) const override;
+  void print(const std::string &s) const override;
+  bool equals(const Base &expected, double tol = 1e-8) const override;
+  static shared_ptr Create(std::function<double(double)> weight, std::function<double(double)> loss,
+                           const ReweightScheme reweight = Block, const std::string &name = "Custom");
+  inline std::string& name() { return name_; }
+
+  inline std::function<double(double)>& weightFunction() { return weight_; }
+  inline std::function<double(double)>& lossFunction() { return loss_; }
+
+  // Default constructor for serialization
+  inline Custom() = default;
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(name_);
   }
 #endif
 };

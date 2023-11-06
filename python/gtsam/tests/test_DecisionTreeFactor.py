@@ -26,7 +26,13 @@ class TestDecisionTreeFactor(GtsamTestCase):
         self.B = (5, 2)
         self.factor = DecisionTreeFactor([self.A, self.B], "1 2  3 4  5 6")
 
+    def test_from_floats(self):
+        """Test whether we can construct a factor from floats."""
+        actual = DecisionTreeFactor([self.A, self.B], [1., 2.,  3., 4.,  5., 6.])
+        self.gtsamAssertEquals(actual, self.factor)
+
     def test_enumerate(self):
+        """Test whether we can enumerate the factor."""
         actual = self.factor.enumerate()
         _, values = zip(*actual)
         self.assertEqual(list(values), [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])

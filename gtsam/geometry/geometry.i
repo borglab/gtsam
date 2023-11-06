@@ -166,7 +166,9 @@ class Rot2 {
 
   // Manifold
   gtsam::Rot2 retract(Vector v) const;
+  gtsam::Rot2 retract(Vector v, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
   Vector localCoordinates(const gtsam::Rot2& p) const;
+  Vector localCoordinates(const gtsam::Rot2& p, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // Lie Group
   static gtsam::Rot2 Expmap(Vector v);
@@ -397,19 +399,24 @@ class Pose2 {
   static gtsam::Pose2 Identity();
   gtsam::Pose2 inverse() const;
   gtsam::Pose2 compose(const gtsam::Pose2& p2) const;
+  gtsam::Pose2 compose(const gtsam::Pose2& p2, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
   gtsam::Pose2 between(const gtsam::Pose2& p2) const;
+  gtsam::Pose2 between(const gtsam::Pose2& p2, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // Operator Overloads
   gtsam::Pose2 operator*(const gtsam::Pose2& p2) const;
 
   // Manifold
   gtsam::Pose2 retract(Vector v) const;
+  gtsam::Pose2 retract(Vector v, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
   Vector localCoordinates(const gtsam::Pose2& p) const;
+  Vector localCoordinates(const gtsam::Pose2& p, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // Lie Group
   static gtsam::Pose2 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose2& p);
   Vector logmap(const gtsam::Pose2& p);
+  Vector logmap(const gtsam::Pose2& p, Eigen::Ref<Eigen::MatrixXd> H);
   static Matrix ExpmapDerivative(Vector v);
   static Matrix LogmapDerivative(const gtsam::Pose2& v);
   Matrix AdjointMap() const;
@@ -1075,6 +1082,7 @@ class Similarity2 {
 
   // Standard Interface
   bool equals(const gtsam::Similarity2& sim, double tol) const;
+  void print(const std::string& s = "") const;
   Matrix matrix() const;
   gtsam::Rot2& rotation();
   gtsam::Point2& translation();
@@ -1098,6 +1106,7 @@ class Similarity3 {
 
   // Standard Interface
   bool equals(const gtsam::Similarity3& sim, double tol) const;
+  void print(const std::string& s = "") const;
   Matrix matrix() const;
   gtsam::Rot3& rotation();
   gtsam::Point3& translation();
@@ -1173,11 +1182,13 @@ class TriangulationParameters {
   bool enableEPI;
   double landmarkDistanceThreshold;
   double dynamicOutlierRejectionThreshold;
+  bool useLOST;
   gtsam::SharedNoiseModel noiseModel;
   TriangulationParameters(const double rankTolerance = 1.0,
                           const bool enableEPI = false,
                           double landmarkDistanceThreshold = -1,
                           double dynamicOutlierRejectionThreshold = -1,
+                          const bool useLOST = false,
                           const gtsam::SharedNoiseModel& noiseModel = nullptr);
 };
 

@@ -42,7 +42,7 @@ namespace gtsam {
  * @ingroup slam
  */
 template <class CAMERA>
-class GTSAM_UNSTABLE_EXPORT SmartProjectionPoseFactorRollingShutter
+class SmartProjectionPoseFactorRollingShutter
     : public SmartProjectionFactor<CAMERA> {
  private:
   typedef SmartProjectionFactor<CAMERA> Base;

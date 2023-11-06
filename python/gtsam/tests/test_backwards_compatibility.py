@@ -29,7 +29,7 @@ UPRIGHT = Rot3.Ypr(-np.pi / 2, 0.0, -np.pi / 2)
 
 
 class TestBackwardsCompatibility(GtsamTestCase):
-    """Tests for the backwards compatibility for the Python wrapper."""
+    """Tests for backwards compatibility of the Python wrapper."""
 
     def setUp(self):
         """Setup test fixtures"""

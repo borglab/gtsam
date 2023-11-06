@@ -93,7 +93,7 @@ namespace gtsam {
     /// print
     void print(const std::string& s, const LabelFormatter& labelFormatter,
                const ValueFormatter& valueFormatter) const override {
-      std::cout << s << " Leaf [" << nrAssignments() << "]"
+      std::cout << s << " Leaf [" << nrAssignments() << "] "
                 << valueFormatter(constant_) << std::endl;
     }
 
@@ -660,7 +660,7 @@ namespace gtsam {
   // B=1
   //  A=0: 3
   //  A=1: 4
-  // Note, through the magic of "compose", build([A B],[1 2 3 4]) will produce
+  // Note, through the magic of "compose", create([A B],[1 3 2 4]) will produce
   // exactly the same tree as above: the highest label is always the root.
   // However, it will be *way* faster if labels are given highest to lowest.
   template<typename L, typename Y>

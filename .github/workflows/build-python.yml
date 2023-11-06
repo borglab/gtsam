@@ -2,6 +2,12 @@ name: Python CI
 
 on: [pull_request]
 
+# Every time you make a push to your PR, it cancel immediately the previous checks, 
+# and start a new one. The other runner will be available more quickly to your PR. 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: ${{ matrix.name }} ${{ matrix.build_type }} Python ${{ matrix.python_version }}
@@ -69,7 +75,7 @@ jobs:
           fi
 
           sudo apt-get -y update
-          sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libboost-all-dev
+          sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libboost-all-dev ninja-build
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
@@ -103,9 +109,12 @@ jobs:
         with:
           swap-size-gb: 6
 
-      - name: Install Dependencies
+      - name: Install System Dependencies
         run: |
           bash .github/scripts/python.sh -d
+
+      - name: Install Python Dependencies
+        run: python$PYTHON_VERSION -m pip install -r python/dev_requirements.txt
 
       - name: Build
         run: |

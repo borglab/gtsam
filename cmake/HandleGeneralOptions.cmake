@@ -8,6 +8,18 @@ else()
     set(GTSAM_UNSTABLE_AVAILABLE 0)
 endif()
 
+### GtsamTesting related options
+option(GTSAM_BUILD_EXAMPLES_ALWAYS       "Build examples with 'make all' (build with 'make examples' if not)"       ON)
+option(GTSAM_BUILD_TIMING_ALWAYS         "Build timing scripts with 'make all' (build with 'make timing' if not"    OFF)
+###
+
+# Add option for using build type postfixes to allow installing multiple build modes
+option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" ON)
+
+if (NOT MSVC)
+    option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" OFF)
+endif()
+
 # Configurable Options
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
@@ -32,6 +44,7 @@ option(GTSAM_ALLOW_DEPRECATED_SINCE_V43     "Allow use of methods/functions depr
 option(GTSAM_SUPPORT_NESTED_DISSECTION      "Support Metis-based nested dissection" ON)
 option(GTSAM_TANGENT_PREINTEGRATION         "Use new ImuFactor with integration on tangent space" ON)
 option(GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR "Use the slower but correct version of BetweenFactor" OFF)
+option(GTSAM_SLOW_BUT_CORRECT_EXPMAP        "Use slower but correct expmap for Pose2"  OFF)
 
 if (GTSAM_FORCE_SHARED_LIB)
     message(STATUS "GTSAM is a shared library due to GTSAM_FORCE_SHARED_LIB")

@@ -58,6 +58,11 @@ class GTSAM_EXPORT DiscreteBayesTreeClique
 
   //** evaluate conditional probability of subtree for given DiscreteValues */
   double evaluate(const DiscreteValues& values) const;
+
+  //** (Preferred) sugar for the above for given DiscreteValues */
+  double operator()(const DiscreteValues& values) const {
+    return evaluate(values);
+  }
 };
 
 /* ************************************************************************* */
@@ -104,5 +109,13 @@ class GTSAM_EXPORT DiscreteBayesTree
 
   /// @}
 };
+
+/// traits
+template <>
+struct traits<DiscreteBayesTreeClique>
+    : public Testable<DiscreteBayesTreeClique> {};
+
+template <>
+struct traits<DiscreteBayesTree> : public Testable<DiscreteBayesTree> {};
 
 }  // namespace gtsam

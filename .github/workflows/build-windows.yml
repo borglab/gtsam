@@ -2,6 +2,12 @@ name: Windows CI
 
 on: [pull_request]
 
+# Every time you make a push to your PR, it cancel immediately the previous checks, 
+# and start a new one. The other runner will be available more quickly to your PR. 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: ${{ matrix.name }} ${{ matrix.build_type }}
@@ -28,6 +34,7 @@ jobs:
             Debug,
             Release
           ]
+
         build_unstable: [ON]
         include:
           - name: windows-2019-cl
@@ -87,32 +94,66 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Setup msbuild
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x${{ matrix.platform }}
+
       - name: Configuration
+        shell: bash
         run: |
+          export CMAKE_GENERATOR=Ninja 
           cmake -E remove_directory build
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
+          cmake -B build \
+                -S . \
+                -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+                -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+                -DBOOST_ROOT="${BOOST_ROOT}" \
+                -DBOOST_INCLUDEDIR="${BOOST_ROOT}\boost\include" \
+                -DBOOST_LIBRARYDIR="${BOOST_ROOT}\lib"
 
       - name: Build
+        shell: bash
         run: |
           # Since Visual Studio is a multi-generator, we need to use --config
           # https://stackoverflow.com/a/24470998/1236990
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target gtsam
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target gtsam_unstable
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target wrap
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target gtsam
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target gtsam_unstable
 
+      - name: Test
+        shell: bash
+        run: |
           # Run GTSAM tests
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.basis
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.discrete
-          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.geometry
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.inference
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.linear
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.navigation
-          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.nonlinear
-          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.sam
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.sfm
-          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.slam
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.symbolic
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.base
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.basis
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.discrete
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.geometry
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.inference
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.linear
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.navigation
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.sam
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.sfm
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.symbolic
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.hybrid
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam
 
           # Run GTSAM_UNSTABLE tests
-          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base_unstable
+          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.base_unstable
+          # Compile. Fail with exception
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.geometry_unstable
+          # Compile. Fail with exception
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.linear_unstable
+          # Compile. Fail with exception
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.discrete_unstable
+          # Compile. Fail with exception
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.dynamics_unstable
+          # Compile. Fail with exception
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear_unstable
+          # Compile. Fail with exception
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam_unstable
+          # Compile. Fail with exception
+          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.partition
+
+          # Run all tests
+          # cmake --build build -j1 --config ${{ matrix.build_type }} --target check

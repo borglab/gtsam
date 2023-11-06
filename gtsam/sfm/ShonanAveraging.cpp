@@ -894,6 +894,9 @@ template <size_t d>
 std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
                                                   size_t pMin,
                                                   size_t pMax) const {
+  if (pMin < d) {
+    throw std::runtime_error("pMin is smaller than the base dimension d");
+  }
   Values Qstar;
   Values initialSOp = LiftTo<Rot>(pMin, initialEstimate);  // lift to pMin!
   for (size_t p = pMin; p <= pMax; p++) {
