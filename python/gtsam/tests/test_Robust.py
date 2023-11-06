@@ -10,9 +10,10 @@ Author: Fan Jiang
 """
 import unittest
 
-import gtsam
 import numpy as np
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
 
 
 class TestRobust(GtsamTestCase):
@@ -37,7 +38,7 @@ class TestRobust(GtsamTestCase):
         v = gtsam.Values()
         v.insert(0, 0.0)
 
-        self.assertAlmostEquals(f.error(v), 0.125)
+        self.assertAlmostEqual(f.error(v), 0.125)
 
 if __name__ == "__main__":
     unittest.main()
