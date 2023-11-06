@@ -1,6 +1,6 @@
 /**
  * @file    RegularImplicitSchurFactor.h
- * @brief   A new type of linear factor (GaussianFactor), which is subclass of GaussianFactor
+ * @brief   A subclass of GaussianFactor specialized to structureless SFM.
  * @author  Frank Dellaert
  * @author  Luca Carlone
  */
@@ -20,13 +20,27 @@ namespace gtsam {
 
 /**
  * RegularImplicitSchurFactor
+ * 
+ * A specialization of a GaussianFactor to structure-less SFM, which is very
+ * fast in a conjugate gradient (CG) solver. Specifically, as measured in 
+ * timeSchurFactors.cpp, it stays very fast for an increasing number of cameras.
+ * The magic is in multiplyHessianAdd, which does the Hessian-vector multiply at 
+ * the core of CG, and implements
+ *    y += F'*alpha*(I - E*P*E')*F*x
+ * where 
+ *  - F is the 2mx6m Jacobian of the m 2D measurements wrpt m 6DOF poses
+ *  - E is the 2mx3 Jacabian of the m 2D measurements wrpt a 3D point
+ *  - P is the covariance on the point
+ * The equation above implicitly executes the Schur complement by removing the
+ * information E*P*E' from the Hessian. It is also very fast as we do not use 
+ * the full 6m*6m F matrix, but rather only it's m 6x6 diagonal blocks.
  */
 template<class CAMERA>
 class RegularImplicitSchurFactor: public GaussianFactor {
 
 public:
   typedef RegularImplicitSchurFactor This; ///< Typedef to this class
-  typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+  typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
 protected:
 
@@ -38,9 +52,10 @@ protected:
   static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
 
   typedef Eigen::Matrix<double, ZDim, D> MatrixZD; ///< type of an F block
-  typedef Eigen::Matrix<double, D, D> MatrixDD; ///< camera hessian
+  typedef Eigen::Matrix<double, D, D> MatrixDD; ///< camera Hessian
+  typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;
 
-  const std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks_; ///< All ZDim*D F blocks (one for each camera)
+  FBlocks FBlocks_; ///< All ZDim*D F blocks (one for each camera)
   const Matrix PointCovariance_; ///< the 3*3 matrix P = inv(E'E) (2*2 if degenerate)
   const Matrix E_; ///< The 2m*3 E Jacobian with respect to the point
   const Vector b_; ///< 2m-dimensional RHS vector
@@ -52,17 +67,25 @@ public:
   }
 
   /// Construct from blocks of F, E, inv(E'*E), and RHS vector b
-  RegularImplicitSchurFactor(const KeyVector& keys,
-      const std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> >& FBlocks, const Matrix& E, const Matrix& P,
-      const Vector& b) :
-      GaussianFactor(keys), FBlocks_(FBlocks), PointCovariance_(P), E_(E), b_(b) {
-  }
+
+  /**
+   * @brief Construct a new RegularImplicitSchurFactor object.
+   * 
+   * @param keys keys corresponding to cameras
+   * @param Fs All ZDim*D F blocks (one for each camera)
+   * @param E Jacobian of measurements wrpt point.
+   * @param P point covariance matrix
+   * @param b RHS vector
+   */
+  RegularImplicitSchurFactor(const KeyVector& keys, const FBlocks& Fs,
+                             const Matrix& E, const Matrix& P, const Vector& b)
+      : GaussianFactor(keys), FBlocks_(Fs), PointCovariance_(P), E_(E), b_(b) {}
 
   /// Destructor
   ~RegularImplicitSchurFactor() override {
   }
 
-  std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> >& FBlocks() const {
+  const FBlocks& Fs() const {
     return FBlocks_;
   }
 
@@ -125,7 +148,7 @@ public:
   std::pair<Matrix, Vector> jacobian() const override {
     throw std::runtime_error(
         "RegularImplicitSchurFactor::jacobian non implemented");
-    return std::make_pair(Matrix(), Vector());
+    return {Matrix(), Vector()};
   }
 
   /// *Compute* full augmented information matrix
@@ -231,18 +254,14 @@ public:
   }
 
   GaussianFactor::shared_ptr clone() const override {
-    return boost::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
+    return std::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
         FBlocks_, PointCovariance_, E_, b_);
     throw std::runtime_error(
         "RegularImplicitSchurFactor::clone non implemented");
   }
 
-  bool empty() const override {
-    return false;
-  }
-
   GaussianFactor::shared_ptr negate() const override {
-    return boost::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
+    return std::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
         FBlocks_, PointCovariance_, E_, b_);
     throw std::runtime_error(
         "RegularImplicitSchurFactor::negate non implemented");

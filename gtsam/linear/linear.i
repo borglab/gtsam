@@ -89,6 +89,7 @@ virtual class Unit : gtsam::noiseModel::Isotropic {
 
 namespace mEstimator {
 virtual class Base {
+  enum ReweightScheme { Scalar, Block };
   void print(string s = "") const;
 };
 
@@ -191,6 +192,36 @@ virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
   double loss(double error) const;
 };
 
+virtual class AsymmetricTukey: gtsam::noiseModel::mEstimator::Base {
+  AsymmetricTukey(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  static gtsam::noiseModel::mEstimator::AsymmetricTukey* Create(double k);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double loss(double error) const;
+};
+
+virtual class Custom: gtsam::noiseModel::mEstimator::Base {
+  Custom(gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
+         gtsam::noiseModel::mEstimator::CustomLossFunction loss,
+         gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
+         std::string name);
+  static gtsam::noiseModel::mEstimator::Custom* Create(
+      gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
+      gtsam::noiseModel::mEstimator::CustomLossFunction loss,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
+      std::string name);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double loss(double error) const;
+};
+
+
 }///\namespace mEstimator
 
 virtual class Robust : gtsam::noiseModel::Base {
@@ -221,6 +252,7 @@ class VectorValues {
   //Constructors
   VectorValues();
   VectorValues(const gtsam::VectorValues& other);
+  VectorValues(const gtsam::VectorValues& first, const gtsam::VectorValues& second);
 
   //Named Constructors
   static gtsam::VectorValues Zero(const gtsam::VectorValues& model);
@@ -235,7 +267,9 @@ class VectorValues {
   bool equals(const gtsam::VectorValues& expected, double tol) const;
   void insert(size_t j, Vector value);
   Vector vector() const;
+  Vector vector(const gtsam::KeyVector& keys) const;
   Vector at(size_t j) const;
+  void insert(const gtsam::VectorValues& values);
   void update(const gtsam::VectorValues& values);
 
   //Advanced Interface
@@ -254,14 +288,11 @@ class VectorValues {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
+  string html() const;
 };
 
 #include <gtsam/linear/GaussianFactor.h>
-virtual class GaussianFactor {
-  gtsam::KeyVector keys() const;
+virtual class GaussianFactor : gtsam::Factor {
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
@@ -272,15 +303,12 @@ virtual class GaussianFactor {
   Matrix information() const;
   Matrix augmentedJacobian() const;
   pair<Matrix, Vector> jacobian() const;
-  size_t size() const;
-  bool empty() const;
 };
 
 #include <gtsam/linear/JacobianFactor.h>
 virtual class JacobianFactor : gtsam::GaussianFactor {
   //Constructors
   JacobianFactor();
-  JacobianFactor(const gtsam::GaussianFactor& factor);
   JacobianFactor(Vector b_in);
   JacobianFactor(size_t i1, Matrix A1, Vector b,
       const gtsam::noiseModel::Diagonal* model);
@@ -296,13 +324,12 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   JacobianFactor(const gtsam::GaussianFactorGraph& graph,
                  const gtsam::Ordering& ordering,
                  const gtsam::VariableSlots& p_variableSlots);
+  JacobianFactor(const gtsam::GaussianFactor& factor);
 
   //Testable
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
-  void printKeys(string s) const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
-  size_t size() const;
   Vector unweighted_error(const gtsam::VectorValues& c) const;
   Vector error_vector(const gtsam::VectorValues& c) const;
   double error(const gtsam::VectorValues& c) const;
@@ -327,9 +354,6 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/linear/HessianFactor.h>
@@ -347,10 +371,8 @@ virtual class HessianFactor : gtsam::GaussianFactor {
   HessianFactor(const gtsam::GaussianFactorGraph& factors);
 
   //Testable
-  size_t size() const;
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
-  void printKeys(string s) const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
   double error(const gtsam::VectorValues& c) const;
 
@@ -362,9 +384,6 @@ virtual class HessianFactor : gtsam::GaussianFactor {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -400,12 +419,14 @@ class GaussianFactorGraph {
   // error and probability
   double error(const gtsam::VectorValues& c) const;
   double probPrime(const gtsam::VectorValues& c) const;
+  void printErrors(const gtsam::VectorValues& c, string str = "GaussianFactorGraph: ", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const;
 
   gtsam::GaussianFactorGraph clone() const;
   gtsam::GaussianFactorGraph negate() const;
 
   // Optimizing and linear algebra
   gtsam::VectorValues optimize() const;
+  gtsam::VectorValues optimizeDensely() const;
   gtsam::VectorValues optimize(const gtsam::Ordering& ordering) const;
   gtsam::VectorValues optimizeGradientSearch() const;
   gtsam::VectorValues gradient(const gtsam::VectorValues& x0) const;
@@ -413,8 +434,10 @@ class GaussianFactorGraph {
 
   // Elimination and marginals
   gtsam::GaussianBayesNet* eliminateSequential();
+  gtsam::GaussianBayesNet* eliminateSequential(gtsam::Ordering::OrderingType type);
   gtsam::GaussianBayesNet* eliminateSequential(const gtsam::Ordering& ordering);
   gtsam::GaussianBayesTree* eliminateMultifrontal();
+  gtsam::GaussianBayesTree* eliminateMultifrontal(gtsam::Ordering::OrderingType type);
   gtsam::GaussianBayesTree* eliminateMultifrontal(const gtsam::Ordering& ordering);
   pair<gtsam::GaussianBayesNet*, gtsam::GaussianFactorGraph*> eliminatePartialSequential(
     const gtsam::Ordering& ordering);
@@ -443,58 +466,107 @@ class GaussianFactorGraph {
   pair<Matrix,Vector> hessian() const;
   pair<Matrix,Vector> hessian(const gtsam::Ordering& ordering) const;
 
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+  void saveGraph(
+      string s,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/hybrid/HybridValues.h>
 virtual class GaussianConditional : gtsam::JacobianFactor {
-  //Constructors
-  GaussianConditional(size_t key, Vector d, Matrix R, const gtsam::noiseModel::Diagonal* sigmas);
+  // Constructors
+  GaussianConditional(size_t key, Vector d, Matrix R,
+                      const gtsam::noiseModel::Diagonal* sigmas);
   GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
-      const gtsam::noiseModel::Diagonal* sigmas);
+                      const gtsam::noiseModel::Diagonal* sigmas);
   GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
-      size_t name2, Matrix T, const gtsam::noiseModel::Diagonal* sigmas);
+                      size_t name2, Matrix T,
+                      const gtsam::noiseModel::Diagonal* sigmas);
 
-  //Constructors with no noise model
+  // Constructors with no noise model
   GaussianConditional(size_t key, Vector d, Matrix R);
-    GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S);
-    GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
-        size_t name2, Matrix T);
+  GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S);
+  GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
+                      size_t name2, Matrix T);
 
-  //Standard Interface
-    void print(string s = "GaussianConditional",
-               const gtsam::KeyFormatter& keyFormatter =
-                   gtsam::DefaultKeyFormatter) const;
-    bool equals(const gtsam::GaussianConditional& cg, double tol) const;
+  // Named constructors
+  static gtsam::GaussianConditional FromMeanAndStddev(gtsam::Key key, 
+                                                      const Vector& mu,
+                                                      double sigma);
 
-    // Advanced Interface
-    gtsam::VectorValues solve(const gtsam::VectorValues& parents) const;
-    gtsam::VectorValues solveOtherRHS(const gtsam::VectorValues& parents,
-                                      const gtsam::VectorValues& rhs) const;
-    void solveTransposeInPlace(gtsam::VectorValues& gy) const;
-    void scaleFrontalsBySigma(gtsam::VectorValues& gy) const;
-    Matrix R() const;
-    Matrix S() const;
-    Vector d() const;
+  static gtsam::GaussianConditional FromMeanAndStddev(gtsam::Key key, 
+                                                      const Matrix& A,
+                                                      gtsam::Key parent,
+                                                      const Vector& b,
+                                                      double sigma);
 
-    // enabling serialization functionality
-    void serialize() const;
+  static gtsam::GaussianConditional FromMeanAndStddev(gtsam::Key key,
+                                                      const Matrix& A1,
+                                                      gtsam::Key parent1, 
+                                                      const Matrix& A2,
+                                                      gtsam::Key parent2, 
+                                                      const Vector& b,
+                                                      double sigma);
+  // Testable
+  void print(string s = "GaussianConditional",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::GaussianConditional& cg, double tol) const;
+  
+  // Standard Interface
+  double logNormalizationConstant() const;
+  double logProbability(const gtsam::VectorValues& x) const;
+  double evaluate(const gtsam::VectorValues& x) const;
+  double error(const gtsam::VectorValues& x) const;
+  gtsam::Key firstFrontalKey() const;
+  gtsam::VectorValues solve(const gtsam::VectorValues& parents) const;
+  gtsam::JacobianFactor* likelihood(
+      const gtsam::VectorValues& frontalValues) const;
+  gtsam::JacobianFactor* likelihood(Vector frontal) const;
+  gtsam::VectorValues sample(const gtsam::VectorValues& parents) const;
+  gtsam::VectorValues sample() const;
+  
+  // Advanced Interface
+  gtsam::VectorValues solveOtherRHS(const gtsam::VectorValues& parents,
+                                    const gtsam::VectorValues& rhs) const;
+  void solveTransposeInPlace(gtsam::VectorValues& gy) const;
+  Matrix R() const;
+  Matrix S() const;
+  Vector d() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // Expose HybridValues versions
+  double logProbability(const gtsam::HybridValues& x) const;
+  double evaluate(const gtsam::HybridValues& x) const;
+  double error(const gtsam::HybridValues& x) const;
 };
 
 #include <gtsam/linear/GaussianDensity.h>
 virtual class GaussianDensity : gtsam::GaussianConditional {
-    //Constructors
-  GaussianDensity(size_t key, Vector d, Matrix R, const gtsam::noiseModel::Diagonal* sigmas);
+  // Constructors
+  GaussianDensity(gtsam::Key key, Vector d, Matrix R,
+                  const gtsam::noiseModel::Diagonal* sigmas);
 
-  //Standard Interface
+  static gtsam::GaussianDensity FromMeanAndStddev(gtsam::Key key,
+                                                  const Vector& mean,
+                                                  double sigma);
+
+  // Testable
   void print(string s = "GaussianDensity",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::GaussianDensity &cg, double tol) const;
+  bool equals(const gtsam::GaussianDensity& cg, double tol) const;
+
+  // Standard Interface
   Vector mean() const;
   Matrix covariance() const;
 };
@@ -511,29 +583,48 @@ virtual class GaussianBayesNet {
   bool equals(const gtsam::GaussianBayesNet& other, double tol) const;
   size_t size() const;
 
+  void push_back(gtsam::GaussianConditional* conditional);
+  void push_back(const gtsam::GaussianBayesNet& bayesNet);
+  gtsam::GaussianConditional* front() const;
+  gtsam::GaussianConditional* back() const;
+
+  // Standard interface
+  // Standard Interface
+  double logProbability(const gtsam::VectorValues& x) const;
+  double evaluate(const gtsam::VectorValues& x) const;
+  double error(const gtsam::VectorValues& x) const;
+
+  gtsam::VectorValues optimize() const;
+  gtsam::VectorValues optimize(const gtsam::VectorValues& given) const;
+  gtsam::VectorValues optimizeGradientSearch() const;
+  
+  gtsam::VectorValues sample(const gtsam::VectorValues& given) const;
+  gtsam::VectorValues sample() const;
+  gtsam::VectorValues backSubstitute(const gtsam::VectorValues& gx) const;
+  gtsam::VectorValues backSubstituteTranspose(const gtsam::VectorValues& gx) const;
+
   // FactorGraph derived interface
-  // size_t size() const;
   gtsam::GaussianConditional* at(size_t idx) const;
   gtsam::KeySet keys() const;
+  gtsam::KeyVector keyVector() const;
   bool exists(size_t idx) const;
 
   void saveGraph(const string& s) const;
 
-  gtsam::GaussianConditional* front() const;
-  gtsam::GaussianConditional* back() const;
-  void push_back(gtsam::GaussianConditional* conditional);
-  void push_back(const gtsam::GaussianBayesNet& bayesNet);
-
-  gtsam::VectorValues optimize() const;
-  gtsam::VectorValues optimize(gtsam::VectorValues& solutionForMissing) const;
-  gtsam::VectorValues optimizeGradientSearch() const;
+  std::pair<Matrix, Vector> matrix() const; 
   gtsam::VectorValues gradient(const gtsam::VectorValues& x0) const;
   gtsam::VectorValues gradientAtZero() const;
   double error(const gtsam::VectorValues& x) const;
   double determinant() const;
   double logDeterminant() const;
-  gtsam::VectorValues backSubstitute(const gtsam::VectorValues& gx) const;
-  gtsam::VectorValues backSubstituteTranspose(const gtsam::VectorValues& gx) const;
+
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+  void saveGraph(
+      string s,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
 };
 
 #include <gtsam/linear/GaussianBayesTree.h>
@@ -547,7 +638,12 @@ virtual class GaussianBayesTree {
   size_t size() const;
   bool empty() const;
   size_t numCachedSeparatorMarginals() const;
-  void saveGraph(string s) const;
+
+  string dot(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  void saveGraph(string s,
+                const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 
   gtsam::VectorValues optimize() const;
   gtsam::VectorValues optimizeGradientSearch() const;
@@ -560,17 +656,6 @@ virtual class GaussianBayesTree {
   gtsam::GaussianConditional* marginalFactor(size_t key) const;
   gtsam::GaussianFactorGraph* joint(size_t key1, size_t key2) const;
   gtsam::GaussianBayesNet* jointBayesNet(size_t key1, size_t key2) const;
-};
-
-#include <gtsam/linear/Errors.h>
-class Errors {
-    //Constructors
-    Errors();
-    Errors(const gtsam::VectorValues& V);
-
-    //Testable
-    void print(string s = "Errors");
-    bool equals(const gtsam::Errors& expected, double tol) const;
 };
 
 #include <gtsam/linear/GaussianISAM.h>
@@ -620,6 +705,10 @@ virtual class DummyPreconditionerParameters : gtsam::PreconditionerParameters {
   DummyPreconditionerParameters();
 };
 
+virtual class BlockJacobiPreconditionerParameters : gtsam::PreconditionerParameters {
+  BlockJacobiPreconditionerParameters();
+};
+
 #include <gtsam/linear/PCGSolver.h>
 virtual class PCGSolverParameters : gtsam::ConjugateGradientParameters {
   PCGSolverParameters();
@@ -634,7 +723,7 @@ virtual class SubgraphSolverParameters : gtsam::ConjugateGradientParameters {
 
 virtual class SubgraphSolver  {
   SubgraphSolver(const gtsam::GaussianFactorGraph &A, const gtsam::SubgraphSolverParameters &parameters, const gtsam::Ordering& ordering);
-  SubgraphSolver(const gtsam::GaussianFactorGraph &Ab1, const gtsam::GaussianFactorGraph* Ab2, const gtsam::SubgraphSolverParameters &parameters, const gtsam::Ordering& ordering);
+  SubgraphSolver(const gtsam::GaussianFactorGraph &Ab1, const gtsam::GaussianFactorGraph& Ab2, const gtsam::SubgraphSolverParameters &parameters, const gtsam::Ordering& ordering);
   gtsam::VectorValues optimize() const;
 };
 

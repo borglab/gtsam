@@ -358,7 +358,7 @@ static void test_std_initializers_tensor() {
 #endif  // EIGEN_HAS_VARIADIC_TEMPLATES
 }
 
-void test_cxx11_tensor_assign()
+EIGEN_DECLARE_TEST(cxx11_tensor_assign)
 {
   CALL_SUBTEST(test_1d());
   CALL_SUBTEST(test_2d());

@@ -10,67 +10,98 @@
 * -------------------------------------------------------------------------- */
 
 /**
-* @file    BayesNet.h
-* @brief   Bayes network
-* @author  Frank Dellaert
-* @author  Richard Roberts
-*/
+ * @file    BayesNet.h
+ * @brief   Bayes network
+ * @author  Frank Dellaert
+ * @author  Richard Roberts
+ */
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
-
 #include <gtsam/inference/FactorGraph.h>
+
+#include <memory>
+#include <string>
 
 namespace gtsam {
 
+class HybridValues;
+
+/**
+ * A BayesNet is a tree of conditionals, stored in elimination order.
+ * @ingroup inference
+ */
+template <class CONDITIONAL>
+class BayesNet : public FactorGraph<CONDITIONAL> {
+ private:
+  typedef FactorGraph<CONDITIONAL> Base;
+
+ public:
+  typedef typename std::shared_ptr<CONDITIONAL>
+      sharedConditional;  ///< A shared pointer to a conditional
+
+ protected:
+  /// @name Protected Constructors
+  /// @{
+
+  /** Default constructor as an empty BayesNet */
+  BayesNet() {}
+
+  /** Construct from iterator over conditionals */
+  template <typename ITERATOR>
+  BayesNet(ITERATOR firstConditional, ITERATOR lastConditional)
+      : Base(firstConditional, lastConditional) {}
+
   /**
-  * A BayesNet is a tree of conditionals, stored in elimination order.
-  *
-  * todo:  how to handle Bayes nets with an optimize function?  Currently using global functions.
-  * \nosubgrouping
-  */
-  template<class CONDITIONAL>
-  class BayesNet : public FactorGraph<CONDITIONAL> {
+   * Constructor that takes an initializer list of shared pointers.
+   *  BayesNet<SymbolicConditional> bn = {make_shared<SymbolicConditional>(),
+   * ...};
+   */
+  BayesNet(std::initializer_list<sharedConditional> conditionals)
+      : Base(conditionals) {}
 
-  private:
+  /// @}
 
-    typedef FactorGraph<CONDITIONAL> Base;
+ public:
+  /// @name Testable
+  /// @{
 
-  public:
-    typedef typename boost::shared_ptr<CONDITIONAL> sharedConditional; ///< A shared pointer to a conditional
+  /** print out graph */
+  void print(
+      const std::string& s = "BayesNet",
+      const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
-  protected:
-    /// @name Standard Constructors
-    /// @{
+  /// @}
+  /// @name Graph Display
+  /// @{
 
-    /** Default constructor as an empty BayesNet */
-    BayesNet() {};
+  /// Output to graphviz format, stream version.
+  void dot(std::ostream& os,
+           const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+           const DotWriter& writer = DotWriter()) const;
 
-    /** Construct from iterator over conditionals */
-    template<typename ITERATOR>
-    BayesNet(ITERATOR firstConditional, ITERATOR lastConditional) : Base(firstConditional, lastConditional) {}
+  /// Output to graphviz format string.
+  std::string dot(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                  const DotWriter& writer = DotWriter()) const;
 
-    /// @}
+  /// output to file with graphviz format.
+  void saveGraph(const std::string& filename,
+                 const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                 const DotWriter& writer = DotWriter()) const;
 
-  public:
-    /// @name Testable
-    /// @{
+  /// @}
+  /// @name HybridValues methods
+  /// @{
 
-   /** print out graph */
-   void print(
-       const std::string& s = "BayesNet",
-       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
+  // Expose HybridValues version of logProbability.
+  double logProbability(const HybridValues& x) const;
 
-   /// @}
+  // Expose HybridValues version of evaluate.
+  double evaluate(const HybridValues& c) const;
 
-   /// @name Standard Interface
-   /// @{
+  /// @}
+};
 
-   void saveGraph(const std::string& s,
-                  const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
-  };
-
-}
+}  // namespace gtsam
 
 #include <gtsam/inference/BayesNet-inst.h>

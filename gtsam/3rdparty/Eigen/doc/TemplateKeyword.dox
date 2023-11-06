@@ -76,7 +76,7 @@ point where the template is defined, without knowing the actual value of the tem
 and \c Derived2 in the example). That means that the compiler cannot know that <tt>dst.triangularView</tt> is
 a member template and that the following &lt; symbol is part of the delimiter for the template
 parameter. Another possibility would be that <tt>dst.triangularView</tt> is a member variable with the &lt;
-symbol refering to the <tt>operator&lt;()</tt> function. In fact, the compiler should choose the second
+symbol referring to the <tt>operator&lt;()</tt> function. In fact, the compiler should choose the second
 possibility, according to the standard. If <tt>dst.triangularView</tt> is a member template (as in our case),
 the programmer should specify this explicitly with the \c template keyword and write <tt>dst.template
 triangularView</tt>.

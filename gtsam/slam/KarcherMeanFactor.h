@@ -22,6 +22,7 @@
 
 #include <map>
 #include <vector>
+#include <optional>
 
 namespace gtsam {
 /**
@@ -50,7 +51,7 @@ template <class T> class KarcherMeanFactor : public NonlinearFactor {
   size_t d_;
 
   /// Constant Jacobian made of d*d identity matrices
-  boost::shared_ptr<JacobianFactor> whitenedJacobian_;
+  std::shared_ptr<JacobianFactor> whitenedJacobian_;
 
 public:
   /**
@@ -60,7 +61,7 @@ public:
    */
   template <typename CONTAINER>
   KarcherMeanFactor(const CONTAINER &keys, int d = D,
-                    boost::optional<double> beta = boost::none);
+                    std::optional<double> beta = {});
 
   /// Destructor
   ~KarcherMeanFactor() override {}
@@ -72,7 +73,7 @@ public:
   size_t dim() const override { return d_; }
 
   /// linearize to a GaussianFactor
-  boost::shared_ptr<GaussianFactor> linearize(const Values &c) const override {
+  std::shared_ptr<GaussianFactor> linearize(const Values &c) const override {
     return whitenedJacobian_;
   }
 };

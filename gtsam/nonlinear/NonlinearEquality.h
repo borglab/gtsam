@@ -21,8 +21,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
 
-#include <boost/bind/bind.hpp>
-
 #include <limits>
 #include <iostream>
 #include <cmath>
@@ -42,10 +40,13 @@ namespace gtsam {
  * \nosubgrouping
  */
 template<class VALUE>
-class NonlinearEquality: public NoiseModelFactor1<VALUE> {
+class NonlinearEquality: public NoiseModelFactorN<VALUE> {
 
 public:
   typedef VALUE T;
+
+  // Provide access to the Matrix& version of evaluateError:
+  using NoiseModelFactor1<VALUE>::evaluateError;
 
 private:
 
@@ -62,7 +63,7 @@ private:
   using This = NonlinearEquality<VALUE>;
 
   // typedef to base class
-  using Base = NoiseModelFactor1<VALUE>;
+  using Base = NoiseModelFactorN<VALUE>;
 
 public:
 
@@ -138,8 +139,7 @@ public:
   }
 
   /// Error function
-  Vector evaluateError(const T& xj,
-      boost::optional<Matrix&> H = boost::none) const override {
+  Vector evaluateError(const T& xj, OptionalMatrixType H) const override {
     const size_t nj = traits<T>::GetDimension(feasible_);
     if (allow_error_) {
       if (H)
@@ -170,7 +170,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -180,10 +180,12 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar
         & boost::serialization::make_nvp("NoiseModelFactor1",
             boost::serialization::base_object<Base>(*this));
@@ -191,6 +193,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(allow_error_);
     ar & BOOST_SERIALIZATION_NVP(error_gain_);
   }
+#endif
 
 };
 // \class NonlinearEquality
@@ -203,13 +206,16 @@ struct traits<NonlinearEquality<VALUE>> : Testable<NonlinearEquality<VALUE>> {};
  * Simple unary equality constraint - fixes a value for a variable
  */
 template<class VALUE>
-class NonlinearEquality1: public NoiseModelFactor1<VALUE> {
+class NonlinearEquality1: public NoiseModelFactorN<VALUE> {
 
 public:
   typedef VALUE X;
 
+  // Provide access to Matrix& version of evaluateError:
+  using NoiseModelFactor1<VALUE>::evaluateError;
+
 protected:
-  typedef NoiseModelFactor1<VALUE> Base;
+  typedef NoiseModelFactorN<VALUE> Base;
   typedef NonlinearEquality1<VALUE> This;
 
   /// Default constructor to allow for serialization
@@ -219,12 +225,11 @@ protected:
   X value_; /// fixed value for variable
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(X)
-
   GTSAM_CONCEPT_TESTABLE_TYPE(X)
 
 public:
 
-  typedef boost::shared_ptr<NonlinearEquality1<VALUE> > shared_ptr;
+  typedef std::shared_ptr<NonlinearEquality1<VALUE> > shared_ptr;
 
   /**
    * Constructor
@@ -243,13 +248,12 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   /// g(x) with optional derivative
-  Vector evaluateError(const X& x1,
-      boost::optional<Matrix&> H = boost::none) const override {
+  Vector evaluateError(const X& x1, OptionalMatrixType H) const override {
     if (H)
       (*H) = Matrix::Identity(traits<X>::GetDimension(x1),traits<X>::GetDimension(x1));
     // manifold equivalent of h(x)-z -> log(z,h(x))
@@ -269,15 +273,18 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar
         & boost::serialization::make_nvp("NoiseModelFactor1",
             boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(value_);
   }
+#endif
 };
 // \NonlinearEquality1
 
@@ -291,9 +298,9 @@ struct traits<NonlinearEquality1<VALUE> >
  * be the same.
  */
 template <class T>
-class NonlinearEquality2 : public NoiseModelFactor2<T, T> {
+class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
  protected:
-  using Base = NoiseModelFactor2<T, T>;
+  using Base = NoiseModelFactorN<T, T>;
   using This = NonlinearEquality2<T>;
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(T)
@@ -302,7 +309,11 @@ class NonlinearEquality2 : public NoiseModelFactor2<T, T> {
   NonlinearEquality2() {}
 
  public:
-  typedef boost::shared_ptr<NonlinearEquality2<T>> shared_ptr;
+  typedef std::shared_ptr<NonlinearEquality2<T>> shared_ptr;
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
 
   /**
    * Constructor
@@ -317,14 +328,13 @@ class NonlinearEquality2 : public NoiseModelFactor2<T, T> {
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   /// g(x) with optional derivative2
   Vector evaluateError(
-      const T& x1, const T& x2, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const override {
+      const T& x1, const T& x2, OptionalMatrixType H1, OptionalMatrixType H2) const override {
     static const size_t p = traits<T>::dimension;
     if (H1) *H1 = -Matrix::Identity(p, p);
     if (H2) *H2 = Matrix::Identity(p, p);
@@ -334,13 +344,16 @@ class NonlinearEquality2 : public NoiseModelFactor2<T, T> {
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /// Serialization function
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
     ar& boost::serialization::make_nvp(
         "NoiseModelFactor2", boost::serialization::base_object<Base>(*this));
   }
+#endif
 };
 // \NonlinearEquality2
 

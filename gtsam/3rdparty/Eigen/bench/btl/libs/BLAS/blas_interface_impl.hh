@@ -46,9 +46,9 @@ public :
     BLAS_FUNC(gemm)(&notrans,&notrans,&N,&N,&N,&fone,A,&N,B,&N,&fzero,X,&N);
   }
 
-//   static inline void ata_product(gene_matrix & A, gene_matrix & X, int N){
-//     ssyrk_(&lower,&trans,&N,&N,&fone,A,&N,&fzero,X,&N);
-//   }
+  static inline void ata_product(gene_matrix & A, gene_matrix & X, int N){
+    BLAS_FUNC(syrk)(&lower,&trans,&N,&N,&fone,A,&N,&fzero,X,&N);
+  }
 
   static inline void aat_product(gene_matrix & A, gene_matrix & X, int N){
     BLAS_FUNC(syrk)(&lower,&notrans,&N,&N,&fone,A,&N,&fzero,X,&N);

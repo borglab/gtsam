@@ -62,6 +62,10 @@ class Method:
 
         self.parent = parent
 
+    def to_cpp(self) -> str:
+        """Generate the C++ code for wrapping."""
+        return self.name
+
     def __repr__(self) -> str:
         return "Method: {} {} {}({}){}".format(
             self.template,
@@ -84,7 +88,8 @@ class StaticMethod:
     ```
     """
     rule = (
-        STATIC  #
+        Optional(Template.rule("template"))  #
+        + STATIC  #
         + ReturnType.rule("return_type")  #
         + IDENT("name")  #
         + LPAREN  #
@@ -92,16 +97,18 @@ class StaticMethod:
         + RPAREN  #
         + SEMI_COLON  # BR
     ).setParseAction(
-        lambda t: StaticMethod(t.name, t.return_type, t.args_list))
+        lambda t: StaticMethod(t.name, t.return_type, t.args_list, t.template))
 
     def __init__(self,
                  name: str,
                  return_type: ReturnType,
                  args: ArgumentList,
+                 template: Union[Template, Any] = None,
                  parent: Union["Class", Any] = ''):
         self.name = name
         self.return_type = return_type
         self.args = args
+        self.template = template
 
         self.parent = parent
 
@@ -221,8 +228,8 @@ class Class:
         Rule for all the members within a class.
         """
         rule = ZeroOrMore(Constructor.rule  #
-                          ^ StaticMethod.rule  #
                           ^ Method.rule  #
+                          ^ StaticMethod.rule  #
                           ^ Variable.rule  #
                           ^ Operator.rule  #
                           ^ Enum.rule  #
@@ -292,7 +299,7 @@ class Class:
             # If the base class is a TemplatedType,
             # we want the instantiated Typename
             if isinstance(parent_class, TemplatedType):
-                parent_class = parent_class.typename  # type: ignore
+                pass  # Note: this must get handled in InstantiatedClass
 
             self.parent_class = parent_class
         else:

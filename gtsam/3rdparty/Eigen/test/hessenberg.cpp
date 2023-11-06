@@ -49,7 +49,7 @@ template<typename Scalar,int Size> void hessenberg(int size = Size)
   // TODO: Add tests for packedMatrix() and householderCoefficients()
 }
 
-void test_hessenberg()
+EIGEN_DECLARE_TEST(hessenberg)
 {
   CALL_SUBTEST_1(( hessenberg<std::complex<double>,1>() ));
   CALL_SUBTEST_2(( hessenberg<std::complex<double>,2>() ));

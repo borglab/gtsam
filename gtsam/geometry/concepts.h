@@ -25,7 +25,6 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
-#include <boost/optional.hpp>
 
 namespace gtsam {
 
@@ -72,5 +71,5 @@ private:
 
 /** Pose Concept macros */
 #define GTSAM_CONCEPT_POSE_INST(T) template class gtsam::PoseConcept<T>;
-#define GTSAM_CONCEPT_POSE_TYPE(T) typedef gtsam::PoseConcept<T> _gtsam_PoseConcept##T;
+#define GTSAM_CONCEPT_POSE_TYPE(T) using _gtsam_PoseConcept##T = gtsam::PoseConcept<T>;
 

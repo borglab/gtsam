@@ -17,14 +17,13 @@
 
 #include "TangentPreintegration.h"
 #include <gtsam/base/numericalDerivative.h>
-#include <boost/make_shared.hpp>
 
 using namespace std;
 
 namespace gtsam {
 
 //------------------------------------------------------------------------------
-TangentPreintegration::TangentPreintegration(const boost::shared_ptr<Params>& p,
+TangentPreintegration::TangentPreintegration(const std::shared_ptr<Params>& p,
     const Bias& biasHat) :
     PreintegrationBase(p, biasHat) {
   resetIntegration();
@@ -112,9 +111,11 @@ void TangentPreintegration::update(const Vector3& measuredAcc,
 
   // Possibly correct for sensor pose by converting to body frame
   Matrix3 D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega;
-  if (p().body_P_sensor)
-    boost::tie(acc, omega) = correctMeasurementsBySensorPose(acc, omega,
-        D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega);
+  if (p().body_P_sensor) {
+    std::tie(acc, omega) = correctMeasurementsBySensorPose(
+        acc, omega, D_correctedAcc_acc, D_correctedAcc_omega,
+        D_correctedOmega_omega);
+  }
 
   // Do update
   deltaTij_ += dt;

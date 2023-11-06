@@ -38,13 +38,13 @@ void GTSAM_UNSTABLE_EXPORT synchronize(ConcurrentFilter& filter, ConcurrentSmoot
  */
 class GTSAM_UNSTABLE_EXPORT ConcurrentFilter {
 public:
-  typedef boost::shared_ptr<ConcurrentFilter> shared_ptr;
+  typedef std::shared_ptr<ConcurrentFilter> shared_ptr;
 
   /** Default constructor */
-  ConcurrentFilter() {};
+  ConcurrentFilter() = default;
 
   /** Default destructor */
-  virtual ~ConcurrentFilter() {};
+  virtual ~ConcurrentFilter() = default;
 
   /** Implement a standard 'print' function */
   virtual void print(
@@ -58,7 +58,7 @@ public:
    * Perform any required operations before the synchronization process starts.
    * Called by 'synchronize'
    */
-  virtual void presync() {};
+  virtual void presync() {}
 
   /**
    * Populate the provided containers with factors that constitute the filter branch summarization
@@ -91,7 +91,7 @@ public:
    * Perform any required operations after the synchronization process finishes.
    * Called by 'synchronize'
    */
-  virtual void postsync() {};
+  virtual void postsync() {}
 
 }; // ConcurrentFilter
 
@@ -100,13 +100,13 @@ public:
  */
 class GTSAM_UNSTABLE_EXPORT ConcurrentSmoother {
 public:
-  typedef boost::shared_ptr<ConcurrentSmoother> shared_ptr;
+  typedef std::shared_ptr<ConcurrentSmoother> shared_ptr;
 
   /** Default constructor */
-  ConcurrentSmoother() {};
+  ConcurrentSmoother() {}
 
   /** Default destructor */
-  virtual ~ConcurrentSmoother() {};
+  virtual ~ConcurrentSmoother() = default;
 
   /** Implement a standard 'print' function */
   virtual void print(
@@ -120,7 +120,7 @@ public:
    * Perform any required operations before the synchronization process starts.
    * Called by 'synchronize'
    */
-  virtual void presync() {};
+  virtual void presync() {}
 
   /**
    * Populate the provided containers with factors that constitute the smoother branch summarization
@@ -147,7 +147,7 @@ public:
    * Perform any required operations after the synchronization process finishes.
    * Called by 'synchronize'
    */
-  virtual void postsync() {};
+  virtual void postsync() {}
 
 }; // ConcurrentSmoother
 

@@ -30,7 +30,7 @@ template<typename T> void test_lscg_T()
   CALL_SUBTEST( check_sparse_leastsquare_solving(lscg_rowmajor_I)     );
 }
 
-void test_lscg()
+EIGEN_DECLARE_TEST(lscg)
 {
   CALL_SUBTEST_1(test_lscg_T<double>());
   CALL_SUBTEST_2(test_lscg_T<std::complex<double> >());

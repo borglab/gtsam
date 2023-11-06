@@ -33,7 +33,6 @@ The following examples illustrate some concepts from Georgia Tech's research pap
 ## 2D Pose SLAM 
 
 * **LocalizationExample.cpp**: modeling robot motion
-* **LocalizationExample2.cpp**: example with GPS like measurements
 * **Pose2SLAMExample**: A 2D Pose SLAM example using the predefined typedefs in gtsam/slam/pose2SLAM.h
 * **Pose2SLAMExample_advanced**: same, but uses an Optimizer object
 * **Pose2SLAMwSPCG**: solve a simple 3 by 3 grid of Pose2 SLAM problem by using easy SPCG interface

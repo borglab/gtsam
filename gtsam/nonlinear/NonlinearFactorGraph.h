@@ -23,10 +23,11 @@
 
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/GraphvizFormatting.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <functional>
 
 namespace gtsam {
@@ -42,38 +43,14 @@ namespace gtsam {
   class ExpressionFactor;
 
   /**
-   * Formatting options when saving in GraphViz format using
-   * NonlinearFactorGraph::saveGraph.
-   */
-  struct GTSAM_EXPORT GraphvizFormatting {
-    enum Axis { X, Y, Z, NEGX, NEGY, NEGZ }; ///< World axes to be assigned to paper axes
-    Axis paperHorizontalAxis; ///< The world axis assigned to the horizontal paper axis
-    Axis paperVerticalAxis; ///< The world axis assigned to the vertical paper axis
-    double figureWidthInches; ///< The figure width on paper in inches
-    double figureHeightInches; ///< The figure height on paper in inches
-    double scale; ///< Scale all positions to reduce / increase density
-    bool mergeSimilarFactors; ///< Merge multiple factors that have the same connectivity
-    bool plotFactorPoints; ///< Plots each factor as a dot between the variables
-    bool connectKeysToFactor; ///< Draw a line from each key within a factor to the dot of the factor
-    bool binaryEdges; ///< just use non-dotted edges for binary factors
-    std::map<size_t, Point2> factorPositions; ///< (optional for each factor) Manually specify factor "dot" positions.
-    /// Default constructor sets up robot coordinates.  Paper horizontal is robot Y,
-    /// paper vertical is robot X.  Default figure size of 5x5 in.
-    GraphvizFormatting() :
-      paperHorizontalAxis(Y), paperVerticalAxis(X),
-      figureWidthInches(5), figureHeightInches(5), scale(1),
-      mergeSimilarFactors(false), plotFactorPoints(true),
-      connectKeysToFactor(true), binaryEdges(true) {}
-  };
-
-
-  /**
-   * A non-linear factor graph is a graph of non-Gaussian, i.e. non-linear factors,
-   * which derive from NonlinearFactor. The values structures are typically (in SAM) more general
-   * than just vectors, e.g., Rot3 or Pose3, which are objects in non-linear manifolds.
-   * Linearizing the non-linear factor graph creates a linear factor graph on the
-   * tangent vector space at the linearization point. Because the tangent space is a true
-   * vector space, the config type will be an VectorValues in that linearized factor graph.
+   * A NonlinearFactorGraph is a graph of non-Gaussian, i.e. non-linear factors,
+   * which derive from NonlinearFactor. The values structures are typically (in
+   * SAM) more general than just vectors, e.g., Rot3 or Pose3, which are objects
+   * in non-linear manifolds. Linearizing the non-linear factor graph creates a
+   * linear factor graph on the tangent vector space at the linearization point.
+   * Because the tangent space is a true vector space, the config type will be
+   * an VectorValues in that linearized factor graph.
+   * @addtogroup nonlinear
    */
   class GTSAM_EXPORT NonlinearFactorGraph: public FactorGraph<NonlinearFactor> {
 
@@ -81,7 +58,10 @@ namespace gtsam {
 
     typedef FactorGraph<NonlinearFactor> Base;
     typedef NonlinearFactorGraph This;
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
+
+    /// @name Standard Constructors
+    /// @{
 
     /** Default constructor */
     NonlinearFactorGraph() {}
@@ -98,8 +78,9 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     NonlinearFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
-    /// Destructor
-    virtual ~NonlinearFactorGraph() {}
+    /// @}
+    /// @name Testable
+    /// @{
 
     /** print */
     void print(
@@ -115,22 +96,11 @@ namespace gtsam {
     /** Test equality */
     bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;
 
-    /// Write the graph in GraphViz format for visualization
-    void saveGraph(std::ostream& stm, const Values& values = Values(),
-      const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    /// @}
+    /// @name Standard Interface
+    /// @{
 
-    /**
-     * Write the graph in GraphViz format to file for visualization.
-     *
-     * This is a wrapper friendly version since wrapped languages don't have
-     * access to C++ streams.
-     */
-    void saveGraph(const std::string& file, const Values& values = Values(),
-      const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
-
-    /** unnormalized error, \f$ 0.5 \sum_i (h_i(X_i)-z)^2/\sigma^2 \f$ in the most common case */
+    /** unnormalized error, \f$ \sum_i 0.5 (h_i(X_i)-z)^2 / \sigma^2 \f$ in the most common case */
     double error(const Values& values) const;
 
     /** Unnormalized probability. O(n) */
@@ -139,7 +109,7 @@ namespace gtsam {
     /**
      * Create a symbolic factor graph
      */
-    boost::shared_ptr<SymbolicFactorGraph> symbolic() const;
+    std::shared_ptr<SymbolicFactorGraph> symbolic() const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.
@@ -157,10 +127,10 @@ namespace gtsam {
     Ordering orderingCOLAMDConstrained(const FastMap<Key, int>& constraints) const;
 
     /// Linearize a nonlinear factor graph
-    boost::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
+    std::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
 
     /// typdef for dampen functions used below
-    typedef std::function<void(const boost::shared_ptr<HessianFactor>& hessianFactor)> Dampen;
+    typedef std::function<void(const std::shared_ptr<HessianFactor>& hessianFactor)> Dampen;
 
     /**
      * Instead of producing a GaussianFactorGraph, pre-allocate and linearize directly
@@ -169,7 +139,7 @@ namespace gtsam {
      * An optional lambda function can be used to apply damping on the filled Hessian.
      * No parallelism is exploited, because all the factors write in the same memory.
      */
-    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+    std::shared_ptr<HessianFactor> linearizeToHessianFactor(
         const Values& values, const Dampen& dampen = nullptr) const;
 
     /**
@@ -180,7 +150,7 @@ namespace gtsam {
      * An optional lambda function can be used to apply damping on the filled Hessian.
      * No parallelism is exploited, because all the factors write in the same memory.
      */
-    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+    std::shared_ptr<HessianFactor> linearizeToHessianFactor(
         const Values& values, const Ordering& ordering, const Dampen& dampen = nullptr) const;
 
     /// Linearize and solve in one pass.
@@ -216,7 +186,7 @@ namespace gtsam {
     template<typename T>
     void addExpressionFactor(const SharedNoiseModel& R, const T& z,
                              const Expression<T>& h) {
-      push_back(boost::make_shared<ExpressionFactor<T> >(R, z, h));
+      this->emplace_shared<ExpressionFactor<T>>(R, z, h);
     }
 
     /**
@@ -246,15 +216,41 @@ namespace gtsam {
       emplace_shared<PriorFactor<T>>(key, prior, covariance);
     }
 
-  private:
+    /// @}
+    /// @name Graph Display
+    /// @{
+
+    using FactorGraph::dot;
+    using FactorGraph::saveGraph;
+
+    /// Output to graphviz format, stream version, with Values/extra options.
+    void dot(std::ostream& os, const Values& values,
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+             const GraphvizFormatting& writer = GraphvizFormatting()) const;
+
+    /// Output to graphviz format string, with Values/extra options.
+    std::string dot(
+        const Values& values,
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+        const GraphvizFormatting& writer = GraphvizFormatting()) const;
+
+    /// output to file with graphviz format, with Values/extra options.
+    void saveGraph(
+        const std::string& filename, const Values& values,
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+        const GraphvizFormatting& writer = GraphvizFormatting()) const;
+    /// @}
+
+   private:
 
     /**
      * Linearize from Scatter rather than from Ordering.  Made private because
      *  it doesn't include gttic.
      */
-    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+    std::shared_ptr<HessianFactor> linearizeToHessianFactor(
         const Values& values, const Scatter& scatter, const Dampen& dampen = nullptr) const;
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -262,19 +258,7 @@ namespace gtsam {
       ar & boost::serialization::make_nvp("NonlinearFactorGraph",
                 boost::serialization::base_object<Base>(*this));
     }
-
-  public:
-
-    /** \deprecated */
-    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
-        const Values& values, boost::none_t, const Dampen& dampen = nullptr) const
-      {return linearizeToHessianFactor(values, dampen);}
-
-    /** \deprecated */
-    Values updateCholesky(const Values& values, boost::none_t,
-                          const Dampen& dampen = nullptr) const
-      {return updateCholesky(values, dampen);}
-
+#endif
   };
 
 /// traits

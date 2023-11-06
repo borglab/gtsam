@@ -55,7 +55,7 @@ namespace gtsam {
     /* ************************************************************************* */
     namespace internal {
       template<class NODE>
-      ForestStatistics* statisticsVisitor(const boost::shared_ptr<NODE>& node, ForestStatistics* stats)
+      ForestStatistics* statisticsVisitor(const std::shared_ptr<NODE>& node, ForestStatistics* stats)
       {
         (*stats->problemSizeHistogram[node->problemSize()]) ++;
         (*stats->numberOfChildrenHistogram[(int)node->children.size()]) ++;
@@ -63,7 +63,7 @@ namespace gtsam {
         {
           int largestProblemSize = 0;
           int secondLargestProblemSize = 0;
-          for(const boost::shared_ptr<NODE>& child: node->children)
+          for(const std::shared_ptr<NODE>& child: node->children)
           {
             if (child->problemSize() > largestProblemSize)
             {

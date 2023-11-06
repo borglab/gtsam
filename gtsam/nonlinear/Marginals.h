@@ -121,7 +121,7 @@ public:
 
   /** Optimize the bayes tree */
   VectorValues optimize() const;
-            
+
 protected:
   
   /** Compute the Bayes Tree as a helper function to the constructor */
@@ -129,20 +129,6 @@ protected:
 
   /** Compute the Bayes Tree as a helper function to the constructor */
   void computeBayesTree(const Ordering& ordering);
-
-public:
-  /** \deprecated argument order changed due to removing boost::optional<Ordering> */
-  Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization,
-            const Ordering& ordering) : Marginals(graph, solution, ordering, factorization) {}
-
-  /** \deprecated argument order changed due to removing boost::optional<Ordering> */
-  Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization,
-            const Ordering& ordering) : Marginals(graph, solution, ordering, factorization) {}
-
-  /** \deprecated argument order changed due to removing boost::optional<Ordering> */
-  Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization,
-            const Ordering& ordering) : Marginals(graph, solution, ordering, factorization) {}
-
 };
 
 /**

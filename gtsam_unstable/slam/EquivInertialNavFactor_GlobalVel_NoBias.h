@@ -27,7 +27,6 @@
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/optional.hpp>
 
 #include <ostream>
 
@@ -87,12 +86,12 @@ namespace gtsam {
  */
 
 template<class POSE, class VELOCITY>
-class EquivInertialNavFactor_GlobalVel_NoBias : public NoiseModelFactor4<POSE, VELOCITY, POSE, VELOCITY> {
+class EquivInertialNavFactor_GlobalVel_NoBias : public NoiseModelFactorN<POSE, VELOCITY, POSE, VELOCITY> {
 
 private:
 
   typedef EquivInertialNavFactor_GlobalVel_NoBias<POSE, VELOCITY> This;
-  typedef NoiseModelFactor4<POSE, VELOCITY, POSE, VELOCITY> Base;
+  typedef NoiseModelFactorN<POSE, VELOCITY, POSE, VELOCITY> Base;
 
   Vector delta_pos_in_t0_;
   Vector delta_vel_in_t0_;
@@ -105,12 +104,15 @@ private:
 
   Matrix Jacobian_wrt_t0_Overall_;
 
-  boost::optional<POSE> body_P_sensor_;   // The pose of the sensor in the body frame
+  std::optional<POSE> body_P_sensor_;   // The pose of the sensor in the body frame
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   // shorthand for a smart pointer to a factor
-  typedef typename boost::shared_ptr<EquivInertialNavFactor_GlobalVel_NoBias> shared_ptr;
+  typedef typename std::shared_ptr<EquivInertialNavFactor_GlobalVel_NoBias> shared_ptr;
 
   /** default constructor - only use for serialization */
   EquivInertialNavFactor_GlobalVel_NoBias() {}
@@ -121,7 +123,7 @@ public:
       double dt12, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const noiseModel::Gaussian::shared_ptr& model_equivalent,
       const Matrix& Jacobian_wrt_t0_Overall,
-      boost::optional<POSE> body_P_sensor = boost::none) :
+      std::optional<POSE> body_P_sensor = {}) :
         Base(model_equivalent, Pose1, Vel1, Pose2, Vel2),
         delta_pos_in_t0_(delta_pos_in_t0), delta_vel_in_t0_(delta_vel_in_t0), delta_angles_(delta_angles),
         dt12_(dt12), world_g_(world_g), world_rho_(world_rho), world_omega_earth_(world_omega_earth), Jacobian_wrt_t0_Overall_(Jacobian_wrt_t0_Overall),
@@ -136,10 +138,10 @@ public:
       const std::string& s = "EquivInertialNavFactor_GlobalVel_NoBias",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << s << "("
-        << keyFormatter(this->key1()) << ","
-        << keyFormatter(this->key2()) << ","
-        << keyFormatter(this->key3()) << ","
-        << keyFormatter(this->key4()) << "\n";
+        << keyFormatter(this->key<1>()) << ","
+        << keyFormatter(this->key<2>()) << ","
+        << keyFormatter(this->key<3>()) << ","
+        << keyFormatter(this->key<4>()) << "\n";
     std::cout << "delta_pos_in_t0: " << this->delta_pos_in_t0_.transpose() << std::endl;
     std::cout << "delta_vel_in_t0: " << this->delta_vel_in_t0_.transpose() << std::endl;
     std::cout << "delta_angles: " << this->delta_angles_ << std::endl;
@@ -270,10 +272,8 @@ public:
   }
 
   Vector evaluateError(const POSE& Pose1, const VELOCITY& Vel1, const POSE& Pose2, const VELOCITY& Vel2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none,
-      boost::optional<Matrix&> H4 = boost::none) const {
+      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3,
+      OptionalMatrixType H4) const {
 
     // TODO: Write analytical derivative calculations
     // Jacobian w.r.t. Pose1
@@ -351,7 +351,7 @@ public:
       Vector& delta_pos_in_t0, Vector3& delta_angles, Vector& delta_vel_in_t0, double& delta_t,
       const noiseModel::Gaussian::shared_ptr& model_continuous_overall,
       Matrix& EquivCov_Overall, Matrix& Jacobian_wrt_t0_Overall,
-      boost::optional<POSE> p_body_P_sensor = boost::none){
+      std::optional<POSE> p_body_P_sensor = {}){
     // Note: all delta terms refer to an IMU\sensor system at t0
     // Note: Earth-related terms are not accounted here but are incorporated in predict functions.
 
@@ -372,15 +372,15 @@ public:
     Matrix Z_3x3 = Z_3x3;
     Matrix I_3x3 = I_3x3;
 
-    Matrix H_pos_pos = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
-    Matrix H_pos_vel = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
+    Matrix H_pos_pos = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
+    Matrix H_pos_vel = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
     Matrix H_pos_angles = Z_3x3;
 
-    Matrix H_vel_vel = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, _1, flag_use_body_P_sensor, body_P_sensor), delta_vel_in_t0);
-    Matrix H_vel_angles = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, _1, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor), delta_angles);
+    Matrix H_vel_vel = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, _1, flag_use_body_P_sensor, body_P_sensor), delta_vel_in_t0);
+    Matrix H_vel_angles = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, _1, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor), delta_angles);
     Matrix H_vel_pos = Z_3x3;
 
-    Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, _1, flag_use_body_P_sensor, body_P_sensor), delta_angles);
+    Matrix H_angles_angles = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, _1, flag_use_body_P_sensor, body_P_sensor), delta_angles);
     Matrix H_angles_pos = Z_3x3;
     Matrix H_angles_vel = Z_3x3;
 
@@ -573,6 +573,7 @@ public:
     }
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -580,6 +581,7 @@ private:
     ar & boost::serialization::make_nvp("NonlinearFactor2",
         boost::serialization::base_object<Base>(*this));
   }
+#endif
 
 
 

@@ -13,40 +13,42 @@ Author: Frank Dellaert
 
 import unittest
 
-import gtsam
 import numpy as np
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
+from gtsam import Rot3
 
 KEY = 0
 MODEL = gtsam.noiseModel.Unit.Create(3)
 
-
-def find_Karcher_mean_Rot3(rotations):
-    """Find the Karcher mean of given values."""
-    # Cost function C(R) = \sum PriorFactor(R_i)::error(R)
-    # No closed form solution.
-    graph = gtsam.NonlinearFactorGraph()
-    for R in rotations:
-        graph.add(gtsam.PriorFactorRot3(KEY, R, MODEL))
-    initial = gtsam.Values()
-    initial.insert(KEY, gtsam.Rot3())
-    result = gtsam.GaussNewtonOptimizer(graph, initial).optimize()
-    return result.atRot3(KEY)
-
-
 # Rot3 version
-R = gtsam.Rot3.Expmap(np.array([0.1, 0, 0]))
+R = Rot3.Expmap(np.array([0.1, 0, 0]))
 
 
 class TestKarcherMean(GtsamTestCase):
 
     def test_find(self):
-        # Check that optimizing for Karcher mean (which minimizes Between distance)
-        # gets correct result.
-        rotations = {R, R.inverse()}
-        expected = gtsam.Rot3()
-        actual = find_Karcher_mean_Rot3(rotations)
+        """
+        Check that optimizing for Karcher mean (which minimizes Between distance)
+        gets correct result.
+        """
+        rotations = [R, R.inverse()]
+        expected = Rot3()
+        actual = gtsam.FindKarcherMean(rotations)
         self.gtsamAssertEquals(expected, actual)
+
+    def test_find_karcher_mean_identity(self):
+        """Averaging 3 identity rotations should yield the identity."""
+        a1Rb1 = Rot3()
+        a2Rb2 = Rot3()
+        a3Rb3 = Rot3()
+
+        aRb_list = [a1Rb1, a2Rb2, a3Rb3]
+        aRb_expected = Rot3()
+
+        aRb = gtsam.FindKarcherMean(aRb_list)
+        self.gtsamAssertEquals(aRb, aRb_expected)
 
     def test_factor(self):
         """Check that the InnerConstraint factor leaves the mean unchanged."""
@@ -58,22 +60,18 @@ class TestKarcherMean(GtsamTestCase):
         graph = gtsam.NonlinearFactorGraph()
         R12 = R.compose(R.compose(R))
         graph.add(gtsam.BetweenFactorRot3(1, 2, R12, MODEL))
-        keys = gtsam.KeyVector()
-        keys.append(1)
-        keys.append(2)
+        keys = [1, 2]
         graph.add(gtsam.KarcherMeanFactorRot3(keys))
 
         initial = gtsam.Values()
         initial.insert(1, R.inverse())
         initial.insert(2, R)
-        expected = find_Karcher_mean_Rot3([R, R.inverse()])
+        expected = Rot3()
 
         result = gtsam.GaussNewtonOptimizer(graph, initial).optimize()
-        actual = find_Karcher_mean_Rot3(
-            [result.atRot3(1), result.atRot3(2)])
+        actual = gtsam.FindKarcherMean([result.atRot3(1), result.atRot3(2)])
         self.gtsamAssertEquals(expected, actual)
-        self.gtsamAssertEquals(
-            R12, result.atRot3(1).between(result.atRot3(2)))
+        self.gtsamAssertEquals(R12, result.atRot3(1).between(result.atRot3(2)))
 
 
 if __name__ == "__main__":

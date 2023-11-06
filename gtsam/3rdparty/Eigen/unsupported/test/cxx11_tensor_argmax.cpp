@@ -273,7 +273,7 @@ static void test_argmin_dim()
   }
 }
 
-void test_cxx11_tensor_argmax()
+EIGEN_DECLARE_TEST(cxx11_tensor_argmax)
 {
   CALL_SUBTEST(test_simple_index_tuples<RowMajor>());
   CALL_SUBTEST(test_simple_index_tuples<ColMajor>());

@@ -20,11 +20,14 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
-#include <boost/range/adaptor/reversed.hpp>
 #include <fstream>
+#include <iterator>
 
 using namespace std;
 using namespace gtsam;
+
+// In Wrappers we have no access to this so have a default ready
+static std::mt19937_64 kRandomNumberGenerator(42);
 
 namespace gtsam {
 
@@ -37,28 +40,52 @@ namespace gtsam {
     return Base::equals(bn, tol);
   }
 
-  /* ************************************************************************* */
-  VectorValues GaussianBayesNet::optimize() const
-  {
-    VectorValues soln; // no missing variables -> just create an empty vector
-    return optimize(soln);
+  /* ************************************************************************ */
+  VectorValues GaussianBayesNet::optimize() const {
+    VectorValues solution;  // no missing variables -> create an empty vector
+    return optimize(solution);
   }
 
-  /* ************************************************************************* */
-  VectorValues GaussianBayesNet::optimize(
-      const VectorValues& solutionForMissing) const {
-    VectorValues soln(solutionForMissing); // possibly empty
+  VectorValues GaussianBayesNet::optimize(const VectorValues& given) const {
+    VectorValues solution = given;
     // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
-    /** solve each node in turn in topological sort order (parents first)*/
-    for (auto cg: boost::adaptors::reverse(*this)) {
+    // solve each node in reverse topological sort order (parents first)
+    for (auto it = std::make_reverse_iterator(end()); it != std::make_reverse_iterator(begin()); ++it) {
       // i^th part of R*x=y, x=inv(R)*y
-      // (Rii*xi + R_i*x(i+1:))./si = yi <-> xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
-      soln.insert(cg->solve(soln));
+      // (Rii*xi + R_i*x(i+1:))./si = yi =>
+      // xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
+      solution.insert((*it)->solve(solution));
     }
-    return soln;
+    return solution;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
+  VectorValues GaussianBayesNet::sample(std::mt19937_64* rng) const {
+    VectorValues result;  // no missing variables -> create an empty vector
+    return sample(result, rng);
+  }
+
+  VectorValues GaussianBayesNet::sample(const VectorValues& given,
+                                        std::mt19937_64* rng) const {
+    VectorValues result(given);
+    // sample each node in reverse topological sort order (parents first)
+    for (auto it = std::make_reverse_iterator(end()); it != std::make_reverse_iterator(begin()); ++it) {
+      const VectorValues sampled = (*it)->sample(result, rng);
+      result.insert(sampled);
+    }
+    return result;
+  }
+
+  /* ************************************************************************ */
+  VectorValues GaussianBayesNet::sample() const {
+    return sample(&kRandomNumberGenerator);
+  }
+
+  VectorValues GaussianBayesNet::sample(const VectorValues& given) const {
+    return sample(given, &kRandomNumberGenerator);
+  }
+
+  /* ************************************************************************ */
   VectorValues GaussianBayesNet::optimizeGradientSearch() const
   {
     gttic(GaussianBayesTree_optimizeGradientSearch);
@@ -77,7 +104,25 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double GaussianBayesNet::error(const VectorValues& x) const {
-    return GaussianFactorGraph(*this).error(x);
+    double sum = 0.;
+    for (const auto& gc : *this) {
+      if (gc) sum += gc->error(x);
+    }
+    return sum;
+  }
+
+  /* ************************************************************************* */
+  double GaussianBayesNet::logProbability(const VectorValues& x) const {
+    double sum = 0.;
+    for (const auto& gc : *this) {
+      if (gc) sum += gc->logProbability(x);
+    }
+    return sum;
+  }
+
+  /* ************************************************************************* */
+  double GaussianBayesNet::evaluate(const VectorValues& x) const {
+    return exp(logProbability(x));
   }
 
   /* ************************************************************************* */
@@ -86,8 +131,8 @@ namespace gtsam {
     VectorValues result;
     // TODO this looks pretty sketchy. result is passed as the parents argument
     //  as it's filled up by solving the gaussian conditionals.
-    for (auto cg: boost::adaptors::reverse(*this)) {
-      result.insert(cg->solveOtherRHS(result, rhs));
+    for (auto it = std::make_reverse_iterator(end()); it != std::make_reverse_iterator(begin()); ++it) {
+      result.insert((*it)->solveOtherRHS(result, rhs));
     }
     return result;
   }
@@ -192,34 +237,9 @@ namespace gtsam {
   double GaussianBayesNet::logDeterminant() const {
     double logDet = 0.0;
     for (const sharedConditional& cg : *this) {
-      if (cg->get_model()) {
-        Vector diag = cg->R().diagonal();
-        cg->get_model()->whitenInPlace(diag);
-        logDet += diag.unaryExpr([](double x) { return log(x); }).sum();
-      } else {
-        logDet +=
-            cg->R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
-      }
+      logDet += cg->logDeterminant();
     }
     return logDet;
-  }
-
-  /* ************************************************************************* */
-  void GaussianBayesNet::saveGraph(const std::string& s,
-                                   const KeyFormatter& keyFormatter) const {
-    std::ofstream of(s.c_str());
-    of << "digraph G{\n";
-
-    for (auto conditional : boost::adaptors::reverse(*this)) {
-      typename GaussianConditional::Frontals frontals = conditional->frontals();
-      Key me = frontals.front();
-      typename GaussianConditional::Parents parents = conditional->parents();
-      for (Key p : parents)
-        of << keyFormatter(p) << "->" << keyFormatter(me) << std::endl;
-    }
-
-    of << "}";
-    of.close();
   }
 
   /* ************************************************************************* */
