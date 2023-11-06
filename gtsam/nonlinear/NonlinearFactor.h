@@ -46,7 +46,7 @@ namespace gtsam {
  * Had to use the static_cast of a nullptr, because the compiler is not able to
  * deduce the type of the nullptr when expanding the evaluateError templates.
  */
-#define OptionalNone static_cast<Matrix*>(nullptr)
+#define OptionalNone static_cast<gtsam::Matrix*>(nullptr)
 
 /** This typedef will be used everywhere boost::optional<Matrix&> reference was used
  * previously. This is used to indicate that the Jacobian is optional. In the future

@@ -332,7 +332,8 @@ public:
   }
 
   /// stream operator
-  friend std::ostream& operator<<(std::ostream &os, const PinholePose& camera) {
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                               const PinholePose& camera) {
     os << "{R: " << camera.pose().rotation().rpy().transpose();
     os << ", t: " << camera.pose().translation().transpose();
     if (!camera.K_) os << ", K: none";

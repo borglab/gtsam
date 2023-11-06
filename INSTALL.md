@@ -182,7 +182,7 @@ Here are some tips to get the best possible performance out of GTSAM.
     optimization by 30-50%. Please note that this may not be true for very small 
     problems where the overhead of dispatching work to multiple threads outweighs
     the benefit. We recommend that you benchmark your problem with/without TBB.
-3. Add `-march=native` to `GTSAM_CMAKE_CXX_FLAGS`. A performance gain of
+3. Use `GTSAM_BUILD_WITH_MARCH_NATIVE`. A performance gain of
     25-30% can be expected on modern processors. Note that this affects the portability
     of your executable. It may not run when copied to another system with older/different
     processor architecture.

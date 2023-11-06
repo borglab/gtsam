@@ -105,7 +105,8 @@ public:
   /// @name Testable
   /// @{
 
-  friend std::ostream& operator<<(std::ostream& os, const Unit3& pair);
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                               const Unit3& pair);
 
   /// The print fuction
   void print(const std::string& s = std::string()) const;

@@ -219,6 +219,11 @@ TEST(Ordering, AppendVector) {
 
   Ordering expected{X(0), X(1), X(2)};
   EXPECT(assert_equal(expected, actual));
+
+  actual = Ordering();
+  Ordering addl{X(0), X(1), X(2)};
+  actual += addl;
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

@@ -89,6 +89,7 @@ virtual class Unit : gtsam::noiseModel::Isotropic {
 
 namespace mEstimator {
 virtual class Base {
+  enum ReweightScheme { Scalar, Block };
   void print(string s = "") const;
 };
 
@@ -190,6 +191,36 @@ virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
   double weight(double error) const;
   double loss(double error) const;
 };
+
+virtual class AsymmetricTukey: gtsam::noiseModel::mEstimator::Base {
+  AsymmetricTukey(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  static gtsam::noiseModel::mEstimator::AsymmetricTukey* Create(double k);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double loss(double error) const;
+};
+
+virtual class Custom: gtsam::noiseModel::mEstimator::Base {
+  Custom(gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
+         gtsam::noiseModel::mEstimator::CustomLossFunction loss,
+         gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
+         std::string name);
+  static gtsam::noiseModel::mEstimator::Custom* Create(
+      gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
+      gtsam::noiseModel::mEstimator::CustomLossFunction loss,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
+      std::string name);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double loss(double error) const;
+};
+
 
 }///\namespace mEstimator
 

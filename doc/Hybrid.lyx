@@ -86,7 +86,7 @@ Hybrid Inference
 \end_layout
 
 \begin_layout Author
-Frank Dellaert & Varun Agrawal
+Frank Dellaert
 \end_layout
 
 \begin_layout Date
@@ -264,12 +264,110 @@ If we take the log of
  we get
 \begin_inset Formula 
 \begin{equation}
-\log P(x|y,m)=\log P_{m}(x|y)=K_{gcm}-E_{gcm}(x,y).\label{eq:gm_log}
+\log P(x|y,m)=\log P_{m}(x|y)=K_{gc}(m)-E_{gcm}(x,y).\label{eq:gm_log}
 \end{equation}
 
 \end_inset
 
-Equating 
+
+\end_layout
+
+\begin_layout Standard
+\noindent
+For conciseness, we will write 
+\begin_inset Formula $K_{gc}(m)$
+\end_inset
+
+ as 
+\begin_inset Formula $K_{gcm}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\SpecialChar allowbreak
+
+\end_layout
+
+\begin_layout Standard
+\noindent
+The key point here is that 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $K_{gm}$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ is the log-normalization constant for the complete 
+\emph on
+GaussianMixture
+\emph default
+ across all values of 
+\begin_inset Formula $m$
+\end_inset
+
+, and cannot be dependent on the value of 
+\begin_inset Formula $m$
+\end_inset
+
+.
+ In contrast, 
+\begin_inset Formula $K_{gcm}$
+\end_inset
+
+ is the log-normalization constant for a specific 
+\emph on
+GaussianConditional 
+\emph default
+mode (thus dependent on 
+\begin_inset Formula $m$
+\end_inset
+
+) and can have differing values based on the covariance matrices for each
+ mode.
+ Thus to obtain a constant 
+\begin_inset Formula $K_{gm}$
+\end_inset
+
+ which satisfies the invariant, we need to specify 
+\begin_inset Formula $E_{gm}(x,y,m)$
+\end_inset
+
+ accordingly.
+\end_layout
+
+\begin_layout Standard
+\SpecialChar allowbreak
+
+\end_layout
+
+\begin_layout Standard
+\noindent
+By equating 
 \begin_inset CommandInset ref
 LatexCommand eqref
 reference "eq:gm_invariant"
@@ -289,7 +387,7 @@ noprefix "false"
 
 \end_inset
 
- we see that this can be achieved by defining the error 
+, we see that this can be achieved by defining the error 
 \begin_inset Formula $E_{gm}(x,y,m)$
 \end_inset
 
@@ -541,9 +639,9 @@ noprefix "false"
 
 :
 \begin_inset Formula 
-\[
-E_{mf}(y,m)=C+E_{gcm}(\bar{x},y)-K_{gcm}.
-\]
+\begin{equation}
+E_{mf}(y,m)=C+E_{gcm}(\bar{x},y)-K_{gcm}\label{eq:mixture_factor}
+\end{equation}
 
 \end_inset
 
@@ -555,8 +653,25 @@ Unfortunately, we can no longer choose
 \begin_inset Formula $m$
 \end_inset
 
- to make the constant disappear.
- There are two possibilities:
+ to make the constant disappear, since 
+\begin_inset Formula $C$
+\end_inset
+
+ has to be a constant applicable across all 
+\begin_inset Formula $m$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\SpecialChar allowbreak
+
+\end_layout
+
+\begin_layout Standard
+\noindent
+There are two possibilities:
 \end_layout
 
 \begin_layout Enumerate

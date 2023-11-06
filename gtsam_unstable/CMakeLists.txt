@@ -82,7 +82,7 @@ if(GTSAM_SUPPORT_NESTED_DISSECTION) # Only build partition if metis is built
 endif(GTSAM_SUPPORT_NESTED_DISSECTION)
 
 # Versions - same as core gtsam library
-set(gtsam_unstable_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
+set(gtsam_unstable_version   ${GTSAM_VERSION_STRING})
 set(gtsam_unstable_soversion ${GTSAM_VERSION_MAJOR})
 message(STATUS "GTSAM_UNSTABLE Version: ${gtsam_unstable_version}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")

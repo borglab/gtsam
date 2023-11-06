@@ -19,6 +19,7 @@
 #include <gtsam/linear/LossFunctions.h>
 
 #include <iostream>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -422,6 +423,132 @@ bool L2WithDeadZone::equals(const Base &expected, double tol) const {
 
 L2WithDeadZone::shared_ptr L2WithDeadZone::Create(double k, const ReweightScheme reweight) {
   return shared_ptr(new L2WithDeadZone(k, reweight));
+}
+
+
+/* ************************************************************************* */
+// AsymmetricTukey
+/* ************************************************************************* */
+
+AsymmetricTukey::AsymmetricTukey(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {
+  if (c <= 0) {
+    throw runtime_error("mEstimator AsymmetricTukey takes only positive double in constructor.");
+  }
+}
+
+double AsymmetricTukey::weight(double distance) const {
+  distance = -distance;
+  if (distance >= 0.0) {
+    return 1.0;
+  } else if (distance > -c_) {
+    const double one_minus_xc2 = 1.0 - distance * distance / csquared_;
+    return one_minus_xc2 * one_minus_xc2;
+  }
+  return 0.0;
+}
+
+double AsymmetricTukey::loss(double distance) const {
+  distance = -distance;
+  if (distance >= 0.0) {
+    return distance * distance / 2.0;
+  } else if (distance >= -c_) {
+    const double one_minus_xc2 = 1.0 - distance * distance / csquared_;
+    const double t = one_minus_xc2 * one_minus_xc2 * one_minus_xc2;
+    return csquared_ * (1 - t) / 6.0;
+  }
+  return csquared_ / 6.0;
+}
+
+void AsymmetricTukey::print(const std::string &s="") const {
+  std::cout << s << ": AsymmetricTukey (" << c_ << ")" << std::endl;
+}
+
+bool AsymmetricTukey::equals(const Base &expected, double tol) const {
+  const AsymmetricTukey* p = dynamic_cast<const AsymmetricTukey*>(&expected);
+  if (p == nullptr) return false;
+  return std::abs(c_ - p->c_) < tol;
+}
+
+AsymmetricTukey::shared_ptr AsymmetricTukey::Create(double c, const ReweightScheme reweight) {
+  return shared_ptr(new AsymmetricTukey(c, reweight));
+}
+
+
+/* ************************************************************************* */
+// AsymmetricCauchy
+/* ************************************************************************* */
+
+AsymmetricCauchy::AsymmetricCauchy(double k, const ReweightScheme reweight) : Base(reweight), k_(k), ksquared_(k * k) {
+  if (k <= 0) {
+    throw runtime_error("mEstimator AsymmetricCauchy takes only positive double in constructor.");
+  }
+}
+
+double AsymmetricCauchy::weight(double distance) const {
+  distance = -distance;
+  if (distance >= 0.0) {
+    return 1.0;
+  }
+  
+    return ksquared_ / (ksquared_ + distance*distance);
+  
+}
+
+double AsymmetricCauchy::loss(double distance) const {
+  distance = -distance;
+  if (distance >= 0.0) {
+    return distance * distance / 2.0;
+  }
+  const double val = std::log1p(distance * distance / ksquared_);
+  return ksquared_ * val * 0.5;
+}
+
+void AsymmetricCauchy::print(const std::string &s="") const {
+  std::cout << s << ": AsymmetricCauchy (" << k_ << ")" << std::endl;
+}
+
+bool AsymmetricCauchy::equals(const Base &expected, double tol) const {
+  const AsymmetricCauchy* p = dynamic_cast<const AsymmetricCauchy*>(&expected);
+  if (p == nullptr) return false;
+  return std::abs(k_ - p->k_) < tol;
+}
+
+AsymmetricCauchy::shared_ptr AsymmetricCauchy::Create(double k, const ReweightScheme reweight) {
+  return shared_ptr(new AsymmetricCauchy(k, reweight));
+}
+
+
+/* ************************************************************************* */
+// Custom
+/* ************************************************************************* */
+
+Custom::Custom(std::function<double(double)> weight, std::function<double(double)> loss, const ReweightScheme reweight,
+               std::string name)
+    : Base(reweight), weight_(std::move(weight)), loss_(loss), name_(std::move(name)) {}
+
+double Custom::weight(double distance) const {
+  return weight_(distance);
+}
+
+double Custom::loss(double distance) const {
+  return loss_(distance);
+}
+
+void Custom::print(const std::string &s = "") const {
+  std::cout << s << ": Custom (" << name_ << ")" << std::endl;
+}
+
+bool Custom::equals(const Base &expected, double tol) const {
+  const auto *p = dynamic_cast<const Custom *>(&expected);
+  if (p == nullptr)
+    return false;
+  return name_ == p->name_ && weight_.target<double(double)>() == p->weight_.target<double(double)>() &&
+         loss_.target<double(double)>() == p->loss_.target<double(double)>() && reweight_ == p->reweight_;
+}
+
+Custom::shared_ptr Custom::Create(std::function<double(double)> weight, std::function<double(double)> loss,
+                                  const ReweightScheme reweight, const std::string &name) {
+  return std::make_shared<Custom>(std::move(weight), std::move(loss), reweight, name);
 }
 
 } // namespace mEstimator

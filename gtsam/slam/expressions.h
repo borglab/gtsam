@@ -155,10 +155,10 @@ Point2_ project2(const Expression<CAMERA>& camera_, const Expression<POINT>& p_)
 namespace internal {
 // Helper template for project3 expression below
 template <class CALIBRATION, class POINT>
-inline Point2 project6(const Pose3& x, const Point3& p, const Cal3_S2& K,
+inline Point2 project6(const Pose3& x, const POINT& p, const CALIBRATION& K,
                        OptionalJacobian<2, 6> Dpose, OptionalJacobian<2, 3> Dpoint,
-                       OptionalJacobian<2, 5> Dcal) {
-  return PinholeCamera<Cal3_S2>(x, K).project(p, Dpose, Dpoint, Dcal);
+                       OptionalJacobian<2, CALIBRATION::dimension> Dcal) {
+  return PinholeCamera<CALIBRATION>(x, K).project(p, Dpose, Dpoint, Dcal);
 }
 }
 

@@ -1441,14 +1441,14 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationNonDegenerate ) {
   std::shared_ptr<GaussianFactor> hessianFactorRotTran =
       smartFactor->linearize(tranValues);
 
-  // Hessian is invariant to rotations and translations in the degenerate case
-  EXPECT(
-      assert_equal(hessianFactor->information(),
+  double error;
 #ifdef GTSAM_USE_EIGEN_MKL
-          hessianFactorRotTran->information(), 1e-5));
+  error = 1e-5;
 #else
-          hessianFactorRotTran->information(), 1e-6));
+  error = 1e-6;
 #endif
+  // Hessian is invariant to rotations and translations in the degenerate case
+  EXPECT(assert_equal(hessianFactor->information(), hessianFactorRotTran->information(), error));
 }
 
 /* ************************************************************************* */
