@@ -53,25 +53,16 @@ namespace gtsam {
     /** constant stored in this leaf */
     Y constant_;
 
-    /** The number of assignments contained within this leaf.
-     * Particularly useful when leaves have been pruned.
-     */
-    size_t nrAssignments_;
-
     /// Default constructor for serialization.
     Leaf() {}
 
     /// Constructor from constant
-    Leaf(const Y& constant, size_t nrAssignments = 1)
-        : constant_(constant), nrAssignments_(nrAssignments) {}
+    Leaf(const Y& constant) : constant_(constant) {}
 
     /// Return the constant
     const Y& constant() const {
       return constant_;
     }
-
-    /// Return the number of assignments contained within this leaf.
-    size_t nrAssignments() const { return nrAssignments_; }
 
     /// Leaf-Leaf equality
     bool sameLeaf(const Leaf& q) const override {
@@ -93,8 +84,7 @@ namespace gtsam {
     /// print
     void print(const std::string& s, const LabelFormatter& labelFormatter,
                const ValueFormatter& valueFormatter) const override {
-      std::cout << s << " Leaf [" << nrAssignments() << "] "
-                << valueFormatter(constant_) << std::endl;
+      std::cout << s << " Leaf " << valueFormatter(constant_) << std::endl;
     }
 
     /** Write graphviz format to stream `os`. */
@@ -114,14 +104,14 @@ namespace gtsam {
 
     /** apply unary operator */
     NodePtr apply(const Unary& op) const override {
-      NodePtr f(new Leaf(op(constant_), nrAssignments_));
+      NodePtr f(new Leaf(op(constant_)));
       return f;
     }
 
     /// Apply unary operator with assignment
     NodePtr apply(const UnaryAssignment& op,
                   const Assignment<L>& assignment) const override {
-      NodePtr f(new Leaf(op(assignment, constant_), nrAssignments_));
+      NodePtr f(new Leaf(op(assignment, constant_)));
       return f;
     }
 
@@ -137,9 +127,7 @@ namespace gtsam {
     // Applying binary operator to two leaves results in a leaf
     NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const override {
       // fL op gL
-      // The nrAssignments is always set to fL since we consider g operating on
-      // (or modifying) f.
-      NodePtr h(new Leaf(op(fL.constant_, constant_), fL.nrAssignments()));
+      NodePtr h(new Leaf(op(fL.constant_, constant_)));
       return h;
     }
 
@@ -150,7 +138,7 @@ namespace gtsam {
 
     /** choose a branch, create new memory ! */
     NodePtr choose(const L& label, size_t index) const override {
-      return NodePtr(new Leaf(constant(), 1));
+      return NodePtr(new Leaf(constant()));
     }
 
     bool isLeaf() const override { return true; }
@@ -165,7 +153,6 @@ namespace gtsam {
     void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar& BOOST_SERIALIZATION_NVP(constant_);
-      ar& BOOST_SERIALIZATION_NVP(nrAssignments_);
     }
 #endif
   };  // Leaf
@@ -235,16 +222,8 @@ namespace gtsam {
           assert(f->branches().size() > 0);
           NodePtr f0 = f->branches_[0];
 
-          // Compute total number of assignments
-          size_t nrAssignments = 0;
-          for (auto branch : f->branches()) {
-            if (auto leaf = std::dynamic_pointer_cast<const Leaf>(branch)) {
-              nrAssignments += leaf->nrAssignments();
-            }
-          }
           NodePtr newLeaf(
-              new Leaf(std::dynamic_pointer_cast<const Leaf>(f0)->constant(),
-                       nrAssignments));
+              new Leaf(std::dynamic_pointer_cast<const Leaf>(f0)->constant()));
           return newLeaf;
         }
 #endif
@@ -732,7 +711,7 @@ namespace gtsam {
     // If leaf, apply unary conversion "op" and create a unique leaf.
     using MXLeaf = typename DecisionTree<M, X>::Leaf;
     if (auto leaf = std::dynamic_pointer_cast<const MXLeaf>(f)) {
-      return NodePtr(new Leaf(Y_of_X(leaf->constant()), leaf->nrAssignments()));
+      return NodePtr(new Leaf(Y_of_X(leaf->constant())));
     }
 
     // Check if Choice
@@ -877,16 +856,6 @@ namespace gtsam {
     size_t total = 0;
     visit([&total](const Y& node) { total += 1; });
     return total;
-  }
-
-  /****************************************************************************/
-  template <typename L, typename Y>
-  size_t DecisionTree<L, Y>::nrAssignments() const {
-    size_t n = 0;
-    this->visitLeaf([&n](const DecisionTree<L, Y>::Leaf& leaf) {
-      n += leaf.nrAssignments();
-    });
-    return n;
   }
 
   /****************************************************************************/
