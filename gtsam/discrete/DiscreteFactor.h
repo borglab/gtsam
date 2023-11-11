@@ -18,9 +18,10 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
+#include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/inference/Factor.h>
-#include <gtsam/base/Testable.h>
 
 #include <string>
 namespace gtsam {
@@ -35,7 +36,7 @@ class HybridValues;
  *
  * @ingroup discrete
  */
-class GTSAM_EXPORT DiscreteFactor: public Factor {
+class GTSAM_EXPORT DiscreteFactor : public Factor {
  public:
   // typedefs needed to play nice with gtsam
   typedef DiscreteFactor This;  ///< This class
@@ -103,7 +104,11 @@ class GTSAM_EXPORT DiscreteFactor: public Factor {
    */
   double error(const HybridValues& c) const override;
 
-  /// Multiply in a DecisionTreeFactor and return the result as DecisionTreeFactor
+  /// Compute error for each assignment and return as a tree
+  virtual AlgebraicDecisionTree<Key> error() const = 0;
+
+  /// Multiply in a DecisionTreeFactor and return the result as
+  /// DecisionTreeFactor
   virtual DecisionTreeFactor operator*(const DecisionTreeFactor&) const = 0;
 
   virtual DecisionTreeFactor toDecisionTreeFactor() const = 0;
@@ -111,7 +116,7 @@ class GTSAM_EXPORT DiscreteFactor: public Factor {
   /// @}
   /// @name Wrapper support
   /// @{
-  
+
   /// Translation table from values to strings.
   using Names = DiscreteValues::Names;
 
@@ -175,4 +180,4 @@ template<> struct traits<DiscreteFactor> : public Testable<DiscreteFactor> {};
 std::vector<double> expNormalize(const std::vector<double> &logProbs);
 
 
-}// namespace gtsam
+}  // namespace gtsam

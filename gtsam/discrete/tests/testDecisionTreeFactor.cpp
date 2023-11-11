@@ -68,6 +68,24 @@ TEST( DecisionTreeFactor, constructors)
 }
 
 /* ************************************************************************* */
+TEST(DecisionTreeFactor, Error) {
+  // Declare a bunch of keys
+  DiscreteKey X(0,2), Y(1,3), Z(2,2);
+
+  // Create factors
+  DecisionTreeFactor f(X & Y & Z, "2 5 3 6 4 7 25 55 35 65 45 75");
+
+  auto errors = f.error();
+  // regression
+  AlgebraicDecisionTree<Key> expected(
+      {X, Y, Z},
+      vector<double>{-0.69314718, -1.6094379, -1.0986123, -1.7917595,
+                     -1.3862944, -1.9459101, -3.2188758, -4.0073332, -3.5553481,
+                     -4.1743873, -3.8066625, -4.3174881});
+  EXPECT(assert_equal(expected, errors, 1e-6));
+}
+
+/* ************************************************************************* */
 TEST(DecisionTreeFactor, multiplication) {
   DiscreteKey v0(0, 2), v1(1, 2), v2(2, 2);
 
