@@ -15,16 +15,19 @@
  *  @author Duy-Nguyen Ta
  */
 
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/discrete/DiscreteBayesTree.h>
+#include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/discrete/DiscreteEliminationTree.h>
-#include <gtsam/discrete/DiscreteBayesTree.h>
 #include <gtsam/inference/BayesNet.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/inference/Symbol.h>
 
 using namespace std;
 using namespace gtsam;
+
+using symbol_shorthand::M;
 
 /* ************************************************************************* */
 TEST_UNSAFE(DiscreteFactorGraph, debugScheduler) {
@@ -345,6 +348,7 @@ TEST(DiscreteFactorGraph, markdown) {
   values[1] = 0;
   EXPECT_DOUBLES_EQUAL(0.3, graph[0]->operator()(values), 1e-9);
 }
+
 /* ************************************************************************* */
 int main() {
 TestResult tr;
