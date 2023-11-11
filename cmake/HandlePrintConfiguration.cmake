@@ -90,6 +90,7 @@ print_enabled_config(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency c
 print_enabled_config(${GTSAM_ENABLE_MEMORY_SANITIZER}     "Build with Memory Sanitizer     ")
 print_enabled_config(${GTSAM_ROT3_EXPMAP}                 "Rot3 retract is full ExpMap     ")
 print_enabled_config(${GTSAM_POSE3_EXPMAP}                "Pose3 retract is full ExpMap    ")
+print_enabled_config(${GTSAM_DT_MERGING}                  "Enable branch merging in DecisionTree")
 print_enabled_config(${GTSAM_ALLOW_DEPRECATED_SINCE_V43}  "Allow features deprecated in GTSAM 4.3")
 print_enabled_config(${GTSAM_SUPPORT_NESTED_DISSECTION}   "Metis-based Nested Dissection   ")
 print_enabled_config(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space preintegration")
