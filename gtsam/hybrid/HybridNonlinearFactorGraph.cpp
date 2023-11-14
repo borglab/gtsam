@@ -66,7 +66,7 @@ void HybridNonlinearFactorGraph::printErrors(
       } else {
         factor->print(ss.str(), keyFormatter);
         std::cout << "error = ";
-        mf->error(values.nonlinear()).print("", DefaultKeyFormatter);
+        mf->error(values.nonlinear()).print("", keyFormatter);
         std::cout << std::endl;
       }
     } else if (auto gmf =
@@ -77,7 +77,7 @@ void HybridNonlinearFactorGraph::printErrors(
       } else {
         factor->print(ss.str(), keyFormatter);
         std::cout << "error = ";
-        gmf->error(values.continuous()).print("", DefaultKeyFormatter);
+        gmf->error(values.continuous()).print("", keyFormatter);
         std::cout << std::endl;
       }
     } else if (auto gm = std::dynamic_pointer_cast<GaussianMixture>(factor)) {
@@ -87,7 +87,7 @@ void HybridNonlinearFactorGraph::printErrors(
       } else {
         factor->print(ss.str(), keyFormatter);
         std::cout << "error = ";
-        gm->error(values.continuous()).print("", DefaultKeyFormatter);
+        gm->error(values.continuous()).print("", keyFormatter);
         std::cout << std::endl;
       }
     } else if (auto nf = std::dynamic_pointer_cast<NonlinearFactor>(factor)) {
@@ -121,7 +121,7 @@ void HybridNonlinearFactorGraph::printErrors(
       } else {
         factor->print(ss.str(), keyFormatter);
         std::cout << "error = ";
-        df->error().print("", DefaultKeyFormatter);
+        df->error().print("", keyFormatter);
         std::cout << std::endl;
       }
 
