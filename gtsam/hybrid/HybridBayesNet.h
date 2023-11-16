@@ -189,6 +189,9 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    */
   AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
 
+  /// Error method using HybridValues which returns specific error.
+  using Base::error;
+
   /**
    * @brief Compute log probability for each discrete assignment,
    * and return as a tree.
