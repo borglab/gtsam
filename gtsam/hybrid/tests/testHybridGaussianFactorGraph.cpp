@@ -658,7 +658,7 @@ bool ratioTest(const HybridBayesNet &bn, const VectorValues &measurements,
 }
 
 /* ****************************************************************************/
-// Check that the factor graph unnormalized probability is proportional to the
+// Check that the bayes net unnormalized probability is proportional to the
 // Bayes net probability for the given measurements.
 bool ratioTest(const HybridBayesNet &bn, const VectorValues &measurements,
                const HybridBayesNet &posterior, size_t num_samples = 100) {
@@ -905,6 +905,102 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
 
   // Ratio test
   EXPECT(ratioTest(bn, measurements, *posterior));
+}
+
+/* ****************************************************************************/
+// Test printErrors with multivariate example.
+TEST(HybridGaussianFactorGraph, PrintErrors) {
+  HybridGaussianFactorGraph hfg;
+  HybridBayesNet bayesNet;
+
+  size_t num_measurements = 1;
+  // Create Gaussian mixture z_i = x0 + noise for each measurement.
+  for (size_t i = 0; i < num_measurements; i++) {
+    const DiscreteKey mode_i{M(i), 2};
+    bayesNet.emplace_back(new GaussianMixture(
+        {Z(i)}, {X(0)}, {mode_i},
+        {GaussianConditional::sharedMeanAndStddev(Z(i), I_3x3, X(0), Z_3x1, 10),
+         GaussianConditional::sharedMeanAndStddev(Z(i), I_3x3, X(0), Z_3x1,
+                                                  0.1)}));
+  }
+
+  // Create prior on X(0).
+  bayesNet.push_back(GaussianConditional::sharedMeanAndStddev(
+      X(0), Vector3(1.0, 2.0, 5.0), 0.5));
+
+  // Add prior on mode.
+  const size_t nrModes = 1;
+  for (size_t i = 0; i < nrModes; i++) {
+    bayesNet.emplace_back(new DiscreteConditional({M(i), 2}, "4/6"));
+  }
+
+  VectorValues measurements{{Z(0), Vector3(1.0, 2.0, 5.0)}};
+  HybridGaussianFactorGraph measurement_fg =
+      bayesNet.toFactorGraph(measurements);
+  HybridValues values = bayesNet.optimize();
+
+  std::stringstream buffer;
+  // Save the original output stream so we can reset later
+  std::streambuf *old = std::cout.rdbuf(buffer.rdbuf());
+
+  // We test against actual std::cout for faithful reproduction
+  measurement_fg.printErrors(values);
+
+  // Get output string and reset stdout
+  std::string actual = buffer.str();
+  std::cout.rdbuf(old);
+
+  std::string expected = R"(HybridGaussianFactorGraph: size: 3
+
+Factor 0: Hybrid [x0; m0]{
+ Choice(m0) 
+ 0 Leaf :
+  A[x0] = [
+	-1, -0, -0;
+	-0, -1, -0;
+	-0, -0, -1;
+	0, 0, 0
+]
+  b = [      -1      -2      -5 5.25652 ]
+  Noise model: diagonal sigmas [10; 10; 10; 1];
+
+ 1 Leaf :
+  A[x0] = [
+	-1, -0, -0;
+	-0, -1, -0;
+	-0, -0, -1
+]
+  b = [ -1 -2 -5 ]
+isotropic dim=3 sigma=0.1
+
+}
+error =  Choice(m0) 
+ 0 Leaf 13.815511
+ 1 Leaf    0
+
+
+Factor 1: p(x0)
+  R = [ 1 0 0 ]
+      [ 0 1 0 ]
+      [ 0 0 1 ]
+  d = [ 1 2 5 ]
+  mean: 1 elements
+  x0: 1 2 5
+isotropic dim=3 sigma=0.5
+error = 0
+
+Factor 2:  P( m0 ):
+ Choice(m0) 
+ 0 Leaf  0.4
+ 1 Leaf  0.6
+
+error =  Choice(m0) 
+ 0 Leaf 0.91629073
+ 1 Leaf 0.51082562
+
+
+)";
+  EXPECT(expected == actual);
 }
 
 /* ************************************************************************* */
