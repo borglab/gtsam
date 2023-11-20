@@ -142,7 +142,6 @@ void HybridGaussianFactorGraph::printErrors(
         factor->print(ss.str(), keyFormatter);
         std::cout << "error = ";
         df->error().print("", keyFormatter);
-        std::cout << std::endl;
       }
 
     } else {
