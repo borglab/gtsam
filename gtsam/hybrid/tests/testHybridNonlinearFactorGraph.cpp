@@ -410,10 +410,10 @@ TEST(HybridFactorGraph, PrintErrors) {
   HybridValues hv = bn->optimize();
 
   // Print and verify
-  fg.print();
-  std::cout << "\n\n\n" << std::endl;
-  fg.printErrors(
-      HybridValues(hv.continuous(), DiscreteValues(), self.linearizationPoint));
+  // fg.print();
+  // std::cout << "\n\n\n" << std::endl;
+  // fg.printErrors(
+  //     HybridValues(hv.continuous(), DiscreteValues(), self.linearizationPoint));
 }
 
 /****************************************************************************
