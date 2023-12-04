@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    NavState.h
+ * @file    NavState.cpp
  * @brief   Navigation state composing of attitude, position, and velocity
  * @author  Frank Dellaert
  * @date    July 2015

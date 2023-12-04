@@ -169,10 +169,10 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
       // TODO(dellaert): is this correct? If so explain here.
     } else if (auto hc = dynamic_pointer_cast<HybridConditional>(f)) {
       auto dc = hc->asDiscrete();
-      if (!dc) throwRuntimeError("continuousElimination", dc);
+      if (!dc) throwRuntimeError("discreteElimination", dc);
       dfg.push_back(hc->asDiscrete());
     } else {
-      throwRuntimeError("continuousElimination", f);
+      throwRuntimeError("discreteElimination", f);
     }
   }
 
