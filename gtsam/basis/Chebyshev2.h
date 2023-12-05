@@ -98,16 +98,6 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
                                   double b = 1);
 
   /**
-   * Calculate weights for all x in vector X.
-   * Returns M*N matrix where M is the size of the vector X,
-   * and N is the number of basis functions.
-   *
-   * Overriden for Chebyshev2.
-   */
-  static Matrix WeightMatrix(size_t N, const Vector& X, double a = -1,
-                             double b = 1);
-
-  /**
    *  Evaluate derivative of barycentric weights.
    *  This is easy and efficient via the DifferentiationMatrix.
    */
