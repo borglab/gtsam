@@ -94,14 +94,21 @@ set(interface_headers
 set(GTSAM_PYTHON_TARGET gtsam_py)
 set(GTSAM_PYTHON_UNSTABLE_TARGET gtsam_unstable_py)
 
+set(GTSAM_OUTPUT_NAME "gtsam")
+set(GTSAM_UNSTABLE_OUTPUT_NAME "gtsam_unstable")
+if(MSVC)
+        set(GTSAM_OUTPUT_NAME "py_gtsam")
+        set(GTSAM_UNSTABLE_OUTPUT_NAME "py_gtsam_unstable")
+endif()
+
 pybind_wrap(${GTSAM_PYTHON_TARGET} # target
             "${interface_headers}" # interface_headers
             "gtsam.cpp" # generated_cpp
             "gtsam" # module_name
             "gtsam" # top_namespace
             "${ignore}" # ignore_classes
-            ${PROJECT_PYTHON_SOURCE_DIR}/gtsam/gtsam.tpl
-            gtsam # libs
+            "${PROJECT_PYTHON_SOURCE_DIR}/gtsam/gtsam.tpl"
+            "gtsam" # libs
             "gtsam;gtsam_header" # dependencies
             ${GTSAM_ENABLE_BOOST_SERIALIZATION} # use_boost_serialization
             )
@@ -109,7 +116,7 @@ pybind_wrap(${GTSAM_PYTHON_TARGET} # target
 set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
     INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
     INSTALL_RPATH_USE_LINK_PATH TRUE
-    OUTPUT_NAME "gtsam"
+    OUTPUT_NAME "${GTSAM_OUTPUT_NAME}"
     LIBRARY_OUTPUT_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam"
     DEBUG_POSTFIX "" # Otherwise you will have a wrong name
     RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
@@ -188,7 +195,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
     set_target_properties(${GTSAM_PYTHON_UNSTABLE_TARGET} PROPERTIES
             INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
             INSTALL_RPATH_USE_LINK_PATH TRUE
-            OUTPUT_NAME "gtsam_unstable"
+            OUTPUT_NAME "${GTSAM_UNSTABLE_OUTPUT_NAME}"
             LIBRARY_OUTPUT_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable"
             DEBUG_POSTFIX "" # Otherwise you will have a wrong name
             RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
