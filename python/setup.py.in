@@ -11,7 +11,8 @@ print("PACKAGES: ", packages)
 package_data = {
     '': [
         "./*.so",
-        "./*.dll"
+        "./*.dll",
+        "./*.pyd",
     ]
 }
 
