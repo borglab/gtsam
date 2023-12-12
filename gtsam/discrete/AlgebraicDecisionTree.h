@@ -196,6 +196,25 @@ namespace gtsam {
       return this->apply(g, &Ring::div);
     }
 
+    /// Compute sum of all values
+    double sum() const {
+      double sum = 0;
+      auto visitor = [&](int y) { sum += y; };
+      this->visit(visitor);
+      return sum;
+    }
+
+    /**
+     * @brief Helper method to perform normalization such that all leaves in the
+     * tree sum to 1
+     *
+     * @param sum
+     * @return AlgebraicDecisionTree
+     */
+    AlgebraicDecisionTree normalize(double sum) const {
+      return this->apply([&sum](const double& x) { return x / sum; });
+    }
+
     /** sum out variable */
     AlgebraicDecisionTree sum(const L& label, size_t cardinality) const {
       return this->combine(label, cardinality, &Ring::add);

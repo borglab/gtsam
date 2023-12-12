@@ -283,16 +283,17 @@ HybridValues HybridBayesNet::optimize() const {
         error = error + gm->error(continuousValues);
 
         // Add the logNormalization constant to the error
-        // Also compute the mean for normalization (for numerical stability)
-        double mean = 0.0;
-        auto addConstant = [&gm, &mean](const double &error) {
+        // Also compute the sum for discrete probability normalization
+        // (normalization trick for numerical stability)
+        double sum = 0.0;
+        auto addConstant = [&gm, &sum](const double &error) {
           double e = error + gm->logNormalizationConstant();
-          mean += e;
+          sum += e;
           return e;
         };
         error = error.apply(addConstant);
-        // Normalize by the mean
-        error = error.apply([&mean](double x) { return x / mean; });
+        // Normalize by the sum
+        error = error.normalize(sum);
 
         // Include the discrete keys
         std::copy(gm->discreteKeys().begin(), gm->discreteKeys().end(),
