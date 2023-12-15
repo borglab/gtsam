@@ -118,6 +118,51 @@ TEST(MixtureFactor, Dim) {
 }
 
 /* ************************************************************************* */
+// Test components with differing means
+TEST(MixtureFactor, DifferentMeans) {
+  DiscreteKey m1(M(1), 2), m2(M(2), 2);
+
+  Values values;
+  double x1 = 0.0, x2 = 1.75, x3 = 2.60;
+  values.insert(X(1), x1);
+  values.insert(X(2), x2);
+  values.insert(X(3), x3);
+
+  auto model0 = noiseModel::Isotropic::Sigma(1, 1e-0);
+  auto model1 = noiseModel::Isotropic::Sigma(1, 1e-0);
+  auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-0);
+
+  auto f0 = std::make_shared<BetweenFactor<double>>(X(1), X(2), 0.0, model0);
+  auto f1 = std::make_shared<BetweenFactor<double>>(X(1), X(2), 2.0, model1);
+  std::vector<NonlinearFactor::shared_ptr> factors{f0, f1};
+
+  MixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+  HybridNonlinearFactorGraph hnfg;
+  hnfg.push_back(mixtureFactor);
+
+  f0 = std::make_shared<BetweenFactor<double>>(X(2), X(3), 0.0, model0);
+  f1 = std::make_shared<BetweenFactor<double>>(X(2), X(3), 2.0, model1);
+  std::vector<NonlinearFactor::shared_ptr> factors23{f0, f1};
+  hnfg.push_back(MixtureFactor({X(2), X(3)}, {m2}, factors23));
+
+  auto prior = PriorFactor<double>(X(1), x1, prior_noise);
+  hnfg.push_back(prior);
+
+  hnfg.emplace_shared<PriorFactor<double>>(X(2), 2.0, prior_noise);
+
+  auto hgfg = hnfg.linearize(values);
+  auto bn = hgfg->eliminateSequential();
+  HybridValues actual = bn->optimize();
+
+  HybridValues expected(
+      VectorValues{
+          {X(1), Vector1(0.0)}, {X(2), Vector1(0.25)}, {X(3), Vector1(-0.6)}},
+      DiscreteValues{{M(1), 1}, {M(2), 0}});
+
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
 // Test components with differing covariances
 TEST(MixtureFactor, DifferentCovariances) {
   DiscreteKey m1(M(1), 2);
