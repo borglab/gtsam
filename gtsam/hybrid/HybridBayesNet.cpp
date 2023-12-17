@@ -303,9 +303,10 @@ HybridValues HybridBayesNet::optimize() const {
   }
 
   double min_log = error.min();
-  AlgebraicDecisionTree<Key> model_selection = DecisionTree<Key, double>(
-      error, [&min_log](const double &x) { return std::exp(-(x - min_log)); });
-  model_selection = model_selection + exp(-min_log);
+  AlgebraicDecisionTree<Key> model_selection =
+      DecisionTree<Key, double>(error, [&min_log](const double &x) {
+        return std::exp(-(x - min_log)) * exp(-min_log);
+      });
 
   // Only add model_selection if we have discrete keys
   if (discreteKeySet.size() > 0) {
