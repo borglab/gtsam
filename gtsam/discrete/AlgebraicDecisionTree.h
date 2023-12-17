@@ -199,7 +199,7 @@ namespace gtsam {
     /// Compute sum of all values
     double sum() const {
       double sum = 0;
-      auto visitor = [&](int y) { sum += y; };
+      auto visitor = [&](double y) { sum += y; };
       this->visit(visitor);
       return sum;
     }
@@ -213,6 +213,22 @@ namespace gtsam {
      */
     AlgebraicDecisionTree normalize(double sum) const {
       return this->apply([&sum](const double& x) { return x / sum; });
+    }
+
+    /// Find the minimum values amongst all leaves
+    double min() const {
+      double min = std::numeric_limits<double>::max();
+      auto visitor = [&](double x) { min = x < min ? x : min; };
+      this->visit(visitor);
+      return min;
+    }
+
+    /// Find the maximum values amongst all leaves
+    double max() const {
+      double max = std::numeric_limits<double>::min();
+      auto visitor = [&](double x) { max = x > max ? x : max; };
+      this->visit(visitor);
+      return max;
     }
 
     /** sum out variable */
