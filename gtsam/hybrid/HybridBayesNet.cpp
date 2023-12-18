@@ -274,26 +274,26 @@ HybridValues HybridBayesNet::optimize() const {
           q(mu; M, Z) * sqrt((2*pi)^n*det(Sigma))
 
         If q(mu; M, Z) = exp(-error) & k = 1.0 / sqrt((2*pi)^n*det(Sigma))
-        thus, q*sqrt(|2*pi*Sigma|) = q/k = exp(log(q/k))
+        thus, q * sqrt((2*pi)^n*det(Sigma)) = q/k = exp(log(q/k))
         = exp(log(q) - log(k)) = exp(-error - log(k))
         = exp(-(error + log(k)))
 
-        So let's compute (error + log(k)) and exponentiate later
+        So we compute (error + log(k)) and exponentiate later
         */
-        error = error + gm->error(continuousValues);
 
-        // Add the logNormalization constant to the error
+        // Add the error and the logNormalization constant to the error
+        auto err = gm->error(continuousValues) + gm->logNormalizationConstant();
+
         // Also compute the sum for discrete probability normalization
         // (normalization trick for numerical stability)
         double sum = 0.0;
-        auto addConstant = [&gm, &sum](const double &error) {
-          double e = error + gm->logNormalizationConstant();
+        auto absSum = [&sum](const double &e) {
           sum += std::abs(e);
           return e;
         };
-        error = error.apply(addConstant);
-        // Normalize by the sum
-        error = error.normalize(sum);
+        err.visit(absSum);
+        // Normalize by the sum to prevent overflow
+        error = error + err.normalize(sum);
 
         // Include the discrete keys
         std::copy(gm->discreteKeys().begin(), gm->discreteKeys().end(),
@@ -302,11 +302,11 @@ HybridValues HybridBayesNet::optimize() const {
     }
   }
 
-  double min_log = error.min();
-  AlgebraicDecisionTree<Key> model_selection =
-      DecisionTree<Key, double>(error, [&min_log](const double &x) {
-        return std::exp(-(x - min_log)) * exp(-min_log);
-      });
+  error = error * -1;
+  double max_log = error.max();
+  AlgebraicDecisionTree<Key> model_selection = DecisionTree<Key, double>(
+      error, [&max_log](const double &x) { return std::exp(x - max_log); });
+  model_selection = model_selection.normalize(model_selection.sum());
 
   // Only add model_selection if we have discrete keys
   if (discreteKeySet.size() > 0) {

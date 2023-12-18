@@ -328,7 +328,6 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     // The residual error contains no keys, and only depends on the discrete
     // separator if present.
     auto logProbability = [&](const Result &pair) -> double {
-      // auto probability = [&](const Result &pair) -> double {
       static const VectorValues kEmpty;
       // If the factor is not null, it has no keys, just contains the residual.
       const auto &factor = pair.second;
@@ -343,9 +342,11 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
     // Perform normalization
     double max_log = logProbabilities.max();
-    DecisionTree<Key, double> probabilities(
+    AlgebraicDecisionTree probabilities = DecisionTree<Key, double>(
         logProbabilities,
-        [&max_log](const double x) { return exp(x - max_log) * exp(max_log); });
+        [&max_log](const double x) { return exp(x - max_log); });
+    // probabilities.print("", DefaultKeyFormatter);
+    probabilities = probabilities.normalize(probabilities.sum());
 
     return {
         std::make_shared<HybridConditional>(gaussianMixture),

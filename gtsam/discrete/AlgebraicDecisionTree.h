@@ -225,7 +225,8 @@ namespace gtsam {
 
     /// Find the maximum values amongst all leaves
     double max() const {
-      double max = std::numeric_limits<double>::min();
+      // Get the most negative value
+      double max = -std::numeric_limits<double>::max();
       auto visitor = [&](double x) { max = x > max ? x : max; };
       this->visit(visitor);
       return max;

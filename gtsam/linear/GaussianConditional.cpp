@@ -184,8 +184,10 @@ namespace gtsam {
   double GaussianConditional::logNormalizationConstant() const {
     constexpr double log2pi = 1.8378770664093454835606594728112;
     size_t n = d().size();
-    // log det(Sigma)) = - 2.0 * logDeterminant()
-    return - 0.5 * n * log2pi + logDeterminant();
+    // Sigma = (R'R)^{-1}, det(Sigma) = det((R'R)^{-1}) = det(R'R)^{-1}
+    // log det(Sigma) = -log(det(R'R)) = -2*log(det(R))
+    // Hence, log det(Sigma)) = - 2.0 * logDeterminant()
+    return -0.5 * n * log2pi + logDeterminant();
   }
 
   /* ************************************************************************* */
