@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Landmark-based SLAM &mdash; GTSAM 4.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=a084f797"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Structure from Motion" href="StructureFromMotion.html" />
+    <link rel="prev" title="PoseSLAM" href="PoseSLAM.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            GTSAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installing.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Building.html">Building</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="Tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Overview.html">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="FactorGraphs.html">Factor Graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ModelingRobotMotion.html">Modeling Robot Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="RobotLocalization.html">Robot Localization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PoseSLAM.html">PoseSLAM</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Landmark-based SLAM</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basics">Basics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#of-keys-and-symbols">Of Keys and Symbols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#a-larger-example">A Larger Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#a-real-world-example">A Real-World Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="StructureFromMotion.html">Structure from Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="iSAM.html">iSAM: Incremental Smoothing and Mapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MoreApplications.html">More Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CppExamples.html">C++ Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PythonExamples.html">Python Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MatlabExamples.html">Matlab Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Bindings.html">Bindings</a></li>
+<li class="toctree-l1"><a class="reference external" href="_static/doxygen/html/modules.html#http://">C++ API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GTSAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Landmark-based SLAM</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/LandmarkBasedSLAM.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="landmark-based-slam">
+<h1>Landmark-based SLAM<a class="headerlink" href="#landmark-based-slam" title="Link to this heading"></a></h1>
+<section id="basics">
+<h2>Basics<a class="headerlink" href="#basics" title="Link to this heading"></a></h2>
+<p><a href="#id1"><span class="problematic" id="id2">|image: 12\_Users\_dellaert\_git\_github\_doc\_images\_FactorGraph4.png|</span></a>
+Figure 10: Factor graph for landmark-based SLAM</p>
+<p>In <strong>landmark-based SLAM</strong>, we explicitly build a map with the location
+of observed landmarks, which introduces a second type of variable in the
+factor graph besides robot poses. An example factor graph for a
+landmark-based SLAM example is shown in Figure <a class="reference external" href="#fig_SLAM">10</a>, which
+shows the typical connectivity: poses are connected in an odometry
+Markov chain, and landmarks are observed from multiple poses, inducing
+binary factors. In addition, the pose <span class="math notranslate nohighlight">\(x_{1}\)</span> has the usual prior
+on it.</p>
+<p><a href="#id3"><span class="problematic" id="id4">|image: 13\_Users\_dellaert\_git\_github\_doc\_images\_example2.png|</span></a>
+Figure 11: The optimized result along with covariance ellipses for both
+poses (in green) and landmarks (in blue). Also shown are the trajectory
+(red) and landmark sightings (cyan).</p>
+<p>The factor graph from Figure <a class="reference external" href="#fig_SLAM">10</a> can be created using the
+MATLAB code in Listing <a class="reference external" href="#listing_PlanarSLAMExample">5.1</a>. As before,
+on line 2 we create the factor graph, and Lines 8-18 create the
+prior/odometry chain we are now familiar with. However, the code on
+lines 20-25 is new: it creates three <strong>measurement factors</strong>, in this
+case “bearing/range” measurements from the pose to the landmark.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">%</span> <span class="n">Create</span> <span class="n">graph</span> <span class="n">container</span> <span class="ow">and</span> <span class="n">add</span> <span class="n">factors</span> <span class="n">to</span> <span class="n">it</span>
+<span class="n">graph</span> <span class="o">=</span> <span class="n">NonlinearFactorGraph</span><span class="p">;</span>
+
+<span class="o">%</span> <span class="n">Create</span> <span class="n">keys</span> <span class="k">for</span> <span class="n">variables</span>
+<span class="n">i1</span> <span class="o">=</span> <span class="n">symbol</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span> <span class="n">i2</span> <span class="o">=</span> <span class="n">symbol</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span> <span class="n">i3</span> <span class="o">=</span> <span class="n">symbol</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">);</span>
+<span class="n">j1</span> <span class="o">=</span> <span class="n">symbol</span><span class="p">(</span><span class="s1">&#39;l&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span> <span class="n">j2</span> <span class="o">=</span> <span class="n">symbol</span><span class="p">(</span><span class="s1">&#39;l&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span>
+
+<span class="o">%</span> <span class="n">Add</span> <span class="n">prior</span>
+<span class="n">priorMean</span> <span class="o">=</span> <span class="n">Pose2</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">);</span> <span class="o">%</span> <span class="n">prior</span> <span class="n">at</span> <span class="n">origin</span>
+<span class="n">priorNoise</span> <span class="o">=</span> <span class="n">noiseModel</span><span class="o">.</span><span class="n">Diagonal</span><span class="o">.</span><span class="n">Sigmas</span><span class="p">([</span><span class="mf">0.3</span><span class="p">;</span> <span class="mf">0.3</span><span class="p">;</span> <span class="mf">0.1</span><span class="p">]);</span>
+<span class="o">%</span> <span class="n">add</span> <span class="n">directly</span> <span class="n">to</span> <span class="n">graph</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">PriorFactorPose2</span><span class="p">(</span><span class="n">i1</span><span class="p">,</span> <span class="n">priorMean</span><span class="p">,</span> <span class="n">priorNoise</span><span class="p">));</span>
+
+<span class="o">%</span> <span class="n">Add</span> <span class="n">odometry</span>
+<span class="n">odometry</span> <span class="o">=</span> <span class="n">Pose2</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">);</span>
+<span class="n">odometryNoise</span> <span class="o">=</span> <span class="n">noiseModel</span><span class="o">.</span><span class="n">Diagonal</span><span class="o">.</span><span class="n">Sigmas</span><span class="p">([</span><span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.1</span><span class="p">]);</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BetweenFactorPose2</span><span class="p">(</span><span class="n">i1</span><span class="p">,</span> <span class="n">i2</span><span class="p">,</span> <span class="n">odometry</span><span class="p">,</span> <span class="n">odometryNoise</span><span class="p">));</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BetweenFactorPose2</span><span class="p">(</span><span class="n">i2</span><span class="p">,</span> <span class="n">i3</span><span class="p">,</span> <span class="n">odometry</span><span class="p">,</span> <span class="n">odometryNoise</span><span class="p">));</span>
+
+<span class="o">%</span> <span class="n">Add</span> <span class="n">bearing</span><span class="o">/</span><span class="nb">range</span> <span class="n">measurement</span> <span class="n">factors</span>
+<span class="n">degrees</span> <span class="o">=</span> <span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">;</span>
+<span class="n">brNoise</span> <span class="o">=</span> <span class="n">noiseModel</span><span class="o">.</span><span class="n">Diagonal</span><span class="o">.</span><span class="n">Sigmas</span><span class="p">([</span><span class="mf">0.1</span><span class="p">;</span> <span class="mf">0.2</span><span class="p">]);</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BearingRangeFactor2D</span><span class="p">(</span><span class="n">i1</span><span class="p">,</span> <span class="n">j1</span><span class="p">,</span> <span class="n">Rot2</span><span class="p">(</span><span class="mi">45</span><span class="o">*</span><span class="n">degrees</span><span class="p">),</span> <span class="n">sqrt</span><span class="p">(</span><span class="mi">8</span><span class="p">),</span> <span class="n">brNoise</span><span class="p">));</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BearingRangeFactor2D</span><span class="p">(</span><span class="n">i2</span><span class="p">,</span> <span class="n">j1</span><span class="p">,</span> <span class="n">Rot2</span><span class="p">(</span><span class="mi">90</span><span class="o">*</span><span class="n">degrees</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">brNoise</span><span class="p">));</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BearingRangeFactor2D</span><span class="p">(</span><span class="n">i3</span><span class="p">,</span> <span class="n">j2</span><span class="p">,</span> <span class="n">Rot2</span><span class="p">(</span><span class="mi">90</span><span class="o">*</span><span class="n">degrees</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">brNoise</span><span class="p">));</span>
+</pre></div>
+</div>
+</section>
+<section id="of-keys-and-symbols">
+<h2>Of Keys and Symbols<a class="headerlink" href="#of-keys-and-symbols" title="Link to this heading"></a></h2>
+<p>The only unexplained code is on lines 4-6: here we create integer keys
+for the poses and landmarks using the <strong>*symbol*</strong> function. In GTSAM,
+we address all variables using the <strong>*Ke*</strong><strong>y</strong> type, which is just a
+typedef to <strong>*size_t*</strong> a 32 or 64 bit integer,
+depending on your platform. The keys do not have to be numbered continuously, but they do have to
+be unique within a given factor graph. For factor graphs with different
+types of variables, we provide the <strong>*symbol*</strong> function in MATLAB, and
+the <strong>*Symbol*</strong> type in C++, to help you create (large) integer keys
+that are far apart in the space of possible keys, so you don’t have to
+think about starting the point numbering at some arbitrary offset. To
+create a a <em>symbol key</em> you simply provide a character and an integer
+index. You can use base 0 or 1, or use arbitrary indices: it does not
+matter. In the code above, we we use ‘x’ for poses, and ‘l’ for
+landmarks.</p>
+<p>The optimized result for the factor graph created by Listing
+<a class="reference external" href="#listing_PlanarSLAMExample">5.1</a> is shown in Figure
+<a class="reference external" href="#fig_PlanarSLAMExample">11</a>, and it is readily apparent that the
+landmark <span class="math notranslate nohighlight">\(l_{1}\)</span> with two measurements is better localized. In
+MATLAB we can also examine the actual numerical values, and doing so
+reveals some more GTSAM magic:</p>
+<p>&gt;&gt; result Values with 5 values: l1: (2, 2) l2: (4, 2) x1: (-1.8e-16,
+5.1e-17, -1.5e-17) x2: (2, -5.8e-16, -4.6e-16) x3: (4, -3.1e-15,
+-4.6e-16)</p>
+<p>Indeed, the keys generated by symbol are automatically detected by the
+<strong>*print*</strong> method in the <strong>*Values*</strong> class, and rendered in
+human-readable form “x1”, “l2”, etc, rather than as large, unwieldy
+integers. This magic extends to most factors and other classes where the
+<strong>Key</strong> type is used.</p>
+</section>
+<section id="a-larger-example">
+<h2>A Larger Example<a class="headerlink" href="#a-larger-example" title="Link to this heading"></a></h2>
+<p><a href="#id5"><span class="problematic" id="id6">|image: 14\_Users\_dellaert\_git\_github\_doc\_images\_littleRobot.png|</span></a>
+Figure 12: A larger example with about 100 poses and 30 or so landmarks,
+as produced by gtsam_examples/PlanarSLAMExample_graph.m</p>
+<p>GTSAM comes with a slightly larger example that is read from a .graph
+file by PlanarSLAMExample_graph.m, shown in Figure
+<a class="reference external" href="#fig_littleRobot">12</a>. To not clutter the figure only the marginals
+are shown, not the lines of sight. This example, with 119 (multivariate)
+variables and 517 factors optimizes in less than 10 ms.</p>
+</section>
+<section id="a-real-world-example">
+<h2>A Real-World Example<a class="headerlink" href="#a-real-world-example" title="Link to this heading"></a></h2>
+<p><a href="#id7"><span class="problematic" id="id8">|image: 15\_Users\_dellaert\_git\_github\_doc\_images\_Victoria.png|</span></a>
+Figure 13: Small section of optimized trajectory and landmarks (trees
+detected in a laser range finder scan) from data recorded in Sydney’s
+Victoria Park (dataset due to Jose Guivant, U. Sydney).</p>
+<p>A real-world example is shown in Figure <a class="reference external" href="#fig_Victoria_1">13</a>, using
+data from a well known dataset collected in Sydney’s Victoria Park,
+using a truck equipped with a laser range-finder. The covariance
+matrices in this figure were computed very efficiently, as explained in
+detail in (<a class="reference external" href="#LyXCite-Kaess09ras">Kaess and Dellaert, 2009</a>). The
+exact covariances (blue, smaller ellipses) obtained by our fast
+algorithm coincide with the exact covariances based on full inversion
+(orange, mostly hidden by blue). The much larger conservative covariance
+estimates (green, large ellipses) were based on our earlier work in
+(<a class="reference external" href="#LyXCite-Kaess08tro">Kaess et al., 2008</a>).</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="PoseSLAM.html" class="btn btn-neutral float-left" title="PoseSLAM" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="StructureFromMotion.html" class="btn btn-neutral float-right" title="Structure from Motion" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, The GTSAM authors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

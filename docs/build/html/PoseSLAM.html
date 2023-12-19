@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PoseSLAM &mdash; GTSAM 4.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=a084f797"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Landmark-based SLAM" href="LandmarkBasedSLAM.html" />
+    <link rel="prev" title="Robot Localization" href="RobotLocalization.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            GTSAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installing.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Building.html">Building</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="Tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Overview.html">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="FactorGraphs.html">Factor Graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ModelingRobotMotion.html">Modeling Robot Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="RobotLocalization.html">Robot Localization</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">PoseSLAM</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#loop-closure-constraints">Loop Closure Constraints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-the-matlab-interface">Using the MATLAB Interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reading-and-optimizing-pose-graphs">Reading and Optimizing Pose Graphs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#poseslam-in-3d">PoseSLAM in 3D</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="LandmarkBasedSLAM.html">Landmark-based SLAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="StructureFromMotion.html">Structure from Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="iSAM.html">iSAM: Incremental Smoothing and Mapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MoreApplications.html">More Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CppExamples.html">C++ Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PythonExamples.html">Python Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MatlabExamples.html">Matlab Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Bindings.html">Bindings</a></li>
+<li class="toctree-l1"><a class="reference external" href="_static/doxygen/html/modules.html#http://">C++ API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GTSAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">PoseSLAM</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/PoseSLAM.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="poseslam">
+<h1>PoseSLAM<a class="headerlink" href="#poseslam" title="Link to this heading"></a></h1>
+<section id="loop-closure-constraints">
+<h2>Loop Closure Constraints<a class="headerlink" href="#loop-closure-constraints" title="Link to this heading"></a></h2>
+<p>The simplest instantiation of a SLAM problem is <strong>PoseSLAM</strong>, which
+avoids building an explicit map of the environment. The goal of SLAM is
+to simultaneously localize a robot and map the environment given
+incoming sensor measurements (<a class="reference external" href="#LyXCite-DurrantWhyte06ram">Durrant-Whyte and Bailey,
+2006</a>). Besides wheel odometry, one of
+the most popular sensors for robots moving on a plane is a 2D
+laser-range finder, which provides both odometry constraints between
+successive poses, and loop-closure constraints when the robot re-visits
+a previously explored part of the environment.</p>
+<p><a href="#id1"><span class="problematic" id="id2">|image: 8\_Users\_dellaert\_git\_github\_doc\_images\_FactorGraph3.png|</span></a>
+Figure 6: Factor graph for PoseSLAM.</p>
+<p>A factor graph example for PoseSLAM is shown in Figure
+<a class="reference external" href="#fig_Pose2SLAM">6</a>. The following C++ code, included in GTSAM as an
+example, creates this factor graph in code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">NonlinearFactorGraph</span> <span class="n">graph</span><span class="p">;</span>
+<span class="n">noiseModel</span><span class="p">::</span><span class="n">Diagonal</span><span class="p">::</span><span class="n">shared_ptr</span> <span class="n">priorNoise</span> <span class="o">=</span>
+  <span class="n">noiseModel</span><span class="p">::</span><span class="n">Diagonal</span><span class="p">::</span><span class="n">Sigmas</span><span class="p">(</span><span class="n">Vector3</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">));</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">PriorFactor</span><span class="o">&lt;</span><span class="n">Pose2</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Pose2</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">priorNoise</span><span class="p">));</span>
+
+<span class="o">//</span> <span class="n">Add</span> <span class="n">odometry</span> <span class="n">factors</span>
+<span class="n">noiseModel</span><span class="p">::</span><span class="n">Diagonal</span><span class="p">::</span><span class="n">shared_ptr</span> <span class="n">model</span> <span class="o">=</span>
+  <span class="n">noiseModel</span><span class="p">::</span><span class="n">Diagonal</span><span class="p">::</span><span class="n">Sigmas</span><span class="p">(</span><span class="n">Vector3</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">));</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BetweenFactor</span><span class="o">&lt;</span><span class="n">Pose2</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">Pose2</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>     <span class="p">),</span> <span class="n">model</span><span class="p">));</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BetweenFactor</span><span class="o">&lt;</span><span class="n">Pose2</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Pose2</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">M_PI_2</span><span class="p">),</span> <span class="n">model</span><span class="p">));</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BetweenFactor</span><span class="o">&lt;</span><span class="n">Pose2</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">Pose2</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">M_PI_2</span><span class="p">),</span> <span class="n">model</span><span class="p">));</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BetweenFactor</span><span class="o">&lt;</span><span class="n">Pose2</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">Pose2</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">M_PI_2</span><span class="p">),</span> <span class="n">model</span><span class="p">));</span>
+
+<span class="o">//</span> <span class="n">Add</span> <span class="n">the</span> <span class="n">loop</span> <span class="n">closure</span> <span class="n">constraint</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BetweenFactor</span><span class="o">&lt;</span><span class="n">Pose2</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">Pose2</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">M_PI_2</span><span class="p">),</span> <span class="n">model</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>As before, lines 1-4 create a nonlinear factor graph and add the unary
+factor <span class="math notranslate nohighlight">\(f_{0}\left( x_{1} \right)\)</span>. As the robot travels through
+the world, it creates binary factors
+<span class="math notranslate nohighlight">\(f_{t}\left( {x_{t},x_{t + 1}} \right)\)</span> corresponding to odometry,
+added to the graph in lines 6-12 (Note that M_PI_2 refers to pi/2).
+But line 15 models a different event: a <strong>loop closure</strong>. For example,
+the robot might recognize the same location using vision or a laser
+range finder, and calculate the geometric pose constraint to when it
+first visited this location. This is illustrated for poses <span class="math notranslate nohighlight">\(x_{5}\)</span>
+and <span class="math notranslate nohighlight">\(x_{2}\)</span>, and generates the (red) loop closing factor
+<span class="math notranslate nohighlight">\(f_{5}\left( {x_{5},x_{2}} \right)\)</span>.</p>
+<p><a href="#id3"><span class="problematic" id="id4">|image: 9\_Users\_dellaert\_git\_github\_doc\_images\_example1.png|</span></a>
+Figure 7: The result of running optimize on the factor graph in Figure
+<a class="reference external" href="#fig_Pose2SLAM">6</a>.</p>
+<p>We can optimize this factor graph as before, by creating an initial
+estimate of type <strong>*Values*</strong>, and creating and running an optimizer.
+The result is shown graphically in Figure <a class="reference external" href="#fig_example">7</a>, along
+with covariance ellipses shown in green. These covariance ellipses in 2D
+indicate the marginal over position, over all possible orientations, and
+show the area which contain 68.26% of the probability mass (in 1D this
+would correspond to one standard deviation). The graph shows in a clear
+manner that the uncertainty on pose <span class="math notranslate nohighlight">\(x_{5}\)</span> is now much less than
+if there would be only odometry measurements. The pose with the highest
+uncertainty, <span class="math notranslate nohighlight">\(x_{4}\)</span>, is the one furthest away from the unary
+constraint <span class="math notranslate nohighlight">\(f_{0}\left( x_{1} \right)\)</span>, which is the only factor
+tying the graph to a global coordinate frame.</p>
+<p>The figure above was created using an interface that allows you to use
+GTSAM from within MATLAB, which provides for visualization and rapid
+development. We discuss this next.</p>
+</section>
+<section id="using-the-matlab-interface">
+<h2>Using the MATLAB Interface<a class="headerlink" href="#using-the-matlab-interface" title="Link to this heading"></a></h2>
+<p>A large subset of the GTSAM functionality can be accessed through
+wrapped classes from within MATLAB
+(GTSAM also allows you to wrap your own custom-made classes, although
+this is outside the scope of this manual).
+The following code excerpt is the MATLAB equivalent of the C++ code in
+Listing <a class="reference external" href="#listing_Pose2SLAMExample">4.1</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">graph</span> <span class="o">=</span> <span class="n">NonlinearFactorGraph</span><span class="p">;</span>
+<span class="n">priorNoise</span> <span class="o">=</span> <span class="n">noiseModel</span><span class="o">.</span><span class="n">Diagonal</span><span class="o">.</span><span class="n">Sigmas</span><span class="p">([</span><span class="mf">0.3</span><span class="p">;</span> <span class="mf">0.3</span><span class="p">;</span> <span class="mf">0.1</span><span class="p">]);</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">PriorFactorPose2</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Pose2</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">priorNoise</span><span class="p">));</span>
+
+<span class="o">%%</span> <span class="n">Add</span> <span class="n">odometry</span> <span class="n">factors</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">noiseModel</span><span class="o">.</span><span class="n">Diagonal</span><span class="o">.</span><span class="n">Sigmas</span><span class="p">([</span><span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.1</span><span class="p">]);</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BetweenFactorPose2</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">Pose2</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>   <span class="p">),</span> <span class="n">model</span><span class="p">));</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BetweenFactorPose2</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">Pose2</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="n">model</span><span class="p">));</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BetweenFactorPose2</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">Pose2</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="n">model</span><span class="p">));</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BetweenFactorPose2</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">Pose2</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="n">model</span><span class="p">));</span>
+
+<span class="o">%%</span> <span class="n">Add</span> <span class="n">pose</span> <span class="n">constraint</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">BetweenFactorPose2</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">Pose2</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="n">model</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>Note that the code is almost identical, although there are a few syntax
+and naming differences:</p>
+<ul class="simple">
+<li><p>Objects are created by calling a constructor instead of allocating
+them on the heap.</p></li>
+<li><p>Namespaces are done using dot notation, i.e.,
+<strong>*noiseModel::Diagonal::SigmasClasses*</strong> becomes
+<strong>*noiseModel.Diagonal.Sigmas*</strong>.</p></li>
+<li><p><strong>*Vector*</strong> and <strong>*Matrix*</strong> classes in C++ are just
+vectors/matrices in MATLAB.</p></li>
+<li><p>As templated classes do not exist in MATLAB, these have been
+hardcoded in the GTSAM interface, e.g., <strong>*PriorFactorPose2*</strong>
+corresponds to the C++ class <strong>*PriorFactor&lt;Pose2&gt;*</strong>, etc.</p></li>
+</ul>
+<p>After executing the code, you can call <em>whos</em> on the MATLAB command
+prompt to see the objects created. Note that the indicated <em>Class</em>
+corresponds to the wrapped C++ classes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;&gt;</span> <span class="n">whos</span>
+  <span class="n">Name</span>                 <span class="n">Size</span>            <span class="n">Bytes</span>  <span class="n">Class</span>
+  <span class="n">graph</span>                <span class="mi">1</span><span class="n">x1</span>               <span class="mi">112</span>  <span class="n">gtsam</span><span class="o">.</span><span class="n">NonlinearFactorGraph</span>
+  <span class="n">priorNoise</span>           <span class="mi">1</span><span class="n">x1</span>               <span class="mi">112</span>  <span class="n">gtsam</span><span class="o">.</span><span class="n">noiseModel</span><span class="o">.</span><span class="n">Diagonal</span>
+  <span class="n">model</span>                <span class="mi">1</span><span class="n">x1</span>               <span class="mi">112</span>  <span class="n">gtsam</span><span class="o">.</span><span class="n">noiseModel</span><span class="o">.</span><span class="n">Diagonal</span>
+  <span class="n">initialEstimate</span>      <span class="mi">1</span><span class="n">x1</span>               <span class="mi">112</span>  <span class="n">gtsam</span><span class="o">.</span><span class="n">Values</span>
+  <span class="n">optimizer</span>            <span class="mi">1</span><span class="n">x1</span>               <span class="mi">112</span>  <span class="n">gtsam</span><span class="o">.</span><span class="n">LevenbergMarquardtOptimizer</span>
+</pre></div>
+</div>
+<p>In addition, any GTSAM object can be examined in detail, yielding
+identical output to C++:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;&gt;</span> <span class="n">priorNoise</span>
+<span class="n">diagonal</span> <span class="n">sigmas</span> <span class="p">[</span><span class="mf">0.3</span><span class="p">;</span> <span class="mf">0.3</span><span class="p">;</span> <span class="mf">0.1</span><span class="p">];</span>
+
+<span class="o">&gt;&gt;</span> <span class="n">graph</span>
+<span class="n">size</span><span class="p">:</span> <span class="mi">6</span>
+<span class="n">factor</span> <span class="mi">0</span><span class="p">:</span> <span class="n">PriorFactor</span> <span class="n">on</span> <span class="mi">1</span>
+  <span class="n">prior</span> <span class="n">mean</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="n">noise</span> <span class="n">model</span><span class="p">:</span> <span class="n">diagonal</span> <span class="n">sigmas</span> <span class="p">[</span><span class="mf">0.3</span><span class="p">;</span> <span class="mf">0.3</span><span class="p">;</span> <span class="mf">0.1</span><span class="p">];</span>
+<span class="n">factor</span> <span class="mi">1</span><span class="p">:</span> <span class="n">BetweenFactor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+  <span class="n">measured</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="n">noise</span> <span class="n">model</span><span class="p">:</span> <span class="n">diagonal</span> <span class="n">sigmas</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.1</span><span class="p">];</span>
+<span class="n">factor</span> <span class="mi">2</span><span class="p">:</span> <span class="n">BetweenFactor</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+  <span class="n">measured</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">1.6</span><span class="p">)</span>
+  <span class="n">noise</span> <span class="n">model</span><span class="p">:</span> <span class="n">diagonal</span> <span class="n">sigmas</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.1</span><span class="p">];</span>
+<span class="n">factor</span> <span class="mi">3</span><span class="p">:</span> <span class="n">BetweenFactor</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+  <span class="n">measured</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">1.6</span><span class="p">)</span>
+  <span class="n">noise</span> <span class="n">model</span><span class="p">:</span> <span class="n">diagonal</span> <span class="n">sigmas</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.1</span><span class="p">];</span>
+<span class="n">factor</span> <span class="mi">4</span><span class="p">:</span> <span class="n">BetweenFactor</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">)</span>
+  <span class="n">measured</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">1.6</span><span class="p">)</span>
+  <span class="n">noise</span> <span class="n">model</span><span class="p">:</span> <span class="n">diagonal</span> <span class="n">sigmas</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.1</span><span class="p">];</span>
+<span class="n">factor</span> <span class="mi">5</span><span class="p">:</span> <span class="n">BetweenFactor</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+  <span class="n">measured</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">1.6</span><span class="p">)</span>
+  <span class="n">noise</span> <span class="n">model</span><span class="p">:</span> <span class="n">diagonal</span> <span class="n">sigmas</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.2</span><span class="p">;</span> <span class="mf">0.1</span><span class="p">];</span>
+</pre></div>
+</div>
+<p>And it does not stop there: we can also call some of the functions
+defined for factor graphs. E.g.,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;&gt;</span> <span class="n">graph</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">initialEstimate</span><span class="p">)</span>
+<span class="n">ans</span> <span class="o">=</span>
+   <span class="mf">20.1086</span>
+
+<span class="o">&gt;&gt;</span> <span class="n">graph</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<span class="n">ans</span> <span class="o">=</span>
+   <span class="mf">8.2631e-18</span>
+</pre></div>
+</div>
+<p>computes the sum-squared error
+<span class="math notranslate nohighlight">\(\frac{1}{2}\sum\limits_{i}{||h_{i}\left( X_{i} \right) - z_{i}||}_{\Sigma}^{2}{}\)</span>
+before and after optimization.</p>
+</section>
+<section id="reading-and-optimizing-pose-graphs">
+<h2>Reading and Optimizing Pose Graphs<a class="headerlink" href="#reading-and-optimizing-pose-graphs" title="Link to this heading"></a></h2>
+<p><a href="#id5"><span class="problematic" id="id6">|image: 10\_Users\_dellaert\_git\_github\_doc\_images\_w100-result.png|</span></a>
+Figure 8: MATLAB plot of small Manhattan world example with 100 poses
+(due to Ed Olson). The initial estimate is shown in green. The optimized
+trajectory, with covariance ellipses, in blue.</p>
+<p>The ability to work in MATLAB adds a much quicker development cycle, and
+effortless graphical output. The optimized trajectory in Figure
+<a class="reference external" href="#fig_w100">8</a> was produced by the code below, in which <em>load2D</em>
+reads TORO files. To see how plotting is done, refer to the full source
+code.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">%%</span> <span class="n">Initialize</span> <span class="n">graph</span><span class="p">,</span> <span class="n">initial</span> <span class="n">estimate</span><span class="p">,</span> <span class="ow">and</span> <span class="n">odometry</span> <span class="n">noise</span>
+<span class="n">datafile</span> <span class="o">=</span> <span class="n">findExampleDataFile</span><span class="p">(</span><span class="s1">&#39;w100.graph&#39;</span><span class="p">);</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">noiseModel</span><span class="o">.</span><span class="n">Diagonal</span><span class="o">.</span><span class="n">Sigmas</span><span class="p">([</span><span class="mf">0.05</span><span class="p">;</span> <span class="mf">0.05</span><span class="p">;</span> <span class="mi">5</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">]);</span>
+<span class="p">[</span><span class="n">graph</span><span class="p">,</span><span class="n">initial</span><span class="p">]</span> <span class="o">=</span> <span class="n">load2D</span><span class="p">(</span><span class="n">datafile</span><span class="p">,</span> <span class="n">model</span><span class="p">);</span>
+
+<span class="o">%%</span> <span class="n">Add</span> <span class="n">a</span> <span class="n">Gaussian</span> <span class="n">prior</span> <span class="n">on</span> <span class="n">pose</span> <span class="n">x_0</span>
+<span class="n">priorMean</span> <span class="o">=</span> <span class="n">Pose2</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="n">priorNoise</span> <span class="o">=</span> <span class="n">noiseModel</span><span class="o">.</span><span class="n">Diagonal</span><span class="o">.</span><span class="n">Sigmas</span><span class="p">([</span><span class="mf">0.01</span><span class="p">;</span> <span class="mf">0.01</span><span class="p">;</span> <span class="mf">0.01</span><span class="p">]);</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">PriorFactorPose2</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">priorMean</span><span class="p">,</span> <span class="n">priorNoise</span><span class="p">));</span>
+
+<span class="o">%%</span> <span class="n">Optimize</span> <span class="n">using</span> <span class="n">Levenberg</span><span class="o">-</span><span class="n">Marquardt</span> <span class="n">optimization</span> <span class="ow">and</span> <span class="n">get</span> <span class="n">marginals</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">LevenbergMarquardtOptimizer</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">initial</span><span class="p">);</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">optimizeSafely</span><span class="p">;</span>
+<span class="n">marginals</span> <span class="o">=</span> <span class="n">Marginals</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">result</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="poseslam-in-3d">
+<h2>PoseSLAM in 3D<a class="headerlink" href="#poseslam-in-3d" title="Link to this heading"></a></h2>
+<p>PoseSLAM can easily be extended to 3D poses, but some care is needed to
+update 3D rotations. GTSAM supports both <strong>quaternions</strong> and
+<span class="math notranslate nohighlight">\(3 \times 3\)</span> <strong>rotation matrices</strong> to represent 3D rotations. The
+selection is made via the compile flag GTSAM_USE_QUATERNIONS.</p>
+<p><a href="#id7"><span class="problematic" id="id8">|image:
+11\_Users\_dellaert\_git\_github\_doc\_images\_sphere2500-result.png|</span></a>
+Figure 9: 3D plot of sphere example (due to Michael Kaess). The very
+wrong initial estimate, derived from odometry, is shown in green. The
+optimized trajectory is shown red. Code below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">%%</span> <span class="n">Initialize</span> <span class="n">graph</span><span class="p">,</span> <span class="n">initial</span> <span class="n">estimate</span><span class="p">,</span> <span class="ow">and</span> <span class="n">odometry</span> <span class="n">noise</span>
+<span class="n">datafile</span> <span class="o">=</span> <span class="n">findExampleDataFile</span><span class="p">(</span><span class="s1">&#39;sphere2500.txt&#39;</span><span class="p">);</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">noiseModel</span><span class="o">.</span><span class="n">Diagonal</span><span class="o">.</span><span class="n">Sigmas</span><span class="p">([</span><span class="mi">5</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">;</span> <span class="mi">5</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">;</span> <span class="mi">5</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">;</span> <span class="mf">0.05</span><span class="p">;</span> <span class="mf">0.05</span><span class="p">;</span> <span class="mf">0.05</span><span class="p">]);</span>
+<span class="p">[</span><span class="n">graph</span><span class="p">,</span><span class="n">initial</span><span class="p">]</span> <span class="o">=</span> <span class="n">load3D</span><span class="p">(</span><span class="n">datafile</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">true</span><span class="p">,</span> <span class="mi">2500</span><span class="p">);</span>
+<span class="n">plot3DTrajectory</span><span class="p">(</span><span class="n">initial</span><span class="p">,</span> <span class="s1">&#39;g-&#39;</span><span class="p">,</span> <span class="n">false</span><span class="p">);</span> <span class="o">%</span> <span class="n">Plot</span> <span class="n">Initial</span> <span class="n">Estimate</span>
+
+<span class="o">%%</span> <span class="n">Read</span> <span class="n">again</span><span class="p">,</span> <span class="n">now</span> <span class="k">with</span> <span class="nb">all</span> <span class="n">constraints</span><span class="p">,</span> <span class="ow">and</span> <span class="n">optimize</span>
+<span class="n">graph</span> <span class="o">=</span> <span class="n">load3D</span><span class="p">(</span><span class="n">datafile</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">false</span><span class="p">,</span> <span class="mi">2500</span><span class="p">);</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">NonlinearEqualityPose3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">initial</span><span class="o">.</span><span class="n">atPose3</span><span class="p">(</span><span class="mi">0</span><span class="p">)));</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">LevenbergMarquardtOptimizer</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">initial</span><span class="p">);</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">optimizeSafely</span><span class="p">();</span>
+<span class="n">plot3DTrajectory</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s1">&#39;r-&#39;</span><span class="p">,</span> <span class="n">false</span><span class="p">);</span> <span class="n">axis</span> <span class="n">equal</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="RobotLocalization.html" class="btn btn-neutral float-left" title="Robot Localization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="LandmarkBasedSLAM.html" class="btn btn-neutral float-right" title="Landmark-based SLAM" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, The GTSAM authors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

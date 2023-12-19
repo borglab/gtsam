@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Factor Graphs &mdash; GTSAM 4.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=a084f797"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Modeling Robot Motion" href="ModelingRobotMotion.html" />
+    <link rel="prev" title="Overview" href="Overview.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            GTSAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installing.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Building.html">Building</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="Tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Overview.html">Overview</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Factor Graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ModelingRobotMotion.html">Modeling Robot Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="RobotLocalization.html">Robot Localization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PoseSLAM.html">PoseSLAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LandmarkBasedSLAM.html">Landmark-based SLAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="StructureFromMotion.html">Structure from Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="iSAM.html">iSAM: Incremental Smoothing and Mapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MoreApplications.html">More Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CppExamples.html">C++ Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PythonExamples.html">Python Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MatlabExamples.html">Matlab Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Bindings.html">Bindings</a></li>
+<li class="toctree-l1"><a class="reference external" href="_static/doxygen/html/modules.html#http://">C++ API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GTSAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Factor Graphs</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/FactorGraphs.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="factor-graphs">
+<h1>Factor Graphs<a class="headerlink" href="#factor-graphs" title="Link to this heading"></a></h1>
+<p>Let us start with a one-page primer on factor graphs, which in no way
+replaces the excellent and detailed reviews by <a class="reference external" href="#LyXCite-Kschischang01it">Kschischang et
+al.</a> (2001) and
+<a class="reference external" href="#LyXCite-Loeliger04spm">Loeliger</a> (2004).</p>
+<p><a href="#id1"><span class="problematic" id="id2">|image: 2\_Users\_dellaert\_git\_github\_doc\_images\_hmm.png|</span></a> Figure 1:
+An HMM, unrolled over three time-steps, represented by a Bayes net.</p>
+<p>Figure <a class="reference external" href="#fig_unrolledHMM">1</a> shows the <strong>Bayes network</strong> for a hidden
+Markov model (HMM) over three time steps. In a Bayes net, each node is
+associated with a conditional density: the top Markov chain encodes the
+prior <span class="math notranslate nohighlight">\(P\left( X_{1} \right)\)</span> and transition probabilities
+<span class="math notranslate nohighlight">\(P\left( X_{2} \middle| X_{1} \right)\)</span> and
+<span class="math notranslate nohighlight">\(P\left( X_{3} \middle| X_{2} \right)\)</span>, whereas measurements
+<span class="math notranslate nohighlight">\(Z_{t}\)</span> depend only on the state <span class="math notranslate nohighlight">\(X_{t}\)</span>, modeled by
+conditional densities <span class="math notranslate nohighlight">\(P\left( Z_{t} \middle| X_{t} \right)\)</span>.
+Given known measurements <span class="math notranslate nohighlight">\(z_{1}\)</span>, <span class="math notranslate nohighlight">\(z_{2}\)</span> and <span class="math notranslate nohighlight">\(z_{3}\)</span>
+we are interested in the hidden state sequence
+<span class="math notranslate nohighlight">\(\left( {X_{1},X_{2},X_{3}} \right)\)</span> that maximizes the posterior
+probability
+<span class="math notranslate nohighlight">\(P\left( X_{1},X_{2},X_{3} \middle| Z_{1} = z_{1},Z_{2} = z_{2},Z_{3} = z_{3} \right)\)</span>.
+Since the measurements <span class="math notranslate nohighlight">\(Z_{1}\)</span>, <span class="math notranslate nohighlight">\(Z_{2}\)</span>, and <span class="math notranslate nohighlight">\(Z_{3}\)</span>
+are <em>known</em>, the posterior is proportional to the product of six
+<strong>factors</strong>, three of which derive from the the Markov chain, and three
+likelihood factors defined as
+<span class="math notranslate nohighlight">\(L\left( {X_{t};z} \right) \propto P\left( Z_{t} = z \middle| X_{t} \right)\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[P\left( X_{1},X_{2},X_{3} \middle| Z_{1},Z_{2},Z_{3} \right) \propto P\left( X_{1} \right)P\left( X_{2} \middle| X_{1} \right)P\left( X_{3} \middle| X_{2} \right)L\left( {X_{1};z_{1}} \right)L\left( {X_{2};z_{2}} \right)L\left( {X_{3};z_{3}} \right)\]</div>
+<p><a href="#id3"><span class="problematic" id="id4">|image: 3\_Users\_dellaert\_git\_github\_doc\_images\_hmm-FG.png|</span></a> Figure
+2: An HMM with observed measurements, unrolled over time, represented as
+a factor graph.</p>
+<p>This motivates a different graphical model, a <strong>factor graph</strong>, in which
+we only represent the unknown variables <span class="math notranslate nohighlight">\(X_{1}\)</span>, <span class="math notranslate nohighlight">\(X_{2}\)</span>,
+and <span class="math notranslate nohighlight">\(X_{3}\)</span>, connected to factors that encode probabilistic
+information on them, as in Figure <a class="reference external" href="#fig_HMM_FG">2</a>. To do maximum
+a-posteriori (MAP) inference, we then maximize the product</p>
+<div class="math notranslate nohighlight">
+\[f\left( {X_{1},X_{2},X_{3}} \right) = \prod f_{i}\left( \mathcal{X}_{i} \right)\]</div>
+<p>i.e., the value of the factor graph. It should be clear from the
+figure that the connectivity of a factor graph encodes, for each factor
+<span class="math notranslate nohighlight">\(f_{i}\)</span>, which subset of variables <span class="math notranslate nohighlight">\(\mathcal{X}_{i}\)</span> it
+depends on. In the examples below, we use factor graphs to model more
+complex MAP inference problems in robotics.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Overview.html" class="btn btn-neutral float-left" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ModelingRobotMotion.html" class="btn btn-neutral float-right" title="Modeling Robot Motion" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, The GTSAM authors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
