@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Creating new factor and variable types &mdash; GTSAM 4.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=a084f797"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            GTSAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installing.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Building.html">Building</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Bindings.html">Bindings</a></li>
+<li class="toctree-l1"><a class="reference external" href="_static/doxygen/html/modules.html#http://">C++ API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GTSAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Creating new factor and variable types</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/TutorialCreateNewFactor.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="creating-new-factor-and-variable-types">
+<h1>Creating new factor and variable types<a class="headerlink" href="#creating-new-factor-and-variable-types" title="Link to this heading"></a></h1>
+<p>GTSAM comes with a set of variable and factor types typically used in SFM and
+SLAM.  Geometry variables such as points and poses are in the geometry
+subdirectory and module.  Factors such as BetweenFactor and BearingFactor are in
+the gtsam/slam directory.</p>
+<p>To use GTSAM to solve your own problems, you will often have to create new factor
+types, which derive either from NonlinearFactor or NoiseModelFactor, or one of
+their derived types.  Here is an outline of the options:</p>
+<ul class="simple">
+<li><p>The number of variables your factor involves is &lt;b&gt;unknown&lt;/b&gt; at compile time - derive from NoiseModelFactor and implement NoiseModelFactor::unwhitenedError()</p>
+<ul>
+<li><p>This is a factor expressing the sum-of-squares error between a measurement f$ z f$ and a measurement prediction function f$ h(x) f$, on which the errors are expected to follow some distribution specified by a noise model (see noiseModel).</p></li>
+</ul>
+</li>
+<li><p>The number of variables your factor involves is &lt;b&gt;known&lt;/b&gt; at compile time and is between 1 and 6 - derive from NoiseModelFactor1, NoiseModelFactor2, NoiseModelFactor3, NoiseModelFactor4, NoiseModelFactor5, or NoiseModelFactor6, and implement &lt;b&gt;c evaluateError()&lt;/b&gt;</p>
+<ul>
+<li><p>This factor expresses the same sum-of-squares error with a noise model, but makes the implementation task slightly easier than with %NoiseModelFactor.</p></li>
+</ul>
+</li>
+<li><p>Derive from NonlinearFactor</p>
+<ul>
+<li><p>This is more advanced and allows creating factors without an explicit noise model, or that linearize to HessianFactor instead of JacobianFactor.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, The GTSAM authors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

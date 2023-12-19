@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iSAM: Incremental Smoothing and Mapping &mdash; GTSAM 4.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=a084f797"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="More Applications" href="MoreApplications.html" />
+    <link rel="prev" title="Structure from Motion" href="StructureFromMotion.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            GTSAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installing.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Building.html">Building</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="Tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Overview.html">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="FactorGraphs.html">Factor Graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ModelingRobotMotion.html">Modeling Robot Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="RobotLocalization.html">Robot Localization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PoseSLAM.html">PoseSLAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LandmarkBasedSLAM.html">Landmark-based SLAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="StructureFromMotion.html">Structure from Motion</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">iSAM: Incremental Smoothing and Mapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MoreApplications.html">More Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CppExamples.html">C++ Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PythonExamples.html">Python Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MatlabExamples.html">Matlab Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Bindings.html">Bindings</a></li>
+<li class="toctree-l1"><a class="reference external" href="_static/doxygen/html/modules.html#http://">C++ API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GTSAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">iSAM: Incremental Smoothing and Mapping</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/iSAM.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="isam-incremental-smoothing-and-mapping">
+<h1>iSAM: Incremental Smoothing and Mapping<a class="headerlink" href="#isam-incremental-smoothing-and-mapping" title="Link to this heading"></a></h1>
+<p>GTSAM provides an incremental inference algorithm based on a more
+advanced graphical model, the Bayes tree, which is kept up to date by
+the <strong>iSAM</strong> algorithm (incremental Smoothing and Mapping, see <a class="reference external" href="#LyXCite-Kaess08tro">Kaess et
+al.</a> (2008); <a class="reference external" href="#LyXCite-Kaess12ijrr">Kaess et
+al.</a> (2012) for an in-depth treatment). For
+mobile robots operating in real-time it is important to have access to
+an updated map as soon as new sensor measurements come in. iSAM keeps
+the map up-to-date in an efficient manner.</p>
+<p>Listing <a class="reference external" href="#listing_iSAMExample">7</a> shows how to use iSAM in a simple
+visual SLAM example. In line 1-2 we create a <strong>*NonlinearISAM*</strong> object
+which will relinearize and reorder the variables every 3 steps. The
+corect value for this parameter depends on how non-linear your problem
+is and how close you want to be to gold-standard solution at every step.
+In iSAM 2.0, this parameter is not needed, as iSAM2 automatically
+determines when linearization is needed and for which variables.</p>
+<p>The example involves eight 3D points that are seen from eight successive
+camera poses. Hence in the first step -which is omitted here- all eight
+landmarks and the first pose are properly initialized. In the code this
+is done by perturbing the known ground truth, but in a real application
+great care is needed to properly initialize poses and landmarks,
+especially in a monocular sequence.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">relinearizeInterval</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="n">NonlinearISAM</span> <span class="n">isam</span><span class="p">(</span><span class="n">relinearizeInterval</span><span class="p">);</span>
+
+<span class="o">//</span> <span class="o">...</span> <span class="n">first</span> <span class="n">frame</span> <span class="n">initialization</span> <span class="n">omitted</span> <span class="o">...</span>
+
+<span class="o">//</span> <span class="n">Loop</span> <span class="n">over</span> <span class="n">the</span> <span class="n">different</span> <span class="n">poses</span><span class="p">,</span> <span class="n">adding</span> <span class="n">the</span> <span class="n">observations</span> <span class="n">to</span> <span class="n">iSAM</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">poses</span><span class="o">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="o">//</span> <span class="n">Add</span> <span class="n">factors</span> <span class="k">for</span> <span class="n">each</span> <span class="n">landmark</span> <span class="n">observation</span>
+  <span class="n">NonlinearFactorGraph</span> <span class="n">graph</span><span class="p">;</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">size_t</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">points</span><span class="o">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">j</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+      <span class="n">GenericProjectionFactor</span><span class="o">&lt;</span><span class="n">Pose3</span><span class="p">,</span> <span class="n">Point3</span><span class="p">,</span> <span class="n">Cal3_S2</span><span class="o">&gt;</span>
+        <span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">],</span> <span class="n">noise</span><span class="p">,</span><span class="n">Symbol</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">),</span> <span class="n">Symbol</span><span class="p">(</span><span class="s1">&#39;l&#39;</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="n">K</span><span class="p">)</span>
+    <span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="o">//</span> <span class="n">Add</span> <span class="n">an</span> <span class="n">initial</span> <span class="n">guess</span> <span class="k">for</span> <span class="n">the</span> <span class="n">current</span> <span class="n">pose</span>
+  <span class="n">Values</span> <span class="n">initialEstimate</span><span class="p">;</span>
+  <span class="n">initialEstimate</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">Symbol</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">),</span> <span class="n">initial_x</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+
+  <span class="o">//</span> <span class="n">Update</span> <span class="n">iSAM</span> <span class="k">with</span> <span class="n">the</span> <span class="n">new</span> <span class="n">factors</span>
+  <span class="n">isam</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">initialEstimate</span><span class="p">);</span>
+ <span class="p">}</span>
+</pre></div>
+</div>
+<p>The remainder of the code illustrates a typical iSAM loop:</p>
+<ol class="arabic simple">
+<li><p>Create factors for new measurements. Here, in lines 9-18, a small
+<strong>*NonlinearFactorGraph*</strong> is created to hold the new factors of type
+<strong>*GenericProjectionFactor&lt;Pose3, Point3, Cal3_S2&gt;*</strong>.</p></li>
+<li><p>Create an initial estimate for all newly introduced variables. In
+this small example, all landmarks have been observed in frame 1 and
+hence the only new variable that needs to be initialized at each time
+step is the new pose. This is done in lines 20-22. Note we assume a
+good initial estimate is available as <em>initial_x[i]</em>.</p></li>
+<li><p>Finally, we call <em>isam.update()</em>, which takes the factors and initial
+estimates, and incrementally updates the solution, which is available
+through the method <em>isam.estimate()</em>, if desired.</p></li>
+</ol>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="StructureFromMotion.html" class="btn btn-neutral float-left" title="Structure from Motion" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="MoreApplications.html" class="btn btn-neutral float-right" title="More Applications" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, The GTSAM authors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

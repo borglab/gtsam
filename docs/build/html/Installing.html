@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installing &mdash; GTSAM 4.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=a084f797"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Building" href="Building.html" />
+    <link rel="prev" title="GTSAM" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            GTSAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#importing-gtsam-in-your-projects">Importing GTSAM in your projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#write-your-first-gtsam-program">Write your first GTSAM program</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Building.html">Building</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Bindings.html">Bindings</a></li>
+<li class="toctree-l1"><a class="reference external" href="_static/doxygen/html/modules.html#http://">C++ API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GTSAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Installing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installing">
+<h1>Installing<a class="headerlink" href="#installing" title="Link to this heading"></a></h1>
+<section id="getting-started">
+<h2>Getting started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h2>
+<p>In the root library folder execute:</p>
+
+<div class="language-plaintext highlighter-rouge">
+  <div class="highlight"><pre class="highlight">
+    #!bash
+    $ mkdir build
+    $ cd build
+    $ cmake ..
+    $ make check (optional, runs unit tests)
+    $ make install
+</pre></div></div>
+
+<p>Prerequisites:</p>
+<ul>
+  <li><a href="http://www.boost.org/users/download/">Boost</a> &gt;= 1.43 (Ubuntu: <code class="language-plaintext highlighter-rouge">sudo apt-get install libboost-all-dev</code>)</li>
+  <li><a href="http://www.cmake.org/cmake/resources/software.html">CMake</a> &gt;= 3.0 (Ubuntu: <code class="language-plaintext highlighter-rouge">sudo apt-get install cmake</code>)</li>
+  <li>A modern compiler, i.e., at least gcc 4.7.3 on Linux.</li>
+</ul>
+</p>
+
+<ul>
+  <li><a href="http://www.threadingbuildingblocks.org/">Intel Threaded Building Blocks (TBB)</a> (Ubuntu: <code class="language-plaintext highlighter-rouge">sudo apt-get install libtbb-dev</code>)</li>
+  <li><a href="http://software.intel.com/en-us/intel-mkl">Intel Math Kernel Library (MKL)</a> (Ubuntu: <a href="https://software.intel.com/en-us/articles/installing-intel-free-libs-and-python-apt-repo">installing using APT</a>)
+    <ul>
+      <li>See <a href="/build/">Build</a> for more installation information</li>
+      <li>Note that MKL may not provide a speedup in all cases. Make sure to benchmark your problem with and without MKL.</li>
+    </ul>
+  </li>
+</ul>
+
+</section>
+<section id="importing-gtsam-in-your-projects">
+  <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+    <div itemprop="articleBody">
+<h1>Importing GTSAM in your projects<a class="headerlink" href="#importing-gtsam-in-your-projects" title="Link to this heading"></a></h1>
+<h2 id="install-gtsam-from-ubuntu-ppa">Install GTSAM from Ubuntu PPA</h2>
+
+<p>GTSAM can be installed on Ubuntu via <a href="https://launchpad.net/~borglab">these PPA repositories</a> as well.
+At present (Nov 2020), packages for Xenial (u16.04), Bionic (u18.04), and Focal (u20.04) are published.</p>
+
+<h4 id="add-ppa-for-gtsam-nightly-builds-develop-branch">Add PPA for GTSAM nightly builds (develop branch)</h4>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><span class="c"># Add PPA</span>
+<span class="nb">sudo </span>add-apt-repository ppa:borglab/gtsam-develop
+<span class="nb">sudo </span>apt update  <span class="c"># not necessary since Bionic</span>
+<span class="c"># Install:</span>
+<span class="nb">sudo </span>apt <span class="nb">install </span>libgtsam-dev libgtsam-unstable-dev
+</pre></div></div>
+
+<h4 id="add-ppa-for-the-latest-gtsam-4x-stable-release">Add PPA for the latest GTSAM 4.x stable release</h4>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><span class="c"># Add PPA</span>
+<span class="nb">sudo </span>add-apt-repository ppa:borglab/gtsam-release-4.0
+<span class="nb">sudo </span>apt update  <span class="c"># not necessary since Bionic</span>
+<span class="c"># Install:</span>
+<span class="nb">sudo </span>apt <span class="nb">install </span>libgtsam-dev libgtsam-unstable-dev
+</pre></div></div>
+
+<h2 id="install-gtsam-from-arch-linux-aur">Install GTSAM from Arch Linux AUR</h2>
+
+<p>Note: Installing GTSAM on Arch Linux is not tested by the GTSAM developers.</p>
+
+<p>GTSAM is available in the Arch User Repository
+(<a href="https://wiki.archlinux.org/index.php/Arch_User_Repository">AUR</a>) as
+<a href="https://aur.archlinux.org/packages/gtsam/"><code class="language-plaintext highlighter-rouge">gtsam</code></a>.</p>
+
+<p>Note you can manually install the package by following the instructions on the
+<a href="https://wiki.archlinux.org/index.php/Arch_User_Repository#Installing_packages">Arch Wiki</a>
+or use an <a href="https://wiki.archlinux.org/index.php/AUR_helpers">AUR helper</a> like
+<a href="https://aur.archlinux.org/packages/yay/"><code class="language-plaintext highlighter-rouge">yay</code></a>
+(recommended for ease of install).</p>
+
+<p>It is also recommended to use the
+<a href="https://wiki.archlinux.org/index.php/Unofficial_user_repositories#arch4edu">arch4edu</a>
+repository. They are hosting many packages related to education and research,
+including robotics such as ROS. Adding a repository allows for you to install
+binaries of packages, instead of compiling them from source.
+This will greatly speed up your installation time. Visit <a href="https://github.com/arch4edu/arch4edu/wiki/Add-arch4edu-to-your-Archlinux">here</a> to add and use arch4edu.</p>
+
+<h4 id="install-gtsam">Install GTSAM</h4>
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>yay <span class="nt">-S</span> gtsam
+</code></pre></div></div>
+
+<p>or</p>
+
+<h4 id="install-gtsam-with-intel-accelerations">Install GTSAM with Intel Accelerations</h4>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>yay <span class="nt">-S</span> gtsam-mkl
+</code></pre></div></div>
+
+<p>To discuss any issues related to this package refer to the comments section on
+the AUR page of <code class="language-plaintext highlighter-rouge">gtsam</code> <a href="https://aur.archlinux.org/packages/gtsam/">here</a>.</p>
+
+  </div>
+</div>
+</section>
+<section id="write-your-first-gtsam-program">
+<h2>Write your first GTSAM program<a class="headerlink" href="#write-your-first-gtsam-program" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="GTSAM" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Building.html" class="btn btn-neutral float-right" title="Building" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, The GTSAM authors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

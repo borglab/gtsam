@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Robot Localization &mdash; GTSAM 4.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=a084f797"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PoseSLAM" href="PoseSLAM.html" />
+    <link rel="prev" title="Modeling Robot Motion" href="ModelingRobotMotion.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            GTSAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installing.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Building.html">Building</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="Tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Overview.html">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="FactorGraphs.html">Factor Graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ModelingRobotMotion.html">Modeling Robot Motion</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Robot Localization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#unary-measurement-factors">Unary Measurement Factors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#defining-custom-factors">Defining Custom Factors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-custom-factors">Using Custom Factors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#full-posterior-inference">Full Posterior Inference</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="PoseSLAM.html">PoseSLAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LandmarkBasedSLAM.html">Landmark-based SLAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="StructureFromMotion.html">Structure from Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="iSAM.html">iSAM: Incremental Smoothing and Mapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MoreApplications.html">More Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CppExamples.html">C++ Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PythonExamples.html">Python Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MatlabExamples.html">Matlab Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Bindings.html">Bindings</a></li>
+<li class="toctree-l1"><a class="reference external" href="_static/doxygen/html/modules.html#http://">C++ API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GTSAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Robot Localization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/RobotLocalization.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="robot-localization">
+<h1>Robot Localization<a class="headerlink" href="#robot-localization" title="Link to this heading"></a></h1>
+<section id="unary-measurement-factors">
+<h2>Unary Measurement Factors<a class="headerlink" href="#unary-measurement-factors" title="Link to this heading"></a></h2>
+<p>In this section we add measurements to the factor graph that will help
+us actually <em>localize</em> the robot over time. The example also serves as a
+tutorial on creating new factor types.</p>
+<p><a href="#id1"><span class="problematic" id="id2">|image: 5\_Users\_dellaert\_git\_github\_doc\_images\_FactorGraph2.png|</span></a>
+Figure 4: Robot localization factor graph with unary measurement factors
+at each time step.</p>
+<p>In particular, we use <strong>unary measurement factors</strong> to handle external
+measurements. The example from Section <a class="reference external" href="#sec_Robot_Localization">2</a>
+is not very useful on a real robot, because it only contains factors
+corresponding to odometry measurements. These are imperfect and will
+lead to quickly accumulating uncertainty on the last robot pose, at
+least in the absence of any external measurements (see Section
+<a class="reference external" href="#subsec_Full_Posterior_Inference">2.5</a>). Figure
+<a class="reference external" href="#fig_LocalizationFG">4</a> shows a new factor graph where the prior
+<span class="math notranslate nohighlight">\(f_{0}\left( x_{1} \right)\)</span> is omitted and instead we added three
+unary factors <span class="math notranslate nohighlight">\(f_{1}\left( {x_{1};z_{1}} \right)\)</span>,
+<span class="math notranslate nohighlight">\(f_{2}\left( {x_{2};z_{2}} \right)\)</span>, and
+<span class="math notranslate nohighlight">\(f_{3}\left( {x_{3};z_{3}} \right)\)</span>, one for each localization
+measurement <span class="math notranslate nohighlight">\(z_{t}\)</span>, respectively. Such unary factors are
+applicable for measurements <span class="math notranslate nohighlight">\(z_{t}\)</span> that depend <em>only</em> on the
+current robot pose, e.g., GPS readings, correlation of a laser
+range-finder in a pre-existing map, or indeed the presence of absence of
+ceiling lights (see <a class="reference external" href="#LyXCite-Dellaert99b">Dellaert et al.</a> (1999)
+for that amusing example).</p>
+</section>
+<section id="defining-custom-factors">
+<h2>Defining Custom Factors<a class="headerlink" href="#defining-custom-factors" title="Link to this heading"></a></h2>
+<p>In GTSAM, you can create custom unary factors by deriving a new class
+from the built-in class <strong>*NoiseModelFactor1&lt;T&gt;*</strong>, which implements a
+unary factor corresponding to a measurement likelihood with a Gaussian
+noise model,
+<span class="math notranslate nohighlight">\(L\left( q;m \right)\operatorname{=\ exp}\left\{ - \frac{1}{2}{||h\left( q \right) - m||}_{\Sigma}^{2} \right\} = f\left( q \right)\)</span>
+where <span class="math notranslate nohighlight">\(m\)</span> is the measurement, <span class="math notranslate nohighlight">\(q\)</span> is the unknown variable,
+<span class="math notranslate nohighlight">\(h\left( q \right)\)</span> is a (possibly nonlinear) measurement
+function, and <span class="math notranslate nohighlight">\(\Sigma\)</span> is the noise covariance. Note that
+<span class="math notranslate nohighlight">\(m\)</span> is considered <em>known</em> above, and the likelihood
+<span class="math notranslate nohighlight">\(L\left( {q;m} \right)\)</span> will only ever be evaluated as a function
+of <span class="math notranslate nohighlight">\(q\)</span>, which explains why it is a unary factor
+<span class="math notranslate nohighlight">\(f\left( q \right)\)</span>. It is always the unknown variable <span class="math notranslate nohighlight">\(q\)</span>
+that is either likely or unlikely, given the measurement.</p>
+<p><strong>Note:</strong> many people get this backwards, often misled by the
+conditional density notation <span class="math notranslate nohighlight">\(P\left( m \middle| q \right)\)</span>. In
+fact, the likelihood <span class="math notranslate nohighlight">\(L\left( {q;m} \right)\)</span> is <em>defined</em> as any
+function of <span class="math notranslate nohighlight">\(q\)</span> proportional to
+<span class="math notranslate nohighlight">\(P\left( m \middle| q \right)\)</span>.</p>
+<p>Listing <a class="reference external" href="#listing_LocalizationFactor">3.2</a> shows an example on how to
+define the custom factor class <strong>*UnaryFactor*</strong> which implements a
+“GPS-like” measurement likelihood:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">UnaryFactor</span><span class="p">:</span> <span class="n">public</span> <span class="n">NoiseModelFactor1</span><span class="o">&lt;</span><span class="n">Pose2</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="n">double</span> <span class="n">mx_</span><span class="p">,</span> <span class="n">my_</span><span class="p">;</span> <span class="o">///&lt;</span> <span class="n">X</span> <span class="ow">and</span> <span class="n">Y</span> <span class="n">measurements</span>
+
+<span class="n">public</span><span class="p">:</span>
+  <span class="n">UnaryFactor</span><span class="p">(</span><span class="n">Key</span> <span class="n">j</span><span class="p">,</span> <span class="n">double</span> <span class="n">x</span><span class="p">,</span> <span class="n">double</span> <span class="n">y</span><span class="p">,</span> <span class="n">const</span> <span class="n">SharedNoiseModel</span><span class="o">&amp;</span> <span class="n">model</span><span class="p">):</span>
+    <span class="n">NoiseModelFactor1</span><span class="o">&lt;</span><span class="n">Pose2</span><span class="o">&gt;</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="n">mx_</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">my_</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="p">{}</span>
+
+  <span class="n">Vector</span> <span class="n">evaluateError</span><span class="p">(</span><span class="n">const</span> <span class="n">Pose2</span><span class="o">&amp;</span> <span class="n">q</span><span class="p">,</span>
+                       <span class="n">boost</span><span class="p">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Matrix</span><span class="o">&amp;&gt;</span> <span class="n">H</span> <span class="o">=</span> <span class="n">boost</span><span class="p">::</span><span class="n">none</span><span class="p">)</span> <span class="n">const</span>
+  <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">H</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="n">H</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">Matrix</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">&lt;&lt;</span> <span class="mf">1.0</span><span class="p">,</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span><span class="mf">1.0</span><span class="p">,</span><span class="mf">0.0</span><span class="p">)</span><span class="o">.</span><span class="n">finished</span><span class="p">();</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">Vector</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">q</span><span class="o">.</span><span class="n">x</span><span class="p">()</span> <span class="o">-</span> <span class="n">mx_</span><span class="p">,</span> <span class="n">q</span><span class="o">.</span><span class="n">y</span><span class="p">()</span> <span class="o">-</span> <span class="n">my_</span><span class="p">)</span><span class="o">.</span><span class="n">finished</span><span class="p">();</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>In defining the derived class on line 1, we provide the template
+argument <strong>*Pose2*</strong> to indicate the type of the variable <span class="math notranslate nohighlight">\(q\)</span>,
+whereas the measurement is stored as the instance variables <strong>*mx_*</strong>
+and <strong>*my_*</strong>, defined on line 2. The constructor on lines 5-6 simply
+passes on the variable key <span class="math notranslate nohighlight">\(j\)</span> and the noise model to the
+superclass, and stores the measurement values provided. The most
+important function to has be implemented by every factor class is
+<strong>*evaluateError*</strong>, which should return
+<span class="math notranslate nohighlight">\(E\left( q \right) = {h\left( q \right) - m}\)</span> which is done on
+line 12. Importantly, because we want to use this factor for nonlinear
+optimization (see e.g., <a class="reference external" href="#LyXCite-Dellaert06ijrr">Dellaert and Kaess
+2006</a> for details), whenever the optional
+argument <span class="math notranslate nohighlight">\(H\)</span> is provided, a <strong>*Matrix*</strong> reference, the function
+should assign the <strong>Jacobian</strong> of <span class="math notranslate nohighlight">\(h\left( q \right)\)</span> to it,
+evaluated at the provided value for <span class="math notranslate nohighlight">\(q\)</span>. This is done for this
+example on line 11. In this case, the Jacobian of the 2-dimensional
+function <span class="math notranslate nohighlight">\(h\)</span>, which just returns the position of the robot,</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}h\left( q \right) = \left\lbrack \begin{array}{l}
+q_{x} \\
+q_{y} \\
+\end{array} \right\rbrack\end{split}\]</div>
+<p>with respect the 3-dimensional pose
+<span class="math notranslate nohighlight">\(q = \left( {q_{x},q_{y},q_{\theta}} \right)\)</span>, yields the
+following simple <span class="math notranslate nohighlight">\(2 \times 3\)</span> matrix:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}H = \left\lbrack \begin{array}{lll}
+1 &amp; 0 &amp; 0 \\
+0 &amp; 1 &amp; 0 \\
+\end{array} \right\rbrack\end{split}\]</div>
+</section>
+<section id="using-custom-factors">
+<h2>Using Custom Factors<a class="headerlink" href="#using-custom-factors" title="Link to this heading"></a></h2>
+<p>The following C++ code fragment illustrates how to create and add custom
+factors to a factor graph:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">//</span> <span class="n">add</span> <span class="n">unary</span> <span class="n">measurement</span> <span class="n">factors</span><span class="p">,</span> <span class="n">like</span> <span class="n">GPS</span><span class="p">,</span> <span class="n">on</span> <span class="nb">all</span> <span class="n">three</span> <span class="n">poses</span>
+<span class="n">noiseModel</span><span class="p">::</span><span class="n">Diagonal</span><span class="p">::</span><span class="n">shared_ptr</span> <span class="n">unaryNoise</span> <span class="o">=</span>
+ <span class="n">noiseModel</span><span class="p">::</span><span class="n">Diagonal</span><span class="p">::</span><span class="n">Sigmas</span><span class="p">(</span><span class="n">Vector2</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">));</span> <span class="o">//</span> <span class="mi">10</span><span class="n">cm</span> <span class="n">std</span> <span class="n">on</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">boost</span><span class="p">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">UnaryFactor</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">unaryNoise</span><span class="p">));</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">boost</span><span class="p">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">UnaryFactor</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">unaryNoise</span><span class="p">));</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">boost</span><span class="p">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">UnaryFactor</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">unaryNoise</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>In Listing <a class="reference external" href="#listing_LocalizationExample2">3.3</a>, we create the noise
+model on line 2-3, which now specifies two standard deviations on the
+measurements <span class="math notranslate nohighlight">\(m_{x}\)</span> and <span class="math notranslate nohighlight">\(m_{y}\)</span>. On lines 4-6 we create
+<strong>*shared_ptr*</strong> versions of three newly created <strong>*UnaryFactor*</strong>
+instances, and add them to graph. GTSAM uses shared pointers to refer to
+factors in factor graphs, and <strong>*boost::make_shared*</strong> is a convenience
+function to simultaneously construct a class and create a
+<strong>*shared_ptr*</strong> to it. We obtain the factor graph from Figure
+<a class="reference external" href="#fig_LocalizationFG">4</a>.</p>
+</section>
+<section id="full-posterior-inference">
+<h2>Full Posterior Inference<a class="headerlink" href="#full-posterior-inference" title="Link to this heading"></a></h2>
+<p>The three GPS factors are enough to fully constrain all unknown poses
+and tie them to a “global” reference frame, including the three unknown
+orientations. If not, GTSAM would have exited with a singular matrix
+exception. The marginals can be recovered exactly as in Section
+<a class="reference external" href="#subsec_Full_Posterior_Inference">2.5</a>, and the solution and
+marginal covariances are now given by the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Final</span> <span class="n">Result</span><span class="p">:</span>
+<span class="n">Values</span> <span class="k">with</span> <span class="mi">3</span> <span class="n">values</span><span class="p">:</span>
+<span class="n">Value</span> <span class="mi">1</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mf">1.5e-14</span><span class="p">,</span> <span class="mf">1.3e-15</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.4e-16</span><span class="p">)</span>
+<span class="n">Value</span> <span class="mi">2</span><span class="p">:</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">3.1e-16</span><span class="p">,</span> <span class="o">-</span><span class="mf">8.5e-17</span><span class="p">)</span>
+<span class="n">Value</span> <span class="mi">3</span><span class="p">:</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mf">6e-16</span><span class="p">,</span> <span class="o">-</span><span class="mf">8.2e-17</span><span class="p">)</span>
+
+<span class="n">x1</span> <span class="n">covariance</span><span class="p">:</span>
+      <span class="mf">0.0083</span>      <span class="mf">4.3e-19</span>     <span class="o">-</span><span class="mf">1.1e-18</span>
+     <span class="mf">4.3e-19</span>       <span class="mf">0.0094</span>      <span class="o">-</span><span class="mf">0.0031</span>
+    <span class="o">-</span><span class="mf">1.1e-18</span>      <span class="o">-</span><span class="mf">0.0031</span>       <span class="mf">0.0082</span>
+<span class="n">x2</span> <span class="n">covariance</span><span class="p">:</span>
+      <span class="mf">0.0071</span>      <span class="mf">2.5e-19</span>     <span class="o">-</span><span class="mf">3.4e-19</span>
+     <span class="mf">2.5e-19</span>       <span class="mf">0.0078</span>      <span class="o">-</span><span class="mf">0.0011</span>
+    <span class="o">-</span><span class="mf">3.4e-19</span>      <span class="o">-</span><span class="mf">0.0011</span>       <span class="mf">0.0082</span>
+<span class="n">x3</span> <span class="n">covariance</span><span class="p">:</span>
+     <span class="mf">0.0083</span>     <span class="mf">4.4e-19</span>     <span class="mf">1.2e-18</span>
+    <span class="mf">4.4e-19</span>      <span class="mf">0.0094</span>      <span class="mf">0.0031</span>
+    <span class="mf">1.2e-18</span>      <span class="mf">0.0031</span>       <span class="mf">0.018</span>
+</pre></div>
+</div>
+<p>Comparing this with the covariance matrices in Section
+<a class="reference external" href="#subsec_Full_Posterior_Inference">2.5</a>, we can see that the
+uncertainty no longer grows without bounds as measurement uncertainty
+accumulates. Instead, the “GPS” measurements more or less constrain the
+poses evenly, as expected.</p>
+<p><a href="#id3"><span class="problematic" id="id4">|image: 6\_Users\_dellaert\_git\_github\_doc\_images\_Odometry.png|</span></a></p>
+<p>Sub-Figure a: Odometry marginals</p>
+<p>Figure 5: Comparing the marginals resulting from the “odometry” factor
+graph in Figure <a class="reference external" href="#fig_OdometryFG">3</a> and the “localization” factor
+graph in Figure <a class="reference external" href="#fig_LocalizationFG">4</a>.</p>
+<p><a href="#id5"><span class="problematic" id="id6">|image: 7\_Users\_dellaert\_git\_github\_doc\_images\_Localization.png|</span></a></p>
+<p>Sub-Figure b: Localization Marginals</p>
+<p>It helps a lot when we view this graphically, as in Figure
+<a class="reference external" href="#fig_CompareMarginals">5</a>, where I show the marginals on position as
+covariance ellipses that contain 68.26% of all probability mass. For the
+odometry marginals, it is immediately apparent from the figure that (1)
+the uncertainty on pose keeps growing, and (2) the uncertainty on
+angular odometry translates into increasing uncertainty on y. The
+localization marginals, in contrast, are constrained by the unary
+factors and are all much smaller. In addition, while less apparent, the
+uncertainty on the middle pose is actually smaller as it is constrained
+by odometry from two sides.</p>
+<p>You might now be wondering how we produced these figures. The answer is
+via the MATLAB interface of GTSAM, which we will demonstrate in the next
+section.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ModelingRobotMotion.html" class="btn btn-neutral float-left" title="Modeling Robot Motion" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="PoseSLAM.html" class="btn btn-neutral float-right" title="PoseSLAM" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, The GTSAM authors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

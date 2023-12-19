@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Structure from Motion &mdash; GTSAM 4.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=a084f797"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="iSAM: Incremental Smoothing and Mapping" href="iSAM.html" />
+    <link rel="prev" title="Landmark-based SLAM" href="LandmarkBasedSLAM.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            GTSAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installing.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Building.html">Building</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="Tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Overview.html">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="FactorGraphs.html">Factor Graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ModelingRobotMotion.html">Modeling Robot Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="RobotLocalization.html">Robot Localization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PoseSLAM.html">PoseSLAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LandmarkBasedSLAM.html">Landmark-based SLAM</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Structure from Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="iSAM.html">iSAM: Incremental Smoothing and Mapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MoreApplications.html">More Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CppExamples.html">C++ Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PythonExamples.html">Python Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MatlabExamples.html">Matlab Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Bindings.html">Bindings</a></li>
+<li class="toctree-l1"><a class="reference external" href="_static/doxygen/html/modules.html#http://">C++ API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GTSAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Structure from Motion</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/StructureFromMotion.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="structure-from-motion">
+<h1>Structure from Motion<a class="headerlink" href="#structure-from-motion" title="Link to this heading"></a></h1>
+<p><a href="#id1"><span class="problematic" id="id2">|image: 16\_Users\_dellaert\_git\_github\_doc\_images\_cube.png|</span></a> Figure
+14: An optimized “Structure from Motion” with 10 cameras arranged in a
+circle, observing the 8 vertices of a <span class="math notranslate nohighlight">\(20 \times 20 \times 20\)</span>
+cube centered around the origin. The camera is rendered with color-coded
+axes, (RGB for XYZ) and the viewing direction is is along the positive
+Z-axis. Also shown are the 3D error covariance ellipses for both cameras
+and points.</p>
+<p><strong>Structure from Motion</strong> (SFM) is a technique to recover a 3D
+reconstruction of the environment from corresponding visual features in
+a collection of <em>unordered</em> images, see Figure <a class="reference external" href="#fig_SFMExample">14</a>.
+In GTSAM this is done using exactly the same factor graph framework,
+simply using SFM-specific measurement factors. In particular, there is a
+<strong>projection factor</strong> that calculates the reprojection error
+<span class="math notranslate nohighlight">\(f\left( {x_{i},p_{j};z_{ij},K} \right)\)</span> for a given camera pose
+<span class="math notranslate nohighlight">\(x_{i}\)</span> (a <strong>*Pose3*</strong>) and point <span class="math notranslate nohighlight">\(p_{j}\)</span> (a <strong>*Point3*</strong>).
+The factor is parameterized by the 2D measurement <span class="math notranslate nohighlight">\(z_{ij}\)</span> (a
+<strong>*Point2*</strong>), and known calibration parameters <span class="math notranslate nohighlight">\(K\)</span> (of type
+<strong>*Cal3_S2*</strong>). The following listing shows how to create the factor
+graph:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">%%</span> <span class="n">Add</span> <span class="n">factors</span> <span class="k">for</span> <span class="nb">all</span> <span class="n">measurements</span>
+<span class="n">noise</span> <span class="o">=</span> <span class="n">noiseModel</span><span class="o">.</span><span class="n">Isotropic</span><span class="o">.</span><span class="n">Sigma</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">measurementNoiseSigma</span><span class="p">);</span>
+<span class="k">for</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">:</span><span class="n">length</span><span class="p">(</span><span class="n">Z</span><span class="p">),</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="o">=</span> <span class="mi">1</span><span class="p">:</span><span class="n">length</span><span class="p">(</span><span class="n">Z</span><span class="p">{</span><span class="n">i</span><span class="p">})</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">J</span><span class="p">{</span><span class="n">i</span><span class="p">}{</span><span class="n">k</span><span class="p">};</span>
+        <span class="n">G</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">GenericProjectionFactorCal3_S2</span><span class="p">(</span>
+              <span class="n">Z</span><span class="p">{</span><span class="n">i</span><span class="p">}{</span><span class="n">k</span><span class="p">},</span> <span class="n">noise</span><span class="p">,</span> <span class="n">symbol</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">),</span> <span class="n">symbol</span><span class="p">(</span><span class="s1">&#39;p&#39;</span><span class="p">,</span> <span class="n">j</span><span class="p">),</span> <span class="n">K</span><span class="p">));</span>
+    <span class="n">end</span>
+<span class="n">end</span>
+</pre></div>
+</div>
+<p>In Listing <a class="reference external" href="#listing_SFMExample">6</a>, assuming that the factor graph
+was already created, we add measurement factors in the double loop. We
+loop over images with index <span class="math notranslate nohighlight">\(i\)</span>, and in this example the data is
+given as two cell arrays: Z{i} specifies a set of measurements
+<span class="math notranslate nohighlight">\(z_{k}\)</span> in image <span class="math notranslate nohighlight">\(i\)</span>, and J{i} specifies the corresponding
+point index. The specific factor type we use is a
+<strong>*GenericProjectionFactorCal3_S2*</strong>, which is the MATLAB equivalent of
+the C++ class <strong>*GenericProjectionFactor&lt;Cal3_S2&gt;*</strong>, where
+<strong>*Cal3_S2*</strong> is the camera calibration type we choose to use (the
+standard, no-radial distortion, 5 parameter calibration matrix). As
+before landmark-based SLAM (Section <a class="reference external" href="#sec_Landmark_based_SLAM">5</a>),
+here we use symbol keys except we now use the character ‘p’ to denote
+points, rather than ‘l’ for landmark.</p>
+<p>Important note: a very tricky and difficult part of making SFM work is
+(a) data association, and (b) initialization. GTSAM does neither of
+these things for you: it simply provides the “bundle adjustment”
+optimization. In the example, we simply assume the data association is
+known (it is encoded in the J sets), and we initialize with the ground
+truth, as the intent of the example is simply to show you how to set up
+the optimization problem.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="LandmarkBasedSLAM.html" class="btn btn-neutral float-left" title="Landmark-based SLAM" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="iSAM.html" class="btn btn-neutral float-right" title="iSAM: Incremental Smoothing and Mapping" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, The GTSAM authors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

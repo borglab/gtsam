@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>More Applications &mdash; GTSAM 4.0.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=a084f797"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="C++ Examples" href="CppExamples.html" />
+    <link rel="prev" title="iSAM: Incremental Smoothing and Mapping" href="iSAM.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            GTSAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installing.html">Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Building.html">Building</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="Tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Overview.html">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="FactorGraphs.html">Factor Graphs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ModelingRobotMotion.html">Modeling Robot Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="RobotLocalization.html">Robot Localization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PoseSLAM.html">PoseSLAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LandmarkBasedSLAM.html">Landmark-based SLAM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="StructureFromMotion.html">Structure from Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="iSAM.html">iSAM: Incremental Smoothing and Mapping</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">More Applications</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#conjugate-gradient-optimization">Conjugate Gradient Optimization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#visual-odometry">Visual Odometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#visual-slam">Visual SLAM</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fixed-lag-smoothing-and-filtering">Fixed-lag Smoothing and Filtering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#discrete-variables-and-hmms">Discrete Variables and HMMs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CppExamples.html">C++ Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PythonExamples.html">Python Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MatlabExamples.html">Matlab Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Bindings.html">Bindings</a></li>
+<li class="toctree-l1"><a class="reference external" href="_static/doxygen/html/modules.html#http://">C++ API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GTSAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">More Applications</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/MoreApplications.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="more-applications">
+<h1>More Applications<a class="headerlink" href="#more-applications" title="Link to this heading"></a></h1>
+<p>While a detailed discussion of all the things you can do with GTSAM will
+take us too far, below is a small survey of what you can expect to do,
+and which we did using GTSAM.</p>
+<section id="conjugate-gradient-optimization">
+<h2>Conjugate Gradient Optimization<a class="headerlink" href="#conjugate-gradient-optimization" title="Link to this heading"></a></h2>
+<p><a href="#id1"><span class="problematic" id="id2">|image: 17\_Users\_dellaert\_git\_github\_doc\_images\_Beijing.png|</span></a>
+Figure 15: A map of Beijing, with a spanning tree shown in black, and
+the remaining <em>loop-closing</em> constraints shown in red. A spanning tree
+can be used as a <em>preconditioner</em> by GTSAM.</p>
+<p>GTSAM also includes efficient preconditioned conjugate gradients (PCG)
+methods for solving large-scale SLAM problems. While direct methods,
+popular in the literature, exhibit quadratic convergence and can be
+quite efficient for sparse problems, they typically require a lot of
+storage and efficient elimination orderings to be found. In contrast,
+iterative optimization methods only require access to the gradient and
+have a small memory footprint, but can suffer from poor convergence. Our
+method, <em>subgraph preconditioning</em>, explained in detail in <a class="reference external" href="#LyXCite-Dellaert10iros">Dellaert et
+al.</a> (2010); <a class="reference external" href="#LyXCite-Jian11iccv">Jian et
+al.</a> (2011), combines the advantages of direct
+and iterative methods, by identifying a sub-problem that can be easily
+solved using direct methods, and solving for the remaining part using
+PCG. The easy sub-problems correspond to a spanning tree, a planar
+subgraph, or any other substructure that can be efficiently solved. An
+example of such a subgraph is shown in Figure <a class="reference external" href="#fig_Beijing">15</a>.</p>
+</section>
+<section id="visual-odometry">
+<h2>Visual Odometry<a class="headerlink" href="#visual-odometry" title="Link to this heading"></a></h2>
+<p>A gentle introduction to vision-based sensing is <strong>Visual Odometry</strong>
+(abbreviated VO, see e.g. <a class="reference external" href="#LyXCite-Nister04cvpr2">Nistér et al.</a>
+(2004)), which provides pose constraints between successive robot poses
+by tracking or associating visual features in successive images taken by
+a camera mounted rigidly on the robot. GTSAM includes both C++ and
+MATLAB example code, as well as VO-specific factors to help you on the
+way.</p>
+</section>
+<section id="visual-slam">
+<h2>Visual SLAM<a class="headerlink" href="#visual-slam" title="Link to this heading"></a></h2>
+<p><strong>Visual SLAM</strong> (see e.g., <a class="reference external" href="#LyXCite-Davison03iccv">Davison</a> (2003))
+is a SLAM variant where 3D points are observed by a camera as the camera
+moves through space, either mounted on a robot or moved around by hand.
+GTSAM, and particularly iSAM (see below), can easily be adapted to be
+used as the back-end optimizer in such a scenario.</p>
+</section>
+<section id="fixed-lag-smoothing-and-filtering">
+<h2>Fixed-lag Smoothing and Filtering<a class="headerlink" href="#fixed-lag-smoothing-and-filtering" title="Link to this heading"></a></h2>
+<p>GTSAM can easily perform recursive estimation, where only a subset of
+the poses are kept in the factor graph, while the remaining poses are
+marginalized out. In all examples above we explicitly optimize for all
+variables using all available measurements, which is called
+<strong>Smoothing</strong> because the trajectory is “smoothed” out, and this is
+where GTSAM got its name (GT <em>Smoothing</em> and Mapping). When instead only
+the last few poses are kept in the graph, one speaks of <strong>Fixed-lag
+Smoothing</strong>. Finally, when only the single most recent poses is kept,
+one speaks of <strong>Filtering</strong>, and indeed the original formulation of SLAM
+was filter-based (<a class="reference external" href="#LyXCite-Smith87b">Smith et al., 1988</a>).</p>
+</section>
+<section id="discrete-variables-and-hmms">
+<h2>Discrete Variables and HMMs<a class="headerlink" href="#discrete-variables-and-hmms" title="Link to this heading"></a></h2>
+<p>Finally, factor graphs are not limited to continuous variables: GTSAM
+can also be used to model and solve discrete optimization problems. For
+example, a Hidden Markov Model (HMM) has the same graphical model
+structure as the Robot Localization problem from Section
+<a class="reference external" href="#sec_Robot_Localization">2</a>, except that in an HMM the variables are
+discrete. GTSAM can optimize and perform inference for discrete models.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="iSAM.html" class="btn btn-neutral float-left" title="iSAM: Incremental Smoothing and Mapping" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="CppExamples.html" class="btn btn-neutral float-right" title="C++ Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, The GTSAM authors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
