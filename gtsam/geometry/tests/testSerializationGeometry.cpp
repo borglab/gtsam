@@ -24,6 +24,7 @@
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3DS2_k3.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Cal3Unified.h>
 #include <gtsam/geometry/StereoCamera.h>
@@ -51,6 +52,7 @@ static Cal3_S2Stereo cal4(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
 static Cal3_S2Stereo::shared_ptr cal4ptr(new Cal3_S2Stereo(cal4));
 static CalibratedCamera cal5(Pose3(rt3, pt3));
 static Cal3Unified cal6(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0);
+static Cal3DS2_k3 cal7(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0);
 
 static PinholeCamera<Cal3_S2> cam1(pose3, cal1);
 static StereoCamera cam2(pose3, cal4ptr);
@@ -75,6 +77,7 @@ TEST (Serialization, text_geometry) {
   EXPECT(equalsObj(cal4));
   EXPECT(equalsObj(cal5));
   EXPECT(equalsObj(cal6));
+  EXPECT(equalsObj(cal7));
 
   EXPECT(equalsObj(cam1));
   EXPECT(equalsObj(cam2));
@@ -99,6 +102,7 @@ TEST (Serialization, xml_geometry) {
   EXPECT(equalsXML(cal3));
   EXPECT(equalsXML(cal4));
   EXPECT(equalsXML(cal5));
+  EXPECT(equalsXML(cal7));
 
   EXPECT(equalsXML(cam1));
   EXPECT(equalsXML(cam2));
@@ -123,6 +127,7 @@ TEST (Serialization, binary_geometry) {
   EXPECT(equalsBinary(cal3));
   EXPECT(equalsBinary(cal4));
   EXPECT(equalsBinary(cal5));
+  EXPECT(equalsBinary(cal7)); 
 
   EXPECT(equalsBinary(cam1));
   EXPECT(equalsBinary(cam2));

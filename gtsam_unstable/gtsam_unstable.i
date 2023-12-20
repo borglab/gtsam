@@ -27,6 +27,7 @@ virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
 class gtsam::Cal3_S2;
 class gtsam::Cal3DS2;
+class gtsam::Cal3DS2_k3;
 class gtsam::GaussianFactorGraph;
 class gtsam::NonlinearFactorGraph;
 class gtsam::Ordering;
@@ -718,6 +719,7 @@ virtual class ProjectionFactorPPP : gtsam::NoiseModelFactor {
 };
 typedef gtsam::ProjectionFactorPPP<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> ProjectionFactorPPPCal3_S2;
 typedef gtsam::ProjectionFactorPPP<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> ProjectionFactorPPPCal3DS2;
+typedef gtsam::ProjectionFactorPPP<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2_k3> ProjectionFactorPPPCal3DS2_k3;
 typedef gtsam::ProjectionFactorPPP<gtsam::Pose3, gtsam::Point3, gtsam::Cal3Fisheye> ProjectionFactorPPPCal3Fisheye;
 
 #include <gtsam_unstable/slam/ProjectionFactorPPPC.h>
@@ -738,6 +740,7 @@ virtual class ProjectionFactorPPPC : gtsam::NoiseModelFactor {
 };
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> ProjectionFactorPPPCCal3_S2;
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> ProjectionFactorPPPCCal3DS2;
+typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2_k3> ProjectionFactorPPPCCal3DS2_k3;
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3Fisheye> ProjectionFactorPPPCCal3Fisheye;
 
 #include <gtsam_unstable/slam/ProjectionFactorRollingShutter.h>
