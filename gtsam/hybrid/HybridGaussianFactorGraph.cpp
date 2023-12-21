@@ -345,7 +345,6 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     AlgebraicDecisionTree probabilities = DecisionTree<Key, double>(
         logProbabilities,
         [&max_log](const double x) { return exp(x - max_log); });
-    // probabilities.print("", DefaultKeyFormatter);
     probabilities = probabilities.normalize(probabilities.sum());
 
     return {
