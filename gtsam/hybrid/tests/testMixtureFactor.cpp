@@ -202,20 +202,19 @@ TEST(MixtureFactor, DifferentCovariances) {
       {Z(1)}, {X(1), X(2)}, {m1},
       {std::make_shared<GaussianConditional>(terms0, 1, -d0, model0),
        std::make_shared<GaussianConditional>(terms1, 1, -d1, model1)});
-  gtsam::HybridBayesNet bn2;
-  bn2.emplace_back(gm);
+  gtsam::HybridBayesNet bn;
+  bn.emplace_back(gm);
 
   gtsam::VectorValues measurements;
   measurements.insert(Z(1), gtsam::Z_1x1);
   // Create FG with single GaussianMixtureFactor
-  auto mixture_fg = bn2.toFactorGraph(measurements);
+  HybridGaussianFactorGraph mixture_fg = bn.toFactorGraph(measurements);
 
   // Linearized prior factor on X1
   auto prior = PriorFactor<double>(X(1), x1, prior_noise).linearize(values);
   mixture_fg.push_back(prior);
 
   auto hbn = mixture_fg.eliminateSequential();
-  // hbn->print("\n\nfinal bayes net");
 
   HybridValues actual_values = hbn->optimize();
 
