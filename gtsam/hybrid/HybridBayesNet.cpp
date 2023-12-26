@@ -342,9 +342,11 @@ HybridValues HybridBayesNet::optimize() const {
     for (auto &&f : *this) {
       if (auto gm = dynamic_pointer_cast<GaussianMixture>(f)) {
         error += gm->error(HybridValues(mu, DiscreteValues(assignment)));
+
       } else if (auto hc = dynamic_pointer_cast<HybridConditional>(f)) {
         if (auto gm = hc->asMixture()) {
           error += gm->error(HybridValues(mu, DiscreteValues(assignment)));
+
         } else if (auto g = hc->asGaussian()) {
           error += g->error(mu);
         }
@@ -356,11 +358,9 @@ HybridValues HybridBayesNet::optimize() const {
   AlgebraicDecisionTree<Key> errorTree =
       DecisionTree<Key, double>(labels, errors);
 
-  // Compute model selection term
-  AlgebraicDecisionTree<Key> model_selection_term = errorTree.apply(
-      [&log_norm_constants](const Assignment<Key> assignment, double err) {
-        return -(err + log_norm_constants(assignment));
-      });
+  // Compute model selection term (with help from ADT methods)
+  AlgebraicDecisionTree<Key> model_selection_term =
+      (errorTree + log_norm_constants) * -1;
 
   // std::cout << "model selection term" << std::endl;
   // model_selection_term.print("", DefaultKeyFormatter);
