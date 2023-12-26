@@ -118,6 +118,8 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
     return evaluate(values);
   }
 
+  GaussianBayesNetValTree assembleTree() const;
+
   /**
    * @brief Solve the HybridBayesNet by first computing the MPE of all the
    * discrete variables and then optimizing the continuous variables based on

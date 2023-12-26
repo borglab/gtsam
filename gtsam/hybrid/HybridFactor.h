@@ -33,6 +33,14 @@ class HybridValues;
 
 /// Alias for DecisionTree of GaussianFactorGraphs
 using GaussianFactorGraphTree = DecisionTree<Key, GaussianFactorGraph>;
+/// Alias for DecisionTree of GaussianBayesNets
+using GaussianBayesNetTree = DecisionTree<Key, GaussianBayesNet>;
+/**
+ * Alias for DecisionTree of (GaussianBayesNet, double) pairs.
+ * Used for model selection in BayesNet::optimize
+ */
+using GaussianBayesNetValTree =
+    DecisionTree<Key, std::pair<GaussianBayesNet, double>>;
 
 KeyVector CollectKeys(const KeyVector &continuousKeys,
                       const DiscreteKeys &discreteKeys);
