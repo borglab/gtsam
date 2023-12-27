@@ -24,6 +24,7 @@
 #include <gtsam/nonlinear/internal/Utils.h>
 
 #include <boost/math/special_functions/gamma.hpp>
+#include <boost/math/special_functions/trunc.hpp>
 
 namespace gtsam {
 
@@ -32,6 +33,72 @@ namespace internal {
 template <class T>
 inline constexpr T log_max_value() {
   return log(LIM<T>::max());
+}
+
+/**
+ * @brief Upper gamma fraction for integer a
+ *
+ * @param a
+ * @param x
+ * @param pol
+ * @param pderivative
+ * @return template <class T, class Policy>
+ */
+template <class T, class Policy>
+inline T finite_gamma_q(T a, T x, Policy const& pol, T* pderivative = 0) {
+  // Calculates normalised Q when a is an integer:
+  T e = exp(-x);
+  T sum = e;
+  if (sum != 0) {
+    T term = sum;
+    for (unsigned n = 1; n < a; ++n) {
+      term /= n;
+      term *= x;
+      sum += term;
+    }
+  }
+  if (pderivative) {
+    *pderivative = e * pow(x, a) /
+                   boost::math::unchecked_factorial<T>(std::trunc(T(a - 1)));
+  }
+  return sum;
+}
+
+/**
+ * @brief Upper gamma fraction for half integer a
+ *
+ * @tparam T
+ * @tparam Policy
+ * @param a
+ * @param x
+ * @param p_derivative
+ * @param pol
+ * @return T
+ */
+template <class T, class Policy>
+T finite_half_gamma_q(T a, T x, T* p_derivative, const Policy& pol) {
+  // Calculates normalised Q when a is a half-integer:
+  T e = boost::math::erfc(sqrt(x), pol);
+  if ((e != 0) && (a > 1)) {
+    T term = exp(-x) / sqrt(M_PI * x);
+    term *= x;
+    static const T half = T(1) / 2;
+    term /= half;
+    T sum = term;
+    for (unsigned n = 2; n < a; ++n) {
+      term /= n - half;
+      term *= x;
+      sum += term;
+    }
+    e += sum;
+    if (p_derivative) {
+      *p_derivative = 0;
+    }
+  } else if (p_derivative) {
+    // We'll be dividing by x later, so calculate derivative * x:
+    *p_derivative = sqrt(x) * exp(-x) / sqrt(M_PI);
+  }
+  return e;
 }
 
 /**
@@ -98,7 +165,8 @@ T gamma_incomplete_imp(T a, T x, bool normalised, bool invert,
   T result = 0;  // Just to avoid warning C4701: potentially uninitialized local
                  // variable 'result' used
 
-  if (a >= boost::math::max_factorial<T>::value && !normalised) {
+  // max_factorial value for long double is 170 in Boost
+  if (a >= 170 && !normalised) {
     //
     // When we're computing the non-normalized incomplete gamma
     // and a is large the result is rather hard to compute unless
@@ -153,7 +221,7 @@ T gamma_incomplete_imp(T a, T x, bool normalised, bool invert,
     return exp(result);
   }
 
-  BOOST_MATH_ASSERT((p_derivative == nullptr) || normalised);
+  assert((p_derivative == nullptr) || normalised);
 
   bool is_int, is_half_int;
   bool is_small_a = (a < 30) && (a <= x + 1) && (x < log_max_value<T>());
@@ -247,7 +315,7 @@ T gamma_incomplete_imp(T a, T x, bool normalised, bool invert,
 
   switch (eval_method) {
     case 0: {
-      result = boost::math::detail::finite_gamma_q(a, x, pol, p_derivative);
+      result = finite_gamma_q(a, x, pol, p_derivative);
       if (!normalised) result *= boost::math::tgamma(a, pol);
       break;
     }
@@ -358,15 +426,11 @@ T gamma_incomplete_imp(T a, T x, bool normalised, bool invert,
       if (!normalised)
         result = pow(x, a) / (a);
       else {
-#ifndef BOOST_NO_EXCEPTIONS
         try {
-#endif
           result = pow(x, a) / boost::math::tgamma(a + 1, pol);
-#ifndef BOOST_NO_EXCEPTIONS
         } catch (const std::overflow_error&) {
           result = 0;
         }
-#endif
       }
       result *= 1 - a * x / (a + 1);
       if (p_derivative)
