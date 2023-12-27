@@ -235,6 +235,14 @@ namespace gtsam {
     double logDeterminant() const;
 
     /**
+     * @brief Get the log of the normalization constant corresponding to the
+     * joint Gaussian density represented by this Bayes net.
+     *
+     * @return double
+     */
+    double logNormalizationConstant() const;
+
+    /**
      * Backsubstitute with a different RHS vector than the one stored in this BayesNet.
      * gy=inv(R*inv(Sigma))*gx
      */
