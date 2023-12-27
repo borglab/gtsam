@@ -82,6 +82,12 @@ namespace gtsam {
     /** Check equality */
     bool equals(const This& bn, double tol = 1e-9) const;
 
+    /// Check exact equality.
+    friend bool operator==(const GaussianBayesNet& lhs,
+                           const GaussianBayesNet& rhs) {
+      return lhs.isEqual(rhs);
+    }
+
     /// print graph
     void print(
         const std::string& s = "",
