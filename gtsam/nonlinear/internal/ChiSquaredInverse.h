@@ -21,6 +21,7 @@
 #pragma once
 
 #include <gtsam/3rdparty/cephes/cephes.h>
+#include <gtsam/dllexport.h>
 
 namespace gtsam {
 
@@ -29,14 +30,19 @@ namespace internal {
 /**
  * @brief Compute the quantile function of the Chi-Squared distribution.
  *
+ * The quantile function of the Chi-squared distribution is the quantile of
+ * the specific (inverse) incomplete Gamma distribution.
+ *
+ * We have a dedicated function so we can unit test any issues easily while also
+ * allowing it to be updated in the future without any backwards-compatibility
+ * issues.
+ *
  * @param dofs Degrees of freedom
  * @param alpha Quantile value
  * @return double
  */
-double chi_squared_quantile(const double dofs, const double alpha) {
-  // The quantile function of the Chi-squared distribution is the quantile of
-  // the specific (inverse) incomplete Gamma distribution
-  // return 2 * internal::igami(dofs / 2, alpha);
+double GTSAM_EXPORT chi_squared_quantile(const double dofs,
+                                         const double alpha) {
   return 2 * cephes_igami(dofs / 2, alpha);
 }
 
