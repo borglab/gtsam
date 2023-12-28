@@ -102,8 +102,14 @@
 #define cephes_isfinite(x) isfinite(x)
 #endif
 
+/* M_PI et al. are not defined in math.h in C99, even with _USE_MATH_DEFINES */
 #if !defined(M_PI)
 #define M_PI 3.14159265358979323846
+#endif
+#ifndef M_PI_2
+#define M_PI_2 1.57079632679489661923 /* pi/2 */
+#define M_1_PI 0.31830988618379067154 /* 1/pi */
+#define M_2_PI 0.63661977236758134308 /* 2/pi */
 #endif
 
 /* Constants needed that are not available in the C standard library */
