@@ -110,6 +110,9 @@ if(GTSAM_SUPPORT_NESTED_DISSECTION)
     list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis-gtsam-if)
 endif()
 
+# Link to cephes library
+list(APPEND GTSAM_ADDITIONAL_LIBRARIES cephes-gtsam-if)
+
 # Versions
 set(gtsam_version   ${GTSAM_VERSION_STRING})
 set(gtsam_soversion ${GTSAM_VERSION_MAJOR})
