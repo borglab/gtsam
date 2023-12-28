@@ -13,7 +13,8 @@
  * @file    ChiSquaredInverse.h
  * @brief   Implementation of the Chi Squared inverse function.
  *
- * Uses the cephes 3rd party library to help with gamma inverse functions.
+ * Uses the cephes 3rd party library to help with
+ * incomplete gamma inverse functions.
  *
  * @author  Varun Agrawal
  */
@@ -41,9 +42,8 @@ namespace internal {
  * @param alpha Quantile value
  * @return double
  */
-double GTSAM_EXPORT chi_squared_quantile(const double dofs,
-                                         const double alpha) {
-  return 2 * cephes_igami(dofs / 2, alpha);
+double chi_squared_quantile(const double dofs, const double alpha) {
+  return 2 * igami(dofs / 2, alpha);
 }
 
 }  // namespace internal
