@@ -100,8 +100,20 @@ set_target_properties(
   cephes-gtsam
   PROPERTIES VERSION ${PROJECT_VERSION}
              SOVERSION ${PROJECT_VERSION_MAJOR}
-             # PUBLIC_HEADER ${CEPHES_HEADER_FILES}
              C_STANDARD 99)
+
+if(WIN32)
+  set_target_properties(
+    cephes-gtsam
+    PROPERTIES PREFIX ""
+               COMPILE_FLAGS /w
+               RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/../../../bin")
+endif()
+
+if(APPLE)
+  set_target_properties(cephes-gtsam PROPERTIES INSTALL_NAME_DIR
+                                                "${CMAKE_INSTALL_PREFIX}/lib")
+endif()
 
 install(
   TARGETS cephes-gtsam
