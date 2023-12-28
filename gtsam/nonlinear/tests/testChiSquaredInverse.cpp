@@ -18,7 +18,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/nonlinear/internal/chiSquaredInverse.h>
+#include <gtsam/nonlinear/internal/ChiSquaredInverse.h>
 
 using namespace gtsam;
 
