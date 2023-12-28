@@ -19,6 +19,9 @@ set(CEPHES_HEADER_FILES
     cephes/polevl.h
     cephes/sf_error.h)
 
+# Add header files
+install(FILES ${CEPHES_HEADER_FILES} DESTINATION include/gtsam/3rdparty/cephes)
+
 set(CEPHES_SOURCES
     cephes/airy.c
     cephes/bdtr.c
@@ -70,7 +73,6 @@ set(CEPHES_SOURCES
     cephes/psi.c
     cephes/rgamma.c
     cephes/round.c
-    # cephes/scipy_iv.c
     cephes/sf_error.c
     cephes/shichi.c
     cephes/sici.c
@@ -87,16 +89,23 @@ set(CEPHES_SOURCES
     cephes/zetac.c)
 
 # Add library source files
-add_library(${PROJECT_NAME} SHARED ${CEPHES_SOURCES})
+add_library(cephes-gtsam SHARED ${CEPHES_SOURCES})
 
 # Add include directory (aka headers)
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(
+  cephes-gtsam BEFORE PUBLIC $<INSTALL_INTERFACE:include/gtsam/3rdparty/cephes/>
+                             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 
 set_target_properties(
-  ${PROJECT_NAME}
+  cephes-gtsam
   PROPERTIES VERSION ${PROJECT_VERSION}
              SOVERSION ${PROJECT_VERSION_MAJOR}
-             PUBLIC_HEADER ${CEPHES_HEADER_FILES}
+             # PUBLIC_HEADER ${CEPHES_HEADER_FILES}
              C_STANDARD 99)
 
-install(FILES ${CEPHES_HEADER_FILES} DESTINATION include/gtsam/3rdparty/cephes)
+install(
+  TARGETS cephes-gtsam
+  EXPORT GTSAM-exports
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
