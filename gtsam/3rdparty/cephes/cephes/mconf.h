@@ -102,6 +102,10 @@
 #define cephes_isfinite(x) isfinite(x)
 #endif
 
+#if !defined(M_PI)
+#define M_PI 3.14159265358979323846
+#endif
+
 /* Constants needed that are not available in the C standard library */
 #define SCIPY_EULER     0.577215664901532860606512090082402431   /* Euler constant */
 #define SCIPY_El        2.718281828459045235360287471352662498L  /* e as long double */
