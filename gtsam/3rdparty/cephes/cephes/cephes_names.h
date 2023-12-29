@@ -73,7 +73,7 @@
 #define psi cephes_psi
 #define rgamma cephes_rgamma
 #define riemann_zeta cephes_riemann_zeta
-// #define round cephes_round
+// #define round cephes_round  // Commented out since it clashes with std::round
 #define shichi cephes_shichi
 #define sici cephes_sici
 #define radian cephes_radian
