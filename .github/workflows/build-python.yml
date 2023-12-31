@@ -166,9 +166,6 @@ jobs:
           bash .github/scripts/python.sh -b
 
       - name: Test
-        # Disable running tests for windows because some of them are failing.
-        # Remove this condition when you want to run tests on windows CI.
-        if: runner.os != 'Windows'
         shell: bash
         run: |
           bash .github/scripts/python.sh -t

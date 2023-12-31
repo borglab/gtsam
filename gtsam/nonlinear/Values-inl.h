@@ -197,6 +197,59 @@ namespace gtsam {
      }
    };
 
+#ifdef _WIN32
+   // Handle dynamic matrices
+   template <int M, int N>
+   struct handle_matrix<Eigen::Matrix<double, M, N, 0, M, N>, true> {
+     inline Eigen::Matrix<double, M, N> operator()(Key j, const Value* const pointer) {
+       auto ptr = dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N>>*>(pointer);
+       if (ptr) {
+         // value returns a const Matrix&, and the return makes a copy !!!!!
+         return ptr->value();
+       } else {
+         // If a fixed matrix was stored, we end up here as well.
+         throw ValuesIncorrectType(j, typeid(*pointer), typeid(Eigen::Matrix<double, M, N>));
+       }
+     }
+   };
+
+   // Handle fixed matrices
+   template <int M, int N>
+   struct handle_matrix<Eigen::Matrix<double, M, N, 0, M, N>, false> {
+     inline Eigen::Matrix<double, M, N> operator()(Key j, const Value* const pointer) {
+       auto ptr = dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N>>*>(pointer);
+       if (ptr) {
+         // value returns a const MatrixMN&, and the return makes a copy !!!!!
+         return ptr->value();
+       } else {
+         Matrix A;
+         // Check if a dynamic matrix was stored
+         auto ptr = dynamic_cast<const GenericValue<Eigen::MatrixXd>*>(pointer);
+         if (ptr) {
+           A = ptr->value();
+         } else {
+           // Or a dynamic vector
+           A = handle_matrix<Eigen::VectorXd, true>()(j, pointer);  // will throw if not....
+         }
+         // Yes: check size, and throw if not a match
+         if (A.rows() != M || A.cols() != N)
+           throw NoMatchFoundForFixed(M, N, A.rows(), A.cols());
+         else
+           return A; // copy but not malloc
+       }
+     }
+   };
+
+   // Handle matrices
+   template <int M, int N>
+   struct handle<Eigen::Matrix<double, M, N, 0, M, N>> {
+     Eigen::Matrix<double, M, N> operator()(Key j, const Value* const pointer) {
+       return handle_matrix<Eigen::Matrix<double, M, N, 0, M, N>,
+                            (M == Eigen::Dynamic || N == Eigen::Dynamic)>()(j, pointer);
+     }
+   };
+#endif // #ifdef _WIN32
+
    }  // internal
 
    /* ************************************************************************* */
