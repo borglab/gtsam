@@ -106,7 +106,8 @@ bool NavState::equals(const NavState& other, double tol) const {
 //------------------------------------------------------------------------------
 NavState NavState::retract(const Vector9& xi, //
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
-  auto [nRb, n_t, n_v] = (*this);
+  Rot3 nRb = R_;
+  Point3 n_t = t_, n_v = v_;
   Matrix3 D_bRc_xi, D_R_nRb, D_t_nRb, D_v_nRb;
   const Rot3 bRc = Rot3::Expmap(dR(xi), H2 ? &D_bRc_xi : 0);
   const Rot3 nRc = nRb.compose(bRc, H1 ? &D_R_nRb : 0);
