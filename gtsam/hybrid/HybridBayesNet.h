@@ -118,6 +118,14 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
     return evaluate(values);
   }
 
+  /**
+   * @brief Assemble a DecisionTree of (GaussianBayesNet, double) leaves for
+   * each discrete assignment.
+   * The included double value is used to make
+   * constructing the model selection term cleaner and more efficient.
+   *
+   * @return GaussianBayesNetValTree
+   */
   GaussianBayesNetValTree assembleTree() const;
 
   /*
