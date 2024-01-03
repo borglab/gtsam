@@ -190,6 +190,9 @@ namespace gtsam {
     /** Non-const access to full matrix (*including* any portions excluded by rowStart(), rowEnd(), and firstBlock()) */
     Matrix& matrix() { return matrix_; }
 
+    /// Setter for wrapper
+    void setMatrix(const Matrix& matrix) { matrix_ = matrix; }
+
   protected:
     void assertInvariants() const {
       assert(matrix_.cols() == variableColOffsets_.back());

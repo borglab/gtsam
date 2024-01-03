@@ -109,4 +109,13 @@ virtual class GenericValue : gtsam::Value {
   void serializable() const;
 };
 
+#include <gtsam/base/VerticalBlockMatrix.h>
+class VerticalBlockMatrix {
+  VerticalBlockMatrix();
+  VerticalBlockMatrix(const std::vector<int>& dimensions, int height, bool appendOneDimension = false);
+
+  const Matrix& matrix() const;
+  void setMatrix(const Matrix& matrix);
+};
+
 }  // namespace gtsam
