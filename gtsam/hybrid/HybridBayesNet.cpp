@@ -26,8 +26,6 @@ static std::mt19937_64 kRandomNumberGenerator(42);
 
 namespace gtsam {
 
-using std::dynamic_pointer_cast;
-
 /* ************************************************************************ */
 // Throw a runtime exception for method specified in string s,
 // and conditional f:
@@ -253,9 +251,9 @@ GaussianBayesNetValTree HybridBayesNet::assembleTree() const {
 
   for (auto &f : factors_) {
     // TODO(dellaert): just use a virtual method defined in HybridFactor.
-    if (auto gm = dynamic_pointer_cast<GaussianMixture>(f)) {
+    if (auto gm = std::dynamic_pointer_cast<GaussianMixture>(f)) {
       result = gm->add(result);
-    } else if (auto hc = dynamic_pointer_cast<HybridConditional>(f)) {
+    } else if (auto hc = std::dynamic_pointer_cast<HybridConditional>(f)) {
       if (auto gm = hc->asMixture()) {
         result = gm->add(result);
       } else if (auto g = hc->asGaussian()) {
@@ -265,7 +263,7 @@ GaussianBayesNetValTree HybridBayesNet::assembleTree() const {
         // TODO(dellaert): in C++20, we can use std::visit.
         continue;
       }
-    } else if (dynamic_pointer_cast<DiscreteFactor>(f)) {
+    } else if (std::dynamic_pointer_cast<DiscreteFactor>(f)) {
       // Don't do anything for discrete-only factors
       // since we want to evaluate continuous values only.
       continue;
