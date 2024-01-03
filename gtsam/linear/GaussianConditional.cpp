@@ -186,7 +186,10 @@ namespace gtsam {
     size_t n = d().size();
     // Sigma = (R'R)^{-1}, det(Sigma) = det((R'R)^{-1}) = det(R'R)^{-1}
     // log det(Sigma) = -log(det(R'R)) = -2*log(det(R))
-    // Hence, log det(Sigma)) = - 2.0 * logDeterminant()
+    // Hence, log det(Sigma)) = -2.0 * logDeterminant()
+    // which gives log = -0.5*n*log(2*pi) - 0.5*(-2.0 * logDeterminant())
+    //     = -0.5*n*log(2*pi) + (0.5*2.0 * logDeterminant())
+    //     = -0.5*n*log(2*pi) + logDeterminant()
     return -0.5 * n * log2pi + logDeterminant();
   }
 
