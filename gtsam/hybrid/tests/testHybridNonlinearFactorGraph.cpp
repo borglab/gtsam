@@ -675,33 +675,41 @@ factor 6:  P( m1 | m0 ):
 size: 3
 conditional 0: Hybrid  P( x0 | x1 m0)
  Discrete Keys = (m0, 2), 
+ logNormalizationConstant: 1.38862
+
  Choice(m0) 
  0 Leaf p(x0 | x1)
   R = [ 10.0499 ]
   S[x1] = [ -0.0995037 ]
   d = [ -9.85087 ]
+  logNormalizationConstant: 1.38862
   No noise model
 
  1 Leaf p(x0 | x1)
   R = [ 10.0499 ]
   S[x1] = [ -0.0995037 ]
   d = [ -9.95037 ]
+  logNormalizationConstant: 1.38862
   No noise model
 
 conditional 1: Hybrid  P( x1 | x2 m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
+ logNormalizationConstant: 1.3935
+
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf p(x1 | x2)
   R = [ 10.099 ]
   S[x2] = [ -0.0990196 ]
   d = [ -9.99901 ]
+  logNormalizationConstant: 1.3935
   No noise model
 
  0 1 Leaf p(x1 | x2)
   R = [ 10.099 ]
   S[x2] = [ -0.0990196 ]
   d = [ -9.90098 ]
+  logNormalizationConstant: 1.3935
   No noise model
 
  1 Choice(m0) 
@@ -709,16 +717,20 @@ conditional 1: Hybrid  P( x1 | x2 m0 m1)
   R = [ 10.099 ]
   S[x2] = [ -0.0990196 ]
   d = [ -10.098 ]
+  logNormalizationConstant: 1.3935
   No noise model
 
  1 1 Leaf p(x1 | x2)
   R = [ 10.099 ]
   S[x2] = [ -0.0990196 ]
   d = [ -10 ]
+  logNormalizationConstant: 1.3935
   No noise model
 
 conditional 2: Hybrid  P( x2 | m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
+ logNormalizationConstant: 1.38857
+
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf p(x2)
@@ -726,6 +738,7 @@ conditional 2: Hybrid  P( x2 | m0 m1)
   d = [ -10.1489 ]
   mean: 1 elements
   x2: -1.0099
+  logNormalizationConstant: 1.38857
   No noise model
 
  0 1 Leaf p(x2)
@@ -733,6 +746,7 @@ conditional 2: Hybrid  P( x2 | m0 m1)
   d = [ -10.1479 ]
   mean: 1 elements
   x2: -1.0098
+  logNormalizationConstant: 1.38857
   No noise model
 
  1 Choice(m0) 
@@ -741,6 +755,7 @@ conditional 2: Hybrid  P( x2 | m0 m1)
   d = [ -10.0504 ]
   mean: 1 elements
   x2: -1.0001
+  logNormalizationConstant: 1.38857
   No noise model
 
  1 1 Leaf p(x2)
@@ -748,6 +763,7 @@ conditional 2: Hybrid  P( x2 | m0 m1)
   d = [ -10.0494 ]
   mean: 1 elements
   x2: -1
+  logNormalizationConstant: 1.38857
   No noise model
 
 )";
