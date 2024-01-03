@@ -333,6 +333,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
       const auto &factor = pair.second;
       if (!factor) return 1.0;  // TODO(dellaert): not loving this.
 
+      // Logspace version of:
       // exp(-factor->error(kEmpty)) / pair.first->normalizationConstant();
       return -factor->error(kEmpty) - pair.first->logNormalizationConstant();
     };
@@ -345,6 +346,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     AlgebraicDecisionTree probabilities = DecisionTree<Key, double>(
         logProbabilities,
         [&max_log](const double x) { return exp(x - max_log); });
+    // probabilities.print("", DefaultKeyFormatter);
     probabilities = probabilities.normalize(probabilities.sum());
 
     return {
