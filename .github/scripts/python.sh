@@ -70,8 +70,16 @@ function build()
 
 function test()
 {
-  cmake --build build --target python-test
-  cmake --build build --target python-test-unstable
+  cd $GITHUB_WORKSPACE/python/gtsam/tests
+  $PYTHON -m unittest discover -v
+  cd $GITHUB_WORKSPACE
+
+  cd $GITHUB_WORKSPACE/python/gtsam_unstable/tests
+  $PYTHON -m unittest discover -v
+  cd $GITHUB_WORKSPACE
+
+  # cmake --build build --target python-test
+  # cmake --build build --target python-test-unstable
 }
 
 # select between build or test
