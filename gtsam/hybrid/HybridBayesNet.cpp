@@ -26,8 +26,6 @@ static std::mt19937_64 kRandomNumberGenerator(42);
 
 namespace gtsam {
 
-using std::dynamic_pointer_cast;
-
 /* ************************************************************************ */
 // Throw a runtime exception for method specified in string s,
 // and conditional f:
@@ -253,9 +251,9 @@ GaussianBayesNetValTree HybridBayesNet::assembleTree() const {
 
   for (auto &f : factors_) {
     // TODO(dellaert): just use a virtual method defined in HybridFactor.
-    if (auto gm = dynamic_pointer_cast<GaussianMixture>(f)) {
+    if (auto gm = std::dynamic_pointer_cast<GaussianMixture>(f)) {
       result = gm->add(result);
-    } else if (auto hc = dynamic_pointer_cast<HybridConditional>(f)) {
+    } else if (auto hc = std::dynamic_pointer_cast<HybridConditional>(f)) {
       if (auto gm = hc->asMixture()) {
         result = gm->add(result);
       } else if (auto g = hc->asGaussian()) {
@@ -265,7 +263,7 @@ GaussianBayesNetValTree HybridBayesNet::assembleTree() const {
         // TODO(dellaert): in C++20, we can use std::visit.
         continue;
       }
-    } else if (dynamic_pointer_cast<DiscreteFactor>(f)) {
+    } else if (std::dynamic_pointer_cast<DiscreteFactor>(f)) {
       // Don't do anything for discrete-only factors
       // since we want to evaluate continuous values only.
       continue;
@@ -283,35 +281,20 @@ GaussianBayesNetValTree HybridBayesNet::assembleTree() const {
 }
 
 /* ************************************************************************* */
-HybridValues HybridBayesNet::optimize() const {
-  // Collect all the discrete factors to compute MPE
-  DiscreteFactorGraph discrete_fg;
-
+AlgebraicDecisionTree<Key> HybridBayesNet::model_selection() const {
   /*
-    Perform the integration of L(X;M,Z)P(X|M)
-    which is the model selection term.
+      To perform model selection, we need:
+      q(mu; M, Z) * sqrt((2*pi)^n*det(Sigma))
 
-    By Bayes' rule, P(X|M,Z) ∝ L(X;M,Z)P(X|M),
-    hence L(X;M,Z)P(X|M) is the unnormalized probabilty of
-    the joint Gaussian distribution.
+      If q(mu; M, Z) = exp(-error) & k = 1.0 / sqrt((2*pi)^n*det(Sigma))
+      thus, q * sqrt((2*pi)^n*det(Sigma)) = q/k = exp(log(q/k))
+      = exp(log(q) - log(k)) = exp(-error - log(k))
+      = exp(-(error + log(k))),
+      where error is computed at the corresponding MAP point, gbn.error(mu).
 
-    This can be computed by multiplying all the exponentiated errors
-    of each of the conditionals, which we do below in hybrid case.
-  */
-  /*
-    To perform model selection, we need:
-    q(mu; M, Z) * sqrt((2*pi)^n*det(Sigma))
+      So we compute (error + log(k)) and exponentiate later
+    */
 
-    If q(mu; M, Z) = exp(-error) & k = 1.0 / sqrt((2*pi)^n*det(Sigma))
-    thus, q * sqrt((2*pi)^n*det(Sigma)) = q/k = exp(log(q/k))
-    = exp(log(q) - log(k)) = exp(-error - log(k))
-    = exp(-(error + log(k))),
-    where error is computed at the corresponding MAP point, gbn.error(mu).
-
-    So we compute (error + log(k)) and exponentiate later
-  */
-
-  std::set<DiscreteKey> discreteKeySet;
   GaussianBayesNetValTree bnTree = assembleTree();
 
   GaussianBayesNetValTree bn_error = bnTree.apply(
@@ -356,6 +339,19 @@ HybridValues HybridBayesNet::optimize() const {
       [&max_log](const double &x) { return std::exp(x - max_log); });
   model_selection = model_selection.normalize(model_selection.sum());
 
+  return model_selection;
+}
+
+/* ************************************************************************* */
+HybridValues HybridBayesNet::optimize() const {
+  // Collect all the discrete factors to compute MPE
+  DiscreteFactorGraph discrete_fg;
+
+  // Compute model selection term
+  AlgebraicDecisionTree<Key> model_selection_term = model_selection();
+
+  // Get the set of all discrete keys involved in model selection
+  std::set<DiscreteKey> discreteKeySet;
   for (auto &&conditional : *this) {
     if (conditional->isDiscrete()) {
       discrete_fg.push_back(conditional->asDiscrete());
@@ -380,7 +376,7 @@ HybridValues HybridBayesNet::optimize() const {
   if (discreteKeySet.size() > 0) {
     discrete_fg.push_back(DecisionTreeFactor(
         DiscreteKeys(discreteKeySet.begin(), discreteKeySet.end()),
-        model_selection));
+        model_selection_term));
   }
 
   // Solve for the MPE

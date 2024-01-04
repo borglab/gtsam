@@ -118,7 +118,28 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
     return evaluate(values);
   }
 
+  /**
+   * @brief Assemble a DecisionTree of (GaussianBayesNet, double) leaves for
+   * each discrete assignment.
+   * The included double value is used to make
+   * constructing the model selection term cleaner and more efficient.
+   *
+   * @return GaussianBayesNetValTree
+   */
   GaussianBayesNetValTree assembleTree() const;
+
+  /*
+    Perform the integration of L(X;M,Z)P(X|M)
+    which is the model selection term.
+
+    By Bayes' rule, P(X|M,Z) ∝ L(X;M,Z)P(X|M),
+    hence L(X;M,Z)P(X|M) is the unnormalized probabilty of
+    the joint Gaussian distribution.
+
+    This can be computed by multiplying all the exponentiated errors
+    of each of the conditionals.
+  */
+  AlgebraicDecisionTree<Key> model_selection() const;
 
   /**
    * @brief Solve the HybridBayesNet by first computing the MPE of all the

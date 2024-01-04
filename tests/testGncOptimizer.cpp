@@ -750,7 +750,8 @@ TEST(GncOptimizer, optimizeSmallPoseGraph) {
   // add a few outliers
   SharedDiagonal betweenNoise = noiseModel::Diagonal::Sigmas(
       Vector3(0.1, 0.1, 0.01));
-  graph->push_back(BetweenFactor<Pose2>(90, 50, Pose2(), betweenNoise));  // some arbitrary and incorrect between factor
+  // some arbitrary and incorrect between factor
+  graph->push_back(BetweenFactor<Pose2>(90, 50, Pose2(), betweenNoise));
 
   /// get expected values by optimizing outlier-free graph
   Values expectedWithOutliers = LevenbergMarquardtOptimizer(*graph, *initial)
@@ -759,9 +760,9 @@ TEST(GncOptimizer, optimizeSmallPoseGraph) {
   // CHECK(assert_equal(expected, expectedWithOutliers, 1e-3));
 
   // GNC
-  // Note: in difficult instances, we set the odometry measurements to be
-  // inliers, but this problem is simple enought to succeed even without that
-  // assumption GncParams<GaussNewtonParams>::IndexVector knownInliers;
+  // NOTE: in difficult instances, we set the odometry measurements to be
+  // inliers, but this problem is simple enough to succeed even without that
+  // assumption.
   GncParams<GaussNewtonParams> gncParams;
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(*graph, *initial,
                                                         gncParams);

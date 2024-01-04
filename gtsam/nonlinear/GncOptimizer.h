@@ -28,7 +28,7 @@
 
 #include <gtsam/nonlinear/GncParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <boost/math/distributions/chi_squared.hpp>
+#include <gtsam/nonlinear/internal/ChiSquaredInverse.h>
 
 namespace gtsam {
 /*
@@ -36,8 +36,7 @@ namespace gtsam {
  * Equivalent to chi2inv in Matlab.
  */
 static double Chi2inv(const double alpha, const size_t dofs) {
-  boost::math::chi_squared_distribution<double> chi2(dofs);
-  return boost::math::quantile(chi2, alpha);
+  return internal::chi_squared_quantile(dofs, alpha);
 }
 
 /* ************************************************************************* */

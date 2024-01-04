@@ -247,10 +247,10 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
       // TODO(dellaert): is this correct? If so explain here.
     } else if (auto hc = dynamic_pointer_cast<HybridConditional>(f)) {
       auto dc = hc->asDiscrete();
-      if (!dc) throwRuntimeError("continuousElimination", dc);
+      if (!dc) throwRuntimeError("discreteElimination", dc);
       dfg.push_back(hc->asDiscrete());
     } else {
-      throwRuntimeError("continuousElimination", f);
+      throwRuntimeError("discreteElimination", f);
     }
   }
 
@@ -276,6 +276,65 @@ GaussianFactorGraphTree removeEmpty(const GaussianFactorGraphTree &sum) {
 }
 
 /* ************************************************************************ */
+using Result = std::pair<std::shared_ptr<GaussianConditional>,
+                         GaussianMixtureFactor::sharedFactor>;
+
+/**
+ * Compute the probability q(μ;m) = exp(-error(μ;m)) * sqrt(det(2π Σ_m)
+ * from the residual error at the mean μ.
+ * The residual error contains no keys, and only
+ * depends on the discrete separator if present.
+ */
+static std::shared_ptr<Factor> createDiscreteFactor(
+    const DecisionTree<Key, Result> &eliminationResults,
+    const DiscreteKeys &discreteSeparator) {
+  auto logProbability = [&](const Result &pair) -> double {
+    const auto &[conditional, factor] = pair;
+    static const VectorValues kEmpty;
+    // If the factor is not null, it has no keys, just contains the residual.
+    if (!factor) return 1.0;  // TODO(dellaert): not loving this.
+
+    // Logspace version of:
+    // exp(-factor->error(kEmpty)) / conditional->normalizationConstant();
+    return -factor->error(kEmpty) - conditional->logNormalizationConstant();
+  };
+
+  AlgebraicDecisionTree<Key> logProbabilities(
+      DecisionTree<Key, double>(eliminationResults, logProbability));
+
+  // Perform normalization
+  double max_log = logProbabilities.max();
+  AlgebraicDecisionTree probabilities = DecisionTree<Key, double>(
+      logProbabilities,
+      [&max_log](const double x) { return exp(x - max_log); });
+  probabilities = probabilities.normalize(probabilities.sum());
+
+  return std::make_shared<DecisionTreeFactor>(discreteSeparator, probabilities);
+}
+
+// Create GaussianMixtureFactor on the separator, taking care to correct
+// for conditional constants.
+static std::shared_ptr<Factor> createGaussianMixtureFactor(
+    const DecisionTree<Key, Result> &eliminationResults,
+    const KeyVector &continuousSeparator,
+    const DiscreteKeys &discreteSeparator) {
+  // Correct for the normalization constant used up by the conditional
+  auto correct = [&](const Result &pair) -> GaussianFactor::shared_ptr {
+    const auto &[conditional, factor] = pair;
+    if (factor) {
+      auto hf = std::dynamic_pointer_cast<HessianFactor>(factor);
+      if (!hf) throw std::runtime_error("Expected HessianFactor!");
+      hf->constantTerm() += 2.0 * conditional->logNormalizationConstant();
+    }
+    return factor;
+  };
+  DecisionTree<Key, GaussianFactor::shared_ptr> newFactors(eliminationResults,
+                                                           correct);
+
+  return std::make_shared<GaussianMixtureFactor>(continuousSeparator,
+                                                 discreteSeparator, newFactors);
+}
+
 static std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
 hybridElimination(const HybridGaussianFactorGraph &factors,
                   const Ordering &frontalKeys,
@@ -295,9 +354,6 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // FG has a nullptr as we're looping over the factors.
   factorGraphTree = removeEmpty(factorGraphTree);
 
-  using Result = std::pair<std::shared_ptr<GaussianConditional>,
-                           GaussianMixtureFactor::sharedFactor>;
-
   // This is the elimination method on the leaf nodes
   auto eliminate = [&](const GaussianFactorGraph &graph) -> Result {
     if (graph.empty()) {
@@ -312,66 +368,22 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // Perform elimination!
   DecisionTree<Key, Result> eliminationResults(factorGraphTree, eliminate);
 
-  // Separate out decision tree into conditionals and remaining factors.
-  const auto [conditionals, newFactors] = unzip(eliminationResults);
+  // If there are no more continuous parents we create a DiscreteFactor with the
+  // error for each discrete choice. Otherwise, create a GaussianMixtureFactor
+  // on the separator, taking care to correct for conditional constants.
+  auto newFactor =
+      continuousSeparator.empty()
+          ? createDiscreteFactor(eliminationResults, discreteSeparator)
+          : createGaussianMixtureFactor(eliminationResults, continuousSeparator,
+                                        discreteSeparator);
 
   // Create the GaussianMixture from the conditionals
+  GaussianMixture::Conditionals conditionals(
+      eliminationResults, [](const Result &pair) { return pair.first; });
   auto gaussianMixture = std::make_shared<GaussianMixture>(
       frontalKeys, continuousSeparator, discreteSeparator, conditionals);
 
-  if (continuousSeparator.empty()) {
-    // If there are no more continuous parents, then we create a
-    // DiscreteFactor here, with the error for each discrete choice.
-
-    // Compute the probability q(μ;m) = exp(-error(μ;m)) * sqrt(det(2π Σ_m))
-    // from the residual error at the mean μ.
-    // The residual error contains no keys, and only depends on the discrete
-    // separator if present.
-    auto logProbability = [&](const Result &pair) -> double {
-      static const VectorValues kEmpty;
-      // If the factor is not null, it has no keys, just contains the residual.
-      const auto &factor = pair.second;
-      if (!factor) return 1.0;  // TODO(dellaert): not loving this.
-
-      // Logspace version of:
-      // exp(-factor->error(kEmpty)) / pair.first->normalizationConstant();
-      return -factor->error(kEmpty) - pair.first->logNormalizationConstant();
-    };
-
-    AlgebraicDecisionTree<Key> logProbabilities(
-        DecisionTree<Key, double>(eliminationResults, logProbability));
-
-    // Perform normalization
-    double max_log = logProbabilities.max();
-    AlgebraicDecisionTree probabilities = DecisionTree<Key, double>(
-        logProbabilities,
-        [&max_log](const double x) { return exp(x - max_log); });
-    // probabilities.print("", DefaultKeyFormatter);
-    probabilities = probabilities.normalize(probabilities.sum());
-
-    return {
-        std::make_shared<HybridConditional>(gaussianMixture),
-        std::make_shared<DecisionTreeFactor>(discreteSeparator, probabilities)};
-  } else {
-    // Otherwise, we create a resulting GaussianMixtureFactor on the separator,
-    // taking care to correct for conditional constant.
-
-    // Correct for the normalization constant used up by the conditional
-    auto correct = [&](const Result &pair) {
-      const auto &factor = pair.second;
-      if (!factor) return;
-      auto hf = std::dynamic_pointer_cast<HessianFactor>(factor);
-      if (!hf) throw std::runtime_error("Expected HessianFactor!");
-      hf->constantTerm() += 2.0 * pair.first->logNormalizationConstant();
-    };
-    eliminationResults.visit(correct);
-
-    const auto mixtureFactor = std::make_shared<GaussianMixtureFactor>(
-        continuousSeparator, discreteSeparator, newFactors);
-
-    return {std::make_shared<HybridConditional>(gaussianMixture),
-            mixtureFactor};
-  }
+  return {std::make_shared<HybridConditional>(gaussianMixture), newFactor};
 }
 
 /* ************************************************************************

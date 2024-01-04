@@ -99,7 +99,7 @@ if(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
 
   # Wrap
   matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i "gtsam_unstable"
-              "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}" "${ignore}")
+              "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
 endif(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
 
 # Record the root dir for gtsam - needed during external builds, e.g., ROS

@@ -67,13 +67,14 @@ class GTSAM_EXPORT GaussianMixture
   double logConstant_;         ///< log of the normalization constant.
 
   /**
-   * @brief Convert a DecisionTree of factors into a DT of Gaussian FGs.
+   * @brief Convert a DecisionTree of factors into
+   * a DecisionTree of Gaussian factor graphs.
    */
   GaussianFactorGraphTree asGaussianFactorGraphTree() const;
 
   /**
    * @brief Convert a DecisionTree of conditionals into
-   * a DT of Gaussian Bayes nets.
+   * a DecisionTree of Gaussian Bayes nets.
    */
   GaussianBayesNetTree asGaussianBayesNetTree() const;
 
