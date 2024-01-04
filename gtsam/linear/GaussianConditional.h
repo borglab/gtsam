@@ -31,8 +31,10 @@ namespace gtsam {
 
   /**
   * A GaussianConditional functions as the node in a Bayes network.
-  * It has a set of parents y,z, etc. and implements a probability density on x.
+  * It has a set of parents y,z, etc. and implements a Gaussian probability density p(x | y, z) on x.
   * The negative log-density is given by \f$ \frac{1}{2} |Rx - (d - Sy - Tz - ...)|^2 \f$
+  * The mean of the conditional density is \f$ R^{-1}(d - Sy - Tz - ...) \f$.
+  * The covariance of the conditional density is given by the noise model and is constrained to be diagonal.
   * @ingroup linear
   */
   class GTSAM_EXPORT GaussianConditional :
