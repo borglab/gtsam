@@ -59,7 +59,6 @@ endif()
 # if GTSAM_USE_BOOST_FEATURES is not set, then we need to exclude the following:
 if(NOT GTSAM_USE_BOOST_FEATURES)
     list (APPEND excluded_sources
-        "${CMAKE_CURRENT_SOURCE_DIR}/nonlinear/GncOptimizer.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/inference/graph.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/inference/graph-inl.h"
     )
@@ -110,6 +109,9 @@ if(GTSAM_SUPPORT_NESTED_DISSECTION)
     # target metis-gtsam-if is defined in both cases: embedded metis or system version:
     list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis-gtsam-if)
 endif()
+
+# Link to cephes library
+list(APPEND GTSAM_ADDITIONAL_LIBRARIES cephes-gtsam-if)
 
 # Versions
 set(gtsam_version   ${GTSAM_VERSION_STRING})

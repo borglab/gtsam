@@ -699,6 +699,7 @@ virtual class OdometryFactorBase : gtsam::NoiseModelFactor {
 
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam_unstable/slam/ProjectionFactorPPP.h>
+#include <gtsam/geometry/Cal3Fisheye.h>
 template<POSE, LANDMARK, CALIBRATION>
 virtual class ProjectionFactorPPP : gtsam::NoiseModelFactor {
   ProjectionFactorPPP(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
@@ -717,7 +718,7 @@ virtual class ProjectionFactorPPP : gtsam::NoiseModelFactor {
 };
 typedef gtsam::ProjectionFactorPPP<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> ProjectionFactorPPPCal3_S2;
 typedef gtsam::ProjectionFactorPPP<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> ProjectionFactorPPPCal3DS2;
-
+typedef gtsam::ProjectionFactorPPP<gtsam::Pose3, gtsam::Point3, gtsam::Cal3Fisheye> ProjectionFactorPPPCal3Fisheye;
 
 #include <gtsam_unstable/slam/ProjectionFactorPPPC.h>
 template<POSE, LANDMARK, CALIBRATION>
@@ -737,6 +738,7 @@ virtual class ProjectionFactorPPPC : gtsam::NoiseModelFactor {
 };
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> ProjectionFactorPPPCCal3_S2;
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> ProjectionFactorPPPCCal3DS2;
+typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3Fisheye> ProjectionFactorPPPCCal3Fisheye;
 
 #include <gtsam_unstable/slam/ProjectionFactorRollingShutter.h>
 virtual class ProjectionFactorRollingShutter : gtsam::NoiseModelFactor {
