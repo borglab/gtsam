@@ -197,6 +197,8 @@ namespace gtsam {
      }
    };
 
+// Added this section for compile gtsam python on windows.
+// msvc don't deduct the template arguments correctly, due possible bug in msvc.
 #ifdef _WIN32
    // Handle dynamic matrices
    template <int M, int N>
