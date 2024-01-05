@@ -131,13 +131,13 @@ class MixtureFactor : public HybridFactor {
    * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
    * as the factor, and leaf values as the error.
    */
-  AlgebraicDecisionTree<Key> error(const Values& continuousValues) const {
+  AlgebraicDecisionTree<Key> errorTree(const Values& continuousValues) const {
     // functor to convert from sharedFactor to double error value.
     auto errorFunc = [continuousValues](const sharedFactor& factor) {
       return factor->error(continuousValues);
     };
-    DecisionTree<Key, double> errorTree(factors_, errorFunc);
-    return errorTree;
+    DecisionTree<Key, double> result(factors_, errorFunc);
+    return result;
   }
 
   /**

@@ -54,7 +54,7 @@ class GTSAM_UNSTABLE_EXPORT AllDiff : public Constraint {
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
   /// Compute error for each assignment and return as a tree
-  AlgebraicDecisionTree<Key> error() const override {
+  AlgebraicDecisionTree<Key> errorTree() const override {
     throw std::runtime_error("AllDiff::error not implemented");
   }
 

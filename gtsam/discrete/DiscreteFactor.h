@@ -105,7 +105,7 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
   double error(const HybridValues& c) const override;
 
   /// Compute error for each assignment and return as a tree
-  virtual AlgebraicDecisionTree<Key> error() const = 0;
+  virtual AlgebraicDecisionTree<Key> errorTree() const = 0;
 
   /// Multiply in a DecisionTreeFactor and return the result as
   /// DecisionTreeFactor

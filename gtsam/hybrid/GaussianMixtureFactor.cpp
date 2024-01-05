@@ -102,14 +102,14 @@ GaussianFactorGraphTree GaussianMixtureFactor::asGaussianFactorGraphTree()
 }
 
 /* *******************************************************************************/
-AlgebraicDecisionTree<Key> GaussianMixtureFactor::error(
+AlgebraicDecisionTree<Key> GaussianMixtureFactor::errorTree(
     const VectorValues &continuousValues) const {
   // functor to convert from sharedFactor to double error value.
   auto errorFunc = [&continuousValues](const sharedFactor &gf) {
     return gf->error(continuousValues);
   };
-  DecisionTree<Key, double> errorTree(factors_, errorFunc);
-  return errorTree;
+  DecisionTree<Key, double> error_tree(factors_, errorFunc);
+  return error_tree;
 }
 
 /* *******************************************************************************/

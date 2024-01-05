@@ -63,7 +63,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  AlgebraicDecisionTree<Key> DecisionTreeFactor::error() const {
+  AlgebraicDecisionTree<Key> DecisionTreeFactor::errorTree() const {
     // Get all possible assignments
     DiscreteKeys dkeys = discreteKeys();
     // Reverse to make cartesian product output a more natural ordering.

@@ -293,7 +293,7 @@ namespace gtsam {
   double error(const HybridValues& values) const override;
 
   /// Compute error for each assignment and return as a tree
-  AlgebraicDecisionTree<Key> error() const override;
+  AlgebraicDecisionTree<Key> errorTree() const override;
 
   /// @}
 

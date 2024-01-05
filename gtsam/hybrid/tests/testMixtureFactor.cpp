@@ -97,7 +97,8 @@ TEST(MixtureFactor, Error) {
   continuousValues.insert<double>(X(1), 0);
   continuousValues.insert<double>(X(2), 1);
 
-  AlgebraicDecisionTree<Key> error_tree = mixtureFactor.error(continuousValues);
+  AlgebraicDecisionTree<Key> error_tree =
+      mixtureFactor.errorTree(continuousValues);
 
   DiscreteKey m1(1, 2);
   std::vector<DiscreteKey> discrete_keys = {m1};
