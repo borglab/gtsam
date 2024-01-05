@@ -171,7 +171,8 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @param continuousValues Continuous values at which to compute the error.
    * @return AlgebraicDecisionTree<Key>
    */
-  AlgebraicDecisionTree<Key> error(const VectorValues& continuousValues) const;
+  AlgebraicDecisionTree<Key> errorTree(
+      const VectorValues& continuousValues) const;
 
   /**
    * @brief Compute unnormalized probability \f$ P(X | M, Z) \f$

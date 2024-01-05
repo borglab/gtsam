@@ -75,7 +75,7 @@ TEST(DecisionTreeFactor, Error) {
   // Create factors
   DecisionTreeFactor f(X & Y & Z, "2 5 3 6 4 7 25 55 35 65 45 75");
 
-  auto errors = f.error();
+  auto errors = f.errorTree();
   // regression
   AlgebraicDecisionTree<Key> expected(
       {X, Y, Z},

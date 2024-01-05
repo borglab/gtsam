@@ -580,7 +580,7 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
   HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
 
   HybridValues delta = hybridBayesNet->optimize();
-  auto error_tree = graph.error(delta.continuous());
+  auto error_tree = graph.errorTree(delta.continuous());
 
   std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
   std::vector<double> leaves = {0.9998558, 0.4902432, 0.5193694, 0.0097568};

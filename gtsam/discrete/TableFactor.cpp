@@ -169,8 +169,8 @@ double TableFactor::error(const HybridValues& values) const {
 }
 
 /* ************************************************************************ */
-AlgebraicDecisionTree<Key> TableFactor::error() const {
-  return toDecisionTreeFactor().error();
+AlgebraicDecisionTree<Key> TableFactor::errorTree() const {
+  return toDecisionTreeFactor().errorTree();
 }
 
 /* ************************************************************************ */
