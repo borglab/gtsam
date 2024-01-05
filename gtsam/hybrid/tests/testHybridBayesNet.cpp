@@ -182,7 +182,7 @@ TEST(HybridBayesNet, Error) {
   values.insert(X(1), Vector1(1));
 
   AlgebraicDecisionTree<Key> actual_errors =
-      bayesNet.error(values.continuous());
+      bayesNet.errorTree(values.continuous());
 
   // Regression.
   // Manually added all the error values from the 3 conditional types.

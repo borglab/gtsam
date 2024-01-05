@@ -221,7 +221,7 @@ class GTSAM_EXPORT GaussianMixture
    * @return AlgebraicDecisionTree<Key> A decision tree on the discrete keys
    * only, with the leaf values as the error for each assignment.
    */
-  AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
+  AlgebraicDecisionTree<Key> errorTree(const VectorValues &continuousValues) const;
 
   /**
    * @brief Compute the logProbability of this Gaussian Mixture.

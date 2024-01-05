@@ -99,7 +99,7 @@ void HybridGaussianFactorGraph::printErrors(
       } else {
         factor->print(ss.str(), keyFormatter);
         std::cout << "error = ";
-        gmf->error(values.continuous()).print("", keyFormatter);
+        gmf->errorTree(values.continuous()).print("", keyFormatter);
         std::cout << std::endl;
       }
     } else if (auto hc = std::dynamic_pointer_cast<HybridConditional>(factor)) {
@@ -113,12 +113,12 @@ void HybridGaussianFactorGraph::printErrors(
           std::cout << "error = " << hc->asGaussian()->error(values) << "\n";
         } else if (hc->isDiscrete()) {
           std::cout << "error = ";
-          hc->asDiscrete()->error().print("", keyFormatter);
+          hc->asDiscrete()->errorTree().print("", keyFormatter);
           std::cout << "\n";
         } else {
           // Is hybrid
           std::cout << "error = ";
-          hc->asMixture()->error(values.continuous()).print();
+          hc->asMixture()->errorTree(values.continuous()).print();
           std::cout << "\n";
         }
       }
@@ -141,7 +141,7 @@ void HybridGaussianFactorGraph::printErrors(
       } else {
         factor->print(ss.str(), keyFormatter);
         std::cout << "error = ";
-        df->error().print("", keyFormatter);
+        df->errorTree().print("", keyFormatter);
       }
 
     } else {
@@ -513,7 +513,7 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
 }
 
 /* ************************************************************************ */
-AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
+AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::errorTree(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> error_tree(0.0);
 
@@ -524,7 +524,7 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
 
     if (auto gaussianMixture = dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
       // Compute factor error and add it.
-      error_tree = error_tree + gaussianMixture->error(continuousValues);
+      error_tree = error_tree + gaussianMixture->errorTree(continuousValues);
     } else if (auto gaussian = dynamic_pointer_cast<GaussianFactor>(f)) {
       // If continuous only, get the (double) error
       // and add it to the error_tree
@@ -553,7 +553,7 @@ double HybridGaussianFactorGraph::probPrime(const HybridValues &values) const {
 /* ************************************************************************ */
 AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::probPrime(
     const VectorValues &continuousValues) const {
-  AlgebraicDecisionTree<Key> error_tree = this->error(continuousValues);
+  AlgebraicDecisionTree<Key> error_tree = this->errorTree(continuousValues);
   AlgebraicDecisionTree<Key> prob_tree = error_tree.apply([](double error) {
     // NOTE: The 0.5 term is handled by each factor
     return exp(-error);

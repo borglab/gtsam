@@ -342,7 +342,7 @@ AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
 }
 
 /* *******************************************************************************/
-AlgebraicDecisionTree<Key> GaussianMixture::error(
+AlgebraicDecisionTree<Key> GaussianMixture::errorTree(
     const VectorValues &continuousValues) const {
   auto errorFunc = [&](const GaussianConditional::shared_ptr &conditional) {
     // Check if valid pointer
@@ -355,8 +355,8 @@ AlgebraicDecisionTree<Key> GaussianMixture::error(
       return std::numeric_limits<double>::max();
     }
   };
-  DecisionTree<Key, double> errorTree(conditionals_, errorFunc);
-  return errorTree;
+  DecisionTree<Key, double> error_tree(conditionals_, errorFunc);
+  return error_tree;
 }
 
 /* *******************************************************************************/

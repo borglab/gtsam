@@ -93,7 +93,7 @@ class BinaryAllDiff : public Constraint {
   }
 
   /// Compute error for each assignment and return as a tree
-  AlgebraicDecisionTree<Key> error() const override {
+  AlgebraicDecisionTree<Key> errorTree() const override {
     throw std::runtime_error("BinaryAllDiff::error not implemented");
   }
 };
