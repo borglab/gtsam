@@ -282,7 +282,7 @@ HybridValues HybridBayesNet::sample() const {
 }
 
 /* ************************************************************************* */
-AlgebraicDecisionTree<Key> HybridBayesNet::error(
+AlgebraicDecisionTree<Key> HybridBayesNet::errorTree(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> result(0.0);
 
@@ -290,7 +290,7 @@ AlgebraicDecisionTree<Key> HybridBayesNet::error(
   for (auto &&conditional : *this) {
     if (auto gm = conditional->asMixture()) {
       // If conditional is hybrid, compute error for all assignments.
-      result = result + gm->error(continuousValues);
+      result = result + gm->errorTree(continuousValues);
 
     } else if (auto gc = conditional->asGaussian()) {
       // If continuous, get the error and add it to the result

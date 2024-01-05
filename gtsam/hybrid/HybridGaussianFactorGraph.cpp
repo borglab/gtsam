@@ -99,7 +99,7 @@ void HybridGaussianFactorGraph::printErrors(
       } else {
         factor->print(ss.str(), keyFormatter);
         std::cout << "error = ";
-        gmf->error(values.continuous()).print("", keyFormatter);
+        gmf->errorTree(values.continuous()).print("", keyFormatter);
         std::cout << std::endl;
       }
     } else if (auto hc = std::dynamic_pointer_cast<HybridConditional>(factor)) {
@@ -113,12 +113,12 @@ void HybridGaussianFactorGraph::printErrors(
           std::cout << "error = " << hc->asGaussian()->error(values) << "\n";
         } else if (hc->isDiscrete()) {
           std::cout << "error = ";
-          hc->asDiscrete()->error().print("", keyFormatter);
+          hc->asDiscrete()->errorTree().print("", keyFormatter);
           std::cout << "\n";
         } else {
           // Is hybrid
           std::cout << "error = ";
-          hc->asMixture()->error(values.continuous()).print();
+          hc->asMixture()->errorTree(values.continuous()).print();
           std::cout << "\n";
         }
       }
@@ -141,7 +141,7 @@ void HybridGaussianFactorGraph::printErrors(
       } else {
         factor->print(ss.str(), keyFormatter);
         std::cout << "error = ";
-        df->error().print("", keyFormatter);
+        df->errorTree().print("", keyFormatter);
       }
 
     } else {
