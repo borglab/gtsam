@@ -141,6 +141,8 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
 
     This can be computed by multiplying all the exponentiated errors
     of each of the conditionals.
+    
+    Return a tree where each leaf value is L(M_i;Z).
   */
   AlgebraicDecisionTree<Key> modelSelection() const;
 
