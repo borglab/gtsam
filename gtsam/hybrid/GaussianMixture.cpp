@@ -313,14 +313,14 @@ AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
 }
 
 /* *******************************************************************************/
-AlgebraicDecisionTree<Key> GaussianMixture::error(
+AlgebraicDecisionTree<Key> GaussianMixture::errorTree(
     const VectorValues &continuousValues) const {
   auto errorFunc = [&](const GaussianConditional::shared_ptr &conditional) {
     return conditional->error(continuousValues) +  //
            logConstant_ - conditional->logNormalizationConstant();
   };
-  DecisionTree<Key, double> errorTree(conditionals_, errorFunc);
-  return errorTree;
+  DecisionTree<Key, double> error_tree(conditionals_, errorFunc);
+  return error_tree;
 }
 
 /* *******************************************************************************/
