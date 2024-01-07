@@ -13,10 +13,9 @@ option(GTSAM_USE_SYSTEM_METIS "Find and use system-installed libmetis. If 'off',
 if(GTSAM_USE_SYSTEM_METIS)
   # Debian package: libmetis-dev
 
-  find_path(METIS_INCLUDE_DIR metis.h REQUIRED)
-  find_library(METIS_LIBRARY metis REQUIRED)
+  find_package(metis CONFIG REQUIRED)
 
-  if(METIS_INCLUDE_DIR AND METIS_LIBRARY)
+  if(metis_FOUND)
     mark_as_advanced(METIS_INCLUDE_DIR)
     mark_as_advanced(METIS_LIBRARY)
 
@@ -27,7 +26,7 @@ if(GTSAM_USE_SYSTEM_METIS)
       $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis>
       $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib>
     )
-    target_link_libraries(metis-gtsam-if INTERFACE ${METIS_LIBRARY})
+    target_link_libraries(metis-gtsam-if INTERFACE ${METIS_LIBRARY} metis)
   endif()
 else()
   # Bundled version:

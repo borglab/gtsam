@@ -2,6 +2,7 @@
 #define CEPHES_H
 
 #include "cephes/cephes_names.h"
+#include "dllexport.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,7 +65,7 @@ extern double igamc(double a, double x);
 extern double igam(double a, double x);
 extern double igam_fac(double a, double x);
 extern double igamci(double a, double q);
-extern double igami(double a, double p);
+GTSAM_EXTERN_EXPORT double igami(double a, double p);
 
 extern double incbet(double aa, double bb, double xx);
 extern double incbi(double aa, double bb, double yy0);
