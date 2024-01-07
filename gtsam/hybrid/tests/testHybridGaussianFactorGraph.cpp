@@ -658,7 +658,7 @@ bool ratioTest(const HybridBayesNet &bn, const VectorValues &measurements,
 }
 
 /* ****************************************************************************/
-// Check that the factor graph unnormalized probability is proportional to the
+// Check that the bayes net unnormalized probability is proportional to the
 // Bayes net probability for the given measurements.
 bool ratioTest(const HybridBayesNet &bn, const VectorValues &measurements,
                const HybridBayesNet &posterior, size_t num_samples = 100) {
