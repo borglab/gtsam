@@ -20,7 +20,7 @@ jobs:
       PYTHON_VERSION: ${{ matrix.python_version }}
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
@@ -107,7 +107,7 @@ jobs:
         if: runner.os == 'Linux'
         uses: pierotofy/set-swap-space@master
         with:
-          swap-size-gb: 6
+          swap-size-gb: 10
 
       - name: Install System Dependencies
         run: |

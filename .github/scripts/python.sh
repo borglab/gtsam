@@ -70,8 +70,10 @@ function build()
 
 function test()
 {
+  $PYTHON -m pip install --user pytest-timeout
   cd $GITHUB_WORKSPACE/python/gtsam/tests
-  $PYTHON -m unittest discover -v
+  # run tests with timeout (10 sec). (Reveal the test that hang on tbb)
+  $PYTHON -m pytest --verbose --timeout=10  --timeout-method=thread
   cd $GITHUB_WORKSPACE
 }
 
