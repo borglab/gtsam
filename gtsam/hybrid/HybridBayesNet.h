@@ -129,8 +129,11 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   GaussianBayesNetValTree assembleTree() const;
 
   /*
-    Perform the integration of L(X;M,Z)P(X|M)
-    which is the model selection term.
+    Compute L(M;Z), the likelihood of the discrete model M
+    given the measurements Z.
+    This is called the model selection term.
+
+    To do so, we perform the integration of L(M;Z) ∝ L(X;M,Z)P(X|M).
 
     By Bayes' rule, P(X|M,Z) ∝ L(X;M,Z)P(X|M),
     hence L(X;M,Z)P(X|M) is the unnormalized probabilty of
@@ -139,7 +142,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
     This can be computed by multiplying all the exponentiated errors
     of each of the conditionals.
   */
-  AlgebraicDecisionTree<Key> model_selection() const;
+  AlgebraicDecisionTree<Key> modelSelection() const;
 
   /**
    * @brief Solve the HybridBayesNet by first computing the MPE of all the

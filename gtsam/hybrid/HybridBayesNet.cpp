@@ -281,7 +281,7 @@ GaussianBayesNetValTree HybridBayesNet::assembleTree() const {
 }
 
 /* ************************************************************************* */
-AlgebraicDecisionTree<Key> HybridBayesNet::model_selection() const {
+AlgebraicDecisionTree<Key> HybridBayesNet::modelSelection() const {
   /*
       To perform model selection, we need:
       q(mu; M, Z) * sqrt((2*pi)^n*det(Sigma))
@@ -330,16 +330,16 @@ AlgebraicDecisionTree<Key> HybridBayesNet::model_selection() const {
       });
 
   // Compute model selection term (with help from ADT methods)
-  AlgebraicDecisionTree<Key> model_selection_term =
+  AlgebraicDecisionTree<Key> modelSelectionTerm =
       (errorTree + log_norm_constants) * -1;
 
-  double max_log = model_selection_term.max();
-  AlgebraicDecisionTree<Key> model_selection = DecisionTree<Key, double>(
-      model_selection_term,
+  double max_log = modelSelectionTerm.max();
+  modelSelectionTerm = DecisionTree<Key, double>(
+      modelSelectionTerm,
       [&max_log](const double &x) { return std::exp(x - max_log); });
-  model_selection = model_selection.normalize(model_selection.sum());
+  modelSelectionTerm = modelSelectionTerm.normalize(modelSelectionTerm.sum());
 
-  return model_selection;
+  return modelSelectionTerm;
 }
 
 /* ************************************************************************* */
@@ -348,7 +348,7 @@ HybridValues HybridBayesNet::optimize() const {
   DiscreteFactorGraph discrete_fg;
 
   // Compute model selection term
-  AlgebraicDecisionTree<Key> model_selection_term = model_selection();
+  AlgebraicDecisionTree<Key> modelSelectionTerm = modelSelection();
 
   // Get the set of all discrete keys involved in model selection
   std::set<DiscreteKey> discreteKeySet;
@@ -376,7 +376,7 @@ HybridValues HybridBayesNet::optimize() const {
   if (discreteKeySet.size() > 0) {
     discrete_fg.push_back(DecisionTreeFactor(
         DiscreteKeys(discreteKeySet.begin(), discreteKeySet.end()),
-        model_selection_term));
+        modelSelectionTerm));
   }
 
   // Solve for the MPE
