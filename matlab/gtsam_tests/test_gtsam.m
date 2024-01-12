@@ -44,6 +44,9 @@ testStereoVOExample
 display 'Starting: testVisualISAMExample'
 testVisualISAMExample
 
+display 'Starting: testProperties'
+testProperties
+
 %% MATLAB specific
 display 'Starting: testUtilities'
 testUtilities

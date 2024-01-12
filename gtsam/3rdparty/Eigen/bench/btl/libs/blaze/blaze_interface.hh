@@ -20,6 +20,7 @@
 
 #include <blaze/Math.h>
 #include <blaze/Blaze.h>
+#include <Eigen/Core>
 // using namespace blaze;
 
 #include <vector>
@@ -80,35 +81,35 @@ public :
     }
   }
 
-  static inline void matrix_matrix_product(const gene_matrix & A, const gene_matrix & B, gene_matrix & X, int N){
+  static EIGEN_DONT_INLINE void matrix_matrix_product(const gene_matrix & A, const gene_matrix & B, gene_matrix & X, int N){
     X = (A*B);
   }
 
-  static inline void transposed_matrix_matrix_product(const gene_matrix & A, const gene_matrix & B, gene_matrix & X, int N){
+  static EIGEN_DONT_INLINE void transposed_matrix_matrix_product(const gene_matrix & A, const gene_matrix & B, gene_matrix & X, int N){
     X = (trans(A)*trans(B));
   }
 
-  static inline void ata_product(const gene_matrix & A, gene_matrix & X, int N){
+  static EIGEN_DONT_INLINE void ata_product(const gene_matrix & A, gene_matrix & X, int N){
     X = (trans(A)*A);
   }
 
-  static inline void aat_product(const gene_matrix & A, gene_matrix & X, int N){
+  static EIGEN_DONT_INLINE void aat_product(const gene_matrix & A, gene_matrix & X, int N){
     X = (A*trans(A));
   }
 
-  static inline void matrix_vector_product(gene_matrix & A, gene_vector & B, gene_vector & X, int N){
+  static EIGEN_DONT_INLINE void matrix_vector_product(gene_matrix & A, gene_vector & B, gene_vector & X, int N){
     X = (A*B);
   }
 
-  static inline void atv_product(gene_matrix & A, gene_vector & B, gene_vector & X, int N){
+  static EIGEN_DONT_INLINE void atv_product(gene_matrix & A, gene_vector & B, gene_vector & X, int N){
     X = (trans(A)*B);
   }
 
-  static inline void axpy(const real coef, const gene_vector & X, gene_vector & Y, int N){
+  static EIGEN_DONT_INLINE void axpy(const real coef, const gene_vector & X, gene_vector & Y, int N){
     Y += coef * X;
   }
 
-  static inline void axpby(real a, const gene_vector & X, real b, gene_vector & Y, int N){
+  static EIGEN_DONT_INLINE void axpby(real a, const gene_vector & X, real b, gene_vector & Y, int N){
     Y = a*X + b*Y;
   }
 

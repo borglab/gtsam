@@ -9,8 +9,6 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/discrete/CSP.h>
 
-#include <boost/assign/std/map.hpp>
-using boost::assign::insert;
 #include <stdarg.h>
 
 #include <iostream>
@@ -60,14 +58,14 @@ class Sudoku : public CSP {
     // add row constraints
     for (size_t i = 0; i < n; i++) {
       DiscreteKeys dkeys;
-      for (size_t j = 0; j < n; j++) dkeys += dkey(i, j);
+      for (size_t j = 0; j < n; j++) dkeys.push_back(dkey(i, j));
       addAllDiff(dkeys);
     }
 
     // add col constraints
     for (size_t j = 0; j < n; j++) {
       DiscreteKeys dkeys;
-      for (size_t i = 0; i < n; i++) dkeys += dkey(i, j);
+      for (size_t i = 0; i < n; i++) dkeys.push_back(dkey(i, j));
       addAllDiff(dkeys);
     }
 
@@ -79,7 +77,7 @@ class Sudoku : public CSP {
         // Box I,J
         DiscreteKeys dkeys;
         for (size_t i = i0; i < i0 + N; i++)
-          for (size_t j = j0; j < j0 + N; j++) dkeys += dkey(i, j);
+          for (size_t j = j0; j < j0 + N; j++) dkeys.push_back(dkey(i, j));
         addAllDiff(dkeys);
         j0 += N;
       }
@@ -128,11 +126,14 @@ TEST(Sudoku, small) {
   // optimize and check
   auto solution = csp.optimize();
   DiscreteValues expected;
-  insert(expected)(csp.key(0, 0), 0)(csp.key(0, 1), 1)(csp.key(0, 2), 2)(
-      csp.key(0, 3), 3)(csp.key(1, 0), 2)(csp.key(1, 1), 3)(csp.key(1, 2), 0)(
-      csp.key(1, 3), 1)(csp.key(2, 0), 3)(csp.key(2, 1), 2)(csp.key(2, 2), 1)(
-      csp.key(2, 3), 0)(csp.key(3, 0), 1)(csp.key(3, 1), 0)(csp.key(3, 2), 3)(
-      csp.key(3, 3), 2);
+  expected = {{csp.key(0, 0), 0}, {csp.key(0, 1), 1},
+              {csp.key(0, 2), 2}, {csp.key(0, 3), 3},  //
+              {csp.key(1, 0), 2}, {csp.key(1, 1), 3},
+              {csp.key(1, 2), 0}, {csp.key(1, 3), 1},  //
+              {csp.key(2, 0), 3}, {csp.key(2, 1), 2},
+              {csp.key(2, 2), 1}, {csp.key(2, 3), 0},  //
+              {csp.key(3, 0), 1}, {csp.key(3, 1), 0},
+              {csp.key(3, 2), 3}, {csp.key(3, 3), 2}};
   EXPECT(assert_equal(expected, solution));
   // csp.printAssignment(solution);
 

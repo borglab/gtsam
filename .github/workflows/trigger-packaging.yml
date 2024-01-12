@@ -1,0 +1,21 @@
+# This triggers building of packages
+name: Trigger Package Builds
+on:
+  push:
+    branches:
+      - develop
+jobs:
+  trigger-package-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Package Rebuild
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.PACKAGING_REPO_ACCESS_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'borglab-launchpad',
+              repo: 'gtsam-packaging',
+              workflow_id: 'main.yaml',
+              ref: 'master'
+            })

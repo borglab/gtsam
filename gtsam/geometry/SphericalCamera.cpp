@@ -96,7 +96,7 @@ Vector2 SphericalCamera::reprojectionError(
     Matrix23 H_project_point;
     Matrix22 H_error;
     Unit3 projected = project2(point, H_project_pose, H_project_point);
-    Vector2 error = measured.errorVector(projected, boost::none, H_error);
+    Vector2 error = measured.errorVector(projected, {}, H_error);
     if (Dpose) *Dpose = H_error * H_project_pose;
     if (Dpoint) *Dpoint = H_error * H_project_point;
     return error;

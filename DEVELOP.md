@@ -3,8 +3,8 @@
 ### Coding Conventions
 
 * Classes are Uppercase, methods and functions lowerMixedCase.
-* We use a modified K&R Style, with 2-space tabs, inserting spaces for tabs.
-* Use meaningful variable names, e.g. `measurement` not `msm`.
+* Apart from those naming conventions, we adopt Google C++ style.
+* Use meaningful variable names, e.g. `measurement` not `msm`, avoid abbreviations.
 
 
 ### Windows

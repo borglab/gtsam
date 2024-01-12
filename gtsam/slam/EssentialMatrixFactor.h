@@ -31,13 +31,17 @@ namespace gtsam {
 /**
  * Factor that evaluates epipolar error p'Ep for given essential matrix
  */
-class EssentialMatrixFactor : public NoiseModelFactor1<EssentialMatrix> {
+class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
   Vector3 vA_, vB_;  ///< Homogeneous versions, in ideal coordinates
 
-  typedef NoiseModelFactor1<EssentialMatrix> Base;
+  typedef NoiseModelFactorN<EssentialMatrix> Base;
   typedef EssentialMatrixFactor This;
 
  public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   /**
    *  Constructor
    *  @param key Essential Matrix variable key
@@ -65,7 +69,7 @@ class EssentialMatrixFactor : public NoiseModelFactor1<EssentialMatrix> {
   template <class CALIBRATION>
   EssentialMatrixFactor(Key key, const Point2& pA, const Point2& pB,
                         const SharedNoiseModel& model,
-                        boost::shared_ptr<CALIBRATION> K)
+                        std::shared_ptr<CALIBRATION> K)
       : Base(model, key) {
     assert(K);
     vA_ = EssentialMatrix::Homogeneous(K->calibrate(pA));
@@ -74,7 +78,7 @@ class EssentialMatrixFactor : public NoiseModelFactor1<EssentialMatrix> {
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -90,8 +94,7 @@ class EssentialMatrixFactor : public NoiseModelFactor1<EssentialMatrix> {
 
   /// vector of errors returns 1D vector
   Vector evaluateError(
-      const EssentialMatrix& E,
-      boost::optional<Matrix&> H = boost::none) const override {
+      const EssentialMatrix& E, OptionalMatrixType H) const override {
     Vector error(1);
     error << E.error(vA_, vB_, H);
     return error;
@@ -106,15 +109,19 @@ class EssentialMatrixFactor : public NoiseModelFactor1<EssentialMatrix> {
  * in image 2 is perfect, and returns re-projection error in image 1
  */
 class EssentialMatrixFactor2
-    : public NoiseModelFactor2<EssentialMatrix, double> {
+    : public NoiseModelFactorN<EssentialMatrix, double> {
   Point3 dP1_;  ///< 3D point corresponding to measurement in image 1
   Point2 pn_;   ///< Measurement in image 2, in ideal coordinates
   double f_;    ///< approximate conversion factor for error scaling
 
-  typedef NoiseModelFactor2<EssentialMatrix, double> Base;
+  typedef NoiseModelFactorN<EssentialMatrix, double> Base;
   typedef EssentialMatrixFactor2 This;
 
  public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   /**
    *  Constructor
    *  @param key1 Essential Matrix variable key
@@ -143,7 +150,7 @@ class EssentialMatrixFactor2
   template <class CALIBRATION>
   EssentialMatrixFactor2(Key key1, Key key2, const Point2& pA, const Point2& pB,
                          const SharedNoiseModel& model,
-                         boost::shared_ptr<CALIBRATION> K)
+                         std::shared_ptr<CALIBRATION> K)
       : Base(model, key1, key2),
         dP1_(EssentialMatrix::Homogeneous(K->calibrate(pA))),
         pn_(K->calibrate(pB)) {
@@ -152,7 +159,7 @@ class EssentialMatrixFactor2
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -173,8 +180,7 @@ class EssentialMatrixFactor2
    */
   Vector evaluateError(
       const EssentialMatrix& E, const double& d,
-      boost::optional<Matrix&> DE = boost::none,
-      boost::optional<Matrix&> Dd = boost::none) const override {
+      OptionalMatrixType DE, OptionalMatrixType Dd) const override {
     // We have point x,y in image 1
     // Given a depth Z, the corresponding 3D point P1 = Z*(x,y,1) = (x,y,1)/d
     // We then convert to second camera by P2 = 1R2'*(P1-1T2)
@@ -235,6 +241,10 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
   Rot3 cRb_;  ///< Rotation from body to camera frame
 
  public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   /**
    *  Constructor
    *  @param key1 Essential Matrix variable key
@@ -260,12 +270,12 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
   template <class CALIBRATION>
   EssentialMatrixFactor3(Key key1, Key key2, const Point2& pA, const Point2& pB,
                          const Rot3& cRb, const SharedNoiseModel& model,
-                         boost::shared_ptr<CALIBRATION> K)
+                         std::shared_ptr<CALIBRATION> K)
       : EssentialMatrixFactor2(key1, key2, pA, pB, model, K), cRb_(cRb) {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -284,18 +294,19 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
    */
   Vector evaluateError(
       const EssentialMatrix& E, const double& d,
-      boost::optional<Matrix&> DE = boost::none,
-      boost::optional<Matrix&> Dd = boost::none) const override {
+      OptionalMatrixType DE, OptionalMatrixType Dd) const override {
     if (!DE) {
       // Convert E from body to camera frame
       EssentialMatrix cameraE = cRb_ * E;
       // Evaluate error
-      return Base::evaluateError(cameraE, d, boost::none, Dd);
+      return Base::evaluateError(cameraE, d, OptionalNone, Dd);
     } else {
       // Version with derivatives
       Matrix D_e_cameraE, D_cameraE_E;  // 2*5, 5*5
       EssentialMatrix cameraE = E.rotate(cRb_, D_cameraE_E);
-      Vector e = Base::evaluateError(cameraE, d, D_e_cameraE, Dd);
+      // Using the pointer version of evaluateError since the Base class (EssentialMatrixFactor2)
+      // does not have the matrix reference version of evaluateError
+      Vector e = Base::evaluateError(cameraE, d, &D_e_cameraE, Dd);
       *DE = D_e_cameraE * D_cameraE_E;  // (2*5) * (5*5)
       return e;
     }
@@ -321,17 +332,21 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
  */
 template <class CALIBRATION>
 class EssentialMatrixFactor4
-    : public NoiseModelFactor2<EssentialMatrix, CALIBRATION> {
+    : public NoiseModelFactorN<EssentialMatrix, CALIBRATION> {
  private:
   Point2 pA_, pB_;  ///< points in pixel coordinates
 
-  typedef NoiseModelFactor2<EssentialMatrix, CALIBRATION> Base;
+  typedef NoiseModelFactorN<EssentialMatrix, CALIBRATION> Base;
   typedef EssentialMatrixFactor4 This;
 
   static constexpr int DimK = FixedDimension<CALIBRATION>::value;
   typedef Eigen::Matrix<double, 2, DimK> JacobianCalibration;
 
  public:
+
+   // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   /**
    *  Constructor
    *  @param keyE Essential Matrix (from camera B to A) variable key
@@ -347,7 +362,7 @@ class EssentialMatrixFactor4
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -372,13 +387,12 @@ class EssentialMatrixFactor4
    */
   Vector evaluateError(
       const EssentialMatrix& E, const CALIBRATION& K,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     // converting from pixel coordinates to normalized coordinates cA and cB
     JacobianCalibration cA_H_K;  // dcA/dK
     JacobianCalibration cB_H_K;  // dcB/dK
-    Point2 cA = K.calibrate(pA_, H2 ? &cA_H_K : 0, boost::none);
-    Point2 cB = K.calibrate(pB_, H2 ? &cB_H_K : 0, boost::none);
+    Point2 cA = K.calibrate(pA_, H2 ? &cA_H_K : 0, OptionalNone);
+    Point2 cB = K.calibrate(pB_, H2 ? &cB_H_K : 0, OptionalNone);
 
     // convert to homogeneous coordinates
     Vector3 vA = EssentialMatrix::Homogeneous(cA);

@@ -17,15 +17,14 @@
  * @date    Feb 14, 2011
  */
 
-#include <boost/assign/std/map.hpp>
-#include <boost/assign/std/vector.hpp>
-#include <boost/make_shared.hpp>
-using namespace boost::assign;
-
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/DiscreteBayesNet.h>
+
 
 using namespace std;
 using namespace gtsam;
@@ -49,18 +48,19 @@ TEST(DiscreteConditional, constructors) {
   DiscreteConditional actual2(1, f2);
   DecisionTreeFactor expected2 = f2 / *f2.sum(1);
   EXPECT(assert_equal(expected2, static_cast<DecisionTreeFactor>(actual2)));
+
+  std::vector<double> probs{0.2, 0.5, 0.3, 0.6, 0.4, 0.7, 0.25, 0.55, 0.35, 0.65, 0.45, 0.75};
+  DiscreteConditional actual3(X, {Y, Z}, probs);
+  DecisionTreeFactor expected3 = f2;
+  EXPECT(assert_equal(expected3, static_cast<DecisionTreeFactor>(actual3)));
 }
 
 /* ************************************************************************* */
 TEST(DiscreteConditional, constructors_alt_interface) {
   DiscreteKey X(0, 2), Y(2, 3), Z(1, 2);  // watch ordering !
 
-  Signature::Table table;
-  Signature::Row r1, r2, r3;
-  r1 += 1.0, 1.0;
-  r2 += 2.0, 3.0;
-  r3 += 1.0, 4.0;
-  table += r1, r2, r3;
+  const Signature::Row r1{1, 1}, r2{2, 3}, r3{1, 4};
+  const Signature::Table table{r1, r2, r3};
   DiscreteConditional actual1(X, {Y}, table);
 
   DecisionTreeFactor f1(X & Y, "0.5 0.4 0.2 0.5 0.6 0.8");
@@ -92,6 +92,31 @@ TEST(DiscreteConditional, constructors3) {
 
   DecisionTreeFactor expected(C & B & A, "0.8 0.5 0.5 0.2 0.2 0.5 0.5 0.8");
   EXPECT(assert_equal(expected, static_cast<DecisionTreeFactor>(actual)));
+}
+
+/* ****************************************************************************/
+// Test evaluate for a discrete Prior P(Asia).
+TEST(DiscreteConditional, PriorProbability) {
+  constexpr Key asiaKey = 0;
+  const DiscreteKey Asia(asiaKey, 2);
+  DiscreteConditional dc(Asia, "4/6");
+  DiscreteValues values{{asiaKey, 0}};
+  EXPECT_DOUBLES_EQUAL(0.4, dc.evaluate(values), 1e-9);
+  EXPECT(DiscreteConditional::CheckInvariants(dc, values));
+}
+
+/* ************************************************************************* */
+// Check that error, logProbability, evaluate all work as expected.
+TEST(DiscreteConditional, probability) {
+  DiscreteKey C(2, 2), D(4, 2), E(3, 2);
+  DiscreteConditional C_given_DE((C | D, E) = "4/1 1/1 1/1 1/4");
+
+  DiscreteValues given {{C.first, 1}, {D.first, 0}, {E.first, 0}};
+  EXPECT_DOUBLES_EQUAL(0.2, C_given_DE.evaluate(given), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.2, C_given_DE(given), 1e-9);
+  EXPECT_DOUBLES_EQUAL(log(0.2), C_given_DE.logProbability(given), 1e-9);
+  EXPECT_DOUBLES_EQUAL(-log(0.2), C_given_DE.error(given), 1e-9);
+  EXPECT(DiscreteConditional::CheckInvariants(C_given_DE, given));
 }
 
 /* ************************************************************************* */
@@ -212,7 +237,6 @@ TEST(DiscreteConditional, marginals2) {
   DiscreteConditional conditional(A | B = "2/2 3/1");
   DiscreteConditional prior(B % "1/2");
   DiscreteConditional pAB = prior * conditional;
-  GTSAM_PRINT(pAB);
   // P(A=0) = P(A=0|B=0)P(B=0) + P(A=0|B=1)P(B=1) = 2*1 + 3*2 = 8
   // P(A=1) = P(A=1|B=0)P(B=0) + P(A=1|B=1)P(B=1) = 2*1 + 1*2 = 4
   DiscreteConditional actualA = pAB.marginal(A.first);

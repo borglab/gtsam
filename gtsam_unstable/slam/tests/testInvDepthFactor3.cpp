@@ -62,10 +62,9 @@ TEST( InvDepthFactor, optimize) {
   gtsam::NonlinearFactorGraph graph;
   Values initial;
 
-  InverseDepthFactor::shared_ptr factor(new InverseDepthFactor(expected_uv, sigma,
-      Symbol('x',1), Symbol('l',1), Symbol('d',1), K));
-  graph.push_back(factor);
-  graph += PoseConstraint(Symbol('x',1),level_pose);
+  graph.emplace_shared<InverseDepthFactor>(expected_uv, sigma,
+      Symbol('x',1), Symbol('l',1), Symbol('d',1), K);
+  graph.emplace_shared<PoseConstraint>(Symbol('x', 1), level_pose);
   initial.insert(Symbol('x',1), level_pose);
   initial.insert(Symbol('l',1), inv_landmark);
   initial.insert(Symbol('d',1), inv_depth);
@@ -91,7 +90,7 @@ TEST( InvDepthFactor, optimize) {
       Symbol('x',2), Symbol('l',1),Symbol('d',1),K));
   graph.push_back(factor1);
 
-  graph += PoseConstraint(Symbol('x',2),right_pose);
+  graph.emplace_shared<PoseConstraint>(Symbol('x',2),right_pose);
 
   initial.insert(Symbol('x',2), right_pose);
 
@@ -118,10 +117,8 @@ TEST( InvDepthFactor, Jacobian3D ) {
   Point2 expected_uv = level_camera.project(landmark);
 
   // get expected landmark representation using backprojection
-  double inv_depth;
-  Vector5 inv_landmark;
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  std::tie(inv_landmark, inv_depth) = inv_camera.backproject(expected_uv, 5);
+  const auto [inv_landmark, inv_depth] = inv_camera.backproject(expected_uv, 5);
   Vector5 expected_inv_landmark((Vector(5) << 0., 0., 1., 0., 0.).finished());
 
   CHECK(assert_equal(expected_inv_landmark, inv_landmark, 1e-6));

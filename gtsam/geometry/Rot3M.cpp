@@ -24,7 +24,6 @@
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
-#include <boost/math/constants/constants.hpp>
 #include <cmath>
 
 using namespace std;

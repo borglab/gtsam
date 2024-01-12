@@ -9,7 +9,7 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "../../test/sparse_solver.h"
-#include <Eigen/src/IterativeSolvers/DGMRES.h>
+#include <unsupported/Eigen/IterativeSolvers>
 
 template<typename T> void test_dgmres_T()
 {
@@ -24,7 +24,7 @@ template<typename T> void test_dgmres_T()
   //CALL_SUBTEST( check_sparse_square_solving(dgmres_colmajor_ssor)     );
 }
 
-void test_dgmres()
+EIGEN_DECLARE_TEST(dgmres)
 {
   CALL_SUBTEST_1(test_dgmres_T<double>());
   CALL_SUBTEST_2(test_dgmres_T<std::complex<double> >());

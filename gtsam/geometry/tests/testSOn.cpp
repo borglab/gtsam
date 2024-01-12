@@ -84,9 +84,9 @@ TEST(SOn, SO5) {
 
 //******************************************************************************
 TEST(SOn, Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<SOn>));
-  BOOST_CONCEPT_ASSERT((IsManifold<SOn>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<SOn>));
+  GTSAM_CONCEPT_ASSERT(IsGroup<SOn>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<SOn>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<SOn>);
 }
 
 //******************************************************************************

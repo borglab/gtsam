@@ -9,7 +9,6 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam_unstable/discrete/Domain.h>
 
-#include <boost/make_shared.hpp>
 #include <sstream>
 namespace gtsam {
 
@@ -37,8 +36,7 @@ double Domain::operator()(const DiscreteValues& values) const {
 
 /* ************************************************************************* */
 DecisionTreeFactor Domain::toDecisionTreeFactor() const {
-  DiscreteKeys keys;
-  keys += DiscreteKey(key(), cardinality_);
+  const DiscreteKeys keys{DiscreteKey(key(), cardinality_)};
   vector<double> table;
   for (size_t i1 = 0; i1 < cardinality_; ++i1) table.push_back(contains(i1));
   DecisionTreeFactor converted(keys, table);
@@ -62,7 +60,7 @@ bool Domain::ensureArcConsistency(Key j, Domains* domains) const {
 }
 
 /* ************************************************************************* */
-boost::optional<Domain> Domain::checkAllDiff(const KeyVector keys,
+std::optional<Domain> Domain::checkAllDiff(const KeyVector keys,
                                              const Domains& domains) const {
   Key j = key();
   // for all values in this domain
@@ -75,7 +73,7 @@ boost::optional<Domain> Domain::checkAllDiff(const KeyVector keys,
     return Domain(this->discreteKey(), value);
   found:;
   }
-  return boost::none;  // we did not change it
+  return {};  // we did not change it
 }
 
 /* ************************************************************************* */
@@ -83,7 +81,7 @@ Constraint::shared_ptr Domain::partiallyApply(const DiscreteValues& values) cons
   DiscreteValues::const_iterator it = values.find(key());
   if (it != values.end() && !contains(it->second))
     throw runtime_error("Domain::partiallyApply: unsatisfiable");
-  return boost::make_shared<Domain>(*this);
+  return std::make_shared<Domain>(*this);
 }
 
 /* ************************************************************************* */
@@ -91,7 +89,7 @@ Constraint::shared_ptr Domain::partiallyApply(const Domains& domains) const {
   const Domain& Dk = domains.at(key());
   if (Dk.isSingleton() && !contains(*Dk.begin()))
     throw runtime_error("Domain::partiallyApply: unsatisfiable");
-  return boost::make_shared<Domain>(Dk);
+  return std::make_shared<Domain>(Dk);
 }
 
 /* ************************************************************************* */

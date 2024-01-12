@@ -37,19 +37,19 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/inference/graph.h>
 
 namespace gtsam {
 namespace lago {
 
 typedef std::map<Key, double> key2doubleMap;
+typedef std::map<Key, Key> PredecessorMap;
 
 /**
  * Compute the cumulative orientations (without wrapping)
  * for all nodes wrt the root (root has zero orientation).
  */
 GTSAM_EXPORT key2doubleMap computeThetasToRoot(
-    const key2doubleMap& deltaThetaMap, const PredecessorMap<Key>& tree);
+    const key2doubleMap& deltaThetaMap, const PredecessorMap& tree);
 
 /**
  * Given a factor graph "g", and a spanning tree "tree", select the nodes belonging
@@ -62,13 +62,20 @@ GTSAM_EXPORT key2doubleMap computeThetasToRoot(
 GTSAM_EXPORT void getSymbolicGraph(
 /*OUTPUTS*/std::vector<size_t>& spanningTreeIds, std::vector<size_t>& chordsIds,
     key2doubleMap& deltaThetaMap,
-    /*INPUTS*/const PredecessorMap<Key>& tree, const NonlinearFactorGraph& g);
+    /*INPUTS*/const PredecessorMap& tree, const NonlinearFactorGraph& g);
 
 /** Linear factor graph with regularized orientation measurements */
 GTSAM_EXPORT GaussianFactorGraph buildLinearOrientationGraph(
     const std::vector<size_t>& spanningTreeIds,
     const std::vector<size_t>& chordsIds, const NonlinearFactorGraph& g,
-    const key2doubleMap& orientationsToRoot, const PredecessorMap<Key>& tree);
+    const key2doubleMap& orientationsToRoot, const PredecessorMap& tree);
+
+/** Given a "pose2" factor graph, find its minimum spanning tree.
+ * Note: All 'Pose2' Between factors are given equal weightage.
+ * Note: Assumes all the edges (factors) are Between factors.
+ */
+GTSAM_EXPORT PredecessorMap findMinimumSpanningTree(
+    const NonlinearFactorGraph& pose2Graph);
 
 /** LAGO: Return the orientations of the Pose2 in a generic factor graph */
 GTSAM_EXPORT VectorValues initializeOrientations(

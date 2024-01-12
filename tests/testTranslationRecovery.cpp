@@ -17,8 +17,8 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/sfm/TranslationRecovery.h>
 #include <gtsam/sfm/SfmData.h>
+#include <gtsam/sfm/TranslationRecovery.h>
 #include <gtsam/slam/dataset.h>
 
 using namespace std;
@@ -62,13 +62,13 @@ TEST(TranslationRecovery, BAL) {
                         unitTranslation.measured()));
   }
 
-  TranslationRecovery algorithm(relativeTranslations);
-  const auto graph = algorithm.buildGraph();
+  TranslationRecovery algorithm;
+  const auto graph = algorithm.buildGraph(relativeTranslations);
   EXPECT_LONGS_EQUAL(3, graph.size());
 
   // Run translation recovery
   const double scale = 2.0;
-  const auto result = algorithm.run(scale);
+  const auto result = algorithm.run(relativeTranslations, scale);
 
   // Check result for first two translations, determined by prior
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
@@ -107,12 +107,12 @@ TEST(TranslationRecovery, TwoPoseTest) {
                         unitTranslation.measured()));
   }
 
-  TranslationRecovery algorithm(relativeTranslations);
-  const auto graph = algorithm.buildGraph();
+  TranslationRecovery algorithm;
+  const auto graph = algorithm.buildGraph(relativeTranslations);
   EXPECT_LONGS_EQUAL(1, graph.size());
 
   // Run translation recovery
-  const auto result = algorithm.run(/*scale=*/3.0);
+  const auto result = algorithm.run(relativeTranslations, /*scale=*/3.0);
 
   // Check result for first two translations, determined by prior
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
@@ -145,11 +145,11 @@ TEST(TranslationRecovery, ThreePoseTest) {
                         unitTranslation.measured()));
   }
 
-  TranslationRecovery algorithm(relativeTranslations);
-  const auto graph = algorithm.buildGraph();
+  TranslationRecovery algorithm;
+  const auto graph = algorithm.buildGraph(relativeTranslations);
   EXPECT_LONGS_EQUAL(3, graph.size());
 
-  const auto result = algorithm.run(/*scale=*/3.0);
+  const auto result = algorithm.run(relativeTranslations, /*scale=*/3.0);
 
   // Check result
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
@@ -180,13 +180,9 @@ TEST(TranslationRecovery, ThreePosesIncludingZeroTranslation) {
                         unitTranslation.measured()));
   }
 
-  TranslationRecovery algorithm(relativeTranslations);
-  const auto graph = algorithm.buildGraph();
-  // There is only 1 non-zero translation edge.
-  EXPECT_LONGS_EQUAL(1, graph.size());
-
+  TranslationRecovery algorithm;
   // Run translation recovery
-  const auto result = algorithm.run(/*scale=*/3.0);
+  const auto result = algorithm.run(relativeTranslations, /*scale=*/3.0);
 
   // Check result
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
@@ -222,12 +218,10 @@ TEST(TranslationRecovery, FourPosesIncludingZeroTranslation) {
                         unitTranslation.measured()));
   }
 
-  TranslationRecovery algorithm(relativeTranslations);
-  const auto graph = algorithm.buildGraph();
-  EXPECT_LONGS_EQUAL(3, graph.size());
+  TranslationRecovery algorithm;
 
   // Run translation recovery
-  const auto result = algorithm.run(/*scale=*/4.0);
+  const auto result = algorithm.run(relativeTranslations, /*scale=*/4.0);
 
   // Check result
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
@@ -251,18 +245,112 @@ TEST(TranslationRecovery, ThreePosesWithZeroTranslation) {
                         unitTranslation.measured()));
   }
 
-  TranslationRecovery algorithm(relativeTranslations);
-  const auto graph = algorithm.buildGraph();
-  // Graph size will be zero as there no 'non-zero distance' edges.
-  EXPECT_LONGS_EQUAL(0, graph.size());
+  TranslationRecovery algorithm;
 
   // Run translation recovery
-  const auto result = algorithm.run(/*scale=*/4.0);
+  const auto result = algorithm.run(relativeTranslations, /*scale=*/4.0);
 
   // Check result
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(1), 1e-8));
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(2), 1e-8));
+}
+
+TEST(TranslationRecovery, ThreePosesWithOneSoftConstraint) {
+  // Create a dataset with 3 poses.
+  // __      __
+  // \/      \/
+  //  0 _____ 1
+  //    \ __ /
+  //     \\//
+  //       3
+  //
+  // 0 and 1 face in the same direction but have a translation offset. 3 is in
+  // the same direction as 0 and 1, in between 0 and 1, with some Y axis offset.
+
+  Values poses;
+  poses.insert<Pose3>(0, Pose3(Rot3(), Point3(0, 0, 0)));
+  poses.insert<Pose3>(1, Pose3(Rot3(), Point3(2, 0, 0)));
+  poses.insert<Pose3>(3, Pose3(Rot3(), Point3(1, -1, 0)));
+
+  auto relativeTranslations = TranslationRecovery::SimulateMeasurements(
+      poses, {{0, 1}, {0, 3}, {1, 3}});
+
+  std::vector<BinaryMeasurement<Point3>> betweenTranslations;
+  betweenTranslations.emplace_back(0, 3, Point3(1, -1, 0),
+                                   noiseModel::Isotropic::Sigma(3, 1e-2));
+
+  TranslationRecovery algorithm;
+  auto result =
+      algorithm.run(relativeTranslations, /*scale=*/0.0, betweenTranslations);
+
+  // Check result
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-4));
+  EXPECT(assert_equal(Point3(2, 0, 0), result.at<Point3>(1), 1e-4));
+  EXPECT(assert_equal(Point3(1, -1, 0), result.at<Point3>(3), 1e-4));
+}
+
+TEST(TranslationRecovery, ThreePosesWithOneHardConstraint) {
+  // Create a dataset with 3 poses.
+  // __      __
+  // \/      \/
+  //  0 _____ 1
+  //    \ __ /
+  //     \\//
+  //       3
+  //
+  // 0 and 1 face in the same direction but have a translation offset. 3 is in
+  // the same direction as 0 and 1, in between 0 and 1, with some Y axis offset.
+
+  Values poses;
+  poses.insert<Pose3>(0, Pose3(Rot3(), Point3(0, 0, 0)));
+  poses.insert<Pose3>(1, Pose3(Rot3(), Point3(2, 0, 0)));
+  poses.insert<Pose3>(3, Pose3(Rot3(), Point3(1, -1, 0)));
+
+  auto relativeTranslations = TranslationRecovery::SimulateMeasurements(
+      poses, {{0, 1}, {0, 3}, {1, 3}});
+
+  std::vector<BinaryMeasurement<Point3>> betweenTranslations;
+  betweenTranslations.emplace_back(0, 1, Point3(2, 0, 0),
+                                   noiseModel::Constrained::All(3, 1e2));
+
+  TranslationRecovery algorithm;
+  auto result =
+      algorithm.run(relativeTranslations, /*scale=*/0.0, betweenTranslations);
+
+  // Check result
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-4));
+  EXPECT(assert_equal(Point3(2, 0, 0), result.at<Point3>(1), 1e-4));
+  EXPECT(assert_equal(Point3(1, -1, 0), result.at<Point3>(3), 1e-4));
+}
+
+TEST(TranslationRecovery, NodeWithBetweenFactorAndNoMeasurements) {
+  // Checks that valid results are obtained when a between translation edge is
+  // provided with a node that does not have any other relative translations.
+  Values poses;
+  poses.insert<Pose3>(0, Pose3(Rot3(), Point3(0, 0, 0)));
+  poses.insert<Pose3>(1, Pose3(Rot3(), Point3(2, 0, 0)));
+  poses.insert<Pose3>(3, Pose3(Rot3(), Point3(1, -1, 0)));
+  poses.insert<Pose3>(4, Pose3(Rot3(), Point3(1, 2, 1)));
+
+  auto relativeTranslations = TranslationRecovery::SimulateMeasurements(
+      poses, {{0, 1}, {0, 3}, {1, 3}});
+
+  std::vector<BinaryMeasurement<Point3>> betweenTranslations;
+  betweenTranslations.emplace_back(0, 1, Point3(2, 0, 0),
+                                   noiseModel::Constrained::All(3, 1e2));
+  // Node 4 only has this between translation prior, no relative translations.
+  betweenTranslations.emplace_back(0, 4, Point3(1, 2, 1));
+
+  TranslationRecovery algorithm;
+  auto result =
+      algorithm.run(relativeTranslations, /*scale=*/0.0, betweenTranslations);
+
+  // Check result
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-4));
+  EXPECT(assert_equal(Point3(2, 0, 0), result.at<Point3>(1), 1e-4));
+  EXPECT(assert_equal(Point3(1, -1, 0), result.at<Point3>(3), 1e-4));
+  EXPECT(assert_equal(Point3(1, 2, 1), result.at<Point3>(4), 1e-4));
 }
 
 /* ************************************************************************* */

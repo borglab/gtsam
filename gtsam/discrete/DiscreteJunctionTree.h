@@ -44,7 +44,8 @@ namespace gtsam {
    * The tree structure and elimination method are exactly analogous to the EliminationTree,
    * except that in the JunctionTree, at each node multiple variables are eliminated at a time.
    *
-   * \addtogroup Multifrontal
+   * \ingroup Multifrontal
+   * @ingroup discrete
    * \nosubgrouping
    */
   class GTSAM_EXPORT DiscreteJunctionTree :
@@ -52,7 +53,7 @@ namespace gtsam {
   public:
     typedef JunctionTree<DiscreteBayesTree, DiscreteFactorGraph> Base; ///< Base class
     typedef DiscreteJunctionTree This; ///< This class
-    typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
 
     /**
     * Build the elimination tree of a factor graph using precomputed column structure.
@@ -65,4 +66,6 @@ namespace gtsam {
     DiscreteJunctionTree(const DiscreteEliminationTree& eliminationTree);
   };
 
+  /// typedef for wrapper:
+  using DiscreteCluster = DiscreteJunctionTree::Cluster;
 }

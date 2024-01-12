@@ -26,15 +26,14 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/Vector.h>
+#ifdef GTSAM_USE_BOOST_FEATURES
 #include <gtsam/base/timing.h>
-
-#include <boost/format.hpp>
-#include <boost/optional.hpp>
-#include <boost/range/adaptor/map.hpp>
+#endif
 
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <limits>
 #include <string>
 
@@ -42,7 +41,6 @@ using namespace std;
 
 namespace gtsam {
 
-using boost::adaptors::map_values;
 typedef internal::LevenbergMarquardtState State;
 
 /* ************************************************************************* */
@@ -65,7 +63,8 @@ LevenbergMarquardtOptimizer::LevenbergMarquardtOptimizer(const NonlinearFactorGr
 
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::initTime() {
-  startTime_ = boost::posix_time::microsec_clock::universal_time();
+  // use chrono to measure time in microseconds
+  startTime_ = std::chrono::high_resolution_clock::now();
 }
 
 /* ************************************************************************* */
@@ -107,9 +106,12 @@ inline void LevenbergMarquardtOptimizer::writeLogFile(double currentError){
 
   if (!params_.logFile.empty()) {
     ofstream os(params_.logFile.c_str(), ios::app);
-    boost::posix_time::ptime currentTime = boost::posix_time::microsec_clock::universal_time();
+    // use chrono to measure time in microseconds
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    // Get the time spent in seconds and print it
+    double timeSpent = std::chrono::duration_cast<std::chrono::microseconds>(currentTime - startTime_).count() / 1e6;
     os << /*inner iterations*/ currentState->totalNumberInnerIterations << ","
-        << 1e-6 * (currentTime - startTime_).total_microseconds() << ","
+        << timeSpent << ","
         << /*current error*/ currentError << "," << currentState->lambda << ","
         << /*outer iterations*/ currentState->iterations << endl;
   }
@@ -121,12 +123,16 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
   auto currentState = static_cast<const State*>(state_.get());
   bool verbose = (params_.verbosityLM >= LevenbergMarquardtParams::TRYLAMBDA);
 
+#ifdef GTSAM_USE_BOOST_FEATURES
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
   boost::timer::cpu_timer lamda_iteration_timer;
   lamda_iteration_timer.start();
 #else
   boost::timer lamda_iteration_timer;
   lamda_iteration_timer.restart();
+#endif
+#else
+  auto start = std::chrono::high_resolution_clock::now();
 #endif
 
   if (verbose)
@@ -139,7 +145,8 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
   double modelFidelity = 0.0;
   bool step_is_successful = false;
   bool stopSearchingLambda = false;
-  double newError = numeric_limits<double>::infinity(), costChange;
+  double newError = numeric_limits<double>::infinity();
+  double costChange = 0.0;
   Values newValues;
   VectorValues delta;
 
@@ -215,20 +222,24 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
   } // if (systemSolvedSuccessfully)
 
   if (params_.verbosityLM == LevenbergMarquardtParams::SUMMARY) {
+#ifdef GTSAM_USE_BOOST_FEATURES
 // do timing
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
     double iterationTime = 1e-9 * lamda_iteration_timer.elapsed().wall;
 #else
     double iterationTime = lamda_iteration_timer.elapsed();
 #endif
-    if (currentState->iterations == 0)
+#else
+    auto end = std::chrono::high_resolution_clock::now();
+    double iterationTime = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1e6;
+#endif
+    if (currentState->iterations == 0) {
       cout << "iter      cost      cost_change    lambda  success iter_time" << endl;
-
-    cout << boost::format("% 4d % 8e   % 3.2e   % 3.2e  % 4d   % 3.2e") % currentState->iterations %
-                newError % costChange % currentState->lambda % systemSolvedSuccessfully %
-                iterationTime << endl;
+    }
+    cout << setw(4) << currentState->iterations << " " << setw(8) << newError << " " << setw(3) << setprecision(2)
+         << costChange << " " << setw(3) << setprecision(2) << currentState->lambda << " " << setw(4)
+         << systemSolvedSuccessfully << " " << setw(3) << setprecision(2) << iterationTime << endl;
   }
-
   if (step_is_successful) {
     // we have successfully decreased the cost and we have good modelFidelity
     // NOTE(frank): As we return immediately after this, we move the newValues
@@ -282,8 +293,8 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::iterate() {
   VectorValues sqrtHessianDiagonal;
   if (params_.diagonalDamping) {
     sqrtHessianDiagonal = linear->hessianDiagonal();
-    for (Vector& v : sqrtHessianDiagonal | map_values) {
-      v = v.cwiseMax(params_.minDiagonal).cwiseMin(params_.maxDiagonal).cwiseSqrt();
+    for (auto& [key, value] : sqrtHessianDiagonal) {
+      value = value.cwiseMax(params_.minDiagonal).cwiseMin(params_.maxDiagonal).cwiseSqrt();
     }
   }
 

@@ -547,7 +547,7 @@ Point2 pA(size_t i) { return data.tracks[i].measurements[0].second; }
 Point2 pB(size_t i) { return data.tracks[i].measurements[1].second; }
 
 Cal3Bundler trueK = Cal3Bundler(500, 0, 0);
-boost::shared_ptr<Cal3Bundler> K = boost::make_shared<Cal3Bundler>(trueK);
+std::shared_ptr<Cal3Bundler> K = std::make_shared<Cal3Bundler>(trueK);
 PinholeCamera<Cal3Bundler> camera2(data.cameras[1].pose(), trueK);
 
 Vector vA(size_t i) {

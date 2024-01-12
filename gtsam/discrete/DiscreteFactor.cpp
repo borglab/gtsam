@@ -19,6 +19,7 @@
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/discrete/DiscreteFactor.h>
+#include <gtsam/hybrid/HybridValues.h>
 
 #include <cmath>
 #include <sstream>
@@ -26,6 +27,28 @@
 using namespace std;
 
 namespace gtsam {
+
+/* ************************************************************************ */
+DiscreteKeys DiscreteFactor::discreteKeys() const {
+  DiscreteKeys result;
+  for (auto&& key : keys()) {
+    DiscreteKey dkey(key, cardinality(key));
+    if (std::find(result.begin(), result.end(), dkey) == result.end()) {
+      result.push_back(dkey);
+    }
+  }
+  return result;
+}
+
+/* ************************************************************************* */
+double DiscreteFactor::error(const DiscreteValues& values) const {
+  return -std::log((*this)(values));
+}
+
+/* ************************************************************************* */
+double DiscreteFactor::error(const HybridValues& c) const {
+  return this->error(c.discrete());
+}
 
 /* ************************************************************************* */
 std::vector<double> expNormalize(const std::vector<double>& logProbs) {

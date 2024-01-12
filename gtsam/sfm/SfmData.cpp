@@ -322,25 +322,6 @@ bool writeBAL(const std::string &filename, const SfmData &data) {
   return true;
 }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-bool readBundler(const std::string &filename, SfmData &data) {
-  try {
-    data = SfmData::FromBundlerFile(filename);
-    return true;
-  } catch (const std::exception & /* e */) {
-    return false;
-  }
-}
-bool readBAL(const std::string &filename, SfmData &data) {
-  try {
-    data = SfmData::FromBalFile(filename);
-    return true;
-  } catch (const std::exception & /* e */) {
-    return false;
-  }
-}
-#endif
-
 SfmData readBal(const std::string &filename) {
   return SfmData::FromBalFile(filename);
 }
@@ -424,8 +405,8 @@ NonlinearFactorGraph SfmData::generalSfmFactors(
 
 /* ************************************************************************** */
 NonlinearFactorGraph SfmData::sfmFactorGraph(
-    const SharedNoiseModel &model, boost::optional<size_t> fixedCamera,
-    boost::optional<size_t> fixedPoint) const {
+    const SharedNoiseModel &model, std::optional<size_t> fixedCamera,
+    std::optional<size_t> fixedPoint) const {
   NonlinearFactorGraph graph = generalSfmFactors(model);
   using noiseModel::Constrained;
   if (fixedCamera) {

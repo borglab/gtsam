@@ -22,14 +22,7 @@
 #include <gtsam/discrete/DecisionTree.h>
 
 #include <algorithm>
-#include <boost/assign/std/vector.hpp>
-#include <boost/format.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/optional.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/type_traits/has_dereference.hpp>
-#include <boost/unordered_set.hpp>
+
 #include <cmath>
 #include <fstream>
 #include <list>
@@ -38,8 +31,9 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
-using boost::assign::operator+=;
+#include <optional>
+#include <cassert>
+#include <iterator>
 
 namespace gtsam {
 
@@ -59,22 +53,16 @@ namespace gtsam {
     /** constant stored in this leaf */
     Y constant_;
 
-    /** The number of assignments contained within this leaf.
-     * Particularly useful when leaves have been pruned.
-     */
-    size_t nrAssignments_;
+    /// Default constructor for serialization.
+    Leaf() {}
 
     /// Constructor from constant
-    Leaf(const Y& constant, size_t nrAssignments = 1)
-        : constant_(constant), nrAssignments_(nrAssignments) {}
+    Leaf(const Y& constant) : constant_(constant) {}
 
     /// Return the constant
     const Y& constant() const {
       return constant_;
     }
-
-    /// Return the number of assignments contained within this leaf.
-    size_t nrAssignments() const { return nrAssignments_; }
 
     /// Leaf-Leaf equality
     bool sameLeaf(const Leaf& q) const override {
@@ -116,14 +104,14 @@ namespace gtsam {
 
     /** apply unary operator */
     NodePtr apply(const Unary& op) const override {
-      NodePtr f(new Leaf(op(constant_), nrAssignments_));
+      NodePtr f(new Leaf(op(constant_)));
       return f;
     }
 
     /// Apply unary operator with assignment
     NodePtr apply(const UnaryAssignment& op,
                   const Assignment<L>& assignment) const override {
-      NodePtr f(new Leaf(op(assignment, constant_), nrAssignments_));
+      NodePtr f(new Leaf(op(assignment, constant_)));
       return f;
     }
 
@@ -139,7 +127,7 @@ namespace gtsam {
     // Applying binary operator to two leaves results in a leaf
     NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const override {
       // fL op gL
-      NodePtr h(new Leaf(op(fL.constant_, constant_), nrAssignments_));
+      NodePtr h(new Leaf(op(fL.constant_, constant_)));
       return h;
     }
 
@@ -150,10 +138,23 @@ namespace gtsam {
 
     /** choose a branch, create new memory ! */
     NodePtr choose(const L& label, size_t index) const override {
-      return NodePtr(new Leaf(constant(), nrAssignments()));
+      return NodePtr(new Leaf(constant()));
     }
 
     bool isLeaf() const override { return true; }
+
+   private:
+    using Base = DecisionTree<L, Y>::Node;
+
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar& BOOST_SERIALIZATION_NVP(constant_);
+    }
+#endif
   };  // Leaf
 
   /****************************************************************************/
@@ -174,36 +175,63 @@ namespace gtsam {
      */
     size_t allSame_;
 
-    using ChoicePtr = boost::shared_ptr<const Choice>;
+    using ChoicePtr = std::shared_ptr<const Choice>;
 
    public:
+    /// Default constructor for serialization.
+    Choice() {}
+
     ~Choice() override {
 #ifdef DT_DEBUG_MEMORY
-      std::std::cout << Node::nrNodes << " destructing (Choice) " << this->id()
-                     << std::std::endl;
+      std::cout << Node::nrNodes << " destructing (Choice) " << this->id()
+                     << std::endl;
 #endif
     }
 
-    /// If all branches of a choice node f are the same, just return a branch.
-    static NodePtr Unique(const ChoicePtr& f) {
-#ifndef GTSAM_DT_NO_PRUNING
-      if (f->allSame_) {
-        assert(f->branches().size() > 0);
-        NodePtr f0 = f->branches_[0];
+    /**
+     * @brief Merge branches with equal leaf values for every choice node in a
+     * decision tree. If all branches are the same (i.e. have the same leaf
+     * value), replace the choice node with the equivalent leaf node.
+     *
+     * This function applies the branch merging (if enabled) recursively on the
+     * decision tree represented by the root node passed in as the argument. It
+     * recurses to the leaf nodes and merges branches with equal leaf values in
+     * a bottom-up fashion.
+     *
+     * Thus, if all branches of a choice node `f` are the same,
+     * just return a single branch at each recursion step.
+     *
+     * @param node The root node of the decision tree.
+     * @return NodePtr
+     */
+    static NodePtr Unique(const NodePtr& node) {
+      if (auto choice = std::dynamic_pointer_cast<const Choice>(node)) {
+        // Choice node, we recurse!
+        // Make non-const copy so we can update
+        auto f = std::make_shared<Choice>(choice->label(), choice->nrChoices());
 
-        size_t nrAssignments = 0;
-        for(auto branch: f->branches()) {
-          assert(branch->isLeaf());
-          nrAssignments +=
-              boost::dynamic_pointer_cast<const Leaf>(branch)->nrAssignments();
+        // Iterate over all the branches
+        for (size_t i = 0; i < choice->nrChoices(); i++) {
+          auto branch = choice->branches_[i];
+          f->push_back(Unique(branch));
         }
-        NodePtr newLeaf(
-            new Leaf(boost::dynamic_pointer_cast<const Leaf>(f0)->constant(),
-                     nrAssignments));
-        return newLeaf;
-      } else
+
+#ifdef GTSAM_DT_MERGING
+        // If all the branches are the same, we can merge them into one
+        if (f->allSame_) {
+          assert(f->branches().size() > 0);
+          NodePtr f0 = f->branches_[0];
+
+          NodePtr newLeaf(
+              new Leaf(std::dynamic_pointer_cast<const Leaf>(f0)->constant()));
+          return newLeaf;
+        }
 #endif
         return f;
+      } else {
+        // Leaf node, return as is
+        return node;
+      }
     }
 
     bool isLeaf() const override { return false; }
@@ -269,9 +297,9 @@ namespace gtsam {
                const ValueFormatter& valueFormatter) const override {
       std::cout << s << " Choice(";
       std::cout << labelFormatter(label_) << ") " << std::endl;
-      for (size_t i = 0; i < branches_.size(); i++)
-        branches_[i]->print((boost::format("%s %d") % s % i).str(),
-                            labelFormatter, valueFormatter);
+      for (size_t i = 0; i < branches_.size(); i++) {
+        branches_[i]->print(s + " " + std::to_string(i), labelFormatter, valueFormatter);
+      }
     }
 
     /** output to graphviz (as a a graph) */
@@ -291,10 +319,7 @@ namespace gtsam {
         }
 
         os << "\"" << this->id() << "\" -> \"" << branch->id() << "\"";
-        if (B == 2) {
-          if (i == 0) os << " [style=dashed]";
-          if (i > 1) os << " [style=bold]";
-        }
+        if (B == 2 && i == 0) os << " [style=dashed]";
         os << std::endl;
         branch->dot(os, labelFormatter, valueFormatter, showZero);
       }
@@ -378,14 +403,14 @@ namespace gtsam {
 
     /// apply unary operator.
     NodePtr apply(const Unary& op) const override {
-      auto r = boost::make_shared<Choice>(label_, *this, op);
+      auto r = std::make_shared<Choice>(label_, *this, op);
       return Unique(r);
     }
 
     /// Apply unary operator with assignment
     NodePtr apply(const UnaryAssignment& op,
                   const Assignment<L>& assignment) const override {
-      auto r = boost::make_shared<Choice>(label_, *this, op, assignment);
+      auto r = std::make_shared<Choice>(label_, *this, op, assignment);
       return Unique(r);
     }
 
@@ -400,7 +425,7 @@ namespace gtsam {
 
     // If second argument of binary op is Leaf node, recurse on branches
     NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const override {
-      auto h = boost::make_shared<Choice>(label(), nrChoices());
+      auto h = std::make_shared<Choice>(label(), nrChoices());
       for (auto&& branch : branches_)
         h->push_back(fL.apply_f_op_g(*branch, op));
       return Unique(h);
@@ -408,14 +433,14 @@ namespace gtsam {
 
     // If second argument of binary op is Choice, call constructor
     NodePtr apply_g_op_fC(const Choice& fC, const Binary& op) const override {
-      auto h = boost::make_shared<Choice>(fC, *this, op);
+      auto h = std::make_shared<Choice>(fC, *this, op);
       return Unique(h);
     }
 
     // If second argument of binary op is Leaf
     template<typename OP>
     NodePtr apply_fC_op_gL(const Leaf& gL, OP op) const {
-      auto h = boost::make_shared<Choice>(label(), nrChoices());
+      auto h = std::make_shared<Choice>(label(), nrChoices());
       for (auto&& branch : branches_)
         h->push_back(branch->apply_f_op_g(gL, op));
       return Unique(h);
@@ -426,24 +451,39 @@ namespace gtsam {
       if (label_ == label) return branches_[index];  // choose branch
 
       // second case, not label of interest, just recurse
-      auto r = boost::make_shared<Choice>(label_, branches_.size());
-      for (auto&& branch : branches_)
+      auto r = std::make_shared<Choice>(label_, branches_.size());
+      for (auto&& branch : branches_) {
         r->push_back(branch->choose(label, index));
+      }
+
       return Unique(r);
     }
+
+   private:
+    using Base = DecisionTree<L, Y>::Node;
+
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar& BOOST_SERIALIZATION_NVP(label_);
+      ar& BOOST_SERIALIZATION_NVP(branches_);
+      ar& BOOST_SERIALIZATION_NVP(allSame_);
+    }
+#endif
   };  // Choice
 
   /****************************************************************************/
   // DecisionTree
   /****************************************************************************/
   template<typename L, typename Y>
-  DecisionTree<L, Y>::DecisionTree() {
-  }
+  DecisionTree<L, Y>::DecisionTree() {}
 
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const NodePtr& root) :
-    root_(root) {
-  }
+    root_(root) {}
 
   /****************************************************************************/
   template<typename L, typename Y>
@@ -454,7 +494,7 @@ namespace gtsam {
   /****************************************************************************/
   template <typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const L& label, const Y& y1, const Y& y2) {
-    auto a = boost::make_shared<Choice>(label, 2);
+    auto a = std::make_shared<Choice>(label, 2);
     NodePtr l1(new Leaf(y1)), l2(new Leaf(y2));
     a->push_back(l1);
     a->push_back(l2);
@@ -467,7 +507,7 @@ namespace gtsam {
                                    const Y& y2) {
     if (labelC.second != 2) throw std::invalid_argument(
         "DecisionTree: binary constructor called with non-binary label");
-    auto a = boost::make_shared<Choice>(labelC.first, 2);
+    auto a = std::make_shared<Choice>(labelC.first, 2);
     NodePtr l1(new Leaf(y1)), l2(new Leaf(y2));
     a->push_back(l1);
     a->push_back(l2);
@@ -507,8 +547,7 @@ namespace gtsam {
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const L& label,
       const DecisionTree& f0, const DecisionTree& f1)  {
-    std::vector<DecisionTree> functions;
-    functions += f0, f1;
+    const std::vector<DecisionTree> functions{f0, f1};
     root_ = compose(functions.begin(), functions.end(), label);
   }
 
@@ -542,29 +581,30 @@ namespace gtsam {
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::compose(
       Iterator begin, Iterator end, const L& label) const {
     // find highest label among branches
-    boost::optional<L> highestLabel;
+    std::optional<L> highestLabel;
     size_t nrChoices = 0;
     for (Iterator it = begin; it != end; it++) {
       if (it->root_->isLeaf())
         continue;
-      boost::shared_ptr<const Choice> c =
-          boost::dynamic_pointer_cast<const Choice>(it->root_);
+      std::shared_ptr<const Choice> c =
+          std::dynamic_pointer_cast<const Choice>(it->root_);
       if (!highestLabel || c->label() > *highestLabel) {
-        highestLabel.reset(c->label());
+        highestLabel = c->label();
         nrChoices = c->nrChoices();
       }
     }
 
     // if label is already in correct order, just put together a choice on label
     if (!nrChoices || !highestLabel || label > *highestLabel) {
-      auto choiceOnLabel = boost::make_shared<Choice>(label, end - begin);
+      auto choiceOnLabel = std::make_shared<Choice>(label, end - begin);
       for (Iterator it = begin; it != end; it++)
         choiceOnLabel->push_back(it->root_);
-      return Choice::Unique(choiceOnLabel);
+      // If no reordering, no need to call Choice::Unique
+      return choiceOnLabel;
     } else {
       // Set up a new choice on the highest label
       auto choiceOnHighestLabel =
-          boost::make_shared<Choice>(*highestLabel, nrChoices);
+          std::make_shared<Choice>(*highestLabel, nrChoices);
       // now, for all possible values of highestLabel
       for (size_t index = 0; index < nrChoices; index++) {
         // make a new set of functions for composing by iterating over the given
@@ -579,21 +619,21 @@ namespace gtsam {
         NodePtr fi = compose(functions.begin(), functions.end(), label);
         choiceOnHighestLabel->push_back(fi);
       }
-      return Choice::Unique(choiceOnHighestLabel);
+      return choiceOnHighestLabel;
     }
   }
 
   /****************************************************************************/
-  // "create" is a bit of a complicated thing, but very useful.
+  // "build" is a bit of a complicated thing, but very useful.
   // It takes a range of labels and a corresponding range of values,
-  // and creates a decision tree, as follows:
+  // and builds a decision tree, as follows:
   // - if there is only one label, creates a choice node with values in leaves
   // - otherwise, it evenly splits up the range of values and creates a tree for
   //   each sub-range, and assigns that tree to first label's choices
   // Example:
-  // create([B A],[1 2 3 4]) would call
-  //   create([A],[1 2])
-  //   create([A],[3 4])
+  // build([B A],[1 2 3 4]) would call
+  //   build([A],[1 2])
+  //   build([A],[3 4])
   // and produce
   // B=0
   //  A=0: 1
@@ -601,12 +641,12 @@ namespace gtsam {
   // B=1
   //  A=0: 3
   //  A=1: 4
-  // Note, through the magic of "compose", create([A B],[1 2 3 4]) will produce
+  // Note, through the magic of "compose", create([A B],[1 3 2 4]) will produce
   // exactly the same tree as above: the highest label is always the root.
   // However, it will be *way* faster if labels are given highest to lowest.
   template<typename L, typename Y>
   template<typename It, typename ValueIt>
-  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::create(
+  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::build(
       It begin, It end, ValueIt beginY, ValueIt endY) const {
     // get crucial counts
     size_t nrChoices = begin->second;
@@ -619,17 +659,15 @@ namespace gtsam {
       // Create a simple choice node with values as leaves.
       if (size != nrChoices) {
         std::cout << "Trying to create DD on " << begin->first << std::endl;
-        std::cout << boost::format(
-                         "DecisionTree::create: expected %d values but got %d "
-                         "instead") %
-                         nrChoices % size
-                  << std::endl;
+        std::cout << "DecisionTree::create: expected " << nrChoices
+                  << " values but got " << size << " instead" << std::endl;
         throw std::invalid_argument("DecisionTree::create invalid argument");
       }
-      auto choice = boost::make_shared<Choice>(begin->first, endY - beginY);
-      for (ValueIt y = beginY; y != endY; y++)
+      auto choice = std::make_shared<Choice>(begin->first, endY - beginY);
+      for (ValueIt y = beginY; y != endY; y++) {
         choice->push_back(NodePtr(new Leaf(*y)));
-      return Choice::Unique(choice);
+      }
+      return choice;
     }
 
     // Recursive case: perform "Shannon expansion"
@@ -638,10 +676,25 @@ namespace gtsam {
     std::vector<DecisionTree> functions;
     size_t split = size / nrChoices;
     for (size_t i = 0; i < nrChoices; i++, beginY += split) {
-      NodePtr f = create<It, ValueIt>(labelC, end, beginY, beginY + split);
+      NodePtr f = build<It, ValueIt>(labelC, end, beginY, beginY + split);
       functions.emplace_back(f);
     }
     return compose(functions.begin(), functions.end(), begin->first);
+  }
+
+  /****************************************************************************/
+  // Top-level factory method, which takes a range of labels and a corresponding
+  // range of values, and creates a decision tree.
+  template<typename L, typename Y>
+  template<typename It, typename ValueIt>
+  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::create(
+      It begin, It end, ValueIt beginY, ValueIt endY) const {
+    auto node = build(begin, end, beginY, endY);
+    if (auto choice = std::dynamic_pointer_cast<const Choice>(node)) {
+      return Choice::Unique(choice);
+    } else {
+      return node;
+    }
   }
 
   /****************************************************************************/
@@ -657,13 +710,13 @@ namespace gtsam {
     // functions.
     // If leaf, apply unary conversion "op" and create a unique leaf.
     using MXLeaf = typename DecisionTree<M, X>::Leaf;
-    if (auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f)) {
-      return NodePtr(new Leaf(Y_of_X(leaf->constant()), leaf->nrAssignments()));
+    if (auto leaf = std::dynamic_pointer_cast<const MXLeaf>(f)) {
+      return NodePtr(new Leaf(Y_of_X(leaf->constant())));
     }
 
     // Check if Choice
     using MXChoice = typename DecisionTree<M, X>::Choice;
-    auto choice = boost::dynamic_pointer_cast<const MXChoice>(f);
+    auto choice = std::dynamic_pointer_cast<const MXChoice>(f);
     if (!choice) throw std::invalid_argument(
         "DecisionTree::convertFrom: Invalid NodePtr");
 
@@ -676,7 +729,7 @@ namespace gtsam {
     for (auto&& branch : choice->branches()) {
       functions.emplace_back(convertFrom<M, X>(branch, L_of_M, Y_of_X));
     }
-    return LY::compose(functions.begin(), functions.end(), newLabel);
+    return Choice::Unique(LY::compose(functions.begin(), functions.end(), newLabel));
   }
 
   /****************************************************************************/
@@ -699,11 +752,11 @@ namespace gtsam {
     /// Do a depth-first visit on the tree rooted at node.
     void operator()(const typename DecisionTree<L, Y>::NodePtr& node) const {
       using Leaf = typename DecisionTree<L, Y>::Leaf;
-      if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node))
+      if (auto leaf = std::dynamic_pointer_cast<const Leaf>(node))
         return f(leaf->constant());
 
       using Choice = typename DecisionTree<L, Y>::Choice;
-      auto choice = boost::dynamic_pointer_cast<const Choice>(node);
+      auto choice = std::dynamic_pointer_cast<const Choice>(node);
       if (!choice)
         throw std::invalid_argument("DecisionTree::Visit: Invalid NodePtr");
       for (auto&& branch : choice->branches()) (*this)(branch);  // recurse!
@@ -736,11 +789,11 @@ namespace gtsam {
     /// Do a depth-first visit on the tree rooted at node.
     void operator()(const typename DecisionTree<L, Y>::NodePtr& node) const {
       using Leaf = typename DecisionTree<L, Y>::Leaf;
-      if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node))
+      if (auto leaf = std::dynamic_pointer_cast<const Leaf>(node))
         return f(*leaf);
 
       using Choice = typename DecisionTree<L, Y>::Choice;
-      auto choice = boost::dynamic_pointer_cast<const Choice>(node);
+      auto choice = std::dynamic_pointer_cast<const Choice>(node);
       if (!choice)
         throw std::invalid_argument("DecisionTree::VisitLeaf: Invalid NodePtr");
       for (auto&& branch : choice->branches()) (*this)(branch);  // recurse!
@@ -771,11 +824,11 @@ namespace gtsam {
     /// Do a depth-first visit on the tree rooted at node.
     void operator()(const typename DecisionTree<L, Y>::NodePtr& node) {
       using Leaf = typename DecisionTree<L, Y>::Leaf;
-      if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node))
+      if (auto leaf = std::dynamic_pointer_cast<const Leaf>(node))
         return f(assignment, leaf->constant());
 
       using Choice = typename DecisionTree<L, Y>::Choice;
-      auto choice = boost::dynamic_pointer_cast<const Choice>(node);
+      auto choice = std::dynamic_pointer_cast<const Choice>(node);
       if (!choice)
         throw std::invalid_argument("DecisionTree::VisitWith: Invalid NodePtr");
       for (size_t i = 0; i < choice->nrChoices(); i++) {

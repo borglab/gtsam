@@ -1,14 +1,8 @@
-
-
 #include <pybind11/eigen.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
-
-
-#include "wrap/serialization.h"
-#include <boost/serialization/export.hpp>
 
 
 
@@ -70,6 +64,8 @@ PYBIND11_MODULE(inheritance_py, m_) {
         .def_static("Level",[](const A& K){return MyTemplate<A>::Level(K);}, py::arg("K"));
 
     py::class_<ForwardKinematicsFactor, gtsam::BetweenFactor<gtsam::Pose3>, std::shared_ptr<ForwardKinematicsFactor>>(m_, "ForwardKinematicsFactor");
+
+    py::class_<ParentHasTemplate<double>, MyTemplate<double>, std::shared_ptr<ParentHasTemplate<double>>>(m_, "ParentHasTemplateDouble");
 
 
 #include "python/specializations.h"

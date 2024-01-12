@@ -173,22 +173,6 @@ BOOST_CLASS_EXPORT_GUID(GeneralSFMFactor2Cal3_S2, "gtsam::GeneralSFMFactor2Cal3_
 
 BOOST_CLASS_EXPORT_GUID(GenericStereoFactor3D, "gtsam::GenericStereoFactor3D");
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-
-typedef PriorFactor<SimpleCamera>               PriorFactorSimpleCamera;
-typedef NonlinearEquality<SimpleCamera>         NonlinearEqualitySimpleCamera;
-typedef RangeFactor<SimpleCamera, Point3>       RangeFactorSimpleCameraPoint;
-typedef RangeFactor<SimpleCamera, SimpleCamera> RangeFactorSimpleCamera;
-
-GTSAM_VALUE_EXPORT(gtsam::SimpleCamera);
-BOOST_CLASS_EXPORT_GUID(PriorFactorSimpleCamera, "gtsam::PriorFactorSimpleCamera");
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualitySimpleCamera, "gtsam::NonlinearEqualitySimpleCamera");
-BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCameraPoint, "gtsam::RangeFactorSimpleCameraPoint");
-BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCamera, "gtsam::RangeFactorSimpleCamera");
-
-#endif
-
-
 /* ************************************************************************* */
 // Actual implementations of functions
 /* ************************************************************************* */

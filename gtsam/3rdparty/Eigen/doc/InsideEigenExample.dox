@@ -212,6 +212,11 @@ Thus, the operator+ hasn't performed any actual computation. To summarize, the o
 
 \section Assignment The assignment
 
+<div class="warningbox">
+<strong>PLEASE HELP US IMPROVING THIS SECTION.</strong>
+This page reflects how %Eigen worked until 3.2, but since %Eigen 3.3 the assignment is more sophisticated as it involves an Assignment expression, and the creation of so called evaluator which are responsible for the evaluation of each kind of expressions.
+</div>
+
 At this point, the expression \a v + \a w has finished evaluating, so, in the process of compiling the line of code
 \code
 u = v + w;

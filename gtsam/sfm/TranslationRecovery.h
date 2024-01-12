@@ -11,7 +11,7 @@
 
 /**
  * @file TranslationRecovery.h
- * @author Frank Dellaert
+ * @author Frank Dellaert, Akshay Krishnan
  * @date March 2020
  * @brief Recovering translations in an epipolar graph when rotations are given.
  */
@@ -48,7 +48,7 @@ namespace gtsam {
 // where s is an arbitrary scale that can be supplied, default 1.0. Hence, two
 // versions are supplied below corresponding to whether we have initial values
 // or not.
-class TranslationRecovery {
+class GTSAM_EXPORT TranslationRecovery {
  public:
   using KeyPair = std::pair<Key, Key>;
   using TranslationEdges = std::vector<BinaryMeasurement<Unit3>>;
@@ -57,68 +57,109 @@ class TranslationRecovery {
   // Translation directions between camera pairs.
   TranslationEdges relativeTranslations_;
 
-  // Parameters used by the LM Optimizer.
-  LevenbergMarquardtParams params_;
-
-  // Map from a key in the graph to a set of keys that share the same
-  // translation.
-  std::map<Key, std::set<Key>> sameTranslationNodes_;
+  // Parameters.
+  LevenbergMarquardtParams lmParams_;
 
  public:
   /**
    * @brief Construct a new Translation Recovery object
    *
-   * @param relativeTranslations the relative translations, in world coordinate
-   * frames, vector of BinaryMeasurements of Unit3, where each key of a
-   * measurement is a point in 3D.
-   * @param lmParams (optional) gtsam::LavenbergMarquardtParams that can be
-   * used to modify the parameters for the LM optimizer. By default, uses the
-   * default LM parameters.
+   * @param lmParams parameters for optimization.
    */
-  TranslationRecovery(
-      const TranslationEdges &relativeTranslations,
-      const LevenbergMarquardtParams &lmParams = LevenbergMarquardtParams());
+  TranslationRecovery(const LevenbergMarquardtParams &lmParams)
+      : lmParams_(lmParams) {}
+
+  /**
+   * @brief Default constructor.
+   */
+  TranslationRecovery() = default;
 
   /**
    * @brief Build the factor graph to do the optimization.
    *
+   * @param relativeTranslations unit translation directions between
+   * translations to be estimated
    * @return NonlinearFactorGraph
    */
-  NonlinearFactorGraph buildGraph() const;
+  NonlinearFactorGraph buildGraph(
+      const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations) const;
 
   /**
-   * @brief Add priors on ednpoints of first measurement edge.
+   * @brief Add 3 factors to the graph:
+   *    - A prior on the first point to lie at (0, 0, 0)
+   *    - If betweenTranslations is non-empty, between factors provided by it.
+   *    - If betweenTranslations is empty, a prior on scale of the first
+   * relativeTranslations edge.
    *
+   * @param relativeTranslations unit translation directions between
+   * translations to be estimated
    * @param scale scale for first relative translation which fixes gauge.
    * @param graph factor graph to which prior is added.
+   * @param betweenTranslations relative translations (with scale) between 2
+   * points in world coordinate frame known a priori.
    * @param priorNoiseModel the noise model to use with the prior.
    */
-  void addPrior(const double scale, NonlinearFactorGraph *graph,
-                const SharedNoiseModel &priorNoiseModel =
-                    noiseModel::Isotropic::Sigma(3, 0.01)) const;
+  void addPrior(
+      const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+      const double scale,
+      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
+      NonlinearFactorGraph *graph,
+      const SharedNoiseModel &priorNoiseModel =
+          noiseModel::Isotropic::Sigma(3, 0.01)) const;
 
   /**
    * @brief Create random initial translations.
    *
+   * @param relativeTranslations unit translation directions between
+   * translations to be estimated
+   * @param betweenTranslations relative translations (with scale) between 2
+   * points in world coordinate frame known a priori.
    * @param rng random number generator
+   * @param intialValues (optional) initial values from a prior
    * @return Values
    */
-  Values initializeRandomly(std::mt19937 *rng) const;
+  Values initializeRandomly(
+      const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
+      std::mt19937 *rng, const Values &initialValues = Values()) const;
 
   /**
    * @brief Version of initializeRandomly with a fixed seed.
    *
+   * @param relativeTranslations unit translation directions between
+   * translations to be estimated
+   * @param betweenTranslations relative translations (with scale) between 2
+   * points in world coordinate frame known a priori.
+   * @param initialValues (optional) initial values from a prior
    * @return Values
    */
-  Values initializeRandomly() const;
+  Values initializeRandomly(
+      const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
+      const Values &initialValues = Values()) const;
 
   /**
    * @brief Build and optimize factor graph.
    *
+   * @param relativeTranslations the relative translations, in world coordinate
+   * frames, vector of BinaryMeasurements of Unit3, where each key of a
+   * measurement is a point in 3D. If a relative translation magnitude is zero,
+   * it is treated as a hard same-point constraint (the result of all nodes
+   * connected by a zero-magnitude edge will be the same).
    * @param scale scale for first relative translation which fixes gauge.
+   * The scale is only used if betweenTranslations is empty.
+   * @param betweenTranslations relative translations (with scale) between 2
+   * points in world coordinate frame known a priori. Unlike
+   * relativeTranslations, zero-magnitude betweenTranslations are not treated as
+   * hard constraints.
+   * @param initialValues intial values for optimization. Initializes randomly
+   * if not provided.
    * @return Values
    */
-  Values run(const double scale = 1.0) const;
+  Values run(
+      const TranslationEdges &relativeTranslations, const double scale = 1.0,
+      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations = {},
+      const Values &initialValues = Values()) const;
 
   /**
    * @brief Simulate translation direction measurements
