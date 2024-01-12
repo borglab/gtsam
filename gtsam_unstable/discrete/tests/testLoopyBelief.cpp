@@ -183,13 +183,10 @@ class LoopyBelief {
         // accumulate unary factors
         if (graph.at(factorIndex)->size() == 1) {
           if (!prodOfUnaries)
-            prodOfUnaries = std::dynamic_pointer_cast<DecisionTreeFactor>(
-                graph.at(factorIndex));
+            prodOfUnaries = graph.at<DecisionTreeFactor>(factorIndex);
           else
             prodOfUnaries = std::make_shared<DecisionTreeFactor>(
-                *prodOfUnaries *
-                (*std::dynamic_pointer_cast<DecisionTreeFactor>(
-                    graph.at(factorIndex))));
+                *prodOfUnaries * (*graph.at<DecisionTreeFactor>(factorIndex)));
         }
       }
 

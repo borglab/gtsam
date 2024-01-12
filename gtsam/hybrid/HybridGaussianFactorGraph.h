@@ -140,9 +140,19 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   /// @{
 
   // TODO(dellaert):  customize print and equals.
-  // void print(const std::string& s = "HybridGaussianFactorGraph",
-  //            const KeyFormatter& keyFormatter = DefaultKeyFormatter) const
-  //     override;
+  // void print(
+  //     const std::string& s = "HybridGaussianFactorGraph",
+  //     const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+
+  void printErrors(
+      const HybridValues& values,
+      const std::string& str = "HybridGaussianFactorGraph: ",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+      const std::function<bool(const Factor* /*factor*/,
+                               double /*whitenedError*/, size_t /*index*/)>&
+          printCondition =
+              [](const Factor*, double, size_t) { return true; }) const;
+
   // bool equals(const This& fg, double tol = 1e-9) const override;
 
   /// @}
@@ -161,7 +171,8 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @param continuousValues Continuous values at which to compute the error.
    * @return AlgebraicDecisionTree<Key>
    */
-  AlgebraicDecisionTree<Key> error(const VectorValues& continuousValues) const;
+  AlgebraicDecisionTree<Key> errorTree(
+      const VectorValues& continuousValues) const;
 
   /**
    * @brief Compute unnormalized probability \f$ P(X | M, Z) \f$

@@ -39,6 +39,9 @@
 	#cmakedefine GTSAM_ROT3_EXPMAP
 #endif
 
+// Whether to enable merging of equal leaf nodes in the Discrete Decision Tree.
+#cmakedefine GTSAM_DT_MERGING
+
 // Whether we are using TBB (if TBB was found and GTSAM_WITH_TBB is enabled in CMake)
 #cmakedefine GTSAM_USE_TBB
 

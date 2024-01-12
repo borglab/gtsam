@@ -63,6 +63,22 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
+  AlgebraicDecisionTree<Key> DecisionTreeFactor::errorTree() const {
+    // Get all possible assignments
+    DiscreteKeys dkeys = discreteKeys();
+    // Reverse to make cartesian product output a more natural ordering.
+    DiscreteKeys rdkeys(dkeys.rbegin(), dkeys.rend());
+    const auto assignments = DiscreteValues::CartesianProduct(rdkeys);
+
+    // Construct vector with error values
+    std::vector<double> errors;
+    for (const auto& assignment : assignments) {
+      errors.push_back(error(assignment));
+    }
+    return AlgebraicDecisionTree<Key>(dkeys, errors);
+  }
+
+  /* ************************************************************************ */
   double DecisionTreeFactor::safe_div(const double& a, const double& b) {
     // The use for safe_div is when we divide the product factor by the sum
     // factor. If the product or sum is zero, we accord zero probability to the
@@ -164,15 +180,23 @@ namespace gtsam {
     }
 
     // create new factor, note we collect keys that are not in frontalKeys
-    // TODO(frank): why do we need this??? result should contain correct keys!!!
+    /*
+    Due to branch merging, the labels in `result` may be missing some keys
+    E.g. After branch merging, we may get a ADT like:
+      Leaf [2] 1.0204082
+
+    This is missing the key values used for branching.
+    */
+    KeyVector difference, frontalKeys_(frontalKeys), keys_(keys());
+    // Get the difference of the frontalKeys and the factor keys using set_difference
+    std::sort(keys_.begin(), keys_.end());
+    std::sort(frontalKeys_.begin(), frontalKeys_.end());
+    std::set_difference(keys_.begin(), keys_.end(), frontalKeys_.begin(),
+                        frontalKeys_.end(), back_inserter(difference));
+
     DiscreteKeys dkeys;
-    for (i = 0; i < keys().size(); i++) {
-      Key j = keys()[i];
-      // TODO(frank): inefficient!
-      if (std::find(frontalKeys.begin(), frontalKeys.end(), j) !=
-          frontalKeys.end())
-        continue;
-      dkeys.push_back(DiscreteKey(j, cardinality(j)));
+    for (Key key : difference) {
+      dkeys.push_back(DiscreteKey(key, cardinality(key)));
     }
     return std::make_shared<DecisionTreeFactor>(dkeys, result);
   }

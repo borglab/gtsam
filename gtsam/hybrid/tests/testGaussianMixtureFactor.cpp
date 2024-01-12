@@ -108,7 +108,7 @@ TEST(GaussianMixtureFactor, Printing) {
   std::string expected =
       R"(Hybrid [x1 x2; 1]{
  Choice(1) 
- 0 Leaf [1] :
+ 0 Leaf :
   A[x1] = [
 	0;
 	0
@@ -120,7 +120,7 @@ TEST(GaussianMixtureFactor, Printing) {
   b = [ 0 0 ]
   No noise model
 
- 1 Leaf [1] :
+ 1 Leaf :
   A[x1] = [
 	0;
 	0
@@ -178,7 +178,7 @@ TEST(GaussianMixtureFactor, Error) {
   continuousValues.insert(X(2), Vector2(1, 1));
 
   // error should return a tree of errors, with nodes for each discrete value.
-  AlgebraicDecisionTree<Key> error_tree = mixtureFactor.error(continuousValues);
+  AlgebraicDecisionTree<Key> error_tree = mixtureFactor.errorTree(continuousValues);
 
   std::vector<DiscreteKey> discrete_keys = {m1};
   // Error values for regression test

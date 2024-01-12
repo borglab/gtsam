@@ -28,7 +28,7 @@
 
 #include <gtsam/nonlinear/GncParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <boost/math/distributions/chi_squared.hpp>
+#include <gtsam/nonlinear/internal/ChiSquaredInverse.h>
 
 namespace gtsam {
 /*
@@ -36,8 +36,7 @@ namespace gtsam {
  * Equivalent to chi2inv in Matlab.
  */
 static double Chi2inv(const double alpha, const size_t dofs) {
-  boost::math::chi_squared_distribution<double> chi2(dofs);
-  return boost::math::quantile(chi2, alpha);
+  return internal::chi_squared_quantile(dofs, alpha);
 }
 
 /* ************************************************************************* */
@@ -65,10 +64,9 @@ class GncOptimizer {
     nfg_.resize(graph.size());
     for (size_t i = 0; i < graph.size(); i++) {
       if (graph[i]) {
-        NoiseModelFactor::shared_ptr factor = std::dynamic_pointer_cast<
-            NoiseModelFactor>(graph[i]);
-        auto robust = std::dynamic_pointer_cast<
-            noiseModel::Robust>(factor->noiseModel());
+        NoiseModelFactor::shared_ptr factor = graph.at<NoiseModelFactor>(i);
+        auto robust =
+            std::dynamic_pointer_cast<noiseModel::Robust>(factor->noiseModel());
         // if the factor has a robust loss, we remove the robust loss
         nfg_[i] = robust ? factor-> cloneWithNewNoiseModel(robust->noise()) : factor;
       }
@@ -401,11 +399,9 @@ class GncOptimizer {
     newGraph.resize(nfg_.size());
     for (size_t i = 0; i < nfg_.size(); i++) {
       if (nfg_[i]) {
-        auto factor = std::dynamic_pointer_cast<
-            NoiseModelFactor>(nfg_[i]);
-        auto noiseModel =
-            std::dynamic_pointer_cast<noiseModel::Gaussian>(
-                factor->noiseModel());
+        auto factor = nfg_.at<NoiseModelFactor>(i);
+        auto noiseModel = std::dynamic_pointer_cast<noiseModel::Gaussian>(
+            factor->noiseModel());
         if (noiseModel) {
           Matrix newInfo = weights[i] * noiseModel->information();
           auto newNoiseModel = noiseModel::Gaussian::Information(newInfo);

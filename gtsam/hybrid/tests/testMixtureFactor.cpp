@@ -63,8 +63,8 @@ TEST(MixtureFactor, Printing) {
       R"(Hybrid [x1 x2; 1]
 MixtureFactor
  Choice(1) 
- 0 Leaf [1] Nonlinear factor on 2 keys
- 1 Leaf [1] Nonlinear factor on 2 keys
+ 0 Leaf Nonlinear factor on 2 keys
+ 1 Leaf Nonlinear factor on 2 keys
 )";
   EXPECT(assert_print_equal(expected, mixtureFactor));
 }
@@ -97,7 +97,8 @@ TEST(MixtureFactor, Error) {
   continuousValues.insert<double>(X(1), 0);
   continuousValues.insert<double>(X(2), 1);
 
-  AlgebraicDecisionTree<Key> error_tree = mixtureFactor.error(continuousValues);
+  AlgebraicDecisionTree<Key> error_tree =
+      mixtureFactor.errorTree(continuousValues);
 
   DiscreteKey m1(1, 2);
   std::vector<DiscreteKey> discrete_keys = {m1};

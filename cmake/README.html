@@ -47,9 +47,9 @@ linkLibraries: The list of libraries to link to in addition to CppUnitLite.
 </code></pre>
 </li>
 <li>
-<p><code>gtsamAddExamplesGlob(globPatterns excludedFiles linkLibraries)</code> Add scripts that will serve as examples of how to use the library.  A list of files or glob patterns is specified, and one executable will be created for each matching .cpp file.  These executables will not be installed.  They are build with 'make all' if GTSAM_BUILD_EXAMPLES_ALWAYS is enabled.  They may also be built with 'make examples'.</p>
+<p><code>gtsamAddExamplesGlob(globPatterns excludedFiles linkLibraries buildWithAll)</code> Add scripts that will serve as examples of how to use the library.  A list of files or glob patterns is specified, and one executable will be created for each matching .cpp file.  These executables will not be installed.  They are build with 'make all' if GTSAM_BUILD_EXAMPLES_ALWAYS is enabled.  They may also be built with 'make examples'.</p>
 <p>Usage example:</p>
-<pre><code>gtsamAddExamplesGlob("*.cpp" "BrokenExample.cpp" "gtsam;GeographicLib")
+<pre><code>gtsamAddExamplesGlob("*.cpp" "BrokenExample.cpp" "gtsam;GeographicLib" ON)
 </code></pre>
 <p>Arguments:</p>
 <pre><code>globPatterns:  The list of files or glob patterns from which to create unit tests, with
@@ -58,6 +58,7 @@ linkLibraries: The list of libraries to link to in addition to CppUnitLite.
 excludedFiles: A list of files or globs to exclude, e.g. "C*.cpp;BrokenExample.cpp".  Pass
                an empty string "" if nothing needs to be excluded.
 linkLibraries: The list of libraries to link to.
+buildWithAll: Build examples with `make` and/or `make all`
 </code></pre>
 </li>
 </ul>

@@ -34,7 +34,7 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
  protected:
  public:
   using Base = HybridFactorGraph;
-  using This = HybridNonlinearFactorGraph;     ///< this class
+  using This = HybridNonlinearFactorGraph;   ///< this class
   using shared_ptr = std::shared_ptr<This>;  ///< shared_ptr to This
 
   using Values = gtsam::Values;  ///< backwards compatibility
@@ -62,6 +62,16 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
   void print(
       const std::string& s = "HybridNonlinearFactorGraph",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+
+  /** print errors along with factors*/
+  void printErrors(
+      const HybridValues& values,
+      const std::string& str = "HybridNonlinearFactorGraph: ",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+      const std::function<bool(const Factor* /*factor*/,
+                               double /*whitenedError*/, size_t /*index*/)>&
+          printCondition =
+              [](const Factor*, double, size_t) { return true; }) const;
 
   /// @}
   /// @name Standard Interface
