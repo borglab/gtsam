@@ -84,7 +84,7 @@ void PreintegratedCombinedMeasurements::resetIntegration(
     const gtsam::Matrix6& Q_init) {
   // Base class method to reset the preintegrated measurements
   PreintegrationType::resetIntegration();
-  p().biasAccOmegaInt = Q_init;
+  p().biasAccOmegaInit = Q_init;
   preintMeasCov_.setZero();
 }
 
