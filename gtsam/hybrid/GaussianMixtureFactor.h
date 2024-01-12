@@ -107,9 +107,8 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
 
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 
-  void print(
-      const std::string &s = "GaussianMixtureFactor\n",
-      const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+  void print(const std::string &s = "", const KeyFormatter &formatter =
+                                            DefaultKeyFormatter) const override;
 
   /// @}
   /// @name Standard API

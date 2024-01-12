@@ -510,6 +510,7 @@ factor 0:
   b = [ -10 ]
   No noise model
 factor 1: 
+GaussianMixtureFactor
 Hybrid [x0 x1; m0]{
  Choice(m0) 
  0 Leaf :
@@ -534,6 +535,7 @@ Hybrid [x0 x1; m0]{
 
 }
 factor 2: 
+GaussianMixtureFactor
 Hybrid [x1 x2; m1]{
  Choice(m1) 
  0 Leaf :
