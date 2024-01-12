@@ -1,17 +1,13 @@
 #include <gtwrap/matlab.h>
 #include <map>
 
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/serialization/export.hpp>
-
 
 
 typedef ScopedTemplate<Result> ScopedTemplateResult;
 
-typedef std::set<boost::shared_ptr<TemplatedConstructor>*> Collector_TemplatedConstructor;
+typedef std::set<std::shared_ptr<TemplatedConstructor>*> Collector_TemplatedConstructor;
 static Collector_TemplatedConstructor collector_TemplatedConstructor;
-typedef std::set<boost::shared_ptr<ScopedTemplateResult>*> Collector_ScopedTemplateResult;
+typedef std::set<std::shared_ptr<ScopedTemplateResult>*> Collector_ScopedTemplateResult;
 static Collector_ScopedTemplateResult collector_ScopedTemplateResult;
 
 
@@ -67,7 +63,7 @@ void _template_RTTIRegister() {
     mxDestroyArray(registry);
 
     mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);
-    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0) {
+    if(mexPutVariable("global", "gtsam_template_rttiRegistry_created", newAlreadyCreated) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
     }
     mxDestroyArray(newAlreadyCreated);
@@ -77,7 +73,7 @@ void _template_RTTIRegister() {
 void TemplatedConstructor_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<TemplatedConstructor> Shared;
+  typedef std::shared_ptr<TemplatedConstructor> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_TemplatedConstructor.insert(self);
@@ -86,7 +82,7 @@ void TemplatedConstructor_collectorInsertAndMakeBase_0(int nargout, mxArray *out
 void TemplatedConstructor_constructor_1(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<TemplatedConstructor> Shared;
+  typedef std::shared_ptr<TemplatedConstructor> Shared;
 
   Shared *self = new Shared(new TemplatedConstructor());
   collector_TemplatedConstructor.insert(self);
@@ -97,7 +93,7 @@ void TemplatedConstructor_constructor_1(int nargout, mxArray *out[], int nargin,
 void TemplatedConstructor_constructor_2(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<TemplatedConstructor> Shared;
+  typedef std::shared_ptr<TemplatedConstructor> Shared;
 
   string& arg = *unwrap_shared_ptr< string >(in[0], "ptr_string");
   Shared *self = new Shared(new TemplatedConstructor(arg));
@@ -109,7 +105,7 @@ void TemplatedConstructor_constructor_2(int nargout, mxArray *out[], int nargin,
 void TemplatedConstructor_constructor_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<TemplatedConstructor> Shared;
+  typedef std::shared_ptr<TemplatedConstructor> Shared;
 
   int arg = unwrap< int >(in[0]);
   Shared *self = new Shared(new TemplatedConstructor(arg));
@@ -121,7 +117,7 @@ void TemplatedConstructor_constructor_3(int nargout, mxArray *out[], int nargin,
 void TemplatedConstructor_constructor_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<TemplatedConstructor> Shared;
+  typedef std::shared_ptr<TemplatedConstructor> Shared;
 
   double arg = unwrap< double >(in[0]);
   Shared *self = new Shared(new TemplatedConstructor(arg));
@@ -132,21 +128,21 @@ void TemplatedConstructor_constructor_4(int nargout, mxArray *out[], int nargin,
 
 void TemplatedConstructor_deconstructor_5(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<TemplatedConstructor> Shared;
+  typedef std::shared_ptr<TemplatedConstructor> Shared;
   checkArguments("delete_TemplatedConstructor",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_TemplatedConstructor::iterator item;
   item = collector_TemplatedConstructor.find(self);
   if(item != collector_TemplatedConstructor.end()) {
-    delete self;
     collector_TemplatedConstructor.erase(item);
   }
+  delete self;
 }
 
 void ScopedTemplateResult_collectorInsertAndMakeBase_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ScopedTemplate<Result>> Shared;
+  typedef std::shared_ptr<ScopedTemplate<Result>> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_ScopedTemplateResult.insert(self);
@@ -155,7 +151,7 @@ void ScopedTemplateResult_collectorInsertAndMakeBase_6(int nargout, mxArray *out
 void ScopedTemplateResult_constructor_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ScopedTemplate<Result>> Shared;
+  typedef std::shared_ptr<ScopedTemplate<Result>> Shared;
 
   Result::Value& arg = *unwrap_shared_ptr< Result::Value >(in[0], "ptr_Result::Value");
   Shared *self = new Shared(new ScopedTemplate<Result>(arg));
@@ -166,15 +162,15 @@ void ScopedTemplateResult_constructor_7(int nargout, mxArray *out[], int nargin,
 
 void ScopedTemplateResult_deconstructor_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<ScopedTemplate<Result>> Shared;
+  typedef std::shared_ptr<ScopedTemplate<Result>> Shared;
   checkArguments("delete_ScopedTemplateResult",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_ScopedTemplateResult::iterator item;
   item = collector_ScopedTemplateResult.find(self);
   if(item != collector_ScopedTemplateResult.end()) {
-    delete self;
     collector_ScopedTemplateResult.erase(item);
   }
+  delete self;
 }
 
 

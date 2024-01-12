@@ -50,8 +50,8 @@ int main(int argc, char** argv) {
 
   // Print the UGM distribution
   cout << "\nUGM distribution:" << endl;
-  vector<DiscreteFactor::Values> allPosbValues = cartesianProduct(
-      Cathy & Heather & Mark & Allison);
+  auto allPosbValues =
+      DiscreteValues::CartesianProduct(Cathy & Heather & Mark & Allison);
   for (size_t i = 0; i < allPosbValues.size(); ++i) {
     DiscreteFactor::Values values = allPosbValues[i];
     double prodPot = graph(values);
@@ -61,10 +61,9 @@ int main(int argc, char** argv) {
   }
 
   // "Decoding", i.e., configuration with largest value (MPE)
-  // We use sequential variable elimination
-  DiscreteBayesNet::shared_ptr chordal = graph.eliminateSequential();
-  DiscreteFactor::sharedValues optimalDecoding = chordal->optimize();
-  optimalDecoding->print("\noptimalDecoding");
+  // Uses max-product
+  auto optimalDecoding = graph.optimize();
+  GTSAM_PRINT(optimalDecoding);
 
   // "Inference" Computing marginals
   cout << "\nComputing Node Marginals .." << endl;

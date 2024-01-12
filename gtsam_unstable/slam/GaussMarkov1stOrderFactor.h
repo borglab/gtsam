@@ -42,20 +42,23 @@ namespace gtsam {
  * T is the measurement type, by default the same
  */
 template<class VALUE>
-class GaussMarkov1stOrderFactor: public NoiseModelFactor2<VALUE, VALUE> {
+class GaussMarkov1stOrderFactor: public NoiseModelFactorN<VALUE, VALUE> {
 
 private:
 
   typedef GaussMarkov1stOrderFactor<VALUE> This;
-  typedef NoiseModelFactor2<VALUE, VALUE> Base;
+  typedef NoiseModelFactorN<VALUE, VALUE> Base;
 
   double dt_;
   Vector tau_;
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   // shorthand for a smart pointer to a factor
-  typedef typename boost::shared_ptr<GaussMarkov1stOrderFactor> shared_ptr;
+  typedef typename std::shared_ptr<GaussMarkov1stOrderFactor> shared_ptr;
 
   /** default constructor - only use for serialization */
   GaussMarkov1stOrderFactor() {}
@@ -88,8 +91,7 @@ public:
 
   /** vector of errors */
   Vector evaluateError(const VALUE& p1, const VALUE& p2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
 
     Vector v1( traits<VALUE>::Logmap(p1) );
     Vector v2( traits<VALUE>::Logmap(p2) );
@@ -111,6 +113,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -119,13 +122,14 @@ private:
     ar & BOOST_SERIALIZATION_NVP(dt_);
     ar & BOOST_SERIALIZATION_NVP(tau_);
   }
+#endif
 
   SharedGaussian calcDiscreteNoiseModel(const SharedGaussian& model, double delta_t){
     /* Q_d (approx)= Q * delta_t */
     /* In practice, square root of the information matrix is represented, so that:
      *  R_d (approx)= R / sqrt(delta_t)
      * */
-    noiseModel::Gaussian::shared_ptr gaussian_model = boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+    noiseModel::Gaussian::shared_ptr gaussian_model = std::dynamic_pointer_cast<noiseModel::Gaussian>(model);
     SharedGaussian model_d(noiseModel::Gaussian::SqrtInformation(gaussian_model->R()/sqrt(delta_t)));
     return model_d;
   }

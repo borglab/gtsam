@@ -47,7 +47,7 @@ static void test_simple()
 }
 
 
-void test_cxx11_tensor_mixed_indices()
+EIGEN_DECLARE_TEST(cxx11_tensor_mixed_indices)
 {
   CALL_SUBTEST(test_simple());
 }

@@ -113,9 +113,6 @@ namespace gtsam {
     ~InvalidNoiseModel() noexcept override {}
 
     const char* what() const noexcept override;
-
-  private:
-    mutable std::string description_;
   };
 
   /* ************************************************************************* */
@@ -131,9 +128,6 @@ namespace gtsam {
     ~InvalidMatrixBlock() noexcept override {}
 
     const char* what() const noexcept override;
-
-  private:
-    mutable std::string description_;
   };
 
   /* ************************************************************************* */

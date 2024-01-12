@@ -29,7 +29,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 
 static Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x', 3);
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(6, 0.1));
@@ -156,7 +155,7 @@ TEST( InitializePose3, orientationsGradientSymbolicGraph ) {
 /* *************************************************************************** */
 TEST( InitializePose3, singleGradient ) {
   Rot3 R1 = Rot3();
-  Matrix M = Matrix3::Zero();
+  Matrix M = Z_3x3;
   M(0,1) = -1; M(1,0) = 1; M(2,2) = 1;
   Rot3 R2 = Rot3(M);
   double a = 6.010534238540223;
@@ -232,10 +231,8 @@ TEST( InitializePose3, orientationsGradient ) {
   //  writeG2o(pose3Graph, givenPoses, g2oFile);
 
   const string matlabResultsfile = findExampleDataFile("simpleGraph10gradIter");
-  NonlinearFactorGraph::shared_ptr matlabGraph;
-  Values::shared_ptr matlabValues;
   bool is3D = true;
-  boost::tie(matlabGraph, matlabValues) = readG2o(matlabResultsfile, is3D);
+  const auto [matlabGraph, matlabValues] = readG2o(matlabResultsfile, is3D);
 
   Rot3 R0Expected = matlabValues->at<Pose3>(1).rotation();
   EXPECT(assert_equal(R0Expected, orientations.at<Rot3>(x0), 1e-4));
@@ -267,10 +264,8 @@ TEST( InitializePose3, posesWithGivenGuess ) {
 /* ************************************************************************* */
 TEST(InitializePose3, initializePoses) {
   const string g2oFile = findExampleDataFile("pose3example-grid");
-  NonlinearFactorGraph::shared_ptr inputGraph;
-  Values::shared_ptr posesInFile;
   bool is3D = true;
-  boost::tie(inputGraph, posesInFile) = readG2o(g2oFile, is3D);
+  const auto [inputGraph, posesInFile] = readG2o(g2oFile, is3D);
 
   auto priorModel = noiseModel::Unit::Create(6);
   inputGraph->addPrior(0, Pose3(), priorModel);

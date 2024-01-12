@@ -91,7 +91,7 @@ template <typename MatrixType> void run_nesting_ops_2(const MatrixType& _m)
 }
 
 
-void test_nesting_ops()
+EIGEN_DECLARE_TEST(nesting_ops)
 {
   CALL_SUBTEST_1(run_nesting_ops_1(MatrixXf::Random(25,25)));
   CALL_SUBTEST_2(run_nesting_ops_1(MatrixXcd::Random(25,25)));

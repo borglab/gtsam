@@ -3,13 +3,8 @@
 //*************************************************************************
 namespace gtsam {
 
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-
-// ###################
-
 #include <gtsam/symbolic/SymbolicFactor.h>
-virtual class SymbolicFactor {
+virtual class SymbolicFactor : gtsam::Factor {
   // Standard Constructors and Named Constructors
   SymbolicFactor(const gtsam::SymbolicFactor& f);
   SymbolicFactor();
@@ -23,12 +18,10 @@ virtual class SymbolicFactor {
   static gtsam::SymbolicFactor FromKeys(const gtsam::KeyVector& js);
 
   // From Factor
-  size_t size() const;
   void print(string s = "SymbolicFactor",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::SymbolicFactor& other, double tol) const;
-  gtsam::KeyVector keys();
 };
 
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
@@ -82,6 +75,14 @@ virtual class SymbolicFactorGraph {
       const gtsam::KeyVector& key_vector,
       const gtsam::Ordering& marginalizedVariableOrdering);
   gtsam::SymbolicFactorGraph* marginal(const gtsam::KeyVector& key_vector);
+
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+  void saveGraph(
+      string s,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
 };
 
 #include <gtsam/symbolic/SymbolicConditional.h>
@@ -103,6 +104,7 @@ virtual class SymbolicConditional : gtsam::SymbolicFactor {
   bool equals(const gtsam::SymbolicConditional& other, double tol) const;
 
   // Standard interface
+  gtsam::Key firstFrontalKey() const;
   size_t nrFrontals() const;
   size_t nrParents() const;
 };
@@ -125,9 +127,70 @@ class SymbolicBayesNet {
   gtsam::SymbolicConditional* back() const;
   void push_back(gtsam::SymbolicConditional* conditional);
   void push_back(const gtsam::SymbolicBayesNet& bayesNet);
+
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+  void saveGraph(
+      string s,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+};
+
+#include <gtsam/symbolic/SymbolicEliminationTree.h>
+
+class SymbolicEliminationTree {
+  SymbolicEliminationTree(const gtsam::SymbolicFactorGraph& factorGraph,
+                          const gtsam::VariableIndex& structure,
+                          const gtsam::Ordering& order);
+
+  SymbolicEliminationTree(const gtsam::SymbolicFactorGraph& factorGraph,
+                          const gtsam::Ordering& order);
+
+  void print(
+      string name = "EliminationTree: ",
+      const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::SymbolicEliminationTree& other,
+              double tol = 1e-9) const;
+};
+
+#include <gtsam/symbolic/SymbolicJunctionTree.h>
+
+class SymbolicCluster {
+  gtsam::Ordering orderedFrontalKeys;
+  gtsam::SymbolicFactorGraph factors;
+  const gtsam::SymbolicCluster& operator[](size_t i) const;
+  size_t nrChildren() const;
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+};
+
+class SymbolicJunctionTree {
+  SymbolicJunctionTree(const gtsam::SymbolicEliminationTree& eliminationTree);
+  void print(
+      string name = "JunctionTree: ",
+      const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
+  size_t nrRoots() const;
+  const gtsam::SymbolicCluster& operator[](size_t i) const;
 };
 
 #include <gtsam/symbolic/SymbolicBayesTree.h>
+
+class SymbolicBayesTreeClique {
+  SymbolicBayesTreeClique();
+  SymbolicBayesTreeClique(const gtsam::SymbolicConditional* conditional);
+  bool equals(const gtsam::SymbolicBayesTreeClique& other, double tol) const;
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter);
+  const gtsam::SymbolicConditional* conditional() const;
+  bool isRoot() const;
+  gtsam::SymbolicBayesTreeClique* parent() const;
+  size_t treeSize() const;
+  size_t numCachedSeparatorMarginals() const;
+  void deleteCachedShortcuts();
+};
+
+
 class SymbolicBayesTree {
   // Constructors
   SymbolicBayesTree();
@@ -139,9 +202,14 @@ class SymbolicBayesTree {
   bool equals(const gtsam::SymbolicBayesTree& other, double tol) const;
 
   // Standard Interface
-  // size_t findParentClique(const gtsam::IndexVector& parents) const;
-  size_t size();
-  void saveGraph(string s) const;
+  bool empty() const;
+  size_t size() const;
+
+  const gtsam::SymbolicBayesTreeClique* operator[](size_t j) const;
+
+  void saveGraph(string s,
+                const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
   void clear();
   void deleteCachedShortcuts();
   size_t numCachedSeparatorMarginals() const;
@@ -149,6 +217,9 @@ class SymbolicBayesTree {
   gtsam::SymbolicConditional* marginalFactor(size_t key) const;
   gtsam::SymbolicFactorGraph* joint(size_t key1, size_t key2) const;
   gtsam::SymbolicBayesNet* jointBayesNet(size_t key1, size_t key2) const;
+
+  string dot(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 class SymbolicBayesTreeClique {
@@ -187,11 +258,6 @@ class VariableIndex {
   void print(string s = "VariableIndex: ",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-
-  // Standard interface
-  size_t size() const;
-  size_t nFactors() const;
-  size_t nEntries() const;
 };
 
 }  // namespace gtsam

@@ -13,7 +13,7 @@ $ make install
 ## Important Installation Notes
 
 1. GTSAM requires the following libraries to be installed on your system:
-    - BOOST version 1.65 or greater (install through Linux repositories or MacPorts). Please see [Boost Notes](#boost-notes).
+    - BOOST version 1.65 or greater (install through Linux repositories or MacPorts). Please see [Boost Notes](#boost-notes) for version recommendations based on your compiler.
 
     - Cmake version 3.0 or higher
     - Support for XCode 4.3 command line tools on Mac requires CMake 2.8.8 or higher
@@ -50,7 +50,7 @@ will run up to 10x faster in Release mode! See the end of this document for
 additional debugging tips.
 
 3. GTSAM has Doxygen documentation. To generate, run 'make doc' from your
-build directory.
+build directory after setting the `GTSAM_BUILD_DOCS` and `GTSAM_BUILD_[HTML|LATEX]` cmake flags.
 
 4. The instructions below install the library to the default system install path and
 build all components. From a terminal, starting in the root library folder,
@@ -72,7 +72,7 @@ execute commands as follows for an out-of-source build:
 Versions of Boost prior to 1.65 have a known bug that prevents proper "deep" serialization of objects, which means that objects encapsulated inside other objects don't get serialized.
 This is particularly seen when using `clang` as the C++ compiler.
 
-For this reason we require Boost>=1.65, and recommend installing it through alternative channels when it is not available through your operating system's primary package manager.
+For this reason we recommend Boost>=1.65, and recommend installing it through alternative channels when it is not available through your operating system's primary package manager.
 
 ## Known Issues
 
@@ -182,7 +182,7 @@ Here are some tips to get the best possible performance out of GTSAM.
     optimization by 30-50%. Please note that this may not be true for very small 
     problems where the overhead of dispatching work to multiple threads outweighs
     the benefit. We recommend that you benchmark your problem with/without TBB.
-3. Add `-march=native` to `GTSAM_CMAKE_CXX_FLAGS`. A performance gain of
+3. Use `GTSAM_BUILD_WITH_MARCH_NATIVE`. A performance gain of
     25-30% can be expected on modern processors. Note that this affects the portability
     of your executable. It may not run when copied to another system with older/different
     processor architecture.

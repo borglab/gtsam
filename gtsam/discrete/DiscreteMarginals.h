@@ -28,8 +28,9 @@ namespace gtsam {
 
   /**
    * A class for computing marginals of variables in a DiscreteFactorGraph
+   * @ingroup discrete
    */
-  class DiscreteMarginals {
+class DiscreteMarginals {
 
   protected:
 
@@ -37,8 +38,10 @@ namespace gtsam {
 
   public:
 
+  DiscreteMarginals() {}
+
   /** Construct a marginals class.
-   * @param graph The factor graph defining the full joint density on all variables.
+   * @param graph The factor graph defining the full joint distribution on all variables.
    */
   DiscreteMarginals(const DiscreteFactorGraph& graph) {
     bayesTree_ = graph.eliminateMultifrontal();
@@ -64,7 +67,7 @@ namespace gtsam {
     //Create result
     Vector vResult(key.second);
     for (size_t state = 0; state < key.second ; ++ state) {
-      DiscreteFactor::Values values;
+      DiscreteValues values;
       values[key.first] = state;
       vResult(state) = (*marginalFactor)(values);
     }

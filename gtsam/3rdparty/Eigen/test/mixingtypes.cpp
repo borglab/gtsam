@@ -309,8 +309,9 @@ template<int SizeAtCompileType> void mixingtypes(int size = SizeAtCompileType)
   VERIFY_IS_APPROX( rcd.noalias() -= mcd + md*md,           - ((md*md).eval().template cast<CD>()) );
 }
 
-void test_mixingtypes()
+EIGEN_DECLARE_TEST(mixingtypes)
 {
+  g_called = false; // Silence -Wunneeded-internal-declaration.
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1(mixingtypes<3>());
     CALL_SUBTEST_2(mixingtypes<4>());

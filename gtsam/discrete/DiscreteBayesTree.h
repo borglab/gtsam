@@ -42,12 +42,11 @@ class GTSAM_EXPORT DiscreteBayesTreeClique
   typedef DiscreteBayesTreeClique This;
   typedef BayesTreeCliqueBase<DiscreteBayesTreeClique, DiscreteFactorGraph>
       Base;
-  typedef boost::shared_ptr<This> shared_ptr;
-  typedef boost::weak_ptr<This> weak_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
+  typedef std::weak_ptr<This> weak_ptr;
   DiscreteBayesTreeClique() {}
-  virtual ~DiscreteBayesTreeClique() {}
   DiscreteBayesTreeClique(
-      const boost::shared_ptr<DiscreteConditional>& conditional)
+      const std::shared_ptr<DiscreteConditional>& conditional)
       : Base(conditional) {}
 
   /// print index signature only
@@ -57,12 +56,20 @@ class GTSAM_EXPORT DiscreteBayesTreeClique
     conditional_->printSignature(s, formatter);
   }
 
-  //** evaluate conditional probability of subtree for given Values */
-  double evaluate(const DiscreteConditional::Values& values) const;
+  //** evaluate conditional probability of subtree for given DiscreteValues */
+  double evaluate(const DiscreteValues& values) const;
+
+  //** (Preferred) sugar for the above for given DiscreteValues */
+  double operator()(const DiscreteValues& values) const {
+    return evaluate(values);
+  }
 };
 
 /* ************************************************************************* */
-/** A Bayes tree representing a Discrete density */
+/**
+ * @brief A Bayes tree representing a Discrete distribution.
+ * @ingroup discrete
+ */
 class GTSAM_EXPORT DiscreteBayesTree
     : public BayesTree<DiscreteBayesTreeClique> {
  private:
@@ -70,16 +77,45 @@ class GTSAM_EXPORT DiscreteBayesTree
 
  public:
   typedef DiscreteBayesTree This;
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
+  /// @name Standard interface
+  /// @{
   /** Default constructor, creates an empty Bayes tree */
   DiscreteBayesTree() {}
 
   /** Check equality */
   bool equals(const This& other, double tol = 1e-9) const;
 
-  //** evaluate probability for given Values */
-  double evaluate(const DiscreteConditional::Values& values) const;
+  //** evaluate probability for given DiscreteValues */
+  double evaluate(const DiscreteValues& values) const;
+
+  //** (Preferred) sugar for the above for given DiscreteValues */
+  double operator()(const DiscreteValues& values) const {
+    return evaluate(values);
+  }
+
+  /// @}
+  /// @name Wrapper support
+  /// @{
+
+  /// Render as markdown tables.
+  std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                       const DiscreteFactor::Names& names = {}) const;
+
+  /// Render as html tables.
+  std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                   const DiscreteFactor::Names& names = {}) const;
+
+  /// @}
 };
+
+/// traits
+template <>
+struct traits<DiscreteBayesTreeClique>
+    : public Testable<DiscreteBayesTreeClique> {};
+
+template <>
+struct traits<DiscreteBayesTree> : public Testable<DiscreteBayesTree> {};
 
 }  // namespace gtsam

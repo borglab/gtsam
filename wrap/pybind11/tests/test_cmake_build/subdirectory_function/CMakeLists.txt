@@ -1,17 +1,17 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.5)
 
-# The `cmake_minimum_required(VERSION 3.4...3.18)` syntax does not work with
+# The `cmake_minimum_required(VERSION 3.5...3.26)` syntax does not work with
 # some versions of VS that have a patched CMake 3.11. This forces us to emulate
 # the behavior using the following workaround:
-if(${CMAKE_VERSION} VERSION_LESS 3.18)
+if(${CMAKE_VERSION} VERSION_LESS 3.26)
   cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
 else()
-  cmake_policy(VERSION 3.18)
+  cmake_policy(VERSION 3.26)
 endif()
 
 project(test_subdirectory_function CXX)
 
-add_subdirectory("${PYBIND11_PROJECT_DIR}" pybind11)
+add_subdirectory("${pybind11_SOURCE_DIR}" pybind11)
 pybind11_add_module(test_subdirectory_function ../main.cpp)
 set_target_properties(test_subdirectory_function PROPERTIES OUTPUT_NAME test_cmake_build)
 
@@ -31,4 +31,5 @@ add_custom_target(
   PYTHONPATH=$<TARGET_FILE_DIR:test_subdirectory_function>
   ${_Python_EXECUTABLE}
   ${PROJECT_SOURCE_DIR}/../test.py
-  ${PROJECT_NAME})
+  ${PROJECT_NAME}
+  DEPENDS test_subdirectory_function)

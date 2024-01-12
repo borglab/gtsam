@@ -1,6 +1,12 @@
 name: Linux CI
 
-on: [push, pull_request]
+on: [pull_request]
+
+# Every time you make a push to your PR, it cancel immediately the previous checks, 
+# and start a new one. The other runner will be available more quickly to your PR. 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -12,45 +18,50 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
-      BOOST_VERSION: 1.67.0
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          ubuntu-18.04-gcc-5,
-          ubuntu-18.04-gcc-9,
-          ubuntu-18.04-clang-9,
+          ubuntu-20.04-gcc-9,
+          ubuntu-20.04-clang-9,
+          ubuntu-22.04-gcc-11,
+          ubuntu-22.04-clang-14,
         ]
 
         build_type: [Debug, Release]
         build_unstable: [ON]
         include:
-          - name: ubuntu-18.04-gcc-5
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "5"
-
-          - name: ubuntu-18.04-gcc-9
-            os: ubuntu-18.04
+          - name: ubuntu-20.04-gcc-9
+            os: ubuntu-20.04
             compiler: gcc
             version: "9"
 
-          - name: ubuntu-18.04-clang-9
-            os: ubuntu-18.04
+          - name: ubuntu-20.04-clang-9
+            os: ubuntu-20.04
             compiler: clang
             version: "9"
 
+          - name: ubuntu-22.04-gcc-11
+            os: ubuntu-22.04
+            compiler: gcc
+            version: "11"
+
+          - name: ubuntu-22.04-clang-14
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Dependencies
         run: |
-          # LLVM (clang) 9 is not in Bionic's repositories so we add the official LLVM repository.
-          if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
+          # LLVM (clang) 9/14 is not in Bionic's repositories so we add the official LLVM repository.
+          if [ "${{ matrix.compiler }}" = "clang" ]; then
             # (ipv4|ha).pool.sks-keyservers.net is the SKS GPG global keyserver pool
             # ipv4 avoids potential timeouts because of crappy IPv6 infrastructure
             # 15CF4D18AF4F7421 is the GPG key for the LLVM apt repository
@@ -60,9 +71,9 @@ jobs:
             gpg -a --export $LLVM_KEY | sudo apt-key add -
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
           fi
-          sudo apt-get -y update
 
-          sudo apt-get -y install cmake build-essential pkg-config libpython-dev python-numpy libicu-dev
+          sudo apt-get -y update
+          sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libicu-dev ninja-build
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
@@ -76,7 +87,7 @@ jobs:
 
       - name: Install Boost
         run: |
-          bash .github/scripts/boost.sh
+          sudo apt-get -y install libboost-all-dev
 
       - name: Build and Test
         run: bash .github/scripts/unix.sh -t

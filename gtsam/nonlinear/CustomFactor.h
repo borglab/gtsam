@@ -19,8 +19,6 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
-using namespace gtsam;
-
 namespace gtsam {
 
 using JacobianVector = std::vector<Matrix>;
@@ -71,13 +69,11 @@ public:
     this->error_function_ = errorFunction;
   }
 
-  ~CustomFactor() override = default;
-
   /**
     * Calls the errorFunction closure, which is a std::function object
     * One can check if a derivative is needed in the errorFunction by checking the length of Jacobian array
     */
-  Vector unwhitenedError(const Values &x, boost::optional<std::vector<Matrix> &> H = boost::none) const override;
+  Vector unwhitenedError(const Values &x, OptionalMatrixVecType H = nullptr) const override;
 
   /** print */
   void print(const std::string &s,
@@ -92,6 +88,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -99,6 +96,7 @@ private:
     ar & boost::serialization::make_nvp("CustomFactor",
                                         boost::serialization::base_object<Base>(*this));
   }
+#endif
 };
 
-};
+}

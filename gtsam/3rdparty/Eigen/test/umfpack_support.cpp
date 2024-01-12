@@ -12,10 +12,10 @@
 
 #include <Eigen/UmfPackSupport>
 
-template<typename T> void test_umfpack_support_T()
+template<typename T1, typename T2> void test_umfpack_support_T()
 {
-  UmfPackLU<SparseMatrix<T, ColMajor> > umfpack_colmajor;
-  UmfPackLU<SparseMatrix<T, RowMajor> > umfpack_rowmajor;
+  UmfPackLU<SparseMatrix<T1, ColMajor, T2> > umfpack_colmajor;
+  UmfPackLU<SparseMatrix<T1, RowMajor, T2> > umfpack_rowmajor;
   
   check_sparse_square_solving(umfpack_colmajor);
   check_sparse_square_solving(umfpack_rowmajor);
@@ -24,9 +24,11 @@ template<typename T> void test_umfpack_support_T()
   check_sparse_square_determinant(umfpack_rowmajor);
 }
 
-void test_umfpack_support()
+EIGEN_DECLARE_TEST(umfpack_support)
 {
-  CALL_SUBTEST_1(test_umfpack_support_T<double>());
-  CALL_SUBTEST_2(test_umfpack_support_T<std::complex<double> >());
+  CALL_SUBTEST_1((test_umfpack_support_T<double, int>()));
+  CALL_SUBTEST_2((test_umfpack_support_T<std::complex<double>, int>()));
+  CALL_SUBTEST_3((test_umfpack_support_T<double, long >()));
+  CALL_SUBTEST_4((test_umfpack_support_T<std::complex<double>, long>()));
 }
 

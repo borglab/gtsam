@@ -12,13 +12,16 @@
 #pragma once
 
 #include <cmath>
-#include <boost/optional.hpp>
-#include <boost/serialization/nvp.hpp>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/nvp.hpp>
+#endif
 
 namespace gtsam {
 
@@ -31,7 +34,7 @@ template <class CALIBRATION>
 class InvDepthCamera3 {
 private:
   Pose3 pose_;                        ///< The camera pose
-  boost::shared_ptr<CALIBRATION> k_;  ///< The fixed camera calibration
+  std::shared_ptr<CALIBRATION> k_;  ///< The fixed camera calibration
 
 public:
 
@@ -42,7 +45,7 @@ public:
   InvDepthCamera3() {}
 
   /** constructor with pose and calibration */
-  InvDepthCamera3(const Pose3& pose, const boost::shared_ptr<CALIBRATION>& k) :
+  InvDepthCamera3(const Pose3& pose, const std::shared_ptr<CALIBRATION>& k) :
     pose_(pose),k_(k) {}
 
   /// @}
@@ -55,7 +58,7 @@ public:
   inline Pose3& pose() {  return pose_; }
 
   /// return calibration
-  inline const boost::shared_ptr<CALIBRATION>& calibration() const {  return k_; }
+  inline const std::shared_ptr<CALIBRATION>& calibration() const {  return k_; }
 
   /// print
   void print(const std::string& s = "") const {
@@ -83,9 +86,9 @@ public:
    */
   inline gtsam::Point2 project(const Vector5& pw,
       double rho,
-      boost::optional<gtsam::Matrix&> H1 = boost::none,
-      boost::optional<gtsam::Matrix&> H2 = boost::none,
-      boost::optional<gtsam::Matrix&> H3 = boost::none) const {
+      OptionalJacobian<2,6> H1 = {},
+      OptionalJacobian<2,5> H2 = {},
+      OptionalJacobian<2,1> H3 = {}) const {
 
     gtsam::Point3 ray_base(pw.segment(0,3));
     double theta = pw(3), phi = pw(4);
@@ -100,7 +103,7 @@ public:
     }
     else {
       gtsam::Matrix J2;
-      gtsam::Point2 uv= camera.project(landmark,H1, J2, boost::none);
+      gtsam::Point2 uv= camera.project(landmark,H1, J2, {});
       if (H1) {
         *H1 = (*H1) * I_6x6;
       }
@@ -172,6 +175,7 @@ private:
   /// @name Advanced Interface
   /// @{
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -179,6 +183,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(pose_);
     ar & BOOST_SERIALIZATION_NVP(k_);
   }
+#endif
   /// @}
 }; // \class InvDepthCamera
-} // \namesapce gtsam
+} // \namespace gtsam

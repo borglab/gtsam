@@ -24,17 +24,21 @@ namespace gtsam {
 
   /**
    * A class for a soft prior on any Value type
-   * @addtogroup SLAM
+   * @ingroup nonlinear
    */
   template<class VALUE>
-  class PriorFactor: public NoiseModelFactor1<VALUE> {
+  class PriorFactor: public NoiseModelFactorN<VALUE> {
 
   public:
     typedef VALUE T;
 
+    // Provide access to the Matrix& version of evaluateError:
+    using NoiseModelFactor1<VALUE>::evaluateError;
+
+
   private:
 
-    typedef NoiseModelFactor1<VALUE> Base;
+    typedef NoiseModelFactorN<VALUE> Base;
 
     VALUE prior_; /** The measurement */
 
@@ -44,7 +48,7 @@ namespace gtsam {
   public:
 
     /// shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<PriorFactor<VALUE> > shared_ptr;
+    typedef typename std::shared_ptr<PriorFactor<VALUE> > shared_ptr;
 
     /// Typedef to this class
     typedef PriorFactor<VALUE> This;
@@ -66,7 +70,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
@@ -91,10 +95,9 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const T& x, boost::optional<Matrix&> H = boost::none) const override {
+    Vector evaluateError(const T& x, OptionalMatrixType H) const override {
       if (H) (*H) = Matrix::Identity(traits<T>::GetDimension(x),traits<T>::GetDimension(x));
       // manifold equivalent of z-x -> Local(x,z)
-      // TODO(ASL) Add Jacobians.
       return -traits<T>::Local(x, prior_);
     }
 
@@ -102,19 +105,22 @@ namespace gtsam {
 
   private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
       ar & boost::serialization::make_nvp("NoiseModelFactor1",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);
     }
+#endif
 
-	// Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-	enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
+  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+  enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
   public:
-	GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
   };
 
   /// traits

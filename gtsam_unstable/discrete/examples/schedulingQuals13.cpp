@@ -12,14 +12,8 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std/map.hpp>
-#include <boost/optional.hpp>
-#include <boost/format.hpp>
-
 #include <algorithm>
 
-using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
@@ -139,7 +133,7 @@ void runLargeExample() {
   // Do brute force product and output that to file
   if (scheduler.nrStudents() == 1) { // otherwise too slow
     DecisionTreeFactor product = scheduler.product();
-    product.dot("scheduling-large", false);
+    product.dot("scheduling-large", DefaultKeyFormatter, false);
   }
 
   // Do exact inference
@@ -153,7 +147,7 @@ void runLargeExample() {
   tictoc_finishedIteration();
   tictoc_print();
   for (size_t i=0;i<100;i++) {
-    DiscreteFactor::sharedValues assignment = sample(*chordal);
+    auto assignment = sample(*chordal);
     vector<size_t> stats(scheduler.nrFaculty());
     scheduler.accumulateStats(assignment, stats);
     size_t max = *max_element(stats.begin(), stats.end());
@@ -167,7 +161,7 @@ void runLargeExample() {
   }
 #else
   gttic(large);
-  DiscreteFactor::sharedValues MPE = scheduler.optimalAssignment();
+  auto MPE = scheduler.optimize();
   gttoc(large);
   tictoc_finishedIteration();
   tictoc_print();
@@ -212,18 +206,18 @@ void solveStaged(size_t addMutex = 2) {
       root->print(""/*scheduler.studentName(s)*/);
 
     // solve root node only
-    Scheduler::Values values;
-    size_t bestSlot = root->solve(values);
+    size_t bestSlot = root->argmax();
 
     // get corresponding count
     DiscreteKey dkey = scheduler.studentKey(NRSTUDENTS - 1 - s);
+    DiscreteValues values;
     values[dkey.first] = bestSlot;
     double count = (*root)(values);
 
     // remove this slot from consideration
     slotsAvailable[bestSlot] = 0.0;
-    cout << boost::format("%s = %d (%d), count = %d") % scheduler.studentName(NRSTUDENTS-1-s)
-        % scheduler.slotName(bestSlot) % bestSlot % count << endl;
+    cout << scheduler.studentName(NRSTUDENTS - 1 - s) << " = " << scheduler.slotName(bestSlot) << " (" << bestSlot
+         << "), count = " << count << endl;
   }
   tictoc_print_();
 }
@@ -251,15 +245,14 @@ void sampleSolutions() {
   vector<DiscreteBayesNet::shared_ptr> samplers(NRSTUDENTS);
 
   // Given the time-slots, we can create NRSTUDENTS independent samplers
-  vector<size_t> slots;
-  slots += 12,11,13, 21,16,1, 3,2,6, 7,22,4; // given slots
+  vector<size_t> slots{12,11,13, 21,16,1, 3,2,6, 7,22,4}; // given slots
   for (size_t i = 0; i < NRSTUDENTS; i++)
     samplers[i] = createSampler(i, slots[i], schedulers);
 
   // now, sample schedules
   for (size_t n = 0; n < 10000; n++) {
     vector<size_t> stats(nrFaculty, 0);
-    vector<Scheduler::sharedValues> samples;
+    vector<DiscreteValues> samples;
     for (size_t i = 0; i < NRSTUDENTS; i++) {
       samples.push_back(samplers[i]->sample());
       schedulers[i].accumulateStats(samples[i], stats);
@@ -268,9 +261,7 @@ void sampleSolutions() {
     size_t min = *min_element(stats.begin(), stats.end());
     size_t nz = count_if(stats.begin(), stats.end(), NonZero);
     if (nz >= 16 && max <= 3) {
-      cout << boost::format(
-          "Sampled schedule %d, min = %d, nz = %d, max = %d\n") % (n + 1) % min
-          % nz % max;
+      cout << "Sampled schedule " << n + 1 << ", min = " << min << ", nz = " << nz << ", max = " << max << endl;
       for (size_t i = 0; i < NRSTUDENTS; i++) {
         cout << schedulers[i].studentName(0) << " : " << schedulers[i].slotName(
             slots[i]) << endl;

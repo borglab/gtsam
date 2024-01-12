@@ -26,25 +26,30 @@ class CheckMixin:
                 return True
         return False
 
+    def can_be_pointer(self, arg_type: parser.Type):
+        """
+        Determine if the `arg_type` can have a pointer to it.
+
+        E.g. `Pose3` can have `Pose3*` but 
+        `Matrix` should not have `Matrix*`.
+        """
+        return (arg_type.typename.name not in self.not_ptr_type
+                and arg_type.typename.name not in self.ignore_namespace
+                and arg_type.typename.name != 'string')
+
     def is_shared_ptr(self, arg_type: parser.Type):
         """
         Determine if the `interface_parser.Type` should be treated as a
         shared pointer in the wrapper.
         """
-        return arg_type.is_shared_ptr or (
-            arg_type.typename.name not in self.not_ptr_type
-            and arg_type.typename.name not in self.ignore_namespace
-            and arg_type.typename.name != 'string')
+        return arg_type.is_shared_ptr
 
     def is_ptr(self, arg_type: parser.Type):
         """
         Determine if the `interface_parser.Type` should be treated as a
         raw pointer in the wrapper.
         """
-        return arg_type.is_ptr or (
-            arg_type.typename.name not in self.not_ptr_type
-            and arg_type.typename.name not in self.ignore_namespace
-            and arg_type.typename.name != 'string')
+        return arg_type.is_ptr
 
     def is_ref(self, arg_type: parser.Type):
         """
@@ -54,6 +59,31 @@ class CheckMixin:
         return arg_type.typename.name not in self.ignore_namespace and \
                arg_type.typename.name not in self.not_ptr_type and \
                arg_type.is_ref
+
+    def is_class_enum(self, arg_type: parser.Type, class_: parser.Class):
+        """Check if arg_type is an enum in the class `class_`."""
+        if class_:
+            class_enums = [enum.name for enum in class_.enums]
+            return arg_type.typename.name in class_enums
+        else:
+            return False
+
+    def is_global_enum(self, arg_type: parser.Type, class_: parser.Class):
+        """Check if arg_type is a global enum."""
+        if class_:
+            # Get the enums in the class' namespace
+            global_enums = [
+                member.name for member in class_.parent.content
+                if isinstance(member, parser.Enum)
+            ]
+            return arg_type.typename.name in global_enums
+        else:
+            return False
+
+    def is_enum(self, arg_type: parser.Type, class_: parser.Class):
+        """Check if `arg_type` is an enum."""
+        return self.is_class_enum(arg_type, class_) or self.is_global_enum(
+            arg_type, class_)
 
 
 class FormatMixin:
@@ -108,11 +138,11 @@ class FormatMixin:
         elif is_method:
             formatted_type_name += self.data_type_param.get(name) or name
         else:
-            formatted_type_name += name
+            formatted_type_name += str(name)
 
         if separator == "::":  # C++
             templates = []
-            for idx in range(len(type_name.instantiations)):
+            for idx, _ in enumerate(type_name.instantiations):
                 template = '{}'.format(
                     self._format_type_name(type_name.instantiations[idx],
                                            include_namespace=include_namespace,
@@ -124,7 +154,7 @@ class FormatMixin:
                 formatted_type_name += '<{}>'.format(','.join(templates))
 
         else:
-            for idx in range(len(type_name.instantiations)):
+            for idx, _ in enumerate(type_name.instantiations):
                 formatted_type_name += '{}'.format(
                     self._format_type_name(type_name.instantiations[idx],
                                            separator=separator,
@@ -192,10 +222,9 @@ class FormatMixin:
         method = ''
 
         if isinstance(static_method, parser.StaticMethod):
-            method += "".join([separator + x for x in static_method.parent.namespaces()]) + \
-                      separator + static_method.parent.name + separator
+            method += static_method.parent.to_cpp() + separator
 
-        return method[2 * len(separator):]
+        return method
 
     def _format_global_function(self,
                                 function: Union[parser.GlobalFunction, Any],

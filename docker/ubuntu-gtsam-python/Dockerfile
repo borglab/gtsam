@@ -6,9 +6,6 @@ FROM borglab/ubuntu-gtsam:bionic
 # Install pip
 RUN apt-get install -y python3-pip python3-dev
 
-# Install python wrapper requirements
-RUN python3 -m pip install -U -r /usr/src/gtsam/python/requirements.txt
-
 # Run cmake again, now with python toolbox on
 WORKDIR /usr/src/gtsam/build
 RUN cmake \

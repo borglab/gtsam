@@ -10,12 +10,13 @@ set (gtsam_subdirs
     inference
     symbolic
     discrete
+    hybrid
     linear
     nonlinear
     sam
     sfm
     slam
-	  navigation
+    navigation
 )
 
 set(gtsam_srcs)
@@ -47,6 +48,22 @@ else()
     set(excluded_sources ${excluded_sources} "${CMAKE_CURRENT_SOURCE_DIR}/geometry/Rot3Q.cpp")
 endif()
 
+# if GTSAM_ENABLE_BOOST_SERIALIZATION is not set, then we need to exclude the following:
+if(NOT GTSAM_ENABLE_BOOST_SERIALIZATION)
+    list (APPEND excluded_headers
+        "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/base/serializationTestHelpers.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/base/serialization.h"
+    )
+endif()
+ 
+# if GTSAM_USE_BOOST_FEATURES is not set, then we need to exclude the following:
+if(NOT GTSAM_USE_BOOST_FEATURES)
+    list (APPEND excluded_sources
+        "${CMAKE_CURRENT_SOURCE_DIR}/inference/graph.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/inference/graph-inl.h"
+    )
+endif()
+ 
 # Common headers
 file(GLOB gtsam_core_headers "*.h")
 install(FILES ${gtsam_core_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam)
@@ -93,17 +110,21 @@ if(GTSAM_SUPPORT_NESTED_DISSECTION)
     list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis-gtsam-if)
 endif()
 
+# Link to cephes library
+list(APPEND GTSAM_ADDITIONAL_LIBRARIES cephes-gtsam-if)
+
 # Versions
-set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
+set(gtsam_version   ${GTSAM_VERSION_STRING})
 set(gtsam_soversion ${GTSAM_VERSION_MAJOR})
 message(STATUS "GTSAM Version: ${gtsam_version}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
 # build shared and static versions of the library
-message(STATUS "Building GTSAM - shared: ${BUILD_SHARED_LIBS}")
+message(STATUS "Building GTSAM - as a ${GTSAM_LIBRARY_TYPE} library")
 
-# BUILD_SHARED_LIBS automatically defines static/shared libs:
-add_library(gtsam ${gtsam_srcs})
+# BUILD_SHARED_LIBS automatically defines static/shared libs
+# Here we ensure we control which type of library gtsam is specifically
+add_library(gtsam ${GTSAM_LIBRARY_TYPE} ${gtsam_srcs})
 target_link_libraries(gtsam PUBLIC ${GTSAM_BOOST_LIBRARIES})
 target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
 
@@ -114,21 +135,16 @@ set_target_properties(gtsam PROPERTIES
     OUTPUT_NAME         gtsam
     CLEAN_DIRECT_OUTPUT 1
     VERSION             ${gtsam_version}
-    SOVERSION           ${gtsam_soversion})
+    SOVERSION           ${gtsam_soversion}
+    LINKER_LANGUAGE     CXX)
 
-# Append Eigen include path, set in top-level CMakeLists.txt to either
+# Append Eigen include path to either
 # system-eigen, or GTSAM eigen path
-target_include_directories(gtsam PUBLIC
-  $<BUILD_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_BUILD}>
-  $<INSTALL_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_INSTALL}>
-)
+target_link_libraries(gtsam PUBLIC Eigen3::Eigen)
+
 # MKL include dir:
 if (GTSAM_USE_EIGEN_MKL)
   target_include_directories(gtsam PUBLIC ${MKL_INCLUDE_DIR})
-endif()
-
-if(GTSAM_USE_TBB)
-  target_include_directories(gtsam PUBLIC ${TBB_INCLUDE_DIRS})
 endif()
 
 # Add includes for source directories 'BEFORE' boost and any system include
@@ -158,10 +174,10 @@ target_include_directories(gtsam SYSTEM BEFORE PUBLIC
 )
 
 if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
-	if (NOT BUILD_SHARED_LIBS)
+	if (NOT GTSAM_SHARED_LIB)
 		set_target_properties(gtsam PROPERTIES
-			PREFIX "lib"
-			COMPILE_DEFINITIONS GTSAM_IMPORT_STATIC)
+			PREFIX "lib")
+		target_compile_definitions(gtsam PRIVATE GTSAM_IMPORT_STATIC)
 	else()
 		set_target_properties(gtsam PROPERTIES
 			PREFIX ""

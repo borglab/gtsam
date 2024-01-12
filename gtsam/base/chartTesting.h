@@ -32,14 +32,14 @@ void testDefaultChart(TestResult& result_,
                       const std::string& name_,
                       const T& value) {
 
-  GTSAM_CONCEPT_TESTABLE_TYPE(T);
+  GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
   typedef typename gtsam::DefaultChart<T> Chart;
   typedef typename Chart::vector Vector;
 
   // First, check the basic chart concept. This checks that the interface is satisfied.
   // The rest of the function is even more detailed, checking the correctness of the chart.
-  BOOST_CONCEPT_ASSERT((ChartConcept<Chart>));
+  GTSAM_CONCEPT_ASSERT(ChartConcept<Chart>);
 
   T other = value;
 

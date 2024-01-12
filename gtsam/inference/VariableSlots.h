@@ -24,7 +24,6 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Testable.h>
 
-#include <boost/tuple/tuple.hpp>
 
 #include <iostream>
 #include <string>
@@ -110,8 +109,7 @@ VariableSlots::VariableSlots(const FG& factorGraph)
       // we're combining.  Initially we put the max integer value in
       // the array entry for each factor that will indicate the factor
       // does not involve the variable.
-      iterator thisVarSlots; bool inserted;
-        boost::tie(thisVarSlots, inserted) = this->insert(std::make_pair(involvedVariable, FastVector<size_t>()));
+      auto [thisVarSlots, inserted] = this->insert({involvedVariable, FastVector<size_t>()});
       if(inserted)
         thisVarSlots->second.resize(factorGraph.nrFactors(), Empty);
       thisVarSlots->second[jointFactorPos] = factorVarSlot;

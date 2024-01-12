@@ -28,7 +28,7 @@ namespace gtsam {
 /**
  * A class for a measurement predicted by "between(config[key1],config[key2])"
  * @tparam VALUE the Value type
- * @addtogroup SLAM
+ * @ingroup slam
  */
 template<class VALUE>
 class BetweenFactorEM: public NonlinearFactor {
@@ -56,12 +56,13 @@ private:
   bool flag_bump_up_near_zero_probs_;
 
   /** concept check by type */
-  GTSAM_CONCEPT_LIE_TYPE(T)GTSAM_CONCEPT_TESTABLE_TYPE(T)
+  GTSAM_CONCEPT_LIE_TYPE(T)
+  GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
 public:
 
   // shorthand for a smart pointer to a factor
-  typedef typename boost::shared_ptr<BetweenFactorEM> shared_ptr;
+  typedef typename std::shared_ptr<BetweenFactorEM> shared_ptr;
 
   /** default constructor - only use for serialization */
   BetweenFactorEM() {
@@ -72,7 +73,7 @@ public:
       const SharedGaussian& model_inlier, const SharedGaussian& model_outlier,
       const double prior_inlier, const double prior_outlier,
       const bool flag_bump_up_near_zero_probs = false) :
-      Base(cref_list_of<2>(key1)(key2)), key1_(key1), key2_(key2), measured_(
+      Base(KeyVector{key1, key2}), key1_(key1), key2_(key2), measured_(
           measured), model_inlier_(model_inlier), model_outlier_(model_outlier), prior_inlier_(
           prior_inlier), prior_outlier_(prior_outlier), flag_bump_up_near_zero_probs_(
           flag_bump_up_near_zero_probs) {
@@ -125,10 +126,10 @@ public:
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
   /* This version of linearize recalculates the noise model each time */
-  boost::shared_ptr<GaussianFactor> linearize(const Values &x) const override {
+  std::shared_ptr<GaussianFactor> linearize(const Values &x) const override {
     // Only linearize if the factor is active
     if (!this->active(x))
-      return boost::shared_ptr<JacobianFactor>();
+      return std::shared_ptr<JacobianFactor>();
 
     //std::cout<<"About to linearize"<<std::endl;
     Matrix A1, A2;
@@ -144,7 +145,7 @@ public:
 
   /* ************************************************************************* */
   Vector whitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
+      OptionalMatrixVecType H = nullptr) const {
 
     bool debug = true;
 
@@ -225,6 +226,12 @@ public:
     }
 
     return err_wh_eq;
+  }
+
+  // A function overload that takes a vector of matrices and passes it to the
+  // function above which uses a pointer to a vector instead.
+  Vector whitenedError(const Values& x, std::vector<Matrix>& H) const {
+	  return whitenedError(x, &H);
   }
 
   /* ************************************************************************* */
@@ -408,6 +415,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -417,7 +425,12 @@ private:
             boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);
   }
+#endif
 };
 // \class BetweenFactorEM
+
+/// traits
+template<class VALUE>
+struct traits<BetweenFactorEM<VALUE> > : public Testable<BetweenFactorEM<VALUE> > {};
 
 }  // namespace gtsam

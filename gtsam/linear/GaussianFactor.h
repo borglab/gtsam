@@ -39,8 +39,11 @@ namespace gtsam {
   {
   public:
     typedef GaussianFactor This; ///< This class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
     typedef Factor Base; ///< Our base class
+
+    /// @name Standard Constructors
+    /// @{
 
     /** Default constructor creates empty factor */
     GaussianFactor() {}
@@ -50,21 +53,36 @@ namespace gtsam {
     template<typename CONTAINER>
     GaussianFactor(const CONTAINER& keys) : Base(keys) {}
 
-    /** Destructor */
-    virtual ~GaussianFactor() {}
+    /// @}
+    /// @name Testable
+    /// @{
 
-    // Implementing Testable interface
-
-    /// print
+    /// print with optional string
     void print(
         const std::string& s = "",
         const KeyFormatter& formatter = DefaultKeyFormatter) const override = 0;
 
-    /** Equals for testable */
+    /// assert equality up to a tolerance
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const = 0;
 
-    /** Print for testable */
-    virtual double error(const VectorValues& c) const = 0; /**  0.5*(A*x-b)'*D*(A*x-b) */
+    /// @}
+    /// @name Standard Interface
+    /// @{
+
+    /**
+     * In Gaussian factors, the error function returns either the negative log-likelihood, e.g.,
+     *   0.5*(A*x-b)'*D*(A*x-b) 
+     * for a \class JacobianFactor, or the negative log-density, e.g.,
+     *   0.5*(A*x-b)'*D*(A*x-b) - log(k)
+     * for a \class GaussianConditional, where k is the normalization constant.
+     */
+    virtual double error(const VectorValues& c) const;
+
+    /**
+     * The Factor::error simply extracts the \class VectorValues from the
+     * \class HybridValues and calculates the error.
+     */
+    double error(const HybridValues& c) const override;
 
     /** Return the dimension of the variable pointed to by the given key iterator */
     virtual DenseIndex getDim(const_iterator variable) const = 0;
@@ -117,9 +135,6 @@ namespace gtsam {
     /** Clone a factor (make a deep copy) */
     virtual GaussianFactor::shared_ptr clone() const = 0;
 
-    /** Test whether the factor is empty */
-    virtual bool empty() const = 0;
-
     /**
      * Construct the corresponding anti-factor to negate information
      * stored stored in this factor.
@@ -135,6 +150,10 @@ namespace gtsam {
     virtual void updateHessian(const KeyVector& keys,
                            SymmetricBlockMatrix* info) const = 0;
 
+    /// @}
+    /// @name Operator interface
+    /// @{
+
     /// y += alpha * A'*A*x
     virtual void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const = 0;
 
@@ -147,20 +166,27 @@ namespace gtsam {
     /// Gradient wrt a key at any values
     virtual Vector gradient(Key key, const VectorValues& x) const = 0;
 
+    /// @}
+    /// @name Advanced Interface
+    /// @{
+
     // Determine position of a given key
     template <typename CONTAINER>
     static DenseIndex Slot(const CONTAINER& keys, Key key) {
       return std::find(keys.begin(), keys.end(), key) - keys.begin();
     }
 
+    /// @}
+    
   private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
-
+#endif
   }; // GaussianFactor
 
 /// traits

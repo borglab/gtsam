@@ -23,7 +23,6 @@
 #include <gtsam/base/types.h>
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/algorithm/string.hpp>
 #include <string>
 #include <iostream>
 
@@ -71,7 +70,8 @@ TEST( GeographicLib, UTM) {
   // Obtained by
   // http://geographiclib.sourceforge.net/cgi-bin/GeoConvert?input=33.87071+-84.30482000000001&zone=-3&prec=2&option=Submit
   auto actual = UTMUPS::EncodeZone(zone, northp);
-  boost::to_upper(actual);
+  // transform to upper case
+  std::transform(actual.begin(), actual.end(), actual.begin(), ::toupper);
   EXPECT(actual=="16N");
   EXPECT_DOUBLES_EQUAL(749305.58, x, 1e-2);
   EXPECT_DOUBLES_EQUAL(3751090.08, y, 1e-2);

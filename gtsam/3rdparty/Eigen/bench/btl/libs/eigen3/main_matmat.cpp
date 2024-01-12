@@ -25,7 +25,7 @@ BTL_MAIN;
 int main()
 {
   bench<Action_matrix_matrix_product<eigen3_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
-//   bench<Action_ata_product<eigen3_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
+  bench<Action_ata_product<eigen3_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
   bench<Action_aat_product<eigen3_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
   bench<Action_trmm<eigen3_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
 
