@@ -19,7 +19,6 @@
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/testLie.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/tuple/tuple.hpp>
 #include <iostream>
 
 using namespace std;
@@ -155,8 +154,7 @@ TEST(Vector, weightedPseudoinverse )
   Vector weights = sigmas.array().square().inverse();
 
   // perform solve
-  Vector actual; double precision;
-  boost::tie(actual, precision) = weightedPseudoinverse(x, weights);
+  const auto [actual, precision] = weightedPseudoinverse(x, weights);
 
   // construct expected
   Vector expected(2);
@@ -180,8 +178,7 @@ TEST(Vector, weightedPseudoinverse_constraint )
   sigmas(0) = 0.0; sigmas(1) = 0.2;
   Vector weights = sigmas.array().square().inverse();
   // perform solve
-  Vector actual; double precision;
-  boost::tie(actual, precision) = weightedPseudoinverse(x, weights);
+  const auto [actual, precision] = weightedPseudoinverse(x, weights);
 
   // construct expected
   Vector expected(2);
@@ -198,8 +195,7 @@ TEST(Vector, weightedPseudoinverse_nan )
   Vector a = (Vector(4) << 1., 0., 0., 0.).finished();
   Vector sigmas = (Vector(4) << 0.1, 0.1, 0., 0.).finished();
   Vector weights = sigmas.array().square().inverse();
-  Vector pseudo; double precision;
-  boost::tie(pseudo, precision) = weightedPseudoinverse(a, weights);
+  const auto [pseudo, precision] = weightedPseudoinverse(a, weights);
 
   Vector expected = (Vector(4) << 1., 0., 0.,0.).finished();
   EXPECT(assert_equal(expected, pseudo));
@@ -270,11 +266,16 @@ TEST(Vector, linear_dependent3 )
 }
 
 //******************************************************************************
-TEST(Vector, IsVectorSpace) {
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector5>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector>));
+TEST(Vector, VectorIsVectorSpace) {
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector5>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector>);
+}
+
+TEST(Vector, RowVectorIsVectorSpace) {
+#ifdef GTSAM_USE_BOOST_FEATURES
   typedef Eigen::Matrix<double,1,-1> RowVector;
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<RowVector>));
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowVector>);
+#endif
 }
 
 /* ************************************************************************* */

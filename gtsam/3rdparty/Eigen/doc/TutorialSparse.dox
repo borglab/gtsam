@@ -57,10 +57,10 @@ The \c "_" indicates available free space to quickly insert new elements.
 Assuming no reallocation is needed, the insertion of a random element is therefore in O(nnz_j) where nnz_j is the number of nonzeros of the respective inner vector.
 On the other hand, inserting elements with increasing inner indices in a given inner vector is much more efficient since this only requires to increase the respective \c InnerNNZs entry that is a O(1) operation.
 
-The case where no empty space is available is a special case, and is refered as the \em compressed mode.
+The case where no empty space is available is a special case, and is referred as the \em compressed mode.
 It corresponds to the widely used Compressed Column (or Row) Storage schemes (CCS or CRS).
 Any SparseMatrix can be turned to this form by calling the SparseMatrix::makeCompressed() function.
-In this case, one can remark that the \c InnerNNZs array is redundant with \c OuterStarts because we the equality: \c InnerNNZs[j] = \c OuterStarts[j+1]-\c OuterStarts[j].
+In this case, one can remark that the \c InnerNNZs array is redundant with \c OuterStarts because we have the equality: \c InnerNNZs[j] = \c OuterStarts[j+1]-\c OuterStarts[j].
 Therefore, in practice a call to SparseMatrix::makeCompressed() frees this buffer.
 
 It is worth noting that most of our wrappers to external libraries requires compressed matrices as inputs.
@@ -212,7 +212,7 @@ See the SparseMatrix::setFromTriplets() function and class Triplet for more deta
 
 
 In some cases, however, slightly higher performance, and lower memory consumption can be reached by directly inserting the non-zeros into the destination matrix.
-A typical scenario of this approach is illustrated bellow:
+A typical scenario of this approach is illustrated below:
 \code
 1: SparseMatrix<double> mat(rows,cols);         // default is column major
 2: mat.reserve(VectorXi::Constant(cols,6));

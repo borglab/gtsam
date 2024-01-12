@@ -23,7 +23,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_unstable/dllexport.h>
 
-#include <boost/optional.hpp>
 
 namespace gtsam {
 
@@ -38,18 +37,18 @@ namespace gtsam {
  * define the alpha = (t_p - t_A) / (t_B - t_A), we will use the pose
  * interpolated between A and B by the alpha to project the corresponding
  * landmark to Point2.
- * @addtogroup SLAM
+ * @ingroup slam
  */
 
 class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
-    : public NoiseModelFactor3<Pose3, Pose3, Point3> {
+    : public NoiseModelFactorN<Pose3, Pose3, Point3> {
  protected:
   // Keep a copy of measurement and calibration for I/O
   Point2 measured_;  ///< 2D measurement
   double alpha_;     ///< interpolation parameter in [0,1] corresponding to the
                      ///< point2 measurement
-  boost::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
-  boost::optional<Pose3>
+  std::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
+  std::optional<Pose3>
       body_P_sensor_;  ///< The pose of the sensor in the body frame
 
   // verbosity handling for Cheirality Exceptions
@@ -62,11 +61,15 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   /// shorthand for base class type
   typedef NoiseModelFactor3<Pose3, Pose3, Point3> Base;
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
+
   /// shorthand for this class
   typedef ProjectionFactorRollingShutter This;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// Default constructor
   ProjectionFactorRollingShutter()
@@ -91,8 +94,8 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   ProjectionFactorRollingShutter(
       const Point2& measured, double alpha, const SharedNoiseModel& model,
       Key poseKey_a, Key poseKey_b, Key pointKey,
-      const boost::shared_ptr<Cal3_S2>& K,
-      boost::optional<Pose3> body_P_sensor = boost::none)
+      const std::shared_ptr<Cal3_S2>& K,
+      std::optional<Pose3> body_P_sensor = {})
       : Base(model, poseKey_a, poseKey_b, pointKey),
         measured_(measured),
         alpha_(alpha),
@@ -121,9 +124,9 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   ProjectionFactorRollingShutter(
       const Point2& measured, double alpha, const SharedNoiseModel& model,
       Key poseKey_a, Key poseKey_b, Key pointKey,
-      const boost::shared_ptr<Cal3_S2>& K, bool throwCheirality,
+      const std::shared_ptr<Cal3_S2>& K, bool throwCheirality,
       bool verboseCheirality,
-      boost::optional<Pose3> body_P_sensor = boost::none)
+      std::optional<Pose3> body_P_sensor = {})
       : Base(model, poseKey_a, poseKey_b, pointKey),
         measured_(measured),
         alpha_(alpha),
@@ -137,7 +140,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -173,15 +176,13 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(
       const Pose3& pose_a, const Pose3& pose_b, const Point3& point,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const override;
+      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3) const override;
 
   /** return the measurement */
   const Point2& measured() const { return measured_; }
 
   /** return the calibration object */
-  inline const boost::shared_ptr<Cal3_S2> calibration() const { return K_; }
+  inline const std::shared_ptr<Cal3_S2> calibration() const { return K_; }
 
   /** returns the rolling shutter interp param*/
   inline double alpha() const { return alpha_; }
@@ -193,6 +194,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   inline bool throwCheirality() const { return throwCheirality_; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -205,6 +207,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
     ar& BOOST_SERIALIZATION_NVP(throwCheirality_);
     ar& BOOST_SERIALIZATION_NVP(verboseCheirality_);
   }
+#endif
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

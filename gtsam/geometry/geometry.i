@@ -16,7 +16,7 @@ class Point2 {
   bool equals(const gtsam::Point2& point, double tol) const;
 
   // Group
-  static gtsam::Point2 identity();
+  static gtsam::Point2 Identity();
 
   // Standard Interface
   double x() const;
@@ -28,7 +28,8 @@ class Point2 {
   // enabling serialization functionality
   void serialize() const;
 };
-  
+
+// Used in Matlab wrapper
 class Point2Pairs {
   Point2Pairs();
   size_t size() const;
@@ -38,6 +39,7 @@ class Point2Pairs {
 };
 
 // std::vector<gtsam::Point2>
+// Used in Matlab wrapper
 class Point2Vector {
   // Constructors
   Point2Vector();
@@ -73,7 +75,7 @@ class StereoPoint2 {
   bool equals(const gtsam::StereoPoint2& point, double tol) const;
 
   // Group
-  static gtsam::StereoPoint2 identity();
+  static gtsam::StereoPoint2 Identity();
   gtsam::StereoPoint2 inverse() const;
   gtsam::StereoPoint2 compose(const gtsam::StereoPoint2& p2) const;
   gtsam::StereoPoint2 between(const gtsam::StereoPoint2& p2) const;
@@ -115,7 +117,7 @@ class Point3 {
   bool equals(const gtsam::Point3& p, double tol) const;
 
   // Group
-  static gtsam::Point3 identity();
+  static gtsam::Point3 Identity();
 
   // Standard Interface
   Vector vector() const;
@@ -125,8 +127,13 @@ class Point3 {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // Other methods
+  gtsam::Point3 normalize(const gtsam::Point3 &p) const;
+  gtsam::Point3 normalize(const gtsam::Point3 &p, Eigen::Ref<Eigen::MatrixXd> H) const;
 };
 
+// Used in Matlab wrapper
 class Point3Pairs {
   Point3Pairs();
   size_t size() const;
@@ -149,7 +156,7 @@ class Rot2 {
   bool equals(const gtsam::Rot2& rot, double tol) const;
 
   // Group
-  static gtsam::Rot2 identity();
+  static gtsam::Rot2 Identity();
   gtsam::Rot2 inverse();
   gtsam::Rot2 compose(const gtsam::Rot2& p2) const;
   gtsam::Rot2 between(const gtsam::Rot2& p2) const;
@@ -159,7 +166,9 @@ class Rot2 {
 
   // Manifold
   gtsam::Rot2 retract(Vector v) const;
+  gtsam::Rot2 retract(Vector v, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
   Vector localCoordinates(const gtsam::Rot2& p) const;
+  Vector localCoordinates(const gtsam::Rot2& p, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // Lie Group
   static gtsam::Rot2 Expmap(Vector v);
@@ -198,7 +207,7 @@ class SO3 {
   bool equals(const gtsam::SO3& other, double tol) const;
 
   // Group
-  static gtsam::SO3 identity();
+  static gtsam::SO3 Identity();
   gtsam::SO3 inverse() const;
   gtsam::SO3 between(const gtsam::SO3& R) const;
   gtsam::SO3 compose(const gtsam::SO3& R) const;
@@ -228,7 +237,7 @@ class SO4 {
   bool equals(const gtsam::SO4& other, double tol) const;
 
   // Group
-  static gtsam::SO4 identity();
+  static gtsam::SO4 Identity();
   gtsam::SO4 inverse() const;
   gtsam::SO4 between(const gtsam::SO4& Q) const;
   gtsam::SO4 compose(const gtsam::SO4& Q) const;
@@ -258,7 +267,7 @@ class SOn {
   bool equals(const gtsam::SOn& other, double tol) const;
 
   // Group
-  static gtsam::SOn identity();
+  static gtsam::SOn Identity();
   gtsam::SOn inverse() const;
   gtsam::SOn between(const gtsam::SOn& Q) const;
   gtsam::SOn compose(const gtsam::SOn& Q) const;
@@ -322,7 +331,7 @@ class Rot3 {
   bool equals(const gtsam::Rot3& rot, double tol) const;
 
   // Group
-  static gtsam::Rot3 identity();
+  static gtsam::Rot3 Identity();
   gtsam::Rot3 inverse() const;
   gtsam::Rot3 compose(const gtsam::Rot3& p2) const;
   gtsam::Rot3 between(const gtsam::Rot3& p2) const;
@@ -340,6 +349,13 @@ class Rot3 {
   gtsam::Point3 rotate(const gtsam::Point3& p) const;
   gtsam::Point3 unrotate(const gtsam::Point3& p) const;
 
+  // Group action on Unit3
+  gtsam::Unit3 rotate(const gtsam::Unit3& p) const;
+  gtsam::Unit3 rotate(const gtsam::Unit3& p,
+                      Eigen::Ref<Eigen::MatrixXd> HR,
+                      Eigen::Ref<Eigen::MatrixXd> Hp) const;
+  gtsam::Unit3 unrotate(const gtsam::Unit3& p) const;
+  
   // Standard Interface
   static gtsam::Rot3 Expmap(Vector v);
   static Vector Logmap(const gtsam::Rot3& p);
@@ -372,30 +388,35 @@ class Pose2 {
   Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
   Pose2(Vector v);
 
-  static boost::optional<gtsam::Pose2> Align(const gtsam::Point2Pairs& abPointPairs);
-  static boost::optional<gtsam::Pose2> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
+  static std::optional<gtsam::Pose2> Align(const gtsam::Point2Pairs& abPointPairs);
+  static std::optional<gtsam::Pose2> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
 
   // Testable
   void print(string s = "") const;
   bool equals(const gtsam::Pose2& pose, double tol) const;
 
   // Group
-  static gtsam::Pose2 identity();
+  static gtsam::Pose2 Identity();
   gtsam::Pose2 inverse() const;
   gtsam::Pose2 compose(const gtsam::Pose2& p2) const;
+  gtsam::Pose2 compose(const gtsam::Pose2& p2, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
   gtsam::Pose2 between(const gtsam::Pose2& p2) const;
+  gtsam::Pose2 between(const gtsam::Pose2& p2, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // Operator Overloads
   gtsam::Pose2 operator*(const gtsam::Pose2& p2) const;
 
   // Manifold
   gtsam::Pose2 retract(Vector v) const;
+  gtsam::Pose2 retract(Vector v, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
   Vector localCoordinates(const gtsam::Pose2& p) const;
+  Vector localCoordinates(const gtsam::Pose2& p, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // Lie Group
   static gtsam::Pose2 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose2& p);
   Vector logmap(const gtsam::Pose2& p);
+  Vector logmap(const gtsam::Pose2& p, Eigen::Ref<Eigen::MatrixXd> H);
   static Matrix ExpmapDerivative(Vector v);
   static Matrix LogmapDerivative(const gtsam::Pose2& v);
   Matrix AdjointMap() const;
@@ -420,7 +441,9 @@ class Pose2 {
   gtsam::Rot2 bearing(const gtsam::Point2& point) const;
   double range(const gtsam::Point2& point) const;
   gtsam::Point2 translation() const;
+  gtsam::Point2 translation(Eigen::Ref<Eigen::MatrixXd> Hself) const;
   gtsam::Rot2 rotation() const;
+  gtsam::Rot2 rotation(Eigen::Ref<Eigen::MatrixXd> Hself) const;
   Matrix matrix() const;
 
   // enabling serialization functionality
@@ -436,34 +459,53 @@ class Pose3 {
   Pose3(const gtsam::Pose2& pose2);
   Pose3(Matrix mat);
 
-  static boost::optional<gtsam::Pose3> Align(const gtsam::Point3Pairs& abPointPairs);
-  static boost::optional<gtsam::Pose3> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
+  static std::optional<gtsam::Pose3> Align(const gtsam::Point3Pairs& abPointPairs);
+  static std::optional<gtsam::Pose3> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
 
   // Testable
   void print(string s = "") const;
   bool equals(const gtsam::Pose3& pose, double tol) const;
 
   // Group
-  static gtsam::Pose3 identity();
+  static gtsam::Pose3 Identity();
   gtsam::Pose3 inverse() const;
+  gtsam::Pose3 inverse(Eigen::Ref<Eigen::MatrixXd> H) const;
   gtsam::Pose3 compose(const gtsam::Pose3& pose) const;
+  gtsam::Pose3 compose(const gtsam::Pose3& pose,
+                       Eigen::Ref<Eigen::MatrixXd> H1,
+                       Eigen::Ref<Eigen::MatrixXd> H2) const;
   gtsam::Pose3 between(const gtsam::Pose3& pose) const;
+  gtsam::Pose3 between(const gtsam::Pose3& pose,
+                       Eigen::Ref<Eigen::MatrixXd> H1,
+                       Eigen::Ref<Eigen::MatrixXd> H2) const;
+  gtsam::Pose3 slerp(double t, const gtsam::Pose3& pose) const;
+  gtsam::Pose3 slerp(double t, const gtsam::Pose3& pose,
+                           Eigen::Ref<Eigen::MatrixXd> Hx,
+                           Eigen::Ref<Eigen::MatrixXd> Hy) const;
 
   // Operator Overloads
   gtsam::Pose3 operator*(const gtsam::Pose3& pose) const;
 
   // Manifold
   gtsam::Pose3 retract(Vector v) const;
+  gtsam::Pose3 retract(Vector v, Eigen::Ref<Eigen::MatrixXd> Hxi) const;
   Vector localCoordinates(const gtsam::Pose3& pose) const;
+  Vector localCoordinates(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hxi) const;
 
   // Lie Group
   static gtsam::Pose3 Expmap(Vector v);
+  static gtsam::Pose3 Expmap(Vector v, Eigen::Ref<Eigen::MatrixXd> Hxi);
   static Vector Logmap(const gtsam::Pose3& pose);
+  static Vector Logmap(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hpose);
   gtsam::Pose3 expmap(Vector v);
   Vector logmap(const gtsam::Pose3& pose);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
+  Vector Adjoint(Vector xi, Eigen::Ref<Eigen::MatrixXd> H_this,
+                 Eigen::Ref<Eigen::MatrixXd> H_xib) const;
   Vector AdjointTranspose(Vector xi) const;
+  Vector AdjointTranspose(Vector xi, Eigen::Ref<Eigen::MatrixXd> H_this,
+                          Eigen::Ref<Eigen::MatrixXd> H_x) const;
   static Matrix adjointMap(Vector xi);
   static Vector adjoint(Vector xi, Vector y);
   static Matrix adjointMap_(Vector xi);
@@ -476,7 +518,11 @@ class Pose3 {
 
   // Group Action on Point3
   gtsam::Point3 transformFrom(const gtsam::Point3& point) const;
+  gtsam::Point3 transformFrom(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
+                              Eigen::Ref<Eigen::MatrixXd> Hpoint) const;
   gtsam::Point3 transformTo(const gtsam::Point3& point) const;
+  gtsam::Point3 transformTo(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
+                            Eigen::Ref<Eigen::MatrixXd> Hpoint) const;
 
   // Matrix versions
   Matrix transformFrom(const Matrix& points) const;
@@ -484,20 +530,31 @@ class Pose3 {
 
   // Standard Interface
   gtsam::Rot3 rotation() const;
+  gtsam::Rot3 rotation(Eigen::Ref<Eigen::MatrixXd> Hself) const;
   gtsam::Point3 translation() const;
+  gtsam::Point3 translation(Eigen::Ref<Eigen::MatrixXd> Hself) const;
   double x() const;
   double y() const;
   double z() const;
   Matrix matrix() const;
   gtsam::Pose3 transformPoseFrom(const gtsam::Pose3& pose) const;
+  gtsam::Pose3 transformPoseFrom(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hself,
+                                 Eigen::Ref<Eigen::MatrixXd> HaTb) const;
   gtsam::Pose3 transformPoseTo(const gtsam::Pose3& pose) const;
+  gtsam::Pose3 transformPoseTo(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hself,
+                               Eigen::Ref<Eigen::MatrixXd> HwTb) const;
   double range(const gtsam::Point3& point);
+  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
+               Eigen::Ref<Eigen::MatrixXd> Hpoint);
   double range(const gtsam::Pose3& pose);
+  double range(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hself,
+               Eigen::Ref<Eigen::MatrixXd> Hpose);
 
   // enabling serialization functionality
   void serialize() const;
 };
 
+// Used in Matlab wrapper
 class Pose3Pairs {
   Pose3Pairs();
   size_t size() const;
@@ -506,6 +563,7 @@ class Pose3Pairs {
   void push_back(const gtsam::Pose3Pair& pose_pair);
 };
 
+// Used in Matlab wrapper
 class Pose3Vector {
   Pose3Vector();
   size_t size() const;
@@ -526,14 +584,27 @@ class Unit3 {
 
   // Other functionality
   Matrix basis() const;
+  Matrix basis(Eigen::Ref<Eigen::MatrixXd> H) const;
   Matrix skew() const;
   gtsam::Point3 point3() const;
+  gtsam::Point3 point3(Eigen::Ref<Eigen::MatrixXd> H) const;
+
+  gtsam::Vector3 unitVector() const;
+  gtsam::Vector3 unitVector(Eigen::Ref<Eigen::MatrixXd> H) const;
+  double dot(const gtsam::Unit3& q) const;
+  double dot(const gtsam::Unit3& q, Eigen::Ref<Eigen::MatrixXd> H1,
+             Eigen::Ref<Eigen::MatrixXd> H2) const;
+  gtsam::Vector2 errorVector(const gtsam::Unit3& q) const;
+  gtsam::Vector2 errorVector(const gtsam::Unit3& q, Eigen::Ref<Eigen::MatrixXd> H_p,
+                      Eigen::Ref<Eigen::MatrixXd> H_q) const;
 
   // Manifold
   static size_t Dim();
   size_t dim() const;
   gtsam::Unit3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Unit3& s) const;
+  gtsam::Unit3 FromPoint3(const gtsam::Point3& point) const;
+  gtsam::Unit3 FromPoint3(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> H) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -1011,6 +1082,7 @@ class Similarity2 {
 
   // Standard Interface
   bool equals(const gtsam::Similarity2& sim, double tol) const;
+  void print(const std::string& s = "") const;
   Matrix matrix() const;
   gtsam::Rot2& rotation();
   gtsam::Point2& translation();
@@ -1034,6 +1106,7 @@ class Similarity3 {
 
   // Standard Interface
   bool equals(const gtsam::Similarity3& sim, double tol) const;
+  void print(const std::string& s = "") const;
   Matrix matrix() const;
   gtsam::Rot3& rotation();
   gtsam::Point3& translation();
@@ -1090,13 +1163,13 @@ class StereoCamera {
 #include <gtsam/geometry/triangulation.h>
 class TriangulationResult {
   enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
-  Status status;
+  gtsam::TriangulationResult::Status status;
   TriangulationResult(const gtsam::Point3& p);
   const gtsam::Point3& get() const;
-  static TriangulationResult Degenerate();
-  static TriangulationResult Outlier();
-  static TriangulationResult FarPoint();
-  static TriangulationResult BehindCamera();
+  static gtsam::TriangulationResult Degenerate();
+  static gtsam::TriangulationResult Outlier();
+  static gtsam::TriangulationResult FarPoint();
+  static gtsam::TriangulationResult BehindCamera();
   bool valid() const;
   bool degenerate() const;
   bool outlier() const;
@@ -1109,16 +1182,18 @@ class TriangulationParameters {
   bool enableEPI;
   double landmarkDistanceThreshold;
   double dynamicOutlierRejectionThreshold;
-  SharedNoiseModel noiseModel;
+  bool useLOST;
+  gtsam::SharedNoiseModel noiseModel;
   TriangulationParameters(const double rankTolerance = 1.0,
                           const bool enableEPI = false,
                           double landmarkDistanceThreshold = -1,
                           double dynamicOutlierRejectionThreshold = -1,
+                          const bool useLOST = false,
                           const gtsam::SharedNoiseModel& noiseModel = nullptr);
 };
 
-// Templates appear not yet supported for free functions - issue raised at
-// borglab/wrap#14 to add support
+// Can be templated but overloaded for convenience.
+// We can now call `triangulatePoint3` with any template type.
 
 // Cal3_S2 versions
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
@@ -1129,7 +1204,8 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3_S2* sharedCal,
                                    const gtsam::Point2Vector& measurements,
@@ -1151,7 +1227,8 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3DS2& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3DS2* sharedCal,
                                    const gtsam::Point2Vector& measurements,
@@ -1173,7 +1250,8 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3Bundler* sharedCal,
                                    const gtsam::Point2Vector& measurements,
@@ -1195,7 +1273,8 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Fisheye& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3Fisheye* sharedCal,
                                    const gtsam::Point2Vector& measurements,
@@ -1217,7 +1296,8 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Unified& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3Unified* sharedCal,
                                    const gtsam::Point2Vector& measurements,
@@ -1246,5 +1326,11 @@ class BearingRange {
 
 typedef gtsam::BearingRange<gtsam::Pose2, gtsam::Point2, gtsam::Rot2, double>
     BearingRange2D;
+typedef gtsam::BearingRange<gtsam::Pose2, gtsam::Pose2, gtsam::Rot2, double>
+    BearingRangePose2;
+typedef gtsam::BearingRange<gtsam::Pose3, gtsam::Point3, gtsam::Unit3, double>
+    BearingRange3D;
+typedef gtsam::BearingRange<gtsam::Pose3, gtsam::Pose3, gtsam::Unit3, double>
+    BearingRangePose3;
 
 }  // namespace gtsam

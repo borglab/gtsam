@@ -21,14 +21,14 @@
 
 #include <stack>
 #include <sstream>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <functional>
 
 namespace gtsam {
 
   /**
    * @brief Binary tree
-   * @addtogroup base
+   * @ingroup base
    */
   template<class KEY, class VALUE>
   class BTree {
@@ -75,7 +75,7 @@ namespace gtsam {
 
     // We store a shared pointer to the root of the functional tree
     // composed of Node classes. If root_==nullptr, the tree is empty.
-    typedef boost::shared_ptr<const Node> sharedNode;
+    typedef std::shared_ptr<const Node> sharedNode;
     sharedNode root_;
 
     inline const value_type& keyValue() const { return root_->keyValue_;}

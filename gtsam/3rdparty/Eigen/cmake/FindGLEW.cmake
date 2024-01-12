@@ -10,47 +10,47 @@
 # Also defined, but not for general use are:
 #  GLEW_GLEW_LIBRARY = the full path to the glew library.
 
-IF (WIN32)
+if (WIN32)
 
-  IF(CYGWIN)
+  if(CYGWIN)
 
-    FIND_PATH( GLEW_INCLUDE_DIR GL/glew.h)
+    find_path( GLEW_INCLUDE_DIR GL/glew.h)
 
-    FIND_LIBRARY( GLEW_GLEW_LIBRARY glew32
+    find_library( GLEW_GLEW_LIBRARY glew32
       ${OPENGL_LIBRARY_DIR}
       /usr/lib/w32api
       /usr/X11R6/lib
     )
 
 
-  ELSE(CYGWIN)
+  else(CYGWIN)
   
-    FIND_PATH( GLEW_INCLUDE_DIR GL/glew.h
+    find_path( GLEW_INCLUDE_DIR GL/glew.h
       $ENV{GLEW_ROOT_PATH}/include
     )
 
-    FIND_LIBRARY( GLEW_GLEW_LIBRARY
+    find_library( GLEW_GLEW_LIBRARY
       NAMES glew glew32
       PATHS
       $ENV{GLEW_ROOT_PATH}/lib
       ${OPENGL_LIBRARY_DIR}
     )
 
-  ENDIF(CYGWIN)
+  endif(CYGWIN)
 
-ELSE (WIN32)
+else (WIN32)
 
-  IF (APPLE)
+  if (APPLE)
 # These values for Apple could probably do with improvement.
-    FIND_PATH( GLEW_INCLUDE_DIR glew.h
+    find_path( GLEW_INCLUDE_DIR glew.h
       /System/Library/Frameworks/GLEW.framework/Versions/A/Headers
       ${OPENGL_LIBRARY_DIR}
     )
-    SET(GLEW_GLEW_LIBRARY "-framework GLEW" CACHE STRING "GLEW library for OSX")
-    SET(GLEW_cocoa_LIBRARY "-framework Cocoa" CACHE STRING "Cocoa framework for OSX")
-  ELSE (APPLE)
+    set(GLEW_GLEW_LIBRARY "-framework GLEW" CACHE STRING "GLEW library for OSX")
+    set(GLEW_cocoa_LIBRARY "-framework Cocoa" CACHE STRING "Cocoa framework for OSX")
+  else (APPLE)
 
-    FIND_PATH( GLEW_INCLUDE_DIR GL/glew.h
+    find_path( GLEW_INCLUDE_DIR GL/glew.h
       /usr/include/GL
       /usr/openwin/share/include
       /usr/openwin/include
@@ -60,44 +60,44 @@ ELSE (WIN32)
       /opt/graphics/OpenGL/contrib/libglew
     )
 
-    FIND_LIBRARY( GLEW_GLEW_LIBRARY GLEW
+    find_library( GLEW_GLEW_LIBRARY GLEW
       /usr/openwin/lib
       /usr/X11R6/lib
     )
 
-  ENDIF (APPLE)
+  endif (APPLE)
 
-ENDIF (WIN32)
+endif (WIN32)
 
-SET( GLEW_FOUND "NO" )
-IF(GLEW_INCLUDE_DIR)
-  IF(GLEW_GLEW_LIBRARY)
+set( GLEW_FOUND "NO" )
+if(GLEW_INCLUDE_DIR)
+  if(GLEW_GLEW_LIBRARY)
     # Is -lXi and -lXmu required on all platforms that have it?
     # If not, we need some way to figure out what platform we are on.
-    SET( GLEW_LIBRARIES
+    set( GLEW_LIBRARIES
       ${GLEW_GLEW_LIBRARY}
       ${GLEW_cocoa_LIBRARY}
     )
-    SET( GLEW_FOUND "YES" )
+    set( GLEW_FOUND "YES" )
 
 #The following deprecated settings are for backwards compatibility with CMake1.4
-    SET (GLEW_LIBRARY ${GLEW_LIBRARIES})
-    SET (GLEW_INCLUDE_PATH ${GLEW_INCLUDE_DIR})
+    set (GLEW_LIBRARY ${GLEW_LIBRARIES})
+    set (GLEW_INCLUDE_PATH ${GLEW_INCLUDE_DIR})
 
-  ENDIF(GLEW_GLEW_LIBRARY)
-ENDIF(GLEW_INCLUDE_DIR)
+  endif(GLEW_GLEW_LIBRARY)
+endif(GLEW_INCLUDE_DIR)
 
-IF(GLEW_FOUND)
-  IF(NOT GLEW_FIND_QUIETLY)
-    MESSAGE(STATUS "Found Glew: ${GLEW_LIBRARIES}")
-  ENDIF(NOT GLEW_FIND_QUIETLY)
-ELSE(GLEW_FOUND)
-  IF(GLEW_FIND_REQUIRED)
-    MESSAGE(FATAL_ERROR "Could not find Glew")
-  ENDIF(GLEW_FIND_REQUIRED)
-ENDIF(GLEW_FOUND)
+if(GLEW_FOUND)
+  if(NOT GLEW_FIND_QUIETLY)
+    message(STATUS "Found Glew: ${GLEW_LIBRARIES}")
+  endif(NOT GLEW_FIND_QUIETLY)
+else(GLEW_FOUND)
+  if(GLEW_FIND_REQUIRED)
+    message(FATAL_ERROR "Could not find Glew")
+  endif(GLEW_FIND_REQUIRED)
+endif(GLEW_FOUND)
 
-MARK_AS_ADVANCED(
+mark_as_advanced(
   GLEW_INCLUDE_DIR
   GLEW_GLEW_LIBRARY
   GLEW_Xmu_LIBRARY

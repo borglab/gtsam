@@ -129,7 +129,7 @@ void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
     // Create factors and variable connections
     size_t i = 0;
     for (const KeyVector& factorKeys : structure) {
-      writer.processFactor(i++, factorKeys, keyFormatter, boost::none, &os);
+      writer.processFactor(i++, factorKeys, keyFormatter, {}, &os);
     }
   } else {
     // Create factors and variable connections
@@ -194,14 +194,14 @@ Ordering NonlinearFactorGraph::orderingCOLAMDConstrained(const FastMap<Key, int>
 SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic() const
 {
   // Generate the symbolic factor graph
-  SymbolicFactorGraph::shared_ptr symbolic = boost::make_shared<SymbolicFactorGraph>();
+  SymbolicFactorGraph::shared_ptr symbolic = std::make_shared<SymbolicFactorGraph>();
   symbolic->reserve(size());
 
   for (const sharedFactor& factor: factors_) {
     if(factor)
-      *symbolic += SymbolicFactor(*factor);
+      symbolic->push_back(SymbolicFactor(*factor));
     else
-      *symbolic += SymbolicFactorGraph::sharedFactor();
+      symbolic->push_back(SymbolicFactorGraph::sharedFactor());
   }
 
   return symbolic;
@@ -241,7 +241,7 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
   gttic(NonlinearFactorGraph_linearize);
 
   // create an empty linear FG
-  GaussianFactorGraph::shared_ptr linearFG = boost::make_shared<GaussianFactorGraph>();
+  GaussianFactorGraph::shared_ptr linearFG = std::make_shared<GaussianFactorGraph>();
 
 #ifdef GTSAM_USE_TBB
 
@@ -265,11 +265,11 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
   linearFG->reserve(size());
 
   // linearize all factors
-  for(const sharedFactor& factor: factors_) {
-    if(factor) {
-      (*linearFG) += factor->linearize(linearizationPoint);
+  for (const sharedFactor& factor : factors_) {
+    if (factor) {
+      linearFG->push_back(factor->linearize(linearizationPoint));
     } else
-    (*linearFG) += GaussianFactor::shared_ptr();
+      linearFG->push_back(GaussianFactor::shared_ptr());
   }
 
 #endif
@@ -285,8 +285,8 @@ static Scatter scatterFromValues(const Values& values) {
   scatter.reserve(values.size());
 
   // use "natural" ordering with keys taken from the initial values
-  for (const auto key_value : values) {
-    scatter.add(key_value.key, key_value.value.dim());
+  for (const auto& key_dim : values.dims()) {
+    scatter.add(key_dim.first, key_dim.second);
   }
 
   return scatter;

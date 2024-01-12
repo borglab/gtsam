@@ -27,6 +27,8 @@ namespace gtsam {
 /**
  * A prior probability on a set of discrete variables.
  * Derives from DiscreteConditional
+ *
+ * @ingroup discrete
  */
 class GTSAM_EXPORT DiscreteDistribution : public DiscreteConditional {
  public:
@@ -91,12 +93,6 @@ class GTSAM_EXPORT DiscreteDistribution : public DiscreteConditional {
   std::vector<double> pmf() const;
 
   /// @}
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  /// @name Deprecated functionality
-  /// @{
-  size_t GTSAM_DEPRECATED solve() const { return Base::solve({}); }
-  /// @}
-#endif
 };
 // DiscreteDistribution
 

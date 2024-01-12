@@ -17,7 +17,6 @@
 #pragma once
 
 #include <gtsam/navigation/PreintegratedRotation.h>
-#include <boost/make_shared.hpp>
 
 namespace gtsam {
 
@@ -41,21 +40,21 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
 
   /// The Params constructor insists on getting the navigation frame gravity vector
   /// For convenience, two commonly used conventions are provided by named constructors below
-  PreintegrationParams(const Vector3& n_gravity)
+  PreintegrationParams(const Vector3& n_gravity_)
       : PreintegratedRotationParams(),
         accelerometerCovariance(I_3x3),
         integrationCovariance(I_3x3),
         use2ndOrderCoriolis(false),
-        n_gravity(n_gravity) {}
+        n_gravity(n_gravity_) {}
 
   // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
-  static boost::shared_ptr<PreintegrationParams> MakeSharedD(double g = 9.81) {
-    return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, g)));
+  static std::shared_ptr<PreintegrationParams> MakeSharedD(double g = 9.81) {
+    return std::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, g)));
   }
 
   // Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
-  static boost::shared_ptr<PreintegrationParams> MakeSharedU(double g = 9.81) {
-    return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, -g)));
+  static std::shared_ptr<PreintegrationParams> MakeSharedU(double g = 9.81) {
+    return std::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, -g)));
   }
 
   void print(const std::string& s="") const override;
@@ -72,6 +71,7 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
 
 protected:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -83,6 +83,7 @@ protected:
     ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
     ar & BOOST_SERIALIZATION_NVP(n_gravity);
   }
+#endif
 
 #ifdef GTSAM_USE_QUATERNIONS
   // Align if we are using Quaternions

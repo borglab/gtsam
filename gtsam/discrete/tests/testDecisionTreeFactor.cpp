@@ -19,15 +19,25 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/Signature.h>
 
-#include <boost/assign/std/map.hpp>
-using namespace boost::assign;
-
 using namespace std;
 using namespace gtsam;
+
+/* ************************************************************************* */
+TEST(DecisionTreeFactor, ConstructorsMatch) {
+  // Declare two keys
+  DiscreteKey X(0, 2), Y(1, 3);
+
+  // Create with vector and with string
+  const std::vector<double> table {2, 5, 3, 6, 4, 7};
+  DecisionTreeFactor f1({X, Y}, table);
+  DecisionTreeFactor f2({X, Y}, "2 5 3 6 4 7");
+  EXPECT(assert_equal(f1, f2));
+}
 
 /* ************************************************************************* */
 TEST( DecisionTreeFactor, constructors)
@@ -43,13 +53,36 @@ TEST( DecisionTreeFactor, constructors)
   EXPECT_LONGS_EQUAL(2,f2.size());
   EXPECT_LONGS_EQUAL(3,f3.size());
 
-  DiscreteValues values;
-  values[0] = 1; // x
-  values[1] = 2; // y
-  values[2] = 1; // z
-  EXPECT_DOUBLES_EQUAL(8, f1(values), 1e-9);
-  EXPECT_DOUBLES_EQUAL(7, f2(values), 1e-9);
-  EXPECT_DOUBLES_EQUAL(75, f3(values), 1e-9);
+  DiscreteValues x121{{0, 1}, {1, 2}, {2, 1}};
+  EXPECT_DOUBLES_EQUAL(8, f1(x121), 1e-9);
+  EXPECT_DOUBLES_EQUAL(7, f2(x121), 1e-9);
+  EXPECT_DOUBLES_EQUAL(75, f3(x121), 1e-9);
+
+  // Assert that error = -log(value)
+  EXPECT_DOUBLES_EQUAL(-log(f1(x121)), f1.error(x121), 1e-9);
+
+  // Construct from DiscreteConditional
+  DiscreteConditional conditional(X | Y = "1/1 2/3 1/4");
+  DecisionTreeFactor f4(conditional);
+  EXPECT_DOUBLES_EQUAL(0.8, f4(x121), 1e-9);
+}
+
+/* ************************************************************************* */
+TEST(DecisionTreeFactor, Error) {
+  // Declare a bunch of keys
+  DiscreteKey X(0,2), Y(1,3), Z(2,2);
+
+  // Create factors
+  DecisionTreeFactor f(X & Y & Z, "2 5 3 6 4 7 25 55 35 65 45 75");
+
+  auto errors = f.errorTree();
+  // regression
+  AlgebraicDecisionTree<Key> expected(
+      {X, Y, Z},
+      vector<double>{-0.69314718, -1.6094379, -1.0986123, -1.7917595,
+                     -1.3862944, -1.9459101, -3.2188758, -4.0073332, -3.5553481,
+                     -4.1743873, -3.8066625, -4.3174881});
+  EXPECT(assert_equal(expected, errors, 1e-6));
 }
 
 /* ************************************************************************* */

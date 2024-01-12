@@ -5,19 +5,16 @@
 # All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.5)
 
-# The `cmake_minimum_required(VERSION 3.4...3.18)` syntax does not work with
+# The `cmake_minimum_required(VERSION 3.5...3.26)` syntax does not work with
 # some versions of VS that have a patched CMake 3.11. This forces us to emulate
 # the behavior using the following workaround:
-if(${CMAKE_VERSION} VERSION_LESS 3.21)
+if(${CMAKE_VERSION} VERSION_LESS 3.26)
   cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
 else()
-  cmake_policy(VERSION 3.21)
+  cmake_policy(VERSION 3.26)
 endif()
-
-# Only needed for CMake < 3.5 support
-include(CMakeParseArguments)
 
 # Filter out items; print an optional message if any items filtered. This ignores extensions.
 #
@@ -128,7 +125,8 @@ set(PYBIND11_TEST_FILES
     test_custom_type_casters
     test_custom_type_setup
     test_docstring_options
-    test_eigen
+    test_eigen_matrix
+    test_eigen_tensor
     test_enum
     test_eval
     test_exceptions
@@ -153,7 +151,11 @@ set(PYBIND11_TEST_FILES
     test_stl_binders
     test_tagbased_polymorphic
     test_thread
+    test_type_caster_pyobject_ptr
     test_union
+    test_unnamed_namespace_a
+    test_unnamed_namespace_b
+    test_vector_unique_ptr_member
     test_virtual_functions)
 
 # Invoking cmake with something like:
@@ -168,7 +170,7 @@ if(PYBIND11_TEST_OVERRIDE)
   # This allows the override to be done with extensions, preserving backwards compatibility.
   foreach(test_name ${TEST_FILES_NO_EXT})
     if(NOT ${test_name} IN_LIST TEST_OVERRIDE_NO_EXT
-    )# If not in the whitelist, add to be filtered out.
+    )# If not in the allowlist, add to be filtered out.
       list(APPEND PYBIND11_TEST_FILTER ${test_name})
     endif()
   endforeach()
@@ -177,11 +179,6 @@ endif()
 # You can also filter tests:
 if(PYBIND11_TEST_FILTER)
   pybind11_filter_tests(PYBIND11_TEST_FILES ${PYBIND11_TEST_FILTER})
-endif()
-
-if(PYTHON_VERSION VERSION_LESS 3.5)
-  pybind11_filter_tests(PYBIND11_TEST_FILES test_async.cpp MESSAGE
-                        "Skipping test_async on Python 2")
 endif()
 
 # Skip tests for CUDA check:
@@ -220,6 +217,7 @@ tests_extra_targets("test_exceptions.py;test_local_bindings.py;test_stl.py;test_
                     "pybind11_cross_module_tests")
 
 # And add additional targets for other tests.
+tests_extra_targets("test_exceptions.py" "cross_module_interleaved_error_already_set")
 tests_extra_targets("test_gil_scoped.py" "cross_module_gil_utils")
 
 set(PYBIND11_EIGEN_REPO
@@ -237,7 +235,10 @@ list(GET PYBIND11_EIGEN_VERSION_AND_HASH 1 PYBIND11_EIGEN_VERSION_HASH)
 # Check if Eigen is available; if not, remove from PYBIND11_TEST_FILES (but
 # keep it in PYBIND11_PYTEST_FILES, so that we get the "eigen is not installed"
 # skip message).
-list(FIND PYBIND11_TEST_FILES test_eigen.cpp PYBIND11_TEST_FILES_EIGEN_I)
+list(FIND PYBIND11_TEST_FILES test_eigen_matrix.cpp PYBIND11_TEST_FILES_EIGEN_I)
+if(PYBIND11_TEST_FILES_EIGEN_I EQUAL -1)
+  list(FIND PYBIND11_TEST_FILES test_eigen_tensor.cpp PYBIND11_TEST_FILES_EIGEN_I)
+endif()
 if(PYBIND11_TEST_FILES_EIGEN_I GREATER -1)
   # Try loading via newer Eigen's Eigen3Config first (bypassing tools/FindEigen3.cmake).
   # Eigen 3.3.1+ exports a cmake 3.0+ target for handling dependency requirements, but also
@@ -292,10 +293,31 @@ if(PYBIND11_TEST_FILES_EIGEN_I GREATER -1)
       set(EIGEN3_VERSION ${EIGEN3_VERSION_STRING})
     endif()
     message(STATUS "Building tests with Eigen v${EIGEN3_VERSION}")
+
+    if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0))
+      tests_extra_targets("test_eigen_tensor.py" "eigen_tensor_avoid_stl_array")
+    endif()
+
   else()
-    list(REMOVE_AT PYBIND11_TEST_FILES ${PYBIND11_TEST_FILES_EIGEN_I})
+    list(FIND PYBIND11_TEST_FILES test_eigen_matrix.cpp PYBIND11_TEST_FILES_EIGEN_I)
+    if(PYBIND11_TEST_FILES_EIGEN_I GREATER -1)
+      list(REMOVE_AT PYBIND11_TEST_FILES ${PYBIND11_TEST_FILES_EIGEN_I})
+    endif()
+
+    list(FIND PYBIND11_TEST_FILES test_eigen_tensor.cpp PYBIND11_TEST_FILES_EIGEN_I)
+    if(PYBIND11_TEST_FILES_EIGEN_I GREATER -1)
+      list(REMOVE_AT PYBIND11_TEST_FILES ${PYBIND11_TEST_FILES_EIGEN_I})
+    endif()
     message(
       STATUS "Building tests WITHOUT Eigen, use -DDOWNLOAD_EIGEN=ON on CMake 3.11+ to download")
+  endif()
+endif()
+
+# Some code doesn't support gcc 4
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
+  list(FIND PYBIND11_TEST_FILES test_eigen_tensor.cpp PYBIND11_TEST_FILES_EIGEN_I)
+  if(PYBIND11_TEST_FILES_EIGEN_I GREATER -1)
+    list(REMOVE_AT PYBIND11_TEST_FILES ${PYBIND11_TEST_FILES_EIGEN_I})
   endif()
 endif()
 
@@ -356,7 +378,7 @@ endif()
 # Compile with compiler warnings turned on
 function(pybind11_enable_warnings target_name)
   if(MSVC)
-    target_compile_options(${target_name} PRIVATE /W4)
+    target_compile_options(${target_name} PRIVATE /W4 /wd4189)
   elseif(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Intel|Clang)" AND NOT PYBIND11_CUDA_TESTS)
     target_compile_options(
       ${target_name}
@@ -386,17 +408,6 @@ function(pybind11_enable_warnings target_name)
           -Werror-all
           # "Inlining inhibited by limit max-size", "Inlining inhibited by limit max-total-size"
           -diag-disable 11074,11076)
-    endif()
-  endif()
-
-  # Needs to be re-added since the ordering requires these to be after the ones above
-  if(CMAKE_CXX_STANDARD
-     AND CMAKE_CXX_COMPILER_ID MATCHES "Clang"
-     AND PYTHON_VERSION VERSION_LESS 3.0)
-    if(CMAKE_CXX_STANDARD LESS 17)
-      target_compile_options(${target_name} PUBLIC -Wno-deprecated-register)
-    else()
-      target_compile_options(${target_name} PUBLIC -Wno-register)
     endif()
   endif()
 endfunction()

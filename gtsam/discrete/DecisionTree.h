@@ -19,10 +19,14 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/types.h>
 #include <gtsam/discrete/Assignment.h>
 
-#include <boost/function.hpp>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/nvp.hpp>
+#endif
+#include <memory>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -35,9 +39,25 @@
 namespace gtsam {
 
   /**
-   * Decision Tree
-   * L = label for variables
-   * Y = function range (any algebra), e.g., bool, int, double
+   * @brief a decision tree is a function from assignments to values.
+   * @tparam L label for variables
+   * @tparam Y function range (any algebra), e.g., bool, int, double
+   * 
+   * After creating a decision tree on some variables, the tree can be evaluated
+   * on an assignment to those variables. Example:
+   * 
+   * @code{.cpp}
+   * // Create a decision stump one one variable 'a' with values 10 and 20.
+   * DecisionTree<char, int> tree('a', 10, 20);
+   * 
+   * // Evaluate the tree on an assignment to the variable.
+   * int value0 = tree({{'a', 0}}); // value0 = 10
+   * int value1 = tree({{'a', 1}}); // value1 = 20
+   * @endcode
+   * 
+   * More examples can be found in testDecisionTree.cpp
+   *
+   * @ingroup discrete
    */
   template<typename L, typename Y>
   class DecisionTree {
@@ -66,7 +86,7 @@ namespace gtsam {
 
     /** ------------------------ Node base class --------------------------- */
     struct Node {
-      using Ptr = boost::shared_ptr<const Node>;
+      using Ptr = std::shared_ptr<const Node>;
 
 #ifdef DT_DEBUG_MEMORY
       static int nrNodes;
@@ -111,6 +131,14 @@ namespace gtsam {
       virtual Ptr apply_g_op_fC(const Choice&, const Binary&) const = 0;
       virtual Ptr choose(const L& label, size_t index) const = 0;
       virtual bool isLeaf() const = 0;
+
+     private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+      /** Serialization function */
+      friend class boost::serialization::access;
+      template <class ARCHIVE>
+      void serialize(ARCHIVE& ar, const unsigned int /*version*/) {}
+#endif
     };
     /** ------------------------ Node base class --------------------------- */
 
@@ -122,10 +150,19 @@ namespace gtsam {
     NodePtr root_;
 
    protected:
-    /** Internal recursive function to create from keys, cardinalities, 
+    /**
+     * Internal recursive function to create from keys, cardinalities, 
      * and Y values 
      */
-    template<typename It, typename ValueIt>
+    template <typename It, typename ValueIt>
+    NodePtr build(It begin, It end, ValueIt beginY, ValueIt endY) const;
+
+    /** Internal helper function to create from
+     * keys, cardinalities, and Y values.
+     * Calls `build` which builds thetree bottom-up,
+     * before we prune in a top-down fashion.
+     */
+    template <typename It, typename ValueIt>
     NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY) const;
 
     /**
@@ -153,7 +190,13 @@ namespace gtsam {
     /** Create a constant */
     explicit DecisionTree(const Y& y);
 
-    /// Create tree with 2 assignments `y1`, `y2`, splitting on variable `label`
+    /**
+     * @brief Create tree with 2 assignments `y1`, `y2`, splitting on variable `label`
+     * 
+     * @param label The variable to split on.
+     * @param y1 The value for the first assignment.
+     * @param y2 The value for the second assignment.
+     */
     DecisionTree(const L& label, const Y& y1, const Y& y2);
 
     /** Allow Label+Cardinality for convenience */
@@ -234,7 +277,7 @@ namespace gtsam {
     /**
      * @brief Visit all leaves in depth-first fashion.
      *
-     * @param f (side-effect) Function taking a value.
+     * @param f (side-effect) Function taking the value of the leaf node.
      *
      * @note Due to pruning, the number of leaves may not be the same as the
      * number of assignments. E.g. if we have a tree on 2 binary variables with
@@ -243,7 +286,7 @@ namespace gtsam {
      * Example:
      *   int sum = 0;
      *   auto visitor = [&](int y) { sum += y; };
-     *   tree.visitWith(visitor);
+     *   tree.visit(visitor);
      */
     template <typename Func>
     void visit(Func f) const;
@@ -259,8 +302,8 @@ namespace gtsam {
      *
      * Example:
      *   int sum = 0;
-     *   auto visitor = [&](int y) { sum += y; };
-     *   tree.visitWith(visitor);
+     *   auto visitor = [&](const Leaf& leaf) { sum += leaf.constant(); };
+     *   tree.visitLeaf(visitor);
      */
     template <typename Func>
     void visitLeaf(Func f) const;
@@ -362,7 +405,20 @@ namespace gtsam {
     compose(Iterator begin, Iterator end, const L& label) const;
 
     /// @}
+
+   private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+      ar& BOOST_SERIALIZATION_NVP(root_);
+    }
+#endif
   };  // DecisionTree
+
+  template <class L, class Y>
+  struct traits<DecisionTree<L, Y>> : public Testable<DecisionTree<L, Y>> {};
 
   /** free versions of apply */
 
@@ -397,10 +453,10 @@ namespace gtsam {
   template <typename L, typename T1, typename T2>
   std::pair<DecisionTree<L, T1>, DecisionTree<L, T2> > unzip(
       const DecisionTree<L, std::pair<T1, T2> >& input) {
-    return std::make_pair(
+    return {
         DecisionTree<L, T1>(input, [](std::pair<T1, T2> i) { return i.first; }),
-        DecisionTree<L, T2>(input,
-                            [](std::pair<T1, T2> i) { return i.second; }));
+        DecisionTree<L, T2>(input, [](std::pair<T1, T2> i) { return i.second; })
+    };
   }
 
 }  // namespace gtsam

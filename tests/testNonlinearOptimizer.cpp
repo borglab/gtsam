@@ -31,11 +31,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/range/adaptor/map.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-using boost::adaptors::map_values;
 
 #include <iostream>
 #include <fstream>
@@ -195,7 +190,7 @@ TEST( NonlinearOptimizer, Factorization )
 
   NonlinearFactorGraph graph;
   graph.addPrior(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
-  graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
+  graph.emplace_shared<BetweenFactor<Pose2>>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
   Ordering ordering;
   ordering.push_back(X(1));
@@ -254,9 +249,9 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
   NonlinearFactorGraph fg;
   fg.addPrior(0, Pose2(0, 0, 0), noiseModel::Isotropic::Sigma(3, 1));
-  fg += BetweenFactor<Pose2>(0, 1, Pose2(1, 0, M_PI / 2),
+  fg.emplace_shared<BetweenFactor<Pose2>>(0, 1, Pose2(1, 0, M_PI / 2),
       noiseModel::Isotropic::Sigma(3, 1));
-  fg += BetweenFactor<Pose2>(1, 2, Pose2(1, 0, M_PI / 2),
+  fg.emplace_shared<BetweenFactor<Pose2>>(1, 2, Pose2(1, 0, M_PI / 2),
       noiseModel::Isotropic::Sigma(3, 1));
 
   Values init;
@@ -305,7 +300,9 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
     GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
     VectorValues d = linear->hessianDiagonal();
     VectorValues sqrtHessianDiagonal = d;
-    for (Vector& v : sqrtHessianDiagonal | map_values) v = v.cwiseSqrt();
+    for (auto& [key, value] : sqrtHessianDiagonal) {
+      value = value.cwiseSqrt();
+    }
     GaussianFactorGraph damped = optimizer.buildDampedSystem(*linear, sqrtHessianDiagonal);
     VectorValues  expectedDiagonal = d + params.lambdaInitial * d;
     EXPECT(assert_equal(expectedDiagonal, damped.hessianDiagonal()));
@@ -355,10 +352,10 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuberNoOutlier) {
 
   NonlinearFactorGraph fg;
   fg.addPrior(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1));
-  fg += BetweenFactor<Pose2>(0, 1, Pose2(1,1.1,M_PI/4),
+  fg.emplace_shared<BetweenFactor<Pose2>>(0, 1, Pose2(1,1.1,M_PI/4),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(2.0),
                                                          noiseModel::Isotropic::Sigma(3,1)));
-  fg += BetweenFactor<Pose2>(0, 1, Pose2(1,0.9,M_PI/2),
+  fg.emplace_shared<BetweenFactor<Pose2>>(0, 1, Pose2(1,0.9,M_PI/2),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(3.0),
                                                          noiseModel::Isotropic::Sigma(3,1)));
 
@@ -386,13 +383,13 @@ TEST(NonlinearOptimizer, Point2LinearOptimizationWithHuber) {
 
   NonlinearFactorGraph fg;
   fg.addPrior(0, Point2(0,0), noiseModel::Isotropic::Sigma(2,0.01));
-  fg += BetweenFactor<Point2>(0, 1, Point2(1,1.8),
+  fg.emplace_shared<BetweenFactor<Point2>>(0, 1, Point2(1,1.8),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.0),
                                                          noiseModel::Isotropic::Sigma(2,1)));
-  fg += BetweenFactor<Point2>(0, 1, Point2(1,0.9),
+  fg.emplace_shared<BetweenFactor<Point2>>(0, 1, Point2(1,0.9),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.0),
                                                          noiseModel::Isotropic::Sigma(2,1)));
-  fg += BetweenFactor<Point2>(0, 1, Point2(1,90),
+  fg.emplace_shared<BetweenFactor<Point2>>(0, 1, Point2(1,90),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.0),
                                                          noiseModel::Isotropic::Sigma(2,1)));
 
@@ -420,16 +417,16 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuber) {
 
   NonlinearFactorGraph fg;
   fg.addPrior(0, Pose2(0,0, 0), noiseModel::Isotropic::Sigma(3,0.1));
-  fg += BetweenFactor<Pose2>(0, 1, Pose2(0,9, M_PI/2),
+  fg.emplace_shared<BetweenFactor<Pose2>>(0, 1, Pose2(0,9, M_PI/2),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(0.2),
                                                          noiseModel::Isotropic::Sigma(3,1)));
-  fg += BetweenFactor<Pose2>(0, 1, Pose2(0, 11, M_PI/2),
+  fg.emplace_shared<BetweenFactor<Pose2>>(0, 1, Pose2(0, 11, M_PI/2),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(0.2),
                                                          noiseModel::Isotropic::Sigma(3,1)));
-  fg += BetweenFactor<Pose2>(0, 1, Pose2(0, 10, M_PI/2),
+  fg.emplace_shared<BetweenFactor<Pose2>>(0, 1, Pose2(0, 10, M_PI/2),
                              noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(0.2),
                                                         noiseModel::Isotropic::Sigma(3,1)));
-  fg += BetweenFactor<Pose2>(0, 1, Pose2(0,9, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(0, 1, Pose2(0,9, 0),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(0.2),
                                                          noiseModel::Isotropic::Sigma(3,1)));
 
@@ -498,7 +495,7 @@ TEST(NonlinearOptimizer, disconnected_graph) {
 
   NonlinearFactorGraph graph;
   graph.addPrior(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
-  graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.5,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph.emplace_shared<BetweenFactor<Pose2>>(X(1),X(2), Pose2(1.5,0.,0.), noiseModel::Isotropic::Sigma(3,1));
   graph.addPrior(X(3), Pose2(3.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
 
   EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(graph, init).optimize()));
@@ -544,7 +541,7 @@ TEST(NonlinearOptimizer, subclass_solver) {
 
   NonlinearFactorGraph graph;
   graph.addPrior(X(1), Pose2(0., 0., 0.), noiseModel::Isotropic::Sigma(3, 1));
-  graph += BetweenFactor<Pose2>(X(1), X(2), Pose2(1.5, 0., 0.),
+  graph.emplace_shared<BetweenFactor<Pose2>>(X(1), X(2), Pose2(1.5, 0., 0.),
                                 noiseModel::Isotropic::Sigma(3, 1));
   graph.addPrior(X(3), Pose2(3., 0., 0.), noiseModel::Isotropic::Sigma(3, 1));
 

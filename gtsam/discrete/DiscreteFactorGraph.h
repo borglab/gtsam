@@ -25,7 +25,6 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/FastSet.h>
 
-#include <boost/make_shared.hpp>
 #include <string>
 #include <utility>
 #include <vector>
@@ -40,11 +39,32 @@ class DiscreteEliminationTree;
 class DiscreteBayesTree;
 class DiscreteJunctionTree;
 
-/** Main elimination function for DiscreteFactorGraph */
-GTSAM_EXPORT std::pair<boost::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
-EliminateDiscrete(const DiscreteFactorGraph& factors, const Ordering& keys);
+/**
+ * @brief Main elimination function for DiscreteFactorGraph.
+ *
+ * @param factors The factor graph to eliminate.
+ * @param frontalKeys An ordering for which variables to eliminate.
+ * @return A pair of the resulting conditional and the separator factor.
+ * @ingroup discrete
+ */
+GTSAM_EXPORT
+std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>
+EliminateDiscrete(const DiscreteFactorGraph& factors,
+                  const Ordering& frontalKeys);
 
-/* ************************************************************************* */
+/**
+ * @brief Alternate elimination function for that creates non-normalized lookup tables.
+ *
+ * @param factors The factor graph to eliminate.
+ * @param frontalKeys An ordering for which variables to eliminate.
+ * @return A pair of the resulting lookup table and the separator factor.
+ * @ingroup discrete
+ */
+GTSAM_EXPORT
+std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>
+EliminateForMPE(const DiscreteFactorGraph& factors,
+                const Ordering& frontalKeys);
+
 template<> struct EliminationTraits<DiscreteFactorGraph>
 {
   typedef DiscreteFactor FactorType;                   ///< Type of factors in factor graph
@@ -54,16 +74,26 @@ template<> struct EliminationTraits<DiscreteFactorGraph>
   typedef DiscreteEliminationTree EliminationTreeType; ///< Type of elimination tree
   typedef DiscreteBayesTree BayesTreeType;             ///< Type of Bayes tree
   typedef DiscreteJunctionTree JunctionTreeType;       ///< Type of Junction tree
+  
   /// The default dense elimination function
-  static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
+  static std::pair<std::shared_ptr<ConditionalType>,
+                   std::shared_ptr<FactorType> >
   DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
-    return EliminateDiscrete(factors, keys); }
+    return EliminateDiscrete(factors, keys);
+  }
+  
+  /// The default ordering generation function
+  static Ordering DefaultOrderingFunc(
+      const FactorGraphType& graph,
+      std::optional<std::reference_wrapper<const VariableIndex>> variableIndex) {
+    return Ordering::Colamd((*variableIndex).get());
+  }
 };
 
-/* ************************************************************************* */
 /**
  * A Discrete Factor Graph is a factor graph where all factors are Discrete, i.e.
  *   Factor == DiscreteFactor
+ * @ingroup discrete
  */
 class GTSAM_EXPORT DiscreteFactorGraph
     : public FactorGraph<DiscreteFactor>,
@@ -73,7 +103,7 @@ class GTSAM_EXPORT DiscreteFactorGraph
   using Base = FactorGraph<DiscreteFactor>;  ///< base factor graph type
   using BaseEliminateable =
       EliminateableFactorGraph<This>;          ///< for elimination
-  using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
+  using shared_ptr = std::shared_ptr<This>;  ///< shared_ptr to This
 
   using Values = DiscreteValues;  ///< backwards compatibility
 
@@ -93,11 +123,8 @@ class GTSAM_EXPORT DiscreteFactorGraph
 
   /** Implicit copy/downcast constructor to override explicit template container
    * constructor */
-  template <class DERIVEDFACTOR>
-  DiscreteFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
-
-  /// Destructor
-  virtual ~DiscreteFactorGraph() {}
+  template <class DERIVED_FACTOR>
+  DiscreteFactorGraph(const FactorGraph<DERIVED_FACTOR>& graph) : Base(graph) {}
 
   /// @name Testable
   /// @{
@@ -139,7 +166,7 @@ class GTSAM_EXPORT DiscreteFactorGraph
    * @return DiscreteBayesNet encoding posterior P(X|Z)
    */
   DiscreteBayesNet sumProduct(
-      OptionalOrderingType orderingType = boost::none) const;
+      OptionalOrderingType orderingType = {}) const;
 
   /**
    * @brief Implement the sum-product algorithm
@@ -156,7 +183,7 @@ class GTSAM_EXPORT DiscreteFactorGraph
    * @return DiscreteLookupDAG DAG with lookup tables
    */
   DiscreteLookupDAG maxProduct(
-      OptionalOrderingType orderingType = boost::none) const;
+      OptionalOrderingType orderingType = {}) const;
 
   /**
    * @brief Implement the max-product algorithm
@@ -173,7 +200,7 @@ class GTSAM_EXPORT DiscreteFactorGraph
    * @return DiscreteValues : MPE
    */
   DiscreteValues optimize(
-      OptionalOrderingType orderingType = boost::none) const;
+      OptionalOrderingType orderingType = {}) const;
 
   /**
    * @brief Find the maximum probable explanation (MPE) by doing max-product.
@@ -207,11 +234,13 @@ class GTSAM_EXPORT DiscreteFactorGraph
                    const DiscreteFactor::Names& names = {}) const;
 
   /// @}
-};  // \ DiscreteFactorGraph
+  /// @name HybridValues methods.
+  /// @{
 
-std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
-EliminateForMPE(const DiscreteFactorGraph& factors,
-                const Ordering& frontalKeys);
+  using Base::error;  // Expose error(const HybridValues&) method..
+
+  /// @}
+};  // \ DiscreteFactorGraph
 
 /// traits
 template <>

@@ -12,15 +12,16 @@ Author: John Lambert
 import unittest
 
 import numpy as np
-from gtsam import Pose2, Pose2Pairs, Rot2, Similarity2
 from gtsam.utils.test_case import GtsamTestCase
+
+from gtsam import Pose2, Rot2, Similarity2
 
 
 class TestSim2(GtsamTestCase):
     """Test selected Sim2 methods."""
 
     def test_align_poses_along_straight_line(self) -> None:
-        """Test Align Pose2Pairs method.
+        """Test Align of list of Pose2Pair.
 
         Scenario:
            3 object poses
@@ -46,7 +47,7 @@ class TestSim2(GtsamTestCase):
 
         wToi_list = [wTo0, wTo1, wTo2]
 
-        we_pairs = Pose2Pairs(list(zip(wToi_list, eToi_list)))
+        we_pairs = list(zip(wToi_list, eToi_list))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
         wSe = Similarity2.Align(we_pairs)
@@ -55,7 +56,7 @@ class TestSim2(GtsamTestCase):
             self.gtsamAssertEquals(wToi, wSe.transformFrom(eToi))
 
     def test_align_poses_along_straight_line_gauge(self):
-        """Test if Align Pose3Pairs method can account for gauge ambiguity.
+        """Test if Pose2 Align method can account for gauge ambiguity.
 
         Scenario:
            3 object poses
@@ -81,7 +82,7 @@ class TestSim2(GtsamTestCase):
 
         wToi_list = [wTo0, wTo1, wTo2]
 
-        we_pairs = Pose2Pairs(list(zip(wToi_list, eToi_list)))
+        we_pairs = list(zip(wToi_list, eToi_list))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
         wSe = Similarity2.Align(we_pairs)
@@ -90,7 +91,7 @@ class TestSim2(GtsamTestCase):
             self.gtsamAssertEquals(wToi, wSe.transformFrom(eToi))
 
     def test_align_poses_scaled_squares(self):
-        """Test if Align Pose2Pairs method can account for gauge ambiguity.
+        """Test if Align method can account for gauge ambiguity.
 
         Make sure a big and small square can be aligned.
         The u's represent a big square (10x10), and v's represents a small square (4x4).
@@ -119,7 +120,7 @@ class TestSim2(GtsamTestCase):
 
         bTi_list = [bTi0, bTi1, bTi2, bTi3]
 
-        ab_pairs = Pose2Pairs(list(zip(aTi_list, bTi_list)))
+        ab_pairs = list(zip(aTi_list, bTi_list))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
         aSb = Similarity2.Align(ab_pairs)

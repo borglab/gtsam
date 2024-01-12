@@ -25,12 +25,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-
-#include <boost/assign/list_inserter.hpp>
-#include <boost/assign/std/map.hpp>
-
-using namespace boost::assign;
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -48,13 +42,13 @@ TEST(DiscreteBayesNet, bayesNet) {
   DiscreteBayesNet bayesNet;
   DiscreteKey Parent(0, 2), Child(1, 2);
 
-  auto prior = boost::make_shared<DiscreteConditional>(Parent % "6/4");
+  auto prior = std::make_shared<DiscreteConditional>(Parent % "6/4");
   CHECK(assert_equal(ADT({Parent}, "0.6 0.4"),
                      (ADT)*prior));
   bayesNet.push_back(prior);
 
   auto conditional =
-      boost::make_shared<DiscreteConditional>(Child | Parent = "7/3 8/2");
+      std::make_shared<DiscreteConditional>(Child | Parent = "7/3 8/2");
   EXPECT_LONGS_EQUAL(1, *(conditional->beginFrontals()));
   ADT expected(Child & Parent, "0.7 0.8 0.3 0.2");
   CHECK(assert_equal(expected, (ADT)*conditional));
@@ -100,11 +94,15 @@ TEST(DiscreteBayesNet, Asia) {
   EXPECT(assert_equal(vs, marginals.marginalProbabilities(Smoking)));
 
   // Create solver and eliminate
-  Ordering ordering;
-  ordering += Key(0), Key(1), Key(2), Key(3), Key(4), Key(5), Key(6), Key(7);
+  const Ordering ordering{0, 1, 2, 3, 4, 5, 6, 7};
   DiscreteBayesNet::shared_ptr chordal = fg.eliminateSequential(ordering);
   DiscreteConditional expected2(Bronchitis % "11/9");
   EXPECT(assert_equal(expected2, *chordal->back()));
+
+  // Check evaluate and logProbability
+  auto result = fg.optimize();
+  EXPECT_DOUBLES_EQUAL(asia.logProbability(result),
+                       std::log(asia.evaluate(result)), 1e-9);
 
   // add evidence, we were in Asia and we have dyspnea
   fg.add(Asia, "0 1");
@@ -115,11 +113,11 @@ TEST(DiscreteBayesNet, Asia) {
   EXPECT(assert_equal(expected2, *chordal->back()));
 
   // now sample from it
-  DiscreteValues expectedSample;
+  DiscreteValues expectedSample{{Asia.first, 1},       {Dyspnea.first, 1},
+                                {XRay.first, 1},       {Tuberculosis.first, 0},
+                                {Smoking.first, 1},    {Either.first, 1},
+                                {LungCancer.first, 1}, {Bronchitis.first, 0}};
   SETDEBUG("DiscreteConditional::sample", false);
-  insert(expectedSample)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 1)(
-      Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 1)(
-      LungCancer.first, 1)(Bronchitis.first, 0);
   auto actualSample = chordal2->sample();
   EXPECT(assert_equal(expectedSample, actualSample));
 }

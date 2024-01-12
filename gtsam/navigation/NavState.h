@@ -79,9 +79,9 @@ public:
   /// @name Component Access
   /// @{
 
-  const Rot3& attitude(OptionalJacobian<3, 9> H = boost::none) const;
-  const Point3& position(OptionalJacobian<3, 9> H = boost::none) const;
-  const Velocity3& velocity(OptionalJacobian<3, 9> H = boost::none) const;
+  const Rot3& attitude(OptionalJacobian<3, 9> H = {}) const;
+  const Point3& position(OptionalJacobian<3, 9> H = {}) const;
+  const Velocity3& velocity(OptionalJacobian<3, 9> H = {}) const;
 
   const Pose3 pose() const {
     return Pose3(attitude(), position());
@@ -110,15 +110,15 @@ public:
   /**
    * @brief Return velocity in body frame.
    * Follows from eqn 2.57 in Murray, Li & Sastry.
-   * 
+   *
    * @param omega_b The angular velocity in the body frame.
    * @param H_state Optional jacobian matrix wrpt NavState.
    * @param H_omega Optional jacobian matrix wrpt omega_b.
    * @return Velocity3 The linear velocity in the body frame.
    */
   Velocity3 bodyVelocity(const Vector3& omega_b,
-                         OptionalJacobian<3, 9> H_state = boost::none,
-                         OptionalJacobian<3, 3> H_omega = boost::none) const;
+                         OptionalJacobian<3, 9> H_state = {},
+                         OptionalJacobian<3, 3> H_omega = {}) const;
 
   /// Return matrix group representation, in MATLAB notation:
   /// nTb = [nRb 0 n_t; 0 nRb n_v; 0 0 1]
@@ -159,13 +159,13 @@ public:
 
   /// retract with optional derivatives
   NavState retract(const Vector9& v, //
-      OptionalJacobian<9, 9> H1 = boost::none, OptionalJacobian<9, 9> H2 =
-          boost::none) const;
+      OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 =
+          {}) const;
 
   /// localCoordinates with optional derivatives
   Vector9 localCoordinates(const NavState& g, //
-      OptionalJacobian<9, 9> H1 = boost::none, OptionalJacobian<9, 9> H2 =
-          boost::none) const;
+      OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 =
+          {}) const;
 
   /// @}
   /// @name Dynamics
@@ -179,20 +179,21 @@ public:
 
   /// Compute tangent space contribution due to Coriolis forces
   Vector9 coriolis(double dt, const Vector3& omega, bool secondOrder = false,
-      OptionalJacobian<9, 9> H = boost::none) const;
+      OptionalJacobian<9, 9> H = {}) const;
 
   /// Correct preintegrated tangent vector with our velocity and rotated gravity,
   /// taking into account Coriolis forces if omegaCoriolis is given.
   Vector9 correctPIM(const Vector9& pim, double dt, const Vector3& n_gravity,
-      const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
-          false, OptionalJacobian<9, 9> H1 = boost::none,
-      OptionalJacobian<9, 9> H2 = boost::none) const;
+      const std::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
+          false, OptionalJacobian<9, 9> H1 = {},
+      OptionalJacobian<9, 9> H2 = {}) const;
 
   /// @}
 
 private:
   /// @{
   /// serialization
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
@@ -200,6 +201,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(t_);
     ar & BOOST_SERIALIZATION_NVP(v_);
   }
+#endif
   /// @}
 };
 

@@ -1,11 +1,25 @@
 <?xml version="1.0"?>
-<package format="2">
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
   <name>gtsam</name>
-  <version>4.1.0</version>
+  <version>4.3.0</version>
   <description>gtsam</description>
 
   <maintainer email="gtsam@lists.gatech.edu">Frank Dellaert</maintainer>
-  <license>BSD</license>
+
+  <!-- Main License for GTSAM sources -->
+  <license>BSD-3-Clause</license>
+  <!-- 3rd party libraries -->
+  <license file="gtsam/3rdparty/CCOLAMD/Doc/License.txt">BSD-3-Clause</license>
+  <license file="gtsam/3rdparty/ceres/jet.h">BSD-3-Clause</license>
+  <license file="gtsam/3rdparty/Eigen/COPYING.README">MPL-2.0</license>
+  <license file="gtsam/3rdparty/GeographicLib/LICENSE.txt">MIT</license>
+  <license file="gtsam/3rdparty/metis/LICENSE.txt">Apache-2.0</license>
+  <license file="gtsam/3rdparty/Spectra/GenEigsSolver.h">MPL-2.0</license>
+
+  <!-- Maintainers of the ROS packaging -->
+  <maintainer email="fan.jiang@gatech.edu">Fan Jiang</maintainer>
+  <maintainer email="jlblanco@ual.es">José Luis Blanco-Claraco</maintainer>
 
   <buildtool_depend>cmake</buildtool_depend>
 

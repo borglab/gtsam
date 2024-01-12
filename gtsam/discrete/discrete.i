@@ -17,6 +17,8 @@ class DiscreteKeys {
 };
 
 // DiscreteValues is added in specializations/discrete.h as a std::map
+std::vector<gtsam::DiscreteValues> cartesianProduct(
+    const gtsam::DiscreteKeys& keys);
 string markdown(
     const gtsam::DiscreteValues& values,
     const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
@@ -31,27 +33,30 @@ string html(const gtsam::DiscreteValues& values,
             std::map<gtsam::Key, std::vector<std::string>> names);
 
 #include <gtsam/discrete/DiscreteFactor.h>
-class DiscreteFactor {
+virtual class DiscreteFactor : gtsam::Factor {
   void print(string s = "DiscreteFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteFactor& other, double tol = 1e-9) const;
-  bool empty() const;
-  size_t size() const;
   double operator()(const gtsam::DiscreteValues& values) const;
 };
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
 virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
   DecisionTreeFactor();
-  
+
   DecisionTreeFactor(const gtsam::DiscreteKey& key,
                      const std::vector<double>& spec);
   DecisionTreeFactor(const gtsam::DiscreteKey& key, string table);
-  
+
+  DecisionTreeFactor(const gtsam::DiscreteKeys& keys,
+                     const std::vector<double>& table);
   DecisionTreeFactor(const gtsam::DiscreteKeys& keys, string table);
+
+  DecisionTreeFactor(const std::vector<gtsam::DiscreteKey>& keys,
+                     const std::vector<double>& table);
   DecisionTreeFactor(const std::vector<gtsam::DiscreteKey>& keys, string table);
-  
+
   DecisionTreeFactor(const gtsam::DiscreteConditional& c);
   
   void print(string s = "DecisionTreeFactor\n",
@@ -59,6 +64,8 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DecisionTreeFactor& other, double tol = 1e-9) const;
 
+  size_t cardinality(gtsam::Key j) const;
+  
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DecisionTreeFactor operator*(const gtsam::DecisionTreeFactor& f) const;
   size_t cardinality(gtsam::Key j) const;
@@ -66,6 +73,7 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
   gtsam::DecisionTreeFactor* sum(size_t nrFrontals) const;
   gtsam::DecisionTreeFactor* sum(const gtsam::Ordering& keys) const;
   gtsam::DecisionTreeFactor* max(size_t nrFrontals) const;
+  gtsam::DecisionTreeFactor* max(const gtsam::Ordering& keys) const;
 
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
@@ -82,6 +90,7 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
 };
 
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/hybrid/HybridValues.h>
 virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   DiscreteConditional();
   DiscreteConditional(size_t nFrontals, const gtsam::DecisionTreeFactor& f);
@@ -95,6 +104,12 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   DiscreteConditional(const gtsam::DecisionTreeFactor& joint,
                       const gtsam::DecisionTreeFactor& marginal,
                       const gtsam::Ordering& orderedKeys);
+
+  // Standard interface
+  double logNormalizationConstant() const;
+  double logProbability(const gtsam::DiscreteValues& values) const;
+  double evaluate(const gtsam::DiscreteValues& values) const;
+  double error(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteConditional operator*(
       const gtsam::DiscreteConditional& other) const;
   gtsam::DiscreteConditional marginal(gtsam::Key key) const;
@@ -116,6 +131,8 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   size_t sample(size_t value) const;
   size_t sample() const;
   void sampleInPlace(gtsam::DiscreteValues @parentsValues) const;
+
+  // Markdown and HTML
   string markdown(const gtsam::KeyFormatter& keyFormatter =
                       gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
@@ -124,6 +141,11 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
                   gtsam::DefaultKeyFormatter) const;
   string html(const gtsam::KeyFormatter& keyFormatter,
               std::map<gtsam::Key, std::vector<std::string>> names) const;
+
+  // Expose HybridValues versions
+  double logProbability(const gtsam::HybridValues& x) const;
+  double evaluate(const gtsam::HybridValues& x) const;
+  double error(const gtsam::HybridValues& x) const;
 };
 
 #include <gtsam/discrete/DiscreteDistribution.h>
@@ -157,7 +179,12 @@ class DiscreteBayesNet {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteBayesNet& other, double tol = 1e-9) const;
+
+  // Standard interface.
+  double logProbability(const gtsam::DiscreteValues& values) const;
+  double evaluate(const gtsam::DiscreteValues& values) const;
   double operator()(const gtsam::DiscreteValues& values) const;
+
   gtsam::DiscreteValues sample() const;
   gtsam::DiscreteValues sample(gtsam::DiscreteValues given) const;
 
@@ -184,10 +211,16 @@ class DiscreteBayesTreeClique {
   DiscreteBayesTreeClique(const gtsam::DiscreteConditional* conditional);
   const gtsam::DiscreteConditional* conditional() const;
   bool isRoot() const;
+  size_t nrChildren() const;
+  const gtsam::DiscreteBayesTreeClique* operator[](size_t i) const;
+  void print(string s = "DiscreteBayesTreeClique",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
   void printSignature(
       const string& s = "Clique: ",
       const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
   double evaluate(const gtsam::DiscreteValues& values) const;
+  double operator()(const gtsam::DiscreteValues& values) const;
 };
 
 class DiscreteBayesTree {
@@ -200,6 +233,9 @@ class DiscreteBayesTree {
   size_t size() const;
   bool empty() const;
   const DiscreteBayesTreeClique* operator[](size_t j) const;
+
+  double evaluate(const gtsam::DiscreteValues& values) const;
+  double operator()(const gtsam::DiscreteValues& values) const;
 
   string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
@@ -219,6 +255,16 @@ class DiscreteBayesTree {
 };
 
 #include <gtsam/discrete/DiscreteLookupDAG.h>
+
+class DiscreteLookupTable : gtsam::DiscreteConditional{
+  DiscreteLookupTable(size_t nFrontals, const gtsam::DiscreteKeys& keys,
+                      const gtsam::DecisionTreeFactor::ADT& potentials);
+  void print(string s = "Discrete Lookup Table: ",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  size_t argmax(const gtsam::DiscreteValues& parentsValues) const;
+};
+
 class DiscreteLookupDAG {
   DiscreteLookupDAG();
   void push_back(const gtsam::DiscreteLookupTable* table);
@@ -234,6 +280,14 @@ class DiscreteLookupDAG {
 };
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+pair<gtsam::DiscreteConditional*, gtsam::DecisionTreeFactor*>
+EliminateDiscrete(const gtsam::DiscreteFactorGraph& factors,
+                  const gtsam::Ordering& frontalKeys);
+
+pair<gtsam::DiscreteConditional*, gtsam::DecisionTreeFactor*>
+EliminateForMPE(const gtsam::DiscreteFactorGraph& factors,
+                const gtsam::Ordering& frontalKeys);
+
 class DiscreteFactorGraph {
   DiscreteFactorGraph();
   DiscreteFactorGraph(const gtsam::DiscreteBayesNet& bayesNet);
@@ -248,6 +302,7 @@ class DiscreteFactorGraph {
   void add(const gtsam::DiscreteKey& j, const std::vector<double>& spec);
   void add(const gtsam::DiscreteKeys& keys, string spec);
   void add(const std::vector<gtsam::DiscreteKey>& keys, string spec);
+  void add(const std::vector<gtsam::DiscreteKey>& keys, const std::vector<double>& spec);
 
   bool empty() const;
   size_t size() const;
@@ -261,25 +316,46 @@ class DiscreteFactorGraph {
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
 
-  gtsam::DiscreteBayesNet sumProduct();
-  gtsam::DiscreteBayesNet sumProduct(gtsam::Ordering::OrderingType type);
+  gtsam::DiscreteBayesNet sumProduct(
+      gtsam::Ordering::OrderingType type = gtsam::Ordering::COLAMD);
   gtsam::DiscreteBayesNet sumProduct(const gtsam::Ordering& ordering);
 
-  gtsam::DiscreteLookupDAG maxProduct();
-  gtsam::DiscreteLookupDAG maxProduct(gtsam::Ordering::OrderingType type);
+  gtsam::DiscreteLookupDAG maxProduct(
+      gtsam::Ordering::OrderingType type = gtsam::Ordering::COLAMD);
   gtsam::DiscreteLookupDAG maxProduct(const gtsam::Ordering& ordering);
 
-  gtsam::DiscreteBayesNet* eliminateSequential();
-  gtsam::DiscreteBayesNet* eliminateSequential(gtsam::Ordering::OrderingType type);
+  gtsam::DiscreteBayesNet* eliminateSequential(
+      gtsam::Ordering::OrderingType type = gtsam::Ordering::COLAMD);
+  gtsam::DiscreteBayesNet* eliminateSequential(
+      gtsam::Ordering::OrderingType type,
+      const gtsam::DiscreteFactorGraph::Eliminate& function);
   gtsam::DiscreteBayesNet* eliminateSequential(const gtsam::Ordering& ordering);
+  gtsam::DiscreteBayesNet* eliminateSequential(
+      const gtsam::Ordering& ordering,
+      const gtsam::DiscreteFactorGraph::Eliminate& function);
   pair<gtsam::DiscreteBayesNet*, gtsam::DiscreteFactorGraph*>
-      eliminatePartialSequential(const gtsam::Ordering& ordering);
+  eliminatePartialSequential(const gtsam::Ordering& ordering);
+  pair<gtsam::DiscreteBayesNet*, gtsam::DiscreteFactorGraph*>
+  eliminatePartialSequential(
+      const gtsam::Ordering& ordering,
+      const gtsam::DiscreteFactorGraph::Eliminate& function);
 
-  gtsam::DiscreteBayesTree* eliminateMultifrontal();
-  gtsam::DiscreteBayesTree* eliminateMultifrontal(gtsam::Ordering::OrderingType type);  
-  gtsam::DiscreteBayesTree* eliminateMultifrontal(const gtsam::Ordering& ordering);  
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(
+      gtsam::Ordering::OrderingType type = gtsam::Ordering::COLAMD);
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(
+      gtsam::Ordering::OrderingType type,
+      const gtsam::DiscreteFactorGraph::Eliminate& function);
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(
+      const gtsam::Ordering& ordering);
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(
+      const gtsam::Ordering& ordering,
+      const gtsam::DiscreteFactorGraph::Eliminate& function);
   pair<gtsam::DiscreteBayesTree*, gtsam::DiscreteFactorGraph*>
-      eliminatePartialMultifrontal(const gtsam::Ordering& ordering);
+  eliminatePartialMultifrontal(const gtsam::Ordering& ordering);
+  pair<gtsam::DiscreteBayesTree*, gtsam::DiscreteFactorGraph*>
+  eliminatePartialMultifrontal(
+      const gtsam::Ordering& ordering,
+      const gtsam::DiscreteFactorGraph::Eliminate& function);
 
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
@@ -297,6 +373,43 @@ class DiscreteFactorGraph {
                   gtsam::DefaultKeyFormatter) const;
   string html(const gtsam::KeyFormatter& keyFormatter,
               std::map<gtsam::Key, std::vector<std::string>> names) const;
+};
+
+#include <gtsam/discrete/DiscreteEliminationTree.h>
+
+class DiscreteEliminationTree {
+  DiscreteEliminationTree(const gtsam::DiscreteFactorGraph& factorGraph,
+                          const gtsam::VariableIndex& structure,
+                          const gtsam::Ordering& order);
+
+  DiscreteEliminationTree(const gtsam::DiscreteFactorGraph& factorGraph,
+                          const gtsam::Ordering& order);
+
+  void print(
+      string name = "EliminationTree: ",
+      const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::DiscreteEliminationTree& other,
+              double tol = 1e-9) const;
+};
+
+#include <gtsam/discrete/DiscreteJunctionTree.h>
+
+class DiscreteCluster {
+  gtsam::Ordering orderedFrontalKeys;
+  gtsam::DiscreteFactorGraph factors;
+  const gtsam::DiscreteCluster& operator[](size_t i) const;
+  size_t nrChildren() const;
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+};
+
+class DiscreteJunctionTree {
+  DiscreteJunctionTree(const gtsam::DiscreteEliminationTree& eliminationTree);
+  void print(
+      string name = "JunctionTree: ",
+      const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
+  size_t nrRoots() const;
+  const gtsam::DiscreteCluster& operator[](size_t i) const;
 };
 
 }  // namespace gtsam

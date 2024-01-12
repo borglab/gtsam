@@ -17,17 +17,19 @@
  *        methods
  */
 
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/basis/Chebyshev2.h>
 #include <gtsam/basis/FitBasis.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/base/Testable.h>
 
-#include <CppUnitLite/TestHarness.h>
+#include <cstddef>
+#include <functional>
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::placeholders;
 
 namespace {
 noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(1);
@@ -106,7 +108,7 @@ TEST(Chebyshev2, InterpolateVector) {
   double t = 30, a = 0, b = 100;
   const size_t N = 3;
   // Create 2x3 matrix with Vectors at Chebyshev points
-  ParameterMatrix<2> X(N);
+  Matrix X = Matrix::Zero(2, N);
   X.row(0) = Chebyshev2::Points(N, a, b);  // slope 1 ramp
 
   // Check value
@@ -114,14 +116,15 @@ TEST(Chebyshev2, InterpolateVector) {
   expected << t, 0;
   Eigen::Matrix<double, /*2x2N*/ -1, -1> actualH(2, 2 * N);
 
-  Chebyshev2::VectorEvaluationFunctor<2> fx(N, t, a, b);
+  Chebyshev2::VectorEvaluationFunctor fx(2, N, t, a, b);
   EXPECT(assert_equal(expected, fx(X, actualH), 1e-9));
 
   // Check derivative
-  boost::function<Vector2(ParameterMatrix<2>)> f = boost::bind(
-      &Chebyshev2::VectorEvaluationFunctor<2>::operator(), fx, _1, boost::none);
+  std::function<Vector2(Matrix)> f =
+      std::bind(&Chebyshev2::VectorEvaluationFunctor::operator(), fx,
+                std::placeholders::_1, nullptr);
   Matrix numericalH =
-      numericalDerivative11<Vector2, ParameterMatrix<2>, 2 * N>(f, X);
+      numericalDerivative11<Vector2, Matrix, 2 * N>(f, X);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }
 
@@ -130,25 +133,66 @@ TEST(Chebyshev2, InterpolateVector) {
 TEST(Chebyshev2, InterpolatePose2) {
   double t = 30, a = 0, b = 100;
 
-  ParameterMatrix<3> X(N);
+  Matrix X(3, N);
   X.row(0) = Chebyshev2::Points(N, a, b);  // slope 1 ramp
   X.row(1) = Vector::Zero(N);
   X.row(2) = 0.1 * Vector::Ones(N);
 
   Vector xi(3);
   xi << t, 0, 0.1;
+  Eigen::Matrix<double, /*3x3N*/ -1, -1> actualH(3, 3 * N);
+
   Chebyshev2::ManifoldEvaluationFunctor<Pose2> fx(N, t, a, b);
   // We use xi as canonical coordinates via exponential map
   Pose2 expected = Pose2::ChartAtOrigin::Retract(xi);
-  EXPECT(assert_equal(expected, fx(X)));
+  EXPECT(assert_equal(expected, fx(X, actualH)));
+
+  // Check derivative
+  std::function<Pose2(Matrix)> f =
+      std::bind(&Chebyshev2::ManifoldEvaluationFunctor<Pose2>::operator(), fx,
+                std::placeholders::_1, nullptr);
+  Matrix numericalH =
+      numericalDerivative11<Pose2, Matrix, 3 * N>(f, X);
+  EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }
+
+#ifdef GTSAM_POSE3_EXPMAP
+//******************************************************************************
+// Interpolating poses using the exponential map
+TEST(Chebyshev2, InterpolatePose3) {
+  double a = 10, b = 100;
+  double t = Chebyshev2::Points(N, a, b)(11);
+
+  Rot3 R = Rot3::Ypr(-2.21366492e-05, -9.35353636e-03, -5.90463598e-04);
+  Pose3 pose(R, Point3(1, 2, 3));
+
+  Vector6 xi = Pose3::ChartAtOrigin::Local(pose);
+  Eigen::Matrix<double, /*6x6N*/ -1, -1> actualH(6, 6 * N);
+
+  Matrix X = Matrix::Zero(6, N);
+  X.col(11) = xi;
+
+  Chebyshev2::ManifoldEvaluationFunctor<Pose3> fx(N, t, a, b);
+  // We use xi as canonical coordinates via exponential map
+  Pose3 expected = Pose3::ChartAtOrigin::Retract(xi);
+  EXPECT(assert_equal(expected, fx(X, actualH)));
+
+  // Check derivative
+  std::function<Pose3(Matrix)> f =
+      std::bind(&Chebyshev2::ManifoldEvaluationFunctor<Pose3>::operator(), fx,
+                std::placeholders::_1, nullptr);
+  Matrix numericalH =
+      numericalDerivative11<Pose3, Matrix, 6 * N>(f, X);
+  EXPECT(assert_equal(numericalH, actualH, 1e-8));
+}
+#endif
 
 //******************************************************************************
 TEST(Chebyshev2, Decomposition) {
   // Create example sequence
   Sequence sequence;
   for (size_t i = 0; i < 16; i++) {
-    double x = (1.0/ 16)*i - 0.99, y = x;
+    double x = (1.0 / 16) * i - 0.99, y = x;
     sequence[x] = y;
   }
 
@@ -369,15 +413,15 @@ TEST(Chebyshev2, Derivative6_03) {
 TEST(Chebyshev2, VectorDerivativeFunctor) {
   const size_t N = 3, M = 2;
   const double x = 0.2;
-  using VecD = Chebyshev2::VectorDerivativeFunctor<M>;
-  VecD fx(N, x, 0, 3);
-  ParameterMatrix<M> X(N);
+  using VecD = Chebyshev2::VectorDerivativeFunctor;
+  VecD fx(M, N, x, 0, 3);
+  Matrix X = Matrix::Zero(M, N);
   Matrix actualH(M, M * N);
   EXPECT(assert_equal(Vector::Zero(M), (Vector)fx(X, actualH), 1e-8));
 
   // Test Jacobian
-  Matrix expectedH = numericalDerivative11<Vector2, ParameterMatrix<M>, M * N>(
-      boost::bind(&VecD::operator(), fx, _1, boost::none), X);
+  Matrix expectedH = numericalDerivative11<Vector2, Matrix, M * N>(
+      std::bind(&VecD::operator(), fx, std::placeholders::_1, nullptr), X);
   EXPECT(assert_equal(expectedH, actualH, 1e-7));
 }
 
@@ -385,31 +429,30 @@ TEST(Chebyshev2, VectorDerivativeFunctor) {
 // Test VectorDerivativeFunctor with polynomial function
 TEST(Chebyshev2, VectorDerivativeFunctor2) {
   const size_t N = 64, M = 1, T = 15;
-  using VecD = Chebyshev2::VectorDerivativeFunctor<M>;
+  using VecD = Chebyshev2::VectorDerivativeFunctor;
 
   const Vector points = Chebyshev2::Points(N, 0, T);
 
-  // Assign the parameter matrix
-  Vector values(N);
+  // Assign the parameter matrix 1xN
+  Matrix X(1, N);
   for (size_t i = 0; i < N; ++i) {
-    values(i) = f(points(i));
+    X(i) = f(points(i));
   }
-  ParameterMatrix<M> X(values);
 
   // Evaluate the derivative at the chebyshev points using
   // VectorDerivativeFunctor.
   for (size_t i = 0; i < N; ++i) {
-    VecD d(N, points(i), 0, T);
+    VecD d(M, N, points(i), 0, T);
     Vector1 Dx = d(X);
     EXPECT_DOUBLES_EQUAL(fprime(points(i)), Dx(0), 1e-6);
   }
 
   // Test Jacobian at the first chebyshev point.
   Matrix actualH(M, M * N);
-  VecD vecd(N, points(0), 0, T);
+  VecD vecd(M, N, points(0), 0, T);
   vecd(X, actualH);
-  Matrix expectedH = numericalDerivative11<Vector1, ParameterMatrix<M>, M * N>(
-      boost::bind(&VecD::operator(), vecd, _1, boost::none), X);
+  Matrix expectedH = numericalDerivative11<Vector1, Matrix, M * N>(
+      std::bind(&VecD::operator(), vecd, std::placeholders::_1, nullptr), X);
   EXPECT(assert_equal(expectedH, actualH, 1e-6));
 }
 
@@ -418,15 +461,15 @@ TEST(Chebyshev2, VectorDerivativeFunctor2) {
 TEST(Chebyshev2, ComponentDerivativeFunctor) {
   const size_t N = 6, M = 2;
   const double x = 0.2;
-  using CompFunc = Chebyshev2::ComponentDerivativeFunctor<M>;
+  using CompFunc = Chebyshev2::ComponentDerivativeFunctor;
   size_t row = 1;
-  CompFunc fx(N, row, x, 0, 3);
-  ParameterMatrix<M> X(N);
+  CompFunc fx(M, N, row, x, 0, 3);
+  Matrix X = Matrix::Zero(M, N);
   Matrix actualH(1, M * N);
   EXPECT_DOUBLES_EQUAL(0, fx(X, actualH), 1e-8);
 
-  Matrix expectedH = numericalDerivative11<double, ParameterMatrix<M>, M * N>(
-      boost::bind(&CompFunc::operator(), fx, _1, boost::none), X);
+  Matrix expectedH = numericalDerivative11<double, Matrix, M * N>(
+      std::bind(&CompFunc::operator(), fx, std::placeholders::_1, nullptr), X);
   EXPECT(assert_equal(expectedH, actualH, 1e-7));
 }
 

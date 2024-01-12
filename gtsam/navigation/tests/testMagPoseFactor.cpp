@@ -57,8 +57,8 @@ Pose3 body_P3_sensor(Rot3::RzRyRx(Vector3(1.5, 0.9, -1.15)),
 
 // *****************************************************************************
 TEST(MagPoseFactor, Constructors) {
-  MagPoseFactor<Pose2> f2a(Symbol('X', 0), measured2, scale, dir2, bias2, model2, boost::none);
-  MagPoseFactor<Pose3> f3a(Symbol('X', 0), measured3, scale, dir3, bias3, model3, boost::none);
+  MagPoseFactor<Pose2> f2a(Symbol('X', 0), measured2, scale, dir2, bias2, model2, {});
+  MagPoseFactor<Pose3> f3a(Symbol('X', 0), measured3, scale, dir3, bias3, model3, {});
 
   // Try constructing with a body_P_sensor set.
   MagPoseFactor<Pose2> f2b = MagPoseFactor<Pose2>(
@@ -75,11 +75,10 @@ TEST(MagPoseFactor, JacobianPose2) {
   Matrix H2;
 
   // Error should be zero at the groundtruth pose.
-  MagPoseFactor<Pose2> f(Symbol('X', 0), measured2, scale, dir2, bias2, model2, boost::none);
+  MagPoseFactor<Pose2> f(Symbol('X', 0), measured2, scale, dir2, bias2, model2, {});
   CHECK(gtsam::assert_equal(Z_2x1, f.evaluateError(n_P2_b, H2), 1e-5));
   CHECK(gtsam::assert_equal(gtsam::numericalDerivative11<Vector, Pose2>  //
-                            (std::bind(&MagPoseFactor<Pose2>::evaluateError, &f,
-                                       std::placeholders::_1, boost::none),
+                            ([&f] (const Pose2& p) {return f.evaluateError(p);},
                              n_P2_b),
                             H2, 1e-7));
 }
@@ -89,11 +88,10 @@ TEST(MagPoseFactor, JacobianPose3) {
   Matrix H3;
 
   // Error should be zero at the groundtruth pose.
-  MagPoseFactor<Pose3> f(Symbol('X', 0), measured3, scale, dir3, bias3, model3, boost::none);
+  MagPoseFactor<Pose3> f(Symbol('X', 0), measured3, scale, dir3, bias3, model3, {});
   CHECK(gtsam::assert_equal(Z_3x1, f.evaluateError(n_P3_b, H3), 1e-5));
   CHECK(gtsam::assert_equal(gtsam::numericalDerivative11<Vector, Pose3>  //
-                            (std::bind(&MagPoseFactor<Pose3>::evaluateError, &f,
-                                       std::placeholders::_1, boost::none),
+                            ([&f] (const Pose3& p) {return f.evaluateError(p);},
                              n_P3_b),
                             H3, 1e-7));
 }
@@ -109,7 +107,7 @@ TEST(MagPoseFactor, body_P_sensor2) {
   MagPoseFactor<Pose2> f = MagPoseFactor<Pose2>(Symbol('X', 0), sM, scale, dir2, bias2, model2, body_P2_sensor);
   CHECK(gtsam::assert_equal(Z_2x1, f.evaluateError(n_P2_b, H2), 1e-5));
   CHECK(gtsam::assert_equal(gtsam::numericalDerivative11<Vector, Pose2> //
-      (std::bind(&MagPoseFactor<Pose2>::evaluateError, &f, std::placeholders::_1, boost::none), n_P2_b), H2, 1e-7));
+      ([&f] (const Pose2& p) {return f.evaluateError(p);},n_P2_b), H2, 1e-7));
 }
 
 // *****************************************************************************
@@ -123,7 +121,7 @@ TEST(MagPoseFactor, body_P_sensor3) {
   MagPoseFactor<Pose3> f = MagPoseFactor<Pose3>(Symbol('X', 0), sM, scale, dir3, bias3, model3, body_P3_sensor);
   CHECK(gtsam::assert_equal(Z_3x1, f.evaluateError(n_P3_b, H3), 1e-5));
   CHECK(gtsam::assert_equal(gtsam::numericalDerivative11<Vector, Pose3> //
-      (std::bind(&MagPoseFactor<Pose3>::evaluateError, &f, std::placeholders::_1, boost::none), n_P3_b), H3, 1e-7));
+      ([&f] (const Pose3& p) {return f.evaluateError(p);}, n_P3_b), H3, 1e-7));
 }
 
 // *****************************************************************************

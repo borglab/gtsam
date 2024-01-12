@@ -20,11 +20,11 @@ namespace gtsam {
  *    - For implicit Euler method:  q_{k+1} = q_k + h*v_{k+1}
  *    - For sympletic Euler method: q_{k+1} = q_k + h*v_{k+1}
  */
-class PendulumFactor1: public NoiseModelFactor3<double, double, double> {
+class PendulumFactor1: public NoiseModelFactorN<double, double, double> {
 public:
 
 protected:
-  typedef NoiseModelFactor3<double, double, double> Base;
+  typedef NoiseModelFactorN<double, double, double> Base;
 
   /** default constructor to allow for serialization */
   PendulumFactor1() {}
@@ -33,7 +33,10 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<PendulumFactor1> shared_ptr;
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
+  typedef std::shared_ptr<PendulumFactor1> shared_ptr;
 
   ///Constructor.  k1: q_{k+1}, k: q_k, velKey: velocity variable depending on the chosen method, h: time step
   PendulumFactor1(Key k1, Key k, Key velKey, double h, double mu = 1000.0)
@@ -41,14 +44,13 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactor1(*this))); }
 
   /** q_k + h*v - q_k1 = 0, with optional derivatives */
   Vector evaluateError(const double& qk1, const double& qk, const double& v,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2,
+      OptionalMatrixType H3) const override {
     const size_t p = 1;
     if (H1) *H1 = -Matrix::Identity(p,p);
     if (H2) *H2 = Matrix::Identity(p,p);
@@ -66,11 +68,11 @@ public:
  *    - For implicit Euler method:  v_{k+1} = v_k - h*g/L*sin(q_{k+1})
  *    - For sympletic Euler method: v_{k+1} = v_k - h*g/L*sin(q_k)
  */
-class PendulumFactor2: public NoiseModelFactor3<double, double, double> {
+class PendulumFactor2: public NoiseModelFactorN<double, double, double> {
 public:
 
 protected:
-  typedef NoiseModelFactor3<double, double, double> Base;
+  typedef NoiseModelFactorN<double, double, double> Base;
 
   /** default constructor to allow for serialization */
   PendulumFactor2() {}
@@ -81,7 +83,10 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<PendulumFactor2 > shared_ptr;
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
+  typedef std::shared_ptr<PendulumFactor2 > shared_ptr;
 
   ///Constructor.  vk1: v_{k+1}, vk: v_k, qkey: q's key depending on the chosen method, h: time step
   PendulumFactor2(Key vk1, Key vk, Key qkey, double h, double r = 1.0, double g = 9.81, double mu = 1000.0)
@@ -89,14 +94,13 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactor2(*this))); }
 
   /**  v_k - h*g/L*sin(q) - v_k1 = 0, with optional derivatives */
   Vector evaluateError(const double & vk1, const double & vk, const double & q,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2,
+      OptionalMatrixType H3) const override {
     const size_t p = 1;
     if (H1) *H1 = -Matrix::Identity(p,p);
     if (H2) *H2 = Matrix::Identity(p,p);
@@ -110,14 +114,14 @@ public:
 //*************************************************************************
 /**
  * This class implements the first position-momentum update rule
- *    p_k = -D_1 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)+mgrh(1-\alpha)\,\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right)
- *    = (1/h)mr^2 (q_{k+1}-q_k) + mgrh(1-alpha) sin ((1-alpha)q_k+\alpha q_{k+1})
+ *  \f$ p_k = -D_1 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)+mgrh(1-\alpha)\,\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right) \f$
+ *  \f$ = (1/h)mr^2 (q_{k+1}-q_k) + mgrh(1-alpha) sin ((1-alpha)q_k+\alpha q_{k+1}) \f$
  */
-class PendulumFactorPk: public NoiseModelFactor3<double, double, double> {
+class PendulumFactorPk: public NoiseModelFactorN<double, double, double> {
 public:
 
 protected:
-  typedef NoiseModelFactor3<double, double, double> Base;
+  typedef NoiseModelFactorN<double, double, double> Base;
 
   /** default constructor to allow for serialization */
   PendulumFactorPk() {}
@@ -130,7 +134,10 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<PendulumFactorPk > shared_ptr;
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
+  typedef std::shared_ptr<PendulumFactorPk > shared_ptr;
 
   ///Constructor
   PendulumFactorPk(Key pKey, Key qKey, Key qKey1,
@@ -140,14 +147,13 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactorPk(*this))); }
 
   /**  1/h mr^2 (qk1-qk)+mgrh (1-a) sin((1-a)pk + a*pk1) - pk = 0, with optional derivatives */
   Vector evaluateError(const double & pk, const double & qk, const double & qk1,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2,
+      OptionalMatrixType H3) const override {
     const size_t p = 1;
 
     double qmid = (1-alpha_)*qk + alpha_*qk1;
@@ -166,14 +172,14 @@ public:
 //*************************************************************************
 /**
  * This class implements the second position-momentum update rule
- *    p_k1 = D_2 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)-mgrh\alpha\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right)
- *    = (1/h)mr^2 (q_{k+1}-q_k) - mgrh alpha sin ((1-alpha)q_k+\alpha q_{k+1})
+ *  \f$ p_k1 = D_2 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)-mgrh\alpha\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right) \f$
+ *  \f$ = (1/h)mr^2 (q_{k+1}-q_k) - mgrh alpha sin ((1-alpha)q_k+\alpha q_{k+1}) \f$
  */
-class PendulumFactorPk1: public NoiseModelFactor3<double, double, double> {
+class PendulumFactorPk1: public NoiseModelFactorN<double, double, double> {
 public:
 
 protected:
-  typedef NoiseModelFactor3<double, double, double> Base;
+  typedef NoiseModelFactorN<double, double, double> Base;
 
   /** default constructor to allow for serialization */
   PendulumFactorPk1() {}
@@ -186,7 +192,10 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<PendulumFactorPk1 > shared_ptr;
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
+  typedef std::shared_ptr<PendulumFactorPk1 > shared_ptr;
 
   ///Constructor
   PendulumFactorPk1(Key pKey1, Key qKey, Key qKey1,
@@ -196,14 +205,13 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactorPk1(*this))); }
 
   /**  1/h mr^2 (qk1-qk) - mgrh a sin((1-a)pk + a*pk1) - pk1 = 0, with optional derivatives */
   Vector evaluateError(const double & pk1, const double & qk, const double & qk1,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2,
+      OptionalMatrixType H3) const override {
     const size_t p = 1;
 
     double qmid = (1-alpha_)*qk + alpha_*qk1;

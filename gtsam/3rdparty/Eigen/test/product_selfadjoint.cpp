@@ -59,7 +59,7 @@ template<typename MatrixType> void product_selfadjoint(const MatrixType& m)
   }
 }
 
-void test_product_selfadjoint()
+EIGEN_DECLARE_TEST(product_selfadjoint)
 {
   int s = 0;
   for(int i = 0; i < g_repeat ; i++) {

@@ -1,5 +1,3 @@
-
-
 #include <pybind11/eigen.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/pybind11.h>
@@ -7,10 +5,6 @@
 #include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 
 #include "gtsam/geometry/Cal3Bundler.h"
-
-#include "wrap/serialization.h"
-#include <boost/serialization/export.hpp>
-
 
 
 
@@ -32,7 +26,15 @@ PYBIND11_MODULE(special_cases_py, m_) {
 
     py::class_<gtsam::PinholeCamera<gtsam::Cal3Bundler>, std::shared_ptr<gtsam::PinholeCamera<gtsam::Cal3Bundler>>>(m_gtsam, "PinholeCameraCal3Bundler");
 
-    py::class_<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>, std::shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>>>(m_gtsam, "GeneralSFMFactorCal3Bundler");
+    py::class_<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>, std::shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>>> generalsfmfactorcal3bundler(m_gtsam, "GeneralSFMFactorCal3Bundler");
+    generalsfmfactorcal3bundler
+        .def_readwrite("verbosity", &gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>::verbosity);
+
+    py::enum_<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>::Verbosity>(generalsfmfactorcal3bundler, "Verbosity", py::arithmetic())
+        .value("SILENT", gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>::Verbosity::SILENT)
+        .value("SUMMARY", gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>::Verbosity::SUMMARY)
+        .value("VALUES", gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>::Verbosity::VALUES);
+
 
 
 #include "python/specializations.h"

@@ -23,7 +23,7 @@
  */
 
 // This example demonstrates the use of the Fixed-Lag Smoothers in GTSAM unstable
-#include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
+#include <gtsam/nonlinear/BatchFixedLagSmoother.h>
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
   auto &factorGraph = smootherISAM2.getFactors();
 
   // Linearize to a Gaussian factor graph
-  boost::shared_ptr<GaussianFactorGraph> linearGraph = factorGraph.linearize(result);
+  std::shared_ptr<GaussianFactorGraph> linearGraph = factorGraph.linearize(result);
 
   // Converts the linear graph into a Jacobian factor and extracts the Jacobian matrix
   Matrix jacobian = linearGraph->jacobian().first;

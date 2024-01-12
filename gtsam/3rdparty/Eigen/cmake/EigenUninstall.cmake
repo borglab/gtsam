@@ -27,7 +27,7 @@ if(EXISTS ${MANIFEST})
     else()
       message(STATUS "File '${file}' does not exist.")
     endif()
-  endforeach(file)
+  endforeach()
 
   message(STATUS "========== Finished Uninstalling Eigen  ==============")
 else()

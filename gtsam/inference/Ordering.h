@@ -25,13 +25,12 @@
 #include <gtsam/inference/MetisIndex.h>
 #include <gtsam/base/FastSet.h>
 
-#include <boost/assign/list_inserter.hpp>
 #include <algorithm>
 #include <vector>
 
 namespace gtsam {
 
-class Ordering: public KeyVector {
+class GTSAM_EXPORT Ordering: public KeyVector {
 protected:
   typedef KeyVector Base;
 
@@ -43,12 +42,13 @@ public:
   };
 
   typedef Ordering This; ///< Typedef to this class
-  typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+  typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
-  /// Create an empty ordering
-  GTSAM_EXPORT
+  /// Create an empty ordering  
   Ordering() {
   }
+
+  using KeyVector::KeyVector;  // Inherit the KeyVector's constructors
 
   /// Create from a container
   template<typename KEYS>
@@ -56,24 +56,18 @@ public:
       Base(keys.begin(), keys.end()) {
   }
 
-  /// Create an ordering using iterators over keys
-  template<typename ITERATOR>
-  Ordering(ITERATOR firstKey, ITERATOR lastKey) :
-      Base(firstKey, lastKey) {
-  }
+  /// Add new variables to the ordering as
+  /// `ordering += key1, key2, ...`.
+  This& operator+=(Key key);
 
-  /// Add new variables to the ordering as ordering += key1, key2, ...  Equivalent to calling
-  /// push_back.
-  boost::assign::list_inserter<boost::assign_detail::call_push_back<This> > operator+=(
-      Key key) {
-    return boost::assign::make_list_inserter(
-        boost::assign_detail::call_push_back<This>(*this))(key);
-  }
+  /// Overloading the comma operator allows for chaining appends
+  // e.g. keys += key1, key2
+  This& operator,(Key key);
 
   /**
    * @brief Append new keys to the ordering as `ordering += keys`.
    *
-   * @param key
+   * @param keys The key vector to append to this ordering.
    * @return The ordering variable with appended keys.
    */
   This& operator+=(KeyVector& keys);
@@ -89,7 +83,8 @@ public:
    */
   FastMap<Key, size_t> invert() const;
 
-  /// @name Fill-reducing Orderings @{
+  /// @name Fill-reducing Orderings
+  /// @{
 
   /// Compute a fill-reducing ordering using COLAMD from a factor graph (see details for note on
   /// performance). This internally builds a VariableIndex so if you already have a VariableIndex,
@@ -103,7 +98,7 @@ public:
   }
 
   /// Compute a fill-reducing ordering using COLAMD from a VariableIndex.
-  static GTSAM_EXPORT Ordering Colamd(const VariableIndex& variableIndex);
+  static Ordering Colamd(const VariableIndex& variableIndex);
 
   /// Compute a fill-reducing ordering using constrained COLAMD from a factor graph (see details
   /// for note on performance).  This internally builds a VariableIndex so if you already have a
@@ -128,7 +123,7 @@ public:
   /// variables in \c constrainLast will be ordered in the same order specified in the KeyVector
   /// \c constrainLast.   If \c forceOrder is false, the variables in \c constrainLast will be
   /// ordered after all the others, but will be rearranged by CCOLAMD to reduce fill-in as well.
-  static GTSAM_EXPORT Ordering ColamdConstrainedLast(
+  static Ordering ColamdConstrainedLast(
       const VariableIndex& variableIndex, const KeyVector& constrainLast,
       bool forceOrder = false);
 
@@ -156,7 +151,7 @@ public:
   /// KeyVector \c constrainFirst.   If \c forceOrder is false, the variables in \c
   /// constrainFirst will be ordered before all the others, but will be rearranged by CCOLAMD to
   /// reduce fill-in as well.
-  static GTSAM_EXPORT Ordering ColamdConstrainedFirst(
+  static Ordering ColamdConstrainedFirst(
       const VariableIndex& variableIndex,
       const KeyVector& constrainFirst, bool forceOrder = false);
 
@@ -185,7 +180,7 @@ public:
   /// appear in \c groups in arbitrary order.  Any variables not present in \c groups will be
   /// assigned to group 0.  This function simply fills the \c cmember argument to CCOLAMD with the
   /// supplied indices, see the CCOLAMD documentation for more information.
-  static GTSAM_EXPORT Ordering ColamdConstrained(
+  static Ordering ColamdConstrained(
       const VariableIndex& variableIndex, const FastMap<Key, int>& groups);
 
   /// Return a natural Ordering. Typically used by iterative solvers
@@ -194,16 +189,16 @@ public:
     KeySet src = fg.keys();
     KeyVector keys(src.begin(), src.end());
     std::stable_sort(keys.begin(), keys.end());
-    return Ordering(keys);
+    return Ordering(keys.begin(), keys.end());
   }
 
   /// METIS Formatting function
   template<class FACTOR_GRAPH>
-  static GTSAM_EXPORT void CSRFormat(std::vector<int>& xadj,
+  static void CSRFormat(std::vector<int>& xadj,
       std::vector<int>& adj, const FACTOR_GRAPH& graph);
 
   /// Compute an ordering determined by METIS from a VariableIndex
-  static GTSAM_EXPORT Ordering Metis(const MetisIndex& met);
+  static Ordering Metis(const MetisIndex& met);
 
   template<class FACTOR_GRAPH>
   static Ordering Metis(const FACTOR_GRAPH& graph) {
@@ -215,7 +210,8 @@ public:
 
   /// @}
 
-  /// @name Named Constructors @{
+  /// @name Named Constructors
+  /// @{
 
   template<class FACTOR_GRAPH>
   static Ordering Create(OrderingType orderingType,
@@ -241,28 +237,29 @@ public:
 
   /// @}
 
-  /// @name Testable @{
+  /// @name Testable
+  /// @{
 
-  GTSAM_EXPORT
   void print(const std::string& str = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const;
 
-  GTSAM_EXPORT
   bool equals(const Ordering& other, double tol = 1e-9) const;
 
   /// @}
 
 private:
   /// Internal COLAMD function
-  static GTSAM_EXPORT Ordering ColamdConstrained(
+  static Ordering ColamdConstrained(
       const VariableIndex& variableIndex, std::vector<int>& cmember);
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
+#endif
 };
 
 /// traits

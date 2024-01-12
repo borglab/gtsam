@@ -10,6 +10,7 @@
 #define EIGEN_NO_STATIC_ASSERT
 
 #include "main.h"
+#include "random_without_cast_overflow.h"
 
 template<typename MatrixType> void basicStuff(const MatrixType& m)
 {
@@ -48,6 +49,22 @@ template<typename MatrixType> void basicStuff(const MatrixType& m)
   v1[r] = x;
   VERIFY_IS_APPROX(x, v1[r]);
 
+  // test fetching with various index types.
+  Index r1 = internal::random<Index>(0, numext::mini(Index(127),rows-1));
+  x = v1(static_cast<char>(r1));
+  x = v1(static_cast<signed char>(r1));
+  x = v1(static_cast<unsigned char>(r1));
+  x = v1(static_cast<signed short>(r1));
+  x = v1(static_cast<unsigned short>(r1));
+  x = v1(static_cast<signed int>(r1));
+  x = v1(static_cast<unsigned int>(r1));
+  x = v1(static_cast<signed long>(r1));
+  x = v1(static_cast<unsigned long>(r1));
+#if EIGEN_HAS_CXX11
+  x = v1(static_cast<long long int>(r1));
+  x = v1(static_cast<unsigned long long int>(r1));
+#endif
+
   VERIFY_IS_APPROX(               v1,    v1);
   VERIFY_IS_NOT_APPROX(           v1,    2*v1);
   VERIFY_IS_MUCH_SMALLER_THAN(    vzero, v1);
@@ -74,7 +91,7 @@ template<typename MatrixType> void basicStuff(const MatrixType& m)
   Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> cv(rows);
   rv = square.row(r);
   cv = square.col(r);
-  
+
   VERIFY_IS_APPROX(rv, cv.transpose());
 
   if(cols!=1 && rows!=1 && MatrixType::SizeAtCompileTime!=Dynamic)
@@ -104,28 +121,28 @@ template<typename MatrixType> void basicStuff(const MatrixType& m)
   m1 = m2;
   VERIFY(m1==m2);
   VERIFY(!(m1!=m2));
-  
+
   // check automatic transposition
   sm2.setZero();
-  for(typename MatrixType::Index i=0;i<rows;++i)
+  for(Index i=0;i<rows;++i)
     sm2.col(i) = sm1.row(i);
   VERIFY_IS_APPROX(sm2,sm1.transpose());
-  
+
   sm2.setZero();
-  for(typename MatrixType::Index i=0;i<rows;++i)
+  for(Index i=0;i<rows;++i)
     sm2.col(i).noalias() = sm1.row(i);
   VERIFY_IS_APPROX(sm2,sm1.transpose());
-  
+
   sm2.setZero();
-  for(typename MatrixType::Index i=0;i<rows;++i)
+  for(Index i=0;i<rows;++i)
     sm2.col(i).noalias() += sm1.row(i);
   VERIFY_IS_APPROX(sm2,sm1.transpose());
-  
+
   sm2.setZero();
-  for(typename MatrixType::Index i=0;i<rows;++i)
+  for(Index i=0;i<rows;++i)
     sm2.col(i).noalias() -= sm1.row(i);
   VERIFY_IS_APPROX(sm2,-sm1.transpose());
-  
+
   // check ternary usage
   {
     bool b = internal::random<int>(0,10)>5;
@@ -178,16 +195,78 @@ template<typename MatrixType> void basicStuffComplex(const MatrixType& m)
   VERIFY(!static_cast<const MatrixType&>(cm).imag().isZero());
 }
 
-#ifdef EIGEN_TEST_PART_2
-void casting()
-{
-  Matrix4f m = Matrix4f::Random(), m2;
-  Matrix4d n = m.cast<double>();
-  VERIFY(m.isApprox(n.cast<float>()));
-  m2 = m.cast<float>(); // check the specialization when NewType == Type
-  VERIFY(m.isApprox(m2));
-}
+template<typename SrcScalar, typename TgtScalar>
+struct casting_test {
+  static void run() {
+    Matrix<SrcScalar,4,4> m;
+    for (int i=0; i<m.rows(); ++i) {
+      for (int j=0; j<m.cols(); ++j) {
+        m(i, j) = internal::random_without_cast_overflow<SrcScalar,TgtScalar>::value();
+      }
+    }
+    Matrix<TgtScalar,4,4> n = m.template cast<TgtScalar>();
+    for (int i=0; i<m.rows(); ++i) {
+      for (int j=0; j<m.cols(); ++j) {
+        VERIFY_IS_APPROX(n(i, j), (internal::cast<SrcScalar,TgtScalar>(m(i, j))));
+      }
+    }
+  }
+};
+
+template<typename SrcScalar, typename EnableIf = void>
+struct casting_test_runner {
+  static void run() {
+    casting_test<SrcScalar, bool>::run();
+    casting_test<SrcScalar, int8_t>::run();
+    casting_test<SrcScalar, uint8_t>::run();
+    casting_test<SrcScalar, int16_t>::run();
+    casting_test<SrcScalar, uint16_t>::run();
+    casting_test<SrcScalar, int32_t>::run();
+    casting_test<SrcScalar, uint32_t>::run();
+#if EIGEN_HAS_CXX11
+    casting_test<SrcScalar, int64_t>::run();
+    casting_test<SrcScalar, uint64_t>::run();
 #endif
+    casting_test<SrcScalar, half>::run();
+    casting_test<SrcScalar, bfloat16>::run();
+    casting_test<SrcScalar, float>::run();
+    casting_test<SrcScalar, double>::run();
+    casting_test<SrcScalar, std::complex<float> >::run();
+    casting_test<SrcScalar, std::complex<double> >::run();
+  }
+};
+
+template<typename SrcScalar>
+struct casting_test_runner<SrcScalar, typename internal::enable_if<(NumTraits<SrcScalar>::IsComplex)>::type>
+{
+  static void run() {
+    // Only a few casts from std::complex<T> are defined.
+    casting_test<SrcScalar, half>::run();
+    casting_test<SrcScalar, bfloat16>::run();
+    casting_test<SrcScalar, std::complex<float> >::run();
+    casting_test<SrcScalar, std::complex<double> >::run();
+  }
+};
+
+void casting_all() {
+  casting_test_runner<bool>::run();
+  casting_test_runner<int8_t>::run();
+  casting_test_runner<uint8_t>::run();
+  casting_test_runner<int16_t>::run();
+  casting_test_runner<uint16_t>::run();
+  casting_test_runner<int32_t>::run();
+  casting_test_runner<uint32_t>::run();
+#if EIGEN_HAS_CXX11
+  casting_test_runner<int64_t>::run();
+  casting_test_runner<uint64_t>::run();
+#endif
+  casting_test_runner<half>::run();
+  casting_test_runner<bfloat16>::run();
+  casting_test_runner<float>::run();
+  casting_test_runner<double>::run();
+  casting_test_runner<std::complex<float> >::run();
+  casting_test_runner<std::complex<double> >::run();
+}
 
 template <typename Scalar>
 void fixedSizeMatrixConstruction()
@@ -195,12 +274,12 @@ void fixedSizeMatrixConstruction()
   Scalar raw[4];
   for(int k=0; k<4; ++k)
     raw[k] = internal::random<Scalar>();
-  
+
   {
     Matrix<Scalar,4,1> m(raw);
     Array<Scalar,4,1> a(raw);
     for(int k=0; k<4; ++k) VERIFY(m(k) == raw[k]);
-    for(int k=0; k<4; ++k) VERIFY(a(k) == raw[k]);    
+    for(int k=0; k<4; ++k) VERIFY(a(k) == raw[k]);
     VERIFY_IS_EQUAL(m,(Matrix<Scalar,4,1>(raw[0],raw[1],raw[2],raw[3])));
     VERIFY((a==(Array<Scalar,4,1>(raw[0],raw[1],raw[2],raw[3]))).all());
   }
@@ -252,7 +331,7 @@ void fixedSizeMatrixConstruction()
   }
 }
 
-void test_basicstuff()
+EIGEN_DECLARE_TEST(basicstuff)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( basicStuff(Matrix<float, 1, 1>()) );
@@ -262,6 +341,7 @@ void test_basicstuff()
     CALL_SUBTEST_5( basicStuff(MatrixXcd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_6( basicStuff(Matrix<float, 100, 100>()) );
     CALL_SUBTEST_7( basicStuff(Matrix<long double,Dynamic,Dynamic>(internal::random<int>(1,EIGEN_TEST_MAX_SIZE),internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_8( casting_all() );
 
     CALL_SUBTEST_3( basicStuffComplex(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_5( basicStuffComplex(MatrixXcd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
@@ -273,6 +353,4 @@ void test_basicstuff()
   CALL_SUBTEST_1(fixedSizeMatrixConstruction<int>());
   CALL_SUBTEST_1(fixedSizeMatrixConstruction<long int>());
   CALL_SUBTEST_1(fixedSizeMatrixConstruction<std::ptrdiff_t>());
-
-  CALL_SUBTEST_2(casting());
 }
