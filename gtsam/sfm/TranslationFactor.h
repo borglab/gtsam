@@ -35,16 +35,20 @@ namespace gtsam {
  * ambient world coordinate frame:
  *    normalized(Tb - Ta) - w_aZb.point3()
  *
- * @addtogroup SFM
+ * @ingroup sfm
  * 
  * 
  */
-class TranslationFactor : public NoiseModelFactor2<Point3, Point3> {
+class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
  private:
-  typedef NoiseModelFactor2<Point3, Point3> Base;
+  typedef NoiseModelFactorN<Point3, Point3> Base;
   Point3 measured_w_aZb_;
 
  public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using NoiseModelFactor2<Point3, Point3>::evaluateError;
+
   /// default constructor
   TranslationFactor() {}
 
@@ -65,8 +69,8 @@ class TranslationFactor : public NoiseModelFactor2<Point3, Point3> {
    */
   Vector evaluateError(
       const Point3& Ta, const Point3& Tb,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const override {
+      OptionalMatrixType H1,
+      OptionalMatrixType H2) const override {
     const Point3 dir = Tb - Ta;
     Matrix33 H_predicted_dir;
     const Point3 predicted = normalize(dir, H1 || H2 ? &H_predicted_dir : nullptr);
@@ -76,11 +80,13 @@ class TranslationFactor : public NoiseModelFactor2<Point3, Point3> {
   }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& boost::serialization::make_nvp(
         "Base", boost::serialization::base_object<Base>(*this));
   }
+#endif
 };  // \ TranslationFactor
 }  // namespace gtsam

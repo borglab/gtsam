@@ -48,16 +48,16 @@ int main(const int argc, const char *argv[]) {
   Values::shared_ptr initial;
   bool is3D = false;
   if (kernelType.compare("none") == 0) {
-    boost::tie(graph, initial) = readG2o(g2oFile, is3D);
+    std::tie(graph, initial) = readG2o(g2oFile, is3D);
   }
   if (kernelType.compare("huber") == 0) {
     std::cout << "Using robust kernel: huber " << std::endl;
-    boost::tie(graph, initial) =
+    std::tie(graph, initial) =
         readG2o(g2oFile, is3D, KernelFunctionTypeHUBER);
   }
   if (kernelType.compare("tukey") == 0) {
     std::cout << "Using robust kernel: tukey " << std::endl;
-    boost::tie(graph, initial) =
+    std::tie(graph, initial) =
         readG2o(g2oFile, is3D, KernelFunctionTypeTUKEY);
   }
 
@@ -90,7 +90,7 @@ int main(const int argc, const char *argv[]) {
     std::cout << "Writing results to file: " << outputFile << std::endl;
     NonlinearFactorGraph::shared_ptr graphNoKernel;
     Values::shared_ptr initial2;
-    boost::tie(graphNoKernel, initial2) = readG2o(g2oFile);
+    std::tie(graphNoKernel, initial2) = readG2o(g2oFile);
     writeG2o(*graphNoKernel, result, outputFile);
     std::cout << "done! " << std::endl;
   }

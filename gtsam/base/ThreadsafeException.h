@@ -14,18 +14,18 @@
  * @brief    Base exception type that uses tbb_allocator if GTSAM is compiled with TBB
  * @author   Richard Roberts
  * @date     Aug 21, 2010
- * @addtogroup base
+ * @ingroup base
  */
 
 #pragma once
 
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
-#include <boost/optional/optional.hpp>
 #include <gtsam/dllexport.h>
 #include <string>
 #include <typeinfo>
 #include <exception>
+#include <optional>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/tbb_allocator.h>
@@ -46,14 +46,16 @@ private:
 protected:
   typedef std::basic_string<char, std::char_traits<char>,
       tbb::tbb_allocator<char> > String;
+  typedef tbb::tbb_allocator<char> Allocator;
 #else
 protected:
   typedef std::string String;
+  typedef std::allocator<char> Allocator;
 #endif
 
 protected:
   bool dynamic_; ///< Whether this object was moved
-  mutable boost::optional<String> description_; ///< Optional description
+  mutable std::optional<String> description_; ///< Optional description
 
   /// Default constructor is protected - may only be created from derived classes
   ThreadsafeException() :

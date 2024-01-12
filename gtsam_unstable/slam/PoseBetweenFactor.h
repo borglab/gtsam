@@ -26,33 +26,36 @@ namespace gtsam {
   /**
    * A class for a measurement predicted by "between(config[key1],config[key2])"
    * @tparam POSE the Pose type
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   template<class POSE>
-  class PoseBetweenFactor: public NoiseModelFactor2<POSE, POSE> {
+  class PoseBetweenFactor: public NoiseModelFactorN<POSE, POSE> {
 
   private:
 
     typedef PoseBetweenFactor<POSE> This;
-    typedef NoiseModelFactor2<POSE, POSE> Base;
+    typedef NoiseModelFactorN<POSE, POSE> Base;
 
     POSE measured_; /** The measurement */
-    boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
+    std::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
     /** concept check by type */
     GTSAM_CONCEPT_TESTABLE_TYPE(POSE)
     GTSAM_CONCEPT_POSE_TYPE(POSE)
   public:
 
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
+
     // shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<PoseBetweenFactor> shared_ptr;
+    typedef typename std::shared_ptr<PoseBetweenFactor> shared_ptr;
 
     /** default constructor - only use for serialization */
     PoseBetweenFactor() {}
 
     /** Constructor */
     PoseBetweenFactor(Key key1, Key key2, const POSE& measured,
-        const SharedNoiseModel& model, boost::optional<POSE> body_P_sensor = boost::none) :
+        const SharedNoiseModel& model, std::optional<POSE> body_P_sensor = {}) :
       Base(model, key1, key2), measured_(measured), body_P_sensor_(body_P_sensor) {
     }
 
@@ -60,7 +63,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
@@ -89,8 +92,7 @@ namespace gtsam {
 
     /** vector of errors */
     Vector evaluateError(const POSE& p1, const POSE& p2,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2) const override {
       if(body_P_sensor_) {
         POSE hx;
         if(H1 || H2) {
@@ -117,6 +119,7 @@ namespace gtsam {
 
   private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -125,6 +128,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(measured_);
 
     }
+#endif
   }; // \class PoseBetweenFactor
 
 } /// namespace gtsam

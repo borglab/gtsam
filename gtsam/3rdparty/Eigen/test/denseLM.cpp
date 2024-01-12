@@ -182,7 +182,7 @@ void test_denseLM_T()
   
 }
 
-void test_denseLM()
+EIGEN_DECLARE_TEST(denseLM)
 {
   CALL_SUBTEST_2(test_denseLM_T<double>());
   

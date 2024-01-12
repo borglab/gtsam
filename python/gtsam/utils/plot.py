@@ -12,9 +12,8 @@ from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=unused-import
 import gtsam
 from gtsam import Marginals, Point2, Point3, Pose2, Pose3, Values
 
-
-# For translation between a scaling of the uncertainty ellipse and the 
-# percentage of inliers see discussion in 
+# For translation between a scaling of the uncertainty ellipse and the
+# percentage of inliers see discussion in
 #   [PR 1067](https://github.com/borglab/gtsam/pull/1067)
 # and the notebook python/gtsam/notebooks/ellipses.ipynb (needs scipy).
 #
@@ -32,6 +31,7 @@ from gtsam import Marginals, Point2, Point3, Pose2, Pose3, Values
 # 1D	68.26895	95.44997	99.73002	99.99367	99.99994
 # 2D	39.34693	86.46647	98.88910	99.96645	99.99963
 # 3D	19.87480	73.85359	97.07091	99.88660	99.99846
+
 
 def set_axes_equal(fignum: int) -> None:
     """
@@ -128,8 +128,7 @@ def plot_covariance_ellipse_3d(axes,
     axes.plot_surface(x, y, z, alpha=alpha, cmap='hot')
 
 
-def plot_covariance_ellipse_2d(axes,
-                               origin: Point2,
+def plot_covariance_ellipse_2d(axes, origin: Point2,
                                covariance: np.ndarray) -> None:
     """
     Plots a Gaussian as an uncertainty ellipse
@@ -155,7 +154,7 @@ def plot_covariance_ellipse_2d(axes,
     e1 = patches.Ellipse(origin,
                          np.sqrt(w[0]) * 2 * k,
                          np.sqrt(w[1]) * 2 * k,
-                         np.rad2deg(angle),
+                         angle=np.rad2deg(angle),
                          fill=False)
     axes.add_patch(e1)
 
@@ -181,12 +180,13 @@ def plot_point2_on_axes(axes,
     if P is not None:
         plot_covariance_ellipse_2d(axes, point, P)
 
+
 def plot_point2(
-    fignum: int,
-    point: Point2,
-    linespec: str,
-    P: np.ndarray = None,
-    axis_labels: Iterable[str] = ("X axis", "Y axis"),
+        fignum: int,
+        point: Point2,
+        linespec: str,
+        P: np.ndarray = None,
+        axis_labels: Iterable[str] = ("X axis", "Y axis"),
 ) -> plt.Figure:
     """
     Plot a 2D point on given figure with given `linespec`.
@@ -557,7 +557,7 @@ def plot_incremental_trajectory(fignum: int,
         axes = fig.axes[0]
 
     poses = gtsam.utilities.allPose3s(values)
-    keys = gtsam.KeyVector(poses.keys())
+    keys = poses.keys()
 
     for key in keys[start:]:
         if values.exists(key):

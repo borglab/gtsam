@@ -76,7 +76,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   }
 
   FastVector<size_t> removedFactors;
-  boost::optional<FastMap<Key, int> > constrainedKeys = boost::none;
+  std::optional<FastMap<Key, int> > constrainedKeys = {};
 
   // Update the Timestamps associated with the factor keys
   updateKeyTimestampMap(timestamps);
@@ -126,7 +126,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
 
   // Update iSAM2
   isamResult_ = isam_.update(newFactors, newTheta,
-      factorsToRemove, constrainedKeys, boost::none, additionalMarkedKeys);
+      factorsToRemove, constrainedKeys, {}, additionalMarkedKeys);
 
   if (debug) {
     PrintSymbolicTree(isam_,
@@ -175,7 +175,7 @@ void IncrementalFixedLagSmoother::eraseKeysBefore(double timestamp) {
 /* ************************************************************************* */
 void IncrementalFixedLagSmoother::createOrderingConstraints(
     const KeyVector& marginalizableKeys,
-    boost::optional<FastMap<Key, int> >& constrainedKeys) const {
+    std::optional<FastMap<Key, int> >& constrainedKeys) const {
   if (marginalizableKeys.size() > 0) {
     constrainedKeys = FastMap<Key, int>();
     // Generate ordering constraints so that the marginalizable variables will be eliminated first

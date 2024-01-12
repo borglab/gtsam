@@ -10,11 +10,7 @@
 #include <gtsam/base/timing.h>
 #include <gtsam_unstable/discrete/Scheduler.h>
 
-#include <boost/assign/std/map.hpp>
-#include <boost/assign/std/vector.hpp>
-#include <boost/optional.hpp>
 
-using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 

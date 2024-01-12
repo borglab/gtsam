@@ -48,10 +48,7 @@ Vector4 triangulateHomogeneousDLT(
     A.row(row) = p.x() * projection.row(2) - projection.row(0);
     A.row(row + 1) = p.y() * projection.row(2) - projection.row(1);
   }
-  int rank;
-  double error;
-  Vector v;
-  boost::tie(rank, error, v) = DLT(A, rank_tol);
+  const auto [rank, error, v] = DLT(A, rank_tol);
 
   if (rank < 3) throw(TriangulationUnderconstrainedException());
 
@@ -79,10 +76,7 @@ Vector4 triangulateHomogeneousDLT(
     A.row(row) = p.x() * projection.row(2) - p.z() * projection.row(0);
     A.row(row + 1) = p.y() * projection.row(2) - p.z() * projection.row(1);
   }
-  int rank;
-  double error;
-  Vector v;
-  boost::tie(rank, error, v) = DLT(A, rank_tol);
+  const auto [rank, error, v] = DLT(A, rank_tol);
 
   if (rank < 3) throw(TriangulationUnderconstrainedException());
 
@@ -91,7 +85,8 @@ Vector4 triangulateHomogeneousDLT(
 
 Point3 triangulateLOST(const std::vector<Pose3>& poses,
                        const Point3Vector& calibratedMeasurements,
-                       const SharedIsotropic& measurementNoise) {
+                       const SharedIsotropic& measurementNoise,
+                       double rank_tol) {
   size_t m = calibratedMeasurements.size();
   assert(m == poses.size());
 
@@ -102,17 +97,38 @@ Point3 triangulateLOST(const std::vector<Pose3>& poses,
   for (size_t i = 0; i < m; i++) {
     const Pose3& wTi = poses[i];
     // TODO(akshay-krishnan): are there better ways to select j?
-    const int j = (i + 1) % m;
+    int j = (i + 1) % m;
     const Pose3& wTj = poses[j];
 
-    const Point3 d_ij = wTj.translation() - wTi.translation();
+    Point3 d_ij = wTj.translation() - wTi.translation();
+    Point3 wZi = wTi.rotation().rotate(calibratedMeasurements[i]);
+    Point3 wZj = wTj.rotation().rotate(calibratedMeasurements[j]);
+    double num_i = wZi.cross(wZj).norm();
+    double den_i = d_ij.cross(wZj).norm();
 
-    const Point3 wZi = wTi.rotation().rotate(calibratedMeasurements[i]);
-    const Point3 wZj = wTj.rotation().rotate(calibratedMeasurements[j]);
+    // Handle q_i = 0 (or NaN), which arises if the measurement vectors, wZi and 
+    // wZj, coincide (or the baseline vector coincides with the jth measurement 
+    // vector).
+    if (num_i == 0 || den_i == 0) {
+      bool success = false;
+      for (size_t k = 2; k < m; k++) {
+        j = (i + k) % m;
+        const Pose3& wTj = poses[j];
+
+        d_ij = wTj.translation() - wTi.translation();
+        wZj = wTj.rotation().rotate(calibratedMeasurements[j]);
+        num_i = wZi.cross(wZj).norm();
+        den_i = d_ij.cross(wZj).norm();
+        if (num_i > 0 && den_i > 0) {
+          success = true;
+          break;
+        }
+      }
+      if (!success) throw(TriangulationUnderconstrainedException());
+    }
 
     // Note: Setting q_i = 1.0 gives same results as DLT.
-    const double q_i = wZi.cross(wZj).norm() /
-                       (measurementNoise->sigma() * d_ij.cross(wZj).norm());
+    const double q_i = num_i / (measurementNoise->sigma() * den_i);
 
     const Matrix23 coefficientMat =
         q_i * skewSymmetric(calibratedMeasurements[i]).topLeftCorner(2, 3) *
@@ -121,7 +137,13 @@ Point3 triangulateLOST(const std::vector<Pose3>& poses,
     A.block<2, 3>(2 * i, 0) << coefficientMat;
     b.block<2, 1>(2 * i, 0) << coefficientMat * wTi.translation();
   }
-  return A.colPivHouseholderQr().solve(b);
+
+  Eigen::ColPivHouseholderQR<Matrix> A_Qr = A.colPivHouseholderQr();
+  A_Qr.setThreshold(rank_tol);
+
+  if (A_Qr.rank() < 3) throw(TriangulationUnderconstrainedException());
+
+  return A_Qr.solve(b);
 }
 
 Point3 triangulateDLT(

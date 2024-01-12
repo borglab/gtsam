@@ -29,6 +29,7 @@
 #include <chrono>
 #include <iostream>
 #include <random>
+#include <optional>
 
 using namespace std;
 using namespace gtsam;
@@ -121,7 +122,7 @@ int main(int argc, char* argv[]) {
   Matrix errorsDLTOpt = Matrix::Zero(nrTrials, 3);
 
   double rank_tol = 1e-9;
-  boost::shared_ptr<Cal3_S2> calib = boost::make_shared<Cal3_S2>();
+  std::shared_ptr<Cal3_S2> calib = std::make_shared<Cal3_S2>();
   std::chrono::nanoseconds durationDLT;
   std::chrono::nanoseconds durationDLTOpt;
   std::chrono::nanoseconds durationLOST;
@@ -131,23 +132,23 @@ int main(int argc, char* argv[]) {
         AddNoiseToMeasurements(measurements, measurementSigma);
 
     auto lostStart = std::chrono::high_resolution_clock::now();
-    boost::optional<Point3> estimateLOST = triangulatePoint3<Cal3_S2>(
+    auto estimateLOST = triangulatePoint3<Cal3_S2>(
         cameras, noisyMeasurements, rank_tol, false, measurementNoise, true);
     durationLOST += std::chrono::high_resolution_clock::now() - lostStart;
 
     auto dltStart = std::chrono::high_resolution_clock::now();
-    boost::optional<Point3> estimateDLT = triangulatePoint3<Cal3_S2>(
+    auto estimateDLT = triangulatePoint3<Cal3_S2>(
         cameras, noisyMeasurements, rank_tol, false, measurementNoise, false);
     durationDLT += std::chrono::high_resolution_clock::now() - dltStart;
 
     auto dltOptStart = std::chrono::high_resolution_clock::now();
-    boost::optional<Point3> estimateDLTOpt = triangulatePoint3<Cal3_S2>(
+    auto estimateDLTOpt = triangulatePoint3<Cal3_S2>(
         cameras, noisyMeasurements, rank_tol, true, measurementNoise, false);
     durationDLTOpt += std::chrono::high_resolution_clock::now() - dltOptStart;
 
-    errorsLOST.row(i) = *estimateLOST - landmark;
-    errorsDLT.row(i) = *estimateDLT - landmark;
-    errorsDLTOpt.row(i) = *estimateDLTOpt - landmark;
+    errorsLOST.row(i) = estimateLOST - landmark;
+    errorsDLT.row(i) = estimateDLT - landmark;
+    errorsDLTOpt.row(i) = estimateDLTOpt - landmark;
   }
   PrintCovarianceStats(errorsLOST, "LOST");
   PrintCovarianceStats(errorsDLT, "DLT");

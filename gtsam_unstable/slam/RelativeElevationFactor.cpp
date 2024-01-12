@@ -18,7 +18,7 @@ RelativeElevationFactor::RelativeElevationFactor(Key poseKey, Key pointKey, doub
 
 /* ************************************************************************* */
 Vector RelativeElevationFactor::evaluateError(const Pose3& pose, const Point3& point,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    OptionalMatrixType H1, OptionalMatrixType H2) const {
   double hx = pose.z() - point.z();
   if (H1) {
     *H1 = Matrix::Zero(1,6);

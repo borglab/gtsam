@@ -20,7 +20,7 @@ template<typename T> void test_pardiso_T()
   check_sparse_square_solving(pardiso_lu);
 }
 
-void test_pardiso_support()
+EIGEN_DECLARE_TEST(pardiso_support)
 {
   CALL_SUBTEST_1(test_pardiso_T<float>());
   CALL_SUBTEST_2(test_pardiso_T<double>());

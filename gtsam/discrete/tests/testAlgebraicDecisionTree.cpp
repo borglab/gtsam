@@ -20,15 +20,9 @@
 #include <gtsam/discrete/DiscreteKey.h>  // make sure we have traits
 #include <gtsam/discrete/DiscreteValues.h>
 // headers first to make sure no missing headers
-//#define GTSAM_DT_NO_PRUNING
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DecisionTree-inl.h>  // for convert only
 #define DISABLE_TIMING
-
-#include <boost/assign/std/map.hpp>
-#include <boost/assign/std/vector.hpp>
-#include <boost/tokenizer.hpp>
-using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/timing.h>
@@ -84,9 +78,9 @@ void resetCounts() {
 }
 void printCounts(const string& s) {
 #ifndef DISABLE_TIMING
-  cout << boost::format("%s: %3d muls, %3d adds, %g ms.") % s % muls % adds %
-              (1000 * elapsed)
-       << endl;
+cout << s << ": " << std::setw(3) << muls << " muls, " << 
+  std::setw(3) << adds << " adds, " << 1000 * elapsed << " ms."
+     << endl;
 #endif
   resetCounts();
 }
@@ -136,7 +130,9 @@ ADT create(const Signature& signature) {
   ADT p(signature.discreteKeys(), signature.cpt());
   static size_t count = 0;
   const DiscreteKey& key = signature.key();
-  string DOTfile = (boost::format("CPT-%03d-%d") % ++count % key.first).str();
+  std::stringstream ss;
+  ss << "CPT-" << std::setw(3) << std::setfill('0') << ++count << "-" << key.first;
+  string DOTfile = ss.str();
   dot(p, DOTfile);
   return p;
 }
@@ -182,7 +178,11 @@ TEST(ADT, joint) {
   dot(joint, "Asia-ASTLBEX");
   joint = apply(joint, pD, &mul);
   dot(joint, "Asia-ASTLBEXD");
+#ifdef GTSAM_DT_MERGING
   EXPECT_LONGS_EQUAL(346, muls);
+#else
+  EXPECT_LONGS_EQUAL(508, muls);
+#endif
   gttoc_(asiaJoint);
   tictoc_getNode(asiaJointNode, asiaJoint);
   elapsed = asiaJointNode->secs() + asiaJointNode->wall();
@@ -243,7 +243,11 @@ TEST(ADT, inference) {
   dot(joint, "Joint-Product-ASTLBEX");
   joint = apply(joint, pD, &mul);
   dot(joint, "Joint-Product-ASTLBEXD");
+#ifdef GTSAM_DT_MERGING
   EXPECT_LONGS_EQUAL(370, (long)muls);  // different ordering
+#else
+  EXPECT_LONGS_EQUAL(508, (long)muls);  // different ordering
+#endif
   gttoc_(asiaProd);
   tictoc_getNode(asiaProdNode, asiaProd);
   elapsed = asiaProdNode->secs() + asiaProdNode->wall();
@@ -261,7 +265,11 @@ TEST(ADT, inference) {
   dot(marginal, "Joint-Sum-ADBLE");
   marginal = marginal.combine(E, &add_);
   dot(marginal, "Joint-Sum-ADBL");
+#ifdef GTSAM_DT_MERGING
   EXPECT_LONGS_EQUAL(161, (long)adds);
+#else
+  EXPECT_LONGS_EQUAL(240, (long)adds);
+#endif
   gttoc_(asiaSum);
   tictoc_getNode(asiaSumNode, asiaSum);
   elapsed = asiaSumNode->secs() + asiaSumNode->wall();
@@ -299,7 +307,11 @@ TEST(ADT, factor_graph) {
   fg = apply(fg, pX, &mul);
   fg = apply(fg, pD, &mul);
   dot(fg, "FactorGraph");
+#ifdef GTSAM_DT_MERGING
   EXPECT_LONGS_EQUAL(158, (long)muls);
+#else
+  EXPECT_LONGS_EQUAL(188, (long)muls);
+#endif
   gttoc_(asiaFG);
   tictoc_getNode(asiaFGNode, asiaFG);
   elapsed = asiaFGNode->secs() + asiaFGNode->wall();
@@ -318,7 +330,11 @@ TEST(ADT, factor_graph) {
   dot(fg, "Marginalized-3E");
   fg = fg.combine(L, &add_);
   dot(fg, "Marginalized-2L");
+#ifdef GTSAM_DT_MERGING
   LONGS_EQUAL(49, adds);
+#else
+  LONGS_EQUAL(62, adds);
+#endif
   gttoc_(marg);
   tictoc_getNode(margNode, marg);
   elapsed = margNode->secs() + margNode->wall();
@@ -402,13 +418,9 @@ TEST(ADT, factor_graph) {
 /* ************************************************************************* */
 // test equality
 TEST(ADT, equality_noparser) {
-  DiscreteKey A(0, 2), B(1, 2);
-  Signature::Table tableA, tableB;
-  Signature::Row rA, rB;
-  rA += 80, 20;
-  rB += 60, 40;
-  tableA += rA;
-  tableB += rB;
+  const DiscreteKey A(0, 2), B(1, 2);
+  const Signature::Row rA{80, 20}, rB{60, 40};
+  const Signature::Table tableA{rA}, tableB{rB};
 
   // Check straight equality
   ADT pA1 = create(A % tableA);
@@ -523,9 +535,9 @@ TEST(ADT, elimination) {
 
     // normalize
     ADT actual = f1 / actualSum;
-    vector<double> cpt;
-    cpt += 1.0 / 3, 2.0 / 3, 3.0 / 7, 4.0 / 7, 5.0 / 11, 6.0 / 11,  //
-        1.0 / 9, 8.0 / 9, 3.0 / 6, 3.0 / 6, 5.0 / 10, 5.0 / 10;
+    const vector<double> cpt{
+        1.0 / 3, 2.0 / 3, 3.0 / 7, 4.0 / 7, 5.0 / 11, 6.0 / 11,  //
+        1.0 / 9, 8.0 / 9, 3.0 / 6, 3.0 / 6, 5.0 / 10, 5.0 / 10};
     ADT expected(A & B & C, cpt);
     CHECK(assert_equal(expected, actual));
   }
@@ -538,9 +550,9 @@ TEST(ADT, elimination) {
 
     // normalize
     ADT actual = f1 / actualSum;
-    vector<double> cpt;
-    cpt += 1.0 / 21, 2.0 / 21, 3.0 / 21, 4.0 / 21, 5.0 / 21, 6.0 / 21,  //
-        1.0 / 25, 8.0 / 25, 3.0 / 25, 3.0 / 25, 5.0 / 25, 5.0 / 25;
+    const vector<double> cpt{
+        1.0 / 21, 2.0 / 21, 3.0 / 21, 4.0 / 21, 5.0 / 21, 6.0 / 21,  //
+        1.0 / 25, 8.0 / 25, 3.0 / 25, 3.0 / 25, 5.0 / 25, 5.0 / 25};
     ADT expected(A & B & C, cpt);
     CHECK(assert_equal(expected, actual));
   }

@@ -20,11 +20,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DiscreteLookupDAG.h>
 
-#include <boost/assign/list_inserter.hpp>
-#include <boost/assign/std/map.hpp>
-
 using namespace gtsam;
-using namespace boost::assign;
 
 /* ************************************************************************* */
 TEST(DiscreteLookupDAG, argmax) {
@@ -43,8 +39,7 @@ TEST(DiscreteLookupDAG, argmax) {
   dag.add(1, DiscreteKeys{A}, adtA);
 
   // The expected MPE is A=1, B=1
-  DiscreteValues mpe;
-  insert(mpe)(0, 1)(1, 1);
+  DiscreteValues mpe{{0, 1}, {1, 1}};
 
   // check:
   auto actualMPE = dag.argmax();

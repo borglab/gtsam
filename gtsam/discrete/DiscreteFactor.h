@@ -18,47 +18,54 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
+#include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/inference/Factor.h>
-#include <gtsam/base/Testable.h>
 
 #include <string>
 namespace gtsam {
 
 class DecisionTreeFactor;
 class DiscreteConditional;
+class HybridValues;
 
 /**
  * Base class for discrete probabilistic factors
  * The most general one is the derived DecisionTreeFactor
+ *
+ * @ingroup discrete
  */
-class GTSAM_EXPORT DiscreteFactor: public Factor {
-
-public:
-
+class GTSAM_EXPORT DiscreteFactor : public Factor {
+ public:
   // typedefs needed to play nice with gtsam
-  typedef DiscreteFactor This; ///< This class
-  typedef boost::shared_ptr<DiscreteFactor> shared_ptr; ///< shared_ptr to this class
-  typedef Factor Base; ///< Our base class
+  typedef DiscreteFactor This;  ///< This class
+  typedef std::shared_ptr<DiscreteFactor>
+      shared_ptr;       ///< shared_ptr to this class
+  typedef Factor Base;  ///< Our base class
 
-  using Values = DiscreteValues; ///< backwards compatibility
+  using Values = DiscreteValues;  ///< backwards compatibility
 
-public:
+ protected:
+  /// Map of Keys and their cardinalities.
+  std::map<Key, size_t> cardinalities_;
 
+ public:
   /// @name Standard Constructors
   /// @{
 
   /** Default constructor creates empty factor */
   DiscreteFactor() {}
 
-  /** Construct from container of keys.  This constructor is used internally from derived factor
-   *  constructors, either from a container of keys or from a boost::assign::list_of. */
-  template<typename CONTAINER>
-  DiscreteFactor(const CONTAINER& keys) : Base(keys) {}
-
-  /// Virtual destructor
-  virtual ~DiscreteFactor() {
-  }
+  /**
+   * Construct from container of keys and map of cardinalities.
+   * This constructor is used internally from derived factor constructors,
+   * either from a container of keys or from a boost::assign::list_of.
+   */
+  template <typename CONTAINER>
+  DiscreteFactor(const CONTAINER& keys,
+                 const std::map<Key, size_t> cardinalities = {})
+      : Base(keys), cardinalities_(cardinalities) {}
 
   /// @}
   /// @name Testable
@@ -78,10 +85,30 @@ public:
   /// @name Standard Interface
   /// @{
 
+  /// Return all the discrete keys associated with this factor.
+  DiscreteKeys discreteKeys() const;
+
+  std::map<Key, size_t> cardinalities() const { return cardinalities_; }
+
+  size_t cardinality(Key j) const { return cardinalities_.at(j); }
+
   /// Find value for given assignment of values to variables
   virtual double operator()(const DiscreteValues&) const = 0;
 
-  /// Multiply in a DecisionTreeFactor and return the result as DecisionTreeFactor
+  /// Error is just -log(value)
+  double error(const DiscreteValues& values) const;
+
+  /**
+   * The Factor::error simply extracts the \class DiscreteValues from the
+   * \class HybridValues and calculates the error.
+   */
+  double error(const HybridValues& c) const override;
+
+  /// Compute error for each assignment and return as a tree
+  virtual AlgebraicDecisionTree<Key> errorTree() const = 0;
+
+  /// Multiply in a DecisionTreeFactor and return the result as
+  /// DecisionTreeFactor
   virtual DecisionTreeFactor operator*(const DecisionTreeFactor&) const = 0;
 
   virtual DecisionTreeFactor toDecisionTreeFactor() const = 0;
@@ -89,7 +116,7 @@ public:
   /// @}
   /// @name Wrapper support
   /// @{
-  
+
   /// Translation table from values to strings.
   using Names = DiscreteValues::Names;
 
@@ -116,6 +143,17 @@ public:
       const Names& names = {}) const = 0;
 
   /// @}
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar& BOOST_SERIALIZATION_NVP(cardinalities_);
+  }
+#endif
 };
 // DiscreteFactor
 
@@ -142,4 +180,4 @@ template<> struct traits<DiscreteFactor> : public Testable<DiscreteFactor> {};
 std::vector<double> expNormalize(const std::vector<double> &logProbs);
 
 
-}// namespace gtsam
+}  // namespace gtsam

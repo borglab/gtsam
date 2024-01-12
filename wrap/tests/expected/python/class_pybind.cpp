@@ -1,5 +1,3 @@
-
-
 #include <pybind11/eigen.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/pybind11.h>
@@ -7,10 +5,6 @@
 #include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 
 #include "folder/path/to/Test.h"
-
-#include "wrap/serialization.h"
-#include <boost/serialization/export.hpp>
-
 
 
 
@@ -70,7 +64,9 @@ PYBIND11_MODULE(class_py, m_) {
         .def("set_container",[](Test* self, std::vector<testing::Test&> container){ self->set_container(container);}, py::arg("container"))
         .def("get_container",[](Test* self){return self->get_container();})
         .def("_repr_markdown_",[](Test* self, const gtsam::KeyFormatter& keyFormatter){return self->markdown(keyFormatter);}, py::arg("keyFormatter") = gtsam::DefaultKeyFormatter)
-        .def_readwrite("model_ptr", &Test::model_ptr);
+        .def_readwrite("model_ptr", &Test::model_ptr)
+        .def_readwrite("value", &Test::value)
+        .def_readwrite("name", &Test::name);
 
     py::class_<PrimitiveRef<double>, std::shared_ptr<PrimitiveRef<double>>>(m_, "PrimitiveRefDouble")
         .def(py::init<>())

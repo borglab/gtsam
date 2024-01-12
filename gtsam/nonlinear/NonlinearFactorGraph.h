@@ -27,7 +27,7 @@
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <functional>
 
 namespace gtsam {
@@ -58,7 +58,7 @@ namespace gtsam {
 
     typedef FactorGraph<NonlinearFactor> Base;
     typedef NonlinearFactorGraph This;
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
 
     /// @name Standard Constructors
     /// @{
@@ -77,9 +77,6 @@ namespace gtsam {
     /** Implicit copy/downcast constructor to override explicit template container constructor */
     template<class DERIVEDFACTOR>
     NonlinearFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
-
-    /// Destructor
-    virtual ~NonlinearFactorGraph() {}
 
     /// @}
     /// @name Testable
@@ -112,7 +109,7 @@ namespace gtsam {
     /**
      * Create a symbolic factor graph
      */
-    boost::shared_ptr<SymbolicFactorGraph> symbolic() const;
+    std::shared_ptr<SymbolicFactorGraph> symbolic() const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.
@@ -130,10 +127,10 @@ namespace gtsam {
     Ordering orderingCOLAMDConstrained(const FastMap<Key, int>& constraints) const;
 
     /// Linearize a nonlinear factor graph
-    boost::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
+    std::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
 
     /// typdef for dampen functions used below
-    typedef std::function<void(const boost::shared_ptr<HessianFactor>& hessianFactor)> Dampen;
+    typedef std::function<void(const std::shared_ptr<HessianFactor>& hessianFactor)> Dampen;
 
     /**
      * Instead of producing a GaussianFactorGraph, pre-allocate and linearize directly
@@ -142,7 +139,7 @@ namespace gtsam {
      * An optional lambda function can be used to apply damping on the filled Hessian.
      * No parallelism is exploited, because all the factors write in the same memory.
      */
-    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+    std::shared_ptr<HessianFactor> linearizeToHessianFactor(
         const Values& values, const Dampen& dampen = nullptr) const;
 
     /**
@@ -153,7 +150,7 @@ namespace gtsam {
      * An optional lambda function can be used to apply damping on the filled Hessian.
      * No parallelism is exploited, because all the factors write in the same memory.
      */
-    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+    std::shared_ptr<HessianFactor> linearizeToHessianFactor(
         const Values& values, const Ordering& ordering, const Dampen& dampen = nullptr) const;
 
     /// Linearize and solve in one pass.
@@ -189,7 +186,7 @@ namespace gtsam {
     template<typename T>
     void addExpressionFactor(const SharedNoiseModel& R, const T& z,
                              const Expression<T>& h) {
-      push_back(boost::make_shared<ExpressionFactor<T> >(R, z, h));
+      this->emplace_shared<ExpressionFactor<T>>(R, z, h);
     }
 
     /**
@@ -250,9 +247,10 @@ namespace gtsam {
      * Linearize from Scatter rather than from Ordering.  Made private because
      *  it doesn't include gttic.
      */
-    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+    std::shared_ptr<HessianFactor> linearizeToHessianFactor(
         const Values& values, const Scatter& scatter, const Dampen& dampen = nullptr) const;
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -260,39 +258,7 @@ namespace gtsam {
       ar & boost::serialization::make_nvp("NonlinearFactorGraph",
                 boost::serialization::base_object<Base>(*this));
     }
-
-  public:
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-    /// @name Deprecated
-    /// @{
-    /** @deprecated */
-    boost::shared_ptr<HessianFactor> GTSAM_DEPRECATED linearizeToHessianFactor(
-        const Values& values, boost::none_t, const Dampen& dampen = nullptr) const
-      {return linearizeToHessianFactor(values, dampen);}
-
-    /** @deprecated */
-    Values GTSAM_DEPRECATED updateCholesky(const Values& values, boost::none_t,
-                          const Dampen& dampen = nullptr) const
-      {return updateCholesky(values, dampen);}
-
-    /** @deprecated */
-    void GTSAM_DEPRECATED saveGraph(
-        std::ostream& os, const Values& values = Values(),
-        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      dot(os, values, keyFormatter, graphvizFormatting);
-    }
-    /** @deprecated */
-    void GTSAM_DEPRECATED
-    saveGraph(const std::string& filename, const Values& values,
-              const GraphvizFormatting& graphvizFormatting,
-              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      saveGraph(filename, values, keyFormatter, graphvizFormatting);
-    }
-    /// @}
 #endif
-
   };
 
 /// traits

@@ -31,9 +31,9 @@ namespace internal {
 static Point2Pairs SubtractCentroids(const Point2Pairs& abPointPairs,
                                      const Point2Pair& centroids) {
   Point2Pairs d_abPointPairs;
-  for (const Point2Pair& abPair : abPointPairs) {
-    Point2 da = abPair.first - centroids.first;
-    Point2 db = abPair.second - centroids.second;
+  for (const auto& [a, b] : abPointPairs) {
+    Point2 da = a - centroids.first;
+    Point2 db = b - centroids.second;
     d_abPointPairs.emplace_back(da, db);
   }
   return d_abPointPairs;
@@ -43,10 +43,8 @@ static Point2Pairs SubtractCentroids(const Point2Pairs& abPointPairs,
 static double CalculateScale(const Point2Pairs& d_abPointPairs,
                              const Rot2& aRb) {
   double x = 0, y = 0;
-  Point2 da, db;
 
-  for (const Point2Pair& d_abPair : d_abPointPairs) {
-    std::tie(da, db) = d_abPair;
+  for (const auto& [da, db] : d_abPointPairs) {
     const Vector2 da_prime = aRb * db;
     y += da.transpose() * da_prime;
     x += da_prime.transpose() * da_prime;
@@ -58,8 +56,8 @@ static double CalculateScale(const Point2Pairs& d_abPointPairs,
 /// Form outer product H.
 static Matrix2 CalculateH(const Point2Pairs& d_abPointPairs) {
   Matrix2 H = Z_2x2;
-  for (const Point2Pair& d_abPair : d_abPointPairs) {
-    H += d_abPair.first * d_abPair.second.transpose();
+  for (const auto& [da, db] : d_abPointPairs) {
+    H += da * db.transpose();
   }
   return H;
 }
@@ -134,7 +132,7 @@ void Similarity2::print(const std::string& s) const {
             << std::endl;
 }
 
-Similarity2 Similarity2::identity() { return Similarity2(); }
+Similarity2 Similarity2::Identity() { return Similarity2(); }
 
 Similarity2 Similarity2::operator*(const Similarity2& S) const {
   return Similarity2(R_ * S.R_, ((1.0 / S.s_) * t_) + R_ * S.t_, s_ * S.s_);
@@ -186,9 +184,7 @@ Similarity2 Similarity2::Align(const Pose2Pairs& abPosePairs) {
   abPointPairs.reserve(n);
   // Below denotes the pose of the i'th object/camera/etc
   // in frame "a" or frame "b".
-  Pose2 aTi, bTi;
-  for (const Pose2Pair& abPair : abPosePairs) {
-    std::tie(aTi, bTi) = abPair;
+  for (const auto& [aTi, bTi] : abPosePairs) {
     const Rot2 aRb = aTi.rotation().compose(bTi.rotation().inverse());
     rotations.emplace_back(aRb);
     abPointPairs.emplace_back(aTi.translation(), bTi.translation());

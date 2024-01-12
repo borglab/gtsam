@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file     QPParser.h
+ * @file     QPSParser.h
  * @brief    QPS parser implementation
  * @author   Ivan Dario Jimenez
  * @date     3/5/16
@@ -18,12 +18,13 @@
 
 #pragma once
 
+#include <gtsam_unstable/dllexport.h>
 #include <gtsam_unstable/linear/QP.h>
 #include <fstream>
 
 namespace gtsam {
 
-class QPSParser {
+class GTSAM_UNSTABLE_EXPORT QPSParser {
 
 private:
   std::string fileName_;

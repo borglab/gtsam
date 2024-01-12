@@ -15,6 +15,7 @@
  * @date  Jan 13, 2010
  * @author Richard Roberts
  * @author Frank Dellaert
+ * @author Fan Jiang
  */
 
 #pragma once
@@ -23,12 +24,14 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/dllexport.h>
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/extended_type_info.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/optional.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/singleton.hpp>
+#endif
 
 namespace gtsam {
 namespace noiseModel {
@@ -65,7 +68,7 @@ class GTSAM_EXPORT Base {
   /** the rows can be weighted independently according to the error
    * or uniformly with the norm of the right hand side */
   enum ReweightScheme { Scalar, Block };
-  typedef boost::shared_ptr<Base> shared_ptr;
+  typedef std::shared_ptr<Base> shared_ptr;
 
  protected:
   /// Strategy for reweighting \sa ReweightScheme
@@ -89,7 +92,7 @@ class GTSAM_EXPORT Base {
    * functions. It would be better for this function to accept the vector and
    * internally call the norm if necessary.
    *
-   * This returns \rho(x) in \ref mEstimator
+   * This returns \f$\rho(x)\f$ in \ref mEstimator
    */
   virtual double loss(double distance) const { return 0; }
 
@@ -115,9 +118,7 @@ class GTSAM_EXPORT Base {
   Vector weight(const Vector &error) const;
 
   /** square root version of the weight function */
-  Vector sqrtWeight(const Vector &error) const {
-    return weight(error).cwiseSqrt();
-  }
+  Vector sqrtWeight(const Vector &error) const;
 
   /** reweight block matrices and a vector according to their weight
    * implementation */
@@ -128,12 +129,14 @@ class GTSAM_EXPORT Base {
   void reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const;
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_NVP(reweight_);
   }
+#endif
 };
 
 /** "Null" robust loss function, equivalent to a Gaussian pdf noise model, or
@@ -141,13 +144,13 @@ class GTSAM_EXPORT Base {
  *
  *  This model has no additional parameters.
  *
- * - Loss       \rho(x)          = 0.5 x²
- * - Derivative \phi(x)          = x
- * - Weight     w(x) = \phi(x)/x = 1
+ * - Loss       \f$ \rho(x)          = 0.5 x² \f$
+ * - Derivative \f$ \phi(x)          = x \f$
+ * - Weight     \f$ w(x) = \phi(x)/x = 1 \f$
  */
 class GTSAM_EXPORT Null : public Base {
  public:
-  typedef boost::shared_ptr<Null> shared_ptr;
+  typedef std::shared_ptr<Null> shared_ptr;
 
   Null(const ReweightScheme reweight = Block) : Base(reweight) {}
   ~Null() override {}
@@ -158,12 +161,14 @@ class GTSAM_EXPORT Null : public Base {
   static shared_ptr Create();
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
+#endif
 };
 
 /** Implementation of the "Fair" robust error model (Zhang97ivc)
@@ -179,7 +184,7 @@ class GTSAM_EXPORT Fair : public Base {
   double c_;
 
  public:
-  typedef boost::shared_ptr<Fair> shared_ptr;
+  typedef std::shared_ptr<Fair> shared_ptr;
 
   Fair(double c = 1.3998, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -190,6 +195,7 @@ class GTSAM_EXPORT Fair : public Base {
   double modelParameter() const { return c_; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -197,6 +203,7 @@ class GTSAM_EXPORT Fair : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
   }
+#endif
 };
 
 /** The "Huber" robust error model (Zhang97ivc).
@@ -212,7 +219,7 @@ class GTSAM_EXPORT Huber : public Base {
   double k_;
 
  public:
-  typedef boost::shared_ptr<Huber> shared_ptr;
+  typedef std::shared_ptr<Huber> shared_ptr;
 
   Huber(double k = 1.345, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -223,6 +230,7 @@ class GTSAM_EXPORT Huber : public Base {
   double modelParameter() const { return k_; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -230,6 +238,7 @@ class GTSAM_EXPORT Huber : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(k_);
   }
+#endif
 };
 
 /** Implementation of the "Cauchy" robust error model (Lee2013IROS).
@@ -250,7 +259,7 @@ class GTSAM_EXPORT Cauchy : public Base {
   double k_, ksquared_;
 
  public:
-  typedef boost::shared_ptr<Cauchy> shared_ptr;
+  typedef std::shared_ptr<Cauchy> shared_ptr;
 
   Cauchy(double k = 0.1, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -261,6 +270,7 @@ class GTSAM_EXPORT Cauchy : public Base {
   double modelParameter() const { return k_; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -269,22 +279,23 @@ class GTSAM_EXPORT Cauchy : public Base {
     ar &BOOST_SERIALIZATION_NVP(k_);
     ar &BOOST_SERIALIZATION_NVP(ksquared_);
   }
+#endif
 };
 
 /** Implementation of the "Tukey" robust error model (Zhang97ivc).
  *
  *  This model has a scalar parameter "c".
  *
- * - Loss       \rho(x) = c² (1 - (1-x²/c²)³)/6  if |x|<c,  c²/6   otherwise
- * - Derivative \phi(x) = x(1-x²/c²)² if |x|<c,  0   otherwise
- * - Weight     w(x) = \phi(x)/x = (1-x²/c²)² if |x|<c,  0   otherwise
+ * - Loss       \f$ \rho(x) = c² (1 - (1-x²/c²)³)/6 \f$  if |x|<c,  c²/6   otherwise
+ * - Derivative \f$ \phi(x) = x(1-x²/c²)² if |x|<c \f$,  0   otherwise
+ * - Weight     \f$ w(x) = \phi(x)/x = (1-x²/c²)² \f$ if |x|<c,  0   otherwise
  */
 class GTSAM_EXPORT Tukey : public Base {
  protected:
   double c_, csquared_;
 
  public:
-  typedef boost::shared_ptr<Tukey> shared_ptr;
+  typedef std::shared_ptr<Tukey> shared_ptr;
 
   Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -295,6 +306,7 @@ class GTSAM_EXPORT Tukey : public Base {
   double modelParameter() const { return c_; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -302,22 +314,23 @@ class GTSAM_EXPORT Tukey : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
   }
+#endif
 };
 
 /** Implementation of the "Welsch" robust error model (Zhang97ivc).
  *
  *  This model has a scalar parameter "c".
  *
- * - Loss       \rho(x) = -0.5 c² (exp(-x²/c²) - 1)
- * - Derivative \phi(x) = x exp(-x²/c²)
- * - Weight     w(x) = \phi(x)/x = exp(-x²/c²)
+ * - Loss       \f$ \rho(x) = -0.5 c² (exp(-x²/c²) - 1) \f$
+ * - Derivative \f$ \phi(x) = x exp(-x²/c²) \f$
+ * - Weight     \f$ w(x) = \phi(x)/x = exp(-x²/c²) \f$
  */
 class GTSAM_EXPORT Welsch : public Base {
  protected:
   double c_, csquared_;
 
  public:
-  typedef boost::shared_ptr<Welsch> shared_ptr;
+  typedef std::shared_ptr<Welsch> shared_ptr;
 
   Welsch(double c = 2.9846, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -328,6 +341,7 @@ class GTSAM_EXPORT Welsch : public Base {
   double modelParameter() const { return c_; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -336,6 +350,7 @@ class GTSAM_EXPORT Welsch : public Base {
     ar &BOOST_SERIALIZATION_NVP(c_);
     ar &BOOST_SERIALIZATION_NVP(csquared_);
   }
+#endif
 };
 
 /** Implementation of the "Geman-McClure" robust error model (Zhang97ivc).
@@ -350,7 +365,7 @@ class GTSAM_EXPORT Welsch : public Base {
  */
 class GTSAM_EXPORT GemanMcClure : public Base {
  public:
-  typedef boost::shared_ptr<GemanMcClure> shared_ptr;
+  typedef std::shared_ptr<GemanMcClure> shared_ptr;
 
   GemanMcClure(double c = 1.0, const ReweightScheme reweight = Block);
   ~GemanMcClure() override {}
@@ -365,6 +380,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
   double c_;
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -372,6 +388,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
   }
+#endif
 };
 
 /** DCS implements the Dynamic Covariance Scaling robust error model
@@ -388,7 +405,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
  */
 class GTSAM_EXPORT DCS : public Base {
  public:
-  typedef boost::shared_ptr<DCS> shared_ptr;
+  typedef std::shared_ptr<DCS> shared_ptr;
 
   DCS(double c = 1.0, const ReweightScheme reweight = Block);
   ~DCS() override {}
@@ -403,6 +420,7 @@ class GTSAM_EXPORT DCS : public Base {
   double c_;
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -410,6 +428,7 @@ class GTSAM_EXPORT DCS : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
   }
+#endif
 };
 
 /** L2WithDeadZone implements a standard L2 penalty, but with a dead zone of
@@ -421,16 +440,16 @@ class GTSAM_EXPORT DCS : public Base {
  *
  *  This model has a scalar parameter "k".
  *
- * - Loss       \rho(x) = 0 if |x|<k,    0.5(k-|x|)² otherwise
- * - Derivative \phi(x) = 0 if |x|<k, (-k+x) if x>k,  (k+x) if x<-k
- * - Weight     w(x) = \phi(x)/x = 0 if |x|<k, (-k+x)/x if x>k,  (k+x)/x if x<-k
+ * - Loss       \f$ \rho(x) = 0 \f$ if |x|<k,    0.5(k-|x|)² otherwise
+ * - Derivative \f$ \phi(x) = 0 \f$ if |x|<k, (-k+x) if x>k,  (k+x) if x<-k
+ * - Weight     \f$ w(x) = \phi(x)/x = 0 \f$ if |x|<k, (-k+x)/x if x>k,  (k+x)/x if x<-k
  */
 class GTSAM_EXPORT L2WithDeadZone : public Base {
  protected:
   double k_;
 
  public:
-  typedef boost::shared_ptr<L2WithDeadZone> shared_ptr;
+  typedef std::shared_ptr<L2WithDeadZone> shared_ptr;
 
   L2WithDeadZone(double k = 1.0, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -441,6 +460,7 @@ class GTSAM_EXPORT L2WithDeadZone : public Base {
   double modelParameter() const { return k_; }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -448,6 +468,124 @@ class GTSAM_EXPORT L2WithDeadZone : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(k_);
   }
+#endif
+};
+
+/** Implementation of the "AsymmetricTukey" robust error model.
+ *
+ *  This model has a scalar parameter "c".
+ *
+ * - Following are all for one side, the other is standard L2
+ * - Loss       \rho(x) = c² (1 - (1-x²/c²)³)/6  if |x|<c,  c²/6   otherwise
+ * - Derivative \phi(x) = x(1-x²/c²)² if |x|<c,  0   otherwise
+ * - Weight     w(x) = \phi(x)/x = (1-x²/c²)² if |x|<c,  0   otherwise
+ */
+class GTSAM_EXPORT AsymmetricTukey : public Base {
+ protected:
+  double c_, csquared_;
+
+ public:
+  typedef std::shared_ptr<AsymmetricTukey> shared_ptr;
+
+  AsymmetricTukey(double c = 4.6851, const ReweightScheme reweight = Block);
+  double weight(double distance) const override;
+  double loss(double distance) const override;
+  void print(const std::string &s) const override;
+  bool equals(const Base &expected, double tol = 1e-8) const override;
+  static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+  double modelParameter() const { return c_; }
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(c_);
+  }
+#endif
+};
+
+/** Implementation of the "AsymmetricCauchy" robust error model.
+ *
+ *  This model has a scalar parameter "k".
+ *
+ * - Following are all for one side, the other is standard L2
+ * - Loss       \rho(x) = 0.5 k² log(1+x²/k²)
+ * - Derivative \phi(x) = (k²x)/(x²+k²)
+ * - Weight     w(x) = \phi(x)/x = k²/(x²+k²)
+ */
+class GTSAM_EXPORT AsymmetricCauchy : public Base {
+ protected:
+  double k_, ksquared_;
+
+ public:
+  typedef std::shared_ptr<AsymmetricCauchy> shared_ptr;
+
+  AsymmetricCauchy(double k = 0.1, const ReweightScheme reweight = Block);
+  double weight(double distance) const override;
+  double loss(double distance) const override;
+  void print(const std::string &s) const override;
+  bool equals(const Base &expected, double tol = 1e-8) const override;
+  static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+  double modelParameter() const { return k_; }
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(k_);
+    ar &BOOST_SERIALIZATION_NVP(ksquared_);
+  }
+#endif
+};
+
+// Type alias for the custom loss and weight functions
+using CustomLossFunction = std::function<double(double)>;
+using CustomWeightFunction = std::function<double(double)>;
+
+/** Implementation of the "Custom" robust error model.
+ *
+ *  This model just takes two functions as input, one for the loss and one for the weight.
+ */
+class GTSAM_EXPORT Custom : public Base {
+ protected:
+  std::function<double(double)> weight_, loss_;
+  std::string name_;
+
+ public:
+  typedef std::shared_ptr<Custom> shared_ptr;
+
+  Custom(CustomWeightFunction weight, CustomLossFunction loss,
+         const ReweightScheme reweight = Block, std::string name = "Custom");
+  double weight(double distance) const override;
+  double loss(double distance) const override;
+  void print(const std::string &s) const override;
+  bool equals(const Base &expected, double tol = 1e-8) const override;
+  static shared_ptr Create(std::function<double(double)> weight, std::function<double(double)> loss,
+                           const ReweightScheme reweight = Block, const std::string &name = "Custom");
+  inline std::string& name() { return name_; }
+
+  inline std::function<double(double)>& weightFunction() { return weight_; }
+  inline std::function<double(double)>& lossFunction() { return loss_; }
+
+  // Default constructor for serialization
+  inline Custom() = default;
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(name_);
+  }
+#endif
 };
 
 }  // namespace mEstimator

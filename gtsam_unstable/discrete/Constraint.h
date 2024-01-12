@@ -21,8 +21,6 @@
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam_unstable/dllexport.h>
 
-#include <boost/assign.hpp>
-#include <boost/format.hpp>
 #include <map>
 
 namespace gtsam {
@@ -36,15 +34,14 @@ using Domains = std::map<Key, Domain>;
  */
 class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
  public:
-  typedef boost::shared_ptr<Constraint> shared_ptr;
+  typedef std::shared_ptr<Constraint> shared_ptr;
 
  protected:
   /// Construct unary constraint factor.
-  Constraint(Key j) : DiscreteFactor(boost::assign::cref_list_of<1>(j)) {}
+  Constraint(Key j) : DiscreteFactor(KeyVector{j}) {}
 
   /// Construct binary constraint factor.
-  Constraint(Key j1, Key j2)
-      : DiscreteFactor(boost::assign::cref_list_of<2>(j1)(j2)) {}
+  Constraint(Key j1, Key j2) : DiscreteFactor(KeyVector{j1, j2}) {}
 
   /// Construct n-way constraint factor.
   Constraint(const KeyVector& js) : DiscreteFactor(js) {}
@@ -88,13 +85,13 @@ class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
   /// Render as markdown table.
   std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                        const Names& names = {}) const override {
-    return (boost::format("`Constraint` on %1% variables\n") % (size())).str();
+    return "`Constraint` on " + std::to_string(size()) + " variables\n";
   }
 
   /// Render as html table.
   std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                    const Names& names = {}) const override {
-    return (boost::format("<p>Constraint on %1% variables</p>") % (size())).str();
+    return "<p>Constraint on " + std::to_string(size()) + " variables</p>";
   }
 
   /// @}

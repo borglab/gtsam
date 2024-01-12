@@ -20,6 +20,7 @@
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/KarcherMeanFactor.h>
+#include <optional>
 
 using namespace std;
 
@@ -58,7 +59,7 @@ T FindKarcherMean(std::initializer_list<T>&& rotations) {
 template <class T>
 template <typename CONTAINER>
 KarcherMeanFactor<T>::KarcherMeanFactor(const CONTAINER &keys, int d,
-                                        boost::optional<double> beta)
+                                        std::optional<double> beta)
     : NonlinearFactor(keys), d_(static_cast<size_t>(d)) {
   if (d <= 0) {
     throw std::invalid_argument(
@@ -73,6 +74,6 @@ KarcherMeanFactor<T>::KarcherMeanFactor(const CONTAINER &keys, int d,
     terms[j] = A;
   }
   whitenedJacobian_ =
-      boost::make_shared<JacobianFactor>(terms, Vector::Zero(d));
+      std::make_shared<JacobianFactor>(terms, Vector::Zero(d));
 }
 }  // namespace gtsam

@@ -74,16 +74,17 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
   bool operator==(const Similarity2& other) const;
 
   /// Print with optional string
-  void print(const std::string& s) const;
+  void print(const std::string& s = "") const;
 
-  friend std::ostream& operator<<(std::ostream& os, const Similarity2& p);
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                               const Similarity2& p);
 
   /// @}
   /// @name Group
   /// @{
 
   /// Return an identity transform
-  static Similarity2 identity();
+  static Similarity2 Identity();
 
   /// Composition
   Similarity2 operator*(const Similarity2& S) const;
@@ -132,7 +133,7 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
    * using the algorithm described here:
    * http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
    */
-  static Similarity2 Align(const std::vector<Pose2Pair>& abPosePairs);
+  static Similarity2 Align(const Pose2Pairs& abPosePairs);
 
   /// @}
   /// @name Lie Group
@@ -143,20 +144,20 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
    * \f$ [t_x, t_y, \delta, \lambda] \f$
    */
   static Vector4 Logmap(const Similarity2& S,  //
-                        OptionalJacobian<4, 4> Hm = boost::none);
+                        OptionalJacobian<4, 4> Hm = {});
 
   /// Exponential map at the identity
   static Similarity2 Expmap(const Vector4& v,  //
-                            OptionalJacobian<4, 4> Hm = boost::none);
+                            OptionalJacobian<4, 4> Hm = {});
 
   /// Chart at the origin
   struct ChartAtOrigin {
     static Similarity2 Retract(const Vector4& v,
-                               ChartJacobian H = boost::none) {
+                               ChartJacobian H = {}) {
       return Similarity2::Expmap(v, H);
     }
     static Vector4 Local(const Similarity2& other,
-                         ChartJacobian H = boost::none) {
+                         ChartJacobian H = {}) {
       return Similarity2::Logmap(other, H);
     }
   };

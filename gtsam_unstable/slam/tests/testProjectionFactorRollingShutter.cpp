@@ -230,30 +230,15 @@ TEST(ProjectionFactorRollingShutter, Jacobian) {
   Matrix H1Actual, H2Actual, H3Actual;
   factor.evaluateError(pose1, pose2, point, H1Actual, H2Actual, H3Actual);
 
+  auto f = [&factor](const Pose3& p1, const Pose3& p2, const Point3& p3) {
+	  return factor.evaluateError(p1, p2, p3); 
+  };
   // Expected Jacobians via numerical derivatives
-  Matrix H1Expected = numericalDerivative31<Vector, Pose3, Pose3, Point3>(
-      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
-                    std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, boost::none, boost::none,
-                    boost::none)),
-      pose1, pose2, point);
+  Matrix H1Expected = numericalDerivative31<Vector, Pose3, Pose3, Point3>(f, pose1, pose2, point);
 
-  Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
-      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
-                    std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, boost::none, boost::none,
-                    boost::none)),
-      pose1, pose2, point);
+  Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(f, pose1, pose2, point);
 
-  Matrix H3Expected = numericalDerivative33<Vector, Pose3, Pose3, Point3>(
-      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
-                    std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, boost::none, boost::none,
-                    boost::none)),
-      pose1, pose2, point);
+  Matrix H3Expected = numericalDerivative33<Vector, Pose3, Pose3, Point3>(f, pose1, pose2, point);
 
   CHECK(assert_equal(H1Expected, H1Actual, 1e-5));
   CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
@@ -280,30 +265,15 @@ TEST(ProjectionFactorRollingShutter, JacobianWithTransform) {
   Matrix H1Actual, H2Actual, H3Actual;
   factor.evaluateError(pose1, pose2, point, H1Actual, H2Actual, H3Actual);
 
+  auto f = [&factor](const Pose3& p1, const Pose3& p2, const Point3& p3) {
+	  return factor.evaluateError(p1, p2, p3); 
+  };
   // Expected Jacobians via numerical derivatives
-  Matrix H1Expected = numericalDerivative31<Vector, Pose3, Pose3, Point3>(
-      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
-                    std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, boost::none, boost::none,
-                    boost::none)),
-      pose1, pose2, point);
+  Matrix H1Expected = numericalDerivative31<Vector, Pose3, Pose3, Point3>(f, pose1, pose2, point);
 
-  Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
-      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
-                    std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, boost::none, boost::none,
-                    boost::none)),
-      pose1, pose2, point);
+  Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(f, pose1, pose2, point);
 
-  Matrix H3Expected = numericalDerivative33<Vector, Pose3, Pose3, Point3>(
-      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
-                    std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, boost::none, boost::none,
-                    boost::none)),
-      pose1, pose2, point);
+  Matrix H3Expected = numericalDerivative33<Vector, Pose3, Pose3, Point3>(f, pose1, pose2, point);
 
   CHECK(assert_equal(H1Expected, H1Actual, 1e-5));
   CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
@@ -372,24 +342,24 @@ TEST(ProjectionFactorRollingShutter, cheirality) {
         std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
             std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
                       std::placeholders::_1, std::placeholders::_2,
-                      std::placeholders::_3, boost::none, boost::none,
-                      boost::none)),
+                      std::placeholders::_3, {}, {},
+                      {})),
         pose1, pose2, point);
 
     Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
         std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
             std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
                       std::placeholders::_1, std::placeholders::_2,
-                      std::placeholders::_3, boost::none, boost::none,
-                      boost::none)),
+                      std::placeholders::_3, {}, {},
+                      {})),
         pose1, pose2, point);
 
     Matrix H3Expected = numericalDerivative33<Vector, Pose3, Pose3, Point3>(
         std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
             std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
                       std::placeholders::_1, std::placeholders::_2,
-                      std::placeholders::_3, boost::none, boost::none,
-                      boost::none)),
+                      std::placeholders::_3, {}, {},
+                      {})),
         pose1, pose2, point);
 
     CHECK(assert_equal(H1Expected, H1Actual, 1e-5));

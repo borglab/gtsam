@@ -45,16 +45,18 @@ class HybridEliminationTree;
  * EliminationTree, except that in the JunctionTree, at each node multiple
  * variables are eliminated at a time.
  *
- * \addtogroup Multifrontal
+ * \ingroup Multifrontal
+ * \ingroup hybrid
  * \nosubgrouping
  */
 class GTSAM_EXPORT HybridJunctionTree
     : public JunctionTree<HybridBayesTree, HybridGaussianFactorGraph> {
+
  public:
   typedef JunctionTree<HybridBayesTree, HybridGaussianFactorGraph>
       Base;                                    ///< Base class
-  typedef HybridJunctionTree This;     ///< This class
-  typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer to this class
+  typedef HybridJunctionTree This;             ///< This class
+  typedef std::shared_ptr<This> shared_ptr;  ///< Shared pointer to this class
 
   /**
    * Build the elimination tree of a factor graph using precomputed column

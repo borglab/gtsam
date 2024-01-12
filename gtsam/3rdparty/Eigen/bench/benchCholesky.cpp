@@ -1,5 +1,4 @@
-
-// g++ -DNDEBUG -O3 -I.. benchLLT.cpp  -o benchLLT && ./benchLLT
+// g++ -DNDEBUG -O3 -I.. benchCholesky.cpp  -o benchCholesky && ./benchCholesky
 // options:
 //  -DBENCH_GSL -lgsl /usr/lib/libcblas.so.3
 //  -DEIGEN_DONT_VECTORIZE

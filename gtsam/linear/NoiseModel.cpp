@@ -19,9 +19,6 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/format.hpp>
-#include <boost/make_shared.hpp>
-
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -47,8 +44,9 @@ void updateAb(MATRIX& Ab, int j, const Vector& a, const Vector& rd) {
 
 /* ************************************************************************* */
 // check *above the diagonal* for non-zero entries
-boost::optional<Vector> checkIfDiagonal(const Matrix M) {
+std::optional<Vector> checkIfDiagonal(const Matrix& M) {
   size_t m = M.rows(), n = M.cols();
+  assert(m > 0);
   // check all non-diagonal entries
   bool full = false;
   size_t i, j;
@@ -60,12 +58,12 @@ boost::optional<Vector> checkIfDiagonal(const Matrix M) {
           break;
         }
   if (full) {
-    return boost::none;
+    return {};
   } else {
     Vector diagonal(n);
     for (j = 0; j < n; j++)
       diagonal(j) = M(j, j);
-    return diagonal;
+    return std::move(diagonal);
   }
 }
 
@@ -87,12 +85,12 @@ Gaussian::shared_ptr Gaussian::SqrtInformation(const Matrix& R, bool smart) {
   if (m != n)
     throw invalid_argument("Gaussian::SqrtInformation: R not square");
   if (smart) {
-    boost::optional<Vector> diagonal = checkIfDiagonal(R);
+    std::optional<Vector> diagonal = checkIfDiagonal(R);
     if (diagonal)
       return Diagonal::Sigmas(diagonal->array().inverse(), true);
   }
   // NOTE(frank): only reaches here if !(smart && diagonal)
-  return shared_ptr(new Gaussian(R.rows(), R));
+  return std::make_shared<Gaussian>(R.rows(), R);
 }
 
 /* ************************************************************************* */
@@ -100,7 +98,7 @@ Gaussian::shared_ptr Gaussian::Information(const Matrix& information, bool smart
   size_t m = information.rows(), n = information.cols();
   if (m != n)
     throw invalid_argument("Gaussian::Information: R not square");
-  boost::optional<Vector> diagonal = boost::none;
+  std::optional<Vector> diagonal = {};
   if (smart)
     diagonal = checkIfDiagonal(information);
   if (diagonal)
@@ -108,7 +106,7 @@ Gaussian::shared_ptr Gaussian::Information(const Matrix& information, bool smart
   else {
     Eigen::LLT<Matrix> llt(information);
     Matrix R = llt.matrixU();
-    return shared_ptr(new Gaussian(n, R));
+    return std::make_shared<Gaussian>(n, R);
   }
 }
 
@@ -118,7 +116,7 @@ Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance,
   size_t m = covariance.rows(), n = covariance.cols();
   if (m != n)
     throw invalid_argument("Gaussian::Covariance: covariance not square");
-  boost::optional<Vector> variances = boost::none;
+  std::optional<Vector> variances = {};
   if (smart)
     variances = checkIfDiagonal(covariance);
   if (variances)
@@ -238,6 +236,8 @@ void Gaussian::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const
   whitenInPlace(b);
 }
 
+Matrix Gaussian::information() const { return R().transpose() * R(); }
+
 /* ************************************************************************* */
 // Diagonal
 /* ************************************************************************* */
@@ -284,6 +284,11 @@ Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
 }
 
 /* ************************************************************************* */
+Diagonal::shared_ptr Diagonal::Precisions(const Vector& precisions,
+                                          bool smart) {
+  return Variances(precisions.array().inverse(), smart);
+}
+/* ************************************************************************* */
 void Diagonal::print(const string& name) const {
   gtsam::print(sigmas_, name + "diagonal sigmas ");
 }
@@ -293,22 +298,18 @@ Vector Diagonal::whiten(const Vector& v) const {
   return v.cwiseProduct(invsigmas_);
 }
 
-/* ************************************************************************* */
 Vector Diagonal::unwhiten(const Vector& v) const {
   return v.cwiseProduct(sigmas_);
 }
 
-/* ************************************************************************* */
 Matrix Diagonal::Whiten(const Matrix& H) const {
   return vector_scale(invsigmas(), H);
 }
 
-/* ************************************************************************* */
 void Diagonal::WhitenInPlace(Matrix& H) const {
   vector_scale_inplace(invsigmas(), H);
 }
 
-/* ************************************************************************* */
 void Diagonal::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H = invsigmas().asDiagonal() * H;
 }
@@ -377,6 +378,32 @@ Vector Constrained::whiten(const Vector& v) const {
 }
 
 /* ************************************************************************* */
+Constrained::shared_ptr Constrained::MixedSigmas(const Vector& sigmas) {
+  return MixedSigmas(Vector::Constant(sigmas.size(), 1000.0), sigmas);
+}
+
+Constrained::shared_ptr Constrained::MixedSigmas(double m,
+                                                 const Vector& sigmas) {
+  return MixedSigmas(Vector::Constant(sigmas.size(), m), sigmas);
+}
+
+Constrained::shared_ptr Constrained::MixedVariances(const Vector& mu,
+                                                    const Vector& variances) {
+  return shared_ptr(new Constrained(mu, variances.cwiseSqrt()));
+}
+Constrained::shared_ptr Constrained::MixedVariances(const Vector& variances) {
+  return shared_ptr(new Constrained(variances.cwiseSqrt()));
+}
+
+Constrained::shared_ptr Constrained::MixedPrecisions(const Vector& mu,
+                                                     const Vector& precisions) {
+  return MixedVariances(mu, precisions.array().inverse());
+}
+Constrained::shared_ptr Constrained::MixedPrecisions(const Vector& precisions) {
+  return MixedVariances(precisions.array().inverse());
+}
+
+/* ************************************************************************* */
 double Constrained::squaredMahalanobisDistance(const Vector& v) const {
   Vector w = Diagonal::whiten(v); // get noisemodel for constrained elements
   for (size_t i=0; i<dim_; ++i)  // add mu weights on constrained variables
@@ -425,8 +452,8 @@ Constrained::shared_ptr Constrained::unit() const {
 // Check whether column a triggers a constraint and corresponding variable is deterministic
 // Return constraint_row with maximum element in case variable plays in multiple constraints
 template <typename VECTOR>
-boost::optional<size_t> check_if_constraint(VECTOR a, const Vector& invsigmas, size_t m) {
-  boost::optional<size_t> constraint_row;
+std::optional<size_t> check_if_constraint(VECTOR a, const Vector& invsigmas, size_t m) {
+  std::optional<size_t> constraint_row;
   // not zero, so roundoff errors will not be counted
   // TODO(frank): that's a fairly crude way of dealing with roundoff errors :-(
   double max_element = 1e-9;
@@ -436,7 +463,7 @@ boost::optional<size_t> check_if_constraint(VECTOR a, const Vector& invsigmas, s
     double abs_ai = std::abs(a(i,0));
     if (abs_ai > max_element) {
       max_element = abs_ai;
-      constraint_row.reset(i);
+      constraint_row = i;
     }
   }
   return constraint_row;
@@ -451,7 +478,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   const size_t maxRank = min(m, n);
 
   // create storage for [R d]
-  typedef boost::tuple<size_t, Matrix, double> Triple;
+  typedef std::tuple<size_t, Matrix, double> Triple;
   list<Triple> Rd;
 
   Matrix rd(1, n + 1);  // and for row of R
@@ -467,7 +494,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
     Eigen::Block<Matrix> a = Ab.block(0, j, m, 1);
 
     // Check whether we need to handle as a constraint
-    boost::optional<size_t> constraint_row = check_if_constraint(a, invsigmas, m);
+    std::optional<size_t> constraint_row = check_if_constraint(a, invsigmas, m);
 
     if (constraint_row) {
       // Handle this as a constraint, as the i^th row has zero sigma with non-zero entry A(i,j)
@@ -477,7 +504,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
       rd = Ab.row(*constraint_row);
 
       // Construct solution (r, d, sigma)
-      Rd.push_back(boost::make_tuple(j, rd, kInfinity));
+      Rd.push_back(std::make_tuple(j, rd, kInfinity));
 
       // exit after rank exhausted
       if (Rd.size() >= maxRank)
@@ -523,7 +550,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
         rd.block(0, j + 1, 1, n - j) = pseudo.transpose() * Ab.block(0, j + 1, m, n - j);
 
         // construct solution (r, d, sigma)
-        Rd.push_back(boost::make_tuple(j, rd, precision));
+        Rd.push_back(std::make_tuple(j, rd, precision));
       } else {
         // If precision is zero, no information on this column
         // This is actually not limited to constraints, could happen in Gaussian::QR
@@ -548,9 +575,9 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   bool mixed = false;
   Ab.setZero();  // make sure we don't look below
   for (const Triple& t: Rd) {
-    const size_t& j = t.get<0>();
-    const Matrix& rd = t.get<1>();
-    precisions(i) = t.get<2>();
+    const size_t& j = std::get<0>(t);
+    const Matrix& rd = std::get<1>(t);
+    precisions(i) = std::get<2>(t);
     if (std::isinf(precisions(i)))
       mixed = true;
     Ab.block(i, j, 1, n + 1 - j) = rd.block(0, j, 1, n + 1 - j);
@@ -577,7 +604,7 @@ Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smar
 
 /* ************************************************************************* */
 void Isotropic::print(const string& name) const {
-  cout << boost::format("isotropic dim=%1% sigma=%2%") % dim() % sigma_ << endl;
+  cout << "isotropic dim=" << dim() << " sigma=" << sigma_ << endl;
 }
 
 /* ************************************************************************* */
@@ -623,6 +650,11 @@ void Unit::print(const std::string& name) const {
 }
 
 /* ************************************************************************* */
+double Unit::squaredMahalanobisDistance(const Vector& v) const {
+  return v.dot(v);
+}
+
+/* ************************************************************************* */
 // Robust
 /* ************************************************************************* */
 
@@ -660,6 +692,13 @@ void Robust::WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const {
 void Robust::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const{
   noise_->WhitenSystem(A1,A2,A3,b);
   robust_->reweight(A1,A2,A3,b);
+}
+
+Vector Robust::unweightedWhiten(const Vector& v) const {
+  return noise_->unweightedWhiten(v);
+}
+double Robust::weight(const Vector& v) const {
+  return robust_->weight(v.norm());
 }
 
 Robust::shared_ptr Robust::Create(

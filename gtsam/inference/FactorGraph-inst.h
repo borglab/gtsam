@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   FactorGraph-inl.h
+ * @file   FactorGraph-inst.h
  * @brief  Factor Graph Base Class
  * @author Carlos Nieto
  * @author Frank Dellaert
@@ -59,6 +59,16 @@ bool FactorGraph<FACTOR>::equals(const This& fg, double tol) const {
     if (!f1->equals(*f2, tol)) return false;
   }
   return true;
+}
+
+/* ************************************************************************ */
+template <class FACTOR>
+double FactorGraph<FACTOR>::error(const HybridValues &values) const {
+  double error = 0.0;
+  for (auto &f : factors_) {
+    error += f->error(values);
+  }
+  return error;
 }
 
 /* ************************************************************************* */
@@ -145,7 +155,7 @@ void FactorGraph<FACTOR>::dot(std::ostream& os,
     const auto& factor = at(i);
     if (factor) {
       const KeyVector& factorKeys = factor->keys();
-      writer.processFactor(i, factorKeys, keyFormatter, boost::none, &os);
+      writer.processFactor(i, factorKeys, keyFormatter, {}, &os);
     }
   }
 

@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "gtsam/geometry/Point3.h"
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Cal3Unified.h>
@@ -32,6 +33,8 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/TriangulationFactor.h>
+
+#include <optional>
 
 namespace gtsam {
 
@@ -107,7 +110,8 @@ GTSAM_EXPORT Point3 triangulateDLT(
  */
 GTSAM_EXPORT Point3 triangulateLOST(const std::vector<Pose3>& poses,
                                     const Point3Vector& calibratedMeasurements,
-                                    const SharedIsotropic& measurementNoise);
+                                    const SharedIsotropic& measurementNoise,
+                                    double rank_tol = 1e-9);
 
 /**
  * Create a factor graph with projection factors from poses and one calibration
@@ -120,7 +124,7 @@ GTSAM_EXPORT Point3 triangulateLOST(const std::vector<Pose3>& poses,
  */
 template<class CALIBRATION>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
-    const std::vector<Pose3>& poses, boost::shared_ptr<CALIBRATION> sharedCal,
+    const std::vector<Pose3>& poses, std::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, Key landmarkKey,
     const Point3& initialEstimate,
     const SharedNoiseModel& model = noiseModel::Unit::Create(2)) {
@@ -134,7 +138,7 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     graph.emplace_shared<TriangulationFactor<Camera> > //
         (camera_i, measurements[i], model, landmarkKey);
   }
-  return std::make_pair(graph, values);
+  return {graph, values};
 }
 
 /**
@@ -162,7 +166,7 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     graph.emplace_shared<TriangulationFactor<CAMERA> > //
         (camera_i, measurements[i], model? model : unit, landmarkKey);
   }
-  return std::make_pair(graph, values);
+  return {graph, values};
 }
 
 /**
@@ -185,14 +189,12 @@ GTSAM_EXPORT Point3 optimize(const NonlinearFactorGraph& graph,
  */
 template<class CALIBRATION>
 Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
-    boost::shared_ptr<CALIBRATION> sharedCal,
+    std::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, const Point3& initialEstimate,
     const SharedNoiseModel& model = nullptr) {
 
   // Create a factor graph and initial values
-  Values values;
-  NonlinearFactorGraph graph;
-  boost::tie(graph, values) = triangulationGraph<CALIBRATION> //
+  const auto [graph, values] = triangulationGraph<CALIBRATION> //
       (poses, sharedCal, measurements, Symbol('p', 0), initialEstimate, model);
 
   return optimize(graph, values, Symbol('p', 0));
@@ -212,9 +214,7 @@ Point3 triangulateNonlinear(
     const SharedNoiseModel& model = nullptr) {
 
   // Create a factor graph and initial values
-  Values values;
-  NonlinearFactorGraph graph;
-  boost::tie(graph, values) = triangulationGraph<CAMERA> //
+  const auto [graph, values] = triangulationGraph<CAMERA> //
       (cameras, measurements, Symbol('p', 0), initialEstimate, model);
 
   return optimize(graph, values, Symbol('p', 0));
@@ -233,7 +233,7 @@ projectionMatricesFromCameras(const CameraSet<CAMERA> &cameras) {
 // overload, assuming pinholePose
 template<class CALIBRATION>
 std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projectionMatricesFromPoses(
-        const std::vector<Pose3> &poses, boost::shared_ptr<CALIBRATION> sharedCal) {
+        const std::vector<Pose3> &poses, std::shared_ptr<CALIBRATION> sharedCal) {
   std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
   for (size_t i = 0; i < poses.size(); i++) {
     PinholePose<CALIBRATION> camera(poses.at(i), sharedCal);
@@ -260,7 +260,7 @@ Cal3_S2 createPinholeCalibration(const CALIBRATION& cal) {
 template <class CALIBRATION, class MEASUREMENT>
 MEASUREMENT undistortMeasurementInternal(
     const CALIBRATION& cal, const MEASUREMENT& measurement,
-    boost::optional<Cal3_S2> pinholeCal = boost::none) {
+    std::optional<Cal3_S2> pinholeCal = {}) {
   if (!pinholeCal) {
     pinholeCal = createPinholeCalibration(cal);
   }
@@ -419,7 +419,7 @@ inline Point3Vector calibrateMeasurements(
  */
 template <class CALIBRATION>
 Point3 triangulatePoint3(const std::vector<Pose3>& poses,
-                         boost::shared_ptr<CALIBRATION> sharedCal,
+                         std::shared_ptr<CALIBRATION> sharedCal,
                          const Point2Vector& measurements,
                          double rank_tol = 1e-9, bool optimize = false,
                          const SharedNoiseModel& model = nullptr,
@@ -440,7 +440,8 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     auto calibratedMeasurements =
         calibrateMeasurementsShared<CALIBRATION>(*sharedCal, measurements);
 
-    point = triangulateLOST(poses, calibratedMeasurements, measurementNoise);
+    point = triangulateLOST(poses, calibratedMeasurements, measurementNoise, 
+                            rank_tol);
   } else {
     // construct projection matrices from poses & calibration
     auto projection_matrices = projectionMatricesFromPoses(poses, sharedCal);
@@ -513,7 +514,8 @@ Point3 triangulatePoint3(const CameraSet<CAMERA>& cameras,
     auto calibratedMeasurements =
         calibrateMeasurements<CAMERA>(cameras, measurements);
 
-    point = triangulateLOST(poses, calibratedMeasurements, measurementNoise);
+    point = triangulateLOST(poses, calibratedMeasurements, measurementNoise, 
+                            rank_tol);
   } else {
     // construct projection matrices from poses & calibration
     auto projection_matrices = projectionMatricesFromCameras(cameras);
@@ -572,6 +574,11 @@ struct GTSAM_EXPORT TriangulationParameters {
    */
   double dynamicOutlierRejectionThreshold;
 
+  /**
+   * if true, will use the LOST algorithm instead of DLT
+   */
+  bool useLOST;
+
   SharedNoiseModel noiseModel; ///< used in the nonlinear triangulation
 
   /**
@@ -586,10 +593,12 @@ struct GTSAM_EXPORT TriangulationParameters {
   TriangulationParameters(const double _rankTolerance = 1.0,
       const bool _enableEPI = false, double _landmarkDistanceThreshold = -1,
       double _dynamicOutlierRejectionThreshold = -1,
+      const bool _useLOST = false,
       const SharedNoiseModel& _noiseModel = nullptr) :
       rankTolerance(_rankTolerance), enableEPI(_enableEPI), //
       landmarkDistanceThreshold(_landmarkDistanceThreshold), //
       dynamicOutlierRejectionThreshold(_dynamicOutlierRejectionThreshold),
+      useLOST(_useLOST),
       noiseModel(_noiseModel){
   }
 
@@ -602,12 +611,14 @@ struct GTSAM_EXPORT TriangulationParameters {
         << std::endl;
     os << "dynamicOutlierRejectionThreshold = "
         << p.dynamicOutlierRejectionThreshold << std::endl;
+    os << "useLOST = " << p.useLOST << std::endl;
     os << "noise model" << std::endl;
     return os;
   }
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -617,13 +628,14 @@ private:
     ar & BOOST_SERIALIZATION_NVP(landmarkDistanceThreshold);
     ar & BOOST_SERIALIZATION_NVP(dynamicOutlierRejectionThreshold);
   }
+#endif
 };
 
 /**
  * TriangulationResult is an optional point, along with the reasons why it is
  * invalid.
  */
-class TriangulationResult : public boost::optional<Point3> {
+class TriangulationResult : public std::optional<Point3> {
  public:
   enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
   Status status;
@@ -640,7 +652,7 @@ class TriangulationResult : public boost::optional<Point3> {
   /**
    * Constructor
    */
-  TriangulationResult(const Point3& p) : status(VALID) { reset(p); }
+  TriangulationResult(const Point3& p) : status(VALID) { emplace(p); }
   static TriangulationResult Degenerate() {
     return TriangulationResult(DEGENERATE);
   }
@@ -656,9 +668,13 @@ class TriangulationResult : public boost::optional<Point3> {
   bool outlier() const { return status == OUTLIER; }
   bool farPoint() const { return status == FAR_POINT; }
   bool behindCamera() const { return status == BEHIND_CAMERA; }
+  const gtsam::Point3& get() const {
+    if (!has_value()) throw std::runtime_error("TriangulationResult has no value");
+    return value();
+  }
   // stream to output
-  friend std::ostream& operator<<(std::ostream& os,
-                                  const TriangulationResult& result) {
+  GTSAM_EXPORT friend std::ostream& operator<<(
+      std::ostream& os, const TriangulationResult& result) {
     if (result)
       os << "point = " << *result << std::endl;
     else
@@ -667,12 +683,14 @@ class TriangulationResult : public boost::optional<Point3> {
   }
 
  private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int version) {
     ar& BOOST_SERIALIZATION_NVP(status);
   }
+#endif
 };
 
 /// triangulateSafe: extensive checking of the outcome
@@ -691,7 +709,7 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
     try {
       Point3 point =
           triangulatePoint3<CAMERA>(cameras, measured, params.rankTolerance,
-                                    params.enableEPI, params.noiseModel);
+                                    params.enableEPI, params.noiseModel, params.useLOST);
 
       // Check landmark distance and re-projection errors to avoid outliers
       size_t i = 0;
@@ -743,4 +761,3 @@ using CameraSetCal3Fisheye = CameraSet<PinholeCamera<Cal3Fisheye>>;
 using CameraSetCal3Unified = CameraSet<PinholeCamera<Cal3Unified>>;
 using CameraSetSpherical = CameraSet<SphericalCamera>;
 } // \namespace gtsam
-

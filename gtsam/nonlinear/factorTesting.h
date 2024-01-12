@@ -83,7 +83,7 @@ inline bool testFactorJacobians(const std::string& name_,
 
   // Create actual value by linearize
   auto actual =
-      boost::dynamic_pointer_cast<JacobianFactor>(factor.linearize(values));
+      std::dynamic_pointer_cast<JacobianFactor>(factor.linearize(values));
   if (!actual) return false;
 
   // Check cast result and then equality

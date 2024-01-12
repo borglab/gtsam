@@ -32,10 +32,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/list.hpp>
-#include <boost/assign/std/set.hpp>
-using namespace boost::assign;
-
 /*STL/C++*/
 #include <iostream>
 
@@ -82,13 +78,13 @@ TEST( NonlinearFactorGraph, keys )
 /* ************************************************************************* */
 TEST( NonlinearFactorGraph, GET_ORDERING)
 {
-  Ordering expected; expected += L(1), X(2), X(1); // For starting with l1,x1,x2
+  const Ordering expected{L(1), X(2), X(1)};  // For starting with l1,x1,x2
   NonlinearFactorGraph nlfg = createNonlinearFactorGraph();
   Ordering actual = Ordering::Colamd(nlfg);
   EXPECT(assert_equal(expected,actual));
 
   // Constrained ordering - put x2 at the end
-  Ordering expectedConstrained; expectedConstrained += L(1), X(1), X(2);
+  const Ordering expectedConstrained{L(1), X(1), X(2)};
   FastMap<Key, int> constraints;
   constraints[X(2)] = 1;
   Ordering actualConstrained = Ordering::ColamdConstrained(nlfg, constraints);
@@ -166,8 +162,8 @@ TEST( NonlinearFactorGraph, rekey )
   // updated measurements
   Point2 z3(0, -1),  z4(-1.5, -1.);
   SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
-  expRekey += simulated2D::Measurement(z3, sigma0_2, X(1), L(4));
-  expRekey += simulated2D::Measurement(z4, sigma0_2, X(2), L(4));
+  expRekey.emplace_shared<simulated2D::Measurement>(z3, sigma0_2, X(1), L(4));
+  expRekey.emplace_shared<simulated2D::Measurement>(z4, sigma0_2, X(2), L(4));
 
   EXPECT(assert_equal(expRekey, actRekey));
 }
@@ -202,8 +198,7 @@ TEST(NonlinearFactorGraph, UpdateCholesky) {
   EXPECT(assert_equal(expected, fg.updateCholesky(initial)));
 
   // solve with Ordering
-  Ordering ordering;
-  ordering += L(1), X(2), X(1);
+  const Ordering ordering{L(1), X(2), X(1)};
   EXPECT(assert_equal(expected, fg.updateCholesky(initial, ordering)));
 
   // solve with new method, heavily damped
@@ -255,8 +250,7 @@ TEST(testNonlinearFactorGraph, eliminate) {
   auto linearized = graph.linearize(values);
 
   // Eliminate
-  Ordering ordering;
-  ordering += 11, 21, 12, 22;
+  const Ordering ordering{11, 21, 12, 22};
   auto bn = linearized->eliminateSequential(ordering);
   EXPECT_LONGS_EQUAL(4, bn->size());
 }

@@ -147,6 +147,7 @@ mark_as_advanced(BLAS_VERBOSE)
 
 include(CheckFunctionExists)
 include(CheckFortranFunctionExists)
+include(CMakeFindDependencyMacro)
 
 set(_blas_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
@@ -270,8 +271,8 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
       endif ()
       set(${LIBRARIES} ${${LIBRARIES}} ${${_prefix}_${_library}_LIBRARY})
       set(_libraries_work ${${_prefix}_${_library}_LIBRARY})
-    endif(_libraries_work)
-  endforeach(_library ${_list})
+    endif()
+  endforeach()
 
   if(_libraries_work)
     # Test this combination of libraries.
@@ -310,11 +311,11 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
 
   if(_libraries_work)
     set(${LIBRARIES} ${${LIBRARIES}} ${_thread})
-  else(_libraries_work)
+  else()
     set(${LIBRARIES} FALSE)
-  endif(_libraries_work)
+  endif()
 
-endmacro(Check_Fortran_Libraries)
+endmacro()
 
 
 set(BLAS_LINKER_FLAGS)
@@ -438,7 +439,7 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
       if (OMP_gomp_LIBRARY)
 	set(OMP_LIB "${OMP_gomp_LIBRARY}")
       endif()
-    else(CMAKE_C_COMPILER_ID STREQUAL "Intel")
+    else()
       if (OMP_iomp5_LIBRARY)
 	set(OMP_LIB "${OMP_iomp5_LIBRARY}")
       endif()
@@ -509,9 +510,9 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
 
     if (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
       if(BLAS_FIND_QUIETLY OR NOT BLAS_FIND_REQUIRED)
-	find_package(Threads)
+	find_dependency(Threads)
       else()
-	find_package(Threads REQUIRED)
+	find_dependency(Threads REQUIRED)
       endif()
 
       set(BLAS_SEARCH_LIBS "")
@@ -560,7 +561,7 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
 		"${MAIN} ${THREAD} mkl_core${BLAS_mkl_DLL_SUFFIX}")
 	    endforeach()
 	  endforeach()
-	else (WIN32)
+	else ()
 	  if (BLA_VENDOR STREQUAL "Intel10_32" OR BLA_VENDOR STREQUAL "All")
 	    list(APPEND BLAS_SEARCH_LIBS
 	      "mkl_blas95 mkl_intel mkl_intel_thread mkl_core guide")
@@ -586,9 +587,9 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
 	      set(OMP_LIB "")
 	    endif()
 	  endif ()
-	endif (WIN32)
+	endif ()
 
-      else (BLA_F95)
+      else ()
 
 	set(BLAS_mkl_SEARCH_SYMBOL sgemm)
 	set(_LIBRARIES BLAS_LIBRARIES)
@@ -632,7 +633,7 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
 		"${MAIN} ${THREAD} mkl_core${BLAS_mkl_DLL_SUFFIX}")
 	    endforeach()
 	  endforeach()
-	else (WIN32)
+	else ()
 	  if (BLA_VENDOR STREQUAL "Intel10_32" OR BLA_VENDOR STREQUAL "All")
 	    list(APPEND BLAS_SEARCH_LIBS
 	      "mkl_intel mkl_intel_thread mkl_core guide")
@@ -667,9 +668,9 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
 	    list(APPEND BLAS_SEARCH_LIBS
 	      "mkl_em64t")
 	  endif ()
-	endif (WIN32)
+	endif ()
 
-      endif (BLA_F95)
+      endif ()
 
       foreach (IT ${BLAS_SEARCH_LIBS})
 	string(REPLACE " " ";" SEARCH_LIBS ${IT})
@@ -698,9 +699,9 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
       if (${_LIBRARIES} AND NOT BLAS_VENDOR_FOUND)
           set (BLAS_VENDOR_FOUND "Intel MKL")
       endif()
-    endif (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
-  endif(NOT BLAS_LIBRARIES OR BLA_VENDOR MATCHES "Intel*")
-endif (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
+    endif ()
+  endif()
+endif ()
 
 
 if (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
@@ -727,7 +728,7 @@ if (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
       set (BLAS_VENDOR_FOUND "Goto")
   endif()
 
-endif (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
+endif ()
 
 
 # OpenBlas
@@ -755,7 +756,7 @@ if (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
       set (BLAS_VENDOR_FOUND "Openblas")
   endif()
 
-endif (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
+endif ()
 
 
 # EigenBlas
@@ -802,7 +803,7 @@ if (BLA_VENDOR STREQUAL "Eigen" OR BLA_VENDOR STREQUAL "All")
       set (BLAS_VENDOR_FOUND "Eigen")
   endif()
 
-endif (BLA_VENDOR STREQUAL "Eigen" OR BLA_VENDOR STREQUAL "All")
+endif ()
 
 
 if (BLA_VENDOR STREQUAL "ATLAS" OR BLA_VENDOR STREQUAL "All")
@@ -830,7 +831,7 @@ if (BLA_VENDOR STREQUAL "ATLAS" OR BLA_VENDOR STREQUAL "All")
       set (BLAS_VENDOR_FOUND "Atlas")
   endif()
 
-endif (BLA_VENDOR STREQUAL "ATLAS" OR BLA_VENDOR STREQUAL "All")
+endif ()
 
 
 # BLAS in PhiPACK libraries? (requires generic BLAS lib, too)
@@ -858,7 +859,7 @@ if (BLA_VENDOR STREQUAL "PhiPACK" OR BLA_VENDOR STREQUAL "All")
       set (BLAS_VENDOR_FOUND "PhiPACK")
   endif()
 
-endif (BLA_VENDOR STREQUAL "PhiPACK" OR BLA_VENDOR STREQUAL "All")
+endif ()
 
 
 # BLAS in Alpha CXML library?
@@ -886,7 +887,7 @@ if (BLA_VENDOR STREQUAL "CXML" OR BLA_VENDOR STREQUAL "All")
       set (BLAS_VENDOR_FOUND "CXML")
   endif()
 
-endif (BLA_VENDOR STREQUAL "CXML" OR BLA_VENDOR STREQUAL "All")
+endif ()
 
 
 # BLAS in Alpha DXML library? (now called CXML, see above)
@@ -914,7 +915,7 @@ if (BLA_VENDOR STREQUAL "DXML" OR BLA_VENDOR STREQUAL "All")
       set (BLAS_VENDOR_FOUND "DXML")
   endif()
   
-endif (BLA_VENDOR STREQUAL "DXML" OR BLA_VENDOR STREQUAL "All")
+endif ()
 
 
 # BLAS in Sun Performance library?
@@ -1124,7 +1125,7 @@ if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
 	  "${_ACML_ROOT}/${_ACML_COMPILER64}${_ACML_PATH_SUFFIX}/lib" )
       endif()
 
-    endif(_ACML_ROOT)
+    endif()
 
   elseif(BLAS_${BLA_VENDOR}_LIB_DIRS)
 
@@ -1229,7 +1230,7 @@ if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
       set (BLAS_VENDOR_FOUND "ACML")
   endif()
 
-endif (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All") # ACML
+endif () # ACML
 
 
 # Apple BLAS library?
@@ -1257,7 +1258,7 @@ if (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
       set (BLAS_VENDOR_FOUND "Apple Accelerate")
   endif()
 
-endif (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
+endif ()
 
 
 if (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
@@ -1284,7 +1285,7 @@ if (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
       set (BLAS_VENDOR_FOUND "NAS")
   endif()
 
-endif (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
+endif ()
 
 
 # Generic BLAS library?
@@ -1316,7 +1317,7 @@ if (BLA_VENDOR STREQUAL "Generic" OR BLA_VENDOR STREQUAL "All")
       set (BLAS_VENDOR_FOUND "Netlib or other Generic libblas")
   endif()
 
-endif (BLA_VENDOR STREQUAL "Generic" OR BLA_VENDOR STREQUAL "All")
+endif ()
 
 
 if(BLA_F95)
@@ -1331,7 +1332,7 @@ if(BLA_F95)
     if(BLAS95_FOUND)
       message(STATUS "A library with BLAS95 API found.")
       message(STATUS "BLAS_LIBRARIES ${BLAS_LIBRARIES}")
-    else(BLAS95_FOUND)
+    else()
       message(WARNING "BLA_VENDOR has been set to ${BLA_VENDOR} but blas 95 libraries could not be found or check of symbols failed."
 	"\nPlease indicate where to find blas libraries. You have three options:\n"
 	"- Option 1: Provide the installation directory of BLAS library with cmake option: -DBLAS_DIR=your/path/to/blas\n"
@@ -1349,13 +1350,13 @@ if(BLA_F95)
 	message(STATUS
 	  "A library with BLAS95 API not found. Please specify library location.")
       endif()
-    endif(BLAS95_FOUND)
-  endif(NOT BLAS_FIND_QUIETLY)
+    endif()
+  endif()
 
   set(BLAS_FOUND TRUE)
   set(BLAS_LIBRARIES "${BLAS95_LIBRARIES}")
 
-else(BLA_F95)
+else()
 
   if(BLAS_LIBRARIES)
     set(BLAS_FOUND TRUE)
@@ -1367,7 +1368,7 @@ else(BLA_F95)
     if(BLAS_FOUND)
       message(STATUS "A library with BLAS API found.")
       message(STATUS "BLAS_LIBRARIES ${BLAS_LIBRARIES}")
-    else(BLAS_FOUND)
+    else()
       message(WARNING "BLA_VENDOR has been set to ${BLA_VENDOR} but blas libraries could not be found or check of symbols failed."
 	"\nPlease indicate where to find blas libraries. You have three options:\n"
 	"- Option 1: Provide the installation directory of BLAS library with cmake option: -DBLAS_DIR=your/path/to/blas\n"
@@ -1385,10 +1386,10 @@ else(BLA_F95)
 	message(STATUS
 	  "A library with BLAS API not found. Please specify library location.")
       endif()
-    endif(BLAS_FOUND)
-  endif(NOT BLAS_FIND_QUIETLY)
+    endif()
+  endif()
 
-endif(BLA_F95)
+endif()
 
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_blas_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
 

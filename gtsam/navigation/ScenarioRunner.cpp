@@ -18,11 +18,9 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 
-#include <boost/assign.hpp>
 #include <cmath>
 
 using namespace std;
-using namespace boost::assign;
 
 namespace gtsam {
 
@@ -108,7 +106,7 @@ Matrix6 ScenarioRunner::estimateNoiseCovariance(size_t N) const {
 PreintegratedCombinedMeasurements CombinedScenarioRunner::integrate(
     double T, const Bias& estimatedBias, bool corrupted) const {
   gttic_(integrate);
-  PreintegratedCombinedMeasurements pim(p_, estimatedBias);
+  PreintegratedCombinedMeasurements pim(p_, estimatedBias, preintMeasCov_);
 
   const double dt = imuSampleTime();
   const size_t nrSteps = T / dt;

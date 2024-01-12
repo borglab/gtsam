@@ -21,7 +21,7 @@
 #pragma once
 
 #include <gtsam/geometry/Cal3DS2_Base.h>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace gtsam {
 
@@ -29,7 +29,7 @@ namespace gtsam {
  * @brief Calibration of a camera with radial distortion that also supports
  * Lie-group behaviors for optimization.
  * \sa Cal3DS2_Base
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
@@ -39,7 +39,7 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
   enum { dimension = 9 };
 
   ///< shared pointer to stereo calibration object
-  using shared_ptr = boost::shared_ptr<Cal3DS2>;
+  using shared_ptr = std::shared_ptr<Cal3DS2>;
 
   /// @name Standard Constructors
   /// @{
@@ -94,8 +94,8 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
   /// @{
 
   /// @return a deep copy of this object
-  boost::shared_ptr<Base> clone() const override {
-    return boost::shared_ptr<Base>(new Cal3DS2(*this));
+  std::shared_ptr<Base> clone() const override {
+    return std::shared_ptr<Base>(new Cal3DS2(*this));
   }
 
   /// @}
@@ -104,6 +104,7 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
   /// @name Advanced Interface
   /// @{
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
@@ -111,6 +112,7 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
     ar& boost::serialization::make_nvp(
         "Cal3DS2", boost::serialization::base_object<Cal3DS2_Base>(*this));
   }
+#endif
 
   /// @}
 };

@@ -25,7 +25,7 @@ class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
   }
 
  public:
-  typedef boost::shared_ptr<SingleValue> shared_ptr;
+  typedef std::shared_ptr<SingleValue> shared_ptr;
 
   /// Construct from key, cardinality, and given value.
   SingleValue(Key key, size_t n, size_t value)
@@ -47,6 +47,11 @@ class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
       const SingleValue& f(static_cast<const SingleValue&>(other));
       return (cardinality_ == f.cardinality_) && (value_ == f.value_);
     }
+  }
+
+  /// Compute error for each assignment and return as a tree
+  AlgebraicDecisionTree<Key> errorTree() const override {
+    throw std::runtime_error("SingleValue::error not implemented");
   }
 
   /// Calculate value
