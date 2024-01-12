@@ -77,10 +77,10 @@ Vector3 NavState::bodyVelocity(OptionalJacobian<3, 9> H) const {
 }
 
 //------------------------------------------------------------------------------
-Matrix5 NavState::matrix() const {
+Matrix7 NavState::matrix() const {
   Matrix3 R = this->R();
-  Matrix5 T;
-  T << R, t(), v(), Z_3x1.transpose(), 1.0, 0.0, Z_3x1.transpose(), 0.0, 1.0;
+  Matrix7 T;
+  T << R, Z_3x3, t(), Z_3x3, R, v(), Vector6::Zero().transpose(), 1.0;
   return T;
 }
 
@@ -113,20 +113,25 @@ NavState NavState::inverse() const {
 NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi) {
   if (Hxi) *Hxi = ExpmapDerivative(xi);
 
-  // Order is ω, velocity, position which represent by φ,ρ,ν
-  Vector3 phi(xi(0), xi(1), xi(2)), rho(xi(3), xi(4), xi(5)),
+  // Order is rotation, position, velocity, represented by ω,ρ,ν
+  Vector3 omega(xi(0), xi(1), xi(2)), rho(xi(3), xi(4), xi(5)),
       nu(xi(6), xi(7), xi(8));
 
-  Rot3 R = Rot3::Expmap(phi);
+  Rot3 R = Rot3::Expmap(omega);
 
-  double phi_norm = phi.norm();
-  if (phi_norm < 1e-8)
-    return NavState(Rot3(), Point3(rho), Point3(nu));
-  else {
-    Matrix W = skewSymmetric(phi / phi_norm);
-    Matrix A = I_3x3 + ((1 - cos(phi_norm)) / phi_norm) * W +
-               ((phi_norm - sin(phi_norm)) / phi_norm) * (W * W);
-    return NavState(Rot3::Expmap(phi), Point3(A * rho), Point3(A * nu));
+//   double omega_norm = omega.norm();
+
+//   if (omega_norm < 1e-8)
+//     return NavState(Rot3(), Point3(rho), Point3(nu));
+
+//   else {
+//     Matrix W = skewSymmetric(omega);
+//     double omega_norm2 = omega_norm * omega_norm;
+//     double omega_norm3 = omega_norm2 * omega_norm;
+//     Matrix A = I_3x3 + ((1 - cos(omega_norm)) / omega_norm2) * W +
+//                ((omega_norm - sin(omega_norm)) / omega_norm3) * (W * W);
+
+    // return NavState(Rot3::Expmap(omega), Point3(A * rho), Point3(A * nu));
   }
 }
 
@@ -354,6 +359,8 @@ Vector9 NavState::ChartAtOrigin::Local(const NavState& state,
 //------------------------------------------------------------------------------
 NavState NavState::retract(const Vector9& xi, //
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
+  // return LieGroup<NavState, 9>::retract(xi, H1, H2);
+
   Rot3 nRb = R_;
   Point3 n_t = t_, n_v = v_;
   Matrix3 D_bRc_xi, D_R_nRb, D_t_nRb, D_v_nRb;
@@ -381,6 +388,23 @@ NavState NavState::retract(const Vector9& xi, //
 //------------------------------------------------------------------------------
 Vector9 NavState::localCoordinates(const NavState& g, //
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
+  // return LieGroup<NavState, 9>::localCoordinates(g, H1, H2);
+
+  // Vector9 xi;
+  // Matrix3 D_xi_R;
+  // xi << Rot3::Logmap(dR, (H1 || H2) ? &D_xi_R : 0), dP, dV;
+  // if (H1) {
+  //   *H1 << D_xi_R * D_dR_R, Z_3x3, Z_3x3, //
+  //   D_dt_R, -I_3x3, Z_3x3, //
+  //   D_dv_R, Z_3x3, -I_3x3;
+  // }
+  // if (H2) {
+  //   *H2 << D_xi_R, Z_3x3, Z_3x3, //
+  //   Z_3x3, dR.matrix(), Z_3x3, //
+  //   Z_3x3, Z_3x3, dR.matrix();
+  // }
+  // return xi;
+
   Matrix3 D_dR_R, D_dt_R, D_dv_R;
   const Rot3 dR = R_.between(g.R_, H1 ? &D_dR_R : 0);
   const Point3 dP = R_.unrotate(g.t_ - t_, H1 ? &D_dt_R : 0);
@@ -462,7 +486,8 @@ NavState NavState::update(const Vector3& b_acceleration, const Vector3& b_omega,
 //------------------------------------------------------------------------------
 Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
     OptionalJacobian<9, 9> H) const {
-  auto [nRb, n_t, n_v] = (*this);
+  Rot3 nRb = R_;
+  Point3 n_t = t_, n_v = v_;
 
   const double dt2 = dt * dt;
   const Vector3 omega_cross_vel = omega.cross(n_v);
