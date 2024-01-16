@@ -141,7 +141,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
 
     This can be computed by multiplying all the exponentiated errors
     of each of the conditionals.
-    
+
     Return a tree where each leaf value is L(M_i;Z).
   */
   AlgebraicDecisionTree<Key> modelSelection() const;
@@ -279,5 +279,40 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
 /// traits
 template <>
 struct traits<HybridBayesNet> : public Testable<HybridBayesNet> {};
+
+/**
+ * @brief Add a Gaussian conditional to each node of the GaussianBayesNetTree
+ *
+ * @param gbnTree
+ * @param factor
+ * @return GaussianBayesNetTree
+ */
+GaussianBayesNetTree addGaussian(const GaussianBayesNetTree &gbnTree,
+                                 const GaussianConditional::shared_ptr &factor);
+
+/**
+ * @brief Compute the (logarithmic) normalization constant for each Bayes
+ * network in the tree.
+ *
+ * @param bnTree A tree of Bayes networks in each leaf. The tree encodes a
+ * discrete assignment yielding the Bayes net.
+ * @return AlgebraicDecisionTree<Key>
+ */
+AlgebraicDecisionTree<Key> computeLogNormConstants(
+    const GaussianBayesNetValTree &bnTree);
+
+/**
+ * @brief Compute the model selection term L(M; Z, X) given the error
+ * and log normalization constants.
+ *
+ * Perform normalization to handle underflow issues.
+ *
+ * @param errorTree
+ * @param log_norm_constants
+ * @return AlgebraicDecisionTree<Key>
+ */
+AlgebraicDecisionTree<Key> computeModelSelectionTerm(
+    const AlgebraicDecisionTree<Key> &errorTree,
+    const AlgebraicDecisionTree<Key> &log_norm_constants);
 
 }  // namespace gtsam
