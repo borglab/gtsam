@@ -39,6 +39,11 @@ class KeyList {
   void remove(size_t key);
 
   void serialize() const;
+
+  // Specual dunder methods for Python wrapping
+  __len__();
+  __contains__(size_t key);
+  __iter__();
 };
 
 // Actually a FastSet<Key>
@@ -64,6 +69,11 @@ class KeySet {
   bool count(size_t key) const;  // returns true if value exists
 
   void serialize() const;
+
+  // Specual dunder methods for Python wrapping
+  __len__();
+  __contains__(size_t key);
+  __iter__();
 };
 
 // Actually a vector<Key>, needed for Matlab
@@ -85,6 +95,11 @@ class KeyVector {
   void push_back(size_t key) const;
 
   void serialize() const;
+
+  // Specual dunder methods for Python wrapping
+  __len__();
+  __contains__(size_t key);
+  __iter__();
 };
 
 // Actually a FastMap<Key,int>
