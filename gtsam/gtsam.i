@@ -40,7 +40,7 @@ class KeyList {
 
   void serialize() const;
 
-  // Specual dunder methods for Python wrapping
+  // Special dunder methods for Python wrapping
   __len__();
   __contains__(size_t key);
   __iter__();
@@ -70,7 +70,7 @@ class KeySet {
 
   void serialize() const;
 
-  // Specual dunder methods for Python wrapping
+  // Special dunder methods for Python wrapping
   __len__();
   __contains__(size_t key);
   __iter__();
@@ -96,7 +96,7 @@ class KeyVector {
 
   void serialize() const;
 
-  // Specual dunder methods for Python wrapping
+  // Special dunder methods for Python wrapping
   __len__();
   __contains__(size_t key);
   __iter__();
