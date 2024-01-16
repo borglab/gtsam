@@ -126,6 +126,11 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   /// @brief Default constructor.
   HybridGaussianFactorGraph() = default;
 
+  /** Construct from container of factors (shared_ptr or plain objects) */
+  template <class CONTAINER>
+  explicit HybridGaussianFactorGraph(const CONTAINER& factors)
+      : Base(factors) {}
+
   /**
    * Implicit copy/downcast constructor to override explicit template container
    * constructor. In BayesTree this is used for:
