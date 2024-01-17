@@ -4,6 +4,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <gtsam/dllexport.h>
+
 namespace gtsam {
 /**
  * For Python __str__().
@@ -11,7 +13,7 @@ namespace gtsam {
  * of an object when it prints to cout.
  * https://stackoverflow.com/questions/5419356/redirect-stdout-stderr-to-a-string
  */
-struct RedirectCout {
+struct GTSAM_EXPORT RedirectCout {
   /// constructor -- redirect stdout buffer to a stringstream buffer
   RedirectCout() : ssBuffer_(), coutBuffer_(std::cout.rdbuf(ssBuffer_.rdbuf())) {}
 

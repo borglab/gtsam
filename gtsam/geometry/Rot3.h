@@ -396,7 +396,7 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     Matrix3 AdjointMap() const { return matrix(); }
 
     // Chart at origin, depends on compile-time flag ROT3_DEFAULT_COORDINATES_MODE
-    struct ChartAtOrigin {
+    struct GTSAM_EXPORT ChartAtOrigin {
       static Rot3 Retract(const Vector3& v, ChartJacobian H = {});
       static Vector3 Local(const Rot3& r, ChartJacobian H = {});
     };
