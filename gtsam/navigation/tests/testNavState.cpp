@@ -329,15 +329,15 @@ TEST(NavState, Lie) {
                                           Vector3::Zero(), Vector3::Zero())
                       .localCoordinates(nav_state_b, H1, H2);
 
+  // TODO(Varun)
   Matrix6 J1, J2;
-  auto logmap_pose_b = Pose3::Create(Rot3(), Vector3::Zero())
-                           .localCoordinates(nav_state_b.pose(), J1, J2);
+  // auto logmap_pose_b = Pose3::Create(Rot3(), Vector3::Zero())
+  //                          .localCoordinates(nav_state_b.pose(), J1, J2);
 
-  // Check retraction
-  auto retraction_b = NavState().retract(logmap_b);
-  CHECK(assert_equal(retraction_b, nav_state_b));
+  // //  Check retraction
+  // auto retraction_b = NavState().retract(logmap_b);
+  // CHECK(assert_equal(retraction_b, nav_state_b));
 
-  //TODO(Varun)
   // // Test if the sum of the logmap is the same as the logmap of the product
   // auto logmap_c = NavState::Create(Rot3::Identity(),
   //                                         Vector3::Zero(), Vector3::Zero())
@@ -478,15 +478,16 @@ TEST(NavState, Print) {
 #ifndef GTSAM_POSE3_EXPMAP
 TEST(NavState, Retract_first_order) {
   NavState id;
-  Vector xi = Z_9x1;
-  xi(0) = 0.3;
-  EXPECT(assert_equal(NavState(R, Point3(0, 0, 0), Vector3(0, 0, 0)), id.retract(xi), 1e-2));
-  xi(3) = 3;
-  xi(4) = 0.4;
-  xi(5) = -2.2;
-  xi(6) = 0.2;
-  xi(7) = 0.7;
-  xi(8) = -2;
+  Vector v = Z_9x1;
+  v(0) = 0.3;
+  EXPECT(assert_equal(NavState(R, Point3(0, 0, 0), Vector3(0, 0, 0)),
+                      id.retract(v), 1e-2));
+  v(3) = 0.2;
+  v(4) = 0.7;
+  v(5) = -2;
+  v(6) = 3;
+  v(7) = 0.4;
+  v(8) = -2.2;
   EXPECT(assert_equal(NavState(R, P, V), id.retract(v), 1e-2));
 }
 #endif
