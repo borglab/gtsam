@@ -1,7 +1,6 @@
 #ifndef CEPHES_H
 #define CEPHES_H
 
-#include "cephes/cephes_names.h"
 #include "dllexport.h"
 
 #ifdef __cplusplus
