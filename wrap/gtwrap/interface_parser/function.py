@@ -82,7 +82,7 @@ class ArgumentList:
             return ArgumentList([])
 
     def __repr__(self) -> str:
-        return repr(tuple(self.args_list))
+        return ",".join([repr(x) for x in self.args_list])
 
     def __len__(self) -> int:
         return len(self.args_list)

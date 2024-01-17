@@ -56,7 +56,6 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "cephes_names.h"
 #include "cephes.h"
 #include "polevl.h"
 #include "sf_error.h"
