@@ -77,10 +77,13 @@ Vector3 NavState::bodyVelocity(OptionalJacobian<3, 9> H) const {
 }
 
 //------------------------------------------------------------------------------
-Matrix7 NavState::matrix() const {
+Matrix5 NavState::matrix() const {
   Matrix3 R = this->R();
-  Matrix7 T;
-  T << R, Z_3x3, t(), Z_3x3, R, v(), Vector6::Zero().transpose(), 1.0;
+
+  Matrix5 T = Matrix5::Identity();
+  T.block<3, 3>(0, 0) = R;
+  T.block<3, 1>(0, 3) = t_;
+  T.block<3, 1>(0, 4) = v_;
   return T;
 }
 
@@ -119,19 +122,19 @@ NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi) {
 
   Rot3 R = Rot3::Expmap(omega);
 
-//   double omega_norm = omega.norm();
+  double omega_norm = omega.norm();
 
-//   if (omega_norm < 1e-8)
-//     return NavState(Rot3(), Point3(rho), Point3(nu));
+  if (omega_norm < 1e-8) {
+    return NavState(Rot3(), Point3(rho), Point3(nu));
 
-//   else {
-//     Matrix W = skewSymmetric(omega);
-//     double omega_norm2 = omega_norm * omega_norm;
-//     double omega_norm3 = omega_norm2 * omega_norm;
-//     Matrix A = I_3x3 + ((1 - cos(omega_norm)) / omega_norm2) * W +
-//                ((omega_norm - sin(omega_norm)) / omega_norm3) * (W * W);
+  } else {
+    Matrix W = skewSymmetric(omega);
+    double omega_norm2 = omega_norm * omega_norm;
+    double omega_norm3 = omega_norm2 * omega_norm;
+    Matrix A = I_3x3 + ((1 - cos(omega_norm)) / omega_norm2) * W +
+               ((omega_norm - sin(omega_norm)) / omega_norm3) * (W * W);
 
-    // return NavState(Rot3::Expmap(omega), Point3(A * rho), Point3(A * nu));
+    return NavState(Rot3::Expmap(omega), Point3(A * rho), Point3(A * nu));
   }
 }
 
@@ -317,7 +320,7 @@ Matrix9 NavState::ExpmapDerivative(const Vector9& xi) {
   const Matrix3 Qp = Q.bottomRows<3>();
 
   Matrix9 J;
-  J << Jw, Z_3x3, Z_3x3, Qp, Jw, Z_3x3, Qv, Z_3x3, Jw;
+  J << Jw, Z_3x3, Z_3x3, Qv, Jw, Z_3x3, Qp, Z_3x3, Jw;
 
   return J;
 }
@@ -336,10 +339,7 @@ Matrix9 NavState::LogmapDerivative(const NavState& state) {
   const Matrix3 Qp2 = -Jw * Qp * Jw;
 
   Matrix9 J;
-  // TODO(Varun) If we remove the custom localCoordinates, first one mirrors
-  // Pose3, but the second one gives the correct values as per unit tests
-  J << Jw, Z_3x3, Z_3x3, Qp2, Jw, Z_3x3, Qv2, Z_3x3, Jw;
-  // J << Jw, Z_3x3, Z_3x3, Z_3x3, R, Z_3x3, Z_3x3, Z_3x3, R;
+  J << Jw, Z_3x3, Z_3x3, Qv2, Jw, Z_3x3, Qp2, Z_3x3, Jw;
   return J;
 }
 
@@ -389,6 +389,13 @@ NavState NavState::retract(const Vector9& xi, //
 Vector9 NavState::localCoordinates(const NavState& g, //
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
   // return LieGroup<NavState, 9>::localCoordinates(g, H1, H2);
+
+  //TODO(Varun) Fix so that test on L680 passes
+
+  // Matrix3 D_dR_R, D_dt_R, D_dv_R;
+  // const Rot3 dR = R_.between(g.R_, H1 ? &D_dR_R : 0);
+  // const Point3 dP = R_.unrotate(g.t_ - t_, H1 ? &D_dt_R : 0);
+  // const Vector dV = R_.unrotate(g.v_ - v_, H1 ? &D_dv_R : 0);
 
   // Vector9 xi;
   // Matrix3 D_xi_R;

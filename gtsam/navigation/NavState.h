@@ -119,7 +119,7 @@ public:
   Velocity3 bodyVelocity(OptionalJacobian<3, 9> H = {}) const;
 
   /// Return matrix group representation, in MATLAB notation:
-  /// nTb = [nRb n_v, n_t; 0_1x3 1 0; 0_1x3 0 1]
+  /// nTb = [nRb n_t n_v; 0_1x3 1 0; 0_1x3 0 1]
   Matrix5 matrix() const;
 
   /// @}
