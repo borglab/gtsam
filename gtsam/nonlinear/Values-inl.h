@@ -200,6 +200,7 @@ namespace gtsam {
 // Added this section for compile gtsam python on windows.
 // msvc don't deduct the template arguments correctly, due possible bug in msvc.
 #ifdef _WIN32
+#if _MSC_VER < 1937
    // Handle dynamic matrices
    template <int M, int N>
    struct handle_matrix<Eigen::Matrix<double, M, N, 0, M, N>, true> {
@@ -250,6 +251,7 @@ namespace gtsam {
                             (M == Eigen::Dynamic || N == Eigen::Dynamic)>()(j, pointer);
      }
    };
+#endif // #if _MSC_VER < 1937
 #endif // #ifdef _WIN32
 
    }  // internal
