@@ -178,7 +178,7 @@ TEST(GaussianMixtureFactor, Error) {
   continuousValues.insert(X(2), Vector2(1, 1));
 
   // error should return a tree of errors, with nodes for each discrete value.
-  AlgebraicDecisionTree<Key> error_tree = mixtureFactor.error(continuousValues);
+  AlgebraicDecisionTree<Key> error_tree = mixtureFactor.errorTree(continuousValues);
 
   std::vector<DiscreteKey> discrete_keys = {m1};
   // Error values for regression test

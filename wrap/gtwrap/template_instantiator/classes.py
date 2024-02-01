@@ -57,6 +57,8 @@ class InstantiatedClass(parser.Class):
 
         # Instantiate all instance methods
         self.methods = self.instantiate_methods(typenames)
+        
+        self.dunder_methods = original.dunder_methods
 
         super().__init__(
             self.template,
@@ -66,6 +68,7 @@ class InstantiatedClass(parser.Class):
             self.ctors,
             self.methods,
             self.static_methods,
+            self.dunder_methods,
             self.properties,
             self.operators,
             self.enums,
