@@ -76,9 +76,9 @@ class GncParams {
   /// Use IndexVector for inliers and outliers since it is fast
   using IndexVector = FastVector<uint64_t>;
   ///< Slots in the factor graph corresponding to measurements that we know are inliers
-  IndexVector knownInliers = IndexVector();
+  IndexVector knownInliers;
   ///< Slots in the factor graph corresponding to measurements that we know are outliers
-  IndexVector knownOutliers = IndexVector();
+  IndexVector knownOutliers;
 
   /// Set the robust loss function to be used in GNC (chosen among the ones in GncLossType).
   void setLossType(const GncLossType type) {

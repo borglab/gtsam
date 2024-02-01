@@ -126,12 +126,12 @@ inline std::vector<DiscreteValues> cartesianProduct(const DiscreteKeys& keys) {
 }
 
 /// Free version of markdown.
-std::string markdown(const DiscreteValues& values,
+std::string GTSAM_EXPORT markdown(const DiscreteValues& values,
                      const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                      const DiscreteValues::Names& names = {});
 
 /// Free version of html.
-std::string html(const DiscreteValues& values,
+std::string GTSAM_EXPORT html(const DiscreteValues& values,
                  const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                  const DiscreteValues::Names& names = {});
 

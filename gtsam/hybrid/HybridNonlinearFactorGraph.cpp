@@ -43,6 +43,98 @@ void HybridNonlinearFactorGraph::print(const std::string& s,
 }
 
 /* ************************************************************************* */
+void HybridNonlinearFactorGraph::printErrors(
+    const HybridValues& values, const std::string& str,
+    const KeyFormatter& keyFormatter,
+    const std::function<bool(const Factor* /*factor*/, double /*whitenedError*/,
+                             size_t /*index*/)>& printCondition) const {
+  std::cout << str << "size: " << size() << std::endl << std::endl;
+
+  std::stringstream ss;
+
+  for (size_t i = 0; i < factors_.size(); i++) {
+    auto&& factor = factors_[i];
+    std::cout << "Factor " << i << ": ";
+
+    // Clear the stringstream
+    ss.str(std::string());
+
+    if (auto mf = std::dynamic_pointer_cast<MixtureFactor>(factor)) {
+      if (factor == nullptr) {
+        std::cout << "nullptr"
+                  << "\n";
+      } else {
+        factor->print(ss.str(), keyFormatter);
+        std::cout << "error = ";
+        mf->errorTree(values.nonlinear()).print("", keyFormatter);
+        std::cout << std::endl;
+      }
+    } else if (auto gmf =
+                   std::dynamic_pointer_cast<GaussianMixtureFactor>(factor)) {
+      if (factor == nullptr) {
+        std::cout << "nullptr"
+                  << "\n";
+      } else {
+        factor->print(ss.str(), keyFormatter);
+        std::cout << "error = ";
+        gmf->errorTree(values.continuous()).print("", keyFormatter);
+        std::cout << std::endl;
+      }
+    } else if (auto gm = std::dynamic_pointer_cast<GaussianMixture>(factor)) {
+      if (factor == nullptr) {
+        std::cout << "nullptr"
+                  << "\n";
+      } else {
+        factor->print(ss.str(), keyFormatter);
+        std::cout << "error = ";
+        gm->errorTree(values.continuous()).print("", keyFormatter);
+        std::cout << std::endl;
+      }
+    } else if (auto nf = std::dynamic_pointer_cast<NonlinearFactor>(factor)) {
+      const double errorValue = (factor != nullptr ? nf->error(values) : .0);
+      if (!printCondition(factor.get(), errorValue, i))
+        continue;  // User-provided filter did not pass
+
+      if (factor == nullptr) {
+        std::cout << "nullptr"
+                  << "\n";
+      } else {
+        factor->print(ss.str(), keyFormatter);
+        std::cout << "error = " << errorValue << "\n";
+      }
+    } else if (auto gf = std::dynamic_pointer_cast<GaussianFactor>(factor)) {
+      const double errorValue = (factor != nullptr ? gf->error(values) : .0);
+      if (!printCondition(factor.get(), errorValue, i))
+        continue;  // User-provided filter did not pass
+
+      if (factor == nullptr) {
+        std::cout << "nullptr"
+                  << "\n";
+      } else {
+        factor->print(ss.str(), keyFormatter);
+        std::cout << "error = " << errorValue << "\n";
+      }
+    } else if (auto df = std::dynamic_pointer_cast<DiscreteFactor>(factor)) {
+      if (factor == nullptr) {
+        std::cout << "nullptr"
+                  << "\n";
+      } else {
+        factor->print(ss.str(), keyFormatter);
+        std::cout << "error = ";
+        df->errorTree().print("", keyFormatter);
+        std::cout << std::endl;
+      }
+
+    } else {
+      continue;
+    }
+
+    std::cout << "\n";
+  }
+  std::cout.flush();
+}
+
+/* ************************************************************************* */
 HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
     const Values& continuousValues) const {
   using std::dynamic_pointer_cast;

@@ -22,6 +22,7 @@ RAW_POINTER, SHARED_POINTER, REF = map(Literal, "@*&")
 
 LPAREN, RPAREN, LBRACE, RBRACE, COLON, SEMI_COLON = map(Suppress, "(){}:;")
 LOPBRACK, ROPBRACK, COMMA, EQUAL = map(Suppress, "<>,=")
+DUNDER = Suppress(Literal("__"))
 
 # Default argument passed to functions/methods.
 # Allow anything up to ',' or ';' except when they

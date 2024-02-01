@@ -97,7 +97,7 @@ TEST(GaussianMixture, LogProbability) {
 /// Check error.
 TEST(GaussianMixture, Error) {
   using namespace equal_constants;
-  auto actual = mixture.error(vv);
+  auto actual = mixture.errorTree(vv);
 
   // Check result.
   std::vector<DiscreteKey> discrete_keys = {mode};
@@ -134,7 +134,7 @@ TEST(GaussianMixture, Likelihood) {
   std::vector<double> leaves = {conditionals[0]->likelihood(vv)->error(vv),
                                 conditionals[1]->likelihood(vv)->error(vv)};
   AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
-  EXPECT(assert_equal(expected, likelihood->error(vv), 1e-6));
+  EXPECT(assert_equal(expected, likelihood->errorTree(vv), 1e-6));
 
   // Check that the ratio of probPrime to evaluate is the same for all modes.
   std::vector<double> ratio(2);
