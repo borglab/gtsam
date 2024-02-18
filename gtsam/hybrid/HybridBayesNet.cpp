@@ -291,7 +291,7 @@ AlgebraicDecisionTree<Key> HybridBayesNet::modelSelection() const {
                                 std::numeric_limits<double>::max());
         }
 
-        // Compute the error for X* and the assignment
+        // Compute the error at the MLE point X* for the current assignment
         double error =
             this->error(HybridValues(mu, DiscreteValues(assignment)));
 

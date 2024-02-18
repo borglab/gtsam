@@ -295,8 +295,9 @@ static std::shared_ptr<Factor> createDiscreteFactor(
     if (!factor) return 1.0;  // TODO(dellaert): not loving this.
 
     // Logspace version of:
-    // exp(-factor->error(kEmpty)) / conditional->normalizationConstant();
-    return -factor->error(kEmpty) - conditional->logNormalizationConstant();
+    // exp(-factor->error(kEmpty)) * conditional->normalizationConstant();
+    // We take negative of the logNormalizationConstant (1/k) to get k
+    return -factor->error(kEmpty) + (-conditional->logNormalizationConstant());
   };
 
   AlgebraicDecisionTree<Key> logProbabilities(
@@ -324,6 +325,7 @@ static std::shared_ptr<Factor> createGaussianMixtureFactor(
     if (factor) {
       auto hf = std::dynamic_pointer_cast<HessianFactor>(factor);
       if (!hf) throw std::runtime_error("Expected HessianFactor!");
+      // Add 2.0 term since the constant term will be premultiplied by 0.5
       hf->constantTerm() += 2.0 * conditional->logNormalizationConstant();
     }
     return factor;
