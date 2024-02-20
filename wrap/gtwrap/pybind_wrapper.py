@@ -45,6 +45,8 @@ class PybindWrapper:
             'continue', 'global', 'pass'
         ]
 
+        self.dunder_methods = ('len', 'contains', 'iter')
+
         # amount of indentation to add before each function/method declaration.
         self.method_indent = '\n' + (' ' * 8)
 
@@ -153,6 +155,51 @@ class PybindWrapper:
             suffix=suffix)
         return ret
 
+    def _wrap_dunder(self,
+                     method,
+                     cpp_class,
+                     prefix,
+                     suffix,
+                     method_suffix=""):
+        """
+        Wrap a Python double-underscore (dunder) method.
+
+        E.g. __len__() gets wrapped as `.def("__len__", [](gtsam::KeySet* self) {return self->size();})`
+
+        Supported methods are:
+        - __contains__(T x)
+        - __len__()
+        - __iter__()
+        """
+        py_method = method.name + method_suffix
+        args_names = method.args.names()
+        py_args_names = self._py_args_names(method.args)
+        args_signature_with_names = self._method_args_signature(method.args)
+
+        if method.name == 'len':
+            function_call = "return std::distance(self->begin(), self->end());"
+        elif method.name == 'contains':
+            function_call = f"return std::find(self->begin(), self->end(), {method.args.args_list[0].name}) != self->end();"
+        elif method.name == 'iter':
+            function_call = "return py::make_iterator(self->begin(), self->end());"
+
+        ret = ('{prefix}.def("__{py_method}__",'
+               '[]({self}{opt_comma}{args_signature_with_names}){{'
+               '{function_call}'
+               '}}'
+               '{py_args_names}){suffix}'.format(
+                   prefix=prefix,
+                   py_method=py_method,
+                   self=f"{cpp_class}* self",
+                   opt_comma=', ' if args_names else '',
+                   args_signature_with_names=args_signature_with_names,
+                   function_call=function_call,
+                   py_args_names=py_args_names,
+                   suffix=suffix,
+               ))
+
+        return ret
+
     def _wrap_method(self,
                      method,
                      cpp_class,
@@ -234,6 +281,20 @@ class PybindWrapper:
                                    prefix, suffix)
 
         return ret
+
+    def wrap_dunder_methods(self,
+                            methods,
+                            cpp_class,
+                            prefix='\n' + ' ' * 8,
+                            suffix=''):
+        res = ""
+        for method in methods:
+            res += self._wrap_dunder(method=method,
+                                     cpp_class=cpp_class,
+                                     prefix=prefix,
+                                     suffix=suffix)
+
+        return res
 
     def wrap_methods(self,
                      methods,
@@ -398,6 +459,7 @@ class PybindWrapper:
                 '{wrapped_ctors}'
                 '{wrapped_methods}'
                 '{wrapped_static_methods}'
+                '{wrapped_dunder_methods}'
                 '{wrapped_properties}'
                 '{wrapped_operators};\n'.format(
                     class_declaration=class_declaration,
@@ -406,6 +468,8 @@ class PybindWrapper:
                         instantiated_class.methods, cpp_class),
                     wrapped_static_methods=self.wrap_methods(
                         instantiated_class.static_methods, cpp_class),
+                    wrapped_dunder_methods=self.wrap_dunder_methods(
+                        instantiated_class.dunder_methods, cpp_class),
                     wrapped_properties=self.wrap_properties(
                         instantiated_class.properties, cpp_class),
                     wrapped_operators=self.wrap_operators(

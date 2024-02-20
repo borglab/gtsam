@@ -42,7 +42,7 @@ using CustomErrorFunction = std::function<Vector(const CustomFactor &, const Val
  *
  * This factor is mainly for creating a custom factor in Python.
  */
-class CustomFactor: public NoiseModelFactor {
+class GTSAM_EXPORT CustomFactor: public NoiseModelFactor {
 protected:
   CustomErrorFunction error_function_;
 

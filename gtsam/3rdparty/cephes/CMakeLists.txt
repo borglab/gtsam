@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 enable_testing()
 project(
   cephes
@@ -8,7 +8,6 @@ project(
 
 set(CEPHES_HEADER_FILES
     cephes.h
-    cephes/cephes_names.h
     cephes/dd_idefs.h
     cephes/dd_real.h
     cephes/dd_real_idefs.h
