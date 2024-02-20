@@ -489,12 +489,17 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
                       size_t name2, Matrix T,
                       const gtsam::noiseModel::Diagonal* sigmas);
+  GaussianConditional(const vector<std::pair<gtsam::Key, Matrix>> terms,
+                      size_t nrFrontals, Vector d,
+                      const gtsam::noiseModel::Diagonal* sigmas);
 
   // Constructors with no noise model
   GaussianConditional(size_t key, Vector d, Matrix R);
   GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S);
   GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
                       size_t name2, Matrix T);
+  GaussianConditional(const gtsam::KeyVector& keys, size_t nrFrontals,
+                      const gtsam::VerticalBlockMatrix& augmentedMatrix);
 
   // Named constructors
   static gtsam::GaussianConditional FromMeanAndStddev(gtsam::Key key, 
