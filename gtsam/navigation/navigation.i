@@ -294,7 +294,7 @@ virtual class GPSFactor : gtsam::NonlinearFactor{
   // Testable
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::GPSFactor& expected, double tol);
+  bool equals(const gtsam::NonlinearFactor& expected, double tol);
 
   // Standard Interface
   gtsam::Point3 measurementIn() const;
@@ -307,10 +307,27 @@ virtual class GPSFactor2 : gtsam::NonlinearFactor {
   // Testable
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::GPSFactor2& expected, double tol);
+  bool equals(const gtsam::NonlinearFactor& expected, double tol);
 
   // Standard Interface
   gtsam::Point3 measurementIn() const;
+};
+
+#include <gtsam/navigation/BarometricFactor.h>
+virtual class BarometricFactor : gtsam::NonlinearFactor {
+  BarometricFactor();
+  BarometricFactor(size_t key, size_t baroKey, const double& baroIn,
+                   const gtsam::noiseModel::Base* model);
+
+  // Testable
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::NonlinearFactor& expected, double tol);
+
+  // Standard Interface
+  const double& measurementIn() const;
+  double heightOut(double n) const;
+  double baroOut(const double& meters) const;
 };
 
 #include <gtsam/navigation/Scenario.h>
