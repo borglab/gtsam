@@ -210,6 +210,10 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   GaussianFactorGraphTree assembleGraphTree() const;
 
   /// @}
+
+  /// Get the GaussianFactorGraph at a given discrete assignment.
+  GaussianFactorGraph operator()(const DiscreteValues& assignment) const;
+
 };
 
 }  // namespace gtsam

@@ -296,7 +296,8 @@ static std::shared_ptr<Factor> createDiscreteFactor(
 
     // Logspace version of:
     // exp(-factor->error(kEmpty)) * conditional->normalizationConstant();
-    // We take negative of the logNormalizationConstant `log(1/k)` to get `log(k)`.
+    // We take negative of the logNormalizationConstant `log(1/k)`
+    // to get `log(k)`.
     return -factor->error(kEmpty) + (-conditional->logNormalizationConstant());
   };
 
@@ -326,6 +327,7 @@ static std::shared_ptr<Factor> createGaussianMixtureFactor(
       auto hf = std::dynamic_pointer_cast<HessianFactor>(factor);
       if (!hf) throw std::runtime_error("Expected HessianFactor!");
       // Add 2.0 term since the constant term will be premultiplied by 0.5
+      // as per the Hessian definition
       hf->constantTerm() += 2.0 * conditional->logNormalizationConstant();
     }
     return factor;
@@ -561,6 +563,26 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::probPrime(
     return exp(-error);
   });
   return prob_tree;
+}
+
+/* ************************************************************************ */
+GaussianFactorGraph HybridGaussianFactorGraph::operator()(
+    const DiscreteValues &assignment) const {
+  GaussianFactorGraph gfg;
+  for (auto &&f : *this) {
+    if (auto gf = std::dynamic_pointer_cast<GaussianFactor>(f)) {
+      gfg.push_back(gf);
+    } else if (auto gc = std::dynamic_pointer_cast<GaussianConditional>(f)) {
+      gfg.push_back(gf);
+    } else if (auto gmf = std::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
+      gfg.push_back((*gmf)(assignment));
+    } else if (auto gm = dynamic_pointer_cast<GaussianMixture>(f)) {
+      gfg.push_back((*gm)(assignment));
+    } else {
+      continue;
+    }
+  }
+  return gfg;
 }
 
 }  // namespace gtsam
