@@ -56,8 +56,6 @@ namespace std { template<> struct is_trivially_move_constructible<boost::seriali
 #endif
 
 
-// Only for old boost
-#if BOOST_VERSION < 108000
 // function specializations must be defined in the appropriate
 // namespace - boost::serialization
 namespace boost {
@@ -100,5 +98,4 @@ void serialize(Archive& ar, std::optional<T>& t, const unsigned int version) {
 
 }  // namespace serialization
 }  // namespace boost
-#endif
 #endif
