@@ -57,7 +57,14 @@ namespace std { template<> struct is_trivially_move_constructible<boost::seriali
 #endif
 #endif
 
-
+/*
+ * PR https://github.com/boostorg/serialization/pull/163 was merged
+ * on September 3rd 2023,
+ * and so the below code is now a part of Boost 1.84.
+ * We include it for posterity, hence the check for BOOST_VERSION being less
+ * than 1.84.
+ */
+#if BOOST_VERSION < 108400
 // function specializations must be defined in the appropriate
 // namespace - boost::serialization
 namespace boost {

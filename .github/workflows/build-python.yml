@@ -29,7 +29,7 @@ jobs:
         name:
           [
             ubuntu-20.04-gcc-9,
-            ubuntu-22.04-gcc-9-tbb,
+            ubuntu-20.04-gcc-9-tbb,
             ubuntu-20.04-clang-9,
             macOS-11-xcode-13.4.1,
             windows-2019-msbuild,
@@ -43,8 +43,8 @@ jobs:
             compiler: gcc
             version: "9"
 
-          - name: ubuntu-22.04-gcc-9-tbb
-            os: ubuntu-22.04
+          - name: ubuntu-20.04-gcc-9-tbb
+            os: ubuntu-20.04
             compiler: gcc
             version: "9"
             flag: tbb
@@ -144,6 +144,12 @@ jobs:
         run: |
           echo "GTSAM_WITH_TBB=ON" >> $GITHUB_ENV
           echo "GTSAM Uses TBB"
+
+      - name: Set Swap Space (Linux)
+        if: runner.os == 'Linux'
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 6
 
       - name: Install System Dependencies (Linux, macOS)
         if: runner.os != 'Windows'
