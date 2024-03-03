@@ -12,8 +12,6 @@
 
 // Defined only if boost serialization is enabled
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
-// Only for old boost
-#if BOOST_VERSION < 108000
 #include <optional>
 #include <boost/config.hpp>
 
@@ -108,5 +106,4 @@ void serialize(Archive& ar, std::optional<T>& t, const unsigned int version) {
 }  // namespace serialization
 }  // namespace boost
 #endif // BOOST_VERSION < 108400
-#endif // BOOST_VERSION < 108000
 #endif // GTSAM_ENABLE_BOOST_SERIALIZATION
