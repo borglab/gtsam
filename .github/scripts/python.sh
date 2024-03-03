@@ -65,7 +65,7 @@ function build()
   # Set to 2 cores so that Actions does not error out during resource provisioning.
   cmake --build build -j2
 
-  $PYTHON -m pip install --user build/python
+  cmake --build build --target python-install
 }
 
 function test()
@@ -73,6 +73,13 @@ function test()
   cd $GITHUB_WORKSPACE/python/gtsam/tests
   $PYTHON -m unittest discover -v
   cd $GITHUB_WORKSPACE
+
+  cd $GITHUB_WORKSPACE/python/gtsam_unstable/tests
+  $PYTHON -m unittest discover -v
+  cd $GITHUB_WORKSPACE
+
+  # cmake --build build --target python-test
+  # cmake --build build --target python-test-unstable
 }
 
 # select between build or test

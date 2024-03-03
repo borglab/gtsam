@@ -69,7 +69,7 @@ using MatchIndicesMap = std::map<IndexPair, CorrespondenceIndices>;
  *        correspondence indices, from each image.
  * @param Length-N list of keypoints, for N images/cameras.
  */
-std::vector<SfmTrack2d> tracksFromPairwiseMatches(
+std::vector<SfmTrack2d> GTSAM_EXPORT tracksFromPairwiseMatches(
     const MatchIndicesMap& matches, const KeypointsVector& keypoints,
     bool verbose = false);
 

@@ -18,6 +18,8 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       PYTHON_VERSION: ${{ matrix.python_version }}
+      BOOST_VERSION: 1.72.0
+      BOOST_EXE: boost_1_72_0-msvc-14.2      
 
     strategy:
       fail-fast: true
@@ -30,6 +32,7 @@ jobs:
             ubuntu-20.04-gcc-9-tbb,
             ubuntu-20.04-clang-9,
             macOS-11-xcode-13.4.1,
+            windows-2019-msbuild,
           ]
 
         build_type: [Release]
@@ -55,6 +58,10 @@ jobs:
             os: macOS-11
             compiler: xcode
             version: "13.4.1"
+
+          - name: windows-2019-msbuild
+            os: windows-2019
+            platform: 64
 
     steps:
       - name: Checkout
@@ -97,29 +104,68 @@ jobs:
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
 
+      - name: Setup msbuild (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x${{matrix.platform}}
+
+      - name: Setup python (Windows)
+        uses: actions/setup-python@v4
+        if: runner.os == 'Windows'
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Install ninja (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          choco install ninja
+          ninja --version
+          where ninja
+
+      - name: Install Boost (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          # Snippet from: https://github.com/actions/virtual-environments/issues/2667
+          $BOOST_PATH = "C:\hostedtoolcache\windows\Boost\$env:BOOST_VERSION\x86_64"
+
+          # Use the prebuilt binary for Windows
+          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/$env:BOOST_VERSION/$env:BOOST_EXE-${{matrix.platform}}.exe"
+          (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost.exe")
+          Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=$BOOST_PATH"
+
+          # Set the BOOST_ROOT variable
+          echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
+
       - name: Set GTSAM_WITH_TBB Flag
         if: matrix.flag == 'tbb'
         run: |
           echo "GTSAM_WITH_TBB=ON" >> $GITHUB_ENV
           echo "GTSAM Uses TBB"
 
-      - name: Set Swap Space
+      - name: Set Swap Space (Linux)
         if: runner.os == 'Linux'
         uses: pierotofy/set-swap-space@master
         with:
           swap-size-gb: 6
 
-      - name: Install System Dependencies
+      - name: Install System Dependencies (Linux, macOS)
+        if: runner.os != 'Windows'
         run: |
           bash .github/scripts/python.sh -d
 
       - name: Install Python Dependencies
+        shell: bash
         run: python$PYTHON_VERSION -m pip install -r python/dev_requirements.txt
 
       - name: Build
+        shell: bash
         run: |
           bash .github/scripts/python.sh -b
 
       - name: Test
+        shell: bash
         run: |
           bash .github/scripts/python.sh -t

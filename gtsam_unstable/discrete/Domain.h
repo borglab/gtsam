@@ -69,6 +69,11 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
     }
   }
 
+  /// Compute error for each assignment and return as a tree
+  AlgebraicDecisionTree<Key> errorTree() const override {
+    throw std::runtime_error("Domain::error not implemented");
+  }
+
   // Return concise string representation, mostly to debug arc consistency.
   // Converts from base 0 to base1.
   std::string base1Str() const;
