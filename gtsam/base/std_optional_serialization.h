@@ -8,12 +8,10 @@
 * Functionality to serialize std::optional<T> to boost::archive
 * Inspired from this PR: https://github.com/boostorg/serialization/pull/163
 * ---------------------------------------------------------------------------- */
+#pragma once
 
 // Defined only if boost serialization is enabled
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
-// Only for old boost
-#if BOOST_VERSION < 108000
-#pragma once
 #include <optional>
 #include <boost/config.hpp>
 
@@ -107,5 +105,5 @@ void serialize(Archive& ar, std::optional<T>& t, const unsigned int version) {
 
 }  // namespace serialization
 }  // namespace boost
-#endif
-#endif
+#endif // BOOST_VERSION < 108400
+#endif // GTSAM_ENABLE_BOOST_SERIALIZATION
