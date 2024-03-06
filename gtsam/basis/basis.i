@@ -11,7 +11,7 @@ namespace gtsam {
 
 class FourierBasis {
   static gtsam::Vector CalculateWeights(size_t N, double x);
-  static gtsam::Matrix WeightMatrix(size_t N, gtsam::Vector x);
+  static gtsam::Matrix WeightMatrix(size_t N, const gtsam::Vector& x);
 
   static gtsam::Matrix DifferentiationMatrix(size_t N);
   static gtsam::Vector DerivativeWeights(size_t N, double x);
@@ -21,12 +21,12 @@ class FourierBasis {
 
 class Chebyshev1Basis {
   static gtsam::Matrix CalculateWeights(size_t N, double x);
-  static gtsam::Matrix WeightMatrix(size_t N, gtsam::Vector X);
+  static gtsam::Matrix WeightMatrix(size_t N, const gtsam::Vector& X);
 };
 
 class Chebyshev2Basis {
   static gtsam::Matrix CalculateWeights(size_t N, double x);
-  static gtsam::Matrix WeightMatrix(size_t N, gtsam::Vector x);
+  static gtsam::Matrix WeightMatrix(size_t N, const gtsam::Vector& x);
 };
 
 #include <gtsam/basis/Chebyshev2.h>
@@ -37,11 +37,13 @@ class Chebyshev2 {
   static gtsam::Vector Points(size_t N);
   static gtsam::Vector Points(size_t N, double a, double b);
 
-  static gtsam::Matrix WeightMatrix(size_t N, gtsam::Vector X);
-  static gtsam::Matrix WeightMatrix(size_t N, gtsam::Vector X, double a, double b);
+  static gtsam::Matrix WeightMatrix(size_t N, const gtsam::Vector& X);
+  static gtsam::Matrix WeightMatrix(size_t N, const gtsam::Vector& X, double a,
+                                    double b);
 
   static gtsam::Matrix CalculateWeights(size_t N, double x, double a, double b);
-  static gtsam::Matrix DerivativeWeights(size_t N, double x, double a, double b);
+  static gtsam::Matrix DerivativeWeights(size_t N, double x, double a,
+                                         double b);
   static gtsam::Matrix IntegrationWeights(size_t N, double a, double b);
   static gtsam::Matrix DifferentiationMatrix(size_t N, double a, double b);
 };

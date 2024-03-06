@@ -123,14 +123,14 @@ class BinaryMeasurementsRot3 {
   void push_back(const gtsam::BinaryMeasurement<gtsam::Rot3>& measurement);
 };
 
-#include <gtsam/slam/dataset.h>
 #include <gtsam/sfm/ShonanAveraging.h>
+#include <gtsam/slam/dataset.h>
 
-template <d={2, 3}>
+template <d = {2, 3}>
 class ShonanAveragingParameters {
   ShonanAveragingParameters(const gtsam::LevenbergMarquardtParams& lm);
   ShonanAveragingParameters(const gtsam::LevenbergMarquardtParams& lm,
-                             string method);
+                            string method);
   gtsam::LevenbergMarquardtParams getLMParams() const;
   void setOptimalityThreshold(double value);
   double getOptimalityThreshold() const;
@@ -178,7 +178,8 @@ class ShonanAveraging2 {
   gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
   gtsam::Values initializeRandomlyAt(size_t p) const;
   double costAt(size_t p, const gtsam::Values& values) const;
-  pair<double, gtsam::Vector> computeMinEigenVector(const gtsam::Values& values) const;
+  pair<double, gtsam::Vector> computeMinEigenVector(
+      const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
   gtsam::LevenbergMarquardtOptimizer* createOptimizerAt(
       size_t p, const gtsam::Values& initial);
@@ -228,7 +229,8 @@ class ShonanAveraging3 {
   gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
   gtsam::Values initializeRandomlyAt(size_t p) const;
   double costAt(size_t p, const gtsam::Values& values) const;
-  pair<double, gtsam::Vector> computeMinEigenVector(const gtsam::Values& values) const;
+  pair<double, gtsam::Vector> computeMinEigenVector(
+      const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
   gtsam::LevenbergMarquardtOptimizer* createOptimizerAt(
       size_t p, const gtsam::Values& initial);

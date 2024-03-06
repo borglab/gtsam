@@ -161,12 +161,12 @@ class FactorIndices {
 namespace utilities {
 
 #include <gtsam/nonlinear/utilities.h>
-gtsam::KeyList createKeyList(gtsam::Vector I);
-gtsam::KeyList createKeyList(string s, gtsam::Vector I);
-gtsam::KeyVector createKeyVector(gtsam::Vector I);
-gtsam::KeyVector createKeyVector(string s, gtsam::Vector I);
-gtsam::KeySet createKeySet(gtsam::Vector I);
-gtsam::KeySet createKeySet(string s, gtsam::Vector I);
+gtsam::KeyList createKeyList(const gtsam::Vector& I);
+gtsam::KeyList createKeyList(string s, const gtsam::Vector& I);
+gtsam::KeyVector createKeyVector(const gtsam::Vector& I);
+gtsam::KeyVector createKeyVector(string s, const gtsam::Vector& I);
+gtsam::KeySet createKeySet(const gtsam::Vector& I);
+gtsam::KeySet createKeySet(string s, const gtsam::Vector& I);
 gtsam::Matrix extractPoint2(const gtsam::Values& values);
 gtsam::Matrix extractPoint3(const gtsam::Values& values);
 gtsam::Values allPose2s(gtsam::Values& values);
@@ -180,13 +180,15 @@ void perturbPose2(gtsam::Values& values, double sigmaT, double sigmaR,
 void perturbPoint3(gtsam::Values& values, double sigma, int seed = 42u);
 void insertBackprojections(gtsam::Values& values,
                            const gtsam::PinholeCamera<gtsam::Cal3_S2>& c,
-                           gtsam::Vector J, gtsam::Matrix Z, double depth);
+                           const gtsam::Vector& J, const gtsam::Matrix& Z,
+                           double depth);
 void insertProjectionFactors(
-    gtsam::NonlinearFactorGraph& graph, size_t i, gtsam::Vector J, gtsam::Matrix Z,
-    const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K,
+    gtsam::NonlinearFactorGraph& graph, size_t i, const gtsam::Vector& J,
+    const gtsam::Matrix& Z, const gtsam::noiseModel::Base* model,
+    const gtsam::Cal3_S2* K,
     const gtsam::Pose3& body_P_sensor = gtsam::Pose3());
 gtsam::Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph,
-                          const gtsam::Values& values);
+                                 const gtsam::Values& values);
 gtsam::Values localToWorld(const gtsam::Values& local,
                            const gtsam::Pose2& base);
 gtsam::Values localToWorld(const gtsam::Values& local, const gtsam::Pose2& base,

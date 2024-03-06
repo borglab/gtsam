@@ -23,11 +23,9 @@ namespace gtsam {
 #include <gtsam/geometry/SOn.h>
 #include <gtsam/geometry/StereoPoint2.h>
 #include <gtsam/geometry/Unit3.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/NavState.h>
-
-#include <gtsam/linear/VectorValues.h>
-
 #include <gtsam/nonlinear/Values.h>
 class Values {
   Values();
@@ -68,8 +66,8 @@ class Values {
 
   // The order is important: gtsam::Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors.
-  void insert(size_t j, gtsam::Vector vector);
-  void insert(size_t j, gtsam::Matrix matrix);
+  void insert(size_t j, const gtsam::Vector& vector);
+  void insert(size_t j, const gtsam::Matrix& matrix);
   void insert(size_t j, const gtsam::Point2& point2);
   void insert(size_t j, const gtsam::Point3& point3);
   void insert(size_t j, const gtsam::Rot2& rot2);
@@ -103,8 +101,8 @@ class Values {
 
   // The order is important: gtsam::Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors.
-  void update(size_t j, gtsam::Vector vector);
-  void update(size_t j, gtsam::Matrix matrix);
+  void update(size_t j, const gtsam::Vector& vector);
+  void update(size_t j, const gtsam::Matrix& matrix);
   void update(size_t j, const gtsam::Point2& point2);
   void update(size_t j, const gtsam::Point3& point3);
   void update(size_t j, const gtsam::Rot2& rot2);
@@ -135,8 +133,8 @@ class Values {
 
   // The order is important: gtsam::Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors.
-  void insert_or_assign(size_t j, gtsam::Vector vector);
-  void insert_or_assign(size_t j, gtsam::Matrix matrix);
+  void insert_or_assign(size_t j, const gtsam::Vector& vector);
+  void insert_or_assign(size_t j, const gtsam::Matrix& matrix);
   void insert_or_assign(size_t j, const gtsam::Point2& point2);
   void insert_or_assign(size_t j, const gtsam::Point3& point3);
   void insert_or_assign(size_t j, const gtsam::Rot2& rot2);

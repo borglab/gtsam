@@ -33,7 +33,7 @@ class IndexPair {
   size_t j() const;
 };
 
-template<KEY = {gtsam::IndexPair}>
+template <KEY = {gtsam::IndexPair}>
 class DSFMap {
   DSFMap();
   KEY find(const KEY& key) const;
@@ -86,7 +86,8 @@ class IndexPairSetMap {
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/MatrixSerialization.h>
-bool linear_independent(gtsam::Matrix A, gtsam::Matrix B, double tol);
+bool linear_independent(const gtsam::Matrix& A, const gtsam::Matrix& B,
+                        double tol);
 
 #include <gtsam/base/Value.h>
 virtual class Value {
@@ -100,11 +101,12 @@ virtual class Value {
 };
 
 #include <gtsam/base/GenericValue.h>
-template <T = {gtsam::Vector, gtsam::Matrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2,
-               gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2,
-               gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler,
-               gtsam::Cal3Fisheye, gtsam::Cal3Unified, gtsam::EssentialMatrix,
-               gtsam::CalibratedCamera, gtsam::imuBias::ConstantBias}>
+template <T = {gtsam::Vector, gtsam::Matrix, gtsam::Point2, gtsam::Point3,
+               gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
+               gtsam::StereoPoint2, gtsam::Cal3_S2, gtsam::Cal3DS2,
+               gtsam::Cal3Bundler, gtsam::Cal3Fisheye, gtsam::Cal3Unified,
+               gtsam::EssentialMatrix, gtsam::CalibratedCamera,
+               gtsam::imuBias::ConstantBias}>
 virtual class GenericValue : gtsam::Value {
   void serializable() const;
 };
