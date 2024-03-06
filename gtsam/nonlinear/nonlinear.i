@@ -95,6 +95,12 @@ class NonlinearFactorGraph {
   // Ordering* orderingCOLAMDConstrained(const gtsam::Values& c, const
   // std::map<gtsam::Key,int>& constraints) const;
   gtsam::GaussianFactorGraph* linearize(const gtsam::Values& values) const;
+  gtsam::HessianFactor* linearizeToHessianFactor(
+      const gtsam::Values& values,
+      const gtsam::This::Dampen& dampen = nullptr) const;
+  gtsam::HessianFactor* linearizeToHessianFactor(
+      const gtsam::Values& values, gtsam::Ordering ordering,
+      const gtsam::This::Dampen& dampen = nullptr) const;
   gtsam::NonlinearFactorGraph clone() const;
 
   string dot(
@@ -333,6 +339,9 @@ virtual class NonlinearOptimizer {
   gtsam::Values values() const;
   gtsam::NonlinearFactorGraph graph() const;
   gtsam::GaussianFactorGraph* iterate() const;
+  gtsam::VectorValues solve(
+      gtsam::GaussianFactorGraph& gfg,
+      const gtsam::NonlinearOptimizerParams& params) const;
 };
 
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
@@ -484,6 +493,8 @@ class ISAM2Result {
   size_t getCliques() const;
   double getErrorBefore() const;
   double getErrorAfter() const;
+
+  gtsam::FactorIndices newFactorsIndices;
 };
 
 class ISAM2 {

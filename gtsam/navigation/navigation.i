@@ -123,6 +123,9 @@ class PreintegratedImuMeasurements {
   // Standard Interface
   void integrateMeasurement(const gtsam::Vector& measuredAcc,
                             const gtsam::Vector& measuredOmega, double deltaT);
+  void integrateMeasurements(const gtsam::Matrix& measuredAccs,
+                             const gtsam::Matrix& measuredOmegas,
+                             const gtsam::Vector& dts);
   void resetIntegration();
   void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
 

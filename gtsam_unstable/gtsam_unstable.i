@@ -600,8 +600,16 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
 
   gtsam::ISAM2Params params() const;
 
+  gtsam::FixedLagSmootherResult update(
+      const gtsam::NonlinearFactorGraph& newFactors,
+      const gtsam::Values& newTheta,
+      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps,
+      const gtsam::FactorIndices& factorsToRemove);
+
+  gtsam::VectorValues getDelta() const;
   gtsam::NonlinearFactorGraph getFactors() const;
   gtsam::ISAM2 getISAM2() const;
+  gtsam::ISAM2Result getISAM2Result() const;
 };
 
 #include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
@@ -674,6 +682,18 @@ virtual class ConcurrentBatchSmoother : gtsam::ConcurrentSmoother {
       const gtsam::NonlinearFactorGraph& newFactors,
       const gtsam::Values& newTheta);
   gtsam::Values calculateEstimate() const;
+};
+
+#include <gtsam_unstable/nonlinear/LinearizedFactor.h>
+
+virtual class LinearizedGaussianFactor : gtsam::NonlinearFactor {
+  const gtsam::Values& linearizationPoint() const;
+};
+
+virtual class LinearizedHessianFactor : gtsam::LinearizedGaussianFactor {
+  LinearizedHessianFactor();
+  LinearizedHessianFactor(const gtsam::HessianFactor* hessian,
+                          const gtsam::Values& lin_points);
 };
 
 //*************************************************************************
