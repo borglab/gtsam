@@ -111,13 +111,15 @@ AlgebraicDecisionTree<Key> HybridBayesTree::modelSelection() const {
   auto trees = unzip(bn_error);
   AlgebraicDecisionTree<Key> errorTree = trees.second;
 
-  // Only compute logNormalizationConstant
-  AlgebraicDecisionTree<Key> log_norm_constants =
-      computeLogNormConstants(bnTree);
-
   // Compute model selection term (with help from ADT methods)
-  AlgebraicDecisionTree<Key> modelSelectionTerm =
-      computeModelSelectionTerm(errorTree, log_norm_constants);
+  AlgebraicDecisionTree<Key> modelSelectionTerm = errorTree * -1;
+
+  // Exponentiate using our scheme
+  double max_log = modelSelectionTerm.max();
+  modelSelectionTerm = DecisionTree<Key, double>(
+      modelSelectionTerm,
+      [&max_log](const double& x) { return std::exp(x - max_log); });
+  modelSelectionTerm = modelSelectionTerm.normalize(modelSelectionTerm.sum());
 
   return modelSelectionTerm;
 }

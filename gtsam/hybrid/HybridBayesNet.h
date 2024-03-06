@@ -128,22 +128,17 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    */
   GaussianBayesNetValTree assembleTree() const;
 
-  /*
-    Compute L(M;Z), the likelihood of the discrete model M
-    given the measurements Z.
-    This is called the model selection term.
-
-    To do so, we perform the integration of L(M;Z) ∝ L(X;M,Z)P(X|M).
-
-    By Bayes' rule, P(X|M,Z) ∝ L(X;M,Z)P(X|M),
-    hence L(X;M,Z)P(X|M) is the unnormalized probabilty of
-    the joint Gaussian distribution.
-
-    This can be computed by multiplying all the exponentiated errors
-    of each of the conditionals.
-
-    Return a tree where each leaf value is L(M_i;Z).
-  */
+  /**
+   * @brief Compute the model selection term q(μ_X; M, Z)
+   * given the error for each discrete assignment.
+   *
+   * The q(μ) terms are obtained as a result of elimination
+   * as part of the separator factor.
+   *
+   * Perform normalization to handle underflow issues.
+   *
+   * @return AlgebraicDecisionTree<Key>
+   */
   AlgebraicDecisionTree<Key> modelSelection() const;
 
   /**
@@ -300,19 +295,5 @@ GaussianBayesNetTree addGaussian(const GaussianBayesNetTree &gbnTree,
  */
 AlgebraicDecisionTree<Key> computeLogNormConstants(
     const GaussianBayesNetValTree &bnTree);
-
-/**
- * @brief Compute the model selection term L(M; Z, X) given the error
- * and log normalization constants.
- *
- * Perform normalization to handle underflow issues.
- *
- * @param errorTree
- * @param log_norm_constants
- * @return AlgebraicDecisionTree<Key>
- */
-AlgebraicDecisionTree<Key> computeModelSelectionTerm(
-    const AlgebraicDecisionTree<Key> &errorTree,
-    const AlgebraicDecisionTree<Key> &log_norm_constants);
 
 }  // namespace gtsam

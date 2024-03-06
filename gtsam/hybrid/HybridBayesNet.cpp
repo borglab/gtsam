@@ -265,16 +265,10 @@ GaussianBayesNetValTree HybridBayesNet::assembleTree() const {
 /* ************************************************************************* */
 AlgebraicDecisionTree<Key> HybridBayesNet::modelSelection() const {
   /*
-      To perform model selection, we need:
-      q(mu; M, Z) * sqrt((2*pi)^n*det(Sigma))
-
-      If q(mu; M, Z) = exp(-error) & k = 1.0 / sqrt((2*pi)^n*det(Sigma))
-      thus, q * sqrt((2*pi)^n*det(Sigma)) = q/k = exp(log(q/k))
-      = exp(log(q) - log(k)) = exp(-error - log(k))
-      = exp(-(error + log(k))),
+      To perform model selection, we need: q(mu; M, Z) = exp(-error)
       where error is computed at the corresponding MAP point, gbn.error(mu).
 
-      So we compute (error + log(k)) and exponentiate later
+      So we compute (-error) and exponentiate later
     */
 
   GaussianBayesNetValTree bnTree = assembleTree();
@@ -301,13 +295,16 @@ AlgebraicDecisionTree<Key> HybridBayesNet::modelSelection() const {
   auto trees = unzip(bn_error);
   AlgebraicDecisionTree<Key> errorTree = trees.second;
 
-  // Only compute logNormalizationConstant
-  AlgebraicDecisionTree<Key> log_norm_constants =
-      computeLogNormConstants(bnTree);
-
   // Compute model selection term (with help from ADT methods)
-  AlgebraicDecisionTree<Key> modelSelectionTerm =
-      computeModelSelectionTerm(errorTree, log_norm_constants);
+  AlgebraicDecisionTree<Key> modelSelectionTerm = errorTree * -1;
+
+  // Exponentiate using our scheme
+  double max_log = modelSelectionTerm.max();
+  modelSelectionTerm = DecisionTree<Key, double>(
+      modelSelectionTerm,
+      [&max_log](const double &x) { return std::exp(x - max_log); });
+  modelSelectionTerm = modelSelectionTerm.normalize(modelSelectionTerm.sum());
+
   return modelSelectionTerm;
 }
 
@@ -529,22 +526,6 @@ AlgebraicDecisionTree<Key> computeLogNormConstants(
         return gbn.logNormalizationConstant();
       });
   return log_norm_constants;
-}
-
-/* ************************************************************************* */
-AlgebraicDecisionTree<Key> computeModelSelectionTerm(
-    const AlgebraicDecisionTree<Key> &errorTree,
-    const AlgebraicDecisionTree<Key> &log_norm_constants) {
-  AlgebraicDecisionTree<Key> modelSelectionTerm =
-      (errorTree + log_norm_constants) * -1;
-
-  double max_log = modelSelectionTerm.max();
-  modelSelectionTerm = DecisionTree<Key, double>(
-      modelSelectionTerm,
-      [&max_log](const double &x) { return std::exp(x - max_log); });
-  modelSelectionTerm = modelSelectionTerm.normalize(modelSelectionTerm.sum());
-
-  return modelSelectionTerm;
 }
 
 }  // namespace gtsam
