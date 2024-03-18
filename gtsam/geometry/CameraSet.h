@@ -327,12 +327,16 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
    * g = F' * (b - E * P * E' * b)
    * Fixed size version
    */
+#ifdef _WIN32
+#if _MSC_VER < 1937
   template <int N>  // N = 2 or 3
   static SymmetricBlockMatrix SchurComplement(
       const FBlocks& Fs, const Matrix& E, const Eigen::Matrix<double, N, N>& P,
       const Vector& b) {
     return SchurComplement<N, D>(Fs, E, P, b);
   }
+#endif
+#endif
 
   /// Computes Point Covariance P, with lambda parameter
   template <int N>  // N = 2 or 3 (point dimension)
