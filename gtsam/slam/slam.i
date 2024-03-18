@@ -7,12 +7,13 @@ namespace gtsam {
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/SO4.h>
 #include <gtsam/navigation/ImuBias.h>
+#include <gtsam/geometry/Similarity3.h>
 
 // ######
 
 #include <gtsam/slam/BetweenFactor.h>
 template <T = {double, Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3,
-               gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
+               gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Similarity3,
                gtsam::imuBias::ConstantBias}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose,

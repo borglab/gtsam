@@ -145,3 +145,12 @@ class TemplatedConstructor {
 
 class SuperCoolFactor;
 typedef SuperCoolFactor<gtsam::Pose3> SuperCoolFactorPose3;
+
+/// @brief class with dunder methods for container behavior
+class FastSet {
+  FastSet();
+
+  __len__();
+  __contains__(size_t key);
+  __iter__();
+};
