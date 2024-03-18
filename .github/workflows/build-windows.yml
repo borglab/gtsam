@@ -27,7 +27,7 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-            windows-2019-cl,
+            windows-2022-cl,
           ]
 
         build_type: [
@@ -37,12 +37,25 @@ jobs:
 
         build_unstable: [ON]
         include:
-          - name: windows-2019-cl
-            os: windows-2019
+          - name: windows-2022-cl
+            os: windows-2022
             compiler: cl
             platform: 64
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup msbuild
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x${{ matrix.platform }}
+          toolset: 14.38
+
+      - name: cl version
+        shell: cmd
+        run: cl
+
       - name: Install Dependencies
         shell: powershell
         run: |
@@ -90,14 +103,6 @@ jobs:
 
           # Set the BOOST_ROOT variable
           echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
-
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Setup msbuild
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x${{ matrix.platform }}
 
       - name: Configuration
         shell: bash
