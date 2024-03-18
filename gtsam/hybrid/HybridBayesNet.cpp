@@ -228,24 +228,6 @@ GaussianBayesNet HybridBayesNet::choose(
 }
 
 /* ************************************************************************ */
-static GaussianBayesNetTree addGaussian(
-    const GaussianBayesNetTree &gfgTree,
-    const GaussianConditional::shared_ptr &factor) {
-  // If the decision tree is not initialized, then initialize it.
-  if (gfgTree.empty()) {
-    GaussianBayesNet result{factor};
-    return GaussianBayesNetTree(result);
-  } else {
-    auto add = [&factor](const GaussianBayesNet &graph) {
-      auto result = graph;
-      result.push_back(factor);
-      return result;
-    };
-    return gfgTree.apply(add);
-  }
-}
-
-/* ************************************************************************ */
 GaussianBayesNetValTree HybridBayesNet::assembleTree() const {
   GaussianBayesNetTree result;
 
@@ -283,16 +265,10 @@ GaussianBayesNetValTree HybridBayesNet::assembleTree() const {
 /* ************************************************************************* */
 AlgebraicDecisionTree<Key> HybridBayesNet::modelSelection() const {
   /*
-      To perform model selection, we need:
-      q(mu; M, Z) * sqrt((2*pi)^n*det(Sigma))
-
-      If q(mu; M, Z) = exp(-error) & k = 1.0 / sqrt((2*pi)^n*det(Sigma))
-      thus, q * sqrt((2*pi)^n*det(Sigma)) = q/k = exp(log(q/k))
-      = exp(log(q) - log(k)) = exp(-error - log(k))
-      = exp(-(error + log(k))),
+      To perform model selection, we need: q(mu; M, Z) = exp(-error)
       where error is computed at the corresponding MAP point, gbn.error(mu).
 
-      So we compute (error + log(k)) and exponentiate later
+      So we compute (-error) and exponentiate later
     */
 
   GaussianBayesNetValTree bnTree = assembleTree();
@@ -309,7 +285,7 @@ AlgebraicDecisionTree<Key> HybridBayesNet::modelSelection() const {
                                 std::numeric_limits<double>::max());
         }
 
-        // Compute the error for X* and the assignment
+        // Compute the error at the MLE point X* for the current assignment
         double error =
             this->error(HybridValues(mu, DiscreteValues(assignment)));
 
@@ -319,20 +295,10 @@ AlgebraicDecisionTree<Key> HybridBayesNet::modelSelection() const {
   auto trees = unzip(bn_error);
   AlgebraicDecisionTree<Key> errorTree = trees.second;
 
-  // Only compute logNormalizationConstant
-  AlgebraicDecisionTree<Key> log_norm_constants = DecisionTree<Key, double>(
-      bnTree, [](const std::pair<GaussianBayesNet, double> &gbnAndValue) {
-        GaussianBayesNet gbn = gbnAndValue.first;
-        if (gbn.size() == 0) {
-          return 0.0;
-        }
-        return gbn.logNormalizationConstant();
-      });
-
   // Compute model selection term (with help from ADT methods)
-  AlgebraicDecisionTree<Key> modelSelectionTerm =
-      (errorTree + log_norm_constants) * -1;
+  AlgebraicDecisionTree<Key> modelSelectionTerm = errorTree * -1;
 
+  // Exponentiate using our scheme
   double max_log = modelSelectionTerm.max();
   modelSelectionTerm = DecisionTree<Key, double>(
       modelSelectionTerm,
@@ -528,6 +494,38 @@ HybridGaussianFactorGraph HybridBayesNet::toFactorGraph(
     }
   }
   return fg;
+}
+
+/* ************************************************************************ */
+GaussianBayesNetTree addGaussian(
+    const GaussianBayesNetTree &gbnTree,
+    const GaussianConditional::shared_ptr &factor) {
+  // If the decision tree is not initialized, then initialize it.
+  if (gbnTree.empty()) {
+    GaussianBayesNet result{factor};
+    return GaussianBayesNetTree(result);
+  } else {
+    auto add = [&factor](const GaussianBayesNet &graph) {
+      auto result = graph;
+      result.push_back(factor);
+      return result;
+    };
+    return gbnTree.apply(add);
+  }
+}
+
+/* ************************************************************************* */
+AlgebraicDecisionTree<Key> computeLogNormConstants(
+    const GaussianBayesNetValTree &bnTree) {
+  AlgebraicDecisionTree<Key> log_norm_constants = DecisionTree<Key, double>(
+      bnTree, [](const std::pair<GaussianBayesNet, double> &gbnAndValue) {
+        GaussianBayesNet gbn = gbnAndValue.first;
+        if (gbn.size() == 0) {
+          return 0.0;
+        }
+        return gbn.logNormalizationConstant();
+      });
+  return log_norm_constants;
 }
 
 }  // namespace gtsam

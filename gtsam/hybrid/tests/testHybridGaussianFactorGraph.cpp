@@ -490,6 +490,58 @@ TEST(HybridGaussianFactorGraph, SwitchingTwoVar) {
   }
 }
 
+/* ****************************************************************************/
+// Select a particular continuous factor graph given a discrete assignment
+TEST(HybridGaussianFactorGraph, DiscreteSelection) {
+  Switching s(3);
+
+  HybridGaussianFactorGraph graph = s.linearizedFactorGraph;
+
+  DiscreteValues dv00{{M(0), 0}, {M(1), 0}};
+  GaussianFactorGraph continuous_00 = graph(dv00);
+  GaussianFactorGraph expected_00;
+  expected_00.push_back(JacobianFactor(X(0), I_1x1 * 10, Vector1(-10)));
+  expected_00.push_back(JacobianFactor(X(0), -I_1x1, X(1), I_1x1, Vector1(-1)));
+  expected_00.push_back(JacobianFactor(X(1), -I_1x1, X(2), I_1x1, Vector1(-1)));
+  expected_00.push_back(JacobianFactor(X(1), I_1x1 * 10, Vector1(-10)));
+  expected_00.push_back(JacobianFactor(X(2), I_1x1 * 10, Vector1(-10)));
+
+  EXPECT(assert_equal(expected_00, continuous_00));
+
+  DiscreteValues dv01{{M(0), 0}, {M(1), 1}};
+  GaussianFactorGraph continuous_01 = graph(dv01);
+  GaussianFactorGraph expected_01;
+  expected_01.push_back(JacobianFactor(X(0), I_1x1 * 10, Vector1(-10)));
+  expected_01.push_back(JacobianFactor(X(0), -I_1x1, X(1), I_1x1, Vector1(-1)));
+  expected_01.push_back(JacobianFactor(X(1), -I_1x1, X(2), I_1x1, Vector1(-0)));
+  expected_01.push_back(JacobianFactor(X(1), I_1x1 * 10, Vector1(-10)));
+  expected_01.push_back(JacobianFactor(X(2), I_1x1 * 10, Vector1(-10)));
+
+  EXPECT(assert_equal(expected_01, continuous_01));
+
+  DiscreteValues dv10{{M(0), 1}, {M(1), 0}};
+  GaussianFactorGraph continuous_10 = graph(dv10);
+  GaussianFactorGraph expected_10;
+  expected_10.push_back(JacobianFactor(X(0), I_1x1 * 10, Vector1(-10)));
+  expected_10.push_back(JacobianFactor(X(0), -I_1x1, X(1), I_1x1, Vector1(-0)));
+  expected_10.push_back(JacobianFactor(X(1), -I_1x1, X(2), I_1x1, Vector1(-1)));
+  expected_10.push_back(JacobianFactor(X(1), I_1x1 * 10, Vector1(-10)));
+  expected_10.push_back(JacobianFactor(X(2), I_1x1 * 10, Vector1(-10)));
+
+  EXPECT(assert_equal(expected_10, continuous_10));
+
+  DiscreteValues dv11{{M(0), 1}, {M(1), 1}};
+  GaussianFactorGraph continuous_11 = graph(dv11);
+  GaussianFactorGraph expected_11;
+  expected_11.push_back(JacobianFactor(X(0), I_1x1 * 10, Vector1(-10)));
+  expected_11.push_back(JacobianFactor(X(0), -I_1x1, X(1), I_1x1, Vector1(-0)));
+  expected_11.push_back(JacobianFactor(X(1), -I_1x1, X(2), I_1x1, Vector1(-0)));
+  expected_11.push_back(JacobianFactor(X(1), I_1x1 * 10, Vector1(-10)));
+  expected_11.push_back(JacobianFactor(X(2), I_1x1 * 10, Vector1(-10)));
+
+  EXPECT(assert_equal(expected_11, continuous_11));
+}
+
 /* ************************************************************************* */
 TEST(HybridGaussianFactorGraph, optimize) {
   HybridGaussianFactorGraph hfg;
