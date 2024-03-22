@@ -106,7 +106,8 @@ TEST(GaussianMixtureFactor, Printing) {
   GaussianMixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 
   std::string expected =
-      R"(Hybrid [x1 x2; 1]{
+      R"(GaussianMixtureFactor
+Hybrid [x1 x2; 1]{
  Choice(1) 
  0 Leaf :
   A[x1] = [

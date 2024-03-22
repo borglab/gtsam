@@ -24,6 +24,7 @@
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Conditional-inst.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
@@ -93,6 +94,34 @@ GaussianFactorGraphTree GaussianMixture::asGaussianFactorGraphTree() const {
 }
 
 /* *******************************************************************************/
+GaussianBayesNetTree GaussianMixture::add(
+    const GaussianBayesNetTree &sum) const {
+  using Y = GaussianBayesNet;
+  auto add = [](const Y &graph1, const Y &graph2) {
+    auto result = graph1;
+    if (graph2.size() == 0) {
+      return GaussianBayesNet();
+    }
+    result.push_back(graph2);
+    return result;
+  };
+  const auto tree = asGaussianBayesNetTree();
+  return sum.empty() ? tree : sum.apply(tree, add);
+}
+
+/* *******************************************************************************/
+GaussianBayesNetTree GaussianMixture::asGaussianBayesNetTree() const {
+  auto wrap = [](const GaussianConditional::shared_ptr &gc) {
+    if (gc) {
+      return GaussianBayesNet{gc};
+    } else {
+      return GaussianBayesNet();
+    }
+  };
+  return {conditionals_, wrap};
+}
+
+/* *******************************************************************************/
 size_t GaussianMixture::nrComponents() const {
   size_t total = 0;
   conditionals_.visit([&total](const GaussianFactor::shared_ptr &node) {
@@ -145,6 +174,8 @@ void GaussianMixture::print(const std::string &s,
     std::cout << "(" << formatter(dk.first) << ", " << dk.second << "), ";
   }
   std::cout << "\n";
+  std::cout << " logNormalizationConstant: " << logConstant_ << "\n"
+            << std::endl;
   conditionals_.print(
       "", [&](Key k) { return formatter(k); },
       [&](const GaussianConditional::shared_ptr &gf) -> std::string {
@@ -316,8 +347,15 @@ AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
 AlgebraicDecisionTree<Key> GaussianMixture::errorTree(
     const VectorValues &continuousValues) const {
   auto errorFunc = [&](const GaussianConditional::shared_ptr &conditional) {
-    return conditional->error(continuousValues) +  //
-           logConstant_ - conditional->logNormalizationConstant();
+    // Check if valid pointer
+    if (conditional) {
+      return conditional->error(continuousValues) +  //
+             logConstant_ - conditional->logNormalizationConstant();
+    } else {
+      // If not valid, pointer, it means this conditional was pruned,
+      // so we return maximum error.
+      return std::numeric_limits<double>::max();
+    }
   };
   DecisionTree<Key, double> error_tree(conditionals_, errorFunc);
   return error_tree;
@@ -325,10 +363,32 @@ AlgebraicDecisionTree<Key> GaussianMixture::errorTree(
 
 /* *******************************************************************************/
 double GaussianMixture::error(const HybridValues &values) const {
+  // Check if discrete keys in discrete assignment are
+  // present in the GaussianMixture
+  KeyVector dKeys = this->discreteKeys_.indices();
+  bool valid_assignment = false;
+  for (auto &&kv : values.discrete()) {
+    if (std::find(dKeys.begin(), dKeys.end(), kv.first) != dKeys.end()) {
+      valid_assignment = true;
+      break;
+    }
+  }
+
+  // The discrete assignment is not valid so we return 0.0 erorr.
+  if (!valid_assignment) {
+    return 0.0;
+  }
+
   // Directly index to get the conditional, no need to build the whole tree.
   auto conditional = conditionals_(values.discrete());
-  return conditional->error(values.continuous()) +  //
-         logConstant_ - conditional->logNormalizationConstant();
+  if (conditional) {
+    return conditional->error(values.continuous()) +  //
+           logConstant_ - conditional->logNormalizationConstant();
+  } else {
+    // If not valid, pointer, it means this conditional was pruned,
+    // so we return maximum error.
+    return std::numeric_limits<double>::max();
+  }
 }
 
 /* *******************************************************************************/

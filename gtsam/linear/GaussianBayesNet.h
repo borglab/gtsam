@@ -82,6 +82,12 @@ namespace gtsam {
     /** Check equality */
     bool equals(const This& bn, double tol = 1e-9) const;
 
+    /// Check exact equality.
+    friend bool operator==(const GaussianBayesNet& lhs,
+                           const GaussianBayesNet& rhs) {
+      return lhs.isEqual(rhs);
+    }
+
     /// print graph
     void print(
         const std::string& s = "",
@@ -227,6 +233,14 @@ namespace gtsam {
      * @param bayesNet The input GaussianBayesNet
      * @return The determinant */
     double logDeterminant() const;
+
+    /**
+     * @brief Get the log of the normalization constant corresponding to the
+     * joint Gaussian density represented by this Bayes net.
+     *
+     * @return double
+     */
+    double logNormalizationConstant() const;
 
     /**
      * Backsubstitute with a different RHS vector than the one stored in this BayesNet.

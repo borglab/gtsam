@@ -67,9 +67,16 @@ class GTSAM_EXPORT GaussianMixture
   double logConstant_;         ///< log of the normalization constant.
 
   /**
-   * @brief Convert a DecisionTree of factors into a DT of Gaussian FGs.
+   * @brief Convert a DecisionTree of factors into
+   * a DecisionTree of Gaussian factor graphs.
    */
   GaussianFactorGraphTree asGaussianFactorGraphTree() const;
+
+  /**
+   * @brief Convert a DecisionTree of conditionals into
+   * a DecisionTree of Gaussian Bayes nets.
+   */
+  GaussianBayesNetTree asGaussianBayesNetTree() const;
 
   /**
    * @brief Helper function to get the pruner functor.
@@ -248,6 +255,15 @@ class GTSAM_EXPORT GaussianMixture
    * @return GaussianFactorGraphTree
    */
   GaussianFactorGraphTree add(const GaussianFactorGraphTree &sum) const;
+
+  /**
+   * @brief Merge the Gaussian Bayes Nets in `this` and `sum` while
+   * maintaining the decision tree structure.
+   *
+   * @param sum Decision Tree of Gaussian Bayes Nets
+   * @return GaussianBayesNetTree
+   */
+  GaussianBayesNetTree add(const GaussianBayesNetTree &sum) const;
   /// @}
 
  private:
