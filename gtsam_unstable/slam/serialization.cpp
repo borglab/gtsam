@@ -24,6 +24,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3DS2_k3.h>
 //#include <gtsam/geometry/Cal3_S2Stereo.h>
 
 using namespace gtsam;
@@ -38,6 +39,7 @@ typedef PriorFactor<Pose2>                PriorFactorPose2;
 typedef PriorFactor<Pose3>                PriorFactorPose3;
 typedef PriorFactor<Cal3_S2>              PriorFactorCal3_S2;
 typedef PriorFactor<Cal3DS2>              PriorFactorCal3DS2;
+typedef PriorFactor<Cal3DS2_k3>           PriorFactorCal3DS2_k3;
 typedef PriorFactor<CalibratedCamera>     PriorFactorCalibratedCamera;
 typedef PriorFactor<PinholeCameraCal3_S2> PriorFactorPinholeCameraCal3_S2;
 typedef PriorFactor<StereoCamera>         PriorFactorStereoCamera;
@@ -58,6 +60,7 @@ typedef NonlinearEquality<Pose2>                  NonlinearEqualityPose2;
 typedef NonlinearEquality<Pose3>                  NonlinearEqualityPose3;
 typedef NonlinearEquality<Cal3_S2>                NonlinearEqualityCal3_S2;
 typedef NonlinearEquality<Cal3DS2>                NonlinearEqualityCal3DS2;
+typedef NonlinearEquality<Cal3DS2_k3>             NonlinearEqualityCal3DS2_k3;
 typedef NonlinearEquality<CalibratedCamera>       NonlinearEqualityCalibratedCamera;
 typedef NonlinearEquality<PinholeCameraCal3_S2>   NonlinearEqualityPinholeCameraCal3_S2;
 typedef NonlinearEquality<StereoCamera>           NonlinearEqualityStereoCamera;
@@ -76,6 +79,7 @@ typedef BearingRangeFactor<Pose3, Point3>  BearingRangeFactor3D;
 
 typedef GenericProjectionFactor<Pose3, Point3, Cal3_S2> GenericProjectionFactorCal3_S2;
 typedef GenericProjectionFactor<Pose3, Point3, Cal3DS2> GenericProjectionFactorCal3DS2;
+typedef GenericProjectionFactor<Pose3, Point3, Cal3DS2_k3> GenericProjectionFactorCal3DS2_k3;
 
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
@@ -113,6 +117,7 @@ GTSAM_VALUE_EXPORT(gtsam::Pose2);
 GTSAM_VALUE_EXPORT(gtsam::Pose3);
 GTSAM_VALUE_EXPORT(gtsam::Cal3_S2);
 GTSAM_VALUE_EXPORT(gtsam::Cal3DS2);
+GTSAM_VALUE_EXPORT(gtsam::Cal3DS2_k3);
 GTSAM_VALUE_EXPORT(gtsam::Cal3_S2Stereo);
 GTSAM_VALUE_EXPORT(gtsam::CalibratedCamera);
 GTSAM_VALUE_EXPORT(gtsam::PinholeCameraCal3_S2);

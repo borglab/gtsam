@@ -26,6 +26,7 @@
 #include <gtsam/geometry/Cal3Unified.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3DS2_k3.h>
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/SphericalCamera.h>
@@ -757,6 +758,7 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
 using CameraSetCal3Bundler = CameraSet<PinholeCamera<Cal3Bundler>>;
 using CameraSetCal3_S2 = CameraSet<PinholeCamera<Cal3_S2>>;
 using CameraSetCal3DS2 = CameraSet<PinholeCamera<Cal3DS2>>;
+using CameraSetCal3DS2_k3 = CameraSet<PinholeCamera<Cal3DS2_k3>>;
 using CameraSetCal3Fisheye = CameraSet<PinholeCamera<Cal3Fisheye>>;
 using CameraSetCal3Unified = CameraSet<PinholeCamera<Cal3Unified>>;
 using CameraSetSpherical = CameraSet<SphericalCamera>;

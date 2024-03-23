@@ -741,6 +741,56 @@ virtual class Cal3DS2 : gtsam::Cal3DS2_Base {
   void serialize() const;
 };
 
+#include <gtsam/geometry/Cal3DS2_k3_Base.h>
+virtual class Cal3DS2_k3_Base {
+  // Standard Constructors
+  Cal3DS2_k3_Base();
+
+  // Testable
+  void print(string s = "") const;
+
+  // Standard Interface
+  double fx() const;
+  double fy() const;
+  double skew() const;
+  double px() const;
+  double py() const;
+  double k1() const;
+  double k2() const;
+  double k3() const;
+  Matrix K() const;
+  Vector k() const;
+  Vector vector() const;
+
+  // Action on Point2
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
+#include <gtsam/geometry/Cal3DS2_k3.h>
+virtual class Cal3DS2_k3 : gtsam::Cal3DS2_k3_Base {
+  // Standard Constructors
+  Cal3DS2_k3();
+  Cal3DS2_k3(double fx, double fy, double s, double u0, double v0, double k1,
+          double k2, double p1, double p2, double k3);
+  Cal3DS2_k3(Vector v);
+
+  // Testable
+  bool equals(const gtsam::Cal3DS2_k3& rhs, double tol) const;
+
+  // Manifold
+  size_t dim() const;
+  static size_t Dim();
+  gtsam::Cal3DS2_k3 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Cal3DS2_k3& c) const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
 #include <gtsam/geometry/Cal3Unified.h>
 virtual class Cal3Unified : gtsam::Cal3DS2_Base {
   // Standard Constructors
@@ -1004,6 +1054,7 @@ class PinholeCamera {
 // PinholeCameraCal3_S2 is the same as SimpleCamera above
 typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
 typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
+typedef gtsam::PinholeCamera<gtsam::Cal3DS2_k3> PinholeCameraCal3DS2_k3;
 typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
 typedef gtsam::PinholeCamera<gtsam::Cal3Fisheye> PinholeCameraCal3Fisheye;
@@ -1061,6 +1112,7 @@ class PinholePose {
 
 typedef gtsam::PinholePose<gtsam::Cal3_S2> PinholePoseCal3_S2;
 typedef gtsam::PinholePose<gtsam::Cal3DS2> PinholePoseCal3DS2;
+typedef gtsam::PinholePose<gtsam::Cal3DS2_k3> PinholePoseCal3DS2_k3;
 typedef gtsam::PinholePose<gtsam::Cal3Unified> PinholePoseCal3Unified;
 typedef gtsam::PinholePose<gtsam::Cal3Bundler> PinholePoseCal3Bundler;
 typedef gtsam::PinholePose<gtsam::Cal3Fisheye> PinholePoseCal3Fisheye;
@@ -1238,6 +1290,29 @@ gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3DS2& cameras,
                                    const gtsam::Point3& initialEstimate);
 gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSetCal3DS2& cameras,
+    const gtsam::Point2Vector& measurements,
+    const gtsam::TriangulationParameters& params);
+
+// Cal3DS2_k3 versions
+gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
+                                gtsam::Cal3DS2_k3* sharedCal,
+                                const gtsam::Point2Vector& measurements,
+                                double rank_tol, bool optimize,
+                                const gtsam::SharedNoiseModel& model = nullptr);
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3DS2_k3& cameras,
+                                const gtsam::Point2Vector& measurements,
+                                double rank_tol, bool optimize,
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
+gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
+                                   gtsam::Cal3DS2_k3* sharedCal,
+                                   const gtsam::Point2Vector& measurements,
+                                   const gtsam::Point3& initialEstimate);
+gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3DS2_k3& cameras,
+                                   const gtsam::Point2Vector& measurements,
+                                   const gtsam::Point3& initialEstimate);
+gtsam::TriangulationResult triangulateSafe(
+    const gtsam::CameraSetCal3DS2_k3& cameras,
     const gtsam::Point2Vector& measurements,
     const gtsam::TriangulationParameters& params);
 
