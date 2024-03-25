@@ -77,6 +77,9 @@ namespace gtsam {
     typedef ConcurrentMap<Key, Vector> Values;  ///< Collection of Vectors making up a VectorValues
     Values values_;                             ///< Vectors making up this VectorValues
 
+    /** Sort by key (primarily for use with TBB, which uses an unordered map)*/
+    std::map<Key, Vector> sorted() const;
+
    public:
     typedef Values::iterator iterator;              ///< Iterator over vector values
     typedef Values::const_iterator const_iterator;  ///< Const iterator over vector values
