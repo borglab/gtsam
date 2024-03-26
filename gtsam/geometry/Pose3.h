@@ -135,10 +135,10 @@ public:
   /// @name Lie Group
   /// @{
 
-  /// Exponential map at identity - create a rotation from canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$
+  /// Exponential map at identity - create a pose from canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$
   static Pose3 Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi = {});
 
-  /// Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of this rotation
+  /// Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of this pose
   static Vector6 Logmap(const Pose3& pose, OptionalJacobian<6, 6> Hpose = {});
 
   /**
