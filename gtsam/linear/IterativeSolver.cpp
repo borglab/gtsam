@@ -47,6 +47,12 @@ void IterativeOptimizationParameters::print(ostream &os) const {
 }
 
 /*****************************************************************************/
+bool IterativeOptimizationParameters::equals(
+    const IterativeOptimizationParameters &other, double tol) const {
+  return verbosity_ == other.verbosity();
+}
+
+/*****************************************************************************/
 ostream& operator<<(ostream &os, const IterativeOptimizationParameters &p) {
   p.print(os);
   return os;
