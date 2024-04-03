@@ -104,6 +104,9 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   DiscreteConditional(const gtsam::DecisionTreeFactor& joint,
                       const gtsam::DecisionTreeFactor& marginal,
                       const gtsam::Ordering& orderedKeys);
+  DiscreteConditional(const gtsam::DiscreteKey& key,
+                      const gtsam::DiscreteKeys& parents,
+                      const std::vector<double>& table);
 
   // Standard interface
   double logNormalizationConstant() const;
