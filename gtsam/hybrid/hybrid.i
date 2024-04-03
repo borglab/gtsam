@@ -92,7 +92,10 @@ class GaussianMixture : gtsam::HybridFactor {
                   const std::vector<gtsam::GaussianConditional::shared_ptr>&
                       conditionalsList);
 
-  gtsam::GaussianMixtureFactor* likelihood(const gtsam::VectorValues &frontals) const;
+  gtsam::GaussianMixtureFactor* likelihood(
+      const gtsam::VectorValues& frontals) const;
+  double logProbability(const gtsam::HybridValues& values) const;
+  double evaluate(const gtsam::HybridValues& values) const;
 
   void print(string s = "GaussianMixture\n",
              const gtsam::KeyFormatter& keyFormatter =
