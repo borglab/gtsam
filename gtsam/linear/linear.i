@@ -127,7 +127,7 @@ virtual class Huber: gtsam::noiseModel::mEstimator::Base {
 };
 
 virtual class Cauchy: gtsam::noiseModel::mEstimator::Base {
-  Cauchy(double k);
+  Cauchy(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::Cauchy* Create(double k);
 
   // enabling serialization functionality
@@ -138,7 +138,7 @@ virtual class Cauchy: gtsam::noiseModel::mEstimator::Base {
 };
 
 virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
-  Tukey(double k);
+  Tukey(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::Tukey* Create(double k);
 
   // enabling serialization functionality
@@ -149,7 +149,7 @@ virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
 };
 
 virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
-  Welsch(double k);
+  Welsch(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::Welsch* Create(double k);
 
   // enabling serialization functionality
@@ -160,7 +160,7 @@ virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
 };
 
 virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
-  GemanMcClure(double c);
+  GemanMcClure(double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::GemanMcClure* Create(double c);
 
   // enabling serialization functionality
@@ -171,7 +171,7 @@ virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
 };
 
 virtual class DCS: gtsam::noiseModel::mEstimator::Base {
-  DCS(double c);
+  DCS(double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::DCS* Create(double c);
 
   // enabling serialization functionality
@@ -182,7 +182,7 @@ virtual class DCS: gtsam::noiseModel::mEstimator::Base {
 };
 
 virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
-  L2WithDeadZone(double k);
+  L2WithDeadZone(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::L2WithDeadZone* Create(double k);
 
   // enabling serialization functionality
@@ -195,6 +195,28 @@ virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
 virtual class AsymmetricTukey: gtsam::noiseModel::mEstimator::Base {
   AsymmetricTukey(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::AsymmetricTukey* Create(double k);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double loss(double error) const;
+};
+
+virtual class AsymmetricCauchy: gtsam::noiseModel::mEstimator::Base {
+  AsymmetricCauchy(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  static gtsam::noiseModel::mEstimator::AsymmetricCauchy* Create(double k);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double loss(double error) const;
+};
+
+virtual class TwoSidedHuberCauchy: gtsam::noiseModel::mEstimator::Base {
+  TwoSidedHuberCauchy(double k, double k_huber, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  static gtsam::noiseModel::mEstimator::TwoSidedHuberCauchy* Create(double k);
 
   // enabling serialization functionality
   void serializable() const;
@@ -355,6 +377,8 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   // enabling serialization functionality
   void serialize() const;
 };
+
+pair<gtsam::GaussianConditional, gtsam::JacobianFactor*> EliminateQR(const gtsam::GaussianFactorGraph& factors, const gtsam::Ordering& keys);
 
 #include <gtsam/linear/HessianFactor.h>
 virtual class HessianFactor : gtsam::GaussianFactor {
