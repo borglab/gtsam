@@ -110,7 +110,7 @@ void PreintegratedRotation::integrateGyroMeasurement(
   delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ + H_bias;
 }
 
-// deprecated!
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 void PreintegratedRotation::integrateMeasurement(
     const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
     OptionalJacobian<3, 3> optional_D_incrR_integratedOmega,
@@ -125,6 +125,7 @@ void PreintegratedRotation::integrateMeasurement(
     *optional_D_incrR_integratedOmega << H_bias / -deltaT;
   }
 }
+#endif
 
 Rot3 PreintegratedRotation::biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
     OptionalJacobian<3, 3> H) const {
