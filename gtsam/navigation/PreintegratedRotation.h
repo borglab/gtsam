@@ -65,7 +65,6 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    namespace bs = ::boost::serialization;
     ar & BOOST_SERIALIZATION_NVP(gyroscopeCovariance);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor);
 
@@ -159,15 +158,34 @@ class GTSAM_EXPORT PreintegratedRotation {
   /// @name Main functionality
   /// @{
 
-  /// Take the gyro measurement, correct it using the (constant) bias estimate
-  /// and possibly the sensor pose, and then integrate it forward in time to yield
-  /// an incremental rotation.
-  Rot3 incrementalRotation(const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
-                           OptionalJacobian<3, 3> D_incrR_integratedOmega) const;
+  /**
+   * @brief Take the gyro measurement, correct it using the (constant) bias
+   * estimate and possibly the sensor pose, and then integrate it forward in
+   * time to yield an incremental rotation.
+   * @param measuredOmega The measured angular velocity (as given by the sensor)
+   * @param biasHat The bias estimate
+   * @param deltaT The time interval
+   * @param D_incrR_integratedOmega Jacobian of the incremental rotation w.r.t.
+   * delta_T * (measuredOmega - biasHat), possibly rotated by body_R_sensor.
+   * @return The incremental rotation
+   */
+  Rot3 incrementalRotation(
+      const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
+      OptionalJacobian<3, 3> D_incrR_integratedOmega) const;
 
-  /// Calculate an incremental rotation given the gyro measurement and a time interval,
-  /// and update both deltaTij_ and deltaRij_.
-  void integrateMeasurement(const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
+  /**
+   * @brief Calculate an incremental rotation given the gyro measurement and a
+   * time interval, and update both deltaTij_ and deltaRij_.
+   * @param measuredOmega The measured angular velocity (as given by the sensor)
+   * @param biasHat The bias estimate
+   * @param deltaT The time interval
+   * @param D_incrR_integratedOmega Optional Jacobian of the incremental
+   * rotation w.r.t. the integrated angular velocity
+   * @param F Optional Jacobian of the incremental rotation w.r.t. the bias
+   * estimate
+   */
+  void integrateMeasurement(const Vector3& measuredOmega,
+                            const Vector3& biasHat, double deltaT,
                             OptionalJacobian<3, 3> D_incrR_integratedOmega = {},
                             OptionalJacobian<3, 3> F = {});
 

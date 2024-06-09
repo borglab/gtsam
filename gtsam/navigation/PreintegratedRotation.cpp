@@ -89,13 +89,13 @@ Rot3 PreintegratedRotation::incrementalRotation(const Vector3& measuredOmega,
   return Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
 }
 
-void PreintegratedRotation::integrateMeasurement(const Vector3& measuredOmega,
-    const Vector3& biasHat, double deltaT,
+void PreintegratedRotation::integrateMeasurement(
+    const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
     OptionalJacobian<3, 3> optional_D_incrR_integratedOmega,
     OptionalJacobian<3, 3> F) {
   Matrix3 D_incrR_integratedOmega;
   const Rot3 incrR = incrementalRotation(measuredOmega, biasHat, deltaT,
-      D_incrR_integratedOmega);
+                                         D_incrR_integratedOmega);
 
   // If asked, pass first derivative as well
   if (optional_D_incrR_integratedOmega) {
@@ -108,8 +108,8 @@ void PreintegratedRotation::integrateMeasurement(const Vector3& measuredOmega,
 
   // Update Jacobian
   const Matrix3 incrRt = incrR.transpose();
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
-      - D_incrR_integratedOmega * deltaT;
+  delRdelBiasOmega_ =
+      incrRt * delRdelBiasOmega_ - D_incrR_integratedOmega * deltaT;
 }
 
 Rot3 PreintegratedRotation::biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
