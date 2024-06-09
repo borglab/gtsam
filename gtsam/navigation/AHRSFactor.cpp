@@ -49,10 +49,9 @@ void PreintegratedAhrsMeasurements::resetIntegration() {
 //------------------------------------------------------------------------------
 void PreintegratedAhrsMeasurements::integrateMeasurement(
     const Vector3& measuredOmega, double deltaT) {
-
-  Matrix3 D_incrR_integratedOmega, Fr;
-  PreintegratedRotation::integrateMeasurement(measuredOmega,
-      biasHat_, deltaT, &D_incrR_integratedOmega, &Fr);
+  Matrix3 Fr;
+  PreintegratedRotation::integrateGyroMeasurement(measuredOmega, biasHat_,
+                                                  deltaT, &Fr);
 
   // First order uncertainty propagation
   // The deltaT allows to pass from continuous time noise to discrete time

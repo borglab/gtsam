@@ -74,34 +74,32 @@ Rot3 PreintegratedRotation::IncrementalRotation::operator()(
   Vector3 correctedOmega = measuredOmega - bias;
 
   // Then compensate for sensor-body displacement: we express the quantities
-  // (originally in the IMU frame) into the body frame
+  // (originally in the IMU frame) into the body frame. If Jacobian is
+  // requested, the rotation matrix is obtained as `rotate` Jacobian.
+  Matrix3 body_R_sensor;
   if (body_P_sensor) {
-    const Matrix3 body_R_sensor = body_P_sensor->rotation().matrix();
     // rotation rate vector in the body frame
-    correctedOmega = body_R_sensor * correctedOmega;
+    correctedOmega = body_P_sensor->rotation().rotate(
+        correctedOmega, {}, H_bias ? &body_R_sensor : nullptr);
   }
 
   // rotation vector describing rotation increment computed from the
   // current rotation rate measurement
   const Vector3 integratedOmega = correctedOmega * deltaT;
   Rot3 incrR = Rot3::Expmap(integratedOmega, H_bias);  // expensive !!
-  if (H_bias)
+  if (H_bias) {
     *H_bias *= -deltaT;  // Correct so accurately reflects bias derivative
+    if (body_P_sensor) *H_bias *= body_R_sensor;
+  }
   return incrR;
 }
 
-void PreintegratedRotation::integrateMeasurement(
-    const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
-    OptionalJacobian<3, 3> optional_D_incrR_integratedOmega,
+void PreintegratedRotation::integrateGyroMeasurement(
+    const Vector3& measuredOmega, const Vector3& bias, double deltaT,
     OptionalJacobian<3, 3> F) {
-  Matrix3 D_incrR_integratedOmega;
+  Matrix3 H_bias;
   IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
-  const Rot3 incrR = f(biasHat, D_incrR_integratedOmega);
-
-  // If asked, pass first derivative as well
-  if (optional_D_incrR_integratedOmega) {
-    *optional_D_incrR_integratedOmega << D_incrR_integratedOmega;
-  }
+  const Rot3 incrR = f(bias, H_bias);
 
   // Update deltaTij and rotation
   deltaTij_ += deltaT;
@@ -109,8 +107,23 @@ void PreintegratedRotation::integrateMeasurement(
 
   // Update Jacobian
   const Matrix3 incrRt = incrR.transpose();
-  delRdelBiasOmega_ =
-      incrRt * delRdelBiasOmega_ - D_incrR_integratedOmega * deltaT;
+  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ + H_bias;
+}
+
+// deprecated!
+void PreintegratedRotation::integrateMeasurement(
+    const Vector3& measuredOmega, const Vector3& bias, double deltaT,
+    OptionalJacobian<3, 3> optional_D_incrR_integratedOmega,
+    OptionalJacobian<3, 3> F) {
+  integrateGyroMeasurement(measuredOmega, bias, deltaT, F);
+
+  // If asked, pass obsolete Jacobians as well
+  if (optional_D_incrR_integratedOmega) {
+    Matrix3 H_bias;
+    IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
+    const Rot3 incrR = f(bias, H_bias);
+    *optional_D_incrR_integratedOmega << H_bias / -deltaT;
+  }
 }
 
 Rot3 PreintegratedRotation::biascorrectedDeltaRij(const Vector3& biasOmegaIncr,

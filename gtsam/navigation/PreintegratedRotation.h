@@ -175,7 +175,7 @@ class GTSAM_EXPORT PreintegratedRotation {
      * @param H_bias Jacobian of the rotation w.r.t. bias.
      * @return The incremental rotation
      */
-    Rot3 operator()(const Vector3& biasHat,
+    Rot3 operator()(const Vector3& bias,
                     OptionalJacobian<3, 3> H_bias = {}) const;
   };
 
@@ -183,17 +183,13 @@ class GTSAM_EXPORT PreintegratedRotation {
    * @brief Calculate an incremental rotation given the gyro measurement and a
    * time interval, and update both deltaTij_ and deltaRij_.
    * @param measuredOmega The measured angular velocity (as given by the sensor)
-   * @param biasHat The bias estimate
+   * @param bias The bias estimate
    * @param deltaT The time interval
-   * @param D_incrR_integratedOmega Optional Jacobian of the incremental
-   * rotation w.r.t. the integrated angular velocity
-   * @param F Optional Jacobian of the incremental rotation w.r.t. the bias
-   * estimate
+   * @param F Jacobian of internal compose, used in AhrsFactor.
    */
-  void integrateMeasurement(const Vector3& measuredOmega,
-                            const Vector3& biasHat, double deltaT,
-                            OptionalJacobian<3, 3> D_incrR_integratedOmega = {},
-                            OptionalJacobian<3, 3> F = {});
+  void integrateGyroMeasurement(const Vector3& measuredOmega,
+                                const Vector3& bias, double deltaT,
+                                OptionalJacobian<3, 3> F = {});
 
   /// Return a bias corrected version of the integrated rotation, with optional Jacobian
   Rot3 biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
@@ -210,14 +206,20 @@ class GTSAM_EXPORT PreintegratedRotation {
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /// @deprecated: use IncrementalRotation functor with sane Jacobian
   inline Rot3 GTSAM_DEPRECATED incrementalRotation(
-      const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
+      const Vector3& measuredOmega, const Vector3& bias, double deltaT,
       OptionalJacobian<3, 3> D_incrR_integratedOmega) const {
     IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
-    Rot3 incrR = f(biasHat, D_incrR_integratedOmega);
+    Rot3 incrR = f(bias, D_incrR_integratedOmega);
     // Backwards compatible "weird" Jacobian, no longer used.
     if (D_incrR_integratedOmega) *D_incrR_integratedOmega /= -deltaT;
     return incrR;
   }
+
+  /// @deprecated: returned hard-to-understand Jacobian D_incrR_integratedOmega.
+  void GTSAM_DEPRECATED integrateMeasurement(
+      const Vector3& measuredOmega, const Vector3& bias, double deltaT,
+      OptionalJacobian<3, 3> D_incrR_integratedOmega, OptionalJacobian<3, 3> F);
+
 #endif
 
   /// @}
