@@ -68,17 +68,15 @@ bool PreintegratedRotation::equals(const PreintegratedRotation& other,
       && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol);
 }
 
-Rot3 PreintegratedRotation::incrementalRotation(const Vector3& measuredOmega,
-    const Vector3& biasHat, double deltaT,
-    OptionalJacobian<3, 3> D_incrR_integratedOmega) const {
-
+Rot3 PreintegratedRotation::IncrementalRotation::operator()(
+    const Vector3& bias, OptionalJacobian<3, 3> H_bias) const {
   // First we compensate the measurements for the bias
-  Vector3 correctedOmega = measuredOmega - biasHat;
+  Vector3 correctedOmega = measuredOmega - bias;
 
   // Then compensate for sensor-body displacement: we express the quantities
   // (originally in the IMU frame) into the body frame
-  if (p_->body_P_sensor) {
-    Matrix3 body_R_sensor = p_->body_P_sensor->rotation().matrix();
+  if (body_P_sensor) {
+    const Matrix3 body_R_sensor = body_P_sensor->rotation().matrix();
     // rotation rate vector in the body frame
     correctedOmega = body_R_sensor * correctedOmega;
   }
@@ -86,7 +84,10 @@ Rot3 PreintegratedRotation::incrementalRotation(const Vector3& measuredOmega,
   // rotation vector describing rotation increment computed from the
   // current rotation rate measurement
   const Vector3 integratedOmega = correctedOmega * deltaT;
-  return Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
+  Rot3 incrR = Rot3::Expmap(integratedOmega, H_bias);  // expensive !!
+  if (H_bias)
+    *H_bias *= -deltaT;  // Correct so accurately reflects bias derivative
+  return incrR;
 }
 
 void PreintegratedRotation::integrateMeasurement(
@@ -94,8 +95,8 @@ void PreintegratedRotation::integrateMeasurement(
     OptionalJacobian<3, 3> optional_D_incrR_integratedOmega,
     OptionalJacobian<3, 3> F) {
   Matrix3 D_incrR_integratedOmega;
-  const Rot3 incrR = incrementalRotation(measuredOmega, biasHat, deltaT,
-                                         D_incrR_integratedOmega);
+  IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
+  const Rot3 incrR = f(biasHat, D_incrR_integratedOmega);
 
   // If asked, pass first derivative as well
   if (optional_D_incrR_integratedOmega) {

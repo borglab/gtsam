@@ -21,9 +21,9 @@
 
 #pragma once
 
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/std_optional_serialization.h>
+#include <gtsam/geometry/Pose3.h>
 
 namespace gtsam {
 
@@ -159,19 +159,25 @@ class GTSAM_EXPORT PreintegratedRotation {
   /// @{
 
   /**
-   * @brief Take the gyro measurement, correct it using the (constant) bias
-   * estimate and possibly the sensor pose, and then integrate it forward in
-   * time to yield an incremental rotation.
+   * @brief Function object for incremental rotation.
    * @param measuredOmega The measured angular velocity (as given by the sensor)
-   * @param biasHat The bias estimate
-   * @param deltaT The time interval
-   * @param D_incrR_integratedOmega Jacobian of the incremental rotation w.r.t.
-   * delta_T * (measuredOmega - biasHat), possibly rotated by body_R_sensor.
-   * @return The incremental rotation
+   * @param deltaT The time interval over which the rotation is integrated.
+   * @param body_P_sensor Optional transform between body and IMU.
    */
-  Rot3 incrementalRotation(
-      const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
-      OptionalJacobian<3, 3> D_incrR_integratedOmega) const;
+  struct IncrementalRotation {
+    const Vector3& measuredOmega;
+    const double deltaT;
+    const std::optional<Pose3>& body_P_sensor;
+
+    /**
+     * @brief Integrate angular velocity, but corrected by bias.
+     * @param bias The bias estimate
+     * @param H_bias Jacobian of the rotation w.r.t. bias.
+     * @return The incremental rotation
+     */
+    Rot3 operator()(const Vector3& biasHat,
+                    OptionalJacobian<3, 3> H_bias = {}) const;
+  };
 
   /**
    * @brief Calculate an incremental rotation given the gyro measurement and a
@@ -195,6 +201,24 @@ class GTSAM_EXPORT PreintegratedRotation {
 
   /// Integrate coriolis correction in body frame rot_i
   Vector3 integrateCoriolis(const Rot3& rot_i) const;
+
+  /// @}
+
+  /// @name Deprecated API
+  /// @{
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated: use IncrementalRotation functor with sane Jacobian
+  inline Rot3 GTSAM_DEPRECATED incrementalRotation(
+      const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
+      OptionalJacobian<3, 3> D_incrR_integratedOmega) const {
+    IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
+    Rot3 incrR = f(biasHat, D_incrR_integratedOmega);
+    // Backwards compatible "weird" Jacobian, no longer used.
+    if (D_incrR_integratedOmega) *D_incrR_integratedOmega /= -deltaT;
+    return incrR;
+  }
+#endif
 
   /// @}
 

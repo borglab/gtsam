@@ -30,40 +30,36 @@ using namespace gtsam;
 namespace simple_roll {
 auto p = std::make_shared<PreintegratedRotationParams>();
 PreintegratedRotation pim(p);
-const double roll = 0.1;
-const Vector3 measuredOmega(roll, 0, 0);
-const Vector3 biasHat(0, 0, 0);
+const double omega = 0.1;
+const Vector3 measuredOmega(omega, 0, 0);
+const Vector3 bias(0, 0, 0);
 const double deltaT = 0.5;
 }  // namespace simple_roll
 
 //******************************************************************************
-TEST(PreintegratedRotation, incrementalRotation) {
+TEST(PreintegratedRotation, IncrementalRotation) {
   using namespace simple_roll;
 
   // Check the value.
-  Matrix3 D_incrR_integratedOmega;
-  const Rot3 incrR = pim.incrementalRotation(measuredOmega, biasHat, deltaT,
-                                             D_incrR_integratedOmega);
-  Rot3 expected = Rot3::Roll(roll * deltaT);
+  Matrix3 H_bias;
+  PreintegratedRotation::IncrementalRotation f{measuredOmega, deltaT,
+                                               p->getBodyPSensor()};
+  const Rot3 incrR = f(bias, H_bias);
+  Rot3 expected = Rot3::Roll(omega * deltaT);
   EXPECT(assert_equal(expected, incrR, 1e-9));
 
-  // Lambda for numerical derivative:
-  auto f = [&](const Vector3& x, const Vector3& y) {
+  // Check the derivative:
+  EXPECT(assert_equal(numericalDerivative11<Rot3, Vector3>(f, bias), H_bias));
+
+  // Ephemeral test for deprecated Jacobian:
+  Matrix3 D_incrR_integratedOmega;
+  (void)pim.incrementalRotation(measuredOmega, bias, deltaT,
+                                D_incrR_integratedOmega);
+  auto g = [&](const Vector3& x, const Vector3& y) {
     return pim.incrementalRotation(x, y, deltaT, {});
   };
-
-  // NOTE(frank): these derivatives as computed by the function violate the
-  // "Jacobian contract". We should refactor this. It's not clear that the
-  // deltaT factor is actually understood in calling code.
-
-  // Check derivative with respect to measuredOmega
   EXPECT(assert_equal<Matrix3>(
-      numericalDerivative21<Rot3, Vector3, Vector3>(f, measuredOmega, biasHat),
-      deltaT * D_incrR_integratedOmega));
-
-  // Check derivative with respect to biasHat
-  EXPECT(assert_equal<Matrix3>(
-      numericalDerivative22<Rot3, Vector3, Vector3>(f, measuredOmega, biasHat),
+      numericalDerivative22<Rot3, Vector3, Vector3>(g, measuredOmega, bias),
       -deltaT * D_incrR_integratedOmega));
 }
 
@@ -77,40 +73,35 @@ static std::shared_ptr<PreintegratedRotationParams> paramsWithTransform() {
 namespace roll_in_rotated_frame {
 auto p = paramsWithTransform();
 PreintegratedRotation pim(p);
-const double roll = 0.1;
-const Vector3 measuredOmega(roll, 0, 0);
-const Vector3 biasHat(0, 0, 0);
+const double omega = 0.1;
+const Vector3 measuredOmega(omega, 0, 0);
+const Vector3 bias(0, 0, 0);
 const double deltaT = 0.5;
 }  // namespace roll_in_rotated_frame
 
 //******************************************************************************
-TEST(PreintegratedRotation, incrementalRotationWithTransform) {
+TEST(PreintegratedRotation, IncrementalRotationWithTransform) {
   using namespace roll_in_rotated_frame;
 
   // Check the value.
-  Matrix3 D_incrR_integratedOmega;
-  const Rot3 incrR = pim.incrementalRotation(measuredOmega, biasHat, deltaT,
-                                             D_incrR_integratedOmega);
-  Rot3 expected = Rot3::Pitch(roll * deltaT);
-  EXPECT(assert_equal(expected, incrR, 1e-9));
+  Matrix3 H_bias;
+  PreintegratedRotation::IncrementalRotation f{measuredOmega, deltaT,
+                                               p->getBodyPSensor()};
+  Rot3 expected = Rot3::Pitch(omega * deltaT);
+  EXPECT(assert_equal(expected, f(bias, H_bias), 1e-9));
 
-  // Lambda for numerical derivative:
-  auto f = [&](const Vector3& x, const Vector3& y) {
+  // Check the derivative:
+  EXPECT(assert_equal(numericalDerivative11<Rot3, Vector3>(f, bias), H_bias));
+
+  // Ephemeral test for deprecated Jacobian:
+  Matrix3 D_incrR_integratedOmega;
+  (void)pim.incrementalRotation(measuredOmega, bias, deltaT,
+                                D_incrR_integratedOmega);
+  auto g = [&](const Vector3& x, const Vector3& y) {
     return pim.incrementalRotation(x, y, deltaT, {});
   };
-
-  // NOTE(frank): Here, once again, the derivatives are weird, as they do not
-  // take the rotation into account. They *are* the derivatives of the rotated
-  // omegas, but not the derivatives with respect to the function arguments.
-
-  // Check derivative with respect to measuredOmega
   EXPECT(assert_equal<Matrix3>(
-      numericalDerivative21<Rot3, Vector3, Vector3>(f, measuredOmega, biasHat),
-      deltaT * D_incrR_integratedOmega));
-
-  // Check derivative with respect to biasHat
-  EXPECT(assert_equal<Matrix3>(
-      numericalDerivative22<Rot3, Vector3, Vector3>(f, measuredOmega, biasHat),
+      numericalDerivative22<Rot3, Vector3, Vector3>(g, measuredOmega, bias),
       -deltaT * D_incrR_integratedOmega));
 }
 
