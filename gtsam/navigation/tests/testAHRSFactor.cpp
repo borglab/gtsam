@@ -29,9 +29,12 @@
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/factorTesting.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 #include <cmath>
 #include <list>
+#include <memory>
+#include "gtsam/nonlinear/LevenbergMarquardtParams.h"
 
 using namespace std::placeholders;
 using namespace std;
@@ -39,7 +42,7 @@ using namespace gtsam;
 
 // Convenience for named keys
 using symbol_shorthand::B;
-using symbol_shorthand::X;
+using symbol_shorthand::R;
 
 Vector3 kZeroOmegaCoriolis(0, 0, 0);
 
@@ -136,7 +139,7 @@ TEST(AHRSFactor, Error) {
   pim.integrateMeasurement(measuredOmega, deltaT);
 
   // Create factor
-  AHRSFactor factor(X(1), X(2), B(1), pim, kZeroOmegaCoriolis, {});
+  AHRSFactor factor(R(1), R(2), B(1), pim, kZeroOmegaCoriolis, {});
 
   // Check value
   Vector3 errorActual = factor.evaluateError(Ri, Rj, bias);
@@ -145,8 +148,8 @@ TEST(AHRSFactor, Error) {
 
   // Check Derivatives
   Values values;
-  values.insert(X(1), Ri);
-  values.insert(X(2), Rj);
+  values.insert(R(1), Ri);
+  values.insert(R(2), Rj);
   values.insert(B(1), bias);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
 }
@@ -165,7 +168,7 @@ TEST(AHRSFactor, ErrorWithBiases) {
   pim.integrateMeasurement(measuredOmega, deltaT);
 
   // Create factor
-  AHRSFactor factor(X(1), X(2), B(1), pim, kZeroOmegaCoriolis);
+  AHRSFactor factor(R(1), R(2), B(1), pim, kZeroOmegaCoriolis);
 
   // Check value
   Vector3 errorExpected(0, 0, 0);
@@ -174,8 +177,8 @@ TEST(AHRSFactor, ErrorWithBiases) {
 
   // Check Derivatives
   Values values;
-  values.insert(X(1), Ri);
-  values.insert(X(2), Rj);
+  values.insert(R(1), Ri);
+  values.insert(R(2), Rj);
   values.insert(B(1), bias);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
 }
@@ -324,12 +327,12 @@ TEST(AHRSFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   EXPECT(assert_equal(kMeasuredOmegaCovariance, pim.preintMeasCov()));
 
   // Create factor
-  AHRSFactor factor(X(1), X(2), B(1), pim, omegaCoriolis);
+  AHRSFactor factor(R(1), R(2), B(1), pim, omegaCoriolis);
 
   // Check Derivatives
   Values values;
-  values.insert(X(1), Ri);
-  values.insert(X(2), Rj);
+  values.insert(R(1), Ri);
+  values.insert(R(2), Rj);
   values.insert(B(1), bias);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
 }
@@ -350,7 +353,7 @@ TEST(AHRSFactor, predictTest) {
   expectedMeasCov = 200 * kMeasuredOmegaCovariance;
   EXPECT(assert_equal(expectedMeasCov, pim.preintMeasCov()));
 
-  AHRSFactor factor(X(1), X(2), B(1), pim, kZeroOmegaCoriolis);
+  AHRSFactor factor(R(1), R(2), B(1), pim, kZeroOmegaCoriolis);
 
   // Predict
   Rot3 x;
@@ -368,7 +371,6 @@ TEST(AHRSFactor, predictTest) {
   EXPECT(assert_equal(expectedH, H, 1e-8));
 }
 //******************************************************************************
-
 TEST(AHRSFactor, graphTest) {
   // linearization point
   Rot3 Ri(Rot3::RzRyRx(0, 0, 0));
@@ -393,15 +395,87 @@ TEST(AHRSFactor, graphTest) {
   }
 
   // pim.print("Pre integrated measurements");
-  AHRSFactor factor(X(1), X(2), B(1), pim, kZeroOmegaCoriolis);
-  values.insert(X(1), Ri);
-  values.insert(X(2), Rj);
+  AHRSFactor factor(R(1), R(2), B(1), pim, kZeroOmegaCoriolis);
+  values.insert(R(1), Ri);
+  values.insert(R(2), Rj);
   values.insert(B(1), bias);
   graph.push_back(factor);
   LevenbergMarquardtOptimizer optimizer(graph, values);
   Values result = optimizer.optimize();
   Rot3 expectedRot(Rot3::RzRyRx(0, M_PI / 4, 0));
-  EXPECT(assert_equal(expectedRot, result.at<Rot3>(X(2))));
+  EXPECT(assert_equal(expectedRot, result.at<Rot3>(R(2))));
+}
+
+/* ************************************************************************* */
+TEST(AHRSFactor, bodyPSensorWithBias) {
+  using noiseModel::Diagonal;
+
+  int numRotations = 10;
+  const Vector3 noiseBetweenBiasSigma(3.0e-6, 3.0e-6, 3.0e-6);
+  SharedDiagonal biasNoiseModel = Diagonal::Sigmas(noiseBetweenBiasSigma);
+
+  // Measurements in the sensor frame:
+  const double omega = 0.1;
+  const Vector3 realOmega(omega, 0, 0);
+  const Vector3 realBias(1, 2, 3);  // large !
+  const Vector3 measuredOmega = realOmega + realBias;
+
+  auto p = std::make_shared<PreintegratedAhrsMeasurements::Params>();
+  p->body_P_sensor = Pose3(Rot3::Yaw(M_PI_2), Point3(0, 0, 0));
+  p->gyroscopeCovariance = 1e-8 * I_3x3;
+  double deltaT = 0.005;
+
+  // Specify noise values on priors
+  const Vector3 priorNoisePoseSigmas(0.001, 0.001, 0.001);
+  const Vector3 priorNoiseBiasSigmas(0.5e-1, 0.5e-1, 0.5e-1);
+  SharedDiagonal priorNoisePose = Diagonal::Sigmas(priorNoisePoseSigmas);
+  SharedDiagonal priorNoiseBias = Diagonal::Sigmas(priorNoiseBiasSigmas);
+
+  // Create a factor graph with priors on initial pose, velocity and bias
+  NonlinearFactorGraph graph;
+  Values values;
+
+  graph.addPrior(R(0), Rot3(), priorNoisePose);
+  values.insert(R(0), Rot3());
+
+  // The key to this test is that we specify the bias, in the sensor frame, as
+  // known a priori. We also create factors below that encode our assumption
+  // that this bias is constant over time In theory, after optimization, we
+  // should recover that same bias estimate
+  graph.addPrior(B(0), realBias, priorNoiseBias);
+  values.insert(B(0), realBias);
+
+  // Now add IMU factors and bias noise models
+  const Vector3 zeroBias(0, 0, 0);
+  for (int i = 1; i < numRotations; i++) {
+    PreintegratedAhrsMeasurements pim(p, realBias);
+    for (int j = 0; j < 200; ++j)
+      pim.integrateMeasurement(measuredOmega, deltaT);
+
+    // Create factors
+    graph.emplace_shared<AHRSFactor>(R(i - 1), R(i), B(i - 1), pim);
+    graph.emplace_shared<BetweenFactor<Vector3> >(B(i - 1), B(i), zeroBias,
+                                                  biasNoiseModel);
+
+    values.insert(R(i), Rot3());
+    values.insert(B(i), realBias);
+  }
+
+  // Finally, optimize, and get bias at last time step
+  LevenbergMarquardtParams params;
+  // params.setVerbosityLM("SUMMARY");
+  Values result = LevenbergMarquardtOptimizer(graph, values, params).optimize();
+  const Vector3 biasActual = result.at<Vector3>(B(numRotations - 1));
+
+  // Bias should be a self-fulfilling prophesy:
+  EXPECT(assert_equal(realBias, biasActual, 1e-3));
+
+  // Check that the successive rotations are all `omega` apart:
+  for (int i = 0; i < numRotations; i++) {
+    Rot3 expectedRot = Rot3::Pitch(omega * i);
+    Rot3 actualRot = result.at<Rot3>(R(i));
+    EXPECT(assert_equal(expectedRot, actualRot, 1e-3));
+  }
 }
 
 //******************************************************************************

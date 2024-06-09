@@ -410,33 +410,33 @@ TEST(ImuFactor, PartialDerivative_wrt_Bias) {
   const Matrix3 Jr =
       Rot3::ExpmapDerivative((measuredOmega - biasOmega) * deltaT);
 
-  Matrix3 actualdelRdelBiasOmega = -Jr * deltaT; // the delta bias appears with the minus sign
+  Matrix3 actualDelRdelBiasOmega = -Jr * deltaT; // the delta bias appears with the minus sign
 
   // Compare Jacobians
-  EXPECT(assert_equal(expectedDelRdelBiasOmega, actualdelRdelBiasOmega, 1e-9));
+  EXPECT(assert_equal(expectedDelRdelBiasOmega, actualDelRdelBiasOmega, 1e-9));
 }
 
 /* ************************************************************************* */
 TEST(ImuFactor, PartialDerivativeLogmap) {
   // Linearization point
-  Vector3 thetahat(0.1, 0.1, 0); // Current estimate of rotation rate bias
+  Vector3 thetaHat(0.1, 0.1, 0); // Current estimate of rotation rate bias
 
   // Measurements
-  Vector3 deltatheta(0, 0, 0);
+  Vector3 deltaTheta(0, 0, 0);
 
-  auto evaluateLogRotation = [=](const Vector3 deltatheta) {
+  auto evaluateLogRotation = [=](const Vector3 delta) {
     return Rot3::Logmap(
-        Rot3::Expmap(thetahat).compose(Rot3::Expmap(deltatheta)));
+        Rot3::Expmap(thetaHat).compose(Rot3::Expmap(delta)));
   };
 
   // Compute numerical derivatives
-  Matrix expectedDelFdeltheta =
-      numericalDerivative11<Vector, Vector3>(evaluateLogRotation, deltatheta);
+  Matrix expectedDelFdelTheta =
+      numericalDerivative11<Vector, Vector3>(evaluateLogRotation, deltaTheta);
 
-  Matrix3 actualDelFdeltheta = Rot3::LogmapDerivative(thetahat);
+  Matrix3 actualDelFdelTheta = Rot3::LogmapDerivative(thetaHat);
 
   // Compare Jacobians
-  EXPECT(assert_equal(expectedDelFdeltheta, actualDelFdeltheta));
+  EXPECT(assert_equal(expectedDelFdelTheta, actualDelFdelTheta));
 }
 
 /* ************************************************************************* */
@@ -450,8 +450,8 @@ TEST(ImuFactor, fistOrderExponential) {
 
   // change w.r.t. linearization point
   double alpha = 0.0;
-  Vector3 deltabiasOmega;
-  deltabiasOmega << alpha, alpha, alpha;
+  Vector3 deltaBiasOmega;
+  deltaBiasOmega << alpha, alpha, alpha;
 
   const Matrix3 Jr = Rot3::ExpmapDerivative(
       (measuredOmega - biasOmega) * deltaT);
@@ -459,13 +459,12 @@ TEST(ImuFactor, fistOrderExponential) {
   Matrix3 delRdelBiasOmega = -Jr * deltaT; // the delta bias appears with the minus sign
 
   const Matrix expectedRot = Rot3::Expmap(
-      (measuredOmega - biasOmega - deltabiasOmega) * deltaT).matrix();
+      (measuredOmega - biasOmega - deltaBiasOmega) * deltaT).matrix();
 
   const Matrix3 hatRot =
       Rot3::Expmap((measuredOmega - biasOmega) * deltaT).matrix();
   const Matrix3 actualRot = hatRot
-      * Rot3::Expmap(delRdelBiasOmega * deltabiasOmega).matrix();
-  // hatRot * (I_3x3 + skewSymmetric(delRdelBiasOmega * deltabiasOmega));
+      * Rot3::Expmap(delRdelBiasOmega * deltaBiasOmega).matrix();
 
   // This is a first order expansion so the equality is only an approximation
   EXPECT(assert_equal(expectedRot, actualRot));
@@ -728,7 +727,7 @@ TEST(ImuFactor, bodyPSensorWithBias) {
   using noiseModel::Diagonal;
   typedef Bias Bias;
 
-  int numFactors = 10;
+  int numPoses = 10;
   Vector6 noiseBetweenBiasSigma;
   noiseBetweenBiasSigma << Vector3(2.0e-5, 2.0e-5, 2.0e-5), Vector3(3.0e-6,
       3.0e-6, 3.0e-6);
@@ -761,7 +760,7 @@ TEST(ImuFactor, bodyPSensorWithBias) {
   SharedDiagonal priorNoiseBias = Diagonal::Sigmas(priorNoiseBiasSigmas);
   Vector3 zeroVel(0, 0, 0);
 
-  // Create a factor graph with priors on initial pose, vlocity and bias
+  // Create a factor graph with priors on initial pose, velocity and bias
   NonlinearFactorGraph graph;
   Values values;
 
@@ -780,9 +779,8 @@ TEST(ImuFactor, bodyPSensorWithBias) {
 
   // Now add IMU factors and bias noise models
   Bias zeroBias(Vector3(0, 0, 0), Vector3(0, 0, 0));
-  for (int i = 1; i < numFactors; i++) {
-    PreintegratedImuMeasurements pim = PreintegratedImuMeasurements(p,
-        priorBias);
+  for (int i = 1; i < numPoses; i++) {
+    PreintegratedImuMeasurements pim(p, priorBias);
     for (int j = 0; j < 200; ++j)
       pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
@@ -796,8 +794,8 @@ TEST(ImuFactor, bodyPSensorWithBias) {
   }
 
   // Finally, optimize, and get bias at last time step
-  Values results = LevenbergMarquardtOptimizer(graph, values).optimize();
-  Bias biasActual = results.at<Bias>(B(numFactors - 1));
+  Values result = LevenbergMarquardtOptimizer(graph, values).optimize();
+  Bias biasActual = result.at<Bias>(B(numPoses - 1));
 
   // And compare it with expected value (our prior)
   Bias biasExpected(Vector3(0, 0, 0), Vector3(0, 0.01, 0));
@@ -851,11 +849,11 @@ struct ImuFactorMergeTest {
                         actual_pim02.preintegrated(), tol));
     EXPECT(assert_equal(pim02_expected, actual_pim02, tol));
 
-    ImuFactor::shared_ptr factor01 =
+    auto factor01 =
         std::make_shared<ImuFactor>(X(0), V(0), X(1), V(1), B(0), pim01);
-    ImuFactor::shared_ptr factor12 =
+    auto factor12 =
         std::make_shared<ImuFactor>(X(1), V(1), X(2), V(2), B(0), pim12);
-    ImuFactor::shared_ptr factor02_expected = std::make_shared<ImuFactor>(
+    auto factor02_expected = std::make_shared<ImuFactor>(
         X(0), V(0), X(2), V(2), B(0), pim02_expected);
 
     ImuFactor::shared_ptr factor02_merged = ImuFactor::Merge(factor01, factor12);
