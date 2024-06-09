@@ -44,7 +44,7 @@ static std::shared_ptr<PreintegratedRotationParams> paramsWithTransform() {
 }
 
 //******************************************************************************
-TEST(PreintegratedRotation, integrateMeasurement) {
+TEST(PreintegratedRotation, integrateGyroMeasurement) {
   // Example where IMU is identical to body frame, then omega is roll
   using namespace biased_x_rotation;
   auto p = std::make_shared<PreintegratedRotationParams>();
@@ -74,48 +74,7 @@ TEST(PreintegratedRotation, integrateMeasurement) {
 }
 
 //******************************************************************************
-TEST(PreintegratedRotation, Deprecated) {
-  // Example where IMU is identical to body frame, then omega is roll
-  using namespace biased_x_rotation;
-  auto p = std::make_shared<PreintegratedRotationParams>();
-  PreintegratedRotation pim(p);
-
-  // Check the value.
-  Matrix3 H_bias;
-  PreintegratedRotation::IncrementalRotation f{measuredOmega, deltaT,
-                                               p->getBodyPSensor()};
-  Rot3 expected = Rot3::Roll(omega * deltaT);
-  EXPECT(assert_equal(expected, f(bias, H_bias), 1e-9));
-
-  // Ephemeral test for deprecated Jacobian:
-  Matrix3 D_incrR_integratedOmega;
-  (void)pim.incrementalRotation(measuredOmega, bias, deltaT,
-                                D_incrR_integratedOmega);
-  auto g = [&](const Vector3& x, const Vector3& y) {
-    return pim.incrementalRotation(x, y, deltaT, {});
-  };
-  const Matrix3 oldJacobian =
-      numericalDerivative22<Rot3, Vector3, Vector3>(g, measuredOmega, bias);
-  EXPECT(assert_equal<Matrix3>(oldJacobian, -deltaT * D_incrR_integratedOmega));
-
-  // Check deprecated version.
-  Matrix3 D_incrR_integratedOmega2, F;
-  pim.integrateMeasurement(measuredOmega, bias, deltaT,
-                           D_incrR_integratedOmega2, F);
-  EXPECT(assert_equal(expected, pim.deltaRij(), 1e-9));
-
-  // Check that system matrix F is the first derivative of compose:
-  EXPECT(assert_equal<Matrix3>(pim.deltaRij().inverse().AdjointMap(), F));
-
-  // Check that deprecated Jacobian is correct.
-  EXPECT(assert_equal(D_incrR_integratedOmega, D_incrR_integratedOmega2, 1e-9));
-
-  // Make sure delRdelBiasOmega is H_bias after integration.
-  EXPECT(assert_equal<Matrix3>(H_bias, pim.delRdelBiasOmega()));
-}
-
-//******************************************************************************
-TEST(PreintegratedRotation, IncrementalRotationWithTransform) {
+TEST(PreintegratedRotation, integrateGyroMeasurementWithTransform) {
   // Example where IMU is rotated, so measured omega indicates pitch.
   using namespace biased_x_rotation;
   auto p = paramsWithTransform();
@@ -138,47 +97,6 @@ TEST(PreintegratedRotation, IncrementalRotationWithTransform) {
 
   // Check that system matrix F is the first derivative of compose:
   EXPECT(assert_equal<Matrix3>(pim.deltaRij().inverse().AdjointMap(), F));
-
-  // Make sure delRdelBiasOmega is H_bias after integration.
-  EXPECT(assert_equal<Matrix3>(H_bias, pim.delRdelBiasOmega()));
-}
-
-//******************************************************************************
-TEST(PreintegratedRotation, DeprecatedWithTransform) {
-  // Example where IMU is rotated, so measured omega indicates pitch.
-  using namespace biased_x_rotation;
-  auto p = paramsWithTransform();
-  PreintegratedRotation pim(p);
-
-  // Check the value.
-  Matrix3 H_bias;
-  PreintegratedRotation::IncrementalRotation f{measuredOmega, deltaT,
-                                               p->getBodyPSensor()};
-  Rot3 expected = Rot3::Pitch(omega * deltaT);
-  EXPECT(assert_equal(expected, f(bias, H_bias), 1e-9));
-
-  // Ephemeral test for deprecated Jacobian:
-  Matrix3 D_incrR_integratedOmega;
-  (void)pim.incrementalRotation(measuredOmega, bias, deltaT,
-                                D_incrR_integratedOmega);
-  auto g = [&](const Vector3& x, const Vector3& y) {
-    return pim.incrementalRotation(x, y, deltaT, {});
-  };
-  const Matrix3 oldJacobian =
-      numericalDerivative22<Rot3, Vector3, Vector3>(g, measuredOmega, bias);
-  EXPECT(assert_equal<Matrix3>(oldJacobian, -deltaT * D_incrR_integratedOmega));
-
-  // Check deprecated version.
-  Matrix3 D_incrR_integratedOmega2, F;
-  pim.integrateMeasurement(measuredOmega, bias, deltaT,
-                           D_incrR_integratedOmega2, F);
-  EXPECT(assert_equal(expected, pim.deltaRij(), 1e-9));
-
-  // Check that system matrix F is the first derivative of compose:
-  EXPECT(assert_equal<Matrix3>(pim.deltaRij().inverse().AdjointMap(), F));
-
-  // Check that deprecated Jacobian is correct.
-  EXPECT(assert_equal(D_incrR_integratedOmega, D_incrR_integratedOmega2, 1e-9));
 
   // Make sure delRdelBiasOmega is H_bias after integration.
   EXPECT(assert_equal<Matrix3>(H_bias, pim.delRdelBiasOmega()));
