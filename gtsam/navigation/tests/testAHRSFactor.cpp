@@ -302,29 +302,6 @@ TEST(AHRSFactor, FirstOrderPreIntegratedMeasurements) {
 }
 
 //******************************************************************************
-// TEST(AHRSFactor, PimWithBodyDisplacement) {
-//   Vector3 bias(0, 0, 0.3);
-//   Vector3 measuredOmega(0, 0, M_PI / 10.0 + 0.3);
-//   double deltaT = 1.0;
-
-//   auto p = std::make_shared<PreintegratedAhrsMeasurements::Params>();
-//   p->gyroscopeCovariance = kMeasuredOmegaCovariance;
-//   p->body_P_sensor = Pose3(Rot3::Roll(M_PI_2), Point3(0, 0, 0));
-//   PreintegratedAhrsMeasurements pim(p, Vector3::Zero());
-
-//   pim.integrateMeasurement(measuredOmega, deltaT);
-
-//   Vector3 biasOmegaIncr(0.01, 0.0, 0.0);
-//   Matrix3 actualH;
-//   pim.biascorrectedDeltaRij(biasOmegaIncr, actualH);
-
-//   // Numerical derivative using a lambda function:
-//   auto f = [&](const Vector3& bias) { return pim.biascorrectedDeltaRij(bias); };
-//   Matrix3 expectedH = numericalDerivative11<Rot3, Vector3>(f, bias);
-//   EXPECT(assert_equal(expectedH, actualH));
-// }
-
-//******************************************************************************
 TEST(AHRSFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   Vector3 bias(0, 0, 0.3);
   Rot3 Ri(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0)));

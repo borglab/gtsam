@@ -135,18 +135,10 @@ class GTSAM_EXPORT PreintegratedRotation {
 
   /// @name Access instance variables
   /// @{
-  const std::shared_ptr<Params>& params() const {
-    return p_;
-  }
-  const double& deltaTij() const {
-    return deltaTij_;
-  }
-  const Rot3& deltaRij() const {
-    return deltaRij_;
-  }
-  const Matrix3& delRdelBiasOmega() const {
-    return delRdelBiasOmega_;
-  }
+  const std::shared_ptr<Params>& params() const { return p_; }
+  const double& deltaTij() const { return deltaTij_; }
+  const Rot3& deltaRij() const { return deltaRij_; }
+  const Matrix3& delRdelBiasOmega() const { return delRdelBiasOmega_; }
   /// @}
 
   /// @name Testable
@@ -156,6 +148,35 @@ class GTSAM_EXPORT PreintegratedRotation {
   /// @}
 
   /// @name Main functionality
+  /// @{
+
+  /**
+   * @brief Calculate an incremental rotation given the gyro measurement and a
+   * time interval, and update both deltaTij_ and deltaRij_.
+   * @param measuredOmega The measured angular velocity (as given by the sensor)
+   * @param bias The biasHat estimate
+   * @param deltaT The time interval
+   * @param F Jacobian of internal compose, used in AhrsFactor.
+   */
+  void integrateGyroMeasurement(const Vector3& measuredOmega,
+                                const Vector3& biasHat, double deltaT,
+                                OptionalJacobian<3, 3> F = {});
+
+  /**
+   * @brief Return a bias corrected version of the integrated rotation.
+   * @param biasOmegaIncr An increment with respect to biasHat used above.
+   * @param H Jacobian of the correction w.r.t. the bias increment.
+   * @note The *key* functionality of this class used in optimizing the bias.
+   */
+  Rot3 biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
+                             OptionalJacobian<3, 3> H = {}) const;
+
+  /// Integrate coriolis correction in body frame rot_i
+  Vector3 integrateCoriolis(const Rot3& rot_i) const;
+
+  /// @}
+
+  /// @name Internal, exposed for testing only
   /// @{
 
   /**
@@ -179,25 +200,6 @@ class GTSAM_EXPORT PreintegratedRotation {
                     OptionalJacobian<3, 3> H_bias = {}) const;
   };
 
-  /**
-   * @brief Calculate an incremental rotation given the gyro measurement and a
-   * time interval, and update both deltaTij_ and deltaRij_.
-   * @param measuredOmega The measured angular velocity (as given by the sensor)
-   * @param bias The bias estimate
-   * @param deltaT The time interval
-   * @param F Jacobian of internal compose, used in AhrsFactor.
-   */
-  void integrateGyroMeasurement(const Vector3& measuredOmega,
-                                const Vector3& bias, double deltaT,
-                                OptionalJacobian<3, 3> F = {});
-
-  /// Return a bias corrected version of the integrated rotation, with optional Jacobian
-  Rot3 biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
-                             OptionalJacobian<3, 3> H = {}) const;
-
-  /// Integrate coriolis correction in body frame rot_i
-  Vector3 integrateCoriolis(const Rot3& rot_i) const;
-
   /// @}
 
   /// @name Deprecated API
@@ -215,9 +217,10 @@ class GTSAM_EXPORT PreintegratedRotation {
     return incrR;
   }
 
-  /// @deprecated: returned hard-to-understand Jacobian D_incrR_integratedOmega.
+  /// @deprecated: use integrateGyroMeasurement from now on
+  /// @note this returned hard-to-understand Jacobian D_incrR_integratedOmega.
   void GTSAM_DEPRECATED integrateMeasurement(
-      const Vector3& measuredOmega, const Vector3& bias, double deltaT,
+      const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
       OptionalJacobian<3, 3> D_incrR_integratedOmega, OptionalJacobian<3, 3> F);
 
 #endif

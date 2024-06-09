@@ -95,11 +95,11 @@ Rot3 PreintegratedRotation::IncrementalRotation::operator()(
 }
 
 void PreintegratedRotation::integrateGyroMeasurement(
-    const Vector3& measuredOmega, const Vector3& bias, double deltaT,
+    const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
     OptionalJacobian<3, 3> F) {
   Matrix3 H_bias;
   IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
-  const Rot3 incrR = f(bias, H_bias);
+  const Rot3 incrR = f(biasHat, H_bias);
 
   // Update deltaTij and rotation
   deltaTij_ += deltaT;
@@ -112,16 +112,16 @@ void PreintegratedRotation::integrateGyroMeasurement(
 
 // deprecated!
 void PreintegratedRotation::integrateMeasurement(
-    const Vector3& measuredOmega, const Vector3& bias, double deltaT,
+    const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
     OptionalJacobian<3, 3> optional_D_incrR_integratedOmega,
     OptionalJacobian<3, 3> F) {
-  integrateGyroMeasurement(measuredOmega, bias, deltaT, F);
+  integrateGyroMeasurement(measuredOmega, biasHat, deltaT, F);
 
   // If asked, pass obsolete Jacobians as well
   if (optional_D_incrR_integratedOmega) {
     Matrix3 H_bias;
     IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
-    const Rot3 incrR = f(bias, H_bias);
+    const Rot3 incrR = f(biasHat, H_bias);
     *optional_D_incrR_integratedOmega << H_bias / -deltaT;
   }
 }

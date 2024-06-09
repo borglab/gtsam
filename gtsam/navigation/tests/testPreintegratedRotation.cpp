@@ -71,6 +71,22 @@ TEST(PreintegratedRotation, integrateGyroMeasurement) {
 
   // Make sure delRdelBiasOmega is H_bias after integration.
   EXPECT(assert_equal<Matrix3>(H_bias, pim.delRdelBiasOmega()));
+
+  // Check if we make a correction to the bias, the value and Jacobian are
+  // correct. Note that the bias is subtracted from the measurement, and the
+  // integration time is taken into account, so we expect -deltaT*delta change.
+  Matrix3 H;
+  const double delta = 0.05;
+  const Vector3 biasOmegaIncr(delta, 0, 0);
+  Rot3 corrected = pim.biascorrectedDeltaRij(biasOmegaIncr, H);
+  EQUALITY(Vector3(-deltaT * delta, 0, 0), expected.logmap(corrected));
+  EXPECT(assert_equal(Rot3::Roll((omega - delta) * deltaT), corrected, 1e-9));
+
+  // TODO(frank): again the derivative is not the *sane* one!
+  // auto g = [&](const Vector3& increment) {
+  //   return pim.biascorrectedDeltaRij(increment, {});
+  // };
+  // EXPECT(assert_equal(numericalDerivative11<Rot3, Vector3>(g, Z_3x1), H));
 }
 
 //******************************************************************************
@@ -100,6 +116,20 @@ TEST(PreintegratedRotation, integrateGyroMeasurementWithTransform) {
 
   // Make sure delRdelBiasOmega is H_bias after integration.
   EXPECT(assert_equal<Matrix3>(H_bias, pim.delRdelBiasOmega()));
+
+  // Check the bias correction in same way, but will now yield pitch change.
+  Matrix3 H;
+  const double delta = 0.05;
+  const Vector3 biasOmegaIncr(delta, 0, 0);
+  Rot3 corrected = pim.biascorrectedDeltaRij(biasOmegaIncr, H);
+  EQUALITY(Vector3(0, -deltaT * delta, 0), expected.logmap(corrected));
+  EXPECT(assert_equal(Rot3::Pitch((omega - delta) * deltaT), corrected, 1e-9));
+
+  // TODO(frank): again the derivative is not the *sane* one!
+  // auto g = [&](const Vector3& increment) {
+  //   return pim.biascorrectedDeltaRij(increment, {});
+  // };
+  // EXPECT(assert_equal(numericalDerivative11<Rot3, Vector3>(g, Z_3x1), H));
 }
 
 //******************************************************************************
