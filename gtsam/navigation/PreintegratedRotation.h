@@ -24,6 +24,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/std_optional_serialization.h>
 #include <gtsam/geometry/Pose3.h>
+#include "gtsam/dllexport.h"
 
 namespace gtsam {
 
@@ -34,7 +35,7 @@ namespace internal {
  * @param deltaT The time interval over which the rotation is integrated.
  * @param body_P_sensor Optional transform between body and IMU.
  */
-struct IncrementalRotation {
+struct GTSAM_EXPORT IncrementalRotation {
   const Vector3& measuredOmega;
   const double deltaT;
   const std::optional<Pose3>& body_P_sensor;
