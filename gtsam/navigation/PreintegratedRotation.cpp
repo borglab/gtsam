@@ -122,7 +122,7 @@ void PreintegratedRotation::integrateMeasurement(
   // If asked, pass obsolete Jacobians as well
   if (optional_D_incrR_integratedOmega) {
     Matrix3 H_bias;
-    IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
+    internal::IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
     const Rot3 incrR = f(biasHat, H_bias);
     *optional_D_incrR_integratedOmega << H_bias / -deltaT;
   }

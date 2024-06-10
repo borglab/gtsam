@@ -27,6 +27,30 @@
 
 namespace gtsam {
 
+namespace internal {
+/**
+ * @brief Function object for incremental rotation.
+ * @param measuredOmega The measured angular velocity (as given by the sensor)
+ * @param deltaT The time interval over which the rotation is integrated.
+ * @param body_P_sensor Optional transform between body and IMU.
+ */
+struct IncrementalRotation {
+  const Vector3& measuredOmega;
+  const double deltaT;
+  const std::optional<Pose3>& body_P_sensor;
+
+  /**
+   * @brief Integrate angular velocity, but corrected by bias.
+   * @param bias The bias estimate
+   * @param H_bias Jacobian of the rotation w.r.t. bias.
+   * @return The incremental rotation
+   */
+  Rot3 operator()(const Vector3& bias,
+                  OptionalJacobian<3, 3> H_bias = {}) const;
+};
+
+}  // namespace internal
+
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
 struct GTSAM_EXPORT PreintegratedRotationParams {
@@ -184,7 +208,7 @@ class GTSAM_EXPORT PreintegratedRotation {
   inline Rot3 GTSAM_DEPRECATED incrementalRotation(
       const Vector3& measuredOmega, const Vector3& bias, double deltaT,
       OptionalJacobian<3, 3> D_incrR_integratedOmega) const {
-    IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
+    internal::IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
     Rot3 incrR = f(bias, D_incrR_integratedOmega);
     // Backwards compatible "weird" Jacobian, no longer used.
     if (D_incrR_integratedOmega) *D_incrR_integratedOmega /= -deltaT;
@@ -223,29 +247,5 @@ class GTSAM_EXPORT PreintegratedRotation {
 
 template <>
 struct traits<PreintegratedRotation> : public Testable<PreintegratedRotation> {};
-
-namespace internal {
-/**
- * @brief Function object for incremental rotation.
- * @param measuredOmega The measured angular velocity (as given by the sensor)
- * @param deltaT The time interval over which the rotation is integrated.
- * @param body_P_sensor Optional transform between body and IMU.
- */
-struct IncrementalRotation {
-  const Vector3& measuredOmega;
-  const double deltaT;
-  const std::optional<Pose3>& body_P_sensor;
-
-  /**
-   * @brief Integrate angular velocity, but corrected by bias.
-   * @param bias The bias estimate
-   * @param H_bias Jacobian of the rotation w.r.t. bias.
-   * @return The incremental rotation
-   */
-  Rot3 operator()(const Vector3& bias,
-                  OptionalJacobian<3, 3> H_bias = {}) const;
-};
-
-}  // namespace internal
 
 }  /// namespace gtsam
