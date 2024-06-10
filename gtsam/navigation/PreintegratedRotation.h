@@ -176,32 +176,6 @@ class GTSAM_EXPORT PreintegratedRotation {
 
   /// @}
 
-  /// @name Internal, exposed for testing only
-  /// @{
-
-  /**
-   * @brief Function object for incremental rotation.
-   * @param measuredOmega The measured angular velocity (as given by the sensor)
-   * @param deltaT The time interval over which the rotation is integrated.
-   * @param body_P_sensor Optional transform between body and IMU.
-   */
-  struct IncrementalRotation {
-    const Vector3& measuredOmega;
-    const double deltaT;
-    const std::optional<Pose3>& body_P_sensor;
-
-    /**
-     * @brief Integrate angular velocity, but corrected by bias.
-     * @param bias The bias estimate
-     * @param H_bias Jacobian of the rotation w.r.t. bias.
-     * @return The incremental rotation
-     */
-    Rot3 operator()(const Vector3& bias,
-                    OptionalJacobian<3, 3> H_bias = {}) const;
-  };
-
-  /// @}
-
   /// @name Deprecated API
   /// @{
 
@@ -249,5 +223,29 @@ class GTSAM_EXPORT PreintegratedRotation {
 
 template <>
 struct traits<PreintegratedRotation> : public Testable<PreintegratedRotation> {};
+
+namespace internal {
+/**
+ * @brief Function object for incremental rotation.
+ * @param measuredOmega The measured angular velocity (as given by the sensor)
+ * @param deltaT The time interval over which the rotation is integrated.
+ * @param body_P_sensor Optional transform between body and IMU.
+ */
+struct IncrementalRotation {
+  const Vector3& measuredOmega;
+  const double deltaT;
+  const std::optional<Pose3>& body_P_sensor;
+
+  /**
+   * @brief Integrate angular velocity, but corrected by bias.
+   * @param bias The bias estimate
+   * @param H_bias Jacobian of the rotation w.r.t. bias.
+   * @return The incremental rotation
+   */
+  Rot3 operator()(const Vector3& bias,
+                  OptionalJacobian<3, 3> H_bias = {}) const;
+};
+
+}  // namespace internal
 
 }  /// namespace gtsam

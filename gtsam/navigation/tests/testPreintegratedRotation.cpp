@@ -52,8 +52,7 @@ TEST(PreintegratedRotation, integrateGyroMeasurement) {
 
   // Check the value.
   Matrix3 H_bias;
-  PreintegratedRotation::IncrementalRotation f{measuredOmega, deltaT,
-                                               p->getBodyPSensor()};
+  internal::IncrementalRotation f{measuredOmega, deltaT, p->getBodyPSensor()};
   const Rot3 incrR = f(bias, H_bias);
   Rot3 expected = Rot3::Roll(omega * deltaT);
   EXPECT(assert_equal(expected, incrR, 1e-9));
@@ -98,8 +97,7 @@ TEST(PreintegratedRotation, integrateGyroMeasurementWithTransform) {
 
   // Check the value.
   Matrix3 H_bias;
-  PreintegratedRotation::IncrementalRotation f{measuredOmega, deltaT,
-                                               p->getBodyPSensor()};
+  internal::IncrementalRotation f{measuredOmega, deltaT, p->getBodyPSensor()};
   Rot3 expected = Rot3::Pitch(omega * deltaT);
   EXPECT(assert_equal(expected, f(bias, H_bias), 1e-9));
 

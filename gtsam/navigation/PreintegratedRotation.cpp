@@ -68,7 +68,8 @@ bool PreintegratedRotation::equals(const PreintegratedRotation& other,
       && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol);
 }
 
-Rot3 PreintegratedRotation::IncrementalRotation::operator()(
+namespace internal {
+Rot3 IncrementalRotation::operator()(
     const Vector3& bias, OptionalJacobian<3, 3> H_bias) const {
   // First we compensate the measurements for the bias
   Vector3 correctedOmega = measuredOmega - bias;
@@ -93,12 +94,13 @@ Rot3 PreintegratedRotation::IncrementalRotation::operator()(
   }
   return incrR;
 }
+}  // namespace internal
 
 void PreintegratedRotation::integrateGyroMeasurement(
     const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
     OptionalJacobian<3, 3> F) {
   Matrix3 H_bias;
-  IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
+  internal::IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
   const Rot3 incrR = f(biasHat, H_bias);
 
   // Update deltaTij and rotation
