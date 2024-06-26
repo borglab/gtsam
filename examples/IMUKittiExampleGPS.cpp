@@ -241,7 +241,6 @@ int main(int argc, char* argv[]) {
       "-- Starting main loop: inference is performed at each time step, but we "
       "plot trajectory every 10 steps\n");
   size_t j = 0;
-  size_t included_imu_measurement_count = 0;
 
   for (size_t i = first_gps_pose; i < gps_measurements.size() - 1; i++) {
     // At each non=IMU measurement we initialize a new node in the graph
@@ -249,6 +248,7 @@ int main(int argc, char* argv[]) {
     auto current_vel_key = V(i);
     auto current_bias_key = B(i);
     double t = gps_measurements[i].time;
+    size_t included_imu_measurement_count = 0;
 
     if (i == first_gps_pose) {
       // Create initial estimate and prior on initial pose, velocity, and biases

@@ -200,7 +200,7 @@ class PreintegratedCombinedMeasurements {
       const gtsam::imuBias::ConstantBias& bias) const;
 };
 
-virtual class CombinedImuFactor: gtsam::NonlinearFactor {
+virtual class CombinedImuFactor: gtsam::NoiseModelFactor {
   CombinedImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j,
       size_t bias_i, size_t bias_j,
       const gtsam::PreintegratedCombinedMeasurements& CombinedPreintegratedMeasurements);
