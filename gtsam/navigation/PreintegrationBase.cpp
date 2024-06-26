@@ -129,7 +129,7 @@ NavState PreintegrationBase::predict(const NavState& state_i,
   Matrix9 D_predict_state, D_predict_delta;
   NavState state_j = state_i.retract(xi,
                                      H1 ? &D_predict_state : nullptr,
-                                     H2 || H2 ? &D_predict_delta : nullptr);
+                                     H1 || H2 ? &D_predict_delta : nullptr);
   if (H1)
     *H1 = D_predict_state + D_predict_delta * D_delta_state;
   if (H2)
