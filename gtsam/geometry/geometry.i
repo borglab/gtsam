@@ -69,6 +69,7 @@ class StereoPoint2 {
   // Standard Constructors
   StereoPoint2();
   StereoPoint2(double uL, double uR, double v);
+  StereoPoint2(const gtsam::Vector3 &v);
 
   // Testable
   void print(string s = "") const;
@@ -836,6 +837,12 @@ class Cal3_S2Stereo {
   Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0, double b);
   Cal3_S2Stereo(Vector v);
 
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Cal3_S2Stereo retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Cal3_S2Stereo& c) const;
+
   // Testable
   void print(string s = "") const;
   bool equals(const gtsam::Cal3_S2Stereo& K, double tol) const;
@@ -846,8 +853,11 @@ class Cal3_S2Stereo {
   double skew() const;
   double px() const;
   double py() const;
+  Matrix K() const;
   gtsam::Point2 principalPoint() const;
   double baseline() const;
+  Vector6 vector() const;
+  Matrix inverse() const;
 };
 
 #include <gtsam/geometry/Cal3Bundler.h>
