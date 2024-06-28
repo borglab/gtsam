@@ -63,9 +63,6 @@ class Typename:
         else:
             self.instantiations = []
 
-        if self.name in ["Matrix", "Vector"] and not self.namespaces:
-            self.namespaces = ["gtsam"]
-
     @staticmethod
     def from_parse_result(parse_result: Union[str, list]):
         """Unpack the parsed result to get the Typename instance."""
@@ -220,7 +217,6 @@ class Type:
         Generate the C++ code for wrapping.
 
         Treat all pointers as "const shared_ptr<T>&"
-        Treat Matrix and Vector as "const Matrix&" and "const Vector&" resp.
         """
 
         if self.is_shared_ptr:
@@ -228,17 +224,14 @@ class Type:
                 typename=self.typename.to_cpp())
         elif self.is_ptr:
             typename = "{typename}*".format(typename=self.typename.to_cpp())
-        elif self.is_ref or self.typename.name in ["Matrix", "Vector"]:
+        elif self.is_ref:
             typename = typename = "{typename}&".format(
                 typename=self.typename.to_cpp())
         else:
             typename = self.typename.to_cpp()
 
         return ("{const}{typename}".format(
-            const="const " if
-            (self.is_const
-             or self.typename.name in ["Matrix", "Vector"]) else "",
-            typename=typename))
+            const="const " if self.is_const else "", typename=typename))
 
     def get_typename(self):
         """Convenience method to get the typename of this type."""
@@ -305,13 +298,10 @@ class TemplatedType:
             typename = f"std::shared_ptr<{typename}>"
         elif self.is_ptr:
             typename = "{typename}*".format(typename=typename)
-        elif self.is_ref or self.typename.name in ["Matrix", "Vector"]:
+        elif self.is_ref:
             typename = typename = "{typename}&".format(typename=typename)
         else:
             pass
 
         return ("{const}{typename}".format(
-            const="const " if
-            (self.is_const
-             or self.typename.name in ["Matrix", "Vector"]) else "",
-            typename=typename))
+            const="const " if self.is_const else "", typename=typename))

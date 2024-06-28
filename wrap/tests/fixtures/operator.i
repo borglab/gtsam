@@ -8,7 +8,7 @@ class Pose3 {
   gtsam::Pose3 operator*(gtsam::Pose3 other) const;
 };
 
-template<T = {Matrix}>
+template<T = {gtsam::Matrix}>
 class Container {
   gtsam::JacobianFactor operator()(const T& m) const;
   T operator[](size_t idx) const;
