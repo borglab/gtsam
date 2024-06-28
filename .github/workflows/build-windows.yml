@@ -50,7 +50,7 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x${{ matrix.platform }}
-          toolset: 14.2
+          toolset: 14.40
 
       - name: cl version
         shell: cmd
