@@ -54,10 +54,10 @@ class Dummy {
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 class PoseRTV {
   PoseRTV();
-  PoseRTV(Vector rtv);
-  PoseRTV(const gtsam::Point3& pt, const gtsam::Rot3& rot, const Vector& vel);
-  PoseRTV(const gtsam::Rot3& rot, const gtsam::Point3& pt, const Vector& vel);
-  PoseRTV(const gtsam::Pose3& pose, const Vector& vel);
+  PoseRTV(gtsam::Vector rtv);
+  PoseRTV(const gtsam::Point3& pt, const gtsam::Rot3& rot, const gtsam::Vector& vel);
+  PoseRTV(const gtsam::Rot3& rot, const gtsam::Point3& pt, const gtsam::Vector& vel);
+  PoseRTV(const gtsam::Pose3& pose, const gtsam::Vector& vel);
   PoseRTV(const gtsam::Pose3& pose);
   PoseRTV(double roll, double pitch, double yaw, double x, double y, double z, double vx, double vy, double vz);
 
@@ -68,21 +68,21 @@ class PoseRTV {
   // access
   gtsam::Point3 translation() const;
   gtsam::Rot3 rotation() const;
-  Vector velocity() const;
+  gtsam::Vector velocity() const;
   gtsam::Pose3 pose() const;
 
-  // Vector interfaces
-  Vector vector() const;
-  Vector translationVec() const;
-  Vector velocityVec() const;
+  // gtsam::Vector interfaces
+  gtsam::Vector vector() const;
+  gtsam::Vector translationVec() const;
+  gtsam::Vector velocityVec() const;
 
   // manifold/Lie
   static size_t Dim();
   size_t dim() const;
-  gtsam::PoseRTV retract(Vector v) const;
-  Vector localCoordinates(const gtsam::PoseRTV& p) const;
-  static gtsam::PoseRTV Expmap(Vector v);
-  static Vector Logmap(const gtsam::PoseRTV& p);
+  gtsam::PoseRTV retract(gtsam::Vector v) const;
+  gtsam::Vector localCoordinates(const gtsam::PoseRTV& p) const;
+  static gtsam::PoseRTV Expmap(gtsam::Vector v);
+  static gtsam::Vector Logmap(const gtsam::PoseRTV& p);
   gtsam::PoseRTV inverse() const;
   gtsam::PoseRTV compose(const gtsam::PoseRTV& p) const;
   gtsam::PoseRTV between(const gtsam::PoseRTV& p) const;
@@ -94,10 +94,10 @@ class PoseRTV {
   // IMU/dynamics
   gtsam::PoseRTV planarDynamics(double vel_rate, double heading_rate, double max_accel, double dt) const;
   gtsam::PoseRTV flyingDynamics(double pitch_rate, double heading_rate, double lift_control, double dt) const;
-  gtsam::PoseRTV generalDynamics(Vector accel, Vector gyro, double dt) const;
-  Vector imuPrediction(const gtsam::PoseRTV& x2, double dt) const;
+  gtsam::PoseRTV generalDynamics(gtsam::Vector accel, gtsam::Vector gyro, double dt) const;
+  gtsam::Vector imuPrediction(const gtsam::PoseRTV& x2, double dt) const;
   gtsam::Point3 translationIntegration(const gtsam::PoseRTV& x2, double dt) const;
-  Vector translationIntegrationVec(const gtsam::PoseRTV& x2, double dt) const;
+  gtsam::Vector translationIntegrationVec(const gtsam::PoseRTV& x2, double dt) const;
 
   void serializable() const; // enabling serialization functionality
 };
@@ -126,16 +126,16 @@ class Pose3Upright {
   gtsam::Pose3 pose() const;
 
   size_t dim() const;
-  gtsam::Pose3Upright retract(Vector v) const;
-  Vector localCoordinates(const gtsam::Pose3Upright& p2) const;
+  gtsam::Pose3Upright retract(gtsam::Vector v) const;
+  gtsam::Vector localCoordinates(const gtsam::Pose3Upright& p2) const;
 
   static gtsam::Pose3Upright Identity();
   gtsam::Pose3Upright inverse() const;
   gtsam::Pose3Upright compose(const gtsam::Pose3Upright& p2) const;
   gtsam::Pose3Upright between(const gtsam::Pose3Upright& p2) const;
 
-  static gtsam::Pose3Upright Expmap(Vector xi);
-  static Vector Logmap(const gtsam::Pose3Upright& p);
+  static gtsam::Pose3Upright Expmap(gtsam::Vector xi);
+  static gtsam::Vector Logmap(const gtsam::Pose3Upright& p);
 
   void serializable() const; // enabling serialization functionality
 }; // \class Pose3Upright
@@ -156,8 +156,8 @@ class BearingS2 {
   bool equals(const gtsam::BearingS2& x, double tol) const;
 
   size_t dim() const;
-  gtsam::BearingS2 retract(Vector v) const;
-  Vector localCoordinates(const gtsam::BearingS2& p2) const;
+  gtsam::BearingS2 retract(gtsam::Vector v) const;
+  gtsam::Vector localCoordinates(const gtsam::BearingS2& p2) const;
 
   void serializable() const; // enabling serialization functionality
 };
@@ -304,17 +304,17 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
         const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
         double prior_inlier, double prior_outlier,  bool flag_bump_up_near_zero_probs);
 
-  Vector whitenedError(const gtsam::Values& x);
-  Vector unwhitenedError(const gtsam::Values& x);
-  Vector calcIndicatorProb(const gtsam::Values& x);
+  gtsam::Vector whitenedError(const gtsam::Values& x);
+  gtsam::Vector unwhitenedError(const gtsam::Values& x);
+  gtsam::Vector calcIndicatorProb(const gtsam::Values& x);
   gtsam::Pose2 measured(); // TODO: figure out how to output a template instead
   void set_flag_bump_up_near_zero_probs(bool flag);
   bool get_flag_bump_up_near_zero_probs() const;
 
   void updateNoiseModels(const gtsam::Values& values, const gtsam::NonlinearFactorGraph& graph);
-  void updateNoiseModels_givenCovs(const gtsam::Values& values, Matrix cov1, Matrix cov2, Matrix cov12);
-  Matrix get_model_inlier_cov();
-  Matrix get_model_outlier_cov();
+  void updateNoiseModels_givenCovs(const gtsam::Values& values, gtsam::Matrix cov1, gtsam::Matrix cov2, gtsam::Matrix cov12);
+  gtsam::Matrix get_model_inlier_cov();
+  gtsam::Matrix get_model_outlier_cov();
 
   void serializable() const; // enabling serialization functionality
 };
@@ -332,15 +332,15 @@ virtual class TransformBtwRobotsUnaryFactorEM : gtsam::NonlinearFactor {
         const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
         double prior_inlier, double prior_outlier, bool flag_bump_up_near_zero_probs, bool start_with_M_step);
 
-  Vector whitenedError(const gtsam::Values& x);
-  Vector unwhitenedError(const gtsam::Values& x);
-  Vector calcIndicatorProb(const gtsam::Values& x);
+  gtsam::Vector whitenedError(const gtsam::Values& x);
+  gtsam::Vector unwhitenedError(const gtsam::Values& x);
+  gtsam::Vector calcIndicatorProb(const gtsam::Values& x);
   void setValAValB(const gtsam::Values valA, const gtsam::Values valB);
 
   void updateNoiseModels(const gtsam::Values& values, const gtsam::NonlinearFactorGraph& graph);
-  void updateNoiseModels_givenCovs(const gtsam::Values& values, Matrix cov1, Matrix cov2, Matrix cov12);
-  Matrix get_model_inlier_cov();
-  Matrix get_model_outlier_cov();
+  void updateNoiseModels_givenCovs(const gtsam::Values& values, gtsam::Matrix cov1, gtsam::Matrix cov2, gtsam::Matrix cov12);
+  gtsam::Matrix get_model_inlier_cov();
+  gtsam::Matrix get_model_outlier_cov();
 
   void serializable() const; // enabling serialization functionality
 };
@@ -352,8 +352,8 @@ virtual class TransformBtwRobotsUnaryFactor : gtsam::NonlinearFactor {
       const gtsam::Values& valA, const gtsam::Values& valB,
       const gtsam::noiseModel::Gaussian* model);
 
-  Vector whitenedError(const gtsam::Values& x);
-  Vector unwhitenedError(const gtsam::Values& x);
+  gtsam::Vector whitenedError(const gtsam::Values& x);
+  gtsam::Vector unwhitenedError(const gtsam::Values& x);
   void setValAValB(const gtsam::Values valA, const gtsam::Values valB);
 
   void serializable() const; // enabling serialization functionality
@@ -419,16 +419,16 @@ virtual class NonlinearEquality : gtsam::NoiseModelFactor {
 template<POSE = {gtsam::PoseRTV}>
 virtual class IMUFactor : gtsam::NoiseModelFactor {
   /** Standard constructor */
-  IMUFactor(Vector accel, Vector gyro,
+  IMUFactor(gtsam::Vector accel, gtsam::Vector gyro,
     double dt, size_t key1, size_t key2, const gtsam::noiseModel::Base* model);
 
   /** Full IMU vector specification */
-  IMUFactor(Vector imu_vector,
+  IMUFactor(gtsam::Vector imu_vector,
     double dt, size_t key1, size_t key2, const gtsam::noiseModel::Base* model);
 
-  Vector gyro() const;
-  Vector accel() const;
-  Vector z() const;
+  gtsam::Vector gyro() const;
+  gtsam::Vector accel() const;
+  gtsam::Vector z() const;
 
   template <I = {1, 2}>
   size_t key() const;
@@ -438,16 +438,16 @@ virtual class IMUFactor : gtsam::NoiseModelFactor {
 template<POSE = {gtsam::PoseRTV}>
 virtual class FullIMUFactor : gtsam::NoiseModelFactor {
   /** Standard constructor */
-  FullIMUFactor(Vector accel, Vector gyro,
+  FullIMUFactor(gtsam::Vector accel, gtsam::Vector gyro,
     double dt, size_t key1, size_t key2, const gtsam::noiseModel::Base* model);
 
   /** Single IMU vector - imu = [accel, gyro] */
-  FullIMUFactor(Vector imu,
+  FullIMUFactor(gtsam::Vector imu,
     double dt, size_t key1, size_t key2, const gtsam::noiseModel::Base* model);
 
-  Vector gyro() const;
-  Vector accel() const;
-  Vector z() const;
+  gtsam::Vector gyro() const;
+  gtsam::Vector accel() const;
+  gtsam::Vector z() const;
 
   template <I = {1, 2}>
   size_t key() const;
@@ -466,14 +466,14 @@ virtual class DRollPrior : gtsam::NonlinearFactor {
 };
 
 virtual class VelocityPrior : gtsam::NonlinearFactor {
-  VelocityPrior(size_t key, Vector vel, const gtsam::noiseModel::Base* model);
+  VelocityPrior(size_t key, gtsam::Vector vel, const gtsam::noiseModel::Base* model);
 };
 
 virtual class DGroundConstraint : gtsam::NonlinearFactor {
   // Primary constructor allows for variable height of the "floor"
   DGroundConstraint(size_t key, double height, const gtsam::noiseModel::Base* model);
   // Fully specify vector - use only for debugging
-  DGroundConstraint(size_t key, Vector constraint, const gtsam::noiseModel::Base* model);
+  DGroundConstraint(size_t key, gtsam::Vector constraint, const gtsam::noiseModel::Base* model);
 };
 
 #include <gtsam_unstable/dynamics/VelocityConstraint3.h>
@@ -481,7 +481,7 @@ virtual class VelocityConstraint3 : gtsam::NonlinearFactor {
   /** Standard constructor */
   VelocityConstraint3(size_t key1, size_t key2, size_t velKey, double dt);
 
-  Vector evaluateError(const double& x1, const double& x2, const double& v) const;
+  gtsam::Vector evaluateError(const double& x1, const double& x2, const double& v) const;
 };
 
 #include <gtsam_unstable/dynamics/Pendulum.h>
@@ -489,7 +489,7 @@ virtual class PendulumFactor1 : gtsam::NonlinearFactor {
   /** Standard constructor */
   PendulumFactor1(size_t k1, size_t k, size_t velKey, double dt);
 
-  Vector evaluateError(const double& qk1, const double& qk, const double& v) const;
+  gtsam::Vector evaluateError(const double& qk1, const double& qk, const double& v) const;
 };
 
 #include <gtsam_unstable/dynamics/Pendulum.h>
@@ -497,35 +497,35 @@ virtual class PendulumFactor2 : gtsam::NonlinearFactor {
   /** Standard constructor */
   PendulumFactor2(size_t vk1, size_t vk, size_t qKey, double dt, double L, double g);
 
-  Vector evaluateError(const double& vk1, const double& vk, const double& q) const;
+  gtsam::Vector evaluateError(const double& vk1, const double& vk, const double& q) const;
 };
 
 virtual class PendulumFactorPk : gtsam::NonlinearFactor {
   /** Standard constructor */
   PendulumFactorPk(size_t pk, size_t qk, size_t qk1, double h, double m, double r, double g, double alpha);
 
-  Vector evaluateError(const double& pk, const double& qk, const double& qk1) const;
+  gtsam::Vector evaluateError(const double& pk, const double& qk, const double& qk1) const;
 };
 
 virtual class PendulumFactorPk1 : gtsam::NonlinearFactor {
   /** Standard constructor */
   PendulumFactorPk1(size_t pk1, size_t qk, size_t qk1, double h, double m, double r, double g, double alpha);
 
-  Vector evaluateError(const double& pk1, const double& qk, const double& qk1) const;
+  gtsam::Vector evaluateError(const double& pk1, const double& qk, const double& qk1) const;
 };
 
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>
 virtual class Reconstruction : gtsam::NoiseModelFactor {
   Reconstruction(size_t gKey1, size_t gKey, size_t xiKey, double h);
 
-  Vector evaluateError(const gtsam::Pose3& gK1, const gtsam::Pose3& gK, Vector xiK) const;
+  gtsam::Vector evaluateError(const gtsam::Pose3& gK1, const gtsam::Pose3& gK, gtsam::Vector xiK) const;
 };
 
 virtual class DiscreteEulerPoincareHelicopter : gtsam::NoiseModelFactor {
   DiscreteEulerPoincareHelicopter(size_t xiKey, size_t xiKey_1, size_t gKey,
-      double h, Matrix Inertia, Vector Fu, double m);
+      double h, gtsam::Matrix Inertia, gtsam::Vector Fu, double m);
 
-  Vector evaluateError(Vector xiK, Vector xiK_1, const gtsam::Pose3& gK) const;
+  gtsam::Vector evaluateError(gtsam::Vector xiK, gtsam::Vector xiK_1, const gtsam::Pose3& gK) const;
 };
 
 //*************************************************************************
@@ -649,25 +649,25 @@ virtual class InvDepthFactorVariant3b : gtsam::NoiseModelFactor {
 #include <gtsam_unstable/slam/Mechanization_bRn2.h>
 class Mechanization_bRn2 {
   Mechanization_bRn2();
-  Mechanization_bRn2(gtsam::Rot3& initial_bRn, Vector initial_x_g,
-      Vector initial_x_a);
-  Vector b_g(double g_e);
+  Mechanization_bRn2(gtsam::Rot3& initial_bRn, gtsam::Vector initial_x_g,
+      gtsam::Vector initial_x_a);
+  gtsam::Vector b_g(double g_e);
   gtsam::Rot3 bRn();
-  Vector x_g();
-  Vector x_a();
-  static gtsam::Mechanization_bRn2 initialize(Matrix U, Matrix F, double g_e);
-  gtsam::Mechanization_bRn2 correct(Vector dx) const;
-  gtsam::Mechanization_bRn2 integrate(Vector u, double dt) const;
+  gtsam::Vector x_g();
+  gtsam::Vector x_a();
+  static gtsam::Mechanization_bRn2 initialize(gtsam::Matrix U, gtsam::Matrix F, double g_e);
+  gtsam::Mechanization_bRn2 correct(gtsam::Vector dx) const;
+  gtsam::Mechanization_bRn2 integrate(gtsam::Vector u, double dt) const;
   //void print(string s) const;
 };
 
 #include <gtsam_unstable/slam/AHRS.h>
 class AHRS {
-  AHRS(Matrix U, Matrix F, double g_e);
+  AHRS(gtsam::Matrix U, gtsam::Matrix F, double g_e);
   pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> initialize(double g_e);
-  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> integrate(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector u, double dt);
-  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aid(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector f, bool Farrel);
-  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aidGeneral(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector f, Vector f_expected, const gtsam::Rot3& increment);
+  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> integrate(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, gtsam::Vector u, double dt);
+  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aid(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, gtsam::Vector f, bool Farrel);
+  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aidGeneral(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, gtsam::Vector f, gtsam::Vector f_expected, const gtsam::Rot3& increment);
   //void print(string s) const;
 };
 
