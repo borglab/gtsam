@@ -6,6 +6,7 @@ namespace gtsam {
 
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3DS2_k3.h>
 #include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Cal3Unified.h>
 #include <gtsam/geometry/Cal3_S2.h>
@@ -82,6 +83,7 @@ class Values {
   void insert(size_t j, const gtsam::Unit3& unit3);
   void insert(size_t j, const gtsam::Cal3_S2& cal3_s2);
   void insert(size_t j, const gtsam::Cal3DS2& cal3ds2);
+  void insert(size_t j, const gtsam::Cal3DS2_k3& cal3ds2_k3);
   void insert(size_t j, const gtsam::Cal3Bundler& cal3bundler);
   void insert(size_t j, const gtsam::Cal3Fisheye& cal3fisheye);
   void insert(size_t j, const gtsam::Cal3Unified& cal3unified);
@@ -117,6 +119,7 @@ class Values {
   void update(size_t j, const gtsam::Unit3& unit3);
   void update(size_t j, const gtsam::Cal3_S2& cal3_s2);
   void update(size_t j, const gtsam::Cal3DS2& cal3ds2);
+  void update(size_t j, const gtsam::Cal3DS2_k3& cal3ds2_k3);
   void update(size_t j, const gtsam::Cal3Bundler& cal3bundler);
   void update(size_t j, const gtsam::Cal3Fisheye& cal3fisheye);
   void update(size_t j, const gtsam::Cal3Unified& cal3unified);
@@ -149,6 +152,7 @@ class Values {
   void insert_or_assign(size_t j, const gtsam::Unit3& unit3);
   void insert_or_assign(size_t j, const gtsam::Cal3_S2& cal3_s2);
   void insert_or_assign(size_t j, const gtsam::Cal3DS2& cal3ds2);
+  void insert_or_assign(size_t j, const gtsam::Cal3DS2_k3& cal3ds2_k3);
   void insert_or_assign(size_t j, const gtsam::Cal3Bundler& cal3bundler);
   void insert_or_assign(size_t j, const gtsam::Cal3Fisheye& cal3fisheye);
   void insert_or_assign(size_t j, const gtsam::Cal3Unified& cal3unified);
@@ -187,6 +191,7 @@ class Values {
                  gtsam::Unit3,
                  gtsam::Cal3_S2,
                  gtsam::Cal3DS2,
+                 gtsam::Cal3DS2_k3,
                  gtsam::Cal3Bundler,
                  gtsam::Cal3Fisheye,
                  gtsam::Cal3Unified,
