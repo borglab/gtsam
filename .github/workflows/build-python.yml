@@ -31,7 +31,7 @@ jobs:
             ubuntu-20.04-gcc-9,
             ubuntu-20.04-gcc-9-tbb,
             ubuntu-20.04-clang-9,
-            macOS-11-xcode-13.4.1,
+            macos-12-xcode-14.2,
             windows-2022-msbuild,
           ]
 
@@ -54,10 +54,10 @@ jobs:
             compiler: clang
             version: "9"
 
-          - name: macOS-11-xcode-13.4.1
-            os: macOS-11
+          - name: macos-12-xcode-14.2
+            os: macos-12
             compiler: xcode
-            version: "13.4.1"
+            version: "14.2"
 
           - name: windows-2022-msbuild
             os: windows-2022

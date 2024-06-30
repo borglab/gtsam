@@ -66,10 +66,10 @@ class Values {
   // void update(size_t j, const gtsam::Value& val);
   // gtsam::Value at(size_t j) const;
 
-  // The order is important: Vector has to precede Point2/Point3 so `atVector`
+  // The order is important: gtsam::Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors.
-  void insert(size_t j, Vector vector);
-  void insert(size_t j, Matrix matrix);
+  void insert(size_t j, gtsam::Vector vector);
+  void insert(size_t j, gtsam::Matrix matrix);
   void insert(size_t j, const gtsam::Point2& point2);
   void insert(size_t j, const gtsam::Point3& point3);
   void insert(size_t j, const gtsam::Rot2& rot2);
@@ -101,10 +101,10 @@ class Values {
   template <T = {gtsam::Point2, gtsam::Point3}>
   void insert(size_t j, const T& val);
 
-  // The order is important: Vector has to precede Point2/Point3 so `atVector`
+  // The order is important: gtsam::Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors.
-  void update(size_t j, Vector vector);
-  void update(size_t j, Matrix matrix);
+  void update(size_t j, gtsam::Vector vector);
+  void update(size_t j, gtsam::Matrix matrix);
   void update(size_t j, const gtsam::Point2& point2);
   void update(size_t j, const gtsam::Point3& point3);
   void update(size_t j, const gtsam::Rot2& rot2);
@@ -133,10 +133,10 @@ class Values {
   void update(size_t j, const gtsam::NavState& nav_state);
   void update(size_t j, double c);
 
-  // The order is important: Vector has to precede Point2/Point3 so `atVector`
+  // The order is important: gtsam::Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors.
-  void insert_or_assign(size_t j, Vector vector);
-  void insert_or_assign(size_t j, Matrix matrix);
+  void insert_or_assign(size_t j, gtsam::Vector vector);
+  void insert_or_assign(size_t j, gtsam::Matrix matrix);
   void insert_or_assign(size_t j, const gtsam::Point2& point2);
   void insert_or_assign(size_t j, const gtsam::Point3& point3);
   void insert_or_assign(size_t j, const gtsam::Rot2& rot2);
@@ -201,8 +201,8 @@ class Values {
                  gtsam::PinholePose<gtsam::Cal3Unified>,
                  gtsam::imuBias::ConstantBias,
                  gtsam::NavState,
-                 Vector,
-                 Matrix,
+                 gtsam::Vector,
+                 gtsam::Matrix,
                  double}>
   T at(size_t j);
 };
