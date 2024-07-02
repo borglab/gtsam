@@ -3,11 +3,11 @@ virtual class MyBase {
 };
 
 // A templated class
-template<T = {gtsam::Point2, Matrix, A}>
+template<T = {gtsam::Point2, gtsam::Matrix, A}>
 virtual class MyTemplate : MyBase {
   MyTemplate();
 
-  template<ARG = {gtsam::Point2, gtsam::Point3, Vector, Matrix}>
+  template<ARG = {gtsam::Point2, gtsam::Point3, gtsam::Vector, gtsam::Matrix}>
   ARG templatedMethod(const ARG& t);
 
   // Stress test templates and pointer combinations
