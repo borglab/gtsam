@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runs-on: [ubuntu-20.04, macos-latest, windows-latest]
+        runs-on: [ubuntu-20.04, macos-13, windows-latest]
         arch: [x64]
         cmake: ["3.26"]
 
@@ -35,9 +35,9 @@ jobs:
 
         - runs-on: ubuntu-20.04
           arch: x64
-          cmake: "3.27"
+          cmake: "3.29"
 
-        - runs-on: macos-latest
+        - runs-on: macos-13
           arch: x64
           cmake: "3.7"
 
@@ -49,10 +49,10 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Setup Python 3.7
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: 3.7
         architecture: ${{ matrix.arch }}
@@ -63,7 +63,7 @@ jobs:
     # An action for adding a specific version of CMake:
     #   https://github.com/jwlawson/actions-setup-cmake
     - name: Setup CMake ${{ matrix.cmake }}
-      uses: jwlawson/actions-setup-cmake@v1.14
+      uses: jwlawson/actions-setup-cmake@v2.0
       with:
         cmake-version: ${{ matrix.cmake }}
 
