@@ -1,0 +1,14 @@
+services:
+  gtsam:
+    build:
+      args:
+        UBUNTU_TAG: ${UBUNTU_TAG}
+        GTSAM_GIT_TAG: ${GTSAM_GIT_TAG}
+        GTSAM_WITH_TBB: ${GTSAM_WITH_TBB}
+        GTSAM_BUILD_PYTHON: ${GTSAM_BUILD_PYTHON}
+        CORES: ${CORES}
+      context: .
+      dockerfile: Containerfile
+    env_file:
+      - .env
+    image: gtsam:${GTSAM_GIT_TAG}-tbb-${GTSAM_WITH_TBB}-python-${GTSAM_BUILD_PYTHON}_${UBUNTU_TAG}
