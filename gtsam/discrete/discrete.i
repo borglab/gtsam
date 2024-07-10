@@ -14,6 +14,9 @@ class DiscreteKeys {
   bool empty() const;
   gtsam::DiscreteKey at(size_t n) const;
   void push_back(const gtsam::DiscreteKey& point_pair);
+  void print(const std::string& s = "",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 // DiscreteValues is added in specializations/discrete.h as a std::map
@@ -162,7 +165,6 @@ virtual class DiscreteDistribution : gtsam::DiscreteConditional {
                  gtsam::DefaultKeyFormatter) const;
   double operator()(size_t value) const;
   std::vector<double> pmf() const;
-  size_t argmax() const;
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
