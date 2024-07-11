@@ -137,6 +137,7 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   size_t sample(size_t value) const;
   size_t sample() const;
   void sampleInPlace(gtsam::DiscreteValues @parentsValues) const;
+  size_t argmax(const gtsam::DiscreteValues& parents) const;
 
   // Markdown and HTML
   string markdown(const gtsam::KeyFormatter& keyFormatter =
@@ -192,6 +193,7 @@ class DiscreteBayesNet {
 
   gtsam::DiscreteValues sample() const;
   gtsam::DiscreteValues sample(gtsam::DiscreteValues given) const;
+  gtsam::DiscreteValues mode() const;
 
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
