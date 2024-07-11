@@ -200,7 +200,7 @@ install(
 list(APPEND GTSAM_EXPORTED_TARGETS gtsam)
 set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 
-if(WIN32)
+if(MSVC)
   # For CMake<3.15, when building with MSVC,
   # the compiler warning flags (/W3, /W4) are added by default.
   # This removes the warnings which helps with faster compilation on Windows.
