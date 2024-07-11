@@ -62,6 +62,14 @@ DiscreteValues DiscreteBayesNet::sample(DiscreteValues result) const {
   return result;
 }
 
+DiscreteValues DiscreteBayesNet::mode() const {
+  DiscreteValues result;
+  for (auto it = begin(); it != end(); ++it) {
+    result[(*it)->firstFrontalKey()] = (*it)->argmax(result);
+  }
+  return result;
+}
+
 /* *********************************************************************** */
 std::string DiscreteBayesNet::markdown(
     const KeyFormatter& keyFormatter,
