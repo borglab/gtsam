@@ -200,6 +200,12 @@ install(
 list(APPEND GTSAM_EXPORTED_TARGETS gtsam)
 set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 
+if(WIN32)
+  # For CMake<3.15, when building with MSVC,
+  # the compiler warning flags (/W3, /W4) are added by default.
+  # This removes the warnings which helps with faster compilation on Windows.
+  string(REGEX REPLACE "/W[3|4]" "/w" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+endif()
 # Make sure that ccolamd compiles even in face of warnings
 # and suppress all warnings from 3rd party code if Release build
 if(WIN32)
