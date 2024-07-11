@@ -217,7 +217,7 @@ class GTSAM_EXPORT DiscreteConditional
    * @brief Return assignment that maximizes distribution.
    * @return Optimal assignment (1 frontal variable).
    */
-  size_t argmax() const;
+  size_t argmax(const DiscreteValues& parentsValues = DiscreteValues()) const;
 
   /// @}
   /// @name Advanced Interface
