@@ -18,9 +18,9 @@
 
 #pragma once
 
-#include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/Signature.h>
+#include <gtsam/inference/Conditional-inst.h>
 
 #include <memory>
 #include <string>
@@ -39,7 +39,7 @@ class GTSAM_EXPORT DiscreteConditional
       public Conditional<DecisionTreeFactor, DiscreteConditional> {
  public:
   // typedefs needed to play nice with gtsam
-  typedef DiscreteConditional This;            ///< Typedef to this class
+  typedef DiscreteConditional This;          ///< Typedef to this class
   typedef std::shared_ptr<This> shared_ptr;  ///< shared_ptr to this class
   typedef DecisionTreeFactor BaseFactor;  ///< Typedef to our factor base class
   typedef Conditional<BaseFactor, This>
@@ -159,9 +159,7 @@ class GTSAM_EXPORT DiscreteConditional
   /// @{
 
   /// Log-probability is just -error(x).
-  double logProbability(const DiscreteValues& x) const  {
-    return -error(x);
-  }
+  double logProbability(const DiscreteValues& x) const { return -error(x); }
 
   /// print index signature only
   void printSignature(
@@ -214,10 +212,17 @@ class GTSAM_EXPORT DiscreteConditional
   size_t sample() const;
 
   /**
-   * @brief Return assignment that maximizes distribution.
-   * @return Optimal assignment (1 frontal variable).
+   * @brief Return assignment for single frontal variable that maximizes value.
+   * @param parentsValues Known assignments for the parents.
+   * @return maximizing assignment for the frontal variable.
    */
   size_t argmax() const;
+
+  /**
+   * @brief Calculate assignment for frontal variables that maximizes value.
+   * @param (in/out) parentsValues Known assignments for the parents.
+   */
+  void argmaxInPlace(DiscreteValues* parentsValues) const;
 
   /// @}
   /// @name Advanced Interface
@@ -243,7 +248,6 @@ class GTSAM_EXPORT DiscreteConditional
   /// Render as html table.
   std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                    const Names& names = {}) const override;
-
 
   /// @}
   /// @name HybridValues methods.
