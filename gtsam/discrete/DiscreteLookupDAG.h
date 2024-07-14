@@ -37,41 +37,9 @@ class DiscreteBayesNet;
  * Inherits from discrete conditional for convenience, but is not normalized.
  * Is used in the max-product algorithm.
  */
-class GTSAM_EXPORT DiscreteLookupTable : public DiscreteConditional {
- public:
-  using This = DiscreteLookupTable;
-  using shared_ptr = std::shared_ptr<This>;
-  using BaseConditional = Conditional<DecisionTreeFactor, This>;
-
-  /**
-   * @brief Construct a new Discrete Lookup Table object
-   *
-   * @param nFrontals number of frontal variables
-   * @param keys a sorted list of gtsam::Keys
-   * @param potentials the algebraic decision tree with lookup values
-   */
-  DiscreteLookupTable(size_t nFrontals, const DiscreteKeys& keys,
-                      const ADT& potentials)
-      : DiscreteConditional(nFrontals, keys, potentials) {}
-
-  /// GTSAM-style print
-  void print(
-      const std::string& s = "Discrete Lookup Table: ",
-      const KeyFormatter& formatter = DefaultKeyFormatter) const override;
-
-  /**
-   * @brief return assignment for single frontal variable that maximizes value.
-   * @param parentsValues Known assignments for the parents.
-   * @return maximizing assignment for the frontal variable.
-   */
-  size_t argmax(const DiscreteValues& parentsValues) const;
-
-  /**
-   * @brief Calculate assignment for frontal variables that maximizes value.
-   * @param (in/out) parentsValues Known assignments for the parents.
-   */
-  void argmaxInPlace(DiscreteValues* parentsValues) const;
-};
+// Typedef for backwards compatibility
+// TODO(Varun): Remove
+using DiscreteLookupTable = DiscreteConditional;
 
 /** A DAG made from lookup tables, as defined above. */
 class GTSAM_EXPORT DiscreteLookupDAG : public BayesNet<DiscreteLookupTable> {
