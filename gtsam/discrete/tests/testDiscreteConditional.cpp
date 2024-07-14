@@ -293,22 +293,22 @@ TEST(DiscreteConditional, choose) {
 // Check argmax on P(C|D) and P(D)
 TEST(DiscreteConditional, Argmax) {
   DiscreteKey C(2, 2), D(4, 2);
-  DiscreteConditional D_cond(D, "1/3");
-  DiscreteConditional C_given_DE((C | D) = "1/4 1/1");
+  DiscreteConditional D_prior(D, "1/3");
+  DiscreteConditional C_given_D((C | D) = "1/4 1/1");
 
   // Case 1: No parents
-  size_t actual1 = D_cond.argmax();
+  size_t actual1 = D_prior.argmax();
   EXPECT_LONGS_EQUAL(1, actual1);
 
   // Case 2: Given parent values
   DiscreteValues given;
   given[D.first] = 1;
-  size_t actual2 = C_given_DE.argmax(given);
+  size_t actual2 = C_given_D.argmax(given);
   // Should be 0 since D=1 gives 0.5/0.5
   EXPECT_LONGS_EQUAL(0, actual2);
   
   given[D.first] = 0;
-  size_t actual3 = C_given_DE.argmax(given);
+  size_t actual3 = C_given_D.argmax(given);
   EXPECT_LONGS_EQUAL(1, actual3);
 }
 
