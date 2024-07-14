@@ -18,6 +18,7 @@
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteLookupDAG.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 
@@ -65,7 +66,7 @@ DiscreteValues DiscreteBayesNet::sample(DiscreteValues result) const {
 }
 
 DiscreteValues DiscreteBayesNet::mode() const {
-  return DiscreteLookupDAG::FromBayesNet(*this).argmax();
+  return DiscreteFactorGraph(*this).optimize();
 }
 
 /* *********************************************************************** */

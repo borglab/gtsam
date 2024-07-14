@@ -238,7 +238,8 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
 size_t DiscreteConditional::argmax(const DiscreteValues& parentsValues) const {
   ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
 
-  // Initialize
+  // Then, find the max over all remaining
+  // TODO(Duy): only works for one key now, seems horribly slow this way
   size_t maxValue = 0;
   double maxP = 0;
   DiscreteValues values = parentsValues;
@@ -247,7 +248,7 @@ size_t DiscreteConditional::argmax(const DiscreteValues& parentsValues) const {
   Key j = firstFrontalKey();
   for (size_t value = 0; value < cardinality(j); value++) {
     values[j] = value;
-    double pValueS = (*this)(values);
+    double pValueS = pFS(values);  // P(F=value|S=parentsValues)
     // Update MPE solution if better
     if (pValueS > maxP) {
       maxP = pValueS;

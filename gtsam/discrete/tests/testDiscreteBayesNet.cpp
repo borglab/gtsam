@@ -148,6 +148,28 @@ TEST(DiscreteBayesNet, Mode) {
 }
 
 /* ************************************************************************* */
+TEST(DiscreteBayesNet, ModeEdgeCase) {
+  // Declare 2 keys
+  DiscreteKey A(0, 2), B(1, 2);
+
+  // Create Bayes net such that marginal on A is bigger for 0 than 1, but the
+  // MPE does not have A=0.
+  DiscreteBayesNet bayesNet;
+  bayesNet.add(B | A = "1/1 1/2");
+  bayesNet.add(A % "10/9");
+
+  // Which we verify using max-product:
+  DiscreteFactorGraph graph(bayesNet);
+  // The expected MPE is A=1, B=1
+  DiscreteValues expectedMPE = graph.optimize();
+
+  auto actualMPE = bayesNet.mode();
+
+  EXPECT(assert_equal(expectedMPE, actualMPE));
+  EXPECT_DOUBLES_EQUAL(0.315789, bayesNet(expectedMPE), 1e-5);  // regression
+}
+
+/* ************************************************************************* */
 TEST(DiscreteBayesNet, Sugar) {
   DiscreteKey T(0, 2), L(1, 2), E(2, 2), C(8, 3), S(7, 2);
 
