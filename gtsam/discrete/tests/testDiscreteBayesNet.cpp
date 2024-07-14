@@ -16,14 +16,13 @@
  *  @author Frank Dellaert
  */
 
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/debug.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteMarginals.h>
-#include <gtsam/base/debug.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Vector.h>
-
-#include <CppUnitLite/TestHarness.h>
 
 #include <iostream>
 #include <string>
@@ -43,8 +42,7 @@ TEST(DiscreteBayesNet, bayesNet) {
   DiscreteKey Parent(0, 2), Child(1, 2);
 
   auto prior = std::make_shared<DiscreteConditional>(Parent % "6/4");
-  CHECK(assert_equal(ADT({Parent}, "0.6 0.4"),
-                     (ADT)*prior));
+  CHECK(assert_equal(ADT({Parent}, "0.6 0.4"), (ADT)*prior));
   bayesNet.push_back(prior);
 
   auto conditional =
@@ -126,17 +124,18 @@ TEST(DiscreteBayesNet, Asia) {
 TEST(DiscreteBayesNet, Mode) {
   DiscreteBayesNet asia;
 
-  asia.add(Asia, "99/1");
-  asia.add(Smoking % "50/50");  // Signature version
+  // We need to order the Bayes net in bottom-up fashion
+  asia.add(XRay | Either = "95/5 2/98");
+  asia.add((Dyspnea | Either, Bronchitis) = "9/1 2/8 3/7 1/9");
+
+  asia.add((Either | Tuberculosis, LungCancer) = "F T T T");
 
   asia.add(Tuberculosis | Asia = "99/1 95/5");
   asia.add(LungCancer | Smoking = "99/1 90/10");
   asia.add(Bronchitis | Smoking = "70/30 40/60");
 
-  asia.add((Either | Tuberculosis, LungCancer) = "F T T T");
-
-  asia.add(XRay | Either = "95/5 2/98");
-  asia.add((Dyspnea | Either, Bronchitis) = "9/1 2/8 3/7 1/9");
+  asia.add(Asia, "99/1");
+  asia.add(Smoking % "50/50");  // Signature version
 
   DiscreteValues actual = asia.mode();
   // NOTE: Examined the DBN and found the optimal assignment.
