@@ -216,7 +216,7 @@ class GTSAM_EXPORT DiscreteConditional
    * @param parentsValues Known assignments for the parents.
    * @return maximizing assignment for the frontal variable.
    */
-  size_t argmax() const;
+  size_t argmax(const DiscreteValues& parentsValues = DiscreteValues()) const;
 
   /**
    * @brief Calculate assignment for frontal variables that maximizes value.
