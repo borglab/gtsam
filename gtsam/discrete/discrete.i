@@ -262,6 +262,15 @@ class DiscreteBayesTree {
 
 #include <gtsam/discrete/DiscreteLookupDAG.h>
 
+class DiscreteLookupTable : gtsam::DiscreteConditional{
+  DiscreteLookupTable(size_t nFrontals, const gtsam::DiscreteKeys& keys,
+                      const gtsam::DecisionTreeFactor::ADT& potentials);
+  void print(string s = "Discrete Lookup Table: ",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  size_t argmax(const gtsam::DiscreteValues& parentsValues) const;
+};
+
 class DiscreteLookupDAG {
   DiscreteLookupDAG();
   void push_back(const gtsam::DiscreteLookupTable* table);
