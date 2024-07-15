@@ -124,14 +124,6 @@ class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional> {
      */
     DiscreteValues sample(DiscreteValues given) const;
 
-    /**
-     * @brief Compute the discrete assignment which gives the highest
-     * probability for the DiscreteBayesNet.
-     *
-     * @return DiscreteValues
-     */
-    DiscreteValues mode() const;
-
     ///@}
     /// @name Wrapper support
     /// @{

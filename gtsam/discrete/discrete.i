@@ -193,7 +193,6 @@ class DiscreteBayesNet {
 
   gtsam::DiscreteValues sample() const;
   gtsam::DiscreteValues sample(gtsam::DiscreteValues given) const;
-  gtsam::DiscreteValues mode() const;
 
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,

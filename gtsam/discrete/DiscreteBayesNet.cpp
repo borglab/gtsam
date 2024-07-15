@@ -65,10 +65,6 @@ DiscreteValues DiscreteBayesNet::sample(DiscreteValues result) const {
   return result;
 }
 
-DiscreteValues DiscreteBayesNet::mode() const {
-  return DiscreteFactorGraph(*this).optimize();
-}
-
 /* *********************************************************************** */
 std::string DiscreteBayesNet::markdown(
     const KeyFormatter& keyFormatter,

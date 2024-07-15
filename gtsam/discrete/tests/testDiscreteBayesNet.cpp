@@ -121,55 +121,6 @@ TEST(DiscreteBayesNet, Asia) {
 }
 
 /* ************************************************************************* */
-TEST(DiscreteBayesNet, Mode) {
-  DiscreteBayesNet asia;
-
-  // We need to order the Bayes net in bottom-up fashion
-  asia.add(XRay | Either = "95/5 2/98");
-  asia.add((Dyspnea | Either, Bronchitis) = "9/1 2/8 3/7 1/9");
-
-  asia.add((Either | Tuberculosis, LungCancer) = "F T T T");
-
-  asia.add(Tuberculosis | Asia = "99/1 95/5");
-  asia.add(LungCancer | Smoking = "99/1 90/10");
-  asia.add(Bronchitis | Smoking = "70/30 40/60");
-
-  asia.add(Asia, "99/1");
-  asia.add(Smoking % "50/50");  // Signature version
-
-  DiscreteValues actual = asia.mode();
-  // NOTE: Examined the DBN and found the optimal assignment.
-  DiscreteValues expected{
-      {Asia.first, 0},       {Smoking.first, 0},    {Tuberculosis.first, 0},
-      {LungCancer.first, 0}, {Bronchitis.first, 0}, {Either.first, 0},
-      {XRay.first, 0},       {Dyspnea.first, 0},
-  };
-  EXPECT(assert_equal(expected, actual));
-}
-
-/* ************************************************************************* */
-TEST(DiscreteBayesNet, ModeEdgeCase) {
-  // Declare 2 keys
-  DiscreteKey A(0, 2), B(1, 2);
-
-  // Create Bayes net such that marginal on A is bigger for 0 than 1, but the
-  // MPE does not have A=0.
-  DiscreteBayesNet bayesNet;
-  bayesNet.add(B | A = "1/1 1/2");
-  bayesNet.add(A % "10/9");
-
-  // Which we verify using max-product:
-  DiscreteFactorGraph graph(bayesNet);
-  // The expected MPE is A=1, B=1
-  DiscreteValues expectedMPE = graph.optimize();
-
-  auto actualMPE = bayesNet.mode();
-
-  EXPECT(assert_equal(expectedMPE, actualMPE));
-  EXPECT_DOUBLES_EQUAL(0.315789, bayesNet(expectedMPE), 1e-5);  // regression
-}
-
-/* ************************************************************************* */
 TEST(DiscreteBayesNet, Sugar) {
   DiscreteKey T(0, 2), L(1, 2), E(2, 2), C(8, 3), S(7, 2);
 
