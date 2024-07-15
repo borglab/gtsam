@@ -244,7 +244,7 @@ size_t DiscreteConditional::argmax(const DiscreteValues& parentsValues) const {
   Key j = firstFrontalKey();
   for (size_t value = 0; value < cardinality(j); value++) {
     values[j] = value;
-    double pValueS = pFS(values);  // P(F=value|S=parentsValues)
+    double pValueS = (*this)(values);
     // Update MPE solution if better
     if (pValueS > maxP) {
       maxP = pValueS;
