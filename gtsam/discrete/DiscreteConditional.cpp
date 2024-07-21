@@ -258,33 +258,6 @@ size_t DiscreteConditional::argmax(const DiscreteValues& parentsValues) const {
 }
 
 /* ************************************************************************** */
-void DiscreteConditional::argmaxInPlace(DiscreteValues* values) const {
-  ADT pFS = choose(*values, true);  // P(F|S=parentsValues)
-
-  // Initialize
-  DiscreteValues mpe;
-  double maxP = 0;
-
-  // Get all Possible Configurations
-  const auto allPosbValues = frontalAssignments();
-
-  // Find the maximum
-  for (const auto& frontalVals : allPosbValues) {
-    double pValueS = pFS(frontalVals);  // P(F=value|S=parentsValues)
-    // Update maximum solution if better
-    if (pValueS > maxP) {
-      maxP = pValueS;
-      mpe = frontalVals;
-    }
-  }
-
-  // set values (inPlace) to maximum
-  for (Key j : frontals()) {
-    (*values)[j] = mpe[j];
-  }
-}
-
-/* ************************************************************************** */
 void DiscreteConditional::sampleInPlace(DiscreteValues* values) const {
   assert(nrFrontals() == 1);
   Key j = (firstFrontalKey());
