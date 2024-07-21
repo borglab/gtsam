@@ -236,6 +236,9 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
 
 /* ************************************************************************** */
 size_t DiscreteConditional::argmax(const DiscreteValues& parentsValues) const {
+  ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
+
+  // Initialize
   size_t maxValue = 0;
   double maxP = 0;
   DiscreteValues values = parentsValues;
@@ -252,6 +255,33 @@ size_t DiscreteConditional::argmax(const DiscreteValues& parentsValues) const {
     }
   }
   return maxValue;
+}
+
+/* ************************************************************************** */
+void DiscreteConditional::argmaxInPlace(DiscreteValues* values) const {
+  ADT pFS = choose(*values, true);  // P(F|S=parentsValues)
+
+  // Initialize
+  DiscreteValues mpe;
+  double maxP = 0;
+
+  // Get all Possible Configurations
+  const auto allPosbValues = frontalAssignments();
+
+  // Find the maximum
+  for (const auto& frontalVals : allPosbValues) {
+    double pValueS = pFS(frontalVals);  // P(F=value|S=parentsValues)
+    // Update maximum solution if better
+    if (pValueS > maxP) {
+      maxP = pValueS;
+      mpe = frontalVals;
+    }
+  }
+
+  // set values (inPlace) to maximum
+  for (Key j : frontals()) {
+    (*values)[j] = mpe[j];
+  }
 }
 
 /* ************************************************************************** */
@@ -459,7 +489,7 @@ string DiscreteConditional::html(const KeyFormatter& keyFormatter,
 }
 
 /* ************************************************************************* */
-double DiscreteConditional::evaluate(const HybridValues& x) const{
+double DiscreteConditional::evaluate(const HybridValues& x) const {
   return this->evaluate(x.discrete());
 }
 /* ************************************************************************* */
