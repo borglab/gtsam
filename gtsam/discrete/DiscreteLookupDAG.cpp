@@ -119,7 +119,8 @@ DiscreteLookupDAG DiscreteLookupDAG::FromBayesNet(
 
 DiscreteValues DiscreteLookupDAG::argmax(DiscreteValues result) const {
   // Argmax each node in turn in topological sort order (parents first).
-  for (auto it = std::make_reverse_iterator(end()); it != std::make_reverse_iterator(begin()); ++it) {
+  for (auto it = std::make_reverse_iterator(end());
+       it != std::make_reverse_iterator(begin()); ++it) {
     // dereference to get the sharedFactor to the lookup table
     (*it)->argmaxInPlace(&result);
   }
