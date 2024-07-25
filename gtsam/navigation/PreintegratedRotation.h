@@ -181,7 +181,7 @@ class GTSAM_EXPORT PreintegratedRotation {
    * @param measuredOmega The measured angular velocity (as given by the sensor)
    * @param bias The biasHat estimate
    * @param deltaT The time interval
-   * @param F Jacobian of internal compose, used in AhrsFactor.
+   * @param F optional Jacobian of internal compose, used in AhrsFactor.
    */
   void integrateGyroMeasurement(const Vector3& measuredOmega,
                                 const Vector3& biasHat, double deltaT,
@@ -190,7 +190,7 @@ class GTSAM_EXPORT PreintegratedRotation {
   /**
    * @brief Return a bias corrected version of the integrated rotation.
    * @param biasOmegaIncr An increment with respect to biasHat used above.
-   * @param H Jacobian of the correction w.r.t. the bias increment.
+   * @param H optional Jacobian of the correction w.r.t. the bias increment.
    * @note The *key* functionality of this class used in optimizing the bias.
    */
   Rot3 biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
