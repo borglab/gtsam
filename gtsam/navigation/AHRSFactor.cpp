@@ -49,13 +49,14 @@ void PreintegratedAhrsMeasurements::resetIntegration() {
 //------------------------------------------------------------------------------
 void PreintegratedAhrsMeasurements::integrateMeasurement(
     const Vector3& measuredOmega, double deltaT) {
+  Matrix3 Fr;
+  PreintegratedRotation::integrateGyroMeasurement(measuredOmega, biasHat_,
+                                                  deltaT, &Fr);
 
-  Matrix3 D_incrR_integratedOmega, Fr;
-  PreintegratedRotation::integrateMeasurement(measuredOmega,
-      biasHat_, deltaT, &D_incrR_integratedOmega, &Fr);
-
-  // first order uncertainty propagation
-  // the deltaT allows to pass from continuous time noise to discrete time noise
+  // First order uncertainty propagation
+  // The deltaT allows to pass from continuous time noise to discrete time
+  // noise. Comparing with the IMUFactor.cpp implementation, the latter is an
+  // approximation for C * (wCov / dt) * C.transpose(), with C \approx I * dt.
   preintMeasCov_ = Fr * preintMeasCov_ * Fr.transpose() + p().gyroscopeCovariance * deltaT;
 }
 
