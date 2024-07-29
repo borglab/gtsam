@@ -15,11 +15,11 @@ matrices.
 
 The current support matrix is:
 
-| Platform     | Compiler  | Build Status  |
-|:------------:|:---------:|:-------------:|
-| Ubuntu 18.04 | gcc/clang | ![Linux CI](https://github.com/borglab/gtsam/workflows/Linux%20CI/badge.svg) |
-| macOS        | clang     | ![macOS CI](https://github.com/borglab/gtsam/workflows/macOS%20CI/badge.svg) |
-| Windows      | MSVC      | ![Windows CI](https://github.com/borglab/gtsam/workflows/Windows%20CI/badge.svg) |
+| Platform           | Compiler  | Build Status                                                                     |
+|:------------------:|:---------:|:--------------------------------------------------------------------------------:|
+| Ubuntu 20.04/22.04 | gcc/clang | ![Linux CI](https://github.com/borglab/gtsam/workflows/Linux%20CI/badge.svg)     |
+| macOS              | clang     | ![macOS CI](https://github.com/borglab/gtsam/workflows/macOS%20CI/badge.svg)     |
+| Windows            | MSVC      | ![Windows CI](https://github.com/borglab/gtsam/workflows/Windows%20CI/badge.svg) |
 
 
 On top of the C++ library, GTSAM includes [wrappers for MATLAB & Python](#wrappers).
