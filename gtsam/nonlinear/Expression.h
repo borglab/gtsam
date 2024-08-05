@@ -34,6 +34,8 @@ namespace gtsam {
 // Forward declares
 class Values;
 template<typename T> class ExpressionFactor;
+template<typename T> class ExpressionEqualityConstraint;
+class ScalarExpressionInequalityConstraint;
 
 namespace internal {
 template<typename T> class ExecutionTrace;
@@ -206,6 +208,8 @@ protected:
   // be very selective on who can access these private methods:
   friend class ExpressionFactor<T> ;
   friend class internal::ExpressionNode<T>;
+  friend class ExpressionEqualityConstraint<T>;
+  friend class ScalarExpressionInequalityConstraint;
 
   // and add tests
   friend class ::ExpressionFactorShallowTest;
