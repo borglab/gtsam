@@ -20,6 +20,9 @@
 #include <gtsam/constraint/NonlinearConstraint.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/base_object.hpp>
+#endif
 
 namespace gtsam {
 
@@ -37,6 +40,17 @@ class NonlinearEqualityConstraint : public NonlinearConstraint {
 
   /** Destructor. */
   virtual ~NonlinearEqualityConstraint() {}
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp("NonlinearEqualityConstraint",
+                                       boost::serialization::base_object<Base>(*this));
+  }
+#endif
 };
 
 /** Equality constraint that force g(x) = M. */
@@ -66,6 +80,20 @@ class ExpressionEqualityConstraint : public NonlinearEqualityConstraint {
   virtual NoiseModelFactor::shared_ptr penaltyFactor(const double mu = 1.0) const override;
 
   const Expression<T>& expression() const { return expression_; }
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp("ExpressionEqualityConstraint",
+                                       boost::serialization::base_object<Base>(*this));
+    ar& BOOST_SERIALIZATION_NVP(expression_);
+    ar& BOOST_SERIALIZATION_NVP(rhs_);
+    ar& BOOST_SERIALIZATION_NVP(dims_);
+  }
+#endif
 };
 
 /** Equality constraint that enforce the cost factor with zero error. */
@@ -90,6 +118,18 @@ class ZeroCostConstraint : public NonlinearEqualityConstraint {
   virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override;
 
   virtual NoiseModelFactor::shared_ptr penaltyFactor(const double mu = 1.0) const override;
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp("ZeroCostConstraint",
+                                       boost::serialization::base_object<Base>(*this));
+    ar& BOOST_SERIALIZATION_NVP(factor_);
+  }
+#endif
 };
 
 /// Container of NonlinearEqualityConstraint.
@@ -113,6 +153,17 @@ class NonlinearEqualityConstraints : public FactorGraph<NonlinearEqualityConstra
   double violationNorm(const Values& values) const;
 
   NonlinearFactorGraph penaltyGraph(const double mu = 1.0) const;
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp("NonlinearEqualityConstraints",
+                                       boost::serialization::base_object<Base>(*this));
+  }
+#endif
 };
 
 }  // namespace gtsam

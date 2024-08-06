@@ -53,6 +53,17 @@ class NonlinearInequalityConstraint : public NonlinearConstraint {
 
   /** penalty function as if the constraint is equality, 0.5 * mu * ||g(x)||^2 */
   virtual NoiseModelFactor::shared_ptr penaltyFactorEquality(const double mu = 1.0) const;
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp("NonlinearInequalityConstraint",
+                                       boost::serialization::base_object<Base>(*this));
+  }
+#endif
 };
 
 /** Inequality constraint that force g(x) <= 0, where g(x) is a scalar-valued
@@ -96,6 +107,19 @@ class ScalarExpressionInequalityConstraint : public NonlinearInequalityConstrain
   virtual NoiseModelFactor::shared_ptr penaltyFactorEquality(const double mu = 1.0) const override;
 
   const Double_& expression() const { return expression_; }
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp("ExpressionEqualityConstraint",
+                                       boost::serialization::base_object<Base>(*this));
+    ar& BOOST_SERIALIZATION_NVP(expression_);
+    ar& BOOST_SERIALIZATION_NVP(dims_);
+  }
+#endif
 };
 
 /// Container of NonlinearInequalityConstraint.
@@ -120,6 +144,17 @@ class NonlinearInequalityConstraints : public FactorGraph<NonlinearInequalityCon
 
   NonlinearFactorGraph penaltyGraphSmooth(SmoothRampFunction::shared_ptr func,
                                           const double mu = 1.0) const;
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp("NonlinearInequalityConstraints",
+                                       boost::serialization::base_object<Base>(*this));
+  }
+#endif
 };
 
 }  // namespace gtsam

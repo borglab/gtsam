@@ -19,7 +19,9 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include "gtsam/linear/NoiseModel.h"
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/base_object.hpp>
+#endif
 
 namespace gtsam {
 
@@ -40,7 +42,9 @@ class NonlinearConstraint : public NoiseModelFactor {
   virtual ~NonlinearConstraint() {}
 
   /** Create a cost factor representing the L2 penalty function with scaling coefficient mu. */
-  virtual NoiseModelFactor::shared_ptr penaltyFactor(const double mu = 1.0) const = 0;
+  virtual NoiseModelFactor::shared_ptr penaltyFactor(const double mu = 1.0) const {
+    return cloneWithNewNoiseModel(penaltyNoise(mu));
+  }
 
   /** Return the norm of the constraint violation vector. */
   virtual double violation(const Values& x) const { return sqrt(2 * error(x)); }
@@ -60,6 +64,17 @@ class NonlinearConstraint : public NoiseModelFactor {
   static SharedNoiseModel constrainedNoise(const Vector& sigmas) {
     return noiseModel::Constrained::MixedSigmas(1.0, sigmas);
   }
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp("NonlinearConstraint",
+                                       boost::serialization::base_object<Base>(*this));
+  }
+#endif
 };
 
 }  // namespace gtsam
