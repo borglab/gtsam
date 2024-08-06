@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    EqualityConstraint-inl.h
- * @brief   Equality constraints in constrained optimization.
+ * @file    NonlinearEqualityConstraint-inl.h
+ * @brief   Nonlinear equality constraints in constrained optimization.
  * @author  Yetong Zhang, Frank Dellaert
  * @date    Aug 3, 2024 */
 

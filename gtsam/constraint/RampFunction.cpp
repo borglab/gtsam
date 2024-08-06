@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    NonlinearInequalityConstraint.h
- * @brief   Nonlinear inequality constraints in constrained optimization.
- * @author  Yetong Zhang, Frank Dellaert
+ * @file    RampFunction.cpp
+ * @brief   Ramp function to compute inequality constraint violations.
+ * @author  Yetong Zhang
  * @date    Aug 3, 2024
  */
 
@@ -41,7 +41,7 @@ SmoothRampFunction::UnaryScalarFunc SmoothRampFunction::function() const {
 }
 
 /* ************************************************************************* */
-double PolynomialRampFunction::operator()(const double& x, OptionalJacobian<1, 1> H) const {
+double RampFunctionPoly2::operator()(const double& x, OptionalJacobian<1, 1> H) const {
   if (x <= 0) {
     if (H) {
       H->setZero();
@@ -49,9 +49,29 @@ double PolynomialRampFunction::operator()(const double& x, OptionalJacobian<1, 1
     return 0;
   } else if (x < epsilon_) {
     if (H) {
-      H->setConstant(x / epsilon_);
+      H->setConstant(2 * a_ * x);
     }
-    return (x * x) / (2 * epsilon_) + epsilon_ / 2;
+    return a_ * pow(x, 2);
+  } else {
+    if (H) {
+      H->setOnes();
+    }
+    return x - epsilon_ / 2;
+  }
+}
+
+/* ************************************************************************* */
+double RampFunctionPoly3::operator()(const double& x, OptionalJacobian<1, 1> H) const {
+  if (x <= 0) {
+    if (H) {
+      H->setZero();
+    }
+    return 0;
+  } else if (x < epsilon_) {
+    if (H) {
+      H->setConstant(3 * a_ * pow(x, 2) + 2 * b_ * x);
+    }
+    return a_ * pow(x, 3) + b_ * pow(x, 2);
   } else {
     if (H) {
       H->setOnes();

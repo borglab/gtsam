@@ -11,7 +11,7 @@
 
 /**
  * @file    NonlinearConstraint.h
- * @brief   Equality constraints in constrained optimization.
+ * @brief   Nonlinear constraints in constrained optimization.
  * @author  Yetong Zhang, Frank Dellaert
  * @date    Aug 3, 2024
  */

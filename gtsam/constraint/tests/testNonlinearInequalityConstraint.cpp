@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    NonlinearInequalityConstraint.h
- * @brief   Nonlinear inequality constraints in constrained optimization.
+ * @file    testNonlinearInequalityConstraint.h
+ * @brief   unit tests for nonlinear inequality constraints
  * @author  Yetong Zhang
  * @date    Aug 3, 2024
  */

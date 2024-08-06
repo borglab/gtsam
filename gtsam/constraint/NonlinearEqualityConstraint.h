@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    EqualityConstraint.h
- * @brief   Equality constraints in constrained optimization.
+ * @file    NonlinearEqualityConstraint.h
+ * @brief   Nonlinear equality constraints in constrained optimization.
  * @author  Yetong Zhang, Frank Dellaert
  * @date    Aug 3, 2024 */
 
@@ -20,9 +20,6 @@
 #include <gtsam/constraint/NonlinearConstraint.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
-#include <boost/serialization/base_object.hpp>
-#endif
 
 namespace gtsam {
 
@@ -81,6 +78,12 @@ class ExpressionEqualityConstraint : public NonlinearEqualityConstraint {
 
   const Expression<T>& expression() const { return expression_; }
 
+  /// @return a deep copy of this factor
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
  private:
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
@@ -118,6 +121,12 @@ class ZeroCostConstraint : public NonlinearEqualityConstraint {
   virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override;
 
   virtual NoiseModelFactor::shared_ptr penaltyFactor(const double mu = 1.0) const override;
+
+  /// @return a deep copy of this factor
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
 
  private:
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION

@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testEqualityConstraint.cpp
- * @brief   Equality constraints in constrained optimization.
+ * @file    testNonlinearEqualityConstraint.cpp
+ * @brief   unit tests for nonlinear equality constraints
  * @author  Yetong Zhang
  * @date    Aug 3, 2024
  */

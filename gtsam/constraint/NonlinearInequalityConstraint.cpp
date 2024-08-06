@@ -17,8 +17,7 @@
  */
 
 #include <gtsam/constraint/NonlinearInequalityConstraint.h>
-#include <memory>
-#include "gtsam/constraint/RampFunction.h"
+#include <gtsam/constraint/RampFunction.h>
 
 namespace gtsam {
 
@@ -42,6 +41,20 @@ Vector NonlinearInequalityConstraint::unwhitenedError(const Values& x,
 /* ************************************************************************* */
 bool NonlinearInequalityConstraint::active(const Values& x) const {
   return (unwhitenedExpr(x).array() >= 0).any();
+}
+
+/* ************************************************************************* */
+NoiseModelFactor::shared_ptr NonlinearInequalityConstraint::penaltyFactorSmooth(
+    SmoothRampFunction::shared_ptr func, const double mu) const {
+  /// Default behavior, this function should be overriden.
+  return penaltyFactor(mu);
+}
+
+/* ************************************************************************* */
+NonlinearEqualityConstraint::shared_ptr NonlinearInequalityConstraint::createEqualityConstraint()
+    const {
+  /// Default behavior, this function should be overriden.
+  return nullptr;
 }
 
 /* ************************************************************************* */

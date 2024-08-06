@@ -25,7 +25,7 @@
 namespace gtsam {
 
 /**
- * Inequality constraint base class.
+ * Inequality constraint base class, enforcing g(x) <= 0.
  */
 class NonlinearInequalityConstraint : public NonlinearConstraint {
  public:
@@ -39,17 +39,21 @@ class NonlinearInequalityConstraint : public NonlinearConstraint {
   /** Destructor. */
   virtual ~NonlinearInequalityConstraint() {}
 
+  /** Return g(x). */
   virtual Vector unwhitenedExpr(const Values& x, OptionalMatrixVecType H = nullptr) const = 0;
 
+  /** Return ramp(g(x)). */
   virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override;
 
+  /** Return true if g(x)>=0 in any dimension. */
   virtual bool active(const Values& x) const override;
 
-  virtual NonlinearEqualityConstraint::shared_ptr createEqualityConstraint() const = 0;
+  /** Return an equality constraint corresponding to g(x)=0. */
+  virtual NonlinearEqualityConstraint::shared_ptr createEqualityConstraint() const;
 
   /** Smooth approximation of the ramp function. */
   virtual NoiseModelFactor::shared_ptr penaltyFactorSmooth(SmoothRampFunction::shared_ptr func,
-                                                           const double mu = 1.0) const = 0;
+                                                           const double mu = 1.0) const;
 
   /** penalty function as if the constraint is equality, 0.5 * mu * ||g(x)||^2 */
   virtual NoiseModelFactor::shared_ptr penaltyFactorEquality(const double mu = 1.0) const;
@@ -67,7 +71,8 @@ class NonlinearInequalityConstraint : public NonlinearConstraint {
 };
 
 /** Inequality constraint that force g(x) <= 0, where g(x) is a scalar-valued
- * function. */
+ * nonlinear function.
+ */
 class ScalarExpressionInequalityConstraint : public NonlinearInequalityConstraint {
  public:
   typedef NonlinearInequalityConstraint Base;
@@ -82,31 +87,44 @@ class ScalarExpressionInequalityConstraint : public NonlinearInequalityConstrain
   /**
    * @brief Constructor.
    *
-   * @param expression  expression representing g(x).
+   * @param expression  expression representing g(x) (or -g(x) for GeqZero).
    * @param sigma   scalar representing sigma.
    */
   ScalarExpressionInequalityConstraint(const Double_& expression, const double& sigma);
 
-  // Create an inequality constraint g(x)>=0.
+  /** Create an inequality constraint g(x)/sigma >= 0, internally represented as -g(x)/sigma <= 0.
+   */
   static ScalarExpressionInequalityConstraint::shared_ptr GeqZero(const Double_& expression,
                                                                   const double& sigma);
 
-  // Create an inequality constraint g(x)<=0.
+  /** Create an inequality constraint g(x)/sigma <= 0. */
   static ScalarExpressionInequalityConstraint::shared_ptr LeqZero(const Double_& expression,
                                                                   const double& sigma);
 
+  /** Compute g(x), or -g(x) for objects constructed from GeqZero. */
   virtual Vector unwhitenedExpr(const Values& x, OptionalMatrixVecType H = nullptr) const override;
 
+  /** Equality constraint representing g(x)/sigma = 0. */
   NonlinearEqualityConstraint::shared_ptr createEqualityConstraint() const override;
 
+  /** Penalty function 0.5*mu*||ramp(g(x)/sigma||^2. */
   NoiseModelFactor::shared_ptr penaltyFactor(const double mu = 1.0) const override;
 
+  /** Penalty function using a smooth approxiamtion of the ramp funciton. */
   NoiseModelFactor::shared_ptr penaltyFactorSmooth(SmoothRampFunction::shared_ptr func,
                                                    const double mu = 1.0) const override;
 
+  /** Penalty function as if the constraint is equality, 0.5 * mu * ||g(x)/sigma||^2. */
   virtual NoiseModelFactor::shared_ptr penaltyFactorEquality(const double mu = 1.0) const override;
 
+  /** Return expression g(x), or -g(x) for objects constructed from GeqZero. */
   const Double_& expression() const { return expression_; }
+
+  /** return a deep copy of this factor. */
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
 
  private:
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -131,17 +149,19 @@ class NonlinearInequalityConstraints : public FactorGraph<NonlinearInequalityCon
 
   using Base::Base;
 
-  /// Return the total dimension of constraints.
+  /** Return the total dimension of constraints. */
   size_t dim() const;
 
-  /// Evaluate the constraint violation as a vector
+  /** Evaluate the constraint violation as a vector. */
   Vector violationVector(const Values& values, bool whiten = true) const;
 
-  /// Evaluate the constraint violation (as L2 norm).
+  /** Evaluate the constraint violation (as L2 norm). */
   double violationNorm(const Values& values) const;
 
+  /** Return the penalty function corresponding to \sum_i||ramp(g_i(x))||^2. */
   NonlinearFactorGraph penaltyGraph(const double mu = 1.0) const;
 
+  /** Return the penalty function constructed using smooth approximations of the ramp function. */
   NonlinearFactorGraph penaltyGraphSmooth(SmoothRampFunction::shared_ptr func,
                                           const double mu = 1.0) const;
 

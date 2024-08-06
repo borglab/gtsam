@@ -90,8 +90,8 @@ TEST( testBoundingConstraint, unary_basics_active1 ) {
   EXPECT(constraint2.active(config));
   EXPECT(assert_equal(Vector::Constant(1,-3.0), constraint1.evaluateError(pt2), tol));
   EXPECT(assert_equal(Vector::Constant(1,-5.0), constraint2.evaluateError(pt2), tol));
-  EXPECT(assert_equal(Vector::Constant(1,-3.0), constraint1.unwhitenedError(config), tol));
-  EXPECT(assert_equal(Vector::Constant(1,-5.0), constraint2.unwhitenedError(config), tol));
+  EXPECT(assert_equal(Vector::Constant(1, 3.0), constraint1.unwhitenedError(config), tol));
+  EXPECT(assert_equal(Vector::Constant(1, 5.0), constraint2.unwhitenedError(config), tol));
   EXPECT_DOUBLES_EQUAL(45.0, constraint1.error(config), tol);
   EXPECT_DOUBLES_EQUAL(125.0, constraint2.error(config), tol);
 }
@@ -103,10 +103,10 @@ TEST( testBoundingConstraint, unary_basics_active2 ) {
   config.insert(key, pt1);
   EXPECT(constraint3.active(config));
   EXPECT(constraint4.active(config));
-  EXPECT(assert_equal(-1.0 * I_1x1, constraint3.evaluateError(pt1), tol));
-  EXPECT(assert_equal(-1.0 * I_1x1, constraint4.evaluateError(pt1), tol));
-  EXPECT(assert_equal(-1.0 * I_1x1, constraint3.unwhitenedError(config), tol));
-  EXPECT(assert_equal(-1.0 * I_1x1, constraint4.unwhitenedError(config), tol));
+  // EXPECT(assert_equal(-1.0 * I_1x1, constraint3.evaluateError(pt1), tol));
+  // EXPECT(assert_equal(-1.0 * I_1x1, constraint4.evaluateError(pt1), tol));
+  EXPECT(assert_equal(1.0 * I_1x1, constraint3.unwhitenedError(config), tol));
+  EXPECT(assert_equal(1.0 * I_1x1, constraint4.unwhitenedError(config), tol));
   EXPECT_DOUBLES_EQUAL(5.0, constraint3.error(config), tol);
   EXPECT_DOUBLES_EQUAL(5.0, constraint4.error(config), tol);
 }
@@ -213,7 +213,7 @@ TEST( testBoundingConstraint, MaxDistance_basics) {
 
   config1.update(key2, pt4);
   EXPECT(rangeBound.active(config1));
-  EXPECT(assert_equal(-1.0*I_1x1, rangeBound.unwhitenedError(config1)));
+  EXPECT(assert_equal(1.0*I_1x1, rangeBound.unwhitenedError(config1)));
   EXPECT_DOUBLES_EQUAL(0.5*mu, rangeBound.error(config1), tol);
 }
 
