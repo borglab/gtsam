@@ -298,7 +298,6 @@ static std::shared_ptr<Factor> createDiscreteFactor(
     // exp(-factor->error(kEmpty)) / conditional->normalizationConstant();
     // We take negative of the logNormalizationConstant `log(1/k)`
     // to get `log(k)`.
-    // factor->print("Discrete Separator");
     return -factor->error(kEmpty) + (-conditional->logNormalizationConstant());
   };
 
