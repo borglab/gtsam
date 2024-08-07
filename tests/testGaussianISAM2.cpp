@@ -994,6 +994,56 @@ TEST(ISAM2, calculate_nnz)
   EXPECT_LONGS_EQUAL(expected, actual);
 }
 
+class FixActiveFactor : public NoiseModelFactorN<Vector2> {
+  using Base = NoiseModelFactorN<Vector2>;
+  bool is_active_;
+
+public:
+  FixActiveFactor(const gtsam::Key& key, const bool active)
+      : Base(nullptr, key), is_active_(active) {}
+
+  virtual bool active(const gtsam::Values &values) const override {
+    return is_active_;
+  }
+
+  virtual Vector
+  evaluateError(const Vector2& x,
+                Base::OptionalMatrixTypeT<Vector2> H = nullptr) const override {
+    if (H) {
+      *H = Vector2::Identity();
+    }
+    return Vector2::Zero();
+  }
+};
+
+TEST(ActiveFactorTesting, Issue1596) {
+  // Issue1596: When a derived Nonlinear Factor is not active, the linearization returns a nullptr (NonlinearFactor.cpp:156), which  
+  //            causes an error when `EliminateSymbolic` is called (SymbolicFactor-inst.h:45) due to not checking if the factor is nullptr.
+  const gtsam::Key key{Symbol('x', 0)};
+
+  ISAM2 isam;
+  Values values;
+  NonlinearFactorGraph graph;
+
+  // Insert an active factor
+  values.insert<Vector2>(key, Vector2::Zero());
+  graph.emplace_shared<FixActiveFactor>(key, true);
+
+  // No problem here
+  isam.update(graph, values);
+
+  graph = NonlinearFactorGraph();
+  
+  // Inserting a factor that is never active
+  graph.emplace_shared<FixActiveFactor>(key, false);
+
+  // This call throws the error if the pointer is not validated on (SymbolicFactor-inst.h:45)
+  isam.update(graph);
+
+  // If the bug is fixed, this line is reached.
+  EXPECT(isam.getFactorsUnsafe().size() == 2);
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
