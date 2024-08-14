@@ -74,18 +74,18 @@ TEST(PreintegratedRotation, integrateGyroMeasurement) {
   EQUALITY(Vector3(-deltaT * delta, 0, 0), expected.logmap(corrected))
   EXPECT(assert_equal(Rot3::Roll((omega - delta) * deltaT), corrected, 1e-9))
 
+  // Check the derivative matches the numerical one
   auto g = [&](const Vector3& increment) {
     return pim.biascorrectedDeltaRij(increment, {});
   };
-  const Matrix3 sane = numericalDerivative11<Rot3, Vector3>(g, Z_3x1);
-  EXPECT(assert_equal(sane, pim.delRdelBiasOmega()));
-  // TODO(frank): the derivative H we compute in biascorrectedDeltaRij is not the *sane* one!
-  // EXPECT(assert_equal(sane, H));
-
+  Matrix3 expectedH = numericalDerivative11<Rot3, Vector3>(g, biasOmegaIncr);
+  EXPECT(assert_equal(expectedH, H));
+  
   // Let's integrate a second IMU measurement and check the Jacobian update:
   pim.integrateGyroMeasurement(measuredOmega, bias, deltaT);
-  const Matrix3 sane2 = numericalDerivative11<Rot3, Vector3>(g, Z_3x1);
-  EXPECT(assert_equal(sane2, pim.delRdelBiasOmega()));
+  expectedH = numericalDerivative11<Rot3, Vector3>(g, biasOmegaIncr);
+  corrected = pim.biascorrectedDeltaRij(biasOmegaIncr, H);
+  EXPECT(assert_equal(expectedH, H));
 }
 
 //******************************************************************************
@@ -131,18 +131,18 @@ TEST(PreintegratedRotation, integrateGyroMeasurementWithTransform) {
   EQUALITY(Vector3(0, -deltaT * delta, 0), expected.logmap(corrected))
   EXPECT(assert_equal(Rot3::Pitch((omega - delta) * deltaT), corrected, 1e-9))
 
+  // Check the derivative matches the *expectedH* one
   auto g = [&](const Vector3& increment) {
     return pim.biascorrectedDeltaRij(increment, {});
   };
-  const Matrix3 sane = numericalDerivative11<Rot3, Vector3>(g, Z_3x1);
-  EXPECT(assert_equal(sane, pim.delRdelBiasOmega()));
-  // TODO(frank): the derivative H we compute in biascorrectedDeltaRij is not the *sane* one!
-  // EXPECT(assert_equal(sane, H));
+  Matrix3 expectedH = numericalDerivative11<Rot3, Vector3>(g, biasOmegaIncr);
+  EXPECT(assert_equal(expectedH, H));
 
   // Let's integrate a second IMU measurement and check the Jacobian update:
   pim.integrateGyroMeasurement(measuredOmega, bias, deltaT);
-  const Matrix3 sane2 = numericalDerivative11<Rot3, Vector3>(g, Z_3x1);
-  EXPECT(assert_equal(sane2, pim.delRdelBiasOmega()));
+  corrected = pim.biascorrectedDeltaRij(biasOmegaIncr, H);
+  expectedH = numericalDerivative11<Rot3, Vector3>(g, biasOmegaIncr);
+  EXPECT(assert_equal(expectedH, H));
 }
 
 // Create params we have a non-axis-aligned rotation and even an offset.
@@ -180,19 +180,18 @@ TEST(PreintegratedRotation, integrateGyroMeasurementWithArbitraryTransform) {
   const Vector3 biasOmegaIncr(delta, 0, 0);
   Rot3 corrected = pim.biascorrectedDeltaRij(biasOmegaIncr, H);
 
+  // Check the derivative matches the numerical one
   auto g = [&](const Vector3& increment) {
     return pim.biascorrectedDeltaRij(increment, {});
   };
-  const Matrix3 sane = numericalDerivative11<Rot3, Vector3>(g, Z_3x1);
-  EXPECT(assert_equal(sane, pim.delRdelBiasOmega()));
-  // TODO(frank): the derivative H we compute in biascorrectedDeltaRij is not the *sane* one!
-  // EXPECT(assert_equal(sane, H));
+  Matrix3 expectedH = numericalDerivative11<Rot3, Vector3>(g, biasOmegaIncr);
+  EXPECT(assert_equal(expectedH, H));
 
   // Let's integrate a second IMU measurement and check the Jacobian update:
   pim.integrateGyroMeasurement(measuredOmega, bias, deltaT);
-  const Matrix3 sane2 = numericalDerivative11<Rot3, Vector3>(g, Z_3x1);
-  EXPECT(assert_equal(sane2, pim.delRdelBiasOmega()));
-
+  corrected = pim.biascorrectedDeltaRij(biasOmegaIncr, H);
+  expectedH = numericalDerivative11<Rot3, Vector3>(g, biasOmegaIncr);
+  EXPECT(assert_equal(expectedH, H));
 }
 
 //******************************************************************************
