@@ -957,6 +957,46 @@ TEST(Rot3, determinant) {
 }
 
 /* ************************************************************************* */
+TEST(Rot3, ExpmapChainRule) {
+  // Muliply with an arbitrary matrix and exponentiate
+  Matrix3 M;
+  M << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  auto g = [&](const Vector3& omega) {
+    return Rot3::Expmap(M*omega);
+  };
+
+  // Test the derivatives at zero
+  const Matrix3 expected = numericalDerivative11<Rot3, Vector3>(g, Z_3x1);
+  EXPECT(assert_equal<Matrix3>(expected, M)); // SO3::ExpmapDerivative(Z_3x1) is identity
+
+  // Test the derivatives at another value
+  const Vector3 delta{0.1,0.2,0.3};
+  const Matrix3 expected2 = numericalDerivative11<Rot3, Vector3>(g, delta);
+  EXPECT(assert_equal<Matrix3>(expected2, SO3::ExpmapDerivative(M*delta) * M));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, expmapChainRule) {
+  // Muliply an arbitrary rotation with exp(M*x)
+  // Perhaps counter-intuitively, this has the same derivatives as above
+  Matrix3 M;
+  M << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  const Rot3 R = Rot3::Expmap({1, 2, 3});
+  auto g = [&](const Vector3& omega) {
+    return R.expmap(M*omega);
+  };
+
+  // Test the derivatives at zero
+  const Matrix3 expected = numericalDerivative11<Rot3, Vector3>(g, Z_3x1);
+  EXPECT(assert_equal<Matrix3>(expected, M));
+
+  // Test the derivatives at another value
+  const Vector3 delta{0.1,0.2,0.3};
+  const Matrix3 expected2 = numericalDerivative11<Rot3, Vector3>(g, delta);
+  EXPECT(assert_equal<Matrix3>(expected2, SO3::ExpmapDerivative(M*delta) * M));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
