@@ -11,6 +11,7 @@
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Marginals.h>
@@ -880,16 +881,16 @@ TEST(ISAM2, marginalizeLeaves6)
   // Create a grid of pose variables
   for (int i = 0; i < gridDim; ++i) {
     for (int j = 0; j < gridDim; ++j) {
-      Pose3 pose = Pose3(Rot3::identity(), Point3(i, j, 0));
+      Pose3 pose = Pose3(Rot3::Identity(), Point3(i, j, 0));
       Key key = idxToKey(i, j);
       // Place a prior on the first pose
-      factors.addPrior(key, Pose3(Rot3::identity(), Point3(i, j, 0)), nm);
+      factors.addPrior(key, Pose3(Rot3::Identity(), Point3(i, j, 0)), nm);
       values.insert(key, pose);
       if (i > 0) {
-        factors.emplace_shared<BetweenFactor<Pose3>>(idxToKey(i - 1, j), key, Pose3(Rot3::identity(), Point3(1, 0, 0)),nm);
+        factors.emplace_shared<BetweenFactor<Pose3>>(idxToKey(i - 1, j), key, Pose3(Rot3::Identity(), Point3(1, 0, 0)),nm);
       }
       if (j > 0) {
-        factors.emplace_shared<BetweenFactor<Pose3>>(idxToKey(i, j - 1), key, Pose3(Rot3::identity(), Point3(0, 1, 0)),nm);
+        factors.emplace_shared<BetweenFactor<Pose3>>(idxToKey(i, j - 1), key, Pose3(Rot3::Identity(), Point3(0, 1, 0)),nm);
       }
     }
   }
@@ -923,10 +924,10 @@ TEST(ISAM2, MarginalizeRoot)
   ISAM2 isam;
 
   // Create a factor graph with one variable and a prior
-  Pose3 root = Pose3::identity();
+  Pose3 root = Pose3::Identity();
   Key rootKey(0);
   values.insert(rootKey, root);
-  factors.addPrior(rootKey, Pose3::identity(), nm);
+  factors.addPrior(rootKey, Pose3::Identity(), nm);
 
   // Optimize the graph
   EXPECT(updateAndMarginalize(factors, values, {}, isam));
@@ -956,13 +957,13 @@ TEST(ISAM2, marginalizationSize)
 
   // Create a pose variable
   Key aKey(0);
-  values.insert(aKey, Pose3::identity());
-  factors.addPrior(aKey, Pose3::identity(), nm);
+  values.insert(aKey, Pose3::Identity());
+  factors.addPrior(aKey, Pose3::Identity(), nm);
   // Create another pose variable linked to the first
-  Pose3 b = Pose3::identity();
+  Pose3 b = Pose3::Identity();
   Key bKey(1);
-  values.insert(bKey, Pose3::identity());
-  factors.emplace_shared<BetweenFactor<Pose3>>(aKey, bKey, Pose3::identity(), nm);
+  values.insert(bKey, Pose3::Identity());
+  factors.emplace_shared<BetweenFactor<Pose3>>(aKey, bKey, Pose3::Identity(), nm);
   // Optimize the graph
   EXPECT(updateAndMarginalize(factors, values, {}, isam));
 
