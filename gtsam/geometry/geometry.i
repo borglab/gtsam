@@ -856,7 +856,7 @@ class Cal3_S2Stereo {
   gtsam::Matrix K() const;
   gtsam::Point2 principalPoint() const;
   double baseline() const;
-  Vector6 vector() const;
+  gtsam::Vector6 vector() const;
   gtsam::Matrix inverse() const;
 };
 
