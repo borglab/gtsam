@@ -295,7 +295,7 @@ static std::shared_ptr<Factor> createDiscreteFactor(
     if (!factor) return 1.0;  // TODO(dellaert): not loving this.
 
     // Logspace version of:
-    // exp(-factor->error(kEmpty)) * conditional->normalizationConstant();
+    // exp(-factor->error(kEmpty)) / conditional->normalizationConstant();
     // We take negative of the logNormalizationConstant `log(1/k)`
     // to get `log(k)`.
     return -factor->error(kEmpty) + (-conditional->logNormalizationConstant());
@@ -372,6 +372,12 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // Perform elimination!
   DecisionTree<Key, Result> eliminationResults(factorGraphTree, eliminate);
 
+  // Create the GaussianMixture from the conditionals
+  GaussianMixture::Conditionals conditionals(
+      eliminationResults, [](const Result &pair) { return pair.first; });
+  auto gaussianMixture = std::make_shared<GaussianMixture>(
+      frontalKeys, continuousSeparator, discreteSeparator, conditionals);
+
   // If there are no more continuous parents we create a DiscreteFactor with the
   // error for each discrete choice. Otherwise, create a GaussianMixtureFactor
   // on the separator, taking care to correct for conditional constants.
@@ -380,12 +386,6 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
           ? createDiscreteFactor(eliminationResults, discreteSeparator)
           : createGaussianMixtureFactor(eliminationResults, continuousSeparator,
                                         discreteSeparator);
-
-  // Create the GaussianMixture from the conditionals
-  GaussianMixture::Conditionals conditionals(
-      eliminationResults, [](const Result &pair) { return pair.first; });
-  auto gaussianMixture = std::make_shared<GaussianMixture>(
-      frontalKeys, continuousSeparator, discreteSeparator, conditionals);
 
   return {std::make_shared<HybridConditional>(gaussianMixture), newFactor};
 }

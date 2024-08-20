@@ -119,29 +119,6 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   }
 
   /**
-   * @brief Assemble a DecisionTree of (GaussianBayesNet, double) leaves for
-   * each discrete assignment.
-   * The included double value is used to make
-   * constructing the model selection term cleaner and more efficient.
-   *
-   * @return GaussianBayesNetValTree
-   */
-  GaussianBayesNetValTree assembleTree() const;
-
-  /**
-   * @brief Compute the model selection term q(μ_X; M, Z)
-   * given the error for each discrete assignment.
-   *
-   * The q(μ) terms are obtained as a result of elimination
-   * as part of the separator factor.
-   *
-   * Perform normalization to handle underflow issues.
-   *
-   * @return AlgebraicDecisionTree<Key>
-   */
-  AlgebraicDecisionTree<Key> modelSelection() const;
-
-  /**
    * @brief Solve the HybridBayesNet by first computing the MPE of all the
    * discrete variables and then optimizing the continuous variables based on
    * the MPE assignment.

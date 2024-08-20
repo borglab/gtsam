@@ -82,10 +82,13 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * their cardinalities.
    * @param factors The decision tree of Gaussian factors stored as the mixture
    * density.
+   * @param varyingNormalizers Flag indicating factor components have varying
+   * normalizer values.
    */
   GaussianMixtureFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
-                        const Factors &factors);
+                        const Factors &factors,
+                        bool varyingNormalizers = false);
 
   /**
    * @brief Construct a new GaussianMixtureFactor object using a vector of
@@ -94,12 +97,16 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @param continuousKeys Vector of keys for continuous factors.
    * @param discreteKeys Vector of discrete keys.
    * @param factors Vector of gaussian factor shared pointers.
+   * @param varyingNormalizers Flag indicating factor components have varying
+   * normalizer values.
    */
   GaussianMixtureFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
-                        const std::vector<sharedFactor> &factors)
+                        const std::vector<sharedFactor> &factors,
+                        bool varyingNormalizers = false)
       : GaussianMixtureFactor(continuousKeys, discreteKeys,
-                              Factors(discreteKeys, factors)) {}
+                              Factors(discreteKeys, factors),
+                              varyingNormalizers) {}
 
   /// @}
   /// @name Testable
@@ -134,7 +141,8 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
    * as the factors involved, and leaf values as the error.
    */
-  AlgebraicDecisionTree<Key> errorTree(const VectorValues &continuousValues) const;
+  AlgebraicDecisionTree<Key> errorTree(
+      const VectorValues &continuousValues) const;
 
   /**
    * @brief Compute the log-likelihood, including the log-normalizing constant.
