@@ -34,8 +34,6 @@ class HybridValues;
 
 /// Alias for DecisionTree of GaussianFactorGraphs
 using GaussianFactorGraphTree = DecisionTree<Key, GaussianFactorGraph>;
-/// Alias for DecisionTree of GaussianBayesNets
-using GaussianBayesNetTree = DecisionTree<Key, GaussianBayesNet>;
 
 KeyVector CollectKeys(const KeyVector &continuousKeys,
                       const DiscreteKeys &discreteKeys);

@@ -93,35 +93,6 @@ GaussianFactorGraphTree GaussianMixture::asGaussianFactorGraphTree() const {
   return {conditionals_, wrap};
 }
 
-/*
-*******************************************************************************/
-GaussianBayesNetTree GaussianMixture::add(
-    const GaussianBayesNetTree &sum) const {
-  using Y = GaussianBayesNet;
-  auto add = [](const Y &graph1, const Y &graph2) {
-    auto result = graph1;
-    if (graph2.size() == 0) {
-      return GaussianBayesNet();
-    }
-    result.push_back(graph2);
-    return result;
-  };
-  const auto tree = asGaussianBayesNetTree();
-  return sum.empty() ? tree : sum.apply(tree, add);
-}
-
-/* *******************************************************************************/
-GaussianBayesNetTree GaussianMixture::asGaussianBayesNetTree() const {
-  auto wrap = [](const GaussianConditional::shared_ptr &gc) {
-    if (gc) {
-      return GaussianBayesNet{gc};
-    } else {
-      return GaussianBayesNet();
-    }
-  };
-  return {conditionals_, wrap};
-}
-
 /* *******************************************************************************/
 size_t GaussianMixture::nrComponents() const {
   size_t total = 0;
