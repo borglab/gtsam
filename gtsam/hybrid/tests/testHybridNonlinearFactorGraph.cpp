@@ -675,7 +675,6 @@ factor 6:  P( m1 | m0 ):
 size: 3
 conditional 0: Hybrid  P( x0 | x1 m0)
  Discrete Keys = (m0, 2), 
-
  Choice(m0) 
  0 Leaf p(x0 | x1)
   R = [ 10.0499 ]
@@ -691,7 +690,6 @@ conditional 0: Hybrid  P( x0 | x1 m0)
 
 conditional 1: Hybrid  P( x1 | x2 m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
-
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf p(x1 | x2)
@@ -721,7 +719,6 @@ conditional 1: Hybrid  P( x1 | x2 m0 m1)
 
 conditional 2: Hybrid  P( x2 | m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
-
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf p(x2)

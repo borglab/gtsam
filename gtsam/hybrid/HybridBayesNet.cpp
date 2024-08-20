@@ -221,7 +221,6 @@ GaussianBayesNet HybridBayesNet::choose(
 HybridValues HybridBayesNet::optimize() const {
   // Collect all the discrete factors to compute MPE
   DiscreteBayesNet discrete_bn;
-
   for (auto &&conditional : *this) {
     if (conditional->isDiscrete()) {
       discrete_bn.push_back(conditional->asDiscrete());
