@@ -71,23 +71,26 @@ GaussianMixture::GaussianMixture(
                       Conditionals(discreteParents, conditionals)) {}
 
 /* *******************************************************************************/
-GaussianBayesNetTree GaussianMixture::asGaussianBayesNetTree() const {
-  auto wrap = [](const GaussianConditional::shared_ptr &gc) {
-    if (gc) {
-      return GaussianBayesNet{gc};
-    } else {
-      return GaussianBayesNet();
-    }
+// TODO(dellaert): This is copy/paste: GaussianMixture should be derived from
+// GaussianMixtureFactor, no?
+GaussianFactorGraphTree GaussianMixture::add(
+    const GaussianFactorGraphTree &sum) const {
+  using Y = GaussianFactorGraph;
+  auto add = [](const Y &graph1, const Y &graph2) {
+    auto result = graph1;
+    result.push_back(graph2);
+    return result;
   };
-  return {conditionals_, wrap};
+  const auto tree = asGaussianFactorGraphTree();
+  return sum.empty() ? tree : sum.apply(tree, add);
 }
 
 /* *******************************************************************************/
 GaussianFactorGraphTree GaussianMixture::asGaussianFactorGraphTree() const {
-  auto wrap = [](const GaussianBayesNet &gbn) {
-    return GaussianFactorGraph(gbn);
+  auto wrap = [](const GaussianConditional::shared_ptr &gc) {
+    return GaussianFactorGraph{gc};
   };
-  return {this->asGaussianBayesNetTree(), wrap};
+  return {conditionals_, wrap};
 }
 
 /*
@@ -108,18 +111,15 @@ GaussianBayesNetTree GaussianMixture::add(
 }
 
 /* *******************************************************************************/
-// TODO(dellaert): This is copy/paste: GaussianMixture should be derived from
-// GaussianMixtureFactor, no?
-GaussianFactorGraphTree GaussianMixture::add(
-    const GaussianFactorGraphTree &sum) const {
-  using Y = GaussianFactorGraph;
-  auto add = [](const Y &graph1, const Y &graph2) {
-    auto result = graph1;
-    result.push_back(graph2);
-    return result;
+GaussianBayesNetTree GaussianMixture::asGaussianBayesNetTree() const {
+  auto wrap = [](const GaussianConditional::shared_ptr &gc) {
+    if (gc) {
+      return GaussianBayesNet{gc};
+    } else {
+      return GaussianBayesNet();
+    }
   };
-  const auto tree = asGaussianFactorGraphTree();
-  return sum.empty() ? tree : sum.apply(tree, add);
+  return {conditionals_, wrap};
 }
 
 /* *******************************************************************************/
