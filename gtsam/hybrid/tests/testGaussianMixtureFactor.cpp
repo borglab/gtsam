@@ -346,7 +346,84 @@ TEST(GaussianMixtureFactor, DifferentCovariances) {
   DiscreteValues dv1{{M(1), 1}};
 
   // regression
-  EXPECT_DOUBLES_EQUAL(0.69314718056, errorTree(dv0), 1e-9);
+  EXPECT_DOUBLES_EQUAL(9.90348755254, errorTree(dv0), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.69314718056, errorTree(dv1), 1e-9);
+
+  DiscreteConditional expected_m1(m1, "0.5/0.5");
+  DiscreteConditional actual_m1 = *(hbn->at(2)->asDiscrete());
+
+  EXPECT(assert_equal(expected_m1, actual_m1));
+}
+
+/* ************************************************************************* */
+/**
+ * @brief Test components with differing covariances
+ * but with a Bayes net P(Z|X, M) converted to a FG.
+ */
+TEST(GaussianMixtureFactor, DifferentCovariances2) {
+  DiscreteKey m1(M(1), 2);
+
+  Values values;
+  double x1 = 1.0, x2 = 1.0;
+  values.insert(X(1), x1);
+  values.insert(X(2), x2);
+
+  double between = 0.0;
+
+  auto model0 = noiseModel::Isotropic::Sigma(1, 1e2);
+  auto model1 = noiseModel::Isotropic::Sigma(1, 1e-2);
+  auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-3);
+
+  auto f0 =
+      std::make_shared<BetweenFactor<double>>(X(1), X(2), between, model0);
+  auto f1 =
+      std::make_shared<BetweenFactor<double>>(X(1), X(2), between, model1);
+  std::vector<NonlinearFactor::shared_ptr> factors{f0, f1};
+
+  // Create via toFactorGraph
+  using symbol_shorthand::Z;
+  Matrix H0_1, H0_2, H1_1, H1_2;
+  Vector d0 = f0->evaluateError(x1, x2, &H0_1, &H0_2);
+  std::vector<std::pair<Key, Matrix>> terms0 = {{Z(1), gtsam::I_1x1 /*Rx*/},
+                                                //
+                                                {X(1), H0_1 /*Sp1*/},
+                                                {X(2), H0_2 /*Tp2*/}};
+
+  Vector d1 = f1->evaluateError(x1, x2, &H1_1, &H1_2);
+  std::vector<std::pair<Key, Matrix>> terms1 = {{Z(1), gtsam::I_1x1 /*Rx*/},
+                                                //
+                                                {X(1), H1_1 /*Sp1*/},
+                                                {X(2), H1_2 /*Tp2*/}};
+  auto gm = new gtsam::GaussianMixture(
+      {Z(1)}, {X(1), X(2)}, {m1},
+      {std::make_shared<GaussianConditional>(terms0, 1, -d0, model0),
+       std::make_shared<GaussianConditional>(terms1, 1, -d1, model1)});
+  gtsam::HybridBayesNet bn;
+  bn.emplace_back(gm);
+
+  gtsam::VectorValues measurements;
+  measurements.insert(Z(1), gtsam::Z_1x1);
+  // Create FG with single GaussianMixtureFactor
+  HybridGaussianFactorGraph mixture_fg = bn.toFactorGraph(measurements);
+
+  // Linearized prior factor on X1
+  auto prior = PriorFactor<double>(X(1), x1, prior_noise).linearize(values);
+  mixture_fg.push_back(prior);
+
+  auto hbn = mixture_fg.eliminateSequential();
+
+  VectorValues cv;
+  cv.insert(X(1), Vector1(0.0));
+  cv.insert(X(2), Vector1(0.0));
+
+  // Check that the error values at the MLE point μ.
+  AlgebraicDecisionTree<Key> errorTree = hbn->errorTree(cv);
+
+  DiscreteValues dv0{{M(1), 0}};
+  DiscreteValues dv1{{M(1), 1}};
+
+  // regression
+  EXPECT_DOUBLES_EQUAL(9.90348755254, errorTree(dv0), 1e-9);
   EXPECT_DOUBLES_EQUAL(0.69314718056, errorTree(dv1), 1e-9);
 
   DiscreteConditional expected_m1(m1, "0.5/0.5");
