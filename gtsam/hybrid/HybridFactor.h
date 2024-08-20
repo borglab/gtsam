@@ -13,6 +13,7 @@
  *  @file HybridFactor.h
  *  @date Mar 11, 2022
  *  @author Fan Jiang
+ *  @author Varun Agrawal
  */
 
 #pragma once
@@ -35,12 +36,6 @@ class HybridValues;
 using GaussianFactorGraphTree = DecisionTree<Key, GaussianFactorGraph>;
 /// Alias for DecisionTree of GaussianBayesNets
 using GaussianBayesNetTree = DecisionTree<Key, GaussianBayesNet>;
-/**
- * Alias for DecisionTree of (GaussianBayesNet, double) pairs.
- * Used for model selection in BayesNet::optimize
- */
-using GaussianBayesNetValTree =
-    DecisionTree<Key, std::pair<GaussianBayesNet, double>>;
 
 KeyVector CollectKeys(const KeyVector &continuousKeys,
                       const DiscreteKeys &discreteKeys);

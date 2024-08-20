@@ -71,29 +71,27 @@ GaussianMixture::GaussianMixture(
                       Conditionals(discreteParents, conditionals)) {}
 
 /* *******************************************************************************/
-// TODO(dellaert): This is copy/paste: GaussianMixture should be derived from
-// GaussianMixtureFactor, no?
-GaussianFactorGraphTree GaussianMixture::add(
-    const GaussianFactorGraphTree &sum) const {
-  using Y = GaussianFactorGraph;
-  auto add = [](const Y &graph1, const Y &graph2) {
-    auto result = graph1;
-    result.push_back(graph2);
-    return result;
-  };
-  const auto tree = asGaussianFactorGraphTree();
-  return sum.empty() ? tree : sum.apply(tree, add);
-}
-
-/* *******************************************************************************/
-GaussianFactorGraphTree GaussianMixture::asGaussianFactorGraphTree() const {
+GaussianBayesNetTree GaussianMixture::asGaussianBayesNetTree() const {
   auto wrap = [](const GaussianConditional::shared_ptr &gc) {
-    return GaussianFactorGraph{gc};
+    if (gc) {
+      return GaussianBayesNet{gc};
+    } else {
+      return GaussianBayesNet();
+    }
   };
   return {conditionals_, wrap};
 }
 
 /* *******************************************************************************/
+GaussianFactorGraphTree GaussianMixture::asGaussianFactorGraphTree() const {
+  auto wrap = [](const GaussianBayesNet &gbn) {
+    return GaussianFactorGraph(gbn);
+  };
+  return {this->asGaussianBayesNetTree(), wrap};
+}
+
+/*
+*******************************************************************************/
 GaussianBayesNetTree GaussianMixture::add(
     const GaussianBayesNetTree &sum) const {
   using Y = GaussianBayesNet;
@@ -110,15 +108,18 @@ GaussianBayesNetTree GaussianMixture::add(
 }
 
 /* *******************************************************************************/
-GaussianBayesNetTree GaussianMixture::asGaussianBayesNetTree() const {
-  auto wrap = [](const GaussianConditional::shared_ptr &gc) {
-    if (gc) {
-      return GaussianBayesNet{gc};
-    } else {
-      return GaussianBayesNet();
-    }
+// TODO(dellaert): This is copy/paste: GaussianMixture should be derived from
+// GaussianMixtureFactor, no?
+GaussianFactorGraphTree GaussianMixture::add(
+    const GaussianFactorGraphTree &sum) const {
+  using Y = GaussianFactorGraph;
+  auto add = [](const Y &graph1, const Y &graph2) {
+    auto result = graph1;
+    result.push_back(graph2);
+    return result;
   };
-  return {conditionals_, wrap};
+  const auto tree = asGaussianFactorGraphTree();
+  return sum.empty() ? tree : sum.apply(tree, add);
 }
 
 /* *******************************************************************************/
