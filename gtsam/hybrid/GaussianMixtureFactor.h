@@ -82,10 +82,13 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * their cardinalities.
    * @param factors The decision tree of Gaussian factors stored as the mixture
    * density.
+   * @param varyingNormalizers Flag indicating factor components have varying
+   * normalizer values.
    */
   GaussianMixtureFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
-                        const Factors &factors);
+                        const Factors &factors,
+                        bool varyingNormalizers = false);
 
   /**
    * @brief Construct a new GaussianMixtureFactor object using a vector of
@@ -94,12 +97,16 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @param continuousKeys Vector of keys for continuous factors.
    * @param discreteKeys Vector of discrete keys.
    * @param factors Vector of gaussian factor shared pointers.
+   * @param varyingNormalizers Flag indicating factor components have varying
+   * normalizer values.
    */
   GaussianMixtureFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
-                        const std::vector<sharedFactor> &factors)
+                        const std::vector<sharedFactor> &factors,
+                        bool varyingNormalizers = false)
       : GaussianMixtureFactor(continuousKeys, discreteKeys,
-                              Factors(discreteKeys, factors)) {}
+                              Factors(discreteKeys, factors),
+                              varyingNormalizers) {}
 
   /// @}
   /// @name Testable
@@ -107,9 +114,8 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
 
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 
-  void print(
-      const std::string &s = "GaussianMixtureFactor\n",
-      const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+  void print(const std::string &s = "", const KeyFormatter &formatter =
+                                            DefaultKeyFormatter) const override;
 
   /// @}
   /// @name Standard API
