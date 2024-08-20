@@ -262,15 +262,4 @@ struct traits<HybridBayesNet> : public Testable<HybridBayesNet> {};
 GaussianBayesNetTree addGaussian(const GaussianBayesNetTree &gbnTree,
                                  const GaussianConditional::shared_ptr &factor);
 
-/**
- * @brief Compute the (logarithmic) normalization constant for each Bayes
- * network in the tree.
- *
- * @param bnTree A tree of Bayes networks in each leaf. The tree encodes a
- * discrete assignment yielding the Bayes net.
- * @return AlgebraicDecisionTree<Key>
- */
-AlgebraicDecisionTree<Key> computeLogNormConstants(
-    const GaussianBayesNetValTree &bnTree);
-
 }  // namespace gtsam

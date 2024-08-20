@@ -90,46 +90,6 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
   }
 
   /**
-   * @brief Helper function to add a clique of hybrid conditionals to the passed
-   * in GaussianBayesNetTree. Operates recursively on the clique in a bottom-up
-   * fashion, adding the children first.
-   *
-   * @param clique The
-   * @param result
-   * @return GaussianBayesNetTree&
-   */
-  GaussianBayesNetTree& addCliqueToTree(const sharedClique& clique,
-                                        GaussianBayesNetTree& result) const;
-
-  /**
-   * @brief Assemble a DecisionTree of (GaussianBayesTree, double) leaves for
-   * each discrete assignment.
-   * The included double value is used to make
-   * constructing the model selection term cleaner and more efficient.
-   *
-   * @return GaussianBayesNetValTree
-   */
-  GaussianBayesNetValTree assembleTree() const;
-
-  /*
-    Compute L(M;Z), the likelihood of the discrete model M
-    given the measurements Z.
-    This is called the model selection term.
-
-    To do so, we perform the integration of L(M;Z) ∝ L(X;M,Z)P(X|M).
-
-    By Bayes' rule, P(X|M,Z) ∝ L(X;M,Z)P(X|M),
-    hence L(X;M,Z)P(X|M) is the unnormalized probabilty of
-    the joint Gaussian distribution.
-
-    This can be computed by multiplying all the exponentiated errors
-    of each of the conditionals.
-
-    Return a tree where each leaf value is L(M_i;Z).
-  */
-  AlgebraicDecisionTree<Key> modelSelection() const;
-
-  /**
    * @brief Optimize the hybrid Bayes tree by computing the MPE for the current
    * set of discrete variables and using it to compute the best continuous
    * update delta.
