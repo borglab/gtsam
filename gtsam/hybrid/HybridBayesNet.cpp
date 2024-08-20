@@ -220,16 +220,16 @@ GaussianBayesNet HybridBayesNet::choose(
 /* ************************************************************************* */
 HybridValues HybridBayesNet::optimize() const {
   // Collect all the discrete factors to compute MPE
-  DiscreteFactorGraph discrete_fg;
+  DiscreteBayesNet discrete_bn;
 
   for (auto &&conditional : *this) {
     if (conditional->isDiscrete()) {
-      discrete_fg.push_back(conditional->asDiscrete());
+      discrete_bn.push_back(conditional->asDiscrete());
     }
   }
 
   // Solve for the MPE
-  DiscreteValues mpe = discrete_fg.optimize();
+  DiscreteValues mpe = DiscreteFactorGraph(discrete_bn).optimize();
 
   // Given the MPE, compute the optimal continuous values.
   return HybridValues(optimize(mpe), mpe);

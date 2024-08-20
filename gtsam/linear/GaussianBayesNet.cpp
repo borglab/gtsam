@@ -243,25 +243,5 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  double GaussianBayesNet::logNormalizationConstant() const {
-    /*
-    normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
-    logConstant = -0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
-    
-    log det(Sigma)) = -2.0 * logDeterminant()
-    thus, logConstant = -0.5*n*log(2*pi) + logDeterminant()
-
-    BayesNet logConstant = sum(-0.5*n_i*log(2*pi) + logDeterminant_i())
-    = sum(-0.5*n_i*log(2*pi)) + sum(logDeterminant_i())
-    = sum(-0.5*n_i*log(2*pi)) + bn->logDeterminant()
-    */
-    double logNormConst = 0.0;
-    for (const sharedConditional& cg : *this) {
-      logNormConst += cg->logNormalizationConstant();
-    }
-    return logNormConst;
-  }
-
-  /* ************************************************************************* */
 
 } // namespace gtsam
