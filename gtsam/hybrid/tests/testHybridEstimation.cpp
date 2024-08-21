@@ -333,7 +333,6 @@ TEST(HybridEstimation, Probability) {
   for (auto discrete_conditional : *discreteBayesNet) {
     bayesNet->add(discrete_conditional);
   }
-  auto discreteConditional = discreteBayesNet->at(0)->asDiscrete();
 
   HybridValues hybrid_values = bayesNet->optimize();
 

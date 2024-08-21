@@ -135,7 +135,8 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
    * as the factors involved, and leaf values as the error.
    */
-  AlgebraicDecisionTree<Key> errorTree(const VectorValues &continuousValues) const;
+  AlgebraicDecisionTree<Key> errorTree(
+      const VectorValues &continuousValues) const;
 
   /**
    * @brief Compute the log-likelihood, including the log-normalizing constant.
