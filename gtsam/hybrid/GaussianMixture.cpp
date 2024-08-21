@@ -200,24 +200,10 @@ std::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
   const GaussianMixtureFactor::Factors likelihoods(
       conditionals_, [&](const GaussianConditional::shared_ptr &conditional) {
         const auto likelihood_m = conditional->likelihood(given);
-        const double Cgm_Kgcm =
-            logConstant_ - conditional->logNormalizationConstant();
-        if (Cgm_Kgcm == 0.0) {
-          return likelihood_m;
-        } else {
-          // Add a constant factor to the likelihood in case the noise models
-          // are not all equal.
-          GaussianFactorGraph gfg;
-          gfg.push_back(likelihood_m);
-          Vector c(1);
-          c << std::sqrt(2.0 * Cgm_Kgcm);
-          auto constantFactor = std::make_shared<JacobianFactor>(c);
-          gfg.push_back(constantFactor);
-          return std::make_shared<JacobianFactor>(gfg);
-        }
+        return likelihood_m;
       });
   return std::make_shared<GaussianMixtureFactor>(
-      continuousParentKeys, discreteParentKeys, likelihoods);
+      continuousParentKeys, discreteParentKeys, likelihoods, true);
 }
 
 /* ************************************************************************* */

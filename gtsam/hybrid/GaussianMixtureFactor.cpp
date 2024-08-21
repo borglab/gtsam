@@ -29,7 +29,7 @@
 namespace gtsam {
 
 /**
- * @brief Helper function to correct the [A|b] matrices in the factor components
+ * @brief Helper function to augment the [A|b] matrices in the factor components
  * with the normalizer values.
  * This is done by storing the normalizer value in
  * the `b` vector as an additional row.
@@ -39,7 +39,7 @@ namespace gtsam {
  * each component.
  * @return GaussianMixtureFactor::Factors
  */
-GaussianMixtureFactor::Factors correct(
+GaussianMixtureFactor::Factors augment(
     const GaussianMixtureFactor::Factors &factors, bool varyingNormalizers) {
   if (!varyingNormalizers) {
     return factors;
@@ -107,7 +107,7 @@ GaussianMixtureFactor::GaussianMixtureFactor(const KeyVector &continuousKeys,
                                              const Factors &factors,
                                              bool varyingNormalizers)
     : Base(continuousKeys, discreteKeys),
-      factors_(correct(factors, varyingNormalizers)) {}
+      factors_(augment(factors, varyingNormalizers)) {}
 
 /* *******************************************************************************/
 bool GaussianMixtureFactor::equals(const HybridFactor &lf, double tol) const {
