@@ -346,9 +346,10 @@ double GaussianMixture::error(const HybridValues &values) const {
     }
   }
 
-  // The discrete assignment is not valid so we return 0.0 erorr.
+  // The discrete assignment is not valid so we throw an error.
   if (!valid_assignment) {
-    return 0.0;
+    throw std::runtime_error(
+        "Invalid discrete values in values. Not all discrete keys specified.");
   }
 
   // Directly index to get the conditional, no need to build the whole tree.
