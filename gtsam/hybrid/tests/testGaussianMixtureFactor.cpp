@@ -209,14 +209,14 @@ TEST(GaussianMixtureFactor, Error) {
  * or both for each hybrid factor component.
  *
  * @param values Initial values for linearization.
- * @param means The mean values for the conditional components.
+ * @param mus The mean values for the conditional components.
  * @param sigmas Noise model sigma values (standard deviation).
  * @param m1 The discrete mode key.
  * @param z1 The measurement value.
  * @return HybridGaussianFactorGraph
  */
 HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
-    const gtsam::Values &values, const std::vector<double> &means,
+    const gtsam::Values &values, const std::vector<double> &mus,
     const std::vector<double> &sigmas, DiscreteKey &m1, double z1 = 0.0) {
   // Noise models
   auto model0 = noiseModel::Isotropic::Sigma(1, sigmas[0]);
@@ -224,11 +224,9 @@ HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
   auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-3);
 
   // GaussianMixtureFactor component factors
-  auto f0 =
-      std::make_shared<BetweenFactor<double>>(X(1), X(2), means[0], model0);
-  auto f1 =
-      std::make_shared<BetweenFactor<double>>(X(1), X(2), means[1], model1);
-  std::vector<NonlinearFactor::shared_ptr> factors{f0, f1};
+  auto f0 = std::make_shared<BetweenFactor<double>>(X(1), X(2), mus[0], model0);
+  auto f1 = std::make_shared<BetweenFactor<double>>(X(1), X(2), mus[1], model1);
+  // std::vector<NonlinearFactor::shared_ptr> factors{f0, f1};
 
   /// Get terms for each p^m(z1 | x1, x2)
   Matrix H0_1, H0_2, H1_1, H1_2;
@@ -275,7 +273,7 @@ HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
  * p(Z1 | X1, X2, M1) has 2 factors each for the binary mode m1, with only the
  * means being different.
  */
-TEST(GaussianMixtureFactor, DifferentMeansHBN) {
+TEST(GaussianMixtureFactor, DifferentMeans) {
   DiscreteKey m1(M(1), 2);
 
   Values values;
