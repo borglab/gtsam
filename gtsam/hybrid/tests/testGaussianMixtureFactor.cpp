@@ -517,8 +517,6 @@ TEST(GaussianMixtureFactor, DifferentCovariancesFG) {
 
   // Check that the error values at the MLE point μ.
   AlgebraicDecisionTree<Key> errorTree = hbn->errorTree(cv);
-  hbn->errorTree(cv).print();
-  hbn2->errorTree(cv).print();
 
   DiscreteValues dv0{{M(1), 0}};
   DiscreteValues dv1{{M(1), 1}};
