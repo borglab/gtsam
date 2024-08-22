@@ -35,45 +35,17 @@ namespace gtsam {
  * the `b` vector as an additional row.
  *
  * @param factors DecisionTree of GaussianFactor shared pointers.
- * @param varyingNormalizers Flag indicating the normalizers are different for
- * each component.
+ * @param logNormalizers Tree of log-normalizers corresponding to each
+ * Gaussian factor in factors.
  * @return GaussianMixtureFactor::Factors
  */
 GaussianMixtureFactor::Factors augment(
-    const GaussianMixtureFactor::Factors &factors, bool varyingNormalizers) {
-  if (!varyingNormalizers) {
-    return factors;
-  }
-
-  // First compute all the sqrt(|2 pi Sigma|) terms
-  auto computeNormalizers = [](const GaussianMixtureFactor::sharedFactor &gf) {
-    auto jf = std::dynamic_pointer_cast<JacobianFactor>(gf);
-    // If we have, say, a Hessian factor, then no need to do anything
-    if (!jf) return 0.0;
-
-    auto model = jf->get_model();
-    // If there is no noise model, there is nothing to do.
-    if (!model) {
-      return 0.0;
-    }
-    // Since noise models are Gaussian, we can get the logDeterminant using the
-    // same trick as in GaussianConditional
-    double logDetR =
-        model->R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
-    double logDeterminantSigma = -2.0 * logDetR;
-
-    size_t n = model->dim();
-    constexpr double log2pi = 1.8378770664093454835606594728112;
-    return n * log2pi + logDeterminantSigma;
-  };
-
-  AlgebraicDecisionTree<Key> log_normalizers =
-      DecisionTree<Key, double>(factors, computeNormalizers);
-
+    const GaussianMixtureFactor::Factors &factors,
+    const AlgebraicDecisionTree<Key> &logNormalizers) {
   // Find the minimum value so we can "proselytize" to positive values.
   // Done because we can't have sqrt of negative numbers.
-  double min_log_normalizer = log_normalizers.min();
-  log_normalizers = log_normalizers.apply(
+  double min_log_normalizer = logNormalizers.min();
+  AlgebraicDecisionTree<Key> log_normalizers = logNormalizers.apply(
       [&min_log_normalizer](double n) { return n - min_log_normalizer; });
 
   // Finally, update the [A|b] matrices.
@@ -82,8 +54,6 @@ GaussianMixtureFactor::Factors augment(
                     const GaussianMixtureFactor::sharedFactor &gf) {
     auto jf = std::dynamic_pointer_cast<JacobianFactor>(gf);
     if (!jf) return gf;
-    // If there is no noise model, there is nothing to do.
-    if (!jf->get_model()) return gf;
     // If the log_normalizer is 0, do nothing
     if (log_normalizers(assignment) == 0.0) return gf;
 
@@ -102,12 +72,11 @@ GaussianMixtureFactor::Factors augment(
 }
 
 /* *******************************************************************************/
-GaussianMixtureFactor::GaussianMixtureFactor(const KeyVector &continuousKeys,
-                                             const DiscreteKeys &discreteKeys,
-                                             const Factors &factors,
-                                             bool varyingNormalizers)
+GaussianMixtureFactor::GaussianMixtureFactor(
+    const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys,
+    const Factors &factors, const AlgebraicDecisionTree<Key> &logNormalizers)
     : Base(continuousKeys, discreteKeys),
-      factors_(augment(factors, varyingNormalizers)) {}
+      factors_(augment(factors, logNormalizers)) {}
 
 /* *******************************************************************************/
 bool GaussianMixtureFactor::equals(const HybridFactor &lf, double tol) const {
@@ -194,6 +163,21 @@ double GaussianMixtureFactor::error(const HybridValues &values) const {
   const sharedFactor gf = factors_(values.discrete());
   return gf->error(values.continuous());
 }
+
 /* *******************************************************************************/
+double ComputeLogNormalizer(
+    const noiseModel::Gaussian::shared_ptr &noise_model) {
+  // Since noise models are Gaussian, we can get the logDeterminant using
+  // the same trick as in GaussianConditional
+  double logDetR = noise_model->R()
+                       .diagonal()
+                       .unaryExpr([](double x) { return log(x); })
+                       .sum();
+  double logDeterminantSigma = -2.0 * logDetR;
+
+  size_t n = noise_model->dim();
+  constexpr double log2pi = 1.8378770664093454835606594728112;
+  return n * log2pi + logDeterminantSigma;
+}
 
 }  // namespace gtsam
