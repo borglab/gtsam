@@ -82,14 +82,10 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * their cardinalities.
    * @param factors The decision tree of Gaussian factors stored as the mixture
    * density.
-   * @param logNormalizers Tree of log-normalizers corresponding to each
-   * Gaussian factor in factors.
    */
   GaussianMixtureFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
-                        const Factors &factors,
-                        const AlgebraicDecisionTree<Key> &logNormalizers =
-                            AlgebraicDecisionTree<Key>(0.0));
+                        const Factors &factors);
 
   /**
    * @brief Construct a new GaussianMixtureFactor object using a vector of
@@ -98,16 +94,12 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @param continuousKeys Vector of keys for continuous factors.
    * @param discreteKeys Vector of discrete keys.
    * @param factors Vector of gaussian factor shared pointers.
-   * @param logNormalizers Tree of log-normalizers corresponding to each
-   * Gaussian factor in factors.
    */
   GaussianMixtureFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
-                        const std::vector<sharedFactor> &factors,
-                        const AlgebraicDecisionTree<Key> &logNormalizers =
-                            AlgebraicDecisionTree<Key>(0.0))
+                        const std::vector<sharedFactor> &factors)
       : GaussianMixtureFactor(continuousKeys, discreteKeys,
-                              Factors(discreteKeys, factors), logNormalizers) {}
+                              Factors(discreteKeys, factors)) {}
 
   /// @}
   /// @name Testable

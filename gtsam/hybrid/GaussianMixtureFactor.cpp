@@ -28,55 +28,11 @@
 
 namespace gtsam {
 
-/**
- * @brief Helper function to augment the [A|b] matrices in the factor components
- * with the normalizer values.
- * This is done by storing the normalizer value in
- * the `b` vector as an additional row.
- *
- * @param factors DecisionTree of GaussianFactor shared pointers.
- * @param logNormalizers Tree of log-normalizers corresponding to each
- * Gaussian factor in factors.
- * @return GaussianMixtureFactor::Factors
- */
-GaussianMixtureFactor::Factors augment(
-    const GaussianMixtureFactor::Factors &factors,
-    const AlgebraicDecisionTree<Key> &logNormalizers) {
-  // Find the minimum value so we can "proselytize" to positive values.
-  // Done because we can't have sqrt of negative numbers.
-  double min_log_normalizer = logNormalizers.min();
-  AlgebraicDecisionTree<Key> log_normalizers = logNormalizers.apply(
-      [&min_log_normalizer](double n) { return n - min_log_normalizer; });
-
-  // Finally, update the [A|b] matrices.
-  auto update = [&log_normalizers](
-                    const Assignment<Key> &assignment,
-                    const GaussianMixtureFactor::sharedFactor &gf) {
-    auto jf = std::dynamic_pointer_cast<JacobianFactor>(gf);
-    if (!jf) return gf;
-    // If the log_normalizer is 0, do nothing
-    if (log_normalizers(assignment) == 0.0) return gf;
-
-    GaussianFactorGraph gfg;
-    gfg.push_back(jf);
-
-    Vector c(1);
-    c << std::sqrt(log_normalizers(assignment));
-    auto constantFactor = std::make_shared<JacobianFactor>(c);
-
-    gfg.push_back(constantFactor);
-    return std::dynamic_pointer_cast<GaussianFactor>(
-        std::make_shared<JacobianFactor>(gfg));
-  };
-  return factors.apply(update);
-}
-
 /* *******************************************************************************/
-GaussianMixtureFactor::GaussianMixtureFactor(
-    const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys,
-    const Factors &factors, const AlgebraicDecisionTree<Key> &logNormalizers)
-    : Base(continuousKeys, discreteKeys),
-      factors_(augment(factors, logNormalizers)) {}
+GaussianMixtureFactor::GaussianMixtureFactor(const KeyVector &continuousKeys,
+                                             const DiscreteKeys &discreteKeys,
+                                             const Factors &factors)
+    : Base(continuousKeys, discreteKeys), factors_(factors) {}
 
 /* *******************************************************************************/
 bool GaussianMixtureFactor::equals(const HybridFactor &lf, double tol) const {
@@ -162,22 +118,6 @@ AlgebraicDecisionTree<Key> GaussianMixtureFactor::errorTree(
 double GaussianMixtureFactor::error(const HybridValues &values) const {
   const sharedFactor gf = factors_(values.discrete());
   return gf->error(values.continuous());
-}
-
-/* *******************************************************************************/
-double ComputeLogNormalizer(
-    const noiseModel::Gaussian::shared_ptr &noise_model) {
-  // Since noise models are Gaussian, we can get the logDeterminant using
-  // the same trick as in GaussianConditional
-  double logDetR = noise_model->R()
-                       .diagonal()
-                       .unaryExpr([](double x) { return log(x); })
-                       .sum();
-  double logDeterminantSigma = -2.0 * logDetR;
-
-  size_t n = noise_model->dim();
-  constexpr double log2pi = 1.8378770664093454835606594728112;
-  return n * log2pi + logDeterminantSigma;
 }
 
 }  // namespace gtsam
