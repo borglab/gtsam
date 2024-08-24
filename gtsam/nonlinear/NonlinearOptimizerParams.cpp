@@ -132,8 +132,8 @@ bool NonlinearOptimizerParams::equals(const NonlinearOptimizerParams& other,
   if (iterativeParams && other.iterativeParams) {
     iterative_params_equal = iterativeParams->equals(*other.iterativeParams);
   } else {
-    // If one or both shared pointers are null, we can't assume they are equal
-    iterative_params_equal = false;
+    // Check if either is null. If both are null, then true
+    iterative_params_equal = !iterativeParams && !other.iterativeParams;
   }
 
   return maxIterations == other.getMaxIterations() &&
