@@ -114,7 +114,7 @@ public:
 
   virtual void print(const std::string& str = "") const;
 
-  bool equals(const NonlinearOptimizerParams& other, double tol = 1e-9);
+  bool equals(const NonlinearOptimizerParams& other, double tol = 1e-9) const;
 
   inline bool isMultifrontal() const {
     return (linearSolverType == MULTIFRONTAL_CHOLESKY)
