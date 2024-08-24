@@ -252,14 +252,4 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
 template <>
 struct traits<HybridBayesNet> : public Testable<HybridBayesNet> {};
 
-/**
- * @brief Add a Gaussian conditional to each node of the GaussianBayesNetTree
- *
- * @param gbnTree
- * @param factor
- * @return GaussianBayesNetTree
- */
-GaussianBayesNetTree addGaussian(const GaussianBayesNetTree &gbnTree,
-                                 const GaussianConditional::shared_ptr &factor);
-
 }  // namespace gtsam

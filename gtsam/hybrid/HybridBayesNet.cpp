@@ -377,4 +377,5 @@ HybridGaussianFactorGraph HybridBayesNet::toFactorGraph(
   }
   return fg;
 }
+
 }  // namespace gtsam
