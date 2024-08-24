@@ -24,7 +24,6 @@
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Conditional-inst.h>
-#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
@@ -71,43 +70,6 @@ GaussianMixture::GaussianMixture(
                       Conditionals(discreteParents, conditionals)) {}
 
 /* *******************************************************************************/
-GaussianBayesNetTree GaussianMixture::asGaussianBayesNetTree() const {
-  auto wrap = [](const GaussianConditional::shared_ptr &gc) {
-    if (gc) {
-      return GaussianBayesNet{gc};
-    } else {
-      return GaussianBayesNet();
-    }
-  };
-  return {conditionals_, wrap};
-}
-
-/* *******************************************************************************/
-GaussianFactorGraphTree GaussianMixture::asGaussianFactorGraphTree() const {
-  auto wrap = [](const GaussianBayesNet &gbn) {
-    return GaussianFactorGraph(gbn);
-  };
-  return {this->asGaussianBayesNetTree(), wrap};
-}
-
-/*
-*******************************************************************************/
-GaussianBayesNetTree GaussianMixture::add(
-    const GaussianBayesNetTree &sum) const {
-  using Y = GaussianBayesNet;
-  auto add = [](const Y &graph1, const Y &graph2) {
-    auto result = graph1;
-    if (graph2.size() == 0) {
-      return GaussianBayesNet();
-    }
-    result.push_back(graph2);
-    return result;
-  };
-  const auto tree = asGaussianBayesNetTree();
-  return sum.empty() ? tree : sum.apply(tree, add);
-}
-
-/* *******************************************************************************/
 // TODO(dellaert): This is copy/paste: GaussianMixture should be derived from
 // GaussianMixtureFactor, no?
 GaussianFactorGraphTree GaussianMixture::add(
@@ -120,6 +82,14 @@ GaussianFactorGraphTree GaussianMixture::add(
   };
   const auto tree = asGaussianFactorGraphTree();
   return sum.empty() ? tree : sum.apply(tree, add);
+}
+
+/* *******************************************************************************/
+GaussianFactorGraphTree GaussianMixture::asGaussianFactorGraphTree() const {
+  auto wrap = [](const GaussianConditional::shared_ptr &gc) {
+    return GaussianFactorGraph{gc};
+  };
+  return {conditionals_, wrap};
 }
 
 /* *******************************************************************************/
@@ -347,15 +317,8 @@ AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
 AlgebraicDecisionTree<Key> GaussianMixture::errorTree(
     const VectorValues &continuousValues) const {
   auto errorFunc = [&](const GaussianConditional::shared_ptr &conditional) {
-    // Check if valid pointer
-    if (conditional) {
-      return conditional->error(continuousValues) +  //
-             logConstant_ - conditional->logNormalizationConstant();
-    } else {
-      // If not valid, pointer, it means this conditional was pruned,
-      // so we return maximum error.
-      return std::numeric_limits<double>::max();
-    }
+    return conditional->error(continuousValues) +  //
+           logConstant_ - conditional->logNormalizationConstant();
   };
   DecisionTree<Key, double> error_tree(conditionals_, errorFunc);
   return error_tree;
@@ -363,32 +326,10 @@ AlgebraicDecisionTree<Key> GaussianMixture::errorTree(
 
 /* *******************************************************************************/
 double GaussianMixture::error(const HybridValues &values) const {
-  // Check if discrete keys in discrete assignment are
-  // present in the GaussianMixture
-  KeyVector dKeys = this->discreteKeys_.indices();
-  bool valid_assignment = false;
-  for (auto &&kv : values.discrete()) {
-    if (std::find(dKeys.begin(), dKeys.end(), kv.first) != dKeys.end()) {
-      valid_assignment = true;
-      break;
-    }
-  }
-
-  // The discrete assignment is not valid so we return 0.0 erorr.
-  if (!valid_assignment) {
-    return 0.0;
-  }
-
   // Directly index to get the conditional, no need to build the whole tree.
   auto conditional = conditionals_(values.discrete());
-  if (conditional) {
-    return conditional->error(values.continuous()) +  //
-           logConstant_ - conditional->logNormalizationConstant();
-  } else {
-    // If not valid, pointer, it means this conditional was pruned,
-    // so we return maximum error.
-    return std::numeric_limits<double>::max();
-  }
+  return conditional->error(values.continuous()) +  //
+         logConstant_ - conditional->logNormalizationConstant();
 }
 
 /* *******************************************************************************/

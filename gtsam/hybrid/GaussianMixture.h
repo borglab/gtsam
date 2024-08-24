@@ -73,12 +73,6 @@ class GTSAM_EXPORT GaussianMixture
   GaussianFactorGraphTree asGaussianFactorGraphTree() const;
 
   /**
-   * @brief Convert a DecisionTree of conditionals into
-   * a DecisionTree of Gaussian Bayes nets.
-   */
-  GaussianBayesNetTree asGaussianBayesNetTree() const;
-
-  /**
    * @brief Helper function to get the pruner functor.
    *
    * @param discreteProbs The pruned discrete probabilities.
@@ -221,7 +215,8 @@ class GTSAM_EXPORT GaussianMixture
    * @return AlgebraicDecisionTree<Key> A decision tree on the discrete keys
    * only, with the leaf values as the error for each assignment.
    */
-  AlgebraicDecisionTree<Key> errorTree(const VectorValues &continuousValues) const;
+  AlgebraicDecisionTree<Key> errorTree(
+      const VectorValues &continuousValues) const;
 
   /**
    * @brief Compute the logProbability of this Gaussian Mixture.
@@ -255,15 +250,6 @@ class GTSAM_EXPORT GaussianMixture
    * @return GaussianFactorGraphTree
    */
   GaussianFactorGraphTree add(const GaussianFactorGraphTree &sum) const;
-
-  /**
-   * @brief Merge the Gaussian Bayes Nets in `this` and `sum` while
-   * maintaining the decision tree structure.
-   *
-   * @param sum Decision Tree of Gaussian Bayes Nets
-   * @return GaussianBayesNetTree
-   */
-  GaussianBayesNetTree add(const GaussianBayesNetTree &sum) const;
   /// @}
 
  private:

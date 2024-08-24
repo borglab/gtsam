@@ -18,9 +18,6 @@
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/HybridBayesNet.h>
-#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
-#include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/MixtureFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>

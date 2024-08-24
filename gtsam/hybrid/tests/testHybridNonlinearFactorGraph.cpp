@@ -510,7 +510,6 @@ factor 0:
   b = [ -10 ]
   No noise model
 factor 1: 
-GaussianMixtureFactor
 Hybrid [x0 x1; m0]{
  Choice(m0) 
  0 Leaf :
@@ -535,7 +534,6 @@ Hybrid [x0 x1; m0]{
 
 }
 factor 2: 
-GaussianMixtureFactor
 Hybrid [x1 x2; m1]{
  Choice(m1) 
  0 Leaf :
@@ -677,8 +675,6 @@ factor 6:  P( m1 | m0 ):
 size: 3
 conditional 0: Hybrid  P( x0 | x1 m0)
  Discrete Keys = (m0, 2), 
- logNormalizationConstant: 1.38862
-
  Choice(m0) 
  0 Leaf p(x0 | x1)
   R = [ 10.0499 ]
@@ -696,8 +692,6 @@ conditional 0: Hybrid  P( x0 | x1 m0)
 
 conditional 1: Hybrid  P( x1 | x2 m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
- logNormalizationConstant: 1.3935
-
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf p(x1 | x2)
@@ -731,8 +725,6 @@ conditional 1: Hybrid  P( x1 | x2 m0 m1)
 
 conditional 2: Hybrid  P( x2 | m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
- logNormalizationConstant: 1.38857
-
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf p(x2)
