@@ -85,9 +85,7 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
   GaussianBayesTree choose(const DiscreteValues& assignment) const;
 
   /** Error for all conditionals. */
-  double error(const HybridValues& values) const {
-    return HybridGaussianFactorGraph(*this).error(values);
-  }
+  double error(const HybridValues& values) const;
 
   /**
    * @brief Optimize the hybrid Bayes tree by computing the MPE for the current
