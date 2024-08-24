@@ -114,24 +114,7 @@ public:
 
   virtual void print(const std::string& str = "") const;
 
-  bool equals(const NonlinearOptimizerParams& other, double tol = 1e-9) const {
-    // Check for equality of shared ptrs
-    bool iterative_params_equal = false;
-    if (iterativeParams == other.iterativeParams) {
-      iterative_params_equal = true;
-    }
-    if (iterativeParams && other.iterativeParams) {
-      iterative_params_equal = iterativeParams->equals(*other.iterativeParams);
-    }
-
-    return maxIterations == other.getMaxIterations() &&
-           std::abs(relativeErrorTol - other.getRelativeErrorTol()) <= tol &&
-           std::abs(absoluteErrorTol - other.getAbsoluteErrorTol()) <= tol &&
-           std::abs(errorTol - other.getErrorTol()) <= tol &&
-           verbosityTranslator(verbosity) == other.getVerbosity() &&
-           orderingType == other.orderingType && ordering == other.ordering &&
-           linearSolverType == other.linearSolverType && iterative_params_equal;
-  }
+  bool equals(const NonlinearOptimizerParams& other, double tol = 1e-9);
 
   inline bool isMultifrontal() const {
     return (linearSolverType == MULTIFRONTAL_CHOLESKY)
