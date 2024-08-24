@@ -110,6 +110,59 @@ TEST(ManifoldPreintegration, computeError) {
 }
 
 /* ************************************************************************* */
+TEST(ManifoldPreintegration, CompareWithPreintegratedRotation) {
+  // Create a PreintegratedRotation object
+  auto p = std::make_shared<PreintegratedRotationParams>();
+  PreintegratedRotation pim(p);
+
+  // Integrate a single measurement
+  const double omega = 0.1;
+  const Vector3 trueOmega(omega, 0, 0);
+  const Vector3 bias(1, 2, 3);
+  const Vector3 measuredOmega = trueOmega + bias;
+  const double deltaT = 0.5;
+
+  // Check the accumulated rotation.
+  Rot3 expected = Rot3::Roll(omega * deltaT);
+  pim.integrateGyroMeasurement(measuredOmega, bias, deltaT);
+  EXPECT(assert_equal(expected, pim.deltaRij(), 1e-9));
+
+  // Now do the same for a ManifoldPreintegration object
+  imuBias::ConstantBias biasHat {Z_3x1, bias};
+  ManifoldPreintegration manifoldPim(testing::Params(), biasHat);
+  manifoldPim.integrateMeasurement(Z_3x1, measuredOmega, deltaT);
+  EXPECT(assert_equal(expected, manifoldPim.deltaRij(), 1e-9));
+
+  // Check their internal Jacobians are the same:
+  EXPECT(assert_equal(pim.delRdelBiasOmega(), manifoldPim.delRdelBiasOmega()));
+
+  // Check PreintegratedRotation::biascorrectedDeltaRij.
+  Matrix3 H;
+  const double delta = 0.05;
+  const Vector3 biasOmegaIncr(delta, 0, 0);
+  Rot3 corrected = pim.biascorrectedDeltaRij(biasOmegaIncr, H);
+  EQUALITY(Vector3(-deltaT * delta, 0, 0), expected.logmap(corrected));
+  const Rot3 expected2 = Rot3::Roll((omega - delta) * deltaT);
+  EXPECT(assert_equal(expected2, corrected, 1e-9));
+
+  // Check ManifoldPreintegration::biasCorrectedDelta.
+  imuBias::ConstantBias bias_i {Z_3x1, bias + biasOmegaIncr};
+  Matrix96 H2;
+  Vector9 biasCorrected = manifoldPim.biasCorrectedDelta(bias_i, H2);
+  Vector9 expected3;
+  expected3 << Rot3::Logmap(expected2), Z_3x1, Z_3x1;
+  EXPECT(assert_equal(expected3, biasCorrected, 1e-9));
+  
+  // Check that this one is sane:
+  auto g = [&](const Vector3& increment) {
+    return manifoldPim.biasCorrectedDelta({Z_3x1, bias + increment}, {});
+  };
+  EXPECT(assert_equal<Matrix>(numericalDerivative11<Vector9, Vector3>(g, Z_3x1),
+                              H2.rightCols<3>(),
+                              1e-4));  // NOTE(frank): reduced tolerance
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

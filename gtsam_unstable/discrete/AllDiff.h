@@ -53,6 +53,11 @@ class GTSAM_UNSTABLE_EXPORT AllDiff : public Constraint {
   /// Multiply into a decisiontree
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
+  /// Compute error for each assignment and return as a tree
+  AlgebraicDecisionTree<Key> errorTree() const override {
+    throw std::runtime_error("AllDiff::error not implemented");
+  }
+
   /*
    * Ensure Arc-consistency by checking every possible value of domain j.
    * @param j domain to be checked

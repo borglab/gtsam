@@ -86,11 +86,6 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
     return points;
   }
 
-  /// Return a zero initialized Parameter matrix.
-  static Parameters ParameterMatrix(size_t N) {
-    return Parameters::Zero(N);
-  }
-
   /**
    * Evaluate Chebyshev Weights on [-1,1] at any x up to order N-1 (N values)
    * These weights implement barycentric interpolation at a specific x.
@@ -101,16 +96,6 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
    */
   static Weights CalculateWeights(size_t N, double x, double a = -1,
                                   double b = 1);
-
-  /**
-   * Calculate weights for all x in vector X.
-   * Returns M*N matrix where M is the size of the vector X,
-   * and N is the number of basis functions.
-   *
-   * Overriden for Chebyshev2.
-   */
-  static Matrix WeightMatrix(size_t N, const Vector& X, double a = -1,
-                             double b = 1);
 
   /**
    *  Evaluate derivative of barycentric weights.

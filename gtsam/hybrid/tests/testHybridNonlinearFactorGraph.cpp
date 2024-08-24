@@ -327,8 +327,8 @@ GaussianFactorGraph::shared_ptr batchGFG(double between,
   NonlinearFactorGraph graph;
   graph.addPrior<double>(X(0), 0, Isotropic::Sigma(1, 0.1));
 
-  auto between_x0_x1 = std::make_shared<MotionModel>(
-      X(0), X(1), between, Isotropic::Sigma(1, 1.0));
+  auto between_x0_x1 = std::make_shared<MotionModel>(X(0), X(1), between,
+                                                     Isotropic::Sigma(1, 1.0));
 
   graph.push_back(between_x0_x1);
 
@@ -395,6 +395,25 @@ TEST(HybridFactorGraph, Partial_Elimination) {
   EXPECT(remainingFactorGraph->at(0)->keys() == KeyVector({M(0)}));
   EXPECT(remainingFactorGraph->at(1)->keys() == KeyVector({M(1), M(0)}));
   EXPECT(remainingFactorGraph->at(2)->keys() == KeyVector({M(0), M(1)}));
+}
+
+TEST(HybridFactorGraph, PrintErrors) {
+  Switching self(3);
+
+  // Get nonlinear factor graph and add linear factors to be holistic
+  HybridNonlinearFactorGraph fg = self.nonlinearFactorGraph;
+  fg.add(self.linearizedFactorGraph);
+
+  // Optimize to get HybridValues
+  HybridBayesNet::shared_ptr bn =
+      self.linearizedFactorGraph.eliminateSequential();
+  HybridValues hv = bn->optimize();
+
+  // Print and verify
+  // fg.print();
+  // std::cout << "\n\n\n" << std::endl;
+  // fg.printErrors(
+  //     HybridValues(hv.continuous(), DiscreteValues(), self.linearizationPoint));
 }
 
 /****************************************************************************
@@ -564,7 +583,7 @@ factor 6:  P( m1 | m0 ):
 
 )";
 #else
-string expected_hybridFactorGraph = R"(
+  string expected_hybridFactorGraph = R"(
 size: 7
 factor 0: 
   A[x0] = [
@@ -661,12 +680,14 @@ conditional 0: Hybrid  P( x0 | x1 m0)
   R = [ 10.0499 ]
   S[x1] = [ -0.0995037 ]
   d = [ -9.85087 ]
+  logNormalizationConstant: 1.38862
   No noise model
 
  1 Leaf p(x0 | x1)
   R = [ 10.0499 ]
   S[x1] = [ -0.0995037 ]
   d = [ -9.95037 ]
+  logNormalizationConstant: 1.38862
   No noise model
 
 conditional 1: Hybrid  P( x1 | x2 m0 m1)
@@ -677,12 +698,14 @@ conditional 1: Hybrid  P( x1 | x2 m0 m1)
   R = [ 10.099 ]
   S[x2] = [ -0.0990196 ]
   d = [ -9.99901 ]
+  logNormalizationConstant: 1.3935
   No noise model
 
  0 1 Leaf p(x1 | x2)
   R = [ 10.099 ]
   S[x2] = [ -0.0990196 ]
   d = [ -9.90098 ]
+  logNormalizationConstant: 1.3935
   No noise model
 
  1 Choice(m0) 
@@ -690,12 +713,14 @@ conditional 1: Hybrid  P( x1 | x2 m0 m1)
   R = [ 10.099 ]
   S[x2] = [ -0.0990196 ]
   d = [ -10.098 ]
+  logNormalizationConstant: 1.3935
   No noise model
 
  1 1 Leaf p(x1 | x2)
   R = [ 10.099 ]
   S[x2] = [ -0.0990196 ]
   d = [ -10 ]
+  logNormalizationConstant: 1.3935
   No noise model
 
 conditional 2: Hybrid  P( x2 | m0 m1)
@@ -707,6 +732,7 @@ conditional 2: Hybrid  P( x2 | m0 m1)
   d = [ -10.1489 ]
   mean: 1 elements
   x2: -1.0099
+  logNormalizationConstant: 1.38857
   No noise model
 
  0 1 Leaf p(x2)
@@ -714,6 +740,7 @@ conditional 2: Hybrid  P( x2 | m0 m1)
   d = [ -10.1479 ]
   mean: 1 elements
   x2: -1.0098
+  logNormalizationConstant: 1.38857
   No noise model
 
  1 Choice(m0) 
@@ -722,6 +749,7 @@ conditional 2: Hybrid  P( x2 | m0 m1)
   d = [ -10.0504 ]
   mean: 1 elements
   x2: -1.0001
+  logNormalizationConstant: 1.38857
   No noise model
 
  1 1 Leaf p(x2)
@@ -729,6 +757,7 @@ conditional 2: Hybrid  P( x2 | m0 m1)
   d = [ -10.0494 ]
   mean: 1 elements
   x2: -1
+  logNormalizationConstant: 1.38857
   No noise model
 
 )";
@@ -759,9 +788,9 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   KeyVector contKeys = {X(0), X(1)};
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
   auto still = std::make_shared<PlanarMotionModel>(X(0), X(1), Pose2(0, 0, 0),
-                                                     noise_model),
+                                                   noise_model),
        moving = std::make_shared<PlanarMotionModel>(X(0), X(1), odometry,
-                                                      noise_model);
+                                                    noise_model);
   std::vector<PlanarMotionModel::shared_ptr> motion_models = {still, moving};
   fg.emplace_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, motion_models);
@@ -788,7 +817,7 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   initialEstimate.insert(L(1), Point2(4.1, 1.8));
 
   // We want to eliminate variables not connected to DCFactors first.
-  const Ordering ordering {L(0), L(1), X(0), X(1)};
+  const Ordering ordering{L(0), L(1), X(0), X(1)};
 
   HybridGaussianFactorGraph linearized = *fg.linearize(initialEstimate);
 

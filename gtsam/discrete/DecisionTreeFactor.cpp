@@ -63,6 +63,22 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
+  AlgebraicDecisionTree<Key> DecisionTreeFactor::errorTree() const {
+    // Get all possible assignments
+    DiscreteKeys dkeys = discreteKeys();
+    // Reverse to make cartesian product output a more natural ordering.
+    DiscreteKeys rdkeys(dkeys.rbegin(), dkeys.rend());
+    const auto assignments = DiscreteValues::CartesianProduct(rdkeys);
+
+    // Construct vector with error values
+    std::vector<double> errors;
+    for (const auto& assignment : assignments) {
+      errors.push_back(error(assignment));
+    }
+    return AlgebraicDecisionTree<Key>(dkeys, errors);
+  }
+
+  /* ************************************************************************ */
   double DecisionTreeFactor::safe_div(const double& a, const double& b) {
     // The use for safe_div is when we divide the product factor by the sum
     // factor. If the product or sum is zero, we accord zero probability to the

@@ -16,14 +16,13 @@
  *  @author Frank Dellaert
  */
 
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/debug.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteMarginals.h>
-#include <gtsam/base/debug.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Vector.h>
-
-#include <CppUnitLite/TestHarness.h>
 
 #include <iostream>
 #include <string>
@@ -43,8 +42,7 @@ TEST(DiscreteBayesNet, bayesNet) {
   DiscreteKey Parent(0, 2), Child(1, 2);
 
   auto prior = std::make_shared<DiscreteConditional>(Parent % "6/4");
-  CHECK(assert_equal(ADT({Parent}, "0.6 0.4"),
-                     (ADT)*prior));
+  CHECK(assert_equal(ADT({Parent}, "0.6 0.4"), (ADT)*prior));
   bayesNet.push_back(prior);
 
   auto conditional =

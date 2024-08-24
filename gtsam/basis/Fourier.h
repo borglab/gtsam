@@ -51,11 +51,6 @@ class FourierBasis : public Basis<FourierBasis> {
     return b;
   }
 
-  /// Return a zero initialized Parameter matrix.
-  static Parameters ParameterMatrix(size_t N) {
-    return Parameters::Zero(N);
-  }
-
   /**
    * @brief Evaluate Real Fourier Weights of size N in interval [a, b],
    *        e.g. N=5 yields bases: 1, cos(x), sin(x), cos(2*x), sin(2*x)

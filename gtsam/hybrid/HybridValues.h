@@ -12,6 +12,7 @@
 /**
  *  @file HybridValues.h
  *  @date Jul 28, 2022
+ *  @author Varun Agrawal
  *  @author Shangjie Xue
  */
 
@@ -54,13 +55,13 @@ class GTSAM_EXPORT HybridValues {
   HybridValues() = default;
 
   /// Construct from DiscreteValues and VectorValues.
-  HybridValues(const VectorValues &cv, const DiscreteValues &dv)
-      : continuous_(cv), discrete_(dv){}
+  HybridValues(const VectorValues& cv, const DiscreteValues& dv)
+      : continuous_(cv), discrete_(dv) {}
 
   /// Construct from all values types.
   HybridValues(const VectorValues& cv, const DiscreteValues& dv,
                const Values& v)
-      : continuous_(cv), discrete_(dv), nonlinear_(v){}
+      : continuous_(cv), discrete_(dv), nonlinear_(v) {}
 
   /// @}
   /// @name Testable
@@ -101,9 +102,7 @@ class GTSAM_EXPORT HybridValues {
   bool existsDiscrete(Key j) { return (discrete_.find(j) != discrete_.end()); }
 
   /// Check whether a variable with key \c j exists in values.
-  bool existsNonlinear(Key j) {
-    return nonlinear_.exists(j);
-  }
+  bool existsNonlinear(Key j) { return nonlinear_.exists(j); }
 
   /// Check whether a variable with key \c j exists.
   bool exists(Key j) {
@@ -128,9 +127,7 @@ class GTSAM_EXPORT HybridValues {
   }
 
   /// insert_or_assign() , similar to Values.h
-  void insert_or_assign(Key j, size_t value) {
-    discrete_[j] = value;
-  }
+  void insert_or_assign(Key j, size_t value) { discrete_[j] = value; }
 
   /** Insert all continuous values from \c values.  Throws an invalid_argument
    * exception if any keys to be inserted are already used. */

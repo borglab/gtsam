@@ -7,12 +7,13 @@ namespace gtsam {
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/SO4.h>
 #include <gtsam/navigation/ImuBias.h>
+#include <gtsam/geometry/Similarity3.h>
 
 // ######
 
 #include <gtsam/slam/BetweenFactor.h>
-template <T = {double, Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3,
-               gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
+template <T = {double, gtsam::Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3,
+               gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Similarity3,
                gtsam::imuBias::ConstantBias}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose,
@@ -170,6 +171,20 @@ virtual class GenericStereoFactor : gtsam::NoiseModelFactor {
   GenericStereoFactor(const gtsam::StereoPoint2& measured,
                       const gtsam::noiseModel::Base* noiseModel, size_t poseKey,
                       size_t landmarkKey, const gtsam::Cal3_S2Stereo* K);
+  GenericStereoFactor(const gtsam::StereoPoint2& measured,
+                      const gtsam::noiseModel::Base* noiseModel, size_t poseKey,
+                      size_t landmarkKey, const gtsam::Cal3_S2Stereo* K,
+                      POSE body_P_sensor);
+
+  GenericStereoFactor(const gtsam::StereoPoint2& measured,
+                      const gtsam::noiseModel::Base* noiseModel, size_t poseKey,
+                      size_t landmarkKey, const gtsam::Cal3_S2Stereo* K,
+                      bool throwCheirality, bool verboseCheirality);
+  GenericStereoFactor(const gtsam::StereoPoint2& measured,
+                      const gtsam::noiseModel::Base* noiseModel, size_t poseKey,
+                      size_t landmarkKey, const gtsam::Cal3_S2Stereo* K,
+                      bool throwCheirality, bool verboseCheirality,
+                      POSE body_P_sensor);
   gtsam::StereoPoint2 measured() const;
   gtsam::Cal3_S2Stereo* calibration() const;
 
@@ -212,7 +227,7 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::EssentialMatrixFactor& other, double tol) const;
-  Vector evaluateError(const gtsam::EssentialMatrix& E) const;
+  gtsam::Vector evaluateError(const gtsam::EssentialMatrix& E) const;
 };
 
 #include <gtsam/slam/EssentialMatrixConstraint.h>
@@ -222,7 +237,7 @@ virtual class EssentialMatrixConstraint : gtsam::NoiseModelFactor {
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::EssentialMatrixConstraint& other, double tol) const;
-  Vector evaluateError(const gtsam::Pose3& p1, const gtsam::Pose3& p2) const;
+  gtsam::Vector evaluateError(const gtsam::Pose3& p1, const gtsam::Pose3& p2) const;
   const gtsam::EssentialMatrix& measured() const;
 };
 
@@ -321,7 +336,7 @@ virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
   FrobeniusFactor(size_t key1, size_t key2);
   FrobeniusFactor(size_t key1, size_t key2, gtsam::noiseModel::Base* model);
 
-  Vector evaluateError(const T& R1, const T& R2);
+  gtsam::Vector evaluateError(const T& R1, const T& R2);
 };
 
 template <T = {gtsam::SO3, gtsam::SO4}>
@@ -330,7 +345,7 @@ virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
   FrobeniusBetweenFactor(size_t key1, size_t key2, const T& R12,
                          gtsam::noiseModel::Base* model);
 
-  Vector evaluateError(const T& R1, const T& R2);
+  gtsam::Vector evaluateError(const T& R1, const T& R2);
 };
   
 #include <gtsam/slam/lago.h>

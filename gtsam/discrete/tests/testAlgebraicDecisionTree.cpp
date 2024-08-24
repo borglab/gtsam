@@ -593,6 +593,55 @@ TEST(ADT, zero) {
   EXPECT_DOUBLES_EQUAL(0, anotb(x11), 1e-9);
 }
 
+/// Example ADT from 0 to 11.
+ADT exampleADT() {
+  DiscreteKey A(0, 2), B(1, 3), C(2, 2);
+  ADT f(A & B & C, "0 6  2 8  4 10    1 7  3 9  5 11");
+  return f;
+}
+/* ************************************************************************** */
+// Test sum
+TEST(ADT, Sum) {
+  ADT a = exampleADT();
+  double expected_sum = 0;
+  for (double i = 0; i < 12; i++) {
+    expected_sum += i;
+  }
+  EXPECT_DOUBLES_EQUAL(expected_sum, a.sum(), 1e-9);
+}
+
+/* ************************************************************************** */
+// Test normalize
+TEST(ADT, Normalize) {
+  ADT a = exampleADT();
+  double sum = a.sum();
+  auto actual = a.normalize(sum);
+
+  DiscreteKey A(0, 2), B(1, 3), C(2, 2);
+  DiscreteKeys keys = DiscreteKeys{A, B, C};
+  std::vector<double> cpt{0 / sum, 6 / sum,  2 / sum, 8 / sum,
+                          4 / sum, 10 / sum, 1 / sum, 7 / sum,
+                          3 / sum, 9 / sum,  5 / sum, 11 / sum};
+  ADT expected(keys, cpt);
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************** */
+// Test min
+TEST(ADT, Min) {
+  ADT a = exampleADT();
+  double min = a.min();
+  EXPECT_DOUBLES_EQUAL(0.0, min, 1e-9);
+}
+
+/* ************************************************************************** */
+// Test max
+TEST(ADT, Max) {
+  ADT a = exampleADT();
+  double max = a.max();
+  EXPECT_DOUBLES_EQUAL(11.0, max, 1e-9);
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

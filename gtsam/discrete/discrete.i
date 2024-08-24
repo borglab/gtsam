@@ -14,6 +14,9 @@ class DiscreteKeys {
   bool empty() const;
   gtsam::DiscreteKey at(size_t n) const;
   void push_back(const gtsam::DiscreteKey& point_pair);
+  void print(const std::string& s = "",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 // DiscreteValues is added in specializations/discrete.h as a std::map
@@ -104,6 +107,9 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   DiscreteConditional(const gtsam::DecisionTreeFactor& joint,
                       const gtsam::DecisionTreeFactor& marginal,
                       const gtsam::Ordering& orderedKeys);
+  DiscreteConditional(const gtsam::DiscreteKey& key,
+                      const gtsam::DiscreteKeys& parents,
+                      const std::vector<double>& table);
 
   // Standard interface
   double logNormalizationConstant() const;
@@ -131,6 +137,7 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   size_t sample(size_t value) const;
   size_t sample() const;
   void sampleInPlace(gtsam::DiscreteValues @parentsValues) const;
+  size_t argmax(const gtsam::DiscreteValues& parents) const;
 
   // Markdown and HTML
   string markdown(const gtsam::KeyFormatter& keyFormatter =
@@ -159,7 +166,6 @@ virtual class DiscreteDistribution : gtsam::DiscreteConditional {
                  gtsam::DefaultKeyFormatter) const;
   double operator()(size_t value) const;
   std::vector<double> pmf() const;
-  size_t argmax() const;
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>

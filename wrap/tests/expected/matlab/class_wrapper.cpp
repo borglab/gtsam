@@ -31,6 +31,10 @@ typedef std::set<std::shared_ptr<ForwardKinematics>*> Collector_ForwardKinematic
 static Collector_ForwardKinematics collector_ForwardKinematics;
 typedef std::set<std::shared_ptr<TemplatedConstructor>*> Collector_TemplatedConstructor;
 static Collector_TemplatedConstructor collector_TemplatedConstructor;
+typedef std::set<std::shared_ptr<FastSet>*> Collector_FastSet;
+static Collector_FastSet collector_FastSet;
+typedef std::set<std::shared_ptr<HessianFactor>*> Collector_HessianFactor;
+static Collector_HessianFactor collector_HessianFactor;
 typedef std::set<std::shared_ptr<MyFactorPosePoint2>*> Collector_MyFactorPosePoint2;
 static Collector_MyFactorPosePoint2 collector_MyFactorPosePoint2;
 
@@ -101,6 +105,18 @@ void _deleteAllObjects()
     collector_TemplatedConstructor.erase(iter++);
     anyDeleted = true;
   } }
+  { for(Collector_FastSet::iterator iter = collector_FastSet.begin();
+      iter != collector_FastSet.end(); ) {
+    delete *iter;
+    collector_FastSet.erase(iter++);
+    anyDeleted = true;
+  } }
+  { for(Collector_HessianFactor::iterator iter = collector_HessianFactor.begin();
+      iter != collector_HessianFactor.end(); ) {
+    delete *iter;
+    collector_HessianFactor.erase(iter++);
+    anyDeleted = true;
+  } }
   { for(Collector_MyFactorPosePoint2::iterator iter = collector_MyFactorPosePoint2.begin();
       iter != collector_MyFactorPosePoint2.end(); ) {
     delete *iter;
@@ -121,6 +137,7 @@ void _class_RTTIRegister() {
   if(!alreadyCreated) {
     std::map<std::string, std::string> types;
 
+    types.insert(std::make_pair(typeid(HessianFactor).name(), "HessianFactor"));
 
 
     mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
@@ -844,7 +861,94 @@ void TemplatedConstructor_deconstructor_72(int nargout, mxArray *out[], int narg
   delete self;
 }
 
-void MyFactorPosePoint2_collectorInsertAndMakeBase_73(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void FastSet_collectorInsertAndMakeBase_73(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef std::shared_ptr<FastSet> Shared;
+
+  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
+  collector_FastSet.insert(self);
+}
+
+void FastSet_constructor_74(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef std::shared_ptr<FastSet> Shared;
+
+  Shared *self = new Shared(new FastSet());
+  collector_FastSet.insert(self);
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
+}
+
+void FastSet_deconstructor_75(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef std::shared_ptr<FastSet> Shared;
+  checkArguments("delete_FastSet",nargout,nargin,1);
+  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
+  Collector_FastSet::iterator item;
+  item = collector_FastSet.find(self);
+  if(item != collector_FastSet.end()) {
+    collector_FastSet.erase(item);
+  }
+  delete self;
+}
+
+void HessianFactor_collectorInsertAndMakeBase_76(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef std::shared_ptr<HessianFactor> Shared;
+
+  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
+  collector_HessianFactor.insert(self);
+
+  typedef std::shared_ptr<gtsam::GaussianFactor> SharedBase;
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
+}
+
+void HessianFactor_upcastFromVoid_77(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+  mexAtExit(&_deleteAllObjects);
+  typedef std::shared_ptr<HessianFactor> Shared;
+  std::shared_ptr<void> *asVoid = *reinterpret_cast<std::shared_ptr<void>**> (mxGetData(in[0]));
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  Shared *self = new Shared(std::static_pointer_cast<HessianFactor>(*asVoid));
+  *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
+}
+
+void HessianFactor_constructor_78(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef std::shared_ptr<HessianFactor> Shared;
+
+  gtsam::KeyVector& js = *unwrap_shared_ptr< gtsam::KeyVector >(in[0], "ptr_gtsamKeyVector");
+  std::vector<Matrix>& Gs = *unwrap_shared_ptr< std::vector<Matrix> >(in[1], "ptr_stdvectorMatrix");
+  std::vector<Vector>& gs = *unwrap_shared_ptr< std::vector<Vector> >(in[2], "ptr_stdvectorVector");
+  double f = unwrap< double >(in[3]);
+  Shared *self = new Shared(new HessianFactor(js,Gs,gs,f));
+  collector_HessianFactor.insert(self);
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
+
+  typedef std::shared_ptr<gtsam::GaussianFactor> SharedBase;
+  out[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<SharedBase**>(mxGetData(out[1])) = new SharedBase(*self);
+}
+
+void HessianFactor_deconstructor_79(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef std::shared_ptr<HessianFactor> Shared;
+  checkArguments("delete_HessianFactor",nargout,nargin,1);
+  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
+  Collector_HessianFactor::iterator item;
+  item = collector_HessianFactor.find(self);
+  if(item != collector_HessianFactor.end()) {
+    collector_HessianFactor.erase(item);
+  }
+  delete self;
+}
+
+void MyFactorPosePoint2_collectorInsertAndMakeBase_80(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef std::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>> Shared;
@@ -853,7 +957,7 @@ void MyFactorPosePoint2_collectorInsertAndMakeBase_73(int nargout, mxArray *out[
   collector_MyFactorPosePoint2.insert(self);
 }
 
-void MyFactorPosePoint2_constructor_74(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyFactorPosePoint2_constructor_81(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef std::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>> Shared;
@@ -868,7 +972,7 @@ void MyFactorPosePoint2_constructor_74(int nargout, mxArray *out[], int nargin, 
   *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
 }
 
-void MyFactorPosePoint2_deconstructor_75(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyFactorPosePoint2_deconstructor_82(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef std::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>> Shared;
   checkArguments("delete_MyFactorPosePoint2",nargout,nargin,1);
@@ -881,7 +985,7 @@ void MyFactorPosePoint2_deconstructor_75(int nargout, mxArray *out[], int nargin
   delete self;
 }
 
-void MyFactorPosePoint2_print_76(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyFactorPosePoint2_print_83(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("print",nargout,nargin-1,2);
   auto obj = unwrap_shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>>(in[0], "ptr_MyFactorPosePoint2");
@@ -890,7 +994,7 @@ void MyFactorPosePoint2_print_76(int nargout, mxArray *out[], int nargin, const 
   obj->print(s,keyFormatter);
 }
 
-void MyFactorPosePoint2_print_77(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyFactorPosePoint2_print_84(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("print",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>>(in[0], "ptr_MyFactorPosePoint2");
@@ -898,7 +1002,7 @@ void MyFactorPosePoint2_print_77(int nargout, mxArray *out[], int nargin, const 
   obj->print(s,gtsam::DefaultKeyFormatter);
 }
 
-void MyFactorPosePoint2_print_78(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void MyFactorPosePoint2_print_85(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("print",nargout,nargin-1,0);
   auto obj = unwrap_shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>>(in[0], "ptr_MyFactorPosePoint2");
@@ -1137,22 +1241,43 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       TemplatedConstructor_deconstructor_72(nargout, out, nargin-1, in+1);
       break;
     case 73:
-      MyFactorPosePoint2_collectorInsertAndMakeBase_73(nargout, out, nargin-1, in+1);
+      FastSet_collectorInsertAndMakeBase_73(nargout, out, nargin-1, in+1);
       break;
     case 74:
-      MyFactorPosePoint2_constructor_74(nargout, out, nargin-1, in+1);
+      FastSet_constructor_74(nargout, out, nargin-1, in+1);
       break;
     case 75:
-      MyFactorPosePoint2_deconstructor_75(nargout, out, nargin-1, in+1);
+      FastSet_deconstructor_75(nargout, out, nargin-1, in+1);
       break;
     case 76:
-      MyFactorPosePoint2_print_76(nargout, out, nargin-1, in+1);
+      HessianFactor_collectorInsertAndMakeBase_76(nargout, out, nargin-1, in+1);
       break;
     case 77:
-      MyFactorPosePoint2_print_77(nargout, out, nargin-1, in+1);
+      HessianFactor_upcastFromVoid_77(nargout, out, nargin-1, in+1);
       break;
     case 78:
-      MyFactorPosePoint2_print_78(nargout, out, nargin-1, in+1);
+      HessianFactor_constructor_78(nargout, out, nargin-1, in+1);
+      break;
+    case 79:
+      HessianFactor_deconstructor_79(nargout, out, nargin-1, in+1);
+      break;
+    case 80:
+      MyFactorPosePoint2_collectorInsertAndMakeBase_80(nargout, out, nargin-1, in+1);
+      break;
+    case 81:
+      MyFactorPosePoint2_constructor_81(nargout, out, nargin-1, in+1);
+      break;
+    case 82:
+      MyFactorPosePoint2_deconstructor_82(nargout, out, nargin-1, in+1);
+      break;
+    case 83:
+      MyFactorPosePoint2_print_83(nargout, out, nargin-1, in+1);
+      break;
+    case 84:
+      MyFactorPosePoint2_print_84(nargout, out, nargin-1, in+1);
+      break;
+    case 85:
+      MyFactorPosePoint2_print_85(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

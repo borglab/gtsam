@@ -12,7 +12,7 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
 - Only one Method/Constructor per line, though methods/constructors can extend across multiple lines.
 
 - Methods can return
-    - Eigen types: `Matrix`, `Vector`.
+    - Eigen types: `gtsam::Matrix`, `gtsam::Vector`.
     - C/C++ basic types: `string`, `bool`, `size_t`, `int`, `double`, `char`, `unsigned char`.
     - `void`
     - Any class with which be copied with `std::make_shared()`.
@@ -34,7 +34,7 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
     - Overloads are supported, but arguments of different types *have* to have different names.
 
 - Arguments to functions can be any of
-    - Eigen types: `Matrix`, `Vector`.
+    - Eigen types: `gtsam::Matrix`, `gtsam::Vector`.
     - Eigen types and classes as an optionally const reference.
     - C/C++ basic types: `string`, `bool`, `size_t`, `size_t`, `double`, `char`, `unsigned char`.
     - Any class with which be copied with `std::make_shared()` (except Eigen).

@@ -41,26 +41,27 @@ class Test {
   double value;
   string name;
 
-  pair<Vector,Matrix> return_pair (Vector v, Matrix A) const; // intentionally the first method
-  pair<Vector,Matrix> return_pair (Vector v) const; // overload
+  // intentionally the first method
+  pair<gtsam::Vector,gtsam::Matrix> return_pair (const gtsam::Vector& v, const gtsam::Matrix& A) const;
+  pair<gtsam::Vector,gtsam::Matrix> return_pair (const gtsam::Vector& v) const; // overload
 
   bool   return_bool   (bool   value) const; // comment after a line!
   size_t return_size_t (size_t value) const;
   int    return_int    (int    value) const;
   double return_double (double value) const;
 
-  Test(double a, Matrix b); // a constructor in the middle of a class
+  Test(double a, const gtsam::Matrix& b); // a constructor in the middle of a class
 
   // comments in the middle!
 
   // (more) comments in the middle!
 
   string return_string (string value) const;
-  Vector return_vector1(Vector value) const;
-  Matrix return_matrix1(Matrix value) const;
-  Vector return_vector2(Vector value) const;
-  Matrix return_matrix2(Matrix value) const;
-  void arg_EigenConstRef(const Matrix& value) const;
+  gtsam::Vector return_vector1(const gtsam::Vector& value) const;
+  gtsam::Matrix return_matrix1(const gtsam::Matrix& value) const;
+  gtsam::Vector return_vector2(const gtsam::Vector& value) const;
+  gtsam::Matrix return_matrix2(const gtsam::Matrix& value) const;
+  void arg_EigenConstRef(const gtsam::Matrix& value) const;
 
   bool return_field(const Test& t) const;
 
@@ -103,7 +104,7 @@ class MyFactor {
 };
 
 // and a typedef specializing it
-typedef MyFactor<gtsam::Pose2, Matrix> MyFactorPosePoint2;
+typedef MyFactor<gtsam::Pose2, gtsam::Matrix> MyFactorPosePoint2;
 
 template<T = {double}>
 class PrimitiveRef {
@@ -145,3 +146,18 @@ class TemplatedConstructor {
 
 class SuperCoolFactor;
 typedef SuperCoolFactor<gtsam::Pose3> SuperCoolFactorPose3;
+
+/// @brief class with dunder methods for container behavior
+class FastSet {
+  FastSet();
+
+  __len__();
+  __contains__(size_t key);
+  __iter__();
+};
+
+virtual class HessianFactor : gtsam::GaussianFactor {
+  HessianFactor(const gtsam::KeyVector& js,
+                const std::vector<gtsam::Matrix>& Gs,
+                const std::vector<gtsam::Vector>& gs, double f);
+};

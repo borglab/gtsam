@@ -12,13 +12,14 @@ Author: Varun Agrawal
 import unittest
 
 import numpy as np
+from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
-from gtsam.utils.test_case import GtsamTestCase
 
 
 class TestUtilites(GtsamTestCase):
     """Test various GTSAM utilities."""
+
     def test_createKeyList(self):
         """Test createKeyList."""
         I = [0, 1, 2]
@@ -27,6 +28,17 @@ class TestUtilites(GtsamTestCase):
 
         kl = gtsam.utilities.createKeyList("s", I)
         self.assertEqual(kl.size(), 3)
+
+    def test_KeyList_iteration(self):
+        """Tests for KeyList iteration"""
+        I = [0, 1, 2]
+        kl = gtsam.utilities.createKeyList(I)
+
+        self.assertEqual(len(kl), len(I))
+
+        for i, key in enumerate(kl):
+            self.assertTrue(key in kl)
+            self.assertEqual(I[i], key)
 
     def test_createKeyVector(self):
         """Test createKeyVector."""
@@ -37,6 +49,17 @@ class TestUtilites(GtsamTestCase):
         kl = gtsam.utilities.createKeyVector("s", I)
         self.assertEqual(len(kl), 3)
 
+    def test_KeyVector_iteration(self):
+        """Tests for KeyVector iteration"""
+        I = [0, 1, 2]
+        kv = gtsam.utilities.createKeyVector(I)
+
+        self.assertEqual(len(kv), len(I))
+
+        for i, key in enumerate(kv):
+            self.assertTrue(key in kv)
+            self.assertEqual(I[i], key)
+
     def test_createKeySet(self):
         """Test createKeySet."""
         I = [0, 1, 2]
@@ -45,6 +68,17 @@ class TestUtilites(GtsamTestCase):
 
         kl = gtsam.utilities.createKeySet("s", I)
         self.assertEqual(kl.size(), 3)
+
+    def test_KeySet_iteration(self):
+        """Tests for KeySet iteration"""
+        I = [0, 1, 2]
+        ks = gtsam.utilities.createKeySet(I)
+
+        self.assertEqual(len(ks), len(I))
+
+        for i, key in enumerate(ks):
+            self.assertTrue(key in ks)
+            self.assertEqual(I[i], key)
 
     def test_extractPoint2(self):
         """Test extractPoint2."""
