@@ -189,6 +189,8 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::BinaryMeasurementsPoint3
             gtsam::BinaryMeasurementsUnit3
             gtsam::BinaryMeasurementsRot3
+            gtsam::SimWall2DVector
+            gtsam::SimPolygon2DVector
             gtsam::CameraSetCal3_S2
             gtsam::CameraSetCal3Bundler
             gtsam::CameraSetCal3Unified
