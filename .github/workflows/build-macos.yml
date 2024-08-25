@@ -26,6 +26,7 @@ jobs:
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
           macos-12-xcode-14.2,
+          macos-14-xcode-15.4,
         ]
 
         build_type: [Debug, Release]
@@ -35,6 +36,11 @@ jobs:
             os: macos-12
             compiler: xcode
             version: "14.2"
+
+          - name: macos-14-xcode-15.4
+            os: macos-14
+            compiler: xcode
+            version: "15.4"
 
     steps:
       - name: Checkout
