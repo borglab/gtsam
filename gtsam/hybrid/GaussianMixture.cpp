@@ -144,8 +144,9 @@ void GaussianMixture::print(const std::string &s,
   for (auto &dk : discreteKeys()) {
     std::cout << "(" << formatter(dk.first) << ", " << dk.second << "), ";
   }
-  std::cout << "\n logNormalizationConstant: " << logConstant_ << std::endl;
-  std::cout << "\n";
+  std::cout << std::endl
+            << " logNormalizationConstant: " << logConstant_ << std::endl
+            << std::endl;
   conditionals_.print(
       "", [&](Key k) { return formatter(k); },
       [&](const GaussianConditional::shared_ptr &gf) -> std::string {
