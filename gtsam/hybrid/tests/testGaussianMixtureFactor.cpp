@@ -221,12 +221,12 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
   auto c0 = make_shared<GaussianConditional>(z, Vector1(mu0), I_1x1, model),
        c1 = make_shared<GaussianConditional>(z, Vector1(mu1), I_1x1, model);
 
-  auto gm = new GaussianMixture({z}, {}, {m}, {c0, c1});
-  auto mixing = new DiscreteConditional(m, "0.5/0.5");
+  GaussianMixture gm({z}, {}, {m}, {c0, c1});
+  DiscreteConditional mixing(m, "0.5/0.5");
 
   HybridBayesNet hbn;
-  hbn.emplace_back(gm);
-  hbn.emplace_back(mixing);
+  hbn.push_back(gm);
+  hbn.push_back(mixing);
 
   // The result should be a sigmoid.
   // So should be m = 0.5 at z=3.0 - 1.0=2.0
@@ -237,7 +237,7 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
   HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
   HybridBayesNet expected;
-  expected.emplace_back(new DiscreteConditional(m, "0.5/0.5"));
+  expected.push_back(DiscreteConditional(m, "0.5/0.5"));
 
   EXPECT(assert_equal(expected, *bn));
 }
@@ -265,12 +265,12 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
   auto c0 = make_shared<GaussianConditional>(z, Vector1(mu0), I_1x1, model0),
        c1 = make_shared<GaussianConditional>(z, Vector1(mu1), I_1x1, model1);
 
-  auto gm = new GaussianMixture({z}, {}, {m}, {c0, c1});
-  auto mixing = new DiscreteConditional(m, "0.5/0.5");
+  GaussianMixture gm({z}, {}, {m}, {c0, c1});
+  DiscreteConditional mixing(m, "0.5/0.5");
 
   HybridBayesNet hbn;
-  hbn.emplace_back(gm);
-  hbn.emplace_back(mixing);
+  hbn.push_back(gm);
+  hbn.push_back(mixing);
 
   // The result should be a sigmoid leaning towards model1
   // since it has the tighter covariance.
@@ -281,8 +281,7 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
   HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
   HybridBayesNet expected;
-  expected.emplace_back(
-      new DiscreteConditional(m, "0.338561851224/0.661438148776"));
+  expected.push_back(DiscreteConditional(m, "0.338561851224/0.661438148776"));
 
   EXPECT(assert_equal(expected, *bn));
 }
