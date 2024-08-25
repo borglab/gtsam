@@ -242,6 +242,18 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
   for (auto &f : factors) {
     if (auto df = dynamic_pointer_cast<DiscreteFactor>(f)) {
       dfg.push_back(df);
+    } else if (auto gmf = dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
+      // Case where we have a GaussianMixtureFactor with no continuous keys.
+      // In this case, compute discrete probabilities.
+      auto probability =
+          [&](const GaussianFactor::shared_ptr &factor) -> double {
+        if (!factor) return 0.0;
+        return exp(-factor->error(VectorValues()));
+      };
+      dfg.emplace_shared<DecisionTreeFactor>(
+          gmf->discreteKeys(),
+          DecisionTree<Key, double>(gmf->factors(), probability));
+
     } else if (auto orphan = dynamic_pointer_cast<OrphanWrapper>(f)) {
       // Ignore orphaned clique.
       // TODO(dellaert): is this correct? If so explain here.
