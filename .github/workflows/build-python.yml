@@ -112,6 +112,7 @@ jobs:
 
           python$PYTHON_VERSION -m venv venv
           source venv/bin/activate
+          echo "PATH=$(pwd)/venv/bin:$PATH" >> $GITHUB_ENV
           python -m pip install --upgrade pip
 
       - name: Setup msbuild (Windows)
@@ -174,11 +175,7 @@ jobs:
 
       - name: Install Python Dependencies
         shell: bash
-        run: |
-          if [ "${{ runner.os }}" == "macOS" ]; then
-            source venv/bin/activate
-          fi
-          python$PYTHON_VERSION -m pip install -r python/dev_requirements.txt
+        run: python$PYTHON_VERSION -m pip install -r python/dev_requirements.txt
 
       - name: Build
         shell: bash
