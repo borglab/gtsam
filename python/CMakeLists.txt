@@ -264,11 +264,13 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
 endif()
 
 # Add custom target so we can install with `make python-install`
+# Note below we make sure to install with --user iff not in a virtualenv
 set(GTSAM_PYTHON_INSTALL_TARGET python-install)
 add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-        COMMAND ${PYTHON_EXECUTABLE} -c "import sys, subprocess; cmd = [sys.executable, '-m', 'pip', 'install']; if not hasattr(sys, 'real_prefix') and not (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix): cmd.append('--user'); cmd.append('.'); subprocess.check_call(cmd)"
+        COMMAND ${PYTHON_EXECUTABLE} -c "import sys, subprocess; cmd = [sys.executable, '-m', 'pip', 'install']; has_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix); cmd.append('--user' if not has_venv else ''); cmd.append('.'); subprocess.check_call([c for c in cmd if c])"
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
-        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
+        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY}
+        VERBATIM)
 
 # Custom make command to run all GTSAM Python tests
 add_custom_target(
