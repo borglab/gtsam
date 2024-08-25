@@ -200,6 +200,228 @@ TEST(GaussianMixtureFactor, Error) {
       4.0, mixtureFactor.error({continuousValues, discreteValues}), 1e-9);
 }
 
+/* ************************************************************************* */
+/**
+ * Test a simple Gaussian Mixture Model represented as P(m)P(z|m)
+ * where m is a discrete variable and z is a continuous variable.
+ * m is binary and depending on m, we have 2 different means
+ * μ1 and μ2 for the Gaussian distribution around which we sample z.
+ *
+ * The resulting factor graph should eliminate to a Bayes net
+ * which represents a sigmoid function.
+ */
+TEST(GaussianMixtureFactor, GaussianMixtureModel) {
+  double mu0 = 1.0, mu1 = 3.0;
+  double sigma = 2.0;
+  auto model = noiseModel::Isotropic::Sigma(1, sigma);
+
+  DiscreteKey m(M(0), 2);
+  Key z = Z(0);
+
+  auto c0 = make_shared<GaussianConditional>(z, Vector1(mu0), I_1x1, model),
+       c1 = make_shared<GaussianConditional>(z, Vector1(mu1), I_1x1, model);
+
+  auto gm = new GaussianMixture({z}, {}, {m}, {c0, c1});
+  auto mixing = new DiscreteConditional(m, "0.5/0.5");
+
+  HybridBayesNet hbn;
+  hbn.emplace_back(gm);
+  hbn.emplace_back(mixing);
+
+  // The result should be a sigmoid.
+  // So should be m = 0.5 at z=3.0 - 1.0=2.0
+  VectorValues given;
+  given.insert(z, Vector1(mu1 - mu0));
+
+  HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+  HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+  HybridBayesNet expected;
+  expected.emplace_back(new DiscreteConditional(m, "0.5/0.5"));
+
+  EXPECT(assert_equal(expected, *bn));
+}
+
+/* ************************************************************************* */
+/**
+ * Test a simple Gaussian Mixture Model represented as P(m)P(z|m)
+ * where m is a discrete variable and z is a continuous variable.
+ * m is binary and depending on m, we have 2 different means
+ * and covariances each for the
+ * Gaussian distribution around which we sample z.
+ *
+ * The resulting factor graph should eliminate to a Bayes net
+ * which represents a sigmoid function leaning towards
+ * the tighter covariance Gaussian.
+ */
+TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
+  double mu0 = 1.0, mu1 = 3.0;
+  auto model0 = noiseModel::Isotropic::Sigma(1, 8.0);
+  auto model1 = noiseModel::Isotropic::Sigma(1, 4.0);
+
+  DiscreteKey m(M(0), 2);
+  Key z = Z(0);
+
+  auto c0 = make_shared<GaussianConditional>(z, Vector1(mu0), I_1x1, model0),
+       c1 = make_shared<GaussianConditional>(z, Vector1(mu1), I_1x1, model1);
+
+  auto gm = new GaussianMixture({z}, {}, {m}, {c0, c1});
+  auto mixing = new DiscreteConditional(m, "0.5/0.5");
+
+  HybridBayesNet hbn;
+  hbn.emplace_back(gm);
+  hbn.emplace_back(mixing);
+
+  // The result should be a sigmoid leaning towards model1
+  // since it has the tighter covariance.
+  // So should be m = 0.34/0.66 at z=3.0 - 1.0=2.0
+  VectorValues given;
+  given.insert(z, Vector1(mu1 - mu0));
+  HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+  HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+  HybridBayesNet expected;
+  expected.emplace_back(
+      new DiscreteConditional(m, "0.338561851224/0.661438148776"));
+
+  EXPECT(assert_equal(expected, *bn));
+}
+
+/* ************************************************************************* */
+/**
+ * Test a model P(x0)P(z0|x0)p(x1|m1)p(z1|x1)p(m1).
+ *
+ * p(x1|m1) has different means and same covariance.
+ *
+ * Converting to a factor graph gives us
+ * P(x0)ϕ(x0)P(x1|m1)ϕ(x1)P(m1)
+ *
+ * If we only have a measurement on z0, then
+ * the probability of x1 should be 0.5/0.5.
+ * Getting a measurement on z1 gives use more information.
+ */
+TEST(GaussianMixtureFactor, TwoStateModel) {
+  double mu0 = 1.0, mu1 = 3.0;
+  auto model = noiseModel::Isotropic::Sigma(1, 2.0);
+
+  DiscreteKey m1(M(1), 2);
+  Key z0 = Z(0), z1 = Z(1), x0 = X(0), x1 = X(1);
+
+  auto c0 = make_shared<GaussianConditional>(x1, Vector1(mu0), I_1x1, model),
+       c1 = make_shared<GaussianConditional>(x1, Vector1(mu1), I_1x1, model);
+
+  auto p_x0 = new GaussianConditional(x0, Vector1(0.0), I_1x1,
+                                      noiseModel::Isotropic::Sigma(1, 1.0));
+  auto p_z0x0 = new GaussianConditional(z0, Vector1(0.0), I_1x1, x0, -I_1x1,
+                                        noiseModel::Isotropic::Sigma(1, 1.0));
+  auto p_x1m1 = new GaussianMixture({x1}, {}, {m1}, {c0, c1});
+  auto p_z1x1 = new GaussianConditional(z1, Vector1(0.0), I_1x1, x1, -I_1x1,
+                                        noiseModel::Isotropic::Sigma(1, 3.0));
+  auto p_m1 = new DiscreteConditional(m1, "0.5/0.5");
+
+  HybridBayesNet hbn;
+  hbn.emplace_back(p_x0);
+  hbn.emplace_back(p_z0x0);
+  hbn.emplace_back(p_x1m1);
+  hbn.emplace_back(p_m1);
+
+  VectorValues given;
+  given.insert(z0, Vector1(0.5));
+
+  {
+    // Start with no measurement on x1, only on x0
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+    // Since no measurement on x1, we hedge our bets
+    DiscreteConditional expected(m1, "0.5/0.5");
+
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete())));
+  }
+
+  {
+    // Now we add a measurement z1 on x1
+    hbn.emplace_back(p_z1x1);
+
+    given.insert(z1, Vector1(2.2));
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+    // Since we have a measurement on z2, we get a definite result
+    DiscreteConditional expected(m1, "0.4923083/0.5076917");
+
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 1e-6));
+  }
+}
+
+/* ************************************************************************* */
+/**
+ * Test a model P(x0)P(z0|x0)p(x1|m1)p(z1|x1)p(m1).
+ *
+ * p(x1|m1) has different means and different covariances.
+ *
+ * Converting to a factor graph gives us
+ * P(x0)ϕ(x0)P(x1|m1)ϕ(x1)P(m1)
+ *
+ * If we only have a measurement on z0, then
+ * the probability of x1 should be the ratio of covariances.
+ * Getting a measurement on z1 gives use more information.
+ */
+TEST(GaussianMixtureFactor, TwoStateModel2) {
+  double mu0 = 1.0, mu1 = 3.0;
+  auto model0 = noiseModel::Isotropic::Sigma(1, 6.0);
+  auto model1 = noiseModel::Isotropic::Sigma(1, 4.0);
+
+  DiscreteKey m1(M(1), 2);
+  Key z0 = Z(0), z1 = Z(1), x0 = X(0), x1 = X(1);
+
+  auto c0 = make_shared<GaussianConditional>(x1, Vector1(mu0), I_1x1, model0),
+       c1 = make_shared<GaussianConditional>(x1, Vector1(mu1), I_1x1, model1);
+
+  auto p_x0 = new GaussianConditional(x0, Vector1(0.0), I_1x1,
+                                      noiseModel::Isotropic::Sigma(1, 1.0));
+  auto p_z0x0 = new GaussianConditional(z0, Vector1(0.0), I_1x1, x0, -I_1x1,
+                                        noiseModel::Isotropic::Sigma(1, 1.0));
+  auto p_x1m1 = new GaussianMixture({x1}, {}, {m1}, {c0, c1});
+  auto p_z1x1 = new GaussianConditional(z1, Vector1(0.0), I_1x1, x1, -I_1x1,
+                                        noiseModel::Isotropic::Sigma(1, 3.0));
+  auto p_m1 = new DiscreteConditional(m1, "0.5/0.5");
+
+  HybridBayesNet hbn;
+  hbn.emplace_back(p_x0);
+  hbn.emplace_back(p_z0x0);
+  hbn.emplace_back(p_x1m1);
+  hbn.emplace_back(p_m1);
+
+  VectorValues given;
+  given.insert(z0, Vector1(0.5));
+
+  {
+    // Start with no measurement on x1, only on x0
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+    // Since no measurement on x1, we get the ratio of covariances.
+    DiscreteConditional expected(m1, "0.6/0.4");
+
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete())));
+  }
+
+  {
+    // Now we add a measurement z1 on x1
+    hbn.emplace_back(p_z1x1);
+
+    given.insert(z1, Vector1(2.2));
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+    // Since we have a measurement on z2, we get a definite result
+    DiscreteConditional expected(m1, "0.52706646/0.47293354");
+
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 1e-6));
+  }
+}
+
 /**
  * @brief Helper function to specify a Hybrid Bayes Net
  * {P(X1) P(Z1 | X1, X2, M1)} and convert it to a Hybrid Factor Graph
@@ -271,11 +493,12 @@ HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
  *
  * We specify a hybrid Bayes network P(Z | X, M) =p(X1)p(Z1 | X1, X2, M1),
  * which is then converted to a factor graph by specifying Z1.
- *
- * p(Z1 | X1, X2, M1) has 2 factors each for the binary mode m1, with only the
- * means being different.
+ * This is a different case since now we have a hybrid factor
+ * with 2 continuous variables ϕ(x1, x2, m1).
+ * p(Z1 | X1, X2, M1) has 2 factors each for the binary
+ * mode m1, with only the means being different.
  */
-TEST(GaussianMixtureFactor, DifferentMeansHBN) {
+TEST(GaussianMixtureFactor, DifferentMeans) {
   DiscreteKey m1(M(1), 2);
 
   Values values;
@@ -355,6 +578,8 @@ TEST(GaussianMixtureFactor, DifferentMeansHBN) {
 /**
  * @brief Test components with differing covariances
  * but with a Bayes net P(Z|X, M) converted to a FG.
+ * Same as the DifferentMeans example but in this case,
+ * we keep the means the same and vary the covariances.
  */
 TEST(GaussianMixtureFactor, DifferentCovariances) {
   DiscreteKey m1(M(1), 2);
