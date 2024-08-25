@@ -66,7 +66,7 @@ void GaussianMixtureFactor::print(const std::string &s,
         [&](const sharedFactor &gf) -> std::string {
           RedirectCout rd;
           std::cout << ":\n";
-          if (gf && !gf->empty()) {
+          if (gf) {
             gf->print("", formatter);
             return rd.str();
           } else {
