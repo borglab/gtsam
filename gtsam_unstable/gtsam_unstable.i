@@ -671,6 +671,21 @@ class AHRS {
   //void print(string s) const;
 };
 
+#include <gtsam_unstable/slam/PartialPriorFactor.h>
+template <T = {gtsam::Pose2, gtsam::Pose3}>
+virtual class PartialPriorFactor : gtsam::NoiseModelFactor {
+  PartialPriorFactor(gtsam::Key key, size_t idx, double prior,
+                     const gtsam::noiseModel::Base* model);
+  PartialPriorFactor(gtsam::Key key, const std::vector<size_t>& indices,
+                     const gtsam::Vector& prior,
+                     const gtsam::noiseModel::Base* model);
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  const gtsam::Vector& prior();
+};
+
 // Tectonic SAM Factors
 
 #include <gtsam_unstable/slam/TSAMFactors.h>
