@@ -110,6 +110,10 @@ jobs:
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
 
+          python$PYTHON_VERSION -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+
       - name: Setup msbuild (Windows)
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
