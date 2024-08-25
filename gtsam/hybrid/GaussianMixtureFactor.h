@@ -80,8 +80,8 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @param continuousKeys A vector of keys representing continuous variables.
    * @param discreteKeys A vector of keys representing discrete variables and
    * their cardinalities.
-   * @param factors The decision tree of Gaussian factors stored as the mixture
-   * density.
+   * @param factors The decision tree of Gaussian factors stored
+   * as the mixture density.
    */
   GaussianMixtureFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
