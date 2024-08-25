@@ -32,6 +32,7 @@ jobs:
             ubuntu-20.04-gcc-9-tbb,
             ubuntu-20.04-clang-9,
             macos-12-xcode-14.2,
+            macos-14-xcode-15.4,
             windows-2022-msbuild,
           ]
 
@@ -58,6 +59,11 @@ jobs:
             os: macos-12
             compiler: xcode
             version: "14.2"
+
+          - name: macos-14-xcode-15.4
+            os: macos-14
+            compiler: xcode
+            version: "15.4"
 
           - name: windows-2022-msbuild
             os: windows-2022
