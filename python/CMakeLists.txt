@@ -30,7 +30,7 @@ if(POLICY CMP0057)
 endif()
 
 # Use bundled pybind11 version
-find_package(pybind11 CONFIG QUIET PATHS "${PROJECT_SOURCE_DIR}/wrap/pybind11")
+add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
 
 # Set the wrapping script variable
 set(PYBIND_WRAP_SCRIPT "${PROJECT_SOURCE_DIR}/wrap/scripts/pybind_wrap.py")
