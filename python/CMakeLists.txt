@@ -266,7 +266,7 @@ endif()
 # Add custom target so we can install with `make python-install`
 set(GTSAM_PYTHON_INSTALL_TARGET python-install)
 add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-        COMMAND ${PYTHON_EXECUTABLE} -m pip install `if [ -z "$VIRTUAL_ENV" ]; then echo --user; fi` .
+        COMMAND ${PYTHON_EXECUTABLE} -c "import sys, subprocess; cmd = [sys.executable, '-m', 'pip', 'install']; if not hasattr(sys, 'real_prefix') and not (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix): cmd.append('--user'); cmd.append('.'); subprocess.check_call(cmd)"
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
 
