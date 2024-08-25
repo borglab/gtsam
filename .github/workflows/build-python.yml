@@ -110,11 +110,6 @@ jobs:
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
 
-          python$PYTHON_VERSION -m venv venv
-          source venv/bin/activate
-          echo "PATH=$(pwd)/venv/bin:$PATH" >> $GITHUB_ENV
-          python -m pip install --upgrade pip
-
       - name: Setup msbuild (Windows)
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
@@ -175,7 +170,7 @@ jobs:
 
       - name: Install Python Dependencies
         shell: bash
-        run: python$PYTHON_VERSION -m pip install -r python/dev_requirements.txt
+        run: python$PYTHON_VERSION -m pip install --break-system-packages --user -r python/dev_requirements.txt
 
       - name: Build
         shell: bash
