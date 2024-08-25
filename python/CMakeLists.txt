@@ -265,12 +265,18 @@ endif()
 
 # Add custom target so we can install with `make python-install`
 set(GTSAM_PYTHON_INSTALL_TARGET python-install)
-add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-        COMMAND stubgen -q -p gtsam &&
-                rsync -a "out/gtsam/" gtsam &&
-                ${PYTHON_EXECUTABLE} -m pip install --user .
+if (NOT WIN32)
+    add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
+        COMMAND stubgen -q -p gtsam && rsync -a \"out/gtsam/\" gtsam && ${PYTHON_EXECUTABLE} -m pip install --user .
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
+elseif()
+    #TODO(Varun) Find rsync equivalent on Windows
+    add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
+        COMMAND ${PYTHON_EXECUTABLE} -m pip install --user .
+        DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
+        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
+endif()
 
 # Custom make command to run all GTSAM Python tests
 add_custom_target(
