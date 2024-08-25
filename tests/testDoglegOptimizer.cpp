@@ -184,6 +184,14 @@ TEST(DoglegOptimizer, Constraint) {
 }
 
 /* ************************************************************************* */
+/**
+ * Test created to fix issue in ISAM2 when using the DogLegOptimizer.
+ * Originally reported by kvmanohar22 in issue #301
+ * https://github.com/borglab/gtsam/issues/301
+ *
+ * This test is based on a script provided by kvmanohar22
+ * to help reproduce the issue.
+ */
 TEST(DogLegOptimizer, VariableUpdate) {
   // Make the typename short so it looks much cleaner
   typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
