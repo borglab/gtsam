@@ -80,8 +80,8 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @param continuousKeys A vector of keys representing continuous variables.
    * @param discreteKeys A vector of keys representing discrete variables and
    * their cardinalities.
-   * @param factors The decision tree of Gaussian factors stored as the mixture
-   * density.
+   * @param factors The decision tree of Gaussian factors stored
+   * as the mixture density.
    */
   GaussianMixtureFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
@@ -107,9 +107,8 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
 
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 
-  void print(
-      const std::string &s = "GaussianMixtureFactor\n",
-      const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+  void print(const std::string &s = "", const KeyFormatter &formatter =
+                                            DefaultKeyFormatter) const override;
 
   /// @}
   /// @name Standard API

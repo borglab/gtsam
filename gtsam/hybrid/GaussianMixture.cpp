@@ -24,6 +24,7 @@
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Conditional-inst.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
@@ -318,8 +319,15 @@ AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
 AlgebraicDecisionTree<Key> GaussianMixture::errorTree(
     const VectorValues &continuousValues) const {
   auto errorFunc = [&](const GaussianConditional::shared_ptr &conditional) {
-    return conditional->error(continuousValues) +  //
-           logConstant_ - conditional->logNormalizationConstant();
+    // Check if valid pointer
+    if (conditional) {
+      return conditional->error(continuousValues) +  //
+             logConstant_ - conditional->logNormalizationConstant();
+    } else {
+      // If not valid, pointer, it means this conditional was pruned,
+      // so we return maximum error.
+      return std::numeric_limits<double>::max();
+    }
   };
   DecisionTree<Key, double> error_tree(conditionals_, errorFunc);
   return error_tree;
@@ -327,10 +335,33 @@ AlgebraicDecisionTree<Key> GaussianMixture::errorTree(
 
 /* *******************************************************************************/
 double GaussianMixture::error(const HybridValues &values) const {
+  // Check if discrete keys in discrete assignment are
+  // present in the GaussianMixture
+  KeyVector dKeys = this->discreteKeys_.indices();
+  bool valid_assignment = false;
+  for (auto &&kv : values.discrete()) {
+    if (std::find(dKeys.begin(), dKeys.end(), kv.first) != dKeys.end()) {
+      valid_assignment = true;
+      break;
+    }
+  }
+
+  // The discrete assignment is not valid so we throw an error.
+  if (!valid_assignment) {
+    throw std::runtime_error(
+        "Invalid discrete values in values. Not all discrete keys specified.");
+  }
+
   // Directly index to get the conditional, no need to build the whole tree.
   auto conditional = conditionals_(values.discrete());
-  return conditional->error(values.continuous()) +  //
-         logConstant_ - conditional->logNormalizationConstant();
+  if (conditional) {
+    return conditional->error(values.continuous()) +  //
+           logConstant_ - conditional->logNormalizationConstant();
+  } else {
+    // If not valid, pointer, it means this conditional was pruned,
+    // so we return maximum error.
+    return std::numeric_limits<double>::max();
+  }
 }
 
 /* *******************************************************************************/
