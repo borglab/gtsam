@@ -263,11 +263,18 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
 endif()
 
 # Add custom target so we can install with `make python-install`
-set(GTSAM_PYTHON_INSTALL_TARGET python-install)
-add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
+if (NOT WIN32) # WIN32=1 is target platform is Windows
+    add_custom_target(python-install
+        COMMAND stubgen -q -p gtsam -o ./stubs && cp -a stubs/gtsam/ gtsam && ${PYTHON_EXECUTABLE} -m pip install --user .
+        DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
+        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
+else()
+    #TODO(Varun) Find equivalent cp on Windows
+    add_custom_target(python-install
         COMMAND ${PYTHON_EXECUTABLE} -m pip install --user .
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
+endif()
 
 # Custom make command to run all GTSAM Python tests
 add_custom_target(
