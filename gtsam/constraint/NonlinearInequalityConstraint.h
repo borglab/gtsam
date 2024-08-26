@@ -18,8 +18,8 @@
 
 #pragma once
 
+#include <gtsam/constraint/InequalityPenaltyFunction.h>
 #include <gtsam/constraint/NonlinearEqualityConstraint.h>
-#include <gtsam/constraint/RampFunction.h>
 #include <gtsam/nonlinear/expressions.h>
 
 namespace gtsam {
@@ -27,7 +27,7 @@ namespace gtsam {
 /**
  * Inequality constraint base class, enforcing g(x) <= 0.
  */
-class NonlinearInequalityConstraint : public NonlinearConstraint {
+class GTSAM_EXPORT NonlinearInequalityConstraint : public NonlinearConstraint {
  public:
   typedef NonlinearConstraint Base;
   typedef NonlinearInequalityConstraint This;
@@ -42,6 +42,8 @@ class NonlinearInequalityConstraint : public NonlinearConstraint {
   /** Return g(x). */
   virtual Vector unwhitenedExpr(const Values& x, OptionalMatrixVecType H = nullptr) const = 0;
 
+  virtual Vector whitenedExpr(const Values& x) const;
+
   /** Return ramp(g(x)). */
   virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override;
 
@@ -51,9 +53,9 @@ class NonlinearInequalityConstraint : public NonlinearConstraint {
   /** Return an equality constraint corresponding to g(x)=0. */
   virtual NonlinearEqualityConstraint::shared_ptr createEqualityConstraint() const;
 
-  /** Smooth approximation of the ramp function. */
-  virtual NoiseModelFactor::shared_ptr penaltyFactorSmooth(SmoothRampFunction::shared_ptr func,
-                                                           const double mu = 1.0) const;
+  /** Cost factor using a customized penalty function. */
+  virtual NoiseModelFactor::shared_ptr penaltyFactorCustom(
+      InequalityPenaltyFunction::shared_ptr func, const double mu = 1.0) const;
 
   /** penalty function as if the constraint is equality, 0.5 * mu * ||g(x)||^2 */
   virtual NoiseModelFactor::shared_ptr penaltyFactorEquality(const double mu = 1.0) const;
@@ -73,7 +75,7 @@ class NonlinearInequalityConstraint : public NonlinearConstraint {
 /** Inequality constraint that force g(x) <= 0, where g(x) is a scalar-valued
  * nonlinear function.
  */
-class ScalarExpressionInequalityConstraint : public NonlinearInequalityConstraint {
+class GTSAM_EXPORT ScalarExpressionInequalityConstraint : public NonlinearInequalityConstraint {
  public:
   typedef NonlinearInequalityConstraint Base;
   typedef ScalarExpressionInequalityConstraint This;
@@ -111,7 +113,7 @@ class ScalarExpressionInequalityConstraint : public NonlinearInequalityConstrain
   NoiseModelFactor::shared_ptr penaltyFactor(const double mu = 1.0) const override;
 
   /** Penalty function using a smooth approxiamtion of the ramp funciton. */
-  NoiseModelFactor::shared_ptr penaltyFactorSmooth(SmoothRampFunction::shared_ptr func,
+  NoiseModelFactor::shared_ptr penaltyFactorCustom(InequalityPenaltyFunction::shared_ptr func,
                                                    const double mu = 1.0) const override;
 
   /** Penalty function as if the constraint is equality, 0.5 * mu * ||g(x)/sigma||^2. */
@@ -141,7 +143,8 @@ class ScalarExpressionInequalityConstraint : public NonlinearInequalityConstrain
 };
 
 /// Container of NonlinearInequalityConstraint.
-class NonlinearInequalityConstraints : public FactorGraph<NonlinearInequalityConstraint> {
+class GTSAM_EXPORT NonlinearInequalityConstraints
+    : public FactorGraph<NonlinearInequalityConstraint> {
  public:
   typedef FactorGraph<NonlinearInequalityConstraint> Base;
   typedef NonlinearInequalityConstraints This;
@@ -161,8 +164,8 @@ class NonlinearInequalityConstraints : public FactorGraph<NonlinearInequalityCon
   /** Return the penalty function corresponding to \sum_i||ramp(g_i(x))||^2. */
   NonlinearFactorGraph penaltyGraph(const double mu = 1.0) const;
 
-  /** Return the penalty function constructed using smooth approximations of the ramp function. */
-  NonlinearFactorGraph penaltyGraphSmooth(SmoothRampFunction::shared_ptr func,
+  /** Return the cost graph constructed using a customized penalty function. */
+  NonlinearFactorGraph penaltyGraphCustom(InequalityPenaltyFunction::shared_ptr func,
                                           const double mu = 1.0) const;
 
  private:

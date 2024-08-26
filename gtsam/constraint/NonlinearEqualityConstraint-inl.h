@@ -21,7 +21,7 @@
 
 namespace gtsam {
 
-/* ************************************************************************* */
+/* ********************************************************************************************* */
 template <typename T>
 ExpressionEqualityConstraint<T>::ExpressionEqualityConstraint(const Expression<T>& expression,
                                                               const T& rhs,
@@ -31,7 +31,7 @@ ExpressionEqualityConstraint<T>::ExpressionEqualityConstraint(const Expression<T
       rhs_(rhs),
       dims_(expression.keysAndDims().second) {}
 
-/* ************************************************************************* */
+/* ********************************************************************************************* */
 template <typename T>
 Vector ExpressionEqualityConstraint<T>::unwhitenedError(const Values& x,
                                                         OptionalMatrixVecType H) const {
@@ -45,7 +45,7 @@ Vector ExpressionEqualityConstraint<T>::unwhitenedError(const Values& x,
   }
 }
 
-/* ************************************************************************* */
+/* ********************************************************************************************* */
 template <typename T>
 NoiseModelFactor::shared_ptr ExpressionEqualityConstraint<T>::penaltyFactor(const double mu) const {
   return std::make_shared<ExpressionFactor<T>>(penaltyNoise(mu), rhs_, expression_);

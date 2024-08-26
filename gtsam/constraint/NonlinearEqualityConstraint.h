@@ -26,7 +26,7 @@ namespace gtsam {
 /**
  * Equality constraint base class.
  */
-class NonlinearEqualityConstraint : public NonlinearConstraint {
+class GTSAM_EXPORT NonlinearEqualityConstraint : public NonlinearConstraint {
  public:
   typedef NonlinearConstraint Base;
   typedef NonlinearEqualityConstraint This;
@@ -52,7 +52,7 @@ class NonlinearEqualityConstraint : public NonlinearConstraint {
 
 /** Equality constraint that force g(x) = M. */
 template <typename T>
-class ExpressionEqualityConstraint : public NonlinearEqualityConstraint {
+class GTSAM_EXPORT ExpressionEqualityConstraint : public NonlinearEqualityConstraint {
  public:
   typedef NonlinearEqualityConstraint Base;
   typedef ExpressionEqualityConstraint This;
@@ -100,7 +100,7 @@ class ExpressionEqualityConstraint : public NonlinearEqualityConstraint {
 };
 
 /** Equality constraint that enforce the cost factor with zero error. */
-class ZeroCostConstraint : public NonlinearEqualityConstraint {
+class GTSAM_EXPORT ZeroCostConstraint : public NonlinearEqualityConstraint {
  public:
   typedef NonlinearEqualityConstraint Base;
   typedef ZeroCostConstraint This;
@@ -142,7 +142,7 @@ class ZeroCostConstraint : public NonlinearEqualityConstraint {
 };
 
 /// Container of NonlinearEqualityConstraint.
-class NonlinearEqualityConstraints : public FactorGraph<NonlinearEqualityConstraint> {
+class GTSAM_EXPORT NonlinearEqualityConstraints : public FactorGraph<NonlinearEqualityConstraint> {
  public:
   typedef std::shared_ptr<NonlinearEqualityConstraints> shared_ptr;
   typedef FactorGraph<NonlinearEqualityConstraint> Base;

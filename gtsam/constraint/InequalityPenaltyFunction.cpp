@@ -10,18 +10,23 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    RampFunction.cpp
+ * @file    InequalityPenaltyFunction.cpp
  * @brief   Ramp function to compute inequality constraint violations.
  * @author  Yetong Zhang
  * @date    Aug 3, 2024
  */
 
-#include <gtsam/constraint/RampFunction.h>
+#include <gtsam/constraint/InequalityPenaltyFunction.h>
 
 namespace gtsam {
 
-/* ************************************************************************* */
-double RampFunction(const double x, OptionalJacobian<1, 1> H) {
+/* ********************************************************************************************* */
+InequalityPenaltyFunction::UnaryScalarFunc InequalityPenaltyFunction::function() const {
+  return [=](const double& x, OptionalJacobian<1, 1> H = {}) -> double { return (*this)(x, H); };
+}
+
+/* ********************************************************************************************* */
+double RampFunction::Ramp(const double x, OptionalJacobian<1, 1> H) {
   if (x < 0) {
     if (H) {
       H->setConstant(0);
@@ -35,13 +40,8 @@ double RampFunction(const double x, OptionalJacobian<1, 1> H) {
   }
 }
 
-/* ************************************************************************* */
-SmoothRampFunction::UnaryScalarFunc SmoothRampFunction::function() const {
-  return [=](const double& x, OptionalJacobian<1, 1> H = {}) -> double { return (*this)(x, H); };
-}
-
-/* ************************************************************************* */
-double RampFunctionPoly2::operator()(const double& x, OptionalJacobian<1, 1> H) const {
+/* ********************************************************************************************* */
+double SmoothRampPoly2::operator()(const double& x, OptionalJacobian<1, 1> H) const {
   if (x <= 0) {
     if (H) {
       H->setZero();
@@ -60,8 +60,8 @@ double RampFunctionPoly2::operator()(const double& x, OptionalJacobian<1, 1> H) 
   }
 }
 
-/* ************************************************************************* */
-double RampFunctionPoly3::operator()(const double& x, OptionalJacobian<1, 1> H) const {
+/* ********************************************************************************************* */
+double SmoothRampPoly3::operator()(const double& x, OptionalJacobian<1, 1> H) const {
   if (x <= 0) {
     if (H) {
       H->setZero();
@@ -80,7 +80,7 @@ double RampFunctionPoly3::operator()(const double& x, OptionalJacobian<1, 1> H) 
   }
 }
 
-/* ************************************************************************* */
+/* ********************************************************************************************* */
 double SoftPlusFunction::operator()(const double& x, OptionalJacobian<1, 1> H) const {
   if (H) {
     H->setConstant(1 / (1 + std::exp(-k_ * x)));

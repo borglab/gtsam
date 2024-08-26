@@ -31,7 +31,7 @@ namespace gtsam {
  * whitenedError() returns The constraint violation vector.
  * unwhitenedError() returns the sigma-scaled constraint violation vector.
  */
-class NonlinearConstraint : public NoiseModelFactor {
+class GTSAM_EXPORT NonlinearConstraint : public NoiseModelFactor {
  public:
   typedef NoiseModelFactor Base;
 
@@ -52,6 +52,13 @@ class NonlinearConstraint : public NoiseModelFactor {
   /**  Check if constraint violation is within tolerance. */
   virtual bool feasible(const Values& x, const double tolerance = 1e-5) const {
     return violation(x) <= tolerance;
+  }
+
+  const Vector sigmas() const { return noiseModel()->sigmas(); }
+
+  // return the hessian of unwhitened error function in each dimension.
+  virtual std::vector<Matrix> unwhitenedHessian(const Values& x) const {
+    throw std::runtime_error("hessian not implemented");
   }
 
  protected:

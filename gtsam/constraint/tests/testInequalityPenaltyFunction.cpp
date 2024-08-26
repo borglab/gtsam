@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testRampFunction.h
+ * @file    testInequalityPenaltyFunction.h
  * @brief   unit tests for ramp functions
  * @author  Yetong Zhang
  * @date    Aug 3, 2024
@@ -20,13 +20,14 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/constraint/RampFunction.h>
+#include <gtsam/constraint/InequalityPenaltyFunction.h>
 
 using namespace gtsam;
 
+/* ********************************************************************************************* */
 TEST(RampFunction, error_and_jacobian) {
   /// Helper function for numerical Jacobian computation.
-  auto ramp_helper = [&](const double& x) { return RampFunction(x); };
+  auto ramp_helper = [&](const double& x) { return RampFunction::Ramp(x); };
 
   /// Create a set of values to test the function.
   static std::vector<double> x_vec{-3.0, 0.0, 1.0, 2.0, 3.0};
@@ -35,7 +36,7 @@ TEST(RampFunction, error_and_jacobian) {
   for (size_t i = 0; i < x_vec.size(); i++) {
     double x = x_vec.at(i);
     Matrix H;
-    double r = RampFunction(x, H);
+    double r = RampFunction::Ramp(x, H);
 
     /// Check function evaluation.
     EXPECT_DOUBLES_EQUAL(expected_r_vec.at(i), r, 1e-9);
@@ -48,9 +49,10 @@ TEST(RampFunction, error_and_jacobian) {
   }
 }
 
+/* ********************************************************************************************* */
 TEST(RampFunctionPoly2, error_and_jacobian) {
   /// Helper function for numerical Jacobian computation.
-  RampFunctionPoly2 p_ramp(2.0);
+  SmoothRampPoly2 p_ramp(2.0);
   auto ramp_helper = [&](const double& x) { return p_ramp(x); };
 
   /// Create a set of values to test the function.
@@ -71,9 +73,10 @@ TEST(RampFunctionPoly2, error_and_jacobian) {
   }
 }
 
+/* ********************************************************************************************* */
 TEST(RampFunctionPoly3, error_and_jacobian) {
   /// Helper function for numerical Jacobian computation.
-  RampFunctionPoly3 p_ramp(2.0);
+  SmoothRampPoly3 p_ramp(2.0);
   auto ramp_helper = [&](const double& x) { return p_ramp(x); };
 
   /// Create a set of values to test the function.
@@ -94,6 +97,7 @@ TEST(RampFunctionPoly3, error_and_jacobian) {
   }
 }
 
+/* ********************************************************************************************* */
 TEST(SoftPlusFunction, error_and_jacobian) {
   /// Helper function for numerical Jacobian computation.
   SoftPlusFunction soft_plus(0.5);

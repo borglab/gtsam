@@ -22,7 +22,6 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/constraint/NonlinearEqualityConstraint.h>
-#include <gtsam/inference/VariableIndex.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/slam/BetweenFactor.h>
 
@@ -155,7 +154,6 @@ TEST(ExpressionEqualityConstraint, Vector2) {
   EXPECT_CORRECT_FACTOR_JACOBIANS(*merit_factor, values2, 1e-7, 1e-5);
 }
 
-
 // Test methods of FactorZeroErrorConstraint.
 TEST(ZeroCostConstraint, BetweenFactor) {
   Key x1_key = 1;
@@ -218,9 +216,6 @@ TEST(ZeroCostConstraint, BetweenFactor) {
   EXPECT_CORRECT_FACTOR_JACOBIANS(*merit_factor, values2, 1e-7, 1e-5);
 }
 
-
-
-
 TEST(NonlinearEqualityConstraints, Container) {
   NonlinearEqualityConstraints constraints;
 
@@ -254,12 +249,9 @@ TEST(NonlinearEqualityConstraints, Container) {
   EXPECT(assert_container_equality(expected_vi_x2, vi[x2_key]));
 
   // Check constraint violation.
-
 }
 
-
-TEST(NonlinearEqualityConstraints, FromCostGraph) {
-}
+TEST(NonlinearEqualityConstraints, FromCostGraph) {}
 
 int main() {
   TestResult tr;
