@@ -67,7 +67,8 @@ class GTSAM_EXPORT GaussianMixture
   double logConstant_;         ///< log of the normalization constant.
 
   /**
-   * @brief Convert a DecisionTree of factors into a DT of Gaussian FGs.
+   * @brief Convert a DecisionTree of factors into
+   * a DecisionTree of Gaussian factor graphs.
    */
   GaussianFactorGraphTree asGaussianFactorGraphTree() const;
 
@@ -214,7 +215,8 @@ class GTSAM_EXPORT GaussianMixture
    * @return AlgebraicDecisionTree<Key> A decision tree on the discrete keys
    * only, with the leaf values as the error for each assignment.
    */
-  AlgebraicDecisionTree<Key> errorTree(const VectorValues &continuousValues) const;
+  AlgebraicDecisionTree<Key> errorTree(
+      const VectorValues &continuousValues) const;
 
   /**
    * @brief Compute the logProbability of this Gaussian Mixture.

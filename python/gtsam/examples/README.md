@@ -17,7 +17,7 @@
 | InverseKinematicsExampleExpressions.cpp               |        |
 | ISAM2Example_SmartFactor                              |        |
 | ISAM2_SmartFactorStereo_IMU                           |        |
-| LocalizationExample                                   | impossible? |
+| LocalizationExample                                   | :heavy_check_mark:      |
 | METISOrderingExample                                  |        |
 | OdometryExample                                       | :heavy_check_mark:      |
 | PlanarSLAMExample                                     | :heavy_check_mark:      |

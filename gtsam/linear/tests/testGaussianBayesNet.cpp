@@ -80,6 +80,8 @@ TEST(GaussianBayesNet, Evaluate1) {
                        smallBayesNet.at(0)->logNormalizationConstant() +
                            smallBayesNet.at(1)->logNormalizationConstant(),
                        1e-9);
+  EXPECT_DOUBLES_EQUAL(log(constant), smallBayesNet.logNormalizationConstant(),
+                       1e-9);
   const double actual = smallBayesNet.evaluate(mean);
   EXPECT_DOUBLES_EQUAL(constant, actual, 1e-9);
 }
