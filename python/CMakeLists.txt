@@ -265,24 +265,22 @@ endif()
 # Add custom target so we can install with `make python-install`
 # Note below we make sure to install with --user iff not in a virtualenv
 set(GTSAM_PYTHON_INSTALL_TARGET python-install)
-add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
+#TODO(Varun) Maybe move the long command to script?
+# https://stackoverflow.com/questions/49053544/how-do-i-run-a-python-script-every-time-in-a-cmake-build
+if (NOT WIN32) # WIN32=1 is target platform is Windows
+    add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
+        COMMAND stubgen -q -p gtsam && cp -a out/gtsam/ gtsam && ${PYTHON_EXECUTABLE} -c "import sys, subprocess; cmd = [sys.executable, '-m', 'pip', 'install']; has_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix); cmd.append('--user' if not has_venv else ''); cmd.append('.'); subprocess.check_call([c for c in cmd if c])"
+        DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
+        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY}
+        VERBATIM)
+else()
+    #TODO(Varun) Find equivalent cp on Windows
+    add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
         COMMAND ${PYTHON_EXECUTABLE} -c "import sys, subprocess; cmd = [sys.executable, '-m', 'pip', 'install']; has_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix); cmd.append('--user' if not has_venv else ''); cmd.append('.'); subprocess.check_call([c for c in cmd if c])"
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY}
         VERBATIM)
-
-# if (NOT WIN32) # WIN32=1 is target platform is Windows
-#     add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-#         COMMAND stubgen -q -p gtsam -o ./stubs && cp -a stubs/gtsam/ gtsam && ${PYTHON_EXECUTABLE} -m pip install --user .
-#         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
-#         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
-# else()
-#     #TODO(Varun) Find equivalent cp on Windows
-#     add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-#         COMMAND ${PYTHON_EXECUTABLE} -m pip install --user .
-#         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
-#         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
-# endif()
+endif()
 
 
 # Custom make command to run all GTSAM Python tests
