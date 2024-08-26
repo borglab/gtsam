@@ -424,6 +424,11 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
   ISAM2Result result(params_.enableDetailedResults);
   UpdateImpl update(params_, updateParams);
 
+  // Initialize any new variables \Theta_{new} and add
+  // \Theta:=\Theta\cup\Theta_{new}.
+  // Needed before delta update if using Dogleg optimizer.
+  addVariables(newTheta, result.details());
+
   // Update delta if we need it to check relinearization later
   if (update.relinarizationNeeded(update_count_))
     updateDelta(updateParams.forceFullSolve);
@@ -435,9 +440,7 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
   update.computeUnusedKeys(newFactors, variableIndex_,
                            result.keysWithRemovedFactors, &result.unusedKeys);
 
-  // 2. Initialize any new variables \Theta_{new} and add
-  // \Theta:=\Theta\cup\Theta_{new}.
-  addVariables(newTheta, result.details());
+  // 2. Compute new error to check for relinearization
   if (params_.evaluateNonlinearError)
     update.error(nonlinearFactors_, calculateEstimate(), &result.errorBefore);
 
@@ -731,6 +734,7 @@ void ISAM2::updateDelta(bool forceFullSolve) const {
                                       effectiveWildfireThreshold, &delta_);
     deltaReplacedMask_.clear();
     gttoc(Wildfire_update);
+
   } else if (std::holds_alternative<ISAM2DoglegParams>(params_.optimizationParams)) {
     // If using Dogleg, do a Dogleg step
     const ISAM2DoglegParams& doglegParams =
@@ -769,9 +773,8 @@ void ISAM2::updateDelta(bool forceFullSolve) const {
     gttic(Copy_dx_d);
     // Update Delta and linear step
     doglegDelta_ = doglegResult.delta;
-    delta_ =
-        doglegResult
-            .dx_d;  // Copy the VectorValues containing with the linear solution
+    // Copy the VectorValues containing with the linear solution
+    delta_ = doglegResult.dx_d;
     gttoc(Copy_dx_d);
   } else {
     throw std::runtime_error("iSAM2: unknown ISAM2Params type");

@@ -29,11 +29,8 @@ if(POLICY CMP0057)
   cmake_policy(SET CMP0057 NEW)
 endif()
 
-# Prefer system pybind11 first, if not found, rely on bundled version:
-find_package(pybind11 CONFIG QUIET)
-if (NOT pybind11_FOUND)
-        add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
-endif()
+# Use bundled pybind11 version
+add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
 
 # Set the wrapping script variable
 set(PYBIND_WRAP_SCRIPT "${PROJECT_SOURCE_DIR}/wrap/scripts/pybind_wrap.py")
@@ -189,6 +186,8 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::BinaryMeasurementsPoint3
             gtsam::BinaryMeasurementsUnit3
             gtsam::BinaryMeasurementsRot3
+            gtsam::SimWall2DVector
+            gtsam::SimPolygon2DVector
             gtsam::CameraSetCal3_S2
             gtsam::CameraSetCal3Bundler
             gtsam::CameraSetCal3Unified
@@ -264,11 +263,18 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
 endif()
 
 # Add custom target so we can install with `make python-install`
-set(GTSAM_PYTHON_INSTALL_TARGET python-install)
-add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
+if (NOT WIN32) # WIN32=1 is target platform is Windows
+    add_custom_target(python-install
+        COMMAND stubgen -q -p gtsam -o ./stubs && cp -a stubs/gtsam/ gtsam && ${PYTHON_EXECUTABLE} -m pip install --user .
+        DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
+        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
+else()
+    #TODO(Varun) Find equivalent cp on Windows
+    add_custom_target(python-install
         COMMAND ${PYTHON_EXECUTABLE} -m pip install --user .
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
+endif()
 
 # Custom make command to run all GTSAM Python tests
 add_custom_target(
