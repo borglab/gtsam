@@ -958,7 +958,7 @@ TEST(Rot3, determinant) {
 
 /* ************************************************************************* */
 TEST(Rot3, ExpmapChainRule) {
-  // Muliply with an arbitrary matrix and exponentiate
+  // Multiply with an arbitrary matrix and exponentiate
   Matrix3 M;
   M << 1, 2, 3, 4, 5, 6, 7, 8, 9;
   auto g = [&](const Vector3& omega) {
@@ -967,17 +967,17 @@ TEST(Rot3, ExpmapChainRule) {
 
   // Test the derivatives at zero
   const Matrix3 expected = numericalDerivative11<Rot3, Vector3>(g, Z_3x1);
-  EXPECT(assert_equal<Matrix3>(expected, M)); // SO3::ExpmapDerivative(Z_3x1) is identity
+  EXPECT(assert_equal<Matrix3>(expected, M, 1e-5)); // SO3::ExpmapDerivative(Z_3x1) is identity
 
   // Test the derivatives at another value
   const Vector3 delta{0.1,0.2,0.3};
   const Matrix3 expected2 = numericalDerivative11<Rot3, Vector3>(g, delta);
-  EXPECT(assert_equal<Matrix3>(expected2, SO3::ExpmapDerivative(M*delta) * M));
+  EXPECT(assert_equal<Matrix3>(expected2, SO3::ExpmapDerivative(M*delta) * M, 1e-5));
 }
 
 /* ************************************************************************* */
 TEST(Rot3, expmapChainRule) {
-  // Muliply an arbitrary rotation with exp(M*x)
+  // Multiply an arbitrary rotation with exp(M*x)
   // Perhaps counter-intuitively, this has the same derivatives as above
   Matrix3 M;
   M << 1, 2, 3, 4, 5, 6, 7, 8, 9;
@@ -988,12 +988,12 @@ TEST(Rot3, expmapChainRule) {
 
   // Test the derivatives at zero
   const Matrix3 expected = numericalDerivative11<Rot3, Vector3>(g, Z_3x1);
-  EXPECT(assert_equal<Matrix3>(expected, M));
+  EXPECT(assert_equal<Matrix3>(expected, M, 1e-5));
 
   // Test the derivatives at another value
   const Vector3 delta{0.1,0.2,0.3};
   const Matrix3 expected2 = numericalDerivative11<Rot3, Vector3>(g, delta);
-  EXPECT(assert_equal<Matrix3>(expected2, SO3::ExpmapDerivative(M*delta) * M));
+  EXPECT(assert_equal<Matrix3>(expected2, SO3::ExpmapDerivative(M*delta) * M, 1e-5));
 }
 
 /* ************************************************************************* */

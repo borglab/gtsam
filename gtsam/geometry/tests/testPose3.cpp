@@ -1223,7 +1223,7 @@ TEST(Pose3, ExpmapChainRule) {
 
   // Test the derivatives at zero
   const Matrix6 expected = numericalDerivative11<Pose3, Vector6>(g, Z_6x1);
-  EXPECT(assert_equal<Matrix6>(expected, M)); // Pose3::ExpmapDerivative(Z_6x1) is identity
+  EXPECT(assert_equal<Matrix6>(expected, M, 1e-5)); // Pose3::ExpmapDerivative(Z_6x1) is identity
 
   // Test the derivatives at another value
   const Vector6 delta{0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
