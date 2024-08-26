@@ -68,7 +68,7 @@ namespace gtsam {
       return fromAngle(theta * degree);
     }
 
-    /// Named constructor from cos(theta),sin(theta) pair, will *not* normalize!
+    /// Named constructor from cos(theta),sin(theta) pair
     static Rot2 fromCosSin(double c, double s);
 
     /**
