@@ -264,15 +264,14 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
 endif()
 
 # Add custom target so we can install with `make python-install`
-set(GTSAM_PYTHON_INSTALL_TARGET python-install)
 if (NOT WIN32)
-    add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
+    add_custom_target(python-install
         COMMAND stubgen -q -p gtsam && rsync -a \"out/gtsam/\" gtsam && ${PYTHON_EXECUTABLE} -m pip install --user .
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
 elseif()
     #TODO(Varun) Find rsync equivalent on Windows
-    add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
+    add_custom_target(python-install
         COMMAND ${PYTHON_EXECUTABLE} -m pip install --user .
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
