@@ -266,11 +266,11 @@ endif()
 # Add custom target so we can install with `make python-install`
 if (NOT WIN32) # WIN32=1 is target platform is Windows
     add_custom_target(python-install
-        COMMAND stubgen -q -p gtsam && rsync -a \"out/gtsam/\" gtsam && ${PYTHON_EXECUTABLE} -m pip install --user .
+        COMMAND stubgen -q -p gtsam -o ./stubs && cp -a stubs/gtsam/ gtsam && ${PYTHON_EXECUTABLE} -m pip install --user .
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
 else()
-    #TODO(Varun) Find rsync equivalent on Windows
+    #TODO(Varun) Find equivalent cp on Windows
     add_custom_target(python-install
         COMMAND ${PYTHON_EXECUTABLE} -m pip install --user .
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
