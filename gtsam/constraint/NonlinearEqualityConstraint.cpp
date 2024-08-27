@@ -16,6 +16,7 @@
  * @date    Aug 3, 2024 */
 
 #include <gtsam/constraint/NonlinearEqualityConstraint.h>
+#include <gtsam/inference/FactorGraph-inst.h>
 
 namespace gtsam {
 
