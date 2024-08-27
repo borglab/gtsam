@@ -251,8 +251,8 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
  * Gaussian distribution around which we sample z.
  *
  * The resulting factor graph should eliminate to a Bayes net
- * which represents a sigmoid function leaning towards
- * the tighter covariance Gaussian.
+ * which represents a Gaussian-like function
+ * where m1>m0 close to 3.1333.
  */
 TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
   double mu0 = 1.0, mu1 = 3.0;
@@ -272,17 +272,16 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
   hbn.emplace_back(gm);
   hbn.emplace_back(mixing);
 
-  // The result should be a sigmoid leaning towards model1
-  // since it has the tighter covariance.
-  // So should be m = 0.34/0.66 at z=3.0 - 1.0=2.0
+  // The result should be a bell curve like function
+  // with m1 > m0 close to 3.1333.
   VectorValues given;
-  given.insert(z, Vector1(mu1 - mu0));
+  given.insert(z, Vector1(3.133));
   HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
   HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
   HybridBayesNet expected;
   expected.emplace_back(
-      new DiscreteConditional(m, "0.338561851224/0.661438148776"));
+      new DiscreteConditional(m, "0.325603277954/0.674396722046"));
 
   EXPECT(assert_equal(expected, *bn));
 }
