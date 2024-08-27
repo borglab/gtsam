@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/base_object.hpp>
