@@ -200,6 +200,42 @@ TEST(GaussianMixtureFactor, Error) {
       4.0, mixtureFactor.error({continuousValues, discreteValues}), 1e-9);
 }
 
+namespace test_gmm {
+
+/**
+ * Function to compute P(m=1|z). For P(m=0|z), swap `mus and sigmas.
+ * Follows equation 7.108 since it is more generic.
+ */
+double sigmoid(double mu0, double mu1, double sigma0, double sigma1, double z) {
+  double x1 = ((z - mu0) / sigma0), x2 = ((z - mu1) / sigma1);
+  double d = std::sqrt(sigma0 * sigma0) / std::sqrt(sigma1 * sigma1);
+  double e = d * std::exp(-0.5 * (x1 * x1 - x2 * x2));
+  return 1 / (1 + e);
+};
+
+HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1, double sigma0,
+                                       double sigma1) {
+  DiscreteKey m(M(0), 2);
+  Key z = Z(0);
+
+  auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
+  auto model1 = noiseModel::Isotropic::Sigma(1, sigma1);
+
+  auto c0 = make_shared<GaussianConditional>(z, Vector1(mu0), I_1x1, model0),
+       c1 = make_shared<GaussianConditional>(z, Vector1(mu1), I_1x1, model1);
+
+  auto gm = new GaussianMixture({z}, {}, {m}, {c0, c1});
+  auto mixing = new DiscreteConditional(m, "0.5/0.5");
+
+  HybridBayesNet hbn;
+  hbn.emplace_back(gm);
+  hbn.emplace_back(mixing);
+
+  return hbn;
+}
+
+}  // namespace test_gmm
+
 /* ************************************************************************* */
 /**
  * Test a simple Gaussian Mixture Model represented as P(m)P(z|m)
@@ -211,6 +247,8 @@ TEST(GaussianMixtureFactor, Error) {
  * which represents a sigmoid function.
  */
 TEST(GaussianMixtureFactor, GaussianMixtureModel) {
+  using namespace test_gmm;
+
   double mu0 = 1.0, mu1 = 3.0;
   double sigma = 2.0;
   auto model = noiseModel::Isotropic::Sigma(1, sigma);
@@ -218,28 +256,52 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
   DiscreteKey m(M(0), 2);
   Key z = Z(0);
 
-  auto c0 = make_shared<GaussianConditional>(z, Vector1(mu0), I_1x1, model),
-       c1 = make_shared<GaussianConditional>(z, Vector1(mu1), I_1x1, model);
-
-  auto gm = new GaussianMixture({z}, {}, {m}, {c0, c1});
-  auto mixing = new DiscreteConditional(m, "0.5/0.5");
-
-  HybridBayesNet hbn;
-  hbn.emplace_back(gm);
-  hbn.emplace_back(mixing);
+  auto hbn = GetGaussianMixtureModel(mu0, mu1, sigma, sigma);
 
   // The result should be a sigmoid.
-  // So should be m = 0.5 at z=3.0 - 1.0=2.0
-  VectorValues given;
-  given.insert(z, Vector1(mu1 - mu0));
+  // So should be P(m=1|z) = 0.5 at z=3.0 - 1.0=2.0
+  double midway = mu1 - mu0, lambda = 4;
+  {
+    VectorValues given;
+    given.insert(z, Vector1(midway));
 
-  HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
-  HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
-  HybridBayesNet expected;
-  expected.emplace_back(new DiscreteConditional(m, "0.5/0.5"));
+    EXPECT_DOUBLES_EQUAL(
+        sigmoid(mu0, mu1, sigma, sigma, midway),
+        bn->at(0)->asDiscrete()->operator()(DiscreteValues{{M(0), 1}}), 1e-8);
 
-  EXPECT(assert_equal(expected, *bn));
+    // At the halfway point between the means, we should get P(m|z)=0.5
+    HybridBayesNet expected;
+    expected.emplace_back(new DiscreteConditional(m, "0.5/0.5"));
+
+    EXPECT(assert_equal(expected, *bn));
+  }
+  {
+    // Shift by -lambda
+    VectorValues given;
+    given.insert(z, Vector1(midway - lambda));
+
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+    EXPECT_DOUBLES_EQUAL(
+        sigmoid(mu0, mu1, sigma, sigma, midway - lambda),
+        bn->at(0)->asDiscrete()->operator()(DiscreteValues{{M(0), 1}}), 1e-8);
+  }
+  {
+    // Shift by lambda
+    VectorValues given;
+    given.insert(z, Vector1(midway + lambda));
+
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+    EXPECT_DOUBLES_EQUAL(
+        sigmoid(mu0, mu1, sigma, sigma, midway + lambda),
+        bn->at(0)->asDiscrete()->operator()(DiscreteValues{{M(0), 1}}), 1e-8);
+  }
 }
 
 /* ************************************************************************* */
@@ -255,30 +317,25 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
  * where m1>m0 close to 3.1333.
  */
 TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
+  using namespace test_gmm;
+
   double mu0 = 1.0, mu1 = 3.0;
-  auto model0 = noiseModel::Isotropic::Sigma(1, 8.0);
-  auto model1 = noiseModel::Isotropic::Sigma(1, 4.0);
+  double sigma0 = 8.0, sigma1 = 4.0;
 
   DiscreteKey m(M(0), 2);
   Key z = Z(0);
 
-  auto c0 = make_shared<GaussianConditional>(z, Vector1(mu0), I_1x1, model0),
-       c1 = make_shared<GaussianConditional>(z, Vector1(mu1), I_1x1, model1);
-
-  auto gm = new GaussianMixture({z}, {}, {m}, {c0, c1});
-  auto mixing = new DiscreteConditional(m, "0.5/0.5");
-
-  HybridBayesNet hbn;
-  hbn.emplace_back(gm);
-  hbn.emplace_back(mixing);
+  auto hbn = GetGaussianMixtureModel(mu0, mu1, sigma0, sigma1);
 
   // The result should be a bell curve like function
   // with m1 > m0 close to 3.1333.
+  // We get 3.1333 by finding the maximum value of the function.
   VectorValues given;
   given.insert(z, Vector1(3.133));
   HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
   HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
+  // regression
   HybridBayesNet expected;
   expected.emplace_back(
       new DiscreteConditional(m, "0.325603277954/0.674396722046"));
