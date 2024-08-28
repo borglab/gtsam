@@ -235,19 +235,18 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
 
 /* ************************************************************************ */
 /**
- * @brief Exponential log-probabilities after performing
- * the necessary normalizations.
+ * @brief Exponentiate log-values, not necessarily normalized, normalize, and
+ * return as AlgebraicDecisionTree<Key>.
  *
- * @param logProbabilities DecisionTree of log-probabilities.
+ * @param logValues DecisionTree of (unnormalized) log values.
  * @return AlgebraicDecisionTree<Key>
  */
-static AlgebraicDecisionTree<Key> exponentiateLogProbabilities(
-    const AlgebraicDecisionTree<Key> &logProbabilities) {
+static AlgebraicDecisionTree<Key> probabilitiesFromLogValues(
+    const AlgebraicDecisionTree<Key> &logValues) {
   // Perform normalization
-  double max_log = logProbabilities.max();
+  double max_log = logValues.max();
   AlgebraicDecisionTree<Key> probabilities = DecisionTree<Key, double>(
-      logProbabilities,
-      [&max_log](const double x) { return exp(x - max_log); });
+      logValues, [&max_log](const double x) { return exp(x - max_log); });
   probabilities = probabilities.normalize(probabilities.sum());
 
   return probabilities;
@@ -274,7 +273,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
           DecisionTree<Key, double>(gmf->factors(), logProbability);
 
       AlgebraicDecisionTree<Key> probabilities =
-          exponentiateLogProbabilities(logProbabilities);
+          probabilitiesFromLogValues(logProbabilities);
       dfg.emplace_shared<DecisionTreeFactor>(gmf->discreteKeys(),
                                              probabilities);
 
@@ -340,7 +339,7 @@ static std::shared_ptr<Factor> createDiscreteFactor(
   AlgebraicDecisionTree<Key> logProbabilities(
       DecisionTree<Key, double>(eliminationResults, logProbability));
   AlgebraicDecisionTree<Key> probabilities =
-      exponentiateLogProbabilities(logProbabilities);
+      probabilitiesFromLogValues(logProbabilities);
 
   return std::make_shared<DecisionTreeFactor>(discreteSeparator, probabilities);
 }
