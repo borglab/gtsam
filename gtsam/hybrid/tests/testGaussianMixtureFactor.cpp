@@ -36,6 +36,7 @@
 using namespace std;
 using namespace gtsam;
 using noiseModel::Isotropic;
+using symbol_shorthand::F;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
 using symbol_shorthand::Z;
@@ -270,7 +271,8 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
 
     EXPECT_DOUBLES_EQUAL(
         sigmoid(mu0, mu1, sigma, sigma, midway),
-        bn->at(0)->asDiscrete()->operator()(DiscreteValues{{M(0), 1}}), 1e-8);
+        bn->at(0)->asDiscrete()->operator()(DiscreteValues{{m.first, 1}}),
+        1e-8);
 
     // At the halfway point between the means, we should get P(m|z)=0.5
     HybridBayesNet expected;
@@ -288,7 +290,8 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
 
     EXPECT_DOUBLES_EQUAL(
         sigmoid(mu0, mu1, sigma, sigma, midway - lambda),
-        bn->at(0)->asDiscrete()->operator()(DiscreteValues{{M(0), 1}}), 1e-8);
+        bn->at(0)->asDiscrete()->operator()(DiscreteValues{{m.first, 1}}),
+        1e-8);
   }
   {
     // Shift by lambda
@@ -300,7 +303,8 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
 
     EXPECT_DOUBLES_EQUAL(
         sigmoid(mu0, mu1, sigma, sigma, midway + lambda),
-        bn->at(0)->asDiscrete()->operator()(DiscreteValues{{M(0), 1}}), 1e-8);
+        bn->at(0)->asDiscrete()->operator()(DiscreteValues{{m.first, 1}}),
+        1e-8);
   }
 }
 
@@ -343,81 +347,124 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
   EXPECT(assert_equal(expected, *bn));
 }
 
+namespace test_two_state_estimation {
+
+/// Create Two State Bayes Network with measurements
+HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
+                              double sigma1,
+                              bool add_second_measurement = false,
+                              double prior_sigma = 1e-3,
+                              double measurement_sigma = 3.0) {
+  DiscreteKey m1(M(1), 2);
+  Key z0 = Z(0), z1 = Z(1), f01 = F(0);
+  Key x0 = X(0), x1 = X(1);
+
+  HybridBayesNet hbn;
+
+  auto prior_model = noiseModel::Isotropic::Sigma(1, prior_sigma);
+  auto measurement_model = noiseModel::Isotropic::Sigma(1, measurement_sigma);
+
+  // Set a prior P(x0) at x0=0
+  hbn.emplace_back(
+      new GaussianConditional(x0, Vector1(0.0), I_1x1, prior_model));
+
+  // Add measurement P(z0 | x0)
+  auto p_z0 = new GaussianConditional(z0, Vector1(0.0), -I_1x1, x0, I_1x1,
+                                      measurement_model);
+  hbn.emplace_back(p_z0);
+
+  // Add hybrid motion model
+  auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
+  auto model1 = noiseModel::Isotropic::Sigma(1, sigma1);
+  auto c0 = make_shared<GaussianConditional>(f01, Vector1(mu0), I_1x1, x1,
+                                             I_1x1, x0, -I_1x1, model0),
+       c1 = make_shared<GaussianConditional>(f01, Vector1(mu1), I_1x1, x1,
+                                             I_1x1, x0, -I_1x1, model1);
+
+  auto motion = new GaussianMixture({f01}, {x0, x1}, {m1}, {c0, c1});
+
+  hbn.emplace_back(motion);
+
+  if (add_second_measurement) {
+    // Add second measurement
+    auto p_z1 = new GaussianConditional(z1, Vector1(0.0), -I_1x1, x1, I_1x1,
+                                        measurement_model);
+    hbn.emplace_back(p_z1);
+  }
+
+  // Discrete uniform prior.
+  auto p_m1 = new DiscreteConditional(m1, "0.5/0.5");
+  hbn.emplace_back(p_m1);
+
+  return hbn;
+}
+
+}  // namespace test_two_state_estimation
+
 /* ************************************************************************* */
 /**
- * Test a model P(x0)P(z0|x0)p(x1|m1)p(z1|x1)p(m1).
+ * Test a model P(x0)P(z0|x0)P(f01|x1,x0,m1)P(z1|x1)P(m1).
  *
- * p(x1|m1) has different means and same covariance.
+ * P(f01|x1,x0,m1) has different means and same covariance.
  *
  * Converting to a factor graph gives us
- * P(x0)ϕ(x0)P(x1|m1)ϕ(x1)P(m1)
+ * P(x0)ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)P(m1)
  *
  * If we only have a measurement on z0, then
- * the probability of x1 should be 0.5/0.5.
+ * the probability of m1 should be 0.5/0.5.
  * Getting a measurement on z1 gives use more information.
  */
 TEST(GaussianMixtureFactor, TwoStateModel) {
+  using namespace test_two_state_estimation;
+
   double mu0 = 1.0, mu1 = 3.0;
-  auto model = noiseModel::Isotropic::Sigma(1, 2.0);
+  double sigma = 2.0;
 
   DiscreteKey m1(M(1), 2);
-  Key z0 = Z(0), z1 = Z(1), x0 = X(0), x1 = X(1);
+  Key z0 = Z(0), z1 = Z(1), f01 = F(0);
 
-  auto c0 = make_shared<GaussianConditional>(x1, Vector1(mu0), I_1x1, model),
-       c1 = make_shared<GaussianConditional>(x1, Vector1(mu1), I_1x1, model);
-
-  auto p_x0 = new GaussianConditional(x0, Vector1(0.0), I_1x1,
-                                      noiseModel::Isotropic::Sigma(1, 1.0));
-  auto p_z0x0 = new GaussianConditional(z0, Vector1(0.0), I_1x1, x0, -I_1x1,
-                                        noiseModel::Isotropic::Sigma(1, 1.0));
-  auto p_x1m1 = new GaussianMixture({x1}, {}, {m1}, {c0, c1});
-  auto p_z1x1 = new GaussianConditional(z1, Vector1(0.0), I_1x1, x1, -I_1x1,
-                                        noiseModel::Isotropic::Sigma(1, 3.0));
-  auto p_m1 = new DiscreteConditional(m1, "0.5/0.5");
-
-  HybridBayesNet hbn;
-  hbn.emplace_back(p_x0);
-  hbn.emplace_back(p_z0x0);
-  hbn.emplace_back(p_x1m1);
-  hbn.emplace_back(p_m1);
+  // Start with no measurement on x1, only on x0
+  HybridBayesNet hbn = CreateBayesNet(mu0, mu1, sigma, sigma, false);
 
   VectorValues given;
   given.insert(z0, Vector1(0.5));
+  // The motion model says we didn't move
+  given.insert(f01, Vector1(0.0));
 
   {
-    // Start with no measurement on x1, only on x0
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
     // Since no measurement on x1, we hedge our bets
     DiscreteConditional expected(m1, "0.5/0.5");
-
+    // regression
     EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete())));
   }
 
   {
     // Now we add a measurement z1 on x1
-    hbn.emplace_back(p_z1x1);
+    hbn = CreateBayesNet(mu0, mu1, sigma, sigma, true);
 
+    // If we see z1=2.2, discrete mode should say m1=1
     given.insert(z1, Vector1(2.2));
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
     // Since we have a measurement on z2, we get a definite result
     DiscreteConditional expected(m1, "0.4923083/0.5076917");
-
+    // regression
     EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 1e-6));
   }
 }
 
 /* ************************************************************************* */
 /**
- * Test a model P(x0)P(z0|x0)p(x1|m1)p(z1|x1)p(m1).
+ * Test a model P(x0)P(z0|x0)P(f01|x1,x0,m1)P(z1|x1)P(m1).
  *
- * p(x1|m1) has different means and different covariances.
+ * P(f01|x1,x0,m1) has different means and different covariances.
  *
  * Converting to a factor graph gives us
- * P(x0)ϕ(x0)P(x1|m1)ϕ(x1)P(m1)
+ * P(x0)ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)P(m1)
  *
  * If we only have a measurement on z0, then
  * the probability of x1 should be the ratio of covariances.
@@ -425,8 +472,9 @@ TEST(GaussianMixtureFactor, TwoStateModel) {
  */
 TEST(GaussianMixtureFactor, TwoStateModel2) {
   double mu0 = 1.0, mu1 = 3.0;
-  auto model0 = noiseModel::Isotropic::Sigma(1, 6.0);
-  auto model1 = noiseModel::Isotropic::Sigma(1, 4.0);
+  double sigma0 = 6.0, sigma1 = 4.0;
+  auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
+  auto model1 = noiseModel::Isotropic::Sigma(1, sigma1);
 
   DiscreteKey m1(M(1), 2);
   Key z0 = Z(0), z1 = Z(1), x0 = X(0), x1 = X(1);
