@@ -551,6 +551,11 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::errorTree(
     // TODO(dellaert): just use a virtual method defined in HybridFactor.
     AlgebraicDecisionTree<Key> factor_error;
 
+    auto f = factor;
+    if (auto hc = dynamic_pointer_cast<HybridConditional>(factor)) {
+      f = hc->inner();
+    }
+
     if (auto gaussianMixture = dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
       // Compute factor error and add it.
       error_tree = error_tree + gaussianMixture->errorTree(continuousValues);
