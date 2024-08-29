@@ -394,7 +394,7 @@ static HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
                                      double prior_sigma = 1e-3,
                                      double measurement_sigma = 3.0) {
   DiscreteKey m1(M(1), 2);
-  Key z0 = Z(0), z1 = Z(1), f01 = F(0);
+  Key z0 = Z(0), z1 = Z(1);
   Key x0 = X(0), x1 = X(1);
 
   HybridBayesNet hbn;
@@ -414,12 +414,12 @@ static HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
   // Add hybrid motion model
   auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
   auto model1 = noiseModel::Isotropic::Sigma(1, sigma1);
-  auto c0 = make_shared<GaussianConditional>(f01, Vector1(mu0), I_1x1, x1,
-                                             I_1x1, x0, -I_1x1, model0),
-       c1 = make_shared<GaussianConditional>(f01, Vector1(mu1), I_1x1, x1,
-                                             I_1x1, x0, -I_1x1, model1);
+  auto c0 = make_shared<GaussianConditional>(x1, Vector1(mu0), I_1x1, x0,
+                                             -I_1x1, model0),
+       c1 = make_shared<GaussianConditional>(x1, Vector1(mu1), I_1x1, x0,
+                                             -I_1x1, model1);
 
-  auto motion = new GaussianMixture({f01}, {x0, x1}, {m1}, {c0, c1});
+  auto motion = new GaussianMixture({x1}, {x0}, {m1}, {c0, c1});
   hbn.emplace_back(motion);
 
   if (add_second_measurement) {
@@ -458,15 +458,13 @@ TEST(GaussianMixtureFactor, TwoStateModel) {
   double sigma = 2.0;
 
   DiscreteKey m1(M(1), 2);
-  Key z0 = Z(0), z1 = Z(1), f01 = F(0);
+  Key z0 = Z(0), z1 = Z(1);
 
   // Start with no measurement on x1, only on x0
   HybridBayesNet hbn = CreateBayesNet(mu0, mu1, sigma, sigma, false);
 
   VectorValues given;
   given.insert(z0, Vector1(0.5));
-  // The motion model measurement says we didn't move
-  given.insert(f01, Vector1(0.0));
 
   {
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
@@ -523,8 +521,6 @@ TEST_DISABLED(GaussianMixtureFactor, TwoStateModel2) {
 
   VectorValues given;
   given.insert(z0, Vector1(0.5));
-  // The motion model measurement says we didn't move
-  // given.insert(x1, Vector1(0.0));
 
   {
     // Start with no measurement on x1, only on x0
