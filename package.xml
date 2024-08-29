@@ -10,9 +10,9 @@
 
   <buildtool_depend>cmake</buildtool_depend>
 
-  <build_depend>boost</build_depend>
-  <build_depend>eigen</build_depend>
-  <build_depend>tbb</build_depend>
+  <depend>boost</depend>
+  <depend>eigen</depend>
+  <depend>tbb</depend>
 
   <export>
     <!-- Specify that this is not really a Catkin package-->
