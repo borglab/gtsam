@@ -205,17 +205,20 @@ namespace test_gmm {
 
 /**
  * Function to compute P(m=1|z). For P(m=0|z), swap mus and sigmas.
+ * If sigma0 == sigma1, it simplifies to a sigmoid function.
+ *
  * Follows equation 7.108 since it is more generic.
  */
-double sigmoid(double mu0, double mu1, double sigma0, double sigma1, double z) {
+double prob_m_z(double mu0, double mu1, double sigma0, double sigma1,
+                double z) {
   double x1 = ((z - mu0) / sigma0), x2 = ((z - mu1) / sigma1);
   double d = sigma0 / sigma1;
   double e = d * std::exp(-0.5 * (x1 * x1 - x2 * x2));
   return 1 / (1 + e);
 };
 
-HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1, double sigma0,
-                                       double sigma1) {
+static HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1,
+                                              double sigma0, double sigma1) {
   DiscreteKey m(M(0), 2);
   Key z = Z(0);
 
@@ -269,7 +272,7 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
     EXPECT_DOUBLES_EQUAL(
-        sigmoid(mu0, mu1, sigma, sigma, midway),
+        prob_m_z(mu0, mu1, sigma, sigma, midway),
         bn->at(0)->asDiscrete()->operator()(DiscreteValues{{m.first, 1}}),
         1e-8);
 
@@ -288,7 +291,7 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
     EXPECT_DOUBLES_EQUAL(
-        sigmoid(mu0, mu1, sigma, sigma, midway - lambda),
+        prob_m_z(mu0, mu1, sigma, sigma, midway - lambda),
         bn->at(0)->asDiscrete()->operator()(DiscreteValues{{m.first, 1}}),
         1e-8);
   }
@@ -301,7 +304,7 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
     EXPECT_DOUBLES_EQUAL(
-        sigmoid(mu0, mu1, sigma, sigma, midway + lambda),
+        prob_m_z(mu0, mu1, sigma, sigma, midway + lambda),
         bn->at(0)->asDiscrete()->operator()(DiscreteValues{{m.first, 1}}),
         1e-8);
   }
@@ -349,11 +352,11 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
 namespace test_two_state_estimation {
 
 /// Create Two State Bayes Network with measurements
-HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
-                              double sigma1,
-                              bool add_second_measurement = false,
-                              double prior_sigma = 1e-3,
-                              double measurement_sigma = 3.0) {
+static HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
+                                     double sigma1,
+                                     bool add_second_measurement = false,
+                                     double prior_sigma = 1e-3,
+                                     double measurement_sigma = 3.0) {
   DiscreteKey m1(M(1), 2);
   Key z0 = Z(0), z1 = Z(1), f01 = F(0);
   Key x0 = X(0), x1 = X(1);
@@ -401,7 +404,7 @@ HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
 
 /* ************************************************************************* */
 /**
- * Test a model P(x0)P(z0|x0)P(f01|x1,x0,m1)P(z1|x1)P(m1).
+ * Test a model P(x0)P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1).
  *
  * P(f01|x1,x0,m1) has different means and same covariance.
  *
@@ -435,7 +438,6 @@ TEST(GaussianMixtureFactor, TwoStateModel) {
 
     // Since no measurement on x1, we hedge our bets
     DiscreteConditional expected(m1, "0.5/0.5");
-    // regression
     EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete())));
   }
 
@@ -457,7 +459,7 @@ TEST(GaussianMixtureFactor, TwoStateModel) {
 
 /* ************************************************************************* */
 /**
- * Test a model P(x0)P(z0|x0)P(f01|x1,x0,m1)P(z1|x1)P(m1).
+ * Test a model P(x0)P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1).
  *
  * P(f01|x1,x0,m1) has different means and different covariances.
  *
