@@ -204,12 +204,12 @@ TEST(GaussianMixtureFactor, Error) {
 namespace test_gmm {
 
 /**
- * Function to compute P(m=1|z). For P(m=0|z), swap `mus and sigmas.
+ * Function to compute P(m=1|z). For P(m=0|z), swap mus and sigmas.
  * Follows equation 7.108 since it is more generic.
  */
 double sigmoid(double mu0, double mu1, double sigma0, double sigma1, double z) {
   double x1 = ((z - mu0) / sigma0), x2 = ((z - mu1) / sigma1);
-  double d = std::sqrt(sigma0 * sigma0) / std::sqrt(sigma1 * sigma1);
+  double d = sigma0 / sigma1;
   double e = d * std::exp(-0.5 * (x1 * x1 - x2 * x2));
   return 1 / (1 + e);
 };
@@ -252,7 +252,6 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
 
   double mu0 = 1.0, mu1 = 3.0;
   double sigma = 2.0;
-  auto model = noiseModel::Isotropic::Sigma(1, sigma);
 
   DiscreteKey m(M(0), 2);
   Key z = Z(0);
@@ -382,7 +381,6 @@ HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
                                              I_1x1, x0, -I_1x1, model1);
 
   auto motion = new GaussianMixture({f01}, {x0, x1}, {m1}, {c0, c1});
-
   hbn.emplace_back(motion);
 
   if (add_second_measurement) {
@@ -487,7 +485,7 @@ TEST(GaussianMixtureFactor, TwoStateModel2) {
   VectorValues given;
   given.insert(z0, Vector1(0.5));
   // The motion model measurement says we didn't move
-  given.insert(f01, Vector1(0.0));
+  // given.insert(x1, Vector1(0.0));
 
   {
     // Start with no measurement on x1, only on x0
@@ -512,7 +510,7 @@ TEST(GaussianMixtureFactor, TwoStateModel2) {
 
     // Since we have a measurement on z2, we get a definite result
     DiscreteConditional expected(m1, "0.4262682/0.5737318");
-
+    // regression
     EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 1e-6));
   }
 }
