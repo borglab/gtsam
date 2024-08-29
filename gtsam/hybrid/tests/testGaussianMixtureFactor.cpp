@@ -212,7 +212,7 @@ namespace test_gmm {
 double prob_m_z(double mu0, double mu1, double sigma0, double sigma1,
                 double z) {
   double x1 = ((z - mu0) / sigma0), x2 = ((z - mu1) / sigma1);
-  double d = sigma0 / sigma1;
+  double d = sigma1 / sigma0;
   double e = d * std::exp(-0.5 * (x1 * x1 - x2 * x2));
   return 1 / (1 + e);
 };
