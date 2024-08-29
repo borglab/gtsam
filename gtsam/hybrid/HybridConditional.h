@@ -61,7 +61,7 @@ class GTSAM_EXPORT HybridConditional
       public Conditional<HybridFactor, HybridConditional> {
  public:
   // typedefs needed to play nice with gtsam
-  typedef HybridConditional This;              ///< Typedef to this class
+  typedef HybridConditional This;            ///< Typedef to this class
   typedef std::shared_ptr<This> shared_ptr;  ///< shared_ptr to this class
   typedef HybridFactor BaseFactor;  ///< Typedef to our factor base class
   typedef Conditional<BaseFactor, This>
@@ -185,7 +185,7 @@ class GTSAM_EXPORT HybridConditional
    * Return the log normalization constant.
    * Note this is 0.0 for discrete and hybrid conditionals, but depends
    * on the continuous parameters for Gaussian conditionals.
-   */ 
+   */
   double logNormalizationConstant() const override;
 
   /// Return the probability (or density) of the underlying conditional.
