@@ -519,6 +519,24 @@ TEST(GaussianMixtureFactor, TwoStateModel2) {
   {
     // Start with no measurement on x1, only on x0
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+
+    {
+      VectorValues vv{
+          {X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}, {Z(0), Vector1(0.5)}};
+      HybridValues hv0(vv, DiscreteValues{{M(1), 0}}),
+          hv1(vv, DiscreteValues{{M(1), 1}});
+      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
+                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
+    }
+    {
+      VectorValues vv{
+          {X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}, {Z(0), Vector1(0.5)}};
+      HybridValues hv0(vv, DiscreteValues{{M(1), 0}}),
+          hv1(vv, DiscreteValues{{M(1), 1}});
+      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
+                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
+    }
+
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
     // Since no measurement on x1, we a 50/50 probability
@@ -535,6 +553,28 @@ TEST(GaussianMixtureFactor, TwoStateModel2) {
 
     given.insert(z1, Vector1(2.2));
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+
+    {
+      VectorValues vv{{X(0), Vector1(0.0)},
+                      {X(1), Vector1(1.0)},
+                      {Z(0), Vector1(0.5)},
+                      {Z(1), Vector1(2.2)}};
+      HybridValues hv0(vv, DiscreteValues{{M(1), 0}}),
+          hv1(vv, DiscreteValues{{M(1), 1}});
+      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
+                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
+    }
+    {
+      VectorValues vv{{X(0), Vector1(0.5)},
+                      {X(1), Vector1(3.0)},
+                      {Z(0), Vector1(0.5)},
+                      {Z(1), Vector1(2.2)}};
+      HybridValues hv0(vv, DiscreteValues{{M(1), 0}}),
+          hv1(vv, DiscreteValues{{M(1), 1}});
+      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
+                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
+    }
+
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
     // Since we have a measurement on z2, we get a definite result
