@@ -88,16 +88,20 @@ GaussianFactorGraphTree GaussianMixture::add(
 /* *******************************************************************************/
 GaussianFactorGraphTree GaussianMixture::asGaussianFactorGraphTree() const {
   auto wrap = [this](const GaussianConditional::shared_ptr &gc) {
-    const double Cgm_Kgcm = this->logConstant_ - gc->logNormalizationConstant();
-    // If there is a difference in the covariances, we need to account for that
-    // since the error is dependent on the mode.
-    if (Cgm_Kgcm > 0.0) {
-      // We add a constant factor which will be used when computing
-      // the probability of the discrete variables.
-      Vector c(1);
-      c << std::sqrt(2.0 * Cgm_Kgcm);
-      auto constantFactor = std::make_shared<JacobianFactor>(c);
-      return GaussianFactorGraph{gc, constantFactor};
+    // First check if conditional has not been pruned
+    if (gc) {
+      const double Cgm_Kgcm =
+          this->logConstant_ - gc->logNormalizationConstant();
+      // If there is a difference in the covariances, we need to account for
+      // that since the error is dependent on the mode.
+      if (Cgm_Kgcm > 0.0) {
+        // We add a constant factor which will be used when computing
+        // the probability of the discrete variables.
+        Vector c(1);
+        c << std::sqrt(2.0 * Cgm_Kgcm);
+        auto constantFactor = std::make_shared<JacobianFactor>(c);
+        return GaussianFactorGraph{gc, constantFactor};
+      }
     }
     return GaussianFactorGraph{gc};
   };
