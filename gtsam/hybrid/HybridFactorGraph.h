@@ -66,7 +66,7 @@ class GTSAM_EXPORT HybridFactorGraph : public FactorGraph<Factor> {
   /// Get all the discrete keys in the factor graph.
   std::set<DiscreteKey> discreteKeys() const;
 
-  /// Get all the discrete keys in the factor graph, as a set.
+  /// Get all the discrete keys in the factor graph, as a set of Keys.
   KeySet discreteKeySet() const;
 
   /// Get a map from Key to corresponding DiscreteKey.

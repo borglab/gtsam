@@ -375,7 +375,8 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   void serialize() const;
 };
 
-pair<gtsam::GaussianConditional, gtsam::JacobianFactor*> EliminateQR(const gtsam::GaussianFactorGraph& factors, const gtsam::Ordering& keys);
+pair<gtsam::GaussianConditional*, gtsam::JacobianFactor*> EliminateQR(
+    const gtsam::GaussianFactorGraph& factors, const gtsam::Ordering& keys);
 
 #include <gtsam/linear/HessianFactor.h>
 virtual class HessianFactor : gtsam::GaussianFactor {

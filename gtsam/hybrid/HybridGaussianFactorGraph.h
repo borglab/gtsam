@@ -144,6 +144,14 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   //     const std::string& s = "HybridGaussianFactorGraph",
   //     const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
+  /**
+   * @brief Print the errors of each factor in the hybrid factor graph.
+   *
+   * @param values The HybridValues for the variables used to compute the error.
+   * @param str String that is output before the factor graph and errors.
+   * @param keyFormatter Formatter function for the keys in the factors.
+   * @param printCondition A condition to check if a factor should be printed.
+   */
   void printErrors(
       const HybridValues& values,
       const std::string& str = "HybridGaussianFactorGraph: ",

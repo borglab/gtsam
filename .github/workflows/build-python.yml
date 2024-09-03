@@ -32,6 +32,7 @@ jobs:
             ubuntu-20.04-gcc-9-tbb,
             ubuntu-20.04-clang-9,
             macos-12-xcode-14.2,
+            macos-14-xcode-15.4,
             windows-2022-msbuild,
           ]
 
@@ -59,13 +60,18 @@ jobs:
             compiler: xcode
             version: "14.2"
 
+          - name: macos-14-xcode-15.4
+            os: macos-14
+            compiler: xcode
+            version: "15.4"
+
           - name: windows-2022-msbuild
             os: windows-2022
             platform: 64
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install (Linux)
         if: runner.os == 'Linux'
@@ -161,6 +167,14 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           bash .github/scripts/python.sh -d
+
+      - name: Create virtual on MacOS
+        if: runner.os == 'macOS'
+        run: |
+          python$PYTHON_VERSION -m venv venv
+          source venv/bin/activate
+          echo "PATH=$(pwd)/venv/bin:$PATH" >> $GITHUB_ENV
+          python -m pip install --upgrade pip
 
       - name: Install Python Dependencies
         shell: bash
