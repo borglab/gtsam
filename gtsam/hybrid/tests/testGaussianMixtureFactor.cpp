@@ -399,13 +399,7 @@ static HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
 
   HybridBayesNet hbn;
 
-  auto prior_model = noiseModel::Isotropic::Sigma(1, prior_sigma);
   auto measurement_model = noiseModel::Isotropic::Sigma(1, measurement_sigma);
-
-  // Set a prior P(x0) at x0=0
-  hbn.emplace_back(
-      new GaussianConditional(x0, Vector1(0.0), I_1x1, prior_model));
-
   // Add measurement P(z0 | x0)
   auto p_z0 = new GaussianConditional(z0, Vector1(0.0), -I_1x1, x0, I_1x1,
                                       measurement_model);
@@ -479,13 +473,14 @@ TEST(GaussianMixtureFactor, TwoStateModel) {
     // Now we add a measurement z1 on x1
     hbn = CreateBayesNet(mu0, mu1, sigma, sigma, true);
 
-    // If we see z1=2.2, discrete mode should say m1=1
-    given.insert(z1, Vector1(2.2));
+    // If we see z1=2.6 (> 2.5 which is the halfway point),
+    // discrete mode should say m1=1
+    given.insert(z1, Vector1(2.6));
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
     // Since we have a measurement on z2, we get a definite result
-    DiscreteConditional expected(m1, "0.4923083/0.5076917");
+    DiscreteConditional expected(m1, "0.49772729/0.50227271");
     // regression
     EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 1e-6));
   }
@@ -504,8 +499,7 @@ TEST(GaussianMixtureFactor, TwoStateModel) {
  * the P(m1) should be 0.5/0.5.
  * Getting a measurement on z1 gives use more information.
  */
-// TODO(Varun) Figuring out the correctness of this
-TEST_DISABLED(GaussianMixtureFactor, TwoStateModel2) {
+TEST(GaussianMixtureFactor, TwoStateModel2) {
   using namespace test_two_state_estimation;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -544,7 +538,7 @@ TEST_DISABLED(GaussianMixtureFactor, TwoStateModel2) {
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
     // Since we have a measurement on z2, we get a definite result
-    DiscreteConditional expected(m1, "0.4262682/0.5737318");
+    DiscreteConditional expected(m1, "0.44744586/0.55255414");
     // regression
     EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 1e-6));
   }
