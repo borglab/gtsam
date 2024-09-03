@@ -330,7 +330,7 @@ static std::shared_ptr<Factor> createDiscreteFactor(
     // exp(-factor->error(kEmpty)) / conditional->normalizationConstant();
     // We take negative of the logNormalizationConstant `log(1/k)`
     // to get `log(k)`.
-    return -factor->error(kEmpty) + (-conditional->logNormalizationConstant());
+    return -factor->error(kEmpty) - conditional->logNormalizationConstant();
   };
 
   AlgebraicDecisionTree<Key> logProbabilities(
@@ -523,14 +523,15 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
         std::inserter(continuousSeparator, continuousSeparator.begin()));
 
     // Similarly for the discrete separator.
-    KeySet discreteSeparatorSet;
-    std::set<DiscreteKey> discreteSeparator;
     auto discreteKeySet = factors.discreteKeySet();
+    // Use set-difference to get the difference in keys
+    KeySet discreteSeparatorSet;
     std::set_difference(
         discreteKeySet.begin(), discreteKeySet.end(), frontalKeysSet.begin(),
         frontalKeysSet.end(),
         std::inserter(discreteSeparatorSet, discreteSeparatorSet.begin()));
     // Convert from set of keys to set of DiscreteKeys
+    std::set<DiscreteKey> discreteSeparator;
     auto discreteKeyMap = factors.discreteKeyMap();
     for (auto key : discreteSeparatorSet) {
       discreteSeparator.insert(discreteKeyMap.at(key));
