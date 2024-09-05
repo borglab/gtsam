@@ -33,18 +33,6 @@ namespace gtsam {
  * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
-  template <typename T>
-  struct is_shared_ptr : std::false_type {};
-  template <typename T>
-  struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {};
-
-  /// Helper templates for checking if a type is a shared pointer or not
-  template <typename T>
-  using IsSharedPtr = typename std::enable_if<is_shared_ptr<T>::value>::type;
-  template <typename T>
-  using IsNotSharedPtr =
-      typename std::enable_if<!is_shared_ptr<T>::value>::type;
-
  public:
   using Base = BayesNet<HybridConditional>;
   using This = HybridBayesNet;
@@ -108,7 +96,6 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    *
    * @tparam CONDITIONAL Type of conditional. This is shared_ptr version.
    * @param conditional The conditional as a shared pointer.
-   * @return IsSharedPtr<CONDITIONAL>
    */
   template <class CONDITIONAL>
   void push_back(std::shared_ptr<CONDITIONAL> conditional) {
