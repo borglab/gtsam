@@ -586,21 +586,21 @@ TEST(GaussianMixtureFactor, TwoStateModel2) {
 
 /**
  * @brief Helper function to specify a Hybrid Bayes Net
- * {P(X1) P(Z1 | X1, X2, M1)} and convert it to a Hybrid Factor Graph
- * {P(X1)L(X1, X2, M1; Z1)} by converting to likelihoods given Z1.
+ * P(X1)P(Z1 | X1, X2, M1) and convert it to a Hybrid Factor Graph
+ * ϕ(X1)ϕ(X1, X2, M1; Z1) by converting to likelihoods given Z1.
  *
  * We can specify either different means or different sigmas,
  * or both for each hybrid factor component.
  *
  * @param values Initial values for linearization.
- * @param mus The mean values for the conditional components.
+ * @param means The mean values for the conditional components.
  * @param sigmas Noise model sigma values (standard deviation).
  * @param m1 The discrete mode key.
  * @param z1 The measurement value.
  * @return HybridGaussianFactorGraph
  */
 HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
-    const gtsam::Values &values, const std::vector<double> &mus,
+    const gtsam::Values &values, const std::vector<double> &means,
     const std::vector<double> &sigmas, DiscreteKey &m1, double z1 = 0.0) {
   // Noise models
   auto model0 = noiseModel::Isotropic::Sigma(1, sigmas[0]);
@@ -608,9 +608,11 @@ HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
   auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-3);
 
   // GaussianMixtureFactor component factors
-  auto f0 = std::make_shared<BetweenFactor<double>>(X(0), X(1), mus[0], model0);
-  auto f1 = std::make_shared<BetweenFactor<double>>(X(0), X(1), mus[1], model1);
-  // std::vector<NonlinearFactor::shared_ptr> factors{f0, f1};
+  auto f0 =
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), means[0], model0);
+  auto f1 =
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), means[1], model1);
+  std::vector<NonlinearFactor::shared_ptr> factors{f0, f1};
 
   /// Get terms for each p^m(z1 | x1, x2)
   Matrix H0_1, H0_2, H1_1, H1_2;
@@ -651,7 +653,7 @@ HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
 /**
  * @brief Test components with differing means.
  *
- * We specify a hybrid Bayes network P(Z | X, M) =p(X1)p(Z1 | X1, X2, M1),
+ * We specify a hybrid Bayes network P(Z | X, M) =P(X1)P(Z1 | X1, X2, M1),
  * which is then converted to a factor graph by specifying Z1.
  * This is a different case since now we have a hybrid factor
  * with 2 continuous variables ϕ(x1, x2, m1).
