@@ -59,6 +59,10 @@ class GTSAM_EXPORT HybridFactorGraph : public FactorGraph<Factor> {
   template <class DERIVEDFACTOR>
   HybridFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
+  /** Construct from container of factors (shared_ptr or plain objects) */
+  template <class CONTAINER>
+  explicit HybridFactorGraph(const CONTAINER& factors) : Base(factors) {}
+
   /// @}
   /// @name Extra methods to inspect discrete/continuous keys.
   /// @{

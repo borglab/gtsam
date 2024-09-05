@@ -63,6 +63,6 @@ A RegularJacobianFactor that uses some badly documented reduction on the Jacobia
 
 A RegularJacobianFactor that eliminates a point using sequential elimination.
 
-### JacobianFactorQR
+### JacobianFactorSVD
 
 A RegularJacobianFactor that uses the "Nullspace Trick" by Mourikis et al. See the documentation in the file, which *is* well documented.

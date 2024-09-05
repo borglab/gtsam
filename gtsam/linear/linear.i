@@ -511,7 +511,7 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   GaussianConditional(size_t key, gtsam::Vector d, gtsam::Matrix R, size_t name1, gtsam::Matrix S,
                       size_t name2, gtsam::Matrix T,
                       const gtsam::noiseModel::Diagonal* sigmas);
-  GaussianConditional(const vector<std::pair<gtsam::Key, gtsam::Matrix>> terms,
+  GaussianConditional(const std::vector<std::pair<gtsam::Key, gtsam::Matrix>> terms,
                       size_t nrFrontals, gtsam::Vector d,
                       const gtsam::noiseModel::Diagonal* sigmas);
 
