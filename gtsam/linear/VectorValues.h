@@ -263,11 +263,6 @@ namespace gtsam {
     /** equals required by Testable for unit testing */
     bool equals(const VectorValues& x, double tol = 1e-9) const;
 
-    /// Check equality.
-    friend bool operator==(const VectorValues& lhs, const VectorValues& rhs) {
-      return lhs.equals(rhs);
-    }
-
     /// @{
     /// @name Advanced Interface
     /// @{

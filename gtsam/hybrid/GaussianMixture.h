@@ -67,7 +67,7 @@ class GTSAM_EXPORT GaussianMixture
   double logConstant_;         ///< log of the normalization constant.
 
   /**
-   * @brief Convert a DecisionTree of factors into
+   * @brief Convert a GaussianMixture of conditionals into
    * a DecisionTree of Gaussian factor graphs.
    */
   GaussianFactorGraphTree asGaussianFactorGraphTree() const;
@@ -255,6 +255,10 @@ class GTSAM_EXPORT GaussianMixture
  private:
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;
+
+  /// Helper method to compute the error of a conditional.
+  double conditionalError(const GaussianConditional::shared_ptr &conditional,
+                          const VectorValues &continuousValues) const;
 
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */

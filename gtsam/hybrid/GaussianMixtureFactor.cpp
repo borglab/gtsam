@@ -54,7 +54,9 @@ bool GaussianMixtureFactor::equals(const HybridFactor &lf, double tol) const {
 /* *******************************************************************************/
 void GaussianMixtureFactor::print(const std::string &s,
                                   const KeyFormatter &formatter) const {
-  HybridFactor::print(s, formatter);
+  std::cout << (s.empty() ? "" : s + "\n");
+  std::cout << "GaussianMixtureFactor" << std::endl;
+  HybridFactor::print("", formatter);
   std::cout << "{\n";
   if (factors_.empty()) {
     std::cout << "  empty" << std::endl;
@@ -64,7 +66,7 @@ void GaussianMixtureFactor::print(const std::string &s,
         [&](const sharedFactor &gf) -> std::string {
           RedirectCout rd;
           std::cout << ":\n";
-          if (gf && !gf->empty()) {
+          if (gf) {
             gf->print("", formatter);
             return rd.str();
           } else {
@@ -117,6 +119,5 @@ double GaussianMixtureFactor::error(const HybridValues &values) const {
   const sharedFactor gf = factors_(values.discrete());
   return gf->error(values.continuous());
 }
-/* *******************************************************************************/
 
 }  // namespace gtsam
