@@ -1,4 +1,16 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
+if (POLICY CMP0082)
+    cmake_policy(SET CMP0082 NEW) # install from sub-directories immediately
+endif()
+if (POLICY CMP0102)
+cmake_policy(SET CMP0102 NEW) # set policy on advanced variables and cmake cache
+endif()
+if (POLICY CMP0156)
+cmake_policy(SET CMP0156 NEW) # new linker strategies
+endif()
+if (POLICY CMP0167)
+cmake_policy(SET CMP0167 OLD) # Don't complain about boost
+endif()
 
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 4)

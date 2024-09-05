@@ -312,8 +312,8 @@ using Result = std::pair<std::shared_ptr<GaussianConditional>,
                          GaussianMixtureFactor::sharedFactor>;
 
 /**
- * Compute the probability q(μ;m) = exp(-error(μ;m)) * sqrt(det(2π Σ_m)
- * from the residual error at the mean μ.
+ * Compute the probability p(μ;m) = exp(-error(μ;m)) * sqrt(det(2π Σ_m)
+ * from the residual error ||b||^2 at the mean μ.
  * The residual error contains no keys, and only
  * depends on the discrete separator if present.
  */
@@ -523,19 +523,9 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
         std::inserter(continuousSeparator, continuousSeparator.begin()));
 
     // Similarly for the discrete separator.
-    auto discreteKeySet = factors.discreteKeySet();
-    // Use set-difference to get the difference in keys
-    KeySet discreteSeparatorSet;
-    std::set_difference(
-        discreteKeySet.begin(), discreteKeySet.end(), frontalKeysSet.begin(),
-        frontalKeysSet.end(),
-        std::inserter(discreteSeparatorSet, discreteSeparatorSet.begin()));
-    // Convert from set of keys to set of DiscreteKeys
-    std::set<DiscreteKey> discreteSeparator;
-    auto discreteKeyMap = factors.discreteKeyMap();
-    for (auto key : discreteSeparatorSet) {
-      discreteSeparator.insert(discreteKeyMap.at(key));
-    }
+    // Since we eliminate all continuous variables first,
+    // the discrete separator will be *all* the discrete keys.
+    std::set<DiscreteKey> discreteSeparator = factors.discreteKeys();
 
     return hybridElimination(factors, frontalKeys, continuousSeparator,
                              discreteSeparator);

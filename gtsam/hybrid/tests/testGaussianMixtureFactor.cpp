@@ -434,12 +434,12 @@ static HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
 
 /* ************************************************************************* */
 /**
- * Test a model P(x0)P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1).
+ * Test a model P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1).
  *
  * P(f01|x1,x0,m1) has different means and same covariance.
  *
  * Converting to a factor graph gives us
- * P(x0)ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)P(m1)
+ * ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)P(m1)
  *
  * If we only have a measurement on z0, then
  * the probability of m1 should be 0.5/0.5.
@@ -488,12 +488,12 @@ TEST(GaussianMixtureFactor, TwoStateModel) {
 
 /* ************************************************************************* */
 /**
- * Test a model P(x0)P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1).
+ * Test a model P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1).
  *
  * P(f01|x1,x0,m1) has different means and different covariances.
  *
  * Converting to a factor graph gives us
- * P(x0)ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)P(m1)
+ * ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)P(m1)
  *
  * If we only have a measurement on z0, then
  * the P(m1) should be 0.5/0.5.
