@@ -50,15 +50,6 @@ KeySet HybridFactorGraph::discreteKeySet() const {
 }
 
 /* ************************************************************************* */
-std::unordered_map<Key, DiscreteKey> HybridFactorGraph::discreteKeyMap() const {
-  std::unordered_map<Key, DiscreteKey> result;
-  for (const DiscreteKey& k : discreteKeys()) {
-    result[k.first] = k;
-  }
-  return result;
-}
-
-/* ************************************************************************* */
 const KeySet HybridFactorGraph::continuousKeySet() const {
   KeySet keys;
   for (auto& factor : factors_) {

@@ -1208,6 +1208,31 @@ TEST(Pose3, Print) {
 }
 
 /* ************************************************************************* */
+TEST(Pose3, ExpmapChainRule) {
+  // Muliply with an arbitrary matrix and exponentiate
+  Matrix6 M;
+  M << 1, 2, 3, 4, 5, 6, //
+       7, 8, 9, 1, 2, 3, //
+       4, 5, 6, 7, 8, 9, //
+       1, 2, 3, 4, 5, 6, //
+       7, 8, 9, 1, 2, 3, //
+       4, 5, 6, 7, 8, 9;
+  auto g = [&](const Vector6& omega) {
+    return Pose3::Expmap(M*omega);
+  };
+
+  // Test the derivatives at zero
+  const Matrix6 expected = numericalDerivative11<Pose3, Vector6>(g, Z_6x1);
+  EXPECT(assert_equal<Matrix6>(expected, M, 1e-5)); // Pose3::ExpmapDerivative(Z_6x1) is identity
+
+  // Test the derivatives at another value
+  const Vector6 delta{0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
+  const Matrix6 expected2 = numericalDerivative11<Pose3, Vector6>(g, delta);
+  const Matrix6 analytic = Pose3::ExpmapDerivative(M*delta) * M;
+  EXPECT(assert_equal<Matrix6>(expected2, analytic, 1e-5)); // note tolerance
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

@@ -29,11 +29,8 @@ if(POLICY CMP0057)
   cmake_policy(SET CMP0057 NEW)
 endif()
 
-# Prefer system pybind11 first, if not found, rely on bundled version:
-find_package(pybind11 CONFIG QUIET)
-if (NOT pybind11_FOUND)
-        add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
-endif()
+# Use bundled pybind11 version
+add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
 
 # Set the wrapping script variable
 set(PYBIND_WRAP_SCRIPT "${PROJECT_SOURCE_DIR}/wrap/scripts/pybind_wrap.py")
@@ -189,6 +186,8 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::BinaryMeasurementsPoint3
             gtsam::BinaryMeasurementsUnit3
             gtsam::BinaryMeasurementsRot3
+            gtsam::SimWall2DVector
+            gtsam::SimPolygon2DVector
             gtsam::CameraSetCal3_S2
             gtsam::CameraSetCal3Bundler
             gtsam::CameraSetCal3Unified
@@ -264,11 +263,25 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
 endif()
 
 # Add custom target so we can install with `make python-install`
+# Note below we make sure to install with --user iff not in a virtualenv
 set(GTSAM_PYTHON_INSTALL_TARGET python-install)
-add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-        COMMAND ${PYTHON_EXECUTABLE} -m pip install --user .
+#TODO(Varun) Maybe move the long command to script?
+# https://stackoverflow.com/questions/49053544/how-do-i-run-a-python-script-every-time-in-a-cmake-build
+if (NOT WIN32) # WIN32=1 is target platform is Windows
+    add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
+        COMMAND stubgen -q -p gtsam && cp -a out/gtsam/ gtsam && ${PYTHON_EXECUTABLE} -c "import sys, subprocess; cmd = [sys.executable, '-m', 'pip', 'install']; has_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix); cmd.append('--user' if not has_venv else ''); cmd.append('.'); subprocess.check_call([c for c in cmd if c])"
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
-        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
+        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY}
+        VERBATIM)
+else()
+    #TODO(Varun) Find equivalent cp on Windows
+    add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
+        COMMAND ${PYTHON_EXECUTABLE} -c "import sys, subprocess; cmd = [sys.executable, '-m', 'pip', 'install']; has_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix); cmd.append('--user' if not has_venv else ''); cmd.append('.'); subprocess.check_call([c for c in cmd if c])"
+        DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
+        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY}
+        VERBATIM)
+endif()
+
 
 # Custom make command to run all GTSAM Python tests
 add_custom_target(

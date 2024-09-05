@@ -256,6 +256,10 @@ class GTSAM_EXPORT GaussianMixture
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;
 
+  /// Helper method to compute the error of a conditional.
+  double conditionalError(const GaussianConditional::shared_ptr &conditional,
+                          const VectorValues &continuousValues) const;
+
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;

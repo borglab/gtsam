@@ -131,7 +131,7 @@ that structure.
 /************************************************************************/
 pdbf *gk_readpdbfile(char *fname) { /* {{{ */
 	int i=0, res=0; 
-	char linetype[6];
+	char linetype[7];
 	int  aserial;
 	char aname[5] = "    \0";
 	char altLoc   = ' ';
