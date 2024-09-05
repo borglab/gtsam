@@ -227,18 +227,13 @@ static HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1,
 
   auto c0 = make_shared<GaussianConditional>(z, Vector1(mu0), I_1x1, model0),
        c1 = make_shared<GaussianConditional>(z, Vector1(mu1), I_1x1, model1);
-
-  KeyVector frontalKeys{z}, continuousParents;
-  DiscreteKeys discreteParents{m};
-  std::vector<GaussianConditional::shared_ptr> conditionals = {c0, c1};
-  auto gm = make_shared<GaussianMixture>(frontalKeys, continuousParents,
-                                         discreteParents, conditionals);
-
-  HybridBayesNet hbn;
-  hbn.push_back(gm);
+  auto gm = new GaussianMixture({z}, {}, {m}, {c0, c1});
 
   auto mixing = make_shared<DiscreteConditional>(m, "0.5/0.5");
-  hbn.emplace_shared<HybridConditional>(mixing);
+
+  HybridBayesNet hbn;
+  hbn.emplace_back(gm);
+  hbn.push_back(mixing);
 
   return hbn;
 }
