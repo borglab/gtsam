@@ -111,26 +111,8 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @return IsSharedPtr<CONDITIONAL>
    */
   template <class CONDITIONAL>
-  IsSharedPtr<CONDITIONAL> push_back(const CONDITIONAL &conditional) {
+  void push_back(std::shared_ptr<CONDITIONAL> conditional) {
     factors_.push_back(std::make_shared<HybridConditional>(conditional));
-  }
-
-  /**
-   * @brief Add a conditional to the Bayes net.
-   * Implicitly convert to a HybridConditional.
-   *
-   * E.g.
-   * hbn.push_back(DiscreteConditional(m, "1/1"));
-   * hbn.push_back(GaussianConditional(X(0), Vector1(0.0), I_1x1));
-   *
-   * @tparam CONDITIONAL Type of conditional. This is const ref version.
-   * @param conditional The conditional as a const reference.
-   * @return IsSharedPtr<CONDITIONAL>
-   */
-  template <class CONDITIONAL>
-  IsNotSharedPtr<CONDITIONAL> push_back(const CONDITIONAL &conditional) {
-    auto cond_shared_ptr = std::make_shared<CONDITIONAL>(conditional);
-    push_back(cond_shared_ptr);
   }
 
   /**
