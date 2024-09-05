@@ -40,17 +40,17 @@ bool HybridBayesTree::equals(const This& other, double tol) const {
 
 /* ************************************************************************* */
 HybridValues HybridBayesTree::optimize() const {
-  DiscreteBayesNet dbn;
+  DiscreteFactorGraph discrete_fg;
   DiscreteValues mpe;
 
   auto root = roots_.at(0);
   // Access the clique and get the underlying hybrid conditional
   HybridConditional::shared_ptr root_conditional = root->conditional();
 
-  // The root should be discrete only, we compute the MPE
+  //  The root should be discrete only, we compute the MPE
   if (root_conditional->isDiscrete()) {
-    dbn.push_back(root_conditional->asDiscrete());
-    mpe = DiscreteFactorGraph(dbn).optimize();
+    discrete_fg.push_back(root_conditional->asDiscrete());
+    mpe = discrete_fg.optimize();
   } else {
     throw std::runtime_error(
         "HybridBayesTree root is not discrete-only. Please check elimination "
@@ -136,8 +136,7 @@ struct HybridAssignmentData {
   }
 };
 
-/* *************************************************************************
- */
+/* ************************************************************************* */
 GaussianBayesTree HybridBayesTree::choose(
     const DiscreteValues& assignment) const {
   GaussianBayesTree gbt;
@@ -157,8 +156,12 @@ GaussianBayesTree HybridBayesTree::choose(
   return gbt;
 }
 
-/* *************************************************************************
- */
+/* ************************************************************************* */
+double HybridBayesTree::error(const HybridValues& values) const {
+  return HybridGaussianFactorGraph(*this).error(values);
+}
+
+/* ************************************************************************* */
 VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
   GaussianBayesTree gbt = this->choose(assignment);
   // If empty GaussianBayesTree, means a clique is pruned hence invalid
