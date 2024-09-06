@@ -616,12 +616,12 @@ TEST(HybridEstimation, ModeSelection) {
       GaussianConditional::sharedMeanAndStddev(Z(0), -I_1x1, X(0), Z_1x1, 0.1));
   bn.push_back(
       GaussianConditional::sharedMeanAndStddev(Z(0), -I_1x1, X(1), Z_1x1, 0.1));
-  bn.emplace_back(new GaussianMixture(
-      {Z(0)}, {X(0), X(1)}, {mode},
-      {GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), -I_1x1, X(1),
-                                                Z_1x1, noise_loose),
-       GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), -I_1x1, X(1),
-                                                Z_1x1, noise_tight)}));
+  bn.emplace_shared<GaussianMixture>(
+      KeyVector{Z(0)}, KeyVector{X(0), X(1)}, DiscreteKeys{mode},
+      std::vector{GaussianConditional::sharedMeanAndStddev(
+                      Z(0), I_1x1, X(0), -I_1x1, X(1), Z_1x1, noise_loose),
+                  GaussianConditional::sharedMeanAndStddev(
+                      Z(0), I_1x1, X(0), -I_1x1, X(1), Z_1x1, noise_tight)});
 
   VectorValues vv;
   vv.insert(Z(0), Z_1x1);
@@ -647,12 +647,12 @@ TEST(HybridEstimation, ModeSelection2) {
       GaussianConditional::sharedMeanAndStddev(Z(0), -I_3x3, X(0), Z_3x1, 0.1));
   bn.push_back(
       GaussianConditional::sharedMeanAndStddev(Z(0), -I_3x3, X(1), Z_3x1, 0.1));
-  bn.emplace_back(new GaussianMixture(
-      {Z(0)}, {X(0), X(1)}, {mode},
-      {GaussianConditional::sharedMeanAndStddev(Z(0), I_3x3, X(0), -I_3x3, X(1),
-                                                Z_3x1, noise_loose),
-       GaussianConditional::sharedMeanAndStddev(Z(0), I_3x3, X(0), -I_3x3, X(1),
-                                                Z_3x1, noise_tight)}));
+  bn.emplace_shared<GaussianMixture>(
+      KeyVector{Z(0)}, KeyVector{X(0), X(1)}, DiscreteKeys{mode},
+      std::vector{GaussianConditional::sharedMeanAndStddev(
+                      Z(0), I_3x3, X(0), -I_3x3, X(1), Z_3x1, noise_loose),
+                  GaussianConditional::sharedMeanAndStddev(
+                      Z(0), I_3x3, X(0), -I_3x3, X(1), Z_3x1, noise_tight)});
 
   VectorValues vv;
   vv.insert(Z(0), Z_3x1);
