@@ -29,7 +29,6 @@ jobs:
         name:
           [
             ubuntu-20.04-gcc-9,
-            ubuntu-20.04-gcc-9-tbb,
             ubuntu-20.04-clang-9,
             macos-12-xcode-14.2,
             macos-14-xcode-15.4,
@@ -43,12 +42,6 @@ jobs:
             os: ubuntu-20.04
             compiler: gcc
             version: "9"
-
-          - name: ubuntu-20.04-gcc-9-tbb
-            os: ubuntu-20.04
-            compiler: gcc
-            version: "9"
-            flag: tbb
 
           - name: ubuntu-20.04-clang-9
             os: ubuntu-20.04
