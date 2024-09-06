@@ -98,22 +98,23 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @param conditional The conditional as a shared pointer.
    */
   template <class CONDITIONAL>
-  void push_back(std::shared_ptr<CONDITIONAL> conditional) {
+  void push_back(const std::shared_ptr<CONDITIONAL> &conditional) {
     factors_.push_back(std::make_shared<HybridConditional>(conditional));
   }
 
   /**
-   * Preferred: add a conditional directly using a pointer.
+   * Preferred: Emplace a conditional directly using arguments.
    *
    * Examples:
-   *   hbn.emplace_back(new GaussianMixture(...)));
-   *   hbn.emplace_back(new GaussianConditional(...)));
-   *   hbn.emplace_back(new DiscreteConditional(...)));
+   *   hbn.emplace_shared<GaussianMixture>(...)));
+   *   hbn.emplace_shared<GaussianConditional>(...)));
+   *   hbn.emplace_shared<DiscreteConditional>(...)));
    */
-  template <class Conditional>
-  void emplace_back(Conditional *conditional) {
-    factors_.push_back(std::make_shared<HybridConditional>(
-        std::shared_ptr<Conditional>(conditional)));
+  template <class CONDITIONAL, class... Args>
+  void emplace_shared(Args &&...args) {
+    auto cond = std::allocate_shared<CONDITIONAL>(
+        Eigen::aligned_allocator<CONDITIONAL>(), std::forward<Args>(args)...);
+    factors_.push_back(std::make_shared<HybridConditional>(std::move(cond)));
   }
 
   /**
