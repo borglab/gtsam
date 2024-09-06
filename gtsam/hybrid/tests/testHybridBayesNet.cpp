@@ -43,7 +43,7 @@ static const DiscreteKey Asia(asiaKey, 2);
 // Test creation of a pure discrete Bayes net.
 TEST(HybridBayesNet, Creation) {
   HybridBayesNet bayesNet;
-  bayesNet.emplace_back(new DiscreteConditional(Asia, "99/1"));
+  bayesNet.emplace_shared<DiscreteConditional>(Asia, "99/1");
 
   DiscreteConditional expected(Asia, "99/1");
   CHECK(bayesNet.at(0)->asDiscrete());
@@ -54,7 +54,7 @@ TEST(HybridBayesNet, Creation) {
 // Test adding a Bayes net to another one.
 TEST(HybridBayesNet, Add) {
   HybridBayesNet bayesNet;
-  bayesNet.emplace_back(new DiscreteConditional(Asia, "99/1"));
+  bayesNet.emplace_shared<DiscreteConditional>(Asia, "99/1");
 
   HybridBayesNet other;
   other.add(bayesNet);
@@ -65,7 +65,7 @@ TEST(HybridBayesNet, Add) {
 // Test evaluate for a pure discrete Bayes net P(Asia).
 TEST(HybridBayesNet, EvaluatePureDiscrete) {
   HybridBayesNet bayesNet;
-  bayesNet.emplace_back(new DiscreteConditional(Asia, "4/6"));
+  bayesNet.emplace_shared<DiscreteConditional>(Asia, "4/6");
   HybridValues values;
   values.insert(asiaKey, 0);
   EXPECT_DOUBLES_EQUAL(0.4, bayesNet.evaluate(values), 1e-9);
@@ -107,9 +107,10 @@ TEST(HybridBayesNet, evaluateHybrid) {
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
   bayesNet.push_back(continuousConditional);
-  bayesNet.emplace_back(
-      new GaussianMixture({X(1)}, {}, {Asia}, {conditional0, conditional1}));
-  bayesNet.emplace_back(new DiscreteConditional(Asia, "99/1"));
+  bayesNet.emplace_shared<GaussianMixture>(
+      KeyVector{X(1)}, KeyVector{}, DiscreteKeys{Asia},
+      std::vector{conditional0, conditional1});
+  bayesNet.emplace_shared<DiscreteConditional>(Asia, "99/1");
 
   // Create values at which to evaluate.
   HybridValues values;
@@ -167,13 +168,14 @@ TEST(HybridBayesNet, Error) {
              conditional1 = std::make_shared<GaussianConditional>(
                  X(1), Vector1::Constant(2), I_1x1, model1);
 
-  auto gm =
-      new GaussianMixture({X(1)}, {}, {Asia}, {conditional0, conditional1});
+  auto gm = std::make_shared<GaussianMixture>(
+      KeyVector{X(1)}, KeyVector{}, DiscreteKeys{Asia},
+      std::vector{conditional0, conditional1});
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
   bayesNet.push_back(continuousConditional);
-  bayesNet.emplace_back(gm);
-  bayesNet.emplace_back(new DiscreteConditional(Asia, "99/1"));
+  bayesNet.push_back(gm);
+  bayesNet.emplace_shared<DiscreteConditional>(Asia, "99/1");
 
   // Create values at which to evaluate.
   HybridValues values;

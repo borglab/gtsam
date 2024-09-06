@@ -227,12 +227,12 @@ static HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1,
 
   auto c0 = make_shared<GaussianConditional>(z, Vector1(mu0), I_1x1, model0),
        c1 = make_shared<GaussianConditional>(z, Vector1(mu1), I_1x1, model1);
-  auto gm = new GaussianMixture({z}, {}, {m}, {c0, c1});
-
-  auto mixing = make_shared<DiscreteConditional>(m, "0.5/0.5");
 
   HybridBayesNet hbn;
-  hbn.emplace_back(gm);
+  hbn.emplace_shared<GaussianMixture>(KeyVector{z}, KeyVector{},
+                                      DiscreteKeys{m}, std::vector{c0, c1});
+
+  auto mixing = make_shared<DiscreteConditional>(m, "0.5/0.5");
   hbn.push_back(mixing);
 
   return hbn;
@@ -278,7 +278,7 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
 
     // At the halfway point between the means, we should get P(m|z)=0.5
     HybridBayesNet expected;
-    expected.emplace_back(new DiscreteConditional(m, "0.5/0.5"));
+    expected.emplace_shared<DiscreteConditional>(m, "0.5/0.5");
 
     EXPECT(assert_equal(expected, *bn));
   }
@@ -350,10 +350,10 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
 
     // At the halfway point between the means
     HybridBayesNet expected;
-    expected.emplace_back(new DiscreteConditional(
-        m, {},
+    expected.emplace_shared<DiscreteConditional>(
+        m, DiscreteKeys{},
         vector<double>{prob_m_z(mu1, mu0, sigma1, sigma0, m1_high),
-                       prob_m_z(mu0, mu1, sigma0, sigma1, m1_high)}));
+                       prob_m_z(mu0, mu1, sigma0, sigma1, m1_high)});
 
     EXPECT(assert_equal(expected, *bn));
   }
@@ -401,9 +401,9 @@ static HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
 
   auto measurement_model = noiseModel::Isotropic::Sigma(1, measurement_sigma);
   // Add measurement P(z0 | x0)
-  auto p_z0 = new GaussianConditional(z0, Vector1(0.0), -I_1x1, x0, I_1x1,
-                                      measurement_model);
-  hbn.emplace_back(p_z0);
+  auto p_z0 = std::make_shared<GaussianConditional>(
+      z0, Vector1(0.0), -I_1x1, x0, I_1x1, measurement_model);
+  hbn.push_back(p_z0);
 
   // Add hybrid motion model
   auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
@@ -413,19 +413,20 @@ static HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
        c1 = make_shared<GaussianConditional>(x1, Vector1(mu1), I_1x1, x0,
                                              -I_1x1, model1);
 
-  auto motion = new GaussianMixture({x1}, {x0}, {m1}, {c0, c1});
-  hbn.emplace_back(motion);
+  auto motion = std::make_shared<GaussianMixture>(
+      KeyVector{x1}, KeyVector{x0}, DiscreteKeys{m1}, std::vector{c0, c1});
+  hbn.push_back(motion);
 
   if (add_second_measurement) {
     // Add second measurement
-    auto p_z1 = new GaussianConditional(z1, Vector1(0.0), -I_1x1, x1, I_1x1,
-                                        measurement_model);
-    hbn.emplace_back(p_z1);
+    auto p_z1 = std::make_shared<GaussianConditional>(
+        z1, Vector1(0.0), -I_1x1, x1, I_1x1, measurement_model);
+    hbn.push_back(p_z1);
   }
 
   // Discrete uniform prior.
-  auto p_m1 = new DiscreteConditional(m1, "0.5/0.5");
-  hbn.emplace_back(p_m1);
+  auto p_m1 = std::make_shared<DiscreteConditional>(m1, "0.5/0.5");
+  hbn.push_back(p_m1);
 
   return hbn;
 }

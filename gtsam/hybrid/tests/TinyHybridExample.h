@@ -43,12 +43,12 @@ inline HybridBayesNet createHybridBayesNet(size_t num_measurements = 1,
   // Create Gaussian mixture z_i = x0 + noise for each measurement.
   for (size_t i = 0; i < num_measurements; i++) {
     const auto mode_i = manyModes ? DiscreteKey{M(i), 2} : mode;
-    bayesNet.emplace_back(
-        new GaussianMixture({Z(i)}, {X(0)}, {mode_i},
-                            {GaussianConditional::sharedMeanAndStddev(
-                                 Z(i), I_1x1, X(0), Z_1x1, 0.5),
-                             GaussianConditional::sharedMeanAndStddev(
-                                 Z(i), I_1x1, X(0), Z_1x1, 3)}));
+    bayesNet.emplace_shared<GaussianMixture>(
+        KeyVector{Z(i)}, KeyVector{X(0)}, DiscreteKeys{mode_i},
+        std::vector{GaussianConditional::sharedMeanAndStddev(Z(i), I_1x1, X(0),
+                                                             Z_1x1, 0.5),
+                    GaussianConditional::sharedMeanAndStddev(Z(i), I_1x1, X(0),
+                                                             Z_1x1, 3)});
   }
 
   // Create prior on X(0).
@@ -58,7 +58,7 @@ inline HybridBayesNet createHybridBayesNet(size_t num_measurements = 1,
   // Add prior on mode.
   const size_t nrModes = manyModes ? num_measurements : 1;
   for (size_t i = 0; i < nrModes; i++) {
-    bayesNet.emplace_back(new DiscreteConditional({M(i), 2}, "4/6"));
+    bayesNet.emplace_shared<DiscreteConditional>(DiscreteKey{M(i), 2}, "4/6");
   }
   return bayesNet;
 }
@@ -70,8 +70,7 @@ inline HybridBayesNet createHybridBayesNet(size_t num_measurements = 1,
  * the generative Bayes net model HybridBayesNet::Example(num_measurements)
  */
 inline HybridGaussianFactorGraph createHybridGaussianFactorGraph(
-    size_t num_measurements = 1,
-    std::optional<VectorValues> measurements = {},
+    size_t num_measurements = 1, std::optional<VectorValues> measurements = {},
     bool manyModes = false) {
   auto bayesNet = createHybridBayesNet(num_measurements, manyModes);
   if (measurements) {
