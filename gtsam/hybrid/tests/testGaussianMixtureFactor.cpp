@@ -629,12 +629,12 @@ static HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
                                                 {X(0), H1_1 /*Sp1*/},
                                                 {X(1), H1_2 /*Tp2*/}};
   // Create conditional P(Z1 | X1, X2, M1)
-  auto gm = new gtsam::GaussianMixture(
-      {Z(1)}, {X(0), X(1)}, {m1},
-      {std::make_shared<GaussianConditional>(terms0, 1, -d0, model0),
-       std::make_shared<GaussianConditional>(terms1, 1, -d1, model1)});
+  auto conditionals = std::vector{
+      std::make_shared<GaussianConditional>(terms0, 1, -d0, model0),
+      std::make_shared<GaussianConditional>(terms1, 1, -d1, model1)};
   gtsam::HybridBayesNet bn;
-  bn.emplace_back(gm);
+  bn.emplace_shared<GaussianMixture>(KeyVector{Z(1)}, KeyVector{X(0), X(1)},
+                                     DiscreteKeys{m1}, conditionals);
 
   // Create FG via toFactorGraph
   gtsam::VectorValues measurements;
