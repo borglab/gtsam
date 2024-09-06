@@ -388,10 +388,10 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
 namespace test_two_state_estimation {
 
 /// Create Two State Bayes Network with measurements
+/// The Bayes network is P(z0|x0)P(x1|x0,m1)p(m1) and optionally p(z1|x1)
 static HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
                                      double sigma1,
                                      bool add_second_measurement = false,
-                                     double prior_sigma = 1e-3,
                                      double measurement_sigma = 3.0) {
   DiscreteKey m1(M(1), 2);
   Key z0 = Z(0), z1 = Z(1);
@@ -436,7 +436,7 @@ static HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
 /**
  * Test a model P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1).
  *
- * P(f01|x1,x0,m1) has different means and same covariance.
+ * P(x1|x0,m1) has different means and same covariance.
  *
  * Converting to a factor graph gives us
  * ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)P(m1)
@@ -490,7 +490,7 @@ TEST(GaussianMixtureFactor, TwoStateModel) {
 /**
  * Test a model P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1).
  *
- * P(f01|x1,x0,m1) has different means and different covariances.
+ * P(x1|x0,m1) has different means and different covariances.
  *
  * Converting to a factor graph gives us
  * ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)P(m1)
@@ -612,7 +612,6 @@ HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
       std::make_shared<BetweenFactor<double>>(X(0), X(1), means[0], model0);
   auto f1 =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), means[1], model1);
-  std::vector<NonlinearFactor::shared_ptr> factors{f0, f1};
 
   /// Get terms for each p^m(z1 | x1, x2)
   Matrix H0_1, H0_2, H1_1, H1_2;
@@ -635,11 +634,10 @@ HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
        std::make_shared<GaussianConditional>(terms1, 1, -d1, model1)});
   gtsam::HybridBayesNet bn;
   bn.emplace_back(gm);
-  // bn.print();
 
   // Create FG via toFactorGraph
   gtsam::VectorValues measurements;
-  measurements.insert(Z(1), gtsam::I_1x1 * z1);  // Set Z1 = 0
+  measurements.insert(Z(1), gtsam::I_1x1 * z1);  // Set Z1
   HybridGaussianFactorGraph mixture_fg = bn.toFactorGraph(measurements);
 
   // Linearized prior factor on X1
@@ -653,11 +651,11 @@ HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
 /**
  * @brief Test components with differing means.
  *
- * We specify a hybrid Bayes network P(Z | X, M) =P(X1)P(Z1 | X1, X2, M1),
+ * We specify a hybrid Bayes network P(Z | X, M) = P(X1)P(Z1 | X1, X2, M1),
  * which is then converted to a factor graph by specifying Z1.
  * This is a different case since now we have a hybrid factor
  * with 2 continuous variables ϕ(x1, x2, m1).
- * p(Z1 | X1, X2, M1) has 2 factors each for the binary
+ * P(Z1 | X1, X2, M1) has 2 factors each for the binary
  * mode m1, with only the means being different.
  */
 TEST(GaussianMixtureFactor, DifferentMeans) {
@@ -686,18 +684,16 @@ TEST(GaussianMixtureFactor, DifferentMeans) {
     EXPECT(assert_equal(expected, actual));
 
     {
-      DiscreteValues dv{{M(1), 0}};
-      VectorValues cont = bn->optimize(dv);
-      double error = bn->error(HybridValues(cont, dv));
+      DiscreteValues dv0{{M(1), 0}};
+      VectorValues cont0 = bn->optimize(dv0);
+      double error0 = bn->error(HybridValues(cont0, dv0));
       // regression
-      EXPECT_DOUBLES_EQUAL(0.69314718056, error, 1e-9);
-    }
-    {
-      DiscreteValues dv{{M(1), 1}};
-      VectorValues cont = bn->optimize(dv);
-      double error = bn->error(HybridValues(cont, dv));
-      // regression
-      EXPECT_DOUBLES_EQUAL(0.69314718056, error, 1e-9);
+      EXPECT_DOUBLES_EQUAL(0.69314718056, error0, 1e-9);
+
+      DiscreteValues dv1{{M(1), 1}};
+      VectorValues cont1 = bn->optimize(dv1);
+      double error1 = bn->error(HybridValues(cont1, dv1));
+      EXPECT_DOUBLES_EQUAL(error0, error1, 1e-9);
     }
   }
   {
@@ -713,10 +709,10 @@ TEST(GaussianMixtureFactor, DifferentMeans) {
     auto bn = hfg.eliminateSequential();
     HybridValues actual = bn->optimize();
 
+    // regression
     HybridValues expected(
         VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(0.25)}},
         DiscreteValues{{M(1), 1}});
-
     EXPECT(assert_equal(expected, actual));
 
     {
@@ -777,6 +773,19 @@ TEST(GaussianMixtureFactor, DifferentCovariances) {
   EXPECT(assert_equal(expected_m1, actual_m1));
 }
 
+namespace test_direct_factor_graph {
+/**
+ * @brief Create a Factor Graph by directly specifying all
+ * the factors instead of creating conditionals first.
+ * This way we can directly provide the likelihoods and
+ * then perform linearization.
+ *
+ * @param values Initial values to linearize around.
+ * @param mus The means of the GaussianMixtureFactor components.
+ * @param sigmas The covariances of the GaussianMixtureFactor components.
+ * @param m1 The discrete key.
+ * @return HybridGaussianFactorGraph
+ */
 HybridGaussianFactorGraph CreateFactorGraph(const gtsam::Values &values,
                                             const std::vector<double> &mus,
                                             const std::vector<double> &sigmas,
@@ -806,8 +815,19 @@ HybridGaussianFactorGraph CreateFactorGraph(const gtsam::Values &values,
 
   return hfg;
 }
+}  // namespace test_direct_factor_graph
 
+/* ************************************************************************* */
+/**
+ * @brief Test components with differing means but the same covariances.
+ * The factor graph is
+ *     *-X1-*-X2
+ *          |
+ *          M1
+ */
 TEST(GaussianMixtureFactor, DifferentMeansFG) {
+  using namespace test_direct_factor_graph;
+
   DiscreteKey m1(M(1), 2);
 
   Values values;
@@ -878,13 +898,15 @@ TEST(GaussianMixtureFactor, DifferentMeansFG) {
 
 /* ************************************************************************* */
 /**
- * @brief Test components with differing covariances.
+ * @brief Test components with differing covariances but the same means.
  * The factor graph is
  *     *-X1-*-X2
  *          |
  *          M1
  */
 TEST(GaussianMixtureFactor, DifferentCovariancesFG) {
+  using namespace test_direct_factor_graph;
+
   DiscreteKey m1(M(1), 2);
 
   Values values;
