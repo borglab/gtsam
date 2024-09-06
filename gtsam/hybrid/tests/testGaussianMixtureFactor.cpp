@@ -811,7 +811,7 @@ TEST(GaussianMixtureFactor, DifferentMeansFG) {
     VectorValues cont0 = bn->optimize(dv0);
     double error0 = bn->error(HybridValues(cont0, dv0));
     // regression
-    EXPECT_DOUBLES_EQUAL(0.69314718056, error, 1e-9);
+    EXPECT_DOUBLES_EQUAL(0.69314718056, error0, 1e-9);
 
     DiscreteValues dv1{{M(1), 1}};
     VectorValues cont1 = bn->optimize(dv1);
