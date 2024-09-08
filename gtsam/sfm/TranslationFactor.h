@@ -44,7 +44,6 @@ class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
   Point3 measured_w_aZb_;
 
  public:
-
   // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor2<Point3, Point3>::evaluateError;
 
@@ -66,10 +65,9 @@ class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
    * @param H2 optional jacobian in Tb
    * @return * Vector
    */
-  Vector evaluateError(
-      const Point3& Ta, const Point3& Tb,
-      OptionalMatrixType H1,
-      OptionalMatrixType H2) const override {
+  Vector evaluateError(const Point3& Ta, const Point3& Tb,
+                       OptionalMatrixType H1,
+                       OptionalMatrixType H2) const override {
     const Point3 dir = Tb - Ta;
     Matrix33 H_predicted_dir;
     const Point3 predicted =
@@ -95,11 +93,11 @@ class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
  * w_aZb. The measurement equation is
  *    w_aZb = scale * (Tb - Ta)
  * i.e., w_aZb is the translation direction from frame A to B, in world
- * coordinates. 
- * 
+ * coordinates.
+ *
  * Instead of normalizing the Tb - Ta vector, we multiply it by a scalar
  * which is also jointly optimized. This is inspired by the work on
- * BATA (Zhuang et al, CVPR 2018). 
+ * BATA (Zhuang et al, CVPR 2018).
  *
  * @ingroup sfm
  */
@@ -113,10 +111,10 @@ class BilinearAngleTranslationFactor
   /// default constructor
   BilinearAngleTranslationFactor() {}
 
-  BilinearAngleTranslationFactor(Key a, Key b, Key scale_key, const Unit3& w_aZb,
+  BilinearAngleTranslationFactor(Key a, Key b, Key scale_key,
+                                 const Unit3& w_aZb,
                                  const SharedNoiseModel& noiseModel)
-      : Base(noiseModel, a, b, scale_key),
-        measured_w_aZb_(w_aZb.point3()) {}
+      : Base(noiseModel, a, b, scale_key), measured_w_aZb_(w_aZb.point3()) {}
 
   /**
    * @brief Caclulate error: (scale * (Tb - Ta) - measurement)
@@ -129,11 +127,9 @@ class BilinearAngleTranslationFactor
    * @param H2 optional jacobian in Tb
    * @return * Vector
    */
-  Vector evaluateError(
-      const Point3& Ta, const Point3& Tb, const Vector1& scale,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const override {
+  Vector evaluateError(const Point3& Ta, const Point3& Tb, const Vector1& scale,
+                       OptionalMatrixType H1, OptionalMatrixType H2,
+                       OptionalMatrixType H3) const override {
     // Ideally we should use a positive real valued scalar datatype for scale.
     const double abs_scale = abs(scale[0]);
     const Point3 predicted = (Tb - Ta) * abs_scale;
