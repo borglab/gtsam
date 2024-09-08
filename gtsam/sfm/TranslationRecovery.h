@@ -60,14 +60,18 @@ class GTSAM_EXPORT TranslationRecovery {
   // Parameters.
   LevenbergMarquardtParams lmParams_;
 
+  const bool use_bilinear_translation_factor_ = false;
+
  public:
   /**
    * @brief Construct a new Translation Recovery object
    *
    * @param lmParams parameters for optimization.
    */
-  TranslationRecovery(const LevenbergMarquardtParams &lmParams)
-      : lmParams_(lmParams) {}
+  TranslationRecovery(const LevenbergMarquardtParams &lmParams,
+                      bool use_bilinear_translation_factor)
+      : lmParams_(lmParams),
+        use_bilinear_translation_factor_(use_bilinear_translation_factor) {}
 
   /**
    * @brief Default constructor.
