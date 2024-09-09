@@ -116,6 +116,9 @@ class BilinearAngleTranslationFactor
                                  const SharedNoiseModel& noiseModel)
       : Base(noiseModel, a, b, scale_key), measured_w_aZb_(w_aZb.point3()) {}
 
+  // Provide access to the Matrix& version of evaluateError:
+  using NoiseModelFactor2<Point3, Point3, Vector1>::evaluateError;
+
   /**
    * @brief Caclulate error: (scale * (Tb - Ta) - measurement)
    * where Tb and Ta are Point3 translations and measurement is
