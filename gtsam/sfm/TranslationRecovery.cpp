@@ -101,7 +101,7 @@ NonlinearFactorGraph TranslationRecovery::buildGraph(
   NonlinearFactorGraph graph;
 
   // Add translation factors for input translation directions.
-  uint i = 0;
+  uint64_t i = 0;
   for (auto edge : relativeTranslations) {
     if (use_bilinear_translation_factor_) {
       graph.emplace_shared<BilinearAngleTranslationFactor>(
@@ -173,7 +173,7 @@ Values TranslationRecovery::initializeRandomly(
   }
 
   if (use_bilinear_translation_factor_) {
-    for (uint i = 0; i < relativeTranslations.size(); i++) {
+    for (uint64_t i = 0; i < relativeTranslations.size(); i++) {
       initial.insert<Vector1>(Symbol('S', i), Vector1(1.0));
     }
   }
