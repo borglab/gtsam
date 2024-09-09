@@ -270,6 +270,7 @@ class MFAS {
 class TranslationRecovery {
   TranslationRecovery(const gtsam::LevenbergMarquardtParams& lmParams,
                       const bool use_bilinear_translation_factor);
+  TranslationRecovery(const gtsam::LevenbergMarquardtParams& lmParams);
   TranslationRecovery();  // default params.
   void addPrior(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
                 const double scale,
