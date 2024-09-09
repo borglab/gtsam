@@ -69,7 +69,7 @@ class GTSAM_EXPORT TranslationRecovery {
    * @param lmParams parameters for optimization.
    */
   TranslationRecovery(const LevenbergMarquardtParams &lmParams,
-                      bool use_bilinear_translation_factor)
+                      bool use_bilinear_translation_factor = false)
       : lmParams_(lmParams),
         use_bilinear_translation_factor_(use_bilinear_translation_factor) {}
 
