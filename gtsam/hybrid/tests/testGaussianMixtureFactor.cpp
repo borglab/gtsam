@@ -35,8 +35,6 @@
 
 using namespace std;
 using namespace gtsam;
-using noiseModel::Isotropic;
-using symbol_shorthand::F;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
 using symbol_shorthand::Z;
@@ -387,40 +385,38 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
 
 namespace test_two_state_estimation {
 
+DiscreteKey m1(M(1), 2);
+
 /// Create Two State Bayes Network with measurements
 static HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
                                      double sigma1,
                                      bool add_second_measurement = false,
                                      double prior_sigma = 1e-3,
                                      double measurement_sigma = 3.0) {
-  DiscreteKey m1(M(1), 2);
-  Key z0 = Z(0), z1 = Z(1);
-  Key x0 = X(0), x1 = X(1);
-
   HybridBayesNet hbn;
 
   auto measurement_model = noiseModel::Isotropic::Sigma(1, measurement_sigma);
   // Add measurement P(z0 | x0)
   auto p_z0 = std::make_shared<GaussianConditional>(
-      z0, Vector1(0.0), -I_1x1, x0, I_1x1, measurement_model);
+      Z(0), Vector1(0.0), -I_1x1, X(0), I_1x1, measurement_model);
   hbn.push_back(p_z0);
 
   // Add hybrid motion model
   auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
   auto model1 = noiseModel::Isotropic::Sigma(1, sigma1);
-  auto c0 = make_shared<GaussianConditional>(x1, Vector1(mu0), I_1x1, x0,
+  auto c0 = make_shared<GaussianConditional>(X(1), Vector1(mu0), I_1x1, X(0),
                                              -I_1x1, model0),
-       c1 = make_shared<GaussianConditional>(x1, Vector1(mu1), I_1x1, x0,
+       c1 = make_shared<GaussianConditional>(X(1), Vector1(mu1), I_1x1, X(0),
                                              -I_1x1, model1);
 
   auto motion = std::make_shared<GaussianMixture>(
-      KeyVector{x1}, KeyVector{x0}, DiscreteKeys{m1}, std::vector{c0, c1});
+      KeyVector{X(1)}, KeyVector{X(0)}, DiscreteKeys{m1}, std::vector{c0, c1});
   hbn.push_back(motion);
 
   if (add_second_measurement) {
     // Add second measurement
     auto p_z1 = std::make_shared<GaussianConditional>(
-        z1, Vector1(0.0), -I_1x1, x1, I_1x1, measurement_model);
+        Z(1), Vector1(0.0), -I_1x1, X(1), I_1x1, measurement_model);
     hbn.push_back(p_z1);
   }
 
@@ -452,14 +448,11 @@ TEST(GaussianMixtureFactor, TwoStateModel) {
   double mu0 = 1.0, mu1 = 3.0;
   double sigma = 2.0;
 
-  DiscreteKey m1(M(1), 2);
-  Key z0 = Z(0), z1 = Z(1);
-
   // Start with no measurement on x1, only on x0
   HybridBayesNet hbn = CreateBayesNet(mu0, mu1, sigma, sigma, false);
 
   VectorValues given;
-  given.insert(z0, Vector1(0.5));
+  given.insert(Z(0), Vector1(0.5));
 
   {
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
@@ -476,7 +469,7 @@ TEST(GaussianMixtureFactor, TwoStateModel) {
 
     // If we see z1=2.6 (> 2.5 which is the halfway point),
     // discrete mode should say m1=1
-    given.insert(z1, Vector1(2.6));
+    given.insert(Z(1), Vector1(2.6));
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
@@ -508,14 +501,11 @@ TEST(GaussianMixtureFactor, TwoStateModel2) {
   auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
   auto model1 = noiseModel::Isotropic::Sigma(1, sigma1);
 
-  DiscreteKey m1(M(1), 2);
-  Key z0 = Z(0), z1 = Z(1);
-
   // Start with no measurement on x1, only on x0
   HybridBayesNet hbn = CreateBayesNet(mu0, mu1, sigma0, sigma1, false);
 
   VectorValues given;
-  given.insert(z0, Vector1(0.5));
+  given.insert(Z(0), Vector1(0.5));
 
   {
     // Start with no measurement on x1, only on x0
@@ -552,7 +542,7 @@ TEST(GaussianMixtureFactor, TwoStateModel2) {
     // Now we add a measurement z1 on x1
     hbn = CreateBayesNet(mu0, mu1, sigma0, sigma1, true);
 
-    given.insert(z1, Vector1(2.2));
+    given.insert(Z(1), Vector1(2.2));
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
 
     {
