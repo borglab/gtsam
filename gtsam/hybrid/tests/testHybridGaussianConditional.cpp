@@ -31,7 +31,6 @@
 #include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;
-using noiseModel::Isotropic;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
 using symbol_shorthand::Z;
