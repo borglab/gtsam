@@ -392,6 +392,12 @@ namespace test_two_state_estimation {
 
 DiscreteKey m1(M(1), 2);
 
+void addMeasurement(HybridBayesNet& hbn, Key z_key, Key x_key, double sigma) {
+  auto measurement_model = noiseModel::Isotropic::Sigma(1, sigma);
+  hbn.emplace_shared<GaussianConditional>(z_key, Vector1(0.0), I_1x1, x_key,
+                                          -I_1x1, measurement_model);
+}
+
 /// Create hybrid motion model p(x1 | x0, m1)
 static GaussianMixture::shared_ptr CreateHybridMotionModel(double mu0,
                                                            double mu1,
@@ -414,15 +420,11 @@ HybridBayesNet CreateBayesNet(
   HybridBayesNet hbn;
 
   // Add measurement model p(z0 | x0)
-  const double measurement_sigma = 3.0;
-  auto measurement_model = noiseModel::Isotropic::Sigma(1, measurement_sigma);
-  hbn.emplace_shared<GaussianConditional>(Z(0), Vector1(0.0), I_1x1, X(0),
-                                          -I_1x1, measurement_model);
+  addMeasurement(hbn, Z(0), X(0), 3.0);
 
   // Optionally add second measurement model p(z1 | x1)
   if (add_second_measurement) {
-    hbn.emplace_shared<GaussianConditional>(Z(1), Vector1(0.0), I_1x1, X(1),
-                                            -I_1x1, measurement_model);
+    addMeasurement(hbn, Z(1), X(1), 3.0);
   }
 
   // Add hybrid motion model
@@ -434,18 +436,27 @@ HybridBayesNet CreateBayesNet(
   return hbn;
 }
 
+/**
+ * @brief Approximates the discrete marginal P(m1) using importance sampling.
+ * @note Not typically called as expensive, but values are used in the tests.
+ *
+ * @param hbn The hybrid Bayesian network.
+ * @param hybridMotionModel The hybrid motion model.
+ * @param given Observed values for variables.
+ * @param N Number of samples for importance sampling.
+ * @return std::pair<double, double> Probabilities for m1 = 0 and m1 = 1.
+ */
 /// Approximate the discrete marginal P(m1) using importance sampling
-/// Not typically called as expensive, but values are used in the tests.
-void approximateDiscreteMarginal(
+std::pair<double, double> approximateDiscreteMarginal(
     const HybridBayesNet& hbn,
     const GaussianMixture::shared_ptr& hybridMotionModel,
     const VectorValues& given, size_t N = 100000) {
   /// Create importance sampling network q(x0,x1,m) = p(x1|x0,m1) q(x0) P(m1),
-  /// using q(x0) = N(z0, sigma_Q) to sample x0.
+  /// using q(x0) = N(z0, sigmaQ) to sample x0.
   HybridBayesNet q;
   q.push_back(hybridMotionModel);  // Add hybrid motion model
   q.emplace_shared<GaussianConditional>(GaussianConditional::FromMeanAndStddev(
-      X(0), given.at(Z(0)), /* sigma_Q = */ 3.0));  // Add proposal q(x0) for x0
+      X(0), given.at(Z(0)), /* sigmaQ = */ 3.0));  // Add proposal q(x0) for x0
   q.emplace_shared<DiscreteConditional>(m1, "50/50");  // Discrete prior.
 
   // Do importance sampling
@@ -460,6 +471,7 @@ void approximateDiscreteMarginal(
   double pm1 = w1 / (w0 + w1);
   std::cout << "p(m0) = " << 100 * (1.0 - pm1) << std::endl;
   std::cout << "p(m1) = " << 100 * pm1 << std::endl;
+  return {1.0 - pm1, pm1};
 }
 
 }  // namespace test_two_state_estimation
