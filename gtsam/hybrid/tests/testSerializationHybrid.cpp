@@ -18,7 +18,7 @@
 
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/hybrid/GaussianMixture.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
@@ -59,12 +59,12 @@ BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Leaf,
 BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Choice,
                         "gtsam_GaussianMixtureFactor_Factors_Choice");
 
-BOOST_CLASS_EXPORT_GUID(GaussianMixture, "gtsam_GaussianMixture");
-BOOST_CLASS_EXPORT_GUID(GaussianMixture::Conditionals,
+BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional, "gtsam_GaussianMixture");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals,
                         "gtsam_GaussianMixture_Conditionals");
-BOOST_CLASS_EXPORT_GUID(GaussianMixture::Conditionals::Leaf,
+BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals::Leaf,
                         "gtsam_GaussianMixture_Conditionals_Leaf");
-BOOST_CLASS_EXPORT_GUID(GaussianMixture::Conditionals::Choice,
+BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals::Choice,
                         "gtsam_GaussianMixture_Conditionals_Choice");
 // Needed since GaussianConditional::FromMeanAndStddev uses it
 BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
@@ -106,20 +106,20 @@ TEST(HybridSerialization, HybridConditional) {
 }
 
 /* ****************************************************************************/
-// Test GaussianMixture serialization.
-TEST(HybridSerialization, GaussianMixture) {
+// Test HybridGaussianConditional serialization.
+TEST(HybridSerialization, HybridGaussianConditional) {
   const DiscreteKey mode(M(0), 2);
   Matrix1 I = Matrix1::Identity();
   const auto conditional0 = std::make_shared<GaussianConditional>(
       GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 0.5));
   const auto conditional1 = std::make_shared<GaussianConditional>(
       GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 3));
-  const GaussianMixture gm({Z(0)}, {X(0)}, {mode},
+  const HybridGaussianConditional gm({Z(0)}, {X(0)}, {mode},
                            {conditional0, conditional1});
 
-  EXPECT(equalsObj<GaussianMixture>(gm));
-  EXPECT(equalsXML<GaussianMixture>(gm));
-  EXPECT(equalsBinary<GaussianMixture>(gm));
+  EXPECT(equalsObj<HybridGaussianConditional>(gm));
+  EXPECT(equalsXML<HybridGaussianConditional>(gm));
+  EXPECT(equalsBinary<HybridGaussianConditional>(gm));
 }
 
 /* ****************************************************************************/

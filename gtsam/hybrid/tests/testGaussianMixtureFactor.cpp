@@ -20,7 +20,7 @@
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/GaussianMixture.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
@@ -144,7 +144,7 @@ Hybrid [x1 x2; 1]{
 }
 
 /* ************************************************************************* */
-TEST(HybridGaussianFactor, GaussianMixture) {
+TEST(HybridGaussianFactor, HybridGaussianConditional) {
   KeyVector keys;
   keys.push_back(X(0));
   keys.push_back(X(1));
@@ -154,8 +154,8 @@ TEST(HybridGaussianFactor, GaussianMixture) {
   dKeys.emplace_back(M(1), 2);
 
   auto gaussians = std::make_shared<GaussianConditional>();
-  GaussianMixture::Conditionals conditionals(gaussians);
-  GaussianMixture gm({}, keys, dKeys, conditionals);
+  HybridGaussianConditional::Conditionals conditionals(gaussians);
+  HybridGaussianConditional gm({}, keys, dKeys, conditionals);
 
   EXPECT_LONGS_EQUAL(2, gm.discreteKeys().size());
 }
@@ -229,7 +229,7 @@ static HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1,
        c1 = make_shared<GaussianConditional>(z, Vector1(mu1), I_1x1, model1);
 
   HybridBayesNet hbn;
-  hbn.emplace_shared<GaussianMixture>(KeyVector{z}, KeyVector{},
+  hbn.emplace_shared<HybridGaussianConditional>(KeyVector{z}, KeyVector{},
                                       DiscreteKeys{m}, std::vector{c0, c1});
 
   auto mixing = make_shared<DiscreteConditional>(m, "0.5/0.5");
@@ -413,7 +413,7 @@ static HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
        c1 = make_shared<GaussianConditional>(x1, Vector1(mu1), I_1x1, x0,
                                              -I_1x1, model1);
 
-  auto motion = std::make_shared<GaussianMixture>(
+  auto motion = std::make_shared<HybridGaussianConditional>(
       KeyVector{x1}, KeyVector{x0}, DiscreteKeys{m1}, std::vector{c0, c1});
   hbn.push_back(motion);
 

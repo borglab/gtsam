@@ -18,7 +18,7 @@
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/TableFactor.h>
-#include <gtsam/hybrid/GaussianMixture.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
@@ -80,7 +80,7 @@ void HybridNonlinearFactorGraph::printErrors(
         gmf->errorTree(values.continuous()).print("", keyFormatter);
         std::cout << std::endl;
       }
-    } else if (auto gm = std::dynamic_pointer_cast<GaussianMixture>(factor)) {
+    } else if (auto gm = std::dynamic_pointer_cast<HybridGaussianConditional>(factor)) {
       if (factor == nullptr) {
         std::cout << "nullptr"
                   << "\n";
@@ -163,7 +163,7 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
       linearFG->push_back(f);
     } else if (auto gmf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       linearFG->push_back(gmf);
-    } else if (auto gm = dynamic_pointer_cast<GaussianMixture>(f)) {
+    } else if (auto gm = dynamic_pointer_cast<HybridGaussianConditional>(f)) {
       linearFG->push_back(gm);
     } else if (dynamic_pointer_cast<GaussianFactor>(f)) {
       linearFG->push_back(f);

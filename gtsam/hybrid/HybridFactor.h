@@ -47,7 +47,7 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
  * Examples:
  *  - HybridNonlinearFactor
  *  - HybridGaussianFactor
- *  - GaussianMixture
+ *  - HybridGaussianConditional
  *
  * @ingroup hybrid
  */

@@ -23,7 +23,7 @@
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteJunctionTree.h>
-#include <gtsam/hybrid/GaussianMixture.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
@@ -180,7 +180,7 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
       result = addGaussian(result, gf);
     } else if (auto gmf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       result = gmf->add(result);
-    } else if (auto gm = dynamic_pointer_cast<GaussianMixture>(f)) {
+    } else if (auto gm = dynamic_pointer_cast<HybridGaussianConditional>(f)) {
       result = gm->add(result);
     } else if (auto hc = dynamic_pointer_cast<HybridConditional>(f)) {
       if (auto gm = hc->asMixture()) {
@@ -408,10 +408,10 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
           : createGaussianMixtureFactor(eliminationResults, continuousSeparator,
                                         discreteSeparator);
 
-  // Create the GaussianMixture from the conditionals
-  GaussianMixture::Conditionals conditionals(
+  // Create the HybridGaussianConditional from the conditionals
+  HybridGaussianConditional::Conditionals conditionals(
       eliminationResults, [](const Result &pair) { return pair.first; });
-  auto gaussianMixture = std::make_shared<GaussianMixture>(
+  auto gaussianMixture = std::make_shared<HybridGaussianConditional>(
       frontalKeys, continuousSeparator, discreteSeparator, conditionals);
 
   return {std::make_shared<HybridConditional>(gaussianMixture), newFactor};
@@ -458,7 +458,7 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
   // Because of all these reasons, we carefully consider how to
   // implement the hybrid factors so that we do not get poor performance.
 
-  // The first thing is how to represent the GaussianMixture.
+  // The first thing is how to represent the HybridGaussianConditional.
   // A very possible scenario is that the incoming factors will have different
   // levels of discrete keys. For example, imagine we are going to eliminate the
   // fragment: $\phi(x1,c1,c2)$, $\phi(x1,c2,c3)$, which is perfectly valid.
@@ -599,7 +599,7 @@ GaussianFactorGraph HybridGaussianFactorGraph::operator()(
       gfg.push_back(gf);
     } else if (auto gmf = std::dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       gfg.push_back((*gmf)(assignment));
-    } else if (auto gm = dynamic_pointer_cast<GaussianMixture>(f)) {
+    } else if (auto gm = dynamic_pointer_cast<HybridGaussianConditional>(f)) {
       gfg.push_back((*gm)(assignment));
     } else {
       continue;

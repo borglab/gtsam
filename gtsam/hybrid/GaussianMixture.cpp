@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   GaussianMixture.cpp
+ * @file   HybridGaussianConditional.cpp
  * @brief  A hybrid conditional in the Conditional Linear Gaussian scheme
  * @author Fan Jiang
  * @author Varun Agrawal
@@ -20,7 +20,7 @@
 
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/GaussianMixture.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Conditional-inst.h>
@@ -29,10 +29,10 @@
 
 namespace gtsam {
 
-GaussianMixture::GaussianMixture(
+HybridGaussianConditional::HybridGaussianConditional(
     const KeyVector &continuousFrontals, const KeyVector &continuousParents,
     const DiscreteKeys &discreteParents,
-    const GaussianMixture::Conditionals &conditionals)
+    const HybridGaussianConditional::Conditionals &conditionals)
     : BaseFactor(CollectKeys(continuousFrontals, continuousParents),
                  discreteParents),
       BaseConditional(continuousFrontals.size()),
@@ -50,30 +50,30 @@ GaussianMixture::GaussianMixture(
 }
 
 /* *******************************************************************************/
-const GaussianMixture::Conditionals &GaussianMixture::conditionals() const {
+const HybridGaussianConditional::Conditionals &HybridGaussianConditional::conditionals() const {
   return conditionals_;
 }
 
 /* *******************************************************************************/
-GaussianMixture::GaussianMixture(
+HybridGaussianConditional::HybridGaussianConditional(
     KeyVector &&continuousFrontals, KeyVector &&continuousParents,
     DiscreteKeys &&discreteParents,
     std::vector<GaussianConditional::shared_ptr> &&conditionals)
-    : GaussianMixture(continuousFrontals, continuousParents, discreteParents,
+    : HybridGaussianConditional(continuousFrontals, continuousParents, discreteParents,
                       Conditionals(discreteParents, conditionals)) {}
 
 /* *******************************************************************************/
-GaussianMixture::GaussianMixture(
+HybridGaussianConditional::HybridGaussianConditional(
     const KeyVector &continuousFrontals, const KeyVector &continuousParents,
     const DiscreteKeys &discreteParents,
     const std::vector<GaussianConditional::shared_ptr> &conditionals)
-    : GaussianMixture(continuousFrontals, continuousParents, discreteParents,
+    : HybridGaussianConditional(continuousFrontals, continuousParents, discreteParents,
                       Conditionals(discreteParents, conditionals)) {}
 
 /* *******************************************************************************/
-// TODO(dellaert): This is copy/paste: GaussianMixture should be derived from
+// TODO(dellaert): This is copy/paste: HybridGaussianConditional should be derived from
 // GaussianMixtureFactor, no?
-GaussianFactorGraphTree GaussianMixture::add(
+GaussianFactorGraphTree HybridGaussianConditional::add(
     const GaussianFactorGraphTree &sum) const {
   using Y = GaussianFactorGraph;
   auto add = [](const Y &graph1, const Y &graph2) {
@@ -86,7 +86,7 @@ GaussianFactorGraphTree GaussianMixture::add(
 }
 
 /* *******************************************************************************/
-GaussianFactorGraphTree GaussianMixture::asGaussianFactorGraphTree() const {
+GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree() const {
   auto wrap = [this](const GaussianConditional::shared_ptr &gc) {
     // First check if conditional has not been pruned
     if (gc) {
@@ -109,7 +109,7 @@ GaussianFactorGraphTree GaussianMixture::asGaussianFactorGraphTree() const {
 }
 
 /* *******************************************************************************/
-size_t GaussianMixture::nrComponents() const {
+size_t HybridGaussianConditional::nrComponents() const {
   size_t total = 0;
   conditionals_.visit([&total](const GaussianFactor::shared_ptr &node) {
     if (node) total += 1;
@@ -118,7 +118,7 @@ size_t GaussianMixture::nrComponents() const {
 }
 
 /* *******************************************************************************/
-GaussianConditional::shared_ptr GaussianMixture::operator()(
+GaussianConditional::shared_ptr HybridGaussianConditional::operator()(
     const DiscreteValues &discreteValues) const {
   auto &ptr = conditionals_(discreteValues);
   if (!ptr) return nullptr;
@@ -127,11 +127,11 @@ GaussianConditional::shared_ptr GaussianMixture::operator()(
     return conditional;
   else
     throw std::logic_error(
-        "A GaussianMixture unexpectedly contained a non-conditional");
+        "A HybridGaussianConditional unexpectedly contained a non-conditional");
 }
 
 /* *******************************************************************************/
-bool GaussianMixture::equals(const HybridFactor &lf, double tol) const {
+bool HybridGaussianConditional::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
   if (e == nullptr) return false;
 
@@ -149,7 +149,7 @@ bool GaussianMixture::equals(const HybridFactor &lf, double tol) const {
 }
 
 /* *******************************************************************************/
-void GaussianMixture::print(const std::string &s,
+void HybridGaussianConditional::print(const std::string &s,
                             const KeyFormatter &formatter) const {
   std::cout << (s.empty() ? "" : s + "\n");
   if (isContinuous()) std::cout << "Continuous ";
@@ -177,7 +177,7 @@ void GaussianMixture::print(const std::string &s,
 }
 
 /* ************************************************************************* */
-KeyVector GaussianMixture::continuousParents() const {
+KeyVector HybridGaussianConditional::continuousParents() const {
   // Get all parent keys:
   const auto range = parents();
   KeyVector continuousParentKeys(range.begin(), range.end());
@@ -193,7 +193,7 @@ KeyVector GaussianMixture::continuousParents() const {
 }
 
 /* ************************************************************************* */
-bool GaussianMixture::allFrontalsGiven(const VectorValues &given) const {
+bool HybridGaussianConditional::allFrontalsGiven(const VectorValues &given) const {
   for (auto &&kv : given) {
     if (given.find(kv.first) == given.end()) {
       return false;
@@ -203,11 +203,11 @@ bool GaussianMixture::allFrontalsGiven(const VectorValues &given) const {
 }
 
 /* ************************************************************************* */
-std::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
+std::shared_ptr<GaussianMixtureFactor> HybridGaussianConditional::likelihood(
     const VectorValues &given) const {
   if (!allFrontalsGiven(given)) {
     throw std::runtime_error(
-        "GaussianMixture::likelihood: given values are missing some frontals.");
+        "HybridGaussianConditional::likelihood: given values are missing some frontals.");
   }
 
   const DiscreteKeys discreteParentKeys = discreteKeys();
@@ -252,7 +252,7 @@ std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys) {
  */
 std::function<GaussianConditional::shared_ptr(
     const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
-GaussianMixture::prunerFunc(const DecisionTreeFactor &discreteProbs) {
+HybridGaussianConditional::prunerFunc(const DecisionTreeFactor &discreteProbs) {
   // Get the discrete keys as sets for the decision tree
   // and the gaussian mixture.
   auto discreteProbsKeySet = DiscreteKeysAsSet(discreteProbs.discreteKeys());
@@ -303,7 +303,7 @@ GaussianMixture::prunerFunc(const DecisionTreeFactor &discreteProbs) {
 }
 
 /* *******************************************************************************/
-void GaussianMixture::prune(const DecisionTreeFactor &discreteProbs) {
+void HybridGaussianConditional::prune(const DecisionTreeFactor &discreteProbs) {
   // Functional which loops over all assignments and create a set of
   // GaussianConditionals
   auto pruner = prunerFunc(discreteProbs);
@@ -313,7 +313,7 @@ void GaussianMixture::prune(const DecisionTreeFactor &discreteProbs) {
 }
 
 /* *******************************************************************************/
-AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
+AlgebraicDecisionTree<Key> HybridGaussianConditional::logProbability(
     const VectorValues &continuousValues) const {
   // functor to calculate (double) logProbability value from
   // GaussianConditional.
@@ -331,7 +331,7 @@ AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
 }
 
 /* ************************************************************************* */
-double GaussianMixture::conditionalError(
+double HybridGaussianConditional::conditionalError(
     const GaussianConditional::shared_ptr &conditional,
     const VectorValues &continuousValues) const {
   // Check if valid pointer
@@ -348,7 +348,7 @@ double GaussianMixture::conditionalError(
 }
 
 /* *******************************************************************************/
-AlgebraicDecisionTree<Key> GaussianMixture::errorTree(
+AlgebraicDecisionTree<Key> HybridGaussianConditional::errorTree(
     const VectorValues &continuousValues) const {
   auto errorFunc = [&](const GaussianConditional::shared_ptr &conditional) {
     return conditionalError(conditional, continuousValues);
@@ -358,20 +358,20 @@ AlgebraicDecisionTree<Key> GaussianMixture::errorTree(
 }
 
 /* *******************************************************************************/
-double GaussianMixture::error(const HybridValues &values) const {
+double HybridGaussianConditional::error(const HybridValues &values) const {
   // Directly index to get the conditional, no need to build the whole tree.
   auto conditional = conditionals_(values.discrete());
   return conditionalError(conditional, values.continuous());
 }
 
 /* *******************************************************************************/
-double GaussianMixture::logProbability(const HybridValues &values) const {
+double HybridGaussianConditional::logProbability(const HybridValues &values) const {
   auto conditional = conditionals_(values.discrete());
   return conditional->logProbability(values.continuous());
 }
 
 /* *******************************************************************************/
-double GaussianMixture::evaluate(const HybridValues &values) const {
+double HybridGaussianConditional::evaluate(const HybridValues &values) const {
   auto conditional = conditionals_(values.discrete());
   return conditional->evaluate(values.continuous());
 }

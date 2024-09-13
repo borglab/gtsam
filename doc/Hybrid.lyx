@@ -191,13 +191,13 @@ E_{gc}(x,y)=\frac{1}{2}\|Rx+Sy-d\|_{\Sigma}^{2}.\label{eq:gc_error}
 \end_layout
 
 \begin_layout Subsubsection*
-GaussianMixture
+HybridGaussianConditional
 \end_layout
 
 \begin_layout Standard
 A 
 \emph on
-GaussianMixture
+HybridGaussianConditional
 \emph default
  (maybe to be renamed to 
 \emph on
@@ -233,7 +233,7 @@ GaussianConditional
  to a set of discrete variables.
  As 
 \emph on
-GaussianMixture
+HybridGaussianConditional
 \emph default
  is a 
 \emph on
@@ -324,7 +324,7 @@ The key point here is that
 \color inherit
  is the log-normalization constant for the complete 
 \emph on
-GaussianMixture
+HybridGaussianConditional
 \emph default
  across all values of 
 \begin_inset Formula $m$
@@ -556,7 +556,7 @@ Analogously, a
 \emph on
 HybridGaussianFactor
 \emph default
- typically results from a GaussianMixture by having known values 
+ typically results from a HybridGaussianConditional by having known values 
 \begin_inset Formula $\bar{x}$
 \end_inset
 
@@ -817,7 +817,7 @@ E_{mf}(y,m)=\frac{1}{2}\|A_{m}y-b_{m}\|_{\Sigma_{mfm}}^{2}=E_{gcm}(\bar{x},y)+K_
 
 \end_inset
 
-which is identical to the GaussianMixture error 
+which is identical to the HybridGaussianConditional error 
 \begin_inset CommandInset ref
 LatexCommand eqref
 reference "eq:gm_error"

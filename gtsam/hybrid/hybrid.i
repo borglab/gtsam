@@ -65,7 +65,7 @@ virtual class HybridConditional {
   double logProbability(const gtsam::HybridValues& values) const;
   double evaluate(const gtsam::HybridValues& values) const;
   double operator()(const gtsam::HybridValues& values) const;
-  gtsam::GaussianMixture* asMixture() const;
+  gtsam::HybridGaussianConditional* asMixture() const;
   gtsam::GaussianConditional* asGaussian() const;
   gtsam::DiscreteConditional* asDiscrete() const;
   gtsam::Factor* inner();
@@ -84,9 +84,9 @@ class HybridGaussianFactor : gtsam::HybridFactor {
                  gtsam::DefaultKeyFormatter) const;
 };
 
-#include <gtsam/hybrid/GaussianMixture.h>
-class GaussianMixture : gtsam::HybridFactor {
-  GaussianMixture(const gtsam::KeyVector& continuousFrontals,
+#include <gtsam/hybrid/HybridGaussianConditional.h>
+class HybridGaussianConditional : gtsam::HybridFactor {
+  HybridGaussianConditional(const gtsam::KeyVector& continuousFrontals,
                   const gtsam::KeyVector& continuousParents,
                   const gtsam::DiscreteKeys& discreteParents,
                   const std::vector<gtsam::GaussianConditional::shared_ptr>&
@@ -97,7 +97,7 @@ class GaussianMixture : gtsam::HybridFactor {
   double logProbability(const gtsam::HybridValues& values) const;
   double evaluate(const gtsam::HybridValues& values) const;
 
-  void print(string s = "GaussianMixture\n",
+  void print(string s = "HybridGaussianConditional\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
 };
@@ -131,7 +131,7 @@ class HybridBayesTree {
 #include <gtsam/hybrid/HybridBayesNet.h>
 class HybridBayesNet {
   HybridBayesNet();
-  void push_back(const gtsam::GaussianMixture* s);
+  void push_back(const gtsam::HybridGaussianConditional* s);
   void push_back(const gtsam::GaussianConditional* s);
   void push_back(const gtsam::DiscreteConditional* s);
 

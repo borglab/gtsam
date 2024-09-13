@@ -79,7 +79,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    *
    * Example:
    *   auto shared_ptr_to_a_conditional =
-   *     std::make_shared<GaussianMixture>(...);
+   *     std::make_shared<HybridGaussianConditional>(...);
    *  hbn.push_back(shared_ptr_to_a_conditional);
    */
   void push_back(HybridConditional &&conditional) {
@@ -106,7 +106,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * Preferred: Emplace a conditional directly using arguments.
    *
    * Examples:
-   *   hbn.emplace_shared<GaussianMixture>(...)));
+   *   hbn.emplace_shared<HybridGaussianConditional>(...)));
    *   hbn.emplace_shared<GaussianConditional>(...)));
    *   hbn.emplace_shared<DiscreteConditional>(...)));
    */

@@ -18,9 +18,9 @@ from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
 from gtsam import (DiscreteConditional, DiscreteKeys, GaussianConditional,
-                   GaussianMixture, HybridBayesNet, HybridGaussianFactor,
-                   HybridGaussianFactorGraph, HybridValues, JacobianFactor,
-                   Ordering, noiseModel)
+                   HybridBayesNet, HybridGaussianConditional,
+                   HybridGaussianFactor, HybridGaussianFactorGraph,
+                   HybridValues, JacobianFactor, Ordering, noiseModel)
 
 DEBUG_MARGINALS = False
 
@@ -48,7 +48,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         self.assertEqual(hbn.size(), 2)
 
         mixture = hbn.at(0).inner()
-        self.assertIsInstance(mixture, GaussianMixture)
+        self.assertIsInstance(mixture, HybridGaussianConditional)
         self.assertEqual(len(mixture.keys()), 2)
 
         discrete_conditional = hbn.at(hbn.size() - 1).inner()
@@ -106,7 +106,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
                                                                  I_1x1,
                                                                  X(0), [0],
                                                                  sigma=3)
-            bayesNet.push_back(GaussianMixture([Z(i)], [X(0)], keys,
+            bayesNet.push_back(HybridGaussianConditional([Z(i)], [X(0)], keys,
                                                [conditional0, conditional1]))
 
         # Create prior on X(0).

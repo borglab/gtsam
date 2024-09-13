@@ -350,7 +350,7 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
       EliminateHybrid(factors, ordering);
 
   auto gaussianConditionalMixture =
-      dynamic_pointer_cast<GaussianMixture>(hybridConditionalMixture->inner());
+      dynamic_pointer_cast<HybridGaussianConditional>(hybridConditionalMixture->inner());
 
   CHECK(gaussianConditionalMixture);
   // Frontals = [x0, x1]

@@ -168,11 +168,11 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
   DecisionTreeFactor prunedDiscreteProbs =
       this->pruneDiscreteConditionals(maxNrLeaves);
 
-  /* To prune, we visitWith every leaf in the GaussianMixture.
+  /* To prune, we visitWith every leaf in the HybridGaussianConditional.
    * For each leaf, using the assignment we can check the discrete decision tree
    * for 0.0 probability, then just set the leaf to a nullptr.
    *
-   * We can later check the GaussianMixture for just nullptrs.
+   * We can later check the HybridGaussianConditional for just nullptrs.
    */
 
   HybridBayesNet prunedBayesNetFragment;
@@ -182,14 +182,14 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
   for (auto &&conditional : *this) {
     if (auto gm = conditional->asMixture()) {
       // Make a copy of the Gaussian mixture and prune it!
-      auto prunedGaussianMixture = std::make_shared<GaussianMixture>(*gm);
+      auto prunedGaussianMixture = std::make_shared<HybridGaussianConditional>(*gm);
       prunedGaussianMixture->prune(prunedDiscreteProbs);  // imperative :-(
 
       // Type-erase and add to the pruned Bayes Net fragment.
       prunedBayesNetFragment.push_back(prunedGaussianMixture);
 
     } else {
-      // Add the non-GaussianMixture conditional
+      // Add the non-HybridGaussianConditional conditional
       prunedBayesNetFragment.push_back(conditional);
     }
   }

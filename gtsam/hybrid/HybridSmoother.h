@@ -69,7 +69,7 @@ class GTSAM_EXPORT HybridSmoother {
       const HybridBayesNet& hybridBayesNet, const Ordering& ordering) const;
 
   /// Get the Gaussian Mixture from the Bayes Net posterior at `index`.
-  GaussianMixture::shared_ptr gaussianMixture(size_t index) const;
+  HybridGaussianConditional::shared_ptr gaussianMixture(size_t index) const;
 
   /// Return the Bayes Net posterior.
   const HybridBayesNet& hybridBayesNet() const;

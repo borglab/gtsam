@@ -151,23 +151,23 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
           .BaseEliminateable::eliminatePartialMultifrontal(ordering);
 
   // The densities on X(1) should be the same
-  auto x0_conditional = dynamic_pointer_cast<GaussianMixture>(
+  auto x0_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
       bayesTree[X(0)]->conditional()->inner());
-  auto expected_x0_conditional = dynamic_pointer_cast<GaussianMixture>(
+  auto expected_x0_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
       (*expectedHybridBayesTree)[X(0)]->conditional()->inner());
   EXPECT(assert_equal(*x0_conditional, *expected_x0_conditional));
 
   // The densities on X(1) should be the same
-  auto x1_conditional = dynamic_pointer_cast<GaussianMixture>(
+  auto x1_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
       bayesTree[X(1)]->conditional()->inner());
-  auto expected_x1_conditional = dynamic_pointer_cast<GaussianMixture>(
+  auto expected_x1_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
       (*expectedHybridBayesTree)[X(1)]->conditional()->inner());
   EXPECT(assert_equal(*x1_conditional, *expected_x1_conditional));
 
   // The densities on X(2) should be the same
-  auto x2_conditional = dynamic_pointer_cast<GaussianMixture>(
+  auto x2_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
       bayesTree[X(2)]->conditional()->inner());
-  auto expected_x2_conditional = dynamic_pointer_cast<GaussianMixture>(
+  auto expected_x2_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
       (*expectedHybridBayesTree)[X(2)]->conditional()->inner());
   EXPECT(assert_equal(*x2_conditional, *expected_x2_conditional));
 
@@ -300,9 +300,9 @@ TEST(HybridNonlinearISAM, Approx_inference) {
 
   // Check that the hybrid nodes of the bayes net match those of the pre-pruning
   // bayes net, at the same positions.
-  auto &unprunedLastDensity = *dynamic_pointer_cast<GaussianMixture>(
+  auto &unprunedLastDensity = *dynamic_pointer_cast<HybridGaussianConditional>(
       unprunedHybridBayesTree->clique(X(3))->conditional()->inner());
-  auto &lastDensity = *dynamic_pointer_cast<GaussianMixture>(
+  auto &lastDensity = *dynamic_pointer_cast<HybridGaussianConditional>(
       bayesTree[X(3)]->conditional()->inner());
 
   std::vector<std::pair<DiscreteValues, double>> assignments =

@@ -107,7 +107,7 @@ TEST(HybridBayesNet, evaluateHybrid) {
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
   bayesNet.push_back(continuousConditional);
-  bayesNet.emplace_shared<GaussianMixture>(
+  bayesNet.emplace_shared<HybridGaussianConditional>(
       KeyVector{X(1)}, KeyVector{}, DiscreteKeys{Asia},
       std::vector{conditional0, conditional1});
   bayesNet.emplace_shared<DiscreteConditional>(Asia, "99/1");
@@ -168,7 +168,7 @@ TEST(HybridBayesNet, Error) {
              conditional1 = std::make_shared<GaussianConditional>(
                  X(1), Vector1::Constant(2), I_1x1, model1);
 
-  auto gm = std::make_shared<GaussianMixture>(
+  auto gm = std::make_shared<HybridGaussianConditional>(
       KeyVector{X(1)}, KeyVector{}, DiscreteKeys{Asia},
       std::vector{conditional0, conditional1});
   // Create hybrid Bayes net.

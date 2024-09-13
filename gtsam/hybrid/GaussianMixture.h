@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   GaussianMixture.h
+ * @file   HybridGaussianConditional.h
  * @brief  A hybrid conditional in the Conditional Linear Gaussian scheme
  * @author Fan Jiang
  * @author Varun Agrawal
@@ -50,14 +50,14 @@ class HybridValues;
  *
  * @ingroup hybrid
  */
-class GTSAM_EXPORT GaussianMixture
+class GTSAM_EXPORT HybridGaussianConditional
     : public HybridFactor,
-      public Conditional<HybridFactor, GaussianMixture> {
+      public Conditional<HybridFactor, HybridGaussianConditional> {
  public:
-  using This = GaussianMixture;
-  using shared_ptr = std::shared_ptr<GaussianMixture>;
+  using This = HybridGaussianConditional;
+  using shared_ptr = std::shared_ptr<HybridGaussianConditional>;
   using BaseFactor = HybridFactor;
-  using BaseConditional = Conditional<HybridFactor, GaussianMixture>;
+  using BaseConditional = Conditional<HybridFactor, HybridGaussianConditional>;
 
   /// typedef for Decision Tree of Gaussian Conditionals
   using Conditionals = DecisionTree<Key, GaussianConditional::shared_ptr>;
@@ -67,7 +67,7 @@ class GTSAM_EXPORT GaussianMixture
   double logConstant_;         ///< log of the normalization constant.
 
   /**
-   * @brief Convert a GaussianMixture of conditionals into
+   * @brief Convert a HybridGaussianConditional of conditionals into
    * a DecisionTree of Gaussian factor graphs.
    */
   GaussianFactorGraphTree asGaussianFactorGraphTree() const;
@@ -88,10 +88,10 @@ class GTSAM_EXPORT GaussianMixture
   /// @{
 
   /// Default constructor, mainly for serialization.
-  GaussianMixture() = default;
+  HybridGaussianConditional() = default;
 
   /**
-   * @brief Construct a new GaussianMixture object.
+   * @brief Construct a new HybridGaussianConditional object.
    *
    * @param continuousFrontals the continuous frontals.
    * @param continuousParents the continuous parents.
@@ -101,7 +101,7 @@ class GTSAM_EXPORT GaussianMixture
    * cardinality of the DiscreteKeys in discreteParents, since the
    * discreteParents will be used as the labels in the decision tree.
    */
-  GaussianMixture(const KeyVector &continuousFrontals,
+  HybridGaussianConditional(const KeyVector &continuousFrontals,
                   const KeyVector &continuousParents,
                   const DiscreteKeys &discreteParents,
                   const Conditionals &conditionals);
@@ -114,7 +114,7 @@ class GTSAM_EXPORT GaussianMixture
    * @param discreteParents Discrete parents variables
    * @param conditionals List of conditionals
    */
-  GaussianMixture(KeyVector &&continuousFrontals, KeyVector &&continuousParents,
+  HybridGaussianConditional(KeyVector &&continuousFrontals, KeyVector &&continuousParents,
                   DiscreteKeys &&discreteParents,
                   std::vector<GaussianConditional::shared_ptr> &&conditionals);
 
@@ -126,7 +126,7 @@ class GTSAM_EXPORT GaussianMixture
    * @param discreteParents Discrete parents variables
    * @param conditionals List of conditionals
    */
-  GaussianMixture(
+  HybridGaussianConditional(
       const KeyVector &continuousFrontals, const KeyVector &continuousParents,
       const DiscreteKeys &discreteParents,
       const std::vector<GaussianConditional::shared_ptr> &conditionals);
@@ -140,7 +140,7 @@ class GTSAM_EXPORT GaussianMixture
 
   /// Print utility
   void print(
-      const std::string &s = "GaussianMixture\n",
+      const std::string &s = "HybridGaussianConditional\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
   /// @}
@@ -172,7 +172,7 @@ class GTSAM_EXPORT GaussianMixture
   const Conditionals &conditionals() const;
 
   /**
-   * @brief Compute logProbability of the GaussianMixture as a tree.
+   * @brief Compute logProbability of the HybridGaussianConditional as a tree.
    *
    * @param continuousValues The continuous VectorValues.
    * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
@@ -209,7 +209,7 @@ class GTSAM_EXPORT GaussianMixture
   double error(const HybridValues &values) const override;
 
   /**
-   * @brief Compute error of the GaussianMixture as a tree.
+   * @brief Compute error of the HybridGaussianConditional as a tree.
    *
    * @param continuousValues The continuous VectorValues.
    * @return AlgebraicDecisionTree<Key> A decision tree on the discrete keys
@@ -277,6 +277,6 @@ std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys);
 
 // traits
 template <>
-struct traits<GaussianMixture> : public Testable<GaussianMixture> {};
+struct traits<HybridGaussianConditional> : public Testable<HybridGaussianConditional> {};
 
 }  // namespace gtsam
