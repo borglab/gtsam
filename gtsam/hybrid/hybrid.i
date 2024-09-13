@@ -235,15 +235,15 @@ class HybridNonlinearFactorGraph {
        gtsam::DefaultKeyFormatter) const;
 };
 
-#include <gtsam/hybrid/MixtureFactor.h>
-class MixtureFactor : gtsam::HybridFactor {
-  MixtureFactor(
+#include <gtsam/hybrid/HybridNonlinearFactor.h>
+class HybridNonlinearFactor : gtsam::HybridFactor {
+  HybridNonlinearFactor(
       const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
       const gtsam::DecisionTree<gtsam::Key, gtsam::NonlinearFactor*>& factors,
       bool normalized = false);
 
   template <FACTOR = {gtsam::NonlinearFactor}>
-  MixtureFactor(const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
+  HybridNonlinearFactor(const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
                 const std::vector<FACTOR*>& factors,
                 bool normalized = false);
 
@@ -256,7 +256,7 @@ class MixtureFactor : gtsam::HybridFactor {
   HybridGaussianFactor* linearize(
       const gtsam::Values& continuousValues) const;
 
-  void print(string s = "MixtureFactor\n",
+  void print(string s = "HybridNonlinearFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
 };

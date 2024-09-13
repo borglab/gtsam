@@ -11,7 +11,7 @@
 
 /**
  * @file    testMixtureFactor.cpp
- * @brief   Unit tests for MixtureFactor
+ * @brief   Unit tests for HybridNonlinearFactor
  * @author  Varun Agrawal
  * @date    October 2022
  */
@@ -21,7 +21,7 @@
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
-#include <gtsam/hybrid/MixtureFactor.h>
+#include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
 
@@ -36,17 +36,17 @@ using symbol_shorthand::X;
 
 /* ************************************************************************* */
 // Check iterators of empty mixture.
-TEST(MixtureFactor, Constructor) {
-  MixtureFactor factor;
-  MixtureFactor::const_iterator const_it = factor.begin();
+TEST(HybridNonlinearFactor, Constructor) {
+  HybridNonlinearFactor factor;
+  HybridNonlinearFactor::const_iterator const_it = factor.begin();
   CHECK(const_it == factor.end());
-  MixtureFactor::iterator it = factor.begin();
+  HybridNonlinearFactor::iterator it = factor.begin();
   CHECK(it == factor.end());
 }
 
 /* ************************************************************************* */
 // Test .print() output.
-TEST(MixtureFactor, Printing) {
+TEST(HybridNonlinearFactor, Printing) {
   DiscreteKey m1(1, 2);
   double between0 = 0.0;
   double between1 = 1.0;
@@ -60,11 +60,11 @@ TEST(MixtureFactor, Printing) {
       std::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
   std::vector<NonlinearFactor::shared_ptr> factors{f0, f1};
 
-  MixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+  HybridNonlinearFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 
   std::string expected =
       R"(Hybrid [x1 x2; 1]
-MixtureFactor
+HybridNonlinearFactor
  Choice(1) 
  0 Leaf Nonlinear factor on 2 keys
  1 Leaf Nonlinear factor on 2 keys
@@ -73,7 +73,7 @@ MixtureFactor
 }
 
 /* ************************************************************************* */
-static MixtureFactor getMixtureFactor() {
+static HybridNonlinearFactor getMixtureFactor() {
   DiscreteKey m1(1, 2);
 
   double between0 = 0.0;
@@ -88,12 +88,12 @@ static MixtureFactor getMixtureFactor() {
       std::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
   std::vector<NonlinearFactor::shared_ptr> factors{f0, f1};
 
-  return MixtureFactor({X(1), X(2)}, {m1}, factors);
+  return HybridNonlinearFactor({X(1), X(2)}, {m1}, factors);
 }
 
 /* ************************************************************************* */
-// Test the error of the MixtureFactor
-TEST(MixtureFactor, Error) {
+// Test the error of the HybridNonlinearFactor
+TEST(HybridNonlinearFactor, Error) {
   auto mixtureFactor = getMixtureFactor();
 
   Values continuousValues;
@@ -112,8 +112,8 @@ TEST(MixtureFactor, Error) {
 }
 
 /* ************************************************************************* */
-// Test dim of the MixtureFactor
-TEST(MixtureFactor, Dim) {
+// Test dim of the HybridNonlinearFactor
+TEST(HybridNonlinearFactor, Dim) {
   auto mixtureFactor = getMixtureFactor();
   EXPECT_LONGS_EQUAL(1, mixtureFactor.dim());
 }

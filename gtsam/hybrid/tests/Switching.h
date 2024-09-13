@@ -22,7 +22,7 @@
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
-#include <gtsam/hybrid/MixtureFactor.h>
+#include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
@@ -163,7 +163,7 @@ struct Switching {
       for (auto &&f : motion_models) {
         components.push_back(std::dynamic_pointer_cast<NonlinearFactor>(f));
       }
-      nonlinearFactorGraph.emplace_shared<MixtureFactor>(
+      nonlinearFactorGraph.emplace_shared<HybridNonlinearFactor>(
           keys, DiscreteKeys{modes[k]}, components);
     }
 

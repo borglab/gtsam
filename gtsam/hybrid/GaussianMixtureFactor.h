@@ -146,7 +146,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// Getter for GaussianFactor decision tree
   const Factors &factors() const { return factors_; }
 
-  /// Add MixtureFactor to a Sum, syntactic sugar.
+  /// Add HybridNonlinearFactor to a Sum, syntactic sugar.
   friend GaussianFactorGraphTree &operator+=(
       GaussianFactorGraphTree &sum, const HybridGaussianFactor &factor) {
     sum = factor.add(sum);

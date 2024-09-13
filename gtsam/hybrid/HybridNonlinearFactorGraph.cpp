@@ -21,7 +21,7 @@
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
-#include <gtsam/hybrid/MixtureFactor.h>
+#include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -59,7 +59,7 @@ void HybridNonlinearFactorGraph::printErrors(
     // Clear the stringstream
     ss.str(std::string());
 
-    if (auto mf = std::dynamic_pointer_cast<MixtureFactor>(factor)) {
+    if (auto mf = std::dynamic_pointer_cast<HybridNonlinearFactor>(factor)) {
       if (factor == nullptr) {
         std::cout << "nullptr"
                   << "\n";
@@ -151,7 +151,7 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
       continue;
     }
     // Check if it is a nonlinear mixture factor
-    if (auto mf = dynamic_pointer_cast<MixtureFactor>(f)) {
+    if (auto mf = dynamic_pointer_cast<HybridNonlinearFactor>(f)) {
       const HybridGaussianFactor::shared_ptr& gmf =
           mf->linearize(continuousValues);
       linearFG->push_back(gmf);

@@ -22,7 +22,7 @@
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearISAM.h>
 #include <gtsam/hybrid/HybridSmoother.h>
-#include <gtsam/hybrid/MixtureFactor.h>
+#include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianBayesTree.h>
@@ -435,7 +435,7 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
   const auto one_motion =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
-  nfg.emplace_shared<MixtureFactor>(
+  nfg.emplace_shared<HybridNonlinearFactor>(
       KeyVector{X(0), X(1)}, DiscreteKeys{m},
       std::vector<NonlinearFactor::shared_ptr>{zero_motion, one_motion});
 
@@ -532,7 +532,7 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
  * the difference in noise models.
  */
 std::shared_ptr<HybridGaussianFactor> mixedVarianceFactor(
-    const MixtureFactor& mf, const Values& initial, const Key& mode,
+    const HybridNonlinearFactor& mf, const Values& initial, const Key& mode,
     double noise_tight, double noise_loose, size_t d, size_t tight_index) {
   HybridGaussianFactor::shared_ptr gmf = mf.linearize(initial);
 
@@ -592,7 +592,7 @@ TEST(HybridEstimation, ModeSelection) {
   std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
 
   KeyVector keys = {X(0), X(1)};
-  MixtureFactor mf(keys, modes, components);
+  HybridNonlinearFactor mf(keys, modes, components);
 
   initial.insert(X(0), 0.0);
   initial.insert(X(1), 0.0);
@@ -683,7 +683,7 @@ TEST(HybridEstimation, ModeSelection2) {
   std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
 
   KeyVector keys = {X(0), X(1)};
-  MixtureFactor mf(keys, modes, components);
+  HybridNonlinearFactor mf(keys, modes, components);
 
   initial.insert<Vector3>(X(0), Z_3x1);
   initial.insert<Vector3>(X(1), Z_3x1);

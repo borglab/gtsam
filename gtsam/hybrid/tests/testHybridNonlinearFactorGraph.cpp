@@ -24,7 +24,7 @@
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
-#include <gtsam/hybrid/MixtureFactor.h>
+#include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -105,7 +105,7 @@ TEST(HybridNonlinearFactorGraph, Resize) {
   auto discreteFactor = std::make_shared<DecisionTreeFactor>();
   fg.push_back(discreteFactor);
 
-  auto dcFactor = std::make_shared<MixtureFactor>();
+  auto dcFactor = std::make_shared<HybridNonlinearFactor>();
   fg.push_back(dcFactor);
 
   EXPECT_LONGS_EQUAL(fg.size(), 3);
@@ -132,7 +132,7 @@ TEST(HybridGaussianFactorGraph, Resize) {
        moving = std::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
 
   std::vector<MotionModel::shared_ptr> components = {still, moving};
-  auto dcFactor = std::make_shared<MixtureFactor>(
+  auto dcFactor = std::make_shared<HybridNonlinearFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
   nhfg.push_back(dcFactor);
 
@@ -150,10 +150,10 @@ TEST(HybridGaussianFactorGraph, Resize) {
 }
 
 /***************************************************************************
- * Test that the MixtureFactor reports correctly if the number of continuous
+ * Test that the HybridNonlinearFactor reports correctly if the number of continuous
  * keys provided do not match the keys in the factors.
  */
-TEST(HybridGaussianFactorGraph, MixtureFactor) {
+TEST(HybridGaussianFactorGraph, HybridNonlinearFactor) {
   auto nonlinearFactor = std::make_shared<BetweenFactor<double>>(
       X(0), X(1), 0.0, Isotropic::Sigma(1, 0.1));
   auto discreteFactor = std::make_shared<DecisionTreeFactor>();
@@ -166,12 +166,12 @@ TEST(HybridGaussianFactorGraph, MixtureFactor) {
 
   // Check for exception when number of continuous keys are under-specified.
   KeyVector contKeys = {X(0)};
-  THROWS_EXCEPTION(std::make_shared<MixtureFactor>(
+  THROWS_EXCEPTION(std::make_shared<HybridNonlinearFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components));
 
   // Check for exception when number of continuous keys are too many.
   contKeys = {X(0), X(1), X(2)};
-  THROWS_EXCEPTION(std::make_shared<MixtureFactor>(
+  THROWS_EXCEPTION(std::make_shared<HybridNonlinearFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components));
 }
 
@@ -195,7 +195,7 @@ TEST(HybridFactorGraph, PushBack) {
 
   fg = HybridNonlinearFactorGraph();
 
-  auto dcFactor = std::make_shared<MixtureFactor>();
+  auto dcFactor = std::make_shared<HybridNonlinearFactor>();
   fg.push_back(dcFactor);
 
   EXPECT_LONGS_EQUAL(fg.size(), 1);
@@ -800,7 +800,7 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
        moving = std::make_shared<PlanarMotionModel>(X(0), X(1), odometry,
                                                     noise_model);
   std::vector<PlanarMotionModel::shared_ptr> motion_models = {still, moving};
-  fg.emplace_shared<MixtureFactor>(
+  fg.emplace_shared<HybridNonlinearFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, motion_models);
 
   // Add Range-Bearing measurements to from X0 to L0 and X1 to L1.

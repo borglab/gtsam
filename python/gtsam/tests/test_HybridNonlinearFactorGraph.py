@@ -17,9 +17,9 @@ import unittest
 import numpy as np
 from gtsam.symbol_shorthand import C, X
 from gtsam.utils.test_case import GtsamTestCase
-from gtsam import BetweenFactorPoint3, noiseModel, PriorFactorPoint3, Point3
 
 import gtsam
+from gtsam import BetweenFactorPoint3, Point3, PriorFactorPoint3, noiseModel
 
 
 class TestHybridGaussianFactorGraph(GtsamTestCase):
@@ -34,7 +34,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
             PriorFactorPoint3(2, Point3(1, 2, 3),
                               noiseModel.Diagonal.Variances([0.5, 0.5, 0.5])))
         nlfg.push_back(
-            gtsam.MixtureFactor([1], dk, [
+            gtsam.HybridNonlinearFactor([1], dk, [
                 PriorFactorPoint3(1, Point3(0, 0, 0),
                                   noiseModel.Unit.Create(3)),
                 PriorFactorPoint3(1, Point3(1, 2, 1),
