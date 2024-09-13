@@ -72,7 +72,7 @@ HybridGaussianConditional::HybridGaussianConditional(
 
 /* *******************************************************************************/
 // TODO(dellaert): This is copy/paste: HybridGaussianConditional should be derived from
-// GaussianMixtureFactor, no?
+// HybridGaussianFactor, no?
 GaussianFactorGraphTree HybridGaussianConditional::add(
     const GaussianFactorGraphTree &sum) const {
   using Y = GaussianFactorGraph;
@@ -203,7 +203,7 @@ bool HybridGaussianConditional::allFrontalsGiven(const VectorValues &given) cons
 }
 
 /* ************************************************************************* */
-std::shared_ptr<GaussianMixtureFactor> HybridGaussianConditional::likelihood(
+std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
     const VectorValues &given) const {
   if (!allFrontalsGiven(given)) {
     throw std::runtime_error(
@@ -212,7 +212,7 @@ std::shared_ptr<GaussianMixtureFactor> HybridGaussianConditional::likelihood(
 
   const DiscreteKeys discreteParentKeys = discreteKeys();
   const KeyVector continuousParentKeys = continuousParents();
-  const GaussianMixtureFactor::Factors likelihoods(
+  const HybridGaussianFactor::Factors likelihoods(
       conditionals_, [&](const GaussianConditional::shared_ptr &conditional) {
         const auto likelihood_m = conditional->likelihood(given);
         const double Cgm_Kgcm =
@@ -231,7 +231,7 @@ std::shared_ptr<GaussianMixtureFactor> HybridGaussianConditional::likelihood(
           return std::make_shared<JacobianFactor>(gfg);
         }
       });
-  return std::make_shared<GaussianMixtureFactor>(
+  return std::make_shared<HybridGaussianFactor>(
       continuousParentKeys, discreteParentKeys, likelihoods);
 }
 

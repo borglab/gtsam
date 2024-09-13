@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testGaussianMixtureFactor.cpp
+ * @file    testHybridGaussianFactor.cpp
  * @brief   Unit tests for HybridGaussianFactor
  * @author  Varun Agrawal
  * @author  Fan Jiang

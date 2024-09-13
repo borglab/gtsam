@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testMixtureFactor.cpp
+ * @file    testHybridNonlinearFactor.cpp
  * @brief   Unit tests for HybridNonlinearFactor
  * @author  Varun Agrawal
  * @date    October 2022
