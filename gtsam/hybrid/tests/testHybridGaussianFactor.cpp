@@ -399,17 +399,15 @@ void addMeasurement(HybridBayesNet& hbn, Key z_key, Key x_key, double sigma) {
 }
 
 /// Create hybrid motion model p(x1 | x0, m1)
-static GaussianMixture::shared_ptr CreateHybridMotionModel(double mu0,
-                                                           double mu1,
-                                                           double sigma0,
-                                                           double sigma1) {
+static HybridGaussianConditional::shared_ptr CreateHybridMotionModel(
+    double mu0, double mu1, double sigma0, double sigma1) {
   auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
   auto model1 = noiseModel::Isotropic::Sigma(1, sigma1);
   auto c0 = make_shared<GaussianConditional>(X(1), Vector1(mu0), I_1x1, X(0),
                                              -I_1x1, model0),
        c1 = make_shared<GaussianConditional>(X(1), Vector1(mu1), I_1x1, X(0),
                                              -I_1x1, model1);
-  return std::make_shared<GaussianMixture>(
+  return std::make_shared<HybridGaussianConditional>(
       KeyVector{X(1)}, KeyVector{X(0)}, DiscreteKeys{m1}, std::vector{c0, c1});
 }
 
@@ -621,7 +619,7 @@ TEST(HybridGaussianFactor, TwoStateModel2) {
  * measurements and vastly different motion model: either stand still or move
  * far. This yields a very informative posterior.
  */
-TEST(GaussianMixtureFactor, TwoStateModel3) {
+TEST(HybridGaussianFactor, TwoStateModel3) {
   using namespace test_two_state_estimation;
 
   double mu0 = 0.0, mu1 = 10.0;
