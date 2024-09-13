@@ -436,16 +436,6 @@ HybridBayesNet CreateBayesNet(
   return hbn;
 }
 
-/**
- * @brief Approximates the discrete marginal P(m1) using importance sampling.
- * @note Not typically called as expensive, but values are used in the tests.
- *
- * @param hbn The hybrid Bayesian network.
- * @param hybridMotionModel The hybrid motion model.
- * @param given Observed values for variables.
- * @param N Number of samples for importance sampling.
- * @return std::pair<double, double> Probabilities for m1 = 0 and m1 = 1.
- */
 /// Approximate the discrete marginal P(m1) using importance sampling
 std::pair<double, double> approximateDiscreteMarginal(
     const HybridBayesNet& hbn,
