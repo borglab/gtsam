@@ -53,7 +53,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   using sharedFactor = std::shared_ptr<GaussianFactor>;
 
   /// typedef for Decision Tree of Gaussian factors and log-constant.
-  using Factors = DecisionTree<Key, sharedFactor>;
+  using Factors = DecisionTree<Key, std::pair<sharedFactor, double>>;
 
  private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
@@ -80,8 +80,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * @param continuousKeys A vector of keys representing continuous variables.
    * @param discreteKeys A vector of keys representing discrete variables and
    * their cardinalities.
-   * @param factors The decision tree of Gaussian factors stored
-   * as the mixture density.
+   * @param factors The decision tree of Gaussian factors and arbitrary scalars.
    */
   HybridGaussianFactor(const KeyVector &continuousKeys,
                        const DiscreteKeys &discreteKeys,
@@ -93,11 +92,12 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    *
    * @param continuousKeys Vector of keys for continuous factors.
    * @param discreteKeys Vector of discrete keys.
-   * @param factors Vector of gaussian factor shared pointers.
+   * @param factors Vector of gaussian factor shared pointers
+   *  and arbitrary scalars.
    */
-  HybridGaussianFactor(const KeyVector &continuousKeys,
-                       const DiscreteKeys &discreteKeys,
-                       const std::vector<sharedFactor> &factors)
+  HybridGaussianFactor(
+      const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys,
+      const std::vector<std::pair<sharedFactor, double>> &factors)
       : HybridGaussianFactor(continuousKeys, discreteKeys,
                              Factors(discreteKeys, factors)) {}
 
@@ -114,8 +114,9 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// @name Standard API
   /// @{
 
-  /// Get factor at a given discrete assignment.
-  sharedFactor operator()(const DiscreteValues &assignment) const;
+  /// Get the factor and scalar at a given discrete assignment.
+  std::pair<sharedFactor, double> operator()(
+      const DiscreteValues &assignment) const;
 
   /**
    * @brief Combine the Gaussian Factor Graphs in `sum` and `this` while

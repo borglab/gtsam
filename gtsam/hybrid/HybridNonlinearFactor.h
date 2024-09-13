@@ -245,10 +245,11 @@ class HybridNonlinearFactor : public HybridFactor {
       const Values& continuousValues) const {
     // functional to linearize each factor in the decision tree
     auto linearizeDT =
-        [continuousValues](const std::pair<sharedFactor, double>& f) {
-          auto [factor, val] = f;
-          return {factor->linearize(continuousValues), val};
-        };
+        [continuousValues](const std::pair<sharedFactor, double>& f)
+        -> std::pair<GaussianFactor::shared_ptr, double> {
+      auto [factor, val] = f;
+      return {factor->linearize(continuousValues), val};
+    };
 
     DecisionTree<Key, std::pair<GaussianFactor::shared_ptr, double>>
         linearized_factors(factors_, linearizeDT);
