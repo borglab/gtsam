@@ -46,7 +46,7 @@ namespace gtsam {
    *   Gaussian density over a set of continuous variables.
    * - \b Discrete conditionals, implemented in \class DiscreteConditional, which
    *   represent a discrete conditional distribution over discrete variables.
-   * - \b Hybrid conditional densities, such as \class GaussianMixture, which is 
+   * - \b Hybrid conditional densities, such as \class HybridGaussianConditional, which is 
    *   a density over continuous variables given discrete/continuous parents.
    * - \b Symbolic factors, used to represent a graph structure, implemented in 
    *   \class SymbolicConditional. Only used for symbolic elimination etc.

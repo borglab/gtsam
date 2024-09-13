@@ -138,7 +138,7 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &originalGraph,
 }
 
 /* ************************************************************************* */
-GaussianMixture::shared_ptr HybridSmoother::gaussianMixture(
+HybridGaussianConditional::shared_ptr HybridSmoother::gaussianMixture(
     size_t index) const {
   return hybridBayesNet_.at(index)->asMixture();
 }

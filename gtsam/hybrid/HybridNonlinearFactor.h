@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   MixtureFactor.h
+ * @file   HybridNonlinearFactor.h
  * @brief  Nonlinear Mixture factor of continuous and discrete.
  * @author Kevin Doherty, kdoherty@mit.edu
  * @author Varun Agrawal
@@ -20,7 +20,7 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -44,11 +44,11 @@ namespace gtsam {
  * one of (NonlinearFactor, GaussianFactor) which can then be checked to perform
  * the correct operation.
  */
-class MixtureFactor : public HybridFactor {
+class HybridNonlinearFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
-  using This = MixtureFactor;
-  using shared_ptr = std::shared_ptr<MixtureFactor>;
+  using This = HybridNonlinearFactor;
+  using shared_ptr = std::shared_ptr<HybridNonlinearFactor>;
   using sharedFactor = std::shared_ptr<NonlinearFactor>;
 
   /**
@@ -63,7 +63,7 @@ class MixtureFactor : public HybridFactor {
   bool normalized_;
 
  public:
-  MixtureFactor() = default;
+  HybridNonlinearFactor() = default;
 
   /**
    * @brief Construct from Decision tree.
@@ -74,8 +74,8 @@ class MixtureFactor : public HybridFactor {
    * @param normalized Flag indicating if the factor error is already
    * normalized.
    */
-  MixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                const Factors& factors, bool normalized = false)
+  HybridNonlinearFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
+                        const Factors& factors, bool normalized = false)
       : Base(keys, discreteKeys), factors_(factors), normalized_(normalized) {}
 
   /**
@@ -95,9 +95,9 @@ class MixtureFactor : public HybridFactor {
    * normalized.
    */
   template <typename FACTOR>
-  MixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                const std::vector<std::shared_ptr<FACTOR>>& factors,
-                bool normalized = false)
+  HybridNonlinearFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
+                        const std::vector<std::shared_ptr<FACTOR>>& factors,
+                        bool normalized = false)
       : Base(keys, discreteKeys), normalized_(normalized) {
     std::vector<NonlinearFactor::shared_ptr> nonlinear_factors;
     KeySet continuous_keys_set(keys.begin(), keys.end());
@@ -111,7 +111,7 @@ class MixtureFactor : public HybridFactor {
         nonlinear_factors.push_back(nf);
       } else {
         throw std::runtime_error(
-            "Factors passed into MixtureFactor need to be nonlinear!");
+            "Factors passed into HybridNonlinearFactor need to be nonlinear!");
       }
     }
     factors_ = Factors(discreteKeys, nonlinear_factors);
@@ -124,7 +124,7 @@ class MixtureFactor : public HybridFactor {
   }
 
   /**
-   * @brief Compute error of the MixtureFactor as a tree.
+   * @brief Compute error of the HybridNonlinearFactor as a tree.
    *
    * @param continuousValues The continuous values for which to compute the
    * error.
@@ -188,7 +188,7 @@ class MixtureFactor : public HybridFactor {
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << (s.empty() ? "" : s + " ");
     Base::print("", keyFormatter);
-    std::cout << "\nMixtureFactor\n";
+    std::cout << "\nHybridNonlinearFactor\n";
     auto valueFormatter = [](const sharedFactor& v) {
       if (v) {
         return "Nonlinear factor on " + std::to_string(v->size()) + " keys";
@@ -201,15 +201,16 @@ class MixtureFactor : public HybridFactor {
 
   /// Check equality
   bool equals(const HybridFactor& other, double tol = 1e-9) const override {
-    // We attempt a dynamic cast from HybridFactor to MixtureFactor. If it
-    // fails, return false.
-    if (!dynamic_cast<const MixtureFactor*>(&other)) return false;
+    // We attempt a dynamic cast from HybridFactor to HybridNonlinearFactor. If
+    // it fails, return false.
+    if (!dynamic_cast<const HybridNonlinearFactor*>(&other)) return false;
 
-    // If the cast is successful, we'll properly construct a MixtureFactor
-    // object from `other`
-    const MixtureFactor& f(static_cast<const MixtureFactor&>(other));
+    // If the cast is successful, we'll properly construct a
+    // HybridNonlinearFactor object from `other`
+    const HybridNonlinearFactor& f(
+        static_cast<const HybridNonlinearFactor&>(other));
 
-    // Ensure that this MixtureFactor and `f` have the same `factors_`.
+    // Ensure that this HybridNonlinearFactor and `f` have the same `factors_`.
     auto compare = [tol](const sharedFactor& a, const sharedFactor& b) {
       return traits<NonlinearFactor>::Equals(*a, *b, tol);
     };
@@ -233,8 +234,8 @@ class MixtureFactor : public HybridFactor {
     return factor->linearize(continuousValues);
   }
 
-  /// Linearize all the continuous factors to get a GaussianMixtureFactor.
-  std::shared_ptr<GaussianMixtureFactor> linearize(
+  /// Linearize all the continuous factors to get a HybridGaussianFactor.
+  std::shared_ptr<HybridGaussianFactor> linearize(
       const Values& continuousValues) const {
     // functional to linearize each factor in the decision tree
     auto linearizeDT = [continuousValues](const sharedFactor& factor) {
@@ -244,7 +245,7 @@ class MixtureFactor : public HybridFactor {
     DecisionTree<Key, GaussianFactor::shared_ptr> linearized_factors(
         factors_, linearizeDT);
 
-    return std::make_shared<GaussianMixtureFactor>(
+    return std::make_shared<HybridGaussianFactor>(
         continuousKeys_, discreteKeys_, linearized_factors);
   }
 

@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testGaussianMixture.cpp
- * @brief   Unit tests for GaussianMixture class
+ * @file    testHybridGaussianConditional.cpp
+ * @brief   Unit tests for HybridGaussianConditional class
  * @author  Varun Agrawal
  * @author  Fan Jiang
  * @author  Frank Dellaert
@@ -19,8 +19,8 @@
  */
 
 #include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -45,19 +45,19 @@ static const HybridValues hv1{vv, assignment1};
 
 /* ************************************************************************* */
 namespace equal_constants {
-// Create a simple GaussianMixture
+// Create a simple HybridGaussianConditional
 const double commonSigma = 2.0;
 const std::vector<GaussianConditional::shared_ptr> conditionals{
     GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
                                              commonSigma),
     GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
                                              commonSigma)};
-const GaussianMixture mixture({Z(0)}, {X(0)}, {mode}, conditionals);
+const HybridGaussianConditional mixture({Z(0)}, {X(0)}, {mode}, conditionals);
 }  // namespace equal_constants
 
 /* ************************************************************************* */
 /// Check that invariants hold
-TEST(GaussianMixture, Invariants) {
+TEST(HybridGaussianConditional, Invariants) {
   using namespace equal_constants;
 
   // Check that the mixture normalization constant is the max of all constants
@@ -66,13 +66,13 @@ TEST(GaussianMixture, Invariants) {
   EXPECT_DOUBLES_EQUAL(K, conditionals[0]->logNormalizationConstant(), 1e-8);
   EXPECT_DOUBLES_EQUAL(K, conditionals[1]->logNormalizationConstant(), 1e-8);
 
-  EXPECT(GaussianMixture::CheckInvariants(mixture, hv0));
-  EXPECT(GaussianMixture::CheckInvariants(mixture, hv1));
+  EXPECT(HybridGaussianConditional::CheckInvariants(mixture, hv0));
+  EXPECT(HybridGaussianConditional::CheckInvariants(mixture, hv1));
 }
 
 /* ************************************************************************* */
 /// Check LogProbability.
-TEST(GaussianMixture, LogProbability) {
+TEST(HybridGaussianConditional, LogProbability) {
   using namespace equal_constants;
   auto actual = mixture.logProbability(vv);
 
@@ -94,7 +94,7 @@ TEST(GaussianMixture, LogProbability) {
 
 /* ************************************************************************* */
 /// Check error.
-TEST(GaussianMixture, Error) {
+TEST(HybridGaussianConditional, Error) {
   using namespace equal_constants;
   auto actual = mixture.errorTree(vv);
 
@@ -117,7 +117,7 @@ TEST(GaussianMixture, Error) {
 /* ************************************************************************* */
 /// Check that the likelihood is proportional to the conditional density given
 /// the measurements.
-TEST(GaussianMixture, Likelihood) {
+TEST(HybridGaussianConditional, Likelihood) {
   using namespace equal_constants;
 
   // Compute likelihood
@@ -146,19 +146,19 @@ TEST(GaussianMixture, Likelihood) {
 
 /* ************************************************************************* */
 namespace mode_dependent_constants {
-// Create a GaussianMixture with mode-dependent noise models.
+// Create a HybridGaussianConditional with mode-dependent noise models.
 // 0 is low-noise, 1 is high-noise.
 const std::vector<GaussianConditional::shared_ptr> conditionals{
     GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
                                              0.5),
     GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
                                              3.0)};
-const GaussianMixture mixture({Z(0)}, {X(0)}, {mode}, conditionals);
+const HybridGaussianConditional mixture({Z(0)}, {X(0)}, {mode}, conditionals);
 }  // namespace mode_dependent_constants
 
 /* ************************************************************************* */
 // Create a test for continuousParents.
-TEST(GaussianMixture, ContinuousParents) {
+TEST(HybridGaussianConditional, ContinuousParents) {
   using namespace mode_dependent_constants;
   const KeyVector continuousParentKeys = mixture.continuousParents();
   // Check that the continuous parent keys are correct:
@@ -169,7 +169,7 @@ TEST(GaussianMixture, ContinuousParents) {
 /* ************************************************************************* */
 /// Check that the likelihood is proportional to the conditional density given
 /// the measurements.
-TEST(GaussianMixture, Likelihood2) {
+TEST(HybridGaussianConditional, Likelihood2) {
   using namespace mode_dependent_constants;
 
   // Compute likelihood

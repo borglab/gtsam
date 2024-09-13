@@ -19,10 +19,10 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearISAM.h>
 #include <gtsam/hybrid/HybridSmoother.h>
-#include <gtsam/hybrid/MixtureFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianBayesTree.h>
@@ -435,7 +435,7 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
   const auto one_motion =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
-  nfg.emplace_shared<MixtureFactor>(
+  nfg.emplace_shared<HybridNonlinearFactor>(
       KeyVector{X(0), X(1)}, DiscreteKeys{m},
       std::vector<NonlinearFactor::shared_ptr>{zero_motion, one_motion});
 
@@ -531,10 +531,10 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
  * Helper function to add the constant term corresponding to
  * the difference in noise models.
  */
-std::shared_ptr<GaussianMixtureFactor> mixedVarianceFactor(
-    const MixtureFactor& mf, const Values& initial, const Key& mode,
+std::shared_ptr<HybridGaussianFactor> mixedVarianceFactor(
+    const HybridNonlinearFactor& mf, const Values& initial, const Key& mode,
     double noise_tight, double noise_loose, size_t d, size_t tight_index) {
-  GaussianMixtureFactor::shared_ptr gmf = mf.linearize(initial);
+  HybridGaussianFactor::shared_ptr gmf = mf.linearize(initial);
 
   constexpr double log2pi = 1.8378770664093454835606594728112;
   // logConstant will be of the tighter model
@@ -560,7 +560,7 @@ std::shared_ptr<GaussianMixtureFactor> mixedVarianceFactor(
     }
   };
   auto updated_components = gmf->factors().apply(func);
-  auto updated_gmf = std::make_shared<GaussianMixtureFactor>(
+  auto updated_gmf = std::make_shared<HybridGaussianFactor>(
       gmf->continuousKeys(), gmf->discreteKeys(), updated_components);
 
   return updated_gmf;
@@ -592,7 +592,7 @@ TEST(HybridEstimation, ModeSelection) {
   std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
 
   KeyVector keys = {X(0), X(1)};
-  MixtureFactor mf(keys, modes, components);
+  HybridNonlinearFactor mf(keys, modes, components);
 
   initial.insert(X(0), 0.0);
   initial.insert(X(1), 0.0);
@@ -616,7 +616,7 @@ TEST(HybridEstimation, ModeSelection) {
       GaussianConditional::sharedMeanAndStddev(Z(0), -I_1x1, X(0), Z_1x1, 0.1));
   bn.push_back(
       GaussianConditional::sharedMeanAndStddev(Z(0), -I_1x1, X(1), Z_1x1, 0.1));
-  bn.emplace_shared<GaussianMixture>(
+  bn.emplace_shared<HybridGaussianConditional>(
       KeyVector{Z(0)}, KeyVector{X(0), X(1)}, DiscreteKeys{mode},
       std::vector{GaussianConditional::sharedMeanAndStddev(
                       Z(0), I_1x1, X(0), -I_1x1, X(1), Z_1x1, noise_loose),
@@ -647,7 +647,7 @@ TEST(HybridEstimation, ModeSelection2) {
       GaussianConditional::sharedMeanAndStddev(Z(0), -I_3x3, X(0), Z_3x1, 0.1));
   bn.push_back(
       GaussianConditional::sharedMeanAndStddev(Z(0), -I_3x3, X(1), Z_3x1, 0.1));
-  bn.emplace_shared<GaussianMixture>(
+  bn.emplace_shared<HybridGaussianConditional>(
       KeyVector{Z(0)}, KeyVector{X(0), X(1)}, DiscreteKeys{mode},
       std::vector{GaussianConditional::sharedMeanAndStddev(
                       Z(0), I_3x3, X(0), -I_3x3, X(1), Z_3x1, noise_loose),
@@ -683,7 +683,7 @@ TEST(HybridEstimation, ModeSelection2) {
   std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
 
   KeyVector keys = {X(0), X(1)};
-  MixtureFactor mf(keys, modes, components);
+  HybridNonlinearFactor mf(keys, modes, components);
 
   initial.insert<Vector3>(X(0), Z_3x1);
   initial.insert<Vector3>(X(1), Z_3x1);

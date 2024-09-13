@@ -21,12 +21,12 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/hybrid/HybridValues.h>
@@ -71,13 +71,14 @@ TEST(HybridGaussianFactorGraph, Creation) {
 
   // Define a gaussian mixture conditional P(x0|x1, c0) and add it to the factor
   // graph
-  GaussianMixture gm({X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{M(0), 2}),
-                     GaussianMixture::Conditionals(
-                         M(0),
-                         std::make_shared<GaussianConditional>(
-                             X(0), Z_3x1, I_3x3, X(1), I_3x3),
-                         std::make_shared<GaussianConditional>(
-                             X(0), Vector3::Ones(), I_3x3, X(1), I_3x3)));
+  HybridGaussianConditional gm(
+      {X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{M(0), 2}),
+      HybridGaussianConditional::Conditionals(
+          M(0),
+          std::make_shared<GaussianConditional>(X(0), Z_3x1, I_3x3, X(1),
+                                                I_3x3),
+          std::make_shared<GaussianConditional>(X(0), Vector3::Ones(), I_3x3,
+                                                X(1), I_3x3)));
   hfg.add(gm);
 
   EXPECT_LONGS_EQUAL(2, hfg.size());
@@ -129,7 +130,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
   DecisionTree<Key, GaussianFactor::shared_ptr> dt(
       M(1), std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
-  hfg.add(GaussianMixtureFactor({X(1)}, {m1}, dt));
+  hfg.add(HybridGaussianFactor({X(1)}, {m1}, dt));
 
   auto result = hfg.eliminateSequential();
 
@@ -155,7 +156,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
   std::vector<GaussianFactor::shared_ptr> factors = {
       std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())};
-  hfg.add(GaussianMixtureFactor({X(1)}, {m1}, factors));
+  hfg.add(HybridGaussianFactor({X(1)}, {m1}, factors));
 
   // Discrete probability table for c1
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
@@ -177,7 +178,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  hfg.add(GaussianMixtureFactor(
+  hfg.add(HybridGaussianFactor(
       {X(1)}, {{M(1), 2}},
       {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
        std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())}));
@@ -212,7 +213,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
       std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
 
   // Hybrid factor P(x1|c1)
-  hfg.add(GaussianMixtureFactor({X(1)}, {m}, dt));
+  hfg.add(HybridGaussianFactor({X(1)}, {m}, dt));
   // Prior factor on c1
   hfg.add(DecisionTreeFactor(m, {2, 8}));
 
@@ -237,7 +238,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
 
   {
-    hfg.add(GaussianMixtureFactor(
+    hfg.add(HybridGaussianFactor(
         {X(0)}, {{M(0), 2}},
         {std::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1),
          std::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones())}));
@@ -246,7 +247,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
         M(1), std::make_shared<JacobianFactor>(X(2), I_3x3, Z_3x1),
         std::make_shared<JacobianFactor>(X(2), I_3x3, Vector3::Ones()));
 
-    hfg.add(GaussianMixtureFactor({X(2)}, {{M(1), 2}}, dt1));
+    hfg.add(HybridGaussianFactor({X(2)}, {{M(1), 2}}, dt1));
   }
 
   hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
@@ -259,13 +260,13 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
         M(3), std::make_shared<JacobianFactor>(X(3), I_3x3, Z_3x1),
         std::make_shared<JacobianFactor>(X(3), I_3x3, Vector3::Ones()));
 
-    hfg.add(GaussianMixtureFactor({X(3)}, {{M(3), 2}}, dt));
+    hfg.add(HybridGaussianFactor({X(3)}, {{M(3), 2}}, dt));
 
     DecisionTree<Key, GaussianFactor::shared_ptr> dt1(
         M(2), std::make_shared<JacobianFactor>(X(5), I_3x3, Z_3x1),
         std::make_shared<JacobianFactor>(X(5), I_3x3, Vector3::Ones()));
 
-    hfg.add(GaussianMixtureFactor({X(5)}, {{M(2), 2}}, dt1));
+    hfg.add(HybridGaussianFactor({X(5)}, {{M(2), 2}}, dt1));
   }
 
   auto ordering_full =
@@ -555,7 +556,7 @@ TEST(HybridGaussianFactorGraph, optimize) {
       C(1), std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
 
-  hfg.add(GaussianMixtureFactor({X(1)}, {c1}, dt));
+  hfg.add(HybridGaussianFactor({X(1)}, {c1}, dt));
 
   auto result = hfg.eliminateSequential();
 
@@ -681,8 +682,8 @@ TEST(HybridGaussianFactorGraph, ErrorTreeWithConditional) {
                                              x0, -I_1x1, model0),
        c1 = make_shared<GaussianConditional>(f01, Vector1(mu), I_1x1, x1, I_1x1,
                                              x0, -I_1x1, model1);
-  hbn.emplace_shared<GaussianMixture>(KeyVector{f01}, KeyVector{x0, x1},
-                                      DiscreteKeys{m1}, std::vector{c0, c1});
+  hbn.emplace_shared<HybridGaussianConditional>(
+      KeyVector{f01}, KeyVector{x0, x1}, DiscreteKeys{m1}, std::vector{c0, c1});
 
   // Discrete uniform prior.
   hbn.emplace_shared<DiscreteConditional>(m1, "0.5/0.5");
@@ -717,7 +718,7 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   // Create expected decision tree with two factor graphs:
 
   // Get mixture factor:
-  auto mixture = fg.at<GaussianMixtureFactor>(0);
+  auto mixture = fg.at<HybridGaussianFactor>(0);
   CHECK(mixture);
 
   // Get prior factor:
@@ -805,7 +806,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
                  X(0), Vector1(14.1421), I_1x1 * 2.82843),
              conditional1 = std::make_shared<GaussianConditional>(
                  X(0), Vector1(10.1379), I_1x1 * 2.02759);
-  expectedBayesNet.emplace_shared<GaussianMixture>(
+  expectedBayesNet.emplace_shared<HybridGaussianConditional>(
       KeyVector{X(0)}, KeyVector{}, DiscreteKeys{mode},
       std::vector{conditional0, conditional1});
 
@@ -830,7 +831,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1Swapped) {
   HybridBayesNet bn;
 
   // Create Gaussian mixture z_0 = x0 + noise for each measurement.
-  auto gm = std::make_shared<GaussianMixture>(
+  auto gm = std::make_shared<HybridGaussianConditional>(
       KeyVector{Z(0)}, KeyVector{X(0)}, DiscreteKeys{mode},
       std::vector{
           GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Z_1x1, 3),
@@ -862,7 +863,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1Swapped) {
                  X(0), Vector1(10.1379), I_1x1 * 2.02759),
              conditional1 = std::make_shared<GaussianConditional>(
                  X(0), Vector1(14.1421), I_1x1 * 2.82843);
-  expectedBayesNet.emplace_shared<GaussianMixture>(
+  expectedBayesNet.emplace_shared<HybridGaussianConditional>(
       KeyVector{X(0)}, KeyVector{}, DiscreteKeys{mode},
       std::vector{conditional0, conditional1});
 
@@ -899,7 +900,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
                  X(0), Vector1(17.3205), I_1x1 * 3.4641),
              conditional1 = std::make_shared<GaussianConditional>(
                  X(0), Vector1(10.274), I_1x1 * 2.0548);
-  expectedBayesNet.emplace_shared<GaussianMixture>(
+  expectedBayesNet.emplace_shared<HybridGaussianConditional>(
       KeyVector{X(0)}, KeyVector{}, DiscreteKeys{mode},
       std::vector{conditional0, conditional1});
 
@@ -946,7 +947,7 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   for (size_t t : {0, 1, 2}) {
     // Create Gaussian mixture on Z(t) conditioned on X(t) and mode N(t):
     const auto noise_mode_t = DiscreteKey{N(t), 2};
-    bn.emplace_shared<GaussianMixture>(
+    bn.emplace_shared<HybridGaussianConditional>(
         KeyVector{Z(t)}, KeyVector{X(t)}, DiscreteKeys{noise_mode_t},
         std::vector{GaussianConditional::sharedMeanAndStddev(Z(t), I_1x1, X(t),
                                                              Z_1x1, 0.5),
@@ -961,7 +962,7 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   for (size_t t : {2, 1}) {
     // Create Gaussian mixture on X(t) conditioned on X(t-1) and mode M(t-1):
     const auto motion_model_t = DiscreteKey{M(t), 2};
-    auto gm = std::make_shared<GaussianMixture>(
+    auto gm = std::make_shared<HybridGaussianConditional>(
         KeyVector{X(t)}, KeyVector{X(t - 1)}, DiscreteKeys{motion_model_t},
         std::vector{GaussianConditional::sharedMeanAndStddev(
                         X(t), I_1x1, X(t - 1), Z_1x1, 0.2),

@@ -18,11 +18,11 @@
 
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianConditional.h>
 
@@ -51,29 +51,30 @@ BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree");
 BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf");
 BOOST_CLASS_EXPORT_GUID(ADT::Choice, "gtsam_AlgebraicDecisionTree_Choice")
 
-BOOST_CLASS_EXPORT_GUID(GaussianMixtureFactor, "gtsam_GaussianMixtureFactor");
-BOOST_CLASS_EXPORT_GUID(GaussianMixtureFactor::Factors,
-                        "gtsam_GaussianMixtureFactor_Factors");
-BOOST_CLASS_EXPORT_GUID(GaussianMixtureFactor::Factors::Leaf,
-                        "gtsam_GaussianMixtureFactor_Factors_Leaf");
-BOOST_CLASS_EXPORT_GUID(GaussianMixtureFactor::Factors::Choice,
-                        "gtsam_GaussianMixtureFactor_Factors_Choice");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor, "gtsam_HybridGaussianFactor");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors,
+                        "gtsam_HybridGaussianFactor_Factors");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Leaf,
+                        "gtsam_HybridGaussianFactor_Factors_Leaf");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Choice,
+                        "gtsam_HybridGaussianFactor_Factors_Choice");
 
-BOOST_CLASS_EXPORT_GUID(GaussianMixture, "gtsam_GaussianMixture");
-BOOST_CLASS_EXPORT_GUID(GaussianMixture::Conditionals,
-                        "gtsam_GaussianMixture_Conditionals");
-BOOST_CLASS_EXPORT_GUID(GaussianMixture::Conditionals::Leaf,
-                        "gtsam_GaussianMixture_Conditionals_Leaf");
-BOOST_CLASS_EXPORT_GUID(GaussianMixture::Conditionals::Choice,
-                        "gtsam_GaussianMixture_Conditionals_Choice");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional,
+                        "gtsam_HybridGaussianConditional");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals,
+                        "gtsam_HybridGaussianConditional_Conditionals");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals::Leaf,
+                        "gtsam_HybridGaussianConditional_Conditionals_Leaf");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals::Choice,
+                        "gtsam_HybridGaussianConditional_Conditionals_Choice");
 // Needed since GaussianConditional::FromMeanAndStddev uses it
 BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
 
 BOOST_CLASS_EXPORT_GUID(HybridBayesNet, "gtsam_HybridBayesNet");
 
 /* ****************************************************************************/
-// Test GaussianMixtureFactor serialization.
-TEST(HybridSerialization, GaussianMixtureFactor) {
+// Test HybridGaussianFactor serialization.
+TEST(HybridSerialization, HybridGaussianFactor) {
   KeyVector continuousKeys{X(0)};
   DiscreteKeys discreteKeys{{M(0), 2}};
 
@@ -84,11 +85,11 @@ TEST(HybridSerialization, GaussianMixtureFactor) {
   auto f1 = std::make_shared<JacobianFactor>(X(0), A, b1);
   std::vector<GaussianFactor::shared_ptr> factors{f0, f1};
 
-  const GaussianMixtureFactor factor(continuousKeys, discreteKeys, factors);
+  const HybridGaussianFactor factor(continuousKeys, discreteKeys, factors);
 
-  EXPECT(equalsObj<GaussianMixtureFactor>(factor));
-  EXPECT(equalsXML<GaussianMixtureFactor>(factor));
-  EXPECT(equalsBinary<GaussianMixtureFactor>(factor));
+  EXPECT(equalsObj<HybridGaussianFactor>(factor));
+  EXPECT(equalsXML<HybridGaussianFactor>(factor));
+  EXPECT(equalsBinary<HybridGaussianFactor>(factor));
 }
 
 /* ****************************************************************************/
@@ -106,20 +107,20 @@ TEST(HybridSerialization, HybridConditional) {
 }
 
 /* ****************************************************************************/
-// Test GaussianMixture serialization.
-TEST(HybridSerialization, GaussianMixture) {
+// Test HybridGaussianConditional serialization.
+TEST(HybridSerialization, HybridGaussianConditional) {
   const DiscreteKey mode(M(0), 2);
   Matrix1 I = Matrix1::Identity();
   const auto conditional0 = std::make_shared<GaussianConditional>(
       GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 0.5));
   const auto conditional1 = std::make_shared<GaussianConditional>(
       GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 3));
-  const GaussianMixture gm({Z(0)}, {X(0)}, {mode},
-                           {conditional0, conditional1});
+  const HybridGaussianConditional gm({Z(0)}, {X(0)}, {mode},
+                                     {conditional0, conditional1});
 
-  EXPECT(equalsObj<GaussianMixture>(gm));
-  EXPECT(equalsXML<GaussianMixture>(gm));
-  EXPECT(equalsBinary<GaussianMixture>(gm));
+  EXPECT(equalsObj<HybridGaussianConditional>(gm));
+  EXPECT(equalsXML<HybridGaussianConditional>(gm));
+  EXPECT(equalsBinary<HybridGaussianConditional>(gm));
 }
 
 /* ****************************************************************************/

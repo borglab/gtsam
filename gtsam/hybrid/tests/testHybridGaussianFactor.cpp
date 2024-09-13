@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testGaussianMixtureFactor.cpp
- * @brief   Unit tests for GaussianMixtureFactor
+ * @file    testHybridGaussianFactor.cpp
+ * @brief   Unit tests for HybridGaussianFactor
  * @author  Varun Agrawal
  * @author  Fan Jiang
  * @author  Frank Dellaert
@@ -22,9 +22,9 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Symbol.h>
@@ -46,17 +46,17 @@ using symbol_shorthand::Z;
 
 /* ************************************************************************* */
 // Check iterators of empty mixture.
-TEST(GaussianMixtureFactor, Constructor) {
-  GaussianMixtureFactor factor;
-  GaussianMixtureFactor::const_iterator const_it = factor.begin();
+TEST(HybridGaussianFactor, Constructor) {
+  HybridGaussianFactor factor;
+  HybridGaussianFactor::const_iterator const_it = factor.begin();
   CHECK(const_it == factor.end());
-  GaussianMixtureFactor::iterator it = factor.begin();
+  HybridGaussianFactor::iterator it = factor.begin();
   CHECK(it == factor.end());
 }
 
 /* ************************************************************************* */
 // "Add" two mixture factors together.
-TEST(GaussianMixtureFactor, Sum) {
+TEST(HybridGaussianFactor, Sum) {
   DiscreteKey m1(1, 2), m2(2, 3);
 
   auto A1 = Matrix::Zero(2, 1);
@@ -77,8 +77,8 @@ TEST(GaussianMixtureFactor, Sum) {
   // TODO(Frank): why specify keys at all? And: keys in factor should be *all*
   // keys, deviating from Kevin's scheme. Should we index DT on DiscreteKey?
   // Design review!
-  GaussianMixtureFactor mixtureFactorA({X(1), X(2)}, {m1}, factorsA);
-  GaussianMixtureFactor mixtureFactorB({X(1), X(3)}, {m2}, factorsB);
+  HybridGaussianFactor mixtureFactorA({X(1), X(2)}, {m1}, factorsA);
+  HybridGaussianFactor mixtureFactorB({X(1), X(3)}, {m2}, factorsB);
 
   // Check that number of keys is 3
   EXPECT_LONGS_EQUAL(3, mixtureFactorA.keys().size());
@@ -102,7 +102,7 @@ TEST(GaussianMixtureFactor, Sum) {
 }
 
 /* ************************************************************************* */
-TEST(GaussianMixtureFactor, Printing) {
+TEST(HybridGaussianFactor, Printing) {
   DiscreteKey m1(1, 2);
   auto A1 = Matrix::Zero(2, 1);
   auto A2 = Matrix::Zero(2, 2);
@@ -111,10 +111,10 @@ TEST(GaussianMixtureFactor, Printing) {
   auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
   std::vector<GaussianFactor::shared_ptr> factors{f10, f11};
 
-  GaussianMixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+  HybridGaussianFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 
   std::string expected =
-      R"(GaussianMixtureFactor
+      R"(HybridGaussianFactor
 Hybrid [x1 x2; 1]{
  Choice(1) 
  0 Leaf :
@@ -147,7 +147,7 @@ Hybrid [x1 x2; 1]{
 }
 
 /* ************************************************************************* */
-TEST(GaussianMixtureFactor, GaussianMixture) {
+TEST(HybridGaussianFactor, HybridGaussianConditional) {
   KeyVector keys;
   keys.push_back(X(0));
   keys.push_back(X(1));
@@ -157,15 +157,15 @@ TEST(GaussianMixtureFactor, GaussianMixture) {
   dKeys.emplace_back(M(1), 2);
 
   auto gaussians = std::make_shared<GaussianConditional>();
-  GaussianMixture::Conditionals conditionals(gaussians);
-  GaussianMixture gm({}, keys, dKeys, conditionals);
+  HybridGaussianConditional::Conditionals conditionals(gaussians);
+  HybridGaussianConditional gm({}, keys, dKeys, conditionals);
 
   EXPECT_LONGS_EQUAL(2, gm.discreteKeys().size());
 }
 
 /* ************************************************************************* */
-// Test the error of the GaussianMixtureFactor
-TEST(GaussianMixtureFactor, Error) {
+// Test the error of the HybridGaussianFactor
+TEST(HybridGaussianFactor, Error) {
   DiscreteKey m1(1, 2);
 
   auto A01 = Matrix2::Identity();
@@ -180,7 +180,7 @@ TEST(GaussianMixtureFactor, Error) {
   auto f1 = std::make_shared<JacobianFactor>(X(1), A11, X(2), A12, b);
   std::vector<GaussianFactor::shared_ptr> factors{f0, f1};
 
-  GaussianMixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+  HybridGaussianFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 
   VectorValues continuousValues;
   continuousValues.insert(X(1), Vector2(0, 0));
@@ -232,8 +232,8 @@ static HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1,
        c1 = make_shared<GaussianConditional>(z, Vector1(mu1), I_1x1, model1);
 
   HybridBayesNet hbn;
-  hbn.emplace_shared<GaussianMixture>(KeyVector{z}, KeyVector{},
-                                      DiscreteKeys{m}, std::vector{c0, c1});
+  hbn.emplace_shared<HybridGaussianConditional>(
+      KeyVector{z}, KeyVector{}, DiscreteKeys{m}, std::vector{c0, c1});
 
   auto mixing = make_shared<DiscreteConditional>(m, "50/50");
   hbn.push_back(mixing);
@@ -253,7 +253,7 @@ static HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1,
  * The resulting factor graph should eliminate to a Bayes net
  * which represents a sigmoid function.
  */
-TEST(GaussianMixtureFactor, GaussianMixtureModel) {
+TEST(HybridGaussianFactor, GaussianMixtureModel) {
   using namespace test_gmm;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -325,7 +325,7 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
  * which represents a Gaussian-like function
  * where m1>m0 close to 3.1333.
  */
-TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
+TEST(HybridGaussianFactor, GaussianMixtureModel2) {
   using namespace test_gmm;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -399,23 +399,21 @@ void addMeasurement(HybridBayesNet& hbn, Key z_key, Key x_key, double sigma) {
 }
 
 /// Create hybrid motion model p(x1 | x0, m1)
-static GaussianMixture::shared_ptr CreateHybridMotionModel(double mu0,
-                                                           double mu1,
-                                                           double sigma0,
-                                                           double sigma1) {
+static HybridGaussianConditional::shared_ptr CreateHybridMotionModel(
+    double mu0, double mu1, double sigma0, double sigma1) {
   auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
   auto model1 = noiseModel::Isotropic::Sigma(1, sigma1);
   auto c0 = make_shared<GaussianConditional>(X(1), Vector1(mu0), I_1x1, X(0),
                                              -I_1x1, model0),
        c1 = make_shared<GaussianConditional>(X(1), Vector1(mu1), I_1x1, X(0),
                                              -I_1x1, model1);
-  return std::make_shared<GaussianMixture>(
+  return std::make_shared<HybridGaussianConditional>(
       KeyVector{X(1)}, KeyVector{X(0)}, DiscreteKeys{m1}, std::vector{c0, c1});
 }
 
 /// Create two state Bayes network with 1 or two measurement models
 HybridBayesNet CreateBayesNet(
-    const GaussianMixture::shared_ptr& hybridMotionModel,
+    const HybridGaussianConditional::shared_ptr& hybridMotionModel,
     bool add_second_measurement = false) {
   HybridBayesNet hbn;
 
@@ -439,7 +437,7 @@ HybridBayesNet CreateBayesNet(
 /// Approximate the discrete marginal P(m1) using importance sampling
 std::pair<double, double> approximateDiscreteMarginal(
     const HybridBayesNet& hbn,
-    const GaussianMixture::shared_ptr& hybridMotionModel,
+    const HybridGaussianConditional::shared_ptr& hybridMotionModel,
     const VectorValues& given, size_t N = 100000) {
   /// Create importance sampling network q(x0,x1,m) = p(x1|x0,m1) q(x0) P(m1),
   /// using q(x0) = N(z0, sigmaQ) to sample x0.
@@ -478,7 +476,7 @@ std::pair<double, double> approximateDiscreteMarginal(
  * the posterior probability of m1 should be 0.5/0.5.
  * Getting a measurement on z1 gives use more information.
  */
-TEST(GaussianMixtureFactor, TwoStateModel) {
+TEST(HybridGaussianFactor, TwoStateModel) {
   using namespace test_two_state_estimation;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -534,7 +532,7 @@ TEST(GaussianMixtureFactor, TwoStateModel) {
  * the P(m1) should be 0.5/0.5.
  * Getting a measurement on z1 gives use more information.
  */
-TEST(GaussianMixtureFactor, TwoStateModel2) {
+TEST(HybridGaussianFactor, TwoStateModel2) {
   using namespace test_two_state_estimation;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -621,7 +619,7 @@ TEST(GaussianMixtureFactor, TwoStateModel2) {
  * measurements and vastly different motion model: either stand still or move
  * far. This yields a very informative posterior.
  */
-TEST(GaussianMixtureFactor, TwoStateModel3) {
+TEST(HybridGaussianFactor, TwoStateModel3) {
   using namespace test_two_state_estimation;
 
   double mu0 = 0.0, mu1 = 10.0;

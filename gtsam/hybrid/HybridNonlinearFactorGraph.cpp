@@ -18,10 +18,10 @@
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/TableFactor.h>
-#include <gtsam/hybrid/GaussianMixture.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+#include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
-#include <gtsam/hybrid/MixtureFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -59,7 +59,7 @@ void HybridNonlinearFactorGraph::printErrors(
     // Clear the stringstream
     ss.str(std::string());
 
-    if (auto mf = std::dynamic_pointer_cast<MixtureFactor>(factor)) {
+    if (auto mf = std::dynamic_pointer_cast<HybridNonlinearFactor>(factor)) {
       if (factor == nullptr) {
         std::cout << "nullptr"
                   << "\n";
@@ -70,7 +70,7 @@ void HybridNonlinearFactorGraph::printErrors(
         std::cout << std::endl;
       }
     } else if (auto gmf =
-                   std::dynamic_pointer_cast<GaussianMixtureFactor>(factor)) {
+                   std::dynamic_pointer_cast<HybridGaussianFactor>(factor)) {
       if (factor == nullptr) {
         std::cout << "nullptr"
                   << "\n";
@@ -80,7 +80,8 @@ void HybridNonlinearFactorGraph::printErrors(
         gmf->errorTree(values.continuous()).print("", keyFormatter);
         std::cout << std::endl;
       }
-    } else if (auto gm = std::dynamic_pointer_cast<GaussianMixture>(factor)) {
+    } else if (auto gm = std::dynamic_pointer_cast<HybridGaussianConditional>(
+                   factor)) {
       if (factor == nullptr) {
         std::cout << "nullptr"
                   << "\n";
@@ -151,8 +152,8 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
       continue;
     }
     // Check if it is a nonlinear mixture factor
-    if (auto mf = dynamic_pointer_cast<MixtureFactor>(f)) {
-      const GaussianMixtureFactor::shared_ptr& gmf =
+    if (auto mf = dynamic_pointer_cast<HybridNonlinearFactor>(f)) {
+      const HybridGaussianFactor::shared_ptr& gmf =
           mf->linearize(continuousValues);
       linearFG->push_back(gmf);
     } else if (auto nlf = dynamic_pointer_cast<NonlinearFactor>(f)) {
@@ -161,9 +162,9 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
     } else if (dynamic_pointer_cast<DiscreteFactor>(f)) {
       // If discrete-only: doesn't need linearization.
       linearFG->push_back(f);
-    } else if (auto gmf = dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
+    } else if (auto gmf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       linearFG->push_back(gmf);
-    } else if (auto gm = dynamic_pointer_cast<GaussianMixture>(f)) {
+    } else if (auto gm = dynamic_pointer_cast<HybridGaussianConditional>(f)) {
       linearFG->push_back(gm);
     } else if (dynamic_pointer_cast<GaussianFactor>(f)) {
       linearFG->push_back(f);
