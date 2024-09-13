@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   GaussianMixtureFactor.h
+ * @file   HybridGaussianFactor.h
  * @brief  A set of GaussianFactors, indexed by a set of discrete keys.
  * @author Fan Jiang
  * @author Varun Agrawal
@@ -44,10 +44,10 @@ class VectorValues;
  *
  * @ingroup hybrid
  */
-class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
+class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
-  using This = GaussianMixtureFactor;
+  using This = HybridGaussianFactor;
   using shared_ptr = std::shared_ptr<This>;
 
   using sharedFactor = std::shared_ptr<GaussianFactor>;
@@ -72,7 +72,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   /// @{
 
   /// Default constructor, mainly for serialization.
-  GaussianMixtureFactor() = default;
+  HybridGaussianFactor() = default;
 
   /**
    * @brief Construct a new Gaussian mixture factor.
@@ -83,22 +83,22 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @param factors The decision tree of Gaussian factors stored
    * as the mixture density.
    */
-  GaussianMixtureFactor(const KeyVector &continuousKeys,
+  HybridGaussianFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
                         const Factors &factors);
 
   /**
-   * @brief Construct a new GaussianMixtureFactor object using a vector of
+   * @brief Construct a new HybridGaussianFactor object using a vector of
    * GaussianFactor shared pointers.
    *
    * @param continuousKeys Vector of keys for continuous factors.
    * @param discreteKeys Vector of discrete keys.
    * @param factors Vector of gaussian factor shared pointers.
    */
-  GaussianMixtureFactor(const KeyVector &continuousKeys,
+  HybridGaussianFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
                         const std::vector<sharedFactor> &factors)
-      : GaussianMixtureFactor(continuousKeys, discreteKeys,
+      : HybridGaussianFactor(continuousKeys, discreteKeys,
                               Factors(discreteKeys, factors)) {}
 
   /// @}
@@ -128,7 +128,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   GaussianFactorGraphTree add(const GaussianFactorGraphTree &sum) const;
 
   /**
-   * @brief Compute error of the GaussianMixtureFactor as a tree.
+   * @brief Compute error of the HybridGaussianFactor as a tree.
    *
    * @param continuousValues The continuous VectorValues.
    * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
@@ -148,7 +148,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
 
   /// Add MixtureFactor to a Sum, syntactic sugar.
   friend GaussianFactorGraphTree &operator+=(
-      GaussianFactorGraphTree &sum, const GaussianMixtureFactor &factor) {
+      GaussianFactorGraphTree &sum, const HybridGaussianFactor &factor) {
     sum = factor.add(sum);
     return sum;
   }
@@ -168,7 +168,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
 
 // traits
 template <>
-struct traits<GaussianMixtureFactor> : public Testable<GaussianMixtureFactor> {
+struct traits<HybridGaussianFactor> : public Testable<HybridGaussianFactor> {
 };
 
 }  // namespace gtsam

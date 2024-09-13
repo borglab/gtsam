@@ -24,7 +24,7 @@
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteJunctionTree.h>
 #include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
@@ -92,7 +92,7 @@ void HybridGaussianFactorGraph::printErrors(
     // Clear the stringstream
     ss.str(std::string());
 
-    if (auto gmf = std::dynamic_pointer_cast<GaussianMixtureFactor>(factor)) {
+    if (auto gmf = std::dynamic_pointer_cast<HybridGaussianFactor>(factor)) {
       if (factor == nullptr) {
         std::cout << "nullptr"
                   << "\n";
@@ -178,7 +178,7 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
     // TODO(dellaert): just use a virtual method defined in HybridFactor.
     if (auto gf = dynamic_pointer_cast<GaussianFactor>(f)) {
       result = addGaussian(result, gf);
-    } else if (auto gmf = dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
+    } else if (auto gmf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       result = gmf->add(result);
     } else if (auto gm = dynamic_pointer_cast<GaussianMixture>(f)) {
       result = gm->add(result);
@@ -258,8 +258,8 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
   for (auto &f : factors) {
     if (auto df = dynamic_pointer_cast<DiscreteFactor>(f)) {
       dfg.push_back(df);
-    } else if (auto gmf = dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
-      // Case where we have a GaussianMixtureFactor with no continuous keys.
+    } else if (auto gmf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
+      // Case where we have a HybridGaussianFactor with no continuous keys.
       // In this case, compute discrete probabilities.
       auto logProbability =
           [&](const GaussianFactor::shared_ptr &factor) -> double {
@@ -309,7 +309,7 @@ GaussianFactorGraphTree removeEmpty(const GaussianFactorGraphTree &sum) {
 
 /* ************************************************************************ */
 using Result = std::pair<std::shared_ptr<GaussianConditional>,
-                         GaussianMixtureFactor::sharedFactor>;
+                         HybridGaussianFactor::sharedFactor>;
 
 /**
  * Compute the probability p(μ;m) = exp(-error(μ;m)) * sqrt(det(2π Σ_m)
@@ -341,7 +341,7 @@ static std::shared_ptr<Factor> createDiscreteFactor(
   return std::make_shared<DecisionTreeFactor>(discreteSeparator, probabilities);
 }
 
-// Create GaussianMixtureFactor on the separator, taking care to correct
+// Create HybridGaussianFactor on the separator, taking care to correct
 // for conditional constants.
 static std::shared_ptr<Factor> createGaussianMixtureFactor(
     const DecisionTree<Key, Result> &eliminationResults,
@@ -362,7 +362,7 @@ static std::shared_ptr<Factor> createGaussianMixtureFactor(
   DecisionTree<Key, GaussianFactor::shared_ptr> newFactors(eliminationResults,
                                                            correct);
 
-  return std::make_shared<GaussianMixtureFactor>(continuousSeparator,
+  return std::make_shared<HybridGaussianFactor>(continuousSeparator,
                                                  discreteSeparator, newFactors);
 }
 
@@ -400,7 +400,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   DecisionTree<Key, Result> eliminationResults(factorGraphTree, eliminate);
 
   // If there are no more continuous parents we create a DiscreteFactor with the
-  // error for each discrete choice. Otherwise, create a GaussianMixtureFactor
+  // error for each discrete choice. Otherwise, create a HybridGaussianFactor
   // on the separator, taking care to correct for conditional constants.
   auto newFactor =
       continuousSeparator.empty()
@@ -549,7 +549,7 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::errorTree(
       f = hc->inner();
     }
 
-    if (auto gaussianMixture = dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
+    if (auto gaussianMixture = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       // Compute factor error and add it.
       error_tree = error_tree + gaussianMixture->errorTree(continuousValues);
     } else if (auto gaussian = dynamic_pointer_cast<GaussianFactor>(f)) {
@@ -597,7 +597,7 @@ GaussianFactorGraph HybridGaussianFactorGraph::operator()(
       gfg.push_back(gf);
     } else if (auto gc = std::dynamic_pointer_cast<GaussianConditional>(f)) {
       gfg.push_back(gf);
-    } else if (auto gmf = std::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
+    } else if (auto gmf = std::dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       gfg.push_back((*gmf)(assignment));
     } else if (auto gm = dynamic_pointer_cast<GaussianMixture>(f)) {
       gfg.push_back((*gm)(assignment));

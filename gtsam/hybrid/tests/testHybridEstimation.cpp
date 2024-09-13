@@ -531,10 +531,10 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
  * Helper function to add the constant term corresponding to
  * the difference in noise models.
  */
-std::shared_ptr<GaussianMixtureFactor> mixedVarianceFactor(
+std::shared_ptr<HybridGaussianFactor> mixedVarianceFactor(
     const MixtureFactor& mf, const Values& initial, const Key& mode,
     double noise_tight, double noise_loose, size_t d, size_t tight_index) {
-  GaussianMixtureFactor::shared_ptr gmf = mf.linearize(initial);
+  HybridGaussianFactor::shared_ptr gmf = mf.linearize(initial);
 
   constexpr double log2pi = 1.8378770664093454835606594728112;
   // logConstant will be of the tighter model
@@ -560,7 +560,7 @@ std::shared_ptr<GaussianMixtureFactor> mixedVarianceFactor(
     }
   };
   auto updated_components = gmf->factors().apply(func);
-  auto updated_gmf = std::make_shared<GaussianMixtureFactor>(
+  auto updated_gmf = std::make_shared<HybridGaussianFactor>(
       gmf->continuousKeys(), gmf->discreteKeys(), updated_components);
 
   return updated_gmf;

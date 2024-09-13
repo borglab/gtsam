@@ -46,7 +46,7 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
  *
  * Examples:
  *  - MixtureFactor
- *  - GaussianMixtureFactor
+ *  - HybridGaussianFactor
  *  - GaussianMixture
  *
  * @ingroup hybrid

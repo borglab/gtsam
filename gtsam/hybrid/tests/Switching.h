@@ -19,7 +19,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/MixtureFactor.h>
@@ -57,7 +57,7 @@ inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
 
   // keyFunc(1) to keyFunc(n+1)
   for (size_t t = 1; t < n; t++) {
-    hfg.add(GaussianMixtureFactor(
+    hfg.add(HybridGaussianFactor(
         {keyFunc(t), keyFunc(t + 1)}, {{dKeyFunc(t), 2}},
         {std::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
                                             I_3x3, Z_3x1),

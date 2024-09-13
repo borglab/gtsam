@@ -72,14 +72,14 @@ virtual class HybridConditional {
   double error(const gtsam::HybridValues& values) const;
 };
 
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
-class GaussianMixtureFactor : gtsam::HybridFactor {
-  GaussianMixtureFactor(
+#include <gtsam/hybrid/HybridGaussianFactor.h>
+class HybridGaussianFactor : gtsam::HybridFactor {
+  HybridGaussianFactor(
       const gtsam::KeyVector& continuousKeys,
       const gtsam::DiscreteKeys& discreteKeys,
       const std::vector<gtsam::GaussianFactor::shared_ptr>& factorsList);
 
-  void print(string s = "GaussianMixtureFactor\n",
+  void print(string s = "HybridGaussianFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
 };
@@ -92,7 +92,7 @@ class GaussianMixture : gtsam::HybridFactor {
                   const std::vector<gtsam::GaussianConditional::shared_ptr>&
                       conditionalsList);
 
-  gtsam::GaussianMixtureFactor* likelihood(
+  gtsam::HybridGaussianFactor* likelihood(
       const gtsam::VectorValues& frontals) const;
   double logProbability(const gtsam::HybridValues& values) const;
   double evaluate(const gtsam::HybridValues& values) const;
@@ -177,7 +177,7 @@ class HybridGaussianFactorGraph {
   void push_back(const gtsam::HybridGaussianFactorGraph& graph);
   void push_back(const gtsam::HybridBayesNet& bayesNet);
   void push_back(const gtsam::HybridBayesTree& bayesTree);
-  void push_back(const gtsam::GaussianMixtureFactor* gmm);
+  void push_back(const gtsam::HybridGaussianFactor* gmm);
   void push_back(gtsam::DecisionTreeFactor* factor);
   void push_back(gtsam::TableFactor* factor);
   void push_back(gtsam::JacobianFactor* factor);
@@ -253,7 +253,7 @@ class MixtureFactor : gtsam::HybridFactor {
   double nonlinearFactorLogNormalizingConstant(const gtsam::NonlinearFactor* factor,
                                                const gtsam::Values& values) const;
 
-  GaussianMixtureFactor* linearize(
+  HybridGaussianFactor* linearize(
       const gtsam::Values& continuousValues) const;
 
   void print(string s = "MixtureFactor\n",

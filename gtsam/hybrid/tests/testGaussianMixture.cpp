@@ -20,7 +20,7 @@
 
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianConditional.h>

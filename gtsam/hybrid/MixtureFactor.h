@@ -20,7 +20,7 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -233,8 +233,8 @@ class MixtureFactor : public HybridFactor {
     return factor->linearize(continuousValues);
   }
 
-  /// Linearize all the continuous factors to get a GaussianMixtureFactor.
-  std::shared_ptr<GaussianMixtureFactor> linearize(
+  /// Linearize all the continuous factors to get a HybridGaussianFactor.
+  std::shared_ptr<HybridGaussianFactor> linearize(
       const Values& continuousValues) const {
     // functional to linearize each factor in the decision tree
     auto linearizeDT = [continuousValues](const sharedFactor& factor) {
@@ -244,7 +244,7 @@ class MixtureFactor : public HybridFactor {
     DecisionTree<Key, GaussianFactor::shared_ptr> linearized_factors(
         factors_, linearizeDT);
 
-    return std::make_shared<GaussianMixtureFactor>(
+    return std::make_shared<HybridGaussianFactor>(
         continuousKeys_, discreteKeys_, linearized_factors);
   }
 

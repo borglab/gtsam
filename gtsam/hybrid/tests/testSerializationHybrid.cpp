@@ -19,7 +19,7 @@
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
@@ -51,12 +51,12 @@ BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree");
 BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf");
 BOOST_CLASS_EXPORT_GUID(ADT::Choice, "gtsam_AlgebraicDecisionTree_Choice")
 
-BOOST_CLASS_EXPORT_GUID(GaussianMixtureFactor, "gtsam_GaussianMixtureFactor");
-BOOST_CLASS_EXPORT_GUID(GaussianMixtureFactor::Factors,
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor, "gtsam_GaussianMixtureFactor");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors,
                         "gtsam_GaussianMixtureFactor_Factors");
-BOOST_CLASS_EXPORT_GUID(GaussianMixtureFactor::Factors::Leaf,
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Leaf,
                         "gtsam_GaussianMixtureFactor_Factors_Leaf");
-BOOST_CLASS_EXPORT_GUID(GaussianMixtureFactor::Factors::Choice,
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Choice,
                         "gtsam_GaussianMixtureFactor_Factors_Choice");
 
 BOOST_CLASS_EXPORT_GUID(GaussianMixture, "gtsam_GaussianMixture");
@@ -72,8 +72,8 @@ BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
 BOOST_CLASS_EXPORT_GUID(HybridBayesNet, "gtsam_HybridBayesNet");
 
 /* ****************************************************************************/
-// Test GaussianMixtureFactor serialization.
-TEST(HybridSerialization, GaussianMixtureFactor) {
+// Test HybridGaussianFactor serialization.
+TEST(HybridSerialization, HybridGaussianFactor) {
   KeyVector continuousKeys{X(0)};
   DiscreteKeys discreteKeys{{M(0), 2}};
 
@@ -84,11 +84,11 @@ TEST(HybridSerialization, GaussianMixtureFactor) {
   auto f1 = std::make_shared<JacobianFactor>(X(0), A, b1);
   std::vector<GaussianFactor::shared_ptr> factors{f0, f1};
 
-  const GaussianMixtureFactor factor(continuousKeys, discreteKeys, factors);
+  const HybridGaussianFactor factor(continuousKeys, discreteKeys, factors);
 
-  EXPECT(equalsObj<GaussianMixtureFactor>(factor));
-  EXPECT(equalsXML<GaussianMixtureFactor>(factor));
-  EXPECT(equalsBinary<GaussianMixtureFactor>(factor));
+  EXPECT(equalsObj<HybridGaussianFactor>(factor));
+  EXPECT(equalsXML<HybridGaussianFactor>(factor));
+  EXPECT(equalsBinary<HybridGaussianFactor>(factor));
 }
 
 /* ****************************************************************************/

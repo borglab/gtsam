@@ -18,7 +18,7 @@ from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
 from gtsam import (DiscreteConditional, DiscreteKeys, GaussianConditional,
-                   GaussianMixture, GaussianMixtureFactor, HybridBayesNet,
+                   GaussianMixture, HybridBayesNet, HybridGaussianFactor,
                    HybridGaussianFactorGraph, HybridValues, JacobianFactor,
                    Ordering, noiseModel)
 
@@ -36,7 +36,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         jf1 = JacobianFactor(X(0), np.eye(3), np.zeros((3, 1)), model)
         jf2 = JacobianFactor(X(0), np.eye(3), np.ones((3, 1)), model)
 
-        gmf = GaussianMixtureFactor([X(0)], dk, [jf1, jf2])
+        gmf = HybridGaussianFactor([X(0)], dk, [jf1, jf2])
 
         hfg = HybridGaussianFactorGraph()
         hfg.push_back(jf1)
@@ -63,7 +63,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         jf1 = JacobianFactor(X(0), np.eye(3), np.zeros((3, 1)), model)
         jf2 = JacobianFactor(X(0), np.eye(3), np.ones((3, 1)), model)
 
-        gmf = GaussianMixtureFactor([X(0)], dk, [jf1, jf2])
+        gmf = HybridGaussianFactor([X(0)], dk, [jf1, jf2])
 
         hfg = HybridGaussianFactorGraph()
         hfg.push_back(jf1)

@@ -22,7 +22,7 @@
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
@@ -129,7 +129,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
   DecisionTree<Key, GaussianFactor::shared_ptr> dt(
       M(1), std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
-  hfg.add(GaussianMixtureFactor({X(1)}, {m1}, dt));
+  hfg.add(HybridGaussianFactor({X(1)}, {m1}, dt));
 
   auto result = hfg.eliminateSequential();
 
@@ -155,7 +155,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
   std::vector<GaussianFactor::shared_ptr> factors = {
       std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())};
-  hfg.add(GaussianMixtureFactor({X(1)}, {m1}, factors));
+  hfg.add(HybridGaussianFactor({X(1)}, {m1}, factors));
 
   // Discrete probability table for c1
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
@@ -177,7 +177,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  hfg.add(GaussianMixtureFactor(
+  hfg.add(HybridGaussianFactor(
       {X(1)}, {{M(1), 2}},
       {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
        std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())}));
@@ -212,7 +212,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
       std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
 
   // Hybrid factor P(x1|c1)
-  hfg.add(GaussianMixtureFactor({X(1)}, {m}, dt));
+  hfg.add(HybridGaussianFactor({X(1)}, {m}, dt));
   // Prior factor on c1
   hfg.add(DecisionTreeFactor(m, {2, 8}));
 
@@ -237,7 +237,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
 
   {
-    hfg.add(GaussianMixtureFactor(
+    hfg.add(HybridGaussianFactor(
         {X(0)}, {{M(0), 2}},
         {std::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1),
          std::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones())}));
@@ -246,7 +246,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
         M(1), std::make_shared<JacobianFactor>(X(2), I_3x3, Z_3x1),
         std::make_shared<JacobianFactor>(X(2), I_3x3, Vector3::Ones()));
 
-    hfg.add(GaussianMixtureFactor({X(2)}, {{M(1), 2}}, dt1));
+    hfg.add(HybridGaussianFactor({X(2)}, {{M(1), 2}}, dt1));
   }
 
   hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
@@ -259,13 +259,13 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
         M(3), std::make_shared<JacobianFactor>(X(3), I_3x3, Z_3x1),
         std::make_shared<JacobianFactor>(X(3), I_3x3, Vector3::Ones()));
 
-    hfg.add(GaussianMixtureFactor({X(3)}, {{M(3), 2}}, dt));
+    hfg.add(HybridGaussianFactor({X(3)}, {{M(3), 2}}, dt));
 
     DecisionTree<Key, GaussianFactor::shared_ptr> dt1(
         M(2), std::make_shared<JacobianFactor>(X(5), I_3x3, Z_3x1),
         std::make_shared<JacobianFactor>(X(5), I_3x3, Vector3::Ones()));
 
-    hfg.add(GaussianMixtureFactor({X(5)}, {{M(2), 2}}, dt1));
+    hfg.add(HybridGaussianFactor({X(5)}, {{M(2), 2}}, dt1));
   }
 
   auto ordering_full =
@@ -555,7 +555,7 @@ TEST(HybridGaussianFactorGraph, optimize) {
       C(1), std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
 
-  hfg.add(GaussianMixtureFactor({X(1)}, {c1}, dt));
+  hfg.add(HybridGaussianFactor({X(1)}, {c1}, dt));
 
   auto result = hfg.eliminateSequential();
 
@@ -717,7 +717,7 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   // Create expected decision tree with two factor graphs:
 
   // Get mixture factor:
-  auto mixture = fg.at<GaussianMixtureFactor>(0);
+  auto mixture = fg.at<HybridGaussianFactor>(0);
   CHECK(mixture);
 
   // Get prior factor:

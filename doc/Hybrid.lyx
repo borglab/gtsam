@@ -548,13 +548,13 @@ with
 \end_layout
 
 \begin_layout Subsubsection*
-GaussianMixtureFactor
+HybridGaussianFactor
 \end_layout
 
 \begin_layout Standard
 Analogously, a 
 \emph on
-GaussianMixtureFactor
+HybridGaussianFactor
 \emph default
  typically results from a GaussianMixture by having known values 
 \begin_inset Formula $\bar{x}$

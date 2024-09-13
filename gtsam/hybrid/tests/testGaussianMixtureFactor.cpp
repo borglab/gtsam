@@ -11,7 +11,7 @@
 
 /**
  * @file    testGaussianMixtureFactor.cpp
- * @brief   Unit tests for GaussianMixtureFactor
+ * @brief   Unit tests for HybridGaussianFactor
  * @author  Varun Agrawal
  * @author  Fan Jiang
  * @author  Frank Dellaert
@@ -21,7 +21,7 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridValues.h>
@@ -43,17 +43,17 @@ using symbol_shorthand::Z;
 
 /* ************************************************************************* */
 // Check iterators of empty mixture.
-TEST(GaussianMixtureFactor, Constructor) {
-  GaussianMixtureFactor factor;
-  GaussianMixtureFactor::const_iterator const_it = factor.begin();
+TEST(HybridGaussianFactor, Constructor) {
+  HybridGaussianFactor factor;
+  HybridGaussianFactor::const_iterator const_it = factor.begin();
   CHECK(const_it == factor.end());
-  GaussianMixtureFactor::iterator it = factor.begin();
+  HybridGaussianFactor::iterator it = factor.begin();
   CHECK(it == factor.end());
 }
 
 /* ************************************************************************* */
 // "Add" two mixture factors together.
-TEST(GaussianMixtureFactor, Sum) {
+TEST(HybridGaussianFactor, Sum) {
   DiscreteKey m1(1, 2), m2(2, 3);
 
   auto A1 = Matrix::Zero(2, 1);
@@ -74,8 +74,8 @@ TEST(GaussianMixtureFactor, Sum) {
   // TODO(Frank): why specify keys at all? And: keys in factor should be *all*
   // keys, deviating from Kevin's scheme. Should we index DT on DiscreteKey?
   // Design review!
-  GaussianMixtureFactor mixtureFactorA({X(1), X(2)}, {m1}, factorsA);
-  GaussianMixtureFactor mixtureFactorB({X(1), X(3)}, {m2}, factorsB);
+  HybridGaussianFactor mixtureFactorA({X(1), X(2)}, {m1}, factorsA);
+  HybridGaussianFactor mixtureFactorB({X(1), X(3)}, {m2}, factorsB);
 
   // Check that number of keys is 3
   EXPECT_LONGS_EQUAL(3, mixtureFactorA.keys().size());
@@ -99,7 +99,7 @@ TEST(GaussianMixtureFactor, Sum) {
 }
 
 /* ************************************************************************* */
-TEST(GaussianMixtureFactor, Printing) {
+TEST(HybridGaussianFactor, Printing) {
   DiscreteKey m1(1, 2);
   auto A1 = Matrix::Zero(2, 1);
   auto A2 = Matrix::Zero(2, 2);
@@ -108,10 +108,10 @@ TEST(GaussianMixtureFactor, Printing) {
   auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
   std::vector<GaussianFactor::shared_ptr> factors{f10, f11};
 
-  GaussianMixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+  HybridGaussianFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 
   std::string expected =
-      R"(GaussianMixtureFactor
+      R"(HybridGaussianFactor
 Hybrid [x1 x2; 1]{
  Choice(1) 
  0 Leaf :
@@ -144,7 +144,7 @@ Hybrid [x1 x2; 1]{
 }
 
 /* ************************************************************************* */
-TEST(GaussianMixtureFactor, GaussianMixture) {
+TEST(HybridGaussianFactor, GaussianMixture) {
   KeyVector keys;
   keys.push_back(X(0));
   keys.push_back(X(1));
@@ -161,8 +161,8 @@ TEST(GaussianMixtureFactor, GaussianMixture) {
 }
 
 /* ************************************************************************* */
-// Test the error of the GaussianMixtureFactor
-TEST(GaussianMixtureFactor, Error) {
+// Test the error of the HybridGaussianFactor
+TEST(HybridGaussianFactor, Error) {
   DiscreteKey m1(1, 2);
 
   auto A01 = Matrix2::Identity();
@@ -177,7 +177,7 @@ TEST(GaussianMixtureFactor, Error) {
   auto f1 = std::make_shared<JacobianFactor>(X(1), A11, X(2), A12, b);
   std::vector<GaussianFactor::shared_ptr> factors{f0, f1};
 
-  GaussianMixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+  HybridGaussianFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 
   VectorValues continuousValues;
   continuousValues.insert(X(1), Vector2(0, 0));
@@ -250,7 +250,7 @@ static HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1,
  * The resulting factor graph should eliminate to a Bayes net
  * which represents a sigmoid function.
  */
-TEST(GaussianMixtureFactor, GaussianMixtureModel) {
+TEST(HybridGaussianFactor, GaussianMixtureModel) {
   using namespace test_gmm;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -322,7 +322,7 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
  * which represents a Gaussian-like function
  * where m1>m0 close to 3.1333.
  */
-TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
+TEST(HybridGaussianFactor, GaussianMixtureModel2) {
   using namespace test_gmm;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -446,7 +446,7 @@ static HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
  * the probability of m1 should be 0.5/0.5.
  * Getting a measurement on z1 gives use more information.
  */
-TEST(GaussianMixtureFactor, TwoStateModel) {
+TEST(HybridGaussianFactor, TwoStateModel) {
   using namespace test_two_state_estimation;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -500,7 +500,7 @@ TEST(GaussianMixtureFactor, TwoStateModel) {
  * the P(m1) should be 0.5/0.5.
  * Getting a measurement on z1 gives use more information.
  */
-TEST(GaussianMixtureFactor, TwoStateModel2) {
+TEST(HybridGaussianFactor, TwoStateModel2) {
   using namespace test_two_state_estimation;
 
   double mu0 = 1.0, mu1 = 3.0;

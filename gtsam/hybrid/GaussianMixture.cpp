@@ -21,7 +21,7 @@
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/linear/GaussianBayesNet.h>
@@ -72,7 +72,7 @@ GaussianMixture::GaussianMixture(
 
 /* *******************************************************************************/
 // TODO(dellaert): This is copy/paste: GaussianMixture should be derived from
-// GaussianMixtureFactor, no?
+// HybridGaussianFactor, no?
 GaussianFactorGraphTree GaussianMixture::add(
     const GaussianFactorGraphTree &sum) const {
   using Y = GaussianFactorGraph;
@@ -203,7 +203,7 @@ bool GaussianMixture::allFrontalsGiven(const VectorValues &given) const {
 }
 
 /* ************************************************************************* */
-std::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
+std::shared_ptr<HybridGaussianFactor> GaussianMixture::likelihood(
     const VectorValues &given) const {
   if (!allFrontalsGiven(given)) {
     throw std::runtime_error(
@@ -212,7 +212,7 @@ std::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
 
   const DiscreteKeys discreteParentKeys = discreteKeys();
   const KeyVector continuousParentKeys = continuousParents();
-  const GaussianMixtureFactor::Factors likelihoods(
+  const HybridGaussianFactor::Factors likelihoods(
       conditionals_, [&](const GaussianConditional::shared_ptr &conditional) {
         const auto likelihood_m = conditional->likelihood(given);
         const double Cgm_Kgcm =
@@ -231,7 +231,7 @@ std::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
           return std::make_shared<JacobianFactor>(gfg);
         }
       });
-  return std::make_shared<GaussianMixtureFactor>(
+  return std::make_shared<HybridGaussianFactor>(
       continuousParentKeys, discreteParentKeys, likelihoods);
 }
 

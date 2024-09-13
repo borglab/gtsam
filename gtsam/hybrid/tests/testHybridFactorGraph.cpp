@@ -55,7 +55,7 @@ TEST(HybridFactorGraph, Keys) {
   DecisionTree<Key, GaussianFactor::shared_ptr> dt(
       M(1), std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
-  hfg.add(GaussianMixtureFactor({X(1)}, {m1}, dt));
+  hfg.add(HybridGaussianFactor({X(1)}, {m1}, dt));
 
   KeySet expected_continuous{X(0), X(1)};
   EXPECT(

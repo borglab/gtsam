@@ -23,7 +23,7 @@
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -165,7 +165,7 @@ class GTSAM_EXPORT GaussianMixture
    * Create a likelihood factor for a Gaussian mixture, return a Mixture factor
    * on the parents.
    */
-  std::shared_ptr<GaussianMixtureFactor> likelihood(
+  std::shared_ptr<HybridGaussianFactor> likelihood(
       const VectorValues &given) const;
 
   /// Getter for the underlying Conditionals DecisionTree

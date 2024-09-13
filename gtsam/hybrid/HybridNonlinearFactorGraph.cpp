@@ -70,7 +70,7 @@ void HybridNonlinearFactorGraph::printErrors(
         std::cout << std::endl;
       }
     } else if (auto gmf =
-                   std::dynamic_pointer_cast<GaussianMixtureFactor>(factor)) {
+                   std::dynamic_pointer_cast<HybridGaussianFactor>(factor)) {
       if (factor == nullptr) {
         std::cout << "nullptr"
                   << "\n";
@@ -152,7 +152,7 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
     }
     // Check if it is a nonlinear mixture factor
     if (auto mf = dynamic_pointer_cast<MixtureFactor>(f)) {
-      const GaussianMixtureFactor::shared_ptr& gmf =
+      const HybridGaussianFactor::shared_ptr& gmf =
           mf->linearize(continuousValues);
       linearFG->push_back(gmf);
     } else if (auto nlf = dynamic_pointer_cast<NonlinearFactor>(f)) {
@@ -161,7 +161,7 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
     } else if (dynamic_pointer_cast<DiscreteFactor>(f)) {
       // If discrete-only: doesn't need linearization.
       linearFG->push_back(f);
-    } else if (auto gmf = dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
+    } else if (auto gmf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       linearFG->push_back(gmf);
     } else if (auto gm = dynamic_pointer_cast<GaussianMixture>(f)) {
       linearFG->push_back(gm);
