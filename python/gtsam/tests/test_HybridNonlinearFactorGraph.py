@@ -24,12 +24,14 @@ from gtsam import BetweenFactorPoint3, Point3, PriorFactorPoint3, noiseModel
 
 class TestHybridGaussianFactorGraph(GtsamTestCase):
     """Unit tests for HybridGaussianFactorGraph."""
+
     def test_nonlinear_hybrid(self):
         nlfg = gtsam.HybridNonlinearFactorGraph()
         dk = gtsam.DiscreteKeys()
         dk.push_back((10, 2))
-        nlfg.push_back(BetweenFactorPoint3(1, 2, Point3(
-            1, 2, 3), noiseModel.Diagonal.Variances([1, 1, 1])))
+        nlfg.push_back(
+            BetweenFactorPoint3(1, 2, Point3(1, 2, 3),
+                                noiseModel.Diagonal.Variances([1, 1, 1])))
         nlfg.push_back(
             PriorFactorPoint3(2, Point3(1, 2, 3),
                               noiseModel.Diagonal.Variances([0.5, 0.5, 0.5])))

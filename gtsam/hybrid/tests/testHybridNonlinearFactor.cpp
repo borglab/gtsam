@@ -20,8 +20,8 @@
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
-#include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
+#include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
 

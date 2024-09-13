@@ -30,8 +30,8 @@ namespace gtsam {
 
 /* *******************************************************************************/
 HybridGaussianFactor::HybridGaussianFactor(const KeyVector &continuousKeys,
-                                             const DiscreteKeys &discreteKeys,
-                                             const Factors &factors)
+                                           const DiscreteKeys &discreteKeys,
+                                           const Factors &factors)
     : Base(continuousKeys, discreteKeys), factors_(factors) {}
 
 /* *******************************************************************************/
@@ -53,7 +53,7 @@ bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {
 
 /* *******************************************************************************/
 void HybridGaussianFactor::print(const std::string &s,
-                                  const KeyFormatter &formatter) const {
+                                 const KeyFormatter &formatter) const {
   std::cout << (s.empty() ? "" : s + "\n");
   std::cout << "HybridGaussianFactor" << std::endl;
   HybridFactor::print("", formatter);

@@ -18,8 +18,8 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/Key.h>
@@ -127,7 +127,8 @@ class GTSAM_EXPORT HybridConditional
    * @param gaussianMixture Gaussian Mixture Conditional used to create the
    * HybridConditional.
    */
-  HybridConditional(const std::shared_ptr<HybridGaussianConditional>& gaussianMixture);
+  HybridConditional(
+      const std::shared_ptr<HybridGaussianConditional>& gaussianMixture);
 
   /// @}
   /// @name Testable
@@ -222,8 +223,10 @@ class GTSAM_EXPORT HybridConditional
       boost::serialization::void_cast_register<GaussianConditional, Factor>(
           static_cast<GaussianConditional*>(NULL), static_cast<Factor*>(NULL));
     } else {
-      boost::serialization::void_cast_register<HybridGaussianConditional, Factor>(
-          static_cast<HybridGaussianConditional*>(NULL), static_cast<Factor*>(NULL));
+      boost::serialization::void_cast_register<HybridGaussianConditional,
+                                               Factor>(
+          static_cast<HybridGaussianConditional*>(NULL),
+          static_cast<Factor*>(NULL));
     }
   }
 #endif

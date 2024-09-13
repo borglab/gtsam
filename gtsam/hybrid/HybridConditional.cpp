@@ -157,10 +157,10 @@ double HybridConditional::logNormalizationConstant() const {
     return gc->logNormalizationConstant();
   }
   if (auto gm = asMixture()) {
-    return gm->logNormalizationConstant(); // 0.0!
+    return gm->logNormalizationConstant();  // 0.0!
   }
   if (auto dc = asDiscrete()) {
-    return dc->logNormalizationConstant(); // 0.0!
+    return dc->logNormalizationConstant();  // 0.0!
   }
   throw std::runtime_error(
       "HybridConditional::logProbability: conditional type not handled");

@@ -20,8 +20,8 @@
 #include <gtsam/discrete/TableFactor.h>
 #include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
-#include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
+#include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -80,7 +80,8 @@ void HybridNonlinearFactorGraph::printErrors(
         gmf->errorTree(values.continuous()).print("", keyFormatter);
         std::cout << std::endl;
       }
-    } else if (auto gm = std::dynamic_pointer_cast<HybridGaussianConditional>(factor)) {
+    } else if (auto gm = std::dynamic_pointer_cast<HybridGaussianConditional>(
+                   factor)) {
       if (factor == nullptr) {
         std::cout << "nullptr"
                   << "\n";

@@ -18,11 +18,11 @@
 
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/hybrid/HybridGaussianConditional.h>
-#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianConditional.h>
 
@@ -59,7 +59,8 @@ BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Leaf,
 BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Choice,
                         "gtsam_HybridGaussianFactor_Factors_Choice");
 
-BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional, "gtsam_HybridGaussianConditional");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional,
+                        "gtsam_HybridGaussianConditional");
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals,
                         "gtsam_HybridGaussianConditional_Conditionals");
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals::Leaf,
@@ -115,7 +116,7 @@ TEST(HybridSerialization, HybridGaussianConditional) {
   const auto conditional1 = std::make_shared<GaussianConditional>(
       GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 3));
   const HybridGaussianConditional gm({Z(0)}, {X(0)}, {mode},
-                           {conditional0, conditional1});
+                                     {conditional0, conditional1});
 
   EXPECT(equalsObj<HybridGaussianConditional>(gm));
   EXPECT(equalsXML<HybridGaussianConditional>(gm));

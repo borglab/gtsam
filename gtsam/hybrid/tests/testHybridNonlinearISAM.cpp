@@ -143,7 +143,7 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
 
   /********************************************************/
   // Run batch elimination so we can compare results.
-  const Ordering ordering {X(0), X(1), X(2)};
+  const Ordering ordering{X(0), X(1), X(2)};
 
   // Now we calculate the actual factors using full elimination
   const auto [expectedHybridBayesTree, expectedRemainingGraph] =
@@ -153,22 +153,25 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
   // The densities on X(1) should be the same
   auto x0_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
       bayesTree[X(0)]->conditional()->inner());
-  auto expected_x0_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
-      (*expectedHybridBayesTree)[X(0)]->conditional()->inner());
+  auto expected_x0_conditional =
+      dynamic_pointer_cast<HybridGaussianConditional>(
+          (*expectedHybridBayesTree)[X(0)]->conditional()->inner());
   EXPECT(assert_equal(*x0_conditional, *expected_x0_conditional));
 
   // The densities on X(1) should be the same
   auto x1_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
       bayesTree[X(1)]->conditional()->inner());
-  auto expected_x1_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
-      (*expectedHybridBayesTree)[X(1)]->conditional()->inner());
+  auto expected_x1_conditional =
+      dynamic_pointer_cast<HybridGaussianConditional>(
+          (*expectedHybridBayesTree)[X(1)]->conditional()->inner());
   EXPECT(assert_equal(*x1_conditional, *expected_x1_conditional));
 
   // The densities on X(2) should be the same
   auto x2_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
       bayesTree[X(2)]->conditional()->inner());
-  auto expected_x2_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
-      (*expectedHybridBayesTree)[X(2)]->conditional()->inner());
+  auto expected_x2_conditional =
+      dynamic_pointer_cast<HybridGaussianConditional>(
+          (*expectedHybridBayesTree)[X(2)]->conditional()->inner());
   EXPECT(assert_equal(*x2_conditional, *expected_x2_conditional));
 
   // We only perform manual continuous elimination for 0,0.
@@ -410,11 +413,11 @@ TEST(HybridNonlinearISAM, NonTrivial) {
 
   // Add connecting poses similar to PoseFactors in GTD
   fg.emplace_shared<BetweenFactor<Pose2>>(X(0), Y(0), Pose2(0, 1.0, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Y(0), Z(0), Pose2(0, 1.0, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Z(0), W(0), Pose2(0, 1.0, 0),
-                                             poseNoise);
+                                          poseNoise);
 
   // Create initial estimate
   Values initial;
@@ -433,9 +436,9 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   KeyVector contKeys = {W(0), W(1)};
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
   auto still = std::make_shared<PlanarMotionModel>(W(0), W(1), Pose2(0, 0, 0),
-                                                     noise_model),
+                                                   noise_model),
        moving = std::make_shared<PlanarMotionModel>(W(0), W(1), odometry,
-                                                      noise_model);
+                                                    noise_model);
   std::vector<PlanarMotionModel::shared_ptr> components = {moving, still};
   auto mixtureFactor = std::make_shared<HybridNonlinearFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
@@ -443,14 +446,14 @@ TEST(HybridNonlinearISAM, NonTrivial) {
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(0), X(1), Pose2(1.0, 0.0, 0),
-                                             poseNoise);
+                                          poseNoise);
   // PoseFactors-like at k=1
   fg.emplace_shared<BetweenFactor<Pose2>>(X(1), Y(1), Pose2(0, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Y(1), Z(1), Pose2(0, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Z(1), W(1), Pose2(-1, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
 
   initial.insert(X(1), Pose2(1.0, 0.0, 0.0));
   initial.insert(Y(1), Pose2(1.0, 1.0, 0.0));
@@ -473,7 +476,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   // Add odometry factor with discrete modes.
   contKeys = {W(1), W(2)};
   still = std::make_shared<PlanarMotionModel>(W(1), W(2), Pose2(0, 0, 0),
-                                                noise_model);
+                                              noise_model);
   moving =
       std::make_shared<PlanarMotionModel>(W(1), W(2), odometry, noise_model);
   components = {moving, still};
@@ -483,14 +486,14 @@ TEST(HybridNonlinearISAM, NonTrivial) {
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(1), X(2), Pose2(1.0, 0.0, 0),
-                                             poseNoise);
+                                          poseNoise);
   // PoseFactors-like at k=1
   fg.emplace_shared<BetweenFactor<Pose2>>(X(2), Y(2), Pose2(0, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Y(2), Z(2), Pose2(0, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Z(2), W(2), Pose2(-2, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
 
   initial.insert(X(2), Pose2(2.0, 0.0, 0.0));
   initial.insert(Y(2), Pose2(2.0, 1.0, 0.0));
@@ -516,7 +519,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   // Add odometry factor with discrete modes.
   contKeys = {W(2), W(3)};
   still = std::make_shared<PlanarMotionModel>(W(2), W(3), Pose2(0, 0, 0),
-                                                noise_model);
+                                              noise_model);
   moving =
       std::make_shared<PlanarMotionModel>(W(2), W(3), odometry, noise_model);
   components = {moving, still};
@@ -526,14 +529,14 @@ TEST(HybridNonlinearISAM, NonTrivial) {
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(2), X(3), Pose2(1.0, 0.0, 0),
-                                             poseNoise);
+                                          poseNoise);
   // PoseFactors-like at k=3
   fg.emplace_shared<BetweenFactor<Pose2>>(X(3), Y(3), Pose2(0, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Y(3), Z(3), Pose2(0, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Z(3), W(3), Pose2(-3, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
 
   initial.insert(X(3), Pose2(3.0, 0.0, 0.0));
   initial.insert(Y(3), Pose2(3.0, 1.0, 0.0));

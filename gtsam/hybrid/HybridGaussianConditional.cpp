@@ -50,7 +50,8 @@ HybridGaussianConditional::HybridGaussianConditional(
 }
 
 /* *******************************************************************************/
-const HybridGaussianConditional::Conditionals &HybridGaussianConditional::conditionals() const {
+const HybridGaussianConditional::Conditionals &
+HybridGaussianConditional::conditionals() const {
   return conditionals_;
 }
 
@@ -59,20 +60,22 @@ HybridGaussianConditional::HybridGaussianConditional(
     KeyVector &&continuousFrontals, KeyVector &&continuousParents,
     DiscreteKeys &&discreteParents,
     std::vector<GaussianConditional::shared_ptr> &&conditionals)
-    : HybridGaussianConditional(continuousFrontals, continuousParents, discreteParents,
-                      Conditionals(discreteParents, conditionals)) {}
+    : HybridGaussianConditional(continuousFrontals, continuousParents,
+                                discreteParents,
+                                Conditionals(discreteParents, conditionals)) {}
 
 /* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
     const KeyVector &continuousFrontals, const KeyVector &continuousParents,
     const DiscreteKeys &discreteParents,
     const std::vector<GaussianConditional::shared_ptr> &conditionals)
-    : HybridGaussianConditional(continuousFrontals, continuousParents, discreteParents,
-                      Conditionals(discreteParents, conditionals)) {}
+    : HybridGaussianConditional(continuousFrontals, continuousParents,
+                                discreteParents,
+                                Conditionals(discreteParents, conditionals)) {}
 
 /* *******************************************************************************/
-// TODO(dellaert): This is copy/paste: HybridGaussianConditional should be derived from
-// HybridGaussianFactor, no?
+// TODO(dellaert): This is copy/paste: HybridGaussianConditional should be
+// derived from HybridGaussianFactor, no?
 GaussianFactorGraphTree HybridGaussianConditional::add(
     const GaussianFactorGraphTree &sum) const {
   using Y = GaussianFactorGraph;
@@ -86,7 +89,8 @@ GaussianFactorGraphTree HybridGaussianConditional::add(
 }
 
 /* *******************************************************************************/
-GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree() const {
+GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree()
+    const {
   auto wrap = [this](const GaussianConditional::shared_ptr &gc) {
     // First check if conditional has not been pruned
     if (gc) {
@@ -131,7 +135,8 @@ GaussianConditional::shared_ptr HybridGaussianConditional::operator()(
 }
 
 /* *******************************************************************************/
-bool HybridGaussianConditional::equals(const HybridFactor &lf, double tol) const {
+bool HybridGaussianConditional::equals(const HybridFactor &lf,
+                                       double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
   if (e == nullptr) return false;
 
@@ -150,7 +155,7 @@ bool HybridGaussianConditional::equals(const HybridFactor &lf, double tol) const
 
 /* *******************************************************************************/
 void HybridGaussianConditional::print(const std::string &s,
-                            const KeyFormatter &formatter) const {
+                                      const KeyFormatter &formatter) const {
   std::cout << (s.empty() ? "" : s + "\n");
   if (isContinuous()) std::cout << "Continuous ";
   if (isDiscrete()) std::cout << "Discrete ";
@@ -193,7 +198,8 @@ KeyVector HybridGaussianConditional::continuousParents() const {
 }
 
 /* ************************************************************************* */
-bool HybridGaussianConditional::allFrontalsGiven(const VectorValues &given) const {
+bool HybridGaussianConditional::allFrontalsGiven(
+    const VectorValues &given) const {
   for (auto &&kv : given) {
     if (given.find(kv.first) == given.end()) {
       return false;
@@ -207,7 +213,8 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
     const VectorValues &given) const {
   if (!allFrontalsGiven(given)) {
     throw std::runtime_error(
-        "HybridGaussianConditional::likelihood: given values are missing some frontals.");
+        "HybridGaussianConditional::likelihood: given values are missing some "
+        "frontals.");
   }
 
   const DiscreteKeys discreteParentKeys = discreteKeys();
@@ -365,7 +372,8 @@ double HybridGaussianConditional::error(const HybridValues &values) const {
 }
 
 /* *******************************************************************************/
-double HybridGaussianConditional::logProbability(const HybridValues &values) const {
+double HybridGaussianConditional::logProbability(
+    const HybridValues &values) const {
   auto conditional = conditionals_(values.discrete());
   return conditional->logProbability(values.continuous());
 }

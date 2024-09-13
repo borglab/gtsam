@@ -23,8 +23,8 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
-#include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
+#include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -150,8 +150,8 @@ TEST(HybridGaussianFactorGraph, Resize) {
 }
 
 /***************************************************************************
- * Test that the HybridNonlinearFactor reports correctly if the number of continuous
- * keys provided do not match the keys in the factors.
+ * Test that the HybridNonlinearFactor reports correctly if the number of
+ * continuous keys provided do not match the keys in the factors.
  */
 TEST(HybridGaussianFactorGraph, HybridNonlinearFactor) {
   auto nonlinearFactor = std::make_shared<BetweenFactor<double>>(
@@ -350,7 +350,8 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
       EliminateHybrid(factors, ordering);
 
   auto gaussianConditionalMixture =
-      dynamic_pointer_cast<HybridGaussianConditional>(hybridConditionalMixture->inner());
+      dynamic_pointer_cast<HybridGaussianConditional>(
+          hybridConditionalMixture->inner());
 
   CHECK(gaussianConditionalMixture);
   // Frontals = [x0, x1]
@@ -413,7 +414,8 @@ TEST(HybridFactorGraph, PrintErrors) {
   // fg.print();
   // std::cout << "\n\n\n" << std::endl;
   // fg.printErrors(
-  //     HybridValues(hv.continuous(), DiscreteValues(), self.linearizationPoint));
+  //     HybridValues(hv.continuous(), DiscreteValues(),
+  //     self.linearizationPoint));
 }
 
 /****************************************************************************

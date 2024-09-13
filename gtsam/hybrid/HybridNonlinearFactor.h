@@ -75,7 +75,7 @@ class HybridNonlinearFactor : public HybridFactor {
    * normalized.
    */
   HybridNonlinearFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                const Factors& factors, bool normalized = false)
+                        const Factors& factors, bool normalized = false)
       : Base(keys, discreteKeys), factors_(factors), normalized_(normalized) {}
 
   /**
@@ -96,8 +96,8 @@ class HybridNonlinearFactor : public HybridFactor {
    */
   template <typename FACTOR>
   HybridNonlinearFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                const std::vector<std::shared_ptr<FACTOR>>& factors,
-                bool normalized = false)
+                        const std::vector<std::shared_ptr<FACTOR>>& factors,
+                        bool normalized = false)
       : Base(keys, discreteKeys), normalized_(normalized) {
     std::vector<NonlinearFactor::shared_ptr> nonlinear_factors;
     KeySet continuous_keys_set(keys.begin(), keys.end());
@@ -201,13 +201,14 @@ class HybridNonlinearFactor : public HybridFactor {
 
   /// Check equality
   bool equals(const HybridFactor& other, double tol = 1e-9) const override {
-    // We attempt a dynamic cast from HybridFactor to HybridNonlinearFactor. If it
-    // fails, return false.
+    // We attempt a dynamic cast from HybridFactor to HybridNonlinearFactor. If
+    // it fails, return false.
     if (!dynamic_cast<const HybridNonlinearFactor*>(&other)) return false;
 
-    // If the cast is successful, we'll properly construct a HybridNonlinearFactor
-    // object from `other`
-    const HybridNonlinearFactor& f(static_cast<const HybridNonlinearFactor&>(other));
+    // If the cast is successful, we'll properly construct a
+    // HybridNonlinearFactor object from `other`
+    const HybridNonlinearFactor& f(
+        static_cast<const HybridNonlinearFactor&>(other));
 
     // Ensure that this HybridNonlinearFactor and `f` have the same `factors_`.
     auto compare = [tol](const sharedFactor& a, const sharedFactor& b) {

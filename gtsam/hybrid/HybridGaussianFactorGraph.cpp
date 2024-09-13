@@ -23,11 +23,11 @@
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteJunctionTree.h>
-#include <gtsam/hybrid/HybridGaussianConditional.h>
-#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridJunctionTree.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
@@ -363,7 +363,7 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
                                                            correct);
 
   return std::make_shared<HybridGaussianFactor>(continuousSeparator,
-                                                 discreteSeparator, newFactors);
+                                                discreteSeparator, newFactors);
 }
 
 static std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
@@ -406,7 +406,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
       continuousSeparator.empty()
           ? createDiscreteFactor(eliminationResults, discreteSeparator)
           : createHybridGaussianFactor(eliminationResults, continuousSeparator,
-                                        discreteSeparator);
+                                       discreteSeparator);
 
   // Create the HybridGaussianConditional from the conditionals
   HybridGaussianConditional::Conditionals conditionals(

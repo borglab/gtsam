@@ -18,9 +18,9 @@
 
 #pragma once
 
-#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Ordering.h>
@@ -221,7 +221,6 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
 
   /// Get the GaussianFactorGraph at a given discrete assignment.
   GaussianFactorGraph operator()(const DiscreteValues& assignment) const;
-
 };
 
 }  // namespace gtsam

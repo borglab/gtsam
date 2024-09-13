@@ -23,8 +23,8 @@
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/linear/GaussianConditional.h>
 
@@ -102,9 +102,9 @@ class GTSAM_EXPORT HybridGaussianConditional
    * discreteParents will be used as the labels in the decision tree.
    */
   HybridGaussianConditional(const KeyVector &continuousFrontals,
-                  const KeyVector &continuousParents,
-                  const DiscreteKeys &discreteParents,
-                  const Conditionals &conditionals);
+                            const KeyVector &continuousParents,
+                            const DiscreteKeys &discreteParents,
+                            const Conditionals &conditionals);
 
   /**
    * @brief Make a Gaussian Mixture from a list of Gaussian conditionals
@@ -114,9 +114,10 @@ class GTSAM_EXPORT HybridGaussianConditional
    * @param discreteParents Discrete parents variables
    * @param conditionals List of conditionals
    */
-  HybridGaussianConditional(KeyVector &&continuousFrontals, KeyVector &&continuousParents,
-                  DiscreteKeys &&discreteParents,
-                  std::vector<GaussianConditional::shared_ptr> &&conditionals);
+  HybridGaussianConditional(
+      KeyVector &&continuousFrontals, KeyVector &&continuousParents,
+      DiscreteKeys &&discreteParents,
+      std::vector<GaussianConditional::shared_ptr> &&conditionals);
 
   /**
    * @brief Make a Gaussian Mixture from a list of Gaussian conditionals
@@ -277,6 +278,7 @@ std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys);
 
 // traits
 template <>
-struct traits<HybridGaussianConditional> : public Testable<HybridGaussianConditional> {};
+struct traits<HybridGaussianConditional>
+    : public Testable<HybridGaussianConditional> {};
 
 }  // namespace gtsam

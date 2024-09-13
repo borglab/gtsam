@@ -84,8 +84,8 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * as the mixture density.
    */
   HybridGaussianFactor(const KeyVector &continuousKeys,
-                        const DiscreteKeys &discreteKeys,
-                        const Factors &factors);
+                       const DiscreteKeys &discreteKeys,
+                       const Factors &factors);
 
   /**
    * @brief Construct a new HybridGaussianFactor object using a vector of
@@ -96,10 +96,10 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * @param factors Vector of gaussian factor shared pointers.
    */
   HybridGaussianFactor(const KeyVector &continuousKeys,
-                        const DiscreteKeys &discreteKeys,
-                        const std::vector<sharedFactor> &factors)
+                       const DiscreteKeys &discreteKeys,
+                       const std::vector<sharedFactor> &factors)
       : HybridGaussianFactor(continuousKeys, discreteKeys,
-                              Factors(discreteKeys, factors)) {}
+                             Factors(discreteKeys, factors)) {}
 
   /// @}
   /// @name Testable
@@ -168,7 +168,6 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
 
 // traits
 template <>
-struct traits<HybridGaussianFactor> : public Testable<HybridGaussianFactor> {
-};
+struct traits<HybridGaussianFactor> : public Testable<HybridGaussianFactor> {};
 
 }  // namespace gtsam

@@ -51,7 +51,7 @@ class TestHybridBayesNet(GtsamTestCase):
         bayesNet.push_back(conditional)
         bayesNet.push_back(
             HybridGaussianConditional([X(1)], [], discrete_keys,
-                            [conditional0, conditional1]))
+                                      [conditional0, conditional1]))
         bayesNet.push_back(DiscreteConditional(Asia, "99/1"))
 
         # Create values at which to evaluate.

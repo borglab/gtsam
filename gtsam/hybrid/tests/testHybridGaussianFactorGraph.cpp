@@ -21,12 +21,12 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/HybridGaussianConditional.h>
-#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/hybrid/HybridValues.h>
@@ -71,13 +71,14 @@ TEST(HybridGaussianFactorGraph, Creation) {
 
   // Define a gaussian mixture conditional P(x0|x1, c0) and add it to the factor
   // graph
-  HybridGaussianConditional gm({X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{M(0), 2}),
-                     HybridGaussianConditional::Conditionals(
-                         M(0),
-                         std::make_shared<GaussianConditional>(
-                             X(0), Z_3x1, I_3x3, X(1), I_3x3),
-                         std::make_shared<GaussianConditional>(
-                             X(0), Vector3::Ones(), I_3x3, X(1), I_3x3)));
+  HybridGaussianConditional gm(
+      {X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{M(0), 2}),
+      HybridGaussianConditional::Conditionals(
+          M(0),
+          std::make_shared<GaussianConditional>(X(0), Z_3x1, I_3x3, X(1),
+                                                I_3x3),
+          std::make_shared<GaussianConditional>(X(0), Vector3::Ones(), I_3x3,
+                                                X(1), I_3x3)));
   hfg.add(gm);
 
   EXPECT_LONGS_EQUAL(2, hfg.size());
@@ -681,8 +682,8 @@ TEST(HybridGaussianFactorGraph, ErrorTreeWithConditional) {
                                              x0, -I_1x1, model0),
        c1 = make_shared<GaussianConditional>(f01, Vector1(mu), I_1x1, x1, I_1x1,
                                              x0, -I_1x1, model1);
-  hbn.emplace_shared<HybridGaussianConditional>(KeyVector{f01}, KeyVector{x0, x1},
-                                      DiscreteKeys{m1}, std::vector{c0, c1});
+  hbn.emplace_shared<HybridGaussianConditional>(
+      KeyVector{f01}, KeyVector{x0, x1}, DiscreteKeys{m1}, std::vector{c0, c1});
 
   // Discrete uniform prior.
   hbn.emplace_shared<DiscreteConditional>(m1, "0.5/0.5");
