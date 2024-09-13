@@ -614,6 +614,33 @@ TEST(GaussianMixtureFactor, TwoStateModel2) {
 }
 
 /* ************************************************************************* */
+/**
+ * Same model, P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1), but now with very informative
+ * measurements and vastly different motion model: either stand still or move
+ * far. This yields a very informative posterior.
+ */
+TEST(GaussianMixtureFactor, TwoStateModel3) {
+  using namespace test_two_state_estimation;
+
+  double mu0 = 0.0, mu1 = 10.0;
+  double sigma0 = 0.2, sigma1 = 5.0;
+  auto hybridMotionModel = CreateHybridMotionModel(mu0, mu1, sigma0, sigma1);
+
+  // We only check the 2-measurement case
+  const Vector1 z0(0.0), z1(10.0);
+  VectorValues given{{Z(0), z0}, {Z(1), z1}};
+
+  HybridBayesNet hbn = CreateBayesNet(hybridMotionModel, true);
+  HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+  HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+  // Values taken from an importance sampling run with 100k samples:
+  // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+  DiscreteConditional expected(m1, "8.91527/91.0847");
+  EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.002));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
