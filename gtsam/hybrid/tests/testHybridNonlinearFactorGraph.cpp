@@ -131,7 +131,8 @@ TEST(HybridGaussianFactorGraph, Resize) {
   auto still = std::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
        moving = std::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
 
-  std::vector<MotionModel::shared_ptr> components = {still, moving};
+  std::vector<std::pair<MotionModel::shared_ptr, double>> components = {
+      {still, 0.0}, {moving, 0.0}};
   auto dcFactor = std::make_shared<HybridNonlinearFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
   nhfg.push_back(dcFactor);
@@ -162,7 +163,8 @@ TEST(HybridGaussianFactorGraph, HybridNonlinearFactor) {
   auto still = std::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
        moving = std::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
 
-  std::vector<MotionModel::shared_ptr> components = {still, moving};
+  std::vector<std::pair<MotionModel::shared_ptr, double>> components = {
+      {still, 0.0}, {moving, 0.0}};
 
   // Check for exception when number of continuous keys are under-specified.
   KeyVector contKeys = {X(0)};
@@ -801,7 +803,8 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
                                                    noise_model),
        moving = std::make_shared<PlanarMotionModel>(X(0), X(1), odometry,
                                                     noise_model);
-  std::vector<PlanarMotionModel::shared_ptr> motion_models = {still, moving};
+  std::vector<std::pair<PlanarMotionModel::shared_ptr, double>> motion_models =
+      {{still, 0.0}, {moving, 0.0}};
   fg.emplace_shared<HybridNonlinearFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, motion_models);
 

@@ -159,9 +159,10 @@ struct Switching {
     for (size_t k = 0; k < K - 1; k++) {
       KeyVector keys = {X(k), X(k + 1)};
       auto motion_models = motionModels(k, between_sigma);
-      std::vector<NonlinearFactor::shared_ptr> components;
+      std::vector<std::pair<NonlinearFactor::shared_ptr, double>> components;
       for (auto &&f : motion_models) {
-        components.push_back(std::dynamic_pointer_cast<NonlinearFactor>(f));
+        components.push_back(
+            {std::dynamic_pointer_cast<NonlinearFactor>(f), 0.0});
       }
       nonlinearFactorGraph.emplace_shared<HybridNonlinearFactor>(
           keys, DiscreteKeys{modes[k]}, components);

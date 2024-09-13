@@ -53,9 +53,9 @@ class HybridNonlinearFactor : public HybridFactor {
 
   /**
    * @brief typedef for DecisionTree which has Keys as node labels and
-   * NonlinearFactor as leaf nodes.
+   * pairs of NonlinearFactor & an arbitrary scalar as leaf nodes.
    */
-  using Factors = DecisionTree<Key, sharedFactor>;
+  using Factors = DecisionTree<Key, std::pair<sharedFactor, double>>;
 
  private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
@@ -90,25 +90,27 @@ class HybridNonlinearFactor : public HybridFactor {
    * Will be typecast to NonlinearFactor shared pointers.
    * @param keys Vector of keys for continuous factors.
    * @param discreteKeys Vector of discrete keys.
-   * @param factors Vector of nonlinear factors.
+   * @param factors Vector of nonlinear factor and scalar pairs.
    * @param normalized Flag indicating if the factor error is already
    * normalized.
    */
   template <typename FACTOR>
-  HybridNonlinearFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                        const std::vector<std::shared_ptr<FACTOR>>& factors,
-                        bool normalized = false)
+  HybridNonlinearFactor(
+      const KeyVector& keys, const DiscreteKeys& discreteKeys,
+      const std::vector<std::pair<std::shared_ptr<FACTOR>, double>>& factors,
+      bool normalized = false)
       : Base(keys, discreteKeys), normalized_(normalized) {
-    std::vector<NonlinearFactor::shared_ptr> nonlinear_factors;
+    std::vector<std::pair<NonlinearFactor::shared_ptr, double>>
+        nonlinear_factors;
     KeySet continuous_keys_set(keys.begin(), keys.end());
     KeySet factor_keys_set;
-    for (auto&& f : factors) {
+    for (auto&& [f, val] : factors) {
       // Insert all factor continuous keys in the continuous keys set.
       std::copy(f->keys().begin(), f->keys().end(),
                 std::inserter(factor_keys_set, factor_keys_set.end()));
 
       if (auto nf = std::dynamic_pointer_cast<NonlinearFactor>(f)) {
-        nonlinear_factors.push_back(nf);
+        nonlinear_factors.push_back(std::make_pair(nf, val));
       } else {
         throw std::runtime_error(
             "Factors passed into HybridNonlinearFactor need to be nonlinear!");
@@ -133,9 +135,11 @@ class HybridNonlinearFactor : public HybridFactor {
    */
   AlgebraicDecisionTree<Key> errorTree(const Values& continuousValues) const {
     // functor to convert from sharedFactor to double error value.
-    auto errorFunc = [continuousValues](const sharedFactor& factor) {
-      return factor->error(continuousValues);
-    };
+    auto errorFunc =
+        [continuousValues](const std::pair<sharedFactor, double>& f) {
+          auto [factor, val] = f;
+          return factor->error(continuousValues) + val;
+        };
     DecisionTree<Key, double> result(factors_, errorFunc);
     return result;
   }
@@ -150,12 +154,10 @@ class HybridNonlinearFactor : public HybridFactor {
   double error(const Values& continuousValues,
                const DiscreteValues& discreteValues) const {
     // Retrieve the factor corresponding to the assignment in discreteValues.
-    auto factor = factors_(discreteValues);
+    auto [factor, val] = factors_(discreteValues);
     // Compute the error for the selected factor
     const double factorError = factor->error(continuousValues);
-    if (normalized_) return factorError;
-    return factorError + this->nonlinearFactorLogNormalizingConstant(
-                             factor, continuousValues);
+    return factorError + val;
   }
 
   /**
@@ -175,7 +177,7 @@ class HybridNonlinearFactor : public HybridFactor {
    */
   size_t dim() const {
     const auto assignments = DiscreteValues::CartesianProduct(discreteKeys_);
-    auto factor = factors_(assignments.at(0));
+    auto [factor, val] = factors_(assignments.at(0));
     return factor->dim();
   }
 
@@ -189,9 +191,11 @@ class HybridNonlinearFactor : public HybridFactor {
     std::cout << (s.empty() ? "" : s + " ");
     Base::print("", keyFormatter);
     std::cout << "\nHybridNonlinearFactor\n";
-    auto valueFormatter = [](const sharedFactor& v) {
-      if (v) {
-        return "Nonlinear factor on " + std::to_string(v->size()) + " keys";
+    auto valueFormatter = [](const std::pair<sharedFactor, double>& v) {
+      auto [factor, val] = v;
+      if (factor) {
+        return "Nonlinear factor on " + std::to_string(factor->size()) +
+               " keys";
       } else {
         return std::string("nullptr");
       }
@@ -211,8 +215,10 @@ class HybridNonlinearFactor : public HybridFactor {
         static_cast<const HybridNonlinearFactor&>(other));
 
     // Ensure that this HybridNonlinearFactor and `f` have the same `factors_`.
-    auto compare = [tol](const sharedFactor& a, const sharedFactor& b) {
-      return traits<NonlinearFactor>::Equals(*a, *b, tol);
+    auto compare = [tol](const std::pair<sharedFactor, double>& a,
+                         const std::pair<sharedFactor, double>& b) {
+      return traits<NonlinearFactor>::Equals(*a.first, *b.first, tol) &&
+             (a.second == b.second);
     };
     if (!factors_.equals(f.factors_, compare)) return false;
 
@@ -230,7 +236,7 @@ class HybridNonlinearFactor : public HybridFactor {
   GaussianFactor::shared_ptr linearize(
       const Values& continuousValues,
       const DiscreteValues& discreteValues) const {
-    auto factor = factors_(discreteValues);
+    auto [factor, val] = factors_(discreteValues);
     return factor->linearize(continuousValues);
   }
 
@@ -238,12 +244,14 @@ class HybridNonlinearFactor : public HybridFactor {
   std::shared_ptr<HybridGaussianFactor> linearize(
       const Values& continuousValues) const {
     // functional to linearize each factor in the decision tree
-    auto linearizeDT = [continuousValues](const sharedFactor& factor) {
-      return factor->linearize(continuousValues);
-    };
+    auto linearizeDT =
+        [continuousValues](const std::pair<sharedFactor, double>& f) {
+          auto [factor, val] = f;
+          return {factor->linearize(continuousValues), val};
+        };
 
-    DecisionTree<Key, GaussianFactor::shared_ptr> linearized_factors(
-        factors_, linearizeDT);
+    DecisionTree<Key, std::pair<GaussianFactor::shared_ptr, double>>
+        linearized_factors(factors_, linearizeDT);
 
     return std::make_shared<HybridGaussianFactor>(
         continuousKeys_, discreteKeys_, linearized_factors);
