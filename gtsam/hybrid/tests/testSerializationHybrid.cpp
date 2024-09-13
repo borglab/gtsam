@@ -51,21 +51,21 @@ BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree");
 BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf");
 BOOST_CLASS_EXPORT_GUID(ADT::Choice, "gtsam_AlgebraicDecisionTree_Choice")
 
-BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor, "gtsam_GaussianMixtureFactor");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor, "gtsam_HybridGaussianFactor");
 BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors,
-                        "gtsam_GaussianMixtureFactor_Factors");
+                        "gtsam_HybridGaussianFactor_Factors");
 BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Leaf,
-                        "gtsam_GaussianMixtureFactor_Factors_Leaf");
+                        "gtsam_HybridGaussianFactor_Factors_Leaf");
 BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Choice,
-                        "gtsam_GaussianMixtureFactor_Factors_Choice");
+                        "gtsam_HybridGaussianFactor_Factors_Choice");
 
-BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional, "gtsam_GaussianMixture");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional, "gtsam_HybridGaussianConditional");
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals,
-                        "gtsam_GaussianMixture_Conditionals");
+                        "gtsam_HybridGaussianConditional_Conditionals");
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals::Leaf,
-                        "gtsam_GaussianMixture_Conditionals_Leaf");
+                        "gtsam_HybridGaussianConditional_Conditionals_Leaf");
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals::Choice,
-                        "gtsam_GaussianMixture_Conditionals_Choice");
+                        "gtsam_HybridGaussianConditional_Conditionals_Choice");
 // Needed since GaussianConditional::FromMeanAndStddev uses it
 BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
 

@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testGaussianMixture.cpp
+ * @file    testHybridGaussianConditional.cpp
  * @brief   Unit tests for HybridGaussianConditional class
  * @author  Varun Agrawal
  * @author  Fan Jiang

@@ -201,7 +201,7 @@ HybridGaussianConditional
 \emph default
  (maybe to be renamed to 
 \emph on
-GaussianMixtureComponent
+HybridGaussianConditionalComponent
 \emph default
 ) just indexes into a number of 
 \emph on

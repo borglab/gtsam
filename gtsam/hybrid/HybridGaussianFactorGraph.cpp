@@ -343,7 +343,7 @@ static std::shared_ptr<Factor> createDiscreteFactor(
 
 // Create HybridGaussianFactor on the separator, taking care to correct
 // for conditional constants.
-static std::shared_ptr<Factor> createGaussianMixtureFactor(
+static std::shared_ptr<Factor> createHybridGaussianFactor(
     const DecisionTree<Key, Result> &eliminationResults,
     const KeyVector &continuousSeparator,
     const DiscreteKeys &discreteSeparator) {
@@ -405,7 +405,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   auto newFactor =
       continuousSeparator.empty()
           ? createDiscreteFactor(eliminationResults, discreteSeparator)
-          : createGaussianMixtureFactor(eliminationResults, continuousSeparator,
+          : createHybridGaussianFactor(eliminationResults, continuousSeparator,
                                         discreteSeparator);
 
   // Create the HybridGaussianConditional from the conditionals

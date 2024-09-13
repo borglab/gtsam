@@ -188,7 +188,7 @@ class HybridNonlinearFactor : public HybridFactor {
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << (s.empty() ? "" : s + " ");
     Base::print("", keyFormatter);
-    std::cout << "\nMixtureFactor\n";
+    std::cout << "\nHybridNonlinearFactor\n";
     auto valueFormatter = [](const sharedFactor& v) {
       if (v) {
         return "Nonlinear factor on " + std::to_string(v->size()) + " keys";

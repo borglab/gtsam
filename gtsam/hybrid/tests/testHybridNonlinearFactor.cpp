@@ -73,7 +73,7 @@ HybridNonlinearFactor
 }
 
 /* ************************************************************************* */
-static HybridNonlinearFactor getMixtureFactor() {
+static HybridNonlinearFactor getHybridNonlinearFactor() {
   DiscreteKey m1(1, 2);
 
   double between0 = 0.0;
@@ -94,7 +94,7 @@ static HybridNonlinearFactor getMixtureFactor() {
 /* ************************************************************************* */
 // Test the error of the HybridNonlinearFactor
 TEST(HybridNonlinearFactor, Error) {
-  auto mixtureFactor = getMixtureFactor();
+  auto mixtureFactor = getHybridNonlinearFactor();
 
   Values continuousValues;
   continuousValues.insert<double>(X(1), 0);
@@ -114,7 +114,7 @@ TEST(HybridNonlinearFactor, Error) {
 /* ************************************************************************* */
 // Test dim of the HybridNonlinearFactor
 TEST(HybridNonlinearFactor, Dim) {
-  auto mixtureFactor = getMixtureFactor();
+  auto mixtureFactor = getHybridNonlinearFactor();
   EXPECT_LONGS_EQUAL(1, mixtureFactor.dim());
 }
 

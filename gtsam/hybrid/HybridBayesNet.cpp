@@ -182,11 +182,11 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
   for (auto &&conditional : *this) {
     if (auto gm = conditional->asMixture()) {
       // Make a copy of the Gaussian mixture and prune it!
-      auto prunedGaussianMixture = std::make_shared<HybridGaussianConditional>(*gm);
-      prunedGaussianMixture->prune(prunedDiscreteProbs);  // imperative :-(
+      auto prunedHybridGaussianConditional = std::make_shared<HybridGaussianConditional>(*gm);
+      prunedHybridGaussianConditional->prune(prunedDiscreteProbs);  // imperative :-(
 
       // Type-erase and add to the pruned Bayes Net fragment.
-      prunedBayesNetFragment.push_back(prunedGaussianMixture);
+      prunedBayesNetFragment.push_back(prunedHybridGaussianConditional);
 
     } else {
       // Add the non-HybridGaussianConditional conditional
