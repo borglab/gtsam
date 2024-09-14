@@ -127,9 +127,9 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
 
   // Add a gaussian mixture factor ϕ(x1, c1)
   DiscreteKey m1(M(1), 2);
-  DecisionTree<Key, GaussianFactor::shared_ptr> dt(
-      M(1), std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
-      std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
+  DecisionTree<Key, GaussianFactorValuePair> dt(
+      M(1), {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},
+      {std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()), 0.0});
   hfg.add(HybridGaussianFactor({X(1)}, {m1}, dt));
 
   auto result = hfg.eliminateSequential();
@@ -153,9 +153,9 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
   // Add factor between x0 and x1
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  std::vector<GaussianFactor::shared_ptr> factors = {
-      std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
-      std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())};
+  std::vector<GaussianFactorValuePair> factors = {
+      {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},
+      {std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()), 0.0}};
   hfg.add(HybridGaussianFactor({X(1)}, {m1}, factors));
 
   // Discrete probability table for c1
@@ -178,10 +178,10 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  hfg.add(HybridGaussianFactor(
-      {X(1)}, {{M(1), 2}},
-      {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
-       std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())}));
+  std::vector<GaussianFactorValuePair> factors = {
+      {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},
+      {std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()), 0.0}};
+  hfg.add(HybridGaussianFactor({X(1)}, {{M(1), 2}}, factors));
 
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
   // TODO(Varun) Adding extra discrete variable not connected to continuous
@@ -208,9 +208,9 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
   // Decision tree with different modes on x1
-  DecisionTree<Key, GaussianFactor::shared_ptr> dt(
-      M(1), std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
-      std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
+  DecisionTree<Key, GaussianFactorValuePair> dt(
+      M(1), {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},
+      {std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()), 0.0});
 
   // Hybrid factor P(x1|c1)
   hfg.add(HybridGaussianFactor({X(1)}, {m}, dt));
@@ -238,14 +238,14 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
 
   {
-    hfg.add(HybridGaussianFactor(
-        {X(0)}, {{M(0), 2}},
-        {std::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1),
-         std::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones())}));
+    std::vector<GaussianFactorValuePair> factors = {
+        {std::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1), 0.0},
+        {std::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones()), 0.0}};
+    hfg.add(HybridGaussianFactor({X(0)}, {{M(0), 2}}, factors));
 
-    DecisionTree<Key, GaussianFactor::shared_ptr> dt1(
-        M(1), std::make_shared<JacobianFactor>(X(2), I_3x3, Z_3x1),
-        std::make_shared<JacobianFactor>(X(2), I_3x3, Vector3::Ones()));
+    DecisionTree<Key, GaussianFactorValuePair> dt1(
+        M(1), {std::make_shared<JacobianFactor>(X(2), I_3x3, Z_3x1), 0.0},
+        {std::make_shared<JacobianFactor>(X(2), I_3x3, Vector3::Ones()), 0.0});
 
     hfg.add(HybridGaussianFactor({X(2)}, {{M(1), 2}}, dt1));
   }
@@ -256,15 +256,15 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(4), I_3x3, X(5), -I_3x3, Z_3x1));
 
   {
-    DecisionTree<Key, GaussianFactor::shared_ptr> dt(
-        M(3), std::make_shared<JacobianFactor>(X(3), I_3x3, Z_3x1),
-        std::make_shared<JacobianFactor>(X(3), I_3x3, Vector3::Ones()));
+    DecisionTree<Key, GaussianFactorValuePair> dt(
+        M(3), {std::make_shared<JacobianFactor>(X(3), I_3x3, Z_3x1), 0.0},
+        {std::make_shared<JacobianFactor>(X(3), I_3x3, Vector3::Ones()), 0.0});
 
     hfg.add(HybridGaussianFactor({X(3)}, {{M(3), 2}}, dt));
 
-    DecisionTree<Key, GaussianFactor::shared_ptr> dt1(
-        M(2), std::make_shared<JacobianFactor>(X(5), I_3x3, Z_3x1),
-        std::make_shared<JacobianFactor>(X(5), I_3x3, Vector3::Ones()));
+    DecisionTree<Key, GaussianFactorValuePair> dt1(
+        M(2), {std::make_shared<JacobianFactor>(X(5), I_3x3, Z_3x1), 0.0},
+        {std::make_shared<JacobianFactor>(X(5), I_3x3, Vector3::Ones()), 0.0});
 
     hfg.add(HybridGaussianFactor({X(5)}, {{M(2), 2}}, dt1));
   }
@@ -552,9 +552,9 @@ TEST(HybridGaussianFactorGraph, optimize) {
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  DecisionTree<Key, GaussianFactor::shared_ptr> dt(
-      C(1), std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
-      std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
+  DecisionTree<Key, GaussianFactorValuePair> dt(
+      C(1), {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},
+      {std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()), 0.0});
 
   hfg.add(HybridGaussianFactor({X(1)}, {c1}, dt));
 
@@ -734,8 +734,8 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   // Expected decision tree with two factor graphs:
   // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
   GaussianFactorGraphTree expected{
-      M(0), GaussianFactorGraph(std::vector<GF>{(*mixture)(d0), prior}),
-      GaussianFactorGraph(std::vector<GF>{(*mixture)(d1), prior})};
+      M(0), GaussianFactorGraph(std::vector<GF>{(*mixture)(d0).first, prior}),
+      GaussianFactorGraph(std::vector<GF>{(*mixture)(d1).first, prior})};
 
   EXPECT(assert_equal(expected(d0), actual(d0), 1e-5));
   EXPECT(assert_equal(expected(d1), actual(d1), 1e-5));

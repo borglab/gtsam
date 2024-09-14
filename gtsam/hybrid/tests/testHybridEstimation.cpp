@@ -542,8 +542,10 @@ std::shared_ptr<HybridGaussianFactor> mixedVarianceFactor(
   double logNormalizationConstant = log(1.0 / noise_tight);
   double logConstant = -0.5 * d * log2pi + logNormalizationConstant;
 
-  auto func = [&](const Assignment<Key>& assignment,
-                  const GaussianFactor::shared_ptr& gf) {
+  auto func =
+      [&](const Assignment<Key>& assignment,
+          const GaussianFactorValuePair& gfv) -> GaussianFactorValuePair {
+    auto [gf, val] = gfv;
     if (assignment.at(mode) != tight_index) {
       double factor_log_constant = -0.5 * d * log2pi + log(1.0 / noise_loose);
 
@@ -555,9 +557,9 @@ std::shared_ptr<HybridGaussianFactor> mixedVarianceFactor(
       }
 
       _gfg.emplace_shared<JacobianFactor>(c);
-      return std::make_shared<JacobianFactor>(_gfg);
+      return {std::make_shared<JacobianFactor>(_gfg), 0.0};
     } else {
-      return dynamic_pointer_cast<JacobianFactor>(gf);
+      return {dynamic_pointer_cast<JacobianFactor>(gf), 0.0};
     }
   };
   auto updated_components = gmf->factors().apply(func);

@@ -71,9 +71,8 @@ TEST(HybridGaussianFactor, Sum) {
   auto f20 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
   auto f21 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
   auto f22 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
-  std::vector<std::pair<GaussianFactor::shared_ptr, double>> factorsA{
-      {f10, 0.0}, {f11, 0.0}};
-  std::vector<std::pair<GaussianFactor::shared_ptr, double>> factorsB{
+  std::vector<GaussianFactorValuePair> factorsA{{f10, 0.0}, {f11, 0.0}};
+  std::vector<GaussianFactorValuePair> factorsB{
       {f20, 0.0}, {f21, 0.0}, {f22, 0.0}};
 
   // TODO(Frank): why specify keys at all? And: keys in factor should be *all*
@@ -111,8 +110,7 @@ TEST(HybridGaussianFactor, Printing) {
   auto b = Matrix::Zero(2, 1);
   auto f10 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
   auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
-  std::vector<std::pair<GaussianFactor::shared_ptr, double>> factors{
-      {f10, 0.0}, {f11, 0.0}};
+  std::vector<GaussianFactorValuePair> factors{{f10, 0.0}, {f11, 0.0}};
 
   HybridGaussianFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 
@@ -183,8 +181,7 @@ TEST(HybridGaussianFactor, Error) {
 
   auto f0 = std::make_shared<JacobianFactor>(X(1), A01, X(2), A02, b);
   auto f1 = std::make_shared<JacobianFactor>(X(1), A11, X(2), A12, b);
-  std::vector<std::pair<GaussianFactor::shared_ptr, double>> factors{{f0, 0.0},
-                                                                     {f1, 0.0}};
+  std::vector<GaussianFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
 
   HybridGaussianFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 

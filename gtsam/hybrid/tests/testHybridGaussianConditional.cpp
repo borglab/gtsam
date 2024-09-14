@@ -183,7 +183,7 @@ TEST(HybridGaussianConditional, Likelihood2) {
   // Check the detailed JacobianFactor calculation for mode==1.
   {
     // We have a JacobianFactor
-    const auto gf1 = (*likelihood)(assignment1);
+    const auto gf1 = (*likelihood)(assignment1).first;
     const auto jf1 = std::dynamic_pointer_cast<JacobianFactor>(gf1);
     CHECK(jf1);
 
