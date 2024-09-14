@@ -236,7 +236,7 @@ class HybridNonlinearFactor : public HybridFactor {
   GaussianFactor::shared_ptr linearize(
       const Values& continuousValues,
       const DiscreteValues& discreteValues) const {
-    auto [factor, val] = factors_(discreteValues);
+    auto factor = factors_(discreteValues).first;
     return factor->linearize(continuousValues);
   }
 
