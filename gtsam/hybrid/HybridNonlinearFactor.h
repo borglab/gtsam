@@ -138,7 +138,7 @@ class HybridNonlinearFactor : public HybridFactor {
     auto errorFunc =
         [continuousValues](const std::pair<sharedFactor, double>& f) {
           auto [factor, val] = f;
-          return factor->error(continuousValues) + val;
+          return factor->error(continuousValues) + (0.5 * val * val);
         };
     DecisionTree<Key, double> result(factors_, errorFunc);
     return result;
@@ -157,7 +157,7 @@ class HybridNonlinearFactor : public HybridFactor {
     auto [factor, val] = factors_(discreteValues);
     // Compute the error for the selected factor
     const double factorError = factor->error(continuousValues);
-    return factorError + val;
+    return factorError + (0.5 * val * val);
   }
 
   /**

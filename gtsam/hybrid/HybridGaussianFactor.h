@@ -119,7 +119,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// @name Standard API
   /// @{
 
-  /// Get the factor and scalar at a given discrete assignment.
+  /// Get factor at a given discrete assignment.
   sharedFactor operator()(const DiscreteValues &assignment) const;
 
   /**
