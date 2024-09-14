@@ -526,7 +526,7 @@ TEST(HybridGaussianFactor, TwoStateModel) {
 /**
  * Test a model P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1).
  *
- * P(f01|x1,x0,m1) has different means and different covariances.
+ * P(x1|x0,m1) has different means and different covariances.
  *
  * Converting to a factor graph gives us
  * ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)P(m1)
@@ -618,11 +618,105 @@ TEST(HybridGaussianFactor, TwoStateModel2) {
 
 /* ************************************************************************* */
 /**
+ * Test a model P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1).
+ *
+ * P(x1|x0,m1) has the same means but different covariances.
+ *
+ * Converting to a factor graph gives us
+ * ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)P(m1)
+ *
+ * If we only have a measurement on z0, then
+ * the P(m1) should be 0.5/0.5.
+ * Getting a measurement on z1 gives use more information.
+ */
+TEST(HybridGaussianFactor, TwoStateModel3) {
+  using namespace test_two_state_estimation;
+
+  double mu = 1.0;
+  double sigma0 = 0.5, sigma1 = 2.0;
+  auto hybridMotionModel = CreateHybridMotionModel(mu, mu, sigma0, sigma1);
+
+  // Start with no measurement on x1, only on x0
+  const Vector1 z0(0.5);
+  VectorValues given;
+  given.insert(Z(0), z0);
+
+  {
+    HybridBayesNet hbn = CreateBayesNet(hybridMotionModel);
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+
+    // Check that ratio of Bayes net and factor graph for different modes is
+    // equal for several values of {x0,x1}.
+    for (VectorValues vv :
+         {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
+          VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
+      vv.insert(given);  // add measurements for HBN
+      HybridValues hv0(vv, {{M(1), 0}}), hv1(vv, {{M(1), 1}});
+      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
+                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
+    }
+
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+    // Importance sampling run with 100k samples gives 50.095/49.905
+    // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+
+    // Since no measurement on x1, we a 50/50 probability
+    auto p_m = bn->at(2)->asDiscrete();
+    EXPECT_DOUBLES_EQUAL(0.5, p_m->operator()({{M(1), 0}}), 1e-9);
+    EXPECT_DOUBLES_EQUAL(0.5, p_m->operator()({{M(1), 1}}), 1e-9);
+  }
+
+  {
+    // Now we add a measurement z1 on x1
+    const Vector1 z1(4.0);  // favors m==1
+    given.insert(Z(1), z1);
+
+    HybridBayesNet hbn = CreateBayesNet(hybridMotionModel, true);
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+
+    // Check that ratio of Bayes net and factor graph for different modes is
+    // equal for several values of {x0,x1}.
+    for (VectorValues vv :
+         {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
+          VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
+      vv.insert(given);  // add measurements for HBN
+      HybridValues hv0(vv, {{M(1), 0}}), hv1(vv, {{M(1), 1}});
+      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
+                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
+    }
+
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+    // Values taken from an importance sampling run with 100k samples:
+    // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+    DiscreteConditional expected(m1, "51.7762/48.2238");
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.002));
+  }
+
+  {
+    // Add a different measurement z1 on x1 that favors m==1
+    const Vector1 z1(7.0);
+    given.insert_or_assign(Z(1), z1);
+
+    HybridBayesNet hbn = CreateBayesNet(hybridMotionModel, true);
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+    // Values taken from an importance sampling run with 100k samples:
+    // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+    DiscreteConditional expected(m1, "49.0762/50.9238");
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.005));
+  }
+}
+
+/* ************************************************************************* */
+/**
  * Same model, P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1), but now with very informative
  * measurements and vastly different motion model: either stand still or move
  * far. This yields a very informative posterior.
  */
-TEST(HybridGaussianFactor, TwoStateModel3) {
+TEST(HybridGaussianFactor, TwoStateModel4) {
   using namespace test_two_state_estimation;
 
   double mu0 = 0.0, mu1 = 10.0;
