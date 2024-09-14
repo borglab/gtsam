@@ -129,7 +129,6 @@ Hybrid [x1 x2; 1]{
 ]
   b = [ 0 0 ]
   No noise model
-value: 0
 
  1 Leaf :
   A[x1] = [
@@ -142,7 +141,6 @@ value: 0
 ]
   b = [ 0 0 ]
   No noise model
-value: 0
 
 }
 )";

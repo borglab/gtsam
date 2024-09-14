@@ -442,7 +442,7 @@ TEST(HybridFactorGraph, Full_Elimination) {
 
     DiscreteFactorGraph discrete_fg;
     // TODO(Varun) Make this a function of HybridGaussianFactorGraph?
-    for (auto& factor : (*remainingFactorGraph_partial)) {
+    for (auto &factor : (*remainingFactorGraph_partial)) {
       auto df = dynamic_pointer_cast<DiscreteFactor>(factor);
       assert(df);
       discrete_fg.push_back(df);
@@ -526,7 +526,6 @@ Hybrid [x0 x1; m0]{
 ]
   b = [ -1 ]
   No noise model
-value: 0
 
  1 Leaf :
   A[x0] = [
@@ -537,7 +536,6 @@ value: 0
 ]
   b = [ -0 ]
   No noise model
-value: 0
 
 }
 factor 2: 
@@ -553,7 +551,6 @@ Hybrid [x1 x2; m1]{
 ]
   b = [ -1 ]
   No noise model
-value: 0
 
  1 Leaf :
   A[x1] = [
@@ -564,7 +561,6 @@ value: 0
 ]
   b = [ -0 ]
   No noise model
-value: 0
 
 }
 factor 3: 
@@ -613,7 +609,6 @@ Hybrid [x0 x1; m0]{
 ]
   b = [ -1 ]
   No noise model
-value: 0
 
  1 Leaf:
   A[x0] = [
@@ -624,7 +619,6 @@ value: 0
 ]
   b = [ -0 ]
   No noise model
-value: 0
 
 }
 factor 2: 
@@ -639,7 +633,6 @@ Hybrid [x1 x2; m1]{
 ]
   b = [ -1 ]
   No noise model
-value: 0
 
  1 Leaf:
   A[x1] = [
@@ -650,7 +643,6 @@ value: 0
 ]
   b = [ -0 ]
   No noise model
-value: 0
 
 }
 factor 3: 
