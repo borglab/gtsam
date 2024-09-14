@@ -55,8 +55,10 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
 
   using sharedFactor = std::shared_ptr<GaussianFactor>;
 
-  /// typedef for Decision Tree of Gaussian factors and log-constant.
-  using Factors = DecisionTree<Key, GaussianFactorValuePair>;
+  /// typedef for Decision Tree of Gaussian factors and arbitrary value.
+  using FactorValuePairs = DecisionTree<Key, GaussianFactorValuePair>;
+  /// typedef for Decision Tree of Gaussian factors.
+  using Factors = DecisionTree<Key, sharedFactor>;
 
  private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
@@ -87,7 +89,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    */
   HybridGaussianFactor(const KeyVector &continuousKeys,
                        const DiscreteKeys &discreteKeys,
-                       const Factors &factors);
+                       const FactorValuePairs &factors);
 
   /**
    * @brief Construct a new HybridGaussianFactor object using a vector of
@@ -102,7 +104,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
                        const DiscreteKeys &discreteKeys,
                        const std::vector<GaussianFactorValuePair> &factors)
       : HybridGaussianFactor(continuousKeys, discreteKeys,
-                             Factors(discreteKeys, factors)) {}
+                             FactorValuePairs(discreteKeys, factors)) {}
 
   /// @}
   /// @name Testable
@@ -118,7 +120,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// @{
 
   /// Get the factor and scalar at a given discrete assignment.
-  GaussianFactorValuePair operator()(const DiscreteValues &assignment) const;
+  sharedFactor operator()(const DiscreteValues &assignment) const;
 
   /**
    * @brief Combine the Gaussian Factor Graphs in `sum` and `this` while
@@ -172,5 +174,17 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
 // traits
 template <>
 struct traits<HybridGaussianFactor> : public Testable<HybridGaussianFactor> {};
+
+/**
+ * @brief Helper function to compute the sqrt(|2πΣ|) normalizer values
+ * for a Gaussian noise model.
+ * We compute this in the log-space for numerical accuracy.
+ *
+ * @param noise_model The Gaussian noise model
+ * whose normalizer we wish to compute.
+ * @return double
+ */
+GTSAM_EXPORT double ComputeLogNormalizer(
+    const noiseModel::Gaussian::shared_ptr &noise_model);
 
 }  // namespace gtsam
