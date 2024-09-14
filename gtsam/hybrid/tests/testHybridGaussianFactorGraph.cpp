@@ -734,8 +734,8 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   // Expected decision tree with two factor graphs:
   // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
   GaussianFactorGraphTree expected{
-      M(0), GaussianFactorGraph(std::vector<GF>{(*mixture)(d0).first, prior}),
-      GaussianFactorGraph(std::vector<GF>{(*mixture)(d1).first, prior})};
+      M(0), GaussianFactorGraph(std::vector<GF>{(*mixture)(d0), prior}),
+      GaussianFactorGraph(std::vector<GF>{(*mixture)(d1), prior})};
 
   EXPECT(assert_equal(expected(d0), actual(d0), 1e-5));
   EXPECT(assert_equal(expected(d1), actual(d1), 1e-5));

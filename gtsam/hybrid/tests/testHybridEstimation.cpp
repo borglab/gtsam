@@ -544,8 +544,7 @@ std::shared_ptr<HybridGaussianFactor> mixedVarianceFactor(
 
   auto func =
       [&](const Assignment<Key>& assignment,
-          const GaussianFactorValuePair& gfv) -> GaussianFactorValuePair {
-    auto [gf, val] = gfv;
+          const GaussianFactor::shared_ptr& gf) -> GaussianFactorValuePair {
     if (assignment.at(mode) != tight_index) {
       double factor_log_constant = -0.5 * d * log2pi + log(1.0 / noise_loose);
 
