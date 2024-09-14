@@ -222,8 +222,8 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
   const HybridGaussianFactor::Factors likelihoods(
       conditionals_,
       [&](const GaussianConditional::shared_ptr &conditional)
-          -> std::pair<GaussianFactor::shared_ptr, double> {
-        auto likelihood_m = conditional->likelihood(given);
+          -> GaussianFactorValuePair {
+        const auto likelihood_m = conditional->likelihood(given);
         const double Cgm_Kgcm =
             logConstant_ - conditional->logNormalizationConstant();
         if (Cgm_Kgcm == 0.0) {
@@ -231,8 +231,13 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
         } else {
           // Add a constant factor to the likelihood in case the noise models
           // are not all equal.
-          double c = std::sqrt(2.0 * Cgm_Kgcm);
-          return {likelihood_m, c};
+          GaussianFactorGraph gfg;
+          gfg.push_back(likelihood_m);
+          Vector c(1);
+          c << std::sqrt(2.0 * Cgm_Kgcm);
+          auto constantFactor = std::make_shared<JacobianFactor>(c);
+          gfg.push_back(constantFactor);
+          return {std::make_shared<JacobianFactor>(gfg), 0.0};
         }
       });
   return std::make_shared<HybridGaussianFactor>(

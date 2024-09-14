@@ -263,9 +263,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     } else if (auto gmf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       // Case where we have a HybridGaussianFactor with no continuous keys.
       // In this case, compute discrete probabilities.
-      auto logProbability =
-          [&](const std::pair<GaussianFactor::shared_ptr, double> &fv)
-          -> double {
+      auto logProbability = [&](const GaussianFactorValuePair &fv) -> double {
         auto [factor, val] = fv;
         double v = 0.5 * val * val;
         if (!factor) return -v;
@@ -353,8 +351,7 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
     const KeyVector &continuousSeparator,
     const DiscreteKeys &discreteSeparator) {
   // Correct for the normalization constant used up by the conditional
-  auto correct =
-      [&](const Result &pair) -> std::pair<GaussianFactor::shared_ptr, double> {
+  auto correct = [&](const Result &pair) -> GaussianFactorValuePair {
     const auto &[conditional, factor] = pair;
     if (factor) {
       auto hf = std::dynamic_pointer_cast<HessianFactor>(factor);
@@ -365,8 +362,8 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
     }
     return {factor, 0.0};
   };
-  DecisionTree<Key, std::pair<GaussianFactor::shared_ptr, double>> newFactors(
-      eliminationResults, correct);
+  DecisionTree<Key, GaussianFactorValuePair> newFactors(eliminationResults,
+                                                        correct);
 
   return std::make_shared<HybridGaussianFactor>(continuousSeparator,
                                                 discreteSeparator, newFactors);

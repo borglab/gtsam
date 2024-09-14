@@ -45,12 +45,10 @@ bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {
 
   // Check the base and the factors:
   return Base::equals(*e, tol) &&
-         factors_.equals(e->factors_,
-                         [tol](const std::pair<sharedFactor, double> &f1,
-                               const std::pair<sharedFactor, double> &f2) {
-                           return f1.first->equals(*f2.first, tol) &&
-                                  (f1.second == f2.second);
-                         });
+         factors_.equals(e->factors_, [tol](const GaussianFactorValuePair &f1,
+                                            const GaussianFactorValuePair &f2) {
+           return f1.first->equals(*f2.first, tol) && (f1.second == f2.second);
+         });
 }
 
 /* *******************************************************************************/
@@ -65,7 +63,7 @@ void HybridGaussianFactor::print(const std::string &s,
   } else {
     factors_.print(
         "", [&](Key k) { return formatter(k); },
-        [&](const std::pair<sharedFactor, double> &gfv) -> std::string {
+        [&](const GaussianFactorValuePair &gfv) -> std::string {
           auto [gf, val] = gfv;
           RedirectCout rd;
           std::cout << ":\n";
@@ -82,8 +80,8 @@ void HybridGaussianFactor::print(const std::string &s,
 }
 
 /* *******************************************************************************/
-std::pair<HybridGaussianFactor::sharedFactor, double>
-HybridGaussianFactor::operator()(const DiscreteValues &assignment) const {
+GaussianFactorValuePair HybridGaussianFactor::operator()(
+    const DiscreteValues &assignment) const {
   return factors_(assignment);
 }
 
@@ -103,7 +101,7 @@ GaussianFactorGraphTree HybridGaussianFactor::add(
 /* *******************************************************************************/
 GaussianFactorGraphTree HybridGaussianFactor::asGaussianFactorGraphTree()
     const {
-  auto wrap = [](const std::pair<sharedFactor, double> &gfv) {
+  auto wrap = [](const GaussianFactorValuePair &gfv) {
     return GaussianFactorGraph{gfv.first};
   };
   return {factors_, wrap};
@@ -113,11 +111,10 @@ GaussianFactorGraphTree HybridGaussianFactor::asGaussianFactorGraphTree()
 AlgebraicDecisionTree<Key> HybridGaussianFactor::errorTree(
     const VectorValues &continuousValues) const {
   // functor to convert from sharedFactor to double error value.
-  auto errorFunc =
-      [&continuousValues](const std::pair<sharedFactor, double> &gfv) {
-        auto [gf, val] = gfv;
-        return gf->error(continuousValues) + val;
-      };
+  auto errorFunc = [&continuousValues](const GaussianFactorValuePair &gfv) {
+    auto [gf, v] = gfv;
+    return gf->error(continuousValues) + (0.5 * v * v);
+  };
   DecisionTree<Key, double> error_tree(factors_, errorFunc);
   return error_tree;
 }

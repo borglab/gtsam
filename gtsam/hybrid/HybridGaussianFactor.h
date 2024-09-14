@@ -33,6 +33,9 @@ class HybridValues;
 class DiscreteValues;
 class VectorValues;
 
+/// Alias for pair of GaussianFactor::shared_pointer and a double value.
+using GaussianFactorValuePair = std::pair<GaussianFactor::shared_ptr, double>;
+
 /**
  * @brief Implementation of a discrete conditional mixture factor.
  * Implements a joint discrete-continuous factor where the discrete variable
@@ -53,7 +56,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   using sharedFactor = std::shared_ptr<GaussianFactor>;
 
   /// typedef for Decision Tree of Gaussian factors and log-constant.
-  using Factors = DecisionTree<Key, std::pair<sharedFactor, double>>;
+  using Factors = DecisionTree<Key, GaussianFactorValuePair>;
 
  private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
@@ -95,9 +98,9 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * @param factors Vector of gaussian factor shared pointers
    *  and arbitrary scalars.
    */
-  HybridGaussianFactor(
-      const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys,
-      const std::vector<std::pair<sharedFactor, double>> &factors)
+  HybridGaussianFactor(const KeyVector &continuousKeys,
+                       const DiscreteKeys &discreteKeys,
+                       const std::vector<GaussianFactorValuePair> &factors)
       : HybridGaussianFactor(continuousKeys, discreteKeys,
                              Factors(discreteKeys, factors)) {}
 
@@ -115,8 +118,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// @{
 
   /// Get the factor and scalar at a given discrete assignment.
-  std::pair<sharedFactor, double> operator()(
-      const DiscreteValues &assignment) const;
+  GaussianFactorValuePair operator()(const DiscreteValues &assignment) const;
 
   /**
    * @brief Combine the Gaussian Factor Graphs in `sum` and `this` while
