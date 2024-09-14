@@ -542,9 +542,8 @@ std::shared_ptr<HybridGaussianFactor> mixedVarianceFactor(
   double logNormalizationConstant = log(1.0 / noise_tight);
   double logConstant = -0.5 * d * log2pi + logNormalizationConstant;
 
-  auto func =
-      [&](const Assignment<Key>& assignment,
-          const GaussianFactor::shared_ptr& gf) -> GaussianFactorValuePair {
+  auto func = [&](const Assignment<Key>& assignment,
+                  const GaussianFactor::shared_ptr& gf) {
     if (assignment.at(mode) != tight_index) {
       double factor_log_constant = -0.5 * d * log2pi + log(1.0 / noise_loose);
 
@@ -556,14 +555,19 @@ std::shared_ptr<HybridGaussianFactor> mixedVarianceFactor(
       }
 
       _gfg.emplace_shared<JacobianFactor>(c);
-      return {std::make_shared<JacobianFactor>(_gfg), 0.0};
+      return std::make_shared<JacobianFactor>(_gfg);
     } else {
-      return {dynamic_pointer_cast<JacobianFactor>(gf), 0.0};
+      return dynamic_pointer_cast<JacobianFactor>(gf);
     }
   };
   auto updated_components = gmf->factors().apply(func);
+  auto updated_pairs = HybridGaussianFactor::FactorValuePairs(
+      updated_components,
+      [](const GaussianFactor::shared_ptr& gf) -> GaussianFactorValuePair {
+        return {gf, 0.0};
+      });
   auto updated_gmf = std::make_shared<HybridGaussianFactor>(
-      gmf->continuousKeys(), gmf->discreteKeys(), updated_components);
+      gmf->continuousKeys(), gmf->discreteKeys(), updated_pairs);
 
   return updated_gmf;
 }
