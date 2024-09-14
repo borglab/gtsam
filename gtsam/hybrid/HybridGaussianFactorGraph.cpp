@@ -97,9 +97,7 @@ void HybridGaussianFactorGraph::printErrors(
         std::cout << "nullptr"
                   << "\n";
       } else {
-        auto [factor, val] = hgf->operator()(values.discrete());
-        factor->print(ss.str(), keyFormatter);
-        std::cout << "value: " << val << std::endl;
+        hgf->operator()(values.discrete())->print(ss.str(), keyFormatter);
         std::cout << "error = " << factor->error(values) << std::endl;
       }
     } else if (auto hc = std::dynamic_pointer_cast<HybridConditional>(factor)) {
@@ -263,11 +261,10 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     } else if (auto gmf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       // Case where we have a HybridGaussianFactor with no continuous keys.
       // In this case, compute discrete probabilities.
-      auto logProbability = [&](const GaussianFactorValuePair &fv) -> double {
-        auto [factor, val] = fv;
-        double v = 0.5 * val * val;
-        if (!factor) return -v;
-        return -(factor->error(VectorValues()) + v);
+      auto logProbability =
+          [&](const GaussianFactor::shared_ptr &factor) -> double {
+        if (!factor) return 0.0;
+        return -factor->error(VectorValues());
       };
       AlgebraicDecisionTree<Key> logProbabilities =
           DecisionTree<Key, double>(gmf->factors(), logProbability);
@@ -601,7 +598,7 @@ GaussianFactorGraph HybridGaussianFactorGraph::operator()(
     } else if (auto gc = std::dynamic_pointer_cast<GaussianConditional>(f)) {
       gfg.push_back(gf);
     } else if (auto hgf = std::dynamic_pointer_cast<HybridGaussianFactor>(f)) {
-      gfg.push_back((*hgf)(assignment).first);
+      gfg.push_back((*hgf)(assignment));
     } else if (auto hgc = dynamic_pointer_cast<HybridGaussianConditional>(f)) {
       gfg.push_back((*hgc)(assignment));
     } else {

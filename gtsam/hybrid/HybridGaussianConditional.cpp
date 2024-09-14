@@ -219,7 +219,7 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
 
   const DiscreteKeys discreteParentKeys = discreteKeys();
   const KeyVector continuousParentKeys = continuousParents();
-  const HybridGaussianFactor::Factors likelihoods(
+  const HybridGaussianFactor::FactorValuePairs likelihoods(
       conditionals_,
       [&](const GaussianConditional::shared_ptr &conditional)
           -> GaussianFactorValuePair {
