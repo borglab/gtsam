@@ -221,8 +221,9 @@ double prob_m_z(double mu0, double mu1, double sigma0, double sigma1,
   return 1 / (1 + e);
 };
 
-static HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1,
-                                              double sigma0, double sigma1) {
+static HybridBayesNet GetHybridGaussianConditionalModel(double mu0, double mu1,
+                                                        double sigma0,
+                                                        double sigma1) {
   DiscreteKey m(M(0), 2);
   Key z = Z(0);
 
@@ -254,7 +255,7 @@ static HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1,
  * The resulting factor graph should eliminate to a Bayes net
  * which represents a sigmoid function.
  */
-TEST(HybridGaussianFactor, GaussianMixtureModel) {
+TEST(HybridGaussianFactor, HybridGaussianConditionalModel) {
   using namespace test_gmm;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -263,7 +264,7 @@ TEST(HybridGaussianFactor, GaussianMixtureModel) {
   DiscreteKey m(M(0), 2);
   Key z = Z(0);
 
-  auto hbn = GetGaussianMixtureModel(mu0, mu1, sigma, sigma);
+  auto hbn = GetHybridGaussianConditionalModel(mu0, mu1, sigma, sigma);
 
   // The result should be a sigmoid.
   // So should be P(m=1|z) = 0.5 at z=3.0 - 1.0=2.0
@@ -326,7 +327,7 @@ TEST(HybridGaussianFactor, GaussianMixtureModel) {
  * which represents a Gaussian-like function
  * where m1>m0 close to 3.1333.
  */
-TEST(HybridGaussianFactor, GaussianMixtureModel2) {
+TEST(HybridGaussianFactor, HybridGaussianConditionalModel2) {
   using namespace test_gmm;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -335,7 +336,7 @@ TEST(HybridGaussianFactor, GaussianMixtureModel2) {
   DiscreteKey m(M(0), 2);
   Key z = Z(0);
 
-  auto hbn = GetGaussianMixtureModel(mu0, mu1, sigma0, sigma1);
+  auto hbn = GetHybridGaussianConditionalModel(mu0, mu1, sigma0, sigma1);
 
   double m1_high = 3.133, lambda = 4;
   {
@@ -393,7 +394,7 @@ namespace test_two_state_estimation {
 
 DiscreteKey m1(M(1), 2);
 
-void addMeasurement(HybridBayesNet& hbn, Key z_key, Key x_key, double sigma) {
+void addMeasurement(HybridBayesNet &hbn, Key z_key, Key x_key, double sigma) {
   auto measurement_model = noiseModel::Isotropic::Sigma(1, sigma);
   hbn.emplace_shared<GaussianConditional>(z_key, Vector1(0.0), I_1x1, x_key,
                                           -I_1x1, measurement_model);
@@ -414,7 +415,7 @@ static HybridGaussianConditional::shared_ptr CreateHybridMotionModel(
 
 /// Create two state Bayes network with 1 or two measurement models
 HybridBayesNet CreateBayesNet(
-    const HybridGaussianConditional::shared_ptr& hybridMotionModel,
+    const HybridGaussianConditional::shared_ptr &hybridMotionModel,
     bool add_second_measurement = false) {
   HybridBayesNet hbn;
 
@@ -437,9 +438,9 @@ HybridBayesNet CreateBayesNet(
 
 /// Approximate the discrete marginal P(m1) using importance sampling
 std::pair<double, double> approximateDiscreteMarginal(
-    const HybridBayesNet& hbn,
-    const HybridGaussianConditional::shared_ptr& hybridMotionModel,
-    const VectorValues& given, size_t N = 100000) {
+    const HybridBayesNet &hbn,
+    const HybridGaussianConditional::shared_ptr &hybridMotionModel,
+    const VectorValues &given, size_t N = 100000) {
   /// Create importance sampling network q(x0,x1,m) = p(x1|x0,m1) q(x0) P(m1),
   /// using q(x0) = N(z0, sigmaQ) to sample x0.
   HybridBayesNet q;
@@ -758,7 +759,7 @@ static HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
   auto model1 = noiseModel::Isotropic::Sigma(1, sigmas[1]);
   auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-3);
 
-  // GaussianMixtureFactor component factors
+  // HybridGaussianFactor component factors
   auto f0 =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), means[0], model0);
   auto f1 =
@@ -783,8 +784,8 @@ static HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
       std::make_shared<GaussianConditional>(terms0, 1, -d0, model0),
       std::make_shared<GaussianConditional>(terms1, 1, -d1, model1)};
   gtsam::HybridBayesNet bn;
-  bn.emplace_shared<GaussianMixture>(KeyVector{Z(1)}, KeyVector{X(0), X(1)},
-                                     DiscreteKeys{m1}, conditionals);
+  bn.emplace_shared<HybridGaussianConditional>(
+      KeyVector{Z(1)}, KeyVector{X(0), X(1)}, DiscreteKeys{m1}, conditionals);
 
   // Create FG via toFactorGraph
   gtsam::VectorValues measurements;
@@ -812,7 +813,7 @@ static HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
  * P(Z1 | X1, X2, M1) has 2 conditionals each for the binary
  * mode m1.
  */
-TEST(GaussianMixtureFactor, FactorGraphFromBayesNet) {
+TEST(HybridGaussianFactor, FactorGraphFromBayesNet) {
   DiscreteKey m1(M(1), 2);
 
   Values values;
@@ -889,8 +890,8 @@ namespace test_direct_factor_graph {
  * then perform linearization.
  *
  * @param values Initial values to linearize around.
- * @param means The means of the GaussianMixtureFactor components.
- * @param sigmas The covariances of the GaussianMixtureFactor components.
+ * @param means The means of the HybridGaussianFactor components.
+ * @param sigmas The covariances of the HybridGaussianFactor components.
  * @param m1 The discrete key.
  * @return HybridGaussianFactorGraph
  */
@@ -908,13 +909,10 @@ static HybridGaussianFactorGraph CreateFactorGraph(
       std::make_shared<BetweenFactor<double>>(X(0), X(1), means[1], model1)
           ->linearize(values);
 
-  // Create GaussianMixtureFactor
-  std::vector<GaussianFactor::shared_ptr> factors{f0, f1};
-  AlgebraicDecisionTree<Key> logNormalizers(
-      {m1}, std::vector<double>{ComputeLogNormalizer(model0),
-                                ComputeLogNormalizer(model1)});
-  GaussianMixtureFactor mixtureFactor({X(0), X(1)}, {m1}, factors,
-                                      logNormalizers);
+  // Create HybridGaussianFactor
+  std::vector<GaussianFactorValuePair> factors{
+      {f0, ComputeLogNormalizer(model0)}, {f1, ComputeLogNormalizer(model1)}};
+  HybridGaussianFactor mixtureFactor({X(0), X(1)}, {m1}, factors);
 
   HybridGaussianFactorGraph hfg;
   hfg.push_back(mixtureFactor);
@@ -934,7 +932,7 @@ static HybridGaussianFactorGraph CreateFactorGraph(
  *          |
  *          M1
  */
-TEST(GaussianMixtureFactor, DifferentMeansFG) {
+TEST(HybridGaussianFactor, DifferentMeansFG) {
   using namespace test_direct_factor_graph;
 
   DiscreteKey m1(M(1), 2);
@@ -1009,7 +1007,7 @@ TEST(GaussianMixtureFactor, DifferentMeansFG) {
  *          |
  *          M1
  */
-TEST(GaussianMixtureFactor, DifferentCovariancesFG) {
+TEST(HybridGaussianFactor, DifferentCovariancesFG) {
   using namespace test_direct_factor_graph;
 
   DiscreteKey m1(M(1), 2);
@@ -1021,7 +1019,7 @@ TEST(GaussianMixtureFactor, DifferentCovariancesFG) {
 
   std::vector<double> means = {0.0, 0.0}, sigmas = {1e2, 1e-2};
 
-  // Create FG with GaussianMixtureFactor and prior on X1
+  // Create FG with HybridGaussianFactor and prior on X1
   HybridGaussianFactorGraph mixture_fg =
       CreateFactorGraph(values, means, sigmas, m1);
 
