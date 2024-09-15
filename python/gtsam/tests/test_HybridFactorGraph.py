@@ -37,7 +37,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         jf1 = JacobianFactor(X(0), np.eye(3), np.zeros((3, 1)), model)
         jf2 = JacobianFactor(X(0), np.eye(3), np.ones((3, 1)), model)
 
-        gmf = HybridGaussianFactor([X(0)], dk, [jf1, jf2])
+        gmf = HybridGaussianFactor([X(0)], dk, [(jf1, 0), (jf2, 0)])
 
         hfg = HybridGaussianFactorGraph()
         hfg.push_back(jf1)
@@ -64,7 +64,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         jf1 = JacobianFactor(X(0), np.eye(3), np.zeros((3, 1)), model)
         jf2 = JacobianFactor(X(0), np.eye(3), np.ones((3, 1)), model)
 
-        gmf = HybridGaussianFactor([X(0)], dk, [jf1, jf2])
+        gmf = HybridGaussianFactor([X(0)], dk, [(jf1, 0), (jf2, 0)])
 
         hfg = HybridGaussianFactorGraph()
         hfg.push_back(jf1)
