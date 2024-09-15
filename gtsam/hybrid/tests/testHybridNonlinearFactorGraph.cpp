@@ -841,9 +841,174 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
 }
 
+namespace test_relinearization {
+/**
+ * @brief Create a Factor Graph by directly specifying all
+ * the factors instead of creating conditionals first.
+ * This way we can directly provide the likelihoods and
+ * then perform (re-)linearization.
+ *
+ * @param means The means of the GaussianMixtureFactor components.
+ * @param sigmas The covariances of the GaussianMixtureFactor components.
+ * @param m1 The discrete key.
+ * @param x0_measurement A measurement on X0
+ * @return HybridGaussianFactorGraph
+ */
+static HybridNonlinearFactorGraph CreateFactorGraph(
+    const std::vector<double> &means, const std::vector<double> &sigmas,
+    DiscreteKey &m1, double x0_measurement) {
+  auto model0 = noiseModel::Isotropic::Sigma(1, sigmas[0]);
+  auto model1 = noiseModel::Isotropic::Sigma(1, sigmas[1]);
+  auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-3);
+
+  auto f0 =
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), means[0], model0);
+  auto f1 =
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), means[1], model1);
+
+  // Create HybridNonlinearFactor
+  std::vector<std::pair<NonlinearFactor::shared_ptr, double>> factors{
+      {f0, ComputeLogNormalizer(model0)}, {f1, ComputeLogNormalizer(model1)}};
+
+  HybridNonlinearFactor mixtureFactor({X(0), X(1)}, {m1}, factors);
+
+  HybridNonlinearFactorGraph hfg;
+  hfg.push_back(mixtureFactor);
+
+  hfg.push_back(PriorFactor<double>(X(0), x0_measurement, prior_noise));
+
+  return hfg;
+}
+}  // namespace test_relinearization
+
 /* ************************************************************************* */
+/**
+ * @brief Test components with differing means but the same covariances.
+ * The factor graph is
+ *     *-X1-*-X2
+ *          |
+ *          M1
+ */
+TEST(HybridNonlinearFactorGraph, DifferentMeans) {
+  using namespace test_relinearization;
+
+  DiscreteKey m1(M(1), 2);
+
+  Values values;
+  double x0 = 0.0, x1 = 1.75;
+  values.insert(X(0), x0);
+  values.insert(X(1), x1);
+
+  std::vector<double> means = {0.0, 2.0}, sigmas = {1e-0, 1e-0};
+
+  HybridNonlinearFactorGraph hfg = CreateFactorGraph(means, sigmas, m1, x0);
+
+  {
+    auto bn = hfg.linearize(values)->eliminateSequential();
+    HybridValues actual = bn->optimize();
+
+    HybridValues expected(
+        VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(-1.75)}},
+        DiscreteValues{{M(1), 0}});
+
+    EXPECT(assert_equal(expected, actual));
+
+    DiscreteValues dv0{{M(1), 0}};
+    VectorValues cont0 = bn->optimize(dv0);
+    double error0 = bn->error(HybridValues(cont0, dv0));
+
+    // TODO(Varun) Perform importance sampling to estimate error?
+
+    // regression
+    EXPECT_DOUBLES_EQUAL(0.69314718056, error0, 1e-9);
+
+    DiscreteValues dv1{{M(1), 1}};
+    VectorValues cont1 = bn->optimize(dv1);
+    double error1 = bn->error(HybridValues(cont1, dv1));
+    EXPECT_DOUBLES_EQUAL(error0, error1, 1e-9);
+  }
+
+  {
+    // Add measurement on x1
+    auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-3);
+    hfg.push_back(PriorFactor<double>(X(1), means[1], prior_noise));
+
+    auto bn = hfg.linearize(values)->eliminateSequential();
+    HybridValues actual = bn->optimize();
+
+    HybridValues expected(
+        VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(0.25)}},
+        DiscreteValues{{M(1), 1}});
+
+    EXPECT(assert_equal(expected, actual));
+
+    {
+      DiscreteValues dv{{M(1), 0}};
+      VectorValues cont = bn->optimize(dv);
+      double error = bn->error(HybridValues(cont, dv));
+      // regression
+      EXPECT_DOUBLES_EQUAL(2.12692448787, error, 1e-9);
+    }
+    {
+      DiscreteValues dv{{M(1), 1}};
+      VectorValues cont = bn->optimize(dv);
+      double error = bn->error(HybridValues(cont, dv));
+      // regression
+      EXPECT_DOUBLES_EQUAL(0.126928487854, error, 1e-9);
+    }
+  }
+}
+
+/* ************************************************************************* */
+/**
+ * @brief Test components with differing covariances but the same means.
+ * The factor graph is
+ *     *-X1-*-X2
+ *          |
+ *          M1
+ */
+TEST_DISABLED(HybridNonlinearFactorGraph, DifferentCovariances) {
+  using namespace test_relinearization;
+
+  DiscreteKey m1(M(1), 2);
+
+  Values values;
+  double x0 = 1.0, x1 = 1.0;
+  values.insert(X(0), x0);
+  values.insert(X(1), x1);
+
+  std::vector<double> means = {0.0, 0.0}, sigmas = {1e2, 1e-2};
+
+  // Create FG with HybridNonlinearFactor and prior on X1
+  HybridNonlinearFactorGraph hfg = CreateFactorGraph(means, sigmas, m1, x0);
+  // Linearize and eliminate
+  auto hbn = hfg.linearize(values)->eliminateSequential();
+
+  VectorValues cv;
+  cv.insert(X(0), Vector1(0.0));
+  cv.insert(X(1), Vector1(0.0));
+
+  // Check that the error values at the MLE point μ.
+  AlgebraicDecisionTree<Key> errorTree = hbn->errorTree(cv);
+
+  DiscreteValues dv0{{M(1), 0}};
+  DiscreteValues dv1{{M(1), 1}};
+
+  // regression
+  EXPECT_DOUBLES_EQUAL(9.90348755254, errorTree(dv0), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.69314718056, errorTree(dv1), 1e-9);
+
+  DiscreteConditional expected_m1(m1, "0.5/0.5");
+  DiscreteConditional actual_m1 = *(hbn->at(2)->asDiscrete());
+
+  EXPECT(assert_equal(expected_m1, actual_m1));
+}
+
+/* *************************************************************************
+ */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
-/* ************************************************************************* */
+/* *************************************************************************
+ */
