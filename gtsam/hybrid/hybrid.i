@@ -77,7 +77,8 @@ class HybridGaussianFactor : gtsam::HybridFactor {
   HybridGaussianFactor(
       const gtsam::KeyVector& continuousKeys,
       const gtsam::DiscreteKeys& discreteKeys,
-      const std::vector<gtsam::GaussianFactor::shared_ptr>& factorsList);
+      const std::vector<std::pair<gtsam::GaussianFactor::shared_ptr, double>>&
+          factorsList);
 
   void print(string s = "HybridGaussianFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
@@ -242,14 +243,14 @@ class HybridNonlinearFactorGraph {
 class HybridNonlinearFactor : gtsam::HybridFactor {
   HybridNonlinearFactor(
       const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
-      const gtsam::DecisionTree<gtsam::Key, gtsam::NonlinearFactor*>& factors,
+      const gtsam::DecisionTree<
+          gtsam::Key, std::pair<gtsam::NonlinearFactor*, double>>& factors,
       bool normalized = false);
 
-  template <FACTOR = {gtsam::NonlinearFactor}>
-  HybridNonlinearFactor(const gtsam::KeyVector& keys,
-                        const gtsam::DiscreteKeys& discreteKeys,
-                        const std::vector<FACTOR*>& factors,
-                        bool normalized = false);
+  HybridNonlinearFactor(
+      const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
+      const std::vector<std::pair<gtsam::NonlinearFactor*, double>>& factors,
+      bool normalized = false);
 
   double error(const gtsam::Values& continuousValues,
                const gtsam::DiscreteValues& discreteValues) const;
