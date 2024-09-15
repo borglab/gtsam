@@ -224,7 +224,24 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
       [&](const GaussianConditional::shared_ptr &conditional)
           -> GaussianFactorValuePair {
         const auto likelihood_m = conditional->likelihood(given);
-  s.insert(discreteKeys.begin(), discreteKeys.end());
+        const double Cgm_Kgcm =
+            logConstant_ - conditional->logNormalizationConstant();
+        if (Cgm_Kgcm == 0.0) {
+          return {likelihood_m, 0.0};
+        } else {
+          // Add a constant to the likelihood in case the noise models
+          // are not all equal.
+          double c = 2.0 * Cgm_Kgcm;
+          return {likelihood_m, c};
+        }
+      });
+  return std::make_shared<HybridGaussianFactor>(
+      continuousParentKeys, discreteParentKeys, likelihoods);
+}
+
+/* ************************************************************************* */
+std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys) {
+  std::set<DiscreteKey> s(discreteKeys.begin(), discreteKeys.end());
   return s;
 }
 
@@ -237,6 +254,7 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
  * const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
  */
 std::function<GaussianConditional::shared_ptr(
+    const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
 HybridGaussianConditional::prunerFunc(const DecisionTreeFactor &discreteProbs) {
   // Get the discrete keys as sets for the decision tree
   // and the gaussian mixture.
