@@ -706,6 +706,9 @@ const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise){
   return shared_ptr(new Robust(robust,noise));
 }
 
+/* ************************************************************************* */
+}  // namespace noiseModel
+
 /* *******************************************************************************/
 double ComputeLogNormalizer(
     const noiseModel::Gaussian::shared_ptr& noise_model) {
@@ -722,7 +725,4 @@ double ComputeLogNormalizer(
   return n * log2pi + logDeterminantSigma;
 }
 
-/* ************************************************************************* */
-
-}
 } // gtsam
