@@ -175,16 +175,4 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
 template <>
 struct traits<HybridGaussianFactor> : public Testable<HybridGaussianFactor> {};
 
-/**
- * @brief Helper function to compute the sqrt(|2πΣ|) normalizer values
- * for a Gaussian noise model.
- * We compute this in the log-space for numerical accuracy.
- *
- * @param noise_model The Gaussian noise model
- * whose normalizer we wish to compute.
- * @return double
- */
-GTSAM_EXPORT double ComputeLogNormalizer(
-    const noiseModel::Gaussian::shared_ptr &noise_model);
-
 }  // namespace gtsam
