@@ -616,15 +616,15 @@ TEST(HybridGaussianFactor, TwoStateModel2) {
 
 /* ************************************************************************* */
 /**
- * Test a model P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1).
+ * Test a model p(z0|x0)p(x1|x0,m1)p(z1|x1)p(m1).
  *
- * P(x1|x0,m1) has the same means but different covariances.
+ * p(x1|x0,m1) has the same means but different covariances.
  *
  * Converting to a factor graph gives us
- * ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)P(m1)
+ * ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)p(m1)
  *
  * If we only have a measurement on z0, then
- * the P(m1) should be 0.5/0.5.
+ * the p(m1) should be 0.5/0.5.
  * Getting a measurement on z1 gives use more information.
  */
 TEST(HybridGaussianFactor, TwoStateModel3) {

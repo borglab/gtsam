@@ -110,7 +110,7 @@ class HybridNonlinearFactor : public HybridFactor {
                 std::inserter(factor_keys_set, factor_keys_set.end()));
 
       if (auto nf = std::dynamic_pointer_cast<NonlinearFactor>(f)) {
-        nonlinear_factors.push_back(std::make_pair(nf, val));
+        nonlinear_factors.emplace_back(nf, val);
       } else {
         throw std::runtime_error(
             "Factors passed into HybridNonlinearFactor need to be nonlinear!");
