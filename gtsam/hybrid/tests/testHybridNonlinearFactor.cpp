@@ -58,8 +58,7 @@ TEST(HybridNonlinearFactor, Printing) {
       std::make_shared<BetweenFactor<double>>(X(1), X(2), between0, model);
   auto f1 =
       std::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
-  std::vector<std::pair<NonlinearFactor::shared_ptr, double>> factors{
-      {f0, 0.0}, {f1, 0.0}};
+  std::vector<NonlinearFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
 
   HybridNonlinearFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 
@@ -87,8 +86,7 @@ static HybridNonlinearFactor getHybridNonlinearFactor() {
       std::make_shared<BetweenFactor<double>>(X(1), X(2), between0, model);
   auto f1 =
       std::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
-  std::vector<std::pair<NonlinearFactor::shared_ptr, double>> factors{
-      {f0, 0.0}, {f1, 0.0}};
+  std::vector<NonlinearFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
 
   return HybridNonlinearFactor({X(1), X(2)}, {m1}, factors);
 }

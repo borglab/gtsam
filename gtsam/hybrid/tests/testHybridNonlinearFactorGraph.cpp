@@ -27,6 +27,7 @@
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
@@ -867,7 +868,7 @@ static HybridNonlinearFactorGraph CreateFactorGraph(
       std::make_shared<BetweenFactor<double>>(X(0), X(1), means[1], model1);
 
   // Create HybridNonlinearFactor
-  std::vector<std::pair<NonlinearFactor::shared_ptr, double>> factors{
+  std::vector<NonlinearFactorValuePair> factors{
       {f0, ComputeLogNormalizer(model0)}, {f1, ComputeLogNormalizer(model1)}};
 
   HybridNonlinearFactor mixtureFactor({X(0), X(1)}, {m1}, factors);

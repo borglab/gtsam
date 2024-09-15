@@ -33,6 +33,9 @@
 
 namespace gtsam {
 
+/// Alias for a NonlinearFactor shared pointer and double scalar pair.
+using NonlinearFactorValuePair = std::pair<NonlinearFactor::shared_ptr, double>;
+
 /**
  * @brief Implementation of a discrete conditional mixture factor.
  *
@@ -55,7 +58,7 @@ class HybridNonlinearFactor : public HybridFactor {
    * @brief typedef for DecisionTree which has Keys as node labels and
    * pairs of NonlinearFactor & an arbitrary scalar as leaf nodes.
    */
-  using Factors = DecisionTree<Key, std::pair<sharedFactor, double>>;
+  using Factors = DecisionTree<Key, NonlinearFactorValuePair>;
 
  private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
@@ -100,8 +103,7 @@ class HybridNonlinearFactor : public HybridFactor {
       const std::vector<std::pair<std::shared_ptr<FACTOR>, double>>& factors,
       bool normalized = false)
       : Base(keys, discreteKeys), normalized_(normalized) {
-    std::vector<std::pair<NonlinearFactor::shared_ptr, double>>
-        nonlinear_factors;
+    std::vector<NonlinearFactorValuePair> nonlinear_factors;
     KeySet continuous_keys_set(keys.begin(), keys.end());
     KeySet factor_keys_set;
     for (auto&& [f, val] : factors) {
