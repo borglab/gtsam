@@ -50,31 +50,37 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
 
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const KeyVector &keys)
-    : Base(keys), isContinuous_(true), continuousKeys_(keys) {}
+    : Base(keys),
+      category_(HybridCategory::Continuous),
+      continuousKeys_(keys) {}
 
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const KeyVector &continuousKeys,
                            const DiscreteKeys &discreteKeys)
     : Base(CollectKeys(continuousKeys, discreteKeys)),
-      isDiscrete_((continuousKeys.size() == 0) && (discreteKeys.size() != 0)),
-      isContinuous_((continuousKeys.size() != 0) && (discreteKeys.size() == 0)),
-      isHybrid_((continuousKeys.size() != 0) && (discreteKeys.size() != 0)),
       discreteKeys_(discreteKeys),
-      continuousKeys_(continuousKeys) {}
+      continuousKeys_(continuousKeys) {
+  if ((continuousKeys.size() == 0) && (discreteKeys.size() != 0)) {
+    category_ = HybridCategory::Discrete;
+  } else if ((continuousKeys.size() != 0) && (discreteKeys.size() == 0)) {
+    category_ = HybridCategory::Continuous;
+  } else {
+    category_ = HybridCategory::Hybrid;
+  }
+}
 
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const DiscreteKeys &discreteKeys)
     : Base(CollectKeys({}, discreteKeys)),
-      isDiscrete_(true),
+      category_(HybridCategory::Discrete),
       discreteKeys_(discreteKeys),
       continuousKeys_({}) {}
 
 /* ************************************************************************ */
 bool HybridFactor::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
-  return e != nullptr && Base::equals(*e, tol) &&
-         isDiscrete_ == e->isDiscrete_ && isContinuous_ == e->isContinuous_ &&
-         isHybrid_ == e->isHybrid_ && continuousKeys_ == e->continuousKeys_ &&
+  return e != nullptr && Base::equals(*e, tol) && category_ == e->category_ &&
+         continuousKeys_ == e->continuousKeys_ &&
          discreteKeys_ == e->discreteKeys_;
 }
 
@@ -82,9 +88,18 @@ bool HybridFactor::equals(const HybridFactor &lf, double tol) const {
 void HybridFactor::print(const std::string &s,
                          const KeyFormatter &formatter) const {
   std::cout << (s.empty() ? "" : s + "\n");
-  if (isContinuous_) std::cout << "Continuous ";
-  if (isDiscrete_) std::cout << "Discrete ";
-  if (isHybrid_) std::cout << "Hybrid ";
+  switch (category_) {
+    case HybridCategory::Continuous:
+      std::cout << "Continuous ";
+      break;
+    case HybridCategory::Discrete:
+      std::cout << "Discrete ";
+      break;
+    case HybridCategory::Hybrid:
+      std::cout << "Hybrid ";
+      break;
+  }
+
   std::cout << "[";
   for (size_t c = 0; c < continuousKeys_.size(); c++) {
     std::cout << formatter(continuousKeys_.at(c));
