@@ -171,6 +171,7 @@ file(COPY "${GTSAM_SOURCE_DIR}/examples/Data" DESTINATION "${GTSAM_MODULE_PATH}"
 # Add gtsam as a dependency to the install target
 set(GTSAM_PYTHON_DEPENDENCIES ${GTSAM_PYTHON_TARGET})
 
+set(GTSAM_PYTHON_INSTALL_EXTRA "")
 
 if(GTSAM_UNSTABLE_BUILD_PYTHON)
     set(ignore
@@ -250,6 +251,22 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             VERBATIM            
         )
     endif()
+
+    add_custom_target(
+        python-unstable-stubs
+        COMMAND
+        ${CMAKE_COMMAND} -E env
+        "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
+        pybind11-stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var gtsam_unstable
+        DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES} ${GTSAM_PYTHON_UNSTABLE_TARGET}
+        WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/"
+    )
+
+    if(NOT WIN32)
+        # Add the stubgen target as a dependency to the install target
+        list(APPEND GTSAM_PYTHON_INSTALL_EXTRA python-unstable-stubs)
+    endif()
+
     # Custom make command to run all GTSAM_UNSTABLE Python tests
     add_custom_target(
         python-test-unstable
@@ -262,26 +279,30 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
     )
 endif()
 
+add_custom_target(
+        python-stubs
+        COMMAND
+        ${CMAKE_COMMAND} -E env
+        "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
+        pybind11-stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var gtsam
+        DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES} ${GTSAM_PYTHON_TARGET}
+        WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/"
+)
+
+if(NOT WIN32)
+    # Add the stubgen target as a dependency to the install target
+    list(APPEND GTSAM_PYTHON_INSTALL_EXTRA python-stubs)
+endif()
+
 # Add custom target so we can install with `make python-install`
 # Note below we make sure to install with --user iff not in a virtualenv
 set(GTSAM_PYTHON_INSTALL_TARGET python-install)
-#TODO(Varun) Maybe move the long command to script?
-# https://stackoverflow.com/questions/49053544/how-do-i-run-a-python-script-every-time-in-a-cmake-build
-if (NOT WIN32) # WIN32=1 is target platform is Windows
-    add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-        COMMAND stubgen -q -p gtsam && cp -a out/gtsam/ gtsam && ${PYTHON_EXECUTABLE} -c "import sys, subprocess; cmd = [sys.executable, '-m', 'pip', 'install']; has_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix); cmd.append('--user' if not has_venv else ''); cmd.append('.'); subprocess.check_call([c for c in cmd if c])"
-        DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
-        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY}
-        VERBATIM)
-else()
-    #TODO(Varun) Find equivalent cp on Windows
-    add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-        COMMAND ${PYTHON_EXECUTABLE} -c "import sys, subprocess; cmd = [sys.executable, '-m', 'pip', 'install']; has_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix); cmd.append('--user' if not has_venv else ''); cmd.append('.'); subprocess.check_call([c for c in cmd if c])"
-        DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
-        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY}
-        VERBATIM)
-endif()
 
+add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
+        COMMAND ${PYTHON_EXECUTABLE} -c "import sys, subprocess; cmd = [sys.executable, '-m', 'pip', 'install']; has_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix); cmd.append('--user' if not has_venv else ''); cmd.append('.'); subprocess.check_call([c for c in cmd if c])"
+        DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_INSTALL_EXTRA}
+        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY}
+        VERBATIM)
 
 # Custom make command to run all GTSAM Python tests
 add_custom_target(

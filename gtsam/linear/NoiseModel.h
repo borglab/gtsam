@@ -751,6 +751,18 @@ namespace gtsam {
   template<> struct traits<noiseModel::Isotropic> : public Testable<noiseModel::Isotropic> {};
   template<> struct traits<noiseModel::Unit> : public Testable<noiseModel::Unit> {};
 
+  /**
+   * @brief Helper function to compute the sqrt(|2πΣ|) normalizer values
+   * for a Gaussian noise model.
+   * We compute this in the log-space for numerical accuracy.
+   *
+   * @param noise_model The Gaussian noise model
+   * whose normalizer we wish to compute.
+   * @return double
+   */
+  GTSAM_EXPORT double ComputeLogNormalizer(
+      const noiseModel::Gaussian::shared_ptr& noise_model);
+
 } //\ namespace gtsam
 
 

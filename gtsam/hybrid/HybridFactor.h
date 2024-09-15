@@ -45,9 +45,9 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
  * Base class for *truly* hybrid probabilistic factors
  *
  * Examples:
- *  - MixtureFactor
- *  - GaussianMixtureFactor
- *  - GaussianMixture
+ *  - HybridNonlinearFactor
+ *  - HybridGaussianFactor
+ *  - HybridGaussianConditional
  *
  * @ingroup hybrid
  */

@@ -10,50 +10,53 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testGaussianMixtureFactor.cpp
- * @brief   Unit tests for GaussianMixtureFactor
+ * @file    testHybridGaussianFactor.cpp
+ * @brief   Unit tests for HybridGaussianFactor
  * @author  Varun Agrawal
  * @author  Fan Jiang
  * @author  Frank Dellaert
  * @date    December 2021
  */
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
 
+#include <memory>
+
 using namespace std;
 using namespace gtsam;
-using noiseModel::Isotropic;
-using symbol_shorthand::F;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
 using symbol_shorthand::Z;
 
 /* ************************************************************************* */
 // Check iterators of empty mixture.
-TEST(GaussianMixtureFactor, Constructor) {
-  GaussianMixtureFactor factor;
-  GaussianMixtureFactor::const_iterator const_it = factor.begin();
+TEST(HybridGaussianFactor, Constructor) {
+  HybridGaussianFactor factor;
+  HybridGaussianFactor::const_iterator const_it = factor.begin();
   CHECK(const_it == factor.end());
-  GaussianMixtureFactor::iterator it = factor.begin();
+  HybridGaussianFactor::iterator it = factor.begin();
   CHECK(it == factor.end());
 }
 
 /* ************************************************************************* */
 // "Add" two mixture factors together.
-TEST(GaussianMixtureFactor, Sum) {
+TEST(HybridGaussianFactor, Sum) {
   DiscreteKey m1(1, 2), m2(2, 3);
 
   auto A1 = Matrix::Zero(2, 1);
@@ -68,14 +71,15 @@ TEST(GaussianMixtureFactor, Sum) {
   auto f20 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
   auto f21 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
   auto f22 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
-  std::vector<GaussianFactor::shared_ptr> factorsA{f10, f11};
-  std::vector<GaussianFactor::shared_ptr> factorsB{f20, f21, f22};
+  std::vector<GaussianFactorValuePair> factorsA{{f10, 0.0}, {f11, 0.0}};
+  std::vector<GaussianFactorValuePair> factorsB{
+      {f20, 0.0}, {f21, 0.0}, {f22, 0.0}};
 
   // TODO(Frank): why specify keys at all? And: keys in factor should be *all*
   // keys, deviating from Kevin's scheme. Should we index DT on DiscreteKey?
   // Design review!
-  GaussianMixtureFactor mixtureFactorA({X(1), X(2)}, {m1}, factorsA);
-  GaussianMixtureFactor mixtureFactorB({X(1), X(3)}, {m2}, factorsB);
+  HybridGaussianFactor mixtureFactorA({X(1), X(2)}, {m1}, factorsA);
+  HybridGaussianFactor mixtureFactorB({X(1), X(3)}, {m2}, factorsB);
 
   // Check that number of keys is 3
   EXPECT_LONGS_EQUAL(3, mixtureFactorA.keys().size());
@@ -99,19 +103,19 @@ TEST(GaussianMixtureFactor, Sum) {
 }
 
 /* ************************************************************************* */
-TEST(GaussianMixtureFactor, Printing) {
+TEST(HybridGaussianFactor, Printing) {
   DiscreteKey m1(1, 2);
   auto A1 = Matrix::Zero(2, 1);
   auto A2 = Matrix::Zero(2, 2);
   auto b = Matrix::Zero(2, 1);
   auto f10 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
   auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
-  std::vector<GaussianFactor::shared_ptr> factors{f10, f11};
+  std::vector<GaussianFactorValuePair> factors{{f10, 0.0}, {f11, 0.0}};
 
-  GaussianMixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+  HybridGaussianFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 
   std::string expected =
-      R"(GaussianMixtureFactor
+      R"(HybridGaussianFactor
 Hybrid [x1 x2; 1]{
  Choice(1) 
  0 Leaf :
@@ -144,7 +148,7 @@ Hybrid [x1 x2; 1]{
 }
 
 /* ************************************************************************* */
-TEST(GaussianMixtureFactor, GaussianMixture) {
+TEST(HybridGaussianFactor, HybridGaussianConditional) {
   KeyVector keys;
   keys.push_back(X(0));
   keys.push_back(X(1));
@@ -154,15 +158,15 @@ TEST(GaussianMixtureFactor, GaussianMixture) {
   dKeys.emplace_back(M(1), 2);
 
   auto gaussians = std::make_shared<GaussianConditional>();
-  GaussianMixture::Conditionals conditionals(gaussians);
-  GaussianMixture gm({}, keys, dKeys, conditionals);
+  HybridGaussianConditional::Conditionals conditionals(gaussians);
+  HybridGaussianConditional gm({}, keys, dKeys, conditionals);
 
   EXPECT_LONGS_EQUAL(2, gm.discreteKeys().size());
 }
 
 /* ************************************************************************* */
-// Test the error of the GaussianMixtureFactor
-TEST(GaussianMixtureFactor, Error) {
+// Test the error of the HybridGaussianFactor
+TEST(HybridGaussianFactor, Error) {
   DiscreteKey m1(1, 2);
 
   auto A01 = Matrix2::Identity();
@@ -175,9 +179,9 @@ TEST(GaussianMixtureFactor, Error) {
 
   auto f0 = std::make_shared<JacobianFactor>(X(1), A01, X(2), A02, b);
   auto f1 = std::make_shared<JacobianFactor>(X(1), A11, X(2), A12, b);
-  std::vector<GaussianFactor::shared_ptr> factors{f0, f1};
+  std::vector<GaussianFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
 
-  GaussianMixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+  HybridGaussianFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 
   VectorValues continuousValues;
   continuousValues.insert(X(1), Vector2(0, 0));
@@ -229,10 +233,10 @@ static HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1,
        c1 = make_shared<GaussianConditional>(z, Vector1(mu1), I_1x1, model1);
 
   HybridBayesNet hbn;
-  hbn.emplace_shared<GaussianMixture>(KeyVector{z}, KeyVector{},
-                                      DiscreteKeys{m}, std::vector{c0, c1});
+  hbn.emplace_shared<HybridGaussianConditional>(
+      KeyVector{z}, KeyVector{}, DiscreteKeys{m}, std::vector{c0, c1});
 
-  auto mixing = make_shared<DiscreteConditional>(m, "0.5/0.5");
+  auto mixing = make_shared<DiscreteConditional>(m, "50/50");
   hbn.push_back(mixing);
 
   return hbn;
@@ -250,7 +254,7 @@ static HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1,
  * The resulting factor graph should eliminate to a Bayes net
  * which represents a sigmoid function.
  */
-TEST(GaussianMixtureFactor, GaussianMixtureModel) {
+TEST(HybridGaussianFactor, GaussianMixtureModel) {
   using namespace test_gmm;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -278,7 +282,7 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
 
     // At the halfway point between the means, we should get P(m|z)=0.5
     HybridBayesNet expected;
-    expected.emplace_shared<DiscreteConditional>(m, "0.5/0.5");
+    expected.emplace_shared<DiscreteConditional>(m, "50/50");
 
     EXPECT(assert_equal(expected, *bn));
   }
@@ -322,7 +326,7 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel) {
  * which represents a Gaussian-like function
  * where m1>m0 close to 3.1333.
  */
-TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
+TEST(HybridGaussianFactor, GaussianMixtureModel2) {
   using namespace test_gmm;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -387,103 +391,132 @@ TEST(GaussianMixtureFactor, GaussianMixtureModel2) {
 
 namespace test_two_state_estimation {
 
-/// Create Two State Bayes Network with measurements
-/// The Bayes network is P(z0|x0)P(x1|x0,m1)p(m1) and optionally p(z1|x1)
-static HybridBayesNet CreateBayesNet(double mu0, double mu1, double sigma0,
-                                     double sigma1,
-                                     bool add_second_measurement = false,
-                                     double measurement_sigma = 3.0) {
-  DiscreteKey m1(M(1), 2);
-  Key z0 = Z(0), z1 = Z(1);
-  Key x0 = X(0), x1 = X(1);
+DiscreteKey m1(M(1), 2);
 
-  HybridBayesNet hbn;
+void addMeasurement(HybridBayesNet& hbn, Key z_key, Key x_key, double sigma) {
+  auto measurement_model = noiseModel::Isotropic::Sigma(1, sigma);
+  hbn.emplace_shared<GaussianConditional>(z_key, Vector1(0.0), I_1x1, x_key,
+                                          -I_1x1, measurement_model);
+}
 
-  auto measurement_model = noiseModel::Isotropic::Sigma(1, measurement_sigma);
-  // Add measurement P(z0 | x0)
-  auto p_z0 = std::make_shared<GaussianConditional>(
-      z0, Vector1(0.0), -I_1x1, x0, I_1x1, measurement_model);
-  hbn.push_back(p_z0);
-
-  // Add hybrid motion model
+/// Create hybrid motion model p(x1 | x0, m1)
+static HybridGaussianConditional::shared_ptr CreateHybridMotionModel(
+    double mu0, double mu1, double sigma0, double sigma1) {
   auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
   auto model1 = noiseModel::Isotropic::Sigma(1, sigma1);
-  auto c0 = make_shared<GaussianConditional>(x1, Vector1(mu0), I_1x1, x0,
+  auto c0 = make_shared<GaussianConditional>(X(1), Vector1(mu0), I_1x1, X(0),
                                              -I_1x1, model0),
-       c1 = make_shared<GaussianConditional>(x1, Vector1(mu1), I_1x1, x0,
+       c1 = make_shared<GaussianConditional>(X(1), Vector1(mu1), I_1x1, X(0),
                                              -I_1x1, model1);
+  return std::make_shared<HybridGaussianConditional>(
+      KeyVector{X(1)}, KeyVector{X(0)}, DiscreteKeys{m1}, std::vector{c0, c1});
+}
 
-  auto motion = std::make_shared<GaussianMixture>(
-      KeyVector{x1}, KeyVector{x0}, DiscreteKeys{m1}, std::vector{c0, c1});
-  hbn.push_back(motion);
+/// Create two state Bayes network with 1 or two measurement models
+HybridBayesNet CreateBayesNet(
+    const HybridGaussianConditional::shared_ptr& hybridMotionModel,
+    bool add_second_measurement = false) {
+  HybridBayesNet hbn;
 
+  // Add measurement model p(z0 | x0)
+  addMeasurement(hbn, Z(0), X(0), 3.0);
+
+  // Optionally add second measurement model p(z1 | x1)
   if (add_second_measurement) {
-    // Add second measurement
-    auto p_z1 = std::make_shared<GaussianConditional>(
-        z1, Vector1(0.0), -I_1x1, x1, I_1x1, measurement_model);
-    hbn.push_back(p_z1);
+    addMeasurement(hbn, Z(1), X(1), 3.0);
   }
 
+  // Add hybrid motion model
+  hbn.push_back(hybridMotionModel);
+
   // Discrete uniform prior.
-  auto p_m1 = std::make_shared<DiscreteConditional>(m1, "0.5/0.5");
-  hbn.push_back(p_m1);
+  hbn.emplace_shared<DiscreteConditional>(m1, "50/50");
 
   return hbn;
+}
+
+/// Approximate the discrete marginal P(m1) using importance sampling
+std::pair<double, double> approximateDiscreteMarginal(
+    const HybridBayesNet& hbn,
+    const HybridGaussianConditional::shared_ptr& hybridMotionModel,
+    const VectorValues& given, size_t N = 100000) {
+  /// Create importance sampling network q(x0,x1,m) = p(x1|x0,m1) q(x0) P(m1),
+  /// using q(x0) = N(z0, sigmaQ) to sample x0.
+  HybridBayesNet q;
+  q.push_back(hybridMotionModel);  // Add hybrid motion model
+  q.emplace_shared<GaussianConditional>(GaussianConditional::FromMeanAndStddev(
+      X(0), given.at(Z(0)), /* sigmaQ = */ 3.0));  // Add proposal q(x0) for x0
+  q.emplace_shared<DiscreteConditional>(m1, "50/50");  // Discrete prior.
+
+  // Do importance sampling
+  double w0 = 0.0, w1 = 0.0;
+  std::mt19937_64 rng(42);
+  for (int i = 0; i < N; i++) {
+    HybridValues sample = q.sample(&rng);
+    sample.insert(given);
+    double weight = hbn.evaluate(sample) / q.evaluate(sample);
+    (sample.atDiscrete(M(1)) == 0) ? w0 += weight : w1 += weight;
+  }
+  double pm1 = w1 / (w0 + w1);
+  std::cout << "p(m0) = " << 100 * (1.0 - pm1) << std::endl;
+  std::cout << "p(m1) = " << 100 * pm1 << std::endl;
+  return {1.0 - pm1, pm1};
 }
 
 }  // namespace test_two_state_estimation
 
 /* ************************************************************************* */
 /**
- * Test a model P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1).
+ * Test a model p(z0|x0)p(z1|x1)p(x1|x0,m1)P(m1).
  *
- * P(x1|x0,m1) has different means and same covariance.
+ * p(x1|x0,m1) has mode-dependent mean but same covariance.
  *
- * Converting to a factor graph gives us
- * ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)P(m1)
+ * Converting to a factor graph gives us ϕ(x0;z0)ϕ(x1;z1)ϕ(x1,x0,m1)P(m1)
  *
- * If we only have a measurement on z0, then
- * the probability of m1 should be 0.5/0.5.
+ * If we only have a measurement on x0, then
+ * the posterior probability of m1 should be 0.5/0.5.
  * Getting a measurement on z1 gives use more information.
  */
-TEST(GaussianMixtureFactor, TwoStateModel) {
+TEST(HybridGaussianFactor, TwoStateModel) {
   using namespace test_two_state_estimation;
 
   double mu0 = 1.0, mu1 = 3.0;
-  double sigma = 2.0;
-
-  DiscreteKey m1(M(1), 2);
-  Key z0 = Z(0), z1 = Z(1);
+  double sigma = 0.5;
+  auto hybridMotionModel = CreateHybridMotionModel(mu0, mu1, sigma, sigma);
 
   // Start with no measurement on x1, only on x0
-  HybridBayesNet hbn = CreateBayesNet(mu0, mu1, sigma, sigma, false);
+  const Vector1 z0(0.5);
 
   VectorValues given;
-  given.insert(z0, Vector1(0.5));
+  given.insert(Z(0), z0);
 
   {
+    HybridBayesNet hbn = CreateBayesNet(hybridMotionModel);
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
     // Since no measurement on x1, we hedge our bets
-    DiscreteConditional expected(m1, "0.5/0.5");
+    // Importance sampling run with 100k samples gives 50.051/49.949
+    // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+    DiscreteConditional expected(m1, "50/50");
     EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete())));
   }
 
   {
-    // Now we add a measurement z1 on x1
-    hbn = CreateBayesNet(mu0, mu1, sigma, sigma, true);
+    // If we set z1=4.5 (>> 2.5 which is the halfway point),
+    // probability of discrete mode should be leaning to m1==1.
+    const Vector1 z1(4.5);
+    given.insert(Z(1), z1);
 
-    // If we see z1=2.6 (> 2.5 which is the halfway point),
-    // discrete mode should say m1=1
-    given.insert(z1, Vector1(2.6));
+    HybridBayesNet hbn = CreateBayesNet(hybridMotionModel, true);
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
-    // Since we have a measurement on z2, we get a definite result
-    DiscreteConditional expected(m1, "0.49772729/0.50227271");
-    // regression
-    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 1e-6));
+    // Since we have a measurement on x1, we get a definite result
+    // Values taken from an importance sampling run with 100k samples:
+    // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+    DiscreteConditional expected(m1, "44.3854/55.6146");
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.002));
   }
 }
 
@@ -500,89 +533,206 @@ TEST(GaussianMixtureFactor, TwoStateModel) {
  * the P(m1) should be 0.5/0.5.
  * Getting a measurement on z1 gives use more information.
  */
-TEST(GaussianMixtureFactor, TwoStateModel2) {
+TEST(HybridGaussianFactor, TwoStateModel2) {
   using namespace test_two_state_estimation;
 
   double mu0 = 1.0, mu1 = 3.0;
-  double sigma0 = 6.0, sigma1 = 4.0;
-  auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
-  auto model1 = noiseModel::Isotropic::Sigma(1, sigma1);
-
-  DiscreteKey m1(M(1), 2);
-  Key z0 = Z(0), z1 = Z(1);
+  double sigma0 = 0.5, sigma1 = 2.0;
+  auto hybridMotionModel = CreateHybridMotionModel(mu0, mu1, sigma0, sigma1);
 
   // Start with no measurement on x1, only on x0
-  HybridBayesNet hbn = CreateBayesNet(mu0, mu1, sigma0, sigma1, false);
-
+  const Vector1 z0(0.5);
   VectorValues given;
-  given.insert(z0, Vector1(0.5));
+  given.insert(Z(0), z0);
 
   {
-    // Start with no measurement on x1, only on x0
+    HybridBayesNet hbn = CreateBayesNet(hybridMotionModel);
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
 
-    {
-      VectorValues vv{
-          {X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}, {Z(0), Vector1(0.5)}};
-      HybridValues hv0(vv, DiscreteValues{{M(1), 0}}),
-          hv1(vv, DiscreteValues{{M(1), 1}});
-      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
-                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
-    }
-    {
-      VectorValues vv{
-          {X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}, {Z(0), Vector1(0.5)}};
-      HybridValues hv0(vv, DiscreteValues{{M(1), 0}}),
-          hv1(vv, DiscreteValues{{M(1), 1}});
+    // Check that ratio of Bayes net and factor graph for different modes is
+    // equal for several values of {x0,x1}.
+    for (VectorValues vv :
+         {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
+          VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
+      vv.insert(given);  // add measurements for HBN
+      HybridValues hv0(vv, {{M(1), 0}}), hv1(vv, {{M(1), 1}});
       EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
                            gfg.error(hv1) / hbn.error(hv1), 1e-9);
     }
 
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
+    // Importance sampling run with 100k samples gives 50.095/49.905
+    // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+
     // Since no measurement on x1, we a 50/50 probability
     auto p_m = bn->at(2)->asDiscrete();
-    EXPECT_DOUBLES_EQUAL(0.5, p_m->operator()(DiscreteValues{{m1.first, 0}}),
-                         1e-9);
-    EXPECT_DOUBLES_EQUAL(0.5, p_m->operator()(DiscreteValues{{m1.first, 1}}),
-                         1e-9);
+    EXPECT_DOUBLES_EQUAL(0.5, p_m->operator()({{M(1), 0}}), 1e-9);
+    EXPECT_DOUBLES_EQUAL(0.5, p_m->operator()({{M(1), 1}}), 1e-9);
   }
 
   {
     // Now we add a measurement z1 on x1
-    hbn = CreateBayesNet(mu0, mu1, sigma0, sigma1, true);
+    const Vector1 z1(4.0);  // favors m==1
+    given.insert(Z(1), z1);
 
-    given.insert(z1, Vector1(2.2));
+    HybridBayesNet hbn = CreateBayesNet(hybridMotionModel, true);
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
 
-    {
-      VectorValues vv{{X(0), Vector1(0.0)},
-                      {X(1), Vector1(1.0)},
-                      {Z(0), Vector1(0.5)},
-                      {Z(1), Vector1(2.2)}};
-      HybridValues hv0(vv, DiscreteValues{{M(1), 0}}),
-          hv1(vv, DiscreteValues{{M(1), 1}});
-      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
-                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
-    }
-    {
-      VectorValues vv{{X(0), Vector1(0.5)},
-                      {X(1), Vector1(3.0)},
-                      {Z(0), Vector1(0.5)},
-                      {Z(1), Vector1(2.2)}};
-      HybridValues hv0(vv, DiscreteValues{{M(1), 0}}),
-          hv1(vv, DiscreteValues{{M(1), 1}});
+    // Check that ratio of Bayes net and factor graph for different modes is
+    // equal for several values of {x0,x1}.
+    for (VectorValues vv :
+         {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
+          VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
+      vv.insert(given);  // add measurements for HBN
+      HybridValues hv0(vv, {{M(1), 0}}), hv1(vv, {{M(1), 1}});
       EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
                            gfg.error(hv1) / hbn.error(hv1), 1e-9);
     }
 
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
 
-    // Since we have a measurement on z2, we get a definite result
-    DiscreteConditional expected(m1, "0.44744586/0.55255414");
-    // regression
-    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 1e-6));
+    // Values taken from an importance sampling run with 100k samples:
+    // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+    DiscreteConditional expected(m1, "48.3158/51.6842");
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.002));
   }
+
+  {
+    // Add a different measurement z1 on x1 that favors m==0
+    const Vector1 z1(1.1);
+    given.insert_or_assign(Z(1), z1);
+
+    HybridBayesNet hbn = CreateBayesNet(hybridMotionModel, true);
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+    // Values taken from an importance sampling run with 100k samples:
+    // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+    DiscreteConditional expected(m1, "55.396/44.604");
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.002));
+  }
+}
+
+/* ************************************************************************* */
+/**
+ * Test a model p(z0|x0)p(x1|x0,m1)p(z1|x1)p(m1).
+ *
+ * p(x1|x0,m1) has the same means but different covariances.
+ *
+ * Converting to a factor graph gives us
+ * ϕ(x0)ϕ(x1,x0,m1)ϕ(x1)p(m1)
+ *
+ * If we only have a measurement on z0, then
+ * the p(m1) should be 0.5/0.5.
+ * Getting a measurement on z1 gives use more information.
+ */
+TEST(HybridGaussianFactor, TwoStateModel3) {
+  using namespace test_two_state_estimation;
+
+  double mu = 1.0;
+  double sigma0 = 0.5, sigma1 = 2.0;
+  auto hybridMotionModel = CreateHybridMotionModel(mu, mu, sigma0, sigma1);
+
+  // Start with no measurement on x1, only on x0
+  const Vector1 z0(0.5);
+  VectorValues given;
+  given.insert(Z(0), z0);
+
+  {
+    HybridBayesNet hbn = CreateBayesNet(hybridMotionModel);
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+
+    // Check that ratio of Bayes net and factor graph for different modes is
+    // equal for several values of {x0,x1}.
+    for (VectorValues vv :
+         {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
+          VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
+      vv.insert(given);  // add measurements for HBN
+      HybridValues hv0(vv, {{M(1), 0}}), hv1(vv, {{M(1), 1}});
+      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
+                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
+    }
+
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+    // Importance sampling run with 100k samples gives 50.095/49.905
+    // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+
+    // Since no measurement on x1, we a 50/50 probability
+    auto p_m = bn->at(2)->asDiscrete();
+    EXPECT_DOUBLES_EQUAL(0.5, p_m->operator()({{M(1), 0}}), 1e-9);
+    EXPECT_DOUBLES_EQUAL(0.5, p_m->operator()({{M(1), 1}}), 1e-9);
+  }
+
+  {
+    // Now we add a measurement z1 on x1
+    const Vector1 z1(4.0);  // favors m==1
+    given.insert(Z(1), z1);
+
+    HybridBayesNet hbn = CreateBayesNet(hybridMotionModel, true);
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+
+    // Check that ratio of Bayes net and factor graph for different modes is
+    // equal for several values of {x0,x1}.
+    for (VectorValues vv :
+         {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
+          VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
+      vv.insert(given);  // add measurements for HBN
+      HybridValues hv0(vv, {{M(1), 0}}), hv1(vv, {{M(1), 1}});
+      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
+                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
+    }
+
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+    // Values taken from an importance sampling run with 100k samples:
+    // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+    DiscreteConditional expected(m1, "51.7762/48.2238");
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.002));
+  }
+
+  {
+    // Add a different measurement z1 on x1 that favors m==1
+    const Vector1 z1(7.0);
+    given.insert_or_assign(Z(1), z1);
+
+    HybridBayesNet hbn = CreateBayesNet(hybridMotionModel, true);
+    HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+    // Values taken from an importance sampling run with 100k samples:
+    // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+    DiscreteConditional expected(m1, "49.0762/50.9238");
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.005));
+  }
+}
+
+/* ************************************************************************* */
+/**
+ * Same model, P(z0|x0)P(x1|x0,m1)P(z1|x1)P(m1), but now with very informative
+ * measurements and vastly different motion model: either stand still or move
+ * far. This yields a very informative posterior.
+ */
+TEST(HybridGaussianFactor, TwoStateModel4) {
+  using namespace test_two_state_estimation;
+
+  double mu0 = 0.0, mu1 = 10.0;
+  double sigma0 = 0.2, sigma1 = 5.0;
+  auto hybridMotionModel = CreateHybridMotionModel(mu0, mu1, sigma0, sigma1);
+
+  // We only check the 2-measurement case
+  const Vector1 z0(0.0), z1(10.0);
+  VectorValues given{{Z(0), z0}, {Z(1), z1}};
+
+  HybridBayesNet hbn = CreateBayesNet(hybridMotionModel, true);
+  HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+  HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+
+  // Values taken from an importance sampling run with 100k samples:
+  // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
+  DiscreteConditional expected(m1, "8.91527/91.0847");
+  EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.002));
 }
 
 /**

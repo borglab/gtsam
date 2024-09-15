@@ -18,15 +18,16 @@ from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
 from gtsam import (DiscreteConditional, DiscreteKeys, GaussianConditional,
-                   GaussianMixture, GaussianMixtureFactor, HybridBayesNet,
-                   HybridGaussianFactorGraph, HybridValues, JacobianFactor,
-                   Ordering, noiseModel)
+                   HybridBayesNet, HybridGaussianConditional,
+                   HybridGaussianFactor, HybridGaussianFactorGraph,
+                   HybridValues, JacobianFactor, Ordering, noiseModel)
 
 DEBUG_MARGINALS = False
 
 
 class TestHybridGaussianFactorGraph(GtsamTestCase):
     """Unit tests for HybridGaussianFactorGraph."""
+
     def test_create(self):
         """Test construction of hybrid factor graph."""
         model = noiseModel.Unit.Create(3)
@@ -36,7 +37,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         jf1 = JacobianFactor(X(0), np.eye(3), np.zeros((3, 1)), model)
         jf2 = JacobianFactor(X(0), np.eye(3), np.ones((3, 1)), model)
 
-        gmf = GaussianMixtureFactor([X(0)], dk, [jf1, jf2])
+        gmf = HybridGaussianFactor([X(0)], dk, [(jf1, 0), (jf2, 0)])
 
         hfg = HybridGaussianFactorGraph()
         hfg.push_back(jf1)
@@ -48,7 +49,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         self.assertEqual(hbn.size(), 2)
 
         mixture = hbn.at(0).inner()
-        self.assertIsInstance(mixture, GaussianMixture)
+        self.assertIsInstance(mixture, HybridGaussianConditional)
         self.assertEqual(len(mixture.keys()), 2)
 
         discrete_conditional = hbn.at(hbn.size() - 1).inner()
@@ -63,7 +64,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         jf1 = JacobianFactor(X(0), np.eye(3), np.zeros((3, 1)), model)
         jf2 = JacobianFactor(X(0), np.eye(3), np.ones((3, 1)), model)
 
-        gmf = GaussianMixtureFactor([X(0)], dk, [jf1, jf2])
+        gmf = HybridGaussianFactor([X(0)], dk, [(jf1, 0), (jf2, 0)])
 
         hfg = HybridGaussianFactorGraph()
         hfg.push_back(jf1)
@@ -106,8 +107,9 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
                                                                  I_1x1,
                                                                  X(0), [0],
                                                                  sigma=3)
-            bayesNet.push_back(GaussianMixture([Z(i)], [X(0)], keys,
-                                               [conditional0, conditional1]))
+            bayesNet.push_back(
+                HybridGaussianConditional([Z(i)], [X(0)], keys,
+                                          [conditional0, conditional1]))
 
         # Create prior on X(0).
         prior_on_x0 = GaussianConditional.FromMeanAndStddev(
@@ -219,9 +221,9 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         # Check ratio between unnormalized posterior and factor graph is the same for all modes:
         for mode in [1, 0]:
             values.insert_or_assign(M(0), mode)
-            self.assertAlmostEqual(bayesNet.evaluate(values) /
-                                   np.exp(-fg.error(values)),
-                                   0.6366197723675815)
+            self.assertAlmostEqual(
+                bayesNet.evaluate(values) / np.exp(-fg.error(values)),
+                0.6366197723675815)
             self.assertAlmostEqual(bayesNet.error(values), fg.error(values))
 
         # Test elimination.

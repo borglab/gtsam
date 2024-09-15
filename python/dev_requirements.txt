@@ -1,3 +1,3 @@
 -r requirements.txt
 pyparsing>=2.4.2
-mypy==1.4.1  #TODO(Varun) A bug in mypy>=1.5.0 causes an unresolved placeholder error when importing numpy>=2.0.0 (https://github.com/python/mypy/issues/17396)
+pybind11-stubgen>=2.5.1
