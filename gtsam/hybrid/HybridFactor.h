@@ -42,7 +42,7 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
                                  const DiscreteKeys &key2);
 
 /// Enum to help with categorizing hybrid factors.
-enum class HybridCategory { Discrete, Continuous, Hybrid };
+enum class HybridCategory { None, Discrete, Continuous, Hybrid };
 
 /**
  * Base class for *truly* hybrid probabilistic factors
@@ -57,7 +57,7 @@ enum class HybridCategory { Discrete, Continuous, Hybrid };
 class GTSAM_EXPORT HybridFactor : public Factor {
  private:
   /// Record what category of HybridFactor this is.
-  HybridCategory category_;
+  HybridCategory category_ = HybridCategory::None;
 
  protected:
   // Set of DiscreteKeys for this factor.

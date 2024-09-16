@@ -55,19 +55,27 @@ HybridFactor::HybridFactor(const KeyVector &keys)
       continuousKeys_(keys) {}
 
 /* ************************************************************************ */
+HybridCategory GetCategory(const KeyVector &continuousKeys,
+                           const DiscreteKeys &discreteKeys) {
+  if ((continuousKeys.size() == 0) && (discreteKeys.size() != 0)) {
+    return HybridCategory::Discrete;
+  } else if ((continuousKeys.size() != 0) && (discreteKeys.size() == 0)) {
+    return HybridCategory::Continuous;
+  } else if ((continuousKeys.size() != 0) && (discreteKeys.size() != 0)) {
+    return HybridCategory::Hybrid;
+  } else {
+    // Case where we have no keys. Should never happen.
+    return HybridCategory::None;
+  }
+}
+
+/* ************************************************************************ */
 HybridFactor::HybridFactor(const KeyVector &continuousKeys,
                            const DiscreteKeys &discreteKeys)
     : Base(CollectKeys(continuousKeys, discreteKeys)),
+      category_(GetCategory(continuousKeys, discreteKeys)),
       discreteKeys_(discreteKeys),
-      continuousKeys_(continuousKeys) {
-  if ((continuousKeys.size() == 0) && (discreteKeys.size() != 0)) {
-    category_ = HybridCategory::Discrete;
-  } else if ((continuousKeys.size() != 0) && (discreteKeys.size() == 0)) {
-    category_ = HybridCategory::Continuous;
-  } else {
-    category_ = HybridCategory::Hybrid;
-  }
-}
+      continuousKeys_(continuousKeys) {}
 
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const DiscreteKeys &discreteKeys)
@@ -97,6 +105,9 @@ void HybridFactor::print(const std::string &s,
       break;
     case HybridCategory::Hybrid:
       std::cout << "Hybrid ";
+      break;
+    case HybridCategory::None:
+      std::cout << "None ";
       break;
   }
 
