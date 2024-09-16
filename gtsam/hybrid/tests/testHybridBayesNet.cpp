@@ -383,15 +383,17 @@ TEST(HybridBayesNet, Sampling) {
   HybridNonlinearFactorGraph nfg;
 
   auto noise_model = noiseModel::Diagonal::Sigmas(Vector1(1.0));
+  nfg.emplace_shared<PriorFactor<double>>(X(0), 0.0, noise_model);
+
   auto zero_motion =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
   auto one_motion =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
-  std::vector<NonlinearFactorValuePair> factors = {{zero_motion, 0.0},
-                                                   {one_motion, 0.0}};
-  nfg.emplace_shared<PriorFactor<double>>(X(0), 0.0, noise_model);
-  nfg.emplace_shared<HybridNonlinearFactor>(
-      KeyVector{X(0), X(1)}, DiscreteKeys{DiscreteKey(M(0), 2)}, factors);
+  DiscreteKeys discreteKeys{DiscreteKey(M(0), 2)};
+  HybridNonlinearFactor::Factors factors(
+      discreteKeys, {{zero_motion, 0.0}, {one_motion, 0.0}});
+  nfg.emplace_shared<HybridNonlinearFactor>(KeyVector{X(0), X(1)}, discreteKeys,
+                                            factors);
 
   DiscreteKey mode(M(0), 2);
   nfg.emplace_shared<DiscreteDistribution>(mode, "1/1");
