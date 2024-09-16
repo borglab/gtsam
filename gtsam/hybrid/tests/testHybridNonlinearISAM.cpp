@@ -358,13 +358,13 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
   // each with 2, 4, 8, and 5 (pruned) leaves respetively.
   EXPECT_LONGS_EQUAL(4, bayesTree.size());
   EXPECT_LONGS_EQUAL(
-      2, bayesTree[X(0)]->conditional()->asMixture()->nrComponents());
+      2, bayesTree[X(0)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      3, bayesTree[X(1)]->conditional()->asMixture()->nrComponents());
+      3, bayesTree[X(1)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, bayesTree[X(2)]->conditional()->asMixture()->nrComponents());
+      5, bayesTree[X(2)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, bayesTree[X(3)]->conditional()->asMixture()->nrComponents());
+      5, bayesTree[X(3)]->conditional()->asHybrid()->nrComponents());
 
   /***** Run Round 2 *****/
   HybridGaussianFactorGraph graph2;
@@ -382,9 +382,9 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
   // with 5 (pruned) leaves.
   CHECK_EQUAL(5, bayesTree.size());
   EXPECT_LONGS_EQUAL(
-      5, bayesTree[X(3)]->conditional()->asMixture()->nrComponents());
+      5, bayesTree[X(3)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, bayesTree[X(4)]->conditional()->asMixture()->nrComponents());
+      5, bayesTree[X(4)]->conditional()->asHybrid()->nrComponents());
 }
 
 /* ************************************************************************/
@@ -569,7 +569,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
 
   // Test if pruning worked correctly by checking that
   // we only have 3 leaves in the last node.
-  auto lastConditional = bayesTree[X(3)]->conditional()->asMixture();
+  auto lastConditional = bayesTree[X(3)]->conditional()->asHybrid();
   EXPECT_LONGS_EQUAL(3, lastConditional->nrComponents());
 }
 

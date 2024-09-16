@@ -65,7 +65,7 @@ virtual class HybridConditional {
   double logProbability(const gtsam::HybridValues& values) const;
   double evaluate(const gtsam::HybridValues& values) const;
   double operator()(const gtsam::HybridValues& values) const;
-  gtsam::HybridGaussianConditional* asMixture() const;
+  gtsam::HybridGaussianConditional* asHybrid() const;
   gtsam::GaussianConditional* asGaussian() const;
   gtsam::DiscreteConditional* asDiscrete() const;
   gtsam::Factor* inner();

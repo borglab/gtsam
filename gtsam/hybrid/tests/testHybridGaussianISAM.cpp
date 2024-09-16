@@ -333,13 +333,13 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
   // each with 2, 4, 8, and 5 (pruned) leaves respetively.
   EXPECT_LONGS_EQUAL(4, incrementalHybrid.size());
   EXPECT_LONGS_EQUAL(
-      2, incrementalHybrid[X(0)]->conditional()->asMixture()->nrComponents());
+      2, incrementalHybrid[X(0)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      3, incrementalHybrid[X(1)]->conditional()->asMixture()->nrComponents());
+      3, incrementalHybrid[X(1)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(2)]->conditional()->asMixture()->nrComponents());
+      5, incrementalHybrid[X(2)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(3)]->conditional()->asMixture()->nrComponents());
+      5, incrementalHybrid[X(3)]->conditional()->asHybrid()->nrComponents());
 
   /***** Run Round 2 *****/
   HybridGaussianFactorGraph graph2;
@@ -354,9 +354,9 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
   // with 5 (pruned) leaves.
   CHECK_EQUAL(5, incrementalHybrid.size());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(3)]->conditional()->asMixture()->nrComponents());
+      5, incrementalHybrid[X(3)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(4)]->conditional()->asMixture()->nrComponents());
+      5, incrementalHybrid[X(4)]->conditional()->asHybrid()->nrComponents());
 }
 
 /* ************************************************************************/
@@ -548,7 +548,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
 
   // Test if pruning worked correctly by checking that we only have 3 leaves in
   // the last node.
-  auto lastConditional = inc[X(3)]->conditional()->asMixture();
+  auto lastConditional = inc[X(3)]->conditional()->asHybrid();
   EXPECT_LONGS_EQUAL(3, lastConditional->nrComponents());
 }
 

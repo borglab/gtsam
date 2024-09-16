@@ -151,7 +151,7 @@ class GTSAM_EXPORT HybridConditional
    * @return nullptr if not a conditional
    * @return HybridGaussianConditional::shared_ptr otherwise
    */
-  HybridGaussianConditional::shared_ptr asMixture() const {
+  HybridGaussianConditional::shared_ptr asHybrid() const {
     return std::dynamic_pointer_cast<HybridGaussianConditional>(inner_);
   }
 

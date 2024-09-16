@@ -109,7 +109,7 @@ struct HybridAssignmentData {
 
     GaussianConditional::shared_ptr conditional;
     if (hybrid_conditional->isHybrid()) {
-      conditional = (*hybrid_conditional->asMixture())(parentData.assignment_);
+      conditional = (*hybrid_conditional->asHybrid())(parentData.assignment_);
     } else if (hybrid_conditional->isContinuous()) {
       conditional = hybrid_conditional->asGaussian();
     } else {
@@ -205,7 +205,7 @@ void HybridBayesTree::prune(const size_t maxNrLeaves) {
 
       // If conditional is hybrid, we prune it.
       if (conditional->isHybrid()) {
-        auto hybridGaussianCond = conditional->asMixture();
+        auto hybridGaussianCond = conditional->asHybrid();
 
         hybridGaussianCond->prune(parentData.prunedDiscreteProbs);
       }

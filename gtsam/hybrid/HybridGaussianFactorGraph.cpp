@@ -115,7 +115,7 @@ void HybridGaussianFactorGraph::printErrors(
         } else {
           // Is hybrid
           auto conditionalComponent =
-              hc->asMixture()->operator()(values.discrete());
+              hc->asHybrid()->operator()(values.discrete());
           conditionalComponent->print(ss.str(), keyFormatter);
           std::cout << "error = " << conditionalComponent->error(values)
                     << "\n";
@@ -184,7 +184,7 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
     } else if (auto gm = dynamic_pointer_cast<HybridGaussianConditional>(f)) {
       result = gm->add(result);
     } else if (auto hc = dynamic_pointer_cast<HybridConditional>(f)) {
-      if (auto gm = hc->asMixture()) {
+      if (auto gm = hc->asHybrid()) {
         result = gm->add(result);
       } else if (auto g = hc->asGaussian()) {
         result = addGaussian(result, g);
