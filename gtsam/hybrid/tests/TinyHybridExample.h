@@ -40,7 +40,7 @@ inline HybridBayesNet createHybridBayesNet(size_t num_measurements = 1,
                                            bool manyModes = false) {
   HybridBayesNet bayesNet;
 
-  // Create Gaussian mixture z_i = x0 + noise for each measurement.
+  // Create hybrid Gaussian factor z_i = x0 + noise for each measurement.
   for (size_t i = 0; i < num_measurements; i++) {
     const auto mode_i = manyModes ? DiscreteKey{M(i), 2} : mode;
     std::vector<GaussianConditional::shared_ptr> conditionals{

@@ -45,7 +45,7 @@ using symbol_shorthand::X;
 using symbol_shorthand::Z;
 
 /* ************************************************************************* */
-// Check iterators of empty mixture.
+// Check iterators of empty hybrid factor.
 TEST(HybridGaussianFactor, Constructor) {
   HybridGaussianFactor factor;
   HybridGaussianFactor::const_iterator const_it = factor.begin();
@@ -55,7 +55,7 @@ TEST(HybridGaussianFactor, Constructor) {
 }
 
 /* ************************************************************************* */
-// "Add" two mixture factors together.
+// "Add" two hybrid factors together.
 TEST(HybridGaussianFactor, Sum) {
   DiscreteKey m1(1, 2), m2(2, 3);
 
@@ -78,20 +78,20 @@ TEST(HybridGaussianFactor, Sum) {
   // TODO(Frank): why specify keys at all? And: keys in factor should be *all*
   // keys, deviating from Kevin's scheme. Should we index DT on DiscreteKey?
   // Design review!
-  HybridGaussianFactor mixtureFactorA({X(1), X(2)}, {m1}, factorsA);
-  HybridGaussianFactor mixtureFactorB({X(1), X(3)}, {m2}, factorsB);
+  HybridGaussianFactor hybridFactorA({X(1), X(2)}, {m1}, factorsA);
+  HybridGaussianFactor hybridFactorB({X(1), X(3)}, {m2}, factorsB);
 
   // Check that number of keys is 3
-  EXPECT_LONGS_EQUAL(3, mixtureFactorA.keys().size());
+  EXPECT_LONGS_EQUAL(3, hybridFactorA.keys().size());
 
   // Check that number of discrete keys is 1
-  EXPECT_LONGS_EQUAL(1, mixtureFactorA.discreteKeys().size());
+  EXPECT_LONGS_EQUAL(1, hybridFactorA.discreteKeys().size());
 
-  // Create sum of two mixture factors: it will be a decision tree now on both
+  // Create sum of two hybrid factors: it will be a decision tree now on both
   // discrete variables m1 and m2:
   GaussianFactorGraphTree sum;
-  sum += mixtureFactorA;
-  sum += mixtureFactorB;
+  sum += hybridFactorA;
+  sum += hybridFactorB;
 
   // Let's check that this worked:
   Assignment<Key> mode;
@@ -112,7 +112,7 @@ TEST(HybridGaussianFactor, Printing) {
   auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
   std::vector<GaussianFactorValuePair> factors{{f10, 0.0}, {f11, 0.0}};
 
-  HybridGaussianFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+  HybridGaussianFactor hybridFactor({X(1), X(2)}, {m1}, factors);
 
   std::string expected =
       R"(HybridGaussianFactor
@@ -144,7 +144,7 @@ Hybrid [x1 x2; 1]{
 
 }
 )";
-  EXPECT(assert_print_equal(expected, mixtureFactor));
+  EXPECT(assert_print_equal(expected, hybridFactor));
 }
 
 /* ************************************************************************* */
@@ -181,7 +181,7 @@ TEST(HybridGaussianFactor, Error) {
   auto f1 = std::make_shared<JacobianFactor>(X(1), A11, X(2), A12, b);
   std::vector<GaussianFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
 
-  HybridGaussianFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+  HybridGaussianFactor hybridFactor({X(1), X(2)}, {m1}, factors);
 
   VectorValues continuousValues;
   continuousValues.insert(X(1), Vector2(0, 0));
@@ -189,7 +189,7 @@ TEST(HybridGaussianFactor, Error) {
 
   // error should return a tree of errors, with nodes for each discrete value.
   AlgebraicDecisionTree<Key> error_tree =
-      mixtureFactor.errorTree(continuousValues);
+      hybridFactor.errorTree(continuousValues);
 
   std::vector<DiscreteKey> discrete_keys = {m1};
   // Error values for regression test
@@ -202,7 +202,7 @@ TEST(HybridGaussianFactor, Error) {
   DiscreteValues discreteValues;
   discreteValues[m1.first] = 1;
   EXPECT_DOUBLES_EQUAL(
-      4.0, mixtureFactor.error({continuousValues, discreteValues}), 1e-9);
+      4.0, hybridFactor.error({continuousValues, discreteValues}), 1e-9);
 }
 
 namespace test_gmm {

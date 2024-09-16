@@ -37,13 +37,13 @@ class VectorValues;
 using GaussianFactorValuePair = std::pair<GaussianFactor::shared_ptr, double>;
 
 /**
- * @brief Implementation of a discrete conditional mixture factor.
+ * @brief Implementation of a discrete-conditioned hybrid factor.
  * Implements a joint discrete-continuous factor where the discrete variable
- * serves to "select" a mixture component corresponding to a GaussianFactor type
- * of measurement.
+ * serves to "select" a component corresponding to a GaussianFactor.
  *
- * Represents the underlying Gaussian mixture as a Decision Tree, where the set
- * of discrete variables indexes to the continuous gaussian distribution.
+ * Represents the underlying hybrid Gaussian components as a Decision Tree,
+ * where the set of discrete variables indexes to
+ * the continuous gaussian distribution.
  *
  * @ingroup hybrid
  */
@@ -80,7 +80,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   HybridGaussianFactor() = default;
 
   /**
-   * @brief Construct a new Gaussian mixture factor.
+   * @brief Construct a new hybrid Gaussian factor.
    *
    * @param continuousKeys A vector of keys representing continuous variables.
    * @param discreteKeys A vector of keys representing discrete variables and

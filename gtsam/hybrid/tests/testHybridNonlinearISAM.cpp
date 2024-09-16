@@ -441,9 +441,8 @@ TEST(HybridNonlinearISAM, NonTrivial) {
                                                     noise_model);
   std::vector<std::pair<PlanarMotionModel::shared_ptr, double>> components = {
       {moving, 0.0}, {still, 0.0}};
-  auto mixtureFactor = std::make_shared<HybridNonlinearFactor>(
+  fg.emplace_shared<HybridNonlinearFactor>(
       contKeys, gtsam::DiscreteKey(M(1), 2), components);
-  fg.push_back(mixtureFactor);
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(0), X(1), Pose2(1.0, 0.0, 0),
@@ -481,9 +480,8 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   moving =
       std::make_shared<PlanarMotionModel>(W(1), W(2), odometry, noise_model);
   components = {{moving, 0.0}, {still, 0.0}};
-  mixtureFactor = std::make_shared<HybridNonlinearFactor>(
+  fg.emplace_shared<HybridNonlinearFactor>(
       contKeys, gtsam::DiscreteKey(M(2), 2), components);
-  fg.push_back(mixtureFactor);
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(1), X(2), Pose2(1.0, 0.0, 0),
@@ -524,9 +522,8 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   moving =
       std::make_shared<PlanarMotionModel>(W(2), W(3), odometry, noise_model);
   components = {{moving, 0.0}, {still, 0.0}};
-  mixtureFactor = std::make_shared<HybridNonlinearFactor>(
+  fg.emplace_shared<HybridNonlinearFactor>(
       contKeys, gtsam::DiscreteKey(M(3), 2), components);
-  fg.push_back(mixtureFactor);
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(2), X(3), Pose2(1.0, 0.0, 0),

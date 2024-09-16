@@ -281,7 +281,7 @@ TEST(HybridFactorGraph, EliminationTree) {
 TEST(GaussianElimination, Eliminate_x0) {
   Switching self(3);
 
-  // Gather factors on x1, has a simple Gaussian and a mixture factor.
+  // Gather factors on x1, has a simple Gaussian and a hybrid factor.
   HybridGaussianFactorGraph factors;
   // Add gaussian prior
   factors.push_back(self.linearizedFactorGraph[0]);
@@ -306,7 +306,7 @@ TEST(GaussianElimination, Eliminate_x0) {
 TEST(HybridsGaussianElimination, Eliminate_x1) {
   Switching self(3);
 
-  // Gather factors on x1, will be two mixture factors (with x0 and x2, resp.).
+  // Gather factors on x1, will be two hybrid factors (with x0 and x2, resp.).
   HybridGaussianFactorGraph factors;
   factors.push_back(self.linearizedFactorGraph[1]);  // involves m0
   factors.push_back(self.linearizedFactorGraph[2]);  // involves m1
@@ -349,18 +349,18 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   // Eliminate x0
   const Ordering ordering{X(0), X(1)};
 
-  const auto [hybridConditionalMixture, factorOnModes] =
+  const auto [hybridConditional, factorOnModes] =
       EliminateHybrid(factors, ordering);
 
-  auto gaussianConditionalMixture =
+  auto hybridGaussianConditional =
       dynamic_pointer_cast<HybridGaussianConditional>(
-          hybridConditionalMixture->inner());
+          hybridConditional->inner());
 
-  CHECK(gaussianConditionalMixture);
+  CHECK(hybridGaussianConditional);
   // Frontals = [x0, x1]
-  EXPECT_LONGS_EQUAL(2, gaussianConditionalMixture->nrFrontals());
+  EXPECT_LONGS_EQUAL(2, hybridGaussianConditional->nrFrontals());
   // 1 parent, which is the mode
-  EXPECT_LONGS_EQUAL(1, gaussianConditionalMixture->nrParents());
+  EXPECT_LONGS_EQUAL(1, hybridGaussianConditional->nrParents());
 
   // This is now a discreteFactor
   auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(factorOnModes);
@@ -849,8 +849,8 @@ namespace test_relinearization {
  * This way we can directly provide the likelihoods and
  * then perform (re-)linearization.
  *
- * @param means The means of the GaussianMixtureFactor components.
- * @param sigmas The covariances of the GaussianMixtureFactor components.
+ * @param means The means of the HybridGaussianFactor components.
+ * @param sigmas The covariances of the HybridGaussianFactor components.
  * @param m1 The discrete key.
  * @param x0_measurement A measurement on X0
  * @return HybridGaussianFactorGraph

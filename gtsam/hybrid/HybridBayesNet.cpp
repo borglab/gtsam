@@ -49,7 +49,7 @@ std::function<double(const Assignment<Key> &, double)> prunerFunc(
     const DecisionTreeFactor &prunedDiscreteProbs,
     const HybridConditional &conditional) {
   // Get the discrete keys as sets for the decision tree
-  // and the Gaussian mixture.
+  // and the hybrid Gaussian conditional.
   std::set<DiscreteKey> discreteProbsKeySet =
       DiscreteKeysAsSet(prunedDiscreteProbs.discreteKeys());
   std::set<DiscreteKey> conditionalKeySet =
@@ -63,7 +63,7 @@ std::function<double(const Assignment<Key> &, double)> prunerFunc(
 
     // typecast so we can use this to get probability value
     DiscreteValues values(choices);
-    // Case where the Gaussian mixture has the same
+    // Case where the hybrid Gaussian conditional has the same
     // discrete keys as the decision tree.
     if (conditionalKeySet == discreteProbsKeySet) {
       if (prunedDiscreteProbs(values) == 0) {
@@ -181,7 +181,7 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
   // Bayes Net and prune them as per prunedDiscreteProbs.
   for (auto &&conditional : *this) {
     if (auto gm = conditional->asMixture()) {
-      // Make a copy of the Gaussian mixture and prune it!
+      // Make a copy of the hybrid Gaussian conditional and prune it!
       auto prunedHybridGaussianConditional =
           std::make_shared<HybridGaussianConditional>(*gm);
       prunedHybridGaussianConditional->prune(

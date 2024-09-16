@@ -50,11 +50,11 @@ HybridConditional::HybridConditional(
 
 /* ************************************************************************ */
 HybridConditional::HybridConditional(
-    const std::shared_ptr<HybridGaussianConditional> &gaussianMixture)
-    : BaseFactor(gaussianMixture->continuousKeys(),
-                 gaussianMixture->discreteKeys()),
-      BaseConditional(gaussianMixture->nrFrontals()) {
-  inner_ = gaussianMixture;
+    const std::shared_ptr<HybridGaussianConditional> &hybridGaussianCond)
+    : BaseFactor(hybridGaussianCond->continuousKeys(),
+                 hybridGaussianCond->discreteKeys()),
+      BaseConditional(hybridGaussianCond->nrFrontals()) {
+  inner_ = hybridGaussianCond;
 }
 
 /* ************************************************************************ */

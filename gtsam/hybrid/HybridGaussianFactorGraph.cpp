@@ -437,8 +437,8 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
                 const Ordering &frontalKeys) {
   // NOTE: Because we are in the Conditional Gaussian regime there are only
   // a few cases:
-  // 1. continuous variable, make a Gaussian Mixture if there are hybrid
-  // factors;
+  // 1. continuous variable, make a hybrid Gaussian conditional if there are
+  // hybrid factors;
   // 2. continuous variable, we make a Gaussian Factor if there are no hybrid
   // factors;
   // 3. discrete variable, no continuous factor is allowed
@@ -550,9 +550,10 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::errorTree(
       f = hc->inner();
     }
 
-    if (auto gaussianMixture = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
+    if (auto hybridGaussianCond =
+            dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       // Compute factor error and add it.
-      error_tree = error_tree + gaussianMixture->errorTree(continuousValues);
+      error_tree = error_tree + hybridGaussianCond->errorTree(continuousValues);
     } else if (auto gaussian = dynamic_pointer_cast<GaussianFactor>(f)) {
       // If continuous only, get the (double) error
       // and add it to the error_tree

@@ -205,9 +205,9 @@ void HybridBayesTree::prune(const size_t maxNrLeaves) {
 
       // If conditional is hybrid, we prune it.
       if (conditional->isHybrid()) {
-        auto gaussianMixture = conditional->asMixture();
+        auto hybridGaussianCond = conditional->asMixture();
 
-        gaussianMixture->prune(parentData.prunedDiscreteProbs);
+        hybridGaussianCond->prune(parentData.prunedDiscreteProbs);
       }
       return parentData;
     }
