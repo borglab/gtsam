@@ -106,32 +106,6 @@ class GTSAM_EXPORT HybridGaussianConditional
                             const DiscreteKeys &discreteParents,
                             const Conditionals &conditionals);
 
-  /**
-   * @brief Make a Gaussian Mixture from a list of Gaussian conditionals
-   *
-   * @param continuousFrontals The continuous frontal variables
-   * @param continuousParents The continuous parent variables
-   * @param discreteParents Discrete parents variables
-   * @param conditionals List of conditionals
-   */
-  HybridGaussianConditional(
-      KeyVector &&continuousFrontals, KeyVector &&continuousParents,
-      DiscreteKeys &&discreteParents,
-      std::vector<GaussianConditional::shared_ptr> &&conditionals);
-
-  /**
-   * @brief Make a Gaussian Mixture from a list of Gaussian conditionals
-   *
-   * @param continuousFrontals The continuous frontal variables
-   * @param continuousParents The continuous parent variables
-   * @param discreteParents Discrete parents variables
-   * @param conditionals List of conditionals
-   */
-  HybridGaussianConditional(
-      const KeyVector &continuousFrontals, const KeyVector &continuousParents,
-      const DiscreteKeys &discreteParents,
-      const std::vector<GaussianConditional::shared_ptr> &conditionals);
-
   /// @}
   /// @name Testable
   /// @{
@@ -273,7 +247,7 @@ class GTSAM_EXPORT HybridGaussianConditional
 #endif
 };
 
-/// Return the DiscreteKey vector as a set.
+/// Return the DiscreteKeys vector as a set.
 std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys);
 
 // traits

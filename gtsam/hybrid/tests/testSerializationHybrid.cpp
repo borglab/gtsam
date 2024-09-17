@@ -116,7 +116,8 @@ TEST(HybridSerialization, HybridGaussianConditional) {
   const auto conditional1 = std::make_shared<GaussianConditional>(
       GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 3));
   const HybridGaussianConditional gm({Z(0)}, {X(0)}, {mode},
-                                     {conditional0, conditional1});
+                                     HybridGaussianConditional::Conditionals(
+                                         {mode}, {conditional0, conditional1}));
 
   EXPECT(equalsObj<HybridGaussianConditional>(gm));
   EXPECT(equalsXML<HybridGaussianConditional>(gm));
