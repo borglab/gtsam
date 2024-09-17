@@ -56,6 +56,15 @@ HybridGaussianConditional::conditionals() const {
 }
 
 /* *******************************************************************************/
+HybridGaussianConditional::HybridGaussianConditional(
+    const KeyVector &continuousFrontals, const KeyVector &continuousParents,
+    const DiscreteKeys &discreteParents,
+    const std::vector<GaussianConditional::shared_ptr> &conditionals)
+    : HybridGaussianConditional(continuousFrontals, continuousParents,
+                                discreteParents,
+                                Conditionals(discreteParents, conditionals)) {}
+
+/* *******************************************************************************/
 // TODO(dellaert): This is copy/paste: HybridGaussianConditional should be
 // derived from HybridGaussianFactor, no?
 GaussianFactorGraphTree HybridGaussianConditional::add(

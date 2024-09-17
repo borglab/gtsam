@@ -106,6 +106,20 @@ class GTSAM_EXPORT HybridGaussianConditional
                             const DiscreteKeys &discreteParents,
                             const Conditionals &conditionals);
 
+  /**
+   * @brief Make a Gaussian Mixture from a vector of Gaussian conditionals.
+   * The DecisionTree-based constructor is preferred over this one.
+   *
+   * @param continuousFrontals The continuous frontal variables
+   * @param continuousParents The continuous parent variables
+   * @param discreteParents Discrete parents variables
+   * @param conditionals Vector of conditionals
+   */
+  HybridGaussianConditional(
+      const KeyVector &continuousFrontals, const KeyVector &continuousParents,
+      const DiscreteKeys &discreteParents,
+      const std::vector<GaussianConditional::shared_ptr> &conditionals);
+
   /// @}
   /// @name Testable
   /// @{
@@ -247,7 +261,7 @@ class GTSAM_EXPORT HybridGaussianConditional
 #endif
 };
 
-/// Return the DiscreteKeys vector as a set.
+/// Return the DiscreteKey vector as a set.
 std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys);
 
 // traits
