@@ -181,7 +181,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
   std::vector<GaussianFactorValuePair> factors = {
       {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},
       {std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()), 0.0}};
-  hfg.add(HybridGaussianFactor({X(1)}, {{M(1), 2}}, factors));
+  hfg.add(HybridGaussianFactor({X(1)}, {M(1), 2}, factors));
 
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
   // TODO(Varun) Adding extra discrete variable not connected to continuous
@@ -241,7 +241,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
     std::vector<GaussianFactorValuePair> factors = {
         {std::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1), 0.0},
         {std::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones()), 0.0}};
-    hfg.add(HybridGaussianFactor({X(0)}, {{M(0), 2}}, factors));
+    hfg.add(HybridGaussianFactor({X(0)}, {M(0), 2}, factors));
 
     DecisionTree<Key, GaussianFactorValuePair> dt1(
         M(1), {std::make_shared<JacobianFactor>(X(2), I_3x3, Z_3x1), 0.0},

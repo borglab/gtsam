@@ -168,8 +168,8 @@ struct Switching {
         components.push_back(
             {std::dynamic_pointer_cast<NonlinearFactor>(f), 0.0});
       }
-      nonlinearFactorGraph.emplace_shared<HybridNonlinearFactor>(
-          keys, DiscreteKeys{modes[k]}, components);
+      nonlinearFactorGraph.emplace_shared<HybridNonlinearFactor>(keys, modes[k],
+                                                                 components);
     }
 
     // Add measurement factors

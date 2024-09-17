@@ -92,17 +92,18 @@ class HybridNonlinearFactor : public HybridFactor {
    * @tparam FACTOR The type of the factor shared pointers being passed in.
    * Will be typecast to NonlinearFactor shared pointers.
    * @param keys Vector of keys for continuous factors.
-   * @param discreteKeys Vector of discrete keys.
+   * @param discreteKey The discrete key indexing each component factor.
    * @param factors Vector of nonlinear factor and scalar pairs.
+   * Same size as the cardinality of discreteKey.
    * @param normalized Flag indicating if the factor error is already
    * normalized.
    */
   template <typename FACTOR>
   HybridNonlinearFactor(
-      const KeyVector& keys, const DiscreteKeys& discreteKeys,
+      const KeyVector& keys, const DiscreteKey& discreteKey,
       const std::vector<std::pair<std::shared_ptr<FACTOR>, double>>& factors,
       bool normalized = false)
-      : Base(keys, discreteKeys), normalized_(normalized) {
+      : Base(keys, {discreteKey}), normalized_(normalized) {
     std::vector<NonlinearFactorValuePair> nonlinear_factors;
     KeySet continuous_keys_set(keys.begin(), keys.end());
     KeySet factor_keys_set;
@@ -118,7 +119,7 @@ class HybridNonlinearFactor : public HybridFactor {
             "Factors passed into HybridNonlinearFactor need to be nonlinear!");
       }
     }
-    factors_ = Factors(discreteKeys, nonlinear_factors);
+    factors_ = Factors({discreteKey}, nonlinear_factors);
 
     if (continuous_keys_set != factor_keys_set) {
       throw std::runtime_error(
