@@ -76,7 +76,7 @@ virtual class HybridConditional {
 class HybridGaussianFactor : gtsam::HybridFactor {
   HybridGaussianFactor(
       const gtsam::KeyVector& continuousKeys,
-      const gtsam::DiscreteKeys& discreteKeys,
+      const gtsam::DiscreteKey& discreteKey,
       const std::vector<std::pair<gtsam::GaussianFactor::shared_ptr, double>>&
           factorsList);
 
@@ -91,8 +91,7 @@ class HybridGaussianConditional : gtsam::HybridFactor {
       const gtsam::KeyVector& continuousFrontals,
       const gtsam::KeyVector& continuousParents,
       const gtsam::DiscreteKeys& discreteParents,
-      const std::vector<gtsam::GaussianConditional::shared_ptr>&
-          conditionalsList);
+      const gtsam::HybridGaussianConditional::Conditionals& conditionals);
 
   gtsam::HybridGaussianFactor* likelihood(
       const gtsam::VectorValues& frontals) const;
@@ -248,7 +247,7 @@ class HybridNonlinearFactor : gtsam::HybridFactor {
       bool normalized = false);
 
   HybridNonlinearFactor(
-      const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
+      const gtsam::KeyVector& keys, const gtsam::DiscreteKey& discreteKey,
       const std::vector<std::pair<gtsam::NonlinearFactor*, double>>& factors,
       bool normalized = false);
 
