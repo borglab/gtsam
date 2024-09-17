@@ -107,9 +107,11 @@ TEST(HybridBayesNet, evaluateHybrid) {
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
   bayesNet.push_back(continuousConditional);
+  DiscreteKeys discreteParents{Asia};
   bayesNet.emplace_shared<HybridGaussianConditional>(
-      KeyVector{X(1)}, KeyVector{}, DiscreteKeys{Asia},
-      std::vector{conditional0, conditional1});
+      KeyVector{X(1)}, KeyVector{}, discreteParents,
+      HybridGaussianConditional::Conditionals(
+          discreteParents, std::vector{conditional0, conditional1}));
   bayesNet.emplace_shared<DiscreteConditional>(Asia, "99/1");
 
   // Create values at which to evaluate.
@@ -168,9 +170,11 @@ TEST(HybridBayesNet, Error) {
              conditional1 = std::make_shared<GaussianConditional>(
                  X(1), Vector1::Constant(2), I_1x1, model1);
 
+  DiscreteKeys discreteParents{Asia};
   auto gm = std::make_shared<HybridGaussianConditional>(
-      KeyVector{X(1)}, KeyVector{}, DiscreteKeys{Asia},
-      std::vector{conditional0, conditional1});
+      KeyVector{X(1)}, KeyVector{}, discreteParents,
+      HybridGaussianConditional::Conditionals(
+          discreteParents, std::vector{conditional0, conditional1}));
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
   bayesNet.push_back(continuousConditional);
@@ -383,15 +387,15 @@ TEST(HybridBayesNet, Sampling) {
   HybridNonlinearFactorGraph nfg;
 
   auto noise_model = noiseModel::Diagonal::Sigmas(Vector1(1.0));
+  nfg.emplace_shared<PriorFactor<double>>(X(0), 0.0, noise_model);
+
   auto zero_motion =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
   auto one_motion =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
-
   DiscreteKeys discreteKeys{DiscreteKey(M(0), 2)};
   HybridNonlinearFactor::Factors factors(
       discreteKeys, {{zero_motion, 0.0}, {one_motion, 0.0}});
-  nfg.emplace_shared<PriorFactor<double>>(X(0), 0.0, noise_model);
   nfg.emplace_shared<HybridNonlinearFactor>(KeyVector{X(0), X(1)}, discreteKeys,
                                             factors);
 

@@ -807,6 +807,26 @@ TEST(NoiseModel, NonDiagonalGaussian)
   }
 }
 
+TEST(NoiseModel, ComputeLogNormalizer) {
+  // Very simple 1D noise model, which we can compute by hand.
+  double sigma = 0.1;
+  auto noise_model = Isotropic::Sigma(1, sigma);
+  double actual_value = ComputeLogNormalizer(noise_model);
+  // Compute log(|2πΣ|) by hand.
+  // = log(2π) + log(Σ) (since it is 1D)
+  constexpr double log2pi = 1.8378770664093454835606594728112;
+  double expected_value = log2pi + log(sigma * sigma);
+  EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
+
+  // Similar situation in the 3D case
+  size_t n = 3;
+  auto noise_model2 = Isotropic::Sigma(n, sigma);
+  double actual_value2 = ComputeLogNormalizer(noise_model2);
+  // We multiply by 3 due to the determinant
+  double expected_value2 = n * (log2pi + log(sigma * sigma));
+  EXPECT_DOUBLES_EQUAL(expected_value2, actual_value2, 1e-9);
+}
+
 /* ************************************************************************* */
 int main() {  TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

@@ -96,15 +96,15 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * GaussianFactor shared pointers.
    *
    * @param continuousKeys Vector of keys for continuous factors.
-   * @param discreteKeys Vector of discrete keys.
+   * @param discreteKey The discrete key to index each component.
    * @param factors Vector of gaussian factor shared pointers
-   *  and arbitrary scalars.
+   *  and arbitrary scalars. Same size as the cardinality of discreteKey.
    */
   HybridGaussianFactor(const KeyVector &continuousKeys,
-                       const DiscreteKeys &discreteKeys,
+                       const DiscreteKey &discreteKey,
                        const std::vector<GaussianFactorValuePair> &factors)
-      : HybridGaussianFactor(continuousKeys, discreteKeys,
-                             FactorValuePairs(discreteKeys, factors)) {}
+      : HybridGaussianFactor(continuousKeys, {discreteKey},
+                             FactorValuePairs({discreteKey}, factors)) {}
 
   /// @}
   /// @name Testable

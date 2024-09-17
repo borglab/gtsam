@@ -752,7 +752,7 @@ namespace gtsam {
   template<> struct traits<noiseModel::Unit> : public Testable<noiseModel::Unit> {};
 
   /**
-   * @brief Helper function to compute the sqrt(|2πΣ|) normalizer values
+   * @brief Helper function to compute the log(|2πΣ|) normalizer values
    * for a Gaussian noise model.
    * We compute this in the log-space for numerical accuracy.
    *

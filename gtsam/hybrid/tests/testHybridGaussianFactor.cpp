@@ -233,8 +233,11 @@ static HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1,
        c1 = make_shared<GaussianConditional>(z, Vector1(mu1), I_1x1, model1);
 
   HybridBayesNet hbn;
+  DiscreteKeys discreteParents{m};
   hbn.emplace_shared<HybridGaussianConditional>(
-      KeyVector{z}, KeyVector{}, DiscreteKeys{m}, std::vector{c0, c1});
+      KeyVector{z}, KeyVector{}, discreteParents,
+      HybridGaussianConditional::Conditionals(discreteParents,
+                                              std::vector{c0, c1}));
 
   auto mixing = make_shared<DiscreteConditional>(m, "50/50");
   hbn.push_back(mixing);
@@ -408,8 +411,11 @@ static HybridGaussianConditional::shared_ptr CreateHybridMotionModel(
                                              -I_1x1, model0),
        c1 = make_shared<GaussianConditional>(X(1), Vector1(mu1), I_1x1, X(0),
                                              -I_1x1, model1);
+  DiscreteKeys discreteParents{m1};
   return std::make_shared<HybridGaussianConditional>(
-      KeyVector{X(1)}, KeyVector{X(0)}, DiscreteKeys{m1}, std::vector{c0, c1});
+      KeyVector{X(1)}, KeyVector{X(0)}, discreteParents,
+      HybridGaussianConditional::Conditionals(discreteParents,
+                                              std::vector{c0, c1}));
 }
 
 /// Create two state Bayes network with 1 or two measurement models
