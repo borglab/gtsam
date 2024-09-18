@@ -221,9 +221,8 @@ double prob_m_z(double mu0, double mu1, double sigma0, double sigma1,
   return 1 / (1 + e);
 };
 
-static HybridBayesNet GetHybridGaussianConditionalModel(double mu0, double mu1,
-                                                        double sigma0,
-                                                        double sigma1) {
+static HybridBayesNet GetGaussianMixtureModel(double mu0, double mu1,
+                                              double sigma0, double sigma1) {
   DiscreteKey m(M(0), 2);
   Key z = Z(0);
 
@@ -258,7 +257,7 @@ static HybridBayesNet GetHybridGaussianConditionalModel(double mu0, double mu1,
  * The resulting factor graph should eliminate to a Bayes net
  * which represents a sigmoid function.
  */
-TEST(HybridGaussianFactor, HybridGaussianConditionalModel) {
+TEST(HybridGaussianFactor, GaussianMixtureModel) {
   using namespace test_gmm;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -267,7 +266,7 @@ TEST(HybridGaussianFactor, HybridGaussianConditionalModel) {
   DiscreteKey m(M(0), 2);
   Key z = Z(0);
 
-  auto hbn = GetHybridGaussianConditionalModel(mu0, mu1, sigma, sigma);
+  auto hbn = GetGaussianMixtureModel(mu0, mu1, sigma, sigma);
 
   // The result should be a sigmoid.
   // So should be P(m=1|z) = 0.5 at z=3.0 - 1.0=2.0
@@ -330,7 +329,7 @@ TEST(HybridGaussianFactor, HybridGaussianConditionalModel) {
  * which represents a Gaussian-like function
  * where m1>m0 close to 3.1333.
  */
-TEST(HybridGaussianFactor, HybridGaussianConditionalModel2) {
+TEST(HybridGaussianFactor, GaussianMixtureModel2) {
   using namespace test_gmm;
 
   double mu0 = 1.0, mu1 = 3.0;
@@ -339,7 +338,7 @@ TEST(HybridGaussianFactor, HybridGaussianConditionalModel2) {
   DiscreteKey m(M(0), 2);
   Key z = Z(0);
 
-  auto hbn = GetHybridGaussianConditionalModel(mu0, mu1, sigma0, sigma1);
+  auto hbn = GetGaussianMixtureModel(mu0, mu1, sigma0, sigma1);
 
   double m1_high = 3.133, lambda = 4;
   {
