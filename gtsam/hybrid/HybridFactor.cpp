@@ -50,22 +50,20 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
 
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const KeyVector &keys)
-    : Base(keys),
-      category_(HybridCategory::Continuous),
-      continuousKeys_(keys) {}
+    : Base(keys), category_(Category::Continuous), continuousKeys_(keys) {}
 
 /* ************************************************************************ */
-HybridCategory GetCategory(const KeyVector &continuousKeys,
-                           const DiscreteKeys &discreteKeys) {
+HybridFactor::Category GetCategory(const KeyVector &continuousKeys,
+                                   const DiscreteKeys &discreteKeys) {
   if ((continuousKeys.size() == 0) && (discreteKeys.size() != 0)) {
-    return HybridCategory::Discrete;
+    return HybridFactor::Category::Discrete;
   } else if ((continuousKeys.size() != 0) && (discreteKeys.size() == 0)) {
-    return HybridCategory::Continuous;
+    return HybridFactor::Category::Continuous;
   } else if ((continuousKeys.size() != 0) && (discreteKeys.size() != 0)) {
-    return HybridCategory::Hybrid;
+    return HybridFactor::Category::Hybrid;
   } else {
     // Case where we have no keys. Should never happen.
-    return HybridCategory::None;
+    return HybridFactor::Category::None;
   }
 }
 
@@ -80,7 +78,7 @@ HybridFactor::HybridFactor(const KeyVector &continuousKeys,
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const DiscreteKeys &discreteKeys)
     : Base(CollectKeys({}, discreteKeys)),
-      category_(HybridCategory::Discrete),
+      category_(Category::Discrete),
       discreteKeys_(discreteKeys),
       continuousKeys_({}) {}
 
@@ -97,16 +95,16 @@ void HybridFactor::print(const std::string &s,
                          const KeyFormatter &formatter) const {
   std::cout << (s.empty() ? "" : s + "\n");
   switch (category_) {
-    case HybridCategory::Continuous:
+    case Category::Continuous:
       std::cout << "Continuous ";
       break;
-    case HybridCategory::Discrete:
+    case Category::Discrete:
       std::cout << "Discrete ";
       break;
-    case HybridCategory::Hybrid:
+    case Category::Hybrid:
       std::cout << "Hybrid ";
       break;
-    case HybridCategory::None:
+    case Category::None:
       std::cout << "None ";
       break;
   }
