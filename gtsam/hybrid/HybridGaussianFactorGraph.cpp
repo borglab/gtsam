@@ -114,10 +114,11 @@ void HybridGaussianFactorGraph::printErrors(
                     << "\n";
         } else {
           // Is hybrid
-          auto mixtureComponent =
+          auto conditionalComponent =
               hc->asMixture()->operator()(values.discrete());
-          mixtureComponent->print(ss.str(), keyFormatter);
-          std::cout << "error = " << mixtureComponent->error(values) << "\n";
+          conditionalComponent->print(ss.str(), keyFormatter);
+          std::cout << "error = " << conditionalComponent->error(values)
+                    << "\n";
         }
       }
     } else if (auto gf = std::dynamic_pointer_cast<GaussianFactor>(factor)) {
@@ -411,10 +412,10 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // Create the HybridGaussianConditional from the conditionals
   HybridGaussianConditional::Conditionals conditionals(
       eliminationResults, [](const Result &pair) { return pair.first; });
-  auto gaussianMixture = std::make_shared<HybridGaussianConditional>(
+  auto hybridGaussian = std::make_shared<HybridGaussianConditional>(
       frontalKeys, continuousSeparator, discreteSeparator, conditionals);
 
-  return {std::make_shared<HybridConditional>(gaussianMixture), newFactor};
+  return {std::make_shared<HybridConditional>(hybridGaussian), newFactor};
 }
 
 /* ************************************************************************
@@ -465,7 +466,7 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
   // Now we will need to know how to retrieve the corresponding continuous
   // densities for the assignment (c1,c2,c3) (OR (c2,c3,c1), note there is NO
   // defined order!). We also need to consider when there is pruning. Two
-  // mixture factors could have different pruning patterns - one could have
+  // hybrid factors could have different pruning patterns - one could have
   // (c1=0,c2=1) pruned, and another could have (c2=0,c3=1) pruned, and this
   // creates a big problem in how to identify the intersection of non-pruned
   // branches.

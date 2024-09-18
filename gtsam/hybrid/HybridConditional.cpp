@@ -28,14 +28,9 @@ HybridConditional::HybridConditional(const KeyVector &continuousFrontals,
                                      const DiscreteKeys &discreteFrontals,
                                      const KeyVector &continuousParents,
                                      const DiscreteKeys &discreteParents)
-    : HybridConditional(
-          CollectKeys(
-              {continuousFrontals.begin(), continuousFrontals.end()},
-              KeyVector{continuousParents.begin(), continuousParents.end()}),
-          CollectDiscreteKeys(
-              {discreteFrontals.begin(), discreteFrontals.end()},
-              {discreteParents.begin(), discreteParents.end()}),
-          continuousFrontals.size() + discreteFrontals.size()) {}
+    : HybridConditional(CollectKeys(continuousFrontals, continuousParents),
+                        CollectDiscreteKeys(discreteFrontals, discreteParents),
+                        continuousFrontals.size() + discreteFrontals.size()) {}
 
 /* ************************************************************************ */
 HybridConditional::HybridConditional(
@@ -56,9 +51,7 @@ HybridConditional::HybridConditional(
 /* ************************************************************************ */
 HybridConditional::HybridConditional(
     const std::shared_ptr<HybridGaussianConditional> &gaussianMixture)
-    : BaseFactor(KeyVector(gaussianMixture->keys().begin(),
-                           gaussianMixture->keys().begin() +
-                               gaussianMixture->nrContinuous()),
+    : BaseFactor(gaussianMixture->continuousKeys(),
                  gaussianMixture->discreteKeys()),
       BaseConditional(gaussianMixture->nrFrontals()) {
   inner_ = gaussianMixture;
