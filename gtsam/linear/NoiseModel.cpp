@@ -714,6 +714,9 @@ double ComputeLogNormalizer(
     const noiseModel::Gaussian::shared_ptr& noise_model) {
   // Since noise models are Gaussian, we can get the logDeterminant using
   // the same trick as in GaussianConditional
+  // Sigma = (R'R)^{-1}, det(Sigma) = det((R'R)^{-1}) = det(R'R)^{-1}
+  // log det(Sigma) = -log(det(R'R)) = -2*log(det(R))
+  // Hence, log det(Sigma)) = -2.0 * logDetR()
   double logDetR = noise_model->R()
                        .diagonal()
                        .unaryExpr([](double x) { return log(x); })

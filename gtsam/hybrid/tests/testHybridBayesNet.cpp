@@ -108,7 +108,7 @@ TEST(HybridBayesNet, evaluateHybrid) {
   HybridBayesNet bayesNet;
   bayesNet.push_back(continuousConditional);
   bayesNet.emplace_shared<HybridGaussianConditional>(
-      KeyVector{X(1)}, KeyVector{}, DiscreteKeys{Asia},
+      KeyVector{X(1)}, KeyVector{}, Asia,
       std::vector{conditional0, conditional1});
   bayesNet.emplace_shared<DiscreteConditional>(Asia, "99/1");
 
@@ -169,7 +169,7 @@ TEST(HybridBayesNet, Error) {
                  X(1), Vector1::Constant(2), I_1x1, model1);
 
   auto gm = std::make_shared<HybridGaussianConditional>(
-      KeyVector{X(1)}, KeyVector{}, DiscreteKeys{Asia},
+      KeyVector{X(1)}, KeyVector{}, Asia,
       std::vector{conditional0, conditional1});
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
@@ -383,15 +383,16 @@ TEST(HybridBayesNet, Sampling) {
   HybridNonlinearFactorGraph nfg;
 
   auto noise_model = noiseModel::Diagonal::Sigmas(Vector1(1.0));
+  nfg.emplace_shared<PriorFactor<double>>(X(0), 0.0, noise_model);
+
   auto zero_motion =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
   auto one_motion =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
-  std::vector<NonlinearFactorValuePair> factors = {{zero_motion, 0.0},
-                                                   {one_motion, 0.0}};
-  nfg.emplace_shared<PriorFactor<double>>(X(0), 0.0, noise_model);
   nfg.emplace_shared<HybridNonlinearFactor>(
-      KeyVector{X(0), X(1)}, DiscreteKeys{DiscreteKey(M(0), 2)}, factors);
+      KeyVector{X(0), X(1)}, DiscreteKey(M(0), 2),
+      std::vector<NonlinearFactorValuePair>{{zero_motion, 0.0},
+                                            {one_motion, 0.0}});
 
   DiscreteKey mode(M(0), 2);
   nfg.emplace_shared<DiscreteDistribution>(mode, "1/1");
