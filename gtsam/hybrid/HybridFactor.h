@@ -41,9 +41,6 @@ KeyVector CollectKeys(const KeyVector &keys1, const KeyVector &keys2);
 DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
                                  const DiscreteKeys &key2);
 
-/// Enum to help with categorizing hybrid factors.
-enum class HybridCategory { None, Discrete, Continuous, Hybrid };
-
 /**
  * Base class for *truly* hybrid probabilistic factors
  *
@@ -55,9 +52,13 @@ enum class HybridCategory { None, Discrete, Continuous, Hybrid };
  * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridFactor : public Factor {
+ public:
+  /// Enum to help with categorizing hybrid factors.
+  enum class Category { None, Discrete, Continuous, Hybrid };
+
  private:
   /// Record what category of HybridFactor this is.
-  HybridCategory category_ = HybridCategory::None;
+  Category category_ = Category::None;
 
  protected:
   // Set of DiscreteKeys for this factor.
@@ -118,13 +119,13 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   /// @{
 
   /// True if this is a factor of discrete variables only.
-  bool isDiscrete() const { return category_ == HybridCategory::Discrete; }
+  bool isDiscrete() const { return category_ == Category::Discrete; }
 
   /// True if this is a factor of continuous variables only.
-  bool isContinuous() const { return category_ == HybridCategory::Continuous; }
+  bool isContinuous() const { return category_ == Category::Continuous; }
 
   /// True is this is a Discrete-Continuous factor.
-  bool isHybrid() const { return category_ == HybridCategory::Hybrid; }
+  bool isHybrid() const { return category_ == Category::Hybrid; }
 
   /// Return the number of continuous variables in this factor.
   size_t nrContinuous() const { return continuousKeys_.size(); }

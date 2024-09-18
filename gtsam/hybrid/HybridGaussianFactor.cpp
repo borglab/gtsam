@@ -42,9 +42,11 @@ HybridGaussianFactor::Factors augment(
     const HybridGaussianFactor::FactorValuePairs &factors) {
   // Find the minimum value so we can "proselytize" to positive values.
   // Done because we can't have sqrt of negative numbers.
-  auto unzipped_pair = unzip(factors);
-  const HybridGaussianFactor::Factors gaussianFactors = unzipped_pair.first;
-  const AlgebraicDecisionTree<Key> valueTree = unzipped_pair.second;
+  HybridGaussianFactor::Factors gaussianFactors;
+  AlgebraicDecisionTree<Key> valueTree;
+  std::tie(gaussianFactors, valueTree) = unzip(factors);
+
+  // Normalize
   double min_value = valueTree.min();
   AlgebraicDecisionTree<Key> values =
       valueTree.apply([&min_value](double n) { return n - min_value; });

@@ -423,7 +423,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   std::vector<std::pair<PlanarMotionModel::shared_ptr, double>> components = {
       {moving, 0.0}, {still, 0.0}};
   auto mixtureFactor = std::make_shared<HybridNonlinearFactor>(
-      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
+      contKeys, gtsam::DiscreteKey(M(1), 2), components);
   fg.push_back(mixtureFactor);
 
   // Add equivalent of ImuFactor
@@ -463,7 +463,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
       std::make_shared<PlanarMotionModel>(W(1), W(2), odometry, noise_model);
   components = {{moving, 0.0}, {still, 0.0}};
   mixtureFactor = std::make_shared<HybridNonlinearFactor>(
-      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(2), 2)}, components);
+      contKeys, gtsam::DiscreteKey(M(2), 2), components);
   fg.push_back(mixtureFactor);
 
   // Add equivalent of ImuFactor
@@ -506,7 +506,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
       std::make_shared<PlanarMotionModel>(W(2), W(3), odometry, noise_model);
   components = {{moving, 0.0}, {still, 0.0}};
   mixtureFactor = std::make_shared<HybridNonlinearFactor>(
-      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(3), 2)}, components);
+      contKeys, gtsam::DiscreteKey(M(3), 2), components);
   fg.push_back(mixtureFactor);
 
   // Add equivalent of ImuFactor

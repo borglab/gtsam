@@ -89,14 +89,15 @@ class HybridNonlinearFactor : public HybridFactor {
    * @tparam FACTOR The type of the factor shared pointers being passed in.
    * Will be typecast to NonlinearFactor shared pointers.
    * @param keys Vector of keys for continuous factors.
-   * @param discreteKeys Vector of discrete keys.
+   * @param discreteKey The discrete key indexing each component factor.
    * @param factors Vector of nonlinear factor and scalar pairs.
+   * Same size as the cardinality of discreteKey.
    */
   template <typename FACTOR>
   HybridNonlinearFactor(
-      const KeyVector& keys, const DiscreteKeys& discreteKeys,
+      const KeyVector& keys, const DiscreteKey& discreteKey,
       const std::vector<std::pair<std::shared_ptr<FACTOR>, double>>& factors)
-      : Base(keys, discreteKeys) {
+      : Base(keys, {discreteKey}) {
     std::vector<NonlinearFactorValuePair> nonlinear_factors;
     KeySet continuous_keys_set(keys.begin(), keys.end());
     KeySet factor_keys_set;
@@ -112,7 +113,7 @@ class HybridNonlinearFactor : public HybridFactor {
             "Factors passed into HybridNonlinearFactor need to be nonlinear!");
       }
     }
-    factors_ = Factors(discreteKeys, nonlinear_factors);
+    factors_ = Factors({discreteKey}, nonlinear_factors);
 
     if (continuous_keys_set != factor_keys_set) {
       throw std::runtime_error(
@@ -134,7 +135,7 @@ class HybridNonlinearFactor : public HybridFactor {
     auto errorFunc =
         [continuousValues](const std::pair<sharedFactor, double>& f) {
           auto [factor, val] = f;
-          return factor->error(continuousValues) + (0.5 * val * val);
+          return factor->error(continuousValues) + (0.5 * val);
         };
     DecisionTree<Key, double> result(factors_, errorFunc);
     return result;
@@ -153,7 +154,7 @@ class HybridNonlinearFactor : public HybridFactor {
     auto [factor, val] = factors_(discreteValues);
     // Compute the error for the selected factor
     const double factorError = factor->error(continuousValues);
-    return factorError + (0.5 * val * val);
+    return factorError + (0.5 * val);
   }
 
   /**

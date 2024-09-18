@@ -135,7 +135,7 @@ TEST(HybridGaussianFactorGraph, Resize) {
   std::vector<std::pair<MotionModel::shared_ptr, double>> components = {
       {still, 0.0}, {moving, 0.0}};
   auto dcFactor = std::make_shared<HybridNonlinearFactor>(
-      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
+      contKeys, gtsam::DiscreteKey(M(1), 2), components);
   nhfg.push_back(dcFactor);
 
   Values linearizationPoint;
@@ -170,12 +170,12 @@ TEST(HybridGaussianFactorGraph, HybridNonlinearFactor) {
   // Check for exception when number of continuous keys are under-specified.
   KeyVector contKeys = {X(0)};
   THROWS_EXCEPTION(std::make_shared<HybridNonlinearFactor>(
-      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components));
+      contKeys, gtsam::DiscreteKey(M(1), 2), components));
 
   // Check for exception when number of continuous keys are too many.
   contKeys = {X(0), X(1), X(2)};
   THROWS_EXCEPTION(std::make_shared<HybridNonlinearFactor>(
-      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components));
+      contKeys, gtsam::DiscreteKey(M(1), 2), components));
 }
 
 /*****************************************************************************
@@ -807,7 +807,7 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   std::vector<std::pair<PlanarMotionModel::shared_ptr, double>> motion_models =
       {{still, 0.0}, {moving, 0.0}};
   fg.emplace_shared<HybridNonlinearFactor>(
-      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, motion_models);
+      contKeys, gtsam::DiscreteKey(M(1), 2), motion_models);
 
   // Add Range-Bearing measurements to from X0 to L0 and X1 to L1.
   // create a noise model for the landmark measurements

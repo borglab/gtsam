@@ -27,8 +27,6 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
 
     def test_nonlinear_hybrid(self):
         nlfg = gtsam.HybridNonlinearFactorGraph()
-        dk = gtsam.DiscreteKeys()
-        dk.push_back((10, 2))
         nlfg.push_back(
             BetweenFactorPoint3(1, 2, Point3(1, 2, 3),
                                 noiseModel.Diagonal.Variances([1, 1, 1])))
@@ -40,7 +38,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
                                       noiseModel.Unit.Create(3)), 0.0),
                    (PriorFactorPoint3(1, Point3(1, 2, 1),
                                       noiseModel.Unit.Create(3)), 0.0)]
-        nlfg.push_back(gtsam.HybridNonlinearFactor([1], dk, factors))
+        nlfg.push_back(gtsam.HybridNonlinearFactor([1], (10, 2), factors))
         nlfg.push_back(gtsam.DecisionTreeFactor((10, 2), "1 3"))
         values = gtsam.Values()
         values.insert_point3(1, Point3(0, 0, 0))
