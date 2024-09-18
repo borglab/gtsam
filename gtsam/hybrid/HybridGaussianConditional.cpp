@@ -58,11 +58,11 @@ HybridGaussianConditional::conditionals() const {
 /* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
     const KeyVector &continuousFrontals, const KeyVector &continuousParents,
-    const DiscreteKeys &discreteParents,
+    const DiscreteKey &discreteParent,
     const std::vector<GaussianConditional::shared_ptr> &conditionals)
     : HybridGaussianConditional(continuousFrontals, continuousParents,
-                                discreteParents,
-                                Conditionals(discreteParents, conditionals)) {}
+                                DiscreteKeys{discreteParent},
+                                Conditionals({discreteParent}, conditionals)) {}
 
 /* *******************************************************************************/
 // TODO(dellaert): This is copy/paste: HybridGaussianConditional should be

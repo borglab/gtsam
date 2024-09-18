@@ -95,7 +95,7 @@ class HybridGaussianConditional : gtsam::HybridFactor {
   HybridGaussianConditional(
       const gtsam::KeyVector& continuousFrontals,
       const gtsam::KeyVector& continuousParents,
-      const gtsam::DiscreteKeys& discreteParents,
+      const gtsam::DiscreteKey& discreteParent,
       const std::vector<gtsam::GaussianConditional::shared_ptr>& conditionals);
 
   gtsam::HybridGaussianFactor* likelihood(

@@ -101,10 +101,8 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
                                                                  I_1x1,
                                                                  X(0), [0],
                                                                  sigma=3)
-            discreteParents = DiscreteKeys()
-            discreteParents.push_back(mode)
             bayesNet.push_back(
-                HybridGaussianConditional([Z(i)], [X(0)], discreteParents,
+                HybridGaussianConditional([Z(i)], [X(0)], mode,
                                           [conditional0, conditional1]))
 
         # Create prior on X(0).
