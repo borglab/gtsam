@@ -255,9 +255,6 @@ class HybridNonlinearFactor : gtsam::HybridFactor {
   double error(const gtsam::Values& continuousValues,
                const gtsam::DiscreteValues& discreteValues) const;
 
-  double nonlinearFactorLogNormalizingConstant(
-      const gtsam::NonlinearFactor* factor, const gtsam::Values& values) const;
-
   HybridGaussianFactor* linearize(const gtsam::Values& continuousValues) const;
 
   void print(string s = "HybridNonlinearFactor\n",
