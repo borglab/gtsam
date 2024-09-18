@@ -33,6 +33,9 @@ class HybridValues;
 class DiscreteValues;
 class VectorValues;
 
+/// Alias for pair of GaussianFactor::shared_pointer and a double value.
+using GaussianFactorValuePair = std::pair<GaussianFactor::shared_ptr, double>;
+
 /**
  * @brief Implementation of a discrete conditional mixture factor.
  * Implements a joint discrete-continuous factor where the discrete variable
@@ -52,7 +55,9 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
 
   using sharedFactor = std::shared_ptr<GaussianFactor>;
 
-  /// typedef for Decision Tree of Gaussian factors and log-constant.
+  /// typedef for Decision Tree of Gaussian factors and arbitrary value.
+  using FactorValuePairs = DecisionTree<Key, GaussianFactorValuePair>;
+  /// typedef for Decision Tree of Gaussian factors.
   using Factors = DecisionTree<Key, sharedFactor>;
 
  private:
@@ -80,26 +85,26 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * @param continuousKeys A vector of keys representing continuous variables.
    * @param discreteKeys A vector of keys representing discrete variables and
    * their cardinalities.
-   * @param factors The decision tree of Gaussian factors stored
-   * as the mixture density.
+   * @param factors The decision tree of Gaussian factors and arbitrary scalars.
    */
   HybridGaussianFactor(const KeyVector &continuousKeys,
                        const DiscreteKeys &discreteKeys,
-                       const Factors &factors);
+                       const FactorValuePairs &factors);
 
   /**
    * @brief Construct a new HybridGaussianFactor object using a vector of
    * GaussianFactor shared pointers.
    *
    * @param continuousKeys Vector of keys for continuous factors.
-   * @param discreteKeys Vector of discrete keys.
-   * @param factors Vector of gaussian factor shared pointers.
+   * @param discreteKey The discrete key to index each component.
+   * @param factors Vector of gaussian factor shared pointers
+   *  and arbitrary scalars. Same size as the cardinality of discreteKey.
    */
   HybridGaussianFactor(const KeyVector &continuousKeys,
-                       const DiscreteKeys &discreteKeys,
-                       const std::vector<sharedFactor> &factors)
-      : HybridGaussianFactor(continuousKeys, discreteKeys,
-                             Factors(discreteKeys, factors)) {}
+                       const DiscreteKey &discreteKey,
+                       const std::vector<GaussianFactorValuePair> &factors)
+      : HybridGaussianFactor(continuousKeys, {discreteKey},
+                             FactorValuePairs({discreteKey}, factors)) {}
 
   /// @}
   /// @name Testable

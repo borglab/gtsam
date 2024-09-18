@@ -76,8 +76,9 @@ virtual class HybridConditional {
 class HybridGaussianFactor : gtsam::HybridFactor {
   HybridGaussianFactor(
       const gtsam::KeyVector& continuousKeys,
-      const gtsam::DiscreteKeys& discreteKeys,
-      const std::vector<gtsam::GaussianFactor::shared_ptr>& factorsList);
+      const gtsam::DiscreteKey& discreteKey,
+      const std::vector<std::pair<gtsam::GaussianFactor::shared_ptr, double>>&
+          factorsList);
 
   void print(string s = "HybridGaussianFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
@@ -90,8 +91,12 @@ class HybridGaussianConditional : gtsam::HybridFactor {
       const gtsam::KeyVector& continuousFrontals,
       const gtsam::KeyVector& continuousParents,
       const gtsam::DiscreteKeys& discreteParents,
-      const std::vector<gtsam::GaussianConditional::shared_ptr>&
-          conditionalsList);
+      const gtsam::HybridGaussianConditional::Conditionals& conditionals);
+  HybridGaussianConditional(
+      const gtsam::KeyVector& continuousFrontals,
+      const gtsam::KeyVector& continuousParents,
+      const gtsam::DiscreteKey& discreteParent,
+      const std::vector<gtsam::GaussianConditional::shared_ptr>& conditionals);
 
   gtsam::HybridGaussianFactor* likelihood(
       const gtsam::VectorValues& frontals) const;
@@ -242,14 +247,14 @@ class HybridNonlinearFactorGraph {
 class HybridNonlinearFactor : gtsam::HybridFactor {
   HybridNonlinearFactor(
       const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
-      const gtsam::DecisionTree<gtsam::Key, gtsam::NonlinearFactor*>& factors,
+      const gtsam::DecisionTree<
+          gtsam::Key, std::pair<gtsam::NonlinearFactor*, double>>& factors,
       bool normalized = false);
 
-  template <FACTOR = {gtsam::NonlinearFactor}>
-  HybridNonlinearFactor(const gtsam::KeyVector& keys,
-                        const gtsam::DiscreteKeys& discreteKeys,
-                        const std::vector<FACTOR*>& factors,
-                        bool normalized = false);
+  HybridNonlinearFactor(
+      const gtsam::KeyVector& keys, const gtsam::DiscreteKey& discreteKey,
+      const std::vector<std::pair<gtsam::NonlinearFactor*, double>>& factors,
+      bool normalized = false);
 
   double error(const gtsam::Values& continuousValues,
                const gtsam::DiscreteValues& discreteValues) const;

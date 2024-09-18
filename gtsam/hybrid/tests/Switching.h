@@ -57,12 +57,16 @@ inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
 
   // keyFunc(1) to keyFunc(n+1)
   for (size_t t = 1; t < n; t++) {
-    hfg.add(HybridGaussianFactor(
-        {keyFunc(t), keyFunc(t + 1)}, {{dKeyFunc(t), 2}},
-        {std::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
-                                          I_3x3, Z_3x1),
-         std::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
-                                          I_3x3, Vector3::Ones())}));
+    DiscreteKeys dKeys{{dKeyFunc(t), 2}};
+    HybridGaussianFactor::FactorValuePairs components(
+        dKeys, {{std::make_shared<JacobianFactor>(keyFunc(t), I_3x3,
+                                                  keyFunc(t + 1), I_3x3, Z_3x1),
+                 0.0},
+                {std::make_shared<JacobianFactor>(
+                     keyFunc(t), I_3x3, keyFunc(t + 1), I_3x3, Vector3::Ones()),
+                 0.0}});
+    hfg.add(
+        HybridGaussianFactor({keyFunc(t), keyFunc(t + 1)}, dKeys, components));
 
     if (t > 1) {
       hfg.add(DecisionTreeFactor({{dKeyFunc(t - 1), 2}, {dKeyFunc(t), 2}},
@@ -159,12 +163,13 @@ struct Switching {
     for (size_t k = 0; k < K - 1; k++) {
       KeyVector keys = {X(k), X(k + 1)};
       auto motion_models = motionModels(k, between_sigma);
-      std::vector<NonlinearFactor::shared_ptr> components;
+      std::vector<NonlinearFactorValuePair> components;
       for (auto &&f : motion_models) {
-        components.push_back(std::dynamic_pointer_cast<NonlinearFactor>(f));
+        components.push_back(
+            {std::dynamic_pointer_cast<NonlinearFactor>(f), 0.0});
       }
-      nonlinearFactorGraph.emplace_shared<HybridNonlinearFactor>(
-          keys, DiscreteKeys{modes[k]}, components);
+      nonlinearFactorGraph.emplace_shared<HybridNonlinearFactor>(keys, modes[k],
+                                                                 components);
     }
 
     // Add measurement factors

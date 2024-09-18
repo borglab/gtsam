@@ -28,11 +28,56 @@
 
 namespace gtsam {
 
+/**
+ * @brief Helper function to augment the [A|b] matrices in the factor components
+ * with the normalizer values.
+ * This is done by storing the normalizer value in
+ * the `b` vector as an additional row.
+ *
+ * @param factors DecisionTree of GaussianFactors and arbitrary scalars.
+ * Gaussian factor in factors.
+ * @return HybridGaussianFactor::Factors
+ */
+HybridGaussianFactor::Factors augment(
+    const HybridGaussianFactor::FactorValuePairs &factors) {
+  // Find the minimum value so we can "proselytize" to positive values.
+  // Done because we can't have sqrt of negative numbers.
+  HybridGaussianFactor::Factors gaussianFactors;
+  AlgebraicDecisionTree<Key> valueTree;
+  std::tie(gaussianFactors, valueTree) = unzip(factors);
+
+  // Normalize
+  double min_value = valueTree.min();
+  AlgebraicDecisionTree<Key> values =
+      valueTree.apply([&min_value](double n) { return n - min_value; });
+
+  // Finally, update the [A|b] matrices.
+  auto update = [&values](const Assignment<Key> &assignment,
+                          const HybridGaussianFactor::sharedFactor &gf) {
+    auto jf = std::dynamic_pointer_cast<JacobianFactor>(gf);
+    if (!jf) return gf;
+    // If the log_normalizer is 0, do nothing
+    if (values(assignment) == 0.0) return gf;
+
+    GaussianFactorGraph gfg;
+    gfg.push_back(jf);
+
+    Vector c(1);
+    c << std::sqrt(values(assignment));
+    auto constantFactor = std::make_shared<JacobianFactor>(c);
+
+    gfg.push_back(constantFactor);
+    return std::dynamic_pointer_cast<GaussianFactor>(
+        std::make_shared<JacobianFactor>(gfg));
+  };
+  return gaussianFactors.apply(update);
+}
+
 /* *******************************************************************************/
 HybridGaussianFactor::HybridGaussianFactor(const KeyVector &continuousKeys,
                                            const DiscreteKeys &discreteKeys,
-                                           const Factors &factors)
-    : Base(continuousKeys, discreteKeys), factors_(factors) {}
+                                           const FactorValuePairs &factors)
+    : Base(continuousKeys, discreteKeys), factors_(augment(factors)) {}
 
 /* *******************************************************************************/
 bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {

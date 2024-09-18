@@ -20,7 +20,7 @@ import gtsam
 from gtsam import (DiscreteConditional, DiscreteKeys, GaussianConditional,
                    HybridBayesNet, HybridGaussianConditional,
                    HybridGaussianFactor, HybridGaussianFactorGraph,
-                   HybridValues, JacobianFactor, Ordering, noiseModel)
+                   HybridValues, JacobianFactor, noiseModel)
 
 DEBUG_MARGINALS = False
 
@@ -31,13 +31,11 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
     def test_create(self):
         """Test construction of hybrid factor graph."""
         model = noiseModel.Unit.Create(3)
-        dk = DiscreteKeys()
-        dk.push_back((C(0), 2))
 
         jf1 = JacobianFactor(X(0), np.eye(3), np.zeros((3, 1)), model)
         jf2 = JacobianFactor(X(0), np.eye(3), np.ones((3, 1)), model)
 
-        gmf = HybridGaussianFactor([X(0)], dk, [jf1, jf2])
+        gmf = HybridGaussianFactor([X(0)], (C(0), 2), [(jf1, 0), (jf2, 0)])
 
         hfg = HybridGaussianFactorGraph()
         hfg.push_back(jf1)
@@ -58,13 +56,11 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
     def test_optimize(self):
         """Test construction of hybrid factor graph."""
         model = noiseModel.Unit.Create(3)
-        dk = DiscreteKeys()
-        dk.push_back((C(0), 2))
 
         jf1 = JacobianFactor(X(0), np.eye(3), np.zeros((3, 1)), model)
         jf2 = JacobianFactor(X(0), np.eye(3), np.ones((3, 1)), model)
 
-        gmf = HybridGaussianFactor([X(0)], dk, [jf1, jf2])
+        gmf = HybridGaussianFactor([X(0)], (C(0), 2), [(jf1, 0), (jf2, 0)])
 
         hfg = HybridGaussianFactorGraph()
         hfg.push_back(jf1)
@@ -96,8 +92,6 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
 
         # Create Gaussian mixture Z(0) = X(0) + noise for each measurement.
         I_1x1 = np.eye(1)
-        keys = DiscreteKeys()
-        keys.push_back(mode)
         for i in range(num_measurements):
             conditional0 = GaussianConditional.FromMeanAndStddev(Z(i),
                                                                  I_1x1,
@@ -108,7 +102,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
                                                                  X(0), [0],
                                                                  sigma=3)
             bayesNet.push_back(
-                HybridGaussianConditional([Z(i)], [X(0)], keys,
+                HybridGaussianConditional([Z(i)], [X(0)], mode,
                                           [conditional0, conditional1]))
 
         # Create prior on X(0).
