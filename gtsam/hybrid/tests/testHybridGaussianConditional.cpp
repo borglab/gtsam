@@ -176,7 +176,7 @@ TEST(HybridGaussianConditional, ContinuousParents) {
 /// Check error with mode dependent constants.
 TEST(HybridGaussianConditional, Error2) {
   using namespace mode_dependent_constants;
-  auto actual = mixture.errorTree(vv);
+  auto actual = hybrid_conditional.errorTree(vv);
 
   // Check result.
   DiscreteKeys discrete_keys{mode};
@@ -199,7 +199,7 @@ TEST(HybridGaussianConditional, Error2) {
     EXPECT_DOUBLES_EQUAL(conditionals[mode]->error(vv) -
                              conditionals[mode]->logNormalizationConstant() -
                              minLogNormalizer,
-                         mixture.error(hv), 1e-8);
+                         hybrid_conditional.error(hv), 1e-8);
   }
 }
 
