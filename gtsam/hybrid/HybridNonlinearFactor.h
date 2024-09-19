@@ -45,6 +45,17 @@ using NonlinearFactorValuePair = std::pair<NonlinearFactor::shared_ptr, double>;
  * This class stores all factors as HybridFactors which can then be typecast to
  * one of (NonlinearFactor, GaussianFactor) which can then be checked to perform
  * the correct operation.
+ *
+ * In factor graphs the error function typically returns 0.5*|h(x)-z|^2, i.e.,
+ * the negative log-likelihood for a Gaussian noise model.
+ * In hybrid factor graphs we allow *adding* an arbitrary scalar dependent on
+ * the discrete assignment.
+ * For example, adding a 70/30 mode probability is supported by providing the
+ * scalars $-log(.7)$ and $-log(.3)$.
+ * Note that adding a common constant will not make any difference in the
+ * optimization, so $-log(70)$ and $-log(30)$ work just as well.
+ *
+ * @ingroup hybrid
  */
 class HybridNonlinearFactor : public HybridFactor {
  public:
@@ -134,7 +145,7 @@ class HybridNonlinearFactor : public HybridFactor {
     auto errorFunc =
         [continuousValues](const std::pair<sharedFactor, double>& f) {
           auto [factor, val] = f;
-          return factor->error(continuousValues) + (0.5 * val);
+          return factor->error(continuousValues) + val;
         };
     DecisionTree<Key, double> result(factors_, errorFunc);
     return result;
@@ -153,7 +164,7 @@ class HybridNonlinearFactor : public HybridFactor {
     auto [factor, val] = factors_(discreteValues);
     // Compute the error for the selected factor
     const double factorError = factor->error(continuousValues);
-    return factorError + (0.5 * val);
+    return factorError + val;
   }
 
   /**

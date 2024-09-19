@@ -45,6 +45,15 @@ using GaussianFactorValuePair = std::pair<GaussianFactor::shared_ptr, double>;
  * where the set of discrete variables indexes to
  * the continuous gaussian distribution.
  *
+ * In factor graphs the error function typically returns 0.5*|h(x)-z|^2, i.e.,
+ * the negative log-likelihood for a Gaussian noise model.
+ * In hybrid factor graphs we allow *adding* an arbitrary scalar dependent on
+ * the discrete assignment.
+ * For example, adding a 70/30 mode probability is supported by providing the
+ * scalars $-log(.7)$ and $-log(.3)$.
+ * Note that adding a common constant will not make any difference in the
+ * optimization, so $-log(70)$ and $-log(30)$ work just as well.
+ *
  * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
