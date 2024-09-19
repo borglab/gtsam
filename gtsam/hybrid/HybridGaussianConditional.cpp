@@ -33,8 +33,10 @@ HybridGaussianFactor::FactorValuePairs GetFactorValuePairs(
   auto func = [](const GaussianConditional::shared_ptr &conditional)
       -> GaussianFactorValuePair {
     double value = 0.0;
-    if (conditional) {  // Check if conditional is pruned
-      value = conditional->logNormalizationConstant();
+    // Check if conditional is pruned
+    if (conditional) {
+      // Assign log(|2πΣ|) = -2*log(1 / sqrt(|2πΣ|))
+      value = -2.0 * conditional->logNormalizationConstant();
     }
     return {std::dynamic_pointer_cast<GaussianFactor>(conditional), value};
   };
@@ -49,14 +51,14 @@ HybridGaussianConditional::HybridGaussianConditional(
                  discreteParents, GetFactorValuePairs(conditionals)),
       BaseConditional(continuousFrontals.size()),
       conditionals_(conditionals) {
-  // Calculate logConstant_ as the maximum of the log constants of the
+  // Calculate logNormalizer_ as the minimum of the log normalizers of the
   // conditionals, by visiting the decision tree:
-  logConstant_ = -std::numeric_limits<double>::infinity();
+  logNormalizer_ = std::numeric_limits<double>::infinity();
   conditionals_.visit(
       [this](const GaussianConditional::shared_ptr &conditional) {
         if (conditional) {
-          this->logConstant_ = std::max(
-              this->logConstant_, conditional->logNormalizationConstant());
+          this->logNormalizer_ = std::min(
+              this->logNormalizer_, -conditional->logNormalizationConstant());
         }
       });
 }
@@ -98,7 +100,7 @@ GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree()
     // First check if conditional has not been pruned
     if (gc) {
       const double Cgm_Kgcm =
-          this->logConstant_ - gc->logNormalizationConstant();
+          -gc->logNormalizationConstant() - this->logNormalizer_;
       // If there is a difference in the covariances, we need to account for
       // that since the error is dependent on the mode.
       if (Cgm_Kgcm > 0.0) {
@@ -169,7 +171,8 @@ void HybridGaussianConditional::print(const std::string &s,
     std::cout << "(" << formatter(dk.first) << ", " << dk.second << "), ";
   }
   std::cout << std::endl
-            << " logNormalizationConstant: " << logConstant_ << std::endl
+            << " logNormalizationConstant: " << logNormalizationConstant()
+            << std::endl
             << std::endl;
   conditionals_.print(
       "", [&](Key k) { return formatter(k); },
@@ -228,7 +231,7 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
           -> GaussianFactorValuePair {
         const auto likelihood_m = conditional->likelihood(given);
         const double Cgm_Kgcm =
-            logConstant_ - conditional->logNormalizationConstant();
+            -conditional->logNormalizationConstant() - logNormalizer_;
         if (Cgm_Kgcm == 0.0) {
           return {likelihood_m, 0.0};
         } else {
@@ -342,7 +345,7 @@ double HybridGaussianConditional::conditionalError(
   // Check if valid pointer
   if (conditional) {
     return conditional->error(continuousValues) +  //
-           logConstant_ - conditional->logNormalizationConstant();
+           -conditional->logNormalizationConstant() - logNormalizer_;
   } else {
     // If not valid, pointer, it means this conditional was pruned,
     // so we return maximum error.
