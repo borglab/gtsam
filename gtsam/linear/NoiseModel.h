@@ -266,7 +266,20 @@ namespace gtsam {
       /// Compute covariance matrix
       virtual Matrix covariance() const;
 
-    private:
+      /**
+       * @brief Helper method to compute the normalization constant
+       * for a Gaussian noise model.
+       * k = 1/log(\sqrt(|2πΣ|))
+       *
+       * We compute this in the log-space for numerical accuracy.
+       *
+       * @param noise_model The Gaussian noise model
+       * whose normalization constant we wish to compute.
+       * @return double
+       */
+      double logNormalizationConstant() const;
+
+     private:
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
@@ -750,18 +763,6 @@ namespace gtsam {
   template<> struct traits<noiseModel::Constrained> : public Testable<noiseModel::Constrained> {};
   template<> struct traits<noiseModel::Isotropic> : public Testable<noiseModel::Isotropic> {};
   template<> struct traits<noiseModel::Unit> : public Testable<noiseModel::Unit> {};
-
-  /**
-   * @brief Helper function to compute the log(|2πΣ|) normalizer values
-   * for a Gaussian noise model.
-   * We compute this in the log-space for numerical accuracy.
-   *
-   * @param noise_model The Gaussian noise model
-   * whose normalization constant we wish to compute.
-   * @return double
-   */
-  GTSAM_EXPORT double ComputeLogNormalizerConstant(
-      const noiseModel::Gaussian::shared_ptr& noise_model);
 
 } //\ namespace gtsam
 

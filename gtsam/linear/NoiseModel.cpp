@@ -238,6 +238,25 @@ void Gaussian::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const
 
 Matrix Gaussian::information() const { return R().transpose() * R(); }
 
+/* *******************************************************************************/
+double Gaussian::logNormalizationConstant() const {
+  // Since noise models are Gaussian, we can get the logDeterminant easily
+  // Sigma = (R'R)^{-1}, det(Sigma) = det((R'R)^{-1}) = det(R'R)^{-1}
+  // log det(Sigma) = -log(det(R'R)) = -2*log(det(R))
+  // Hence, log det(Sigma)) = -2.0 * logDeterminant()
+  // which gives log = -0.5*n*log(2*pi) - 0.5*(-2.0 * logDeterminant())
+  //     = -0.5*n*log(2*pi) + (0.5*2.0 * logDeterminant())
+  //     = -0.5*n*log(2*pi) + logDeterminant()
+  double logDetR =
+      R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
+
+  size_t n = dim();
+  constexpr double log2pi = 1.8378770664093454835606594728112;
+  // Get 1/log(\sqrt(|2pi Sigma|)) = -0.5*log(|2pi Sigma|)
+  return -0.5 * n * log2pi + logDetR;
+}
+
+
 /* ************************************************************************* */
 // Diagonal
 /* ************************************************************************* */
@@ -708,24 +727,4 @@ const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise){
 
 /* ************************************************************************* */
 }  // namespace noiseModel
-
-/* *******************************************************************************/
-double ComputeLogNormalizerConstant(
-    const noiseModel::Gaussian::shared_ptr& noise_model) {
-  // Since noise models are Gaussian, we can get the logDeterminant using
-  // the same trick as in GaussianConditional
-  // Sigma = (R'R)^{-1}, det(Sigma) = det((R'R)^{-1}) = det(R'R)^{-1}
-  // log det(Sigma) = -log(det(R'R)) = -2*log(det(R))
-  // Hence, log det(Sigma)) = -2.0 * logDetR()
-  double logDetR = noise_model->R()
-                       .diagonal()
-                       .unaryExpr([](double x) { return log(x); })
-                       .sum();
-  double logDeterminantSigma = -2.0 * logDetR;
-
-  size_t n = noise_model->dim();
-  constexpr double log2pi = 1.8378770664093454835606594728112;
-  return 0.5*(n * log2pi + logDeterminantSigma);
-}
-
 } // gtsam

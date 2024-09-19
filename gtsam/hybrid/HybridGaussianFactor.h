@@ -45,7 +45,7 @@ using GaussianFactorValuePair = std::pair<GaussianFactor::shared_ptr, double>;
  * where the set of discrete variables indexes to
  * the continuous gaussian distribution.
  *
- * In factor graphs the error function typically returns 0.5*|h(x)-z|^2, i.e.,
+ * In factor graphs the error function typically returns 0.5*|A*x - b|^2, i.e.,
  * the negative log-likelihood for a Gaussian noise model.
  * In hybrid factor graphs we allow *adding* an arbitrary scalar dependent on
  * the discrete assignment.
