@@ -210,7 +210,7 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @brief Create a decision tree of factor graphs out of this hybrid factor
    * graph.
    *
-   * For example, if there are two mixture factors, one with a discrete key A
+   * For example, if there are two hybrid factors, one with a discrete key A
    * and one with a discrete key B, then the decision tree will have two levels,
    * one for A and one for B. The leaves of the tree will be the Gaussian
    * factors that have only continuous keys.

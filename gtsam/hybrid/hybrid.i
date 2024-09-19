@@ -65,7 +65,7 @@ virtual class HybridConditional {
   double logProbability(const gtsam::HybridValues& values) const;
   double evaluate(const gtsam::HybridValues& values) const;
   double operator()(const gtsam::HybridValues& values) const;
-  gtsam::HybridGaussianConditional* asMixture() const;
+  gtsam::HybridGaussianConditional* asHybrid() const;
   gtsam::GaussianConditional* asGaussian() const;
   gtsam::DiscreteConditional* asDiscrete() const;
   gtsam::Factor* inner();
@@ -248,19 +248,14 @@ class HybridNonlinearFactor : gtsam::HybridFactor {
   HybridNonlinearFactor(
       const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
       const gtsam::DecisionTree<
-          gtsam::Key, std::pair<gtsam::NonlinearFactor*, double>>& factors,
-      bool normalized = false);
+          gtsam::Key, std::pair<gtsam::NonlinearFactor*, double>>& factors);
 
   HybridNonlinearFactor(
       const gtsam::KeyVector& keys, const gtsam::DiscreteKey& discreteKey,
-      const std::vector<std::pair<gtsam::NonlinearFactor*, double>>& factors,
-      bool normalized = false);
+      const std::vector<std::pair<gtsam::NonlinearFactor*, double>>& factors);
 
   double error(const gtsam::Values& continuousValues,
                const gtsam::DiscreteValues& discreteValues) const;
-
-  double nonlinearFactorLogNormalizingConstant(
-      const gtsam::NonlinearFactor* factor, const gtsam::Values& values) const;
 
   HybridGaussianFactor* linearize(const gtsam::Values& continuousValues) const;
 

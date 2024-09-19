@@ -49,7 +49,7 @@ std::function<double(const Assignment<Key> &, double)> prunerFunc(
     const DecisionTreeFactor &prunedDiscreteProbs,
     const HybridConditional &conditional) {
   // Get the discrete keys as sets for the decision tree
-  // and the Gaussian mixture.
+  // and the hybrid Gaussian conditional.
   std::set<DiscreteKey> discreteProbsKeySet =
       DiscreteKeysAsSet(prunedDiscreteProbs.discreteKeys());
   std::set<DiscreteKey> conditionalKeySet =
@@ -63,7 +63,7 @@ std::function<double(const Assignment<Key> &, double)> prunerFunc(
 
     // typecast so we can use this to get probability value
     DiscreteValues values(choices);
-    // Case where the Gaussian mixture has the same
+    // Case where the hybrid Gaussian conditional has the same
     // discrete keys as the decision tree.
     if (conditionalKeySet == discreteProbsKeySet) {
       if (prunedDiscreteProbs(values) == 0) {
@@ -180,8 +180,8 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
   // Go through all the conditionals in the
   // Bayes Net and prune them as per prunedDiscreteProbs.
   for (auto &&conditional : *this) {
-    if (auto gm = conditional->asMixture()) {
-      // Make a copy of the Gaussian mixture and prune it!
+    if (auto gm = conditional->asHybrid()) {
+      // Make a copy of the hybrid Gaussian conditional and prune it!
       auto prunedHybridGaussianConditional =
           std::make_shared<HybridGaussianConditional>(*gm);
       prunedHybridGaussianConditional->prune(
@@ -204,7 +204,7 @@ GaussianBayesNet HybridBayesNet::choose(
     const DiscreteValues &assignment) const {
   GaussianBayesNet gbn;
   for (auto &&conditional : *this) {
-    if (auto gm = conditional->asMixture()) {
+    if (auto gm = conditional->asHybrid()) {
       // If conditional is hybrid, select based on assignment.
       gbn.push_back((*gm)(assignment));
     } else if (auto gc = conditional->asGaussian()) {
@@ -291,7 +291,7 @@ AlgebraicDecisionTree<Key> HybridBayesNet::errorTree(
 
   // Iterate over each conditional.
   for (auto &&conditional : *this) {
-    if (auto gm = conditional->asMixture()) {
+    if (auto gm = conditional->asHybrid()) {
       // If conditional is hybrid, compute error for all assignments.
       result = result + gm->errorTree(continuousValues);
 
@@ -321,7 +321,7 @@ AlgebraicDecisionTree<Key> HybridBayesNet::logProbability(
 
   // Iterate over each conditional.
   for (auto &&conditional : *this) {
-    if (auto gm = conditional->asMixture()) {
+    if (auto gm = conditional->asHybrid()) {
       // If conditional is hybrid, select based on assignment and compute
       // logProbability.
       result = result + gm->logProbability(continuousValues);
@@ -369,7 +369,7 @@ HybridGaussianFactorGraph HybridBayesNet::toFactorGraph(
     if (conditional->frontalsIn(measurements)) {
       if (auto gc = conditional->asGaussian()) {
         fg.push_back(gc->likelihood(measurements));
-      } else if (auto gm = conditional->asMixture()) {
+      } else if (auto gm = conditional->asHybrid()) {
         fg.push_back(gm->likelihood(measurements));
       } else {
         throw std::runtime_error("Unknown conditional type");

@@ -100,7 +100,7 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &originalGraph,
   // If hybridBayesNet is not empty,
   // it means we have conditionals to add to the factor graph.
   if (!hybridBayesNet.empty()) {
-    // We add all relevant conditional mixtures on the last continuous variable
+    // We add all relevant hybrid conditionals on the last continuous variable
     // in the previous `hybridBayesNet` to the graph
 
     // Conditionals to remove from the bayes net
@@ -140,7 +140,7 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &originalGraph,
 /* ************************************************************************* */
 HybridGaussianConditional::shared_ptr HybridSmoother::gaussianMixture(
     size_t index) const {
-  return hybridBayesNet_.at(index)->asMixture();
+  return hybridBayesNet_.at(index)->asHybrid();
 }
 
 /* ************************************************************************* */

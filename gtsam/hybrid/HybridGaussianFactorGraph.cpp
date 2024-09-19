@@ -115,7 +115,7 @@ void HybridGaussianFactorGraph::printErrors(
         } else {
           // Is hybrid
           auto conditionalComponent =
-              hc->asMixture()->operator()(values.discrete());
+              hc->asHybrid()->operator()(values.discrete());
           conditionalComponent->print(ss.str(), keyFormatter);
           std::cout << "error = " << conditionalComponent->error(values)
                     << "\n";
@@ -184,7 +184,7 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
     } else if (auto gm = dynamic_pointer_cast<HybridGaussianConditional>(f)) {
       result = gm->add(result);
     } else if (auto hc = dynamic_pointer_cast<HybridConditional>(f)) {
-      if (auto gm = hc->asMixture()) {
+      if (auto gm = hc->asHybrid()) {
         result = gm->add(result);
       } else if (auto g = hc->asGaussian()) {
         result = addGaussian(result, g);
@@ -437,8 +437,8 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
                 const Ordering &frontalKeys) {
   // NOTE: Because we are in the Conditional Gaussian regime there are only
   // a few cases:
-  // 1. continuous variable, make a Gaussian Mixture if there are hybrid
-  // factors;
+  // 1. continuous variable, make a hybrid Gaussian conditional if there are
+  // hybrid factors;
   // 2. continuous variable, we make a Gaussian Factor if there are no hybrid
   // factors;
   // 3. discrete variable, no continuous factor is allowed
@@ -550,9 +550,10 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::errorTree(
       f = hc->inner();
     }
 
-    if (auto gaussianMixture = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
+    if (auto hybridGaussianCond =
+            dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       // Compute factor error and add it.
-      error_tree = error_tree + gaussianMixture->errorTree(continuousValues);
+      error_tree = error_tree + hybridGaussianCond->errorTree(continuousValues);
     } else if (auto gaussian = dynamic_pointer_cast<GaussianFactor>(f)) {
       // If continuous only, get the (double) error
       // and add it to the error_tree

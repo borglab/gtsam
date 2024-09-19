@@ -34,7 +34,7 @@ class GTSAM_EXPORT HybridSmoother {
    * Given new factors, perform an incremental update.
    * The relevant densities in the `hybridBayesNet` will be added to the input
    * graph (fragment), and then eliminated according to the `ordering`
-   * presented. The remaining factor graph contains Gaussian mixture factors
+   * presented. The remaining factor graph contains hybrid Gaussian factors
    * that are not connected to the variables in the ordering, or a single
    * discrete factor on all discrete keys, plus all discrete factors in the
    * original graph.
@@ -68,7 +68,13 @@ class GTSAM_EXPORT HybridSmoother {
       const HybridGaussianFactorGraph& graph,
       const HybridBayesNet& hybridBayesNet, const Ordering& ordering) const;
 
-  /// Get the Gaussian Mixture from the Bayes Net posterior at `index`.
+  /**
+   * @brief Get the hybrid Gaussian conditional from
+   * the Bayes Net posterior at `index`.
+   *
+   * @param index Indexing value.
+   * @return HybridGaussianConditional::shared_ptr
+   */
   HybridGaussianConditional::shared_ptr gaussianMixture(size_t index) const;
 
   /// Return the Bayes Net posterior.

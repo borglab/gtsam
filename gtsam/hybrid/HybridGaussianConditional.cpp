@@ -248,20 +248,20 @@ std::function<GaussianConditional::shared_ptr(
     const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
 HybridGaussianConditional::prunerFunc(const DecisionTreeFactor &discreteProbs) {
   // Get the discrete keys as sets for the decision tree
-  // and the gaussian mixture.
+  // and the hybrid gaussian conditional.
   auto discreteProbsKeySet = DiscreteKeysAsSet(discreteProbs.discreteKeys());
-  auto gaussianMixtureKeySet = DiscreteKeysAsSet(this->discreteKeys());
+  auto hybridGaussianCondKeySet = DiscreteKeysAsSet(this->discreteKeys());
 
-  auto pruner = [discreteProbs, discreteProbsKeySet, gaussianMixtureKeySet](
+  auto pruner = [discreteProbs, discreteProbsKeySet, hybridGaussianCondKeySet](
                     const Assignment<Key> &choices,
                     const GaussianConditional::shared_ptr &conditional)
       -> GaussianConditional::shared_ptr {
     // typecast so we can use this to get probability value
     const DiscreteValues values(choices);
 
-    // Case where the gaussian mixture has the same
+    // Case where the hybrid gaussian conditional has the same
     // discrete keys as the decision tree.
-    if (gaussianMixtureKeySet == discreteProbsKeySet) {
+    if (hybridGaussianCondKeySet == discreteProbsKeySet) {
       if (discreteProbs(values) == 0.0) {
         // empty aka null pointer
         std::shared_ptr<GaussianConditional> null;
@@ -273,7 +273,7 @@ HybridGaussianConditional::prunerFunc(const DecisionTreeFactor &discreteProbs) {
       std::vector<DiscreteKey> set_diff;
       std::set_difference(
           discreteProbsKeySet.begin(), discreteProbsKeySet.end(),
-          gaussianMixtureKeySet.begin(), gaussianMixtureKeySet.end(),
+          hybridGaussianCondKeySet.begin(), hybridGaussianCondKeySet.end(),
           std::back_inserter(set_diff));
 
       const std::vector<DiscreteValues> assignments =

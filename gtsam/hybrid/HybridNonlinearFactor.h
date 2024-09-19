@@ -37,11 +37,10 @@ namespace gtsam {
 using NonlinearFactorValuePair = std::pair<NonlinearFactor::shared_ptr, double>;
 
 /**
- * @brief Implementation of a discrete conditional mixture factor.
+ * @brief Implementation of a discrete-conditioned hybrid factor.
  *
  * Implements a joint discrete-continuous factor where the discrete variable
- * serves to "select" a mixture component corresponding to a NonlinearFactor
- * type of measurement.
+ * serves to "select" a hybrid component corresponding to a NonlinearFactor.
  *
  * This class stores all factors as HybridFactors which can then be typecast to
  * one of (NonlinearFactor, GaussianFactor) which can then be checked to perform
@@ -63,7 +62,6 @@ class HybridNonlinearFactor : public HybridFactor {
  private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
   Factors factors_;
-  bool normalized_;
 
  public:
   HybridNonlinearFactor() = default;
@@ -74,12 +72,10 @@ class HybridNonlinearFactor : public HybridFactor {
    * @param keys Vector of keys for continuous factors.
    * @param discreteKeys Vector of discrete keys.
    * @param factors Decision tree with of shared factors.
-   * @param normalized Flag indicating if the factor error is already
-   * normalized.
    */
   HybridNonlinearFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                        const Factors& factors, bool normalized = false)
-      : Base(keys, discreteKeys), factors_(factors), normalized_(normalized) {}
+                        const Factors& factors)
+      : Base(keys, discreteKeys), factors_(factors) {}
 
   /**
    * @brief Convenience constructor that generates the underlying factor
@@ -95,15 +91,12 @@ class HybridNonlinearFactor : public HybridFactor {
    * @param discreteKey The discrete key indexing each component factor.
    * @param factors Vector of nonlinear factor and scalar pairs.
    * Same size as the cardinality of discreteKey.
-   * @param normalized Flag indicating if the factor error is already
-   * normalized.
    */
   template <typename FACTOR>
   HybridNonlinearFactor(
       const KeyVector& keys, const DiscreteKey& discreteKey,
-      const std::vector<std::pair<std::shared_ptr<FACTOR>, double>>& factors,
-      bool normalized = false)
-      : Base(keys, {discreteKey}), normalized_(normalized) {
+      const std::vector<std::pair<std::shared_ptr<FACTOR>, double>>& factors)
+      : Base(keys, {discreteKey}) {
     std::vector<NonlinearFactorValuePair> nonlinear_factors;
     KeySet continuous_keys_set(keys.begin(), keys.end());
     KeySet factor_keys_set;
@@ -225,11 +218,10 @@ class HybridNonlinearFactor : public HybridFactor {
     };
     if (!factors_.equals(f.factors_, compare)) return false;
 
-    // If everything above passes, and the keys_, discreteKeys_ and normalized_
+    // If everything above passes, and the keys_ and discreteKeys_
     // member variables are identical, return true.
     return (std::equal(keys_.begin(), keys_.end(), f.keys().begin()) &&
-            (discreteKeys_ == f.discreteKeys_) &&
-            (normalized_ == f.normalized_));
+            (discreteKeys_ == f.discreteKeys_));
   }
 
   /// @}
@@ -259,46 +251,6 @@ class HybridNonlinearFactor : public HybridFactor {
 
     return std::make_shared<HybridGaussianFactor>(
         continuousKeys_, discreteKeys_, linearized_factors);
-  }
-
-  /**
-   * If the component factors are not already normalized, we want to compute
-   * their normalizing constants so that the resulting joint distribution is
-   * appropriately computed. Remember, this is the _negative_ normalizing
-   * constant for the measurement likelihood (since we are minimizing the
-   * _negative_ log-likelihood).
-   */
-  double nonlinearFactorLogNormalizingConstant(const sharedFactor& factor,
-                                               const Values& values) const {
-    // Information matrix (inverse covariance matrix) for the factor.
-    Matrix infoMat;
-
-    // If this is a NoiseModelFactor, we'll use its noiseModel to
-    // otherwise noiseModelFactor will be nullptr
-    if (auto noiseModelFactor =
-            std::dynamic_pointer_cast<NoiseModelFactor>(factor)) {
-      // If dynamic cast to NoiseModelFactor succeeded, see if the noise model
-      // is Gaussian
-      auto noiseModel = noiseModelFactor->noiseModel();
-
-      auto gaussianNoiseModel =
-          std::dynamic_pointer_cast<noiseModel::Gaussian>(noiseModel);
-      if (gaussianNoiseModel) {
-        // If the noise model is Gaussian, retrieve the information matrix
-        infoMat = gaussianNoiseModel->information();
-      } else {
-        // If the factor is not a Gaussian factor, we'll linearize it to get
-        // something with a normalized noise model
-        // TODO(kevin): does this make sense to do? I think maybe not in
-        // general? Should we just yell at the user?
-        auto gaussianFactor = factor->linearize(values);
-        infoMat = gaussianFactor->information();
-      }
-    }
-
-    // Compute the (negative) log of the normalizing constant
-    return -(factor->dim() * log(2.0 * M_PI) / 2.0) -
-           (log(infoMat.determinant()) / 2.0);
   }
 };
 

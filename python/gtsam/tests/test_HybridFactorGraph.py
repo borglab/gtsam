@@ -46,9 +46,9 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
 
         self.assertEqual(hbn.size(), 2)
 
-        mixture = hbn.at(0).inner()
-        self.assertIsInstance(mixture, HybridGaussianConditional)
-        self.assertEqual(len(mixture.keys()), 2)
+        hybridCond = hbn.at(0).inner()
+        self.assertIsInstance(hybridCond, HybridGaussianConditional)
+        self.assertEqual(len(hybridCond.keys()), 2)
 
         discrete_conditional = hbn.at(hbn.size() - 1).inner()
         self.assertIsInstance(discrete_conditional, DiscreteConditional)
@@ -90,7 +90,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         # Create mode key: 0 is low-noise, 1 is high-noise.
         mode = (M(0), 2)
 
-        # Create Gaussian mixture Z(0) = X(0) + noise for each measurement.
+        # Create hybrid Gaussian conditional Z(0) = X(0) + noise for each measurement.
         I_1x1 = np.eye(1)
         for i in range(num_measurements):
             conditional0 = GaussianConditional.FromMeanAndStddev(Z(i),

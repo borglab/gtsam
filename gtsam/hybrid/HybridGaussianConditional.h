@@ -33,8 +33,8 @@ namespace gtsam {
 class HybridValues;
 
 /**
- * @brief A conditional of gaussian mixtures indexed by discrete variables, as
- * part of a Bayes Network. This is the result of the elimination of a
+ * @brief A conditional of gaussian conditionals indexed by discrete variables,
+ * as part of a Bayes Network. This is the result of the elimination of a
  * continuous variable in a hybrid scheme, such that the remaining variables are
  * discrete+continuous.
  *
@@ -107,7 +107,7 @@ class GTSAM_EXPORT HybridGaussianConditional
                             const Conditionals &conditionals);
 
   /**
-   * @brief Make a Gaussian Mixture from a vector of Gaussian conditionals.
+   * @brief Make a Hybrid Gaussian Conditional from a vector of Gaussian conditionals.
    * The DecisionTree-based constructor is preferred over this one.
    *
    * @param continuousFrontals The continuous frontal variables
@@ -152,8 +152,8 @@ class GTSAM_EXPORT HybridGaussianConditional
   double logNormalizationConstant() const override { return logConstant_; }
 
   /**
-   * Create a likelihood factor for a Gaussian mixture, return a Mixture factor
-   * on the parents.
+   * Create a likelihood factor for a hybrid Gaussian conditional,
+   * return a hybrid Gaussian factor on the parents.
    */
   std::shared_ptr<HybridGaussianFactor> likelihood(
       const VectorValues &given) const;
@@ -172,9 +172,9 @@ class GTSAM_EXPORT HybridGaussianConditional
       const VectorValues &continuousValues) const;
 
   /**
-   * @brief Compute the error of this Gaussian Mixture.
+   * @brief Compute the error of this hybrid Gaussian conditional.
    *
-   * This requires some care, as different mixture components may have
+   * This requires some care, as different components may have
    * different normalization constants. Let's consider p(x|y,m), where m is
    * discrete. We need the error to satisfy the invariant:
    *
@@ -209,7 +209,7 @@ class GTSAM_EXPORT HybridGaussianConditional
       const VectorValues &continuousValues) const;
 
   /**
-   * @brief Compute the logProbability of this Gaussian Mixture.
+   * @brief Compute the logProbability of this hybrid Gaussian conditional.
    *
    * @param values Continuous values and discrete assignment.
    * @return double
