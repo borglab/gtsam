@@ -710,7 +710,7 @@ const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise){
 }  // namespace noiseModel
 
 /* *******************************************************************************/
-double ComputeLogNormalizer(
+double ComputeLogNormalizerConstant(
     const noiseModel::Gaussian::shared_ptr& noise_model) {
   // Since noise models are Gaussian, we can get the logDeterminant using
   // the same trick as in GaussianConditional
@@ -725,7 +725,7 @@ double ComputeLogNormalizer(
 
   size_t n = noise_model->dim();
   constexpr double log2pi = 1.8378770664093454835606594728112;
-  return n * log2pi + logDeterminantSigma;
+  return 0.5*(n * log2pi + logDeterminantSigma);
 }
 
 } // gtsam

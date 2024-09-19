@@ -771,7 +771,8 @@ static HybridGaussianFactorGraph CreateFactorGraph(
 
   // Create HybridGaussianFactor
   std::vector<GaussianFactorValuePair> factors{
-      {f0, ComputeLogNormalizer(model0)}, {f1, ComputeLogNormalizer(model1)}};
+      {f0, ComputeLogNormalizerConstant(model0)},
+      {f1, ComputeLogNormalizerConstant(model1)}};
   HybridGaussianFactor motionFactor({X(0), X(1)}, m1, factors);
 
   HybridGaussianFactorGraph hfg;

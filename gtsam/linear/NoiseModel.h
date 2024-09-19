@@ -757,10 +757,10 @@ namespace gtsam {
    * We compute this in the log-space for numerical accuracy.
    *
    * @param noise_model The Gaussian noise model
-   * whose normalizer we wish to compute.
+   * whose normalization constant we wish to compute.
    * @return double
    */
-  GTSAM_EXPORT double ComputeLogNormalizer(
+  GTSAM_EXPORT double ComputeLogNormalizerConstant(
       const noiseModel::Gaussian::shared_ptr& noise_model);
 
 } //\ namespace gtsam

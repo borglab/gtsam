@@ -30,8 +30,8 @@ namespace gtsam {
 
 /**
  * @brief Helper function to augment the [A|b] matrices in the factor components
- * with the normalizer values.
- * This is done by storing the normalizer value in
+ * with the additional scalar values.
+ * This is done by storing the value in
  * the `b` vector as an additional row.
  *
  * @param factors DecisionTree of GaussianFactors and arbitrary scalars.
@@ -56,7 +56,7 @@ HybridGaussianFactor::Factors augment(
                           const HybridGaussianFactor::sharedFactor &gf) {
     auto jf = std::dynamic_pointer_cast<JacobianFactor>(gf);
     if (!jf) return gf;
-    // If the log_normalizer is 0, do nothing
+    // If the value is 0, do nothing
     if (values(assignment) == 0.0) return gf;
 
     GaussianFactorGraph gfg;

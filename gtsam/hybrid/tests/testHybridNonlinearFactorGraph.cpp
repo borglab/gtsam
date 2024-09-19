@@ -869,7 +869,8 @@ static HybridNonlinearFactorGraph CreateFactorGraph(
 
   // Create HybridNonlinearFactor
   std::vector<NonlinearFactorValuePair> factors{
-      {f0, ComputeLogNormalizer(model0)}, {f1, ComputeLogNormalizer(model1)}};
+      {f0, ComputeLogNormalizerConstant(model0)},
+      {f1, ComputeLogNormalizerConstant(model1)}};
 
   HybridNonlinearFactor mixtureFactor({X(0), X(1)}, m1, factors);
 
