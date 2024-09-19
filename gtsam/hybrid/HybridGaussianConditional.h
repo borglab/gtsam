@@ -51,13 +51,13 @@ class HybridValues;
  * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridGaussianConditional
-    : public HybridFactor,
-      public Conditional<HybridFactor, HybridGaussianConditional> {
+    : public HybridGaussianFactor,
+      public Conditional<HybridGaussianFactor, HybridGaussianConditional> {
  public:
   using This = HybridGaussianConditional;
-  using shared_ptr = std::shared_ptr<HybridGaussianConditional>;
-  using BaseFactor = HybridFactor;
-  using BaseConditional = Conditional<HybridFactor, HybridGaussianConditional>;
+  using shared_ptr = std::shared_ptr<This>;
+  using BaseFactor = HybridGaussianFactor;
+  using BaseConditional = Conditional<BaseFactor, HybridGaussianConditional>;
 
   /// typedef for Decision Tree of Gaussian Conditionals
   using Conditionals = DecisionTree<Key, GaussianConditional::shared_ptr>;

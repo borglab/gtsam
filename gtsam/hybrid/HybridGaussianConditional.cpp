@@ -28,13 +28,25 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
+HybridGaussianFactor::FactorValuePairs GetFactorValuePairs(
+    const HybridGaussianConditional::Conditionals &conditionals) {
+  auto func = [](const GaussianConditional::shared_ptr &conditional)
+      -> GaussianFactorValuePair {
+    double value = 0.0;
+    if (conditional) {  // Check if conditional is pruned
+      value = conditional->logNormalizationConstant();
+    }
+    return {std::dynamic_pointer_cast<GaussianFactor>(conditional), value};
+  };
+  return HybridGaussianFactor::FactorValuePairs(conditionals, func);
+}
 
 HybridGaussianConditional::HybridGaussianConditional(
     const KeyVector &continuousFrontals, const KeyVector &continuousParents,
     const DiscreteKeys &discreteParents,
     const HybridGaussianConditional::Conditionals &conditionals)
     : BaseFactor(CollectKeys(continuousFrontals, continuousParents),
-                 discreteParents),
+                 discreteParents, GetFactorValuePairs(conditionals)),
       BaseConditional(continuousFrontals.size()),
       conditionals_(conditionals) {
   // Calculate logConstant_ as the maximum of the log constants of the
