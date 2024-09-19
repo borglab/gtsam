@@ -16,13 +16,7 @@
  * @date   Sep 12, 2024
  */
 
-// #include <gtsam/base/utilities.h>
-// #include <gtsam/discrete/DecisionTree-inl.h>
-// #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
-// #include <gtsam/hybrid/HybridValues.h>
-// #include <gtsam/linear/GaussianFactor.h>
-// #include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 
