@@ -741,152 +741,6 @@ TEST(HybridGaussianFactor, TwoStateModel4) {
   EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.002));
 }
 
-/**
- * @brief Helper function to specify a Hybrid Bayes Net
- * P(X1)P(Z1 | X1, X2, M1) and convert it to a Hybrid Factor Graph
- * ϕ(X1)ϕ(X1, X2, M1; Z1) by converting to likelihoods given Z1.
- *
- * We can specify either different means or different sigmas,
- * or both for each hybrid factor component.
- *
- * @param values Initial values for linearization.
- * @param means The mean values for the conditional components.
- * @param sigmas Noise model sigma values (standard deviation).
- * @param m1 The discrete mode key.
- * @param z1 The measurement value.
- * @return HybridGaussianFactorGraph
- */
-static HybridGaussianFactorGraph GetFactorGraphFromBayesNet(
-    const gtsam::Values &values, const std::vector<double> &means,
-    const std::vector<double> &sigmas, DiscreteKey &m1, double z1 = 0.0) {
-  // Noise models
-  auto model0 = noiseModel::Isotropic::Sigma(1, sigmas[0]);
-  auto model1 = noiseModel::Isotropic::Sigma(1, sigmas[1]);
-  auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-3);
-
-  // HybridGaussianFactor component factors
-  auto f0 =
-      std::make_shared<BetweenFactor<double>>(X(0), X(1), means[0], model0);
-  auto f1 =
-      std::make_shared<BetweenFactor<double>>(X(0), X(1), means[1], model1);
-
-  /// Get terms for each p^m(z1 | x1, x2)
-  Matrix H0_1, H0_2, H1_1, H1_2;
-  double x1 = values.at<double>(X(0)), x2 = values.at<double>(X(1));
-  Vector d0 = f0->evaluateError(x1, x2, &H0_1, &H0_2);
-  std::vector<std::pair<Key, Matrix>> terms0 = {{Z(1), gtsam::I_1x1 /*Rx*/},
-                                                //
-                                                {X(0), H0_1 /*Sp1*/},
-                                                {X(1), H0_2 /*Tp2*/}};
-
-  Vector d1 = f1->evaluateError(x1, x2, &H1_1, &H1_2);
-  std::vector<std::pair<Key, Matrix>> terms1 = {{Z(1), gtsam::I_1x1 /*Rx*/},
-                                                //
-                                                {X(0), H1_1 /*Sp1*/},
-                                                {X(1), H1_2 /*Tp2*/}};
-  // Create conditional P(Z1 | X1, X2, M1)
-  auto conditionals = std::vector{
-      std::make_shared<GaussianConditional>(terms0, 1, -d0, model0),
-      std::make_shared<GaussianConditional>(terms1, 1, -d1, model1)};
-  gtsam::HybridBayesNet bn;
-  bn.emplace_shared<HybridGaussianConditional>(
-      KeyVector{Z(1)}, KeyVector{X(0), X(1)}, DiscreteKeys{m1}, conditionals);
-
-  // Create FG via toFactorGraph
-  gtsam::VectorValues measurements;
-  measurements.insert(Z(1), gtsam::I_1x1 * z1);  // Set Z1
-  HybridGaussianFactorGraph mixture_fg = bn.toFactorGraph(measurements);
-
-  // Linearized prior factor on X1
-  auto prior = PriorFactor<double>(X(0), x1, prior_noise).linearize(values);
-  mixture_fg.push_back(prior);
-
-  return mixture_fg;
-}
-
-/* ************************************************************************* */
-/**
- * @brief Test Hybrid Factor Graph.
- *
- * We specify a hybrid Bayes network P(Z | X, M) = P(X1)P(Z1 | X1, X2, M1),
- * which is then converted to a factor graph by specifying Z1.
- * This is different from the TwoStateModel version since
- * we use a factor with 2 continuous variables ϕ(x1, x2, m1)
- * directly instead of a conditional.
- * This serves as a good sanity check.
- *
- * P(Z1 | X1, X2, M1) has 2 conditionals each for the binary
- * mode m1.
- */
-TEST(HybridGaussianFactor, FactorGraphFromBayesNet) {
-  DiscreteKey m1(M(1), 2);
-
-  Values values;
-  double x1 = 0.0, x2 = 1.75;
-  values.insert(X(0), x1);
-  values.insert(X(1), x2);
-
-  // Different means, same sigma
-  std::vector<double> means{0.0, 2.0}, sigmas{1e-0, 1e-0};
-
-  HybridGaussianFactorGraph hfg =
-      GetFactorGraphFromBayesNet(values, means, sigmas, m1, 0.0);
-
-  {
-    // With no measurement on X2, each mode should be equally likely
-    auto bn = hfg.eliminateSequential();
-    HybridValues actual = bn->optimize();
-
-    HybridValues expected(
-        VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(-1.75)}},
-        DiscreteValues{{M(1), 0}});
-
-    EXPECT(assert_equal(expected, actual));
-
-    DiscreteValues dv0{{M(1), 0}};
-    VectorValues cont0 = bn->optimize(dv0);
-    double error0 = bn->error(HybridValues(cont0, dv0));
-    // regression
-    EXPECT_DOUBLES_EQUAL(0.69314718056, error0, 1e-9);
-
-    DiscreteValues dv1{{M(1), 1}};
-    VectorValues cont1 = bn->optimize(dv1);
-    double error1 = bn->error(HybridValues(cont1, dv1));
-    EXPECT_DOUBLES_EQUAL(error0, error1, 1e-9);
-  }
-  {
-    // If we add a measurement on X2, we have more information to work with.
-    // Add a measurement on X2
-    auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-3);
-    GaussianConditional meas_z2(Z(2), Vector1(2.0), I_1x1, X(1), I_1x1,
-                                prior_noise);
-    auto prior_x2 = meas_z2.likelihood(Vector1(x2));
-
-    hfg.push_back(prior_x2);
-
-    auto bn = hfg.eliminateSequential();
-    HybridValues actual = bn->optimize();
-
-    // regression
-    HybridValues expected(
-        VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(0.25)}},
-        DiscreteValues{{M(1), 1}});
-    EXPECT(assert_equal(expected, actual));
-
-    DiscreteValues dv0{{M(1), 0}};
-    VectorValues cont0 = bn->optimize(dv0);
-    // regression
-    EXPECT_DOUBLES_EQUAL(2.12692448787, bn->error(HybridValues(cont0, dv0)),
-                         1e-9);
-
-    DiscreteValues dv1{{M(1), 1}};
-    VectorValues cont1 = bn->optimize(dv1);
-    // regression
-    EXPECT_DOUBLES_EQUAL(0.126928487854, bn->error(HybridValues(cont1, dv1)),
-                         1e-9);
-  }
-}
-
 namespace test_direct_factor_graph {
 /**
  * @brief Create a Factor Graph by directly specifying all
@@ -902,10 +756,11 @@ namespace test_direct_factor_graph {
  */
 static HybridGaussianFactorGraph CreateFactorGraph(
     const gtsam::Values &values, const std::vector<double> &means,
-    const std::vector<double> &sigmas, DiscreteKey &m1) {
+    const std::vector<double> &sigmas, DiscreteKey &m1,
+    double measurement_noise = 1e-3) {
   auto model0 = noiseModel::Isotropic::Sigma(1, sigmas[0]);
   auto model1 = noiseModel::Isotropic::Sigma(1, sigmas[1]);
-  auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-3);
+  auto prior_noise = noiseModel::Isotropic::Sigma(1, measurement_noise);
 
   auto f0 =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), means[0], model0)
@@ -917,10 +772,10 @@ static HybridGaussianFactorGraph CreateFactorGraph(
   // Create HybridGaussianFactor
   std::vector<GaussianFactorValuePair> factors{
       {f0, ComputeLogNormalizer(model0)}, {f1, ComputeLogNormalizer(model1)}};
-  HybridGaussianFactor mixtureFactor({X(0), X(1)}, {m1}, factors);
+  HybridGaussianFactor motionFactor({X(0), X(1)}, m1, factors);
 
   HybridGaussianFactorGraph hfg;
-  hfg.push_back(mixtureFactor);
+  hfg.push_back(motionFactor);
 
   hfg.push_back(PriorFactor<double>(X(0), values.at<double>(X(0)), prior_noise)
                     .linearize(values));
@@ -1025,10 +880,8 @@ TEST(HybridGaussianFactor, DifferentCovariancesFG) {
   std::vector<double> means = {0.0, 0.0}, sigmas = {1e2, 1e-2};
 
   // Create FG with HybridGaussianFactor and prior on X1
-  HybridGaussianFactorGraph mixture_fg =
-      CreateFactorGraph(values, means, sigmas, m1);
-
-  auto hbn = mixture_fg.eliminateSequential();
+  HybridGaussianFactorGraph fg = CreateFactorGraph(values, means, sigmas, m1);
+  auto hbn = fg.eliminateSequential();
 
   VectorValues cv;
   cv.insert(X(0), Vector1(0.0));
