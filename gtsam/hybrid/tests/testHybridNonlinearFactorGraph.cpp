@@ -868,9 +868,10 @@ static HybridNonlinearFactorGraph CreateFactorGraph(
       std::make_shared<BetweenFactor<double>>(X(0), X(1), means[1], model1);
 
   // Create HybridNonlinearFactor
+  // We multiply by -2 since the we want the underlying scalar to be log(|2πΣ|)
   std::vector<NonlinearFactorValuePair> factors{
-      {f0, ComputeLogNormalizerConstant(model0)},
-      {f1, ComputeLogNormalizerConstant(model1)}};
+      {f0, -2 * model0->logNormalizationConstant()},
+      {f1, -2 * model1->logNormalizationConstant()}};
 
   HybridNonlinearFactor mixtureFactor({X(0), X(1)}, m1, factors);
 
