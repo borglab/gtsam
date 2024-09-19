@@ -69,8 +69,8 @@ TEST(HybridGaussianFactorGraph, Creation) {
 
   hfg.emplace_shared<JacobianFactor>(X(0), I_3x3, Z_3x1);
 
-  // Define a gaussian mixture conditional P(x0|x1, c0) and add it to the factor
-  // graph
+  // Define a hybrid gaussian conditional P(x0|x1, c0)
+  // and add it to the factor graph.
   HybridGaussianConditional gm(
       {X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{M(0), 2}),
       HybridGaussianConditional::Conditionals(
@@ -125,7 +125,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
   // Add factor between x0 and x1
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  // Add a gaussian mixture factor ϕ(x1, c1)
+  // Add a hybrid gaussian factor ϕ(x1, c1)
   DiscreteKey m1(M(1), 2);
   DecisionTree<Key, GaussianFactorValuePair> dt(
       M(1), {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},
@@ -720,9 +720,9 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
 
   // Create expected decision tree with two factor graphs:
 
-  // Get mixture factor:
-  auto mixture = fg.at<HybridGaussianFactor>(0);
-  CHECK(mixture);
+  // Get hybrid factor:
+  auto hybrid = fg.at<HybridGaussianFactor>(0);
+  CHECK(hybrid);
 
   // Get prior factor:
   const auto gf = fg.at<HybridConditional>(1);
@@ -737,8 +737,8 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   // Expected decision tree with two factor graphs:
   // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
   GaussianFactorGraphTree expected{
-      M(0), GaussianFactorGraph(std::vector<GF>{(*mixture)(d0), prior}),
-      GaussianFactorGraph(std::vector<GF>{(*mixture)(d1), prior})};
+      M(0), GaussianFactorGraph(std::vector<GF>{(*hybrid)(d0), prior}),
+      GaussianFactorGraph(std::vector<GF>{(*hybrid)(d1), prior})};
 
   EXPECT(assert_equal(expected(d0), actual(d0), 1e-5));
   EXPECT(assert_equal(expected(d1), actual(d1), 1e-5));
@@ -802,7 +802,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
   // Create expected Bayes Net:
   HybridBayesNet expectedBayesNet;
 
-  // Create Gaussian mixture on X(0).
+  // Create hybrid Gaussian factor on X(0).
   using tiny::mode;
   // regression, but mean checked to be 5.0 in both cases:
   const auto conditional0 = std::make_shared<GaussianConditional>(
@@ -835,7 +835,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1Swapped) {
   const DiscreteKey mode{M(0), 2};
   HybridBayesNet bn;
 
-  // Create Gaussian mixture z_0 = x0 + noise for each measurement.
+  // Create hybrid Gaussian factor z_0 = x0 + noise for each measurement.
   std::vector<GaussianConditional::shared_ptr> conditionals{
       GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Z_1x1, 3),
       GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Z_1x1, 0.5)};
@@ -863,7 +863,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1Swapped) {
   // Create expected Bayes Net:
   HybridBayesNet expectedBayesNet;
 
-  // Create Gaussian mixture on X(0).
+  // Create hybrid Gaussian factor on X(0).
   // regression, but mean checked to be 5.0 in both cases:
   const auto conditional0 = std::make_shared<GaussianConditional>(
                  X(0), Vector1(10.1379), I_1x1 * 2.02759),
@@ -900,7 +900,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
   // Create expected Bayes Net:
   HybridBayesNet expectedBayesNet;
 
-  // Create Gaussian mixture on X(0).
+  // Create hybrid Gaussian factor on X(0).
   using tiny::mode;
   // regression, but mean checked to be 5.0 in both cases:
   const auto conditional0 = std::make_shared<GaussianConditional>(
@@ -953,7 +953,7 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
 
   // Add measurements:
   for (size_t t : {0, 1, 2}) {
-    // Create Gaussian mixture on Z(t) conditioned on X(t) and mode N(t):
+    // Create hybrid Gaussian factor on Z(t) conditioned on X(t) and mode N(t):
     const auto noise_mode_t = DiscreteKey{N(t), 2};
     std::vector<GaussianConditional::shared_ptr> conditionals{
         GaussianConditional::sharedMeanAndStddev(Z(t), I_1x1, X(t), Z_1x1, 0.5),
@@ -970,7 +970,8 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
 
   // Add motion models:
   for (size_t t : {2, 1}) {
-    // Create Gaussian mixture on X(t) conditioned on X(t-1) and mode M(t-1):
+    // Create hybrid Gaussian factor on X(t) conditioned on X(t-1)
+    // and mode M(t-1):
     const auto motion_model_t = DiscreteKey{M(t), 2};
     std::vector<GaussianConditional::shared_ptr> conditionals{
         GaussianConditional::sharedMeanAndStddev(X(t), I_1x1, X(t - 1), Z_1x1,

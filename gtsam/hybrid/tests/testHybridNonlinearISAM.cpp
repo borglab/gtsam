@@ -358,13 +358,13 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
   // each with 2, 4, 8, and 5 (pruned) leaves respetively.
   EXPECT_LONGS_EQUAL(4, bayesTree.size());
   EXPECT_LONGS_EQUAL(
-      2, bayesTree[X(0)]->conditional()->asMixture()->nrComponents());
+      2, bayesTree[X(0)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      3, bayesTree[X(1)]->conditional()->asMixture()->nrComponents());
+      3, bayesTree[X(1)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, bayesTree[X(2)]->conditional()->asMixture()->nrComponents());
+      5, bayesTree[X(2)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, bayesTree[X(3)]->conditional()->asMixture()->nrComponents());
+      5, bayesTree[X(3)]->conditional()->asHybrid()->nrComponents());
 
   /***** Run Round 2 *****/
   HybridGaussianFactorGraph graph2;
@@ -382,9 +382,9 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
   // with 5 (pruned) leaves.
   CHECK_EQUAL(5, bayesTree.size());
   EXPECT_LONGS_EQUAL(
-      5, bayesTree[X(3)]->conditional()->asMixture()->nrComponents());
+      5, bayesTree[X(3)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, bayesTree[X(4)]->conditional()->asMixture()->nrComponents());
+      5, bayesTree[X(4)]->conditional()->asHybrid()->nrComponents());
 }
 
 /* ************************************************************************/
@@ -441,9 +441,8 @@ TEST(HybridNonlinearISAM, NonTrivial) {
                                                     noise_model);
   std::vector<std::pair<PlanarMotionModel::shared_ptr, double>> components = {
       {moving, 0.0}, {still, 0.0}};
-  auto mixtureFactor = std::make_shared<HybridNonlinearFactor>(
+  fg.emplace_shared<HybridNonlinearFactor>(
       contKeys, gtsam::DiscreteKey(M(1), 2), components);
-  fg.push_back(mixtureFactor);
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(0), X(1), Pose2(1.0, 0.0, 0),
@@ -481,9 +480,8 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   moving =
       std::make_shared<PlanarMotionModel>(W(1), W(2), odometry, noise_model);
   components = {{moving, 0.0}, {still, 0.0}};
-  mixtureFactor = std::make_shared<HybridNonlinearFactor>(
+  fg.emplace_shared<HybridNonlinearFactor>(
       contKeys, gtsam::DiscreteKey(M(2), 2), components);
-  fg.push_back(mixtureFactor);
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(1), X(2), Pose2(1.0, 0.0, 0),
@@ -524,9 +522,8 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   moving =
       std::make_shared<PlanarMotionModel>(W(2), W(3), odometry, noise_model);
   components = {{moving, 0.0}, {still, 0.0}};
-  mixtureFactor = std::make_shared<HybridNonlinearFactor>(
+  fg.emplace_shared<HybridNonlinearFactor>(
       contKeys, gtsam::DiscreteKey(M(3), 2), components);
-  fg.push_back(mixtureFactor);
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(2), X(3), Pose2(1.0, 0.0, 0),
@@ -572,7 +569,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
 
   // Test if pruning worked correctly by checking that
   // we only have 3 leaves in the last node.
-  auto lastConditional = bayesTree[X(3)]->conditional()->asMixture();
+  auto lastConditional = bayesTree[X(3)]->conditional()->asHybrid();
   EXPECT_LONGS_EQUAL(3, lastConditional->nrComponents());
 }
 

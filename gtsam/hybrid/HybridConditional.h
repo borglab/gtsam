@@ -124,11 +124,11 @@ class GTSAM_EXPORT HybridConditional
   /**
    * @brief Construct a new Hybrid Conditional object
    *
-   * @param gaussianMixture Gaussian Mixture Conditional used to create the
+   * @param hybridGaussianCond Hybrid Gaussian Conditional used to create the
    * HybridConditional.
    */
   HybridConditional(
-      const std::shared_ptr<HybridGaussianConditional>& gaussianMixture);
+      const std::shared_ptr<HybridGaussianConditional>& hybridGaussianCond);
 
   /// @}
   /// @name Testable
@@ -148,10 +148,10 @@ class GTSAM_EXPORT HybridConditional
 
   /**
    * @brief Return HybridConditional as a HybridGaussianConditional
-   * @return nullptr if not a mixture
+   * @return nullptr if not a conditional
    * @return HybridGaussianConditional::shared_ptr otherwise
    */
-  HybridGaussianConditional::shared_ptr asMixture() const {
+  HybridGaussianConditional::shared_ptr asHybrid() const {
     return std::dynamic_pointer_cast<HybridGaussianConditional>(inner_);
   }
 

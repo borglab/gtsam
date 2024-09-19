@@ -151,7 +151,7 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
     if (!f) {
       continue;
     }
-    // Check if it is a nonlinear mixture factor
+    // Check if it is a hybrid nonlinear factor
     if (auto mf = dynamic_pointer_cast<HybridNonlinearFactor>(f)) {
       const HybridGaussianFactor::shared_ptr& gmf =
           mf->linearize(continuousValues);

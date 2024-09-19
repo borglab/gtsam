@@ -37,11 +37,10 @@ namespace gtsam {
 using NonlinearFactorValuePair = std::pair<NonlinearFactor::shared_ptr, double>;
 
 /**
- * @brief Implementation of a discrete conditional mixture factor.
+ * @brief Implementation of a discrete-conditioned hybrid factor.
  *
  * Implements a joint discrete-continuous factor where the discrete variable
- * serves to "select" a mixture component corresponding to a NonlinearFactor
- * type of measurement.
+ * serves to "select" a hybrid component corresponding to a NonlinearFactor.
  *
  * This class stores all factors as HybridFactors which can then be typecast to
  * one of (NonlinearFactor, GaussianFactor) which can then be checked to perform

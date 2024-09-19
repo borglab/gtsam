@@ -50,11 +50,11 @@ HybridConditional::HybridConditional(
 
 /* ************************************************************************ */
 HybridConditional::HybridConditional(
-    const std::shared_ptr<HybridGaussianConditional> &gaussianMixture)
-    : BaseFactor(gaussianMixture->continuousKeys(),
-                 gaussianMixture->discreteKeys()),
-      BaseConditional(gaussianMixture->nrFrontals()) {
-  inner_ = gaussianMixture;
+    const std::shared_ptr<HybridGaussianConditional> &hybridGaussianCond)
+    : BaseFactor(hybridGaussianCond->continuousKeys(),
+                 hybridGaussianCond->discreteKeys()),
+      BaseConditional(hybridGaussianCond->nrFrontals()) {
+  inner_ = hybridGaussianCond;
 }
 
 /* ************************************************************************ */
@@ -97,8 +97,8 @@ void HybridConditional::print(const std::string &s,
 bool HybridConditional::equals(const HybridFactor &other, double tol) const {
   const This *e = dynamic_cast<const This *>(&other);
   if (e == nullptr) return false;
-  if (auto gm = asMixture()) {
-    auto other = e->asMixture();
+  if (auto gm = asHybrid()) {
+    auto other = e->asHybrid();
     return other != nullptr && gm->equals(*other, tol);
   }
   if (auto gc = asGaussian()) {
@@ -119,7 +119,7 @@ double HybridConditional::error(const HybridValues &values) const {
   if (auto gc = asGaussian()) {
     return gc->error(values.continuous());
   }
-  if (auto gm = asMixture()) {
+  if (auto gm = asHybrid()) {
     return gm->error(values);
   }
   if (auto dc = asDiscrete()) {
@@ -134,7 +134,7 @@ double HybridConditional::logProbability(const HybridValues &values) const {
   if (auto gc = asGaussian()) {
     return gc->logProbability(values.continuous());
   }
-  if (auto gm = asMixture()) {
+  if (auto gm = asHybrid()) {
     return gm->logProbability(values);
   }
   if (auto dc = asDiscrete()) {
@@ -149,7 +149,7 @@ double HybridConditional::logNormalizationConstant() const {
   if (auto gc = asGaussian()) {
     return gc->logNormalizationConstant();
   }
-  if (auto gm = asMixture()) {
+  if (auto gm = asHybrid()) {
     return gm->logNormalizationConstant();  // 0.0!
   }
   if (auto dc = asDiscrete()) {

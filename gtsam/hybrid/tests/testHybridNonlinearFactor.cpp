@@ -35,7 +35,7 @@ using symbol_shorthand::M;
 using symbol_shorthand::X;
 
 /* ************************************************************************* */
-// Check iterators of empty mixture.
+// Check iterators of empty hybrid factor.
 TEST(HybridNonlinearFactor, Constructor) {
   HybridNonlinearFactor factor;
   HybridNonlinearFactor::const_iterator const_it = factor.begin();
@@ -60,7 +60,7 @@ TEST(HybridNonlinearFactor, Printing) {
       std::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
   std::vector<NonlinearFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
 
-  HybridNonlinearFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+  HybridNonlinearFactor hybridFactor({X(1), X(2)}, {m1}, factors);
 
   std::string expected =
       R"(Hybrid [x1 x2; 1]
@@ -69,7 +69,7 @@ HybridNonlinearFactor
  0 Leaf Nonlinear factor on 2 keys
  1 Leaf Nonlinear factor on 2 keys
 )";
-  EXPECT(assert_print_equal(expected, mixtureFactor));
+  EXPECT(assert_print_equal(expected, hybridFactor));
 }
 
 /* ************************************************************************* */
@@ -94,14 +94,14 @@ static HybridNonlinearFactor getHybridNonlinearFactor() {
 /* ************************************************************************* */
 // Test the error of the HybridNonlinearFactor
 TEST(HybridNonlinearFactor, Error) {
-  auto mixtureFactor = getHybridNonlinearFactor();
+  auto hybridFactor = getHybridNonlinearFactor();
 
   Values continuousValues;
   continuousValues.insert<double>(X(1), 0);
   continuousValues.insert<double>(X(2), 1);
 
   AlgebraicDecisionTree<Key> error_tree =
-      mixtureFactor.errorTree(continuousValues);
+      hybridFactor.errorTree(continuousValues);
 
   DiscreteKey m1(1, 2);
   std::vector<DiscreteKey> discrete_keys = {m1};
@@ -114,8 +114,8 @@ TEST(HybridNonlinearFactor, Error) {
 /* ************************************************************************* */
 // Test dim of the HybridNonlinearFactor
 TEST(HybridNonlinearFactor, Dim) {
-  auto mixtureFactor = getHybridNonlinearFactor();
-  EXPECT_LONGS_EQUAL(1, mixtureFactor.dim());
+  auto hybridFactor = getHybridNonlinearFactor();
+  EXPECT_LONGS_EQUAL(1, hybridFactor.dim());
 }
 
 /* ************************************************************************* */

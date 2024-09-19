@@ -50,7 +50,7 @@ TEST(HybridFactorGraph, Keys) {
   // Add factor between x0 and x1
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  // Add a gaussian mixture factor ϕ(x1, c1)
+  // Add a hybrid Gaussian factor ϕ(x1, c1)
   DiscreteKey m1(M(1), 2);
   DecisionTree<Key, GaussianFactorValuePair> dt(
       M(1), {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},

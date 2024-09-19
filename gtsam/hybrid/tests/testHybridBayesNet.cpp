@@ -144,13 +144,13 @@ TEST(HybridBayesNet, Choose) {
 
   EXPECT_LONGS_EQUAL(4, gbn.size());
 
-  EXPECT(assert_equal(*(*hybridBayesNet->at(0)->asMixture())(assignment),
+  EXPECT(assert_equal(*(*hybridBayesNet->at(0)->asHybrid())(assignment),
                       *gbn.at(0)));
-  EXPECT(assert_equal(*(*hybridBayesNet->at(1)->asMixture())(assignment),
+  EXPECT(assert_equal(*(*hybridBayesNet->at(1)->asHybrid())(assignment),
                       *gbn.at(1)));
-  EXPECT(assert_equal(*(*hybridBayesNet->at(2)->asMixture())(assignment),
+  EXPECT(assert_equal(*(*hybridBayesNet->at(2)->asHybrid())(assignment),
                       *gbn.at(2)));
-  EXPECT(assert_equal(*(*hybridBayesNet->at(3)->asMixture())(assignment),
+  EXPECT(assert_equal(*(*hybridBayesNet->at(3)->asHybrid())(assignment),
                       *gbn.at(3)));
 }
 
@@ -280,9 +280,9 @@ TEST(HybridBayesNet, Pruning) {
   const DiscreteValues discrete_values{{M(0), 1}, {M(1), 1}};
   const HybridValues hybridValues{delta.continuous(), discrete_values};
   double logProbability = 0;
-  logProbability += posterior->at(0)->asMixture()->logProbability(hybridValues);
-  logProbability += posterior->at(1)->asMixture()->logProbability(hybridValues);
-  logProbability += posterior->at(2)->asMixture()->logProbability(hybridValues);
+  logProbability += posterior->at(0)->asHybrid()->logProbability(hybridValues);
+  logProbability += posterior->at(1)->asHybrid()->logProbability(hybridValues);
+  logProbability += posterior->at(2)->asHybrid()->logProbability(hybridValues);
   // NOTE(dellaert): the discrete errors were not added in logProbability tree!
   logProbability +=
       posterior->at(3)->asDiscrete()->logProbability(hybridValues);
