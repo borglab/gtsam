@@ -402,6 +402,37 @@ TEST(HybridNonlinearFactorGraph, Partial_Elimination) {
 }
 
 /* ****************************************************************************/
+TEST(HybridNonlinearFactorGraph, Error) {
+  Switching self(3);
+  HybridNonlinearFactorGraph fg = self.nonlinearFactorGraph;
+
+  {
+    HybridValues values(VectorValues(), DiscreteValues{{M(0), 0}, {M(1), 0}},
+                        self.linearizationPoint);
+    // regression
+    EXPECT_DOUBLES_EQUAL(152.791759469, fg.error(values), 1e-9);
+  }
+  {
+    HybridValues values(VectorValues(), DiscreteValues{{M(0), 0}, {M(1), 1}},
+                        self.linearizationPoint);
+    // regression
+    EXPECT_DOUBLES_EQUAL(151.598612289, fg.error(values), 1e-9);
+  }
+  {
+    HybridValues values(VectorValues(), DiscreteValues{{M(0), 1}, {M(1), 0}},
+                        self.linearizationPoint);
+    // regression
+    EXPECT_DOUBLES_EQUAL(151.703972804, fg.error(values), 1e-9);
+  }
+  {
+    HybridValues values(VectorValues(), DiscreteValues{{M(0), 1}, {M(1), 1}},
+                        self.linearizationPoint);
+    // regression
+    EXPECT_DOUBLES_EQUAL(151.609437912, fg.error(values), 1e-9);
+  }
+}
+
+/* ****************************************************************************/
 TEST(HybridNonlinearFactorGraph, PrintErrors) {
   Switching self(3);
 
