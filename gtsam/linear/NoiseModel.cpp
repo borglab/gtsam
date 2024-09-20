@@ -239,21 +239,31 @@ void Gaussian::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const
 Matrix Gaussian::information() const { return R().transpose() * R(); }
 
 /* *******************************************************************************/
-double Gaussian::logNormalizationConstant() const {
+double Gaussian::logDetR() const {
+  double logDetR =
+      R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
+  return logDetR;
+}
+
+/* *******************************************************************************/
+double Gaussian::logDeterminant() const {
   // Since noise models are Gaussian, we can get the logDeterminant easily
   // Sigma = (R'R)^{-1}, det(Sigma) = det((R'R)^{-1}) = det(R'R)^{-1}
   // log det(Sigma) = -log(det(R'R)) = -2*log(det(R))
-  // Hence, log det(Sigma)) = -2.0 * logDeterminant()
-  // which gives log = -0.5*n*log(2*pi) - 0.5*(-2.0 * logDeterminant())
-  //     = -0.5*n*log(2*pi) + (0.5*2.0 * logDeterminant())
-  //     = -0.5*n*log(2*pi) + logDeterminant()
-  double logDetR =
-      R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
+  // Hence, log det(Sigma)) = -2.0 * logDetR()
+  return -2.0 * logDetR();
+}
 
+/* *******************************************************************************/
+double Gaussian::logNormalizationConstant() const {
+  // log(det(Sigma)) = -2.0 * logDetR
+  // which gives log = -0.5*n*log(2*pi) - 0.5*(-2.0 * logDetR())
+  //     = -0.5*n*log(2*pi) + (0.5*2.0 * logDetR())
+  //     = -0.5*n*log(2*pi) + logDetR()
   size_t n = dim();
   constexpr double log2pi = 1.8378770664093454835606594728112;
   // Get 1/log(\sqrt(|2pi Sigma|)) = -0.5*log(|2pi Sigma|)
-  return -0.5 * n * log2pi + logDetR;
+  return -0.5 * n * log2pi + logDetR();
 }
 
 
@@ -331,6 +341,11 @@ void Diagonal::WhitenInPlace(Matrix& H) const {
 
 void Diagonal::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H = invsigmas().asDiagonal() * H;
+}
+
+/* *******************************************************************************/
+double Diagonal::logDetR() const {
+  return invsigmas_.unaryExpr([](double x) { return log(x); }).sum();
 }
 
 /* ************************************************************************* */
@@ -661,6 +676,9 @@ void Isotropic::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H *= invsigma_;
 }
 
+/* *******************************************************************************/
+double Isotropic::logDetR() const { return log(invsigma_) * dim(); }
+
 /* ************************************************************************* */
 // Unit
 /* ************************************************************************* */
@@ -672,6 +690,9 @@ void Unit::print(const std::string& name) const {
 double Unit::squaredMahalanobisDistance(const Vector& v) const {
   return v.dot(v);
 }
+
+/* *******************************************************************************/
+double Unit::logDetR() const { return 0.0; }
 
 /* ************************************************************************* */
 // Robust

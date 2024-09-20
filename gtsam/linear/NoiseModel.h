@@ -183,6 +183,8 @@ namespace gtsam {
         return *sqrt_information_;
       }
 
+      /// Compute the log of |R|. Used for computing log(|Σ|)
+      virtual double logDetR() const;
 
     public:
 
@@ -266,15 +268,15 @@ namespace gtsam {
       /// Compute covariance matrix
       virtual Matrix covariance() const;
 
+      /// Compute the log of |Σ|
+      double logDeterminant() const;
+
       /**
-       * @brief Helper method to compute the normalization constant
-       * for a Gaussian noise model.
-       * k = 1/log(\sqrt(|2πΣ|))
+       * @brief Method to compute the normalization constant
+       * for a Gaussian noise model k = \sqrt(1/|2πΣ|).
+       * We compute this in the log-space for numerical accuracy,
+       * thus returning log(k).
        *
-       * We compute this in the log-space for numerical accuracy.
-       *
-       * @param noise_model The Gaussian noise model
-       * whose normalization constant we wish to compute.
        * @return double
        */
       double logNormalizationConstant() const;
@@ -308,10 +310,11 @@ namespace gtsam {
        */
       Vector sigmas_, invsigmas_, precisions_;
 
-    protected:
-
       /** constructor to allow for disabling initialization of invsigmas */
       Diagonal(const Vector& sigmas);
+
+      /// Compute the log of |R|. Used for computing log(|Σ|)
+      virtual double logDetR() const override;
 
     public:
       /** constructor - no initializations, for serialization */
@@ -545,6 +548,9 @@ namespace gtsam {
       Isotropic(size_t dim, double sigma) :
         Diagonal(Vector::Constant(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
 
+      /// Compute the log of |R|. Used for computing log(|Σ|)
+      virtual double logDetR() const override;
+
     public:
 
       /* dummy constructor to allow for serialization */
@@ -608,6 +614,10 @@ namespace gtsam {
      * Unit: i.i.d. unit-variance noise on all m dimensions.
      */
     class GTSAM_EXPORT Unit : public Isotropic {
+    protected:
+      /// Compute the log of |R|. Used for computing log(|Σ|)
+      virtual double logDetR() const override;
+
     public:
 
       typedef std::shared_ptr<Unit> shared_ptr;
