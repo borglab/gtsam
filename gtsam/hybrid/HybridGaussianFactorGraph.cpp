@@ -542,10 +542,15 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::errorTree(
   // Iterate over each factor.
   for (auto &factor : factors_) {
     if (auto f = std::dynamic_pointer_cast<HybridFactor>(factor)) {
+      // Check for HybridFactor, and call errorTree
       error_tree = error_tree + f->errorTree(continuousValues);
-    } else if (auto f = std::dynamic_pointer_cast<GaussianFactor>(factor)) {
-      error_tree =
-          error_tree + AlgebraicDecisionTree<Key>(f->error(continuousValues));
+    } else if (auto f = std::dynamic_pointer_cast<DiscreteFactor>(factor)) {
+      // Skip discrete factors
+      continue;
+    } else {
+      // Everything else is a continuous only factor
+      HybridValues hv(continuousValues, DiscreteValues());
+      error_tree = error_tree + AlgebraicDecisionTree<Key>(factor->error(hv));
     }
   }
   return error_tree;
