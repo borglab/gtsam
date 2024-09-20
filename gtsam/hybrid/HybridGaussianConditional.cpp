@@ -79,21 +79,6 @@ HybridGaussianConditional::HybridGaussianConditional(
                                 Conditionals({discreteParent}, conditionals)) {}
 
 /* *******************************************************************************/
-// TODO(dellaert): This is copy/paste: HybridGaussianConditional should be
-// derived from HybridGaussianFactor, no?
-GaussianFactorGraphTree HybridGaussianConditional::add(
-    const GaussianFactorGraphTree &sum) const {
-  using Y = GaussianFactorGraph;
-  auto add = [](const Y &graph1, const Y &graph2) {
-    auto result = graph1;
-    result.push_back(graph2);
-    return result;
-  };
-  const auto tree = asGaussianFactorGraphTree();
-  return sum.empty() ? tree : sum.apply(tree, add);
-}
-
-/* *******************************************************************************/
 GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree()
     const {
   auto wrap = [this](const GaussianConditional::shared_ptr &gc) {

@@ -108,8 +108,9 @@ class GTSAM_EXPORT HybridGaussianConditional
                             const Conditionals &conditionals);
 
   /**
-   * @brief Make a Hybrid Gaussian Conditional from a vector of Gaussian conditionals.
-   * The DecisionTree-based constructor is preferred over this one.
+   * @brief Make a Hybrid Gaussian Conditional from a vector of Gaussian
+   * conditionals. The DecisionTree-based constructor is preferred over this
+   * one.
    *
    * @param continuousFrontals The continuous frontal variables
    * @param continuousParents The continuous parent variables
@@ -233,14 +234,6 @@ class GTSAM_EXPORT HybridGaussianConditional
    */
   void prune(const DecisionTreeFactor &discreteProbs);
 
-  /**
-   * @brief Merge the Gaussian Factor Graphs in `this` and `sum` while
-   * maintaining the decision tree structure.
-   *
-   * @param sum Decision Tree of Gaussian Factor Graphs
-   * @return GaussianFactorGraphTree
-   */
-  GaussianFactorGraphTree add(const GaussianFactorGraphTree &sum) const;
   /// @}
 
  private:
