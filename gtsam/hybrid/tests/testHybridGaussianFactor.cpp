@@ -396,7 +396,7 @@ namespace test_two_state_estimation {
 
 DiscreteKey m1(M(1), 2);
 
-void addMeasurement(HybridBayesNet& hbn, Key z_key, Key x_key, double sigma) {
+void addMeasurement(HybridBayesNet &hbn, Key z_key, Key x_key, double sigma) {
   auto measurement_model = noiseModel::Isotropic::Sigma(1, sigma);
   hbn.emplace_shared<GaussianConditional>(z_key, Vector1(0.0), I_1x1, x_key,
                                           -I_1x1, measurement_model);
@@ -420,7 +420,7 @@ static HybridGaussianConditional::shared_ptr CreateHybridMotionModel(
 
 /// Create two state Bayes network with 1 or two measurement models
 HybridBayesNet CreateBayesNet(
-    const HybridGaussianConditional::shared_ptr& hybridMotionModel,
+    const HybridGaussianConditional::shared_ptr &hybridMotionModel,
     bool add_second_measurement = false) {
   HybridBayesNet hbn;
 
@@ -443,9 +443,9 @@ HybridBayesNet CreateBayesNet(
 
 /// Approximate the discrete marginal P(m1) using importance sampling
 std::pair<double, double> approximateDiscreteMarginal(
-    const HybridBayesNet& hbn,
-    const HybridGaussianConditional::shared_ptr& hybridMotionModel,
-    const VectorValues& given, size_t N = 100000) {
+    const HybridBayesNet &hbn,
+    const HybridGaussianConditional::shared_ptr &hybridMotionModel,
+    const VectorValues &given, size_t N = 100000) {
   /// Create importance sampling network q(x0,x1,m) = p(x1|x0,m1) q(x0) P(m1),
   /// using q(x0) = N(z0, sigmaQ) to sample x0.
   HybridBayesNet q;
@@ -739,6 +739,171 @@ TEST(HybridGaussianFactor, TwoStateModel4) {
   // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
   DiscreteConditional expected(m1, "8.91527/91.0847");
   EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.002));
+}
+
+namespace test_direct_factor_graph {
+/**
+ * @brief Create a Factor Graph by directly specifying all
+ * the factors instead of creating conditionals first.
+ * This way we can directly provide the likelihoods and
+ * then perform linearization.
+ *
+ * @param values Initial values to linearize around.
+ * @param means The means of the HybridGaussianFactor components.
+ * @param sigmas The covariances of the HybridGaussianFactor components.
+ * @param m1 The discrete key.
+ * @return HybridGaussianFactorGraph
+ */
+static HybridGaussianFactorGraph CreateFactorGraph(
+    const gtsam::Values &values, const std::vector<double> &means,
+    const std::vector<double> &sigmas, DiscreteKey &m1,
+    double measurement_noise = 1e-3) {
+  auto model0 = noiseModel::Isotropic::Sigma(1, sigmas[0]);
+  auto model1 = noiseModel::Isotropic::Sigma(1, sigmas[1]);
+  auto prior_noise = noiseModel::Isotropic::Sigma(1, measurement_noise);
+
+  auto f0 =
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), means[0], model0)
+          ->linearize(values);
+  auto f1 =
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), means[1], model1)
+          ->linearize(values);
+
+  // Create HybridGaussianFactor
+  // We take negative since we want
+  // the underlying scalar to be log(\sqrt(|2πΣ|))
+  std::vector<GaussianFactorValuePair> factors{
+      {f0, -model0->logNormalizationConstant()},
+      {f1, -model1->logNormalizationConstant()}};
+  HybridGaussianFactor motionFactor({X(0), X(1)}, m1, factors);
+
+  HybridGaussianFactorGraph hfg;
+  hfg.push_back(motionFactor);
+
+  hfg.push_back(PriorFactor<double>(X(0), values.at<double>(X(0)), prior_noise)
+                    .linearize(values));
+
+  return hfg;
+}
+}  // namespace test_direct_factor_graph
+
+/* ************************************************************************* */
+/**
+ * @brief Test components with differing means but the same covariances.
+ * The factor graph is
+ *     *-X1-*-X2
+ *          |
+ *          M1
+ */
+TEST(HybridGaussianFactor, DifferentMeansFG) {
+  using namespace test_direct_factor_graph;
+
+  DiscreteKey m1(M(1), 2);
+
+  Values values;
+  double x1 = 0.0, x2 = 1.75;
+  values.insert(X(0), x1);
+  values.insert(X(1), x2);
+
+  std::vector<double> means = {0.0, 2.0}, sigmas = {1e-0, 1e-0};
+
+  HybridGaussianFactorGraph hfg = CreateFactorGraph(values, means, sigmas, m1);
+
+  {
+    auto bn = hfg.eliminateSequential();
+    HybridValues actual = bn->optimize();
+
+    HybridValues expected(
+        VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(-1.75)}},
+        DiscreteValues{{M(1), 0}});
+
+    EXPECT(assert_equal(expected, actual));
+
+    DiscreteValues dv0{{M(1), 0}};
+    VectorValues cont0 = bn->optimize(dv0);
+    double error0 = bn->error(HybridValues(cont0, dv0));
+    // regression
+    EXPECT_DOUBLES_EQUAL(0.69314718056, error0, 1e-9);
+
+    DiscreteValues dv1{{M(1), 1}};
+    VectorValues cont1 = bn->optimize(dv1);
+    double error1 = bn->error(HybridValues(cont1, dv1));
+    EXPECT_DOUBLES_EQUAL(error0, error1, 1e-9);
+  }
+
+  {
+    auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-3);
+    hfg.push_back(
+        PriorFactor<double>(X(1), means[1], prior_noise).linearize(values));
+
+    auto bn = hfg.eliminateSequential();
+    HybridValues actual = bn->optimize();
+
+    HybridValues expected(
+        VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(0.25)}},
+        DiscreteValues{{M(1), 1}});
+
+    EXPECT(assert_equal(expected, actual));
+
+    {
+      DiscreteValues dv{{M(1), 0}};
+      VectorValues cont = bn->optimize(dv);
+      double error = bn->error(HybridValues(cont, dv));
+      // regression
+      EXPECT_DOUBLES_EQUAL(2.12692448787, error, 1e-9);
+    }
+    {
+      DiscreteValues dv{{M(1), 1}};
+      VectorValues cont = bn->optimize(dv);
+      double error = bn->error(HybridValues(cont, dv));
+      // regression
+      EXPECT_DOUBLES_EQUAL(0.126928487854, error, 1e-9);
+    }
+  }
+}
+
+/* ************************************************************************* */
+/**
+ * @brief Test components with differing covariances but the same means.
+ * The factor graph is
+ *     *-X1-*-X2
+ *          |
+ *          M1
+ */
+TEST(HybridGaussianFactor, DifferentCovariancesFG) {
+  using namespace test_direct_factor_graph;
+
+  DiscreteKey m1(M(1), 2);
+
+  Values values;
+  double x1 = 1.0, x2 = 1.0;
+  values.insert(X(0), x1);
+  values.insert(X(1), x2);
+
+  std::vector<double> means = {0.0, 0.0}, sigmas = {1e2, 1e-2};
+
+  // Create FG with HybridGaussianFactor and prior on X1
+  HybridGaussianFactorGraph fg = CreateFactorGraph(values, means, sigmas, m1);
+  auto hbn = fg.eliminateSequential();
+
+  VectorValues cv;
+  cv.insert(X(0), Vector1(0.0));
+  cv.insert(X(1), Vector1(0.0));
+
+  // Check that the error values at the MLE point μ.
+  AlgebraicDecisionTree<Key> errorTree = hbn->errorTree(cv);
+
+  DiscreteValues dv0{{M(1), 0}};
+  DiscreteValues dv1{{M(1), 1}};
+
+  // regression
+  EXPECT_DOUBLES_EQUAL(9.90348755254, errorTree(dv0), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.69314718056, errorTree(dv1), 1e-9);
+
+  DiscreteConditional expected_m1(m1, "0.5/0.5");
+  DiscreteConditional actual_m1 = *(hbn->at(2)->asDiscrete());
+
+  EXPECT(assert_equal(expected_m1, actual_m1));
 }
 
 /* ************************************************************************* */

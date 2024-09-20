@@ -18,8 +18,6 @@
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/discrete/DiscreteLookupDAG.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 
 namespace gtsam {

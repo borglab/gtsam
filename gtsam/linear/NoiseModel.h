@@ -183,6 +183,8 @@ namespace gtsam {
         return *sqrt_information_;
       }
 
+      /// Compute the log of |R|. Used for computing log(|Σ|)
+      virtual double logDetR() const;
 
     public:
 
@@ -266,7 +268,20 @@ namespace gtsam {
       /// Compute covariance matrix
       virtual Matrix covariance() const;
 
-    private:
+      /// Compute the log of |Σ|
+      double logDeterminant() const;
+
+      /**
+       * @brief Method to compute the normalization constant
+       * for a Gaussian noise model k = \sqrt(1/|2πΣ|).
+       * We compute this in the log-space for numerical accuracy,
+       * thus returning log(k).
+       *
+       * @return double
+       */
+      double logNormalizationConstant() const;
+
+     private:
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
@@ -295,10 +310,11 @@ namespace gtsam {
        */
       Vector sigmas_, invsigmas_, precisions_;
 
-    protected:
-
       /** constructor to allow for disabling initialization of invsigmas */
       Diagonal(const Vector& sigmas);
+
+      /// Compute the log of |R|. Used for computing log(|Σ|)
+      virtual double logDetR() const override;
 
     public:
       /** constructor - no initializations, for serialization */
@@ -532,6 +548,9 @@ namespace gtsam {
       Isotropic(size_t dim, double sigma) :
         Diagonal(Vector::Constant(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
 
+      /// Compute the log of |R|. Used for computing log(|Σ|)
+      virtual double logDetR() const override;
+
     public:
 
       /* dummy constructor to allow for serialization */
@@ -595,6 +614,10 @@ namespace gtsam {
      * Unit: i.i.d. unit-variance noise on all m dimensions.
      */
     class GTSAM_EXPORT Unit : public Isotropic {
+    protected:
+      /// Compute the log of |R|. Used for computing log(|Σ|)
+      virtual double logDetR() const override;
+
     public:
 
       typedef std::shared_ptr<Unit> shared_ptr;
@@ -750,18 +773,6 @@ namespace gtsam {
   template<> struct traits<noiseModel::Constrained> : public Testable<noiseModel::Constrained> {};
   template<> struct traits<noiseModel::Isotropic> : public Testable<noiseModel::Isotropic> {};
   template<> struct traits<noiseModel::Unit> : public Testable<noiseModel::Unit> {};
-
-  /**
-   * @brief Helper function to compute the log(|2πΣ|) normalizer values
-   * for a Gaussian noise model.
-   * We compute this in the log-space for numerical accuracy.
-   *
-   * @param noise_model The Gaussian noise model
-   * whose normalizer we wish to compute.
-   * @return double
-   */
-  GTSAM_EXPORT double ComputeLogNormalizer(
-      const noiseModel::Gaussian::shared_ptr& noise_model);
 
 } //\ namespace gtsam
 

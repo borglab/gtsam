@@ -857,10 +857,10 @@ namespace test_relinearization {
  */
 static HybridNonlinearFactorGraph CreateFactorGraph(
     const std::vector<double> &means, const std::vector<double> &sigmas,
-    DiscreteKey &m1, double x0_measurement) {
+    DiscreteKey &m1, double x0_measurement, double measurement_noise = 1e-3) {
   auto model0 = noiseModel::Isotropic::Sigma(1, sigmas[0]);
   auto model1 = noiseModel::Isotropic::Sigma(1, sigmas[1]);
-  auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-3);
+  auto prior_noise = noiseModel::Isotropic::Sigma(1, measurement_noise);
 
   auto f0 =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), means[0], model0);
@@ -868,10 +868,13 @@ static HybridNonlinearFactorGraph CreateFactorGraph(
       std::make_shared<BetweenFactor<double>>(X(0), X(1), means[1], model1);
 
   // Create HybridNonlinearFactor
+  // We take negative since we want
+  // the underlying scalar to be log(\sqrt(|2πΣ|))
   std::vector<NonlinearFactorValuePair> factors{
-      {f0, ComputeLogNormalizer(model0)}, {f1, ComputeLogNormalizer(model1)}};
+      {f0, -model0->logNormalizationConstant()},
+      {f1, -model1->logNormalizationConstant()}};
 
-  HybridNonlinearFactor mixtureFactor({X(0), X(1)}, {m1}, factors);
+  HybridNonlinearFactor mixtureFactor({X(0), X(1)}, m1, factors);
 
   HybridNonlinearFactorGraph hfg;
   hfg.push_back(mixtureFactor);
@@ -968,7 +971,7 @@ TEST(HybridNonlinearFactorGraph, DifferentMeans) {
  *          |
  *          M1
  */
-TEST_DISABLED(HybridNonlinearFactorGraph, DifferentCovariances) {
+TEST(HybridNonlinearFactorGraph, DifferentCovariances) {
   using namespace test_relinearization;
 
   DiscreteKey m1(M(1), 2);
@@ -982,8 +985,10 @@ TEST_DISABLED(HybridNonlinearFactorGraph, DifferentCovariances) {
 
   // Create FG with HybridNonlinearFactor and prior on X1
   HybridNonlinearFactorGraph hfg = CreateFactorGraph(means, sigmas, m1, x0);
-  // Linearize and eliminate
-  auto hbn = hfg.linearize(values)->eliminateSequential();
+  // Linearize
+  auto hgfg = hfg.linearize(values);
+  // and eliminate
+  auto hbn = hgfg->eliminateSequential();
 
   VectorValues cv;
   cv.insert(X(0), Vector1(0.0));
@@ -1003,6 +1008,52 @@ TEST_DISABLED(HybridNonlinearFactorGraph, DifferentCovariances) {
   DiscreteConditional actual_m1 = *(hbn->at(2)->asDiscrete());
 
   EXPECT(assert_equal(expected_m1, actual_m1));
+}
+
+TEST(HybridNonlinearFactorGraph, Relinearization) {
+  using namespace test_relinearization;
+
+  DiscreteKey m1(M(1), 2);
+
+  Values values;
+  double x0 = 0.0, x1 = 0.8;
+  values.insert(X(0), x0);
+  values.insert(X(1), x1);
+
+  std::vector<double> means = {0.0, 1.0}, sigmas = {1e-2, 1e-2};
+
+  double prior_sigma = 1e-2;
+  // Create FG with HybridNonlinearFactor and prior on X1
+  HybridNonlinearFactorGraph hfg =
+      CreateFactorGraph(means, sigmas, m1, 0.0, prior_sigma);
+  hfg.push_back(PriorFactor<double>(
+      X(1), 1.2, noiseModel::Isotropic::Sigma(1, prior_sigma)));
+
+  // Linearize
+  auto hgfg = hfg.linearize(values);
+  // and eliminate
+  auto hbn = hgfg->eliminateSequential();
+
+  HybridValues delta = hbn->optimize();
+  values = values.retract(delta.continuous());
+
+  Values expected_first_result;
+  expected_first_result.insert(X(0), 0.0666666666667);
+  expected_first_result.insert(X(1), 1.13333333333);
+  EXPECT(assert_equal(expected_first_result, values));
+
+  // Re-linearize
+  hgfg = hfg.linearize(values);
+  // and eliminate
+  hbn = hgfg->eliminateSequential();
+  delta = hbn->optimize();
+  HybridValues result(delta.continuous(), delta.discrete(),
+                      values.retract(delta.continuous()));
+
+  HybridValues expected_result(
+      VectorValues{{X(0), Vector1(0)}, {X(1), Vector1(0)}},
+      DiscreteValues{{M(1), 1}}, expected_first_result);
+  EXPECT(assert_equal(expected_result, result));
 }
 
 /* *************************************************************************

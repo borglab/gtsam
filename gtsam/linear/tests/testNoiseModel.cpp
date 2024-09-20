@@ -807,24 +807,81 @@ TEST(NoiseModel, NonDiagonalGaussian)
   }
 }
 
-TEST(NoiseModel, ComputeLogNormalizer) {
+TEST(NoiseModel, LogNormalizationConstant1D) {
   // Very simple 1D noise model, which we can compute by hand.
   double sigma = 0.1;
-  auto noise_model = Isotropic::Sigma(1, sigma);
-  double actual_value = ComputeLogNormalizer(noise_model);
-  // Compute log(|2πΣ|) by hand.
-  // = log(2π) + log(Σ) (since it is 1D)
-  constexpr double log2pi = 1.8378770664093454835606594728112;
-  double expected_value = log2pi + log(sigma * sigma);
-  EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
+  // For expected values, we compute 1/log(sqrt(|2πΣ|)) by hand.
+  // = -0.5*(log(2π) + log(Σ)) (since it is 1D)
+  double expected_value = -0.5 * log(2 * M_PI * sigma * sigma);
 
-  // Similar situation in the 3D case
+  // Gaussian
+  {
+    Matrix11 R;
+    R << 1 / sigma;
+    auto noise_model = Gaussian::SqrtInformation(R);
+    double actual_value = noise_model->logNormalizationConstant();
+    EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
+  }
+  // Diagonal
+  {
+    auto noise_model = Diagonal::Sigmas(Vector1(sigma));
+    double actual_value = noise_model->logNormalizationConstant();
+    EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
+  }
+  // Isotropic
+  {
+    auto noise_model = Isotropic::Sigma(1, sigma);
+    double actual_value = noise_model->logNormalizationConstant();
+    EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
+  }
+  // Unit
+  {
+    auto noise_model = Unit::Create(1);
+    double actual_value = noise_model->logNormalizationConstant();
+    double sigma = 1.0;
+    expected_value = -0.5 * log(2 * M_PI * sigma * sigma);
+    EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
+  }
+}
+
+TEST(NoiseModel, LogNormalizationConstant3D) {
+  // Simple 3D noise model, which we can compute by hand.
+  double sigma = 0.1;
   size_t n = 3;
-  auto noise_model2 = Isotropic::Sigma(n, sigma);
-  double actual_value2 = ComputeLogNormalizer(noise_model2);
-  // We multiply by 3 due to the determinant
-  double expected_value2 = n * (log2pi + log(sigma * sigma));
-  EXPECT_DOUBLES_EQUAL(expected_value2, actual_value2, 1e-9);
+  // We compute the expected values just like in the LogNormalizationConstant1D
+  // test, but we multiply by 3 due to the determinant.
+  double expected_value = -0.5 * n * log(2 * M_PI * sigma * sigma);
+
+  // Gaussian
+  {
+    Matrix33 R;
+    R << 1 / sigma, 2, 3,  //
+        0, 1 / sigma, 4,   //
+        0, 0, 1 / sigma;
+    auto noise_model = Gaussian::SqrtInformation(R);
+    double actual_value = noise_model->logNormalizationConstant();
+    EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
+  }
+  // Diagonal
+  {
+    auto noise_model = Diagonal::Sigmas(Vector3(sigma, sigma, sigma));
+    double actual_value = noise_model->logNormalizationConstant();
+    EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
+  }
+  // Isotropic
+  {
+    auto noise_model = Isotropic::Sigma(n, sigma);
+    double actual_value = noise_model->logNormalizationConstant();
+    EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
+  }
+  // Unit
+  {
+    auto noise_model = Unit::Create(3);
+    double actual_value = noise_model->logNormalizationConstant();
+    double sigma = 1.0;
+    expected_value = -0.5 * n * log(2 * M_PI * sigma * sigma);
+    EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
+  }
 }
 
 /* ************************************************************************* */
