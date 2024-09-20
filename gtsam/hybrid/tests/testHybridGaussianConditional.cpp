@@ -100,7 +100,7 @@ TEST(HybridGaussianConditional, Error) {
   auto actual = hybrid_conditional.errorTree(vv);
 
   // Check result.
-  std::vector<DiscreteKey> discrete_keys = {mode};
+  DiscreteKeys discrete_keys{mode};
   std::vector<double> leaves = {conditionals[0]->error(vv),
                                 conditionals[1]->error(vv)};
   AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
@@ -170,6 +170,37 @@ TEST(HybridGaussianConditional, ContinuousParents) {
   // Check that the continuous parent keys are correct:
   EXPECT(continuousParentKeys.size() == 1);
   EXPECT(continuousParentKeys[0] == X(0));
+}
+
+/* ************************************************************************* */
+/// Check error with mode dependent constants.
+TEST(HybridGaussianConditional, Error2) {
+  using namespace mode_dependent_constants;
+  auto actual = hybrid_conditional.errorTree(vv);
+
+  // Check result.
+  DiscreteKeys discrete_keys{mode};
+  double logNormalizer0 = -conditionals[0]->logNormalizationConstant();
+  double logNormalizer1 = -conditionals[1]->logNormalizationConstant();
+  double minLogNormalizer = std::min(logNormalizer0, logNormalizer1);
+
+  // Expected error is e(X) + log(|2πΣ|).
+  // We normalize log(|2πΣ|) with min(logNormalizers) so it is non-negative.
+  std::vector<double> leaves = {
+      conditionals[0]->error(vv) + logNormalizer0 - minLogNormalizer,
+      conditionals[1]->error(vv) + logNormalizer1 - minLogNormalizer};
+  AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
+
+  EXPECT(assert_equal(expected, actual, 1e-6));
+
+  // Check for non-tree version.
+  for (size_t mode : {0, 1}) {
+    const HybridValues hv{vv, {{M(0), mode}}};
+    EXPECT_DOUBLES_EQUAL(conditionals[mode]->error(vv) -
+                             conditionals[mode]->logNormalizationConstant() -
+                             minLogNormalizer,
+                         hybrid_conditional.error(hv), 1e-8);
+  }
 }
 
 /* ************************************************************************* */

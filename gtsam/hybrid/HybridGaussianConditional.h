@@ -51,20 +51,22 @@ class HybridValues;
  * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridGaussianConditional
-    : public HybridFactor,
-      public Conditional<HybridFactor, HybridGaussianConditional> {
+    : public HybridGaussianFactor,
+      public Conditional<HybridGaussianFactor, HybridGaussianConditional> {
  public:
   using This = HybridGaussianConditional;
-  using shared_ptr = std::shared_ptr<HybridGaussianConditional>;
-  using BaseFactor = HybridFactor;
-  using BaseConditional = Conditional<HybridFactor, HybridGaussianConditional>;
+  using shared_ptr = std::shared_ptr<This>;
+  using BaseFactor = HybridGaussianFactor;
+  using BaseConditional = Conditional<BaseFactor, HybridGaussianConditional>;
 
   /// typedef for Decision Tree of Gaussian Conditionals
   using Conditionals = DecisionTree<Key, GaussianConditional::shared_ptr>;
 
  private:
   Conditionals conditionals_;  ///< a decision tree of Gaussian conditionals.
-  double logConstant_;         ///< log of the normalization constant.
+  ///< Negative-log of the normalization constant (log(\sqrt(|2πΣ|))).
+  ///< Take advantage of the neg-log space so everything is a minimization
+  double logConstant_;
 
   /**
    * @brief Convert a HybridGaussianConditional of conditionals into
@@ -107,8 +109,9 @@ class GTSAM_EXPORT HybridGaussianConditional
                             const Conditionals &conditionals);
 
   /**
-   * @brief Make a Hybrid Gaussian Conditional from a vector of Gaussian conditionals.
-   * The DecisionTree-based constructor is preferred over this one.
+   * @brief Make a Hybrid Gaussian Conditional from a vector of Gaussian
+   * conditionals. The DecisionTree-based constructor is preferred over this
+   * one.
    *
    * @param continuousFrontals The continuous frontal variables
    * @param continuousParents The continuous parent variables
@@ -149,7 +152,7 @@ class GTSAM_EXPORT HybridGaussianConditional
 
   /// The log normalization constant is max of the the individual
   /// log-normalization constants.
-  double logNormalizationConstant() const override { return logConstant_; }
+  double logNormalizationConstant() const override { return -logConstant_; }
 
   /**
    * Create a likelihood factor for a hybrid Gaussian conditional,
@@ -232,14 +235,6 @@ class GTSAM_EXPORT HybridGaussianConditional
    */
   void prune(const DecisionTreeFactor &discreteProbs);
 
-  /**
-   * @brief Merge the Gaussian Factor Graphs in `this` and `sum` while
-   * maintaining the decision tree structure.
-   *
-   * @param sum Decision Tree of Gaussian Factor Graphs
-   * @return GaussianFactorGraphTree
-   */
-  GaussianFactorGraphTree add(const GaussianFactorGraphTree &sum) const;
   /// @}
 
  private:
