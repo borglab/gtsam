@@ -222,8 +222,7 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
         } else {
           // Add a constant to the likelihood in case the noise models
           // are not all equal.
-          double c = 2.0 * Cgm_Kgcm;
-          return {likelihood_m, c};
+          return {likelihood_m, Cgm_Kgcm};
         }
       });
   return std::make_shared<HybridGaussianFactor>(
