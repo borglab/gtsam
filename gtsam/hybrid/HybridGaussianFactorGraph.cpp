@@ -329,8 +329,8 @@ static std::shared_ptr<Factor> createDiscreteFactor(
 
     // Logspace version of:
     // exp(-factor->error(kEmpty)) / conditional->normalizationConstant();
-    // We take negative of the logNormalizationConstant `log(1/k)`
-    // to get `log(k)`.
+    // We take negative of the logNormalizationConstant `log(k)`
+    // to get `log(1/k) = log(\sqrt{|2πΣ|})`.
     return -factor->error(kEmpty) - conditional->logNormalizationConstant();
   };
 
