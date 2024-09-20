@@ -539,36 +539,15 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
 AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::errorTree(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> error_tree(0.0);
-
   // Iterate over each factor.
   for (auto &factor : factors_) {
-    // TODO(dellaert): just use a virtual method defined in HybridFactor.
-    AlgebraicDecisionTree<Key> factor_error;
-
-    auto f = factor;
-    if (auto hc = dynamic_pointer_cast<HybridConditional>(factor)) {
-      f = hc->inner();
-    }
-
-    if (auto hybridGaussianCond =
-            dynamic_pointer_cast<HybridGaussianFactor>(f)) {
-      // Compute factor error and add it.
-      error_tree = error_tree + hybridGaussianCond->errorTree(continuousValues);
-    } else if (auto gaussian = dynamic_pointer_cast<GaussianFactor>(f)) {
-      // If continuous only, get the (double) error
-      // and add it to the error_tree
-      double error = gaussian->error(continuousValues);
-      // Add the gaussian factor error to every leaf of the error tree.
-      error_tree = error_tree.apply(
-          [error](double leaf_value) { return leaf_value + error; });
-    } else if (dynamic_pointer_cast<DiscreteFactor>(f)) {
-      // If factor at `idx` is discrete-only, we skip.
-      continue;
-    } else {
-      throwRuntimeError("HybridGaussianFactorGraph::error(VV)", f);
+    if (auto f = std::dynamic_pointer_cast<HybridFactor>(factor)) {
+      error_tree = error_tree + f->errorTree(continuousValues);
+    } else if (auto f = std::dynamic_pointer_cast<GaussianFactor>(factor)) {
+      error_tree =
+          error_tree + AlgebraicDecisionTree<Key>(f->error(continuousValues));
     }
   }
-
   return error_tree;
 }
 

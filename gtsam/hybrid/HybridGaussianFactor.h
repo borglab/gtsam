@@ -148,8 +148,8 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
    * as the factors involved, and leaf values as the error.
    */
-  AlgebraicDecisionTree<Key> errorTree(
-      const VectorValues &continuousValues) const;
+  virtual AlgebraicDecisionTree<Key> errorTree(
+      const VectorValues &continuousValues) const override;
 
   /**
    * @brief Compute the log-likelihood, including the log-normalizing constant.

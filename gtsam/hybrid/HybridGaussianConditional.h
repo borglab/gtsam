@@ -109,9 +109,9 @@ class GTSAM_EXPORT HybridGaussianConditional
                             const Conditionals &conditionals);
 
   /**
-   * @brief Make a Hybrid Gaussian Conditional from a vector of Gaussian
-   * conditionals. The DecisionTree-based constructor is preferred over this
-   * one.
+   * @brief Make a Hybrid Gaussian Conditional from
+   * a vector of Gaussian conditionals.
+   * The DecisionTree-based constructor is preferred over this one.
    *
    * @param continuousFrontals The continuous frontal variables
    * @param continuousParents The continuous parent variables
@@ -208,8 +208,8 @@ class GTSAM_EXPORT HybridGaussianConditional
    * @return AlgebraicDecisionTree<Key> A decision tree on the discrete keys
    * only, with the leaf values as the error for each assignment.
    */
-  AlgebraicDecisionTree<Key> errorTree(
-      const VectorValues &continuousValues) const;
+  virtual AlgebraicDecisionTree<Key> errorTree(
+      const VectorValues &continuousValues) const override;
 
   /**
    * @brief Compute the logProbability of this hybrid Gaussian conditional.

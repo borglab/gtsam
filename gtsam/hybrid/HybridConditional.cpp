@@ -130,6 +130,22 @@ double HybridConditional::error(const HybridValues &values) const {
 }
 
 /* ************************************************************************ */
+AlgebraicDecisionTree<Key> HybridConditional::errorTree(
+    const VectorValues &values) const {
+  if (auto gc = asGaussian()) {
+    return AlgebraicDecisionTree<Key>(gc->error(values));
+  }
+  if (auto gm = asHybrid()) {
+    return gm->errorTree(values);
+  }
+  if (auto dc = asDiscrete()) {
+    return AlgebraicDecisionTree<Key>(0.0);
+  }
+  throw std::runtime_error(
+      "HybridConditional::error: conditional type not handled");
+}
+
+/* ************************************************************************ */
 double HybridConditional::logProbability(const HybridValues &values) const {
   if (auto gc = asGaussian()) {
     return gc->logProbability(values.continuous());
