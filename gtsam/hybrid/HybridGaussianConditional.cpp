@@ -35,8 +35,8 @@ HybridGaussianFactor::FactorValuePairs GetFactorValuePairs(
     double value = 0.0;
     // Check if conditional is pruned
     if (conditional) {
-      // Assign log(|2πΣ|) = -2*log(1 / sqrt(|2πΣ|))
-      value = -2.0 * conditional->logNormalizationConstant();
+      // Assign log(\sqrt(|2πΣ|)) = -log(1 / sqrt(|2πΣ|))
+      value = -conditional->logNormalizationConstant();
     }
     return {std::dynamic_pointer_cast<GaussianFactor>(conditional), value};
   };
