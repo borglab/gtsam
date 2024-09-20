@@ -57,7 +57,7 @@ using NonlinearFactorValuePair = std::pair<NonlinearFactor::shared_ptr, double>;
  *
  * @ingroup hybrid
  */
-class HybridNonlinearFactor : public HybridFactor {
+class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
   using This = HybridNonlinearFactor;
