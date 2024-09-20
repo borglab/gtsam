@@ -51,14 +51,14 @@ HybridGaussianConditional::HybridGaussianConditional(
                  discreteParents, GetFactorValuePairs(conditionals)),
       BaseConditional(continuousFrontals.size()),
       conditionals_(conditionals) {
-  // Calculate logNormalizer_ as the minimum of the log normalizers of the
+  // Calculate logConstant_ as the minimum of the log normalizers of the
   // conditionals, by visiting the decision tree:
-  logNormalizer_ = std::numeric_limits<double>::infinity();
+  logConstant_ = std::numeric_limits<double>::infinity();
   conditionals_.visit(
       [this](const GaussianConditional::shared_ptr &conditional) {
         if (conditional) {
-          this->logNormalizer_ = std::min(
-              this->logNormalizer_, -conditional->logNormalizationConstant());
+          this->logConstant_ = std::min(
+              this->logConstant_, -conditional->logNormalizationConstant());
         }
       });
 }
@@ -85,7 +85,7 @@ GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree()
     // First check if conditional has not been pruned
     if (gc) {
       const double Cgm_Kgcm =
-          -gc->logNormalizationConstant() - this->logNormalizer_;
+          -this->logConstant_ - gc->logNormalizationConstant();
       // If there is a difference in the covariances, we need to account for
       // that since the error is dependent on the mode.
       if (Cgm_Kgcm > 0.0) {
@@ -216,7 +216,7 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
           -> GaussianFactorValuePair {
         const auto likelihood_m = conditional->likelihood(given);
         const double Cgm_Kgcm =
-            -conditional->logNormalizationConstant() - logNormalizer_;
+            -logConstant_ - conditional->logNormalizationConstant();
         if (Cgm_Kgcm == 0.0) {
           return {likelihood_m, 0.0};
         } else {
@@ -330,7 +330,7 @@ double HybridGaussianConditional::conditionalError(
   // Check if valid pointer
   if (conditional) {
     return conditional->error(continuousValues) +  //
-           -conditional->logNormalizationConstant() - logNormalizer_;
+           -logConstant_ - conditional->logNormalizationConstant();
   } else {
     // If not valid, pointer, it means this conditional was pruned,
     // so we return maximum error.

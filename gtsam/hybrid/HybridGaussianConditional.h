@@ -64,8 +64,9 @@ class GTSAM_EXPORT HybridGaussianConditional
 
  private:
   Conditionals conditionals_;  ///< a decision tree of Gaussian conditionals.
-  double logNormalizer_;       ///< log of the normalization constant
-                               ///< (log(\sqrt(|2πΣ|))).
+  ///< Negative-log of the normalization constant (log(\sqrt(|2πΣ|))).
+  ///< Take advantage of the neg-log space so everything is a minimization
+  double logConstant_;
 
   /**
    * @brief Convert a HybridGaussianConditional of conditionals into
@@ -151,7 +152,7 @@ class GTSAM_EXPORT HybridGaussianConditional
 
   /// The log normalization constant is max of the the individual
   /// log-normalization constants.
-  double logNormalizationConstant() const override { return -logNormalizer_; }
+  double logNormalizationConstant() const override { return -logConstant_; }
 
   /**
    * Create a likelihood factor for a hybrid Gaussian conditional,
