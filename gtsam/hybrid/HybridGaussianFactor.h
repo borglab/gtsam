@@ -169,6 +169,10 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// @}
 
  private:
+  /// Helper method to compute the error of a component.
+  double potentiallyPrunedComponentError(
+      const sharedFactor &gf, const VectorValues &continuousValues) const;
+
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
