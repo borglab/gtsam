@@ -232,9 +232,6 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
 
   {
-    std::vector<GaussianFactorValuePair> factors = {
-        {std::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1), 0.0},
-        {std::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones()), 0.0}};
     hfg.add(HybridGaussianFactor({X(0)}, {M(0), 2}, two::components(X(0))));
     hfg.add(HybridGaussianFactor({X(2)}, {M(1), 2}, two::components(X(2))));
   }
@@ -259,7 +256,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   EXPECT_LONGS_EQUAL(0, remaining->size());
 
   /*
-  (Fan) Explanation: the Junction tree will need to reeliminate to get to the
+  (Fan) Explanation: the Junction tree will need to re-eliminate to get to the
   marginal on X(1), which is not possible because it involves eliminating
   discrete before continuous. The solution to this, however, is in Murphy02.
   TLDR is that this is 1. expensive and 2. inexact. nevertheless it is doable.
