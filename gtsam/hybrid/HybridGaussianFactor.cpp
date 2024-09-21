@@ -38,7 +38,7 @@ namespace gtsam {
  * Gaussian factor in factors.
  * @return HybridGaussianFactor::Factors
  */
-HybridGaussianFactor::Factors augment(
+static HybridGaussianFactor::Factors augment(
     const HybridGaussianFactor::FactorValuePairs &factors) {
   // Find the minimum value so we can "proselytize" to positive values.
   // Done because we can't have sqrt of negative numbers.
