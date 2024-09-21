@@ -133,8 +133,10 @@ namespace gtsam {
     /// @{
 
     /**
-     * normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
-     * log = - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
+     * Return normalization constant in negative log space.
+     *
+     * normalization constant k = 1.0 / sqrt((2*pi)^n*det(Sigma))
+     * -log(k) = 0.5 * n*log(2*pi) + 0.5 * log det(Sigma)
      */
     double logNormalizationConstant() const override;
 

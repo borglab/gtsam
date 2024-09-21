@@ -257,13 +257,13 @@ double Gaussian::logDeterminant() const {
 /* *******************************************************************************/
 double Gaussian::logNormalizationConstant() const {
   // log(det(Sigma)) = -2.0 * logDetR
-  // which gives log = -0.5*n*log(2*pi) - 0.5*(-2.0 * logDetR())
-  //     = -0.5*n*log(2*pi) + (0.5*2.0 * logDetR())
-  //     = -0.5*n*log(2*pi) + logDetR()
+  // which gives neg-log = 0.5*n*log(2*pi) + 0.5*(-2.0 * logDetR())
+  //     = 0.5*n*log(2*pi) - (0.5*2.0 * logDetR())
+  //     = 0.5*n*log(2*pi) - logDetR()
   size_t n = dim();
   constexpr double log2pi = 1.8378770664093454835606594728112;
-  // Get 1/log(\sqrt(|2pi Sigma|)) = -0.5*log(|2pi Sigma|)
-  return -0.5 * n * log2pi + logDetR();
+  // Get -log(1/\sqrt(|2pi Sigma|)) = 0.5*log(|2pi Sigma|)
+  return 0.5 * n * log2pi - logDetR();
 }
 
 

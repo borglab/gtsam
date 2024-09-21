@@ -181,24 +181,24 @@ namespace gtsam {
 
   /* ************************************************************************* */
   //  normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
-  //  log = - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
+  //  neg-log = 0.5 * n*log(2*pi) + 0.5 * log det(Sigma)
   double GaussianConditional::logNormalizationConstant() const {
     constexpr double log2pi = 1.8378770664093454835606594728112;
     size_t n = d().size();
     // Sigma = (R'R)^{-1}, det(Sigma) = det((R'R)^{-1}) = det(R'R)^{-1}
     // log det(Sigma) = -log(det(R'R)) = -2*log(det(R))
     // Hence, log det(Sigma)) = -2.0 * logDeterminant()
-    // which gives log = -0.5*n*log(2*pi) - 0.5*(-2.0 * logDeterminant())
-    //     = -0.5*n*log(2*pi) + (0.5*2.0 * logDeterminant())
-    //     = -0.5*n*log(2*pi) + logDeterminant()
-    return -0.5 * n * log2pi + logDeterminant();
+    // which gives neg-log = 0.5*n*log(2*pi) + 0.5*(-2.0 * logDeterminant())
+    //     = 0.5*n*log(2*pi) - (0.5*2.0 * logDeterminant())
+    //     = 0.5*n*log(2*pi) - logDeterminant()
+    return 0.5 * n * log2pi - logDeterminant();
   }
 
   /* ************************************************************************* */
-  //  density = k exp(-error(x))
-  //  log = log(k) - error(x)
+  //  density = 1/k exp(-error(x))
+  //  log = -log(k) - error(x)
   double GaussianConditional::logProbability(const VectorValues& x) const {
-    return logNormalizationConstant() - error(x);
+    return -logNormalizationConstant() - error(x);
   }
 
   double GaussianConditional::logProbability(const HybridValues& x) const {

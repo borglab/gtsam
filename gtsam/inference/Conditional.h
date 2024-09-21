@@ -34,9 +34,10 @@ namespace gtsam {
    * `logProbability` is the main methods that need to be implemented in derived
    * classes. These two methods relate to the `error` method in the factor by:
    *   probability(x) = k exp(-error(x))
-   * where k is a normalization constant making \int probability(x) == 1.0, and
-   *   logProbability(x) = K - error(x)
-   * i.e., K = log(K). The normalization constant K is assumed to *not* depend
+   * where k is a normalization constant making
+   * \int probability(x) = \int k exp(-error(x)) == 1.0, and
+   * logProbability(x) = -(K + error(x))
+   * i.e., K = -log(k). The normalization constant k is assumed to *not* depend
    * on any argument, only (possibly) on the conditional parameters.
    * This class provides a default logNormalizationConstant() == 0.0.
    * 
@@ -163,8 +164,9 @@ namespace gtsam {
     }
 
     /**
-     * All conditional types need to implement a log normalization constant to
-     * make it such that error>=0.
+     * All conditional types need to implement a
+     * (negative) log normalization constant
+     * to make it such that error>=0.
      */
     virtual double logNormalizationConstant() const;
 

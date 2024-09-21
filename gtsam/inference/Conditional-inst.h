@@ -89,7 +89,7 @@ bool Conditional<FACTOR, DERIVEDCONDITIONAL>::CheckInvariants(
                    // normalization constant
   const double error = conditional.error(values);
   if (error < 0.0) return false;  // prob_or_density is negative.
-  const double expected = conditional.logNormalizationConstant() - error;
+  const double expected = -(conditional.logNormalizationConstant() + error);
   if (std::abs(logProb - expected) > 1e-9)
     return false;  // logProb is not consistent with error
   return true;
