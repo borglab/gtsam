@@ -36,7 +36,7 @@ HybridGaussianFactor::FactorValuePairs GetFactorValuePairs(
     // Check if conditional is pruned
     if (conditional) {
       // Assign log(\sqrt(|2πΣ|)) = -log(1 / sqrt(|2πΣ|))
-      value = -conditional->logNormalizationConstant();
+      value = conditional->logNormalizationConstant();
     }
     return {std::dynamic_pointer_cast<GaussianFactor>(conditional), value};
   };
@@ -51,14 +51,14 @@ HybridGaussianConditional::HybridGaussianConditional(
                  discreteParents, GetFactorValuePairs(conditionals)),
       BaseConditional(continuousFrontals.size()),
       conditionals_(conditionals) {
-  // Calculate logConstant_ as the minimum of the log normalizers of the
-  // conditionals, by visiting the decision tree:
+  // Calculate logConstant_ as the minimum of the negative-log normalizers of
+  // the conditionals, by visiting the decision tree:
   logConstant_ = std::numeric_limits<double>::infinity();
   conditionals_.visit(
       [this](const GaussianConditional::shared_ptr &conditional) {
         if (conditional) {
           this->logConstant_ = std::min(
-              this->logConstant_, -conditional->logNormalizationConstant());
+              this->logConstant_, conditional->logNormalizationConstant());
         }
       });
 }
@@ -85,7 +85,7 @@ GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree()
     // First check if conditional has not been pruned
     if (gc) {
       const double Cgm_Kgcm =
-          -this->logConstant_ - gc->logNormalizationConstant();
+          gc->logNormalizationConstant() - this->logConstant_;
       // If there is a difference in the covariances, we need to account for
       // that since the error is dependent on the mode.
       if (Cgm_Kgcm > 0.0) {
@@ -216,7 +216,7 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
           -> GaussianFactorValuePair {
         const auto likelihood_m = conditional->likelihood(given);
         const double Cgm_Kgcm =
-            -logConstant_ - conditional->logNormalizationConstant();
+            conditional->logNormalizationConstant() - logConstant_;
         if (Cgm_Kgcm == 0.0) {
           return {likelihood_m, 0.0};
         } else {

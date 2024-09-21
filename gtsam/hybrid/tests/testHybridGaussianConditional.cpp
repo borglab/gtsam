@@ -180,12 +180,13 @@ TEST(HybridGaussianConditional, Error2) {
 
   // Check result.
   DiscreteKeys discrete_keys{mode};
-  double logNormalizer0 = -conditionals[0]->logNormalizationConstant();
-  double logNormalizer1 = -conditionals[1]->logNormalizationConstant();
+  double logNormalizer0 = conditionals[0]->logNormalizationConstant();
+  double logNormalizer1 = conditionals[1]->logNormalizationConstant();
   double minLogNormalizer = std::min(logNormalizer0, logNormalizer1);
 
-  // Expected error is e(X) + log(|2πΣ|).
-  // We normalize log(|2πΣ|) with min(logNormalizers) so it is non-negative.
+  // Expected error is e(X) + log(sqrt(|2πΣ|)).
+  // We normalize log(sqrt(|2πΣ|)) with min(logNormalizers)
+  // so it is non-negative.
   std::vector<double> leaves = {
       conditionals[0]->error(vv) + logNormalizer0 - minLogNormalizer,
       conditionals[1]->error(vv) + logNormalizer1 - minLogNormalizer};
@@ -196,7 +197,7 @@ TEST(HybridGaussianConditional, Error2) {
   // Check for non-tree version.
   for (size_t mode : {0, 1}) {
     const HybridValues hv{vv, {{M(0), mode}}};
-    EXPECT_DOUBLES_EQUAL(conditionals[mode]->error(vv) -
+    EXPECT_DOUBLES_EQUAL(conditionals[mode]->error(vv) +
                              conditionals[mode]->logNormalizationConstant() -
                              minLogNormalizer,
                          hybrid_conditional.error(hv), 1e-8);
@@ -230,8 +231,8 @@ TEST(HybridGaussianConditional, Likelihood2) {
     CHECK(jf1->rows() == 2);
 
     // Check that the constant C1 is properly encoded in the JacobianFactor.
-    const double C1 = hybrid_conditional.logNormalizationConstant() -
-                      conditionals[1]->logNormalizationConstant();
+    const double C1 = conditionals[1]->logNormalizationConstant() -
+                      hybrid_conditional.logNormalizationConstant();
     const double c1 = std::sqrt(2.0 * C1);
     Vector expected_unwhitened(2);
     expected_unwhitened << 4.9 - 5.0, -c1;

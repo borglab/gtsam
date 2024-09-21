@@ -152,7 +152,7 @@ class GTSAM_EXPORT HybridGaussianConditional
 
   /// The log normalization constant is max of the the individual
   /// log-normalization constants.
-  double logNormalizationConstant() const override { return -logConstant_; }
+  double logNormalizationConstant() const override { return logConstant_; }
 
   /**
    * Create a likelihood factor for a hybrid Gaussian conditional,
