@@ -186,7 +186,7 @@ class GTSAM_EXPORT HybridConditional
    * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
    * as the conditionals involved, and leaf values as the error.
    */
-  virtual AlgebraicDecisionTree<Key> errorTree(
+  AlgebraicDecisionTree<Key> errorTree(
       const VectorValues& values) const override;
 
   /// Return the log-probability (or density) of the underlying conditional.

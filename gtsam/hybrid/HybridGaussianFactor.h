@@ -148,7 +148,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
    * as the factors involved, and leaf values as the error.
    */
-  virtual AlgebraicDecisionTree<Key> errorTree(
+  AlgebraicDecisionTree<Key> errorTree(
       const VectorValues &continuousValues) const override;
 
   /**
