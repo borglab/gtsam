@@ -90,8 +90,8 @@ class TestHybridBayesNet(GtsamTestCase):
         self.assertTrue(probability >= 0.0)
         logProb = conditional.logProbability(values)
         self.assertAlmostEqual(probability, np.exp(logProb))
-        expected = conditional.logNormalizationConstant() - \
-            conditional.error(values)
+        expected = -(conditional.logNormalizationConstant() + \
+            conditional.error(values))
         self.assertAlmostEqual(logProb, expected)
 
 
