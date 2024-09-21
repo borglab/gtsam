@@ -175,43 +175,6 @@ class GTSAM_EXPORT HybridGaussianConditional
       const VectorValues &continuousValues) const;
 
   /**
-   * @brief Compute the error of this hybrid Gaussian conditional.
-   *
-   * This requires some care, as different components may have
-   * different normalization constants. Let's consider p(x|y,m), where m is
-   * discrete. We need the error to satisfy the invariant:
-   *
-   *    error(x;y,m) = K - log(probability(x;y,m))
-   *
-   * For all x,y,m. But note that K, the (log) normalization constant defined
-   * in Conditional.h, should not depend on x, y, or m, only on the parameters
-   * of the density. Hence, we delegate to the underlying Gaussian
-   * conditionals, indexed by m, which do satisfy:
-   *
-   *    log(probability_m(x;y)) = K_m - error_m(x;y)
-   *
-   * We resolve by having K == max(K_m) and
-   *
-   *    error(x;y,m) = error_m(x;y) + K - K_m
-   *
-   * which also makes error(x;y,m) >= 0 for all x,y,m.
-   *
-   * @param values Continuous values and discrete assignment.
-   * @return double
-   */
-  double error(const HybridValues &values) const override;
-
-  /**
-   * @brief Compute error of the HybridGaussianConditional as a tree.
-   *
-   * @param continuousValues The continuous VectorValues.
-   * @return AlgebraicDecisionTree<Key> A decision tree on the discrete keys
-   * only, with the leaf values as the error for each assignment.
-   */
-  virtual AlgebraicDecisionTree<Key> errorTree(
-      const VectorValues &continuousValues) const override;
-
-  /**
    * @brief Compute the logProbability of this hybrid Gaussian conditional.
    *
    * @param values Continuous values and discrete assignment.
@@ -240,10 +203,6 @@ class GTSAM_EXPORT HybridGaussianConditional
  private:
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;
-
-  /// Helper method to compute the error of a conditional.
-  double conditionalError(const GaussianConditional::shared_ptr &conditional,
-                          const VectorValues &continuousValues) const;
 
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
