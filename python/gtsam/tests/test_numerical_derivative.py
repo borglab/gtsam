@@ -5,7 +5,7 @@ All Rights Reserved
 
 See LICENSE for the license information
 
-Unit tests for IMU testing scenarios.
+Unit tests for IMU numerical_derivative module.
 Author: Frank Dellaert & Joel Truher
 """
 # pylint: disable=invalid-name, no-name-in-module

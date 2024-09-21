@@ -5,7 +5,7 @@ All Rights Reserved
 
 See LICENSE for the license information
 
-TestCase class with GTSAM assert utils.
+Numerical derivative functions.
 Author: Joel Truher & Frank Dellaert
 """
 
@@ -36,15 +36,15 @@ def local(a: Y, b: Y) -> np.ndarray:
     if isinstance(a, np.ndarray):
         return b - a
     if isinstance(a, (float, int)):
-        return np.array([[b - a]])  # type:ignore
+        return np.ndarray([[b - a]])  # type:ignore
     # there is no common superclass for Y
     return a.localCoordinates(b)  # type:ignore
 
 
-def retract(a, b):
+def retract(a, xi: np.ndarray):
     if isinstance(a, (np.ndarray, float, int)):
-        return a + b
-    return a.retract(b)
+        return a + xi
+    return a.retract(xi)
 
 
 def numericalDerivative11(h: Callable[[X], Y], x: X, delta=1e-5) -> np.ndarray:
@@ -68,85 +68,85 @@ def numericalDerivative11(h: Callable[[X], Y], x: X, delta=1e-5) -> np.ndarray:
 
 def numericalDerivative21(
     h: Callable[[X1, X2], Y], x1: X1, x2: X2, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x, x2), x1, delta)
 
 
 def numericalDerivative22(
     h: Callable[[X1, X2], Y], x1: X1, x2: X2, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x), x2, delta)
 
 
 def numericalDerivative31(
     h: Callable[[X1, X2, X3], Y], x1: X1, x2: X2, x3: X3, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x, x2, x3), x1, delta)
 
 
 def numericalDerivative32(
     h: Callable[[X1, X2, X3], Y], x1: X1, x2: X2, x3: X3, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x, x3), x2, delta)
 
 
 def numericalDerivative33(
     h: Callable[[X1, X2, X3], Y], x1: X1, x2: X2, x3: X3, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x2, x), x3, delta)
 
 
 def numericalDerivative41(
     h: Callable[[X1, X2, X3, X4], Y], x1: X1, x2: X2, x3: X3, x4: X4, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x, x2, x3, x4), x1, delta)
 
 
 def numericalDerivative42(
     h: Callable[[X1, X2, X3, X4], Y], x1: X1, x2: X2, x3: X3, x4: X4, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x, x3, x4), x2, delta)
 
 
 def numericalDerivative43(
     h: Callable[[X1, X2, X3, X4], Y], x1: X1, x2: X2, x3: X3, x4: X4, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x2, x, x4), x3, delta)
 
 
 def numericalDerivative44(
     h: Callable[[X1, X2, X3, X4], Y], x1: X1, x2: X2, x3: X3, x4: X4, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x2, x3, x), x4, delta)
 
 
 def numericalDerivative51(
     h: Callable[[X1, X2, X3, X4, X5], Y], x1: X1, x2: X2, x3: X3, x4: X4, x5: X5, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x, x2, x3, x4, x5), x1, delta)
 
 
 def numericalDerivative52(
     h: Callable[[X1, X2, X3, X4, X5], Y], x1: X1, x2: X2, x3: X3, x4: X4, x5: X5, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x, x3, x4, x5), x2, delta)
 
 
 def numericalDerivative53(
     h: Callable[[X1, X2, X3, X4, X5], Y], x1: X1, x2: X2, x3: X3, x4: X4, x5: X5, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x2, x, x4, x5), x3, delta)
 
 
 def numericalDerivative54(
     h: Callable[[X1, X2, X3, X4, X5], Y], x1: X1, x2: X2, x3: X3, x4: X4, x5: X5, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x2, x3, x, x5), x4, delta)
 
 
 def numericalDerivative55(
     h: Callable[[X1, X2, X3, X4, X5], Y], x1: X1, x2: X2, x3: X3, x4: X4, x5: X5, delta=1e-5
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x2, x3, x4, x), x5, delta)
 
 
@@ -159,7 +159,7 @@ def numericalDerivative61(
     x5: X5,
     x6: X6,
     delta=1e-5,
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x, x2, x3, x4, x5, x6), x1, delta)
 
 
@@ -172,7 +172,7 @@ def numericalDerivative62(
     x5: X5,
     x6: X6,
     delta=1e-5,
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x, x3, x4, x5, x6), x2, delta)
 
 
@@ -185,7 +185,7 @@ def numericalDerivative63(
     x5: X5,
     x6: X6,
     delta=1e-5,
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x2, x, x4, x5, x6), x3, delta)
 
 
@@ -198,7 +198,7 @@ def numericalDerivative64(
     x5: X5,
     x6: X6,
     delta=1e-5,
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x2, x3, x, x5, x6), x4, delta)
 
 
@@ -211,7 +211,7 @@ def numericalDerivative65(
     x5: X5,
     x6: X6,
     delta=1e-5,
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x2, x3, x4, x, x6), x5, delta)
 
 
@@ -224,5 +224,5 @@ def numericalDerivative66(
     x5: X5,
     x6: X6,
     delta=1e-5,
-) -> np.array:
+) -> np.ndarray:
     return numericalDerivative11(lambda x: h(x1, x2, x3, x4, x5, x), x6, delta)
