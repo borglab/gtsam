@@ -55,7 +55,7 @@ TEST(HybridGaussianFactor, Constructor) {
 }
 
 /* ************************************************************************* */
-namespace testA {
+namespace test_constructor {
 DiscreteKey m1(1, 2);
 
 auto A1 = Matrix::Zero(2, 1);
@@ -64,12 +64,12 @@ auto b = Matrix::Zero(2, 1);
 
 auto f10 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
 auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
-}  // namespace testA
+}  // namespace test_constructor
 
 /* ************************************************************************* */
 // Test simple to complex constructors...
 TEST(HybridGaussianFactor, ConstructorVariants) {
-  using namespace testA;
+  using namespace test_constructor;
   HybridGaussianFactor fromFactors({X(1), X(2)}, m1, {f10, f11});
 
   std::vector<GaussianFactorValuePair> pairs{{f10, 0.0}, {f11, 0.0}};
@@ -84,7 +84,7 @@ TEST(HybridGaussianFactor, ConstructorVariants) {
 /* ************************************************************************* */
 // "Add" two hybrid factors together.
 TEST(HybridGaussianFactor, Sum) {
-  using namespace testA;
+  using namespace test_constructor;
   DiscreteKey m2(2, 3);
 
   auto A3 = Matrix::Zero(2, 3);
@@ -121,7 +121,7 @@ TEST(HybridGaussianFactor, Sum) {
 
 /* ************************************************************************* */
 TEST(HybridGaussianFactor, Printing) {
-  using namespace testA;
+  using namespace test_constructor;
   HybridGaussianFactor hybridFactor({X(1), X(2)}, m1, {f10, f11});
 
   std::string expected =
