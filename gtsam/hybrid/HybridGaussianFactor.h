@@ -89,31 +89,48 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   HybridGaussianFactor() = default;
 
   /**
-   * @brief Construct a new hybrid Gaussian factor.
-   *
-   * @param continuousKeys A vector of keys representing continuous variables.
-   * @param discreteKeys A vector of keys representing discrete variables and
-   * their cardinalities.
-   * @param factors The decision tree of Gaussian factors and arbitrary scalars.
-   */
-  HybridGaussianFactor(const KeyVector &continuousKeys,
-                       const DiscreteKeys &discreteKeys,
-                       const FactorValuePairs &factors);
-
-  /**
-   * @brief Construct a new HybridGaussianFactor object using a vector of
-   * GaussianFactor shared pointers.
+   * @brief Construct a new HybridGaussianFactor on a single discrete key,
+   * providing the factors for each mode m as a vector of factors ϕ_m(x).
+   * The value ϕ(x,m) for the factor is simply ϕ_m(x).
    *
    * @param continuousKeys Vector of keys for continuous factors.
-   * @param discreteKey The discrete key to index each component.
-   * @param factors Vector of gaussian factor shared pointers
-   *  and arbitrary scalars. Same size as the cardinality of discreteKey.
+   * @param discreteKey The discrete key for the "mode", indexing components.
+   * @param factors Vector of gaussian factors, one for each mode.
+   */
+  HybridGaussianFactor(const KeyVector &continuousKeys,
+                       const DiscreteKey &discreteKey,
+                       const std::vector<GaussianFactor::shared_ptr> &factors)
+      : Base(continuousKeys, {discreteKey}), factors_({discreteKey}, factors) {}
+
+  /**
+   * @brief Construct a new HybridGaussianFactor on a single discrete key,
+   * including a scalar error value for each mode m. The factors and scalars are
+   * provided as a vector of pairs (ϕ_m(x), E_m).
+   * The value ϕ(x,m) for the factor is now ϕ_m(x) + E_m.
+   *
+   * @param continuousKeys Vector of keys for continuous factors.
+   * @param discreteKey The discrete key for the "mode", indexing components.
+   * @param factors Vector of gaussian factor-scalar pairs, one per mode.
    */
   HybridGaussianFactor(const KeyVector &continuousKeys,
                        const DiscreteKey &discreteKey,
                        const std::vector<GaussianFactorValuePair> &factors)
       : HybridGaussianFactor(continuousKeys, {discreteKey},
                              FactorValuePairs({discreteKey}, factors)) {}
+
+  /**
+   * @brief Construct a new HybridGaussianFactor on a several discrete keys M,
+   * including a scalar error value for each assignment m. The factors and
+   * scalars are provided as a DecisionTree<Key> of pairs (ϕ_M(x), E_M).
+   * The value ϕ(x,M) for the factor is again ϕ_m(x) + E_m.
+   *
+   * @param continuousKeys A vector of keys representing continuous variables.
+   * @param discreteKeys Discrete variables and their cardinalities.
+   * @param factors The decision tree of Gaussian factor/scalar pairs.
+   */
+  HybridGaussianFactor(const KeyVector &continuousKeys,
+                       const DiscreteKeys &discreteKeys,
+                       const FactorValuePairs &factors);
 
   /// @}
   /// @name Testable
