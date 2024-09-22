@@ -51,7 +51,7 @@ using symbol_shorthand::X;
  * Test that any linearizedFactorGraph gaussian factors are appended to the
  * existing gaussian factor graph in the hybrid factor graph.
  */
-TEST(HybridFactorGraph, GaussianFactorGraph) {
+TEST(HybridNonlinearFactorGraph, GaussianFactorGraph) {
   HybridNonlinearFactorGraph fg;
 
   // Add a simple prior factor to the nonlinear factor graph
@@ -181,7 +181,7 @@ TEST(HybridGaussianFactorGraph, HybridNonlinearFactor) {
 /*****************************************************************************
  * Test push_back on HFG makes the correct distinction.
  */
-TEST(HybridFactorGraph, PushBack) {
+TEST(HybridNonlinearFactorGraph, PushBack) {
   HybridNonlinearFactorGraph fg;
 
   auto nonlinearFactor = std::make_shared<BetweenFactor<double>>();
@@ -240,7 +240,7 @@ TEST(HybridFactorGraph, PushBack) {
 /****************************************************************************
  * Test construction of switching-like hybrid factor graph.
  */
-TEST(HybridFactorGraph, Switching) {
+TEST(HybridNonlinearFactorGraph, Switching) {
   Switching self(3);
 
   EXPECT_LONGS_EQUAL(7, self.nonlinearFactorGraph.size());
@@ -250,7 +250,7 @@ TEST(HybridFactorGraph, Switching) {
 /****************************************************************************
  * Test linearization on a switching-like hybrid factor graph.
  */
-TEST(HybridFactorGraph, Linearization) {
+TEST(HybridNonlinearFactorGraph, Linearization) {
   Switching self(3);
 
   // Linearize here:
@@ -263,7 +263,7 @@ TEST(HybridFactorGraph, Linearization) {
 /****************************************************************************
  * Test elimination tree construction
  */
-TEST(HybridFactorGraph, EliminationTree) {
+TEST(HybridNonlinearFactorGraph, EliminationTree) {
   Switching self(3);
 
   // Create ordering.
@@ -372,7 +372,7 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
 /****************************************************************************
  * Test partial elimination
  */
-TEST(HybridFactorGraph, Partial_Elimination) {
+TEST(HybridNonlinearFactorGraph, Partial_Elimination) {
   Switching self(3);
 
   auto linearizedFactorGraph = self.linearizedFactorGraph;
@@ -401,7 +401,39 @@ TEST(HybridFactorGraph, Partial_Elimination) {
   EXPECT(remainingFactorGraph->at(2)->keys() == KeyVector({M(0), M(1)}));
 }
 
-TEST(HybridFactorGraph, PrintErrors) {
+/* ****************************************************************************/
+TEST(HybridNonlinearFactorGraph, Error) {
+  Switching self(3);
+  HybridNonlinearFactorGraph fg = self.nonlinearFactorGraph;
+
+  {
+    HybridValues values(VectorValues(), DiscreteValues{{M(0), 0}, {M(1), 0}},
+                        self.linearizationPoint);
+    // regression
+    EXPECT_DOUBLES_EQUAL(152.791759469, fg.error(values), 1e-9);
+  }
+  {
+    HybridValues values(VectorValues(), DiscreteValues{{M(0), 0}, {M(1), 1}},
+                        self.linearizationPoint);
+    // regression
+    EXPECT_DOUBLES_EQUAL(151.598612289, fg.error(values), 1e-9);
+  }
+  {
+    HybridValues values(VectorValues(), DiscreteValues{{M(0), 1}, {M(1), 0}},
+                        self.linearizationPoint);
+    // regression
+    EXPECT_DOUBLES_EQUAL(151.703972804, fg.error(values), 1e-9);
+  }
+  {
+    HybridValues values(VectorValues(), DiscreteValues{{M(0), 1}, {M(1), 1}},
+                        self.linearizationPoint);
+    // regression
+    EXPECT_DOUBLES_EQUAL(151.609437912, fg.error(values), 1e-9);
+  }
+}
+
+/* ****************************************************************************/
+TEST(HybridNonlinearFactorGraph, PrintErrors) {
   Switching self(3);
 
   // Get nonlinear factor graph and add linear factors to be holistic
@@ -424,7 +456,7 @@ TEST(HybridFactorGraph, PrintErrors) {
 /****************************************************************************
  * Test full elimination
  */
-TEST(HybridFactorGraph, Full_Elimination) {
+TEST(HybridNonlinearFactorGraph, Full_Elimination) {
   Switching self(3);
 
   auto linearizedFactorGraph = self.linearizedFactorGraph;
@@ -492,7 +524,7 @@ TEST(HybridFactorGraph, Full_Elimination) {
 /****************************************************************************
  * Test printing
  */
-TEST(HybridFactorGraph, Printing) {
+TEST(HybridNonlinearFactorGraph, Printing) {
   Switching self(3);
 
   auto linearizedFactorGraph = self.linearizedFactorGraph;
@@ -784,7 +816,7 @@ conditional 2: Hybrid  P( x2 | m0 m1)
  * The issue arises if we eliminate a landmark variable first since it is not
  * connected to a HybridFactor.
  */
-TEST(HybridFactorGraph, DefaultDecisionTree) {
+TEST(HybridNonlinearFactorGraph, DefaultDecisionTree) {
   HybridNonlinearFactorGraph fg;
 
   // Add a prior on pose x0 at the origin.

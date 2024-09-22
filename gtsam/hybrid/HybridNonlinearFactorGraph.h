@@ -86,6 +86,10 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
    */
   std::shared_ptr<HybridGaussianFactorGraph> linearize(
       const Values& continuousValues) const;
+
+  /// Expose error(const HybridValues&) method.
+  using Base::error;
+
   /// @}
 };
 

@@ -166,7 +166,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * as the factors involved, and leaf values as the error.
    */
   AlgebraicDecisionTree<Key> errorTree(
-      const VectorValues &continuousValues) const;
+      const VectorValues &continuousValues) const override;
 
   /**
    * @brief Compute the log-likelihood, including the log-normalizing constant.
@@ -186,6 +186,10 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// @}
 
  private:
+  /// Helper method to compute the error of a component.
+  double potentiallyPrunedComponentError(
+      const sharedFactor &gf, const VectorValues &continuousValues) const;
+
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;

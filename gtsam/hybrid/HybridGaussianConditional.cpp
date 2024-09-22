@@ -323,40 +323,6 @@ AlgebraicDecisionTree<Key> HybridGaussianConditional::logProbability(
   return DecisionTree<Key, double>(conditionals_, probFunc);
 }
 
-/* ************************************************************************* */
-double HybridGaussianConditional::conditionalError(
-    const GaussianConditional::shared_ptr &conditional,
-    const VectorValues &continuousValues) const {
-  // Check if valid pointer
-  if (conditional) {
-    return conditional->error(continuousValues) +  //
-           -logConstant_ - conditional->logNormalizationConstant();
-  } else {
-    // If not valid, pointer, it means this conditional was pruned,
-    // so we return maximum error.
-    // This way the negative exponential will give
-    // a probability value close to 0.0.
-    return std::numeric_limits<double>::max();
-  }
-}
-
-/* *******************************************************************************/
-AlgebraicDecisionTree<Key> HybridGaussianConditional::errorTree(
-    const VectorValues &continuousValues) const {
-  auto errorFunc = [&](const GaussianConditional::shared_ptr &conditional) {
-    return conditionalError(conditional, continuousValues);
-  };
-  DecisionTree<Key, double> error_tree(conditionals_, errorFunc);
-  return error_tree;
-}
-
-/* *******************************************************************************/
-double HybridGaussianConditional::error(const HybridValues &values) const {
-  // Directly index to get the conditional, no need to build the whole tree.
-  auto conditional = conditionals_(values.discrete());
-  return conditionalError(conditional, values.continuous());
-}
-
 /* *******************************************************************************/
 double HybridGaussianConditional::logProbability(
     const HybridValues &values) const {

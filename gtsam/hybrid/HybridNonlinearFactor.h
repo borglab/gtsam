@@ -74,6 +74,13 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
   /// Decision tree of Gaussian factors indexed by discrete keys.
   Factors factors_;
 
+  /// HybridFactor method implementation. Should not be used.
+  AlgebraicDecisionTree<Key> errorTree(
+      const VectorValues& continuousValues) const override {
+    throw std::runtime_error(
+        "HybridNonlinearFactor::error does not take VectorValues.");
+  }
+
  public:
   HybridNonlinearFactor() = default;
 
