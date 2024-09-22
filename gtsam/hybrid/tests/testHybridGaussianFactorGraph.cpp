@@ -707,6 +707,55 @@ TEST(HybridGaussianFactorGraph, ErrorTreeWithConditional) {
 }
 
 /* ****************************************************************************/
+// Test hybrid gaussian factor graph errorTree during
+// incremental operation
+TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
+  Switching s(4);
+
+  HybridGaussianFactorGraph graph;
+  graph.push_back(s.linearizedFactorGraph.at(0));  // f(X0)
+  graph.push_back(s.linearizedFactorGraph.at(1));  // f(X0, X1, M0)
+  graph.push_back(s.linearizedFactorGraph.at(2));  // f(X1, X2, M1)
+  graph.push_back(s.linearizedFactorGraph.at(4));  // f(X1)
+  graph.push_back(s.linearizedFactorGraph.at(5));  // f(X2)
+  graph.push_back(s.linearizedFactorGraph.at(7));  // f(M0)
+  graph.push_back(s.linearizedFactorGraph.at(8));  // f(M0, M1)
+
+  HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
+  EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
+
+  HybridValues delta = hybridBayesNet->optimize();
+  auto error_tree = graph.errorTree(delta.continuous());
+
+  std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
+  std::vector<double> leaves = {0.99985581, 0.4902432, 0.51936941,
+                                0.0097568009};
+  AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
+
+  // regression
+  EXPECT(assert_equal(expected_error, error_tree, 1e-7));
+
+  graph = HybridGaussianFactorGraph();
+  graph.push_back(*hybridBayesNet);
+  graph.push_back(s.linearizedFactorGraph.at(3));  // f(X2, X3, M2)
+  graph.push_back(s.linearizedFactorGraph.at(6));  // f(X3)
+
+  hybridBayesNet = graph.eliminateSequential();
+  EXPECT_LONGS_EQUAL(7, hybridBayesNet->size());
+
+  delta = hybridBayesNet->optimize();
+  auto error_tree2 = graph.errorTree(delta.continuous());
+
+  discrete_keys = {{M(0), 2}, {M(1), 2}, {M(2), 2}};
+  leaves = {0.50985198, 0.0097577296, 0.50009425, 0,
+            0.52922138, 0.029127133,  0.50985105, 0.0097567964};
+  AlgebraicDecisionTree<Key> expected_error2(discrete_keys, leaves);
+
+  // regression
+  EXPECT(assert_equal(expected_error, error_tree, 1e-7));
+}
+
+/* ****************************************************************************/
 // Check that assembleGraphTree assembles Gaussian factor graphs for each
 // assignment.
 TEST(HybridGaussianFactorGraph, assembleGraphTree) {
