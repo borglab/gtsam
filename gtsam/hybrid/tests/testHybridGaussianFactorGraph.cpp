@@ -114,6 +114,14 @@ TEST(HybridGaussianFactorGraph, EliminateMultifrontal) {
   EXPECT_LONGS_EQUAL(result.first->size(), 1);
   EXPECT_LONGS_EQUAL(result.second->size(), 1);
 }
+/* ************************************************************************* */
+
+namespace two {
+std::vector<GaussianFactor::shared_ptr> components(Key key) {
+  return {std::make_shared<JacobianFactor>(key, I_3x3, Z_3x1),
+          std::make_shared<JacobianFactor>(key, I_3x3, Vector3::Ones())};
+}
+}  // namespace two
 
 /* ************************************************************************* */
 TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
@@ -127,10 +135,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
 
   // Add a hybrid gaussian factor ϕ(x1, c1)
   DiscreteKey m1(M(1), 2);
-  DecisionTree<Key, GaussianFactorValuePair> dt(
-      M(1), {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},
-      {std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()), 0.0});
-  hfg.add(HybridGaussianFactor({X(1)}, {m1}, dt));
+  hfg.add(HybridGaussianFactor({X(1)}, m1, two::components(X(1))));
 
   auto result = hfg.eliminateSequential();
 
@@ -153,10 +158,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
   // Add factor between x0 and x1
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  std::vector<GaussianFactorValuePair> factors = {
-      {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},
-      {std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()), 0.0}};
-  hfg.add(HybridGaussianFactor({X(1)}, {m1}, factors));
+  hfg.add(HybridGaussianFactor({X(1)}, m1, two::components(X(1))));
 
   // Discrete probability table for c1
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
@@ -178,10 +180,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  std::vector<GaussianFactorValuePair> factors = {
-      {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},
-      {std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()), 0.0}};
-  hfg.add(HybridGaussianFactor({X(1)}, {M(1), 2}, factors));
+  hfg.add(HybridGaussianFactor({X(1)}, {M(1), 2}, two::components(X(1))));
 
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
   // TODO(Varun) Adding extra discrete variable not connected to continuous
@@ -207,13 +206,8 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
   // Factor between x0-x1
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  // Decision tree with different modes on x1
-  DecisionTree<Key, GaussianFactorValuePair> dt(
-      M(1), {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},
-      {std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()), 0.0});
-
   // Hybrid factor P(x1|c1)
-  hfg.add(HybridGaussianFactor({X(1)}, {m}, dt));
+  hfg.add(HybridGaussianFactor({X(1)}, m, two::components(X(1))));
   // Prior factor on c1
   hfg.add(DecisionTreeFactor(m, {2, 8}));
 
@@ -238,16 +232,8 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
 
   {
-    std::vector<GaussianFactorValuePair> factors = {
-        {std::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1), 0.0},
-        {std::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones()), 0.0}};
-    hfg.add(HybridGaussianFactor({X(0)}, {M(0), 2}, factors));
-
-    DecisionTree<Key, GaussianFactorValuePair> dt1(
-        M(1), {std::make_shared<JacobianFactor>(X(2), I_3x3, Z_3x1), 0.0},
-        {std::make_shared<JacobianFactor>(X(2), I_3x3, Vector3::Ones()), 0.0});
-
-    hfg.add(HybridGaussianFactor({X(2)}, {{M(1), 2}}, dt1));
+    hfg.add(HybridGaussianFactor({X(0)}, {M(0), 2}, two::components(X(0))));
+    hfg.add(HybridGaussianFactor({X(2)}, {M(1), 2}, two::components(X(2))));
   }
 
   hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
@@ -256,17 +242,8 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(4), I_3x3, X(5), -I_3x3, Z_3x1));
 
   {
-    DecisionTree<Key, GaussianFactorValuePair> dt(
-        M(3), {std::make_shared<JacobianFactor>(X(3), I_3x3, Z_3x1), 0.0},
-        {std::make_shared<JacobianFactor>(X(3), I_3x3, Vector3::Ones()), 0.0});
-
-    hfg.add(HybridGaussianFactor({X(3)}, {{M(3), 2}}, dt));
-
-    DecisionTree<Key, GaussianFactorValuePair> dt1(
-        M(2), {std::make_shared<JacobianFactor>(X(5), I_3x3, Z_3x1), 0.0},
-        {std::make_shared<JacobianFactor>(X(5), I_3x3, Vector3::Ones()), 0.0});
-
-    hfg.add(HybridGaussianFactor({X(5)}, {{M(2), 2}}, dt1));
+    hfg.add(HybridGaussianFactor({X(3)}, {M(3), 2}, two::components(X(3))));
+    hfg.add(HybridGaussianFactor({X(5)}, {M(2), 2}, two::components(X(5))));
   }
 
   auto ordering_full =
@@ -279,7 +256,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   EXPECT_LONGS_EQUAL(0, remaining->size());
 
   /*
-  (Fan) Explanation: the Junction tree will need to reeliminate to get to the
+  (Fan) Explanation: the Junction tree will need to re-eliminate to get to the
   marginal on X(1), which is not possible because it involves eliminating
   discrete before continuous. The solution to this, however, is in Murphy02.
   TLDR is that this is 1. expensive and 2. inexact. nevertheless it is doable.
@@ -551,12 +528,7 @@ TEST(HybridGaussianFactorGraph, optimize) {
 
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
-
-  DecisionTree<Key, GaussianFactorValuePair> dt(
-      C(1), {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},
-      {std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()), 0.0});
-
-  hfg.add(HybridGaussianFactor({X(1)}, {c1}, dt));
+  hfg.add(HybridGaussianFactor({X(1)}, c1, two::components(X(1))));
 
   auto result = hfg.eliminateSequential();
 
@@ -642,13 +614,13 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
   // regression
   EXPECT(assert_equal(expected_error, error_tree, 1e-7));
 
-  auto probs = graph.probPrime(delta.continuous());
+  auto probabilities = graph.probPrime(delta.continuous());
   std::vector<double> prob_leaves = {0.36793249, 0.61247742, 0.59489556,
                                      0.99029064};
-  AlgebraicDecisionTree<Key> expected_probs(discrete_keys, prob_leaves);
+  AlgebraicDecisionTree<Key> expected_probabilities(discrete_keys, prob_leaves);
 
   // regression
-  EXPECT(assert_equal(expected_probs, probs, 1e-7));
+  EXPECT(assert_equal(expected_probabilities, probabilities, 1e-7));
 }
 
 /* ****************************************************************************/

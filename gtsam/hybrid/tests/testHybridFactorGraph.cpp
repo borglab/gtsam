@@ -52,10 +52,10 @@ TEST(HybridFactorGraph, Keys) {
 
   // Add a hybrid Gaussian factor ϕ(x1, c1)
   DiscreteKey m1(M(1), 2);
-  DecisionTree<Key, GaussianFactorValuePair> dt(
-      M(1), {std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1), 0.0},
-      {std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()), 0.0});
-  hfg.add(HybridGaussianFactor({X(1)}, {m1}, dt));
+  std::vector<GaussianFactor::shared_ptr> components{
+      std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
+      std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())};
+  hfg.add(HybridGaussianFactor({X(1)}, m1, components));
 
   KeySet expected_continuous{X(0), X(1)};
   EXPECT(

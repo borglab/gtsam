@@ -55,31 +55,48 @@ TEST(HybridGaussianFactor, Constructor) {
 }
 
 /* ************************************************************************* */
+namespace test_constructor {
+DiscreteKey m1(1, 2);
+
+auto A1 = Matrix::Zero(2, 1);
+auto A2 = Matrix::Zero(2, 2);
+auto b = Matrix::Zero(2, 1);
+
+auto f10 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
+auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
+}  // namespace test_constructor
+
+/* ************************************************************************* */
+// Test simple to complex constructors...
+TEST(HybridGaussianFactor, ConstructorVariants) {
+  using namespace test_constructor;
+  HybridGaussianFactor fromFactors({X(1), X(2)}, m1, {f10, f11});
+
+  std::vector<GaussianFactorValuePair> pairs{{f10, 0.0}, {f11, 0.0}};
+  HybridGaussianFactor fromPairs({X(1), X(2)}, {m1}, pairs);
+  assert_equal(fromFactors, fromPairs);
+
+  HybridGaussianFactor::FactorValuePairs decisionTree({m1}, pairs);
+  HybridGaussianFactor fromDecisionTree({X(1), X(2)}, {m1}, decisionTree);
+  assert_equal(fromDecisionTree, fromPairs);
+}
+
+/* ************************************************************************* */
 // "Add" two hybrid factors together.
 TEST(HybridGaussianFactor, Sum) {
-  DiscreteKey m1(1, 2), m2(2, 3);
+  using namespace test_constructor;
+  DiscreteKey m2(2, 3);
 
-  auto A1 = Matrix::Zero(2, 1);
-  auto A2 = Matrix::Zero(2, 2);
   auto A3 = Matrix::Zero(2, 3);
-  auto b = Matrix::Zero(2, 1);
-  Vector2 sigmas;
-  sigmas << 1, 2;
-
-  auto f10 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
-  auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
   auto f20 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
   auto f21 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
   auto f22 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
-  std::vector<GaussianFactorValuePair> factorsA{{f10, 0.0}, {f11, 0.0}};
-  std::vector<GaussianFactorValuePair> factorsB{
-      {f20, 0.0}, {f21, 0.0}, {f22, 0.0}};
 
   // TODO(Frank): why specify keys at all? And: keys in factor should be *all*
   // keys, deviating from Kevin's scheme. Should we index DT on DiscreteKey?
   // Design review!
-  HybridGaussianFactor hybridFactorA({X(1), X(2)}, {m1}, factorsA);
-  HybridGaussianFactor hybridFactorB({X(1), X(3)}, {m2}, factorsB);
+  HybridGaussianFactor hybridFactorA({X(1), X(2)}, m1, {f10, f11});
+  HybridGaussianFactor hybridFactorB({X(1), X(3)}, m2, {f20, f21, f22});
 
   // Check that number of keys is 3
   EXPECT_LONGS_EQUAL(3, hybridFactorA.keys().size());
@@ -104,15 +121,8 @@ TEST(HybridGaussianFactor, Sum) {
 
 /* ************************************************************************* */
 TEST(HybridGaussianFactor, Printing) {
-  DiscreteKey m1(1, 2);
-  auto A1 = Matrix::Zero(2, 1);
-  auto A2 = Matrix::Zero(2, 2);
-  auto b = Matrix::Zero(2, 1);
-  auto f10 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
-  auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
-  std::vector<GaussianFactorValuePair> factors{{f10, 0.0}, {f11, 0.0}};
-
-  HybridGaussianFactor hybridFactor({X(1), X(2)}, {m1}, factors);
+  using namespace test_constructor;
+  HybridGaussianFactor hybridFactor({X(1), X(2)}, m1, {f10, f11});
 
   std::string expected =
       R"(HybridGaussianFactor
@@ -179,9 +189,7 @@ TEST(HybridGaussianFactor, Error) {
 
   auto f0 = std::make_shared<JacobianFactor>(X(1), A01, X(2), A02, b);
   auto f1 = std::make_shared<JacobianFactor>(X(1), A11, X(2), A12, b);
-  std::vector<GaussianFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
-
-  HybridGaussianFactor hybridFactor({X(1), X(2)}, {m1}, factors);
+  HybridGaussianFactor hybridFactor({X(1), X(2)}, m1, {f0, f1});
 
   VectorValues continuousValues;
   continuousValues.insert(X(1), Vector2(0, 0));
