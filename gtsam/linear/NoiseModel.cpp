@@ -255,7 +255,7 @@ double Gaussian::logDeterminant() const {
 }
 
 /* *******************************************************************************/
-double Gaussian::logNormalizationConstant() const {
+double Gaussian::errorConstant() const {
   // log(det(Sigma)) = -2.0 * logDetR
   // which gives neg-log = 0.5*n*log(2*pi) + 0.5*(-2.0 * logDetR())
   //     = 0.5*n*log(2*pi) - (0.5*2.0 * logDetR())
@@ -266,6 +266,10 @@ double Gaussian::logNormalizationConstant() const {
   return 0.5 * n * log2pi - logDetR();
 }
 
+/* *******************************************************************************/
+double Gaussian::logNormalizationConstant() const {
+  return -errorConstant();
+}
 
 /* ************************************************************************* */
 // Diagonal

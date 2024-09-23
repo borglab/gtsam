@@ -247,14 +247,15 @@ namespace gtsam {
     /*
     normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
     logConstant = -log(normalizationConstant)
-      = 0.5 * n*log(2*pi) + 0.5 * log(det(Sigma))
-    
-    log(det(Sigma)) = -2.0 * logDeterminant()
-    thus, logConstant = 0.5*n*log(2*pi) - logDeterminant()
+      = -0.5 * n*log(2*pi) - 0.5 * log(det(Sigma))
 
-    BayesNet logConstant = sum(0.5*n_i*log(2*pi) - logDeterminant_i())
-    = sum(0.5*n_i*log(2*pi)) - sum(logDeterminant_i())
-    = sum(0.5*n_i*log(2*pi)) - bn->logDeterminant()
+    log(det(Sigma)) = -2.0 * logDeterminant()
+    thus, logConstant = -0.5*n*log(2*pi) + logDeterminant()
+
+    BayesNet logConstant = sum(-0.5*n_i*log(2*pi) + logDeterminant_i())
+    = sum(-0.5*n_i*log(2*pi)) + sum(logDeterminant_i())
+    = sum(-0.5*n_i*log(2*pi)) + bn->logDeterminant()
+    = sum(logNormalizationConstant_i)
     */
     double logNormConst = 0.0;
     for (const sharedConditional& cg : *this) {

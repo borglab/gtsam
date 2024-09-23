@@ -193,11 +193,12 @@ class GTSAM_EXPORT HybridConditional
   double logProbability(const HybridValues& values) const override;
 
   /**
-   * Return the log normalization constant.
+   * Return the negative log of the normalization constant.
+   * This shows up in the error as -(error(x) + errorConstant)
    * Note this is 0.0 for discrete and hybrid conditionals, but depends
    * on the continuous parameters for Gaussian conditionals.
    */
-  double logNormalizationConstant() const override;
+  double errorConstant() const override;
 
   /// Return the probability (or density) of the underlying conditional.
   double evaluate(const HybridValues& values) const override;

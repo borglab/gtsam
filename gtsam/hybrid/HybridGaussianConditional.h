@@ -150,9 +150,15 @@ class GTSAM_EXPORT HybridGaussianConditional
   /// Returns the continuous keys among the parents.
   KeyVector continuousParents() const;
 
-  /// The log normalization constant is max of the the individual
-  /// log-normalization constants.
-  double logNormalizationConstant() const override { return logConstant_; }
+  /**
+   * @brief Return log normalization constant in negative log space.
+   *
+   * The log normalization constant is the max of the individual
+   * log-normalization constants.
+   *
+   * @return double
+   */
+  inline double errorConstant() const override { return logConstant_; }
 
   /**
    * Create a likelihood factor for a hybrid Gaussian conditional,

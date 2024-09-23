@@ -164,9 +164,16 @@ namespace gtsam {
     }
 
     /**
-     * All conditional types need to implement a
-     * (negative) log normalization constant
-     * to make it such that error>=0.
+     * @brief All conditional types need to implement this as the negative log
+     * of the normalization constant.
+     *
+     * @return double
+     */
+    virtual double errorConstant() const;
+
+    /**
+     * All conditional types need to implement a log normalization constant to
+     * make it such that error>=0.
      */
     virtual double logNormalizationConstant() const;
 

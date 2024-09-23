@@ -182,7 +182,7 @@ namespace gtsam {
   /* ************************************************************************* */
   //  normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
   //  neg-log = 0.5 * n*log(2*pi) + 0.5 * log det(Sigma)
-  double GaussianConditional::logNormalizationConstant() const {
+  double GaussianConditional::errorConstant() const {
     constexpr double log2pi = 1.8378770664093454835606594728112;
     size_t n = d().size();
     // Sigma = (R'R)^{-1}, det(Sigma) = det((R'R)^{-1}) = det(R'R)^{-1}
@@ -195,10 +195,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  //  density = 1/k exp(-error(x))
-  //  log = -log(k) - error(x)
+  //  density = k exp(-error(x))
+  //  log = log(k) - error(x)
   double GaussianConditional::logProbability(const VectorValues& x) const {
-    return -logNormalizationConstant() - error(x);
+    return logNormalizationConstant() - error(x);
   }
 
   double GaussianConditional::logProbability(const HybridValues& x) const {

@@ -264,11 +264,12 @@ class GTSAM_EXPORT DiscreteConditional
   }
 
   /**
-   * logNormalizationConstant K is just zero, such that
+   * errorConstant is just zero, such that
    * logProbability(x) = log(evaluate(x)) = - error(x)
    * and hence error(x) = - log(evaluate(x)) > 0 for all x.
+   * Thus -log(K) for the normalization constant k is 0.
    */
-  double logNormalizationConstant() const override { return 0.0; }
+  double errorConstant() const override;
 
   /// @}
 

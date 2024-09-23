@@ -36,7 +36,7 @@ HybridGaussianFactor::FactorValuePairs GetFactorValuePairs(
     // Check if conditional is pruned
     if (conditional) {
       // Assign log(\sqrt(|2πΣ|)) = -log(1 / sqrt(|2πΣ|))
-      value = conditional->logNormalizationConstant();
+      value = conditional->errorConstant();
     }
     return {std::dynamic_pointer_cast<GaussianFactor>(conditional), value};
   };
@@ -57,8 +57,8 @@ HybridGaussianConditional::HybridGaussianConditional(
   conditionals_.visit(
       [this](const GaussianConditional::shared_ptr &conditional) {
         if (conditional) {
-          this->logConstant_ = std::min(
-              this->logConstant_, conditional->logNormalizationConstant());
+          this->logConstant_ =
+              std::min(this->logConstant_, conditional->errorConstant());
         }
       });
 }
@@ -84,8 +84,7 @@ GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree()
   auto wrap = [this](const GaussianConditional::shared_ptr &gc) {
     // First check if conditional has not been pruned
     if (gc) {
-      const double Cgm_Kgcm =
-          gc->logNormalizationConstant() - this->logConstant_;
+      const double Cgm_Kgcm = gc->errorConstant() - this->logConstant_;
       // If there is a difference in the covariances, we need to account for
       // that since the error is dependent on the mode.
       if (Cgm_Kgcm > 0.0) {
@@ -215,8 +214,7 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
       [&](const GaussianConditional::shared_ptr &conditional)
           -> GaussianFactorValuePair {
         const auto likelihood_m = conditional->likelihood(given);
-        const double Cgm_Kgcm =
-            conditional->logNormalizationConstant() - logConstant_;
+        const double Cgm_Kgcm = conditional->errorConstant() - logConstant_;
         if (Cgm_Kgcm == 0.0) {
           return {likelihood_m, 0.0};
         } else {
