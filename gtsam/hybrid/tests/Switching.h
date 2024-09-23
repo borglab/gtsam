@@ -161,13 +161,8 @@ struct Switching {
     for (size_t k = 0; k < K - 1; k++) {
       KeyVector keys = {X(k), X(k + 1)};
       auto motion_models = motionModels(k, between_sigma);
-      std::vector<NonlinearFactorValuePair> components;
-      for (auto &&f : motion_models) {
-        components.push_back(
-            {std::dynamic_pointer_cast<NonlinearFactor>(f), 0.0});
-      }
       nonlinearFactorGraph.emplace_shared<HybridNonlinearFactor>(keys, modes[k],
-                                                                 components);
+                                                                 motion_models);
     }
 
     // Add measurement factors
@@ -191,8 +186,8 @@ struct Switching {
   }
 
   // Create motion models for a given time step
-  static std::vector<MotionModel::shared_ptr> motionModels(size_t k,
-                                                           double sigma = 1.0) {
+  static std::vector<NonlinearFactor::shared_ptr> motionModels(
+      size_t k, double sigma = 1.0) {
     auto noise_model = noiseModel::Isotropic::Sigma(1, sigma);
     auto still =
              std::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),

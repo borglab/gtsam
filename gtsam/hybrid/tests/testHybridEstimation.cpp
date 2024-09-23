@@ -435,8 +435,8 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
   const auto one_motion =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
-  std::vector<NonlinearFactorValuePair> components = {{zero_motion, 0.0},
-                                                      {one_motion, 0.0}};
+  std::vector<NonlinearFactor::shared_ptr> components = {zero_motion,
+                                                         one_motion};
   nfg.emplace_shared<HybridNonlinearFactor>(KeyVector{X(0), X(1)}, m,
                                             components);
 
@@ -566,10 +566,8 @@ std::shared_ptr<HybridGaussianFactor> mixedVarianceFactor(
       [](const GaussianFactor::shared_ptr& gf) -> GaussianFactorValuePair {
         return {gf, 0.0};
       });
-  auto updated_gmf = std::make_shared<HybridGaussianFactor>(
+  return std::make_shared<HybridGaussianFactor>(
       gmf->continuousKeys(), gmf->discreteKeys(), updated_pairs);
-
-  return updated_gmf;
 }
 
 /****************************************************************************/
@@ -591,8 +589,7 @@ TEST(HybridEstimation, ModeSelection) {
            X(0), X(1), 0.0, noiseModel::Isotropic::Sigma(d, noise_loose)),
        model1 = std::make_shared<MotionModel>(
            X(0), X(1), 0.0, noiseModel::Isotropic::Sigma(d, noise_tight));
-  std::vector<NonlinearFactorValuePair> components = {{model0, 0.0},
-                                                      {model1, 0.0}};
+  std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
 
   KeyVector keys = {X(0), X(1)};
   DiscreteKey modes(M(0), 2);
@@ -688,8 +685,7 @@ TEST(HybridEstimation, ModeSelection2) {
            X(0), X(1), Z_3x1, noiseModel::Isotropic::Sigma(d, noise_loose)),
        model1 = std::make_shared<BetweenFactor<Vector3>>(
            X(0), X(1), Z_3x1, noiseModel::Isotropic::Sigma(d, noise_tight));
-  std::vector<NonlinearFactorValuePair> components = {{model0, 0.0},
-                                                      {model1, 0.0}};
+  std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
 
   KeyVector keys = {X(0), X(1)};
   DiscreteKey modes(M(0), 2);

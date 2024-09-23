@@ -115,35 +115,40 @@ TEST(HybridNonlinearFactorGraph, Resize) {
   EXPECT_LONGS_EQUAL(fg.size(), 0);
 }
 
+/***************************************************************************/
+namespace test_motion {
+KeyVector contKeys = {X(0), X(1)};
+gtsam::DiscreteKey m1(M(1), 2);
+auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
+std::vector<NonlinearFactor::shared_ptr> components = {
+    std::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
+    std::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model)};
+}  // namespace test_motion
+
 /***************************************************************************
  * Test that the resize method works correctly for a
  * HybridGaussianFactorGraph.
  */
 TEST(HybridGaussianFactorGraph, Resize) {
-  HybridNonlinearFactorGraph nhfg;
+  using namespace test_motion;
+
+  HybridNonlinearFactorGraph hnfg;
   auto nonlinearFactor = std::make_shared<BetweenFactor<double>>(
       X(0), X(1), 0.0, Isotropic::Sigma(1, 0.1));
-  nhfg.push_back(nonlinearFactor);
+  hnfg.push_back(nonlinearFactor);
   auto discreteFactor = std::make_shared<DecisionTreeFactor>();
-  nhfg.push_back(discreteFactor);
+  hnfg.push_back(discreteFactor);
 
-  KeyVector contKeys = {X(0), X(1)};
-  auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
-  auto still = std::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
-       moving = std::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
-
-  std::vector<std::pair<MotionModel::shared_ptr, double>> components = {
-      {still, 0.0}, {moving, 0.0}};
-  auto dcFactor = std::make_shared<HybridNonlinearFactor>(
-      contKeys, gtsam::DiscreteKey(M(1), 2), components);
-  nhfg.push_back(dcFactor);
+  auto dcFactor =
+      std::make_shared<HybridNonlinearFactor>(contKeys, m1, components);
+  hnfg.push_back(dcFactor);
 
   Values linearizationPoint;
   linearizationPoint.insert<double>(X(0), 0);
   linearizationPoint.insert<double>(X(1), 1);
 
   // Generate `HybridGaussianFactorGraph` by linearizing
-  HybridGaussianFactorGraph gfg = *nhfg.linearize(linearizationPoint);
+  HybridGaussianFactorGraph gfg = *hnfg.linearize(linearizationPoint);
 
   EXPECT_LONGS_EQUAL(gfg.size(), 3);
 
@@ -156,26 +161,19 @@ TEST(HybridGaussianFactorGraph, Resize) {
  * continuous keys provided do not match the keys in the factors.
  */
 TEST(HybridGaussianFactorGraph, HybridNonlinearFactor) {
+  using namespace test_motion;
+
   auto nonlinearFactor = std::make_shared<BetweenFactor<double>>(
       X(0), X(1), 0.0, Isotropic::Sigma(1, 0.1));
   auto discreteFactor = std::make_shared<DecisionTreeFactor>();
 
-  auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
-  auto still = std::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
-       moving = std::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
-
-  std::vector<std::pair<MotionModel::shared_ptr, double>> components = {
-      {still, 0.0}, {moving, 0.0}};
-
   // Check for exception when number of continuous keys are under-specified.
-  KeyVector contKeys = {X(0)};
-  THROWS_EXCEPTION(std::make_shared<HybridNonlinearFactor>(
-      contKeys, gtsam::DiscreteKey(M(1), 2), components));
+  THROWS_EXCEPTION(
+      std::make_shared<HybridNonlinearFactor>(KeyVector{X(0)}, m1, components));
 
   // Check for exception when number of continuous keys are too many.
-  contKeys = {X(0), X(1), X(2)};
   THROWS_EXCEPTION(std::make_shared<HybridNonlinearFactor>(
-      contKeys, gtsam::DiscreteKey(M(1), 2), components));
+      KeyVector{X(0), X(1), X(2)}, m1, components));
 }
 
 /*****************************************************************************
@@ -832,12 +830,10 @@ TEST(HybridNonlinearFactorGraph, DefaultDecisionTree) {
   Pose2 odometry(2.0, 0.0, 0.0);
   KeyVector contKeys = {X(0), X(1)};
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
-  auto still = std::make_shared<PlanarMotionModel>(X(0), X(1), Pose2(0, 0, 0),
-                                                   noise_model),
-       moving = std::make_shared<PlanarMotionModel>(X(0), X(1), odometry,
-                                                    noise_model);
-  std::vector<std::pair<PlanarMotionModel::shared_ptr, double>> motion_models =
-      {{still, 0.0}, {moving, 0.0}};
+  std::vector<NonlinearFactor::shared_ptr> motion_models = {
+      std::make_shared<PlanarMotionModel>(X(0), X(1), Pose2(0, 0, 0),
+                                          noise_model),
+      std::make_shared<PlanarMotionModel>(X(0), X(1), odometry, noise_model)};
   fg.emplace_shared<HybridNonlinearFactor>(
       contKeys, gtsam::DiscreteKey(M(1), 2), motion_models);
 
