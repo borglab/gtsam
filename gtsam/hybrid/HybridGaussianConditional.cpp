@@ -51,14 +51,14 @@ HybridGaussianConditional::HybridGaussianConditional(
                  discreteParents, GetFactorValuePairs(conditionals)),
       BaseConditional(continuousFrontals.size()),
       conditionals_(conditionals) {
-  // Calculate logConstant_ as the minimum of the negative-log normalizers of
+  // Calculate negLogConstant_ as the minimum of the negative-log normalizers of
   // the conditionals, by visiting the decision tree:
-  logConstant_ = std::numeric_limits<double>::infinity();
+  negLogConstant_ = std::numeric_limits<double>::infinity();
   conditionals_.visit(
       [this](const GaussianConditional::shared_ptr &conditional) {
         if (conditional) {
-          this->logConstant_ =
-              std::min(this->logConstant_, conditional->negLogConstant());
+          this->negLogConstant_ =
+              std::min(this->negLogConstant_, conditional->negLogConstant());
         }
       });
 }
@@ -84,7 +84,7 @@ GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree()
   auto wrap = [this](const GaussianConditional::shared_ptr &gc) {
     // First check if conditional has not been pruned
     if (gc) {
-      const double Cgm_Kgcm = gc->negLogConstant() - this->logConstant_;
+      const double Cgm_Kgcm = gc->negLogConstant() - this->negLogConstant_;
       // If there is a difference in the covariances, we need to account for
       // that since the error is dependent on the mode.
       if (Cgm_Kgcm > 0.0) {
@@ -155,8 +155,7 @@ void HybridGaussianConditional::print(const std::string &s,
     std::cout << "(" << formatter(dk.first) << ", " << dk.second << "), ";
   }
   std::cout << std::endl
-            << " logNormalizationConstant: " << -negLogConstant()
-            << std::endl
+            << " logNormalizationConstant: " << -negLogConstant() << std::endl
             << std::endl;
   conditionals_.print(
       "", [&](Key k) { return formatter(k); },
@@ -214,7 +213,7 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
       [&](const GaussianConditional::shared_ptr &conditional)
           -> GaussianFactorValuePair {
         const auto likelihood_m = conditional->likelihood(given);
-        const double Cgm_Kgcm = conditional->negLogConstant() - logConstant_;
+        const double Cgm_Kgcm = conditional->negLogConstant() - negLogConstant_;
         if (Cgm_Kgcm == 0.0) {
           return {likelihood_m, 0.0};
         } else {

@@ -233,13 +233,13 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
 
 /* ************************************************************************ */
 /**
- * @brief Exponentiate (not necessarily normalized) log-values, normalize, and
- * then return as AlgebraicDecisionTree<Key>.
+ * @brief Exponentiate (not necessarily normalized) negative log-values,
+ * normalize, and then return as AlgebraicDecisionTree<Key>.
  *
  * @param logValues DecisionTree of (unnormalized) log values.
  * @return AlgebraicDecisionTree<Key>
  */
-static AlgebraicDecisionTree<Key> probabilitiesFromLogValues(
+static AlgebraicDecisionTree<Key> probabilitiesFromNegativeLogValues(
     const AlgebraicDecisionTree<Key> &logValues) {
   // Perform normalization
   double min_log = logValues.min();
@@ -271,7 +271,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
           DecisionTree<Key, double>(gmf->factors(), logProbability);
 
       AlgebraicDecisionTree<Key> probabilities =
-          probabilitiesFromLogValues(logProbabilities);
+          probabilitiesFromNegativeLogValues(logProbabilities);
       dfg.emplace_shared<DecisionTreeFactor>(gmf->discreteKeys(),
                                              probabilities);
 
@@ -337,7 +337,7 @@ static std::shared_ptr<Factor> createDiscreteFactor(
   AlgebraicDecisionTree<Key> negLogProbabilities(
       DecisionTree<Key, double>(eliminationResults, negLogProbability));
   AlgebraicDecisionTree<Key> probabilities =
-      probabilitiesFromLogValues(negLogProbabilities);
+      probabilitiesFromNegativeLogValues(negLogProbabilities);
 
   return std::make_shared<DecisionTreeFactor>(discreteSeparator, probabilities);
 }
