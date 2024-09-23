@@ -780,9 +780,8 @@ static HybridGaussianFactorGraph CreateFactorGraph(
   // Create HybridGaussianFactor
   // We take negative since we want
   // the underlying scalar to be log(\sqrt(|2πΣ|))
-  std::vector<GaussianFactorValuePair> factors{
-      {f0, -model0->logNormalizationConstant()},
-      {f1, -model1->logNormalizationConstant()}};
+  std::vector<GaussianFactorValuePair> factors{{f0, model0->negLogConstant()},
+                                               {f1, model1->negLogConstant()}};
   HybridGaussianFactor motionFactor({X(0), X(1)}, m1, factors);
 
   HybridGaussianFactorGraph hfg;

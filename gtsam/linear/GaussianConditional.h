@@ -133,10 +133,14 @@ namespace gtsam {
     /// @{
 
     /**
-     * normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
-     * log = - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
+     * @brief Return the negative log of the normalization constant.
+     *
+     * normalization constant k = 1.0 / sqrt((2*pi)^n*det(Sigma))
+     * -log(k) = 0.5 * n*log(2*pi) + 0.5 * log det(Sigma)
+     *
+     * @return double 
      */
-    double logNormalizationConstant() const override;
+    double negLogConstant() const override;
 
     /**
      * Calculate log-probability log(evaluate(x)) for given values `x`:

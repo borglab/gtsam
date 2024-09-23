@@ -272,14 +272,12 @@ namespace gtsam {
       double logDeterminant() const;
 
       /**
-       * @brief Method to compute the normalization constant
-       * for a Gaussian noise model k = \sqrt(1/|2πΣ|).
-       * We compute this in the log-space for numerical accuracy,
-       * thus returning log(k).
-       *
-       * @return double
+       * @brief Compute the negative log of the normalization constant
+       * for a Gaussian noise model k = 1/\sqrt(|2πΣ|).
+       * 
+       * @return double 
        */
-      double logNormalizationConstant() const;
+      double negLogConstant() const;
 
      private:
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION

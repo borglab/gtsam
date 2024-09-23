@@ -161,18 +161,18 @@ double HybridConditional::logProbability(const HybridValues &values) const {
 }
 
 /* ************************************************************************ */
-double HybridConditional::logNormalizationConstant() const {
+double HybridConditional::negLogConstant() const {
   if (auto gc = asGaussian()) {
-    return gc->logNormalizationConstant();
+    return gc->negLogConstant();
   }
   if (auto gm = asHybrid()) {
-    return gm->logNormalizationConstant();  // 0.0!
+    return gm->negLogConstant();  // 0.0!
   }
   if (auto dc = asDiscrete()) {
-    return dc->logNormalizationConstant();  // 0.0!
+    return dc->negLogConstant();  // 0.0!
   }
   throw std::runtime_error(
-      "HybridConditional::logProbability: conditional type not handled");
+      "HybridConditional::negLogConstant: conditional type not handled");
 }
 
 /* ************************************************************************ */

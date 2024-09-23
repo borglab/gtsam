@@ -61,11 +61,11 @@ const HybridGaussianConditional hybrid_conditional({Z(0)}, {X(0)}, mode,
 TEST(HybridGaussianConditional, Invariants) {
   using namespace equal_constants;
 
-  // Check that the conditional normalization constant is the max of all
-  // constants which are all equal, in this case, hence:
-  const double K = hybrid_conditional.logNormalizationConstant();
-  EXPECT_DOUBLES_EQUAL(K, conditionals[0]->logNormalizationConstant(), 1e-8);
-  EXPECT_DOUBLES_EQUAL(K, conditionals[1]->logNormalizationConstant(), 1e-8);
+  // Check that the conditional (negative log) normalization constant is the min
+  // of all constants which are all equal, in this case, hence:
+  const double K = hybrid_conditional.negLogConstant();
+  EXPECT_DOUBLES_EQUAL(K, conditionals[0]->negLogConstant(), 1e-8);
+  EXPECT_DOUBLES_EQUAL(K, conditionals[1]->negLogConstant(), 1e-8);
 
   EXPECT(HybridGaussianConditional::CheckInvariants(hybrid_conditional, hv0));
   EXPECT(HybridGaussianConditional::CheckInvariants(hybrid_conditional, hv1));
@@ -180,15 +180,16 @@ TEST(HybridGaussianConditional, Error2) {
 
   // Check result.
   DiscreteKeys discrete_keys{mode};
-  double logNormalizer0 = -conditionals[0]->logNormalizationConstant();
-  double logNormalizer1 = -conditionals[1]->logNormalizationConstant();
-  double minLogNormalizer = std::min(logNormalizer0, logNormalizer1);
+  double negLogConstant0 = conditionals[0]->negLogConstant();
+  double negLogConstant1 = conditionals[1]->negLogConstant();
+  double minErrorConstant = std::min(negLogConstant0, negLogConstant1);
 
-  // Expected error is e(X) + log(|2πΣ|).
-  // We normalize log(|2πΣ|) with min(logNormalizers) so it is non-negative.
+  // Expected error is e(X) + log(sqrt(|2πΣ|)).
+  // We normalize log(sqrt(|2πΣ|)) with min(negLogConstant)
+  // so it is non-negative.
   std::vector<double> leaves = {
-      conditionals[0]->error(vv) + logNormalizer0 - minLogNormalizer,
-      conditionals[1]->error(vv) + logNormalizer1 - minLogNormalizer};
+      conditionals[0]->error(vv) + negLogConstant0 - minErrorConstant,
+      conditionals[1]->error(vv) + negLogConstant1 - minErrorConstant};
   AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
 
   EXPECT(assert_equal(expected, actual, 1e-6));
@@ -196,9 +197,9 @@ TEST(HybridGaussianConditional, Error2) {
   // Check for non-tree version.
   for (size_t mode : {0, 1}) {
     const HybridValues hv{vv, {{M(0), mode}}};
-    EXPECT_DOUBLES_EQUAL(conditionals[mode]->error(vv) -
-                             conditionals[mode]->logNormalizationConstant() -
-                             minLogNormalizer,
+    EXPECT_DOUBLES_EQUAL(conditionals[mode]->error(vv) +
+                             conditionals[mode]->negLogConstant() -
+                             minErrorConstant,
                          hybrid_conditional.error(hv), 1e-8);
   }
 }
@@ -230,8 +231,8 @@ TEST(HybridGaussianConditional, Likelihood2) {
     CHECK(jf1->rows() == 2);
 
     // Check that the constant C1 is properly encoded in the JacobianFactor.
-    const double C1 = hybrid_conditional.logNormalizationConstant() -
-                      conditionals[1]->logNormalizationConstant();
+    const double C1 =
+        conditionals[1]->negLogConstant() - hybrid_conditional.negLogConstant();
     const double c1 = std::sqrt(2.0 * C1);
     Vector expected_unwhitened(2);
     expected_unwhitened << 4.9 - 5.0, -c1;

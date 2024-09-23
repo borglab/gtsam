@@ -465,6 +465,12 @@ string DiscreteConditional::html(const KeyFormatter& keyFormatter,
 double DiscreteConditional::evaluate(const HybridValues& x) const {
   return this->evaluate(x.discrete());
 }
+
+/* ************************************************************************* */
+double DiscreteConditional::negLogConstant() const {
+  return 0.0;
+}
+
 /* ************************************************************************* */
 
 }  // namespace gtsam

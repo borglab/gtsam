@@ -486,16 +486,17 @@ TEST(GaussianConditional, Error) {
 
 /* ************************************************************************* */
 // Similar test for multivariate gaussian but with sigma 2.0
-TEST(GaussianConditional, LogNormalizationConstant) {
+TEST(GaussianConditional, NegLogConstant) {
   double sigma = 2.0;
   auto conditional = GaussianConditional::FromMeanAndStddev(X(0), Vector3::Zero(), sigma);
   VectorValues x;
   x.insert(X(0), Vector3::Zero());
   Matrix3 Sigma = I_3x3 * sigma * sigma;
-  double expectedLogNormalizingConstant = log(1 / sqrt((2 * M_PI * Sigma).determinant()));
+  double expectedNegLogConstant =
+      -log(1 / sqrt((2 * M_PI * Sigma).determinant()));
 
-  EXPECT_DOUBLES_EQUAL(expectedLogNormalizingConstant,
-                       conditional.logNormalizationConstant(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(expectedNegLogConstant, conditional.negLogConstant(),
+                       1e-9);
 }
 
 /* ************************************************************************* */

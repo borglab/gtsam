@@ -34,11 +34,13 @@ namespace gtsam {
    * `logProbability` is the main methods that need to be implemented in derived
    * classes. These two methods relate to the `error` method in the factor by:
    *   probability(x) = k exp(-error(x))
-   * where k is a normalization constant making \int probability(x) == 1.0, and
-   *   logProbability(x) = K - error(x)
-   * i.e., K = log(K). The normalization constant K is assumed to *not* depend
+   * where k is a normalization constant making
+   * \int probability(x) = \int k exp(-error(x)) == 1.0, and
+   * logProbability(x) = -(K + error(x))
+   * i.e., K = -log(k). The normalization constant k is assumed to *not* depend
    * on any argument, only (possibly) on the conditional parameters.
-   * This class provides a default logNormalizationConstant() == 0.0.
+   * This class provides a default negative log normalization constant
+   * negLogConstant() == 0.0.
    * 
    * There are four broad classes of conditionals that derive from Conditional:
    *
@@ -163,13 +165,12 @@ namespace gtsam {
     }
 
     /**
-     * All conditional types need to implement a log normalization constant to
-     * make it such that error>=0.
+     * @brief All conditional types need to implement this as the negative log
+     * of the normalization constant to make it such that error>=0.
+     *
+     * @return double
      */
-    virtual double logNormalizationConstant() const;
-
-    /** Non-virtual, exponentiate logNormalizationConstant. */
-    double normalizationConstant() const;
+    virtual double negLogConstant() const;
 
     /// @}
     /// @name Advanced Interface
@@ -208,9 +209,9 @@ namespace gtsam {
      *  - evaluate >= 0.0
      *  - evaluate(x) == conditional(x)
      *  - exp(logProbability(x)) == evaluate(x)
-     *  - logNormalizationConstant() = log(normalizationConstant())
+     *  - negLogConstant() = -log(normalizationConstant())
      *  - error >= 0.0
-     *  - logProbability(x) == logNormalizationConstant() - error(x)
+     *  - logProbability(x) == -(negLogConstant() + error(x))
      *
      * @param conditional The conditional to test, as a reference to the derived type.
      * @tparam VALUES HybridValues, or a more narrow type like DiscreteValues.
