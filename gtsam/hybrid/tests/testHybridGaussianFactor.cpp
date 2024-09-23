@@ -73,7 +73,7 @@ TEST(HybridGaussianFactor, ConstructorVariants) {
   HybridGaussianFactor fromFactors({X(1), X(2)}, m1, {f10, f11});
 
   std::vector<GaussianFactorValuePair> pairs{{f10, 0.0}, {f11, 0.0}};
-  HybridGaussianFactor fromPairs({X(1), X(2)}, {m1}, pairs);
+  HybridGaussianFactor fromPairs({X(1), X(2)}, m1, pairs);
   assert_equal(fromFactors, fromPairs);
 
   HybridGaussianFactor::FactorValuePairs decisionTree({m1}, pairs);

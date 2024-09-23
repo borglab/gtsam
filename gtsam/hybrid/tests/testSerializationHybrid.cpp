@@ -83,7 +83,7 @@ TEST(HybridSerialization, HybridGaussianFactor) {
   auto b1 = Matrix::Ones(2, 1);
   auto f0 = std::make_shared<JacobianFactor>(X(0), A, b0);
   auto f1 = std::make_shared<JacobianFactor>(X(0), A, b1);
-  std::vector<GaussianFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
+  std::vector<GaussianFactor::shared_ptr> factors{f0, f1};
 
   const HybridGaussianFactor factor(continuousKeys, discreteKey, factors);
 
