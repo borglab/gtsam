@@ -65,12 +65,6 @@ double Conditional<FACTOR, DERIVEDCONDITIONAL>::negLogConstant() const {
 
 /* ************************************************************************* */
 template <class FACTOR, class DERIVEDCONDITIONAL>
-double Conditional<FACTOR, DERIVEDCONDITIONAL>::normalizationConstant() const {
-  return std::exp(-negLogConstant());
-}
-
-/* ************************************************************************* */
-template <class FACTOR, class DERIVEDCONDITIONAL>
 template <class VALUES>
 bool Conditional<FACTOR, DERIVEDCONDITIONAL>::CheckInvariants(
     const DERIVEDCONDITIONAL& conditional, const VALUES& values) {
@@ -81,10 +75,6 @@ bool Conditional<FACTOR, DERIVEDCONDITIONAL>::CheckInvariants(
   const double logProb = conditional.logProbability(values);
   if (std::abs(prob_or_density - std::exp(logProb)) > 1e-9)
     return false;  // logProb is not consistent with prob_or_density
-  if (std::abs(conditional.negLogConstant() -
-               (-std::log(conditional.normalizationConstant()))) > 1e-9)
-    return false;  // log normalization constant is not consistent with
-                   // normalization constant
   const double error = conditional.error(values);
   if (error < 0.0) return false;  // prob_or_density is negative.
   const double expected = -(conditional.negLogConstant() + error);

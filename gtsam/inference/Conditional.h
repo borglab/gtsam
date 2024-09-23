@@ -172,9 +172,6 @@ namespace gtsam {
      */
     virtual double negLogConstant() const;
 
-    /** Non-virtual, negate and exponentiate negLogConstant. */
-    double normalizationConstant() const;
-
     /// @}
     /// @name Advanced Interface
     /// @{
