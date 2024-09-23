@@ -153,7 +153,7 @@ class GTSAM_EXPORT HybridGaussianConditional
   /**
    * @brief Return log normalization constant in negative log space.
    *
-   * The log normalization constant is the max of the individual
+   * The log normalization constant is the min of the individual
    * log-normalization constants.
    *
    * @return double
