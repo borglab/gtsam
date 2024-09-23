@@ -180,16 +180,16 @@ TEST(HybridGaussianConditional, Error2) {
 
   // Check result.
   DiscreteKeys discrete_keys{mode};
-  double errorConstant0 = conditionals[0]->errorConstant();
-  double errorConstant1 = conditionals[1]->errorConstant();
-  double minErrorConstant = std::min(errorConstant0, errorConstant1);
+  double negLogConstant0 = conditionals[0]->negLogConstant();
+  double negLogConstant1 = conditionals[1]->negLogConstant();
+  double minErrorConstant = std::min(negLogConstant0, negLogConstant1);
 
   // Expected error is e(X) + log(sqrt(|2πΣ|)).
-  // We normalize log(sqrt(|2πΣ|)) with min(errorConstant)
+  // We normalize log(sqrt(|2πΣ|)) with min(negLogConstant)
   // so it is non-negative.
   std::vector<double> leaves = {
-      conditionals[0]->error(vv) + errorConstant0 - minErrorConstant,
-      conditionals[1]->error(vv) + errorConstant1 - minErrorConstant};
+      conditionals[0]->error(vv) + negLogConstant0 - minErrorConstant,
+      conditionals[1]->error(vv) + negLogConstant1 - minErrorConstant};
   AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
 
   EXPECT(assert_equal(expected, actual, 1e-6));
@@ -198,7 +198,7 @@ TEST(HybridGaussianConditional, Error2) {
   for (size_t mode : {0, 1}) {
     const HybridValues hv{vv, {{M(0), mode}}};
     EXPECT_DOUBLES_EQUAL(conditionals[mode]->error(vv) +
-                             conditionals[mode]->errorConstant() -
+                             conditionals[mode]->negLogConstant() -
                              minErrorConstant,
                          hybrid_conditional.error(hv), 1e-8);
   }

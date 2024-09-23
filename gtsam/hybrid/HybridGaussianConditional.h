@@ -158,7 +158,7 @@ class GTSAM_EXPORT HybridGaussianConditional
    *
    * @return double
    */
-  inline double errorConstant() const override { return logConstant_; }
+  inline double negLogConstant() const override { return logConstant_; }
 
   /**
    * Create a likelihood factor for a hybrid Gaussian conditional,

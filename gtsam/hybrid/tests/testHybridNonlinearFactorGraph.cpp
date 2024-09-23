@@ -902,8 +902,8 @@ static HybridNonlinearFactorGraph CreateFactorGraph(
   // Create HybridNonlinearFactor
   // We take negative since we want
   // the underlying scalar to be log(\sqrt(|2πΣ|))
-  std::vector<NonlinearFactorValuePair> factors{{f0, model0->errorConstant()},
-                                                {f1, model1->errorConstant()}};
+  std::vector<NonlinearFactorValuePair> factors{{f0, model0->negLogConstant()},
+                                                {f1, model1->negLogConstant()}};
 
   HybridNonlinearFactor mixtureFactor({X(0), X(1)}, m1, factors);
 

@@ -140,7 +140,7 @@ namespace gtsam {
      *
      * @return double 
      */
-    double errorConstant() const override;
+    double negLogConstant() const override;
 
     /**
      * Calculate log-probability log(evaluate(x)) for given values `x`:

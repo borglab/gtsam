@@ -169,7 +169,7 @@ namespace gtsam {
      *
      * @return double
      */
-    virtual double errorConstant() const;
+    virtual double negLogConstant() const;
 
     /**
      * All conditional types need to implement a log normalization constant to

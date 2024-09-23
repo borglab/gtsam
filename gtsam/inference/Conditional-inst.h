@@ -59,17 +59,17 @@ double Conditional<FACTOR, DERIVEDCONDITIONAL>::evaluate(
 
 /* ************************************************************************* */
 template <class FACTOR, class DERIVEDCONDITIONAL>
-double Conditional<FACTOR, DERIVEDCONDITIONAL>::errorConstant()
+double Conditional<FACTOR, DERIVEDCONDITIONAL>::negLogConstant()
     const {
   throw std::runtime_error(
-      "Conditional::errorConstant is not implemented");
+      "Conditional::negLogConstant is not implemented");
 }
 
 /* ************************************************************************* */
 template <class FACTOR, class DERIVEDCONDITIONAL>
 double Conditional<FACTOR, DERIVEDCONDITIONAL>::logNormalizationConstant()
     const {
-  return -errorConstant();
+  return -negLogConstant();
 }
 
 /* ************************************************************************* */
@@ -96,7 +96,7 @@ bool Conditional<FACTOR, DERIVEDCONDITIONAL>::CheckInvariants(
                    // normalization constant
   const double error = conditional.error(values);
   if (error < 0.0) return false;  // prob_or_density is negative.
-  const double expected = -(conditional.errorConstant() + error);
+  const double expected = -(conditional.negLogConstant() + error);
   if (std::abs(logProb - expected) > 1e-9)
     return false;  // logProb is not consistent with error
   return true;

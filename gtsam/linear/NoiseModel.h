@@ -277,7 +277,7 @@ namespace gtsam {
        * 
        * @return double 
        */
-      double errorConstant() const;
+      double negLogConstant() const;
 
       /**
        * @brief Method to compute the normalization constant

@@ -467,7 +467,7 @@ double DiscreteConditional::evaluate(const HybridValues& x) const {
 }
 
 /* ************************************************************************* */
-double DiscreteConditional::errorConstant() const {
+double DiscreteConditional::negLogConstant() const {
   return 0.0;
 }
 

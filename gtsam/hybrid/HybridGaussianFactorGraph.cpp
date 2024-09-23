@@ -329,9 +329,9 @@ static std::shared_ptr<Factor> createDiscreteFactor(
 
     // Logspace version of:
     // exp(-factor->error(kEmpty)) / conditional->normalizationConstant();
-    // errorConstant gives `-log(k)`
+    // negLogConstant gives `-log(k)`
     // which is `-log(k) = log(1/k) = log(\sqrt{|2πΣ|})`.
-    return -factor->error(kEmpty) + conditional->errorConstant();
+    return -factor->error(kEmpty) + conditional->negLogConstant();
   };
 
   AlgebraicDecisionTree<Key> logProbabilities(
@@ -357,7 +357,7 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
       // Add 2.0 term since the constant term will be premultiplied by 0.5
       // as per the Hessian definition,
       // and negative since we want log(k)
-      hf->constantTerm() += -2.0 * conditional->errorConstant();
+      hf->constantTerm() += -2.0 * conditional->negLogConstant();
     }
     return {factor, 0.0};
   };
