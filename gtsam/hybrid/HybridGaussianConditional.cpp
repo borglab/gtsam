@@ -155,7 +155,7 @@ void HybridGaussianConditional::print(const std::string &s,
     std::cout << "(" << formatter(dk.first) << ", " << dk.second << "), ";
   }
   std::cout << std::endl
-            << " logNormalizationConstant: " << logNormalizationConstant()
+            << " logNormalizationConstant: " << -negLogConstant()
             << std::endl
             << std::endl;
   conditionals_.print(

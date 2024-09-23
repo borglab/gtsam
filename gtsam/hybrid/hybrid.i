@@ -62,7 +62,6 @@ virtual class HybridConditional {
 
   // Standard interface:
   double negLogConstant() const;
-  double logNormalizationConstant() const;
   double logProbability(const gtsam::HybridValues& values) const;
   double evaluate(const gtsam::HybridValues& values) const;
   double operator()(const gtsam::HybridValues& values) const;

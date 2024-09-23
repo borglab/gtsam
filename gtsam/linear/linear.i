@@ -549,7 +549,6 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   
   // Standard Interface
   double negLogConstant() const;
-  double logNormalizationConstant() const;
   double logProbability(const gtsam::VectorValues& x) const;
   double evaluate(const gtsam::VectorValues& x) const;
   double error(const gtsam::VectorValues& x) const;

@@ -121,7 +121,7 @@ namespace gtsam {
       const auto mean = solve({});  // solve for mean.
       mean.print("  mean", formatter);
     }
-    cout << "  logNormalizationConstant: " << logNormalizationConstant() << endl;
+    cout << "  logNormalizationConstant: " << -negLogConstant() << endl;
     if (model_)
       model_->print("  Noise model: ");
     else
@@ -198,7 +198,7 @@ namespace gtsam {
   //  density = k exp(-error(x))
   //  log = log(k) - error(x)
   double GaussianConditional::logProbability(const VectorValues& x) const {
-    return logNormalizationConstant() - error(x);
+    return -(negLogConstant() + error(x));
   }
 
   double GaussianConditional::logProbability(const HybridValues& x) const {

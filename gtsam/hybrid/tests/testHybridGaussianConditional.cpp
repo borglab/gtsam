@@ -61,11 +61,11 @@ const HybridGaussianConditional hybrid_conditional({Z(0)}, {X(0)}, mode,
 TEST(HybridGaussianConditional, Invariants) {
   using namespace equal_constants;
 
-  // Check that the conditional normalization constant is the max of all
-  // constants which are all equal, in this case, hence:
-  const double K = hybrid_conditional.logNormalizationConstant();
-  EXPECT_DOUBLES_EQUAL(K, conditionals[0]->logNormalizationConstant(), 1e-8);
-  EXPECT_DOUBLES_EQUAL(K, conditionals[1]->logNormalizationConstant(), 1e-8);
+  // Check that the conditional (negative log) normalization constant is the min
+  // of all constants which are all equal, in this case, hence:
+  const double K = hybrid_conditional.negLogConstant();
+  EXPECT_DOUBLES_EQUAL(K, conditionals[0]->negLogConstant(), 1e-8);
+  EXPECT_DOUBLES_EQUAL(K, conditionals[1]->negLogConstant(), 1e-8);
 
   EXPECT(HybridGaussianConditional::CheckInvariants(hybrid_conditional, hv0));
   EXPECT(HybridGaussianConditional::CheckInvariants(hybrid_conditional, hv1));
@@ -231,8 +231,8 @@ TEST(HybridGaussianConditional, Likelihood2) {
     CHECK(jf1->rows() == 2);
 
     // Check that the constant C1 is properly encoded in the JacobianFactor.
-    const double C1 = hybrid_conditional.logNormalizationConstant() -
-                      conditionals[1]->logNormalizationConstant();
+    const double C1 =
+        conditionals[1]->negLogConstant() - hybrid_conditional.negLogConstant();
     const double c1 = std::sqrt(2.0 * C1);
     Vector expected_unwhitened(2);
     expected_unwhitened << 4.9 - 5.0, -c1;

@@ -76,12 +76,11 @@ TEST(GaussianBayesNet, Evaluate1) {
   // the normalization constant 1.0/sqrt((2*pi*Sigma).det()).
   // The covariance matrix inv(Sigma) = R'*R, so the determinant is
   const double constant = sqrt((invSigma / (2 * M_PI)).determinant());
-  EXPECT_DOUBLES_EQUAL(log(constant),
-                       smallBayesNet.at(0)->logNormalizationConstant() +
-                           smallBayesNet.at(1)->logNormalizationConstant(),
+  EXPECT_DOUBLES_EQUAL(-log(constant),
+                       smallBayesNet.at(0)->negLogConstant() +
+                           smallBayesNet.at(1)->negLogConstant(),
                        1e-9);
-  EXPECT_DOUBLES_EQUAL(log(constant), smallBayesNet.logNormalizationConstant(),
-                       1e-9);
+  EXPECT_DOUBLES_EQUAL(-log(constant), smallBayesNet.negLogConstant(), 1e-9);
   const double actual = smallBayesNet.evaluate(mean);
   EXPECT_DOUBLES_EQUAL(constant, actual, 1e-9);
 }

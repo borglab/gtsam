@@ -113,7 +113,6 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
 
   // Standard interface
   double negLogConstant() const;
-  double logNormalizationConstant() const;
   double logProbability(const gtsam::DiscreteValues& values) const;
   double evaluate(const gtsam::DiscreteValues& values) const;
   double error(const gtsam::DiscreteValues& values) const;

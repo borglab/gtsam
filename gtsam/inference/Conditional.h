@@ -39,7 +39,8 @@ namespace gtsam {
    * logProbability(x) = -(K + error(x))
    * i.e., K = -log(k). The normalization constant k is assumed to *not* depend
    * on any argument, only (possibly) on the conditional parameters.
-   * This class provides a default logNormalizationConstant() == 0.0.
+   * This class provides a default negative log normalization constant
+   * negLogConstant() == 0.0.
    * 
    * There are four broad classes of conditionals that derive from Conditional:
    *
@@ -165,19 +166,13 @@ namespace gtsam {
 
     /**
      * @brief All conditional types need to implement this as the negative log
-     * of the normalization constant.
+     * of the normalization constant to make it such that error>=0.
      *
      * @return double
      */
     virtual double negLogConstant() const;
 
-    /**
-     * All conditional types need to implement a log normalization constant to
-     * make it such that error>=0.
-     */
-    virtual double logNormalizationConstant() const;
-
-    /** Non-virtual, exponentiate logNormalizationConstant. */
+    /** Non-virtual, negate and exponentiate negLogConstant. */
     double normalizationConstant() const;
 
     /// @}
@@ -217,9 +212,9 @@ namespace gtsam {
      *  - evaluate >= 0.0
      *  - evaluate(x) == conditional(x)
      *  - exp(logProbability(x)) == evaluate(x)
-     *  - logNormalizationConstant() = log(normalizationConstant())
+     *  - negLogConstant() = -log(normalizationConstant())
      *  - error >= 0.0
-     *  - logProbability(x) == logNormalizationConstant() - error(x)
+     *  - logProbability(x) == -(negLogConstant() + error(x))
      *
      * @param conditional The conditional to test, as a reference to the derived type.
      * @tparam VALUES HybridValues, or a more narrow type like DiscreteValues.
