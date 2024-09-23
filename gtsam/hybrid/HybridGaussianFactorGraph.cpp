@@ -233,8 +233,8 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
 
 /* ************************************************************************ */
 /**
- * @brief Exponentiate log-values, not necessarily normalized, normalize, and
- * return as AlgebraicDecisionTree<Key>.
+ * @brief Exponentiate (not necessarily normalized) log-values, normalize, and
+ * then return as AlgebraicDecisionTree<Key>.
  *
  * @param logValues DecisionTree of (unnormalized) log values.
  * @return AlgebraicDecisionTree<Key>
@@ -242,9 +242,9 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
 static AlgebraicDecisionTree<Key> probabilitiesFromLogValues(
     const AlgebraicDecisionTree<Key> &logValues) {
   // Perform normalization
-  double max_log = logValues.max();
+  double min_log = logValues.min();
   AlgebraicDecisionTree<Key> probabilities = DecisionTree<Key, double>(
-      logValues, [&max_log](const double x) { return exp(x - max_log); });
+      logValues, [&min_log](const double x) { return exp(-(x - min_log)); });
   probabilities = probabilities.normalize(probabilities.sum());
 
   return probabilities;
@@ -265,7 +265,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
       auto logProbability =
           [&](const GaussianFactor::shared_ptr &factor) -> double {
         if (!factor) return 0.0;
-        return -factor->error(VectorValues());
+        return factor->error(VectorValues());
       };
       AlgebraicDecisionTree<Key> logProbabilities =
           DecisionTree<Key, double>(gmf->factors(), logProbability);
@@ -327,11 +327,11 @@ static std::shared_ptr<Factor> createDiscreteFactor(
     // If the factor is not null, it has no keys, just contains the residual.
     if (!factor) return 1.0;  // TODO(dellaert): not loving this.
 
-    // Logspace version of:
+    // Negative logspace version of:
     // exp(-factor->error(kEmpty)) / conditional->normalizationConstant();
     // negLogConstant gives `-log(k)`
     // which is `-log(k) = log(1/k) = log(\sqrt{|2πΣ|})`.
-    return -factor->error(kEmpty) + conditional->negLogConstant();
+    return factor->error(kEmpty) - conditional->negLogConstant();
   };
 
   AlgebraicDecisionTree<Key> logProbabilities(
