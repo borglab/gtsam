@@ -493,7 +493,7 @@ TEST(GaussianConditional, LogNormalizationConstant) {
   x.insert(X(0), Vector3::Zero());
   Matrix3 Sigma = I_3x3 * sigma * sigma;
   double expectedLogNormalizationConstant =
-      -log(1 / sqrt((2 * M_PI * Sigma).determinant()));
+      log(1 / sqrt((2 * M_PI * Sigma).determinant()));
 
   EXPECT_DOUBLES_EQUAL(expectedLogNormalizationConstant,
                        conditional.logNormalizationConstant(), 1e-9);
@@ -517,7 +517,7 @@ TEST(GaussianConditional, Print) {
     "  d = [ 20 40 ]\n"
     "  mean: 1 elements\n"
     "  x0: 20 40\n"
-    "  logNormalizationConstant: 4.0351\n"
+    "  logNormalizationConstant: -4.0351\n"
     "isotropic dim=2 sigma=3\n";
   EXPECT(assert_print_equal(expected, conditional, "GaussianConditional"));
 
@@ -532,7 +532,7 @@ TEST(GaussianConditional, Print) {
     "  S[x1] = [ -1 -2 ]\n"
     "          [ -3 -4 ]\n"
     "  d = [ 20 40 ]\n"
-    "  logNormalizationConstant: 4.0351\n"
+    "  logNormalizationConstant: -4.0351\n"
     "isotropic dim=2 sigma=3\n";
   EXPECT(assert_print_equal(expected1, conditional1, "GaussianConditional"));
 
@@ -548,7 +548,7 @@ TEST(GaussianConditional, Print) {
     "  S[y1] = [ -5 -6 ]\n"
     "          [ -7 -8 ]\n"
     "  d = [ 20 40 ]\n"
-    "  logNormalizationConstant: 4.0351\n"
+    "  logNormalizationConstant: -4.0351\n"
     "isotropic dim=2 sigma=3\n";
   EXPECT(assert_print_equal(expected2, conditional2, "GaussianConditional"));
 }

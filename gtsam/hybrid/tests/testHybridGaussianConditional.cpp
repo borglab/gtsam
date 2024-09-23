@@ -180,16 +180,16 @@ TEST(HybridGaussianConditional, Error2) {
 
   // Check result.
   DiscreteKeys discrete_keys{mode};
-  double logNormalizer0 = conditionals[0]->logNormalizationConstant();
-  double logNormalizer1 = conditionals[1]->logNormalizationConstant();
-  double minLogNormalizer = std::min(logNormalizer0, logNormalizer1);
+  double errorConstant0 = conditionals[0]->errorConstant();
+  double errorConstant1 = conditionals[1]->errorConstant();
+  double minErrorConstant = std::min(errorConstant0, errorConstant1);
 
   // Expected error is e(X) + log(sqrt(|2πΣ|)).
-  // We normalize log(sqrt(|2πΣ|)) with min(logNormalizers)
+  // We normalize log(sqrt(|2πΣ|)) with min(errorConstant)
   // so it is non-negative.
   std::vector<double> leaves = {
-      conditionals[0]->error(vv) + logNormalizer0 - minLogNormalizer,
-      conditionals[1]->error(vv) + logNormalizer1 - minLogNormalizer};
+      conditionals[0]->error(vv) + errorConstant0 - minErrorConstant,
+      conditionals[1]->error(vv) + errorConstant1 - minErrorConstant};
   AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
 
   EXPECT(assert_equal(expected, actual, 1e-6));
@@ -198,8 +198,8 @@ TEST(HybridGaussianConditional, Error2) {
   for (size_t mode : {0, 1}) {
     const HybridValues hv{vv, {{M(0), mode}}};
     EXPECT_DOUBLES_EQUAL(conditionals[mode]->error(vv) +
-                             conditionals[mode]->logNormalizationConstant() -
-                             minLogNormalizer,
+                             conditionals[mode]->errorConstant() -
+                             minErrorConstant,
                          hybrid_conditional.error(hv), 1e-8);
   }
 }
@@ -231,8 +231,8 @@ TEST(HybridGaussianConditional, Likelihood2) {
     CHECK(jf1->rows() == 2);
 
     // Check that the constant C1 is properly encoded in the JacobianFactor.
-    const double C1 = conditionals[1]->logNormalizationConstant() -
-                      hybrid_conditional.logNormalizationConstant();
+    const double C1 = hybrid_conditional.logNormalizationConstant() -
+                      conditionals[1]->logNormalizationConstant();
     const double c1 = std::sqrt(2.0 * C1);
     Vector expected_unwhitened(2);
     expected_unwhitened << 4.9 - 5.0, -c1;
