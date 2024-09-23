@@ -22,6 +22,7 @@
 
 #include <gtsam/sfm/BinaryMeasurement.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/sfm/SfmData.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose2.h>
@@ -29,16 +30,15 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/base/serialization.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/types.h>
 
-#include <boost/smart_ptr/shared_ptr.hpp>
 #include <string>
 #include <utility> // for pair
 #include <vector>
 #include <iosfwd>
 #include <map>
+#include <optional>
 
 namespace gtsam {
 
@@ -117,7 +117,7 @@ typedef std::pair<std::pair<size_t, size_t>, Pose2> IndexedEdge;
  * @param is input stream
  * @param tag string parsed from input stream, will only parse if vertex type
  */
-GTSAM_EXPORT boost::optional<IndexedPose> parseVertexPose(std::istream& is,
+GTSAM_EXPORT std::optional<IndexedPose> parseVertexPose(std::istream& is,
     const std::string& tag);
 
 /**
@@ -125,7 +125,7 @@ GTSAM_EXPORT boost::optional<IndexedPose> parseVertexPose(std::istream& is,
  * @param is input stream
  * @param tag string parsed from input stream, will only parse if vertex type
  */
-GTSAM_EXPORT boost::optional<IndexedLandmark> parseVertexLandmark(std::istream& is,
+GTSAM_EXPORT std::optional<IndexedLandmark> parseVertexLandmark(std::istream& is,
     const std::string& tag);
 
 /**
@@ -133,7 +133,7 @@ GTSAM_EXPORT boost::optional<IndexedLandmark> parseVertexLandmark(std::istream& 
  * @param is input stream
  * @param tag string parsed from input stream, will only parse if edge type
  */
-GTSAM_EXPORT boost::optional<IndexedEdge> parseEdge(std::istream& is,
+GTSAM_EXPORT std::optional<IndexedEdge> parseEdge(std::istream& is,
     const std::string& tag);
 
 /// Return type for load functions, which return a graph and initial values. For
@@ -167,14 +167,11 @@ GTSAM_EXPORT GraphAndValues load2D(
  * @param kernelFunctionType whether to wrap the noise model in a robust kernel
  * @return graph and initial values
  */
-GTSAM_EXPORT GraphAndValues load2D(const std::string& filename,
-    SharedNoiseModel model = SharedNoiseModel(), size_t maxIndex = 0, bool addNoise =
-        false, bool smart = true, NoiseFormat noiseFormat = NoiseFormatAUTO, //
-    KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
-
-/// @deprecated load2D now allows for arbitrary models and wrapping a robust kernel
-GTSAM_EXPORT GraphAndValues load2D_robust(const std::string& filename,
-    const noiseModel::Base::shared_ptr& model, size_t maxIndex = 0);
+GTSAM_EXPORT GraphAndValues
+load2D(const std::string& filename, SharedNoiseModel model = SharedNoiseModel(),
+       size_t maxIndex = 0, bool addNoise = false, bool smart = true,
+       NoiseFormat noiseFormat = NoiseFormatAUTO,  //
+       KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
 /** save 2d graph */
 GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph,
@@ -189,8 +186,9 @@ GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph,
  * @param kernelFunctionType whether to wrap the noise model in a robust kernel
  * @return graph and initial values
  */
-GTSAM_EXPORT GraphAndValues readG2o(const std::string& g2oFile, const bool is3D = false,
-    KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
+GTSAM_EXPORT GraphAndValues
+readG2o(const std::string& g2oFile, const bool is3D = false,
+        KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
 /**
  * @brief This function writes a g2o file from
@@ -210,286 +208,6 @@ GTSAM_EXPORT void writeG2o(const NonlinearFactorGraph& graph,
 /// Load TORO 3D Graph
 GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
 
-/// A measurement with its camera index
-typedef std::pair<size_t, Point2> SfmMeasurement;
-
-/// Sift index for SfmTrack
-typedef std::pair<size_t, size_t> SiftIndex;
-
-/// Define the structure for the 3D points
-struct SfmTrack {
-  SfmTrack(float r = 0, float g = 0, float b = 0): p(0,0,0), r(r), g(g), b(b) {}
-  SfmTrack(const gtsam::Point3& pt, float r = 0, float g = 0, float b = 0) : p(pt), r(r), g(g), b(b) {}
- 
-  Point3 p; ///< 3D position of the point
-  float r, g, b; ///< RGB color of the 3D point
-  std::vector<SfmMeasurement> measurements; ///< The 2D image projections (id,(u,v))
-  std::vector<SiftIndex> siftIndices;
-  
-  /// Get RGB values describing 3d point
-  const Point3 rgb() const { return Point3(r, g, b); }
-
-  /// Total number of measurements in this track
-  size_t number_measurements() const {
-    return measurements.size();
-  }
-  /// Get the measurement (camera index, Point2) at pose index `idx`
-  SfmMeasurement measurement(size_t idx) const {
-    return measurements[idx];
-  }
-  /// Get the SIFT feature index corresponding to the measurement at `idx`
-  SiftIndex siftIndex(size_t idx) const {
-    return siftIndices[idx];
-  }
-  /// Get 3D point
-  const Point3& point3() const {
-    return p;
-  }
-  /// Add measurement (camera_idx, Point2) to track
-  void add_measurement(size_t idx, const gtsam::Point2& m) {
-    measurements.emplace_back(idx, m);
-  }
-
-  /** Serialization function */
-  friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(p);
-    ar & BOOST_SERIALIZATION_NVP(r);
-    ar & BOOST_SERIALIZATION_NVP(g);
-    ar & BOOST_SERIALIZATION_NVP(b);
-    ar & BOOST_SERIALIZATION_NVP(measurements);
-    ar & BOOST_SERIALIZATION_NVP(siftIndices);
-  }
-
-  /// assert equality up to a tolerance
-  bool equals(const SfmTrack &sfmTrack, double tol = 1e-9) const {
-    // check the 3D point
-    if (!p.isApprox(sfmTrack.p)) {
-      return false;
-    }
-
-    // check the RGB values
-    if (r!=sfmTrack.r || g!=sfmTrack.g || b!=sfmTrack.b) {
-      return false;
-    }
-
-    // compare size of vectors for measurements and siftIndices
-    if (number_measurements() != sfmTrack.number_measurements() ||
-        siftIndices.size() != sfmTrack.siftIndices.size()) {
-      return false;
-    }
-
-    // compare measurements (order sensitive)
-    for (size_t idx = 0; idx < number_measurements(); ++idx) {
-      SfmMeasurement measurement = measurements[idx];
-      SfmMeasurement otherMeasurement = sfmTrack.measurements[idx];
-
-      if (measurement.first != otherMeasurement.first ||
-          !measurement.second.isApprox(otherMeasurement.second)) {
-        return false;
-      }
-    }
-
-    // compare sift indices (order sensitive)
-    for (size_t idx = 0; idx < siftIndices.size(); ++idx) {
-      SiftIndex index = siftIndices[idx];
-      SiftIndex otherIndex = sfmTrack.siftIndices[idx];
-
-      if (index.first != otherIndex.first ||
-          index.second != otherIndex.second) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  /// print
-  void print(const std::string& s = "") const {
-    std::cout << "Track with " << measurements.size();
-    std::cout << " measurements of point " << p << std::endl;
-  }
-};
-
-/* ************************************************************************* */
-/// traits
-template<>
-struct traits<SfmTrack> : public Testable<SfmTrack> {
-};
-
-
-/// Define the structure for the camera poses
-typedef PinholeCamera<Cal3Bundler> SfmCamera;
-
-/// Define the structure for SfM data
-struct SfmData {
-  std::vector<SfmCamera> cameras; ///< Set of cameras
-  std::vector<SfmTrack> tracks; ///< Sparse set of points
-  size_t number_cameras() const {
-    return cameras.size();
-  }
-  /// The number of reconstructed 3D points
-  size_t number_tracks() const {
-    return tracks.size();
-  }
-  /// The camera pose at frame index `idx`
-  SfmCamera camera(size_t idx) const {
-    return cameras[idx];
-  }
-  /// The track formed by series of landmark measurements
-  SfmTrack track(size_t idx) const {
-    return tracks[idx];
-  }
-  /// Add a track to SfmData
-  void add_track(const SfmTrack& t) {
-    tracks.push_back(t);
-  }
-  /// Add a camera to SfmData
-  void add_camera(const SfmCamera& cam) {
-    cameras.push_back(cam);
-  }
-
-  /** Serialization function */
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(cameras);
-    ar & BOOST_SERIALIZATION_NVP(tracks);
-  }
-
-  /// @}
-  /// @name Testable
-  /// @{
-
-  /// assert equality up to a tolerance
-  bool equals(const SfmData &sfmData, double tol = 1e-9) const {
-    // check number of cameras and tracks
-    if (number_cameras() != sfmData.number_cameras() ||
-        number_tracks() != sfmData.number_tracks()) {
-      return false;
-    }
-
-    // check each camera
-    for (size_t i = 0; i < number_cameras(); ++i) {
-      if (!camera(i).equals(sfmData.camera(i), tol)) {
-        return false;
-      }
-    }
-
-    // check each track
-    for (size_t j = 0; j < number_tracks(); ++j) {
-      if (!track(j).equals(sfmData.track(j), tol)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  /// print
-  void print(const std::string& s = "") const {
-    std::cout << "Number of cameras = " << number_cameras() << std::endl;
-    std::cout << "Number of tracks = " << number_tracks() << std::endl;
-  }
-};
-
-/* ************************************************************************* */
-/// traits
-template<>
-struct traits<SfmData> : public Testable<SfmData> {
-};
-
-/**
- * @brief This function parses a bundler output file and stores the data into a
- * SfmData structure
- * @param filename The name of the bundler file
- * @param data SfM structure where the data is stored
- * @return true if the parsing was successful, false otherwise
- */
-GTSAM_EXPORT bool readBundler(const std::string& filename, SfmData &data);
-
-/**
- * @brief This function parses a "Bundle Adjustment in the Large" (BAL) file and stores the data into a
- * SfmData structure
- * @param filename The name of the BAL file
- * @param data SfM structure where the data is stored
- * @return true if the parsing was successful, false otherwise
- */
-GTSAM_EXPORT bool readBAL(const std::string& filename, SfmData &data);
-
-/**
- * @brief This function parses a "Bundle Adjustment in the Large" (BAL) file and returns the data
- * as a SfmData structure. Mainly used by wrapped code.
- * @param filename The name of the BAL file.
- * @return SfM structure where the data is stored.
- */
-GTSAM_EXPORT SfmData readBal(const std::string& filename);
-
-/**
- * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a
- * SfmData structure
- * @param filename The name of the BAL file to write
- * @param data SfM structure where the data is stored
- * @return true if the parsing was successful, false otherwise
- */
-GTSAM_EXPORT bool writeBAL(const std::string& filename, SfmData &data);
-
-/**
- * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a
- * SfmData structure and a value structure (measurements are the same as the SfM input data,
- * while camera poses and values are read from Values)
- * @param filename The name of the BAL file to write
- * @param data SfM structure where the data is stored
- * @param values structure where the graph values are stored (values can be either Pose3 or PinholeCamera<Cal3Bundler> for the
- * cameras, and should be Point3 for the 3D points). Note that the current version
- * assumes that the keys are "x1" for pose 1 (or "c1" for camera 1) and "l1" for landmark 1
- * @return true if the parsing was successful, false otherwise
- */
-GTSAM_EXPORT bool writeBALfromValues(const std::string& filename,
-    const SfmData &data, Values& values);
-
-/**
- * @brief This function converts an openGL camera pose to an GTSAM camera pose
- * @param R rotation in openGL
- * @param tx x component of the translation in openGL
- * @param ty y component of the translation in openGL
- * @param tz z component of the translation in openGL
- * @return Pose3 in GTSAM format
- */
-GTSAM_EXPORT Pose3 openGL2gtsam(const Rot3& R, double tx, double ty, double tz);
-
-/**
- * @brief This function converts a GTSAM camera pose to an openGL camera pose
- * @param R rotation in GTSAM
- * @param tx x component of the translation in GTSAM
- * @param ty y component of the translation in GTSAM
- * @param tz z component of the translation in GTSAM
- * @return Pose3 in openGL format
- */
-GTSAM_EXPORT Pose3 gtsam2openGL(const Rot3& R, double tx, double ty, double tz);
-
-/**
- * @brief This function converts a GTSAM camera pose to an openGL camera pose
- * @param PoseGTSAM pose in GTSAM format
- * @return Pose3 in openGL format
- */
-GTSAM_EXPORT Pose3 gtsam2openGL(const Pose3& PoseGTSAM);
-
-/**
- * @brief This function creates initial values for cameras from db
- * @param SfmData
- * @return Values
- */
-GTSAM_EXPORT Values initialCamerasEstimate(const SfmData& db);
-
-/**
- * @brief This function creates initial values for cameras and points from db
- * @param SfmData
- * @return Values
- */
-GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfmData& db);
-
 // Wrapper-friendly versions of parseFactors<Pose2> and parseFactors<Pose2>
 using BetweenFactorPose2s = std::vector<BetweenFactor<Pose2>::shared_ptr>;
 GTSAM_EXPORT BetweenFactorPose2s
@@ -504,17 +222,6 @@ parse3DFactors(const std::string &filename,
                size_t maxIndex = 0);
 
 using BinaryMeasurementsUnit3 = std::vector<BinaryMeasurement<Unit3>>;
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
-inline boost::optional<IndexedPose> parseVertex(std::istream &is,
-                                                const std::string &tag) {
-  return parseVertexPose(is, tag);
-}
-
-GTSAM_EXPORT std::map<size_t, Pose3> parse3DPoses(const std::string &filename,
-                                                  size_t maxIndex = 0);
-
-GTSAM_EXPORT std::map<size_t, Point3>
-parse3DLandmarks(const std::string &filename, size_t maxIndex = 0);
-
-#endif
+using BinaryMeasurementsPoint3 = std::vector<BinaryMeasurement<Point3>>;
+using BinaryMeasurementsRot3 = std::vector<BinaryMeasurement<Rot3>>;
 }  // namespace gtsam

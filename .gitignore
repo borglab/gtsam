@@ -3,6 +3,7 @@
 .idea
 *.pyc
 *.DS_Store
+*.swp
 /examples/Data/dubrovnik-3-7-pre-rewritten.txt
 /examples/Data/pose2example-rewritten.txt
 /examples/Data/pose3example-rewritten.txt
@@ -16,3 +17,6 @@
 # for QtCreator:
 CMakeLists.txt.user*
 xcode/
+/Dockerfile
+/python/gtsam/notebooks/.ipynb_checkpoints/ellipses-checkpoint.ipynb
+.cache/

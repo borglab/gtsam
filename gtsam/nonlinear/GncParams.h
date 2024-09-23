@@ -48,6 +48,8 @@ class GncParams {
   enum Verbosity {
     SILENT = 0,
     SUMMARY,
+    MU,
+    WEIGHTS,
     VALUES
   };
 
@@ -70,7 +72,13 @@ class GncParams {
   double relativeCostTol = 1e-5;  ///< If relative cost change is below this threshold, stop iterating
   double weightsTol = 1e-4;  ///< If the weights are within weightsTol from being binary, stop iterating (only for TLS)
   Verbosity verbosity = SILENT;  ///< Verbosity level
-  std::vector<size_t> knownInliers = std::vector<size_t>();  ///< Slots in the factor graph corresponding to measurements that we know are inliers
+
+  /// Use IndexVector for inliers and outliers since it is fast
+  using IndexVector = FastVector<uint64_t>;
+  ///< Slots in the factor graph corresponding to measurements that we know are inliers
+  IndexVector knownInliers;
+  ///< Slots in the factor graph corresponding to measurements that we know are outliers
+  IndexVector knownOutliers;
 
   /// Set the robust loss function to be used in GNC (chosen among the ones in GncLossType).
   void setLossType(const GncLossType type) {
@@ -111,9 +119,22 @@ class GncParams {
    * This functionality is commonly used in SLAM when one may assume the odometry is outlier free, and
    * only apply GNC to prune outliers from the loop closures.
    * */
-  void setKnownInliers(const std::vector<size_t>& knownIn) {
-    for (size_t i = 0; i < knownIn.size(); i++)
+  void setKnownInliers(const IndexVector& knownIn) {
+    for (size_t i = 0; i < knownIn.size(); i++){
       knownInliers.push_back(knownIn[i]);
+    }
+    std::sort(knownInliers.begin(), knownInliers.end());
+  }
+
+  /** (Optional) Provide a vector of measurements that must be considered outliers. The enties in the vector
+   * corresponds to the slots in the factor graph. For instance, if you have a nonlinear factor graph nfg,
+   * and you provide  knownOut = {0, 2, 15}, GNC will not apply outlier rejection to nfg[0], nfg[2], and nfg[15].
+   * */
+  void setKnownOutliers(const IndexVector& knownOut) {
+    for (size_t i = 0; i < knownOut.size(); i++){
+      knownOutliers.push_back(knownOut[i]);
+    }
+    std::sort(knownOutliers.begin(), knownOutliers.end());
   }
 
   /// Equals.
@@ -121,7 +142,8 @@ class GncParams {
     return baseOptimizerParams.equals(other.baseOptimizerParams)
         && lossType == other.lossType && maxIterations == other.maxIterations
         && std::fabs(muStep - other.muStep) <= tol
-        && verbosity == other.verbosity && knownInliers == other.knownInliers;
+        && verbosity == other.verbosity && knownInliers == other.knownInliers
+        && knownOutliers == other.knownOutliers;
   }
 
   /// Print.
@@ -144,7 +166,9 @@ class GncParams {
     std::cout << "verbosity: " << verbosity << "\n";
     for (size_t i = 0; i < knownInliers.size(); i++)
       std::cout << "knownInliers: " << knownInliers[i] << "\n";
-    baseOptimizerParams.print(str);
+    for (size_t i = 0; i < knownOutliers.size(); i++)
+      std::cout << "knownOutliers: " << knownOutliers[i] << "\n";
+    baseOptimizerParams.print("Base optimizer params: ");
   }
 };
 

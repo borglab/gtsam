@@ -100,7 +100,7 @@ public :
     Y+=coef*X;
   }
 
-  // alias free assignements
+  // alias free assignments
 
   static inline void matrix_vector_product(gene_matrix & A, gene_vector & B, gene_vector & X, int N){
     X.assign(prod(A,B));

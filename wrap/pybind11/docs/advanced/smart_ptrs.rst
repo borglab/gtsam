@@ -77,6 +77,7 @@ segmentation fault).
 .. code-block:: python
 
    from example import Parent
+
    print(Parent().get_child())
 
 The problem is that ``Parent::get_child()`` returns a pointer to an instance of
@@ -156,7 +157,7 @@ specialized:
     PYBIND11_DECLARE_HOLDER_TYPE(T, SmartPtr<T>);
 
     // Only needed if the type's `.get()` goes by another name
-    namespace pybind11 { namespace detail {
+    namespace PYBIND11_NAMESPACE { namespace detail {
         template <typename T>
         struct holder_helper<SmartPtr<T>> { // <-- specialization
             static const T *get(const SmartPtr<T> &p) { return p.getPointer(); }

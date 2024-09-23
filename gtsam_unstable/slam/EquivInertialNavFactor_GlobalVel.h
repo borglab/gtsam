@@ -27,8 +27,6 @@
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/optional.hpp>
-
 #include <ostream>
 
 namespace gtsam {
@@ -87,12 +85,12 @@ namespace gtsam {
  */
 
 template<class POSE, class VELOCITY, class IMUBIAS>
-class EquivInertialNavFactor_GlobalVel : public NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
+class EquivInertialNavFactor_GlobalVel : public NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
 
 private:
 
   typedef EquivInertialNavFactor_GlobalVel<POSE, VELOCITY, IMUBIAS> This;
-  typedef NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
+  typedef NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
 
   Vector delta_pos_in_t0_;
   Vector delta_vel_in_t0_;
@@ -105,13 +103,16 @@ private:
 
   Matrix Jacobian_wrt_t0_Overall_;
 
-  boost::optional<IMUBIAS> Bias_initial_; // Bias used when pre-integrating IMU measurements
-  boost::optional<POSE> body_P_sensor_;   // The pose of the sensor in the body frame
+  std::optional<IMUBIAS> Bias_initial_; // Bias used when pre-integrating IMU measurements
+  std::optional<POSE> body_P_sensor_;   // The pose of the sensor in the body frame
 
 public:
+	
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
   // shorthand for a smart pointer to a factor
-  typedef typename boost::shared_ptr<EquivInertialNavFactor_GlobalVel> shared_ptr;
+  typedef typename std::shared_ptr<EquivInertialNavFactor_GlobalVel> shared_ptr;
 
   /** default constructor - only use for serialization */
   EquivInertialNavFactor_GlobalVel() {}
@@ -122,7 +123,7 @@ public:
       double dt12, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const noiseModel::Gaussian::shared_ptr& model_equivalent,
       const Matrix& Jacobian_wrt_t0_Overall,
-      boost::optional<IMUBIAS> Bias_initial = boost::none, boost::optional<POSE> body_P_sensor = boost::none) :
+      std::optional<IMUBIAS> Bias_initial = {}, std::optional<POSE> body_P_sensor = {}) :
         Base(model_equivalent, Pose1, Vel1, IMUBias1, Pose2, Vel2),
         delta_pos_in_t0_(delta_pos_in_t0), delta_vel_in_t0_(delta_vel_in_t0), delta_angles_(delta_angles),
         dt12_(dt12), world_g_(world_g), world_rho_(world_rho), world_omega_earth_(world_omega_earth), Jacobian_wrt_t0_Overall_(Jacobian_wrt_t0_Overall),
@@ -298,47 +299,74 @@ public:
   }
 
   Vector evaluateError(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, const POSE& Pose2, const VELOCITY& Vel2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none,
-      boost::optional<Matrix&> H4 = boost::none,
-      boost::optional<Matrix&> H5 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3, OptionalMatrixType H4,
+      OptionalMatrixType H5) const override {
 
     // TODO: Write analytical derivative calculations
     // Jacobian w.r.t. Pose1
     if (H1){
-      Matrix H1_Pose = numericalDerivative11<POSE, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, _1, Vel1, Bias1, Pose2, Vel2), Pose1);
-      Matrix H1_Vel = numericalDerivative11<VELOCITY, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, _1, Vel1, Bias1, Pose2, Vel2), Pose1);
+      Matrix H1_Pose = numericalDerivative11<POSE, POSE>(
+          std::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError,
+                      this, std::placeholders::_1, Vel1, Bias1, Pose2, Vel2),
+          Pose1);
+      Matrix H1_Vel = numericalDerivative11<VELOCITY, POSE>(
+          std::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError,
+                      this, std::placeholders::_1, Vel1, Bias1, Pose2, Vel2),
+          Pose1);
       *H1 = stack(2, &H1_Pose, &H1_Vel);
     }
 
     // Jacobian w.r.t. Vel1
     if (H2){
       if (Vel1.size()!=3) throw std::runtime_error("Frank's hack to make this compile will not work if size != 3");
-      Matrix H2_Pose = numericalDerivative11<POSE, Vector3>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
-      Matrix H2_Vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
+      Matrix H2_Pose = numericalDerivative11<POSE, Vector3>(
+          std::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError,
+                      this, Pose1, std::placeholders::_1, Bias1, Pose2, Vel2),
+          Vel1);
+      Matrix H2_Vel = numericalDerivative11<Vector3, Vector3>(
+          std::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError,
+                      this, Pose1, std::placeholders::_1, Bias1, Pose2, Vel2),
+          Vel1);
       *H2 = stack(2, &H2_Pose, &H2_Vel);
     }
 
     // Jacobian w.r.t. IMUBias1
     if (H3){
-      Matrix H3_Pose = numericalDerivative11<POSE, IMUBIAS>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, Vel1, _1, Pose2, Vel2), Bias1);
-      Matrix H3_Vel = numericalDerivative11<VELOCITY, IMUBIAS>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, Vel1, _1, Pose2, Vel2), Bias1);
+      Matrix H3_Pose = numericalDerivative11<POSE, IMUBIAS>(
+          std::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError,
+                      this, Pose1, Vel1, std::placeholders::_1, Pose2, Vel2),
+          Bias1);
+      Matrix H3_Vel = numericalDerivative11<VELOCITY, IMUBIAS>(
+          std::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError,
+                      this, Pose1, Vel1, std::placeholders::_1, Pose2, Vel2),
+          Bias1);
       *H3 = stack(2, &H3_Pose, &H3_Vel);
     }
 
     // Jacobian w.r.t. Pose2
     if (H4){
-      Matrix H4_Pose = numericalDerivative11<POSE, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, Vel1, Bias1, _1, Vel2), Pose2);
-      Matrix H4_Vel = numericalDerivative11<VELOCITY, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, Vel1, Bias1, _1, Vel2), Pose2);
+      Matrix H4_Pose = numericalDerivative11<POSE, POSE>(
+          std::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError,
+                      this, Pose1, Vel1, Bias1, std::placeholders::_1, Vel2),
+          Pose2);
+      Matrix H4_Vel = numericalDerivative11<VELOCITY, POSE>(
+          std::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError,
+                      this, Pose1, Vel1, Bias1, std::placeholders::_1, Vel2),
+          Pose2);
       *H4 = stack(2, &H4_Pose, &H4_Vel);
     }
 
     // Jacobian w.r.t. Vel2
     if (H5){
       if (Vel2.size()!=3) throw std::runtime_error("Frank's hack to make this compile will not work if size != 3");
-      Matrix H5_Pose = numericalDerivative11<POSE, Vector3>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
-      Matrix H5_Vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
+      Matrix H5_Pose = numericalDerivative11<POSE, Vector3>(
+          std::bind(&EquivInertialNavFactor_GlobalVel::evaluatePoseError,
+                      this, Pose1, Vel1, Bias1, Pose2, std::placeholders::_1),
+          Vel2);
+      Matrix H5_Vel = numericalDerivative11<Vector3, Vector3>(
+          std::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError,
+                      this, Pose1, Vel1, Bias1, Pose2, std::placeholders::_1),
+          Vel2);
       *H5 = stack(2, &H5_Pose, &H5_Vel);
     }
 
@@ -354,7 +382,7 @@ public:
       const Vector& delta_pos_in_t0, const Vector3& delta_angles,
       double dt12, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const Matrix& Jacobian_wrt_t0_Overall,
-      const boost::optional<IMUBIAS>& Bias_initial = boost::none) {
+      const std::optional<IMUBIAS>& Bias_initial = {}) {
 
 
     // Correct delta_pos_in_t0_ using (Bias1 - Bias_t0)
@@ -383,7 +411,7 @@ public:
   static inline VELOCITY PredictVelocityFromPreIntegration(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1,
       const Vector& delta_vel_in_t0, double dt12, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const Matrix& Jacobian_wrt_t0_Overall,
-      const boost::optional<IMUBIAS>& Bias_initial = boost::none) {
+      const std::optional<IMUBIAS>& Bias_initial = {}) {
 
     // Correct delta_vel_in_t0_ using (Bias1 - Bias_t0)
     Vector delta_BiasAcc  = Bias1.accelerometer();
@@ -405,7 +433,7 @@ public:
       const Vector& delta_pos_in_t0, const Vector& delta_vel_in_t0, const Vector3& delta_angles,
       double dt12, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const Matrix& Jacobian_wrt_t0_Overall,
-      const boost::optional<IMUBIAS>& Bias_initial = boost::none) {
+      const std::optional<IMUBIAS>& Bias_initial = {}) {
 
     Pose2 = PredictPoseFromPreIntegration(Pose1, Vel1, Bias1, delta_pos_in_t0, delta_angles, dt12, world_g, world_rho, world_omega_earth, Jacobian_wrt_t0_Overall, Bias_initial);
     Vel2  = PredictVelocityFromPreIntegration(Pose1, Vel1, Bias1, delta_vel_in_t0, dt12, world_g, world_rho, world_omega_earth, Jacobian_wrt_t0_Overall, Bias_initial);
@@ -416,7 +444,7 @@ public:
       Vector& delta_pos_in_t0, Vector3& delta_angles, Vector& delta_vel_in_t0, double& delta_t,
       const noiseModel::Gaussian::shared_ptr& model_continuous_overall,
       Matrix& EquivCov_Overall, Matrix& Jacobian_wrt_t0_Overall, const IMUBIAS Bias_t0 = IMUBIAS(),
-      boost::optional<POSE> p_body_P_sensor = boost::none){
+      std::optional<POSE> p_body_P_sensor = {}){
     // Note: all delta terms refer to an IMU\sensor system at t0
     // Note: Earth-related terms are not accounted here but are incorporated in predict functions.
 
@@ -437,18 +465,45 @@ public:
     Matrix Z_3x3 = Z_3x3;
     Matrix I_3x3 = I_3x3;
 
-    Matrix H_pos_pos = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
-    Matrix H_pos_vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
+    Matrix H_pos_pos = numericalDerivative11<Vector3, Vector3>(
+        std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt,
+                    std::placeholders::_1, delta_vel_in_t0),
+        delta_pos_in_t0);
+    Matrix H_pos_vel = numericalDerivative11<Vector3, Vector3>(
+        std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt,
+                    delta_pos_in_t0, std::placeholders::_1),
+        delta_vel_in_t0);
     Matrix H_pos_angles = Z_3x3;
     Matrix H_pos_bias = collect(2, &Z_3x3, &Z_3x3);
 
-    Matrix H_vel_vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_vel_in_t0);
-    Matrix H_vel_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, _1, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
-    Matrix H_vel_bias = numericalDerivative11<Vector3, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
+    Matrix H_vel_vel = numericalDerivative11<Vector3, Vector3>(
+        std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t,
+                    msr_acc_t, msr_dt, delta_angles, std::placeholders::_1,
+                    flag_use_body_P_sensor, body_P_sensor, Bias_t0),
+        delta_vel_in_t0);
+    Matrix H_vel_angles = numericalDerivative11<Vector3, Vector3>(
+        std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t,
+                    msr_acc_t, msr_dt, std::placeholders::_1, delta_vel_in_t0,
+                    flag_use_body_P_sensor, body_P_sensor, Bias_t0),
+        delta_angles);
+    Matrix H_vel_bias = numericalDerivative11<Vector3, IMUBIAS>(
+        std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t,
+                    msr_acc_t, msr_dt, delta_angles, delta_vel_in_t0,
+                    flag_use_body_P_sensor, body_P_sensor,
+                    std::placeholders::_1),
+        Bias_t0);
     Matrix H_vel_pos = Z_3x3;
 
-    Matrix H_angles_angles = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, _1, flag_use_body_P_sensor, body_P_sensor, Bias_t0), delta_angles);
-    Matrix H_angles_bias = numericalDerivative11<Vector3, IMUBIAS>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, delta_angles, flag_use_body_P_sensor, body_P_sensor, _1), Bias_t0);
+    Matrix H_angles_angles = numericalDerivative11<Vector3, Vector3>(
+        std::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t,
+                    msr_dt, std::placeholders::_1, flag_use_body_P_sensor,
+                    body_P_sensor, Bias_t0),
+        delta_angles);
+    Matrix H_angles_bias = numericalDerivative11<Vector3, IMUBIAS>(
+        std::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t,
+                    msr_dt, delta_angles, flag_use_body_P_sensor, body_P_sensor,
+                    std::placeholders::_1),
+        Bias_t0);
     Matrix H_angles_pos = Z_3x3;
     Matrix H_angles_vel = Z_3x3;
 
@@ -649,6 +704,7 @@ public:
     }
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -656,6 +712,7 @@ private:
     ar & boost::serialization::make_nvp("NonlinearFactor2",
         boost::serialization::base_object<Base>(*this));
   }
+#endif
 
 
 

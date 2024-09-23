@@ -32,15 +32,21 @@
 namespace gtsam {
 
 /// Typedef for a function to format a key, i.e. to convert it to a string
-typedef std::function<std::string(Key)> KeyFormatter;
+using KeyFormatter = std::function<std::string(Key)>;
 
 // Helper function for DefaultKeyFormatter
 GTSAM_EXPORT std::string _defaultKeyFormatter(Key key);
 
-/// The default KeyFormatter, which is used if no KeyFormatter is passed to
-/// a nonlinear 'print' function.  Automatically detects plain integer keys
-/// and Symbol keys.
-static const KeyFormatter DefaultKeyFormatter = &_defaultKeyFormatter;
+/**
+ * The default KeyFormatter, which is used if no KeyFormatter is passed
+ * to a 'print' function.
+ *
+ * Automatically detects plain integer keys and Symbol keys.
+ * 
+ * Marked as `extern` so that it can be updated by external libraries.
+ *
+ */
+extern GTSAM_EXPORT KeyFormatter DefaultKeyFormatter;
 
 // Helper function for Multi-robot Key Formatter
 GTSAM_EXPORT std::string _multirobotKeyFormatter(gtsam::Key key);
@@ -83,28 +89,32 @@ class key_formatter {
 };
 
 /// Define collection type once and for all - also used in wrappers
-typedef FastVector<Key> KeyVector;
+using KeyVector = FastVector<Key>;
 
 // TODO(frank): Nothing fast about these :-(
-typedef FastList<Key> KeyList;
-typedef FastSet<Key> KeySet;
-typedef FastMap<Key, int> KeyGroupMap;
+using KeyList = FastList<Key>;
+using KeySet = FastSet<Key>;
+using KeyGroupMap = FastMap<Key, int>;
 
 /// Utility function to print one key with optional prefix
-GTSAM_EXPORT void PrintKey(Key key, const std::string& s = "",
-    const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+GTSAM_EXPORT void PrintKey(
+    Key key, const std::string &s = "",
+    const KeyFormatter &keyFormatter = DefaultKeyFormatter);
 
 /// Utility function to print sets of keys with optional prefix
-GTSAM_EXPORT void PrintKeyList(const KeyList& keys, const std::string& s = "",
-    const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+GTSAM_EXPORT void PrintKeyList(
+    const KeyList &keys, const std::string &s = "",
+    const KeyFormatter &keyFormatter = DefaultKeyFormatter);
 
 /// Utility function to print sets of keys with optional prefix
-GTSAM_EXPORT void PrintKeyVector(const KeyVector& keys, const std::string& s =
-    "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+GTSAM_EXPORT void PrintKeyVector(
+    const KeyVector &keys, const std::string &s = "",
+    const KeyFormatter &keyFormatter = DefaultKeyFormatter);
 
 /// Utility function to print sets of keys with optional prefix
-GTSAM_EXPORT void PrintKeySet(const KeySet& keys, const std::string& s = "",
-    const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+GTSAM_EXPORT void PrintKeySet(
+    const KeySet &keys, const std::string &s = "",
+    const KeyFormatter &keyFormatter = DefaultKeyFormatter);
 
 // Define Key to be Testable by specializing gtsam::traits
 template<typename T> struct traits;
@@ -120,7 +130,3 @@ struct traits<Key> {
 };
 
 } // namespace gtsam
-
-
-
-

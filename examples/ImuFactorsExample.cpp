@@ -25,7 +25,8 @@
  *  A row starting with "i" is the first initial position formatted with
  *  N, E, D, qx, qY, qZ, qW, velN, velE, velD
  *  A row starting with "0" is an imu measurement
- *  linAccN, linAccE, linAccD, angVelN, angVelE, angVelD
+ *  (body frame - Forward, Right, Down)
+ *  linAccX, linAccY, linAccZ, angVelX, angVelY, angVelX
  *  A row starting with "1" is a gps correction formatted with
  *  N, E, D, qX, qY, qZ, qW
  * Note that for GPS correction, we're only using the position not the
@@ -81,7 +82,7 @@ po::variables_map parseOptions(int argc, char* argv[]) {
   return vm;
 }
 
-boost::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
+std::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
   // We use the sensor specs to build the noise model for the IMU factor.
   double accel_noise_sigma = 0.0003924;
   double gyro_noise_sigma = 0.000205689024915;
@@ -93,7 +94,7 @@ boost::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
       I_3x3 * 1e-8;  // error committed in integrating position from velocities
   Matrix33 bias_acc_cov = I_3x3 * pow(accel_bias_rw_sigma, 2);
   Matrix33 bias_omega_cov = I_3x3 * pow(gyro_bias_rw_sigma, 2);
-  Matrix66 bias_acc_omega_int =
+  Matrix66 bias_acc_omega_init =
       I_6x6 * 1e-5;  // error in the bias used for preintegration
 
   auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(0.0);
@@ -109,7 +110,7 @@ boost::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
   // PreintegrationCombinedMeasurements params:
   p->biasAccCovariance = bias_acc_cov;      // acc bias in continuous
   p->biasOmegaCovariance = bias_omega_cov;  // gyro bias in continuous
-  p->biasAccOmegaInt = bias_acc_omega_int;
+  p->biasAccOmegaInt = bias_acc_omega_init;
 
   return p;
 }
@@ -266,7 +267,6 @@ int main(int argc, char* argv[]) {
 
       if (use_isam) {
         isam2->update(*graph, initial_values);
-        isam2->update();
         result = isam2->calculateEstimate();
 
         // reset the graph

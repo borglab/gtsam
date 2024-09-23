@@ -12,19 +12,18 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 # pylint: disable=unnecessary-lambda, expression-not-assigned
 
-from typing import Iterable, List, Union
+from typing import List, Sequence, Union
 
-from pyparsing import Forward, Optional, Or, ParseResults, delimitedList
+from pyparsing import ParseResults  # type: ignore
+from pyparsing import Forward, Optional, Or, delimitedList
 
-from .tokens import (BASIS_TYPES, CONST, IDENT, LOPBRACK, RAW_POINTER, REF,
+from .tokens import (BASIC_TYPES, CONST, IDENT, LOPBRACK, RAW_POINTER, REF,
                      ROPBRACK, SHARED_POINTER)
 
 
 class Typename:
     """
-    Generic type which can be either a basic type or a class type,
-    similar to C++'s `typename` aka a qualified dependent type.
-    Contains type name with full namespace and template arguments.
+    Class which holds a type's name, full namespace, and template arguments.
 
     E.g.
     ```
@@ -48,20 +47,21 @@ class Typename:
 
     def __init__(self,
                  t: ParseResults,
-                 instantiations: Union[tuple, list, str, ParseResults] = ()):
+                 instantiations: Sequence[ParseResults] = ()):
         self.name = t[-1]  # the name is the last element in this list
         self.namespaces = t[:-1]
 
+        # If the first namespace is empty string, just get rid of it.
+        if self.namespaces and self.namespaces[0] == '':
+            self.namespaces.pop(0)
+
         if instantiations:
-            if isinstance(instantiations, Iterable):
+            if isinstance(instantiations, Sequence):
                 self.instantiations = instantiations  # type: ignore
             else:
                 self.instantiations = instantiations.asList()
         else:
             self.instantiations = []
-
-        if self.name in ["Matrix", "Vector"] and not self.namespaces:
-            self.namespaces = ["gtsam"]
 
     @staticmethod
     def from_parse_result(parse_result: Union[str, list]):
@@ -84,15 +84,14 @@ class Typename:
 
     def to_cpp(self) -> str:
         """Generate the C++ code for wrapping."""
-        idx = 1 if self.namespaces and not self.namespaces[0] else 0
         if self.instantiations:
             cpp_name = self.name + "<{}>".format(", ".join(
                 [inst.to_cpp() for inst in self.instantiations]))
         else:
             cpp_name = self.name
         return '{}{}{}'.format(
-            "::".join(self.namespaces[idx:]),
-            "::" if self.namespaces[idx:] else "",
+            "::".join(self.namespaces),
+            "::" if self.namespaces else "",
             cpp_name,
         )
 
@@ -111,7 +110,7 @@ class BasicType:
     """
     Basic types are the fundamental built-in types in C++ such as double, int, char, etc.
 
-    When using templates, the basis type will take on the same form as the template.
+    When using templates, the basic type will take on the same form as the template.
 
     E.g.
     ```
@@ -122,16 +121,16 @@ class BasicType:
     will give
 
     ```
-    m_.def("CoolFunctionDoubleDouble",[](const double& s) {
-        return wrap_example::CoolFunction<double,double>(s);
-    }, py::arg("s"));
+    m_.def("funcDouble",[](const double& x){
+        ::func<double>(x);
+    }, py::arg("x"));
     ```
     """
 
-    rule = (Or(BASIS_TYPES)("typename")).setParseAction(lambda t: BasicType(t))
+    rule = (Or(BASIC_TYPES)("typename")).setParseAction(lambda t: BasicType(t))
 
     def __init__(self, t: ParseResults):
-        self.typename = Typename(t.asList())
+        self.typename = Typename(t)
 
 
 class CustomType:
@@ -155,15 +154,17 @@ class CustomType:
 
 class Type:
     """
-    Parsed datatype, can be either a fundamental type or a custom datatype.
+    Parsed datatype, can be either a fundamental/basic type or a custom datatype.
     E.g. void, double, size_t, Matrix.
+    Think of this as a high-level type which encodes the typename and other
+    characteristics of the type.
 
     The type can optionally be a raw pointer, shared pointer or reference.
     Can also be optionally qualified with a `const`, e.g. `const int`.
     """
     rule = (
         Optional(CONST("is_const"))  #
-        + (BasicType.rule("basis") | CustomType.rule("qualified"))  # BR
+        + (BasicType.rule("basic") | CustomType.rule("qualified"))  # BR
         + Optional(
             SHARED_POINTER("is_shared_ptr") | RAW_POINTER("is_ptr")
             | REF("is_ref"))  #
@@ -181,9 +182,10 @@ class Type:
     @staticmethod
     def from_parse_result(t: ParseResults):
         """Return the resulting Type from parsing the source."""
-        if t.basis:
+        # If the type is a basic/fundamental c++ type (e.g int, bool)
+        if t.basic:
             return Type(
-                typename=t.basis.typename,
+                typename=t.basic.typename,
                 is_const=t.is_const,
                 is_shared_ptr=t.is_shared_ptr,
                 is_ptr=t.is_ptr,
@@ -210,34 +212,30 @@ class Type:
             is_const="const " if self.is_const else "",
             is_ptr_or_ref=" " + is_ptr_or_ref if is_ptr_or_ref else "")
 
-    def to_cpp(self, use_boost: bool) -> str:
+    def to_cpp(self) -> str:
         """
         Generate the C++ code for wrapping.
 
         Treat all pointers as "const shared_ptr<T>&"
-        Treat Matrix and Vector as "const Matrix&" and "const Vector&" resp.
-
-        Args:
-            use_boost: Flag indicating whether to use boost::shared_ptr or std::shared_ptr.
         """
-        shared_ptr_ns = "boost" if use_boost else "std"
 
         if self.is_shared_ptr:
-            typename = "{ns}::shared_ptr<{typename}>".format(
-                ns=shared_ptr_ns, typename=self.typename.to_cpp())
+            typename = "std::shared_ptr<{typename}>".format(
+                typename=self.typename.to_cpp())
         elif self.is_ptr:
             typename = "{typename}*".format(typename=self.typename.to_cpp())
-        elif self.is_ref or self.typename.name in ["Matrix", "Vector"]:
+        elif self.is_ref:
             typename = typename = "{typename}&".format(
                 typename=self.typename.to_cpp())
         else:
             typename = self.typename.to_cpp()
 
         return ("{const}{typename}".format(
-            const="const " if
-            (self.is_const
-             or self.typename.name in ["Matrix", "Vector"]) else "",
-            typename=typename))
+            const="const " if self.is_const else "", typename=typename))
+
+    def get_typename(self):
+        """Convenience method to get the typename of this type."""
+        return self.typename.name
 
 
 class TemplatedType:
@@ -285,34 +283,25 @@ class TemplatedType:
         return "TemplatedType({typename.namespaces}::{typename.name})".format(
             typename=self.typename)
 
-    def to_cpp(self, use_boost: bool):
+    def to_cpp(self):
         """
         Generate the C++ code for wrapping.
-
-        Args:
-            use_boost: Flag indicating whether to use boost::shared_ptr or std::shared_ptr.
         """
         # Use Type.to_cpp to do the heavy lifting for the template parameters.
-        template_args = ", ".join(
-            [t.to_cpp(use_boost) for t in self.template_params])
+        template_args = ", ".join([t.to_cpp() for t in self.template_params])
 
         typename = "{typename}<{template_args}>".format(
             typename=self.typename.qualified_name(),
             template_args=template_args)
 
-        shared_ptr_ns = "boost" if use_boost else "std"
         if self.is_shared_ptr:
-            typename = "{ns}::shared_ptr<{typename}>".format(ns=shared_ptr_ns,
-                                                             typename=typename)
+            typename = f"std::shared_ptr<{typename}>"
         elif self.is_ptr:
             typename = "{typename}*".format(typename=typename)
-        elif self.is_ref or self.typename.name in ["Matrix", "Vector"]:
+        elif self.is_ref:
             typename = typename = "{typename}&".format(typename=typename)
         else:
             pass
 
         return ("{const}{typename}".format(
-            const="const " if
-            (self.is_const
-             or self.typename.name in ["Matrix", "Vector"]) else "",
-            typename=typename))
+            const="const " if self.is_const else "", typename=typename))

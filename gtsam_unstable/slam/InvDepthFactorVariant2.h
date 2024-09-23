@@ -23,7 +23,7 @@ namespace gtsam {
 /**
  * Binary factor representing a visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant2: public NoiseModelFactor2<Pose3, Vector3> {
+class InvDepthFactorVariant2: public NoiseModelFactorN<Pose3, Vector3> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -36,11 +36,14 @@ public:
   /// shorthand for base class type
   typedef NoiseModelFactor2<Pose3, Vector3> Base;
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   /// shorthand for this class
   typedef InvDepthFactorVariant2 This;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// Default constructor
   InvDepthFactorVariant2() :
@@ -94,8 +97,8 @@ public:
       return camera.project(world_P_landmark) - measured_;
     } catch( CheiralityException& e) {
       std::cout << e.what()
-          << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key2()) << "]"
-          << " moved behind camera [" << DefaultKeyFormatter(this->key1()) <<"]"
+          << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key<2>()) << "]"
+          << " moved behind camera [" << DefaultKeyFormatter(this->key<1>()) <<"]"
           << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
@@ -104,18 +107,17 @@ public:
 
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(const Pose3& pose, const Vector3& landmark,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
 
     if (H1) {
       (*H1) = numericalDerivative11<Vector, Pose3>(
-          boost::bind(&InvDepthFactorVariant2::inverseDepthError, this, _1,
-              landmark), pose);
+          std::bind(&InvDepthFactorVariant2::inverseDepthError, this,
+              std::placeholders::_1, landmark), pose);
     }
     if (H2) {
       (*H2) = numericalDerivative11<Vector, Vector3>(
-          boost::bind(&InvDepthFactorVariant2::inverseDepthError, this, pose,
-              _1), landmark);
+          std::bind(&InvDepthFactorVariant2::inverseDepthError, this, pose,
+              std::placeholders::_1), landmark);
     }
 
     return inverseDepthError(pose, landmark);
@@ -138,6 +140,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -147,6 +150,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(K_);
     ar & BOOST_SERIALIZATION_NVP(referencePoint_);
   }
+#endif
 };
 
 } // \ namespace gtsam

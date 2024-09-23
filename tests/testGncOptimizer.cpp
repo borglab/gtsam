@@ -99,6 +99,30 @@ TEST(GncOptimizer, gncConstructor) {
 }
 
 /* ************************************************************************* */
+TEST(GncOptimizer, solverParameterParsing) {
+  // has to have Gaussian noise models !
+  auto fg = example::createReallyNonlinearFactorGraph();  // just a unary factor
+                                                          // on a 2D point
+
+  Point2 p0(3, 3);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  LevenbergMarquardtParams lmParams;
+  lmParams.setMaxIterations(0); // forces not to perform optimization
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                               gncParams);
+  Values result = gnc.optimize();
+
+  // check that LM did not perform optimization and result is the same as the initial guess
+  DOUBLES_EQUAL(fg.error(initial), fg.error(result), tol);
+
+  // also check the params:
+  DOUBLES_EQUAL(0.0, gncParams.baseOptimizerParams.maxIterations, tol);
+}
+
+/* ************************************************************************* */
 TEST(GncOptimizer, gncConstructorWithRobustGraphAsInput) {
   auto fg = example::sharedNonRobustFactorGraphWithOutliers();
   // same graph with robust noise model
@@ -543,7 +567,7 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
   Values initial;
   initial.insert(X(1), p0);
 
-  std::vector<size_t> knownInliers;
+  GncParams<GaussNewtonParams>::IndexVector knownInliers;
   knownInliers.push_back(0);
   knownInliers.push_back(1);
   knownInliers.push_back(2);
@@ -620,7 +644,7 @@ TEST(GncOptimizer, barcsq) {
   Values initial;
   initial.insert(X(1), p0);
 
-  std::vector<size_t> knownInliers;
+  GncParams<GaussNewtonParams>::IndexVector knownInliers;
   knownInliers.push_back(0);
   knownInliers.push_back(1);
   knownInliers.push_back(2);
@@ -660,14 +684,14 @@ TEST(GncOptimizer, barcsq_heterogeneousFactors) {
 }
 
 /* ************************************************************************* */
-TEST(GncOptimizer, setWeights) {
+TEST(GncOptimizer, setInlierCostThresholds) {
   auto fg = example::sharedNonRobustFactorGraphWithOutliers();
 
   Point2 p0(1, 0);
   Values initial;
   initial.insert(X(1), p0);
 
-  std::vector<size_t> knownInliers;
+  GncParams<GaussNewtonParams>::IndexVector knownInliers;
   knownInliers.push_back(0);
   knownInliers.push_back(1);
   knownInliers.push_back(2);
@@ -713,9 +737,7 @@ TEST(GncOptimizer, setWeights) {
 TEST(GncOptimizer, optimizeSmallPoseGraph) {
   /// load small pose graph
   const string filename = findExampleDataFile("w100.graph");
-  NonlinearFactorGraph::shared_ptr graph;
-  Values::shared_ptr initial;
-  boost::tie(graph, initial) = load2D(filename);
+  const auto [graph, initial] = load2D(filename);
   // Add a Gaussian prior on first poses
   Pose2 priorMean(0.0, 0.0, 0.0);  // prior at origin
   SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(
@@ -728,7 +750,8 @@ TEST(GncOptimizer, optimizeSmallPoseGraph) {
   // add a few outliers
   SharedDiagonal betweenNoise = noiseModel::Diagonal::Sigmas(
       Vector3(0.1, 0.1, 0.01));
-  graph->push_back(BetweenFactor<Pose2>(90, 50, Pose2(), betweenNoise));  // some arbitrary and incorrect between factor
+  // some arbitrary and incorrect between factor
+  graph->push_back(BetweenFactor<Pose2>(90, 50, Pose2(), betweenNoise));
 
   /// get expected values by optimizing outlier-free graph
   Values expectedWithOutliers = LevenbergMarquardtOptimizer(*graph, *initial)
@@ -737,9 +760,9 @@ TEST(GncOptimizer, optimizeSmallPoseGraph) {
   // CHECK(assert_equal(expected, expectedWithOutliers, 1e-3));
 
   // GNC
-  // Note: in difficult instances, we set the odometry measurements to be
-  // inliers, but this problem is simple enought to succeed even without that
-  // assumption std::vector<size_t> knownInliers;
+  // NOTE: in difficult instances, we set the odometry measurements to be
+  // inliers, but this problem is simple enough to succeed even without that
+  // assumption.
   GncParams<GaussNewtonParams> gncParams;
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(*graph, *initial,
                                                         gncParams);
@@ -747,6 +770,177 @@ TEST(GncOptimizer, optimizeSmallPoseGraph) {
 
   // compare
   CHECK(assert_equal(expected, actual, 1e-3));  // yay! we are robust to outliers!
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, knownInliersAndOutliers) {
+  auto fg = example::sharedNonRobustFactorGraphWithOutliers();
+
+  Point2 p0(1, 0);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  // nonconvexity with known inliers and known outliers (check early stopping
+  // when all measurements are known to be inliers or outliers)
+  {
+    GncParams<GaussNewtonParams>::IndexVector knownInliers;
+    knownInliers.push_back(0);
+    knownInliers.push_back(1);
+    knownInliers.push_back(2);
+
+    GncParams<GaussNewtonParams>::IndexVector knownOutliers;
+    knownOutliers.push_back(3);
+
+    GncParams<GaussNewtonParams> gncParams;
+    gncParams.setKnownInliers(knownInliers);
+    gncParams.setKnownOutliers(knownOutliers);
+    gncParams.setLossType(GncLossType::GM);
+    //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::SUMMARY);
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
+        gncParams);
+    gnc.setInlierCostThresholds(1.0);
+    Values gnc_result = gnc.optimize();
+    CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+
+    // check weights were actually fixed:
+    Vector finalWeights = gnc.getWeights();
+    DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[1], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+    DOUBLES_EQUAL(0.0, finalWeights[3], tol);
+  }
+
+  // nonconvexity with known inliers and known outliers
+  {
+    GncParams<GaussNewtonParams>::IndexVector knownInliers;
+    knownInliers.push_back(2);
+    knownInliers.push_back(0);
+
+    GncParams<GaussNewtonParams>::IndexVector knownOutliers;
+    knownOutliers.push_back(3);
+
+    GncParams<GaussNewtonParams> gncParams;
+    gncParams.setKnownInliers(knownInliers);
+    gncParams.setKnownOutliers(knownOutliers);
+    gncParams.setLossType(GncLossType::GM);
+    //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::SUMMARY);
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
+        gncParams);
+    gnc.setInlierCostThresholds(1.0);
+    Values gnc_result = gnc.optimize();
+    CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+
+    // check weights were actually fixed:
+    Vector finalWeights = gnc.getWeights();
+    DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[1], 1e-5);
+    DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+    DOUBLES_EQUAL(0.0, finalWeights[3], tol);
+  }
+
+  // only known outliers
+  {
+    GncParams<GaussNewtonParams>::IndexVector knownOutliers;
+    knownOutliers.push_back(3);
+
+    GncParams<GaussNewtonParams> gncParams;
+    gncParams.setKnownOutliers(knownOutliers);
+    gncParams.setLossType(GncLossType::GM);
+    //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::SUMMARY);
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
+        gncParams);
+    gnc.setInlierCostThresholds(1.0);
+    Values gnc_result = gnc.optimize();
+    CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+
+    // check weights were actually fixed:
+    Vector finalWeights = gnc.getWeights();
+    DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[1], 1e-5);
+    DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+    DOUBLES_EQUAL(0.0, finalWeights[3], tol);
+  }
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, setWeights) {
+  auto fg = example::sharedNonRobustFactorGraphWithOutliers();
+
+  Point2 p0(1, 0);
+  Values initial;
+  initial.insert(X(1), p0);
+  // initialize weights to be the same
+  {
+    GncParams<GaussNewtonParams> gncParams;
+    gncParams.setLossType(GncLossType::TLS);
+
+    Vector weights = 0.5 * Vector::Ones(fg.size());
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
+        gncParams);
+    gnc.setWeights(weights);
+    gnc.setInlierCostThresholds(1.0);
+    Values gnc_result = gnc.optimize();
+    CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+
+    // check weights were actually fixed:
+    Vector finalWeights = gnc.getWeights();
+    DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[1], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+    DOUBLES_EQUAL(0.0, finalWeights[3], tol);
+  }
+  // try a more challenging initialization
+  {
+    GncParams<GaussNewtonParams> gncParams;
+    gncParams.setLossType(GncLossType::TLS);
+
+    Vector weights = Vector::Zero(fg.size());
+    weights(2) = 1.0;
+    weights(3) = 1.0; // bad initialization: we say the outlier is inlier
+    // GNC can still recover (but if you omit weights(2) = 1.0, then it would fail)
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
+        gncParams);
+    gnc.setWeights(weights);
+    gnc.setInlierCostThresholds(1.0);
+    Values gnc_result = gnc.optimize();
+    CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+
+    // check weights were actually fixed:
+    Vector finalWeights = gnc.getWeights();
+    DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[1], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+    DOUBLES_EQUAL(0.0, finalWeights[3], tol);
+  }
+  // initialize weights and also set known inliers/outliers
+  {
+    GncParams<GaussNewtonParams> gncParams;
+    GncParams<GaussNewtonParams>::IndexVector knownInliers;
+    knownInliers.push_back(2);
+    knownInliers.push_back(0);
+
+    GncParams<GaussNewtonParams>::IndexVector knownOutliers;
+    knownOutliers.push_back(3);
+    gncParams.setKnownInliers(knownInliers);
+    gncParams.setKnownOutliers(knownOutliers);
+
+    gncParams.setLossType(GncLossType::TLS);
+
+    Vector weights = 0.5 * Vector::Ones(fg.size());
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
+        gncParams);
+    gnc.setWeights(weights);
+    gnc.setInlierCostThresholds(1.0);
+    Values gnc_result = gnc.optimize();
+    CHECK(assert_equal(Point2(0.0, 0.0), gnc_result.at<Point2>(X(1)), 1e-3));
+
+    // check weights were actually fixed:
+    Vector finalWeights = gnc.getWeights();
+    DOUBLES_EQUAL(1.0, finalWeights[0], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[1], tol);
+    DOUBLES_EQUAL(1.0, finalWeights[2], tol);
+    DOUBLES_EQUAL(0.0, finalWeights[3], tol);
+  }
 }
 
 /* ************************************************************************* */

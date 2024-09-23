@@ -78,7 +78,8 @@ VectorValues DoglegOptimizerImpl::ComputeBlend(double delta, const VectorValues&
 
   // Compute blended point
   if(verbose) cout << "In blend region with fraction " << tau << " of Newton's method point" << endl;
-  VectorValues blend = (1. - tau) * x_u;  axpy(tau, x_n, blend);
+  VectorValues blend = (1. - tau) * x_u;
+  blend += tau * x_n;
   return blend;
 }
 

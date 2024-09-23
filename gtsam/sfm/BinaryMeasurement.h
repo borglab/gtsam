@@ -35,11 +35,11 @@ namespace gtsam {
 
 template <class T> class BinaryMeasurement : public Factor {
   // Check that T type is testable
-  BOOST_CONCEPT_ASSERT((IsTestable<T>));
+  GTSAM_CONCEPT_ASSERT(IsTestable<T>);
 
 public:
   // shorthand for a smart pointer to a measurement
-  using shared_ptr = typename boost::shared_ptr<BinaryMeasurement>;
+  using shared_ptr = typename std::shared_ptr<BinaryMeasurement>;
 
 private:
   T measured_;                  ///< The measurement
@@ -64,8 +64,8 @@ private:
   /// @name Testable
   /// @{
 
-  void print(const std::string &s,
-             const KeyFormatter &keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string &s, const KeyFormatter &keyFormatter =
+                                       DefaultKeyFormatter) const override {
     std::cout << s << "BinaryMeasurement(" << keyFormatter(this->key1()) << ","
               << keyFormatter(this->key2()) << ")\n";
     traits<T>::Print(measured_, "  measured: ");

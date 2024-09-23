@@ -15,14 +15,10 @@
  * @author: Alex Cunningham
  */
 
-#include <iostream>
-
-#include <boost/format.hpp>
-#include <boost/bind.hpp>
-
-#include <boost/lexical_cast.hpp>
-
 #include <gtsam/inference/LabeledSymbol.h>
+
+#include <iostream>
+#include <limits>
 
 namespace gtsam {
 
@@ -76,7 +72,10 @@ void LabeledSymbol::print(const std::string& s) const {
 
 /* ************************************************************************* */
 LabeledSymbol::operator std::string() const {
-  return str(boost::format("%c%c%d") % c_ % label_ % j_);
+  char buffer[100];
+  snprintf(buffer, 100, "%c%c%llu", c_, label_,
+           static_cast<unsigned long long>(j_));
+  return std::string(buffer);
 }
 
 /* ************************************************************************* */
@@ -109,17 +108,37 @@ bool LabeledSymbol::operator!=(gtsam::Key comp) const {
 /* ************************************************************************* */
 static LabeledSymbol make(gtsam::Key key) { return LabeledSymbol(key);}
 
-boost::function<bool(gtsam::Key)> LabeledSymbol::TypeTest(unsigned char c) {
-  return boost::bind(&LabeledSymbol::chr, boost::bind(make, _1)) == c;
+std::function<bool(gtsam::Key)> LabeledSymbol::TypeTest(unsigned char c) {
+  // Use lambda function to check equality
+  auto equals = [](unsigned char s, unsigned char c) { return s == c; };
+  return std::bind(
+      equals,
+      std::bind(&LabeledSymbol::chr, std::bind(make, std::placeholders::_1)),
+      c);
 }
 
-boost::function<bool(gtsam::Key)> LabeledSymbol::LabelTest(unsigned char label) {
-  return boost::bind(&LabeledSymbol::label, boost::bind(make, _1)) == label;
+std::function<bool(gtsam::Key)> LabeledSymbol::LabelTest(unsigned char label) {
+  // Use lambda function to check equality
+  auto equals = [](unsigned char s, unsigned char c) { return s == c; };
+  return std::bind(
+      equals,
+      std::bind(&LabeledSymbol::label, std::bind(make, std::placeholders::_1)),
+      label);
 }
 
-boost::function<bool(gtsam::Key)> LabeledSymbol::TypeLabelTest(unsigned char c, unsigned char label) {
-  return boost::bind(&LabeledSymbol::chr,   boost::bind(make, _1)) == c &&
-      boost::bind(&LabeledSymbol::label, boost::bind(make, _1)) == label;
+std::function<bool(gtsam::Key)> LabeledSymbol::TypeLabelTest(unsigned char c, unsigned char label) {
+  // Use lambda functions for && and ==
+  auto logical_and = [](bool is_type, bool is_label) { return is_type == is_label; };
+  auto equals = [](unsigned char s, unsigned char c) { return s == c; };
+  return std::bind(logical_and,
+                   std::bind(equals,
+                             std::bind(&LabeledSymbol::chr,
+                                       std::bind(make, std::placeholders::_1)),
+                             c),
+                   std::bind(equals,
+                             std::bind(&LabeledSymbol::label,
+                                       std::bind(make, std::placeholders::_1)),
+                             label));
 }
 
 /* ************************************************************************* */

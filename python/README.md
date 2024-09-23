@@ -8,6 +8,7 @@ For instructions on updating the version of the [wrap library](https://github.co
 
 ## Requirements
 
+- Cmake >= 3.15
 - If you want to build the GTSAM python library for a specific python version (eg 3.6),
   use the `-DGTSAM_PYTHON_VERSION=3.6` option when running `cmake` otherwise the default interpreter will be used.
 - If the interpreter is inside an environment (such as an anaconda environment or virtualenv environment),
@@ -15,7 +16,7 @@ For instructions on updating the version of the [wrap library](https://github.co
 - This wrapper needs `pyparsing(>=2.4.2)`, and `numpy(>=1.11.0)`. These can be installed as follows:
 
   ```bash
-  pip install -r <gtsam_folder>/python/requirements.txt
+  pip install -r <gtsam_folder>/python/dev_requirements.txt
   ```
 
 ## Install
@@ -24,6 +25,7 @@ For instructions on updating the version of the [wrap library](https://github.co
   ```bash
   cmake .. -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=3.6.10
   ```
+  If you do not have TBB installed, you should also provide the argument `-DGTSAM_WITH_TBB=OFF`.
 - Build GTSAM and the wrapper with `make` (or `ninja` if you use `-GNinja`).
 
 - To install, simply run `make python-install` (`ninja python-install`).
@@ -35,12 +37,8 @@ For instructions on updating the version of the [wrap library](https://github.co
 ## Unit Tests
 
 The Python toolbox also has a small set of unit tests located in the
-test directory. To run them:
-
-  ```bash
-  cd <GTSAM_SOURCE_DIRECTORY>/python/gtsam/tests
-  python -m unittest discover
-  ```
+test directory.
+To run them, use `make python-test`.
 
 ## Utils
 

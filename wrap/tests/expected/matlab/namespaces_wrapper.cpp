@@ -1,74 +1,30 @@
 #include <gtwrap/matlab.h>
 #include <map>
 
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/serialization/export.hpp>
-
-#include <folder/path/to/Test.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Point3.h>
+#include <gtsam/nonlinear/Values.h>
 #include <path/to/ns1.h>
 #include <path/to/ns1/ClassB.h>
 #include <path/to/ns2.h>
 #include <path/to/ns2/ClassA.h>
 #include <path/to/ns3.h>
 
-typedef Fun<double> FunDouble;
-typedef PrimitiveRef<double> PrimitiveRefDouble;
-typedef MyVector<3> MyVector3;
-typedef MyVector<12> MyVector12;
-typedef MultipleTemplates<int, double> MultipleTemplatesIntDouble;
-typedef MultipleTemplates<int, float> MultipleTemplatesIntFloat;
-typedef MyFactor<gtsam::Pose2, gtsam::Matrix> MyFactorPosePoint2;
-typedef MyTemplate<gtsam::Point2> MyTemplatePoint2;
-typedef MyTemplate<gtsam::Matrix> MyTemplateMatrix;
 
-BOOST_CLASS_EXPORT_GUID(gtsam::Point2, "gtsamPoint2");
-BOOST_CLASS_EXPORT_GUID(gtsam::Point3, "gtsamPoint3");
 
-typedef std::set<boost::shared_ptr<FunRange>*> Collector_FunRange;
-static Collector_FunRange collector_FunRange;
-typedef std::set<boost::shared_ptr<FunDouble>*> Collector_FunDouble;
-static Collector_FunDouble collector_FunDouble;
-typedef std::set<boost::shared_ptr<Test>*> Collector_Test;
-static Collector_Test collector_Test;
-typedef std::set<boost::shared_ptr<PrimitiveRefDouble>*> Collector_PrimitiveRefDouble;
-static Collector_PrimitiveRefDouble collector_PrimitiveRefDouble;
-typedef std::set<boost::shared_ptr<MyVector3>*> Collector_MyVector3;
-static Collector_MyVector3 collector_MyVector3;
-typedef std::set<boost::shared_ptr<MyVector12>*> Collector_MyVector12;
-static Collector_MyVector12 collector_MyVector12;
-typedef std::set<boost::shared_ptr<MultipleTemplatesIntDouble>*> Collector_MultipleTemplatesIntDouble;
-static Collector_MultipleTemplatesIntDouble collector_MultipleTemplatesIntDouble;
-typedef std::set<boost::shared_ptr<MultipleTemplatesIntFloat>*> Collector_MultipleTemplatesIntFloat;
-static Collector_MultipleTemplatesIntFloat collector_MultipleTemplatesIntFloat;
-typedef std::set<boost::shared_ptr<MyFactorPosePoint2>*> Collector_MyFactorPosePoint2;
-static Collector_MyFactorPosePoint2 collector_MyFactorPosePoint2;
-typedef std::set<boost::shared_ptr<gtsam::Point2>*> Collector_gtsamPoint2;
-static Collector_gtsamPoint2 collector_gtsamPoint2;
-typedef std::set<boost::shared_ptr<gtsam::Point3>*> Collector_gtsamPoint3;
-static Collector_gtsamPoint3 collector_gtsamPoint3;
-typedef std::set<boost::shared_ptr<MyBase>*> Collector_MyBase;
-static Collector_MyBase collector_MyBase;
-typedef std::set<boost::shared_ptr<MyTemplatePoint2>*> Collector_MyTemplatePoint2;
-static Collector_MyTemplatePoint2 collector_MyTemplatePoint2;
-typedef std::set<boost::shared_ptr<MyTemplateMatrix>*> Collector_MyTemplateMatrix;
-static Collector_MyTemplateMatrix collector_MyTemplateMatrix;
-typedef std::set<boost::shared_ptr<ForwardKinematicsFactor>*> Collector_ForwardKinematicsFactor;
-static Collector_ForwardKinematicsFactor collector_ForwardKinematicsFactor;
-typedef std::set<boost::shared_ptr<ns1::ClassA>*> Collector_ns1ClassA;
+typedef std::set<std::shared_ptr<ns1::ClassA>*> Collector_ns1ClassA;
 static Collector_ns1ClassA collector_ns1ClassA;
-typedef std::set<boost::shared_ptr<ns1::ClassB>*> Collector_ns1ClassB;
+typedef std::set<std::shared_ptr<ns1::ClassB>*> Collector_ns1ClassB;
 static Collector_ns1ClassB collector_ns1ClassB;
-typedef std::set<boost::shared_ptr<ns2::ClassA>*> Collector_ns2ClassA;
+typedef std::set<std::shared_ptr<ns2::ClassA>*> Collector_ns2ClassA;
 static Collector_ns2ClassA collector_ns2ClassA;
-typedef std::set<boost::shared_ptr<ns2::ns3::ClassB>*> Collector_ns2ns3ClassB;
+typedef std::set<std::shared_ptr<ns2::ns3::ClassB>*> Collector_ns2ns3ClassB;
 static Collector_ns2ns3ClassB collector_ns2ns3ClassB;
-typedef std::set<boost::shared_ptr<ns2::ClassC>*> Collector_ns2ClassC;
+typedef std::set<std::shared_ptr<ns2::ClassC>*> Collector_ns2ClassC;
 static Collector_ns2ClassC collector_ns2ClassC;
-typedef std::set<boost::shared_ptr<ClassD>*> Collector_ClassD;
+typedef std::set<std::shared_ptr<ClassD>*> Collector_ClassD;
 static Collector_ClassD collector_ClassD;
+typedef std::set<std::shared_ptr<gtsam::Values>*> Collector_gtsamValues;
+static Collector_gtsamValues collector_gtsamValues;
+
 
 void _deleteAllObjects()
 {
@@ -76,96 +32,6 @@ void _deleteAllObjects()
   std::streambuf *outbuf = std::cout.rdbuf(&mout);
 
   bool anyDeleted = false;
-  { for(Collector_FunRange::iterator iter = collector_FunRange.begin();
-      iter != collector_FunRange.end(); ) {
-    delete *iter;
-    collector_FunRange.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_FunDouble::iterator iter = collector_FunDouble.begin();
-      iter != collector_FunDouble.end(); ) {
-    delete *iter;
-    collector_FunDouble.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_Test::iterator iter = collector_Test.begin();
-      iter != collector_Test.end(); ) {
-    delete *iter;
-    collector_Test.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_PrimitiveRefDouble::iterator iter = collector_PrimitiveRefDouble.begin();
-      iter != collector_PrimitiveRefDouble.end(); ) {
-    delete *iter;
-    collector_PrimitiveRefDouble.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyVector3::iterator iter = collector_MyVector3.begin();
-      iter != collector_MyVector3.end(); ) {
-    delete *iter;
-    collector_MyVector3.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyVector12::iterator iter = collector_MyVector12.begin();
-      iter != collector_MyVector12.end(); ) {
-    delete *iter;
-    collector_MyVector12.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MultipleTemplatesIntDouble::iterator iter = collector_MultipleTemplatesIntDouble.begin();
-      iter != collector_MultipleTemplatesIntDouble.end(); ) {
-    delete *iter;
-    collector_MultipleTemplatesIntDouble.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MultipleTemplatesIntFloat::iterator iter = collector_MultipleTemplatesIntFloat.begin();
-      iter != collector_MultipleTemplatesIntFloat.end(); ) {
-    delete *iter;
-    collector_MultipleTemplatesIntFloat.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyFactorPosePoint2::iterator iter = collector_MyFactorPosePoint2.begin();
-      iter != collector_MyFactorPosePoint2.end(); ) {
-    delete *iter;
-    collector_MyFactorPosePoint2.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_gtsamPoint2::iterator iter = collector_gtsamPoint2.begin();
-      iter != collector_gtsamPoint2.end(); ) {
-    delete *iter;
-    collector_gtsamPoint2.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_gtsamPoint3::iterator iter = collector_gtsamPoint3.begin();
-      iter != collector_gtsamPoint3.end(); ) {
-    delete *iter;
-    collector_gtsamPoint3.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyBase::iterator iter = collector_MyBase.begin();
-      iter != collector_MyBase.end(); ) {
-    delete *iter;
-    collector_MyBase.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyTemplatePoint2::iterator iter = collector_MyTemplatePoint2.begin();
-      iter != collector_MyTemplatePoint2.end(); ) {
-    delete *iter;
-    collector_MyTemplatePoint2.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyTemplateMatrix::iterator iter = collector_MyTemplateMatrix.begin();
-      iter != collector_MyTemplateMatrix.end(); ) {
-    delete *iter;
-    collector_MyTemplateMatrix.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_ForwardKinematicsFactor::iterator iter = collector_ForwardKinematicsFactor.begin();
-      iter != collector_ForwardKinematicsFactor.end(); ) {
-    delete *iter;
-    collector_ForwardKinematicsFactor.erase(iter++);
-    anyDeleted = true;
-  } }
   { for(Collector_ns1ClassA::iterator iter = collector_ns1ClassA.begin();
       iter != collector_ns1ClassA.end(); ) {
     delete *iter;
@@ -202,6 +68,13 @@ void _deleteAllObjects()
     collector_ClassD.erase(iter++);
     anyDeleted = true;
   } }
+  { for(Collector_gtsamValues::iterator iter = collector_gtsamValues.begin();
+      iter != collector_gtsamValues.end(); ) {
+    delete *iter;
+    collector_gtsamValues.erase(iter++);
+    anyDeleted = true;
+  } }
+
   if(anyDeleted)
     cout <<
       "WARNING:  Wrap modules with variables in the workspace have been reloaded due to\n"
@@ -214,10 +87,8 @@ void _namespaces_RTTIRegister() {
   const mxArray *alreadyCreated = mexGetVariablePtr("global", "gtsam_namespaces_rttiRegistry_created");
   if(!alreadyCreated) {
     std::map<std::string, std::string> types;
-    types.insert(std::make_pair(typeid(MyBase).name(), "MyBase"));
-    types.insert(std::make_pair(typeid(MyTemplatePoint2).name(), "MyTemplatePoint2"));
-    types.insert(std::make_pair(typeid(MyTemplateMatrix).name(), "MyTemplateMatrix"));
-    types.insert(std::make_pair(typeid(ForwardKinematicsFactor).name(), "ForwardKinematicsFactor"));
+
+
 
     mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
     if(!registry)
@@ -225,18 +96,21 @@ void _namespaces_RTTIRegister() {
     typedef std::pair<std::string, std::string> StringPair;
     for(const StringPair& rtti_matlab: types) {
       int fieldId = mxAddField(registry, rtti_matlab.first.c_str());
-      if(fieldId < 0)
+      if(fieldId < 0) {
         mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+      }
       mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());
       mxSetFieldByNumber(registry, 0, fieldId, matlabName);
     }
-    if(mexPutVariable("global", "gtsamwrap_rttiRegistry", registry) != 0)
+    if(mexPutVariable("global", "gtsamwrap_rttiRegistry", registry) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+    }
     mxDestroyArray(registry);
-    
+
     mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);
-    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0)
+    if(mexPutVariable("global", "gtsam_namespaces_rttiRegistry_created", newAlreadyCreated) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+    }
     mxDestroyArray(newAlreadyCreated);
   }
 }
@@ -244,7 +118,7 @@ void _namespaces_RTTIRegister() {
 void ns1ClassA_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ns1::ClassA> Shared;
+  typedef std::shared_ptr<ns1::ClassA> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_ns1ClassA.insert(self);
@@ -253,7 +127,7 @@ void ns1ClassA_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nar
 void ns1ClassA_constructor_1(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ns1::ClassA> Shared;
+  typedef std::shared_ptr<ns1::ClassA> Shared;
 
   Shared *self = new Shared(new ns1::ClassA());
   collector_ns1ClassA.insert(self);
@@ -263,21 +137,21 @@ void ns1ClassA_constructor_1(int nargout, mxArray *out[], int nargin, const mxAr
 
 void ns1ClassA_deconstructor_2(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<ns1::ClassA> Shared;
+  typedef std::shared_ptr<ns1::ClassA> Shared;
   checkArguments("delete_ns1ClassA",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_ns1ClassA::iterator item;
   item = collector_ns1ClassA.find(self);
   if(item != collector_ns1ClassA.end()) {
-    delete self;
     collector_ns1ClassA.erase(item);
   }
+  delete self;
 }
 
 void ns1ClassB_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ns1::ClassB> Shared;
+  typedef std::shared_ptr<ns1::ClassB> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_ns1ClassB.insert(self);
@@ -286,7 +160,7 @@ void ns1ClassB_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nar
 void ns1ClassB_constructor_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ns1::ClassB> Shared;
+  typedef std::shared_ptr<ns1::ClassB> Shared;
 
   Shared *self = new Shared(new ns1::ClassB());
   collector_ns1ClassB.insert(self);
@@ -296,15 +170,15 @@ void ns1ClassB_constructor_4(int nargout, mxArray *out[], int nargin, const mxAr
 
 void ns1ClassB_deconstructor_5(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<ns1::ClassB> Shared;
+  typedef std::shared_ptr<ns1::ClassB> Shared;
   checkArguments("delete_ns1ClassB",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_ns1ClassB::iterator item;
   item = collector_ns1ClassB.find(self);
   if(item != collector_ns1ClassB.end()) {
-    delete self;
     collector_ns1ClassB.erase(item);
   }
+  delete self;
 }
 
 void aGlobalFunction_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -315,7 +189,7 @@ void aGlobalFunction_6(int nargout, mxArray *out[], int nargin, const mxArray *i
 void ns2ClassA_collectorInsertAndMakeBase_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ns2::ClassA> Shared;
+  typedef std::shared_ptr<ns2::ClassA> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_ns2ClassA.insert(self);
@@ -324,7 +198,7 @@ void ns2ClassA_collectorInsertAndMakeBase_7(int nargout, mxArray *out[], int nar
 void ns2ClassA_constructor_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ns2::ClassA> Shared;
+  typedef std::shared_ptr<ns2::ClassA> Shared;
 
   Shared *self = new Shared(new ns2::ClassA());
   collector_ns2ClassA.insert(self);
@@ -334,15 +208,15 @@ void ns2ClassA_constructor_8(int nargout, mxArray *out[], int nargin, const mxAr
 
 void ns2ClassA_deconstructor_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<ns2::ClassA> Shared;
+  typedef std::shared_ptr<ns2::ClassA> Shared;
   checkArguments("delete_ns2ClassA",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_ns2ClassA::iterator item;
   item = collector_ns2ClassA.find(self);
   if(item != collector_ns2ClassA.end()) {
-    delete self;
     collector_ns2ClassA.erase(item);
   }
+  delete self;
 }
 
 void ns2ClassA_memberFunction_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -365,19 +239,19 @@ void ns2ClassA_nsReturn_12(int nargout, mxArray *out[], int nargin, const mxArra
   checkArguments("nsReturn",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<ns2::ClassA>(in[0], "ptr_ns2ClassA");
   double q = unwrap< double >(in[1]);
-  out[0] = wrap_shared_ptr(boost::make_shared<ns2::ns3::ClassB>(obj->nsReturn(q)),"ns2.ns3.ClassB", false);
+  out[0] = wrap_shared_ptr(std::make_shared<ns2::ns3::ClassB>(obj->nsReturn(q)),"ns2.ns3.ClassB", false);
 }
 
 void ns2ClassA_afunction_13(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("ns2ClassA.afunction",nargout,nargin,0);
+  checkArguments("ns2::ClassA.afunction",nargout,nargin,0);
   out[0] = wrap< double >(ns2::ClassA::afunction());
 }
 
 void ns2ns3ClassB_collectorInsertAndMakeBase_14(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ns2::ns3::ClassB> Shared;
+  typedef std::shared_ptr<ns2::ns3::ClassB> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_ns2ns3ClassB.insert(self);
@@ -386,7 +260,7 @@ void ns2ns3ClassB_collectorInsertAndMakeBase_14(int nargout, mxArray *out[], int
 void ns2ns3ClassB_constructor_15(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ns2::ns3::ClassB> Shared;
+  typedef std::shared_ptr<ns2::ns3::ClassB> Shared;
 
   Shared *self = new Shared(new ns2::ns3::ClassB());
   collector_ns2ns3ClassB.insert(self);
@@ -396,21 +270,21 @@ void ns2ns3ClassB_constructor_15(int nargout, mxArray *out[], int nargin, const 
 
 void ns2ns3ClassB_deconstructor_16(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<ns2::ns3::ClassB> Shared;
+  typedef std::shared_ptr<ns2::ns3::ClassB> Shared;
   checkArguments("delete_ns2ns3ClassB",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_ns2ns3ClassB::iterator item;
   item = collector_ns2ns3ClassB.find(self);
   if(item != collector_ns2ns3ClassB.end()) {
-    delete self;
     collector_ns2ns3ClassB.erase(item);
   }
+  delete self;
 }
 
 void ns2ClassC_collectorInsertAndMakeBase_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ns2::ClassC> Shared;
+  typedef std::shared_ptr<ns2::ClassC> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_ns2ClassC.insert(self);
@@ -419,7 +293,7 @@ void ns2ClassC_collectorInsertAndMakeBase_17(int nargout, mxArray *out[], int na
 void ns2ClassC_constructor_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ns2::ClassC> Shared;
+  typedef std::shared_ptr<ns2::ClassC> Shared;
 
   Shared *self = new Shared(new ns2::ClassC());
   collector_ns2ClassC.insert(self);
@@ -429,15 +303,15 @@ void ns2ClassC_constructor_18(int nargout, mxArray *out[], int nargin, const mxA
 
 void ns2ClassC_deconstructor_19(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<ns2::ClassC> Shared;
+  typedef std::shared_ptr<ns2::ClassC> Shared;
   checkArguments("delete_ns2ClassC",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_ns2ClassC::iterator item;
   item = collector_ns2ClassC.find(self);
   if(item != collector_ns2ClassC.end()) {
-    delete self;
     collector_ns2ClassC.erase(item);
   }
+  delete self;
 }
 
 void aGlobalFunction_20(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -449,19 +323,19 @@ void overloadedGlobalFunction_21(int nargout, mxArray *out[], int nargin, const 
 {
   checkArguments("overloadedGlobalFunction",nargout,nargin,1);
   ns1::ClassA& a = *unwrap_shared_ptr< ns1::ClassA >(in[0], "ptr_ns1ClassA");
-  out[0] = wrap_shared_ptr(boost::make_shared<ns1::ClassA>(ns2::overloadedGlobalFunction(a)),"ns1.ClassA", false);
+  out[0] = wrap_shared_ptr(std::make_shared<ns1::ClassA>(ns2::overloadedGlobalFunction(a)),"ns1.ClassA", false);
 }
 void overloadedGlobalFunction_22(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("overloadedGlobalFunction",nargout,nargin,2);
   ns1::ClassA& a = *unwrap_shared_ptr< ns1::ClassA >(in[0], "ptr_ns1ClassA");
   double b = unwrap< double >(in[1]);
-  out[0] = wrap_shared_ptr(boost::make_shared<ns1::ClassA>(ns2::overloadedGlobalFunction(a,b)),"ns1.ClassA", false);
+  out[0] = wrap_shared_ptr(std::make_shared<ns1::ClassA>(ns2::overloadedGlobalFunction(a,b)),"ns1.ClassA", false);
 }
 void ClassD_collectorInsertAndMakeBase_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ClassD> Shared;
+  typedef std::shared_ptr<ClassD> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_ClassD.insert(self);
@@ -470,7 +344,7 @@ void ClassD_collectorInsertAndMakeBase_23(int nargout, mxArray *out[], int nargi
 void ClassD_constructor_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<ClassD> Shared;
+  typedef std::shared_ptr<ClassD> Shared;
 
   Shared *self = new Shared(new ClassD());
   collector_ClassD.insert(self);
@@ -480,15 +354,78 @@ void ClassD_constructor_24(int nargout, mxArray *out[], int nargin, const mxArra
 
 void ClassD_deconstructor_25(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<ClassD> Shared;
+  typedef std::shared_ptr<ClassD> Shared;
   checkArguments("delete_ClassD",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_ClassD::iterator item;
   item = collector_ClassD.find(self);
   if(item != collector_ClassD.end()) {
-    delete self;
     collector_ClassD.erase(item);
   }
+  delete self;
+}
+
+void gtsamValues_collectorInsertAndMakeBase_26(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef std::shared_ptr<gtsam::Values> Shared;
+
+  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
+  collector_gtsamValues.insert(self);
+}
+
+void gtsamValues_constructor_27(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef std::shared_ptr<gtsam::Values> Shared;
+
+  Shared *self = new Shared(new gtsam::Values());
+  collector_gtsamValues.insert(self);
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
+}
+
+void gtsamValues_constructor_28(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef std::shared_ptr<gtsam::Values> Shared;
+
+  gtsam::Values& other = *unwrap_shared_ptr< gtsam::Values >(in[0], "ptr_gtsamValues");
+  Shared *self = new Shared(new gtsam::Values(other));
+  collector_gtsamValues.insert(self);
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
+}
+
+void gtsamValues_deconstructor_29(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef std::shared_ptr<gtsam::Values> Shared;
+  checkArguments("delete_gtsamValues",nargout,nargin,1);
+  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
+  Collector_gtsamValues::iterator item;
+  item = collector_gtsamValues.find(self);
+  if(item != collector_gtsamValues.end()) {
+    collector_gtsamValues.erase(item);
+  }
+  delete self;
+}
+
+void gtsamValues_insert_30(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("insert",nargout,nargin-1,2);
+  auto obj = unwrap_shared_ptr<gtsam::Values>(in[0], "ptr_gtsamValues");
+  size_t j = unwrap< size_t >(in[1]);
+  Vector vector = unwrap< Vector >(in[2]);
+  obj->insert(j,vector);
+}
+
+void gtsamValues_insert_31(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("insert",nargout,nargin-1,2);
+  auto obj = unwrap_shared_ptr<gtsam::Values>(in[0], "ptr_gtsamValues");
+  size_t j = unwrap< size_t >(in[1]);
+  Matrix matrix = unwrap< Matrix >(in[2]);
+  obj->insert(j,matrix);
 }
 
 
@@ -580,6 +517,24 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     case 25:
       ClassD_deconstructor_25(nargout, out, nargin-1, in+1);
+      break;
+    case 26:
+      gtsamValues_collectorInsertAndMakeBase_26(nargout, out, nargin-1, in+1);
+      break;
+    case 27:
+      gtsamValues_constructor_27(nargout, out, nargin-1, in+1);
+      break;
+    case 28:
+      gtsamValues_constructor_28(nargout, out, nargin-1, in+1);
+      break;
+    case 29:
+      gtsamValues_deconstructor_29(nargout, out, nargin-1, in+1);
+      break;
+    case 30:
+      gtsamValues_insert_30(nargout, out, nargin-1, in+1);
+      break;
+    case 31:
+      gtsamValues_insert_31(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

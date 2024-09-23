@@ -25,6 +25,7 @@
 
 #include <iostream>
 
+using namespace std::placeholders;
 using namespace gtsam;
 
 // Convenience for named keys
@@ -44,7 +45,7 @@ TEST( simulated3D, Values )
 TEST( simulated3D, Dprior )
 {
   Point3 x(1,-9, 7);
-  Matrix numerical = numericalDerivative11<Point3, Point3>(boost::bind(simulated3D::prior, _1, boost::none),x);
+  Matrix numerical = numericalDerivative11<Point3, Point3>(std::bind(simulated3D::prior, std::placeholders::_1, nullptr),x);
   Matrix computed;
   simulated3D::prior(x,computed);
   EXPECT(assert_equal(numerical,computed,1e-9));
@@ -53,13 +54,19 @@ TEST( simulated3D, Dprior )
 /* ************************************************************************* */
 TEST( simulated3D, DOdo )
 {
-  Point3 x1(1,-9,7),x2(-5,6,7);
-  Matrix H1,H2;
-  simulated3D::odo(x1,x2,H1,H2);
-  Matrix A1 = numericalDerivative21<Point3, Point3, Point3>(boost::bind(simulated3D::odo, _1, _2, boost::none, boost::none),x1,x2);
-  EXPECT(assert_equal(A1,H1,1e-9));
-  Matrix A2 = numericalDerivative22<Point3, Point3, Point3>(boost::bind(simulated3D::odo, _1, _2, boost::none, boost::none),x1,x2);
-  EXPECT(assert_equal(A2,H2,1e-9));
+  Point3 x1(1, -9, 7), x2(-5, 6, 7);
+  Matrix H1, H2;
+  simulated3D::odo(x1, x2, H1, H2);
+  Matrix A1 = numericalDerivative21<Point3, Point3, Point3>(
+      std::bind(simulated3D::odo, std::placeholders::_1, std::placeholders::_2,
+                nullptr, nullptr),
+      x1, x2);
+  EXPECT(assert_equal(A1, H1, 1e-9));
+  Matrix A2 = numericalDerivative22<Point3, Point3, Point3>(
+      std::bind(simulated3D::odo, std::placeholders::_1, std::placeholders::_2,
+                nullptr, nullptr),
+      x1, x2);
+  EXPECT(assert_equal(A2, H2, 1e-9));
 }
 
 

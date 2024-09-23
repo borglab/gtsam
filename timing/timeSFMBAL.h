@@ -16,6 +16,9 @@
  * @date    July 5, 2015
  */
 
+#pragma once
+
+#include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -54,9 +57,7 @@ SfmData preamble(int argc, char* argv[]) {
     filename = argv[argc - 1];
   else
     filename = findExampleDataFile("dubrovnik-16-22106-pre");
-  bool success = readBAL(filename, db);
-  if (!success) throw runtime_error("Could not access file!");
-  return db;
+  return SfmData::FromBalFile(filename);
 }
 
 // Create ordering and optimize
@@ -73,8 +74,8 @@ int optimize(const SfmData& db, const NonlinearFactorGraph& graph,
   if (gUseSchur) {
     // Create Schur-complement ordering
     Ordering ordering;
-    for (size_t j = 0; j < db.number_tracks(); j++) ordering.push_back(P(j));
-    for (size_t i = 0; i < db.number_cameras(); i++) {
+    for (size_t j = 0; j < db.numberTracks(); j++) ordering.push_back(P(j));
+    for (size_t i = 0; i < db.numberCameras(); i++) {
       ordering.push_back(C(i));
       if (separateCalibration) ordering.push_back(K(i));
     }

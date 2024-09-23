@@ -5,7 +5,7 @@ Automatic conversion
 ====================
 
 When including the additional header file :file:`pybind11/stl.h`, conversions
-between ``std::vector<>``/``std::deque<>``/``std::list<>``/``std::array<>``,
+between ``std::vector<>``/``std::deque<>``/``std::list<>``/``std::array<>``/``std::valarray<>``,
 ``std::set<>``/``std::unordered_set<>``, and
 ``std::map<>``/``std::unordered_map<>`` and the Python ``list``, ``set`` and
 ``dict`` data structures are automatically enabled. The types ``std::pair<>``
@@ -42,7 +42,7 @@ types:
 .. code-block:: cpp
 
     // `boost::optional` as an example -- can be any `std::optional`-like container
-    namespace pybind11 { namespace detail {
+    namespace PYBIND11_NAMESPACE { namespace detail {
         template <typename T>
         struct type_caster<boost::optional<T>> : optional_caster<boost::optional<T>> {};
     }}
@@ -54,7 +54,7 @@ for custom variant types:
 .. code-block:: cpp
 
     // `boost::variant` as an example -- can be any `std::variant`-like container
-    namespace pybind11 { namespace detail {
+    namespace PYBIND11_NAMESPACE { namespace detail {
         template <typename... Ts>
         struct type_caster<boost::variant<Ts...>> : variant_caster<boost::variant<Ts...>> {};
 
@@ -66,18 +66,27 @@ for custom variant types:
                 return boost::apply_visitor(args...);
             }
         };
-    }} // namespace pybind11::detail
+    }} // namespace PYBIND11_NAMESPACE::detail
 
 The ``visit_helper`` specialization is not required if your ``name::variant`` provides
 a ``name::visit()`` function. For any other function name, the specialization must be
 included to tell pybind11 how to visit the variant.
 
+.. warning::
+
+    When converting a ``variant`` type, pybind11 follows the same rules as when
+    determining which function overload to call (:ref:`overload_resolution`), and
+    so the same caveats hold. In particular, the order in which the ``variant``'s
+    alternatives are listed is important, since pybind11 will try conversions in
+    this order. This means that, for example, when converting ``variant<int, bool>``,
+    the ``bool`` variant will never be selected, as any Python ``bool`` is already
+    an ``int`` and is convertible to a C++ ``int``. Changing the order of alternatives
+    (and using ``variant<bool, int>``, in this example) provides a solution.
+
 .. note::
 
     pybind11 only supports the modern implementation of ``boost::variant``
     which makes use of variadic templates. This requires Boost 1.56 or newer.
-    Additionally, on Windows, MSVC 2017 is required because ``boost::variant``
-    falls back to the old non-variadic implementation on MSVC 2015.
 
 .. _opaque:
 

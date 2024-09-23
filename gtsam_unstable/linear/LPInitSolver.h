@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <gtsam_unstable/dllexport.h>
 #include <gtsam_unstable/linear/LP.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
@@ -30,7 +31,7 @@ namespace gtsam {
  *    min y
  *    st Ax = b
  *       Cx - y <= d
- * where y \in R, x \in R^n, and Ax = b and Cx <= d is the constraints of the original problem.
+ * where \f$y \in R\f$, \f$x \in R^n\f$, and Ax = b and Cx <= d is the constraints of the original problem.
  *
  * If the solution for this problem {x*,y*} has y* <= 0, we'll have x* a feasible initial point
  * of the original problem
@@ -49,7 +50,7 @@ namespace gtsam {
  * inequality constraint, we can't conclude that the problem is infeasible.
  * However, whether it is infeasible or unbounded, we don't have a unique solution anyway.
  */
-class LPInitSolver {
+class GTSAM_UNSTABLE_EXPORT LPInitSolver {
 private:
   const LP& lp_;
 

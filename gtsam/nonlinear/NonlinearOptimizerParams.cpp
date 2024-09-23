@@ -9,7 +9,6 @@
  */
 
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
-#include <boost/algorithm/string.hpp>
 
 namespace gtsam {
 
@@ -17,7 +16,8 @@ namespace gtsam {
 NonlinearOptimizerParams::Verbosity NonlinearOptimizerParams::verbosityTranslator(
     const std::string &src) {
   std::string s = src;
-  boost::algorithm::to_upper(s);
+  // Convert to upper case
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   if (s == "SILENT")
     return NonlinearOptimizerParams::SILENT;
   if (s == "ERROR")
@@ -67,7 +67,7 @@ std::string NonlinearOptimizerParams::verbosityTranslator(
 
 /* ************************************************************************* */
 void NonlinearOptimizerParams::setIterativeParams(
-    const boost::shared_ptr<IterativeOptimizationParameters> params) {
+    const std::shared_ptr<IterativeOptimizationParameters> params) {
   iterativeParams = params;
 }
 
@@ -121,6 +121,28 @@ void NonlinearOptimizerParams::print(const std::string& str) const {
   }
 
   std::cout.flush();
+}
+
+/* ************************************************************************* */
+bool NonlinearOptimizerParams::equals(const NonlinearOptimizerParams& other,
+                                      double tol) const {
+  // Check for equality of shared ptrs
+  bool iterative_params_equal = iterativeParams == other.iterativeParams;
+  // Check equality of components
+  if (iterativeParams && other.iterativeParams) {
+    iterative_params_equal = iterativeParams->equals(*other.iterativeParams);
+  } else {
+    // Check if either is null. If both are null, then true
+    iterative_params_equal = !iterativeParams && !other.iterativeParams;
+  }
+
+  return maxIterations == other.getMaxIterations() &&
+         std::abs(relativeErrorTol - other.getRelativeErrorTol()) <= tol &&
+         std::abs(absoluteErrorTol - other.getAbsoluteErrorTol()) <= tol &&
+         std::abs(errorTol - other.getErrorTol()) <= tol &&
+         verbosityTranslator(verbosity) == other.getVerbosity() &&
+         orderingType == other.orderingType && ordering == other.ordering &&
+         linearSolverType == other.linearSolverType && iterative_params_equal;
 }
 
 /* ************************************************************************* */

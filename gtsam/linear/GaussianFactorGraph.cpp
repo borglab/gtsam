@@ -19,7 +19,6 @@
  */
 
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
@@ -66,6 +65,22 @@ namespace gtsam {
       }
     }
     return spec;
+  }
+
+  /* ************************************************************************* */
+  double GaussianFactorGraph::error(const VectorValues& x) const {
+    double total_error = 0.;
+    for(const sharedFactor& factor: *this){
+      if(factor)
+        total_error += factor->error(x);
+    }
+    return total_error;
+  }
+
+  /* ************************************************************************* */
+  double GaussianFactorGraph::probPrime(const VectorValues& c) const {
+    // NOTE the 0.5 constant is handled by the factor error.
+    return exp(-error(c));
   }
 
   /* ************************************************************************* */
@@ -133,10 +148,10 @@ namespace gtsam {
 
       // Convert to JacobianFactor if necessary
       JacobianFactor::shared_ptr jacobianFactor(
-          boost::dynamic_pointer_cast<JacobianFactor>(factor));
+          std::dynamic_pointer_cast<JacobianFactor>(factor));
       if (!jacobianFactor) {
         HessianFactor::shared_ptr hessian(
-            boost::dynamic_pointer_cast<HessianFactor>(factor));
+            std::dynamic_pointer_cast<HessianFactor>(factor));
         if (hessian)
           jacobianFactor.reset(new JacobianFactor(*hessian));
         else
@@ -234,7 +249,7 @@ namespace gtsam {
     // combine all factors and get upper-triangular part of Hessian
     Scatter scatter(*this, ordering);
     HessianFactor combined(*this, scatter);
-    return combined.info().selfadjointView();;
+    return combined.info().selfadjointView();
   }
 
   /* ************************************************************************* */
@@ -242,7 +257,7 @@ namespace gtsam {
     // combine all factors and get upper-triangular part of Hessian
     Scatter scatter(*this);
     HessianFactor combined(*this, scatter);
-    return combined.info().selfadjointView();;
+    return combined.info().selfadjointView();
   }
 
   /* ************************************************************************* */
@@ -290,10 +305,11 @@ namespace gtsam {
     return blocks;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues GaussianFactorGraph::optimize(const Eliminate& function) const {
     gttic(GaussianFactorGraph_optimize);
-    return BaseEliminateable::eliminateMultifrontal(function)->optimize();
+    return BaseEliminateable::eliminateMultifrontal(Ordering::COLAMD, function)
+        ->optimize();
   }
 
   /* ************************************************************************* */
@@ -329,10 +345,10 @@ namespace gtsam {
   /* ************************************************************************* */
   namespace {
     JacobianFactor::shared_ptr convertToJacobianFactorPtr(const GaussianFactor::shared_ptr &gf) {
-      JacobianFactor::shared_ptr result = boost::dynamic_pointer_cast<JacobianFactor>(gf);
+      JacobianFactor::shared_ptr result = std::dynamic_pointer_cast<JacobianFactor>(gf);
       if( !result )
         // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
-        result = boost::make_shared<JacobianFactor>(*gf);
+        result = std::make_shared<JacobianFactor>(*gf);
       return result;
     }
   }
@@ -379,7 +395,7 @@ namespace gtsam {
 
     gttic(Compute_minimizing_step_size);
     // Compute minimizing step size
-    double step = -gradientSqNorm / dot(Rg, Rg);
+    double step = -gradientSqNorm / gtsam::dot(Rg, Rg);
     gttoc(Compute_minimizing_step_size);
 
     gttic(Compute_point);
@@ -426,7 +442,7 @@ namespace gtsam {
   bool hasConstraints(const GaussianFactorGraph& factors) {
     typedef JacobianFactor J;
     for (const GaussianFactor::shared_ptr& factor: factors) {
-      J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
+      J::shared_ptr jacobian(std::dynamic_pointer_cast<J>(factor));
       if (jacobian && jacobian->get_model() && jacobian->get_model()->isConstrained()) {
         return true;
       }
@@ -504,10 +520,32 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  /** \deprecated */
-  VectorValues GaussianFactorGraph::optimize(boost::none_t,
-    const Eliminate& function) const {
-      return optimize(function);
+  void GaussianFactorGraph::printErrors(
+      const VectorValues& values, const std::string& str,
+      const KeyFormatter& keyFormatter,
+      const std::function<bool(const Factor* /*factor*/,
+                               double /*whitenedError*/, size_t /*index*/)>&
+          printCondition) const {
+    cout << str << "size: " << size() << endl << endl;
+    for (size_t i = 0; i < (*this).size(); i++) {
+      const sharedFactor& factor = (*this)[i];
+      const double errorValue =
+          (factor != nullptr ? (*this)[i]->error(values) : .0);
+      if (!printCondition(factor.get(), errorValue, i))
+        continue;  // User-provided filter did not pass
+
+      stringstream ss;
+      ss << "Factor " << i << ": ";
+      if (factor == nullptr) {
+        cout << "nullptr"
+             << "\n";
+      } else {
+        factor->print(ss.str(), keyFormatter);
+        cout << "error = " << errorValue << "\n";
+      }
+      cout << endl;  // only one "endl" at end might be faster, \n for each
+                     // factor
+    }
   }
 
 } // namespace gtsam

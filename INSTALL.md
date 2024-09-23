@@ -13,16 +13,18 @@ $ make install
 ## Important Installation Notes
 
 1. GTSAM requires the following libraries to be installed on your system:
-    - BOOST version 1.58 or greater (install through Linux repositories or MacPorts)
+    - BOOST version 1.65 or greater (install through Linux repositories or MacPorts). Please see [Boost Notes](#boost-notes) for version recommendations based on your compiler.
+
     - Cmake version 3.0 or higher
     - Support for XCode 4.3 command line tools on Mac requires CMake 2.8.8 or higher
 
     Optional dependent libraries:
      - If TBB is installed and detectable by CMake GTSAM will use it automatically.
        Ensure that CMake prints "Use Intel TBB : Yes".  To disable the use of TBB,
-       disable the CMake flag GTSAM_WITH_TBB (enabled by default).  On Ubuntu, TBB
-       may be installed from the Ubuntu repositories, and for other platforms it
-       may be downloaded from https://www.threadingbuildingblocks.org/
+       disable the CMake flag `GTSAM_WITH_TBB` (enabled by default) by providing
+       the argument `-DGTSAM_WITH_TBB=OFF` to `cmake`.  On Ubuntu, TBB may be
+       installed from the Ubuntu repositories, and for other platforms it may be
+       downloaded from https://www.threadingbuildingblocks.org/
      - GTSAM may be configured to use MKL by toggling `GTSAM_WITH_EIGEN_MKL` and
        `GTSAM_WITH_EIGEN_MKL_OPENMP` to `ON`; however, best performance is usually
        achieved with MKL disabled. We therefore advise you to benchmark your problem 
@@ -48,7 +50,7 @@ will run up to 10x faster in Release mode! See the end of this document for
 additional debugging tips.
 
 3. GTSAM has Doxygen documentation. To generate, run 'make doc' from your
-build directory.
+build directory after setting the `GTSAM_BUILD_DOCS` and `GTSAM_BUILD_[HTML|LATEX]` cmake flags.
 
 4. The instructions below install the library to the default system install path and
 build all components. From a terminal, starting in the root library folder,
@@ -65,11 +67,15 @@ execute commands as follows for an out-of-source build:
   This will build the library and unit tests, run all of the unit tests,
   and then install the library itself.
 
+## Boost Notes
+
+Versions of Boost prior to 1.65 have a known bug that prevents proper "deep" serialization of objects, which means that objects encapsulated inside other objects don't get serialized.
+This is particularly seen when using `clang` as the C++ compiler.
+
+For this reason we recommend Boost>=1.65, and recommend installing it through alternative channels when it is not available through your operating system's primary package manager.
+
 ## Known Issues
 
-- When using `GTSAM_BUILD_WITH_MARCH_NATIVE=ON`, you may encounter issues in running tests which we are still investigating:
-  - Use of a version of GCC < 7.5 results in an "Indeterminant Linear System" error for `testSmartProjectionFactor`.
-  - Use of Boost version < 1.67 with clang will give a segfault for mulitple test cases.
 - MSVC 2013 is not yet supported because it cannot build the serialization module of Boost 1.55 (or earlier).
 
 # Windows Installation
@@ -176,7 +182,7 @@ Here are some tips to get the best possible performance out of GTSAM.
     optimization by 30-50%. Please note that this may not be true for very small 
     problems where the overhead of dispatching work to multiple threads outweighs
     the benefit. We recommend that you benchmark your problem with/without TBB.
-3. Add `-march=native` to `GTSAM_CMAKE_CXX_FLAGS`. A performance gain of
+3. Use `GTSAM_BUILD_WITH_MARCH_NATIVE`. A performance gain of
     25-30% can be expected on modern processors. Note that this affects the portability
     of your executable. It may not run when copied to another system with older/different
     processor architecture.

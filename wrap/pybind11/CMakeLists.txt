@@ -5,15 +5,30 @@
 # All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
-cmake_minimum_required(VERSION 3.4)
+# Propagate this policy (FindPythonInterp removal) so it can be detected later
+if(NOT CMAKE_VERSION VERSION_LESS "3.27")
+  cmake_policy(GET CMP0148 _pybind11_cmp0148)
+endif()
 
-# The `cmake_minimum_required(VERSION 3.4...3.18)` syntax does not work with
+cmake_minimum_required(VERSION 3.5)
+
+# The `cmake_minimum_required(VERSION 3.5...3.29)` syntax does not work with
 # some versions of VS that have a patched CMake 3.11. This forces us to emulate
 # the behavior using the following workaround:
-if(${CMAKE_VERSION} VERSION_LESS 3.18)
+if(${CMAKE_VERSION} VERSION_LESS 3.29)
   cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
 else()
-  cmake_policy(VERSION 3.18)
+  cmake_policy(VERSION 3.29)
+endif()
+
+if(_pybind11_cmp0148)
+  cmake_policy(SET CMP0148 ${_pybind11_cmp0148})
+  unset(_pybind11_cmp0148)
+endif()
+
+# Avoid infinite recursion if tests include this as a subdirectory
+if(DEFINED PYBIND11_MASTER_PROJECT)
+  return()
 endif()
 
 # Extract project version from source
@@ -73,23 +88,62 @@ if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
     set(CMAKE_CXX_EXTENSIONS OFF)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
   endif()
+
+  set(pybind11_system "")
+
+  set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+  if(CMAKE_VERSION VERSION_LESS "3.18")
+    set(_pybind11_findpython_default OFF)
+  else()
+    set(_pybind11_findpython_default ON)
+  endif()
 else()
   set(PYBIND11_MASTER_PROJECT OFF)
   set(pybind11_system SYSTEM)
+  set(_pybind11_findpython_default OFF)
 endif()
 
 # Options
 option(PYBIND11_INSTALL "Install pybind11 header files?" ${PYBIND11_MASTER_PROJECT})
 option(PYBIND11_TEST "Build pybind11 test suite?" ${PYBIND11_MASTER_PROJECT})
 option(PYBIND11_NOPYTHON "Disable search for Python" OFF)
+option(PYBIND11_DISABLE_HANDLE_TYPE_NAME_DEFAULT_IMPLEMENTATION
+       "To enforce that a handle_type_name<> specialization exists" OFF)
+option(PYBIND11_SIMPLE_GIL_MANAGEMENT
+       "Use simpler GIL management logic that does not support disassociation" OFF)
+option(PYBIND11_NUMPY_1_ONLY
+       "Disable NumPy 2 support to avoid changes to previous pybind11 versions." OFF)
+set(PYBIND11_INTERNALS_VERSION
+    ""
+    CACHE STRING "Override the ABI version, may be used to enable the unstable ABI.")
+option(PYBIND11_USE_CROSSCOMPILING "Respect CMAKE_CROSSCOMPILING" OFF)
+
+if(PYBIND11_DISABLE_HANDLE_TYPE_NAME_DEFAULT_IMPLEMENTATION)
+  add_compile_definitions(PYBIND11_DISABLE_HANDLE_TYPE_NAME_DEFAULT_IMPLEMENTATION)
+endif()
+if(PYBIND11_SIMPLE_GIL_MANAGEMENT)
+  add_compile_definitions(PYBIND11_SIMPLE_GIL_MANAGEMENT)
+endif()
+if(PYBIND11_NUMPY_1_ONLY)
+  add_compile_definitions(PYBIND11_NUMPY_1_ONLY)
+endif()
 
 cmake_dependent_option(
   USE_PYTHON_INCLUDE_DIR
   "Install pybind11 headers in Python include directory instead of default installation prefix"
   OFF "PYBIND11_INSTALL" OFF)
 
-cmake_dependent_option(PYBIND11_FINDPYTHON "Force new FindPython" OFF
+cmake_dependent_option(PYBIND11_FINDPYTHON "Force new FindPython" ${_pybind11_findpython_default}
                        "NOT CMAKE_VERSION VERSION_LESS 3.12" OFF)
+
+# Allow PYTHON_EXECUTABLE if in FINDPYTHON mode and building pybind11's tests
+# (makes transition easier while we support both modes).
+if(PYBIND11_MASTER_PROJECT
+   AND PYBIND11_FINDPYTHON
+   AND DEFINED PYTHON_EXECUTABLE
+   AND NOT DEFINED Python_EXECUTABLE)
+  set(Python_EXECUTABLE "${PYTHON_EXECUTABLE}")
+endif()
 
 # NB: when adding a header don't forget to also add it to setup.py
 set(PYBIND11_HEADERS
@@ -98,6 +152,7 @@ set(PYBIND11_HEADERS
     include/pybind11/detail/descr.h
     include/pybind11/detail/init.h
     include/pybind11/detail/internals.h
+    include/pybind11/detail/type_caster_base.h
     include/pybind11/detail/typeid.h
     include/pybind11/attr.h
     include/pybind11/buffer_info.h
@@ -107,8 +162,13 @@ set(PYBIND11_HEADERS
     include/pybind11/complex.h
     include/pybind11/options.h
     include/pybind11/eigen.h
+    include/pybind11/eigen/common.h
+    include/pybind11/eigen/matrix.h
+    include/pybind11/eigen/tensor.h
     include/pybind11/embed.h
     include/pybind11/eval.h
+    include/pybind11/gil.h
+    include/pybind11/gil_safe_call_once.h
     include/pybind11/iostream.h
     include/pybind11/functional.h
     include/pybind11/numpy.h
@@ -116,7 +176,10 @@ set(PYBIND11_HEADERS
     include/pybind11/pybind11.h
     include/pybind11/pytypes.h
     include/pybind11/stl.h
-    include/pybind11/stl_bind.h)
+    include/pybind11/stl_bind.h
+    include/pybind11/stl/filesystem.h
+    include/pybind11/type_caster_pyobject_ptr.h
+    include/pybind11/typing.h)
 
 # Compare with grep and warn if mismatched
 if(PYBIND11_MASTER_PROJECT AND NOT CMAKE_VERSION VERSION_LESS 3.12)
@@ -142,24 +205,50 @@ endif()
 string(REPLACE "include/" "${CMAKE_CURRENT_SOURCE_DIR}/include/" PYBIND11_HEADERS
                "${PYBIND11_HEADERS}")
 
-# Cache variables so pybind11_add_module can be used in parent projects
-set(PYBIND11_INCLUDE_DIR
+# Cache variable so this can be used in parent projects
+set(pybind11_INCLUDE_DIR
     "${CMAKE_CURRENT_LIST_DIR}/include"
-    CACHE INTERNAL "")
+    CACHE INTERNAL "Directory where pybind11 headers are located")
+
+# Backward compatible variable for add_subdirectory mode
+if(NOT PYBIND11_MASTER_PROJECT)
+  set(PYBIND11_INCLUDE_DIR
+      "${pybind11_INCLUDE_DIR}"
+      CACHE INTERNAL "")
+endif()
 
 # Note: when creating targets, you cannot use if statements at configure time -
 # you need generator expressions, because those will be placed in the target file.
 # You can also place ifs *in* the Config.in, but not here.
 
 # This section builds targets, but does *not* touch Python
+# Non-IMPORT targets cannot be defined twice
+if(NOT TARGET pybind11_headers)
+  # Build the headers-only target (no Python included):
+  # (long name used here to keep this from clashing in subdirectory mode)
+  add_library(pybind11_headers INTERFACE)
+  add_library(pybind11::pybind11_headers ALIAS pybind11_headers) # to match exported target
+  add_library(pybind11::headers ALIAS pybind11_headers) # easier to use/remember
 
-# Build the headers-only target (no Python included):
-# (long name used here to keep this from clashing in subdirectory mode)
-add_library(pybind11_headers INTERFACE)
-add_library(pybind11::pybind11_headers ALIAS pybind11_headers) # to match exported target
-add_library(pybind11::headers ALIAS pybind11_headers) # easier to use/remember
+  target_include_directories(
+    pybind11_headers ${pybind11_system} INTERFACE $<BUILD_INTERFACE:${pybind11_INCLUDE_DIR}>
+                                                  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+  target_compile_features(pybind11_headers INTERFACE cxx_inheriting_constructors cxx_user_literals
+                                                     cxx_right_angle_brackets)
+  if(NOT "${PYBIND11_INTERNALS_VERSION}" STREQUAL "")
+    target_compile_definitions(
+      pybind11_headers INTERFACE "PYBIND11_INTERNALS_VERSION=${PYBIND11_INTERNALS_VERSION}")
+  endif()
+else()
+  # It is invalid to install a target twice, too.
+  set(PYBIND11_INSTALL OFF)
+endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/tools/pybind11Common.cmake")
+# https://github.com/jtojnar/cmake-snips/#concatenating-paths-when-building-pkg-config-files
+# TODO: cmake 3.20 adds the cmake_path() function, which obsoletes this snippet
+include("${CMAKE_CURRENT_SOURCE_DIR}/tools/JoinPaths.cmake")
 
 # Relative directory setting
 if(USE_PYTHON_INCLUDE_DIR AND DEFINED Python_INCLUDE_DIRS)
@@ -168,20 +257,17 @@ elseif(USE_PYTHON_INCLUDE_DIR AND DEFINED PYTHON_INCLUDE_DIR)
   file(RELATIVE_PATH CMAKE_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_PREFIX} ${PYTHON_INCLUDE_DIRS})
 endif()
 
-# Fill in headers target
-target_include_directories(
-  pybind11_headers ${pybind11_system} INTERFACE $<BUILD_INTERFACE:${PYBIND11_INCLUDE_DIR}>
-                                                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-
-target_compile_features(pybind11_headers INTERFACE cxx_inheriting_constructors cxx_user_literals
-                                                   cxx_right_angle_brackets)
-
 if(PYBIND11_INSTALL)
-  install(DIRECTORY ${PYBIND11_INCLUDE_DIR}/pybind11 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-  # GNUInstallDirs "DATADIR" wrong here; CMake search path wants "share".
+  install(DIRECTORY ${pybind11_INCLUDE_DIR}/pybind11 DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
   set(PYBIND11_CMAKECONFIG_INSTALL_DIR
-      "share/cmake/${PROJECT_NAME}"
+      "${CMAKE_INSTALL_DATAROOTDIR}/cmake/${PROJECT_NAME}"
       CACHE STRING "install path for pybind11Config.cmake")
+
+  if(IS_ABSOLUTE "${CMAKE_INSTALL_INCLUDEDIR}")
+    set(pybind11_INCLUDEDIR "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
+  else()
+    set(pybind11_INCLUDEDIR "\$\{PACKAGE_PREFIX_DIR\}/${CMAKE_INSTALL_INCLUDEDIR}")
+  endif()
 
   configure_package_config_file(
     tools/${PROJECT_NAME}Config.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
@@ -214,6 +300,7 @@ if(PYBIND11_INSTALL)
           tools/pybind11Common.cmake
           tools/pybind11Tools.cmake
           tools/pybind11NewTools.cmake
+          tools/pybind11GuessPythonExtSuffix.cmake
     DESTINATION ${PYBIND11_CMAKECONFIG_INSTALL_DIR})
 
   if(NOT PYBIND11_EXPORT_NAME)
@@ -226,6 +313,30 @@ if(PYBIND11_INSTALL)
     EXPORT "${PYBIND11_EXPORT_NAME}"
     NAMESPACE "pybind11::"
     DESTINATION ${PYBIND11_CMAKECONFIG_INSTALL_DIR})
+
+  # pkg-config support
+  if(NOT prefix_for_pc_file)
+    if(IS_ABSOLUTE "${CMAKE_INSTALL_DATAROOTDIR}")
+      set(prefix_for_pc_file "${CMAKE_INSTALL_PREFIX}")
+    else()
+      set(pc_datarootdir "${CMAKE_INSTALL_DATAROOTDIR}")
+      if(CMAKE_VERSION VERSION_LESS 3.20)
+        set(prefix_for_pc_file "\${pcfiledir}/..")
+        while(pc_datarootdir)
+          get_filename_component(pc_datarootdir "${pc_datarootdir}" DIRECTORY)
+          string(APPEND prefix_for_pc_file "/..")
+        endwhile()
+      else()
+        cmake_path(RELATIVE_PATH CMAKE_INSTALL_PREFIX BASE_DIRECTORY CMAKE_INSTALL_DATAROOTDIR
+                   OUTPUT_VARIABLE prefix_for_pc_file)
+      endif()
+    endif()
+  endif()
+  join_paths(includedir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
+  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/tools/pybind11.pc.in"
+                 "${CMAKE_CURRENT_BINARY_DIR}/pybind11.pc" @ONLY)
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/pybind11.pc"
+          DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig/")
 
   # Uninstall target
   if(PYBIND11_MASTER_PROJECT)
@@ -260,8 +371,5 @@ endif()
 if(NOT PYBIND11_MASTER_PROJECT)
   set(pybind11_FOUND
       TRUE
-      CACHE INTERNAL "true if pybind11 and all required components found on the system")
-  set(pybind11_INCLUDE_DIR
-      "${PYBIND11_INCLUDE_DIR}"
-      CACHE INTERNAL "Directory where pybind11 headers are located")
+      CACHE INTERNAL "True if pybind11 and all required components found on the system")
 endif()

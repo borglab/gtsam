@@ -10,9 +10,10 @@ All the token definitions.
 Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
 
-from pyparsing import (Keyword, Literal, Or, QuotedString, Suppress, Word,
-                       alphanums, alphas, delimitedList, nums,
-                       pyparsing_common)
+from pyparsing import Or  # type: ignore
+from pyparsing import (Keyword, Literal, OneOrMore, QuotedString, Suppress,
+                       Word, alphanums, alphas, nestedExpr, nums,
+                       originalTextFor, printables)
 
 # rule for identifiers (e.g. variable names)
 IDENT = Word(alphas + '_', alphanums + '_') ^ Word(nums)
@@ -21,17 +22,22 @@ RAW_POINTER, SHARED_POINTER, REF = map(Literal, "@*&")
 
 LPAREN, RPAREN, LBRACE, RBRACE, COLON, SEMI_COLON = map(Suppress, "(){}:;")
 LOPBRACK, ROPBRACK, COMMA, EQUAL = map(Suppress, "<>,=")
-
-# Encapsulating type for numbers, and single and double quoted strings.
-# The pyparsing_common utilities ensure correct coversion to the corresponding type.
-# E.g. pyparsing_common.number will convert 3.1415 to a float type.
-NUMBER_OR_STRING = (pyparsing_common.number ^ QuotedString('"') ^ QuotedString("'"))
-
-# A python tuple, e.g. (1, 9, "random", 3.1415)
-TUPLE = (LPAREN + delimitedList(NUMBER_OR_STRING) + RPAREN)
+DUNDER = Suppress(Literal("__"))
 
 # Default argument passed to functions/methods.
-DEFAULT_ARG = (NUMBER_OR_STRING ^ pyparsing_common.identifier ^ TUPLE)
+# Allow anything up to ',' or ';' except when they
+# appear inside matched expressions such as
+# (a, b) {c, b} "hello, world", templates, initializer lists, etc.
+DEFAULT_ARG = originalTextFor(
+    OneOrMore(
+        QuotedString('"') ^  # parse double quoted strings
+        QuotedString("'") ^  # parse single quoted strings
+        Word(printables, excludeChars="(){}[]<>,;") ^  # parse arbitrary words
+        nestedExpr(opener='(', closer=')') ^  # parse expression in parentheses
+        nestedExpr(opener='[', closer=']') ^  # parse expression in brackets
+        nestedExpr(opener='{', closer='}') ^  # parse expression in braces
+        nestedExpr(opener='<', closer='>')  # parse template expressions
+    ))
 
 CONST, VIRTUAL, CLASS, STATIC, PAIR, TEMPLATE, TYPEDEF, INCLUDE = map(
     Keyword,
@@ -48,7 +54,7 @@ CONST, VIRTUAL, CLASS, STATIC, PAIR, TEMPLATE, TYPEDEF, INCLUDE = map(
 )
 ENUM = Keyword("enum") ^ Keyword("enum class") ^ Keyword("enum struct")
 NAMESPACE = Keyword("namespace")
-BASIS_TYPES = map(
+BASIC_TYPES = map(
     Keyword,
     [
         "void",

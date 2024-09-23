@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  testEssentialMatrixConstraint.cpp
+ *  @file  TestEssentialMatrixConstraint.cpp
  *  @brief Unit tests for EssentialMatrixConstraint Class
  *  @author Frank Dellaert
  *  @author Pablo Alcantarilla
@@ -22,8 +22,10 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
+
 #include <CppUnitLite/TestHarness.h>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -50,12 +52,13 @@ TEST( EssentialMatrixConstraint, test ) {
   CHECK(assert_equal(expected, actual, 1e-8));
 
   // Calculate numerical derivatives
-  Matrix expectedH1 = numericalDerivative11<Vector5,Pose3>(
-      boost::bind(&EssentialMatrixConstraint::evaluateError, &factor, _1, pose2,
-          boost::none, boost::none), pose1);
-  Matrix expectedH2 = numericalDerivative11<Vector5,Pose3>(
-      boost::bind(&EssentialMatrixConstraint::evaluateError, &factor, pose1, _1,
-          boost::none, boost::none), pose2);
+  Matrix expectedH1 = numericalDerivative11<Vector5, Pose3>(
+		[&factor, &pose2](const Pose3& p1) {return factor.evaluateError(p1, pose2);},
+		pose1);
+
+  Matrix expectedH2 = numericalDerivative11<Vector5, Pose3>(
+		[&factor, &pose1](const Pose3& p2) {return factor.evaluateError(pose1, p2);},
+      pose2);
 
   // Use the factor to calculate the derivative
   Matrix actualH1;

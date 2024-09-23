@@ -24,8 +24,6 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/VectorSpace.h>
 
-#include <boost/bind.hpp>
-#include <boost/make_shared.hpp>
 #include <map>
 
 // Forward declare tests
@@ -56,10 +54,10 @@ public:
 protected:
 
   // Paul's trick shared pointer, polymorphic root of entire expression tree
-  boost::shared_ptr<internal::ExpressionNode<T> > root_;
+  std::shared_ptr<internal::ExpressionNode<T> > root_;
 
   /// Construct with a custom root
-  Expression(const boost::shared_ptr<internal::ExpressionNode<T> >& root) : root_(root) {}
+  Expression(const std::shared_ptr<internal::ExpressionNode<T> >& root) : root_(root) {}
 
 public:
 
@@ -69,20 +67,20 @@ public:
   //   Expression<Point2>::BinaryFunction<PinholeCamera<Cal3_S2>,Point3>::type
   template<class A1>
   struct UnaryFunction {
-    typedef boost::function<
+    typedef std::function<
         T(const A1&, typename MakeOptionalJacobian<T, A1>::type)> type;
   };
 
   template<class A1, class A2>
   struct BinaryFunction {
-    typedef boost::function<
+    typedef std::function<
         T(const A1&, const A2&, typename MakeOptionalJacobian<T, A1>::type,
             typename MakeOptionalJacobian<T, A2>::type)> type;
   };
 
   template<class A1, class A2, class A3>
   struct TernaryFunction {
-    typedef boost::function<
+    typedef std::function<
         T(const A1&, const A2&, const A3&,
             typename MakeOptionalJacobian<T, A1>::type,
             typename MakeOptionalJacobian<T, A2>::type,
@@ -156,20 +154,27 @@ public:
    * Notes: this is not terribly efficient, and H should have correct size.
    * The order of the Jacobians is same as keys in either keys() or dims()
    */
-  T value(const Values& values, boost::optional<std::vector<Matrix>&> H =
-      boost::none) const;
+  T value(const Values& values, std::vector<Matrix>* H = nullptr) const;
+
+  /**
+   * An overload of the value function to accept reference to vector of matrices instead of
+   * a pointer to vector of matrices.
+   */
+  T value(const Values& values, std::vector<Matrix>& H) const {
+    return value(values, &H);
+  }
 
   /**
    *  @return a "deep" copy of this Expression
    *  "deep" is in quotes because the ExpressionNode hierarchy is *not* cloned.
    *  The intent is for derived classes to be copied using only a Base pointer.
    */
-  virtual boost::shared_ptr<Expression> clone() const {
-    return boost::make_shared<Expression>(*this);
+  virtual std::shared_ptr<Expression> clone() const {
+    return std::make_shared<Expression>(*this);
   }
 
   /// Return root
-  const boost::shared_ptr<internal::ExpressionNode<T> >& root() const;
+  const std::shared_ptr<internal::ExpressionNode<T> >& root() const;
 
   /// Return size needed for memory buffer in traceExecution
   size_t traceSize() const;
@@ -192,7 +197,7 @@ protected:
 
   /// trace execution, very unsafe
   T traceExecution(const Values& values, internal::ExecutionTrace<T>& trace,
-      void* traceStorage) const;
+      char* traceStorage) const;
 
   /// brief Return value and derivatives, reverse AD version
   T valueAndJacobianMap(const Values& values,
@@ -213,7 +218,7 @@ protected:
 template <typename T>
 class ScalarMultiplyExpression : public Expression<T> {
   // Check that T is a vector space
-  BOOST_CONCEPT_ASSERT((gtsam::IsVectorSpace<T>));
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<T>);
 
  public:
   explicit ScalarMultiplyExpression(double s, const Expression<T>& e);
@@ -226,7 +231,7 @@ class ScalarMultiplyExpression : public Expression<T> {
 template <typename T>
 class BinarySumExpression : public Expression<T> {
   // Check that T is a vector space
-  BOOST_CONCEPT_ASSERT((gtsam::IsVectorSpace<T>));
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<T>);
 
  public:
   explicit BinarySumExpression(const Expression<T>& e1, const Expression<T>& e2);
@@ -240,7 +245,7 @@ class BinarySumExpression : public Expression<T> {
  */
 template <typename T, typename A>
 Expression<T> linearExpression(
-    const boost::function<T(A)>& f, const Expression<A>& expression,
+    const std::function<T(A)>& f, const Expression<A>& expression,
     const Eigen::Matrix<double, traits<T>::dimension, traits<A>::dimension>& dTdA) {
   // Use lambda to endow f with a linear Jacobian
   typename Expression<T>::template UnaryFunction<A>::type g =

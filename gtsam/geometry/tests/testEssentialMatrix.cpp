@@ -5,13 +5,15 @@
  * @date December 17, 2013
  */
 
-#include <gtsam/geometry/EssentialMatrix.h>
-#include <gtsam/geometry/CalibratedCamera.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/EssentialMatrix.h>
+
 #include <sstream>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -38,17 +40,21 @@ TEST(EssentialMatrix, FromRotationAndDirection) {
       trueE, EssentialMatrix::FromRotationAndDirection(trueRotation, trueDirection, actualH1, actualH2),
       1e-8));
 
-  Matrix expectedH1 = numericalDerivative11<EssentialMatrix, Rot3>(
-      boost::bind(EssentialMatrix::FromRotationAndDirection, _1, trueDirection, boost::none,
-                  boost::none),
-      trueRotation);
-  EXPECT(assert_equal(expectedH1, actualH1, 1e-7));
+  {
+    std::function<EssentialMatrix(const Rot3&)> fn = [](const Rot3& R) {
+      return EssentialMatrix::FromRotationAndDirection(R, trueDirection);
+    };
+    Matrix expectedH1 = numericalDerivative11<EssentialMatrix, Rot3>(fn, trueRotation);
+    EXPECT(assert_equal(expectedH1, actualH1, 1e-7));
+  }
 
-  Matrix expectedH2 = numericalDerivative11<EssentialMatrix, Unit3>(
-      boost::bind(EssentialMatrix::FromRotationAndDirection, trueRotation, _1, boost::none,
-                  boost::none),
-                  trueDirection);
-  EXPECT(assert_equal(expectedH2, actualH2, 1e-7));
+  {
+    std::function<EssentialMatrix(const Unit3&)> fn = [](const Unit3& t) {
+      return EssentialMatrix::FromRotationAndDirection(trueRotation, t);
+    };
+    Matrix expectedH2 = numericalDerivative11<EssentialMatrix, Unit3>(fn, trueDirection);
+    EXPECT(assert_equal(expectedH2, actualH2, 1e-7));
+  }
 }
 
 //*************************************************************************
@@ -172,8 +178,10 @@ TEST (EssentialMatrix, FromPose3_a) {
   Matrix actualH;
   Pose3 pose(trueRotation, trueTranslation); // Pose between two cameras
   EXPECT(assert_equal(trueE, EssentialMatrix::FromPose3(pose, actualH), 1e-8));
-  Matrix expectedH = numericalDerivative11<EssentialMatrix, Pose3>(
-      boost::bind(EssentialMatrix::FromPose3, _1, boost::none), pose);
+  std::function<EssentialMatrix(const Pose3&)> fn = [](const Pose3& pose) {
+    return EssentialMatrix::FromPose3(pose);
+  };
+  Matrix expectedH = numericalDerivative11<EssentialMatrix, Pose3>(fn, pose);
   EXPECT(assert_equal(expectedH, actualH, 1e-7));
 }
 
@@ -185,8 +193,10 @@ TEST (EssentialMatrix, FromPose3_b) {
   EssentialMatrix E(c1Rc2, Unit3(c1Tc2));
   Pose3 pose(c1Rc2, c1Tc2); // Pose between two cameras
   EXPECT(assert_equal(E, EssentialMatrix::FromPose3(pose, actualH), 1e-8));
-  Matrix expectedH = numericalDerivative11<EssentialMatrix, Pose3>(
-      boost::bind(EssentialMatrix::FromPose3, _1, boost::none), pose);
+  std::function<EssentialMatrix(const Pose3&)> fn = [](const Pose3& pose) {
+    return EssentialMatrix::FromPose3(pose);
+  };
+  Matrix expectedH = numericalDerivative11<EssentialMatrix, Pose3>(fn, pose);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 

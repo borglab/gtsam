@@ -21,13 +21,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std/map.hpp>
-#include <boost/assign/list_of.hpp>
-
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 
 /* ************************************************************************* */
 TEST(RegularHessianFactor, Constructors)
@@ -36,8 +31,7 @@ TEST(RegularHessianFactor, Constructors)
   // 0.5*|x0 + x1 + x3 - [1;2]|^2 = 0.5*|A*x-b|^2, with A=[I I I]
   Matrix A1 = I_2x2, A2 = I_2x2, A3 = I_2x2;
   Vector2 b(1,2);
-  vector<pair<Key, Matrix> > terms;
-  terms += make_pair(0, A1), make_pair(1, A2), make_pair(3, A3);
+  const vector<pair<Key, Matrix> > terms {{0, A1}, {1, A2}, {3, A3}};
   RegularJacobianFactor<2> jf(terms, b);
 
   // Test conversion from JacobianFactor
@@ -65,24 +59,24 @@ TEST(RegularHessianFactor, Constructors)
 
   // Test n-way constructor
   KeyVector keys {0, 1, 3};
-  vector<Matrix> Gs; Gs += G11, G12, G13, G22, G23, G33;
-  vector<Vector> gs; gs += g1, g2, g3;
+  vector<Matrix> Gs {G11, G12, G13, G22, G23, G33};
+  vector<Vector> gs {g1, g2, g3};
   RegularHessianFactor<2> factor3(keys, Gs, gs, f);
   EXPECT(assert_equal(factor, factor3));
 
   // Test constructor from Gaussian Factor Graph
   GaussianFactorGraph gfg;
-  gfg += jf;
+  gfg.push_back(jf);
   RegularHessianFactor<2> factor4(gfg);
   EXPECT(assert_equal(factor, factor4));
   GaussianFactorGraph gfg2;
-  gfg2 += factor;
+  gfg2.push_back(factor);
   RegularHessianFactor<2> factor5(gfg);
   EXPECT(assert_equal(factor, factor5));
 
   // Test constructor from Information matrix
   Matrix info = factor.augmentedInformation();
-  vector<size_t> dims; dims += 2, 2, 2;
+  vector<size_t> dims {2, 2, 2};
   SymmetricBlockMatrix sym(dims, info, true);
   RegularHessianFactor<2> factor6(keys, sym);
   EXPECT(assert_equal(factor, factor6));
@@ -97,10 +91,7 @@ TEST(RegularHessianFactor, Constructors)
   Vector Y(6); Y << 9, 12, 9, 12, 9, 12;
   EXPECT(assert_equal(Y,AtA*X));
 
-  VectorValues x = map_list_of<Key, Vector>
-    (0, Vector2(1,2))
-    (1, Vector2(3,4))
-    (3, Vector2(5,6));
+  VectorValues x{{0, Vector2(1, 2)}, {1, Vector2(3, 4)}, {3, Vector2(5, 6)}};
 
   VectorValues expected;
   expected.insert(0, Y.segment<2>(0));

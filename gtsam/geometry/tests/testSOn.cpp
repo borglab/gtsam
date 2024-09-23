@@ -84,9 +84,9 @@ TEST(SOn, SO5) {
 
 //******************************************************************************
 TEST(SOn, Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<SOn>));
-  BOOST_CONCEPT_ASSERT((IsManifold<SOn>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<SOn>));
+  GTSAM_CONCEPT_ASSERT(IsGroup<SOn>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<SOn>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<SOn>);
 }
 
 //******************************************************************************
@@ -189,7 +189,7 @@ Matrix RetractJacobian(size_t n) { return SOn::VectorizedGenerators(n); }
 /// Test Jacobian of Retract at origin
 TEST(SOn, RetractJacobian) {
   Matrix actualH = RetractJacobian(3);
-  boost::function<Matrix(const Vector &)> h = [](const Vector &v) {
+  std::function<Matrix(const Vector &)> h = [](const Vector &v) {
     return SOn::ChartAtOrigin::Retract(v).matrix();
   };
   Vector3 v;
@@ -205,7 +205,7 @@ TEST(SOn, vec) {
   SOn Q = SOn::ChartAtOrigin::Retract(v);
   Matrix actualH;
   const Vector actual = Q.vec(actualH);
-  boost::function<Vector(const SOn &)> h = [](const SOn &Q) { return Q.vec(); };
+  std::function<Vector(const SOn &)> h = [](const SOn &Q) { return Q.vec(); };
   const Matrix H = numericalDerivative11<Vector, SOn, 10>(h, Q, 1e-5);
   CHECK(assert_equal(H, actualH));
 }

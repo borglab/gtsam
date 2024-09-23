@@ -10,9 +10,10 @@ Parser classes and rules for parsing C++ functions.
 Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
 
-from typing import Iterable, List, Union
+from typing import Any, Iterable, List, Union
 
-from pyparsing import Optional, ParseResults, delimitedList
+from pyparsing import (Literal, Optional, ParseResults,  # type: ignore
+                       delimitedList)
 
 from .template import Template
 from .tokens import (COMMA, DEFAULT_ARG, EQUAL, IDENT, LOPBRACK, LPAREN, PAIR,
@@ -29,32 +30,24 @@ class Argument:
     void sayHello(/*`s` is the method argument with type `const string&`*/ const string& s);
     ```
     """
-    rule = ((Type.rule ^ TemplatedType.rule)("ctype") + IDENT("name") + \
-            Optional(EQUAL + (DEFAULT_ARG ^ Type.rule ^ TemplatedType.rule) + \
-                Optional(LPAREN + RPAREN)  # Needed to parse the parens for default constructors
-                )("default")
-            ).setParseAction(lambda t: Argument(t.ctype, t.name, t.default))
+    rule = ((Type.rule ^ TemplatedType.rule)("ctype")  #
+            + IDENT("name")  #
+            + Optional(EQUAL + DEFAULT_ARG)("default")
+            ).setParseAction(lambda t: Argument(
+                t.ctype,  #
+                t.name,  #
+                t.default[0] if isinstance(t.default, ParseResults) else None))
 
     def __init__(self,
                  ctype: Union[Type, TemplatedType],
                  name: str,
                  default: ParseResults = None):
         if isinstance(ctype, Iterable):
-            self.ctype = ctype[0]
+            self.ctype = ctype[0]  # type: ignore
         else:
             self.ctype = ctype
         self.name = name
-        # If the length is 1, it's a regular type,
-        if len(default) == 1:
-            default = default[0]
-        # This means a tuple has been passed so we convert accordingly
-        elif len(default) > 1:
-            default = tuple(default.asList())
-        else:
-            # set to None explicitly so we can support empty strings
-            default = None
         self.default = default
-
         self.parent: Union[ArgumentList, None] = None
 
     def __repr__(self) -> str:
@@ -78,7 +71,7 @@ class ArgumentList:
             arg.parent = self
         # The parent object which contains the argument list
         # E.g. Method, StaticMethod, Template, Constructor, GlobalFunction
-        self.parent = None
+        self.parent: Any = None
 
     @staticmethod
     def from_parse_result(parse_result: ParseResults):
@@ -89,18 +82,22 @@ class ArgumentList:
             return ArgumentList([])
 
     def __repr__(self) -> str:
-        return self.args_list.__repr__()
+        return ",".join([repr(x) for x in self.args_list])
 
     def __len__(self) -> int:
         return len(self.args_list)
 
-    def args_names(self) -> List[str]:
+    def names(self) -> List[str]:
         """Return a list of the names of all the arguments."""
         return [arg.name for arg in self.args_list]
 
-    def to_cpp(self, use_boost: bool) -> List[str]:
+    def list(self) -> List[Argument]:
+        """Return a list of the names of all the arguments."""
+        return self.args_list
+
+    def to_cpp(self) -> List[str]:
         """Generate the C++ code for wrapping."""
-        return [arg.ctype.to_cpp(use_boost) for arg in self.args_list]
+        return [arg.ctype.to_cpp() for arg in self.args_list]
 
 
 class ReturnType:
@@ -109,8 +106,10 @@ class ReturnType:
 
     The return type can either be a single type or a pair such as <type1, type2>.
     """
+    # rule to parse optional std:: in front of `pair`
+    optional_std = Optional(Literal('std::')).suppress()
     _pair = (
-        PAIR.suppress()  #
+        optional_std + PAIR.suppress()  #
         + LOPBRACK  #
         + Type.rule("type1")  #
         + COMMA  #
@@ -127,7 +126,7 @@ class ReturnType:
         self.type2 = type2
         # The parent object which contains the return type
         # E.g. Method, StaticMethod, Template, Constructor, GlobalFunction
-        self.parent = None
+        self.parent: Any = None
 
     def is_void(self) -> bool:
         """
@@ -139,7 +138,7 @@ class ReturnType:
         return "{}{}".format(
             self.type1, (', ' + self.type2.__repr__()) if self.type2 else '')
 
-    def to_cpp(self, use_boost: bool) -> str:
+    def to_cpp(self) -> str:
         """
         Generate the C++ code for wrapping.
 
@@ -148,10 +147,9 @@ class ReturnType:
         """
         if self.type2:
             return "std::pair<{type1},{type2}>".format(
-                type1=self.type1.to_cpp(use_boost),
-                type2=self.type2.to_cpp(use_boost))
+                type1=self.type1.to_cpp(), type2=self.type2.to_cpp())
         else:
-            return self.type1.to_cpp(use_boost)
+            return self.type1.to_cpp()
 
 
 class GlobalFunction:
@@ -173,7 +171,7 @@ class GlobalFunction:
                  return_type: ReturnType,
                  args_list: ArgumentList,
                  template: Template,
-                 parent: str = ''):
+                 parent: Any = ''):
         self.name = name
         self.return_type = return_type
         self.args = args_list

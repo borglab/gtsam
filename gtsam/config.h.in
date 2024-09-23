@@ -39,6 +39,9 @@
 	#cmakedefine GTSAM_ROT3_EXPMAP
 #endif
 
+// Whether to enable merging of equal leaf nodes in the Discrete Decision Tree.
+#cmakedefine GTSAM_DT_MERGING
+
 // Whether we are using TBB (if TBB was found and GTSAM_WITH_TBB is enabled in CMake)
 #cmakedefine GTSAM_USE_TBB
 
@@ -70,10 +73,18 @@
 #cmakedefine GTSAM_THROW_CHEIRALITY_EXCEPTION
 
 // Make sure dependent projects that want it can see deprecated functions
-#cmakedefine GTSAM_ALLOW_DEPRECATED_SINCE_V41
+#cmakedefine GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 // Support Metis-based nested dissection
 #cmakedefine GTSAM_SUPPORT_NESTED_DISSECTION
 
 // Support Metis-based nested dissection
 #cmakedefine GTSAM_TANGENT_PREINTEGRATION
+
+// Whether to use the system installed Metis instead of the provided one
+#cmakedefine GTSAM_USE_SYSTEM_METIS
+
+// Toggle switch for BetweenFactor jacobian computation
+#cmakedefine GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+
+#cmakedefine GTSAM_SLOW_BUT_CORRECT_EXPMAP

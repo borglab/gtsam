@@ -17,6 +17,7 @@
  * @author Frank Dellaert
  * @author Mike Bosse
  * @author Duy Nguyen Ta
+ * @author Yotam Stern
  */
 
 
@@ -53,14 +54,14 @@ struct LieGroup {
   }
 
   Class compose(const Class& g, ChartJacobian H1,
-      ChartJacobian H2 = boost::none) const {
+      ChartJacobian H2 = {}) const {
     if (H1) *H1 = g.inverse().AdjointMap();
     if (H2) *H2 = Eigen::Matrix<double, N, N>::Identity();
     return derived() * g;
   }
 
   Class between(const Class& g, ChartJacobian H1,
-      ChartJacobian H2 = boost::none) const {
+      ChartJacobian H2 = {}) const {
     Class result = derived().inverse() * g;
     if (H1) *H1 = - result.inverse().AdjointMap();
     if (H2) *H2 = Eigen::Matrix<double, N, N>::Identity();
@@ -86,7 +87,7 @@ struct LieGroup {
 
   /// expmap with optional derivatives
   Class expmap(const TangentVector& v, //
-      ChartJacobian H1, ChartJacobian H2 = boost::none) const {
+      ChartJacobian H1, ChartJacobian H2 = {}) const {
     Jacobian D_g_v;
     Class g = Class::Expmap(v,H2 ? &D_g_v : 0);
     Class h = compose(g); // derivatives inlined below
@@ -97,7 +98,7 @@ struct LieGroup {
 
   /// logmap with optional derivatives
   TangentVector logmap(const Class& g, //
-      ChartJacobian H1, ChartJacobian H2 = boost::none) const {
+      ChartJacobian H1, ChartJacobian H2 = {}) const {
     Class h = between(g); // derivatives inlined below
     Jacobian D_v_h;
     TangentVector v = Class::Logmap(h, (H1 || H2) ? &D_v_h : 0);
@@ -138,7 +139,7 @@ struct LieGroup {
 
   /// retract with optional derivatives
   Class retract(const TangentVector& v, //
-      ChartJacobian H1, ChartJacobian H2 = boost::none) const {
+      ChartJacobian H1, ChartJacobian H2 = {}) const {
     Jacobian D_g_v;
     Class g = Class::ChartAtOrigin::Retract(v, H2 ? &D_g_v : 0);
     Class h = compose(g); // derivatives inlined below
@@ -149,7 +150,7 @@ struct LieGroup {
 
   /// localCoordinates with optional derivatives
   TangentVector localCoordinates(const Class& g, //
-      ChartJacobian H1, ChartJacobian H2 = boost::none) const {
+      ChartJacobian H1, ChartJacobian H2 = {}) const {
     Class h = between(g); // derivatives inlined below
     Jacobian D_v_h;
     TangentVector v = Class::ChartAtOrigin::Local(h, (H1 || H2) ? &D_v_h : 0);
@@ -176,7 +177,7 @@ struct LieGroupTraits: GetDimensionImpl<Class, Class::dimension> {
   /// @name Group
   /// @{
   typedef multiplicative_group_tag group_flavor;
-  static Class Identity() { return Class::identity();}
+  static Class Identity() { return Class::Identity();}
   /// @}
 
   /// @name Manifold
@@ -187,38 +188,38 @@ struct LieGroupTraits: GetDimensionImpl<Class, Class::dimension> {
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 
   static TangentVector Local(const Class& origin, const Class& other,
-      ChartJacobian Horigin = boost::none, ChartJacobian Hother = boost::none) {
+      ChartJacobian Horigin = {}, ChartJacobian Hother = {}) {
     return origin.localCoordinates(other, Horigin, Hother);
   }
 
   static Class Retract(const Class& origin, const TangentVector& v,
-      ChartJacobian Horigin = boost::none, ChartJacobian Hv = boost::none) {
+      ChartJacobian Horigin = {}, ChartJacobian Hv = {}) {
     return origin.retract(v, Horigin, Hv);
   }
   /// @}
 
   /// @name Lie Group
   /// @{
-  static TangentVector Logmap(const Class& m, ChartJacobian Hm = boost::none) {
+  static TangentVector Logmap(const Class& m, ChartJacobian Hm = {}) {
     return Class::Logmap(m, Hm);
   }
 
-  static Class Expmap(const TangentVector& v, ChartJacobian Hv = boost::none) {
+  static Class Expmap(const TangentVector& v, ChartJacobian Hv = {}) {
     return Class::Expmap(v, Hv);
   }
 
   static Class Compose(const Class& m1, const Class& m2, //
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     return m1.compose(m2, H1, H2);
   }
 
   static Class Between(const Class& m1, const Class& m2, //
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     return m1.between(m2, H1, H2);
   }
 
   static Class Inverse(const Class& m, //
-      ChartJacobian H = boost::none) {
+      ChartJacobian H = {}) {
     return m.inverse(H);
   }
   /// @}
@@ -264,8 +265,8 @@ public:
   typedef typename traits<T>::ChartJacobian ChartJacobian;
 
   BOOST_CONCEPT_USAGE(IsLieGroup) {
-    BOOST_STATIC_ASSERT_MSG(
-        (boost::is_base_of<lie_group_tag, structure_category_tag>::value),
+    static_assert(
+        (std::is_base_of<lie_group_tag, structure_category_tag>::value),
         "This type's trait does not assert it is a Lie group (or derived)");
 
     // group opertations with Jacobians
@@ -319,12 +320,28 @@ T expm(const Vector& x, int K=7) {
 }
 
 /**
- * Linear interpolation between X and Y by coefficient t in [0, 1].
+ * Linear interpolation between X and Y by coefficient t. Typically t \in [0,1],
+ * but can also be used to extrapolate before pose X or after pose Y.
  */
 template <typename T>
-T interpolate(const T& X, const T& Y, double t) {
-  assert(t >= 0 && t <= 1);
-  return traits<T>::Compose(X, traits<T>::Expmap(t * traits<T>::Logmap(traits<T>::Between(X, Y))));
+T interpolate(const T& X, const T& Y, double t,
+              typename MakeOptionalJacobian<T, T>::type Hx = {},
+              typename MakeOptionalJacobian<T, T>::type Hy = {}) {
+  if (Hx || Hy) {
+    typename MakeJacobian<T, T>::type between_H_x, log_H, exp_H, compose_H_x;
+    const T between =
+        traits<T>::Between(X, Y, between_H_x);  // between_H_y = identity
+    typename traits<T>::TangentVector delta = traits<T>::Logmap(between, log_H);
+    const T Delta = traits<T>::Expmap(t * delta, exp_H);
+    const T result = traits<T>::Compose(
+        X, Delta, compose_H_x);  // compose_H_xinv_y = identity
+
+    if (Hx) *Hx = compose_H_x + t * exp_H * log_H * between_H_x;
+    if (Hy) *Hy = t * exp_H * log_H;
+    return result;
+  }
+  return traits<T>::Compose(
+      X, traits<T>::Expmap(t * traits<T>::Logmap(traits<T>::Between(X, Y))));
 }
 
 /**
@@ -353,4 +370,4 @@ public:
  * the gtsam namespace to be more easily enforced as testable
  */
 #define GTSAM_CONCEPT_LIE_INST(T) template class gtsam::IsLieGroup<T>;
-#define GTSAM_CONCEPT_LIE_TYPE(T) typedef gtsam::IsLieGroup<T> _gtsam_IsLieGroup_##T;
+#define GTSAM_CONCEPT_LIE_TYPE(T) using _gtsam_IsLieGroup_##T = gtsam::IsLieGroup<T>;

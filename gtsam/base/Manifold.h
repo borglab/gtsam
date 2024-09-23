@@ -22,10 +22,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/OptionalJacobian.h>
-
-#include <boost/concept_check.hpp>
-#include <boost/concept/requires.hpp>
-#include <boost/type_traits/is_base_of.hpp>
+#include <gtsam/base/concepts.h>
 
 namespace gtsam {
 
@@ -95,7 +92,7 @@ template<class Class>
 struct ManifoldTraits: GetDimensionImpl<Class, Class::dimension> {
 
   // Check that Class has the necessary machinery
-  BOOST_CONCEPT_ASSERT((HasManifoldPrereqs<Class>));
+  GTSAM_CONCEPT_ASSERT(HasManifoldPrereqs<Class>);
 
   // Dimension of the manifold
   enum { dimension = Class::dimension };
@@ -123,7 +120,7 @@ template<class Class> struct Manifold: ManifoldTraits<Class>, Testable<Class> {}
 
 /// Check invariants for Manifold type
 template<typename T>
-BOOST_CONCEPT_REQUIRES(((IsTestable<T>)),(bool)) //
+GTSAM_CONCEPT_REQUIRES(IsTestable<T>, bool) //
 check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
   typename traits<T>::TangentVector v0 = traits<T>::Local(a,a);
   typename traits<T>::TangentVector v = traits<T>::Local(a,b);
@@ -143,10 +140,10 @@ public:
   typedef typename traits<T>::TangentVector TangentVector;
 
   BOOST_CONCEPT_USAGE(IsManifold) {
-    BOOST_STATIC_ASSERT_MSG(
-        (boost::is_base_of<manifold_tag, structure_category_tag>::value),
+    static_assert(
+        (std::is_base_of<manifold_tag, structure_category_tag>::value),
         "This type's structure_category trait does not assert it as a manifold (or derived)");
-    BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
+    static_assert(TangentVector::SizeAtCompileTime == dim);
 
     // make sure Chart methods are defined
     v = traits<T>::Local(p, q);
@@ -164,7 +161,7 @@ template<typename T>
 struct FixedDimension {
   typedef const int value_type;
   static const int value = traits<T>::dimension;
-  BOOST_STATIC_ASSERT_MSG(value != Eigen::Dynamic,
+  static_assert(value != Eigen::Dynamic,
       "FixedDimension instantiated for dymanically-sized type.");
 };
 } // \ namespace gtsam
@@ -178,4 +175,4 @@ struct FixedDimension {
 // * the gtsam namespace to be more easily enforced as testable
 // */
 #define GTSAM_CONCEPT_MANIFOLD_INST(T) template class gtsam::IsManifold<T>;
-#define GTSAM_CONCEPT_MANIFOLD_TYPE(T) typedef gtsam::IsManifold<T> _gtsam_IsManifold_##T;
+#define GTSAM_CONCEPT_MANIFOLD_TYPE(T) using _gtsam_IsManifold_##T = gtsam::IsManifold<T>;

@@ -27,6 +27,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/utilities.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -113,7 +114,7 @@ int main(int argc, char** argv) {
   Values result = optimizer.optimize();
 
   cout << "Final result sample:" << endl;
-  Values pose_values = result.filter<Pose3>();
+  Values pose_values = utilities::allPose3s(result);
   pose_values.print("Final camera poses:\n");
 
   return 0;

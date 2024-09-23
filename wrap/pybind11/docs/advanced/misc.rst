@@ -39,15 +39,42 @@ The ``PYBIND11_MAKE_OPAQUE`` macro does *not* require the above workarounds.
 Global Interpreter Lock (GIL)
 =============================
 
-When calling a C++ function from Python, the GIL is always held.
+The Python C API dictates that the Global Interpreter Lock (GIL) must always
+be held by the current thread to safely access Python objects. As a result,
+when Python calls into C++ via pybind11 the GIL must be held, and pybind11
+will never implicitly release the GIL.
+
+.. code-block:: cpp
+
+    void my_function() {
+        /* GIL is held when this function is called from Python */
+    }
+
+    PYBIND11_MODULE(example, m) {
+        m.def("my_function", &my_function);
+    }
+
+pybind11 will ensure that the GIL is held when it knows that it is calling
+Python code. For example, if a Python callback is passed to C++ code via
+``std::function``, when C++ code calls the function the built-in wrapper
+will acquire the GIL before calling the Python callback. Similarly, the
+``PYBIND11_OVERRIDE`` family of macros will acquire the GIL before calling
+back into Python.
+
+When writing C++ code that is called from other C++ code, if that code accesses
+Python state, it must explicitly acquire and release the GIL.
+
 The classes :class:`gil_scoped_release` and :class:`gil_scoped_acquire` can be
 used to acquire and release the global interpreter lock in the body of a C++
 function call. In this way, long-running C++ code can be parallelized using
-multiple Python threads. Taking :ref:`overriding_virtuals` as an example, this
+multiple Python threads, **but great care must be taken** when any
+:class:`gil_scoped_release` appear: if there is any way that the C++ code
+can access Python objects, :class:`gil_scoped_acquire` should be used to
+reacquire the GIL. Taking :ref:`overriding_virtuals` as an example, this
 could be realized as follows (important changes highlighted):
 
 .. code-block:: cpp
-    :emphasize-lines: 8,9,31,32
+    :emphasize-lines: 8,30,31
 
     class PyAnimal : public Animal {
     public:
@@ -56,9 +83,7 @@ could be realized as follows (important changes highlighted):
 
         /* Trampoline (need one for each virtual function) */
         std::string go(int n_times) {
-            /* Acquire GIL before calling Python code */
-            py::gil_scoped_acquire acquire;
-
+            /* PYBIND11_OVERRIDE_PURE will acquire the GIL before accessing Python state */
             PYBIND11_OVERRIDE_PURE(
                 std::string, /* Return type */
                 Animal,      /* Parent class */
@@ -78,19 +103,48 @@ could be realized as follows (important changes highlighted):
             .def(py::init<>());
 
         m.def("call_go", [](Animal *animal) -> std::string {
-            /* Release GIL before calling into (potentially long-running) C++ code */
+            // GIL is held when called from Python code. Release GIL before
+            // calling into (potentially long-running) C++ code
             py::gil_scoped_release release;
             return call_go(animal);
         });
     }
 
-The ``call_go`` wrapper can also be simplified using the `call_guard` policy
+The ``call_go`` wrapper can also be simplified using the ``call_guard`` policy
 (see :ref:`call_policies`) which yields the same result:
 
 .. code-block:: cpp
 
     m.def("call_go", &call_go, py::call_guard<py::gil_scoped_release>());
 
+
+Common Sources Of Global Interpreter Lock Errors
+==================================================================
+
+Failing to properly hold the Global Interpreter Lock (GIL) is one of the
+more common sources of bugs within code that uses pybind11. If you are
+running into GIL related errors, we highly recommend you consult the
+following checklist.
+
+- Do you have any global variables that are pybind11 objects or invoke
+  pybind11 functions in either their constructor or destructor? You are generally
+  not allowed to invoke any Python function in a global static context. We recommend
+  using lazy initialization and then intentionally leaking at the end of the program.
+
+- Do you have any pybind11 objects that are members of other C++ structures? One
+  commonly overlooked requirement is that pybind11 objects have to increase their reference count
+  whenever their copy constructor is called. Thus, you need to be holding the GIL to invoke
+  the copy constructor of any C++ class that has a pybind11 member. This can sometimes be very
+  tricky to track for complicated programs Think carefully when you make a pybind11 object
+  a member in another struct.
+
+- C++ destructors that invoke Python functions can be particularly troublesome as
+  destructors can sometimes get invoked in weird and unexpected circumstances as a result
+  of exceptions.
+
+- You should try running your code in a debug build. That will enable additional assertions
+  within pybind11 that will throw exceptions on certain GIL handling errors
+  (reference counting operations).
 
 Binding sequence data types, iterators, the slicing protocol, etc.
 ==================================================================
@@ -132,7 +186,7 @@ However, it can be acquired as follows:
 
 .. code-block:: cpp
 
-    py::object pet = (py::object) py::module::import("basic").attr("Pet");
+    py::object pet = (py::object) py::module_::import("basic").attr("Pet");
 
     py::class_<Dog>(m, "Dog", pet)
         .def(py::init<const std::string &>())
@@ -146,7 +200,7 @@ has been executed:
 
 .. code-block:: cpp
 
-    py::module::import("basic");
+    py::module_::import("basic");
 
     py::class_<Dog, Pet>(m, "Dog")
         .def(py::init<const std::string &>())
@@ -223,7 +277,7 @@ avoids this issue involves weak reference with a cleanup callback:
 
 .. code-block:: cpp
 
-    // Register a callback function that is invoked when the BaseClass object is colelcted
+    // Register a callback function that is invoked when the BaseClass object is collected
     py::cpp_function cleanup_callback(
         [](py::handle weakref) {
             // perform cleanup here -- this function is called with the GIL held
@@ -237,13 +291,13 @@ avoids this issue involves weak reference with a cleanup callback:
 
 .. note::
 
-    PyPy (at least version 5.9) does not garbage collect objects when the
-    interpreter exits. An alternative approach (which also works on CPython) is to use
-    the :py:mod:`atexit` module [#f7]_, for example:
+    PyPy does not garbage collect objects when the interpreter exits. An alternative
+    approach (which also works on CPython) is to use the :py:mod:`atexit` module [#f7]_,
+    for example:
 
     .. code-block:: cpp
 
-        auto atexit = py::module::import("atexit");
+        auto atexit = py::module_::import("atexit");
         atexit.attr("register")(py::cpp_function([]() {
             // perform cleanup here -- this function is called with the GIL held
         }));
@@ -284,7 +338,7 @@ work, it is important that all lines are indented consistently, i.e.:
     )mydelimiter");
 
 By default, pybind11 automatically generates and prepends a signature to the docstring of a function
-registered with ``module::def()`` and ``class_::def()``. Sometimes this
+registered with ``module_::def()`` and ``class_::def()``. Sometimes this
 behavior is not desirable, because you want to provide your own signature or remove
 the docstring completely to exclude the function from the Sphinx documentation.
 The class ``options`` allows you to selectively suppress auto-generated signatures:
@@ -297,6 +351,15 @@ The class ``options`` allows you to selectively suppress auto-generated signatur
 
         m.def("add", [](int a, int b) { return a + b; }, "A function which adds two numbers");
     }
+
+pybind11 also appends all members of an enum to the resulting enum docstring.
+This default behavior can be disabled by using the ``disable_enum_members_docstring()``
+function of the ``options`` class.
+
+With ``disable_user_defined_docstrings()`` all user defined docstrings of
+``module_::def()``, ``class_::def()`` and ``enum_()`` are disabled, but the
+function signatures and enum members are included in the docstring, unless they
+are disabled separately.
 
 Note that changes to the settings affect only function bindings created during the
 lifetime of the ``options`` instance. When it goes out of scope at the end of the module's init function,
@@ -335,3 +398,32 @@ before they are used as a parameter or return type of a function:
         pyFoo.def(py::init<const ns::Bar&>());
         pyBar.def(py::init<const ns::Foo&>());
     }
+
+Setting inner type hints in docstrings
+======================================
+
+When you use pybind11 wrappers for ``list``, ``dict``, and other generic python
+types, the docstring will just display the generic type. You can convey the
+inner types in the docstring by using a special 'typed' version of the generic
+type.
+
+.. code-block:: cpp
+
+    PYBIND11_MODULE(example, m) {
+        m.def("pass_list_of_str", [](py::typing::List<py::str> arg) {
+            // arg can be used just like py::list
+        ));
+    }
+
+The resulting docstring will be ``pass_list_of_str(arg0: list[str]) -> None``.
+
+The following special types are available in ``pybind11/typing.h``:
+
+* ``py::Tuple<Args...>``
+* ``py::Dict<K, V>``
+* ``py::List<V>``
+* ``py::Set<V>``
+* ``py::Callable<Signature>``
+
+.. warning:: Just like in python, these are merely hints. They don't actually
+             enforce the types of their contents at runtime or compile time.

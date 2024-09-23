@@ -21,6 +21,7 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/geometry/Point2.h>
+#include "gtsam/base/OptionalJacobian.h"
 
 // \namespace
 
@@ -39,7 +40,7 @@ namespace simulated2D {
 
   public:
     typedef gtsam::Values Base;  ///< base class
-    typedef boost::shared_ptr<Point2> sharedPoint;  ///< shortcut to shared Point type
+    typedef std::shared_ptr<Point2> sharedPoint;  ///< shortcut to shared Point type
 
     /// Constructor
     Values() : nrPoses_(0), nrPoints_(0) {
@@ -89,7 +90,7 @@ namespace simulated2D {
   }
 
   /// Prior on a single pose, optionally returns derivative
-  inline Point2 prior(const Point2& x, boost::optional<Matrix&> H = boost::none) {
+  inline Point2 prior(const Point2& x, OptionalJacobian<2,2> H = OptionalNone) {
     if (H) *H = I_2x2;
     return x;
   }
@@ -100,8 +101,9 @@ namespace simulated2D {
   }
 
   /// odometry between two poses, optionally returns derivative
-  inline Point2 odo(const Point2& x1, const Point2& x2, boost::optional<Matrix&> H1 =
-    boost::none, boost::optional<Matrix&> H2 = boost::none) {
+  inline Point2 odo(const Point2& x1, const Point2& x2, 
+		  OptionalJacobian<2,2> H1 = OptionalNone, 
+		  OptionalJacobian<2,2> H2 = OptionalNone) {
       if (H1) *H1 = -I_2x2;
       if (H2) *H2 = I_2x2;
       return x2 - x1;
@@ -113,8 +115,8 @@ namespace simulated2D {
   }
 
   /// measurement between landmark and pose, optionally returns derivative
-  inline Point2 mea(const Point2& x, const Point2& l, boost::optional<Matrix&> H1 =
-    boost::none, boost::optional<Matrix&> H2 = boost::none) {
+  inline Point2 mea(const Point2& x, const Point2& l, OptionalJacobian<2,2> H1 =
+    OptionalNone, OptionalMatrixType H2 = OptionalNone) {
       if (H1) *H1 = -I_2x2;
       if (H2) *H2 = I_2x2;
       return l - x;
@@ -124,12 +126,15 @@ namespace simulated2D {
    *  Unary factor encoding a soft prior on a vector
    */
   template<class VALUE = Point2>
-  class GenericPrior: public NoiseModelFactor1<VALUE> {
+  class GenericPrior: public NoiseModelFactorN<VALUE> {
   public:
-    typedef NoiseModelFactor1<VALUE> Base;  ///< base class
+    typedef NoiseModelFactorN<VALUE> Base;  ///< base class
     typedef GenericPrior<VALUE> This;
-    typedef boost::shared_ptr<GenericPrior<VALUE> > shared_ptr;
+    typedef std::shared_ptr<GenericPrior<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
+	
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
 
     Pose measured_; ///< prior mean
 
@@ -139,15 +144,15 @@ namespace simulated2D {
     }
 
     /// Return error and optional derivative
-    Vector evaluateError(const Pose& x, boost::optional<Matrix&> H = boost::none) const override {
-      return (prior(x, H) - measured_);
+    Vector evaluateError(const Pose& x, OptionalMatrixType H) const override {
+      return (simulated2D::prior(x, H) - measured_);
     }
 
     ~GenericPrior() override {}
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
@@ -155,6 +160,7 @@ namespace simulated2D {
     /// Default constructor
     GenericPrior() { }
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -162,18 +168,22 @@ namespace simulated2D {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
+#endif
   };
 
   /**
    * Binary factor simulating "odometry" between two Vectors
    */
   template<class VALUE = Point2>
-  class GenericOdometry: public NoiseModelFactor2<VALUE, VALUE> {
+  class GenericOdometry: public NoiseModelFactorN<VALUE, VALUE> {
   public:
-    typedef NoiseModelFactor2<VALUE, VALUE> Base; ///< base class
+    typedef NoiseModelFactorN<VALUE, VALUE> Base; ///< base class
     typedef GenericOdometry<VALUE> This;
-    typedef boost::shared_ptr<GenericOdometry<VALUE> > shared_ptr;
+    typedef std::shared_ptr<GenericOdometry<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
+
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
 
     Pose measured_; ///< odometry measurement
 
@@ -184,8 +194,7 @@ namespace simulated2D {
 
     /// Evaluate error and optionally return derivatives
     Vector evaluateError(const Pose& x1, const Pose& x2,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2) const override {
       return (odo(x1, x2, H1, H2) - measured_);
     }
 
@@ -193,7 +202,7 @@ namespace simulated2D {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
@@ -201,6 +210,7 @@ namespace simulated2D {
     /// Default constructor
     GenericOdometry() { }
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -208,19 +218,23 @@ namespace simulated2D {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
+#endif
   };
 
   /**
    * Binary factor simulating "measurement" between two Vectors
    */
   template<class POSE, class LANDMARK>
-  class GenericMeasurement: public NoiseModelFactor2<POSE, LANDMARK> {
+  class GenericMeasurement: public NoiseModelFactorN<POSE, LANDMARK> {
   public:
-    typedef NoiseModelFactor2<POSE, LANDMARK> Base;  ///< base class
+    typedef NoiseModelFactorN<POSE, LANDMARK> Base;  ///< base class
     typedef GenericMeasurement<POSE, LANDMARK> This;
-    typedef boost::shared_ptr<GenericMeasurement<POSE, LANDMARK> > shared_ptr;
+    typedef std::shared_ptr<GenericMeasurement<POSE, LANDMARK> > shared_ptr;
     typedef POSE Pose; ///< shortcut to Pose type
     typedef LANDMARK Landmark; ///< shortcut to Landmark type
+
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
 
     Landmark measured_; ///< Measurement
 
@@ -231,8 +245,7 @@ namespace simulated2D {
 
     /// Evaluate error and optionally return derivatives
     Vector evaluateError(const Pose& x1, const Landmark& x2,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2) const override {
       return (mea(x1, x2, H1, H2) - measured_);
     }
 
@@ -240,7 +253,7 @@ namespace simulated2D {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
@@ -248,6 +261,7 @@ namespace simulated2D {
     /// Default constructor
     GenericMeasurement() { }
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -255,6 +269,7 @@ namespace simulated2D {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
+#endif
   };
 
   /** Typedefs for regular use */

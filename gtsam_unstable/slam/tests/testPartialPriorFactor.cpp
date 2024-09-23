@@ -15,12 +15,14 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
+
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -84,7 +86,7 @@ TEST(PartialPriorFactor, JacobianPartialTranslation2) {
 
   // Calculate numerical derivatives.
   Matrix expectedH1 = numericalDerivative11<Vector, Pose2>(
-      boost::bind(&TestPrior2::evaluateError, &factor, _1, boost::none), pose);
+		  [&factor](const Pose2& p) { return factor.evaluateError(p); }, pose);
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
@@ -101,13 +103,14 @@ TEST(PartialPriorFactor, JacobianFullTranslation2) {
   Pose2 measurement(-6.0, 3.5, 0.123);
 
   // Prior on x component of translation.
-  TestPrior2 factor(poseKey, { 0, 1 }, measurement.translation(), NM::Isotropic::Sigma(2, 0.25));
+  TestPartialPriorFactor2 factor(poseKey, {0, 1}, measurement.translation(),
+                                 NM::Isotropic::Sigma(2, 0.25));
 
   Pose2 pose = measurement; // Zero-error linearization point.
 
   // Calculate numerical derivatives.
   Matrix expectedH1 = numericalDerivative11<Vector, Pose2>(
-      boost::bind(&TestPrior2::evaluateError, &factor, _1, boost::none), pose);
+		  [&factor](const Pose2& p) { return factor.evaluateError(p); }, pose);
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
@@ -128,7 +131,7 @@ TEST(PartialPriorFactor, JacobianTheta) {
 
   // Calculate numerical derivatives.
   Matrix expectedH1 = numericalDerivative11<Vector, Pose2>(
-      boost::bind(&TestPrior2::evaluateError, &factor, _1, boost::none), pose);
+		  [&factor](const Pose2& p) { return factor.evaluateError(p); }, pose);
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
@@ -169,7 +172,7 @@ TEST(PartialPriorFactor, Constructors3) {
 /* ************************************************************************* */
 TEST(PartialPriorFactor, JacobianAtIdentity3) {
   Key poseKey(1);
-  Pose3 measurement = Pose3::identity();
+  Pose3 measurement = Pose3::Identity();
   SharedNoiseModel model = NM::Isotropic::Sigma(1, 0.25);
 
   TestPrior3 factor(poseKey, kIndexTy, measurement.translation().y(), model);
@@ -178,7 +181,7 @@ TEST(PartialPriorFactor, JacobianAtIdentity3) {
 
   // Calculate numerical derivatives.
   Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
-      boost::bind(&TestPrior3::evaluateError, &factor, _1, boost::none), pose);
+		  [&factor](const Pose3& p) { return factor.evaluateError(p); }, pose);
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
@@ -199,7 +202,7 @@ TEST(PartialPriorFactor, JacobianPartialTranslation3) {
 
   // Calculate numerical derivatives.
   Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
-      boost::bind(&TestPrior3::evaluateError, &factor, _1, boost::none), pose);
+		  [&factor](const Pose3& p) { return factor.evaluateError(p); }, pose);
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
@@ -222,7 +225,7 @@ TEST(PartialPriorFactor, JacobianFullTranslation3) {
 
   // Calculate numerical derivatives.
   Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
-      boost::bind(&TestPrior3::evaluateError, &factor, _1, boost::none), pose);
+		  [&factor](const Pose3& p) { return factor.evaluateError(p); }, pose);
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
@@ -245,7 +248,7 @@ TEST(PartialPriorFactor, JacobianTxTz3) {
 
   // Calculate numerical derivatives.
   Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
-      boost::bind(&TestPrior3::evaluateError, &factor, _1, boost::none), pose);
+		  [&factor](const Pose3& p) { return factor.evaluateError(p); }, pose);
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
@@ -289,7 +292,7 @@ TEST(PartialPriorFactor, JacobianFullRotation3) {
 
   // Calculate numerical derivatives.
   Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
-      boost::bind(&TestPrior3::evaluateError, &factor, _1, boost::none), pose);
+		  [&factor](const Pose3& p) { return factor.evaluateError(p); }, pose);
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;

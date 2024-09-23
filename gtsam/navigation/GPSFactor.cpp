@@ -24,7 +24,8 @@ namespace gtsam {
 
 //***************************************************************************
 void GPSFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
-  cout << s << "GPSFactor on " << keyFormatter(key()) << "\n";
+  cout << (s.empty() ? "" : s + " ") << "GPSFactor on " << keyFormatter(key())
+       << "\n";
   cout << "  GPS measurement: " << nT_ << "\n";
   noiseModel_->print("  noise model: ");
 }
@@ -37,7 +38,7 @@ bool GPSFactor::equals(const NonlinearFactor& expected, double tol) const {
 
 //***************************************************************************
 Vector GPSFactor::evaluateError(const Pose3& p,
-    boost::optional<Matrix&> H) const {
+    OptionalMatrixType H) const {
   return p.translation(H) -nT_;
 }
 
@@ -79,7 +80,7 @@ bool GPSFactor2::equals(const NonlinearFactor& expected, double tol) const {
 
 //***************************************************************************
 Vector GPSFactor2::evaluateError(const NavState& p,
-    boost::optional<Matrix&> H) const {
+    OptionalMatrixType H) const {
   return p.position(H) -nT_;
 }
 

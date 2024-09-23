@@ -48,18 +48,19 @@ static const Eigen::MatrixBase<Vector3>::ConstantReturnType Z_3x1 = Vector3::Zer
 // Create handy typedefs and constants for vectors with N>3
 // VectorN and Z_Nx1, for N=1..9
 #define GTSAM_MAKE_VECTOR_DEFS(N)                \
-  typedef Eigen::Matrix<double, N, 1> Vector##N; \
+  using Vector##N = Eigen::Matrix<double, N, 1>; \
   static const Eigen::MatrixBase<Vector##N>::ConstantReturnType Z_##N##x1 = Vector##N::Zero();
 
-GTSAM_MAKE_VECTOR_DEFS(4);
-GTSAM_MAKE_VECTOR_DEFS(5);
-GTSAM_MAKE_VECTOR_DEFS(6);
-GTSAM_MAKE_VECTOR_DEFS(7);
-GTSAM_MAKE_VECTOR_DEFS(8);
-GTSAM_MAKE_VECTOR_DEFS(9);
-GTSAM_MAKE_VECTOR_DEFS(10);
-GTSAM_MAKE_VECTOR_DEFS(11);
-GTSAM_MAKE_VECTOR_DEFS(12);
+GTSAM_MAKE_VECTOR_DEFS(4)
+GTSAM_MAKE_VECTOR_DEFS(5)
+GTSAM_MAKE_VECTOR_DEFS(6)
+GTSAM_MAKE_VECTOR_DEFS(7)
+GTSAM_MAKE_VECTOR_DEFS(8)
+GTSAM_MAKE_VECTOR_DEFS(9)
+GTSAM_MAKE_VECTOR_DEFS(10)
+GTSAM_MAKE_VECTOR_DEFS(11)
+GTSAM_MAKE_VECTOR_DEFS(12)
+GTSAM_MAKE_VECTOR_DEFS(15)
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
@@ -204,26 +205,6 @@ inline double inner_prod(const V1 &a, const V2& b) {
 }
 
 /**
- * BLAS Level 1 scal: x <- alpha*x
- * \deprecated: use operators instead
- */
-inline void scal(double alpha, Vector& x) { x *= alpha; }
-
-/**
- * BLAS Level 1 axpy: y <- alpha*x + y
- * \deprecated: use operators instead
- */
-template<class V1, class V2>
-inline void axpy(double alpha, const V1& x, V2& y) {
-  assert (y.size()==x.size());
-  y += alpha * x;
-}
-inline void axpy(double alpha, const Vector& x, SubVector y) {
-  assert (y.size()==x.size());
-  y += alpha * x;
-}
-
-/**
  * house(x,j) computes HouseHolder vector v and scaling factor beta
  *  from x, such that the corresponding Householder reflection zeroes out
  *  all but x.(j), j is base 0. Golub & Van Loan p 210.
@@ -262,46 +243,4 @@ GTSAM_EXPORT Vector concatVectors(const std::list<Vector>& vs);
  * concatenate Vectors
  */
 GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
-} // namespace gtsam
-
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/array.hpp>
-#include <boost/serialization/split_free.hpp>
-
-namespace boost {
-  namespace serialization {
-
-    // split version - copies into an STL vector for serialization
-    template<class Archive>
-    void save(Archive & ar, const gtsam::Vector & v, unsigned int /*version*/) {
-      const size_t size = v.size();
-      ar << BOOST_SERIALIZATION_NVP(size);
-      ar << make_nvp("data", make_array(v.data(), v.size()));
-    }
-
-    template<class Archive>
-    void load(Archive & ar, gtsam::Vector & v, unsigned int /*version*/) {
-      size_t size;
-      ar >> BOOST_SERIALIZATION_NVP(size);
-      v.resize(size);
-      ar >> make_nvp("data", make_array(v.data(), v.size()));
-    }
-
-    // split version - copies into an STL vector for serialization
-    template<class Archive, int D>
-    void save(Archive & ar, const Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
-      ar << make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
-    }
-
-    template<class Archive, int D>
-    void load(Archive & ar, Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
-      ar >> make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
-    }
-
-  } // namespace serialization
-} // namespace boost
-
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector)
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector2)
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector3)
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector6)
+}  // namespace gtsam

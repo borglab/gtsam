@@ -22,6 +22,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -29,7 +30,7 @@ using namespace gtsam;
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(3, 0.05));
 
 // Keys are deliberately *not* in sorted order to test that case.
-static const Key kKey1(2), kKey2(1);
+static const Key kKey1(2), kKey2(1), kEdgeKey(3);
 static const Unit3 kMeasured(1, 0, 0);
 
 /* ************************************************************************* */
@@ -89,13 +90,86 @@ TEST(TranslationFactor, Jacobian) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Point3>(
-      boost::bind(&factorError, _1, T2, factor), T1);
+      std::bind(&factorError, std::placeholders::_1, T2, factor), T1);
   H2Expected = numericalDerivative11<Vector, Point3>(
-      boost::bind(&factorError, T1, _1, factor), T2);
+      std::bind(&factorError, T1, std::placeholders::_1, factor), T2);
 
   // Verify the Jacobians are correct
   EXPECT(assert_equal(H1Expected, H1Actual, 1e-9));
   EXPECT(assert_equal(H2Expected, H2Actual, 1e-9));
+}
+
+
+/* ************************************************************************* */
+TEST(BilinearAngleTranslationFactor, Constructor) {
+  BilinearAngleTranslationFactor factor(kKey1, kKey2, kEdgeKey, kMeasured, model);
+}
+
+/* ************************************************************************* */
+TEST(BilinearAngleTranslationFactor, ZeroError) {
+  // Create a factor
+  BilinearAngleTranslationFactor factor(kKey1, kKey2, kEdgeKey, kMeasured, model);
+
+  // Set the linearization
+  Point3 T1(1, 0, 0), T2(2, 0, 0);
+  Vector1 scale(1.0);
+
+  // Use the factor to calculate the error
+  Vector actualError(factor.evaluateError(T1, T2, scale));
+
+  // Verify we get the expected error
+  Vector expected = (Vector3() << 0, 0, 0).finished();
+  EXPECT(assert_equal(expected, actualError, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(BilinearAngleTranslationFactor, NonZeroError) {
+  // create a factor
+  BilinearAngleTranslationFactor factor(kKey1, kKey2, kEdgeKey, kMeasured, model);
+
+  // set the linearization
+  Point3 T1(0, 1, 1), T2(0, 2, 2);
+  Vector1 scale(1.0 / sqrt(2));
+
+  // use the factor to calculate the error
+  Vector actualError(factor.evaluateError(T1, T2, scale));
+
+  // verify we get the expected error
+  Vector expected = (Vector3() << -1, 1 / sqrt(2), 1 / sqrt(2)).finished();
+  EXPECT(assert_equal(expected, actualError, 1e-9));
+}
+
+/* ************************************************************************* */
+Vector bilinearAngleFactorError(const Point3 &T1, const Point3 &T2, const Vector1 &scale,
+                   const BilinearAngleTranslationFactor &factor) {
+  return factor.evaluateError(T1, T2, scale);
+}
+
+TEST(BilinearAngleTranslationFactor, Jacobian) {
+  // Create a factor
+  BilinearAngleTranslationFactor factor(kKey1, kKey2, kEdgeKey, kMeasured, model);
+
+  // Set the linearization
+  Point3 T1(1, 0, 0), T2(2, 0, 0);
+  Vector1 scale(1.0);
+
+  // Use the factor to calculate the Jacobians
+  Matrix H1Actual, H2Actual, H3Actual;
+  factor.evaluateError(T1, T2, scale, H1Actual, H2Actual, H3Actual);
+
+  // Use numerical derivatives to calculate the Jacobians
+  Matrix H1Expected, H2Expected, H3Expected;
+  H1Expected = numericalDerivative11<Vector, Point3>(
+      std::bind(&bilinearAngleFactorError, std::placeholders::_1, T2, scale, factor), T1);
+  H2Expected = numericalDerivative11<Vector, Point3>(
+      std::bind(&bilinearAngleFactorError, T1, std::placeholders::_1, scale, factor), T2);
+  H3Expected = numericalDerivative11<Vector, Vector1>(
+      std::bind(&bilinearAngleFactorError, T1, T2, std::placeholders::_1, factor), scale);
+
+  // Verify the Jacobians are correct
+  EXPECT(assert_equal(H1Expected, H1Actual, 1e-9));
+  EXPECT(assert_equal(H2Expected, H2Actual, 1e-9));
+  EXPECT(assert_equal(H3Expected, H3Actual, 1e-9));
 }
 
 /* ************************************************************************* */

@@ -10,7 +10,7 @@ packages = find_packages()
 setup(
     name='gtwrap',
     description='Library to wrap C++ with Python and Matlab',
-    version='1.1.0',
+    version='2.0.0',
     author="Frank Dellaert et. al.",
     author_email="dellaert@gatech.edu",
     license='BSD',

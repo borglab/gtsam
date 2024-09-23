@@ -15,7 +15,7 @@ class ClassB {
 };
 
 // check namespace handling
-Vector aGlobalFunction();
+gtsam::Vector aGlobalFunction();
 
 }  // namespace ns1
 
@@ -45,7 +45,7 @@ class ClassC {
 };
 
 // separate namespace global function, same name
-Vector aGlobalFunction();
+gtsam::Vector aGlobalFunction();
 
 // An overloaded global function
 ns1::ClassA overloadedGlobalFunction(const ns1::ClassA& a);
@@ -60,3 +60,14 @@ class ClassD {
 };
 
 int aGlobalVar;
+
+namespace gtsam {
+  #include <gtsam/nonlinear/Values.h>
+class Values {
+  Values();
+  Values(const gtsam::Values& other);
+
+  void insert(size_t j, const gtsam::Vector& vector);
+  void insert(size_t j, const gtsam::Matrix& matrix);
+};
+}

@@ -11,6 +11,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/Vector.h>
 
 #include <gtsam/slam/BetweenFactor.h>
 
@@ -21,26 +22,24 @@ using namespace gtsam;
 
 // Disabled this test because it is currently failing - remove the lines "#if 0" and "#endif" below
 // to reenable the test.
-#if 0
+// #if 0
 
 /* ************************************************************************* */
-LieVector predictionError(const Pose2& p1, const Pose2& p2, const gtsam::Key& key1, const gtsam::Key& key2, const BetweenFactorEM<gtsam::Pose2>& factor){
+Vector predictionError(const Pose2& p1, const Pose2& p2, const gtsam::Key& key1, const gtsam::Key& key2, const BetweenFactorEM<gtsam::Pose2>& factor){
   gtsam::Values values;
   values.insert(key1, p1);
   values.insert(key2, p2);
-  //  LieVector err = factor.whitenedError(values);
-  //  return err;
-  return LieVector::Expmap(factor.whitenedError(values));
+  return factor.whitenedError(values);
 }
 
 /* ************************************************************************* */
-LieVector predictionError_standard(const Pose2& p1, const Pose2& p2, const gtsam::Key& key1, const gtsam::Key& key2, const BetweenFactor<gtsam::Pose2>& factor){
+Vector predictionError_standard(const Pose2& p1, const Pose2& p2, const gtsam::Key& key1, const gtsam::Key& key2, const BetweenFactor<gtsam::Pose2>& factor){
   gtsam::Values values;
   values.insert(key1, p1);
   values.insert(key2, p2);
-  //  LieVector err = factor.whitenedError(values);
+  //  Vector err = factor.whitenedError(values);
   //  return err;
-  return LieVector::Expmap(factor.whitenedError(values));
+  return factor.whitenedError(values);
 }
 
 /* ************************************************************************* */
@@ -99,8 +98,8 @@ TEST( BetweenFactorEM, EvaluateError)
 
   Vector actual_err_wh = f.whitenedError(values);
 
-  Vector actual_err_wh_inlier  = (Vector(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
-  Vector actual_err_wh_outlier = (Vector(3) << actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
+  Vector3 actual_err_wh_inlier  = Vector3(actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
+  Vector3 actual_err_wh_outlier = Vector3(actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
 
   //  cout << "Inlier test. norm of actual_err_wh_inlier, actual_err_wh_outlier: "<<actual_err_wh_inlier.norm()<<","<<actual_err_wh_outlier.norm()<<endl;
   //  cout<<actual_err_wh[0]<<" "<<actual_err_wh[1]<<" "<<actual_err_wh[2]<<actual_err_wh[3]<<" "<<actual_err_wh[4]<<" "<<actual_err_wh[5]<<endl;
@@ -117,8 +116,8 @@ TEST( BetweenFactorEM, EvaluateError)
 
   actual_err_wh = g.whitenedError(values);
 
-  actual_err_wh_inlier = (Vector(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
-  actual_err_wh_outlier = (Vector(3) << actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
+  actual_err_wh_inlier = Vector3(actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
+  actual_err_wh_outlier = Vector3(actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
 
   // in case of outlier, outlier-mode whitented error should be dominant
   //  CHECK(actual_err_wh_inlier.norm() < 1000.0*actual_err_wh_outlier.norm());
@@ -132,7 +131,7 @@ TEST( BetweenFactorEM, EvaluateError)
   BetweenFactorEM<gtsam::Pose2> h_EM(key1, key2, rel_pose_msr, model_inlier, model_outlier,
         prior_inlier, prior_outlier);
   actual_err_wh = h_EM.whitenedError(values);
-  actual_err_wh_inlier = (Vector(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
+  actual_err_wh_inlier = Vector3(actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
 
   BetweenFactor<gtsam::Pose2> h(key1, key2, rel_pose_msr, model_inlier );
   Vector actual_err_wh_stnd = h.whitenedError(values);
@@ -178,7 +177,7 @@ TEST (BetweenFactorEM, jacobian ) {
   // compare to standard between factor
   BetweenFactor<gtsam::Pose2> h(key1, key2, rel_pose_msr, model_inlier );
   Vector actual_err_wh_stnd = h.whitenedError(values);
-  Vector actual_err_wh_inlier = (Vector(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
+  Vector actual_err_wh_inlier = Vector3(actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
 //  CHECK( assert_equal(actual_err_wh_stnd, actual_err_wh_inlier, 1e-8));
   std::vector<gtsam::Matrix> H_actual_stnd_unwh(2);
   (void)h.unwhitenedError(values, H_actual_stnd_unwh);
@@ -190,12 +189,13 @@ TEST (BetweenFactorEM, jacobian ) {
 //  CHECK( assert_equal(H2_actual_stnd, H2_actual, 1e-8));
 
   double stepsize = 1.0e-9;
-  Matrix H1_expected = gtsam::numericalDerivative11<LieVector, Pose2>(boost::bind(&predictionError, _1, p2, key1, key2, f), p1, stepsize);
-  Matrix H2_expected = gtsam::numericalDerivative11<LieVector, Pose2>(boost::bind(&predictionError, p1, _1, key1, key2, f), p2, stepsize);
+  using std::placeholders::_1;
+  Matrix H1_expected = gtsam::numericalDerivative11<Vector, Pose2>(std::bind(&predictionError, _1, p2, key1, key2, f), p1, stepsize);
+  Matrix H2_expected = gtsam::numericalDerivative11<Vector, Pose2>(std::bind(&predictionError, p1, _1, key1, key2, f), p2, stepsize);
 
 
   // try to check numerical derivatives of a standard between factor
-  Matrix H1_expected_stnd = gtsam::numericalDerivative11<LieVector, Pose2>(boost::bind(&predictionError_standard, _1, p2, key1, key2, h), p1, stepsize);
+  Matrix H1_expected_stnd = gtsam::numericalDerivative11<Vector, Pose2>(std::bind(&predictionError_standard, _1, p2, key1, key2, h), p1, stepsize);
 //  CHECK( assert_equal(H1_expected_stnd, H1_actual_stnd, 1e-5));
 //
 //
@@ -240,8 +240,8 @@ TEST( BetweenFactorEM, CaseStudy)
   Vector actual_err_unw = f.unwhitenedError(values);
   Vector actual_err_wh  = f.whitenedError(values);
 
-  Vector actual_err_wh_inlier = (Vector(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
-  Vector actual_err_wh_outlier = (Vector(3) << actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
+  Vector3 actual_err_wh_inlier = Vector3(actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
+  Vector3 actual_err_wh_outlier = Vector3(actual_err_wh[3], actual_err_wh[4], actual_err_wh[5]);
 
   if (debug){
     cout << "p_inlier_outler: "<<p_inlier_outler[0]<<", "<<p_inlier_outler[1]<<endl;
@@ -263,8 +263,8 @@ TEST (BetweenFactorEM, updateNoiseModel ) {
   gtsam::Pose2 rel_pose_ideal = p1.between(p2);
   gtsam::Pose2 rel_pose_msr   = rel_pose_ideal.compose(noise);
 
-  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas( (gtsam::Vector(3) << 1.5, 2.5, 4.05)));
-  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas( (gtsam::Vector(3) << 50.0, 50.0, 10.0)));
+  SharedGaussian model_inlier(noiseModel::Diagonal::Sigmas(Vector3(1.5, 2.5, 4.05)));
+  SharedGaussian model_outlier(noiseModel::Diagonal::Sigmas(Vector3(50.0, 50.0, 10.0)));
 
   gtsam::Values values;
   values.insert(key1, p1);
@@ -287,14 +287,14 @@ TEST (BetweenFactorEM, updateNoiseModel ) {
   SharedGaussian model_inlier_new = f.get_model_inlier();
   SharedGaussian model_outlier_new = f.get_model_outlier();
 
-  model_inlier->print("model_inlier:");
-  model_outlier->print("model_outlier:");
-  model_inlier_new->print("model_inlier_new:");
-  model_outlier_new->print("model_outlier_new:");
+  // model_inlier->print("model_inlier:");
+  // model_outlier->print("model_outlier:");
+  // model_inlier_new->print("model_inlier_new:");
+  // model_outlier_new->print("model_outlier_new:");
 }
 
 
-#endif
+// #endif
 
 /* ************************************************************************* */
   int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

@@ -13,7 +13,8 @@
 #include <vector>
 #include <stdexcept>
 #include <string>
-#include <boost/shared_ptr.hpp>
+#include <memory>
+#include <gtsam_unstable/dllexport.h>
 
 #include "PartitionWorkSpace.h"
 
@@ -45,11 +46,11 @@ namespace gtsam { namespace partition {
   };
 
   /** graph is a collection of factors */
-  typedef boost::shared_ptr<GenericFactor2D> sharedGenericFactor2D;
+  typedef std::shared_ptr<GenericFactor2D> sharedGenericFactor2D;
   typedef std::vector<sharedGenericFactor2D> GenericGraph2D;
 
   /** merge nodes in DSF using constraints captured by the given graph */
-  std::list<std::vector<size_t> > findIslands(const GenericGraph2D& graph, const std::vector<size_t>& keys, WorkSpace& workspace,
+  std::list<std::vector<size_t> > GTSAM_UNSTABLE_EXPORT findIslands(const GenericGraph2D& graph, const std::vector<size_t>& keys, WorkSpace& workspace,
       const int minNrConstraintsPerCamera, const int minNrConstraintsPerLandmark);
 
   /** eliminate the sensors from generic graph */
@@ -93,15 +94,15 @@ namespace gtsam { namespace partition {
   };
 
   /** graph is a collection of factors */
-  typedef boost::shared_ptr<GenericFactor3D> sharedGenericFactor3D;
+  typedef std::shared_ptr<GenericFactor3D> sharedGenericFactor3D;
   typedef std::vector<sharedGenericFactor3D> GenericGraph3D;
 
   /** merge nodes in DSF using constraints captured by the given graph */
-  std::list<std::vector<size_t> > findIslands(const GenericGraph3D& graph, const std::vector<size_t>& keys, WorkSpace& workspace,
+  std::list<std::vector<size_t> > GTSAM_UNSTABLE_EXPORT findIslands(const GenericGraph3D& graph, const std::vector<size_t>& keys, WorkSpace& workspace,
       const size_t minNrConstraintsPerCamera, const size_t minNrConstraintsPerLandmark);
 
   /** eliminate the sensors from generic graph */
-  void reduceGenericGraph(const GenericGraph3D& graph, const std::vector<size_t>& cameraKeys,  const std::vector<size_t>& landmarkKeys,
+  void GTSAM_UNSTABLE_EXPORT reduceGenericGraph(const GenericGraph3D& graph, const std::vector<size_t>& cameraKeys,  const std::vector<size_t>& landmarkKeys,
       const std::vector<int>& dictionary,  GenericGraph3D& reducedGraph);
 
   /** check whether the 3D graph is singular (under constrained) */
@@ -126,7 +127,7 @@ namespace gtsam { namespace partition {
   };
 
   /** graph is a collection of factors */
-  typedef boost::shared_ptr<GenericUnaryFactor> sharedGenericUnaryFactor;
+  typedef std::shared_ptr<GenericUnaryFactor> sharedGenericUnaryFactor;
   typedef std::vector<sharedGenericUnaryFactor> GenericUnaryGraph;
 
   /***************************************************

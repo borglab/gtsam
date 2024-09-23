@@ -27,7 +27,7 @@
 namespace gtsam {
 
 /**
- * IMU pre-integration on NavSatet manifold.
+ * IMU pre-integration on NavState manifold.
  * This corresponds to the original RSS paper (with one difference: V is rotated)
  */
 class GTSAM_EXPORT ManifoldPreintegration : public PreintegrationBase {
@@ -59,7 +59,7 @@ public:
    *  @param p    Parameters, typically fixed in a single application
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  ManifoldPreintegration(const boost::shared_ptr<Params>& p,
+  ManifoldPreintegration(const std::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
   /// @}
@@ -103,16 +103,17 @@ public:
   /// summarizing the preintegrated IMU measurements so far
   /// NOTE(frank): implementation is different in two versions
   Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
-      OptionalJacobian<9, 6> H = boost::none) const override;
+      OptionalJacobian<9, 6> H = {}) const override;
 
   /** Dummy clone for MATLAB */
-  virtual boost::shared_ptr<ManifoldPreintegration> clone() const {
-    return boost::shared_ptr<ManifoldPreintegration>();
+  virtual std::shared_ptr<ManifoldPreintegration> clone() const {
+    return std::shared_ptr<ManifoldPreintegration>();
   }
 
   /// @}
 
 private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -126,6 +127,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(delVdelBiasAcc_);
     ar & BOOST_SERIALIZATION_NVP(delVdelBiasOmega_);
   }
+#endif
 };
 
 } /// namespace gtsam

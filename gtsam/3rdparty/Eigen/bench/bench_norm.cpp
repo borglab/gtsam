@@ -111,12 +111,12 @@ EIGEN_DONT_INLINE typename T::Scalar pblueNorm(const T& v)
     int nbig, ibeta, it, iemin, iemax, iexp;
     Scalar abig, eps;
 
-    nbig  = std::numeric_limits<int>::max();            // largest integer
-    ibeta = std::numeric_limits<Scalar>::radix; //NumTraits<Scalar>::Base;                    // base for floating-point numbers
-    it    = std::numeric_limits<Scalar>::digits; //NumTraits<Scalar>::Mantissa;                // number of base-beta digits in mantissa
-    iemin = std::numeric_limits<Scalar>::min_exponent;  // minimum exponent
-    iemax = std::numeric_limits<Scalar>::max_exponent;  // maximum exponent
-    rbig  = std::numeric_limits<Scalar>::max();         // largest floating-point number
+    nbig  = NumTraits<int>::highest();          // largest integer
+    ibeta = std::numeric_limits<Scalar>::radix; // NumTraits<Scalar>::Base;                    // base for floating-point numbers
+    it    = NumTraits<Scalar>::digits();        // NumTraits<Scalar>::Mantissa;                // number of base-beta digits in mantissa
+    iemin = NumTraits<Scalar>::min_exponent();  // minimum exponent
+    iemax = NumTraits<Scalar>::max_exponent();  // maximum exponent
+    rbig  = NumTraits<Scalar>::highest();       // largest floating-point number
 
     // Check the basic machine-dependent constants.
     if(iemin > 1 - 2*it || 1+it>iemax || (it==2 && ibeta<5)
@@ -134,7 +134,7 @@ EIGEN_DONT_INLINE typename T::Scalar pblueNorm(const T& v)
     iexp  = - ((iemax+it)/2);
     s2m   = std::pow(ibeta,iexp);   // scaling factor for upper range
 
-    overfl  = rbig*s2m;          // overfow boundary for abig
+    overfl  = rbig*s2m;          // overflow boundary for abig
     eps     = std::pow(ibeta, 1-it);
     relerr  = std::sqrt(eps);      // tolerance for neglecting asml
     abig    = 1.0/eps - 1.0;

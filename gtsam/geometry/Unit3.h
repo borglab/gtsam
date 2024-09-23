@@ -23,11 +23,11 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorSerialization.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/dllexport.h>
 
-#include <boost/optional.hpp>
-#include <boost/serialization/nvp.hpp>
 
 #include <random>
 #include <string>
@@ -39,13 +39,13 @@
 namespace gtsam {
 
 /// Represents a 3D point on a unit sphere.
-class Unit3 {
+class GTSAM_EXPORT Unit3 {
 
 private:
 
   Vector3 p_; ///< The location of the point on the unit sphere
-  mutable boost::optional<Matrix32> B_; ///< Cached basis
-  mutable boost::optional<Matrix62> H_B_; ///< Cached basis derivative
+  mutable std::optional<Matrix32> B_; ///< Cached basis
+  mutable std::optional<Matrix62> H_B_; ///< Cached basis derivative
 
 #ifdef GTSAM_USE_TBB
   mutable std::mutex B_mutex_; ///< Mutex to protect the cached basis.
@@ -66,21 +66,14 @@ public:
   }
 
   /// Construct from point
-  explicit Unit3(const Vector3& p) :
-      p_(p.normalized()) {
-  }
+  explicit Unit3(const Vector3& p);
 
   /// Construct from x,y,z
-  Unit3(double x, double y, double z) :
-      p_(x, y, z) {
-    p_.normalize();
-  }
+  Unit3(double x, double y, double z);
 
   /// Construct from 2D point in plane at focal length f
   /// Unit3(p,1) can be viewed as normalized homogeneous coordinates of 2D point
-  explicit Unit3(const Point2& p, double f) : p_(p.x(), p.y(), f) {
-    p_.normalize();
-  }
+  explicit Unit3(const Point2& p, double f);
 
   /// Copy constructor
   Unit3(const Unit3& u) {
@@ -96,8 +89,8 @@ public:
   }
 
   /// Named constructor from Point3 with optional Jacobian
-  GTSAM_EXPORT static Unit3 FromPoint3(const Point3& point, //
-      OptionalJacobian<2, 3> H = boost::none);
+  static Unit3 FromPoint3(const Point3& point, //
+      OptionalJacobian<2, 3> H = {});
 
   /**
    * Random direction, using boost::uniform_on_sphere
@@ -105,17 +98,18 @@ public:
    *   std::mt19937 engine(42);
    *   Unit3 unit = Unit3::Random(engine);
    */
-  GTSAM_EXPORT static Unit3 Random(std::mt19937 & rng);
+  static Unit3 Random(std::mt19937 & rng);
 
   /// @}
 
   /// @name Testable
   /// @{
 
-  friend std::ostream& operator<<(std::ostream& os, const Unit3& pair);
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                               const Unit3& pair);
 
   /// The print fuction
-  GTSAM_EXPORT void print(const std::string& s = std::string()) const;
+  void print(const std::string& s = std::string()) const;
 
   /// The equals function with tolerance
   bool equals(const Unit3& s, double tol = 1e-9) const {
@@ -132,16 +126,16 @@ public:
    * tangent to the sphere at the current direction.
    * Provides derivatives of the basis with the two basis vectors stacked up as a 6x1.
    */
-  GTSAM_EXPORT const Matrix32& basis(OptionalJacobian<6, 2> H = boost::none) const;
+  const Matrix32& basis(OptionalJacobian<6, 2> H = {}) const;
 
   /// Return skew-symmetric associated with 3D point on unit sphere
-  GTSAM_EXPORT Matrix3 skew() const;
+  Matrix3 skew() const;
 
   /// Return unit-norm Point3
-  GTSAM_EXPORT Point3 point3(OptionalJacobian<3, 2> H = boost::none) const;
+  Point3 point3(OptionalJacobian<3, 2> H = {}) const;
 
   /// Return unit-norm Vector
-  GTSAM_EXPORT Vector3 unitVector(OptionalJacobian<3, 2> H = boost::none) const;
+  Vector3 unitVector(OptionalJacobian<3, 2> H = {}) const;
 
   /// Return scaled direction as Point3
   friend Point3 operator*(double s, const Unit3& d) {
@@ -149,20 +143,20 @@ public:
   }
 
   /// Return dot product with q
-  GTSAM_EXPORT double dot(const Unit3& q, OptionalJacobian<1,2> H1 = boost::none, //
-                             OptionalJacobian<1,2> H2 = boost::none) const;
+  double dot(const Unit3& q, OptionalJacobian<1,2> H1 = {}, //
+                             OptionalJacobian<1,2> H2 = {}) const;
 
   /// Signed, vector-valued error between two directions
   /// @deprecated, errorVector has the proper derivatives, this confusingly has only the second.
-  GTSAM_EXPORT Vector2 error(const Unit3& q, OptionalJacobian<2, 2> H_q = boost::none) const;
+  Vector2 error(const Unit3& q, OptionalJacobian<2, 2> H_q = {}) const;
 
   /// Signed, vector-valued error between two directions
   /// NOTE(hayk): This method has zero derivatives if this (p) and q are orthogonal.
-  GTSAM_EXPORT Vector2 errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p = boost::none, //
-                      OptionalJacobian<2, 2> H_q = boost::none) const;
+  Vector2 errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p = {}, //
+                      OptionalJacobian<2, 2> H_q = {}) const;
 
   /// Distance between two directions
-  GTSAM_EXPORT double distance(const Unit3& q, OptionalJacobian<1, 2> H = boost::none) const;
+  double distance(const Unit3& q, OptionalJacobian<1, 2> H = {}) const;
 
   /// Cross-product between two Unit3s
   Unit3 cross(const Unit3& q) const {
@@ -195,10 +189,10 @@ public:
   };
 
   /// The retract function
-  GTSAM_EXPORT Unit3 retract(const Vector2& v, OptionalJacobian<2,2> H = boost::none) const;
+  Unit3 retract(const Vector2& v, OptionalJacobian<2,2> H = {}) const;
 
   /// The local coordinates function
-  GTSAM_EXPORT Vector2 localCoordinates(const Unit3& s) const;
+  Vector2 localCoordinates(const Unit3& s) const;
 
   /// @}
 
@@ -206,12 +200,14 @@ private:
 
   /// @name Advanced Interface
   /// @{
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(p_);
   }
+#endif
 
   /// @}
 

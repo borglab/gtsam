@@ -19,8 +19,8 @@
 
 #pragma once
 
+#include <functional>
 #include <gtsam/inference/Symbol.h>
-#include <boost/function.hpp>
 
 namespace gtsam {
 
@@ -89,13 +89,13 @@ public:
    */
 
   // Checks only the type
-  static boost::function<bool(gtsam::Key)> TypeTest(unsigned char c);
+  static std::function<bool(gtsam::Key)> TypeTest(unsigned char c);
 
   // Checks only the robot ID (label_)
-  static boost::function<bool(gtsam::Key)> LabelTest(unsigned char label);
+  static std::function<bool(gtsam::Key)> LabelTest(unsigned char label);
 
   // Checks both type and the robot ID
-  static boost::function<bool(gtsam::Key)> TypeLabelTest(unsigned char c, unsigned char label);
+  static std::function<bool(gtsam::Key)> TypeLabelTest(unsigned char c, unsigned char label);
 
   // Converts to upper/lower versions of labels
   LabeledSymbol upper() const { return LabeledSymbol(c_, toupper(label_), j_); }
@@ -112,6 +112,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -120,6 +121,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(label_);
     ar & BOOST_SERIALIZATION_NVP(j_);
   }
+#endif
 }; // \class LabeledSymbol
 
 /** Create a symbol key from a character, label and index, i.e. xA5. */

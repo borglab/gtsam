@@ -24,7 +24,7 @@
  *
  * These should not be used outside of tests, as they are just remappings
  * of the original functions.  We use these to avoid needing to do
- * too much boost::bind magic or writing a bunch of separate proxy functions.
+ * too much std::bind magic or writing a bunch of separate proxy functions.
  *
  * Don't expect all classes to work for all of these functions.
  */

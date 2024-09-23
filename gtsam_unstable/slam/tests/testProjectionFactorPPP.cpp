@@ -28,8 +28,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/bind.hpp>
-
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -177,10 +176,11 @@ TEST( ProjectionFactorPPP, Jacobian ) {
   CHECK(assert_equal(H3Expected, H3Actual, 1e-3));
 
   // Verify H2 with numerical derivative
-  Matrix H2Expected = numericalDerivative32<Vector,Pose3, Pose3, Point3>(
-      boost::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-      boost::bind(&TestProjectionFactor::evaluateError, &factor, _1, _2, _3,
-          boost::none, boost::none, boost::none)), pose, Pose3(), point);
+  Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
+      [&factor](const Pose3& pose, const Pose3& transform, const Point3& point) {
+        return factor.evaluateError(pose, transform, point);
+      },
+      pose, Pose3(), point);
 
   CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
 }
@@ -213,9 +213,10 @@ TEST( ProjectionFactorPPP, JacobianWithTransform ) {
 
   // Verify H2 with numerical derivative
   Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
-      boost::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-      boost::bind(&TestProjectionFactor::evaluateError, &factor, _1, _2, _3,
-          boost::none, boost::none, boost::none)), pose, body_P_sensor, point);
+      [&factor](const Pose3& pose, const Pose3& transform, const Point3& point) {
+        return factor.evaluateError(pose, transform, point);
+      },
+      pose, body_P_sensor, point);
 
   CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
 

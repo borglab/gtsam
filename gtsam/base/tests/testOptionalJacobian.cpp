@@ -20,50 +20,47 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <CppUnitLite/TestHarness.h>
 
+#include <optional>
+#include <functional>
+
 using namespace std;
 using namespace gtsam;
 
 //******************************************************************************
+#define TEST_CONSTRUCTOR(DIM1, DIM2, X, TRUTHY) \
+  {                                             \
+    OptionalJacobian<DIM1, DIM2> H(X);          \
+    EXPECT(H == TRUTHY);                        \
+  }
 TEST( OptionalJacobian, Constructors ) {
   Matrix23 fixed;
-
-  OptionalJacobian<2, 3> H1;
-  EXPECT(!H1);
-
-  OptionalJacobian<2, 3> H2(fixed);
-  EXPECT(H2);
-
-  OptionalJacobian<2, 3> H3(&fixed);
-  EXPECT(H3);
-
   Matrix dynamic;
-  OptionalJacobian<2, 3> H4(dynamic);
-  EXPECT(H4);
+  std::optional<std::reference_wrapper<Matrix>> optionalRef(std::ref(dynamic));
 
-  OptionalJacobian<2, 3> H5(boost::none);
-  EXPECT(!H5);
+  OptionalJacobian<2, 3> H;
+  EXPECT(!H);
 
-  boost::optional<Matrix&> optional(dynamic);
-  OptionalJacobian<2, 3> H6(optional);
-  EXPECT(H6);
+  TEST_CONSTRUCTOR(2, 3, fixed, true);
+  TEST_CONSTRUCTOR(2, 3, &fixed, true);
+  TEST_CONSTRUCTOR(2, 3, dynamic, true);
+  TEST_CONSTRUCTOR(2, 3, &dynamic, true);
+  TEST_CONSTRUCTOR(2, 3, std::nullopt, false);
+  TEST_CONSTRUCTOR(2, 3, optionalRef, true);
 
+  // Test dynamic
   OptionalJacobian<-1, -1> H7;
   EXPECT(!H7);
 
-  OptionalJacobian<-1, -1> H8(dynamic);
-  EXPECT(H8);
+  TEST_CONSTRUCTOR(-1, -1, dynamic, true);
+  TEST_CONSTRUCTOR(-1, -1, std::nullopt, false);
+  TEST_CONSTRUCTOR(-1, -1, optionalRef, true);
 
-  OptionalJacobian<-1, -1> H9(boost::none);
-  EXPECT(!H9);
-
-  OptionalJacobian<-1, -1> H10(optional);
-  EXPECT(H10);
 }
 
 //******************************************************************************
 Matrix kTestMatrix = (Matrix23() << 11,12,13,21,22,23).finished();
 
-void test(OptionalJacobian<2, 3> H = boost::none) {
+void test(OptionalJacobian<2, 3> H = {}) {
   if (H)
     *H = kTestMatrix;
 }
@@ -101,10 +98,29 @@ TEST( OptionalJacobian, Fixed) {
   dynamic2.setOnes();
   test(dynamic2);
   EXPECT(assert_equal(kTestMatrix, dynamic2));
+
+  {  // Dynamic pointer
+    // Passing in an empty matrix means we want it resized
+    Matrix dynamic0;
+    test(&dynamic0);
+    EXPECT(assert_equal(kTestMatrix, dynamic0));
+
+    // Dynamic wrong size
+    Matrix dynamic1(3, 5);
+    dynamic1.setOnes();
+    test(&dynamic1);
+    EXPECT(assert_equal(kTestMatrix, dynamic1));
+
+    // Dynamic right size
+    Matrix dynamic2(2, 5);
+    dynamic2.setOnes();
+    test(&dynamic2);
+    EXPECT(assert_equal(kTestMatrix, dynamic2));
+  }
 }
 
 //******************************************************************************
-void test2(OptionalJacobian<-1,-1> H = boost::none) {
+void test2(OptionalJacobian<-1,-1> H = {}) {
   if (H)
     *H = kTestMatrix; // resizes
 }
@@ -133,12 +149,12 @@ TEST( OptionalJacobian, Dynamic) {
 }
 
 //******************************************************************************
-void test3(double add, OptionalJacobian<2,1> H = boost::none) {
+void test3(double add, OptionalJacobian<2,1> H = {}) {
   if (H) *H << add + 10, add + 20;
 }
 
 // This function calls the above function three times, one for each column
-void test4(OptionalJacobian<2, 3> H = boost::none) {
+void test4(OptionalJacobian<2, 3> H = {}) {
   if (H) {
     test3(1, H.cols<1>(0));
     test3(2, H.cols<1>(1));

@@ -18,11 +18,14 @@
 
 #pragma once
 
-#include <gtsam/inference/Key.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/inference/Key.h>
+
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
-#include <boost/function.hpp>
+#endif
 #include <cstdint>
+#include <functional>
 
 namespace gtsam {
 
@@ -82,7 +85,7 @@ public:
   operator std::string() const;
 
   /// Return string representation of the key
-  std::string string() const { return std::string(*this); };
+  std::string string() const { return std::string(*this); }
 
   /** Comparison for use in maps */
   bool operator<(const Symbol& comp) const {
@@ -114,13 +117,14 @@ public:
    * Values::filter() function to retrieve all key-value pairs with the
    * requested character.
    */
-  static boost::function<bool(Key)> ChrTest(unsigned char c);
+  static std::function<bool(Key)> ChrTest(unsigned char c);
 
   /// Output stream operator that can be used with key_formatter (see Key.h).
   GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &, const Symbol &);
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -128,6 +132,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(c_);
     ar & BOOST_SERIALIZATION_NVP(j_);
   }
+#endif
 };
 
 /** Create a symbol key from a character and index, i.e. x5. */

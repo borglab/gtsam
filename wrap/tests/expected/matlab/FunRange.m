@@ -52,7 +52,7 @@ classdef FunRange < handle
   end
 
   methods(Static = true)
-    function varargout = Create(varargin)
+    function varargout = create(varargin)
       % CREATE usage: create() : returns FunRange
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0

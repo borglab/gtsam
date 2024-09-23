@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   FactorGraph-inl.h
+ * @file   FactorGraph-inst.h
  * @brief  Factor Graph Base Class
  * @author Carlos Nieto
  * @author Frank Dellaert
@@ -23,11 +23,10 @@
 
 #include <gtsam/inference/FactorGraph.h>
 
-#include <boost/bind.hpp>
-
 #include <stdio.h>
 #include <algorithm>
 #include <iostream>  // for cout :-(
+#include <fstream>
 #include <sstream>
 #include <string>
 
@@ -37,7 +36,7 @@ namespace gtsam {
 template <class FACTOR>
 void FactorGraph<FACTOR>::print(const std::string& s,
                                 const KeyFormatter& formatter) const {
-  std::cout << s << std::endl;
+  std::cout << (s.empty() ? "" : s + " ") << std::endl;
   std::cout << "size: " << size() << std::endl;
   for (size_t i = 0; i < factors_.size(); i++) {
     std::stringstream ss;
@@ -60,6 +59,16 @@ bool FactorGraph<FACTOR>::equals(const This& fg, double tol) const {
     if (!f1->equals(*f2, tol)) return false;
   }
   return true;
+}
+
+/* ************************************************************************ */
+template <class FACTOR>
+double FactorGraph<FACTOR>::error(const HybridValues &values) const {
+  double error = 0.0;
+  for (auto &f : factors_) {
+    error += f->error(values);
+  }
+  return error;
 }
 
 /* ************************************************************************* */
@@ -125,6 +134,52 @@ FactorIndices FactorGraph<FACTOR>::add_factors(const CONTAINER& factors,
     push_back(factors);
   }
   return newFactorIndices;
+}
+
+/* ************************************************************************* */
+template <class FACTOR>
+void FactorGraph<FACTOR>::dot(std::ostream& os,
+                              const KeyFormatter& keyFormatter,
+                              const DotWriter& writer) const {
+  writer.graphPreamble(&os);
+
+  // Create nodes for each variable in the graph
+  for (Key key : keys()) {
+    auto position = writer.variablePos(key);
+    writer.drawVariable(key, keyFormatter, position, &os);
+  }
+  os << "\n";
+
+  // Create factors and variable connections
+  for (size_t i = 0; i < size(); ++i) {
+    const auto& factor = at(i);
+    if (factor) {
+      const KeyVector& factorKeys = factor->keys();
+      writer.processFactor(i, factorKeys, keyFormatter, {}, &os);
+    }
+  }
+
+  os << "}\n";
+  std::flush(os);
+}
+
+/* ************************************************************************* */
+template <class FACTOR>
+std::string FactorGraph<FACTOR>::dot(const KeyFormatter& keyFormatter,
+                                     const DotWriter& writer) const {
+  std::stringstream ss;
+  dot(ss, keyFormatter, writer);
+  return ss.str();
+}
+
+/* ************************************************************************* */
+template <class FACTOR>
+void FactorGraph<FACTOR>::saveGraph(const std::string& filename,
+                                    const KeyFormatter& keyFormatter,
+                                    const DotWriter& writer) const {
+  std::ofstream of(filename.c_str());
+  dot(of, keyFormatter, writer);
+  of.close();
 }
 
 }  // namespace gtsam

@@ -20,9 +20,9 @@ namespace gtsam {
  * assumed to be PoseRTV
  */
 template<class POSE>
-class FullIMUFactor : public NoiseModelFactor2<POSE, POSE> {
+class FullIMUFactor : public NoiseModelFactorN<POSE, POSE> {
 public:
-  typedef NoiseModelFactor2<POSE, POSE> Base;
+  typedef NoiseModelFactorN<POSE, POSE> Base;
   typedef FullIMUFactor<POSE> This;
 
 protected:
@@ -32,6 +32,9 @@ protected:
   double dt_; /// time between measurements
 
 public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
   /** Standard constructor */
   FullIMUFactor(const Vector3& accel, const Vector3& gyro,
@@ -52,7 +55,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** Check if two factors are equal */
@@ -82,23 +85,21 @@ public:
    *  z - h(x1,x2)
    */
   Vector evaluateError(const PoseRTV& x1, const PoseRTV& x2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     Vector9 z;
     z.head(3).operator=(accel_); // Strange syntax to work around ambiguous operator error with clang
     z.segment(3, 3).operator=(gyro_); // Strange syntax to work around ambiguous operator error with clang
     z.tail(3).operator=(x2.t()); // Strange syntax to work around ambiguous operator error with clang
     if (H1) *H1 = numericalDerivative21<Vector9, PoseRTV, PoseRTV>(
-        boost::bind(This::predict_proxy, _1, _2, dt_), x1, x2, 1e-5);
+        std::bind(This::predict_proxy, std::placeholders::_1, std::placeholders::_2, dt_), x1, x2, 1e-5);
     if (H2) *H2 = numericalDerivative22<Vector9, PoseRTV, PoseRTV>(
-        boost::bind(This::predict_proxy, _1, _2, dt_), x1, x2, 1e-5);
+        std::bind(This::predict_proxy, std::placeholders::_1, std::placeholders::_2, dt_), x1, x2, 1e-5);
     return z - predict_proxy(x1, x2, dt_);
   }
 
   /** dummy version that fails for non-dynamic poses */
   virtual Vector evaluateError(const Pose3& x1, const Pose3& x2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const {
+      OptionalMatrixType H1, OptionalMatrixType H2) const {
     assert(false);
     return Vector6::Zero();
   }

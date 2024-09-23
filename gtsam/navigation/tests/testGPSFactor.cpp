@@ -68,8 +68,8 @@ TEST( GPSFactor, Constructor ) {
   EXPECT(assert_equal(Z_3x1,factor.evaluateError(T),1e-5));
 
   // Calculate numerical derivatives
-  Matrix expectedH = numericalDerivative11<Vector,Pose3>(
-      boost::bind(&GPSFactor::evaluateError, &factor, _1, boost::none), T);
+  Matrix expectedH = numericalDerivative11<Vector, Pose3>(
+      [&factor](const Pose3& T) { return factor.evaluateError(T); }, T);
 
   // Use the factor to calculate the derivative
   Matrix actualH;
@@ -97,8 +97,8 @@ TEST( GPSFactor2, Constructor ) {
   EXPECT(assert_equal(Z_3x1,factor.evaluateError(T),1e-5));
 
   // Calculate numerical derivatives
-  Matrix expectedH = numericalDerivative11<Vector,NavState>(
-      boost::bind(&GPSFactor2::evaluateError, &factor, _1, boost::none), T);
+  Matrix expectedH = numericalDerivative11<Vector, NavState>(
+      [&factor](const NavState& T) { return factor.evaluateError(T); }, T);
 
   // Use the factor to calculate the derivative
   Matrix actualH;
@@ -123,9 +123,7 @@ TEST(GPSData, init) {
   Point3 NED2(N, E, -U);
 
   // Estimate initial state
-  Pose3 T;
-  Vector3 nV;
-  boost::tie(T, nV) = GPSFactor::EstimateState(t1, NED1, t2, NED2, 84831.0796);
+  const auto [T, nV] = GPSFactor::EstimateState(t1, NED1, t2, NED2, 84831.0796);
 
   // Check values values
   EXPECT(assert_equal((Vector )Vector3(29.9575, -29.0564, -1.95993), nV, 1e-4));

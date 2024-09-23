@@ -28,7 +28,7 @@
 
 #include <gtsam/nonlinear/GncParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <boost/math/distributions/chi_squared.hpp>
+#include <gtsam/nonlinear/internal/ChiSquaredInverse.h>
 
 namespace gtsam {
 /*
@@ -36,8 +36,7 @@ namespace gtsam {
  * Equivalent to chi2inv in Matlab.
  */
 static double Chi2inv(const double alpha, const size_t dofs) {
-  boost::math::chi_squared_distribution<double> chi2(dofs);
-  return boost::math::quantile(chi2, alpha);
+  return internal::chi_squared_quantile(dofs, alpha);
 }
 
 /* ************************************************************************* */
@@ -65,14 +64,42 @@ class GncOptimizer {
     nfg_.resize(graph.size());
     for (size_t i = 0; i < graph.size(); i++) {
       if (graph[i]) {
-        NoiseModelFactor::shared_ptr factor = boost::dynamic_pointer_cast<
-            NoiseModelFactor>(graph[i]);
-        auto robust = boost::dynamic_pointer_cast<
-            noiseModel::Robust>(factor->noiseModel());
+        NoiseModelFactor::shared_ptr factor = graph.at<NoiseModelFactor>(i);
+        auto robust =
+            std::dynamic_pointer_cast<noiseModel::Robust>(factor->noiseModel());
         // if the factor has a robust loss, we remove the robust loss
         nfg_[i] = robust ? factor-> cloneWithNewNoiseModel(robust->noise()) : factor;
       }
     }
+
+    // check that known inliers and outliers make sense:
+    std::vector<size_t> inconsistentlySpecifiedWeights; // measurements the user has incorrectly specified
+    // to be BOTH known inliers and known outliers
+    std::set_intersection(params.knownInliers.begin(),params.knownInliers.end(),
+                        params.knownOutliers.begin(),params.knownOutliers.end(),
+                        std::inserter(inconsistentlySpecifiedWeights, inconsistentlySpecifiedWeights.begin()));
+    if(inconsistentlySpecifiedWeights.size() > 0){ // if we have inconsistently specified weights, we throw an exception
+      params.print("params\n");
+      throw std::runtime_error("GncOptimizer::constructor: the user has selected one or more measurements"
+          " to be BOTH a known inlier and a known outlier.");
+    }
+    // check that known inliers are in the graph
+    for (size_t i = 0; i < params.knownInliers.size(); i++){
+      if( params.knownInliers[i] > nfg_.size()-1 ){ // outside graph
+        throw std::runtime_error("GncOptimizer::constructor: the user has selected one or more measurements"
+                  "that are not in the factor graph to be known inliers.");
+      }
+    }
+    // check that known outliers are in the graph
+    for (size_t i = 0; i < params.knownOutliers.size(); i++){
+      if( params.knownOutliers[i] > nfg_.size()-1 ){ // outside graph
+        throw std::runtime_error("GncOptimizer::constructor: the user has selected one or more measurements"
+                  "that are not in the factor graph to be known outliers.");
+      }
+    }
+    // initialize weights (if we don't have prior knowledge of inliers/outliers
+    // the weights are all initialized to 1.
+    weights_ = initializeWeightsFromKnownInliersAndOutliers();
 
     // set default barcSq_ (inlier threshold)
     double alpha = 0.99; // with this (default) probability, inlier residuals are smaller than barcSq_
@@ -109,6 +136,18 @@ class GncOptimizer {
     }
   }
 
+  /** Set weights for each factor. This is typically not needed, but
+   * provides an extra interface for the user to initialize the weightst
+   * */
+  void setWeights(const Vector w) {
+    if (size_t(w.size()) != nfg_.size()) {
+      throw std::runtime_error(
+          "GncOptimizer::setWeights: the number of specified weights"
+          " does not match the size of the factor graph.");
+    }
+    weights_ = w;
+  }
+
   /// Access a copy of the internal factor graph.
   const NonlinearFactorGraph& getFactors() const { return nfg_; }
 
@@ -132,29 +171,45 @@ class GncOptimizer {
         && equal(barcSq_, other.getInlierCostThresholds());
   }
 
+  Vector initializeWeightsFromKnownInliersAndOutliers() const{
+    Vector weights = Vector::Ones(nfg_.size());
+    for (size_t i = 0; i < params_.knownOutliers.size(); i++){
+      weights[ params_.knownOutliers[i] ] = 0.0; // known to be outliers
+    }
+    return weights;
+  }
+
   /// Compute optimal solution using graduated non-convexity.
   Values optimize() {
-    // start by assuming all measurements are inliers
-    weights_ = Vector::Ones(nfg_.size());
-    BaseOptimizer baseOptimizer(nfg_, state_);
+    NonlinearFactorGraph graph_initial = this->makeWeightedGraph(weights_);
+    BaseOptimizer baseOptimizer(
+        graph_initial, state_, params_.baseOptimizerParams);
     Values result = baseOptimizer.optimize();
     double mu = initializeMu();
-    double prev_cost = nfg_.error(result);
+    double prev_cost = graph_initial.error(result);
     double cost = 0.0;  // this will be updated in the main loop
 
     // handle the degenerate case that corresponds to small
     // maximum residual errors at initialization
     // For GM: if residual error is small, mu -> 0
     // For TLS: if residual error is small, mu -> -1
-    if (mu <= 0) {
-      if (params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
+    int nrUnknownInOrOut = nfg_.size() - ( params_.knownInliers.size() + params_.knownOutliers.size() );
+    // ^^ number of measurements that are not known to be inliers or outliers (GNC will need to figure them out)
+    if (mu <= 0 || nrUnknownInOrOut == 0) { // no need to even call GNC in this case
+      if (mu <= 0 && params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
         std::cout << "GNC Optimizer stopped because maximum residual at "
                   "initialization is small."
                   << std::endl;
       }
+      if (nrUnknownInOrOut==0 && params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
+        std::cout << "GNC Optimizer stopped because all measurements are already known to be inliers or outliers"
+                  << std::endl;
+      }
+      if (params_.verbosity >= GncParameters::Verbosity::MU) {
+        std::cout << "mu: " << mu << std::endl;
+      }
       if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
         result.print("result\n");
-        std::cout << "mu: " << mu << std::endl;
       }
       return result;
     }
@@ -163,18 +218,23 @@ class GncOptimizer {
     for (iter = 0; iter < params_.maxIterations; iter++) {
 
       // display info
-      if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
+      if (params_.verbosity >= GncParameters::Verbosity::MU) {
         std::cout << "iter: " << iter << std::endl;
-        result.print("result\n");
         std::cout << "mu: " << mu << std::endl;
+      }
+      if (params_.verbosity >= GncParameters::Verbosity::WEIGHTS) {
         std::cout << "weights: " << weights_ << std::endl;
+      }
+      if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
+        result.print("result\n");
       }
       // weights update
       weights_ = calculateWeights(result, mu);
 
       // variable/values update
       NonlinearFactorGraph graph_iter = this->makeWeightedGraph(weights_);
-      BaseOptimizer baseOptimizer_iter(graph_iter, state_);
+      BaseOptimizer baseOptimizer_iter(
+          graph_iter, state_, params_.baseOptimizerParams);
       result = baseOptimizer_iter.optimize();
 
       // stopping condition
@@ -199,9 +259,11 @@ class GncOptimizer {
     if (params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
       std::cout << "final iterations: " << iter << std::endl;
       std::cout << "final mu: " << mu << std::endl;
-      std::cout << "final weights: " << weights_ << std::endl;
       std::cout << "previous cost: " << prev_cost << std::endl;
       std::cout << "current cost: " << cost << std::endl;
+    }
+    if (params_.verbosity >= GncParameters::Verbosity::WEIGHTS) {
+      std::cout << "final weights: " << weights_ << std::endl;
     }
     return result;
   }
@@ -237,6 +299,11 @@ class GncOptimizer {
                 std::min(mu_init, barcSq_[k] / (2 * rk - barcSq_[k]) ) : mu_init;
           }
         }
+        if (mu_init >= 0 && mu_init < 1e-6){
+          mu_init = 1e-6; // if mu ~ 0 (but positive), that means we have measurements with large errors,
+          // i.e., rk > barcSq_[k] and rk very large, hence we threshold to 1e-6 to avoid mu = 0
+        }
+  
         return mu_init > 0 && !std::isinf(mu_init) ? mu_init : -1; // if mu <= 0 or mu = inf, return -1,
         // which leads to termination of the main gnc loop. In this case, all residuals are already below the threshold
         // and there is no need to robustify (TLS = least squares)
@@ -284,8 +351,10 @@ class GncOptimizer {
   bool checkCostConvergence(const double cost, const double prev_cost) const {
     bool costConverged = std::fabs(cost - prev_cost) / std::max(prev_cost, 1e-7)
         < params_.relativeCostTol;
-    if (costConverged && params_.verbosity >= GncParameters::Verbosity::SUMMARY)
-      std::cout << "checkCostConvergence = true " << std::endl;
+    if (costConverged && params_.verbosity >= GncParameters::Verbosity::SUMMARY){
+      std::cout << "checkCostConvergence = true (prev. cost = " << prev_cost
+                << ", curr. cost = " << cost << ")" << std::endl;
+    }
     return costConverged;
   }
 
@@ -330,11 +399,9 @@ class GncOptimizer {
     newGraph.resize(nfg_.size());
     for (size_t i = 0; i < nfg_.size(); i++) {
       if (nfg_[i]) {
-        auto factor = boost::dynamic_pointer_cast<
-            NoiseModelFactor>(nfg_[i]);
-        auto noiseModel =
-            boost::dynamic_pointer_cast<noiseModel::Gaussian>(
-                factor->noiseModel());
+        auto factor = nfg_.at<NoiseModelFactor>(i);
+        auto noiseModel = std::dynamic_pointer_cast<noiseModel::Gaussian>(
+            factor->noiseModel());
         if (noiseModel) {
           Matrix newInfo = weights[i] * noiseModel->information();
           auto newNoiseModel = noiseModel::Gaussian::Information(newInfo);
@@ -350,17 +417,21 @@ class GncOptimizer {
 
   /// Calculate gnc weights.
   Vector calculateWeights(const Values& currentEstimate, const double mu) {
-    Vector weights = Vector::Ones(nfg_.size());
+    Vector weights = initializeWeightsFromKnownInliersAndOutliers();
 
     // do not update the weights that the user has decided are known inliers
     std::vector<size_t> allWeights;
     for (size_t k = 0; k < nfg_.size(); k++) {
       allWeights.push_back(k);
     }
+    std::vector<size_t> knownWeights;
+    std::set_union(params_.knownInliers.begin(), params_.knownInliers.end(),
+                   params_.knownOutliers.begin(), params_.knownOutliers.end(),
+                   std::inserter(knownWeights, knownWeights.begin()));
+
     std::vector<size_t> unknownWeights;
     std::set_difference(allWeights.begin(), allWeights.end(),
-                        params_.knownInliers.begin(),
-                        params_.knownInliers.end(),
+                        knownWeights.begin(), knownWeights.end(),
                         std::inserter(unknownWeights, unknownWeights.begin()));
 
     // update weights of known inlier/outlier measurements
@@ -376,18 +447,16 @@ class GncOptimizer {
         return weights;
       }
       case GncLossType::TLS: {  // use eq (14) in GNC paper
-        double upperbound = (mu + 1) / mu * barcSq_.maxCoeff();
-        double lowerbound = mu / (mu + 1) * barcSq_.minCoeff();
         for (size_t k : unknownWeights) {
           if (nfg_[k]) {
             double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
-            if (u2_k >= upperbound) {
+            double upperbound = (mu + 1) / mu * barcSq_[k];
+            double lowerbound = mu / (mu + 1) * barcSq_[k];
+            weights[k] = std::sqrt(barcSq_[k] * mu * (mu + 1) / u2_k) - mu;
+            if (u2_k >= upperbound || weights[k] < 0) {
               weights[k] = 0;
-            } else if (u2_k <= lowerbound) {
+            } else if (u2_k <= lowerbound || weights[k] > 1) {
               weights[k] = 1;
-            } else {
-              weights[k] = std::sqrt(barcSq_[k] * mu * (mu + 1) / u2_k)
-                  - mu;
             }
           }
         }

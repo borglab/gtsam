@@ -24,7 +24,7 @@ template<typename T> void test_gmres_T()
   //CALL_SUBTEST( check_sparse_square_solving(gmres_colmajor_ssor)     );
 }
 
-void test_gmres()
+EIGEN_DECLARE_TEST(gmres)
 {
   CALL_SUBTEST_1(test_gmres_T<double>());
   CALL_SUBTEST_2(test_gmres_T<std::complex<double> >());

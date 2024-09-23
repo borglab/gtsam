@@ -14,11 +14,12 @@
  * @brief  Unit tests for Point3 class
  */
 
-#include <gtsam/geometry/Point3.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Point3.h>
 
+using namespace std::placeholders;
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(Point3)
@@ -33,9 +34,9 @@ TEST(Point3 , Constructor) {
 
 //******************************************************************************
 TEST(Point3 , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Point3>));
-  BOOST_CONCEPT_ASSERT((IsManifold<Point3>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Point3>));
+  GTSAM_CONCEPT_ASSERT(IsGroup<Point3>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Point3>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Point3>);
 }
 
 //******************************************************************************
@@ -98,7 +99,7 @@ TEST( Point3, dot) {
 
   // Use numerical derivatives to calculate the expected Jacobians
   Matrix H1, H2;
-  boost::function<double(const Point3&, const Point3&)> f =
+  std::function<double(const Point3&, const Point3&)> f =
       [](const Point3& p, const Point3& q) { return gtsam::dot(p, q); };
   {
     gtsam::dot(p, q, H1, H2);
@@ -120,8 +121,8 @@ TEST( Point3, dot) {
 /* ************************************************************************* */
 TEST(Point3, cross) {
   Matrix aH1, aH2;
-  boost::function<Point3(const Point3&, const Point3&)> f =
-      boost::bind(&gtsam::cross, _1, _2, boost::none, boost::none);
+  std::function<Point3(const Point3&, const Point3&)> f = 
+    [](const Point3& p, const Point3& q) { return gtsam::cross(p, q); };
   const Point3 omega(0, 1, 0), theta(4, 6, 8);
   cross(omega, theta, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(f, omega, theta), aH1));
@@ -139,8 +140,8 @@ TEST( Point3, cross2) {
 
   // Use numerical derivatives to calculate the expected Jacobians
   Matrix H1, H2;
-  boost::function<Point3(const Point3&, const Point3&)> f = boost::bind(&gtsam::cross, _1, _2,  //
-                                                                      boost::none, boost::none);
+  std::function<Point3(const Point3&, const Point3&)> f =
+    [](const Point3& p, const Point3& q) { return gtsam::cross(p, q); };
   {
     gtsam::cross(p, q, H1, H2);
     EXPECT(assert_equal(numericalDerivative21<Point3,Point3>(f, p, q), H1, 1e-9));
@@ -159,8 +160,8 @@ TEST (Point3, normalize) {
   Point3 point(1, -2, 3); // arbitrary point
   Point3 expected(point / sqrt(14.0));
   EXPECT(assert_equal(expected, normalize(point, actualH), 1e-8));
-  Matrix expectedH = numericalDerivative11<Point3, Point3>(
-      boost::bind(gtsam::normalize, _1, boost::none), point);
+  std::function<Point3(const Point3&)> fn = [](const Point3& p) { return normalize(p); };
+  Matrix expectedH = numericalDerivative11<Point3, Point3>(fn, point);
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
@@ -175,7 +176,7 @@ TEST(Point3, mean) {
 
 TEST(Point3, mean_pair) {
   Point3 a_mean(2, 2, 2), b_mean(-1, 1, 0);
-  Point3Pair expected = std::make_pair(a_mean, b_mean);
+  Point3Pair expected = {a_mean, b_mean};
   Point3 a1(0, 0, 0), a2(1, 2, 3), a3(5, 4, 3);
   Point3 b1(-1, 0, 0), b2(-2, 4, 0), b3(0, -1, 0);
   std::vector<Point3Pair> point_pairs{{a1, b1}, {a2, b2}, {a3, b3}};

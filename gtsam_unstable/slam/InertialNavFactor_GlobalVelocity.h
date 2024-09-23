@@ -26,8 +26,6 @@
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/optional.hpp>
-
 #include <ostream>
 
 namespace gtsam {
@@ -76,12 +74,12 @@ namespace gtsam {
  *            vehicle
  */
 template<class POSE, class VELOCITY, class IMUBIAS>
-class InertialNavFactor_GlobalVelocity : public NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
+class InertialNavFactor_GlobalVelocity : public NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
 
 private:
 
   typedef InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> This;
-  typedef NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
+  typedef NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
 
   Vector measurement_acc_;
   Vector measurement_gyro_;
@@ -91,12 +89,15 @@ private:
   Vector world_rho_;
   Vector world_omega_earth_;
 
-  boost::optional<POSE> body_P_sensor_; // The pose of the sensor in the body frame
+  std::optional<POSE> body_P_sensor_; // The pose of the sensor in the body frame
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   // shorthand for a smart pointer to a factor
-  typedef typename boost::shared_ptr<InertialNavFactor_GlobalVelocity> shared_ptr;
+  typedef typename std::shared_ptr<InertialNavFactor_GlobalVelocity> shared_ptr;
 
   /** default constructor - only use for serialization */
   InertialNavFactor_GlobalVelocity() {}
@@ -104,7 +105,7 @@ public:
   /** Constructor */
   InertialNavFactor_GlobalVelocity(const Key& Pose1, const Key& Vel1, const Key& IMUBias1, const Key& Pose2, const Key& Vel2,
       const Vector& measurement_acc, const Vector& measurement_gyro, const double measurement_dt, const Vector world_g, const Vector world_rho,
-      const Vector& world_omega_earth, const noiseModel::Gaussian::shared_ptr& model_continuous, boost::optional<POSE> body_P_sensor = boost::none) :
+      const Vector& world_omega_earth, const noiseModel::Gaussian::shared_ptr& model_continuous, std::optional<POSE> body_P_sensor = {}) :
         Base(calc_descrete_noise_model(model_continuous, measurement_dt ),
             Pose1, Vel1, IMUBias1, Pose2, Vel2), measurement_acc_(measurement_acc), measurement_gyro_(measurement_gyro),
             dt_(measurement_dt), world_g_(world_g), world_rho_(world_rho), world_omega_earth_(world_omega_earth), body_P_sensor_(body_P_sensor) {  }
@@ -225,47 +226,74 @@ public:
 
   /** implement functions needed to derive from Factor */
   Vector evaluateError(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, const POSE& Pose2, const VELOCITY& Vel2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none,
-      boost::optional<Matrix&> H4 = boost::none,
-      boost::optional<Matrix&> H5 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3, OptionalMatrixType H4,
+      OptionalMatrixType H5) const override {
 
     // TODO: Write analytical derivative calculations
     // Jacobian w.r.t. Pose1
     if (H1){
-      Matrix H1_Pose = gtsam::numericalDerivative11<POSE, POSE>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError, this, _1, Vel1, Bias1, Pose2, Vel2), Pose1);
-      Matrix H1_Vel = gtsam::numericalDerivative11<VELOCITY, POSE>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError, this, _1, Vel1, Bias1, Pose2, Vel2), Pose1);
+      Matrix H1_Pose = gtsam::numericalDerivative11<POSE, POSE>(
+          std::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError,
+                      this, std::placeholders::_1, Vel1, Bias1, Pose2, Vel2),
+          Pose1);
+      Matrix H1_Vel = gtsam::numericalDerivative11<VELOCITY, POSE>(
+          std::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError,
+                      this, std::placeholders::_1, Vel1, Bias1, Pose2, Vel2),
+          Pose1);
       *H1 = stack(2, &H1_Pose, &H1_Vel);
     }
 
     // Jacobian w.r.t. Vel1
     if (H2){
       if (Vel1.size()!=3) throw std::runtime_error("Frank's hack to make this compile will not work if size != 3");
-      Matrix H2_Pose = gtsam::numericalDerivative11<POSE, Vector3>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
-      Matrix H2_Vel = gtsam::numericalDerivative11<Vector3, Vector3>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, _1, Bias1, Pose2, Vel2), Vel1);
+      Matrix H2_Pose = gtsam::numericalDerivative11<POSE, Vector3>(
+          std::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError,
+                      this, Pose1, std::placeholders::_1, Bias1, Pose2, Vel2),
+          Vel1);
+      Matrix H2_Vel = gtsam::numericalDerivative11<Vector3, Vector3>(
+          std::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError,
+                      this, Pose1, std::placeholders::_1, Bias1, Pose2, Vel2),
+          Vel1);
       *H2 = stack(2, &H2_Pose, &H2_Vel);
     }
 
     // Jacobian w.r.t. IMUBias1
     if (H3){
-      Matrix H3_Pose = gtsam::numericalDerivative11<POSE, IMUBIAS>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, Vel1, _1, Pose2, Vel2), Bias1);
-      Matrix H3_Vel = gtsam::numericalDerivative11<VELOCITY, IMUBIAS>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, Vel1, _1, Pose2, Vel2), Bias1);
+      Matrix H3_Pose = gtsam::numericalDerivative11<POSE, IMUBIAS>(
+          std::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError,
+                      this, Pose1, Vel1, std::placeholders::_1, Pose2, Vel2),
+          Bias1);
+      Matrix H3_Vel = gtsam::numericalDerivative11<VELOCITY, IMUBIAS>(
+          std::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError,
+                      this, Pose1, Vel1, std::placeholders::_1, Pose2, Vel2),
+          Bias1);
       *H3 = stack(2, &H3_Pose, &H3_Vel);
     }
 
     // Jacobian w.r.t. Pose2
     if (H4){
-      Matrix H4_Pose = gtsam::numericalDerivative11<POSE, POSE>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, Vel1, Bias1, _1, Vel2), Pose2);
-      Matrix H4_Vel = gtsam::numericalDerivative11<VELOCITY, POSE>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, Vel1, Bias1, _1, Vel2), Pose2);
+      Matrix H4_Pose = gtsam::numericalDerivative11<POSE, POSE>(
+          std::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError,
+                      this, Pose1, Vel1, Bias1, std::placeholders::_1, Vel2),
+          Pose2);
+      Matrix H4_Vel = gtsam::numericalDerivative11<VELOCITY, POSE>(
+          std::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError,
+                      this, Pose1, Vel1, Bias1, std::placeholders::_1, Vel2),
+          Pose2);
       *H4 = stack(2, &H4_Pose, &H4_Vel);
     }
 
     // Jacobian w.r.t. Vel2
     if (H5){
       if (Vel2.size()!=3) throw std::runtime_error("Frank's hack to make this compile will not work if size != 3");
-      Matrix H5_Pose = gtsam::numericalDerivative11<POSE, Vector3>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
-      Matrix H5_Vel = gtsam::numericalDerivative11<Vector3, Vector3>(boost::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError, this, Pose1, Vel1, Bias1, Pose2, _1), Vel2);
+      Matrix H5_Pose = gtsam::numericalDerivative11<POSE, Vector3>(
+          std::bind(&InertialNavFactor_GlobalVelocity::evaluatePoseError,
+                      this, Pose1, Vel1, Bias1, Pose2, std::placeholders::_1),
+          Vel2);
+      Matrix H5_Vel = gtsam::numericalDerivative11<Vector3, Vector3>(
+          std::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError,
+                      this, Pose1, Vel1, Bias1, Pose2, std::placeholders::_1),
+          Vel2);
       *H5 = stack(2, &H5_Pose, &H5_Vel);
     }
 
@@ -383,6 +411,7 @@ public:
 
 private:
 
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -390,6 +419,7 @@ private:
     ar & boost::serialization::make_nvp("NonlinearFactor2",
         boost::serialization::base_object<Base>(*this));
   }
+#endif
 
 }; // \class InertialNavFactor_GlobalVelocity
 

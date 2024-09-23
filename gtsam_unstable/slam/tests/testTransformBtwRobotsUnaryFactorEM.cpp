@@ -18,7 +18,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 
-
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -260,8 +260,10 @@ TEST( TransformBtwRobotsUnaryFactorEM, Jacobian)
   Matrix H1_actual = H_actual[0];
 
   double stepsize = 1.0e-9;
-  Matrix H1_expected = gtsam::numericalDerivative11<Vector, Pose2>(boost::bind(&predictionError, _1,  key, g), orgA_T_orgB, stepsize);
-//  CHECK( assert_equal(H1_expected, H1_actual, 1e-5));
+  Matrix H1_expected = gtsam::numericalDerivative11<Vector, Pose2>(
+      std::bind(&predictionError, std::placeholders::_1, key, g), orgA_T_orgB,
+      stepsize);
+  //  CHECK( assert_equal(H1_expected, H1_actual, 1e-5));
 }
 /////* ************************************************************************** */
 //TEST (TransformBtwRobotsUnaryFactorEM, jacobian ) {
@@ -310,12 +312,12 @@ TEST( TransformBtwRobotsUnaryFactorEM, Jacobian)
 ////  CHECK( assert_equal(H2_actual_stnd, H2_actual, 1e-8));
 //
 //  double stepsize = 1.0e-9;
-//  Matrix H1_expected = gtsam::numericalDerivative11<Vector, Pose2>(boost::bind(&predictionError, _1, p2, keyA, keyB, f), p1, stepsize);
-//  Matrix H2_expected = gtsam::numericalDerivative11<Vector, Pose2>(boost::bind(&predictionError, p1, _1, keyA, keyB, f), p2, stepsize);
+//  Matrix H1_expected = gtsam::numericalDerivative11<Vector, Pose2>(std::bind(&predictionError, std::placeholders::_1, p2, keyA, keyB, f), p1, stepsize);
+//  Matrix H2_expected = gtsam::numericalDerivative11<Vector, Pose2>(std::bind(&predictionError, p1, std::placeholders::_1, keyA, keyB, f), p2, stepsize);
 //
 //
 //  // try to check numerical derivatives of a standard between factor
-//  Matrix H1_expected_stnd = gtsam::numericalDerivative11<Vector, Pose2>(boost::bind(&predictionError_standard, _1, p2, keyA, keyB, h), p1, stepsize);
+//  Matrix H1_expected_stnd = gtsam::numericalDerivative11<Vector, Pose2>(std::bind(&predictionError_standard, std::placeholders::_1, p2, keyA, keyB, h), p1, stepsize);
 //  CHECK( assert_equal(H1_expected_stnd, H1_actual_stnd, 1e-5));
 //
 //

@@ -29,7 +29,7 @@ namespace gtsam {
 using namespace std;
 
 /// Mapping between variable's key and its corresponding dimensionality
-using KeyDimMap = std::map<Key, size_t>;
+using KeyDimMap = std::map<Key, uint32_t>;
 /*
  * Iterates through every factor in a linear graph and generates a
  * mapping between every factor key and it's corresponding dimensionality.
@@ -49,7 +49,7 @@ KeyDimMap collectKeyDim(const LinearGraph& linearGraph) {
  * Data structure of a Linear Program
  */
 struct LP {
-  using shared_ptr = boost::shared_ptr<LP>;
+  using shared_ptr = std::shared_ptr<LP>;
 
   LinearCost cost; //!< Linear cost factor
   EqualityFactorGraph equalities; //!< Linear equality constraints: cE(x) = 0

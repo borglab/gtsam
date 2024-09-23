@@ -1,5 +1,3 @@
-
-
 #include <pybind11/eigen.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/pybind11.h>
@@ -11,10 +9,7 @@
 #include "path/to/ns2.h"
 #include "path/to/ns2/ClassA.h"
 #include "path/to/ns3.h"
-
-#include "wrap/serialization.h"
-#include <boost/serialization/export.hpp>
-
+#include "gtsam/nonlinear/Values.h"
 
 
 
@@ -57,7 +52,16 @@ PYBIND11_MODULE(namespaces_py, m_) {
     py::class_<ClassD, std::shared_ptr<ClassD>>(m_, "ClassD")
         .def(py::init<>());
 
-    m_.attr("aGlobalVar") = aGlobalVar;
+    m_.attr("aGlobalVar") = aGlobalVar;    pybind11::module m_gtsam = m_.def_submodule("gtsam", "gtsam submodule");
+
+    py::class_<gtsam::Values, std::shared_ptr<gtsam::Values>>(m_gtsam, "Values")
+        .def(py::init<>())
+        .def(py::init<const gtsam::Values&>(), py::arg("other"))
+        .def("insert_vector",[](gtsam::Values* self, size_t j, const gtsam::Vector& vector){ self->insert(j, vector);}, py::arg("j"), py::arg("vector"))
+        .def("insert",[](gtsam::Values* self, size_t j, const gtsam::Vector& vector){ self->insert(j, vector);}, py::arg("j"), py::arg("vector"))
+        .def("insert_matrix",[](gtsam::Values* self, size_t j, const gtsam::Matrix& matrix){ self->insert(j, matrix);}, py::arg("j"), py::arg("matrix"))
+        .def("insert",[](gtsam::Values* self, size_t j, const gtsam::Matrix& matrix){ self->insert(j, matrix);}, py::arg("j"), py::arg("matrix"));
+
 
 #include "python/specializations.h"
 

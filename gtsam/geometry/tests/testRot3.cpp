@@ -24,8 +24,6 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
 
-#include <boost/math/constants/constants.hpp>
-
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -40,9 +38,9 @@ static double error = 1e-9, epsilon = 0.001;
 
 //******************************************************************************
 TEST(Rot3 , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Rot3 >));
-  BOOST_CONCEPT_ASSERT((IsManifold<Rot3 >));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Rot3 >));
+  GTSAM_CONCEPT_ASSERT(IsGroup<Rot3 >);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Rot3 >);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Rot3 >);
 }
 
 /* ************************************************************************* */
@@ -123,6 +121,19 @@ TEST( Rot3, AxisAngle)
 }
 
 /* ************************************************************************* */
+TEST( Rot3, AxisAngle2)
+{
+  // constructor from a rotation matrix, as doubles in *row-major* order.
+  Rot3 R1(-0.999957, 0.00922903, 0.00203116, 0.00926964, 0.999739, 0.0208927, -0.0018374, 0.0209105, -0.999781);
+  
+  // convert Rot3 to quaternion using GTSAM
+  const auto [actualAxis, actualAngle] = R1.axisAngle();
+  
+  double expectedAngle = 3.1396582;
+  CHECK(assert_equal(expectedAngle, actualAngle, 1e-5));
+}
+
+/* ************************************************************************* */
 TEST( Rot3, Rodrigues)
 {
   Rot3 R1 = Rot3::Rodrigues(epsilon, 0, 0);
@@ -181,13 +192,13 @@ TEST( Rot3, retract)
 }
 
 /* ************************************************************************* */
-TEST(Rot3, log) {
-  static const double PI = boost::math::constants::pi<double>();
+TEST( Rot3, log) {
+  static const double PI = std::acos(-1.0);
   Vector w;
   Rot3 R;
 
 #define CHECK_OMEGA(X, Y, Z)             \
-  w = (Vector(3) << X, Y, Z).finished(); \
+  w = (Vector(3) << (X), (Y), (Z)).finished(); \
   R = Rot3::Rodrigues(w);                \
   EXPECT(assert_equal(w, Rot3::Logmap(R), 1e-12));
 
@@ -219,17 +230,17 @@ TEST(Rot3, log) {
   CHECK_OMEGA(0, 0, PI)
 
   // Windows and Linux have flipped sign in quaternion mode
-#if !defined(__APPLE__) && defined(GTSAM_USE_QUATERNIONS)
+//#if !defined(__APPLE__) && defined(GTSAM_USE_QUATERNIONS)
   w = (Vector(3) << x * PI, y * PI, z * PI).finished();
   R = Rot3::Rodrigues(w);
   EXPECT(assert_equal(Vector(-w), Rot3::Logmap(R), 1e-12));
-#else
-  CHECK_OMEGA(x * PI, y * PI, z * PI)
-#endif
+//#else
+//  CHECK_OMEGA(x * PI, y * PI, z * PI)
+//#endif
 
   // Check 360 degree rotations
 #define CHECK_OMEGA_ZERO(X, Y, Z)        \
-  w = (Vector(3) << X, Y, Z).finished(); \
+  w = (Vector(3) << (X), (Y), (Z)).finished(); \
   R = Rot3::Rodrigues(w);                \
   EXPECT(assert_equal((Vector)Z_3x1, Rot3::Logmap(R)));
 
@@ -247,15 +258,15 @@ TEST(Rot3, log) {
   // Rot3's Logmap returns different, but equivalent compacted
   // axis-angle vectors depending on whether Rot3 is implemented
   // by Quaternions or SO3.
-  #if defined(GTSAM_USE_QUATERNIONS)
-    // Quaternion bounds angle to [-pi, pi] resulting in ~179.9 degrees
-    EXPECT(assert_equal(Vector3(0.264451979, -0.742197651, -3.04098211),
+#if defined(GTSAM_USE_QUATERNIONS)
+  // Quaternion bounds angle to [-pi, pi] resulting in ~179.9 degrees
+  EXPECT(assert_equal(Vector3(0.264451979, -0.742197651, -3.04098211),
+                      (Vector)Rot3::Logmap(Rlund), 1e-8));
+#else
+  // SO3 will be approximate because of the non-orthogonality
+  EXPECT(assert_equal(Vector3(0.264452, -0.742197708, -3.04098184),
                         (Vector)Rot3::Logmap(Rlund), 1e-8));
-  #else
-    // SO3 does not bound angle resulting in ~180.1 degrees
-    EXPECT(assert_equal(Vector3(-0.264544406, 0.742217405, 3.04117314),
-                        (Vector)Rot3::Logmap(Rlund), 1e-8));
-  #endif
+#endif
 }
 
 /* ************************************************************************* */
@@ -345,7 +356,7 @@ TEST( Rot3, rotate_derivatives)
 {
   Matrix actualDrotate1a, actualDrotate1b, actualDrotate2;
   R.rotate(P, actualDrotate1a, actualDrotate2);
-  R.inverse().rotate(P, actualDrotate1b, boost::none);
+  R.inverse().rotate(P, actualDrotate1b, {});
   Matrix numerical1 = numericalDerivative21(testing::rotate<Rot3,Point3>, R, P);
   Matrix numerical2 = numericalDerivative21(testing::rotate<Rot3,Point3>, R.inverse(), P);
   Matrix numerical3 = numericalDerivative22(testing::rotate<Rot3,Point3>, R, P);
@@ -493,11 +504,9 @@ TEST( Rot3, yaw_pitch_roll )
 TEST( Rot3, RQ)
 {
   // Try RQ on a pure rotation
-  Matrix actualK;
-  Vector actual;
-  boost::tie(actualK, actual) = RQ(R.matrix());
+  const auto [actualK, actual] = RQ(R.matrix());
   Vector expected = Vector3(0.14715, 0.385821, 0.231671);
-  CHECK(assert_equal(I_3x3,actualK));
+  CHECK(assert_equal(I_3x3, (Matrix)actualK));
   CHECK(assert_equal(expected,actual,1e-6));
 
   // Try using xyz call, asserting that Rot3::RzRyRx(x,y,z).xyz()==[x;y;z]
@@ -516,9 +525,9 @@ TEST( Rot3, RQ)
   // Try RQ to recover calibration from 3*3 sub-block of projection matrix
   Matrix K = (Matrix(3, 3) << 500.0, 0.0, 320.0, 0.0, 500.0, 240.0, 0.0, 0.0, 1.0).finished();
   Matrix A = K * R.matrix();
-  boost::tie(actualK, actual) = RQ(A);
-  CHECK(assert_equal(K,actualK));
-  CHECK(assert_equal(expected,actual,1e-6));
+  const auto [actualK2, actual2] = RQ(A);
+  CHECK(assert_equal(K, actualK2));
+  CHECK(assert_equal(expected, actual2, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -589,6 +598,25 @@ TEST(Rot3, quaternion) {
 }
 
 /* ************************************************************************* */
+TEST(Rot3, ConvertQuaternion) {
+  Eigen::Quaterniond eigenQuaternion;
+  eigenQuaternion.w() = 1.0;
+  eigenQuaternion.x() = 2.0;
+  eigenQuaternion.y() = 3.0;
+  eigenQuaternion.z() = 4.0;
+  EXPECT_DOUBLES_EQUAL(1, eigenQuaternion.w(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(2, eigenQuaternion.x(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(3, eigenQuaternion.y(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(4, eigenQuaternion.z(), 1e-9);
+
+  Rot3 R(eigenQuaternion);
+  EXPECT_DOUBLES_EQUAL(1, R.toQuaternion().w(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(2, R.toQuaternion().x(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(3, R.toQuaternion().y(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(4, R.toQuaternion().z(), 1e-9);
+}
+
+/* ************************************************************************* */
 Matrix Cayley(const Matrix& A) {
   Matrix::Index n = A.cols();
   const Matrix I = Matrix::Identity(n,n);
@@ -625,46 +653,44 @@ TEST( Rot3, slerp)
 }
 
 //******************************************************************************
+namespace {
+Rot3 id;
 Rot3 T1(Rot3::AxisAngle(Vector3(0, 0, 1), 1));
 Rot3 T2(Rot3::AxisAngle(Vector3(0, 1, 0), 2));
+}  // namespace
 
 //******************************************************************************
-TEST(Rot3 , Invariants) {
-  Rot3 id;
+TEST(Rot3, Invariants) {
+  EXPECT(check_group_invariants(id, id));
+  EXPECT(check_group_invariants(id, T1));
+  EXPECT(check_group_invariants(T2, id));
+  EXPECT(check_group_invariants(T2, T1));
+  EXPECT(check_group_invariants(T1, T2));
 
-  EXPECT(check_group_invariants(id,id));
-  EXPECT(check_group_invariants(id,T1));
-  EXPECT(check_group_invariants(T2,id));
-  EXPECT(check_group_invariants(T2,T1));
-  EXPECT(check_group_invariants(T1,T2));
-
-  EXPECT(check_manifold_invariants(id,id));
-  EXPECT(check_manifold_invariants(id,T1));
-  EXPECT(check_manifold_invariants(T2,id));
-  EXPECT(check_manifold_invariants(T2,T1));
-  EXPECT(check_manifold_invariants(T1,T2));
+  EXPECT(check_manifold_invariants(id, id));
+  EXPECT(check_manifold_invariants(id, T1));
+  EXPECT(check_manifold_invariants(T2, id));
+  EXPECT(check_manifold_invariants(T2, T1));
+  EXPECT(check_manifold_invariants(T1, T2));
 }
 
 //******************************************************************************
-TEST(Rot3 , LieGroupDerivatives) {
-  Rot3 id;
-
-  CHECK_LIE_GROUP_DERIVATIVES(id,id);
-  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
-  CHECK_LIE_GROUP_DERIVATIVES(T1,T2);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
+TEST(Rot3, LieGroupDerivatives) {
+  CHECK_LIE_GROUP_DERIVATIVES(id, id);
+  CHECK_LIE_GROUP_DERIVATIVES(id, T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, id);
+  CHECK_LIE_GROUP_DERIVATIVES(T1, T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, T1);
 }
 
 //******************************************************************************
-TEST(Rot3 , ChartDerivatives) {
-  Rot3 id;
+TEST(Rot3, ChartDerivatives) {
   if (ROT3_DEFAULT_COORDINATES_MODE == Rot3::EXPMAP) {
-    CHECK_CHART_DERIVATIVES(id,id);
-    CHECK_CHART_DERIVATIVES(id,T2);
-    CHECK_CHART_DERIVATIVES(T2,id);
-    CHECK_CHART_DERIVATIVES(T1,T2);
-    CHECK_CHART_DERIVATIVES(T2,T1);
+    CHECK_CHART_DERIVATIVES(id, id);
+    CHECK_CHART_DERIVATIVES(id, T2);
+    CHECK_CHART_DERIVATIVES(T2, id);
+    CHECK_CHART_DERIVATIVES(T1, T2);
+    CHECK_CHART_DERIVATIVES(T2, T1);
   }
 }
 
@@ -825,7 +851,7 @@ TEST(Rot3, RQ_derivative) {
     const auto R = Rot3::RzRyRx(xyz).matrix();
     const auto num = numericalDerivative11(RQ_proxy, R);
     Matrix39 calc;
-    RQ(R, calc).second;
+    RQ(R, calc);
 
     const auto err = vec_err.second;
     CHECK(assert_equal(num, calc, err));
@@ -928,6 +954,46 @@ TEST(Rot3, determinant) {
 
     EXPECT_DOUBLES_EQUAL(expected, actual, 1e-7);
   }
+}
+
+/* ************************************************************************* */
+TEST(Rot3, ExpmapChainRule) {
+  // Multiply with an arbitrary matrix and exponentiate
+  Matrix3 M;
+  M << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  auto g = [&](const Vector3& omega) {
+    return Rot3::Expmap(M*omega);
+  };
+
+  // Test the derivatives at zero
+  const Matrix3 expected = numericalDerivative11<Rot3, Vector3>(g, Z_3x1);
+  EXPECT(assert_equal<Matrix3>(expected, M, 1e-5)); // SO3::ExpmapDerivative(Z_3x1) is identity
+
+  // Test the derivatives at another value
+  const Vector3 delta{0.1,0.2,0.3};
+  const Matrix3 expected2 = numericalDerivative11<Rot3, Vector3>(g, delta);
+  EXPECT(assert_equal<Matrix3>(expected2, SO3::ExpmapDerivative(M*delta) * M, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, expmapChainRule) {
+  // Multiply an arbitrary rotation with exp(M*x)
+  // Perhaps counter-intuitively, this has the same derivatives as above
+  Matrix3 M;
+  M << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  const Rot3 R = Rot3::Expmap({1, 2, 3});
+  auto g = [&](const Vector3& omega) {
+    return R.expmap(M*omega);
+  };
+
+  // Test the derivatives at zero
+  const Matrix3 expected = numericalDerivative11<Rot3, Vector3>(g, Z_3x1);
+  EXPECT(assert_equal<Matrix3>(expected, M, 1e-5));
+
+  // Test the derivatives at another value
+  const Vector3 delta{0.1,0.2,0.3};
+  const Matrix3 expected2 = numericalDerivative11<Rot3, Vector3>(g, delta);
+  EXPECT(assert_equal<Matrix3>(expected2, SO3::ExpmapDerivative(M*delta) * M, 1e-5));
 }
 
 /* ************************************************************************* */

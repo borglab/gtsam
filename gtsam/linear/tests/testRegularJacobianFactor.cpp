@@ -24,14 +24,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/list_of.hpp>
-#include <boost/range/iterator_range.hpp>
-#include <boost/range/adaptor/map.hpp>
-
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 
 static const size_t fixedDim = 3;
 static const size_t nrKeys = 3;
@@ -40,10 +34,8 @@ static const size_t nrKeys = 3;
 namespace {
   namespace simple {
     // Terms we'll use
-    const vector<pair<Key, Matrix> > terms = list_of<pair<Key,Matrix> >
-      (make_pair(0, Matrix3::Identity()))
-      (make_pair(1, 2*Matrix3::Identity()))
-      (make_pair(2, 3*Matrix3::Identity()));
+    const vector<pair<Key, Matrix> > terms{
+      {0, 1 * I_3x3}, {1, 2 * I_3x3}, {2, 3 * I_3x3}};
 
     // RHS and sigmas
     const Vector b = (Vector(3) << 1., 2., 3.).finished();
@@ -52,10 +44,8 @@ namespace {
 
   namespace simple2 {
     // Terms
-    const vector<pair<Key, Matrix> > terms2 = list_of<pair<Key,Matrix> >
-      (make_pair(0, 2*Matrix3::Identity()))
-      (make_pair(1, 4*Matrix3::Identity()))
-      (make_pair(2, 6*Matrix3::Identity()));
+    const vector<pair<Key, Matrix> > terms2{
+      {0, 2 * I_3x3}, {1, 4 * I_3x3}, {2, 6 * I_3x3}};
 
     // RHS
     const Vector b2 = (Vector(3) << 2., 4., 6.).finished();

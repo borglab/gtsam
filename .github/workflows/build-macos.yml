@@ -2,6 +2,12 @@ name: macOS CI
 
 on: [pull_request]
 
+# Every time you make a push to your PR, it cancel immediately the previous checks, 
+# and start a new one. The other runner will be available more quickly to your PR. 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: ${{ matrix.name }} ${{ matrix.build_type }}
@@ -14,41 +20,38 @@ jobs:
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          macOS-10.15-xcode-11.3.1,
+          macos-12-xcode-14.2,
+          macos-14-xcode-15.4,
         ]
 
         build_type: [Debug, Release]
         build_unstable: [ON]
         include:
-          - name: macOS-10.15-xcode-11.3.1
-            os: macOS-10.15
+          - name: macos-12-xcode-14.2
+            os: macos-12
             compiler: xcode
-            version: "11.3.1"
+            version: "14.2"
+
+          - name: macos-14-xcode-15.4
+            os: macos-14
+            compiler: xcode
+            version: "15.4"
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Install (macOS)
-        if: runner.os == 'macOS'
+      - name: Install Dependencies
         run: |
           brew install cmake ninja
           brew install boost
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            brew install gcc@${{ matrix.version }}
-            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
-          else
-            sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXX=clang++" >> $GITHUB_ENV
-          fi
-      - name: Build and Test (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          bash .github/scripts/unix.sh -t
+          sudo xcode-select -switch /Applications/Xcode.app
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+      - name: Build and Test
+        run: bash .github/scripts/unix.sh -t

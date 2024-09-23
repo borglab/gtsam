@@ -24,6 +24,7 @@
 
 #include <iostream>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -52,8 +53,8 @@ TEST(CalibratedCamera, Create) {
   EXPECT(assert_equal(camera, CalibratedCamera::Create(kDefaultPose, actualH)));
 
   // Check derivative
-  boost::function<CalibratedCamera(Pose3)> f =  //
-      boost::bind(CalibratedCamera::Create, _1, boost::none);
+  std::function<CalibratedCamera(Pose3)> f =  //
+      std::bind(CalibratedCamera::Create, std::placeholders::_1, nullptr);
   Matrix numericalH = numericalDerivative11<CalibratedCamera, Pose3>(f, kDefaultPose);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }

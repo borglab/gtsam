@@ -1,6 +1,3 @@
-# Built-in in CMake 3.5+
-include(CMakeParseArguments)
-
 add_custom_target(test_cmake_build)
 
 function(pybind11_add_build_test name)
@@ -8,9 +5,8 @@ function(pybind11_add_build_test name)
 
   set(build_options "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
 
+  list(APPEND build_options "-DPYBIND11_FINDPYTHON=${PYBIND11_FINDPYTHON}")
   if(PYBIND11_FINDPYTHON)
-    list(APPEND build_options "-DPYBIND11_FINDPYTHON=${PYBIND11_FINDPYTHON}")
-
     if(DEFINED Python_ROOT_DIR)
       list(APPEND build_options "-DPython_ROOT_DIR=${Python_ROOT_DIR}")
     endif()
@@ -25,7 +21,7 @@ function(pybind11_add_build_test name)
   endif()
 
   if(NOT ARG_INSTALL)
-    list(APPEND build_options "-DPYBIND11_PROJECT_DIR=${pybind11_SOURCE_DIR}")
+    list(APPEND build_options "-Dpybind11_SOURCE_DIR=${pybind11_SOURCE_DIR}")
   else()
     list(APPEND build_options "-DCMAKE_PREFIX_PATH=${pybind11_BINARY_DIR}/mock_install")
   endif()
@@ -55,6 +51,8 @@ function(pybind11_add_build_test name)
   add_dependencies(test_cmake_build test_build_${name})
 endfunction()
 
+possibly_uninitialized(PYTHON_MODULE_EXTENSION Python_INTERPRETER_ID)
+
 pybind11_add_build_test(subdirectory_function)
 pybind11_add_build_test(subdirectory_target)
 if("${PYTHON_MODULE_EXTENSION}" MATCHES "pypy" OR "${Python_INTERPRETER_ID}" STREQUAL "PyPy")
@@ -77,3 +75,6 @@ if(PYBIND11_INSTALL)
 endif()
 
 add_dependencies(check test_cmake_build)
+
+add_subdirectory(subdirectory_target EXCLUDE_FROM_ALL)
+add_subdirectory(subdirectory_embed EXCLUDE_FROM_ALL)

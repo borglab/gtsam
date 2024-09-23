@@ -27,10 +27,9 @@
 namespace gtsam {
 
 using std::vector;
-using Point3Pairs = vector<Point3Pair>;
 
 /** instantiate concept checks */
-GTSAM_CONCEPT_POSE_INST(Pose3);
+GTSAM_CONCEPT_POSE_INST(Pose3)
 
 /* ************************************************************************* */
 Pose3::Pose3(const Pose2& pose2) :
@@ -59,8 +58,48 @@ Matrix6 Pose3::AdjointMap() const {
   const Matrix3 R = R_.matrix();
   Matrix3 A = skewSymmetric(t_.x(), t_.y(), t_.z()) * R;
   Matrix6 adj;
-  adj << R, Z_3x3, A, R;
+  adj << R, Z_3x3, A, R;  // Gives [R 0; A R]
   return adj;
+}
+
+/* ************************************************************************* */
+// Calculate AdjointMap applied to xi_b, with Jacobians
+Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_pose,
+                       OptionalJacobian<6, 6> H_xib) const {
+  const Matrix6 Ad = AdjointMap();
+
+  // Jacobians
+  // D1 Ad_T(xi_b) = D1 Ad_T Ad_I(xi_b) = Ad_T * D1 Ad_I(xi_b) = Ad_T * ad_xi_b
+  // D2 Ad_T(xi_b) = Ad_T
+  // See docs/math.pdf for more details.
+  // In D1 calculation, we could be more efficient by writing it out, but do not
+  // for readability
+  if (H_pose) *H_pose = -Ad * adjointMap(xi_b);
+  if (H_xib) *H_xib = Ad;
+
+  return Ad * xi_b;
+}
+
+/* ************************************************************************* */
+/// The dual version of Adjoint
+Vector6 Pose3::AdjointTranspose(const Vector6& x, OptionalJacobian<6, 6> H_pose,
+                                OptionalJacobian<6, 6> H_x) const {
+  const Matrix6 Ad = AdjointMap();
+  const Vector6 AdTx = Ad.transpose() * x;
+
+  // Jacobians
+  // See docs/math.pdf for more details.
+  if (H_pose) {
+    const auto w_T_hat = skewSymmetric(AdTx.head<3>()),
+               v_T_hat = skewSymmetric(AdTx.tail<3>());
+    *H_pose << w_T_hat, v_T_hat,  //
+        /*  */ v_T_hat, Z_3x3;
+  }
+  if (H_x) {
+    *H_x = Ad.transpose();
+  }
+
+  return AdTx;
 }
 
 /* ************************************************************************* */
@@ -75,7 +114,7 @@ Matrix6 Pose3::adjointMap(const Vector6& xi) {
 
 /* ************************************************************************* */
 Vector6 Pose3::adjoint(const Vector6& xi, const Vector6& y,
-    OptionalJacobian<6, 6> Hxi) {
+    OptionalJacobian<6, 6> Hxi, OptionalJacobian<6, 6> H_y) {
   if (Hxi) {
     Hxi->setZero();
     for (int i = 0; i < 6; ++i) {
@@ -86,12 +125,14 @@ Vector6 Pose3::adjoint(const Vector6& xi, const Vector6& y,
       Hxi->col(i) = Gi * y;
     }
   }
-  return adjointMap(xi) * y;
+  const Matrix6& ad_xi = adjointMap(xi);
+  if (H_y) *H_y = ad_xi;
+  return ad_xi * y;
 }
 
 /* ************************************************************************* */
 Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
-    OptionalJacobian<6, 6> Hxi) {
+    OptionalJacobian<6, 6> Hxi, OptionalJacobian<6, 6> H_y) {
   if (Hxi) {
     Hxi->setZero();
     for (int i = 0; i < 6; ++i) {
@@ -102,7 +143,9 @@ Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
       Hxi->col(i) = GTi * y;
     }
   }
-  return adjointMap(xi).transpose() * y;
+  const Matrix6& adT_xi = adjointMap(xi).transpose();
+  if (H_y) *H_y = adT_xi;
+  return adT_xi * y;
 }
 
 /* ************************************************************************* */
@@ -113,6 +156,12 @@ void Pose3::print(const std::string& s) const {
 /* ************************************************************************* */
 bool Pose3::equals(const Pose3& pose, double tol) const {
   return R_.equals(pose.R_, tol) && traits<Point3>::Equals(t_, pose.t_, tol);
+}
+
+/* ************************************************************************* */
+Pose3 Pose3::interpolateRt(const Pose3& T, double t) const {
+  return Pose3(interpolate<Rot3>(R_, T.R_, t),
+                interpolate<Point3>(t_, T.t_, t));
 }
 
 /* ************************************************************************* */
@@ -310,6 +359,14 @@ Point3 Pose3::transformFrom(const Point3& point, OptionalJacobian<3, 6> Hself,
   return R_ * point + t_;
 }
 
+Matrix Pose3::transformFrom(const Matrix& points) const {
+  if (points.rows() != 3) {
+    throw std::invalid_argument("Pose3:transformFrom expects 3*N matrix.");
+  }
+  const Matrix3 R = R_.matrix();
+  return (R * points).colwise() + t_;  // Eigen broadcasting!
+}
+
 /* ************************************************************************* */
 Point3 Pose3::transformTo(const Point3& point, OptionalJacobian<3, 6> Hself,
     OptionalJacobian<3, 3> Hpoint) const {
@@ -328,6 +385,14 @@ Point3 Pose3::transformTo(const Point3& point, OptionalJacobian<3, 6> Hself,
     *Hpoint = Rt;
   }
   return q;
+}
+
+Matrix Pose3::transformTo(const Matrix& points) const {
+  if (points.rows() != 3) {
+    throw std::invalid_argument("Pose3:transformTo expects 3*N matrix.");
+  }
+  const Matrix3 Rt = R_.transpose();
+  return Rt * (points.colwise() - t_);  // Eigen broadcasting!
 }
 
 /* ************************************************************************* */
@@ -380,14 +445,14 @@ Unit3 Pose3::bearing(const Pose3& pose, OptionalJacobian<2, 6> Hself,
     Hpose->setZero();
     return bearing(pose.translation(), Hself, Hpose.cols<3>(3));
   }
-  return bearing(pose.translation(), Hself, boost::none);
+  return bearing(pose.translation(), Hself, {});
 }
 
 /* ************************************************************************* */
-boost::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
+std::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
   const size_t n = abPointPairs.size();
   if (n < 3) {
-    return boost::none; // we need at least three pairs
+    return {};  // we need at least three pairs
   }
 
   // calculate centroids
@@ -407,12 +472,21 @@ boost::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
   return Pose3(aRb, aTb);
 }
 
-boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
+std::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
+  if (a.rows() != 3 || b.rows() != 3 || a.cols() != b.cols()) {
+    throw std::invalid_argument(
+      "Pose3:Align expects 3*N matrices of equal shape.");
+  }
   Point3Pairs abPointPairs;
-  for (const Point3Pair &baPair : baPointPairs) {
-    abPointPairs.emplace_back(baPair.second, baPair.first);
+  for (Eigen::Index j = 0; j < a.cols(); j++) {
+    abPointPairs.emplace_back(a.col(j), b.col(j));
   }
   return Pose3::Align(abPointPairs);
+}
+
+/* ************************************************************************* */
+Pose3 Pose3::slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx, OptionalJacobian<6, 6> Hy) const {
+  return interpolate(*this, other, t, Hx, Hy);
 }
 
 /* ************************************************************************* */

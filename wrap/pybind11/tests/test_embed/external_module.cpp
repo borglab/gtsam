@@ -6,18 +6,15 @@ namespace py = pybind11;
  * modules aren't preserved over a finalize/initialize.
  */
 
-PYBIND11_MODULE(external_module, m) {
+PYBIND11_MODULE(external_module, m, py::mod_gil_not_used()) {
     class A {
     public:
-        A(int value) : v{value} {};
+        explicit A(int value) : v{value} {};
         int v;
     };
 
-    py::class_<A>(m, "A")
-        .def(py::init<int>())
-        .def_readwrite("value", &A::v);
+    py::class_<A>(m, "A").def(py::init<int>()).def_readwrite("value", &A::v);
 
-    m.def("internals_at", []() {
-        return reinterpret_cast<uintptr_t>(&py::detail::get_internals());
-    });
+    m.def("internals_at",
+          []() { return reinterpret_cast<uintptr_t>(&py::detail::get_internals()); });
 }

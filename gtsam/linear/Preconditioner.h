@@ -9,7 +9,7 @@
 #pragma once
 
 #include <gtsam/base/Vector.h>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <iosfwd>
 #include <map>
 #include <string>
@@ -23,7 +23,7 @@ class VectorValues;
 /* parameters for the preconditioner */
 struct GTSAM_EXPORT PreconditionerParameters {
 
-   typedef boost::shared_ptr<PreconditionerParameters> shared_ptr;
+   typedef std::shared_ptr<PreconditionerParameters> shared_ptr;
 
    enum Kernel { /* Preconditioner Kernel */
      GTSAM = 0,
@@ -44,9 +44,9 @@ struct GTSAM_EXPORT PreconditionerParameters {
    inline Kernel kernel() const { return kernel_; }
    inline Verbosity verbosity() const { return verbosity_; }
 
-   void print() const ;
+   void print() const;
 
-   virtual void print(std::ostream &os) const ;
+   virtual void print(std::ostream &os) const;
 
    static Kernel kernelTranslator(const std::string &s);
    static Verbosity verbosityTranslator(const std::string &s);
@@ -63,7 +63,7 @@ struct GTSAM_EXPORT PreconditionerParameters {
  * The goal of this class is to provide a general interface to all preconditioners */
 class GTSAM_EXPORT Preconditioner {
 public:
-  typedef boost::shared_ptr<Preconditioner> shared_ptr;
+  typedef std::shared_ptr<Preconditioner> shared_ptr;
   typedef std::vector<size_t> Dimensions;
 
   /* Generic Constructor and Destructor */
@@ -94,7 +94,7 @@ public:
 /*******************************************************************************************/
 struct GTSAM_EXPORT DummyPreconditionerParameters : public PreconditionerParameters {
   typedef PreconditionerParameters Base;
-  typedef boost::shared_ptr<DummyPreconditionerParameters> shared_ptr;
+  typedef std::shared_ptr<DummyPreconditionerParameters> shared_ptr;
   DummyPreconditionerParameters() : Base() {}
   ~DummyPreconditionerParameters() override {}
 };
@@ -103,7 +103,7 @@ struct GTSAM_EXPORT DummyPreconditionerParameters : public PreconditionerParamet
 class GTSAM_EXPORT DummyPreconditioner : public Preconditioner {
 public:
   typedef Preconditioner Base;
-  typedef boost::shared_ptr<DummyPreconditioner> shared_ptr;
+  typedef std::shared_ptr<DummyPreconditioner> shared_ptr;
 
 public:
 
@@ -155,7 +155,7 @@ protected:
 
 /*********************************************************************************************/
 /* factory method to create preconditioners */
-boost::shared_ptr<Preconditioner> createPreconditioner(const boost::shared_ptr<PreconditionerParameters> parameters);
+std::shared_ptr<Preconditioner> createPreconditioner(const std::shared_ptr<PreconditionerParameters> parameters);
 
 }
 

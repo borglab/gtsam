@@ -5,99 +5,84 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam_unstable/discrete/Domain.h>
-#include <gtsam_unstable/discrete/CSP.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/discrete/DiscreteBayesNet.h>
+#include <gtsam_unstable/discrete/CSP.h>
+#include <gtsam_unstable/discrete/Domain.h>
 
 using namespace std;
 
 namespace gtsam {
 
-  /// Find the best total assignment - can be expensive
-  CSP::sharedValues CSP::optimalAssignment() const {
-    DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential();
-    sharedValues mpe = chordal->optimize();
-    return mpe;
-  }
+bool CSP::runArcConsistency(const VariableIndex& index,
+                            Domains* domains) const {
+  bool changed = false;
 
-  /// Find the best total assignment - can be expensive
-  CSP::sharedValues CSP::optimalAssignment(const Ordering& ordering) const {
-    DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential(ordering);
-    sharedValues mpe = chordal->optimize();
-    return mpe;
-  }
+  // iterate over all variables in the index
+  for (auto entry : index) {
+    // Get the variable's key and associated factors:
+    const Key key = entry.first;
+    const FactorIndices& factors = entry.second;
 
-  void CSP::runArcConsistency(size_t cardinality, size_t nrIterations, bool print) const {
-    // Create VariableIndex
-    VariableIndex index(*this);
-    // index.print();
+    // If this domain is already a singleton, we do nothing.
+    if (domains->at(key).isSingleton()) continue;
 
-    size_t n = index.size();
-
-    // Initialize domains
-    std::vector < Domain > domains;
-    for (size_t j = 0; j < n; j++)
-      domains.push_back(Domain(DiscreteKey(j,cardinality)));
-
-    // Create array of flags indicating a domain changed or not
-    std::vector<bool> changed(n);
-
-    // iterate nrIterations over entire grid
-    for (size_t it = 0; it < nrIterations; it++) {
-      bool anyChange = false;
-      // iterate over all cells
-      for (size_t v = 0; v < n; v++) {
-        // keep track of which domains changed
-        changed[v] = false;
-        // loop over all factors/constraints for variable v
-        const FactorIndices& factors = index[v];
-        for(size_t f: factors) {
-          // if not already a singleton
-          if (!domains[v].isSingleton()) {
-            // get the constraint and call its ensureArcConsistency method
-            Constraint::shared_ptr constraint = boost::dynamic_pointer_cast<Constraint>((*this)[f]);
-            if (!constraint) throw runtime_error("CSP:runArcConsistency: non-constraint factor");
-            changed[v] = constraint->ensureArcConsistency(v,domains) || changed[v];
-          }
-        } // f
-        if (changed[v]) anyChange = true;
-      } // v
-      if (!anyChange) break;
-      // TODO: Sudoku specific hack
-      if (print) {
-        if (cardinality == 9 && n == 81) {
-          for (size_t i = 0, v = 0; i < (size_t)std::sqrt((double)n); i++) {
-            for (size_t j = 0; j < (size_t)std::sqrt((double)n); j++, v++) {
-              if (changed[v]) cout << "*";
-              domains[v].print();
-              cout << "\t";
-            } // i
-            cout << endl;
-          } // j
-        } else {
-          for (size_t v = 0; v < n; v++) {
-            if (changed[v]) cout << "*";
-            domains[v].print();
-            cout << "\t";
-          } // v
-        }
-        cout << endl;
-      } // print
-    } // it
-
-#ifndef INPROGRESS
-    // Now create new problem with all singleton variables removed
-    // We do this by adding simplifying all factors using parial application
-    // TODO: create a new ordering as we go, to ensure a connected graph
-    // KeyOrdering ordering;
-    // vector<Index> dkeys;
-    for(const DiscreteFactor::shared_ptr& f: factors_) {
-      Constraint::shared_ptr constraint = boost::dynamic_pointer_cast<Constraint>(f);
-      if (!constraint) throw runtime_error("CSP:runArcConsistency: non-constraint factor");
-      Constraint::shared_ptr reduced = constraint->partiallyApply(domains);
-      if (print) reduced->print();
+    // Otherwise, loop over all factors/constraints for variable with given key.
+    for (size_t f : factors) {
+      // If this factor is a constraint, call its ensureArcConsistency method:
+      auto constraint = std::dynamic_pointer_cast<Constraint>((*this)[f]);
+      if (constraint) {
+        changed = constraint->ensureArcConsistency(key, domains) || changed;
+      }
     }
-#endif
   }
-} // gtsam
+  return changed;
+}
 
+// TODO(dellaert): This is AC1, which is inefficient as any change will cause
+// the algorithm to revisit *all* variables again. Implement AC3.
+Domains CSP::runArcConsistency(size_t cardinality, size_t maxIterations) const {
+  // Create VariableIndex
+  VariableIndex index(*this);
+
+  // Initialize domains
+  Domains domains;
+  for (auto entry : index) {
+    const Key key = entry.first;
+    domains.emplace(key, DiscreteKey(key, cardinality));
+  }
+
+  // Iterate until convergence or not a single domain changed.
+  for (size_t it = 0; it < maxIterations; it++) {
+    bool changed = runArcConsistency(index, &domains);
+    if (!changed) break;
+  }
+  return domains;
+}
+
+CSP CSP::partiallyApply(const Domains& domains) const {
+  // Create new problem with all singleton variables removed
+  // We do this by adding simplifying all factors using partial application.
+  // TODO: create a new ordering as we go, to ensure a connected graph
+  // KeyOrdering ordering;
+  // vector<Index> dkeys;
+  CSP new_csp;
+
+  // Add tightened domains as new factors:
+  for (auto key_domain : domains) {
+    new_csp.emplace_shared<Domain>(key_domain.second);
+  }
+
+  // Reduce all existing factors:
+  for (const DiscreteFactor::shared_ptr& f : factors_) {
+    auto constraint = std::dynamic_pointer_cast<Constraint>(f);
+    if (!constraint)
+      throw runtime_error("CSP:runArcConsistency: non-constraint factor");
+    Constraint::shared_ptr reduced = constraint->partiallyApply(domains);
+    if (reduced->size() > 1) {
+      new_csp.push_back(reduced);
+    }
+  }
+  return new_csp;
+}
+}  // namespace gtsam

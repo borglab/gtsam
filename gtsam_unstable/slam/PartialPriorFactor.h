@@ -16,19 +16,19 @@
  */
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Lie.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
 
 /**
  * A class for putting a partial prior on any manifold type by specifying the
  * indices of measured parameter. Note that the prior is over a customizable
- * *parameter* vector, and not over the tangent vector (e.g given by T::Local(x)).
- * This is due to the fact that the tangent vector entries may not be directly
- * useful for common pose constraints; for example, the translation component of
- * Pose3::Local(x) != x.translation() for non-identity rotations, which makes it
- * hard to use the tangent vector for translation constraints.
+ * *parameter* vector, and not over the tangent vector (e.g given by
+ * T::Local(x)). This is due to the fact that the tangent vector entries may not
+ * be directly useful for common pose constraints; for example, the translation
+ * component of Pose3::Local(x) != x.translation() for non-identity rotations,
+ * which makes it hard to use the tangent vector for translation constraints.
  *
  * Instead, the prior and indices are given with respect to a "parameter vector"
  * whose values we can measure and put a prior on. Derived classes implement
@@ -41,60 +41,83 @@ namespace gtsam {
  *
  * @tparam VALUE is the type of variable that the prior effects.
  */
-template<class VALUE>
-class PartialPriorFactor: public NoiseModelFactor1<VALUE> {
+template <class VALUE>
+class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
  public:
   typedef VALUE T;
 
  private:
-  typedef NoiseModelFactor1<VALUE> Base;
+  typedef NoiseModelFactorN<VALUE> Base;
   typedef PartialPriorFactor<VALUE> This;
 
   Vector prior_;                 ///< Prior on measured parameters.
   std::vector<size_t> indices_;  ///< Indices of the measured parameters.
 
-  /** Default constructor - only use for serialization. */
-  PartialPriorFactor() {}
+  /**
+   * constructor with just minimum requirements for a factor - allows more
+   * computation in the constructor.  This should only be used by subclasses
+   */
+  PartialPriorFactor(Key key, const SharedNoiseModel& model)
+      : Base(model, key) {}
 
  public:
-  ~PartialPriorFactor() override {}
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
-  /** Single Index Constructor: Prior on a single entry at index 'idx' in the parameter vector.*/
-  PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model)
+  /** default constructor - only use for serialization */
+  PartialPriorFactor() {}
+
+  /** Single Element Constructor: Prior on a single parameter at index 'idx' in
+   * the tangent vector.*/
+  PartialPriorFactor(Key key, size_t idx, double prior,
+                     const SharedNoiseModel& model)
       : Base(model, key),
-        prior_(Vector1(prior)),
+        prior_((Vector(1) << prior).finished()),
         indices_(1, idx) {
     assert(model->dim() == 1);
   }
 
-  /** Indices Constructor: Specify the relevant measured indices in the parameter vector.*/
-  PartialPriorFactor(Key key, const std::vector<size_t>& indices, const Vector& prior,
-                     const SharedNoiseModel& model)
-      : Base(model, key),
-        prior_(prior),
-        indices_(indices) {
+  /** Indices Constructor: Specify the relevant measured indices in the tangent
+   * vector.*/
+  PartialPriorFactor(Key key, const std::vector<size_t>& indices,
+                     const Vector& prior, const SharedNoiseModel& model)
+      : Base(model, key), prior_(prior), indices_(indices) {
     assert((size_t)prior_.size() == indices_.size());
     assert((size_t)prior.size() == model->dim());
+  }
+
+  ~PartialPriorFactor() override {}
+
+  /// @return a deep copy of this factor
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   /** Implement functions needed for Testable */
 
   /** print */
-  void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+                                       DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
     gtsam::print(prior_, "Prior: ");
     std::cout << "Indices: ";
-    for (const int i : indices_) { std::cout << i << " " ;}
+    for (const int i : indices_) {
+      std::cout << i << " ";
+    }
     std::cout << std::endl;
   }
 
   /** equals */
-  bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
-    const This *e = dynamic_cast<const This*> (&expected);
+  bool equals(const NonlinearFactor& expected,
+              double tol = 1e-9) const override {
+    const This* e = dynamic_cast<const This*>(&expected);
     return e != nullptr && Base::equals(*e, tol) &&
-        gtsam::equal_with_abs_tol(this->prior_, e->prior_, tol) &&
-        this->indices_ == e->indices_;
+           gtsam::equal_with_abs_tol(this->prior_, e->prior_, tol) &&
+           this->indices_ == e->indices_;
   }
+
+  /** implement functions needed to derive from Factor */
 
   /**
    * Evaluate the error h(x) - prior, where h(x) returns a parameter vector
@@ -102,7 +125,7 @@ class PartialPriorFactor: public NoiseModelFactor1<VALUE> {
    * function expects any derived factor to have overridden the Parameterize()
    * member function.
    */
-  Vector evaluateError(const T& x, boost::optional<Matrix&> H = boost::none) const override {
+  Vector evaluateError(const T& x, OptionalMatrixType H) const override {
     // Extract the relevant subset of the parameter vector and Jacobian.
     Matrix H_full;
     const Vector hx_full = Parameterize(x, H ? &H_full : nullptr);
@@ -118,11 +141,6 @@ class PartialPriorFactor: public NoiseModelFactor1<VALUE> {
     return hx - prior_;
   }
 
-  // access
-  const Vector& prior() const { return prior_; }
-  const std::vector<size_t>& indices() const { return indices_; }
-
- private:
   /**
    * Map an input x on the manifold to a parameter vector h(x).
    * Note that this function may not be the same as VALUE::Local() if the
@@ -132,16 +150,23 @@ class PartialPriorFactor: public NoiseModelFactor1<VALUE> {
    */
   virtual Vector Parameterize(const T& x, Matrix* H = nullptr) const = 0;
 
-private:
+  // access
+  const Vector& prior() const { return prior_; }
+  const std::vector<size_t>& indices() const { return indices_; }
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor1",
-        boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(prior_);
-    ar & BOOST_SERIALIZATION_NVP(indices_);
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
+    ar& boost::serialization::make_nvp(
+        "NoiseModelFactor1", boost::serialization::base_object<Base>(*this));
+    ar& BOOST_SERIALIZATION_NVP(prior_);
+    ar& BOOST_SERIALIZATION_NVP(indices_);
   }
-}; // \class PartialPriorFactor
+#endif
+};  // \class PartialPriorFactor
 
-} /// namespace gtsam
+}  // namespace gtsam
