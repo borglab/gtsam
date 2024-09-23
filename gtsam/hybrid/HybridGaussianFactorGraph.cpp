@@ -321,7 +321,7 @@ using Result = std::pair<std::shared_ptr<GaussianConditional>,
 static std::shared_ptr<Factor> createDiscreteFactor(
     const DecisionTree<Key, Result> &eliminationResults,
     const DiscreteKeys &discreteSeparator) {
-  auto logProbability = [&](const Result &pair) -> double {
+  auto negLogProbability = [&](const Result &pair) -> double {
     const auto &[conditional, factor] = pair;
     static const VectorValues kEmpty;
     // If the factor is not null, it has no keys, just contains the residual.
@@ -334,10 +334,10 @@ static std::shared_ptr<Factor> createDiscreteFactor(
     return factor->error(kEmpty) - conditional->negLogConstant();
   };
 
-  AlgebraicDecisionTree<Key> logProbabilities(
-      DecisionTree<Key, double>(eliminationResults, logProbability));
+  AlgebraicDecisionTree<Key> negLogProbabilities(
+      DecisionTree<Key, double>(eliminationResults, negLogProbability));
   AlgebraicDecisionTree<Key> probabilities =
-      probabilitiesFromLogValues(logProbabilities);
+      probabilitiesFromLogValues(negLogProbabilities);
 
   return std::make_shared<DecisionTreeFactor>(discreteSeparator, probabilities);
 }
