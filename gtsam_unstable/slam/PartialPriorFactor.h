@@ -58,7 +58,7 @@ class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
      * computation in the constructor.  This should only be used by subclasses
      */
     PartialPriorFactor(Key key, const SharedNoiseModel& model)
-        : Base(model, key) {}
+      : Base(model, key) {}
 
   public:
 
@@ -68,19 +68,20 @@ class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
     /** default constructor - only use for serialization */
     PartialPriorFactor() {}
 
-    /** Single Index Constructor: Prior on a single entry at index 'idx' in the
-     * parameter vector.*/
-    PartialPriorFactor(Key key, size_t idx, double prior,
-                      const SharedNoiseModel& model)
-        : Base(model, key), prior_(Vector1(prior)), indices_(1, idx) {
+    /** Single Index Constructor: Prior on a single entry at index 'idx' in the parameter vector.*/
+    PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model)
+        : Base(model, key),
+        prior_(Vector1(prior)),
+        indices_(1, idx) {
       assert(model->dim() == 1);
     }
 
-    /** Indices Constructor: Specify the relevant measured indices in the tangent
-     * vector.*/
-    PartialPriorFactor(Key key, const std::vector<size_t>& indices,
-                      const Vector& prior, const SharedNoiseModel& model)
-        : Base(model, key), prior_(prior), indices_(indices) {
+    /** Indices Constructor: Specify the relevant measured indices in the tangent vector.*/
+    PartialPriorFactor(Key key, const std::vector<size_t>& indices, const Vector& prior,
+        const SharedNoiseModel& model) :
+        Base(model, key),
+        prior_(prior),
+        indices_(indices) {
       assert((size_t)prior_.size() == indices_.size());
       assert(model->dim() == (size_t)prior.size());
     }
@@ -90,8 +91,7 @@ class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
     /** Implement functions needed for Testable */
 
     /** print */
-    void print(const std::string& s, const KeyFormatter& keyFormatter =
-                                        DefaultKeyFormatter) const override {
+    void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       Base::print(s, keyFormatter);
       gtsam::print(prior_, "Prior: ");
       std::cout << "Indices: ";
@@ -102,12 +102,11 @@ class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
     }
 
     /** equals */
-    bool equals(const NonlinearFactor& expected,
-                double tol = 1e-9) const override {
+    bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override {
       const This* e = dynamic_cast<const This*>(&expected);
       return e != nullptr && Base::equals(*e, tol) &&
-            gtsam::equal_with_abs_tol(this->prior_, e->prior_, tol) &&
-            this->indices_ == e->indices_;
+          gtsam::equal_with_abs_tol(this->prior_, e->prior_, tol) &&
+          this->indices_ == e->indices_;
     }
 
     /** implement functions needed to derive from Factor */
@@ -151,15 +150,14 @@ class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
-    template <class ARCHIVE>
-    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
-      ar& boost::serialization::make_nvp(
-          "NoiseModelFactor1", boost::serialization::base_object<Base>(*this));
-      ar& BOOST_SERIALIZATION_NVP(prior_);
-      ar& BOOST_SERIALIZATION_NVP(indices_);
+      ar & boost::serialization::make_nvp("NoiseModelFactor1", boost::serialization::base_object<Base>(*this));
+      ar & BOOST_SERIALIZATION_NVP(prior_);
+      ar & BOOST_SERIALIZATION_NVP(indices_);
     }
 #endif
 };  // \class PartialPriorFactor
 
-}  // namespace gtsam
+} /// namespace gtsam
