@@ -22,7 +22,10 @@
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
+#include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/Signature.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Ordering.h>
 
 using namespace std;
 using namespace gtsam;
@@ -33,25 +36,24 @@ TEST(DecisionTreeFactor, ConstructorsMatch) {
   DiscreteKey X(0, 2), Y(1, 3);
 
   // Create with vector and with string
-  const std::vector<double> table {2, 5, 3, 6, 4, 7};
+  const std::vector<double> table{2, 5, 3, 6, 4, 7};
   DecisionTreeFactor f1({X, Y}, table);
   DecisionTreeFactor f2({X, Y}, "2 5 3 6 4 7");
   EXPECT(assert_equal(f1, f2));
 }
 
 /* ************************************************************************* */
-TEST( DecisionTreeFactor, constructors)
-{
+TEST(DecisionTreeFactor, constructors) {
   // Declare a bunch of keys
-  DiscreteKey X(0,2), Y(1,3), Z(2,2);
+  DiscreteKey X(0, 2), Y(1, 3), Z(2, 2);
 
   // Create factors
   DecisionTreeFactor f1(X, {2, 8});
   DecisionTreeFactor f2(X & Y, "2 5 3 6 4 7");
   DecisionTreeFactor f3(X & Y & Z, "2 5 3 6 4 7 25 55 35 65 45 75");
-  EXPECT_LONGS_EQUAL(1,f1.size());
-  EXPECT_LONGS_EQUAL(2,f2.size());
-  EXPECT_LONGS_EQUAL(3,f3.size());
+  EXPECT_LONGS_EQUAL(1, f1.size());
+  EXPECT_LONGS_EQUAL(2, f2.size());
+  EXPECT_LONGS_EQUAL(3, f3.size());
 
   DiscreteValues x121{{0, 1}, {1, 2}, {2, 1}};
   EXPECT_DOUBLES_EQUAL(8, f1(x121), 1e-9);
@@ -70,7 +72,7 @@ TEST( DecisionTreeFactor, constructors)
 /* ************************************************************************* */
 TEST(DecisionTreeFactor, Error) {
   // Declare a bunch of keys
-  DiscreteKey X(0,2), Y(1,3), Z(2,2);
+  DiscreteKey X(0, 2), Y(1, 3), Z(2, 2);
 
   // Create factors
   DecisionTreeFactor f(X & Y & Z, "2 5 3 6 4 7 25 55 35 65 45 75");
@@ -104,9 +106,8 @@ TEST(DecisionTreeFactor, multiplication) {
 }
 
 /* ************************************************************************* */
-TEST( DecisionTreeFactor, sum_max)
-{
-  DiscreteKey v0(0,3), v1(1,2);
+TEST(DecisionTreeFactor, sum_max) {
+  DiscreteKey v0(0, 3), v1(1, 2);
   DecisionTreeFactor f1(v0 & v1, "1 2  3 4  5 6");
 
   DecisionTreeFactor expected(v1, "9 12");
@@ -165,13 +166,76 @@ TEST(DecisionTreeFactor, Prune) {
       "0.0 0.0 0.0 0.60658897 0.61241912 0.61241969 0.61247685 0.61247742 0.0 "
       "0.0 0.0 0.99995287 1.0 1.0 1.0 1.0");
 
-  DecisionTreeFactor expected3(
-      D & C & B & A,
-      "0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 "
-      "0.999952870000 1.0 1.0 1.0 1.0");
+  DecisionTreeFactor expected3(D & C & B & A,
+                               "0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 "
+                               "0.999952870000 1.0 1.0 1.0 1.0");
   maxNrAssignments = 5;
   auto pruned3 = factor.prune(maxNrAssignments);
   EXPECT(assert_equal(expected3, pruned3));
+}
+
+/* ************************************************************************** */
+// Asia Bayes Network
+/* ************************************************************************** */
+
+#define DISABLE_DOT
+
+void maybeSaveDotFile(const DecisionTreeFactor& f, const string& filename) {
+#ifndef DISABLE_DOT
+  std::vector<std::string> names = {"A", "S", "T", "L", "B", "E", "X", "D"};
+  auto formatter = [&](Key key) { return names[key]; };
+  f.dot(filename, formatter, true);
+#endif
+}
+
+/** Convert Signature into CPT */
+DecisionTreeFactor create(const Signature& signature) {
+  DecisionTreeFactor p(signature.discreteKeys(), signature.cpt());
+  return p;
+}
+
+/* ************************************************************************* */
+// test Asia Joint
+TEST(DecisionTreeFactor, joint) {
+  DiscreteKey A(0, 2), S(1, 2), T(2, 2), L(3, 2), B(4, 2), E(5, 2), X(6, 2),
+      D(7, 2);
+
+  gttic_(asiaCPTs);
+  DecisionTreeFactor pA = create(A % "99/1");
+  DecisionTreeFactor pS = create(S % "50/50");
+  DecisionTreeFactor pT = create(T | A = "99/1 95/5");
+  DecisionTreeFactor pL = create(L | S = "99/1 90/10");
+  DecisionTreeFactor pB = create(B | S = "70/30 40/60");
+  DecisionTreeFactor pE = create((E | T, L) = "F T T T");
+  DecisionTreeFactor pX = create(X | E = "95/5 2/98");
+  DecisionTreeFactor pD = create((D | E, B) = "9/1 2/8 3/7 1/9");
+
+  // Create joint
+  gttic_(asiaJoint);
+  DecisionTreeFactor joint = pA;
+  maybeSaveDotFile(joint, "Asia-A");
+  joint = joint * pS;
+  maybeSaveDotFile(joint, "Asia-AS");
+  joint = joint * pT;
+  maybeSaveDotFile(joint, "Asia-AST");
+  joint = joint * pL;
+  maybeSaveDotFile(joint, "Asia-ASTL");
+  joint = joint * pB;
+  maybeSaveDotFile(joint, "Asia-ASTLB");
+  joint = joint * pE;
+  maybeSaveDotFile(joint, "Asia-ASTLBE");
+  joint = joint * pX;
+  maybeSaveDotFile(joint, "Asia-ASTLBEX");
+  joint = joint * pD;
+  maybeSaveDotFile(joint, "Asia-ASTLBEXD");
+
+  // Check that discrete keys are as expected
+  EXPECT(assert_equal(joint.discreteKeys(), {A, S, T, L, B, E, X, D}));
+
+  // Check that summing out variables maintains the keys even if merged, as is
+  // the case with S.
+  auto noAB = joint.sum(Ordering{A.first, B.first});
+  EXPECT(assert_equal(noAB->discreteKeys(), {S, T, L, E, X, D}));
 }
 
 /* ************************************************************************* */
@@ -180,7 +244,7 @@ TEST(DecisionTreeFactor, DotWithNames) {
   DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
   auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };
 
-  for (bool showZero:{true, false}) {
+  for (bool showZero : {true, false}) {
     string actual = f.dot(formatter, showZero);
     // pretty weak test, as ids are pointers and not stable across platforms.
     string expected = "digraph G {";

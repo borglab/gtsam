@@ -22,7 +22,7 @@ namespace gtsam {
 
 /* *******************************************************************************/
 static void checkKeys(const KeyVector& continuousKeys,
-                      std::vector<NonlinearFactorValuePair>& pairs) {
+                      const std::vector<NonlinearFactorValuePair>& pairs) {
   KeySet factor_keys_set;
   for (const auto& pair : pairs) {
     auto f = pair.first;
@@ -55,14 +55,9 @@ HybridNonlinearFactor::HybridNonlinearFactor(
 /* *******************************************************************************/
 HybridNonlinearFactor::HybridNonlinearFactor(
     const KeyVector& continuousKeys, const DiscreteKey& discreteKey,
-    const std::vector<NonlinearFactorValuePair>& factors)
+    const std::vector<NonlinearFactorValuePair>& pairs)
     : Base(continuousKeys, {discreteKey}) {
-  std::vector<NonlinearFactorValuePair> pairs;
   KeySet continuous_keys_set(continuousKeys.begin(), continuousKeys.end());
-  KeySet factor_keys_set;
-  for (auto&& [f, val] : factors) {
-    pairs.emplace_back(f, val);
-  }
   checkKeys(continuousKeys, pairs);
   factors_ = FactorValuePairs({discreteKey}, pairs);
 }

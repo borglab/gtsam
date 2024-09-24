@@ -106,11 +106,11 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
    *
    * @param continuousKeys Vector of keys for continuous factors.
    * @param discreteKey The discrete key for the "mode", indexing components.
-   * @param factors Vector of gaussian factor-scalar pairs, one per mode.
+   * @param pairs Vector of gaussian factor-scalar pairs, one per mode.
    */
   HybridNonlinearFactor(const KeyVector& continuousKeys,
                         const DiscreteKey& discreteKey,
-                        const std::vector<NonlinearFactorValuePair>& factors);
+                        const std::vector<NonlinearFactorValuePair>& pairs);
 
   /**
    * @brief Construct a new HybridNonlinearFactor on a several discrete keys M,
