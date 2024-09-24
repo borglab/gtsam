@@ -22,54 +22,12 @@ static const size_t kHeightIndex = 5;
 static const size_t kVelocityZIndex = 8;
 static const std::vector<size_t> kVelocityIndices = { 6, 7, 8 };
 
-
-class PartialPoseRTVPriorFactor : public PartialPriorFactor<PoseRTV> {
- private:
-  typedef PartialPriorFactor<PoseRTV> Base;
-  typedef PartialPoseRTVPriorFactor This;
-
- public:
-  using Base::Base;
-  using Base::evaluateError;
-
-  gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return std::static_pointer_cast<gtsam::NonlinearFactor>(
-        gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
-
- private:
-  /**
-   * Maps a PoseRTV input x to a parameter vector h(x).
-   *
-   * The parameter vector is a 9-vector [ r, t, v ], where r is the angle-axis
-   * rotation, t is the translation, and v is the velocity.
-  */
-  virtual Vector Parameterize(const PoseRTV& x, Matrix* H = nullptr) const override {
-    Vector9 p; // The output parameter vector.
-
-    p.middleRows(3, 3) = x.translation();
-
-    Matrix3 H_rot;
-    p.middleRows(0, 3) = (H) ? Rot3::Logmap(x.rotation(), H_rot)
-                             : Rot3::Logmap(x.rotation());
-
-    if (H) {
-      *H = Matrix9::Zero();
-      (*H).block<3, 3>(0, 0) = H_rot;
-      (*H).block<3, 3>(3, 3) = x.rotation().matrix();
-      (*H).block<3, 3>(6, 6) = x.rotation().matrix();
-    }
-
-    return p;
-  }
-};
-
-
 /**
  * Forces the value of the height (z) in a PoseRTV to a specific value.
  * Dim: 1
  */
-struct DHeightPrior : public PartialPoseRTVPriorFactor {
-  typedef PartialPoseRTVPriorFactor Base;
+struct DHeightPrior : public gtsam::PartialPriorFactor<PoseRTV> {
+  typedef gtsam::PartialPriorFactor<PoseRTV> Base;
 
   DHeightPrior(Key key, double height, const gtsam::SharedNoiseModel& model)
   : Base(key, kHeightIndex, height, model)  {}
@@ -80,8 +38,8 @@ struct DHeightPrior : public PartialPoseRTVPriorFactor {
  * Implied value is zero
  * Dim: 1
  */
-struct DRollPrior : public PartialPoseRTVPriorFactor {
-  typedef PartialPoseRTVPriorFactor Base;
+struct DRollPrior : public gtsam::PartialPriorFactor<PoseRTV> {
+  typedef gtsam::PartialPriorFactor<PoseRTV> Base;
 
   /** allows for explicit roll parameterization - uses canonical coordinate */
   DRollPrior(Key key, double wx, const gtsam::SharedNoiseModel& model)
@@ -97,8 +55,8 @@ struct DRollPrior : public PartialPoseRTVPriorFactor {
  * Useful for enforcing a stationary state
  * Dim: 3
  */
-struct VelocityPrior : public PartialPoseRTVPriorFactor {
-  typedef PartialPoseRTVPriorFactor Base;
+struct VelocityPrior : public gtsam::PartialPriorFactor<PoseRTV> {
+  typedef gtsam::PartialPriorFactor<PoseRTV> Base;
 
   VelocityPrior(Key key, const gtsam::Vector& vel, const gtsam::SharedNoiseModel& model)
       : Base(key, kVelocityIndices, vel, model) {}
@@ -109,8 +67,8 @@ struct VelocityPrior : public PartialPoseRTVPriorFactor {
  * velocity in z direction
  * Dim: 4
  */
-struct DGroundConstraint : public PartialPoseRTVPriorFactor {
-  typedef PartialPoseRTVPriorFactor Base;
+struct DGroundConstraint : public gtsam::PartialPriorFactor<PoseRTV> {
+  typedef gtsam::PartialPriorFactor<PoseRTV> Base;
 
   /**
    * Primary constructor allows for variable height of the "floor"

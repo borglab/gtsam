@@ -11,7 +11,7 @@
 
 /**
  * @file PartialPriorFactor.h
- * @brief A factor for setting a prior on a subset of a variable's parameters.
+ * @brief A simple prior factor that allows for setting a prior only on a part of linear parameters
  * @author Alex Cunningham
  */
 
@@ -23,24 +23,16 @@
 namespace gtsam {
 
   /**
-   * A class for putting a partial prior on any manifold type by specifying the
-   * indices of measured parameter. Note that the prior is over a customizable
-   * *parameter* vector, and not over the tangent vector (e.g given by
-   * T::Local(x)). This is due to the fact that the tangent vector entries may not
-   * be directly useful for common pose constraints; for example, the translation
-   * component of Pose3::Local(x) != x.translation() for non-identity rotations,
-   * which makes it hard to use the tangent vector for translation constraints.
+   * A class for a soft partial prior on any Lie type, with a mask over Expmap
+   * parameters. Note that this will use Logmap() to find a tangent space parameterization
+   * for the variable attached, so this may fail for highly nonlinear manifolds.
    *
-   * Instead, the prior and indices are given with respect to a "parameter vector"
-   * whose values we can measure and put a prior on. Derived classes implement
-   * the desired parameterization by overriding the Parameterize(x) function.
+   * The prior vector used in this factor is stored in compressed form, such that
+   * it only contains values for measurements that are to be compared, and they are in
+   * the same order as VALUE::Logmap(). The provided indices will determine which components to
+   * extract in the error function.
    *
-   * The prior parameter vector used in this factor is stored in compressed form,
-   * such that it only contains values for measurements that are to be compared.
-   * The provided indices will determine which parameters to extract in the error
-   * function.
-   *
-   * @tparam VALUE is the type of variable that the prior effects.
+   * @tparam VALUE is the type of variable the prior effects
    */
   template <class VALUE>
   class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
@@ -48,10 +40,13 @@ namespace gtsam {
     typedef VALUE T;
 
   protected:
+    // Concept checks on the variable type - currently requires Lie
+    GTSAM_CONCEPT_LIE_TYPE(VALUE)
+
     typedef NoiseModelFactorN<VALUE> Base;
     typedef PartialPriorFactor<VALUE> This;
 
-    Vector prior_;                 ///< Prior on measured parameters.
+    Vector prior_;                 ///< Measurement on tangent space parameters, in compressed form.
     std::vector<size_t> indices_;  ///< Indices of the measured tangent space parameters.
 
     /**
@@ -89,6 +84,11 @@ namespace gtsam {
 
     ~PartialPriorFactor() override {}
 
+    /// @return a deep copy of this factor
+    gtsam::NonlinearFactor::shared_ptr clone() const override {
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
+          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+
     /** implement functions needed for Testable */
 
     /** print */
@@ -112,36 +112,26 @@ namespace gtsam {
 
     /** implement functions needed to derive from Factor */
 
-    /**
-     * Evaluate the error h(x) - prior, where h(x) returns a parameter vector
-     * representation of x that is consistent with the prior. Note that this
-     * function expects any derived factor to have overridden the Parameterize()
-     * member function.
-     */
-    Vector evaluateError(const T& x, OptionalMatrixType H) const override {
-      // Extract the relevant subset of the parameter vector and Jacobian.
-      Matrix H_full;
-      const Vector hx_full = Parameterize(x, H ? &H_full : nullptr);
+    /** Returns a vector of errors for the measured tangent parameters.  */
+    Vector evaluateError(const T& p, OptionalMatrixType H) const override {
+      Eigen::Matrix<double, T::dimension, T::dimension> H_local;
 
-      Vector hx(indices_.size());
-      if (H) (*H) = Matrix::Zero(indices_.size(), T::dimension);
+      const Vector full_tangent = T::LocalCoordinates(p, H ? &H_local : nullptr);
 
+      if (H) {
+        (*H) = Matrix::Zero(indices_.size(), T::dimension);
+        for (size_t i = 0; i < indices_.size(); ++i) {
+          (*H).row(i) = H_local.row(indices_.at(i));
+        }
+      }
+      // Select relevant parameters from the tangent vector.
+      Vector partial_tangent = Vector::Zero(indices_.size());
       for (size_t i = 0; i < indices_.size(); ++i) {
-        hx(i) = hx_full(indices_.at(i));
-        if (H) (*H).row(i) = H_full.row(indices_.at(i));
+        partial_tangent(i) = full_tangent(indices_.at(i));
       }
 
-      return hx - prior_;
+      return partial_tangent - prior_;
     }
-
-    /**
-     * Map an input x on the manifold to a parameter vector h(x).
-     * Note that this function may not be the same as VALUE::Local() if the
-     * parameter vector is defined differently from the tangent vector.
-     *
-     * This function should be implemented by derived classes based on VALUE.
-     */
-    virtual Vector Parameterize(const T& x, Matrix* H = nullptr) const = 0;
 
     // access
     const Vector& prior() const { return prior_; }
