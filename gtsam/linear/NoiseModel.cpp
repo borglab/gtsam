@@ -286,10 +286,10 @@ Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
     // check whether all the same entry
     if ((variances.array() == variances(0)).all()) {
       return Isotropic::Variance(variances.size(), variances(0), true);
-    } else {
-      return shared_ptr(new Diagonal(variances.cwiseSqrt()));
-    }
+    } else
+      goto full;
   }
+full:
   return shared_ptr(new Diagonal(variances.cwiseSqrt()));
 }
 
@@ -297,7 +297,7 @@ Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
 Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
   if (smart) {
     size_t n = sigmas.size();
-    if (n == 0) return Diagonal::shared_ptr(new Diagonal(sigmas));
+    if (n == 0) goto full;
 
     // look for zeros to make a constraint
     if ((sigmas.array() < 1e-8).any()) {
@@ -309,6 +309,7 @@ Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
       return Isotropic::Sigma(n, sigmas(0), true);
     }
   }
+full:
   return Diagonal::shared_ptr(new Diagonal(sigmas));
 }
 
