@@ -14,35 +14,36 @@
  * @brief A factor for setting a prior on a subset of a variable's parameters.
  * @author Alex Cunningham
  */
+
 #pragma once
 
-#include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/base/Lie.h>
 
 namespace gtsam {
 
-/**
- * A class for putting a partial prior on any manifold type by specifying the
- * indices of measured parameter. Note that the prior is over a customizable
- * *parameter* vector, and not over the tangent vector (e.g given by
- * T::Local(x)). This is due to the fact that the tangent vector entries may not
- * be directly useful for common pose constraints; for example, the translation
- * component of Pose3::Local(x) != x.translation() for non-identity rotations,
- * which makes it hard to use the tangent vector for translation constraints.
- *
- * Instead, the prior and indices are given with respect to a "parameter vector"
- * whose values we can measure and put a prior on. Derived classes implement
- * the desired parameterization by overriding the Parameterize(x) function.
- *
- * The prior parameter vector used in this factor is stored in compressed form,
- * such that it only contains values for measurements that are to be compared.
- * The provided indices will determine which parameters to extract in the error
- * function.
- *
- * @tparam VALUE is the type of variable that the prior effects.
- */
-template <class VALUE>
-class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
+  /**
+   * A class for putting a partial prior on any manifold type by specifying the
+   * indices of measured parameter. Note that the prior is over a customizable
+   * *parameter* vector, and not over the tangent vector (e.g given by
+   * T::Local(x)). This is due to the fact that the tangent vector entries may not
+   * be directly useful for common pose constraints; for example, the translation
+   * component of Pose3::Local(x) != x.translation() for non-identity rotations,
+   * which makes it hard to use the tangent vector for translation constraints.
+   *
+   * Instead, the prior and indices are given with respect to a "parameter vector"
+   * whose values we can measure and put a prior on. Derived classes implement
+   * the desired parameterization by overriding the Parameterize(x) function.
+   *
+   * The prior parameter vector used in this factor is stored in compressed form,
+   * such that it only contains values for measurements that are to be compared.
+   * The provided indices will determine which parameters to extract in the error
+   * function.
+   *
+   * @tparam VALUE is the type of variable that the prior effects.
+   */
+  template <class VALUE>
+  class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
   public:
     typedef VALUE T;
 
@@ -51,7 +52,7 @@ class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
     typedef PartialPriorFactor<VALUE> This;
 
     Vector prior_;                 ///< Prior on measured parameters.
-    std::vector<size_t> indices_;  ///< Indices of the measured parameters.
+    std::vector<size_t> indices_;  ///< Indices of the measured tangent space parameters.
 
     /**
      * constructor with just minimum requirements for a factor - allows more
@@ -68,11 +69,11 @@ class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
     /** default constructor - only use for serialization */
     PartialPriorFactor() {}
 
-    /** Single Index Constructor: Prior on a single entry at index 'idx' in the parameter vector.*/
-    PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model)
-        : Base(model, key),
-        prior_(Vector1(prior)),
-        indices_(1, idx) {
+    /** Single Index Constructor: Prior on a single parameter at index 'idx' in the parameter vector.*/
+    PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
+      Base(model, key),
+      prior_(Vector1(prior)),
+      indices_(1, idx) {
       assert(model->dim() == 1);
     }
 
@@ -102,8 +103,8 @@ class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
     }
 
     /** equals */
-    bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override {
-      const This* e = dynamic_cast<const This*>(&expected);
+    bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
+      const This *e = dynamic_cast<const This*>(&expected);
       return e != nullptr && Base::equals(*e, tol) &&
           gtsam::equal_with_abs_tol(this->prior_, e->prior_, tol) &&
           this->indices_ == e->indices_;
@@ -153,11 +154,12 @@ class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
-      ar & boost::serialization::make_nvp("NoiseModelFactor1", boost::serialization::base_object<Base>(*this));
+      ar & boost::serialization::make_nvp("NoiseModelFactor1",
+          boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);
       ar & BOOST_SERIALIZATION_NVP(indices_);
     }
 #endif
-};  // \class PartialPriorFactor
+  };  // \class PartialPriorFactor
 
 } /// namespace gtsam
