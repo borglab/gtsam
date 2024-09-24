@@ -46,7 +46,7 @@ class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
  public:
   typedef VALUE T;
 
- private:
+ protected:
   typedef NoiseModelFactorN<VALUE> Base;
   typedef PartialPriorFactor<VALUE> This;
 
@@ -87,12 +87,6 @@ class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
   }
 
   ~PartialPriorFactor() override {}
-
-  /// @return a deep copy of this factor
-  gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return std::static_pointer_cast<gtsam::NonlinearFactor>(
-        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
-  }
 
   /** Implement functions needed for Testable */
 
