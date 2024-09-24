@@ -21,10 +21,57 @@
 namespace gtsam {
 
 /* *******************************************************************************/
-HybridNonlinearFactor::HybridNonlinearFactor(const KeyVector& keys,
+static void checkKeys(const KeyVector& continuousKeys,
+                      std::vector<NonlinearFactorValuePair>& pairs) {
+  KeySet factor_keys_set;
+  for (const auto& pair : pairs) {
+    auto f = pair.first;
+    // Insert all factor continuous keys in the continuous keys set.
+    std::copy(f->keys().begin(), f->keys().end(),
+              std::inserter(factor_keys_set, factor_keys_set.end()));
+  }
+
+  KeySet continuous_keys_set(continuousKeys.begin(), continuousKeys.end());
+  if (continuous_keys_set != factor_keys_set) {
+    throw std::runtime_error(
+        "HybridNonlinearFactor: The specified continuous keys and the keys in "
+        "the factors do not match!");
+  }
+}
+
+/* *******************************************************************************/
+HybridNonlinearFactor::HybridNonlinearFactor(
+    const KeyVector& continuousKeys, const DiscreteKey& discreteKey,
+    const std::vector<NonlinearFactor::shared_ptr>& factors)
+    : Base(continuousKeys, {discreteKey}) {
+  std::vector<NonlinearFactorValuePair> pairs;
+  for (auto&& f : factors) {
+    pairs.emplace_back(f, 0.0);
+  }
+  checkKeys(continuousKeys, pairs);
+  factors_ = FactorValuePairs({discreteKey}, pairs);
+}
+
+/* *******************************************************************************/
+HybridNonlinearFactor::HybridNonlinearFactor(
+    const KeyVector& continuousKeys, const DiscreteKey& discreteKey,
+    const std::vector<NonlinearFactorValuePair>& factors)
+    : Base(continuousKeys, {discreteKey}) {
+  std::vector<NonlinearFactorValuePair> pairs;
+  KeySet continuous_keys_set(continuousKeys.begin(), continuousKeys.end());
+  KeySet factor_keys_set;
+  for (auto&& [f, val] : factors) {
+    pairs.emplace_back(f, val);
+  }
+  checkKeys(continuousKeys, pairs);
+  factors_ = FactorValuePairs({discreteKey}, pairs);
+}
+
+/* *******************************************************************************/
+HybridNonlinearFactor::HybridNonlinearFactor(const KeyVector& continuousKeys,
                                              const DiscreteKeys& discreteKeys,
-                                             const Factors& factors)
-    : Base(keys, discreteKeys), factors_(factors) {}
+                                             const FactorValuePairs& factors)
+    : Base(continuousKeys, discreteKeys), factors_(factors) {}
 
 /* *******************************************************************************/
 AlgebraicDecisionTree<Key> HybridNonlinearFactor::errorTree(

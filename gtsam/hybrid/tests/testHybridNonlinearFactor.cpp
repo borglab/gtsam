@@ -43,24 +43,39 @@ TEST(HybridNonlinearFactor, Constructor) {
   HybridNonlinearFactor::iterator it = factor.begin();
   CHECK(it == factor.end());
 }
+/* ************************************************************************* */
+namespace test_constructor {
+DiscreteKey m1(1, 2);
+double between0 = 0.0;
+double between1 = 1.0;
+
+Vector1 sigmas = Vector1(1.0);
+auto model = noiseModel::Diagonal::Sigmas(sigmas, false);
+
+auto f0 = std::make_shared<BetweenFactor<double>>(X(1), X(2), between0, model);
+auto f1 = std::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
+}  // namespace test_constructor
+
+/* ************************************************************************* */
+// Test simple to complex constructors...
+TEST(HybridGaussianFactor, ConstructorVariants) {
+  using namespace test_constructor;
+  HybridNonlinearFactor fromFactors({X(1), X(2)}, m1, {f0, f1});
+
+  std::vector<NonlinearFactorValuePair> pairs{{f0, 0.0}, {f1, 0.0}};
+  HybridNonlinearFactor fromPairs({X(1), X(2)}, m1, pairs);
+  assert_equal(fromFactors, fromPairs);
+
+  HybridNonlinearFactor::FactorValuePairs decisionTree({m1}, pairs);
+  HybridNonlinearFactor fromDecisionTree({X(1), X(2)}, {m1}, decisionTree);
+  assert_equal(fromDecisionTree, fromPairs);
+}
 
 /* ************************************************************************* */
 // Test .print() output.
 TEST(HybridNonlinearFactor, Printing) {
-  DiscreteKey m1(1, 2);
-  double between0 = 0.0;
-  double between1 = 1.0;
-
-  Vector1 sigmas = Vector1(1.0);
-  auto model = noiseModel::Diagonal::Sigmas(sigmas, false);
-
-  auto f0 =
-      std::make_shared<BetweenFactor<double>>(X(1), X(2), between0, model);
-  auto f1 =
-      std::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
-  std::vector<NonlinearFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
-
-  HybridNonlinearFactor hybridFactor({X(1), X(2)}, {m1}, factors);
+  using namespace test_constructor;
+  HybridNonlinearFactor hybridFactor({X(1), X(2)}, {m1}, {f0, f1});
 
   std::string expected =
       R"(Hybrid [x1 x2; 1]
@@ -86,9 +101,7 @@ static HybridNonlinearFactor getHybridNonlinearFactor() {
       std::make_shared<BetweenFactor<double>>(X(1), X(2), between0, model);
   auto f1 =
       std::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
-  std::vector<NonlinearFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
-
-  return HybridNonlinearFactor({X(1), X(2)}, {m1}, factors);
+  return HybridNonlinearFactor({X(1), X(2)}, m1, {f0, f1});
 }
 
 /* ************************************************************************* */

@@ -416,12 +416,11 @@ TEST(HybridGaussianISAM, NonTrivial) {
   Pose2 odometry(1.0, 0.0, 0.0);
   KeyVector contKeys = {W(0), W(1)};
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
-  auto still = std::make_shared<PlanarMotionModel>(W(0), W(1), Pose2(0, 0, 0),
-                                                   noise_model),
-       moving = std::make_shared<PlanarMotionModel>(W(0), W(1), odometry,
-                                                    noise_model);
-  std::vector<std::pair<PlanarMotionModel::shared_ptr, double>> components = {
-      {moving, 0.0}, {still, 0.0}};
+  std::vector<NonlinearFactor::shared_ptr> components;
+  components.emplace_back(
+      new PlanarMotionModel(W(0), W(1), odometry, noise_model));  // moving
+  components.emplace_back(
+      new PlanarMotionModel(W(0), W(1), Pose2(0, 0, 0), noise_model));  // still
   fg.emplace_shared<HybridNonlinearFactor>(
       contKeys, gtsam::DiscreteKey(M(1), 2), components);
 
@@ -456,11 +455,11 @@ TEST(HybridGaussianISAM, NonTrivial) {
   /*************** Run Round 3 ***************/
   // Add odometry factor with discrete modes.
   contKeys = {W(1), W(2)};
-  still = std::make_shared<PlanarMotionModel>(W(1), W(2), Pose2(0, 0, 0),
-                                              noise_model);
-  moving =
-      std::make_shared<PlanarMotionModel>(W(1), W(2), odometry, noise_model);
-  components = {{moving, 0.0}, {still, 0.0}};
+  components.clear();
+  components.emplace_back(
+      new PlanarMotionModel(W(1), W(2), odometry, noise_model));  // moving
+  components.emplace_back(
+      new PlanarMotionModel(W(1), W(2), Pose2(0, 0, 0), noise_model));  // still
   fg.emplace_shared<HybridNonlinearFactor>(
       contKeys, gtsam::DiscreteKey(M(2), 2), components);
 
@@ -498,11 +497,11 @@ TEST(HybridGaussianISAM, NonTrivial) {
   /*************** Run Round 4 ***************/
   // Add odometry factor with discrete modes.
   contKeys = {W(2), W(3)};
-  still = std::make_shared<PlanarMotionModel>(W(2), W(3), Pose2(0, 0, 0),
-                                              noise_model);
-  moving =
-      std::make_shared<PlanarMotionModel>(W(2), W(3), odometry, noise_model);
-  components = {{moving, 0.0}, {still, 0.0}};
+  components.clear();
+  components.emplace_back(
+      new PlanarMotionModel(W(2), W(3), odometry, noise_model));  // moving
+  components.emplace_back(
+      new PlanarMotionModel(W(2), W(3), Pose2(0, 0, 0), noise_model));  // still
   fg.emplace_shared<HybridNonlinearFactor>(
       contKeys, gtsam::DiscreteKey(M(3), 2), components);
 
