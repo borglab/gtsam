@@ -22,7 +22,10 @@
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
+#include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/Signature.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Ordering.h>
 
 using namespace std;
 using namespace gtsam;
@@ -33,25 +36,24 @@ TEST(DecisionTreeFactor, ConstructorsMatch) {
   DiscreteKey X(0, 2), Y(1, 3);
 
   // Create with vector and with string
-  const std::vector<double> table {2, 5, 3, 6, 4, 7};
+  const std::vector<double> table{2, 5, 3, 6, 4, 7};
   DecisionTreeFactor f1({X, Y}, table);
   DecisionTreeFactor f2({X, Y}, "2 5 3 6 4 7");
   EXPECT(assert_equal(f1, f2));
 }
 
 /* ************************************************************************* */
-TEST( DecisionTreeFactor, constructors)
-{
+TEST(DecisionTreeFactor, constructors) {
   // Declare a bunch of keys
-  DiscreteKey X(0,2), Y(1,3), Z(2,2);
+  DiscreteKey X(0, 2), Y(1, 3), Z(2, 2);
 
   // Create factors
   DecisionTreeFactor f1(X, {2, 8});
   DecisionTreeFactor f2(X & Y, "2 5 3 6 4 7");
   DecisionTreeFactor f3(X & Y & Z, "2 5 3 6 4 7 25 55 35 65 45 75");
-  EXPECT_LONGS_EQUAL(1,f1.size());
-  EXPECT_LONGS_EQUAL(2,f2.size());
-  EXPECT_LONGS_EQUAL(3,f3.size());
+  EXPECT_LONGS_EQUAL(1, f1.size());
+  EXPECT_LONGS_EQUAL(2, f2.size());
+  EXPECT_LONGS_EQUAL(3, f3.size());
 
   DiscreteValues x121{{0, 1}, {1, 2}, {2, 1}};
   EXPECT_DOUBLES_EQUAL(8, f1(x121), 1e-9);
@@ -70,7 +72,7 @@ TEST( DecisionTreeFactor, constructors)
 /* ************************************************************************* */
 TEST(DecisionTreeFactor, Error) {
   // Declare a bunch of keys
-  DiscreteKey X(0,2), Y(1,3), Z(2,2);
+  DiscreteKey X(0, 2), Y(1, 3), Z(2, 2);
 
   // Create factors
   DecisionTreeFactor f(X & Y & Z, "2 5 3 6 4 7 25 55 35 65 45 75");
@@ -104,9 +106,8 @@ TEST(DecisionTreeFactor, multiplication) {
 }
 
 /* ************************************************************************* */
-TEST( DecisionTreeFactor, sum_max)
-{
-  DiscreteKey v0(0,3), v1(1,2);
+TEST(DecisionTreeFactor, sum_max) {
+  DiscreteKey v0(0, 3), v1(1, 2);
   DecisionTreeFactor f1(v0 & v1, "1 2  3 4  5 6");
 
   DecisionTreeFactor expected(v1, "9 12");
@@ -165,10 +166,9 @@ TEST(DecisionTreeFactor, Prune) {
       "0.0 0.0 0.0 0.60658897 0.61241912 0.61241969 0.61247685 0.61247742 0.0 "
       "0.0 0.0 0.99995287 1.0 1.0 1.0 1.0");
 
-  DecisionTreeFactor expected3(
-      D & C & B & A,
-      "0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 "
-      "0.999952870000 1.0 1.0 1.0 1.0");
+  DecisionTreeFactor expected3(D & C & B & A,
+                               "0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 "
+                               "0.999952870000 1.0 1.0 1.0 1.0");
   maxNrAssignments = 5;
   auto pruned3 = factor.prune(maxNrAssignments);
   EXPECT(assert_equal(expected3, pruned3));
@@ -180,7 +180,7 @@ TEST(DecisionTreeFactor, DotWithNames) {
   DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
   auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };
 
-  for (bool showZero:{true, false}) {
+  for (bool showZero : {true, false}) {
     string actual = f.dot(formatter, showZero);
     // pretty weak test, as ids are pointers and not stable across platforms.
     string expected = "digraph G {";
