@@ -89,7 +89,7 @@ namespace gtsam {
 
     ~PartialPriorFactor() override {}
 
-    /** Implement functions needed for Testable */
+    /** implement functions needed for Testable */
 
     /** print */
     void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
@@ -104,7 +104,7 @@ namespace gtsam {
 
     /** equals */
     bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
-      const This *e = dynamic_cast<const This*>(&expected);
+      const This *e = dynamic_cast<const This*> (&expected);
       return e != nullptr && Base::equals(*e, tol) &&
           gtsam::equal_with_abs_tol(this->prior_, e->prior_, tol) &&
           this->indices_ == e->indices_;
@@ -160,6 +160,6 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(indices_);
     }
 #endif
-  };  // \class PartialPriorFactor
+  }; // \class PartialPriorFactor
 
 } /// namespace gtsam
