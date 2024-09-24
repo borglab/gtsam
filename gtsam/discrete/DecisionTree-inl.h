@@ -91,7 +91,7 @@ namespace gtsam {
     void dot(std::ostream& os, const LabelFormatter& labelFormatter,
              const ValueFormatter& valueFormatter,
              bool showZero) const override {
-      std::string value = valueFormatter(constant_);
+      const std::string value = valueFormatter(constant_);
       if (showZero || value.compare("0"))
         os << "\"" << this->id() << "\" [label=\"" << value
            << "\", shape=box, rank=sink, height=0.35, fixedsize=true]\n";
@@ -306,7 +306,8 @@ namespace gtsam {
     void dot(std::ostream& os, const LabelFormatter& labelFormatter,
              const ValueFormatter& valueFormatter,
              bool showZero) const override {
-      os << "\"" << this->id() << "\" [shape=circle, label=\"" << label_
+      const std::string label = labelFormatter(label_);
+      os << "\"" << this->id() << "\" [shape=circle, label=\"" << label
           << "\"]\n";
       size_t B = branches_.size();
       for (size_t i = 0; i < B; i++) {
