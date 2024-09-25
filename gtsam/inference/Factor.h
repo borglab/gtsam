@@ -25,7 +25,6 @@
 #include <boost/serialization/nvp.hpp>
 #endif
 #include <memory>
-#include <algorithm>
 
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastVector.h>
