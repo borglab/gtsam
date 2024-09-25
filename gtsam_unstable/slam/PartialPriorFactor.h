@@ -116,7 +116,14 @@ namespace gtsam {
     Vector evaluateError(const T& p, OptionalMatrixType H) const override {
       Eigen::Matrix<double, T::dimension, T::dimension> H_local;
 
-      const Vector full_tangent = T::LocalCoordinates(p, H ? &H_local : nullptr);
+    // If the Rot3 Cayley map is used, Rot3::LocalCoordinates will throw a runtime
+    // error when asked to compute the Jacobian matrix (see Rot3M.cpp).
+#ifdef GTSAM_ROT3_EXPMAP
+      const Vector full_tangent =
+          T::LocalCoordinates(p, H ? &H_local : nullptr);
+#else
+      const Vector full_tangent = T::Logmap(p, H ? &H_local : nullptr);
+#endif
 
       if (H) {
         (*H) = Matrix::Zero(indices_.size(), T::dimension);
