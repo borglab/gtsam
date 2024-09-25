@@ -282,15 +282,10 @@ Diagonal::Diagonal(const Vector& sigmas)
 
 /* ************************************************************************* */
 Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
-  if (smart) {
-    // check whether all the same entry
-    if ((variances.array() == variances(0)).all()) {
-      return Isotropic::Variance(variances.size(), variances(0), true);
-    } else
-      goto full;
-  }
-full:
-  return shared_ptr(new Diagonal(variances.cwiseSqrt()));
+  // check whether all the same entry
+  return (smart && (variances.array() == variances(0)).all())
+             ? Isotropic::Variance(variances.size(), variances(0), true)
+             : shared_ptr(new Diagonal(variances.cwiseSqrt()));
 }
 
 /* ************************************************************************* */
