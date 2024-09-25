@@ -79,8 +79,15 @@ TEST(PartialPriorFactor, JacobianPartialTranslation2) {
   Key poseKey(1);
   Pose2 measurement(-13.1, 3.14, -0.73);
 
+#ifdef GTSAM_ROT3_EXPMAP
+  double prior = Pose2::LocalCoordinates(measurement)(0);
+#else
+  double prior = Pose2::Logmap(measurement)(0);
+#endif
+
   // Prior on x component of translation.
-  TestPartialPriorFactor2 factor(poseKey, 0, measurement.x(), NM::Isotropic::Sigma(1, 0.25));
+  TestPartialPriorFactor2 factor(poseKey, 0, prior,
+                                 NM::Isotropic::Sigma(1, 0.25));
 
   Pose2 pose = measurement; // Zero-error linearization point.
 
@@ -103,7 +110,12 @@ TEST(PartialPriorFactor, JacobianFullTranslation2) {
   Pose2 measurement(-6.0, 3.5, 0.123);
 
   // Prior on x component of translation.
-  TestPartialPriorFactor2 factor(poseKey, {0, 1}, measurement.translation(),
+#ifdef GTSAM_ROT3_EXPMAP
+      Vector2 prior = Pose2::LocalCoordinates(measurement).head<2>();
+#else
+      Vector2 prior = Pose2::Logmap(measurement).head<2>();
+#endif
+  TestPartialPriorFactor2 factor(poseKey, {0, 1}, prior,
                                  NM::Isotropic::Sigma(2, 0.25));
 
   Pose2 pose = measurement; // Zero-error linearization point.
