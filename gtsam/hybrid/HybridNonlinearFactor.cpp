@@ -169,7 +169,7 @@ std::shared_ptr<HybridGaussianFactor> HybridNonlinearFactor::linearize(
   DecisionTree<Key, std::pair<GaussianFactor::shared_ptr, double>>
       linearized_factors(factors_, linearizeDT);
 
-  return std::make_shared<HybridGaussianFactor>(continuousKeys_, discreteKeys_,
+  return std::make_shared<HybridGaussianFactor>(discreteKeys_,
                                                 linearized_factors);
 }
 

@@ -52,10 +52,6 @@ HybridGaussianConditional::ConstructorHelper::ConstructorHelper(
     return {std::dynamic_pointer_cast<GaussianFactor>(c), value};
   };
   pairs = HybridGaussianFactor::FactorValuePairs(conditionals, func);
-
-  // Build continuousKeys
-  continuousKeys = frontals;
-  continuousKeys.insert(continuousKeys.end(), parents.begin(), parents.end());
 }
 
 /* *******************************************************************************/
@@ -222,8 +218,8 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
           return {likelihood_m, Cgm_Kgcm};
         }
       });
-  return std::make_shared<HybridGaussianFactor>(
-      continuousParentKeys, discreteParentKeys, likelihoods);
+  return std::make_shared<HybridGaussianFactor>(discreteParentKeys,
+                                                likelihoods);
 }
 
 /* ************************************************************************* */

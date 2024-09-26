@@ -346,7 +346,6 @@ static std::shared_ptr<Factor> createDiscreteFactor(
 // for conditional constants.
 static std::shared_ptr<Factor> createHybridGaussianFactor(
     const DecisionTree<Key, Result> &eliminationResults,
-    const KeyVector &continuousSeparator,
     const DiscreteKeys &discreteSeparator) {
   // Correct for the normalization constant used up by the conditional
   auto correct = [&](const Result &pair) -> GaussianFactorValuePair {
@@ -364,8 +363,7 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
   DecisionTree<Key, GaussianFactorValuePair> newFactors(eliminationResults,
                                                         correct);
 
-  return std::make_shared<HybridGaussianFactor>(continuousSeparator,
-                                                discreteSeparator, newFactors);
+  return std::make_shared<HybridGaussianFactor>(discreteSeparator, newFactors);
 }
 
 static std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
@@ -407,8 +405,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   auto newFactor =
       continuousSeparator.empty()
           ? createDiscreteFactor(eliminationResults, discreteSeparator)
-          : createHybridGaussianFactor(eliminationResults, continuousSeparator,
-                                       discreteSeparator);
+          : createHybridGaussianFactor(eliminationResults, discreteSeparator);
 
   // Create the HybridGaussianConditional from the conditionals
   HybridGaussianConditional::Conditionals conditionals(

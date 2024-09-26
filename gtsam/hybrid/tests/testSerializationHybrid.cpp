@@ -75,7 +75,6 @@ BOOST_CLASS_EXPORT_GUID(HybridBayesNet, "gtsam_HybridBayesNet");
 /* ****************************************************************************/
 // Test HybridGaussianFactor serialization.
 TEST(HybridSerialization, HybridGaussianFactor) {
-  KeyVector continuousKeys{X(0)};
   DiscreteKey discreteKey{M(0), 2};
 
   auto A = Matrix::Zero(2, 1);
@@ -85,7 +84,7 @@ TEST(HybridSerialization, HybridGaussianFactor) {
   auto f1 = std::make_shared<JacobianFactor>(X(0), A, b1);
   std::vector<GaussianFactor::shared_ptr> factors{f0, f1};
 
-  const HybridGaussianFactor factor(continuousKeys, discreteKey, factors);
+  const HybridGaussianFactor factor(discreteKey, factors);
 
   EXPECT(equalsObj<HybridGaussianFactor>(factor));
   EXPECT(equalsXML<HybridGaussianFactor>(factor));

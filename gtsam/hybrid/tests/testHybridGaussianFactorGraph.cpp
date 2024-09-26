@@ -132,7 +132,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
 
   // Add a hybrid gaussian factor ϕ(x1, c1)
   DiscreteKey m1(M(1), 2);
-  hfg.add(HybridGaussianFactor({X(1)}, m1, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
 
   auto result = hfg.eliminateSequential();
 
@@ -155,7 +155,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
   // Add factor between x0 and x1
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  hfg.add(HybridGaussianFactor({X(1)}, m1, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
 
   // Discrete probability table for c1
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
@@ -177,7 +177,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  hfg.add(HybridGaussianFactor({X(1)}, {M(1), 2}, two::components(X(1))));
+  hfg.add(HybridGaussianFactor({M(1), 2}, two::components(X(1))));
 
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
   // TODO(Varun) Adding extra discrete variable not connected to continuous
@@ -204,7 +204,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
   // Hybrid factor P(x1|c1)
-  hfg.add(HybridGaussianFactor({X(1)}, m, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(m, two::components(X(1))));
   // Prior factor on c1
   hfg.add(DecisionTreeFactor(m, {2, 8}));
 
@@ -229,8 +229,8 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
 
   {
-    hfg.add(HybridGaussianFactor({X(0)}, {M(0), 2}, two::components(X(0))));
-    hfg.add(HybridGaussianFactor({X(2)}, {M(1), 2}, two::components(X(2))));
+    hfg.add(HybridGaussianFactor({M(0), 2}, two::components(X(0))));
+    hfg.add(HybridGaussianFactor({M(1), 2}, two::components(X(2))));
   }
 
   hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
@@ -239,8 +239,8 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(4), I_3x3, X(5), -I_3x3, Z_3x1));
 
   {
-    hfg.add(HybridGaussianFactor({X(3)}, {M(3), 2}, two::components(X(3))));
-    hfg.add(HybridGaussianFactor({X(5)}, {M(2), 2}, two::components(X(5))));
+    hfg.add(HybridGaussianFactor({M(3), 2}, two::components(X(3))));
+    hfg.add(HybridGaussianFactor({M(2), 2}, two::components(X(5))));
   }
 
   auto ordering_full =
@@ -525,7 +525,7 @@ TEST(HybridGaussianFactorGraph, optimize) {
 
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
-  hfg.add(HybridGaussianFactor({X(1)}, c1, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(c1, two::components(X(1))));
 
   auto result = hfg.eliminateSequential();
 

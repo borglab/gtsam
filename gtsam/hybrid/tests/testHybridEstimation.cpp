@@ -566,8 +566,8 @@ std::shared_ptr<HybridGaussianFactor> mixedVarianceFactor(
       [](const GaussianFactor::shared_ptr& gf) -> GaussianFactorValuePair {
         return {gf, 0.0};
       });
-  return std::make_shared<HybridGaussianFactor>(
-      gmf->continuousKeys(), gmf->discreteKeys(), updated_pairs);
+  return std::make_shared<HybridGaussianFactor>(gmf->discreteKeys(),
+                                                updated_pairs);
 }
 
 /****************************************************************************/

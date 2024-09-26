@@ -85,11 +85,6 @@ HybridGaussianFactor::HybridGaussianFactor(
     }
   }
 
-  // Check that this worked.
-  if (continuousKeys.empty()) {
-    throw std::invalid_argument("Need at least one non-null factor.");
-  }
-
   // Initialize the base class
   Factor::keys_ = continuousKeys;
   Factor::keys_.push_back(discreteKey.first);
@@ -114,11 +109,6 @@ HybridGaussianFactor::HybridGaussianFactor(
     } else if (pair.first->keys() != continuousKeys) {
       throw std::invalid_argument("All factors must have the same keys");
     }
-  }
-
-  // Check that this worked.
-  if (continuousKeys.empty()) {
-    throw std::invalid_argument("Need at least one non-null factor.");
   }
 
   // Initialize the base class
@@ -149,11 +139,6 @@ HybridGaussianFactor::HybridGaussianFactor(const DiscreteKeys &discreteKeys,
       }
     }
   });
-
-  // Check that this worked.
-  if (continuousKeys.empty()) {
-    throw std::invalid_argument("Need at least one non-null factor.");
-  }
 
   // Initialize the base class
   Factor::keys_ = continuousKeys;
