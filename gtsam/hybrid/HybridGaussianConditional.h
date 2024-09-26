@@ -64,46 +64,10 @@ class GTSAM_EXPORT HybridGaussianConditional
 
  private:
   Conditionals conditionals_;  ///< a decision tree of Gaussian conditionals.
+
   ///< Negative-log of the normalization constant (log(\sqrt(|2πΣ|))).
   ///< Take advantage of the neg-log space so everything is a minimization
   double negLogConstant_;
-
-  /// Helper struct for private constructor.
-  struct ConstructorHelper {
-    KeyVector frontals;
-    KeyVector parents;
-    KeyVector continuousKeys;
-    HybridGaussianFactor::FactorValuePairs pairs;
-    double negLogConstant;
-    ConstructorHelper(const Conditionals &conditionals);
-  };
-
-  /// Private constructor
-  HybridGaussianConditional(
-      const DiscreteKeys &discreteParents,
-      const HybridGaussianConditional::Conditionals &conditionals,
-      const ConstructorHelper &helper)
-      : BaseFactor(helper.continuousKeys, discreteParents, helper.pairs),
-        BaseConditional(helper.frontals.size()),
-        conditionals_(conditionals),
-        negLogConstant_(helper.negLogConstant) {}
-
-  /**
-   * @brief Convert a HybridGaussianConditional of conditionals into
-   * a DecisionTree of Gaussian factor graphs.
-   */
-  GaussianFactorGraphTree asGaussianFactorGraphTree() const;
-
-  /**
-   * @brief Helper function to get the pruner functor.
-   *
-   * @param discreteProbs The pruned discrete probabilities.
-   * @return std::function<GaussianConditional::shared_ptr(
-   * const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
-   */
-  std::function<GaussianConditional::shared_ptr(
-      const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
-  prunerFunc(const DecisionTreeFactor &discreteProbs);
 
  public:
   /// @name Constructors
@@ -220,6 +184,33 @@ class GTSAM_EXPORT HybridGaussianConditional
   /// @}
 
  private:
+  /// Helper struct for private constructor.
+  struct ConstructorHelper {
+    KeyVector frontals, parents, continuousKeys;
+    HybridGaussianFactor::FactorValuePairs pairs;
+    double negLogConstant;
+    /// Compute all variables needed for the private constructor below.
+    ConstructorHelper(const Conditionals &conditionals);
+  };
+
+  /// Private constructor that uses helper struct above.
+  HybridGaussianConditional(
+      const DiscreteKeys &discreteParents,
+      const HybridGaussianConditional::Conditionals &conditionals,
+      const ConstructorHelper &helper)
+      : BaseFactor(helper.continuousKeys, discreteParents, helper.pairs),
+        BaseConditional(helper.frontals.size()),
+        conditionals_(conditionals),
+        negLogConstant_(helper.negLogConstant) {}
+
+  /// Convert to a DecisionTree of Gaussian factor graphs.
+  GaussianFactorGraphTree asGaussianFactorGraphTree() const;
+
+  //// Get the pruner functor from pruned discrete probabilities.
+  std::function<GaussianConditional::shared_ptr(
+      const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
+  prunerFunc(const DecisionTreeFactor &prunedProbabilities);
+
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;
 
