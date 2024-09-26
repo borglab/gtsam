@@ -70,14 +70,13 @@ HybridGaussianFactor::Factors HybridGaussianFactor::augment(
 }
 
 /* *******************************************************************************/
-HybridGaussianFactor::HybridGaussianFactor(
+HybridGaussianFactor::ConstructorHelper::ConstructorHelper(
     const DiscreteKey &discreteKey,
     const std::vector<GaussianFactor::shared_ptr> &factors)
-    : Base(HybridFactor::Category::Hybrid) {
-  // Extract continuous keys from first-null factor and verify all others
-  KeyVector continuousKeys;
+    : discreteKeys({discreteKey}) {
+  // Extract continuous keys from the first non-null factor
   for (const auto &factor : factors) {
-    if (!factor) continue;
+    if (!factor) continue;  // Skip null factors
     if (continuousKeys.empty()) {
       continuousKeys = factor->keys();
     } else if (factor->keys() != continuousKeys) {
@@ -85,25 +84,18 @@ HybridGaussianFactor::HybridGaussianFactor(
     }
   }
 
-  // Initialize the base class
-  Factor::keys_ = continuousKeys;
-  Factor::keys_.push_back(discreteKey.first);
-  Base::discreteKeys_ = {discreteKey};
-  Base::continuousKeys_ = continuousKeys;
-
-  // Build the DecisionTree from factor vector
-  factors_ = Factors({discreteKey}, factors);
+  // Build the DecisionTree from the factor vector
+  factorsTree = Factors(discreteKeys, factors);
 }
 
 /* *******************************************************************************/
-HybridGaussianFactor::HybridGaussianFactor(
+HybridGaussianFactor::ConstructorHelper::ConstructorHelper(
     const DiscreteKey &discreteKey,
     const std::vector<GaussianFactorValuePair> &factorPairs)
-    : Base(HybridFactor::Category::Hybrid) {
-  // Extract continuous keys from first-null factor and verify all others
-  KeyVector continuousKeys;
+    : discreteKeys({discreteKey}) {
+  // Extract continuous keys from the first non-null factor
   for (const auto &pair : factorPairs) {
-    if (!pair.first) continue;
+    if (!pair.first) continue;  // Skip null factors
     if (continuousKeys.empty()) {
       continuousKeys = pair.first->keys();
     } else if (pair.first->keys() != continuousKeys) {
@@ -111,45 +103,26 @@ HybridGaussianFactor::HybridGaussianFactor(
     }
   }
 
-  // Initialize the base class
-  Factor::keys_ = continuousKeys;
-  Factor::keys_.push_back(discreteKey.first);
-  Base::discreteKeys_ = {discreteKey};
-  Base::continuousKeys_ = continuousKeys;
-
   // Build the FactorValuePairs DecisionTree
-  FactorValuePairs pairTree({discreteKey}, factorPairs);
-
-  // Assign factors_ after calling augment
-  factors_ = augment(pairTree);
+  pairs = FactorValuePairs(discreteKeys, factorPairs);
 }
 
 /* *******************************************************************************/
-HybridGaussianFactor::HybridGaussianFactor(const DiscreteKeys &discreteKeys,
-                                           const FactorValuePairs &factorPairs)
-    : Base(HybridFactor::Category::Hybrid) {
-  // Verify that all factors have the same keys
-  KeyVector continuousKeys;
+HybridGaussianFactor::ConstructorHelper::ConstructorHelper(
+    const DiscreteKeys &discreteKeys, const FactorValuePairs &factorPairs)
+    : discreteKeys(discreteKeys) {
+  // Extract continuous keys from the first non-null factor
   factorPairs.visit([&](const GaussianFactorValuePair &pair) {
-    if (pair.first) {
-      if (continuousKeys.empty()) {
-        continuousKeys = pair.first->keys();
-      } else if (pair.first->keys() != continuousKeys) {
-        throw std::invalid_argument("All factors must have the same keys");
-      }
+    if (!pair.first) return;  // Skip null factors
+    if (continuousKeys.empty()) {
+      continuousKeys = pair.first->keys();
+    } else if (pair.first->keys() != continuousKeys) {
+      throw std::invalid_argument("All factors must have the same keys");
     }
   });
 
-  // Initialize the base class
-  Factor::keys_ = continuousKeys;
-  for (const auto &discreteKey : discreteKeys) {
-    Factor::keys_.push_back(discreteKey.first);
-  }
-  Base::discreteKeys_ = discreteKeys;
-  Base::continuousKeys_ = continuousKeys;
-
-  // Assign factors_ after calling augment
-  factors_ = augment(factorPairs);
+  // Build the FactorValuePairs DecisionTree
+  pairs = factorPairs;
 }
 
 /* *******************************************************************************/

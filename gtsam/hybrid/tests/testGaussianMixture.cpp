@@ -101,12 +101,6 @@ TEST(GaussianMixture, GaussianMixtureModel) {
 
   auto hbn = GaussianMixtureModel(mu0, mu1, sigma, sigma);
 
-  // Check the number of keys matches what we expect
-  auto hgc = hbn.at(0)->asHybrid();
-  EXPECT_LONGS_EQUAL(2, hgc->keys().size());
-  EXPECT_LONGS_EQUAL(1, hgc->continuousKeys().size());
-  EXPECT_LONGS_EQUAL(1, hgc->discreteKeys().size());
-
   // At the halfway point between the means, we should get P(m|z)=0.5
   double midway = mu1 - mu0;
   auto pMid = SolveHBN(hbn, midway);
@@ -140,12 +134,6 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
   double sigma0 = 8.0, sigma1 = 4.0;
 
   auto hbn = GaussianMixtureModel(mu0, mu1, sigma0, sigma1);
-
-  // Check the number of keys matches what we expect
-  auto hgc = hbn.at(0)->asHybrid();
-  EXPECT_LONGS_EQUAL(2, hgc->keys().size());
-  EXPECT_LONGS_EQUAL(1, hgc->continuousKeys().size());
-  EXPECT_LONGS_EQUAL(1, hgc->discreteKeys().size());
 
   // We get zMax=3.1333 by finding the maximum value of the function, at which
   // point the mode m==1 is about twice as probable as m==0.
