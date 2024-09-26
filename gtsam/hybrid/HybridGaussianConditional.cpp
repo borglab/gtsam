@@ -29,34 +29,47 @@
 
 namespace gtsam {
 /* *******************************************************************************/
-HybridGaussianConditional::ConstructorHelper::ConstructorHelper(
-    const HybridGaussianConditional::Conditionals &conditionals) {
-  negLogConstant = std::numeric_limits<double>::infinity();
+struct HybridGaussianConditional::ConstructorHelper {
+  KeyVector frontals, parents;
+  HybridGaussianFactor::FactorValuePairs pairs;
+  double negLogConstant;
+  /// Compute all variables needed for the private constructor below.
+  ConstructorHelper(const Conditionals &conditionals) {
+    negLogConstant = std::numeric_limits<double>::infinity();
 
-  auto func =
-      [&](const GaussianConditional::shared_ptr &c) -> GaussianFactorValuePair {
-    double value = 0.0;
-    if (c) {
-      if (frontals.empty()) {
-        frontals = KeyVector(c->frontals().begin(), c->frontals().end());
-        parents = KeyVector(c->parents().begin(), c->parents().end());
+    auto func = [&](const GaussianConditional::shared_ptr &c)
+        -> GaussianFactorValuePair {
+      double value = 0.0;
+      if (c) {
+        if (frontals.empty()) {
+          frontals = KeyVector(c->frontals().begin(), c->frontals().end());
+          parents = KeyVector(c->parents().begin(), c->parents().end());
+        }
+        value = c->negLogConstant();
+        negLogConstant = std::min(negLogConstant, value);
       }
-      value = c->negLogConstant();
-      negLogConstant = std::min(negLogConstant, value);
-    }
-    return {std::dynamic_pointer_cast<GaussianFactor>(c), value};
-  };
-  pairs = HybridGaussianFactor::FactorValuePairs(conditionals, func);
-}
+      return {std::dynamic_pointer_cast<GaussianFactor>(c), value};
+    };
+    pairs = HybridGaussianFactor::FactorValuePairs(conditionals, func);
+  }
+};
 
 /* *******************************************************************************/
+HybridGaussianConditional::HybridGaussianConditional(
+    const DiscreteKeys &discreteParents,
+    const HybridGaussianConditional::Conditionals &conditionals,
+    const ConstructorHelper &helper)
+    : BaseFactor(discreteParents, helper.pairs),
+      BaseConditional(helper.frontals.size()),
+      conditionals_(conditionals),
+      negLogConstant_(helper.negLogConstant) {}
+
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKeys &discreteParents,
     const HybridGaussianConditional::Conditionals &conditionals)
     : HybridGaussianConditional(discreteParents, conditionals,
                                 ConstructorHelper(conditionals)) {}
 
-/* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKey &discreteParent,
     const std::vector<GaussianConditional::shared_ptr> &conditionals)

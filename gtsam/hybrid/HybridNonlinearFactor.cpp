@@ -25,52 +25,71 @@
 namespace gtsam {
 
 /* *******************************************************************************/
-static void CopyOrCheckContinuousKeys(const NonlinearFactor::shared_ptr& factor,
-                                      KeyVector* continuousKeys) {
-  if (!factor) return;
-  if (continuousKeys->empty()) {
-    *continuousKeys = factor->keys();
-  } else if (factor->keys() != *continuousKeys) {
-    throw std::runtime_error(
-        "HybridNonlinearFactor: all factors should have the same keys!");
+struct HybridNonlinearFactor::ConstructorHelper {
+  KeyVector continuousKeys;   // Continuous keys extracted from factors
+  DiscreteKeys discreteKeys;  // Discrete keys provided to the constructors
+  FactorValuePairs factorTree;
+
+  void copyOrCheckContinuousKeys(const NonlinearFactor::shared_ptr& factor) {
+    if (!factor) return;
+    if (continuousKeys.empty()) {
+      continuousKeys = factor->keys();
+    } else if (factor->keys() != continuousKeys) {
+      throw std::runtime_error(
+          "HybridNonlinearFactor: all factors should have the same keys!");
+    }
   }
-}
+
+  ConstructorHelper(const DiscreteKey& discreteKey,
+                    const std::vector<NonlinearFactor::shared_ptr>& factors)
+      : discreteKeys({discreteKey}) {
+    std::vector<NonlinearFactorValuePair> pairs;
+    // Extract continuous keys from the first non-null factor
+    for (const auto& factor : factors) {
+      pairs.emplace_back(factor, 0.0);
+      copyOrCheckContinuousKeys(factor);
+    }
+    factorTree = FactorValuePairs({discreteKey}, pairs);
+  }
+
+  ConstructorHelper(const DiscreteKey& discreteKey,
+                    const std::vector<NonlinearFactorValuePair>& pairs)
+      : discreteKeys({discreteKey}) {
+    // Extract continuous keys from the first non-null factor
+    for (const auto& pair : pairs) {
+      copyOrCheckContinuousKeys(pair.first);
+    }
+    factorTree = FactorValuePairs({discreteKey}, pairs);
+  }
+
+  ConstructorHelper(const DiscreteKeys& discreteKeys,
+                    const FactorValuePairs& factorPairs)
+      : discreteKeys(discreteKeys), factorTree(factorPairs) {
+    // Extract continuous keys from the first non-null factor
+    factorPairs.visit([&](const NonlinearFactorValuePair& pair) {
+      copyOrCheckContinuousKeys(pair.first);
+    });
+  }
+};
 
 /* *******************************************************************************/
-HybridNonlinearFactor::ConstructorHelper::ConstructorHelper(
+HybridNonlinearFactor::HybridNonlinearFactor(const ConstructorHelper& helper)
+    : Base(helper.continuousKeys, helper.discreteKeys),
+      factors_(helper.factorTree) {}
+
+HybridNonlinearFactor::HybridNonlinearFactor(
     const DiscreteKey& discreteKey,
     const std::vector<NonlinearFactor::shared_ptr>& factors)
-    : discreteKeys({discreteKey}) {
-  std::vector<NonlinearFactorValuePair> pairs;
-  // Extract continuous keys from the first non-null factor
-  for (const auto& factor : factors) {
-    pairs.emplace_back(factor, 0.0);
-    CopyOrCheckContinuousKeys(factor, &continuousKeys);
-  }
-  factorTree = FactorValuePairs({discreteKey}, pairs);
-}
+    : HybridNonlinearFactor(ConstructorHelper(discreteKey, factors)) {}
 
-/* *******************************************************************************/
-HybridNonlinearFactor::ConstructorHelper::ConstructorHelper(
+HybridNonlinearFactor::HybridNonlinearFactor(
     const DiscreteKey& discreteKey,
     const std::vector<NonlinearFactorValuePair>& pairs)
-    : discreteKeys({discreteKey}) {
-  // Extract continuous keys from the first non-null factor
-  for (const auto& pair : pairs) {
-    CopyOrCheckContinuousKeys(pair.first, &continuousKeys);
-  }
-  factorTree = FactorValuePairs({discreteKey}, pairs);
-}
+    : HybridNonlinearFactor(ConstructorHelper(discreteKey, pairs)) {}
 
-/* *******************************************************************************/
-HybridNonlinearFactor::ConstructorHelper::ConstructorHelper(
-    const DiscreteKeys& discreteKeys, const FactorValuePairs& factorPairs)
-    : discreteKeys(discreteKeys), factorTree(factorPairs) {
-  // Extract continuous keys from the first non-null factor
-  factorPairs.visit([&](const NonlinearFactorValuePair& pair) {
-    CopyOrCheckContinuousKeys(pair.first, &continuousKeys);
-  });
-}
+HybridNonlinearFactor::HybridNonlinearFactor(const DiscreteKeys& discreteKeys,
+                                             const FactorValuePairs& factors)
+    : HybridNonlinearFactor(ConstructorHelper(discreteKeys, factors)) {}
 
 /* *******************************************************************************/
 AlgebraicDecisionTree<Key> HybridNonlinearFactor::errorTree(

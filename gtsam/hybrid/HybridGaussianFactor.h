@@ -89,8 +89,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * @param factors Vector of gaussian factors, one for each mode.
    */
   HybridGaussianFactor(const DiscreteKey &discreteKey,
-                       const std::vector<GaussianFactor::shared_ptr> &factors)
-      : HybridGaussianFactor(ConstructorHelper(discreteKey, factors)) {}
+                       const std::vector<GaussianFactor::shared_ptr> &factors);
 
   /**
    * @brief Construct a new HybridGaussianFactor on a single discrete key,
@@ -102,8 +101,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * @param factorPairs Vector of gaussian factor-scalar pairs, one per mode.
    */
   HybridGaussianFactor(const DiscreteKey &discreteKey,
-                       const std::vector<GaussianFactorValuePair> &factorPairs)
-      : HybridGaussianFactor(ConstructorHelper(discreteKey, factorPairs)) {}
+                       const std::vector<GaussianFactorValuePair> &factorPairs);
 
   /**
    * @brief Construct a new HybridGaussianFactor on a several discrete keys M,
@@ -115,8 +113,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * @param factors The decision tree of Gaussian factor/scalar pairs.
    */
   HybridGaussianFactor(const DiscreteKeys &discreteKeys,
-                       const FactorValuePairs &factors)
-      : HybridGaussianFactor(ConstructorHelper(discreteKeys, factors)) {}
+                       const FactorValuePairs &factors);
 
   /// @}
   /// @name Testable
@@ -197,27 +194,10 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
       const sharedFactor &gf, const VectorValues &continuousValues) const;
 
   /// Helper struct to assist private constructor below.
-  struct ConstructorHelper {
-    KeyVector continuousKeys;   // Continuous keys extracted from factors
-    DiscreteKeys discreteKeys;  // Discrete keys provided to the constructors
-    FactorValuePairs pairs;     // Used only if factorsTree is empty
-    Factors factorsTree;
-
-    ConstructorHelper(const DiscreteKey &discreteKey,
-                      const std::vector<GaussianFactor::shared_ptr> &factors);
-
-    ConstructorHelper(const DiscreteKey &discreteKey,
-                      const std::vector<GaussianFactorValuePair> &factorPairs);
-
-    ConstructorHelper(const DiscreteKeys &discreteKeys,
-                      const FactorValuePairs &factorPairs);
-  };
+  struct ConstructorHelper;
 
   // Private constructor using ConstructorHelper above.
-  HybridGaussianFactor(const ConstructorHelper &helper)
-      : Base(helper.continuousKeys, helper.discreteKeys),
-        factors_(helper.factorsTree.empty() ? augment(helper.pairs)
-                                            : helper.factorsTree) {}
+  HybridGaussianFactor(const ConstructorHelper &helper);
 
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */

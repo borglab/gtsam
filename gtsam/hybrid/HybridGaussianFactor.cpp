@@ -70,53 +70,76 @@ HybridGaussianFactor::Factors HybridGaussianFactor::augment(
 }
 
 /* *******************************************************************************/
-HybridGaussianFactor::ConstructorHelper::ConstructorHelper(
+struct HybridGaussianFactor::ConstructorHelper {
+  KeyVector continuousKeys;   // Continuous keys extracted from factors
+  DiscreteKeys discreteKeys;  // Discrete keys provided to the constructors
+  FactorValuePairs pairs;     // Used only if factorsTree is empty
+  Factors factorsTree;
+
+  ConstructorHelper(const DiscreteKey &discreteKey,
+                    const std::vector<GaussianFactor::shared_ptr> &factors)
+      : discreteKeys({discreteKey}) {
+    // Extract continuous keys from the first non-null factor
+    for (const auto &factor : factors) {
+      if (factor && continuousKeys.empty()) {
+        continuousKeys = factor->keys();
+        break;
+      }
+    }
+
+    // Build the DecisionTree from the factor vector
+    factorsTree = Factors(discreteKeys, factors);
+  }
+
+  ConstructorHelper(const DiscreteKey &discreteKey,
+                    const std::vector<GaussianFactorValuePair> &factorPairs)
+      : discreteKeys({discreteKey}) {
+    // Extract continuous keys from the first non-null factor
+    for (const auto &pair : factorPairs) {
+      if (pair.first && continuousKeys.empty()) {
+        continuousKeys = pair.first->keys();
+        break;
+      }
+    }
+
+    // Build the FactorValuePairs DecisionTree
+    pairs = FactorValuePairs(discreteKeys, factorPairs);
+  }
+
+  ConstructorHelper(const DiscreteKeys &discreteKeys,
+                    const FactorValuePairs &factorPairs)
+      : discreteKeys(discreteKeys) {
+    // Extract continuous keys from the first non-null factor
+    factorPairs.visit([&](const GaussianFactorValuePair &pair) {
+      if (pair.first && continuousKeys.empty()) {
+        continuousKeys = pair.first->keys();
+      }
+    });
+
+    // Build the FactorValuePairs DecisionTree
+    pairs = factorPairs;
+  }
+};
+
+/* *******************************************************************************/
+HybridGaussianFactor::HybridGaussianFactor(const ConstructorHelper &helper)
+    : Base(helper.continuousKeys, helper.discreteKeys),
+      factors_(helper.factorsTree.empty() ? augment(helper.pairs)
+                                          : helper.factorsTree) {}
+
+HybridGaussianFactor::HybridGaussianFactor(
     const DiscreteKey &discreteKey,
     const std::vector<GaussianFactor::shared_ptr> &factors)
-    : discreteKeys({discreteKey}) {
-  // Extract continuous keys from the first non-null factor
-  for (const auto &factor : factors) {
-    if (factor && continuousKeys.empty()) {
-      continuousKeys = factor->keys();
-      break;
-    }
-  }
+    : HybridGaussianFactor(ConstructorHelper(discreteKey, factors)) {}
 
-  // Build the DecisionTree from the factor vector
-  factorsTree = Factors(discreteKeys, factors);
-}
-
-/* *******************************************************************************/
-HybridGaussianFactor::ConstructorHelper::ConstructorHelper(
+HybridGaussianFactor::HybridGaussianFactor(
     const DiscreteKey &discreteKey,
     const std::vector<GaussianFactorValuePair> &factorPairs)
-    : discreteKeys({discreteKey}) {
-  // Extract continuous keys from the first non-null factor
-  for (const auto &pair : factorPairs) {
-    if (pair.first && continuousKeys.empty()) {
-      continuousKeys = pair.first->keys();
-      break;
-    }
-  }
+    : HybridGaussianFactor(ConstructorHelper(discreteKey, factorPairs)) {}
 
-  // Build the FactorValuePairs DecisionTree
-  pairs = FactorValuePairs(discreteKeys, factorPairs);
-}
-
-/* *******************************************************************************/
-HybridGaussianFactor::ConstructorHelper::ConstructorHelper(
-    const DiscreteKeys &discreteKeys, const FactorValuePairs &factorPairs)
-    : discreteKeys(discreteKeys) {
-  // Extract continuous keys from the first non-null factor
-  factorPairs.visit([&](const GaussianFactorValuePair &pair) {
-    if (pair.first && continuousKeys.empty()) {
-      continuousKeys = pair.first->keys();
-    }
-  });
-
-  // Build the FactorValuePairs DecisionTree
-  pairs = factorPairs;
-}
+HybridGaussianFactor::HybridGaussianFactor(const DiscreteKeys &discreteKeys,
+                                           const FactorValuePairs &factors)
+    : HybridGaussianFactor(ConstructorHelper(discreteKeys, factors)) {}
 
 /* *******************************************************************************/
 bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {

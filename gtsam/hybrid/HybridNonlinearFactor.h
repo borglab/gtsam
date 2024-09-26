@@ -93,9 +93,9 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
    * @param discreteKey The discrete key for the "mode", indexing components.
    * @param factors Vector of gaussian factors, one for each mode.
    */
-  HybridNonlinearFactor(const DiscreteKey& discreteKey,
-                        const std::vector<NonlinearFactor::shared_ptr>& factors)
-      : HybridNonlinearFactor(ConstructorHelper(discreteKey, factors)) {}
+  HybridNonlinearFactor(
+      const DiscreteKey& discreteKey,
+      const std::vector<NonlinearFactor::shared_ptr>& factors);
 
   /**
    * @brief Construct a new HybridNonlinearFactor on a single discrete key,
@@ -107,8 +107,7 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
    * @param pairs Vector of gaussian factor-scalar pairs, one per mode.
    */
   HybridNonlinearFactor(const DiscreteKey& discreteKey,
-                        const std::vector<NonlinearFactorValuePair>& pairs)
-      : HybridNonlinearFactor(ConstructorHelper(discreteKey, pairs)) {}
+                        const std::vector<NonlinearFactorValuePair>& pairs);
 
   /**
    * @brief Construct a new HybridNonlinearFactor on a several discrete keys M,
@@ -120,8 +119,8 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
    * @param factors The decision tree of nonlinear factor/scalar pairs.
    */
   HybridNonlinearFactor(const DiscreteKeys& discreteKeys,
-                        const FactorValuePairs& factors)
-      : HybridNonlinearFactor(ConstructorHelper(discreteKeys, factors)) {}
+                        const FactorValuePairs& factors);
+
   /**
    * @brief Compute error of the HybridNonlinearFactor as a tree.
    *
@@ -181,25 +180,10 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
 
  private:
   /// Helper struct to assist private constructor below.
-  struct ConstructorHelper {
-    KeyVector continuousKeys;   // Continuous keys extracted from factors
-    DiscreteKeys discreteKeys;  // Discrete keys provided to the constructors
-    FactorValuePairs factorTree;
-
-    ConstructorHelper(const DiscreteKey& discreteKey,
-                      const std::vector<NonlinearFactor::shared_ptr>& factors);
-
-    ConstructorHelper(const DiscreteKey& discreteKey,
-                      const std::vector<NonlinearFactorValuePair>& factorPairs);
-
-    ConstructorHelper(const DiscreteKeys& discreteKeys,
-                      const FactorValuePairs& factorPairs);
-  };
+  struct ConstructorHelper;
 
   // Private constructor using ConstructorHelper above.
-  HybridNonlinearFactor(const ConstructorHelper& helper)
-      : Base(helper.continuousKeys, helper.discreteKeys),
-        factors_(helper.factorTree) {}
+  HybridNonlinearFactor(const ConstructorHelper& helper);
 };
 
 // traits

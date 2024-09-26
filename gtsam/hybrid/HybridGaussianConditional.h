@@ -185,23 +185,13 @@ class GTSAM_EXPORT HybridGaussianConditional
 
  private:
   /// Helper struct for private constructor.
-  struct ConstructorHelper {
-    KeyVector frontals, parents;
-    HybridGaussianFactor::FactorValuePairs pairs;
-    double negLogConstant;
-    /// Compute all variables needed for the private constructor below.
-    ConstructorHelper(const Conditionals &conditionals);
-  };
+  struct ConstructorHelper;
 
   /// Private constructor that uses helper struct above.
   HybridGaussianConditional(
       const DiscreteKeys &discreteParents,
       const HybridGaussianConditional::Conditionals &conditionals,
-      const ConstructorHelper &helper)
-      : BaseFactor(discreteParents, helper.pairs),
-        BaseConditional(helper.frontals.size()),
-        conditionals_(conditionals),
-        negLogConstant_(helper.negLogConstant) {}
+      const ConstructorHelper &helper);
 
   /// Convert to a DecisionTree of Gaussian factor graphs.
   GaussianFactorGraphTree asGaussianFactorGraphTree() const;
