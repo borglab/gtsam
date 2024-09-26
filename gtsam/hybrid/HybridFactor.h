@@ -140,6 +140,10 @@ class GTSAM_EXPORT HybridFactor : public Factor {
 
   /// @}
 
+ protected:
+  /// protected constructor to initialize the category
+  HybridFactor(Category category) : category_(category) {}
+
  private:
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */

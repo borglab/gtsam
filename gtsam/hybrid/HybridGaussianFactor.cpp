@@ -26,18 +26,11 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
+#include "gtsam/hybrid/HybridFactor.h"
+
 namespace gtsam {
 
-/**
- * @brief Helper function to augment the [A|b] matrices in the factor components
- * with the additional scalar values.
- * This is done by storing the value in
- * the `b` vector as an additional row.
- *
- * @param factors DecisionTree of GaussianFactors and arbitrary scalars.
- * Gaussian factor in factors.
- * @return HybridGaussianFactor::Factors
- */
+/* *******************************************************************************/
 HybridGaussianFactor::Factors HybridGaussianFactor::augment(
     const FactorValuePairs &factors) {
   // Find the minimum value so we can "proselytize" to positive values.
@@ -77,12 +70,110 @@ HybridGaussianFactor::Factors HybridGaussianFactor::augment(
 }
 
 /* *******************************************************************************/
+HybridGaussianFactor::HybridGaussianFactor(
+    const DiscreteKey &discreteKey,
+    const std::vector<GaussianFactor::shared_ptr> &factors)
+    : Base(HybridFactor::Category::Hybrid) {
+  // Extract continuous keys from first-null factor and verify all others
+  KeyVector continuousKeys;
+  for (const auto &factor : factors) {
+    if (!factor) continue;
+    if (continuousKeys.empty()) {
+      continuousKeys = factor->keys();
+    } else if (factor->keys() != continuousKeys) {
+      throw std::invalid_argument("All factors must have the same keys");
+    }
+  }
+
+  // Check that this worked.
+  if (continuousKeys.empty()) {
+    throw std::invalid_argument("Need at least one non-null factor.");
+  }
+
+  // Initialize the base class
+  Factor::keys_ = continuousKeys;
+  Factor::keys_.push_back(discreteKey.first);
+  Base::discreteKeys_ = {discreteKey};
+  Base::continuousKeys_ = continuousKeys;
+
+  // Build the DecisionTree from factor vector
+  factors_ = Factors({discreteKey}, factors);
+}
+
+/* *******************************************************************************/
+HybridGaussianFactor::HybridGaussianFactor(
+    const DiscreteKey &discreteKey,
+    const std::vector<GaussianFactorValuePair> &factorPairs)
+    : Base(HybridFactor::Category::Hybrid) {
+  // Extract continuous keys from first-null factor and verify all others
+  KeyVector continuousKeys;
+  for (const auto &pair : factorPairs) {
+    if (!pair.first) continue;
+    if (continuousKeys.empty()) {
+      continuousKeys = pair.first->keys();
+    } else if (pair.first->keys() != continuousKeys) {
+      throw std::invalid_argument("All factors must have the same keys");
+    }
+  }
+
+  // Check that this worked.
+  if (continuousKeys.empty()) {
+    throw std::invalid_argument("Need at least one non-null factor.");
+  }
+
+  // Initialize the base class
+  Factor::keys_ = continuousKeys;
+  Factor::keys_.push_back(discreteKey.first);
+  Base::discreteKeys_ = {discreteKey};
+  Base::continuousKeys_ = continuousKeys;
+
+  // Build the FactorValuePairs DecisionTree
+  FactorValuePairs pairTree({discreteKey}, factorPairs);
+
+  // Assign factors_ after calling augment
+  factors_ = augment(pairTree);
+}
+
+/* *******************************************************************************/
+HybridGaussianFactor::HybridGaussianFactor(const DiscreteKeys &discreteKeys,
+                                           const FactorValuePairs &factorPairs)
+    : Base(HybridFactor::Category::Hybrid) {
+  // Verify that all factors have the same keys
+  KeyVector continuousKeys;
+  factorPairs.visit([&](const GaussianFactorValuePair &pair) {
+    if (pair.first) {
+      if (continuousKeys.empty()) {
+        continuousKeys = pair.first->keys();
+      } else if (pair.first->keys() != continuousKeys) {
+        throw std::invalid_argument("All factors must have the same keys");
+      }
+    }
+  });
+
+  // Check that this worked.
+  if (continuousKeys.empty()) {
+    throw std::invalid_argument("Need at least one non-null factor.");
+  }
+
+  // Initialize the base class
+  Factor::keys_ = continuousKeys;
+  for (const auto &discreteKey : discreteKeys) {
+    Factor::keys_.push_back(discreteKey.first);
+  }
+  Base::discreteKeys_ = discreteKeys;
+  Base::continuousKeys_ = continuousKeys;
+
+  // Assign factors_ after calling augment
+  factors_ = augment(factorPairs);
+}
+
+/* *******************************************************************************/
 bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
   if (e == nullptr) return false;
 
-  // This will return false if either factors_ is empty or e->factors_ is empty,
-  // but not if both are empty or both are not empty:
+  // This will return false if either factors_ is empty or e->factors_ is
+  // empty, but not if both are empty or both are not empty:
   if (factors_.empty() ^ e->factors_.empty()) return false;
 
   // Check the base and the factors:
