@@ -17,7 +17,7 @@ import numpy as np
 from gtsam.symbol_shorthand import A, X
 from gtsam.utils.test_case import GtsamTestCase
 
-from gtsam import (DiscreteConditional, DiscreteKeys, DiscreteValues,
+from gtsam import (DiscreteConditional, DiscreteValues,
                    GaussianConditional, HybridBayesNet,
                    HybridGaussianConditional, HybridValues, VectorValues,
                    noiseModel)
@@ -48,8 +48,7 @@ class TestHybridBayesNet(GtsamTestCase):
         bayesNet = HybridBayesNet()
         bayesNet.push_back(conditional)
         bayesNet.push_back(
-            HybridGaussianConditional([X(1)], [], Asia,
-                                      [conditional0, conditional1]))
+            HybridGaussianConditional(Asia, [conditional0, conditional1]))
         bayesNet.push_back(DiscreteConditional(Asia, "99/1"))
 
         # Create values at which to evaluate.
