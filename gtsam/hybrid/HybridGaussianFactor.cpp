@@ -76,11 +76,9 @@ HybridGaussianFactor::ConstructorHelper::ConstructorHelper(
     : discreteKeys({discreteKey}) {
   // Extract continuous keys from the first non-null factor
   for (const auto &factor : factors) {
-    if (!factor) continue;  // Skip null factors
-    if (continuousKeys.empty()) {
+    if (factor && continuousKeys.empty()) {
       continuousKeys = factor->keys();
-    } else if (factor->keys() != continuousKeys) {
-      throw std::invalid_argument("All factors must have the same keys");
+      break;
     }
   }
 
@@ -95,11 +93,9 @@ HybridGaussianFactor::ConstructorHelper::ConstructorHelper(
     : discreteKeys({discreteKey}) {
   // Extract continuous keys from the first non-null factor
   for (const auto &pair : factorPairs) {
-    if (!pair.first) continue;  // Skip null factors
-    if (continuousKeys.empty()) {
+    if (pair.first && continuousKeys.empty()) {
       continuousKeys = pair.first->keys();
-    } else if (pair.first->keys() != continuousKeys) {
-      throw std::invalid_argument("All factors must have the same keys");
+      break;
     }
   }
 
@@ -113,11 +109,8 @@ HybridGaussianFactor::ConstructorHelper::ConstructorHelper(
     : discreteKeys(discreteKeys) {
   // Extract continuous keys from the first non-null factor
   factorPairs.visit([&](const GaussianFactorValuePair &pair) {
-    if (!pair.first) return;  // Skip null factors
-    if (continuousKeys.empty()) {
+    if (pair.first && continuousKeys.empty()) {
       continuousKeys = pair.first->keys();
-    } else if (pair.first->keys() != continuousKeys) {
-      throw std::invalid_argument("All factors must have the same keys");
     }
   });
 

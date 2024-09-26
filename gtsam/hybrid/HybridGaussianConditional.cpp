@@ -37,14 +37,9 @@ HybridGaussianConditional::ConstructorHelper::ConstructorHelper(
       [&](const GaussianConditional::shared_ptr &c) -> GaussianFactorValuePair {
     double value = 0.0;
     if (c) {
-      KeyVector cf(c->frontals().begin(), c->frontals().end());
-      KeyVector cp(c->parents().begin(), c->parents().end());
       if (frontals.empty()) {
-        frontals = cf;
-        parents = cp;
-      } else if (cf != frontals || cp != parents) {
-        throw std::invalid_argument(
-            "All conditionals must have the same frontals and parents");
+        frontals = KeyVector(c->frontals().begin(), c->frontals().end());
+        parents = KeyVector(c->parents().begin(), c->parents().end());
       }
       value = c->negLogConstant();
       negLogConstant = std::min(negLogConstant, value);
