@@ -117,7 +117,6 @@ TEST(HybridNonlinearFactorGraph, Resize) {
 
 /***************************************************************************/
 namespace test_motion {
-KeyVector contKeys = {X(0), X(1)};
 gtsam::DiscreteKey m1(M(1), 2);
 auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
 std::vector<NonlinearFactor::shared_ptr> components = {
@@ -139,8 +138,7 @@ TEST(HybridGaussianFactorGraph, Resize) {
   auto discreteFactor = std::make_shared<DecisionTreeFactor>();
   hnfg.push_back(discreteFactor);
 
-  auto dcFactor =
-      std::make_shared<HybridNonlinearFactor>(contKeys, m1, components);
+  auto dcFactor = std::make_shared<HybridNonlinearFactor>(m1, components);
   hnfg.push_back(dcFactor);
 
   Values linearizationPoint;
@@ -154,26 +152,6 @@ TEST(HybridGaussianFactorGraph, Resize) {
 
   gfg.resize(0);
   EXPECT_LONGS_EQUAL(gfg.size(), 0);
-}
-
-/***************************************************************************
- * Test that the HybridNonlinearFactor reports correctly if the number of
- * continuous keys provided do not match the keys in the factors.
- */
-TEST(HybridGaussianFactorGraph, HybridNonlinearFactor) {
-  using namespace test_motion;
-
-  auto nonlinearFactor = std::make_shared<BetweenFactor<double>>(
-      X(0), X(1), 0.0, Isotropic::Sigma(1, 0.1));
-  auto discreteFactor = std::make_shared<DecisionTreeFactor>();
-
-  // Check for exception when number of continuous keys are under-specified.
-  THROWS_EXCEPTION(
-      std::make_shared<HybridNonlinearFactor>(KeyVector{X(0)}, m1, components));
-
-  // Check for exception when number of continuous keys are too many.
-  THROWS_EXCEPTION(std::make_shared<HybridNonlinearFactor>(
-      KeyVector{X(0), X(1), X(2)}, m1, components));
 }
 
 /*****************************************************************************
@@ -828,14 +806,12 @@ TEST(HybridNonlinearFactorGraph, DefaultDecisionTree) {
 
   // Add odometry factor
   Pose2 odometry(2.0, 0.0, 0.0);
-  KeyVector contKeys = {X(0), X(1)};
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
   std::vector<NonlinearFactor::shared_ptr> motion_models = {
       std::make_shared<PlanarMotionModel>(X(0), X(1), Pose2(0, 0, 0),
                                           noise_model),
       std::make_shared<PlanarMotionModel>(X(0), X(1), odometry, noise_model)};
-  fg.emplace_shared<HybridNonlinearFactor>(
-      contKeys, gtsam::DiscreteKey(M(1), 2), motion_models);
+  fg.emplace_shared<HybridNonlinearFactor>(DiscreteKey{M(1), 2}, motion_models);
 
   // Add Range-Bearing measurements to from X0 to L0 and X1 to L1.
   // create a noise model for the landmark measurements
@@ -901,7 +877,7 @@ static HybridNonlinearFactorGraph CreateFactorGraph(
   std::vector<NonlinearFactorValuePair> factors{{f0, model0->negLogConstant()},
                                                 {f1, model1->negLogConstant()}};
 
-  HybridNonlinearFactor mixtureFactor({X(0), X(1)}, m1, factors);
+  HybridNonlinearFactor mixtureFactor(m1, factors);
 
   HybridNonlinearFactorGraph hfg;
   hfg.push_back(mixtureFactor);

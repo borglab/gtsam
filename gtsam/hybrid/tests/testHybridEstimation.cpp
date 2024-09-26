@@ -437,8 +437,7 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
   std::vector<NonlinearFactor::shared_ptr> components = {zero_motion,
                                                          one_motion};
-  nfg.emplace_shared<HybridNonlinearFactor>(KeyVector{X(0), X(1)}, m,
-                                            components);
+  nfg.emplace_shared<HybridNonlinearFactor>(m, components);
 
   return nfg;
 }
@@ -591,9 +590,7 @@ TEST(HybridEstimation, ModeSelection) {
            X(0), X(1), 0.0, noiseModel::Isotropic::Sigma(d, noise_tight));
   std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
 
-  KeyVector keys = {X(0), X(1)};
-  DiscreteKey modes(M(0), 2);
-  HybridNonlinearFactor mf(keys, modes, components);
+  HybridNonlinearFactor mf({M(0), 2}, components);
 
   initial.insert(X(0), 0.0);
   initial.insert(X(1), 0.0);
@@ -681,9 +678,7 @@ TEST(HybridEstimation, ModeSelection2) {
            X(0), X(1), Z_3x1, noiseModel::Isotropic::Sigma(d, noise_tight));
   std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
 
-  KeyVector keys = {X(0), X(1)};
-  DiscreteKey modes(M(0), 2);
-  HybridNonlinearFactor mf(keys, modes, components);
+  HybridNonlinearFactor mf({M(0), 2}, components);
 
   initial.insert<Vector3>(X(0), Z_3x1);
   initial.insert<Vector3>(X(1), Z_3x1);

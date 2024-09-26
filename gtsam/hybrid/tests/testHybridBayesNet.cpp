@@ -388,7 +388,7 @@ TEST(HybridBayesNet, Sampling) {
   auto one_motion =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
   nfg.emplace_shared<HybridNonlinearFactor>(
-      KeyVector{X(0), X(1)}, DiscreteKey(M(0), 2),
+      DiscreteKey(M(0), 2),
       std::vector<NonlinearFactor::shared_ptr>{zero_motion, one_motion});
 
   DiscreteKey mode(M(0), 2);

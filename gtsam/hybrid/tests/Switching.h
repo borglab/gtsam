@@ -159,9 +159,8 @@ struct Switching {
 
     // Add "motion models".
     for (size_t k = 0; k < K - 1; k++) {
-      KeyVector keys = {X(k), X(k + 1)};
       auto motion_models = motionModels(k, between_sigma);
-      nonlinearFactorGraph.emplace_shared<HybridNonlinearFactor>(keys, modes[k],
+      nonlinearFactorGraph.emplace_shared<HybridNonlinearFactor>(modes[k],
                                                                  motion_models);
     }
 
