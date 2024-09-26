@@ -28,56 +28,42 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
-HybridGaussianConditional::HybridGaussianConditional(
-    const DiscreteKeys &discreteParents,
-    const HybridGaussianConditional::Conditionals &conditionals)
-    : BaseConditional(0) {  // Initialize with zero; we'll set it properly later
+/* *******************************************************************************/
+HybridGaussianConditional::ConstructorHelper::ConstructorHelper(
+    const HybridGaussianConditional::Conditionals &conditionals) {
+  negLogConstant = std::numeric_limits<double>::infinity();
 
-  // Check if conditionals are empty
-  if (conditionals.empty()) {
-    throw std::invalid_argument("Conditionals cannot be empty");
-  }
-
-  KeyVector frontals, parents;
-  negLogConstant_ = std::numeric_limits<double>::infinity();
   auto func =
       [&](const GaussianConditional::shared_ptr &c) -> GaussianFactorValuePair {
     double value = 0.0;
-    // Check if conditional is pruned
     if (c) {
       KeyVector cf(c->frontals().begin(), c->frontals().end());
       KeyVector cp(c->parents().begin(), c->parents().end());
       if (frontals.empty()) {
-        // Get frontal/parent keys from first conditional.
         frontals = cf;
         parents = cp;
       } else if (cf != frontals || cp != parents) {
         throw std::invalid_argument(
             "All conditionals must have the same frontals and parents");
       }
-      // Assign log(\sqrt(|2πΣ|)) = -log(1 / sqrt(|2πΣ|))
       value = c->negLogConstant();
-      this->negLogConstant_ = std::min(this->negLogConstant_, value);
+      negLogConstant = std::min(negLogConstant, value);
     }
     return {std::dynamic_pointer_cast<GaussianFactor>(c), value};
   };
-  HybridGaussianFactor::FactorValuePairs pairs(conditionals, func);
+  pairs = HybridGaussianFactor::FactorValuePairs(conditionals, func);
 
-  // Adjust frontals size
-  BaseConditional::nrFrontals_ = frontals.size();
-
-  // Initialize HybridFactor
-  HybridFactor::category_ = HybridFactor::Category::Hybrid;
-  HybridFactor::discreteKeys_ = discreteParents;
-  HybridFactor::keys_ = frontals;
-  keys_.insert(keys_.end(), parents.begin(), parents.end());
-
-  // Initialize BaseFactor
-  BaseFactor::factors_ = BaseFactor::augment(pairs);  // TODO(frank): expensive
-
-  // Assign local conditionals. TODO(frank): a duplicate of factors_ !!!
-  conditionals_ = conditionals;
+  // Build continuousKeys
+  continuousKeys = frontals;
+  continuousKeys.insert(continuousKeys.end(), parents.begin(), parents.end());
 }
+
+/* *******************************************************************************/
+HybridGaussianConditional::HybridGaussianConditional(
+    const DiscreteKeys &discreteParents,
+    const HybridGaussianConditional::Conditionals &conditionals)
+    : HybridGaussianConditional(discreteParents, conditionals,
+                                ConstructorHelper(conditionals)) {}
 
 /* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(

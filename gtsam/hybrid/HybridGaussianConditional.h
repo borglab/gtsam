@@ -68,6 +68,26 @@ class GTSAM_EXPORT HybridGaussianConditional
   ///< Take advantage of the neg-log space so everything is a minimization
   double negLogConstant_;
 
+  /// Helper struct for private constructor.
+  struct ConstructorHelper {
+    KeyVector frontals;
+    KeyVector parents;
+    KeyVector continuousKeys;
+    HybridGaussianFactor::FactorValuePairs pairs;
+    double negLogConstant;
+    ConstructorHelper(const Conditionals &conditionals);
+  };
+
+  /// Private constructor
+  HybridGaussianConditional(
+      const DiscreteKeys &discreteParents,
+      const HybridGaussianConditional::Conditionals &conditionals,
+      const ConstructorHelper &helper)
+      : BaseFactor(helper.continuousKeys, discreteParents, helper.pairs),
+        BaseConditional(helper.frontals.size()),
+        conditionals_(conditionals),
+        negLogConstant_(helper.negLogConstant) {}
+
   /**
    * @brief Convert a HybridGaussianConditional of conditionals into
    * a DecisionTree of Gaussian factor graphs.
