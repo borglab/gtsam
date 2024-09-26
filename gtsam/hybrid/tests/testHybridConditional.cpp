@@ -39,6 +39,8 @@ TEST(HybridConditional, Invariants) {
   const DiscreteValues d{{M(0), 1}};
   const HybridValues values{c, d};
 
+  GTSAM_PRINT(bn);
+
   // Check invariants for p(z|x,m)
   auto hc0 = bn.at(0);
   CHECK(hc0->isHybrid());

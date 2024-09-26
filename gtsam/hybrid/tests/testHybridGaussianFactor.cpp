@@ -169,7 +169,7 @@ TEST(HybridGaussianFactor, HybridGaussianConditional) {
 
   auto gaussians = std::make_shared<GaussianConditional>();
   HybridGaussianConditional::Conditionals conditionals(gaussians);
-  HybridGaussianConditional gm({}, keys, dKeys, conditionals);
+  HybridGaussianConditional gm(dKeys, conditionals);
 
   EXPECT_LONGS_EQUAL(2, gm.discreteKeys().size());
 }
@@ -234,9 +234,8 @@ static HybridGaussianConditional::shared_ptr CreateHybridMotionModel(
                                              -I_1x1, model1);
   DiscreteKeys discreteParents{m1};
   return std::make_shared<HybridGaussianConditional>(
-      KeyVector{X(1)}, KeyVector{X(0)}, discreteParents,
-      HybridGaussianConditional::Conditionals(discreteParents,
-                                              std::vector{c0, c1}));
+      discreteParents, HybridGaussianConditional::Conditionals(
+                           discreteParents, std::vector{c0, c1}));
 }
 
 /// Create two state Bayes network with 1 or two measurement models

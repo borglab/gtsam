@@ -72,13 +72,10 @@ TEST(HybridGaussianFactorGraph, Creation) {
   // Define a hybrid gaussian conditional P(x0|x1, c0)
   // and add it to the factor graph.
   HybridGaussianConditional gm(
-      {X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{M(0), 2}),
-      HybridGaussianConditional::Conditionals(
-          M(0),
-          std::make_shared<GaussianConditional>(X(0), Z_3x1, I_3x3, X(1),
-                                                I_3x3),
-          std::make_shared<GaussianConditional>(X(0), Vector3::Ones(), I_3x3,
-                                                X(1), I_3x3)));
+      {M(0), 2},
+      {std::make_shared<GaussianConditional>(X(0), Z_3x1, I_3x3, X(1), I_3x3),
+       std::make_shared<GaussianConditional>(X(0), Vector3::Ones(), I_3x3, X(1),
+                                             I_3x3)});
   hfg.add(gm);
 
   EXPECT_LONGS_EQUAL(2, hfg.size());
@@ -654,11 +651,7 @@ TEST(HybridGaussianFactorGraph, ErrorTreeWithConditional) {
                                              x0, -I_1x1, model0),
        c1 = make_shared<GaussianConditional>(f01, Vector1(mu), I_1x1, x1, I_1x1,
                                              x0, -I_1x1, model1);
-  DiscreteKeys discreteParents{m1};
-  hbn.emplace_shared<HybridGaussianConditional>(
-      KeyVector{f01}, KeyVector{x0, x1}, discreteParents,
-      HybridGaussianConditional::Conditionals(discreteParents,
-                                              std::vector{c0, c1}));
+  hbn.emplace_shared<HybridGaussianConditional>(m1, std::vector{c0, c1});
 
   // Discrete uniform prior.
   hbn.emplace_shared<DiscreteConditional>(m1, "0.5/0.5");
@@ -830,11 +823,8 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
                  X(0), Vector1(14.1421), I_1x1 * 2.82843),
              conditional1 = std::make_shared<GaussianConditional>(
                  X(0), Vector1(10.1379), I_1x1 * 2.02759);
-  DiscreteKeys discreteParents{mode};
   expectedBayesNet.emplace_shared<HybridGaussianConditional>(
-      KeyVector{X(0)}, KeyVector{}, discreteParents,
-      HybridGaussianConditional::Conditionals(
-          discreteParents, std::vector{conditional0, conditional1}));
+      mode, std::vector{conditional0, conditional1});
 
   // Add prior on mode.
   expectedBayesNet.emplace_shared<DiscreteConditional>(mode, "74/26");
@@ -860,10 +850,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1Swapped) {
   std::vector<GaussianConditional::shared_ptr> conditionals{
       GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Z_1x1, 3),
       GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Z_1x1, 0.5)};
-  auto gm = std::make_shared<HybridGaussianConditional>(
-      KeyVector{Z(0)}, KeyVector{X(0)}, DiscreteKeys{mode},
-      HybridGaussianConditional::Conditionals(DiscreteKeys{mode},
-                                              conditionals));
+  auto gm = std::make_shared<HybridGaussianConditional>(mode, conditionals);
   bn.push_back(gm);
 
   // Create prior on X(0).
@@ -891,9 +878,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1Swapped) {
              conditional1 = std::make_shared<GaussianConditional>(
                  X(0), Vector1(14.1421), I_1x1 * 2.82843);
   expectedBayesNet.emplace_shared<HybridGaussianConditional>(
-      KeyVector{X(0)}, KeyVector{}, DiscreteKeys{mode},
-      HybridGaussianConditional::Conditionals(
-          DiscreteKeys{mode}, std::vector{conditional0, conditional1}));
+      mode, std::vector{conditional0, conditional1});
 
   // Add prior on mode.
   expectedBayesNet.emplace_shared<DiscreteConditional>(mode, "1/1");
@@ -929,9 +914,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
              conditional1 = std::make_shared<GaussianConditional>(
                  X(0), Vector1(10.274), I_1x1 * 2.0548);
   expectedBayesNet.emplace_shared<HybridGaussianConditional>(
-      KeyVector{X(0)}, KeyVector{}, DiscreteKeys{mode},
-      HybridGaussianConditional::Conditionals(
-          DiscreteKeys{mode}, std::vector{conditional0, conditional1}));
+      mode, std::vector{conditional0, conditional1});
 
   // Add prior on mode.
   expectedBayesNet.emplace_shared<DiscreteConditional>(mode, "23/77");
@@ -980,10 +963,7 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
         GaussianConditional::sharedMeanAndStddev(Z(t), I_1x1, X(t), Z_1x1, 0.5),
         GaussianConditional::sharedMeanAndStddev(Z(t), I_1x1, X(t), Z_1x1,
                                                  3.0)};
-    bn.emplace_shared<HybridGaussianConditional>(
-        KeyVector{Z(t)}, KeyVector{X(t)}, DiscreteKeys{noise_mode_t},
-        HybridGaussianConditional::Conditionals(DiscreteKeys{noise_mode_t},
-                                                conditionals));
+    bn.emplace_shared<HybridGaussianConditional>(noise_mode_t, conditionals);
 
     // Create prior on discrete mode N(t):
     bn.emplace_shared<DiscreteConditional>(noise_mode_t, "20/80");
@@ -999,10 +979,8 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
                                                  0.2),
         GaussianConditional::sharedMeanAndStddev(X(t), I_1x1, X(t - 1), I_1x1,
                                                  0.2)};
-    auto gm = std::make_shared<HybridGaussianConditional>(
-        KeyVector{X(t)}, KeyVector{X(t - 1)}, DiscreteKeys{motion_model_t},
-        HybridGaussianConditional::Conditionals(DiscreteKeys{motion_model_t},
-                                                conditionals));
+    auto gm = std::make_shared<HybridGaussianConditional>(motion_model_t,
+                                                          conditionals);
     bn.push_back(gm);
 
     // Create prior on motion model M(t):

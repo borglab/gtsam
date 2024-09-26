@@ -414,7 +414,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   HybridGaussianConditional::Conditionals conditionals(
       eliminationResults, [](const Result &pair) { return pair.first; });
   auto hybridGaussian = std::make_shared<HybridGaussianConditional>(
-      frontalKeys, continuousSeparator, discreteSeparator, conditionals);
+      discreteSeparator, conditionals);
 
   return {std::make_shared<HybridConditional>(hybridGaussian), newFactor};
 }
