@@ -118,6 +118,8 @@ set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam"
     DEBUG_POSTFIX "" # Otherwise you will have a wrong name
     RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
+    TIMING_POSTFIX "" # Otherwise you will have a wrong name
+    PROFILING_POSTFIX "" # Otherwise you will have a wrong name
     )
 
 if(WIN32)
@@ -218,6 +220,8 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             LIBRARY_OUTPUT_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable"
             DEBUG_POSTFIX "" # Otherwise you will have a wrong name
             RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
+            TIMING_POSTFIX "" # Otherwise you will have a wrong name
+            PROFILING_POSTFIX "" # Otherwise you will have a wrong name
             )
 
     set(GTSAM_UNSTABLE_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable)
