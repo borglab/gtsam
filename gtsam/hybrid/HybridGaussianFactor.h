@@ -133,7 +133,8 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    */
   HybridGaussianFactor(const KeyVector &continuousKeys,
                        const DiscreteKeys &discreteKeys,
-                       const FactorValuePairs &factors);
+                       const FactorValuePairs &factors)
+      : Base(continuousKeys, discreteKeys), factors_(augment(factors)) {}
 
   /// @}
   /// @name Testable

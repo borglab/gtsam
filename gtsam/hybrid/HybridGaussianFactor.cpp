@@ -77,12 +77,6 @@ HybridGaussianFactor::Factors HybridGaussianFactor::augment(
 }
 
 /* *******************************************************************************/
-HybridGaussianFactor::HybridGaussianFactor(const KeyVector &continuousKeys,
-                                           const DiscreteKeys &discreteKeys,
-                                           const FactorValuePairs &factors)
-    : Base(continuousKeys, discreteKeys), factors_(augment(factors)) {}
-
-/* *******************************************************************************/
 bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
   if (e == nullptr) return false;
