@@ -24,12 +24,12 @@
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #endif
-#include <memory>
-#include <algorithm>
-
-#include <gtsam/base/types.h>
 #include <gtsam/base/FastVector.h>
+#include <gtsam/base/types.h>
 #include <gtsam/inference/Key.h>
+
+#include <algorithm>
+#include <memory>
 
 namespace gtsam {
 
