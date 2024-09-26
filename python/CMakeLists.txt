@@ -18,6 +18,19 @@ set(WRAP_BUILD_TYPE_POSTFIXES ${GTSAM_BUILD_TYPE_POSTFIXES})
 
 include(PybindWrap)
 
+macro(SET_PYTHON_TARGET_PROPERTIES PYTHON_TARGET OUTPUT_NAME OUTPUT_DIRECTORY)
+    set_target_properties(${PYTHON_TARGET} PROPERTIES
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+        OUTPUT_NAME "${OUTPUT_NAME}"
+        LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}"
+        DEBUG_POSTFIX "" # Otherwise you will have a wrong name
+        RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
+        TIMING_POSTFIX "" # Otherwise you will have a wrong name
+        PROFILING_POSTFIX "" # Otherwise you will have a wrong name
+    )
+endmacro()
+
 ############################################################
 ## Load the necessary files to compile the wrapper
 
@@ -110,16 +123,7 @@ pybind_wrap(${GTSAM_PYTHON_TARGET} # target
             ${GTSAM_ENABLE_BOOST_SERIALIZATION} # use_boost_serialization
             )
 
-set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
-    INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
-    INSTALL_RPATH_USE_LINK_PATH TRUE
-    OUTPUT_NAME "${GTSAM_OUTPUT_NAME}"
-    LIBRARY_OUTPUT_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam"
-    DEBUG_POSTFIX "" # Otherwise you will have a wrong name
-    RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
-    TIMING_POSTFIX "" # Otherwise you will have a wrong name
-    PROFILING_POSTFIX "" # Otherwise you will have a wrong name
-    )
+SET_PYTHON_TARGET_PROPERTIES(${GTSAM_PYTHON_TARGET} ${GTSAM_OUTPUT_NAME} "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam")
 
 if(WIN32)
     set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
@@ -211,16 +215,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             ${GTSAM_ENABLE_BOOST_SERIALIZATION} # use_boost_serialization
             )
 
-    set_target_properties(${GTSAM_PYTHON_UNSTABLE_TARGET} PROPERTIES
-            INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
-            INSTALL_RPATH_USE_LINK_PATH TRUE
-            OUTPUT_NAME "${GTSAM_UNSTABLE_OUTPUT_NAME}"
-            LIBRARY_OUTPUT_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable"
-            DEBUG_POSTFIX "" # Otherwise you will have a wrong name
-            RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
-            TIMING_POSTFIX "" # Otherwise you will have a wrong name
-            PROFILING_POSTFIX "" # Otherwise you will have a wrong name
-            )
+    SET_PYTHON_TARGET_PROPERTIES(${GTSAM_PYTHON_UNSTABLE_TARGET} ${GTSAM_UNSTABLE_OUTPUT_NAME} "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable")
 
     set(GTSAM_UNSTABLE_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable)
 
