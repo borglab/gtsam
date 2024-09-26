@@ -196,16 +196,15 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   double potentiallyPrunedComponentError(
       const sharedFactor &gf, const VectorValues &continuousValues) const;
 
-  /// Helper struct to assist in constructing the HybridGaussianFactor
+  /// Helper struct to assist private constructor below.
   struct ConstructorHelper {
     KeyVector continuousKeys;   // Continuous keys extracted from factors
     DiscreteKeys discreteKeys;  // Discrete keys provided to the constructors
     FactorValuePairs pairs;     // Used only if factorsTree is empty
     Factors factorsTree;
 
-    ConstructorHelper(
-        const DiscreteKey &discreteKey,
-        const std::vector<GaussianFactor::shared_ptr> &factorsVec);
+    ConstructorHelper(const DiscreteKey &discreteKey,
+                      const std::vector<GaussianFactor::shared_ptr> &factors);
 
     ConstructorHelper(const DiscreteKey &discreteKey,
                       const std::vector<GaussianFactorValuePair> &factorPairs);
@@ -214,7 +213,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
                       const FactorValuePairs &factorPairs);
   };
 
-  // Private constructor using ConstructorHelper
+  // Private constructor using ConstructorHelper above.
   HybridGaussianFactor(const ConstructorHelper &helper)
       : Base(helper.continuousKeys, helper.discreteKeys),
         factors_(helper.factorsTree.empty() ? augment(helper.pairs)

@@ -90,13 +90,12 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
    * providing the factors for each mode m as a vector of factors ϕ_m(x).
    * The value ϕ(x,m) for the factor is simply ϕ_m(x).
    *
-   * @param continuousKeys Vector of keys for continuous factors.
    * @param discreteKey The discrete key for the "mode", indexing components.
    * @param factors Vector of gaussian factors, one for each mode.
    */
-  HybridNonlinearFactor(
-      const KeyVector& continuousKeys, const DiscreteKey& discreteKey,
-      const std::vector<NonlinearFactor::shared_ptr>& factors);
+  HybridNonlinearFactor(const DiscreteKey& discreteKey,
+                        const std::vector<NonlinearFactor::shared_ptr>& factors)
+      : HybridNonlinearFactor(ConstructorHelper(discreteKey, factors)) {}
 
   /**
    * @brief Construct a new HybridNonlinearFactor on a single discrete key,
@@ -104,13 +103,12 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
    * provided as a vector of pairs (ϕ_m(x), E_m).
    * The value ϕ(x,m) for the factor is now ϕ_m(x) + E_m.
    *
-   * @param continuousKeys Vector of keys for continuous factors.
    * @param discreteKey The discrete key for the "mode", indexing components.
    * @param pairs Vector of gaussian factor-scalar pairs, one per mode.
    */
-  HybridNonlinearFactor(const KeyVector& continuousKeys,
-                        const DiscreteKey& discreteKey,
-                        const std::vector<NonlinearFactorValuePair>& pairs);
+  HybridNonlinearFactor(const DiscreteKey& discreteKey,
+                        const std::vector<NonlinearFactorValuePair>& pairs)
+      : HybridNonlinearFactor(ConstructorHelper(discreteKey, pairs)) {}
 
   /**
    * @brief Construct a new HybridNonlinearFactor on a several discrete keys M,
@@ -118,13 +116,12 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
    * scalars are provided as a DecisionTree<Key> of pairs (ϕ_M(x), E_M).
    * The value ϕ(x,M) for the factor is again ϕ_m(x) + E_m.
    *
-   * @param continuousKeys A vector of keys representing continuous variables.
    * @param discreteKeys Discrete variables and their cardinalities.
    * @param factors The decision tree of nonlinear factor/scalar pairs.
    */
-  HybridNonlinearFactor(const KeyVector& continuousKeys,
-                        const DiscreteKeys& discreteKeys,
-                        const FactorValuePairs& factors);
+  HybridNonlinearFactor(const DiscreteKeys& discreteKeys,
+                        const FactorValuePairs& factors)
+      : HybridNonlinearFactor(ConstructorHelper(discreteKeys, factors)) {}
   /**
    * @brief Compute error of the HybridNonlinearFactor as a tree.
    *
@@ -181,6 +178,28 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
   /// Linearize all the continuous factors to get a HybridGaussianFactor.
   std::shared_ptr<HybridGaussianFactor> linearize(
       const Values& continuousValues) const;
+
+ private:
+  /// Helper struct to assist private constructor below.
+  struct ConstructorHelper {
+    KeyVector continuousKeys;   // Continuous keys extracted from factors
+    DiscreteKeys discreteKeys;  // Discrete keys provided to the constructors
+    FactorValuePairs factorTree;
+
+    ConstructorHelper(const DiscreteKey& discreteKey,
+                      const std::vector<NonlinearFactor::shared_ptr>& factors);
+
+    ConstructorHelper(const DiscreteKey& discreteKey,
+                      const std::vector<NonlinearFactorValuePair>& factorPairs);
+
+    ConstructorHelper(const DiscreteKeys& discreteKeys,
+                      const FactorValuePairs& factorPairs);
+  };
+
+  // Private constructor using ConstructorHelper above.
+  HybridNonlinearFactor(const ConstructorHelper& helper)
+      : Base(helper.continuousKeys, helper.discreteKeys),
+        factors_(helper.factorTree) {}
 };
 
 // traits
