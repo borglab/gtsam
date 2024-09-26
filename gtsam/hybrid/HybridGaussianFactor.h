@@ -73,6 +73,9 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// Decision tree of Gaussian factors indexed by discrete keys.
   Factors factors_;
 
+  /// Helper function to "hide" the constants in the Jacobian factors.
+  static Factors augment(const FactorValuePairs &factors);
+
   /**
    * @brief Helper function to return factors and functional to create a
    * DecisionTree of Gaussian Factor Graphs.

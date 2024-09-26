@@ -61,17 +61,22 @@ HybridGaussianConditional::HybridGaussianConditional(
     }
     return {std::dynamic_pointer_cast<GaussianFactor>(c), value};
   };
-  BaseFactor::factors_ = HybridGaussianFactor::Factors(conditionals, func);
+  HybridGaussianFactor::FactorValuePairs pairs(conditionals, func);
 
-  // Initialize base classes
-  KeyVector continuousKeys = frontals;
-  continuousKeys.insert(continuousKeys.end(), parents.begin(), parents.end());
-  BaseFactor::keys_ = continuousKeys;
-  BaseFactor::discreteKeys_ = discreteParents;
+  // Adjust frontals size
   BaseConditional::nrFrontals_ = frontals.size();
 
-  // Assign conditionals
-  conditionals_ = conditionals;  // TODO(frank): a duplicate of factors_ !!!
+  // Initialize HybridFactor
+  HybridFactor::category_ = HybridFactor::Category::Hybrid;
+  HybridFactor::discreteKeys_ = discreteParents;
+  HybridFactor::keys_ = frontals;
+  keys_.insert(keys_.end(), parents.begin(), parents.end());
+
+  // Initialize BaseFactor
+  BaseFactor::factors_ = BaseFactor::augment(pairs);  // TODO(frank): expensive
+
+  // Assign local conditionals. TODO(frank): a duplicate of factors_ !!!
+  conditionals_ = conditionals;
 }
 
 /* *******************************************************************************/

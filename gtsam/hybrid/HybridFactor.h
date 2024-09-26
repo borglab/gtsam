@@ -56,11 +56,9 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   /// Enum to help with categorizing hybrid factors.
   enum class Category { None, Discrete, Continuous, Hybrid };
 
- private:
+ protected:
   /// Record what category of HybridFactor this is.
   Category category_ = Category::None;
-
- protected:
   // Set of DiscreteKeys for this factor.
   DiscreteKeys discreteKeys_;
   /// Record continuous keys for book-keeping

@@ -38,11 +38,11 @@ namespace gtsam {
  * Gaussian factor in factors.
  * @return HybridGaussianFactor::Factors
  */
-static HybridGaussianFactor::Factors augment(
-    const HybridGaussianFactor::FactorValuePairs &factors) {
+HybridGaussianFactor::Factors HybridGaussianFactor::augment(
+    const FactorValuePairs &factors) {
   // Find the minimum value so we can "proselytize" to positive values.
   // Done because we can't have sqrt of negative numbers.
-  HybridGaussianFactor::Factors gaussianFactors;
+  Factors gaussianFactors;
   AlgebraicDecisionTree<Key> valueTree;
   std::tie(gaussianFactors, valueTree) = unzip(factors);
 
@@ -73,7 +73,7 @@ static HybridGaussianFactor::Factors augment(
     return std::dynamic_pointer_cast<GaussianFactor>(
         std::make_shared<JacobianFactor>(gfg));
   };
-  return HybridGaussianFactor::Factors(factors, update);
+  return Factors(factors, update);
 }
 
 /* *******************************************************************************/
