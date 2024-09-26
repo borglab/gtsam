@@ -69,7 +69,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// typedef for Decision Tree of Gaussian factors.
   using Factors = DecisionTree<Key, sharedFactor>;
 
- private:
+ protected:
   /// Decision tree of Gaussian factors indexed by discrete keys.
   Factors factors_;
 

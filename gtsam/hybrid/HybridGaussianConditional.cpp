@@ -28,55 +28,64 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
-HybridGaussianFactor::FactorValuePairs GetFactorValuePairs(
-    const HybridGaussianConditional::Conditionals &conditionals) {
-  auto func = [](const GaussianConditional::shared_ptr &conditional)
-      -> GaussianFactorValuePair {
-    double value = 0.0;
-    // Check if conditional is pruned
-    if (conditional) {
-      // Assign log(\sqrt(|2πΣ|)) = -log(1 / sqrt(|2πΣ|))
-      value = conditional->negLogConstant();
-    }
-    return {std::dynamic_pointer_cast<GaussianFactor>(conditional), value};
-  };
-  return HybridGaussianFactor::FactorValuePairs(conditionals, func);
-}
-
 HybridGaussianConditional::HybridGaussianConditional(
-    const KeyVector &continuousFrontals, const KeyVector &continuousParents,
     const DiscreteKeys &discreteParents,
     const HybridGaussianConditional::Conditionals &conditionals)
-    : BaseFactor(CollectKeys(continuousFrontals, continuousParents),
-                 discreteParents, GetFactorValuePairs(conditionals)),
-      BaseConditional(continuousFrontals.size()),
-      conditionals_(conditionals) {
-  // Calculate negLogConstant_ as the minimum of the negative-log normalizers of
-  // the conditionals, by visiting the decision tree:
+    : BaseConditional(0) {  // Initialize with zero; we'll set it properly later
+
+  // Check if conditionals are empty
+  if (conditionals.empty()) {
+    throw std::invalid_argument("Conditionals cannot be empty");
+  }
+
+  KeyVector frontals, parents;
   negLogConstant_ = std::numeric_limits<double>::infinity();
-  conditionals_.visit(
-      [this](const GaussianConditional::shared_ptr &conditional) {
-        if (conditional) {
-          this->negLogConstant_ =
-              std::min(this->negLogConstant_, conditional->negLogConstant());
-        }
-      });
+  auto func =
+      [&](const GaussianConditional::shared_ptr &c) -> GaussianFactorValuePair {
+    double value = 0.0;
+    // Check if conditional is pruned
+    if (c) {
+      KeyVector cf(c->frontals().begin(), c->frontals().end());
+      KeyVector cp(c->parents().begin(), c->parents().end());
+      if (frontals.empty()) {
+        // Get frontal/parent keys from first conditional.
+        frontals = cf;
+        parents = cp;
+      } else if (cf != frontals || cp != parents) {
+        throw std::invalid_argument(
+            "All conditionals must have the same frontals and parents");
+      }
+      // Assign log(\sqrt(|2πΣ|)) = -log(1 / sqrt(|2πΣ|))
+      value = c->negLogConstant();
+      this->negLogConstant_ = std::min(this->negLogConstant_, value);
+    }
+    return {std::dynamic_pointer_cast<GaussianFactor>(c), value};
+  };
+  BaseFactor::factors_ = HybridGaussianFactor::Factors(conditionals, func);
+
+  // Initialize base classes
+  KeyVector continuousKeys = frontals;
+  continuousKeys.insert(continuousKeys.end(), parents.begin(), parents.end());
+  BaseFactor::keys_ = continuousKeys;
+  BaseFactor::discreteKeys_ = discreteParents;
+  BaseConditional::nrFrontals_ = frontals.size();
+
+  // Assign conditionals
+  conditionals_ = conditionals;  // TODO(frank): a duplicate of factors_ !!!
 }
+
+/* *******************************************************************************/
+HybridGaussianConditional::HybridGaussianConditional(
+    const DiscreteKey &discreteParent,
+    const std::vector<GaussianConditional::shared_ptr> &conditionals)
+    : HybridGaussianConditional(DiscreteKeys{discreteParent},
+                                Conditionals({discreteParent}, conditionals)) {}
 
 /* *******************************************************************************/
 const HybridGaussianConditional::Conditionals &
 HybridGaussianConditional::conditionals() const {
   return conditionals_;
 }
-
-/* *******************************************************************************/
-HybridGaussianConditional::HybridGaussianConditional(
-    const KeyVector &continuousFrontals, const KeyVector &continuousParents,
-    const DiscreteKey &discreteParent,
-    const std::vector<GaussianConditional::shared_ptr> &conditionals)
-    : HybridGaussianConditional(continuousFrontals, continuousParents,
-                                DiscreteKeys{discreteParent},
-                                Conditionals({discreteParent}, conditionals)) {}
 
 /* *******************************************************************************/
 GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree()
