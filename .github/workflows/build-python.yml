@@ -138,7 +138,12 @@ jobs:
 
           # Use the prebuilt binary for Windows
           $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/$env:BOOST_VERSION/$env:BOOST_EXE-${{matrix.platform}}.exe"
-          (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost.exe")
+
+          # Create WebClient with appropriate settings and download Boost exe
+          $wc = New-Object System.Net.Webclient
+          $wc.Headers.Add("User-Agent: Other");
+          $wc.DownloadFile($Url, "$env:TEMP\boost.exe")
+
           Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=$BOOST_PATH"
 
           # Set the BOOST_ROOT variable
