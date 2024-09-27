@@ -414,15 +414,13 @@ TEST(HybridGaussianISAM, NonTrivial) {
 
   // Add odometry factor with discrete modes.
   Pose2 odometry(1.0, 0.0, 0.0);
-  KeyVector contKeys = {W(0), W(1)};
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
   std::vector<NonlinearFactor::shared_ptr> components;
   components.emplace_back(
       new PlanarMotionModel(W(0), W(1), odometry, noise_model));  // moving
   components.emplace_back(
       new PlanarMotionModel(W(0), W(1), Pose2(0, 0, 0), noise_model));  // still
-  fg.emplace_shared<HybridNonlinearFactor>(
-      contKeys, gtsam::DiscreteKey(M(1), 2), components);
+  fg.emplace_shared<HybridNonlinearFactor>(DiscreteKey(M(1), 2), components);
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(0), X(1), Pose2(1.0, 0.0, 0),
@@ -454,14 +452,12 @@ TEST(HybridGaussianISAM, NonTrivial) {
 
   /*************** Run Round 3 ***************/
   // Add odometry factor with discrete modes.
-  contKeys = {W(1), W(2)};
   components.clear();
   components.emplace_back(
       new PlanarMotionModel(W(1), W(2), odometry, noise_model));  // moving
   components.emplace_back(
       new PlanarMotionModel(W(1), W(2), Pose2(0, 0, 0), noise_model));  // still
-  fg.emplace_shared<HybridNonlinearFactor>(
-      contKeys, gtsam::DiscreteKey(M(2), 2), components);
+  fg.emplace_shared<HybridNonlinearFactor>(DiscreteKey(M(2), 2), components);
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(1), X(2), Pose2(1.0, 0.0, 0),
@@ -496,14 +492,12 @@ TEST(HybridGaussianISAM, NonTrivial) {
 
   /*************** Run Round 4 ***************/
   // Add odometry factor with discrete modes.
-  contKeys = {W(2), W(3)};
   components.clear();
   components.emplace_back(
       new PlanarMotionModel(W(2), W(3), odometry, noise_model));  // moving
   components.emplace_back(
       new PlanarMotionModel(W(2), W(3), Pose2(0, 0, 0), noise_model));  // still
-  fg.emplace_shared<HybridNonlinearFactor>(
-      contKeys, gtsam::DiscreteKey(M(3), 2), components);
+  fg.emplace_shared<HybridNonlinearFactor>(DiscreteKey(M(3), 2), components);
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(2), X(3), Pose2(1.0, 0.0, 0),

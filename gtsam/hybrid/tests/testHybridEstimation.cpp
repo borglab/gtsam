@@ -437,8 +437,7 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
   std::vector<NonlinearFactor::shared_ptr> components = {zero_motion,
                                                          one_motion};
-  nfg.emplace_shared<HybridNonlinearFactor>(KeyVector{X(0), X(1)}, m,
-                                            components);
+  nfg.emplace_shared<HybridNonlinearFactor>(m, components);
 
   return nfg;
 }
@@ -566,8 +565,8 @@ std::shared_ptr<HybridGaussianFactor> mixedVarianceFactor(
       [](const GaussianFactor::shared_ptr& gf) -> GaussianFactorValuePair {
         return {gf, 0.0};
       });
-  return std::make_shared<HybridGaussianFactor>(
-      gmf->continuousKeys(), gmf->discreteKeys(), updated_pairs);
+  return std::make_shared<HybridGaussianFactor>(gmf->discreteKeys(),
+                                                updated_pairs);
 }
 
 /****************************************************************************/
@@ -591,9 +590,7 @@ TEST(HybridEstimation, ModeSelection) {
            X(0), X(1), 0.0, noiseModel::Isotropic::Sigma(d, noise_tight));
   std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
 
-  KeyVector keys = {X(0), X(1)};
-  DiscreteKey modes(M(0), 2);
-  HybridNonlinearFactor mf(keys, modes, components);
+  HybridNonlinearFactor mf({M(0), 2}, components);
 
   initial.insert(X(0), 0.0);
   initial.insert(X(1), 0.0);
@@ -623,10 +620,7 @@ TEST(HybridEstimation, ModeSelection) {
                                                Z_1x1, noise_loose),
       GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), -I_1x1, X(1),
                                                Z_1x1, noise_tight)};
-  bn.emplace_shared<HybridGaussianConditional>(
-      KeyVector{Z(0)}, KeyVector{X(0), X(1)}, DiscreteKeys{mode},
-      HybridGaussianConditional::Conditionals(DiscreteKeys{mode},
-                                              conditionals));
+  bn.emplace_shared<HybridGaussianConditional>(mode, conditionals);
 
   VectorValues vv;
   vv.insert(Z(0), Z_1x1);
@@ -658,10 +652,7 @@ TEST(HybridEstimation, ModeSelection2) {
                                                Z_3x1, noise_loose),
       GaussianConditional::sharedMeanAndStddev(Z(0), I_3x3, X(0), -I_3x3, X(1),
                                                Z_3x1, noise_tight)};
-  bn.emplace_shared<HybridGaussianConditional>(
-      KeyVector{Z(0)}, KeyVector{X(0), X(1)}, DiscreteKeys{mode},
-      HybridGaussianConditional::Conditionals(DiscreteKeys{mode},
-                                              conditionals));
+  bn.emplace_shared<HybridGaussianConditional>(mode, conditionals);
 
   VectorValues vv;
   vv.insert(Z(0), Z_3x1);
@@ -687,9 +678,7 @@ TEST(HybridEstimation, ModeSelection2) {
            X(0), X(1), Z_3x1, noiseModel::Isotropic::Sigma(d, noise_tight));
   std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
 
-  KeyVector keys = {X(0), X(1)};
-  DiscreteKey modes(M(0), 2);
-  HybridNonlinearFactor mf(keys, modes, components);
+  HybridNonlinearFactor mf({M(0), 2}, components);
 
   initial.insert<Vector3>(X(0), Z_3x1);
   initial.insert<Vector3>(X(1), Z_3x1);

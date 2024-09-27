@@ -70,14 +70,14 @@ auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
 // Test simple to complex constructors...
 TEST(HybridGaussianFactor, ConstructorVariants) {
   using namespace test_constructor;
-  HybridGaussianFactor fromFactors({X(1), X(2)}, m1, {f10, f11});
+  HybridGaussianFactor fromFactors(m1, {f10, f11});
 
   std::vector<GaussianFactorValuePair> pairs{{f10, 0.0}, {f11, 0.0}};
-  HybridGaussianFactor fromPairs({X(1), X(2)}, m1, pairs);
+  HybridGaussianFactor fromPairs(m1, pairs);
   assert_equal(fromFactors, fromPairs);
 
   HybridGaussianFactor::FactorValuePairs decisionTree({m1}, pairs);
-  HybridGaussianFactor fromDecisionTree({X(1), X(2)}, {m1}, decisionTree);
+  HybridGaussianFactor fromDecisionTree({m1}, decisionTree);
   assert_equal(fromDecisionTree, fromPairs);
 }
 
@@ -95,13 +95,12 @@ TEST(HybridGaussianFactor, Sum) {
   // TODO(Frank): why specify keys at all? And: keys in factor should be *all*
   // keys, deviating from Kevin's scheme. Should we index DT on DiscreteKey?
   // Design review!
-  HybridGaussianFactor hybridFactorA({X(1), X(2)}, m1, {f10, f11});
-  HybridGaussianFactor hybridFactorB({X(1), X(3)}, m2, {f20, f21, f22});
+  HybridGaussianFactor hybridFactorA(m1, {f10, f11});
+  HybridGaussianFactor hybridFactorB(m2, {f20, f21, f22});
 
-  // Check that number of keys is 3
+  // Check the number of keys matches what we expect
   EXPECT_LONGS_EQUAL(3, hybridFactorA.keys().size());
-
-  // Check that number of discrete keys is 1
+  EXPECT_LONGS_EQUAL(2, hybridFactorA.continuousKeys().size());
   EXPECT_LONGS_EQUAL(1, hybridFactorA.discreteKeys().size());
 
   // Create sum of two hybrid factors: it will be a decision tree now on both
@@ -122,7 +121,7 @@ TEST(HybridGaussianFactor, Sum) {
 /* ************************************************************************* */
 TEST(HybridGaussianFactor, Printing) {
   using namespace test_constructor;
-  HybridGaussianFactor hybridFactor({X(1), X(2)}, m1, {f10, f11});
+  HybridGaussianFactor hybridFactor(m1, {f10, f11});
 
   std::string expected =
       R"(HybridGaussianFactor
@@ -159,17 +158,13 @@ Hybrid [x1 x2; 1]{
 
 /* ************************************************************************* */
 TEST(HybridGaussianFactor, HybridGaussianConditional) {
-  KeyVector keys;
-  keys.push_back(X(0));
-  keys.push_back(X(1));
-
   DiscreteKeys dKeys;
   dKeys.emplace_back(M(0), 2);
   dKeys.emplace_back(M(1), 2);
 
   auto gaussians = std::make_shared<GaussianConditional>();
   HybridGaussianConditional::Conditionals conditionals(gaussians);
-  HybridGaussianConditional gm({}, keys, dKeys, conditionals);
+  HybridGaussianConditional gm(dKeys, conditionals);
 
   EXPECT_LONGS_EQUAL(2, gm.discreteKeys().size());
 }
@@ -189,7 +184,7 @@ TEST(HybridGaussianFactor, Error) {
 
   auto f0 = std::make_shared<JacobianFactor>(X(1), A01, X(2), A02, b);
   auto f1 = std::make_shared<JacobianFactor>(X(1), A11, X(2), A12, b);
-  HybridGaussianFactor hybridFactor({X(1), X(2)}, m1, {f0, f1});
+  HybridGaussianFactor hybridFactor(m1, {f0, f1});
 
   VectorValues continuousValues;
   continuousValues.insert(X(1), Vector2(0, 0));
@@ -234,9 +229,8 @@ static HybridGaussianConditional::shared_ptr CreateHybridMotionModel(
                                              -I_1x1, model1);
   DiscreteKeys discreteParents{m1};
   return std::make_shared<HybridGaussianConditional>(
-      KeyVector{X(1)}, KeyVector{X(0)}, discreteParents,
-      HybridGaussianConditional::Conditionals(discreteParents,
-                                              std::vector{c0, c1}));
+      discreteParents, HybridGaussianConditional::Conditionals(
+                           discreteParents, std::vector{c0, c1}));
 }
 
 /// Create two state Bayes network with 1 or two measurement models
@@ -595,7 +589,7 @@ static HybridGaussianFactorGraph CreateFactorGraph(
   // the underlying scalar to be log(\sqrt(|2πΣ|))
   std::vector<GaussianFactorValuePair> factors{{f0, model0->negLogConstant()},
                                                {f1, model1->negLogConstant()}};
-  HybridGaussianFactor motionFactor({X(0), X(1)}, m1, factors);
+  HybridGaussianFactor motionFactor(m1, factors);
 
   HybridGaussianFactorGraph hfg;
   hfg.push_back(motionFactor);

@@ -43,9 +43,6 @@ const DiscreteValues m1Assignment{{M(0), 1}};
 DiscreteConditional::shared_ptr mixing =
     std::make_shared<DiscreteConditional>(m, "60/40");
 
-// define Continuous keys
-const KeyVector continuousKeys{Z(0)};
-
 /**
  * Create a simple Gaussian Mixture Model represented as p(z|m)P(m)
  * where m is a discrete variable and z is a continuous variable.
@@ -61,8 +58,7 @@ HybridBayesNet GaussianMixtureModel(double mu0, double mu1, double sigma0,
                                                   model0),
        c1 = std::make_shared<GaussianConditional>(Z(0), Vector1(mu1), I_1x1,
                                                   model1);
-  hbn.emplace_shared<HybridGaussianConditional>(continuousKeys, KeyVector{}, m,
-                                                std::vector{c0, c1});
+  hbn.emplace_shared<HybridGaussianConditional>(m, std::vector{c0, c1});
   hbn.push_back(mixing);
   return hbn;
 }

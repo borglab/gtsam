@@ -29,8 +29,7 @@ std::set<DiscreteKey> HybridFactorGraph::discreteKeys() const {
       for (const DiscreteKey& key : p->discreteKeys()) {
         keys.insert(key);
       }
-    }
-    if (auto p = std::dynamic_pointer_cast<HybridFactor>(factor)) {
+    } else if (auto p = std::dynamic_pointer_cast<HybridFactor>(factor)) {
       for (const DiscreteKey& key : p->discreteKeys()) {
         keys.insert(key);
       }

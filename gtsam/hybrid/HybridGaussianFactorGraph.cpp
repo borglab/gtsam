@@ -346,7 +346,6 @@ static std::shared_ptr<Factor> createDiscreteFactor(
 // for conditional constants.
 static std::shared_ptr<Factor> createHybridGaussianFactor(
     const DecisionTree<Key, Result> &eliminationResults,
-    const KeyVector &continuousSeparator,
     const DiscreteKeys &discreteSeparator) {
   // Correct for the normalization constant used up by the conditional
   auto correct = [&](const Result &pair) -> GaussianFactorValuePair {
@@ -364,14 +363,12 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
   DecisionTree<Key, GaussianFactorValuePair> newFactors(eliminationResults,
                                                         correct);
 
-  return std::make_shared<HybridGaussianFactor>(continuousSeparator,
-                                                discreteSeparator, newFactors);
+  return std::make_shared<HybridGaussianFactor>(discreteSeparator, newFactors);
 }
 
 static std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
 hybridElimination(const HybridGaussianFactorGraph &factors,
                   const Ordering &frontalKeys,
-                  const KeyVector &continuousSeparator,
                   const std::set<DiscreteKey> &discreteSeparatorSet) {
   // NOTE: since we use the special JunctionTree,
   // only possibility is continuous conditioned on discrete.
@@ -388,12 +385,17 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   factorGraphTree = removeEmpty(factorGraphTree);
 
   // This is the elimination method on the leaf nodes
+  bool someContinuousLeft = false;
   auto eliminate = [&](const GaussianFactorGraph &graph) -> Result {
     if (graph.empty()) {
       return {nullptr, nullptr};
     }
 
+    // Expensive elimination of product factor.
     auto result = EliminatePreferCholesky(graph, frontalKeys);
+
+    // Record whether there any continuous variables left
+    someContinuousLeft |= !result.second->empty();
 
     return result;
   };
@@ -405,16 +407,15 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // error for each discrete choice. Otherwise, create a HybridGaussianFactor
   // on the separator, taking care to correct for conditional constants.
   auto newFactor =
-      continuousSeparator.empty()
-          ? createDiscreteFactor(eliminationResults, discreteSeparator)
-          : createHybridGaussianFactor(eliminationResults, continuousSeparator,
-                                       discreteSeparator);
+      someContinuousLeft
+          ? createHybridGaussianFactor(eliminationResults, discreteSeparator)
+          : createDiscreteFactor(eliminationResults, discreteSeparator);
 
   // Create the HybridGaussianConditional from the conditionals
   HybridGaussianConditional::Conditionals conditionals(
       eliminationResults, [](const Result &pair) { return pair.first; });
   auto hybridGaussian = std::make_shared<HybridGaussianConditional>(
-      frontalKeys, continuousSeparator, discreteSeparator, conditionals);
+      discreteSeparator, conditionals);
 
   return {std::make_shared<HybridConditional>(hybridGaussian), newFactor};
 }
@@ -517,22 +518,12 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
     // Case 3: We are now in the hybrid land!
     KeySet frontalKeysSet(frontalKeys.begin(), frontalKeys.end());
 
-    // Find all the keys in the set of continuous keys
-    // which are not in the frontal keys. This is our continuous separator.
-    KeyVector continuousSeparator;
-    auto continuousKeySet = factors.continuousKeySet();
-    std::set_difference(
-        continuousKeySet.begin(), continuousKeySet.end(),
-        frontalKeysSet.begin(), frontalKeysSet.end(),
-        std::inserter(continuousSeparator, continuousSeparator.begin()));
-
-    // Similarly for the discrete separator.
+    // Find all discrete keys.
     // Since we eliminate all continuous variables first,
     // the discrete separator will be *all* the discrete keys.
     std::set<DiscreteKey> discreteSeparator = factors.discreteKeys();
 
-    return hybridElimination(factors, frontalKeys, continuousSeparator,
-                             discreteSeparator);
+    return hybridElimination(factors, frontalKeys, discreteSeparator);
   }
 }
 

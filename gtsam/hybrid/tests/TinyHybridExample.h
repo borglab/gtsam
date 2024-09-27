@@ -46,8 +46,7 @@ inline HybridBayesNet createHybridBayesNet(size_t num_measurements = 1,
     std::vector<GaussianConditional::shared_ptr> conditionals{
         GaussianConditional::sharedMeanAndStddev(Z(i), I_1x1, X(0), Z_1x1, 0.5),
         GaussianConditional::sharedMeanAndStddev(Z(i), I_1x1, X(0), Z_1x1, 3)};
-    bayesNet.emplace_shared<HybridGaussianConditional>(
-        KeyVector{Z(i)}, KeyVector{X(0)}, mode_i, conditionals);
+    bayesNet.emplace_shared<HybridGaussianConditional>(mode_i, conditionals);
   }
 
   // Create prior on X(0).

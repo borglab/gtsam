@@ -65,7 +65,7 @@ inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
         new JacobianFactor(x(t), I_3x3, x(t + 1), I_3x3, Z_3x1));
     components.emplace_back(
         new JacobianFactor(x(t), I_3x3, x(t + 1), I_3x3, Vector3::Ones()));
-    hfg.add(HybridGaussianFactor({x(t), x(t + 1)}, {m(t), 2}, components));
+    hfg.add(HybridGaussianFactor({m(t), 2}, components));
 
     if (t > 1) {
       hfg.add(DecisionTreeFactor({{m(t - 1), 2}, {m(t), 2}}, "0 1 1 3"));
@@ -159,9 +159,8 @@ struct Switching {
 
     // Add "motion models".
     for (size_t k = 0; k < K - 1; k++) {
-      KeyVector keys = {X(k), X(k + 1)};
       auto motion_models = motionModels(k, between_sigma);
-      nonlinearFactorGraph.emplace_shared<HybridNonlinearFactor>(keys, modes[k],
+      nonlinearFactorGraph.emplace_shared<HybridNonlinearFactor>(modes[k],
                                                                  motion_models);
     }
 

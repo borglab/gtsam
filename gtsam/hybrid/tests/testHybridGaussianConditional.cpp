@@ -52,8 +52,7 @@ const std::vector<GaussianConditional::shared_ptr> conditionals{
                                              commonSigma),
     GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
                                              commonSigma)};
-const HybridGaussianConditional hybrid_conditional({Z(0)}, {X(0)}, mode,
-                                                   conditionals);
+const HybridGaussianConditional hybrid_conditional(mode, conditionals);
 }  // namespace equal_constants
 
 /* ************************************************************************* */
@@ -158,8 +157,7 @@ const std::vector<GaussianConditional::shared_ptr> conditionals{
                                              0.5),
     GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
                                              3.0)};
-const HybridGaussianConditional hybrid_conditional({Z(0)}, {X(0)}, mode,
-                                                   conditionals);
+const HybridGaussianConditional hybrid_conditional(mode, conditionals);
 }  // namespace mode_dependent_constants
 
 /* ************************************************************************* */

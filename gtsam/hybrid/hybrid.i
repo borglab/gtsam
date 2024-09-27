@@ -75,10 +75,12 @@ virtual class HybridConditional {
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 class HybridGaussianFactor : gtsam::HybridFactor {
   HybridGaussianFactor(
-      const gtsam::KeyVector& continuousKeys,
+      const gtsam::DiscreteKey& discreteKey,
+      const std::vector<gtsam::GaussianFactor::shared_ptr>& factors);
+  HybridGaussianFactor(
       const gtsam::DiscreteKey& discreteKey,
       const std::vector<std::pair<gtsam::GaussianFactor::shared_ptr, double>>&
-          factorsList);
+          factorPairs);
 
   void print(string s = "HybridGaussianFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
@@ -88,13 +90,9 @@ class HybridGaussianFactor : gtsam::HybridFactor {
 #include <gtsam/hybrid/HybridGaussianConditional.h>
 class HybridGaussianConditional : gtsam::HybridFactor {
   HybridGaussianConditional(
-      const gtsam::KeyVector& continuousFrontals,
-      const gtsam::KeyVector& continuousParents,
       const gtsam::DiscreteKeys& discreteParents,
       const gtsam::HybridGaussianConditional::Conditionals& conditionals);
   HybridGaussianConditional(
-      const gtsam::KeyVector& continuousFrontals,
-      const gtsam::KeyVector& continuousParents,
       const gtsam::DiscreteKey& discreteParent,
       const std::vector<gtsam::GaussianConditional::shared_ptr>& conditionals);
 
@@ -246,15 +244,15 @@ class HybridNonlinearFactorGraph {
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
 class HybridNonlinearFactor : gtsam::HybridFactor {
   HybridNonlinearFactor(
-      const gtsam::KeyVector& keys, const gtsam::DiscreteKey& discreteKey,
+      const gtsam::DiscreteKey& discreteKey,
       const std::vector<gtsam::NonlinearFactor*>& factors);
 
   HybridNonlinearFactor(
-      const gtsam::KeyVector& keys, const gtsam::DiscreteKey& discreteKey,
+      const gtsam::DiscreteKey& discreteKey,
       const std::vector<std::pair<gtsam::NonlinearFactor*, double>>& factors);
 
   HybridNonlinearFactor(
-      const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
+      const gtsam::DiscreteKeys& discreteKeys,
       const gtsam::DecisionTree<
           gtsam::Key, std::pair<gtsam::NonlinearFactor*, double>>& factors);
 
