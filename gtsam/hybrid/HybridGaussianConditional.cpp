@@ -27,30 +27,35 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
+#include <cstddef>
+
 namespace gtsam {
 /* *******************************************************************************/
 struct HybridGaussianConditional::ConstructorHelper {
-  KeyVector frontals, parents;
+  std::optional<size_t> nrFrontals;
   HybridGaussianFactor::FactorValuePairs pairs;
-  double negLogConstant;
-  /// Compute all variables needed for the private constructor below.
-  ConstructorHelper(const Conditionals &conditionals) {
-    negLogConstant = std::numeric_limits<double>::infinity();
+  double minNegLogConstant;
 
-    auto func = [&](const GaussianConditional::shared_ptr &c)
+  /// Compute all variables needed for the private constructor below.
+  ConstructorHelper(const Conditionals &conditionals)
+      : minNegLogConstant(std::numeric_limits<double>::infinity()) {
+    auto func = [this](const GaussianConditional::shared_ptr &c)
         -> GaussianFactorValuePair {
       double value = 0.0;
       if (c) {
-        if (frontals.empty()) {
-          frontals = KeyVector(c->frontals().begin(), c->frontals().end());
-          parents = KeyVector(c->parents().begin(), c->parents().end());
+        if (!nrFrontals.has_value()) {
+          nrFrontals = c->nrFrontals();
         }
         value = c->negLogConstant();
-        negLogConstant = std::min(negLogConstant, value);
+        minNegLogConstant = std::min(minNegLogConstant, value);
       }
       return {std::dynamic_pointer_cast<GaussianFactor>(c), value};
     };
     pairs = HybridGaussianFactor::FactorValuePairs(conditionals, func);
+    if (!nrFrontals.has_value()) {
+      throw std::runtime_error(
+          "HybridGaussianConditional: need at least one frontal variable.");
+    }
   }
 };
 
@@ -60,9 +65,9 @@ HybridGaussianConditional::HybridGaussianConditional(
     const HybridGaussianConditional::Conditionals &conditionals,
     const ConstructorHelper &helper)
     : BaseFactor(discreteParents, helper.pairs),
-      BaseConditional(helper.frontals.size()),
+      BaseConditional(*helper.nrFrontals),
       conditionals_(conditionals),
-      negLogConstant_(helper.negLogConstant) {}
+      negLogConstant_(helper.minNegLogConstant) {}
 
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKeys &discreteParents,
