@@ -17,10 +17,9 @@
  */
 
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 #include <memory>
-
-#include "gtsam/nonlinear/NonlinearFactor.h"
 
 namespace gtsam {
 
