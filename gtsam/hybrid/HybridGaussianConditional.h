@@ -77,7 +77,18 @@ class GTSAM_EXPORT HybridGaussianConditional
   HybridGaussianConditional() = default;
 
   /**
-   * @brief Construct a new HybridGaussianConditional object.
+   * @brief Construct from one discrete key and vector of conditionals.
+   *
+   * @param discreteParent Single discrete parent variable
+   * @param conditionals Vector of conditionals with the same size as the
+   * cardinality of the discrete parent.
+   */
+  HybridGaussianConditional(
+      const DiscreteKey &discreteParent,
+      const std::vector<GaussianConditional::shared_ptr> &conditionals);
+
+  /**
+   * @brief Construct from multiple discrete keys and conditional tree.
    *
    * @param discreteParents the discrete parents. Will be placed last.
    * @param conditionals a decision tree of GaussianConditionals. The number of
@@ -87,19 +98,6 @@ class GTSAM_EXPORT HybridGaussianConditional
    */
   HybridGaussianConditional(const DiscreteKeys &discreteParents,
                             const Conditionals &conditionals);
-
-  /**
-   * @brief Make a Hybrid Gaussian Conditional from
-   * a vector of Gaussian conditionals.
-   * The DecisionTree-based constructor is preferred over this one.
-   *
-   * @param discreteParent Single discrete parent variable
-   * @param conditionals Vector of conditionals with the same size as the
-   * cardinality of the discrete parent.
-   */
-  HybridGaussianConditional(
-      const DiscreteKey &discreteParent,
-      const std::vector<GaussianConditional::shared_ptr> &conditionals);
 
   /// @}
   /// @name Testable
