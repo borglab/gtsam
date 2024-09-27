@@ -8,7 +8,7 @@ endif()
 # Generate setup.py.
 file(READ "${PROJECT_SOURCE_DIR}/README.md" README_CONTENTS)
 configure_file(${PROJECT_PYTHON_SOURCE_DIR}/setup.py.in
-                ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py)
+               ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py)
 
 # Supply MANIFEST.in for older versions of Python
 file(COPY ${PROJECT_PYTHON_SOURCE_DIR}/MANIFEST.in
@@ -18,15 +18,27 @@ set(WRAP_BUILD_TYPE_POSTFIXES ${GTSAM_BUILD_TYPE_POSTFIXES})
 
 include(PybindWrap)
 
+macro(SET_PYTHON_TARGET_PROPERTIES PYTHON_TARGET OUTPUT_NAME OUTPUT_DIRECTORY)
+    set_target_properties(${PYTHON_TARGET} PROPERTIES
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+        OUTPUT_NAME "${OUTPUT_NAME}"
+        LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}"
+        DEBUG_POSTFIX "" # Otherwise you will have a wrong name
+        RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
+        TIMING_POSTFIX "" # Otherwise you will have a wrong name
+        PROFILING_POSTFIX "" # Otherwise you will have a wrong name
+    )
+endmacro()
+
 ############################################################
 ## Load the necessary files to compile the wrapper
 
 # Load the pybind11 code
 
-
 # This is required to avoid an error in modern pybind11 cmake scripts:
 if(POLICY CMP0057)
-  cmake_policy(SET CMP0057 NEW)
+    cmake_policy(SET CMP0057 NEW)
 endif()
 
 # Use bundled pybind11 version
@@ -111,14 +123,7 @@ pybind_wrap(${GTSAM_PYTHON_TARGET} # target
             ${GTSAM_ENABLE_BOOST_SERIALIZATION} # use_boost_serialization
             )
 
-set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
-    INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
-    INSTALL_RPATH_USE_LINK_PATH TRUE
-    OUTPUT_NAME "${GTSAM_OUTPUT_NAME}"
-    LIBRARY_OUTPUT_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam"
-    DEBUG_POSTFIX "" # Otherwise you will have a wrong name
-    RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
-    )
+SET_PYTHON_TARGET_PROPERTIES(${GTSAM_PYTHON_TARGET} ${GTSAM_OUTPUT_NAME} "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam")
 
 if(WIN32)
     set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
@@ -127,14 +132,14 @@ if(WIN32)
     ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_TARGET} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/${GTSAM_OUTPUT_NAME}.pyd"
-        "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/gtsam.pyd"   
+        "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/gtsam.pyd"
     )
     ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_TARGET} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "$<TARGET_FILE:gtsam>;$<TARGET_RUNTIME_DLLS:gtsam>"
-        "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/"   
+        "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/"
         COMMAND_EXPAND_LISTS
-        VERBATIM              
+        VERBATIM
     )
 endif()
 
@@ -198,7 +203,6 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::gtsfm::KeypointsVector
             gtsam::gtsfm::SfmTrack2dVector)
 
-
     pybind_wrap(${GTSAM_PYTHON_UNSTABLE_TARGET} # target
             ${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i # interface_header
             "gtsam_unstable.cpp" # generated_cpp
@@ -211,20 +215,13 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             ${GTSAM_ENABLE_BOOST_SERIALIZATION} # use_boost_serialization
             )
 
-    set_target_properties(${GTSAM_PYTHON_UNSTABLE_TARGET} PROPERTIES
-            INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
-            INSTALL_RPATH_USE_LINK_PATH TRUE
-            OUTPUT_NAME "${GTSAM_UNSTABLE_OUTPUT_NAME}"
-            LIBRARY_OUTPUT_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable"
-            DEBUG_POSTFIX "" # Otherwise you will have a wrong name
-            RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
-            )
+    SET_PYTHON_TARGET_PROPERTIES(${GTSAM_PYTHON_UNSTABLE_TARGET} ${GTSAM_UNSTABLE_OUTPUT_NAME} "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable")
 
     set(GTSAM_UNSTABLE_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable)
 
     # Copy all python files to build folder.
     copy_directory("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable"
-            "${GTSAM_UNSTABLE_MODULE_PATH}")
+                   "${GTSAM_UNSTABLE_MODULE_PATH}")
 
     # Hack to get python test files copied every time they are modified
     file(GLOB GTSAM_UNSTABLE_PYTHON_TEST_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable/" "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable/tests/*.py")
@@ -237,7 +234,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
     if(WIN32)
         set_target_properties(${GTSAM_PYTHON_UNSTABLE_TARGET} PROPERTIES
             SUFFIX ".pyd"
-        )    
+        )
         ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_UNSTABLE_TARGET} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable/${GTSAM_UNSTABLE_OUTPUT_NAME}.pyd"
@@ -248,7 +245,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             "$<TARGET_FILE:gtsam_unstable>;$<TARGET_RUNTIME_DLLS:gtsam_unstable>"
             "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable/"
             COMMAND_EXPAND_LISTS
-            VERBATIM            
+            VERBATIM
         )
     endif()
 
