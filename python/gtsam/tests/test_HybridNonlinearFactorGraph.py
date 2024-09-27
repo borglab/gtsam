@@ -14,8 +14,6 @@ from __future__ import print_function
 
 import unittest
 
-import numpy as np
-from gtsam.symbol_shorthand import C, X
 from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
@@ -38,8 +36,9 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
                                       noiseModel.Unit.Create(3)), 0.0),
                    (PriorFactorPoint3(1, Point3(1, 2, 1),
                                       noiseModel.Unit.Create(3)), 0.0)]
-        nlfg.push_back(gtsam.HybridNonlinearFactor([1], (10, 2), factors))
-        nlfg.push_back(gtsam.DecisionTreeFactor((10, 2), "1 3"))
+        mode = (10, 2)
+        nlfg.push_back(gtsam.HybridNonlinearFactor(mode, factors))
+        nlfg.push_back(gtsam.DecisionTreeFactor(mode, "1 3"))
         values = gtsam.Values()
         values.insert_point3(1, Point3(0, 0, 0))
         values.insert_point3(2, Point3(2, 3, 1))
