@@ -238,8 +238,8 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     } else if (auto gmf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       // Case where we have a HybridGaussianFactor with no continuous keys.
       // In this case, compute discrete probabilities.
-      auto logProbability =
-          [&](const GaussianFactor::shared_ptr &factor) -> double {
+      auto logProbability = [&](const auto &pair) -> double {
+        auto [factor, _] = pair;
         if (!factor) return 0.0;
         return factor->error(VectorValues());
       };
