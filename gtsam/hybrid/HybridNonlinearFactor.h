@@ -26,25 +26,23 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Symbol.h>
 
-#include <algorithm>
-#include <cmath>
-#include <limits>
 #include <vector>
 
 namespace gtsam {
 
-/// Alias for a NonlinearFactor shared pointer and double scalar pair.
-using NonlinearFactorValuePair = std::pair<NonlinearFactor::shared_ptr, double>;
+/// Alias for a NoiseModelFactor shared pointer and double scalar pair.
+using NonlinearFactorValuePair =
+    std::pair<NoiseModelFactor::shared_ptr, double>;
 
 /**
  * @brief Implementation of a discrete-conditioned hybrid factor.
  *
  * Implements a joint discrete-continuous factor where the discrete variable
- * serves to "select" a hybrid component corresponding to a NonlinearFactor.
+ * serves to "select" a hybrid component corresponding to a NoiseModelFactor.
  *
  * This class stores all factors as HybridFactors which can then be typecast to
- * one of (NonlinearFactor, GaussianFactor) which can then be checked to perform
- * the correct operation.
+ * one of (NoiseModelFactor, GaussianFactor) which can then be checked to
+ * perform the correct operation.
  *
  * In factor graphs the error function typically returns 0.5*|h(x)-z|^2, i.e.,
  * the negative log-likelihood for a Gaussian noise model.
@@ -62,11 +60,11 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
   using Base = HybridFactor;
   using This = HybridNonlinearFactor;
   using shared_ptr = std::shared_ptr<HybridNonlinearFactor>;
-  using sharedFactor = std::shared_ptr<NonlinearFactor>;
+  using sharedFactor = std::shared_ptr<NoiseModelFactor>;
 
   /**
    * @brief typedef for DecisionTree which has Keys as node labels and
-   * pairs of NonlinearFactor & an arbitrary scalar as leaf nodes.
+   * pairs of NoiseModelFactor & an arbitrary scalar as leaf nodes.
    */
   using FactorValuePairs = DecisionTree<Key, NonlinearFactorValuePair>;
 
@@ -95,7 +93,7 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
    */
   HybridNonlinearFactor(
       const DiscreteKey& discreteKey,
-      const std::vector<NonlinearFactor::shared_ptr>& factors);
+      const std::vector<NoiseModelFactor::shared_ptr>& factors);
 
   /**
    * @brief Construct a new HybridNonlinearFactor on a single discrete key,

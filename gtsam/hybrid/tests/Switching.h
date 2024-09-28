@@ -33,6 +33,7 @@
 
 #include "gtsam/linear/GaussianFactor.h"
 #include "gtsam/linear/GaussianFactorGraph.h"
+#include "gtsam/nonlinear/NonlinearFactor.h"
 
 #pragma once
 
@@ -185,7 +186,7 @@ struct Switching {
   }
 
   // Create motion models for a given time step
-  static std::vector<NonlinearFactor::shared_ptr> motionModels(
+  static std::vector<NoiseModelFactor::shared_ptr> motionModels(
       size_t k, double sigma = 1.0) {
     auto noise_model = noiseModel::Isotropic::Sigma(1, sigma);
     auto still =

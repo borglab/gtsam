@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 #include <memory>
@@ -29,7 +30,7 @@ struct HybridNonlinearFactor::ConstructorHelper {
   DiscreteKeys discreteKeys;  // Discrete keys provided to the constructors
   FactorValuePairs factorTree;
 
-  void copyOrCheckContinuousKeys(const NonlinearFactor::shared_ptr& factor) {
+  void copyOrCheckContinuousKeys(const NoiseModelFactor::shared_ptr& factor) {
     if (!factor) return;
     if (continuousKeys.empty()) {
       continuousKeys = factor->keys();
@@ -40,7 +41,7 @@ struct HybridNonlinearFactor::ConstructorHelper {
   }
 
   ConstructorHelper(const DiscreteKey& discreteKey,
-                    const std::vector<NonlinearFactor::shared_ptr>& factors)
+                    const std::vector<NoiseModelFactor::shared_ptr>& factors)
       : discreteKeys({discreteKey}) {
     std::vector<NonlinearFactorValuePair> pairs;
     // Extract continuous keys from the first non-null factor
@@ -78,7 +79,7 @@ HybridNonlinearFactor::HybridNonlinearFactor(const ConstructorHelper& helper)
 
 HybridNonlinearFactor::HybridNonlinearFactor(
     const DiscreteKey& discreteKey,
-    const std::vector<NonlinearFactor::shared_ptr>& factors)
+    const std::vector<NoiseModelFactor::shared_ptr>& factors)
     : HybridNonlinearFactor(ConstructorHelper(discreteKey, factors)) {}
 
 HybridNonlinearFactor::HybridNonlinearFactor(
@@ -158,8 +159,7 @@ bool HybridNonlinearFactor::equals(const HybridFactor& other,
   // Ensure that this HybridNonlinearFactor and `f` have the same `factors_`.
   auto compare = [tol](const std::pair<sharedFactor, double>& a,
                        const std::pair<sharedFactor, double>& b) {
-    return traits<NonlinearFactor>::Equals(*a.first, *b.first, tol) &&
-           (a.second == b.second);
+    return a.first->equals(*b.first, tol) && (a.second == b.second);
   };
   if (!factors_.equals(f.factors_, compare)) return false;
 
@@ -185,7 +185,15 @@ std::shared_ptr<HybridGaussianFactor> HybridNonlinearFactor::linearize(
       [continuousValues](
           const std::pair<sharedFactor, double>& f) -> GaussianFactorValuePair {
     auto [factor, val] = f;
-    return {factor->linearize(continuousValues), val};
+    if (auto gaussian = std::dynamic_pointer_cast<noiseModel::Gaussian>(
+            factor->noiseModel())) {
+      return {factor->linearize(continuousValues),
+              val + gaussian->negLogConstant()};
+    } else {
+      throw std::runtime_error(
+          "HybridNonlinearFactor: linearize() only "
+          "supports Gaussian factors.");
+    }
   };
 
   DecisionTree<Key, std::pair<GaussianFactor::shared_ptr, double>>
