@@ -69,12 +69,14 @@ HybridGaussianConditional::HybridGaussianConditional(
       conditionals_(conditionals),
       negLogConstant_(helper.minNegLogConstant) {}
 
+/* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKeys &discreteParents,
     const HybridGaussianConditional::Conditionals &conditionals)
     : HybridGaussianConditional(discreteParents, conditionals,
                                 ConstructorHelper(conditionals)) {}
 
+/* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKey &discreteParent,
     const std::vector<GaussianConditional::shared_ptr> &conditionals)
@@ -242,13 +244,6 @@ std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys) {
 }
 
 /* ************************************************************************* */
-/**
- * @brief Helper function to get the pruner functional.
- *
- * @param discreteProbs The probabilities of only discrete keys.
- * @return std::function<GaussianConditional::shared_ptr(
- * const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
- */
 std::function<GaussianConditional::shared_ptr(
     const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
 HybridGaussianConditional::prunerFunc(const DecisionTreeFactor &discreteProbs) {

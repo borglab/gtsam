@@ -126,16 +126,19 @@ HybridGaussianFactor::HybridGaussianFactor(const ConstructorHelper &helper)
       factors_(helper.factorsTree.empty() ? augment(helper.pairs)
                                           : helper.factorsTree) {}
 
+/* *******************************************************************************/
 HybridGaussianFactor::HybridGaussianFactor(
     const DiscreteKey &discreteKey,
     const std::vector<GaussianFactor::shared_ptr> &factors)
     : HybridGaussianFactor(ConstructorHelper(discreteKey, factors)) {}
 
+/* *******************************************************************************/
 HybridGaussianFactor::HybridGaussianFactor(
     const DiscreteKey &discreteKey,
     const std::vector<GaussianFactorValuePair> &factorPairs)
     : HybridGaussianFactor(ConstructorHelper(discreteKey, factorPairs)) {}
 
+/* *******************************************************************************/
 HybridGaussianFactor::HybridGaussianFactor(const DiscreteKeys &discreteKeys,
                                            const FactorValuePairs &factors)
     : HybridGaussianFactor(ConstructorHelper(discreteKeys, factors)) {}
@@ -223,6 +226,7 @@ double HybridGaussianFactor::potentiallyPrunedComponentError(
     return std::numeric_limits<double>::max();
   }
 }
+
 /* *******************************************************************************/
 AlgebraicDecisionTree<Key> HybridGaussianFactor::errorTree(
     const VectorValues &continuousValues) const {
