@@ -191,8 +191,8 @@ std::shared_ptr<HybridGaussianFactor> HybridNonlinearFactor::linearize(
               val + gaussian->negLogConstant()};
     } else {
       throw std::runtime_error(
-          "HybridNonlinearFactor: linearize() only "
-          "supports Gaussian factors.");
+          "HybridNonlinearFactor: linearize() only supports NoiseModelFactors "
+          "with Gaussian (or derived) noise models.");
     }
   };
 
