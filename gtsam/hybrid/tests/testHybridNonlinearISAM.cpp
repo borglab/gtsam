@@ -30,6 +30,7 @@
 #include <numeric>
 
 #include "Switching.h"
+#include "gtsam/nonlinear/NonlinearFactor.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -438,7 +439,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
                                                    noise_model),
        moving = std::make_shared<PlanarMotionModel>(W(0), W(1), odometry,
                                                     noise_model);
-  std::vector<NonlinearFactor::shared_ptr> components{moving, still};
+  std::vector<NoiseModelFactor::shared_ptr> components{moving, still};
   fg.emplace_shared<HybridNonlinearFactor>(DiscreteKey(M(1), 2), components);
 
   // Add equivalent of ImuFactor

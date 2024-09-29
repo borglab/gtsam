@@ -30,6 +30,7 @@
 #include <numeric>
 
 #include "Switching.h"
+#include "gtsam/nonlinear/NonlinearFactor.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -415,7 +416,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   // Add odometry factor with discrete modes.
   Pose2 odometry(1.0, 0.0, 0.0);
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
-  std::vector<NonlinearFactor::shared_ptr> components;
+  std::vector<NoiseModelFactor::shared_ptr> components;
   components.emplace_back(
       new PlanarMotionModel(W(0), W(1), odometry, noise_model));  // moving
   components.emplace_back(

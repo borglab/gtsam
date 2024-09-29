@@ -245,16 +245,16 @@ class HybridNonlinearFactorGraph {
 class HybridNonlinearFactor : gtsam::HybridFactor {
   HybridNonlinearFactor(
       const gtsam::DiscreteKey& discreteKey,
-      const std::vector<gtsam::NonlinearFactor*>& factors);
+      const std::vector<gtsam::NoiseModelFactor*>& factors);
 
   HybridNonlinearFactor(
       const gtsam::DiscreteKey& discreteKey,
-      const std::vector<std::pair<gtsam::NonlinearFactor*, double>>& factors);
+      const std::vector<std::pair<gtsam::NoiseModelFactor*, double>>& factors);
 
   HybridNonlinearFactor(
       const gtsam::DiscreteKeys& discreteKeys,
       const gtsam::DecisionTree<
-          gtsam::Key, std::pair<gtsam::NonlinearFactor*, double>>& factors);
+          gtsam::Key, std::pair<gtsam::NoiseModelFactor*, double>>& factors);
 
   double error(const gtsam::Values& continuousValues,
                const gtsam::DiscreteValues& discreteValues) const;

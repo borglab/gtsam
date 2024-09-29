@@ -36,6 +36,7 @@
 #include <numeric>
 
 #include "Switching.h"
+#include "gtsam/nonlinear/NonlinearFactor.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -119,7 +120,7 @@ TEST(HybridNonlinearFactorGraph, Resize) {
 namespace test_motion {
 gtsam::DiscreteKey m1(M(1), 2);
 auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
-std::vector<NonlinearFactor::shared_ptr> components = {
+std::vector<NoiseModelFactor::shared_ptr> components = {
     std::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
     std::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model)};
 }  // namespace test_motion
@@ -207,7 +208,7 @@ TEST(HybridNonlinearFactorGraph, PushBack) {
   factors.emplace_shared<PriorFactor<Pose2>>(1, Pose2(1, 0, 0), noise);
   factors.emplace_shared<PriorFactor<Pose2>>(2, Pose2(2, 0, 0), noise);
   // TODO(Varun) This does not currently work. It should work once HybridFactor
-  // becomes a base class of NonlinearFactor.
+  // becomes a base class of NoiseModelFactor.
   // hnfg.push_back(factors.begin(), factors.end());
 
   // EXPECT_LONGS_EQUAL(3, hnfg.size());
@@ -807,7 +808,7 @@ TEST(HybridNonlinearFactorGraph, DefaultDecisionTree) {
   // Add odometry factor
   Pose2 odometry(2.0, 0.0, 0.0);
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
-  std::vector<NonlinearFactor::shared_ptr> motion_models = {
+  std::vector<NoiseModelFactor::shared_ptr> motion_models = {
       std::make_shared<PlanarMotionModel>(X(0), X(1), Pose2(0, 0, 0),
                                           noise_model),
       std::make_shared<PlanarMotionModel>(X(0), X(1), odometry, noise_model)};
@@ -874,8 +875,7 @@ static HybridNonlinearFactorGraph CreateFactorGraph(
   // Create HybridNonlinearFactor
   // We take negative since we want
   // the underlying scalar to be log(\sqrt(|2πΣ|))
-  std::vector<NonlinearFactorValuePair> factors{{f0, model0->negLogConstant()},
-                                                {f1, model1->negLogConstant()}};
+  std::vector<NonlinearFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
 
   HybridNonlinearFactor mixtureFactor(m1, factors);
 

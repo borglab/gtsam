@@ -39,6 +39,7 @@
 #include <bitset>
 
 #include "Switching.h"
+#include "gtsam/nonlinear/NonlinearFactor.h"
 
 using namespace std;
 using namespace gtsam;
@@ -435,8 +436,8 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
   const auto one_motion =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
-  std::vector<NonlinearFactor::shared_ptr> components = {zero_motion,
-                                                         one_motion};
+  std::vector<NoiseModelFactor::shared_ptr> components = {zero_motion,
+                                                          one_motion};
   nfg.emplace_shared<HybridNonlinearFactor>(m, components);
 
   return nfg;
@@ -527,49 +528,6 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
 }
 
 /****************************************************************************/
-/**
- * Helper function to add the constant term corresponding to
- * the difference in noise models.
- */
-std::shared_ptr<HybridGaussianFactor> mixedVarianceFactor(
-    const HybridNonlinearFactor& mf, const Values& initial, const Key& mode,
-    double noise_tight, double noise_loose, size_t d, size_t tight_index) {
-  HybridGaussianFactor::shared_ptr gmf = mf.linearize(initial);
-
-  constexpr double log2pi = 1.8378770664093454835606594728112;
-  // logConstant will be of the tighter model
-  double logNormalizationConstant = log(1.0 / noise_tight);
-  double logConstant = -0.5 * d * log2pi + logNormalizationConstant;
-
-  auto func = [&](const Assignment<Key>& assignment,
-                  const GaussianFactor::shared_ptr& gf) {
-    if (assignment.at(mode) != tight_index) {
-      double factor_log_constant = -0.5 * d * log2pi + log(1.0 / noise_loose);
-
-      GaussianFactorGraph _gfg;
-      _gfg.push_back(gf);
-      Vector c(d);
-      for (size_t i = 0; i < d; i++) {
-        c(i) = std::sqrt(2.0 * (logConstant - factor_log_constant));
-      }
-
-      _gfg.emplace_shared<JacobianFactor>(c);
-      return std::make_shared<JacobianFactor>(_gfg);
-    } else {
-      return dynamic_pointer_cast<JacobianFactor>(gf);
-    }
-  };
-  auto updated_components = gmf->factors().apply(func);
-  auto updated_pairs = HybridGaussianFactor::FactorValuePairs(
-      updated_components,
-      [](const GaussianFactor::shared_ptr& gf) -> GaussianFactorValuePair {
-        return {gf, 0.0};
-      });
-  return std::make_shared<HybridGaussianFactor>(gmf->discreteKeys(),
-                                                updated_pairs);
-}
-
-/****************************************************************************/
 TEST(HybridEstimation, ModeSelection) {
   HybridNonlinearFactorGraph graph;
   Values initial;
@@ -588,15 +546,14 @@ TEST(HybridEstimation, ModeSelection) {
            X(0), X(1), 0.0, noiseModel::Isotropic::Sigma(d, noise_loose)),
        model1 = std::make_shared<MotionModel>(
            X(0), X(1), 0.0, noiseModel::Isotropic::Sigma(d, noise_tight));
-  std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
+  std::vector<NoiseModelFactor::shared_ptr> components = {model0, model1};
 
   HybridNonlinearFactor mf({M(0), 2}, components);
 
   initial.insert(X(0), 0.0);
   initial.insert(X(1), 0.0);
 
-  auto gmf =
-      mixedVarianceFactor(mf, initial, M(0), noise_tight, noise_loose, d, 1);
+  auto gmf = mf.linearize(initial);
   graph.add(gmf);
 
   auto gfg = graph.linearize(initial);
@@ -676,15 +633,14 @@ TEST(HybridEstimation, ModeSelection2) {
            X(0), X(1), Z_3x1, noiseModel::Isotropic::Sigma(d, noise_loose)),
        model1 = std::make_shared<BetweenFactor<Vector3>>(
            X(0), X(1), Z_3x1, noiseModel::Isotropic::Sigma(d, noise_tight));
-  std::vector<NonlinearFactor::shared_ptr> components = {model0, model1};
+  std::vector<NoiseModelFactor::shared_ptr> components = {model0, model1};
 
   HybridNonlinearFactor mf({M(0), 2}, components);
 
   initial.insert<Vector3>(X(0), Z_3x1);
   initial.insert<Vector3>(X(1), Z_3x1);
 
-  auto gmf =
-      mixedVarianceFactor(mf, initial, M(0), noise_tight, noise_loose, d, 1);
+  auto gmf = mf.linearize(initial);
   graph.add(gmf);
 
   auto gfg = graph.linearize(initial);

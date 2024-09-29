@@ -24,6 +24,7 @@
 
 #include "Switching.h"
 #include "TinyHybridExample.h"
+#include "gtsam/nonlinear/NonlinearFactor.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -389,7 +390,7 @@ TEST(HybridBayesNet, Sampling) {
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
   nfg.emplace_shared<HybridNonlinearFactor>(
       DiscreteKey(M(0), 2),
-      std::vector<NonlinearFactor::shared_ptr>{zero_motion, one_motion});
+      std::vector<NoiseModelFactor::shared_ptr>{zero_motion, one_motion});
 
   DiscreteKey mode(M(0), 2);
   nfg.emplace_shared<DiscreteDistribution>(mode, "1/1");
