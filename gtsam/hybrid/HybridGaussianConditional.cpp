@@ -62,21 +62,6 @@ struct HybridGaussianConditional::ConstructorHelper {
     }
   }
 
-  /// Construct from means and a single sigma.
-  ConstructorHelper(Key x, const DiscreteKey mode,
-                    const std::vector<Vector> &means, double sigma)
-      : nrFrontals(1), minNegLogConstant(0) {
-    std::vector<GaussianConditional::shared_ptr> gcs;
-    for (const auto &mean : means) {
-      auto c = GaussianConditional::sharedMeanAndStddev(x, mean, sigma);
-      gcs.push_back(c);
-    }
-    conditionals = Conditionals({mode}, gcs);
-    pairs = FactorValuePairs(conditionals, [](const auto &c) {
-      return GaussianFactorValuePair{c, 0.0};
-    });
-  }
-
   /// Construct from means and a sigmas.
   ConstructorHelper(Key x, const DiscreteKey mode,
                     const std::vector<std::pair<Vector, double>> &parameters)
@@ -109,12 +94,6 @@ HybridGaussianConditional::HybridGaussianConditional(
     const std::vector<GaussianConditional::shared_ptr> &conditionals)
     : HybridGaussianConditional(DiscreteKeys{mode},
                                 Conditionals({mode}, conditionals)) {}
-
-HybridGaussianConditional::HybridGaussianConditional(
-    Key x, const DiscreteKey mode, const std::vector<Vector> &means,
-    double sigma)
-    : HybridGaussianConditional(DiscreteKeys{mode},
-                                ConstructorHelper(x, mode, means, sigma)) {}
 
 HybridGaussianConditional::HybridGaussianConditional(
     Key x, const DiscreteKey mode,

@@ -80,8 +80,9 @@ TEST(GaussianMixture, GaussianMixtureModel) {
   double sigma = 2.0;
 
   HybridBayesNet hbn;
-  std::vector<Vector> means{Vector1(mu0), Vector1(mu1)};
-  hbn.emplace_shared<HybridGaussianConditional>(Z(0), m, means, sigma);
+  std::vector<std::pair<Vector, double>> parameters{{Vector1(mu0), sigma},
+                                                    {Vector1(mu1), sigma}};
+  hbn.emplace_shared<HybridGaussianConditional>(Z(0), m, parameters);
   hbn.push_back(mixing);
 
   // At the halfway point between the means, we should get P(m|z)=0.5

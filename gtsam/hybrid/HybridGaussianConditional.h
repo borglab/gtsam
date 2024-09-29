@@ -88,17 +88,6 @@ class GTSAM_EXPORT HybridGaussianConditional
       const std::vector<GaussianConditional::shared_ptr> &conditionals);
 
   /**
-   * @brief Construct from vector of means and a single sigma.
-   *
-   * @param x The continuous key.
-   * @param mode The discrete key.
-   * @param means The means for the Gaussian conditionals.
-   * @param sigma The standard deviation for the Gaussian conditionals.
-   */
-  HybridGaussianConditional(Key x, const DiscreteKey mode,
-                            const std::vector<Vector> &means, double sigma);
-
-  /**
    * @brief Construct from vector of means and sigmas.
    *
    * @param x The continuous key.
