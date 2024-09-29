@@ -125,12 +125,13 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
 
   /**
    * @brief Get the Gaussian Bayes Net which corresponds to a specific discrete
-   * value assignment.
+   * value assignment. Note this corresponds to the Gaussian posterior p(X|M=m)
+   * of the continuous variables given the discrete assignment M=m.
    *
    * @note Any pure discrete factors are ignored.
    *
    * @param assignment The discrete value assignment for the discrete keys.
-   * @return GaussianBayesNet
+   * @return Gaussian posterior as a GaussianBayesNet
    */
   GaussianBayesNet choose(const DiscreteValues &assignment) const;
 
@@ -226,29 +227,33 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   using Base::error;
 
   /**
-   * @brief Compute log probability for each discrete assignment,
-   * and return as a tree.
+   * @brief Compute the log posterior log P'(M|x) of all assignments up to a
+   * constant, returning the result as an algebraic decision tree.
    *
-   * @param continuousValues Continuous values at which
-   * to compute the log probability.
+   * @note The joint P(X,M) is p(X|M) P(M)
+   * Then the posterior on M given X=x is is P(M|x) = p(x|M) P(M) / p(x).
+   * Ideally we want log P(M|x) = log p(x|M) + log P(M) - log P(x), but
+   * unfortunately log p(x) is expensive, so we compute the log of the
+   * unnormalized posterior log P'(M|x) = log p(x|M) + log P(M)
+   *
+   * @param continuousValues Continuous values x at which to compute log P'(M|x)
    * @return AlgebraicDecisionTree<Key>
    */
-  AlgebraicDecisionTree<Key> logProbability(
+  AlgebraicDecisionTree<Key> logDiscretePosteriorPrime(
       const VectorValues &continuousValues) const;
 
   using BayesNet::logProbability;  // expose HybridValues version
 
   /**
-   * @brief Compute unnormalized probability q(μ|M),
-   * for each discrete assignment, and return as a tree.
-   * q(μ|M) is the unnormalized probability at the MLE point μ,
-   * conditioned on the discrete variables.
+   * @brief Compute normalized posterior P(M|X=x) and return as a tree.
    *
-   * @param continuousValues Continuous values at which to compute the
-   * probability.
+   * @note Not a DiscreteConditional as the cardinalities of the DiscreteKeys,
+   * which we would need, are hard to recover.
+   *
+   * @param continuousValues Continuous values x to condition P(M|X=x) on.
    * @return AlgebraicDecisionTree<Key>
    */
-  AlgebraicDecisionTree<Key> evaluate(
+  AlgebraicDecisionTree<Key> discretePosterior(
       const VectorValues &continuousValues) const;
 
   /**

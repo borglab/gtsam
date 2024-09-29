@@ -214,10 +214,14 @@ AlgebraicDecisionTree<Key> HybridBayesNet::errorTree(
 
     } else if (auto dc = conditional->asDiscrete()) {
       // If discrete, add the discrete error in the right branch
-      result = result.apply(
-          [dc](const Assignment<Key> &assignment, double leaf_value) {
-            return leaf_value + dc->error(DiscreteValues(assignment));
-          });
+      if (result.nrLeaves() == 1) {
+        result = dc->errorTree();
+      } else {
+        result = result.apply(
+            [dc](const Assignment<Key> &assignment, double leaf_value) {
+              return leaf_value + dc->error(DiscreteValues(assignment));
+            });
+      }
     }
   }
 
@@ -225,22 +229,27 @@ AlgebraicDecisionTree<Key> HybridBayesNet::errorTree(
 }
 
 /* ************************************************************************* */
-AlgebraicDecisionTree<Key> HybridBayesNet::logProbability(
+AlgebraicDecisionTree<Key> HybridBayesNet::logDiscretePosteriorPrime(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> result(0.0);
+
+  // Get logProbability function for a conditional or arbitrarily small
+  // logProbability if the conditional was pruned out.
+  auto probFunc = [continuousValues](
+                      const GaussianConditional::shared_ptr &conditional) {
+    return conditional ? conditional->logProbability(continuousValues) : -1e20;
+  };
 
   // Iterate over each conditional.
   for (auto &&conditional : *this) {
     if (auto gm = conditional->asHybrid()) {
       // If conditional is hybrid, select based on assignment and compute
       // logProbability.
-      result = result + gm->logProbability(continuousValues);
+      result = result + DecisionTree<Key, double>(gm->conditionals(), probFunc);
     } else if (auto gc = conditional->asGaussian()) {
-      // If continuous, get the (double) logProbability and add it to the
-      // result
+      // If continuous, get the logProbability and add it to the result
       double logProbability = gc->logProbability(continuousValues);
-      // Add the computed logProbability to every leaf of the logProbability
-      // tree.
+      // Add the computed logProbability to every leaf of the tree.
       result = result.apply([logProbability](double leaf_value) {
         return leaf_value + logProbability;
       });
@@ -261,10 +270,13 @@ AlgebraicDecisionTree<Key> HybridBayesNet::logProbability(
 }
 
 /* ************************************************************************* */
-AlgebraicDecisionTree<Key> HybridBayesNet::evaluate(
+AlgebraicDecisionTree<Key> HybridBayesNet::discretePosterior(
     const VectorValues &continuousValues) const {
-  AlgebraicDecisionTree<Key> tree = this->logProbability(continuousValues);
-  return tree.apply([](double log) { return exp(log); });
+  AlgebraicDecisionTree<Key> log_p =
+      this->logDiscretePosteriorPrime(continuousValues);
+  AlgebraicDecisionTree<Key> p =
+      log_p.apply([](double log) { return exp(log); });
+  return p / p.sum();
 }
 
 /* ************************************************************************* */
