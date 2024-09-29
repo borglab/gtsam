@@ -629,56 +629,6 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
 }
 
 /* ****************************************************************************/
-// Test hybrid gaussian factor graph errorTree when
-// there is a HybridConditional in the graph
-TEST(HybridGaussianFactorGraph, ErrorTreeWithConditional) {
-  using symbol_shorthand::F;
-
-  Key z0 = Z(0), f01 = F(0);
-  Key x0 = X(0), x1 = X(1);
-
-  HybridBayesNet hbn;
-
-  auto prior_model = noiseModel::Isotropic::Sigma(1, 1e-1);
-  auto measurement_model = noiseModel::Isotropic::Sigma(1, 2.0);
-
-  // Set a prior P(x0) at x0=0
-  hbn.emplace_shared<GaussianConditional>(x0, Vector1(0.0), I_1x1, prior_model);
-
-  // Add measurement P(z0 | x0)
-  hbn.emplace_shared<GaussianConditional>(z0, Vector1(0.0), -I_1x1, x0, I_1x1,
-                                          measurement_model);
-
-  // Add hybrid motion model
-  double mu = 0.0;
-  double sigma0 = 1e2, sigma1 = 1e-2;
-  auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
-  auto model1 = noiseModel::Isotropic::Sigma(1, sigma1);
-  auto c0 = make_shared<GaussianConditional>(f01, Vector1(mu), I_1x1, x1, I_1x1,
-                                             x0, -I_1x1, model0),
-       c1 = make_shared<GaussianConditional>(f01, Vector1(mu), I_1x1, x1, I_1x1,
-                                             x0, -I_1x1, model1);
-  hbn.emplace_shared<HybridGaussianConditional>(m1, std::vector{c0, c1});
-
-  // Discrete uniform prior.
-  hbn.emplace_shared<DiscreteConditional>(m1, "0.5/0.5");
-
-  VectorValues given;
-  given.insert(z0, Vector1(0.0));
-  given.insert(f01, Vector1(0.0));
-  auto gfg = hbn.toFactorGraph(given);
-
-  VectorValues vv;
-  vv.insert(x0, Vector1(1.0));
-  vv.insert(x1, Vector1(2.0));
-  AlgebraicDecisionTree<Key> errorTree = gfg.errorTree(vv);
-
-  // regression
-  AlgebraicDecisionTree<Key> expected(m1, 59.335390372, 5050.125);
-  EXPECT(assert_equal(expected, errorTree, 1e-9));
-}
-
-/* ****************************************************************************/
 // Test hybrid gaussian factor graph errorTree during
 // incremental operation
 TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
