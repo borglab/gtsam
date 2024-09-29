@@ -603,29 +603,34 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
 /* ****************************************************************************/
 // Test hybrid gaussian factor graph error and unnormalized probabilities
 TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
+  // Create switching network with three continuous variables and two discrete:
+  // ϕ(x0) ϕ(x0,x1,m0) ϕ(x1,x2,m1) ϕ(x0;z0) ϕ(x1;z1) ϕ(x2;z2) ϕ(m0) ϕ(m0,m1)
   Switching s(3);
 
-  HybridGaussianFactorGraph graph = s.linearizedFactorGraph;
+  const HybridGaussianFactorGraph &graph = s.linearizedFactorGraph;
 
-  HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
+  const HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
 
-  HybridValues delta = hybridBayesNet->optimize();
-  auto error_tree = graph.errorTree(delta.continuous());
+  const HybridValues delta = hybridBayesNet->optimize();
 
-  std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
+  // regression test for errorTree
   std::vector<double> leaves = {0.9998558, 0.4902432, 0.5193694, 0.0097568};
-  AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
+  AlgebraicDecisionTree<Key> expectedErrors(s.modes, leaves);
+  const auto error_tree = graph.errorTree(delta.continuous());
+  EXPECT(assert_equal(expectedErrors, error_tree, 1e-7));
 
-  // regression
-  EXPECT(assert_equal(expected_error, error_tree, 1e-7));
-
+  // regression test for probPrime
+  const DecisionTreeFactor expectedFactor(
+      s.modes, std::vector{0.36793249, 0.61247742, 0.59489556, 0.99029064});
   auto probabilities = graph.probPrime(delta.continuous());
-  std::vector<double> prob_leaves = {0.36793249, 0.61247742, 0.59489556,
-                                     0.99029064};
-  AlgebraicDecisionTree<Key> expected_probabilities(discrete_keys, prob_leaves);
+  EXPECT(assert_equal(expectedFactor, probabilities, 1e-7));
 
-  // regression
-  EXPECT(assert_equal(expected_probabilities, probabilities, 1e-7));
+  // regression test for discretePosterior
+  const DecisionTreeFactor normalized(
+      s.modes, std::vector{0.14341014, 0.23872714, 0.23187421, 0.38598852});
+  DiscreteConditional expectedPosterior(2, normalized);
+  auto posterior = graph.discretePosterior(delta.continuous());
+  EXPECT(assert_equal(expectedPosterior, posterior, 1e-7));
 }
 
 /* ****************************************************************************/

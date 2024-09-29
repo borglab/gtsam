@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
@@ -188,23 +189,32 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       const VectorValues& continuousValues) const;
 
   /**
-   * @brief Compute unnormalized probability \f$ P(X | M, Z) \f$
-   * for each discrete assignment, and return as a tree.
-   *
-   * @param continuousValues Continuous values at which to compute the
-   * probability.
-   * @return AlgebraicDecisionTree<Key>
-   */
-  AlgebraicDecisionTree<Key> probPrime(
-      const VectorValues& continuousValues) const;
-
-  /**
    * @brief Compute the unnormalized posterior probability for a continuous
    * vector values given a specific assignment.
    *
    * @return double
    */
   double probPrime(const HybridValues& values) const;
+
+  /**
+   * @brief Compute unnormalized probability \f$ P(X | M, Z) \f$
+   * for each discrete assignment, and return as a tree.
+   *
+   * @param continuousValues Continuous values at which to compute probability.
+   * @return DecisionTreeFactor
+   */
+  DecisionTreeFactor probPrime(const VectorValues& continuousValues) const;
+
+  /**
+   * @brief Computer posterior P(M|X=x) when all continuous values X are given.
+   * This is very efficient as this simply probPrime normalized into a
+   * conditional.
+   *
+   * @param continuousValues Continuous values x to condition on.
+   * @return DecisionTreeFactor
+   */
+  DiscreteConditional discretePosterior(
+      const VectorValues& continuousValues) const;
 
   /**
    * @brief Create a decision tree of factor graphs out of this hybrid factor
