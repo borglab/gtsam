@@ -43,18 +43,20 @@ struct HybridGaussianConditional::Helper {
 
   /// Construct from a vector of mean and sigma pairs, plus extra args.
   template <typename... Args>
-  Helper(const DiscreteKey &mode, const P &p, Args &&...args) {
+  explicit Helper(const DiscreteKey &mode, const P &p, Args &&...args) {
     nrFrontals = 1;
     minNegLogConstant = std::numeric_limits<double>::infinity();
 
     std::vector<GaussianFactorValuePair> fvs;
     std::vector<GC::shared_ptr> gcs;
+    fvs.reserve(p.size());
+    gcs.reserve(p.size());
     for (const auto &[mean, sigma] : p) {
       auto gaussianConditional =
           GC::sharedMeanAndStddev(std::forward<Args>(args)..., mean, sigma);
       double value = gaussianConditional->negLogConstant();
       minNegLogConstant = std::min(minNegLogConstant, value);
-      fvs.push_back({gaussianConditional, value});
+      fvs.emplace_back(gaussianConditional, value);
       gcs.push_back(gaussianConditional);
     }
 
@@ -63,7 +65,7 @@ struct HybridGaussianConditional::Helper {
   }
 
   /// Construct from tree of GaussianConditionals.
-  Helper(const Conditionals &conditionals)
+  explicit Helper(const Conditionals &conditionals)
       : conditionals(conditionals),
         minNegLogConstant(std::numeric_limits<double>::infinity()) {
     auto func = [this](const GC::shared_ptr &c) -> GaussianFactorValuePair {
@@ -80,7 +82,8 @@ struct HybridGaussianConditional::Helper {
     pairs = FactorValuePairs(conditionals, func);
     if (!nrFrontals.has_value()) {
       throw std::runtime_error(
-          "HybridGaussianConditional: need at least one frontal variable.");
+          "HybridGaussianConditional: need at least one frontal variable. "
+          "Provided conditionals do not contain any frontal variables.");
     }
   }
 };
@@ -100,20 +103,20 @@ HybridGaussianConditional::HybridGaussianConditional(
                                 Conditionals({mode}, conditionals)) {}
 
 HybridGaussianConditional::HybridGaussianConditional(
-    const DiscreteKey mode, Key key,  //
+    const DiscreteKey &mode, Key key,  //
     const std::vector<std::pair<Vector, double>> &parameters)
     : HybridGaussianConditional(DiscreteKeys{mode},
                                 Helper(mode, parameters, key)) {}
 
 HybridGaussianConditional::HybridGaussianConditional(
-    const DiscreteKey mode, Key key,  //
+    const DiscreteKey &mode, Key key,  //
     const Matrix &A, Key parent,
     const std::vector<std::pair<Vector, double>> &parameters)
     : HybridGaussianConditional(DiscreteKeys{mode},
                                 Helper(mode, parameters, key, A, parent)) {}
 
 HybridGaussianConditional::HybridGaussianConditional(
-    const DiscreteKey mode, Key key,  //
+    const DiscreteKey &mode, Key key,  //
     const Matrix &A1, Key parent1, const Matrix &A2, Key parent2,
     const std::vector<std::pair<Vector, double>> &parameters)
     : HybridGaussianConditional(

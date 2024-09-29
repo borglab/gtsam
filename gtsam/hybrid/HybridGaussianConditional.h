@@ -89,18 +89,18 @@ class GTSAM_EXPORT HybridGaussianConditional
 
   /// Construct from mean `mu_i` and `sigma_i`.
   HybridGaussianConditional(
-      const DiscreteKey mode, Key key,  //
+      const DiscreteKey &mode, Key key,  //
       const std::vector<std::pair<Vector, double>> &parameters);
 
   /// Construct from conditional mean `A1 p1 + b_i` and `sigma_i`.
   HybridGaussianConditional(
-      const DiscreteKey mode, Key key,  //
+      const DiscreteKey &mode, Key key,  //
       const Matrix &A, Key parent,
       const std::vector<std::pair<Vector, double>> &parameters);
 
   /// Construct from conditional mean `A1 p1 + A2 p2 + b_i` and `sigma_i`.
   HybridGaussianConditional(
-      const DiscreteKey mode, Key key,  //
+      const DiscreteKey &mode, Key key,  //
       const Matrix &A1, Key parent1, const Matrix &A2, Key parent2,
       const std::vector<std::pair<Vector, double>> &parameters);
 
