@@ -366,18 +366,18 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
   return std::make_shared<HybridGaussianFactor>(discreteSeparator, newFactors);
 }
 
-static std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
-hybridElimination(const HybridGaussianFactorGraph &factors,
-                  const Ordering &frontalKeys,
-                  const std::set<DiscreteKey> &discreteSeparatorSet) {
-  // NOTE: since we use the special JunctionTree,
-  // only possibility is continuous conditioned on discrete.
-  DiscreteKeys discreteSeparator(discreteSeparatorSet.begin(),
-                                 discreteSeparatorSet.end());
+/* *******************************************************************************/
+std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
+HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
+  // Since we eliminate all continuous variables first,
+  // the discrete separator will be *all* the discrete keys.
+  const std::set<DiscreteKey> keysForDiscreteVariables = discreteKeys();
+  DiscreteKeys discreteSeparator(keysForDiscreteVariables.begin(),
+                                 keysForDiscreteVariables.end());
 
   // Collect all the factors to create a set of Gaussian factor graphs in a
   // decision tree indexed by all discrete keys involved.
-  GaussianFactorGraphTree factorGraphTree = factors.assembleGraphTree();
+  GaussianFactorGraphTree factorGraphTree = assembleGraphTree();
 
   // Convert factor graphs with a nullptr to an empty factor graph.
   // This is done after assembly since it is non-trivial to keep track of which
@@ -392,7 +392,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     }
 
     // Expensive elimination of product factor.
-    auto result = EliminatePreferCholesky(graph, frontalKeys);
+    auto result = EliminatePreferCholesky(graph, keys);
 
     // Record whether there any continuous variables left
     someContinuousLeft |= !result.second->empty();
@@ -436,7 +436,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
  */
 std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>  //
 EliminateHybrid(const HybridGaussianFactorGraph &factors,
-                const Ordering &frontalKeys) {
+                const Ordering &keys) {
   // NOTE: Because we are in the Conditional Gaussian regime there are only
   // a few cases:
   // 1. continuous variable, make a hybrid Gaussian conditional if there are
@@ -510,20 +510,13 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
 
   if (only_discrete) {
     // Case 1: we are only dealing with discrete
-    return discreteElimination(factors, frontalKeys);
+    return discreteElimination(factors, keys);
   } else if (only_continuous) {
     // Case 2: we are only dealing with continuous
-    return continuousElimination(factors, frontalKeys);
+    return continuousElimination(factors, keys);
   } else {
     // Case 3: We are now in the hybrid land!
-    KeySet frontalKeysSet(frontalKeys.begin(), frontalKeys.end());
-
-    // Find all discrete keys.
-    // Since we eliminate all continuous variables first,
-    // the discrete separator will be *all* the discrete keys.
-    std::set<DiscreteKey> discreteSeparator = factors.discreteKeys();
-
-    return hybridElimination(factors, frontalKeys, discreteSeparator);
+    return factors.eliminate(keys);
   }
 }
 

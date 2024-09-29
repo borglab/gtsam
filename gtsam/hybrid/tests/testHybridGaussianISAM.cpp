@@ -30,7 +30,6 @@
 #include <numeric>
 
 #include "Switching.h"
-#include "gtsam/nonlinear/NonlinearFactor.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>

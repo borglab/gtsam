@@ -19,6 +19,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearISAM.h>
@@ -39,7 +40,6 @@
 #include <bitset>
 
 #include "Switching.h"
-#include "gtsam/nonlinear/NonlinearFactor.h"
 
 using namespace std;
 using namespace gtsam;
@@ -572,12 +572,10 @@ TEST(HybridEstimation, ModeSelection) {
   bn.push_back(
       GaussianConditional::sharedMeanAndStddev(Z(0), -I_1x1, X(1), Z_1x1, 0.1));
 
-  std::vector<GaussianConditional::shared_ptr> conditionals{
-      GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), -I_1x1, X(1),
-                                               Z_1x1, noise_loose),
-      GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), -I_1x1, X(1),
-                                               Z_1x1, noise_tight)};
-  bn.emplace_shared<HybridGaussianConditional>(mode, conditionals);
+  std::vector<std::pair<Vector, double>> parameters{{Z_1x1, noise_loose},
+                                                    {Z_1x1, noise_tight}};
+  bn.emplace_shared<HybridGaussianConditional>(mode, Z(0), I_1x1, X(0), -I_1x1,
+                                               X(1), parameters);
 
   VectorValues vv;
   vv.insert(Z(0), Z_1x1);
@@ -604,12 +602,10 @@ TEST(HybridEstimation, ModeSelection2) {
   bn.push_back(
       GaussianConditional::sharedMeanAndStddev(Z(0), -I_3x3, X(1), Z_3x1, 0.1));
 
-  std::vector<GaussianConditional::shared_ptr> conditionals{
-      GaussianConditional::sharedMeanAndStddev(Z(0), I_3x3, X(0), -I_3x3, X(1),
-                                               Z_3x1, noise_loose),
-      GaussianConditional::sharedMeanAndStddev(Z(0), I_3x3, X(0), -I_3x3, X(1),
-                                               Z_3x1, noise_tight)};
-  bn.emplace_shared<HybridGaussianConditional>(mode, conditionals);
+  std::vector<std::pair<Vector, double>> parameters{{Z_3x1, noise_loose},
+                                                    {Z_3x1, noise_tight}};
+  bn.emplace_shared<HybridGaussianConditional>(mode, Z(0), I_3x3, X(0), -I_3x3,
+                                               X(1), parameters);
 
   VectorValues vv;
   vv.insert(Z(0), Z_3x1);

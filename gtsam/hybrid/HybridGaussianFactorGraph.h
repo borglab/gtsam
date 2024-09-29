@@ -217,6 +217,14 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    */
   GaussianFactorGraphTree assembleGraphTree() const;
 
+  /**
+   * @brief Eliminate the given continuous keys.
+   *
+   * @param keys The continuous keys to eliminate.
+   * @return The conditional on the  keys and a factor on the separator.
+   */
+  std::pair<std::shared_ptr<HybridConditional>, std::shared_ptr<Factor>>
+  eliminate(const Ordering& keys) const;
   /// @}
 
   /// Get the GaussianFactorGraph at a given discrete assignment.

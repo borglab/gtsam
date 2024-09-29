@@ -88,6 +88,49 @@ class GTSAM_EXPORT HybridGaussianConditional
       const std::vector<GaussianConditional::shared_ptr> &conditionals);
 
   /**
+   * @brief Constructs a HybridGaussianConditional with means mu_i and
+   * standard deviations sigma_i.
+   *
+   * @param discreteParent The discrete parent or "mode" key.
+   * @param key The key for this conditional variable.
+   * @param parameters A vector of pairs (mu_i, sigma_i).
+   */
+  HybridGaussianConditional(
+      const DiscreteKey &discreteParent, Key key,
+      const std::vector<std::pair<Vector, double>> &parameters);
+
+  /**
+   * @brief Constructs a HybridGaussianConditional with conditional means
+   * A × parent + b_i and standard deviations sigma_i.
+   *
+   * @param discreteParent The discrete parent or "mode" key.
+   * @param key The key for this conditional variable.
+   * @param A The matrix A.
+   * @param parent The key of the parent variable.
+   * @param parameters A vector of pairs (b_i, sigma_i).
+   */
+  HybridGaussianConditional(
+      const DiscreteKey &discreteParent, Key key, const Matrix &A, Key parent,
+      const std::vector<std::pair<Vector, double>> &parameters);
+
+  /**
+   * @brief Constructs a HybridGaussianConditional with conditional means
+   * A1 × parent1 + A2 × parent2 + b_i and standard deviations sigma_i.
+   *
+   * @param discreteParent The discrete parent or "mode" key.
+   * @param key The key for this conditional variable.
+   * @param A1 The first matrix.
+   * @param parent1 The key of the first parent variable.
+   * @param A2 The second matrix.
+   * @param parent2 The key of the second parent variable.
+   * @param parameters A vector of pairs (b_i, sigma_i).
+   */
+  HybridGaussianConditional(
+      const DiscreteKey &discreteParent, Key key,  //
+      const Matrix &A1, Key parent1, const Matrix &A2, Key parent2,
+      const std::vector<std::pair<Vector, double>> &parameters);
+
+  /**
    * @brief Construct from multiple discrete keys and conditional tree.
    *
    * @param discreteParents the discrete parents. Will be placed last.
@@ -183,13 +226,11 @@ class GTSAM_EXPORT HybridGaussianConditional
 
  private:
   /// Helper struct for private constructor.
-  struct ConstructorHelper;
+  struct Helper;
 
   /// Private constructor that uses helper struct above.
-  HybridGaussianConditional(
-      const DiscreteKeys &discreteParents,
-      const HybridGaussianConditional::Conditionals &conditionals,
-      const ConstructorHelper &helper);
+  HybridGaussianConditional(const DiscreteKeys &discreteParents,
+                            const Helper &helper);
 
   /// Convert to a DecisionTree of Gaussian factor graphs.
   GaussianFactorGraphTree asGaussianFactorGraphTree() const;
