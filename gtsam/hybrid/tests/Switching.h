@@ -24,16 +24,15 @@
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 #include <vector>
-
-#include "gtsam/linear/GaussianFactor.h"
-#include "gtsam/linear/GaussianFactorGraph.h"
-#include "gtsam/nonlinear/NonlinearFactor.h"
 
 #pragma once
 
