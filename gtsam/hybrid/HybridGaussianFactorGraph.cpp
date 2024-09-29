@@ -505,22 +505,22 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
 /* ************************************************************************ */
 AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::errorTree(
     const VectorValues &continuousValues) const {
-  AlgebraicDecisionTree<Key> error_tree(0.0);
+  AlgebraicDecisionTree<Key> result(0.0);
   // Iterate over each factor.
   for (auto &factor : factors_) {
     if (auto f = std::dynamic_pointer_cast<HybridFactor>(factor)) {
       // Check for HybridFactor, and call errorTree
-      error_tree = error_tree + f->errorTree(continuousValues);
+      result = result + f->errorTree(continuousValues);
     } else if (auto f = std::dynamic_pointer_cast<DiscreteFactor>(factor)) {
       // Skip discrete factors
       continue;
     } else {
       // Everything else is a continuous only factor
       HybridValues hv(continuousValues, DiscreteValues());
-      error_tree = error_tree + AlgebraicDecisionTree<Key>(factor->error(hv));
+      result = result + AlgebraicDecisionTree<Key>(factor->error(hv));
     }
   }
-  return error_tree;
+  return result;
 }
 
 /* ************************************************************************ */
@@ -531,21 +531,14 @@ double HybridGaussianFactorGraph::probPrime(const HybridValues &values) const {
 }
 
 /* ************************************************************************ */
-DecisionTreeFactor HybridGaussianFactorGraph::probPrime(
+AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::discretePosterior(
     const VectorValues &continuousValues) const {
-  AlgebraicDecisionTree<Key> error_tree = this->errorTree(continuousValues);
-  AlgebraicDecisionTree<Key> prob_tree = error_tree.apply([](double error) {
+  AlgebraicDecisionTree<Key> errors = this->errorTree(continuousValues);
+  AlgebraicDecisionTree<Key> p = errors.apply([](double error) {
     // NOTE: The 0.5 term is handled by each factor
     return exp(-error);
   });
-  return {GetDiscreteKeys(*this), prob_tree};
-}
-
-/* ************************************************************************ */
-DiscreteConditional HybridGaussianFactorGraph::discretePosterior(
-    const VectorValues &continuousValues) const {
-  auto p = probPrime(continuousValues);
-  return {p.size(), p};
+  return p / p.sum();
 }
 
 /* ************************************************************************ */

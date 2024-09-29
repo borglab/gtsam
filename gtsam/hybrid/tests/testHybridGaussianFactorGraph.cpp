@@ -619,16 +619,9 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
   const auto error_tree = graph.errorTree(delta.continuous());
   EXPECT(assert_equal(expectedErrors, error_tree, 1e-7));
 
-  // regression test for probPrime
-  const DecisionTreeFactor expectedFactor(
-      s.modes, std::vector{0.36793249, 0.61247742, 0.59489556, 0.99029064});
-  auto probabilities = graph.probPrime(delta.continuous());
-  EXPECT(assert_equal(expectedFactor, probabilities, 1e-7));
-
   // regression test for discretePosterior
-  const DecisionTreeFactor normalized(
+  const AlgebraicDecisionTree<Key> expectedPosterior(
       s.modes, std::vector{0.14341014, 0.23872714, 0.23187421, 0.38598852});
-  DiscreteConditional expectedPosterior(2, normalized);
   auto posterior = graph.discretePosterior(delta.continuous());
   EXPECT(assert_equal(expectedPosterior, posterior, 1e-7));
 }

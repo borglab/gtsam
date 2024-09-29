@@ -197,23 +197,16 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   double probPrime(const HybridValues& values) const;
 
   /**
-   * @brief Compute unnormalized probability \f$ P(X | M, Z) \f$
-   * for each discrete assignment, and return as a tree.
-   *
-   * @param continuousValues Continuous values at which to compute probability.
-   * @return DecisionTreeFactor
-   */
-  DecisionTreeFactor probPrime(const VectorValues& continuousValues) const;
-
-  /**
    * @brief Computer posterior P(M|X=x) when all continuous values X are given.
-   * This is very efficient as this simply probPrime normalized into a
-   * conditional.
+   * This is efficient as this simply probPrime normalized.
+   *
+   * @note Not a DiscreteConditional as the cardinalities of the DiscreteKeys,
+   * which we would need, are hard to recover.
    *
    * @param continuousValues Continuous values x to condition on.
    * @return DecisionTreeFactor
    */
-  DiscreteConditional discretePosterior(
+  AlgebraicDecisionTree<Key> discretePosterior(
       const VectorValues& continuousValues) const;
 
   /**
