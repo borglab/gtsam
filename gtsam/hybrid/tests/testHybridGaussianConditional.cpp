@@ -168,6 +168,9 @@ TEST(HybridGaussianConditional, ContinuousParents) {
   // Check that the continuous parent keys are correct:
   EXPECT(continuousParentKeys.size() == 1);
   EXPECT(continuousParentKeys[0] == X(0));
+
+  EXPECT(HybridGaussianConditional::CheckInvariants(hybrid_conditional, hv0));
+  EXPECT(HybridGaussianConditional::CheckInvariants(hybrid_conditional, hv1));
 }
 
 /* ************************************************************************* */
