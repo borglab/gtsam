@@ -61,6 +61,8 @@ using gtsam::symbol_shorthand::Z;
 // Set up sampling
 std::mt19937_64 kRng(42);
 
+static const DiscreteKey m1(M(1), 2);
+
 /* ************************************************************************* */
 TEST(HybridGaussianFactorGraph, Creation) {
   HybridConditional conditional;
@@ -98,11 +100,9 @@ TEST(HybridGaussianFactorGraph, EliminateMultifrontal) {
   // Test multifrontal elimination
   HybridGaussianFactorGraph hfg;
 
-  DiscreteKey m(M(1), 2);
-
   // Add priors on x0 and c1
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
-  hfg.add(DecisionTreeFactor(m, {2, 8}));
+  hfg.add(DecisionTreeFactor(m1, {2, 8}));
 
   Ordering ordering;
   ordering.push_back(X(0));
@@ -131,7 +131,6 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
   // Add a hybrid gaussian factor ϕ(x1, c1)
-  DiscreteKey m1(M(1), 2);
   hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
 
   auto result = hfg.eliminateSequential();
@@ -147,8 +146,6 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
 /* ************************************************************************* */
 TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
   HybridGaussianFactorGraph hfg;
-
-  DiscreteKey m1(M(1), 2);
 
   // Add prior on x0
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
@@ -172,8 +169,6 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
 TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
   HybridGaussianFactorGraph hfg;
 
-  DiscreteKey m1(M(1), 2);
-
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
@@ -196,17 +191,15 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
 TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
   HybridGaussianFactorGraph hfg;
 
-  DiscreteKey m(M(1), 2);
-
   // Prior on x0
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   // Factor between x0-x1
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
   // Hybrid factor P(x1|c1)
-  hfg.add(HybridGaussianFactor(m, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
   // Prior factor on c1
-  hfg.add(DecisionTreeFactor(m, {2, 8}));
+  hfg.add(DecisionTreeFactor(m1, {2, 8}));
 
   // Get a constrained ordering keeping c1 last
   auto ordering_full = HybridOrdering(hfg);
@@ -521,17 +514,15 @@ TEST(HybridGaussianFactorGraph, DiscreteSelection) {
 TEST(HybridGaussianFactorGraph, optimize) {
   HybridGaussianFactorGraph hfg;
 
-  DiscreteKey c1(C(1), 2);
-
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
-  hfg.add(HybridGaussianFactor(c1, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
 
   auto result = hfg.eliminateSequential();
 
   HybridValues hv = result->optimize();
 
-  EXPECT(assert_equal(hv.atDiscrete(C(1)), int(0)));
+  EXPECT(assert_equal(hv.atDiscrete(M(1)), int(0)));
 }
 
 /* ************************************************************************* */
@@ -626,7 +617,6 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
 TEST(HybridGaussianFactorGraph, ErrorTreeWithConditional) {
   using symbol_shorthand::F;
 
-  DiscreteKey m1(M(1), 2);
   Key z0 = Z(0), f01 = F(0);
   Key x0 = X(0), x1 = X(1);
 
@@ -842,23 +832,22 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
 TEST(HybridGaussianFactorGraph, EliminateTiny1Swapped) {
   const VectorValues measurements{{Z(0), Vector1(5.0)}};
 
-  // Create mode key: 1 is low-noise, 0 is high-noise.
-  const DiscreteKey mode{M(0), 2};
   HybridBayesNet bn;
 
+  // mode-dependent: 1 is low-noise, 0 is high-noise.
   // Create hybrid Gaussian factor z_0 = x0 + noise for each measurement.
   std::vector<GaussianConditional::shared_ptr> conditionals{
       GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Z_1x1, 3),
       GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Z_1x1, 0.5)};
-  auto gm = std::make_shared<HybridGaussianConditional>(mode, conditionals);
+  auto gm = std::make_shared<HybridGaussianConditional>(m1, conditionals);
   bn.push_back(gm);
 
   // Create prior on X(0).
   bn.push_back(
       GaussianConditional::sharedMeanAndStddev(X(0), Vector1(5.0), 0.5));
 
-  // Add prior on mode.
-  bn.emplace_shared<DiscreteConditional>(mode, "1/1");
+  // Add prior on m1.
+  bn.emplace_shared<DiscreteConditional>(m1, "1/1");
 
   // bn.print();
   auto fg = bn.toFactorGraph(measurements);
@@ -878,10 +867,10 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1Swapped) {
              conditional1 = std::make_shared<GaussianConditional>(
                  X(0), Vector1(14.1421), I_1x1 * 2.82843);
   expectedBayesNet.emplace_shared<HybridGaussianConditional>(
-      mode, std::vector{conditional0, conditional1});
+      m1, std::vector{conditional0, conditional1});
 
-  // Add prior on mode.
-  expectedBayesNet.emplace_shared<DiscreteConditional>(mode, "1/1");
+  // Add prior on m1.
+  expectedBayesNet.emplace_shared<DiscreteConditional>(m1, "1/1");
 
   // Test elimination
   const auto posterior = fg.eliminateSequential();

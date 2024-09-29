@@ -28,15 +28,13 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
-#include <numeric>
-
 #include "Switching.h"
-#include "gtsam/nonlinear/NonlinearFactor.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>

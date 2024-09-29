@@ -24,13 +24,13 @@
 #include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 
 #include <numeric>
 
 #include "Switching.h"
-#include "gtsam/nonlinear/NonlinearFactor.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>

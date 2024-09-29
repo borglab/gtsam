@@ -19,6 +19,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearISAM.h>
@@ -29,6 +30,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -39,7 +41,6 @@
 #include <bitset>
 
 #include "Switching.h"
-#include "gtsam/nonlinear/NonlinearFactor.h"
 
 using namespace std;
 using namespace gtsam;
