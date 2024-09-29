@@ -99,7 +99,7 @@ const auto gc = GaussianConditional::sharedMeanAndStddev(X(0), 2 * I_1x1, X(1),
 
 const std::vector<std::pair<Vector, double>> parms{{Vector1(5), 2.0},
                                                    {Vector1(2), 3.0}};
-const auto hgc = std::make_shared<HybridGaussianConditional>(X(1), Asia, parms);
+const auto hgc = std::make_shared<HybridGaussianConditional>(Asia, X(1), parms);
 
 const auto prior = std::make_shared<DiscreteConditional>(Asia, "99/1");
 auto wrap = [](const auto& c) {

@@ -87,15 +87,21 @@ class GTSAM_EXPORT HybridGaussianConditional
       const DiscreteKey &mode,
       const std::vector<GaussianConditional::shared_ptr> &conditionals);
 
-  /**
-   * @brief Construct from vector of means and sigmas.
-   *
-   * @param x The continuous key.
-   * @param mode The discrete key.
-   * @param parameters The means and sigmas for the Gaussian conditionals.
-   */
+  /// Construct from mean `mu_i` and `sigma_i`.
   HybridGaussianConditional(
-      Key x, const DiscreteKey mode,
+      const DiscreteKey mode, Key key,  //
+      const std::vector<std::pair<Vector, double>> &parameters);
+
+  /// Construct from conditional mean `A1 p1 + b_i` and `sigma_i`.
+  HybridGaussianConditional(
+      const DiscreteKey mode, Key key,  //
+      const Matrix &A, Key parent,
+      const std::vector<std::pair<Vector, double>> &parameters);
+
+  /// Construct from conditional mean `A1 p1 + A2 p2 + b_i` and `sigma_i`.
+  HybridGaussianConditional(
+      const DiscreteKey mode, Key key,  //
+      const Matrix &A1, Key parent1, const Matrix &A2, Key parent2,
       const std::vector<std::pair<Vector, double>> &parameters);
 
   /**
@@ -194,11 +200,11 @@ class GTSAM_EXPORT HybridGaussianConditional
 
  private:
   /// Helper struct for private constructor.
-  struct ConstructorHelper;
+  struct Helper;
 
   /// Private constructor that uses helper struct above.
   HybridGaussianConditional(const DiscreteKeys &discreteParents,
-                            const ConstructorHelper &helper);
+                            const Helper &helper);
 
   /// Convert to a DecisionTree of Gaussian factor graphs.
   GaussianFactorGraphTree asGaussianFactorGraphTree() const;

@@ -82,7 +82,7 @@ TEST(GaussianMixture, GaussianMixtureModel) {
   HybridBayesNet hbn;
   std::vector<std::pair<Vector, double>> parameters{{Vector1(mu0), sigma},
                                                     {Vector1(mu1), sigma}};
-  hbn.emplace_shared<HybridGaussianConditional>(Z(0), m, parameters);
+  hbn.emplace_shared<HybridGaussianConditional>(m, Z(0), parameters);
   hbn.push_back(mixing);
 
   // At the halfway point between the means, we should get P(m|z)=0.5
@@ -120,7 +120,7 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
   HybridBayesNet hbn;
   std::vector<std::pair<Vector, double>> parameters{{Vector1(mu0), sigma0},
                                                     {Vector1(mu1), sigma1}};
-  hbn.emplace_shared<HybridGaussianConditional>(Z(0), m, parameters);
+  hbn.emplace_shared<HybridGaussianConditional>(m, Z(0), parameters);
   hbn.push_back(mixing);
 
   // We get zMax=3.1333 by finding the maximum value of the function, at which

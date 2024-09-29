@@ -803,11 +803,8 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1Swapped) {
 
   // mode-dependent: 1 is low-noise, 0 is high-noise.
   // Create hybrid Gaussian factor z_0 = x0 + noise for each measurement.
-  std::vector<GaussianConditional::shared_ptr> conditionals{
-      GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Z_1x1, 3),
-      GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Z_1x1, 0.5)};
-  auto gm = std::make_shared<HybridGaussianConditional>(m1, conditionals);
-  bn.push_back(gm);
+  std::vector<std::pair<Vector, double>> parms{{Z_1x1, 3}, {Z_1x1, 0.5}};
+  bn.emplace_shared<HybridGaussianConditional>(m1, Z(0), I_1x1, X(0), parms);
 
   // Create prior on X(0).
   bn.push_back(
@@ -912,32 +909,27 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   // NOTE: we add reverse topological so we can sample from the Bayes net.:
 
   // Add measurements:
+  std::vector<std::pair<Vector, double>> measurementModels{{Z_1x1, 3},
+                                                           {Z_1x1, 0.5}};
   for (size_t t : {0, 1, 2}) {
     // Create hybrid Gaussian factor on Z(t) conditioned on X(t) and mode N(t):
     const auto noise_mode_t = DiscreteKey{N(t), 2};
-    std::vector<GaussianConditional::shared_ptr> conditionals{
-        GaussianConditional::sharedMeanAndStddev(Z(t), I_1x1, X(t), Z_1x1, 0.5),
-        GaussianConditional::sharedMeanAndStddev(Z(t), I_1x1, X(t), Z_1x1,
-                                                 3.0)};
-    bn.emplace_shared<HybridGaussianConditional>(noise_mode_t, conditionals);
+    bn.emplace_shared<HybridGaussianConditional>(noise_mode_t, Z(t), I_1x1,
+                                                 X(t), measurementModels);
 
     // Create prior on discrete mode N(t):
     bn.emplace_shared<DiscreteConditional>(noise_mode_t, "20/80");
   }
 
-  // Add motion models:
+  // Add motion models. TODO(frank): why are they exactly the same?
+  std::vector<std::pair<Vector, double>> motionModels{{Z_1x1, 0.2},
+                                                      {Z_1x1, 0.2}};
   for (size_t t : {2, 1}) {
     // Create hybrid Gaussian factor on X(t) conditioned on X(t-1)
     // and mode M(t-1):
     const auto motion_model_t = DiscreteKey{M(t), 2};
-    std::vector<GaussianConditional::shared_ptr> conditionals{
-        GaussianConditional::sharedMeanAndStddev(X(t), I_1x1, X(t - 1), Z_1x1,
-                                                 0.2),
-        GaussianConditional::sharedMeanAndStddev(X(t), I_1x1, X(t - 1), I_1x1,
-                                                 0.2)};
-    auto gm = std::make_shared<HybridGaussianConditional>(motion_model_t,
-                                                          conditionals);
-    bn.push_back(gm);
+    bn.emplace_shared<HybridGaussianConditional>(motion_model_t, X(t), I_1x1,
+                                                 X(t - 1), motionModels);
 
     // Create prior on motion model M(t):
     bn.emplace_shared<DiscreteConditional>(motion_model_t, "40/60");
