@@ -168,7 +168,7 @@ class GTSAM_EXPORT DiscreteConditional
     static_cast<const BaseConditional*>(this)->print(s, formatter);
   }
 
-  /// Evaluate, just look up in AlgebraicDecisonTree
+  /// Evaluate, just look up in AlgebraicDecisionTree
   double evaluate(const DiscreteValues& values) const {
     return ADT::operator()(values);
   }
