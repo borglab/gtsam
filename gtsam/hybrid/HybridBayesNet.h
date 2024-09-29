@@ -44,8 +44,13 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// @name Standard Constructors
   /// @{
 
-  /** Construct empty Bayes net */
+  /// Construct empty Bayes net.
   HybridBayesNet() = default;
+
+  /// Constructor that takes an initializer list of shared pointers.
+  HybridBayesNet(
+      std::initializer_list<HybridConditional::shared_ptr> conditionals)
+      : Base(conditionals) {}
 
   /// @}
   /// @name Testable

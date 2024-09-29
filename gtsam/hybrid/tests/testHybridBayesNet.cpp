@@ -20,6 +20,7 @@
 
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
+#include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
@@ -32,7 +33,6 @@
 using namespace std;
 using namespace gtsam;
 
-using noiseModel::Isotropic;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
 using symbol_shorthand::Z;
@@ -92,37 +92,49 @@ TEST(HybridBayesNet, Tiny) {
 }
 
 /* ****************************************************************************/
+// Hybrid Bayes net P(X0|X1) P(X1|Asia) P(Asia).
+namespace different_sigmas {
+const auto gc = GaussianConditional::sharedMeanAndStddev(X(0), 2 * I_1x1, X(1),
+                                                         Vector1(-4.0), 5.0);
+
+const std::vector<std::pair<Vector, double>> parms{{Vector1(5), 2.0},
+                                                   {Vector1(2), 3.0}};
+const auto hgc = std::make_shared<HybridGaussianConditional>(X(1), Asia, parms);
+
+const auto prior = std::make_shared<DiscreteConditional>(Asia, "99/1");
+auto wrap = [](const auto& c) {
+  return std::make_shared<HybridConditional>(c);
+};
+const HybridBayesNet bayesNet{wrap(gc), wrap(hgc), wrap(prior)};
+
+// Create values at which to evaluate.
+HybridValues values{{{X(0), Vector1(-6)}, {X(1), Vector1(1)}}, {{asiaKey, 0}}};
+}  // namespace different_sigmas
+
+/* ****************************************************************************/
 // Test evaluate for a hybrid Bayes net P(X0|X1) P(X1|Asia) P(Asia).
 TEST(HybridBayesNet, evaluateHybrid) {
-  const auto continuousConditional = GaussianConditional::sharedMeanAndStddev(
-      X(0), 2 * I_1x1, X(1), Vector1(-4.0), 5.0);
+  using namespace different_sigmas;
 
-  const SharedDiagonal model0 = noiseModel::Diagonal::Sigmas(Vector1(2.0)),
-                       model1 = noiseModel::Diagonal::Sigmas(Vector1(3.0));
-
-  const auto conditional0 = std::make_shared<GaussianConditional>(
-                 X(1), Vector1::Constant(5), I_1x1, model0),
-             conditional1 = std::make_shared<GaussianConditional>(
-                 X(1), Vector1::Constant(2), I_1x1, model1);
-
-  // Create hybrid Bayes net.
-  HybridBayesNet bayesNet;
-  bayesNet.push_back(continuousConditional);
-  bayesNet.emplace_shared<HybridGaussianConditional>(
-      Asia, std::vector{conditional0, conditional1});
-  bayesNet.emplace_shared<DiscreteConditional>(Asia, "99/1");
-
-  // Create values at which to evaluate.
-  HybridValues values;
-  values.insert(asiaKey, 0);
-  values.insert(X(0), Vector1(-6));
-  values.insert(X(1), Vector1(1));
-
-  const double conditionalProbability =
-      continuousConditional->evaluate(values.continuous());
-  const double mixtureProbability = conditional0->evaluate(values.continuous());
+  const double conditionalProbability = gc->evaluate(values.continuous());
+  const double mixtureProbability = hgc->evaluate(values);
   EXPECT_DOUBLES_EQUAL(conditionalProbability * mixtureProbability * 0.99,
                        bayesNet.evaluate(values), 1e-9);
+}
+
+/* ****************************************************************************/
+// Test error for a hybrid Bayes net P(X0|X1) P(X1|Asia) P(Asia).
+TEST(HybridBayesNet, Error) {
+  using namespace different_sigmas;
+
+  AlgebraicDecisionTree<Key> actual = bayesNet.errorTree(values.continuous());
+
+  // Regression.
+  // Manually added all the error values from the 3 conditional types.
+  AlgebraicDecisionTree<Key> expected(
+      {Asia}, std::vector<double>{2.33005033585, 5.38619084965});
+
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ****************************************************************************/
@@ -152,45 +164,6 @@ TEST(HybridBayesNet, Choose) {
                       *gbn.at(2)));
   EXPECT(assert_equal(*(*hybridBayesNet->at(3)->asHybrid())(assignment),
                       *gbn.at(3)));
-}
-
-/* ****************************************************************************/
-// Test error for a hybrid Bayes net P(X0|X1) P(X1|Asia) P(Asia).
-TEST(HybridBayesNet, Error) {
-  const auto continuousConditional = GaussianConditional::sharedMeanAndStddev(
-      X(0), 2 * I_1x1, X(1), Vector1(-4.0), 5.0);
-
-  const SharedDiagonal model0 = noiseModel::Diagonal::Sigmas(Vector1(2.0)),
-                       model1 = noiseModel::Diagonal::Sigmas(Vector1(3.0));
-
-  const auto conditional0 = std::make_shared<GaussianConditional>(
-                 X(1), Vector1::Constant(5), I_1x1, model0),
-             conditional1 = std::make_shared<GaussianConditional>(
-                 X(1), Vector1::Constant(2), I_1x1, model1);
-
-  auto gm = std::make_shared<HybridGaussianConditional>(
-      Asia, std::vector{conditional0, conditional1});
-  // Create hybrid Bayes net.
-  HybridBayesNet bayesNet;
-  bayesNet.push_back(continuousConditional);
-  bayesNet.push_back(gm);
-  bayesNet.emplace_shared<DiscreteConditional>(Asia, "99/1");
-
-  // Create values at which to evaluate.
-  HybridValues values;
-  values.insert(asiaKey, 0);
-  values.insert(X(0), Vector1(-6));
-  values.insert(X(1), Vector1(1));
-
-  AlgebraicDecisionTree<Key> actual_errors =
-      bayesNet.errorTree(values.continuous());
-
-  // Regression.
-  // Manually added all the error values from the 3 conditional types.
-  AlgebraicDecisionTree<Key> expected_errors(
-      {Asia}, std::vector<double>{2.33005033585, 5.38619084965});
-
-  EXPECT(assert_equal(expected_errors, actual_errors));
 }
 
 /* ****************************************************************************/
