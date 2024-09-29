@@ -79,15 +79,16 @@ TEST(GaussianMixture, GaussianMixtureModel) {
   double mu0 = 1.0, mu1 = 3.0;
   double sigma = 2.0;
 
-  HybridBayesNet hbn;
+  // Create a Gaussian mixture model p(z|m) with same sigma.
+  HybridBayesNet gmm;
   std::vector<std::pair<Vector, double>> parameters{{Vector1(mu0), sigma},
                                                     {Vector1(mu1), sigma}};
-  hbn.emplace_shared<HybridGaussianConditional>(m, Z(0), parameters);
-  hbn.push_back(mixing);
+  gmm.emplace_shared<HybridGaussianConditional>(m, Z(0), parameters);
+  gmm.push_back(mixing);
 
   // At the halfway point between the means, we should get P(m|z)=0.5
   double midway = mu1 - mu0;
-  auto pMid = SolveHBN(hbn, midway);
+  auto pMid = SolveHBN(gmm, midway);
   EXPECT(assert_equal(DiscreteConditional(m, "60/40"), pMid));
 
   // Everywhere else, the result should be a sigmoid.
@@ -96,7 +97,7 @@ TEST(GaussianMixture, GaussianMixtureModel) {
     const double expected = prob_m_z(mu0, mu1, sigma, sigma, z);
 
     // Workflow 1: convert HBN to HFG and solve
-    auto posterior1 = SolveHBN(hbn, z);
+    auto posterior1 = SolveHBN(gmm, z);
     EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
 
     // Workflow 2: directly specify HFG and solve
@@ -117,16 +118,17 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
   double mu0 = 1.0, mu1 = 3.0;
   double sigma0 = 8.0, sigma1 = 4.0;
 
-  HybridBayesNet hbn;
+  // Create a Gaussian mixture model p(z|m) with same sigma.
+  HybridBayesNet gmm;
   std::vector<std::pair<Vector, double>> parameters{{Vector1(mu0), sigma0},
                                                     {Vector1(mu1), sigma1}};
-  hbn.emplace_shared<HybridGaussianConditional>(m, Z(0), parameters);
-  hbn.push_back(mixing);
+  gmm.emplace_shared<HybridGaussianConditional>(m, Z(0), parameters);
+  gmm.push_back(mixing);
 
   // We get zMax=3.1333 by finding the maximum value of the function, at which
   // point the mode m==1 is about twice as probable as m==0.
   double zMax = 3.133;
-  auto pMax = SolveHBN(hbn, zMax);
+  auto pMax = SolveHBN(gmm, zMax);
   EXPECT(assert_equal(DiscreteConditional(m, "42/58"), pMax, 1e-4));
 
   // Everywhere else, the result should be a bell curve like function.
@@ -135,7 +137,7 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
     const double expected = prob_m_z(mu0, mu1, sigma0, sigma1, z);
 
     // Workflow 1: convert HBN to HFG and solve
-    auto posterior1 = SolveHBN(hbn, z);
+    auto posterior1 = SolveHBN(gmm, z);
     EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
 
     // Workflow 2: directly specify HFG and solve

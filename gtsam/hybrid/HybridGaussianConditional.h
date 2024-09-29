@@ -79,45 +79,45 @@ class GTSAM_EXPORT HybridGaussianConditional
   /**
    * @brief Construct from one discrete key and vector of conditionals.
    *
-   * @param mode Single discrete parent variable
+   * @param discreteParent Single discrete parent variable
    * @param conditionals Vector of conditionals with the same size as the
    * cardinality of the discrete parent.
    */
   HybridGaussianConditional(
-      const DiscreteKey &mode,
+      const DiscreteKey &discreteParent,
       const std::vector<GaussianConditional::shared_ptr> &conditionals);
 
   /**
    * @brief Constructs a HybridGaussianConditional with means mu_i and
    * standard deviations sigma_i.
    *
-   * @param mode The discrete mode key.
+   * @param discreteParent The discrete parent or "mode" key.
    * @param key The key for this conditional variable.
    * @param parameters A vector of pairs (mu_i, sigma_i).
    */
   HybridGaussianConditional(
-      const DiscreteKey &mode, Key key,
+      const DiscreteKey &discreteParent, Key key,
       const std::vector<std::pair<Vector, double>> &parameters);
 
   /**
    * @brief Constructs a HybridGaussianConditional with conditional means
    * A × parent + b_i and standard deviations sigma_i.
    *
-   * @param mode The discrete mode key.
+   * @param discreteParent The discrete parent or "mode" key.
    * @param key The key for this conditional variable.
    * @param A The matrix A.
    * @param parent The key of the parent variable.
    * @param parameters A vector of pairs (b_i, sigma_i).
    */
   HybridGaussianConditional(
-      const DiscreteKey &mode, Key key, const Matrix &A, Key parent,
+      const DiscreteKey &discreteParent, Key key, const Matrix &A, Key parent,
       const std::vector<std::pair<Vector, double>> &parameters);
 
   /**
    * @brief Constructs a HybridGaussianConditional with conditional means
    * A1 × parent1 + A2 × parent2 + b_i and standard deviations sigma_i.
    *
-   * @param mode The discrete mode key.
+   * @param discreteParent The discrete parent or "mode" key.
    * @param key The key for this conditional variable.
    * @param A1 The first matrix.
    * @param parent1 The key of the first parent variable.
@@ -126,7 +126,7 @@ class GTSAM_EXPORT HybridGaussianConditional
    * @param parameters A vector of pairs (b_i, sigma_i).
    */
   HybridGaussianConditional(
-      const DiscreteKey &mode, Key key,  //
+      const DiscreteKey &discreteParent, Key key,  //
       const Matrix &A1, Key parent1, const Matrix &A2, Key parent2,
       const std::vector<std::pair<Vector, double>> &parameters);
 
