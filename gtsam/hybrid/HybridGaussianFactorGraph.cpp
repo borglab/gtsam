@@ -366,6 +366,7 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
   return std::make_shared<HybridGaussianFactor>(discreteSeparator, newFactors);
 }
 
+/* *******************************************************************************/
 std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
 HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
   // Since we eliminate all continuous variables first,

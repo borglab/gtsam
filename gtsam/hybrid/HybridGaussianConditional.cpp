@@ -96,18 +96,21 @@ HybridGaussianConditional::HybridGaussianConditional(
       conditionals_(helper.conditionals),
       negLogConstant_(helper.minNegLogConstant) {}
 
+/* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKey &mode,
     const std::vector<GaussianConditional::shared_ptr> &conditionals)
     : HybridGaussianConditional(DiscreteKeys{mode},
                                 Conditionals({mode}, conditionals)) {}
 
+/* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKey &mode, Key key,  //
     const std::vector<std::pair<Vector, double>> &parameters)
     : HybridGaussianConditional(DiscreteKeys{mode},
                                 Helper(mode, parameters, key)) {}
 
+/* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKey &mode, Key key,  //
     const Matrix &A, Key parent,
@@ -115,6 +118,7 @@ HybridGaussianConditional::HybridGaussianConditional(
     : HybridGaussianConditional(DiscreteKeys{mode},
                                 Helper(mode, parameters, key, A, parent)) {}
 
+/* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKey &mode, Key key,  //
     const Matrix &A1, Key parent1, const Matrix &A2, Key parent2,
@@ -123,6 +127,7 @@ HybridGaussianConditional::HybridGaussianConditional(
           DiscreteKeys{mode},
           Helper(mode, parameters, key, A1, parent1, A2, parent2)) {}
 
+/* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKeys &discreteParents,
     const HybridGaussianConditional::Conditionals &conditionals)
