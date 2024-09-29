@@ -18,6 +18,7 @@
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/Vector.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
@@ -42,6 +43,7 @@
 #include <functional>
 #include <iostream>
 #include <iterator>
+#include <memory>
 #include <numeric>
 #include <vector>
 
@@ -119,6 +121,25 @@ std::vector<GaussianFactor::shared_ptr> components(Key key) {
           std::make_shared<JacobianFactor>(key, I_3x3, Vector3::Ones())};
 }
 }  // namespace two
+
+/* ************************************************************************* */
+TEST(HybridGaussianFactorGraph, hybridEliminationOneFactor) {
+  HybridGaussianFactorGraph hfg;
+  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
+
+  auto result = hfg.eliminate({X(1)});
+
+  // Check that we have a valid Gaussian conditional.
+  auto hgc = result.first->asHybrid();
+  CHECK(hgc);
+  const HybridValues values{{{X(1), Z_3x1}}, {{M(1), 1}}};
+  EXPECT(HybridConditional::CheckInvariants(*result.first, values));
+
+  // Check that factor is discrete and correct
+  auto factor = std::dynamic_pointer_cast<DecisionTreeFactor>(result.second);
+  CHECK(factor);
+  EXPECT(assert_equal(DecisionTreeFactor{m1, "1 1"}, *factor));
+}
 
 /* ************************************************************************* */
 TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
@@ -221,20 +242,16 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
 
-  {
-    hfg.add(HybridGaussianFactor({M(0), 2}, two::components(X(0))));
-    hfg.add(HybridGaussianFactor({M(1), 2}, two::components(X(2))));
-  }
+  hfg.add(HybridGaussianFactor({M(0), 2}, two::components(X(0))));
+  hfg.add(HybridGaussianFactor({M(1), 2}, two::components(X(2))));
 
   hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
 
   hfg.add(JacobianFactor(X(3), I_3x3, X(4), -I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(4), I_3x3, X(5), -I_3x3, Z_3x1));
 
-  {
-    hfg.add(HybridGaussianFactor({M(3), 2}, two::components(X(3))));
-    hfg.add(HybridGaussianFactor({M(2), 2}, two::components(X(5))));
-  }
+  hfg.add(HybridGaussianFactor({M(3), 2}, two::components(X(3))));
+  hfg.add(HybridGaussianFactor({M(2), 2}, two::components(X(5))));
 
   auto ordering_full =
       Ordering::ColamdConstrainedLast(hfg, {M(0), M(1), M(2), M(3)});
