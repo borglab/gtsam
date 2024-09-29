@@ -87,18 +87,44 @@ class GTSAM_EXPORT HybridGaussianConditional
       const DiscreteKey &mode,
       const std::vector<GaussianConditional::shared_ptr> &conditionals);
 
-  /// Construct from mean `mu_i` and `sigma_i`.
+  /**
+   * @brief Constructs a HybridGaussianConditional with means mu_i and
+   * standard deviations sigma_i.
+   *
+   * @param mode The discrete mode key.
+   * @param key The key for this conditional variable.
+   * @param parameters A vector of pairs (mu_i, sigma_i).
+   */
   HybridGaussianConditional(
-      const DiscreteKey &mode, Key key,  //
+      const DiscreteKey &mode, Key key,
       const std::vector<std::pair<Vector, double>> &parameters);
 
-  /// Construct from conditional mean `A1 p1 + b_i` and `sigma_i`.
+  /**
+   * @brief Constructs a HybridGaussianConditional with conditional means
+   * A × parent + b_i and standard deviations sigma_i.
+   *
+   * @param mode The discrete mode key.
+   * @param key The key for this conditional variable.
+   * @param A The matrix A.
+   * @param parent The key of the parent variable.
+   * @param parameters A vector of pairs (b_i, sigma_i).
+   */
   HybridGaussianConditional(
-      const DiscreteKey &mode, Key key,  //
-      const Matrix &A, Key parent,
+      const DiscreteKey &mode, Key key, const Matrix &A, Key parent,
       const std::vector<std::pair<Vector, double>> &parameters);
 
-  /// Construct from conditional mean `A1 p1 + A2 p2 + b_i` and `sigma_i`.
+  /**
+   * @brief Constructs a HybridGaussianConditional with conditional means
+   * A1 × parent1 + A2 × parent2 + b_i and standard deviations sigma_i.
+   *
+   * @param mode The discrete mode key.
+   * @param key The key for this conditional variable.
+   * @param A1 The first matrix.
+   * @param parent1 The key of the first parent variable.
+   * @param A2 The second matrix.
+   * @param parent2 The key of the second parent variable.
+   * @param parameters A vector of pairs (b_i, sigma_i).
+   */
   HybridGaussianConditional(
       const DiscreteKey &mode, Key key,  //
       const Matrix &A1, Key parent1, const Matrix &A2, Key parent2,
