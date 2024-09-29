@@ -29,16 +29,20 @@
 
 #include <cstddef>
 
+#include "gtsam/linear/JacobianFactor.h"
+
 namespace gtsam {
 /* *******************************************************************************/
 struct HybridGaussianConditional::ConstructorHelper {
   std::optional<size_t> nrFrontals;
-  HybridGaussianFactor::FactorValuePairs pairs;
+  FactorValuePairs pairs;
+  Conditionals conditionals;
   double minNegLogConstant;
 
-  /// Compute all variables needed for the private constructor below.
+  /// Construct from tree of GaussianConditionals.
   ConstructorHelper(const Conditionals &conditionals)
-      : minNegLogConstant(std::numeric_limits<double>::infinity()) {
+      : conditionals(conditionals),
+        minNegLogConstant(std::numeric_limits<double>::infinity()) {
     auto func = [this](const GaussianConditional::shared_ptr &c)
         -> GaussianFactorValuePair {
       double value = 0.0;
@@ -51,37 +55,78 @@ struct HybridGaussianConditional::ConstructorHelper {
       }
       return {std::dynamic_pointer_cast<GaussianFactor>(c), value};
     };
-    pairs = HybridGaussianFactor::FactorValuePairs(conditionals, func);
+    pairs = FactorValuePairs(conditionals, func);
     if (!nrFrontals.has_value()) {
       throw std::runtime_error(
           "HybridGaussianConditional: need at least one frontal variable.");
     }
   }
+
+  /// Construct from means and a single sigma.
+  ConstructorHelper(Key x, const DiscreteKey mode,
+                    const std::vector<Vector> &means, double sigma)
+      : nrFrontals(1), minNegLogConstant(0) {
+    std::vector<GaussianConditional::shared_ptr> gcs;
+    for (const auto &mean : means) {
+      auto c = GaussianConditional::sharedMeanAndStddev(x, mean, sigma);
+      gcs.push_back(c);
+    }
+    conditionals = Conditionals({mode}, gcs);
+    pairs = FactorValuePairs(conditionals, [](const auto &c) {
+      return GaussianFactorValuePair{c, 0.0};
+    });
+  }
+
+  /// Construct from means and a sigmas.
+  ConstructorHelper(Key x, const DiscreteKey mode,
+                    const std::vector<std::pair<Vector, double>> &parameters)
+      : nrFrontals(1),
+        minNegLogConstant(std::numeric_limits<double>::infinity()) {
+    std::vector<GaussianConditional::shared_ptr> gcs;
+    std::vector<GaussianFactorValuePair> fvs;
+    for (const auto &[mean, sigma] : parameters) {
+      auto c = GaussianConditional::sharedMeanAndStddev(x, mean, sigma);
+      double value = c->negLogConstant();
+      minNegLogConstant = std::min(minNegLogConstant, value);
+      gcs.push_back(c);
+      fvs.push_back({c, value});
+    }
+    conditionals = Conditionals({mode}, gcs);
+    pairs = FactorValuePairs({mode}, fvs);
+  }
 };
 
 /* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
-    const DiscreteKeys &discreteParents,
-    const HybridGaussianConditional::Conditionals &conditionals,
-    const ConstructorHelper &helper)
+    const DiscreteKeys &discreteParents, const ConstructorHelper &helper)
     : BaseFactor(discreteParents, helper.pairs),
       BaseConditional(*helper.nrFrontals),
-      conditionals_(conditionals),
+      conditionals_(helper.conditionals),
       negLogConstant_(helper.minNegLogConstant) {}
 
-/* *******************************************************************************/
+HybridGaussianConditional::HybridGaussianConditional(
+    const DiscreteKey &mode,
+    const std::vector<GaussianConditional::shared_ptr> &conditionals)
+    : HybridGaussianConditional(DiscreteKeys{mode},
+                                Conditionals({mode}, conditionals)) {}
+
+HybridGaussianConditional::HybridGaussianConditional(
+    Key x, const DiscreteKey mode, const std::vector<Vector> &means,
+    double sigma)
+    : HybridGaussianConditional(DiscreteKeys{mode},
+                                ConstructorHelper(x, mode, means, sigma)) {}
+
+HybridGaussianConditional::HybridGaussianConditional(
+    Key x, const DiscreteKey mode,
+    const std::vector<std::pair<Vector, double>> &parameters)
+    : HybridGaussianConditional(DiscreteKeys{mode},
+                                ConstructorHelper(x, mode, parameters)) {}
+
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKeys &discreteParents,
     const HybridGaussianConditional::Conditionals &conditionals)
-    : HybridGaussianConditional(discreteParents, conditionals,
+    : HybridGaussianConditional(discreteParents,
                                 ConstructorHelper(conditionals)) {}
-
-/* *******************************************************************************/
-HybridGaussianConditional::HybridGaussianConditional(
-    const DiscreteKey &discreteParent,
-    const std::vector<GaussianConditional::shared_ptr> &conditionals)
-    : HybridGaussianConditional(DiscreteKeys{discreteParent},
-                                Conditionals({discreteParent}, conditionals)) {}
 
 /* *******************************************************************************/
 const HybridGaussianConditional::Conditionals &

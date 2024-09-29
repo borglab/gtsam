@@ -43,26 +43,6 @@ const DiscreteValues m1Assignment{{M(0), 1}};
 DiscreteConditional::shared_ptr mixing =
     std::make_shared<DiscreteConditional>(m, "60/40");
 
-/**
- * Create a simple Gaussian Mixture Model represented as p(z|m)P(m)
- * where m is a discrete variable and z is a continuous variable.
- * The "mode" m is binary and depending on m, we have 2 different means
- * μ1 and μ2 for the Gaussian density p(z|m).
- */
-HybridBayesNet GaussianMixtureModel(double mu0, double mu1, double sigma0,
-                                    double sigma1) {
-  HybridBayesNet hbn;
-  auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
-  auto model1 = noiseModel::Isotropic::Sigma(1, sigma1);
-  auto c0 = std::make_shared<GaussianConditional>(Z(0), Vector1(mu0), I_1x1,
-                                                  model0),
-       c1 = std::make_shared<GaussianConditional>(Z(0), Vector1(mu1), I_1x1,
-                                                  model1);
-  hbn.emplace_shared<HybridGaussianConditional>(m, std::vector{c0, c1});
-  hbn.push_back(mixing);
-  return hbn;
-}
-
 /// Gaussian density function
 double Gaussian(double mu, double sigma, double z) {
   return exp(-0.5 * pow((z - mu) / sigma, 2)) / sqrt(2 * M_PI * sigma * sigma);
@@ -99,7 +79,10 @@ TEST(GaussianMixture, GaussianMixtureModel) {
   double mu0 = 1.0, mu1 = 3.0;
   double sigma = 2.0;
 
-  auto hbn = GaussianMixtureModel(mu0, mu1, sigma, sigma);
+  HybridBayesNet hbn;
+  std::vector<Vector> means{Vector1(mu0), Vector1(mu1)};
+  hbn.emplace_shared<HybridGaussianConditional>(Z(0), m, means, sigma);
+  hbn.push_back(mixing);
 
   // At the halfway point between the means, we should get P(m|z)=0.5
   double midway = mu1 - mu0;
@@ -133,7 +116,11 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
   double mu0 = 1.0, mu1 = 3.0;
   double sigma0 = 8.0, sigma1 = 4.0;
 
-  auto hbn = GaussianMixtureModel(mu0, mu1, sigma0, sigma1);
+  HybridBayesNet hbn;
+  std::vector<std::pair<Vector, double>> parameters{{Vector1(mu0), sigma0},
+                                                    {Vector1(mu1), sigma1}};
+  hbn.emplace_shared<HybridGaussianConditional>(Z(0), m, parameters);
+  hbn.push_back(mixing);
 
   // We get zMax=3.1333 by finding the maximum value of the function, at which
   // point the mode m==1 is about twice as probable as m==0.
