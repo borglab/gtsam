@@ -26,10 +26,9 @@
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
 
 #include <cstddef>
-
-#include "gtsam/linear/JacobianFactor.h"
 
 namespace gtsam {
 /* *******************************************************************************/
@@ -42,45 +41,25 @@ struct HybridGaussianConditional::Helper {
   using GC = GaussianConditional;
   using P = std::vector<std::pair<Vector, double>>;
 
-  // Common code for three constructors below:
-  template <typename Create>
-  void initialize(const DiscreteKey &mode, const P &p, Create create) {
+  /// Construct from a vector of mean and sigma pairs, plus extra args.
+  template <typename... Args>
+  Helper(const DiscreteKey &mode, const P &p, Args &&...args) {
     nrFrontals = 1;
     minNegLogConstant = std::numeric_limits<double>::infinity();
 
     std::vector<GaussianFactorValuePair> fvs;
     std::vector<GC::shared_ptr> gcs;
     for (const auto &[mean, sigma] : p) {
-      auto c = create(mean, sigma);
-      double value = c->negLogConstant();
+      auto gaussianConditional =
+          GC::sharedMeanAndStddev(std::forward<Args>(args)..., mean, sigma);
+      double value = gaussianConditional->negLogConstant();
       minNegLogConstant = std::min(minNegLogConstant, value);
-      fvs.push_back({c, value});
-      gcs.push_back(c);
+      fvs.push_back({gaussianConditional, value});
+      gcs.push_back(gaussianConditional);
     }
 
     conditionals = Conditionals({mode}, gcs);
     pairs = FactorValuePairs({mode}, fvs);
-  }
-
-  // Constructors for different types of GaussianConditionals:
-
-  Helper(const DiscreteKey &mode, Key x0, const P &p) {
-    initialize(mode, p, [x0](const Vector &mean, double sigma) {
-      return GC::sharedMeanAndStddev(x0, mean, sigma);
-    });
-  }
-
-  Helper(const DiscreteKey &mode, Key x0, const Matrix &A, Key x1, const P &p) {
-    initialize(mode, p, [x0, A, x1](const Vector &mean, double sigma) {
-      return GC::sharedMeanAndStddev(x0, A, x1, mean, sigma);
-    });
-  }
-
-  Helper(const DiscreteKey &mode, Key x0,  //
-         const Matrix &A1, Key x1, const Matrix &A2, Key x2, const P &p) {
-    initialize(mode, p, [x0, A1, x1, A2, x2](const Vector &mean, double sigma) {
-      return GC::sharedMeanAndStddev(x0, A1, x1, A2, x2, mean, sigma);
-    });
   }
 
   /// Construct from tree of GaussianConditionals.
@@ -124,14 +103,14 @@ HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKey mode, Key key,  //
     const std::vector<std::pair<Vector, double>> &parameters)
     : HybridGaussianConditional(DiscreteKeys{mode},
-                                Helper(mode, key, parameters)) {}
+                                Helper(mode, parameters, key)) {}
 
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKey mode, Key key,  //
     const Matrix &A, Key parent,
     const std::vector<std::pair<Vector, double>> &parameters)
     : HybridGaussianConditional(DiscreteKeys{mode},
-                                Helper(mode, key, A, parent, parameters)) {}
+                                Helper(mode, parameters, key, A, parent)) {}
 
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKey mode, Key key,  //
@@ -139,7 +118,7 @@ HybridGaussianConditional::HybridGaussianConditional(
     const std::vector<std::pair<Vector, double>> &parameters)
     : HybridGaussianConditional(
           DiscreteKeys{mode},
-          Helper(mode, key, A1, parent1, A2, parent2, parameters)) {}
+          Helper(mode, parameters, key, A1, parent1, A2, parent2)) {}
 
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKeys &discreteParents,
