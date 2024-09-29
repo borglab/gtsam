@@ -74,17 +74,6 @@ TEST(HybridGaussianConditional, Invariants) {
 /// Check LogProbability.
 TEST(HybridGaussianConditional, LogProbability) {
   using namespace equal_constants;
-  auto actual = hybrid_conditional.logProbability(vv);
-
-  // Check result.
-  std::vector<DiscreteKey> discrete_keys = {mode};
-  std::vector<double> leaves = {conditionals[0]->logProbability(vv),
-                                conditionals[1]->logProbability(vv)};
-  AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
-
-  EXPECT(assert_equal(expected, actual, 1e-6));
-
-  // Check for non-tree version.
   for (size_t mode : {0, 1}) {
     const HybridValues hv{vv, {{M(0), mode}}};
     EXPECT_DOUBLES_EQUAL(conditionals[mode]->logProbability(vv),

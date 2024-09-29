@@ -195,16 +195,6 @@ class GTSAM_EXPORT HybridGaussianConditional
   const Conditionals &conditionals() const;
 
   /**
-   * @brief Compute logProbability of the HybridGaussianConditional as a tree.
-   *
-   * @param continuousValues The continuous VectorValues.
-   * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
-   * as the conditionals, and leaf values as the logProbability.
-   */
-  AlgebraicDecisionTree<Key> logProbability(
-      const VectorValues &continuousValues) const;
-
-  /**
    * @brief Compute the logProbability of this hybrid Gaussian conditional.
    *
    * @param values Continuous values and discrete assignment.

@@ -338,24 +338,6 @@ HybridGaussianConditional::shared_ptr HybridGaussianConditional::prune(
 }
 
 /* *******************************************************************************/
-AlgebraicDecisionTree<Key> HybridGaussianConditional::logProbability(
-    const VectorValues &continuousValues) const {
-  // functor to calculate (double) logProbability value from
-  // GaussianConditional.
-  auto probFunc =
-      [continuousValues](const GaussianConditional::shared_ptr &conditional) {
-        if (conditional) {
-          return conditional->logProbability(continuousValues);
-        } else {
-          // Return arbitrarily small logProbability if conditional is null
-          // Conditional is null if it is pruned out.
-          return -1e20;
-        }
-      };
-  return DecisionTree<Key, double>(conditionals_, probFunc);
-}
-
-/* *******************************************************************************/
 double HybridGaussianConditional::logProbability(
     const HybridValues &values) const {
   auto conditional = conditionals_(values.discrete());
