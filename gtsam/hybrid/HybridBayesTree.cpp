@@ -26,6 +26,10 @@
 #include <gtsam/inference/BayesTreeCliqueBase-inst.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 
+#include <memory>
+
+#include "gtsam/hybrid/HybridConditional.h"
+
 namespace gtsam {
 
 // Instantiate base class
@@ -207,7 +211,9 @@ void HybridBayesTree::prune(const size_t maxNrLeaves) {
       if (conditional->isHybrid()) {
         auto hybridGaussianCond = conditional->asHybrid();
 
-        hybridGaussianCond->prune(parentData.prunedDiscreteProbs);
+        // Imperative
+        clique->conditional() = std::make_shared<HybridConditional>(
+            hybridGaussianCond->prune(parentData.prunedDiscreteProbs));
       }
       return parentData;
     }
