@@ -243,17 +243,6 @@ class GTSAM_EXPORT HybridGaussianConditional
   /// Convert to a DecisionTree of Gaussian factor graphs.
   GaussianFactorGraphTree asGaussianFactorGraphTree() const;
 
-  /**
-   * @brief Get the pruner function from discrete probabilities.
-   *
-   * @param discreteProbs The probabilities of only discrete keys.
-   * @return std::function<GaussianConditional::shared_ptr(
-   * const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
-   */
-  std::function<GaussianConditional::shared_ptr(
-      const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
-  prunerFunc(const DecisionTreeFactor &prunedProbabilities);
-
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;
 
