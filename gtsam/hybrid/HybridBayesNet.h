@@ -201,8 +201,13 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    */
   HybridValues sample() const;
 
-  /// Prune the Hybrid Bayes Net such that we have at most maxNrLeaves leaves.
-  HybridBayesNet prune(size_t maxNrLeaves);
+  /**
+   * @brief Prune the Bayes Net such that we have at most maxNrLeaves leaves.
+   *
+   * @param maxNrLeaves Continuous values at which to compute the error.
+   * @return A pruned HybridBayesNet
+   */
+  HybridBayesNet prune(size_t maxNrLeaves) const;
 
   /**
    * @brief Compute conditional error for each discrete assignment,
