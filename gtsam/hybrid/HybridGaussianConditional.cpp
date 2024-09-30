@@ -192,11 +192,10 @@ bool HybridGaussianConditional::equals(const HybridFactor &lf,
 
   // Check the base and the factors:
   return BaseFactor::equals(*e, tol) &&
-         conditionals_.equals(e->conditionals_,
-                              [tol](const GaussianConditional::shared_ptr &f1,
-                                    const GaussianConditional::shared_ptr &f2) {
-                                return f1->equals(*(f2), tol);
-                              });
+         conditionals_.equals(
+             e->conditionals_, [tol](const auto &f1, const auto &f2) {
+               return (!f1 && !f2) || (f1 && f2 && f1->equals(*f2, tol));
+             });
 }
 
 /* *******************************************************************************/

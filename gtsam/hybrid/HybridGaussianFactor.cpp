@@ -154,10 +154,9 @@ bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {
 
   // Check the base and the factors:
   return Base::equals(*e, tol) &&
-         factors_.equals(e->factors_,
-                         [tol](const sharedFactor &f1, const sharedFactor &f2) {
-                           return f1->equals(*f2, tol);
-                         });
+         factors_.equals(e->factors_, [tol](const auto &f1, const auto &f2) {
+           return (!f1 && !f2) || (f1 && f2 && f1->equals(*f2, tol));
+         });
 }
 
 /* *******************************************************************************/
