@@ -231,4 +231,9 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   GaussianFactorGraph operator()(const DiscreteValues& assignment) const;
 };
 
+// traits
+template <>
+struct traits<HybridGaussianFactorGraph>
+    : public Testable<HybridGaussianFactorGraph> {};
+
 }  // namespace gtsam

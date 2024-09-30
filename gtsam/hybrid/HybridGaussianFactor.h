@@ -189,10 +189,6 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    */
   static Factors augment(const FactorValuePairs &factors);
 
-  /// Helper method to compute the error of a component.
-  double potentiallyPrunedComponentError(
-      const sharedFactor &gf, const VectorValues &continuousValues) const;
-
   /// Helper struct to assist private constructor below.
   struct ConstructorHelper;
 

@@ -154,10 +154,9 @@ bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {
 
   // Check the base and the factors:
   return Base::equals(*e, tol) &&
-         factors_.equals(e->factors_,
-                         [tol](const sharedFactor &f1, const sharedFactor &f2) {
-                           return f1->equals(*f2, tol);
-                         });
+         factors_.equals(e->factors_, [tol](const auto &f1, const auto &f2) {
+           return (!f1 && !f2) || (f1 && f2 && f1->equals(*f2, tol));
+         });
 }
 
 /* *******************************************************************************/
@@ -213,16 +212,15 @@ GaussianFactorGraphTree HybridGaussianFactor::asGaussianFactorGraphTree()
 }
 
 /* *******************************************************************************/
-double HybridGaussianFactor::potentiallyPrunedComponentError(
-    const sharedFactor &gf, const VectorValues &values) const {
+/// Helper method to compute the error of a component.
+static double PotentiallyPrunedComponentError(
+    const GaussianFactor::shared_ptr &gf, const VectorValues &values) {
   // Check if valid pointer
   if (gf) {
     return gf->error(values);
   } else {
-    // If not valid, pointer, it means this component was pruned,
-    // so we return maximum error.
-    // This way the negative exponential will give
-    // a probability value close to 0.0.
+    // If nullptr this component was pruned, so we return maximum error. This
+    // way the negative exponential will give a probability value close to 0.0.
     return std::numeric_limits<double>::max();
   }
 }
@@ -231,8 +229,8 @@ double HybridGaussianFactor::potentiallyPrunedComponentError(
 AlgebraicDecisionTree<Key> HybridGaussianFactor::errorTree(
     const VectorValues &continuousValues) const {
   // functor to convert from sharedFactor to double error value.
-  auto errorFunc = [this, &continuousValues](const sharedFactor &gf) {
-    return this->potentiallyPrunedComponentError(gf, continuousValues);
+  auto errorFunc = [&continuousValues](const sharedFactor &gf) {
+    return PotentiallyPrunedComponentError(gf, continuousValues);
   };
   DecisionTree<Key, double> error_tree(factors_, errorFunc);
   return error_tree;
@@ -242,7 +240,7 @@ AlgebraicDecisionTree<Key> HybridGaussianFactor::errorTree(
 double HybridGaussianFactor::error(const HybridValues &values) const {
   // Directly index to get the component, no need to build the whole tree.
   const sharedFactor gf = factors_(values.discrete());
-  return potentiallyPrunedComponentError(gf, values.continuous());
+  return PotentiallyPrunedComponentError(gf, values.continuous());
 }
 
 }  // namespace gtsam
