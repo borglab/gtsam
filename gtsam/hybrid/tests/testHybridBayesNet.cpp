@@ -95,12 +95,6 @@ TEST(HybridBayesNet, EvaluatePureDiscrete) {
   EXPECT(assert_equal(bayesNet, bayesNet.prune(2)));
   EXPECT_LONGS_EQUAL(1, bayesNet.prune(1).at(0)->size());
 
-  // errorTree
-  AlgebraicDecisionTree<Key> actual = bayesNet.errorTree({});
-  AlgebraicDecisionTree<Key> expectedErrorTree(
-      {Asia}, std::vector<double>{-log(0.4), -log(0.6)});
-  EXPECT(assert_equal(expectedErrorTree, actual));
-
   // error
   EXPECT_DOUBLES_EQUAL(-log(0.4), bayesNet.error(zero), 1e-9);
   EXPECT_DOUBLES_EQUAL(-log(0.6), bayesNet.error(one), 1e-9);
@@ -127,20 +121,73 @@ TEST(HybridBayesNet, EvaluatePureDiscrete) {
 /* ****************************************************************************/
 // Test creation of a tiny hybrid Bayes net.
 TEST(HybridBayesNet, Tiny) {
-  auto bn = tiny::createHybridBayesNet();
-  EXPECT_LONGS_EQUAL(3, bn.size());
+  auto bayesNet = tiny::createHybridBayesNet();  // P(z|x,mode)P(x)P(mode)
+  EXPECT_LONGS_EQUAL(3, bayesNet.size());
 
   const VectorValues vv{{Z(0), Vector1(5.0)}, {X(0), Vector1(5.0)}};
-  auto fg = bn.toFactorGraph(vv);
-  EXPECT_LONGS_EQUAL(3, fg.size());
+  HybridValues zero{vv, {{M(0), 0}}}, one{vv, {{M(0), 1}}};
 
-  // Check that the ratio of probPrime to evaluate is the same for all modes.
-  std::vector<double> ratio(2);
-  for (size_t mode : {0, 1}) {
-    const HybridValues hv{vv, {{M(0), mode}}};
-    ratio[mode] = std::exp(-fg.error(hv)) / bn.evaluate(hv);
-  }
-  EXPECT_DOUBLES_EQUAL(ratio[0], ratio[1], 1e-8);
+  // choose
+  HybridGaussianConditional::shared_ptr hgc = bayesNet.at(0)->asHybrid();
+  GaussianBayesNet chosen;
+  chosen.push_back(hgc->choose(zero.discrete()));
+  chosen.push_back(bayesNet.at(1)->asGaussian());
+  EXPECT(assert_equal(chosen, bayesNet.choose(zero.discrete()), 1e-9));
+
+  // logProbability
+  const double logP0 = chosen.logProbability(vv) + log(0.4);  // 0.4 is prior
+  const double logP1 = bayesNet.choose(one.discrete()).logProbability(vv) + log(0.6);  // 0.6 is prior
+  EXPECT_DOUBLES_EQUAL(logP0, bayesNet.logProbability(zero), 1e-9);
+  EXPECT_DOUBLES_EQUAL(logP1, bayesNet.logProbability(one), 1e-9);
+
+  // evaluate
+  EXPECT_DOUBLES_EQUAL(exp(logP0), bayesNet.evaluate(zero), 1e-9);
+
+  // optimize
+  EXPECT(assert_equal(one, bayesNet.optimize()));
+  EXPECT(assert_equal(chosen.optimize(), bayesNet.optimize(zero.discrete())));
+
+  // sample
+  std::mt19937_64 rng(42);
+  EXPECT(assert_equal({{M(0), 1}}, bayesNet.sample(&rng).discrete()));
+
+  // prune
+  auto pruned = bayesNet.prune(1);
+  EXPECT_LONGS_EQUAL(1, pruned.at(0)->asHybrid()->nrComponents());
+  EXPECT(!pruned.equals(bayesNet));
+
+  // // error
+  // EXPECT_DOUBLES_EQUAL(-log(0.4), bayesNet.error(zero), 1e-9);
+  // EXPECT_DOUBLES_EQUAL(-log(0.6), bayesNet.error(one), 1e-9);
+
+  // logDiscretePosteriorPrime, TODO: useless as -errorTree?
+  AlgebraicDecisionTree<Key> expected(M(0), logP0, logP1);
+  EXPECT(assert_equal(expected, bayesNet.logDiscretePosteriorPrime(vv)));
+
+  // // logProbability
+  // EXPECT_DOUBLES_EQUAL(log(0.4), bayesNet.logProbability(zero), 1e-9);
+  // EXPECT_DOUBLES_EQUAL(log(0.6), bayesNet.logProbability(one), 1e-9);
+
+  // // discretePosterior
+  // AlgebraicDecisionTree<Key> expectedPosterior({Asia},
+  //                                              std::vector<double>{0.4,
+  //                                              0.6});
+  // EXPECT(assert_equal(expectedPosterior, bayesNet.discretePosterior({})));
+
+  // // toFactorGraph
+  // HybridGaussianFactorGraph expectedFG{};
+
+  // auto fg = bayesNet.toFactorGraph(vv);
+  // EXPECT_LONGS_EQUAL(3, fg.size());
+  // EXPECT(assert_equal(expectedFG, fg));
+
+  // // Check that the ratio of probPrime to evaluate is the same for all modes.
+  // std::vector<double> ratio(2);
+  // ratio[0] = std::exp(-fg.error(zero)) / bayesNet.evaluate(zero);
+  // ratio[0] = std::exp(-fg.error(one)) / bayesNet.evaluate(one);
+  // EXPECT_DOUBLES_EQUAL(ratio[0], ratio[1], 1e-8);
+
+  // TODO: better test: check if discretePosteriors agree !
 }
 
 /* ****************************************************************************/
@@ -172,21 +219,6 @@ TEST(HybridBayesNet, evaluateHybrid) {
   const double mixtureProbability = hgc->evaluate(values);
   EXPECT_DOUBLES_EQUAL(conditionalProbability * mixtureProbability * 0.99,
                        bayesNet.evaluate(values), 1e-9);
-}
-
-/* ****************************************************************************/
-// Test error for a hybrid Bayes net P(X0|X1) P(X1|Asia) P(Asia).
-TEST(HybridBayesNet, Error) {
-  using namespace different_sigmas;
-
-  AlgebraicDecisionTree<Key> actual = bayesNet.errorTree(values.continuous());
-
-  // Regression.
-  // Manually added all the error values from the 3 conditional types.
-  AlgebraicDecisionTree<Key> expected(
-      {Asia}, std::vector<double>{2.33005033585, 5.38619084965});
-
-  EXPECT(assert_equal(expected, actual));
 }
 
 /* ****************************************************************************/

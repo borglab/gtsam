@@ -994,15 +994,8 @@ TEST(HybridNonlinearFactorGraph, DifferentCovariances) {
   cv.insert(X(0), Vector1(0.0));
   cv.insert(X(1), Vector1(0.0));
 
-  // Check that the error values at the MLE point μ.
-  AlgebraicDecisionTree<Key> errorTree = hbn->errorTree(cv);
-
   DiscreteValues dv0{{M(1), 0}};
   DiscreteValues dv1{{M(1), 1}};
-
-  // regression
-  EXPECT_DOUBLES_EQUAL(9.90348755254, errorTree(dv0), 1e-9);
-  EXPECT_DOUBLES_EQUAL(0.69314718056, errorTree(dv1), 1e-9);
 
   DiscreteConditional expected_m1(m1, "0.5/0.5");
   DiscreteConditional actual_m1 = *(hbn->at(2)->asDiscrete());

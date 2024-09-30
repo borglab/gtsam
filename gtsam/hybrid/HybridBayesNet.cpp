@@ -195,40 +195,6 @@ HybridValues HybridBayesNet::sample() const {
 }
 
 /* ************************************************************************* */
-AlgebraicDecisionTree<Key> HybridBayesNet::errorTree(
-    const VectorValues &continuousValues) const {
-  AlgebraicDecisionTree<Key> result(0.0);
-
-  // Iterate over each conditional.
-  for (auto &&conditional : *this) {
-    if (auto gm = conditional->asHybrid()) {
-      // If conditional is hybrid, compute error for all assignments.
-      result = result + gm->errorTree(continuousValues);
-
-    } else if (auto gc = conditional->asGaussian()) {
-      // If continuous, get the error and add it to the result
-      double error = gc->error(continuousValues);
-      // Add the computed error to every leaf of the result tree.
-      result = result.apply(
-          [error](double leaf_value) { return leaf_value + error; });
-
-    } else if (auto dc = conditional->asDiscrete()) {
-      // If discrete, add the discrete error in the right branch
-      if (result.nrLeaves() == 1) {
-        result = dc->errorTree();
-      } else {
-        result = result.apply(
-            [dc](const Assignment<Key> &assignment, double leaf_value) {
-              return leaf_value + dc->error(DiscreteValues(assignment));
-            });
-      }
-    }
-  }
-
-  return result;
-}
-
-/* ************************************************************************* */
 AlgebraicDecisionTree<Key> HybridBayesNet::logDiscretePosteriorPrime(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> result(0.0);

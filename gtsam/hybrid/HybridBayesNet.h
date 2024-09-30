@@ -211,16 +211,6 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   HybridBayesNet prune(size_t maxNrLeaves) const;
 
   /**
-   * @brief Compute conditional error for each discrete assignment,
-   * and return as a tree.
-   *
-   * @param continuousValues Continuous values at which to compute the error.
-   * @return AlgebraicDecisionTree<Key>
-   */
-  AlgebraicDecisionTree<Key> errorTree(
-      const VectorValues &continuousValues) const;
-
-  /**
    * @brief Error method using HybridValues which returns specific error for
    * assignment.
    */
