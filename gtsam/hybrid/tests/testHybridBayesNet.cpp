@@ -168,8 +168,6 @@ TEST(HybridBayesNet, Tiny) {
   const double error1 = chosen1.error(vv) + gc1->negLogConstant() -
                         px->negLogConstant() - log(0.6);
   // print errors:
-  std::cout << "error0 = " << error0 << std::endl;
-  std::cout << "error1 = " << error1 << std::endl;
   EXPECT_DOUBLES_EQUAL(error0, bayesNet.error(zero), 1e-9);
   EXPECT_DOUBLES_EQUAL(error1, bayesNet.error(one), 1e-9);
   EXPECT_DOUBLES_EQUAL(error0 + logP0, error1 + logP1, 1e-9);
@@ -196,16 +194,13 @@ TEST(HybridBayesNet, Tiny) {
   ratio[1] = std::exp(-fg.error(one)) / bayesNet.evaluate(one);
   EXPECT_DOUBLES_EQUAL(ratio[0], ratio[1], 1e-8);
 
-  // TODO(Frank): Better test: check if discretePosteriors agree !
-  // Since ϕ(M, x) \propto P(M,x|z)
-  // q0 = std::exp(-fg.error(zero));
-  // q1 = std::exp(-fg.error(one));
-  // sum = q0 + q1;
-  // AlgebraicDecisionTree<Key> fgPosterior(M(0), q0 / sum, q1 / sum);
+  // Better and more general test:
+  // Since ϕ(M, x) \propto P(M,x|z) the discretePosteriors should agree
+  q0 = std::exp(-fg.error(zero));
+  q1 = std::exp(-fg.error(one));
+  sum = q0 + q1;
+  EXPECT(assert_equal(expectedPosterior, {M(0), q0 / sum, q1 / sum}));
   VectorValues xv{{X(0), Vector1(5.0)}};
-  fg.printErrors(zero);
-  fg.printErrors(one);
-  GTSAM_PRINT(fg.errorTree(xv));
   auto fgPosterior = fg.discretePosterior(xv);
   EXPECT(assert_equal(expectedPosterior, fgPosterior));
 }
