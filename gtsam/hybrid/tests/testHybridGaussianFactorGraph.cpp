@@ -614,21 +614,20 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
   const HybridValues delta = hybridBayesNet->optimize();
 
   // regression test for errorTree
-  std::vector<double> leaves = {0.9998558, 0.4902432, 0.5193694, 0.0097568};
+  std::vector<double> leaves = {2.7916153, 1.5888555, 1.7233422, 1.6191947};
   AlgebraicDecisionTree<Key> expectedErrors(s.modes, leaves);
   const auto error_tree = graph.errorTree(delta.continuous());
   EXPECT(assert_equal(expectedErrors, error_tree, 1e-7));
 
   // regression test for discretePosterior
   const AlgebraicDecisionTree<Key> expectedPosterior(
-      s.modes, std::vector{0.14341014, 0.23872714, 0.23187421, 0.38598852});
+      s.modes, std::vector{0.095516068, 0.31800092, 0.27798511, 0.3084979});
   auto posterior = graph.discretePosterior(delta.continuous());
   EXPECT(assert_equal(expectedPosterior, posterior, 1e-7));
 }
 
 /* ****************************************************************************/
-// Test hybrid gaussian factor graph errorTree during
-// incremental operation
+// Test hybrid gaussian factor graph errorTree during incremental operation
 TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   Switching s(4);
 
@@ -648,8 +647,7 @@ TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   auto error_tree = graph.errorTree(delta.continuous());
 
   std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
-  std::vector<double> leaves = {0.99985581, 0.4902432, 0.51936941,
-                                0.0097568009};
+  std::vector<double> leaves = {2.7916153, 1.5888555, 1.7233422, 1.6191947};
   AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
 
   // regression
@@ -666,12 +664,10 @@ TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   delta = hybridBayesNet->optimize();
   auto error_tree2 = graph.errorTree(delta.continuous());
 
-  discrete_keys = {{M(0), 2}, {M(1), 2}, {M(2), 2}};
+  // regression
   leaves = {0.50985198, 0.0097577296, 0.50009425, 0,
             0.52922138, 0.029127133,  0.50985105, 0.0097567964};
-  AlgebraicDecisionTree<Key> expected_error2(discrete_keys, leaves);
-
-  // regression
+  AlgebraicDecisionTree<Key> expected_error2(s.modes, leaves);
   EXPECT(assert_equal(expected_error, error_tree, 1e-7));
 }
 
