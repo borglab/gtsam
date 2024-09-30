@@ -217,8 +217,8 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   using Base::error;
 
   /**
-   * @brief Compute the log posterior log P'(M|x) of all assignments up to a
-   * constant, returning the result as an algebraic decision tree.
+   * @brief Compute the negative log posterior log P'(M|x) of all assignments up
+   * to a constant, returning the result as an algebraic decision tree.
    *
    * @note The joint P(X,M) is p(X|M) P(M)
    * Then the posterior on M given X=x is is P(M|x) = p(x|M) P(M) / p(x).
@@ -229,7 +229,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @param continuousValues Continuous values x at which to compute log P'(M|x)
    * @return AlgebraicDecisionTree<Key>
    */
-  AlgebraicDecisionTree<Key> logDiscretePosteriorPrime(
+  AlgebraicDecisionTree<Key> errorTree(
       const VectorValues &continuousValues) const;
 
   using BayesNet::logProbability;  // expose HybridValues version

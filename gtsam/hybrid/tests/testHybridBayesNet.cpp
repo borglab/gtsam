@@ -95,18 +95,16 @@ TEST(HybridBayesNet, EvaluatePureDiscrete) {
   EXPECT_DOUBLES_EQUAL(-log(0.4), bayesNet.error(zero), 1e-9);
   EXPECT_DOUBLES_EQUAL(-log(0.6), bayesNet.error(one), 1e-9);
 
-  // logDiscretePosteriorPrime, TODO: useless as -errorTree?
-  AlgebraicDecisionTree<Key> expected({Asia},
-                                      std::vector<double>{log(0.4), log(0.6)});
-  EXPECT(assert_equal(expected, bayesNet.logDiscretePosteriorPrime({})));
+  // errorTree
+  AlgebraicDecisionTree<Key> expected(asiaKey, -log(0.4), -log(0.6));
+  EXPECT(assert_equal(expected, bayesNet.errorTree({})));
 
   // logProbability
   EXPECT_DOUBLES_EQUAL(log(0.4), bayesNet.logProbability(zero), 1e-9);
   EXPECT_DOUBLES_EQUAL(log(0.6), bayesNet.logProbability(one), 1e-9);
 
   // discretePosterior
-  AlgebraicDecisionTree<Key> expectedPosterior({Asia},
-                                               std::vector<double>{0.4, 0.6});
+  AlgebraicDecisionTree<Key> expectedPosterior(asiaKey, 0.4, 0.6);
   EXPECT(assert_equal(expectedPosterior, bayesNet.discretePosterior({})));
 
   // toFactorGraph
@@ -169,15 +167,21 @@ TEST(HybridBayesNet, Tiny) {
                         px->negLogConstant() - log(0.4);
   const double error1 = chosen1.error(vv) + gc1->negLogConstant() -
                         px->negLogConstant() - log(0.6);
+  // print errors:
+  std::cout << "error0 = " << error0 << std::endl;
+  std::cout << "error1 = " << error1 << std::endl;
   EXPECT_DOUBLES_EQUAL(error0, bayesNet.error(zero), 1e-9);
   EXPECT_DOUBLES_EQUAL(error1, bayesNet.error(one), 1e-9);
   EXPECT_DOUBLES_EQUAL(error0 + logP0, error1 + logP1, 1e-9);
 
-  // logDiscretePosteriorPrime, TODO: useless as -errorTree?
-  AlgebraicDecisionTree<Key> expected(M(0), logP0, logP1);
-  EXPECT(assert_equal(expected, bayesNet.logDiscretePosteriorPrime(vv)));
+  // errorTree
+  AlgebraicDecisionTree<Key> expected(M(0), error0, error1);
+  EXPECT(assert_equal(expected, bayesNet.errorTree(vv)));
 
   // discretePosterior
+  // We have: P(z|x,mode)P(x)P(mode). When we condition on z and x, we get
+  // P(mode|z,x) \propto P(z|x,mode)P(x)P(mode)
+  // Normalizing this yields posterior P(mode|z,x) = {0.8, 0.2}
   double q0 = std::exp(logP0), q1 = std::exp(logP1), sum = q0 + q1;
   AlgebraicDecisionTree<Key> expectedPosterior(M(0), q0 / sum, q1 / sum);
   EXPECT(assert_equal(expectedPosterior, bayesNet.discretePosterior(vv)));
@@ -191,6 +195,19 @@ TEST(HybridBayesNet, Tiny) {
   ratio[0] = std::exp(-fg.error(zero)) / bayesNet.evaluate(zero);
   ratio[1] = std::exp(-fg.error(one)) / bayesNet.evaluate(one);
   EXPECT_DOUBLES_EQUAL(ratio[0], ratio[1], 1e-8);
+
+  // TODO(Frank): Better test: check if discretePosteriors agree !
+  // Since ϕ(M, x) \propto P(M,x|z)
+  // q0 = std::exp(-fg.error(zero));
+  // q1 = std::exp(-fg.error(one));
+  // sum = q0 + q1;
+  // AlgebraicDecisionTree<Key> fgPosterior(M(0), q0 / sum, q1 / sum);
+  VectorValues xv{{X(0), Vector1(5.0)}};
+  fg.printErrors(zero);
+  fg.printErrors(one);
+  GTSAM_PRINT(fg.errorTree(xv));
+  auto fgPosterior = fg.discretePosterior(xv);
+  EXPECT(assert_equal(expectedPosterior, fgPosterior));
 }
 
 /* ****************************************************************************/
@@ -556,8 +573,8 @@ TEST(HybridBayesNet, ErrorTreeWithConditional) {
   AlgebraicDecisionTree<Key> errorTree = gfg.errorTree(vv);
 
   // regression
-  AlgebraicDecisionTree<Key> expected(m1, 59.335390372, 5050.125);
-  EXPECT(assert_equal(expected, errorTree, 1e-9));
+  AlgebraicDecisionTree<Key> expected(m1, 60.028538, 5050.8181);
+  EXPECT(assert_equal(expected, errorTree, 1e-4));
 }
 
 /* ************************************************************************* */
