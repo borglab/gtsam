@@ -46,29 +46,29 @@ using symbol_shorthand::X;
  * @brief Create a switching system chain. A switching system is a continuous
  * system which depends on a discrete mode at each time step of the chain.
  *
- * @param n The number of chain elements.
+ * @param K The number of chain elements.
  * @param x The functional to help specify the continuous key.
  * @param m The functional to help specify the discrete key.
  * @return HybridGaussianFactorGraph::shared_ptr
  */
 inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
-    size_t n, std::function<Key(int)> x = X, std::function<Key(int)> m = M) {
+    size_t K, std::function<Key(int)> x = X, std::function<Key(int)> m = M) {
   HybridGaussianFactorGraph hfg;
 
   hfg.add(JacobianFactor(x(1), I_3x3, Z_3x1));
 
   // x(1) to x(n+1)
-  for (size_t t = 1; t < n; t++) {
-    DiscreteKeys dKeys{{m(t), 2}};
+  for (size_t k = 1; k < K; k++) {
+    DiscreteKeys dKeys{{m(k), 2}};
     std::vector<GaussianFactor::shared_ptr> components;
     components.emplace_back(
-        new JacobianFactor(x(t), I_3x3, x(t + 1), I_3x3, Z_3x1));
+        new JacobianFactor(x(k), I_3x3, x(k + 1), I_3x3, Z_3x1));
     components.emplace_back(
-        new JacobianFactor(x(t), I_3x3, x(t + 1), I_3x3, Vector3::Ones()));
-    hfg.add(HybridGaussianFactor({m(t), 2}, components));
+        new JacobianFactor(x(k), I_3x3, x(k + 1), I_3x3, Vector3::Ones()));
+    hfg.add(HybridGaussianFactor({m(k), 2}, components));
 
-    if (t > 1) {
-      hfg.add(DecisionTreeFactor({{m(t - 1), 2}, {m(t), 2}}, "0 1 1 3"));
+    if (k > 1) {
+      hfg.add(DecisionTreeFactor({{m(k - 1), 2}, {m(k), 2}}, "0 1 1 3"));
     }
   }
 
@@ -118,7 +118,7 @@ inline std::pair<KeyVector, std::vector<int>> makeBinaryOrdering(
 using MotionModel = BetweenFactor<double>;
 
 // Test fixture with switching network.
-/// ϕ(X(0)) .. ϕ(X(k),X(k+1)) .. ϕ(X(k);z_k) .. ϕ(M(0)) .. ϕ(M(k),M(k+1))
+/// ϕ(X(0)) .. ϕ(X(k),X(k+1)) .. ϕ(X(k);z_k) .. ϕ(M(0)) .. ϕ(M(K-3),M(K-2))
 struct Switching {
   size_t K;
   DiscreteKeys modes;
@@ -195,7 +195,7 @@ struct Switching {
   }
 
   /**
-   * @brief Add "mode chain" to HybridNonlinearFactorGraph from M(0) to M(K-1).
+   * @brief Add "mode chain" to HybridNonlinearFactorGraph from M(0) to M(K-2).
    * E.g. if K=4, we want M0, M1 and M2.
    *
    * @param fg The factor graph to which the mode chain is added.
