@@ -168,7 +168,7 @@ size_t HybridGaussianConditional::nrComponents() const {
 }
 
 /* *******************************************************************************/
-GaussianConditional::shared_ptr HybridGaussianConditional::operator()(
+GaussianConditional::shared_ptr HybridGaussianConditional::choose(
     const DiscreteValues &discreteValues) const {
   auto &ptr = conditionals_(discreteValues);
   if (!ptr) return nullptr;

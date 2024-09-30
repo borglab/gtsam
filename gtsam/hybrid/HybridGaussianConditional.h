@@ -159,8 +159,14 @@ class GTSAM_EXPORT HybridGaussianConditional
   /// @{
 
   /// @brief Return the conditional Gaussian for the given discrete assignment.
-  GaussianConditional::shared_ptr operator()(
+  GaussianConditional::shared_ptr choose(
       const DiscreteValues &discreteValues) const;
+
+  /// @brief Syntactic sugar for choose.
+  GaussianConditional::shared_ptr operator()(
+      const DiscreteValues &discreteValues) const {
+    return choose(discreteValues);
+  }
 
   /// Returns the total number of continuous components
   size_t nrComponents() const;
