@@ -128,7 +128,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * value assignment. Note this corresponds to the Gaussian posterior p(X|M=m)
    * of the continuous variables given the discrete assignment M=m.
    *
-   * @note Any pure discrete factors are ignored.
+   * @note Be careful, as any factors not Gaussian are ignored.
    *
    * @param assignment The discrete value assignment for the discrete keys.
    * @return Gaussian posterior as a GaussianBayesNet

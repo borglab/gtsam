@@ -542,7 +542,7 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::discretePosterior(
 }
 
 /* ************************************************************************ */
-GaussianFactorGraph HybridGaussianFactorGraph::operator()(
+GaussianFactorGraph HybridGaussianFactorGraph::choose(
     const DiscreteValues &assignment) const {
   GaussianFactorGraph gfg;
   for (auto &&f : *this) {
