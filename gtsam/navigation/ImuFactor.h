@@ -37,13 +37,9 @@ typedef ManifoldPreintegration PreintegrationType;
 
 /*
  * If you are using the factor, please cite:
- * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, "Eliminating
- * conditionally independent sets in factor graphs: a unifying perspective based
- * on smart factors", Int. Conf. on Robotics and Automation (ICRA), 2014.
- *
- * C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza, "IMU Preintegration on
- * Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation",
- * Robotics: Science and Systems (RSS), 2015.
+ * Christian Forster, Luca Carlone, Frank Dellaert, and Davide Scaramuzza,
+ * "On-Manifold Preintegration for Real-Time Visual-Inertial Odometry", IEEE
+ * Transactions on Robotics, 2017.
  *
  * REFERENCES:
  * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups",
@@ -54,8 +50,8 @@ typedef ManifoldPreintegration PreintegrationType;
  * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor:
  *     Computation of the Jacobian Matrices", Tech. Report, 2013.
  *     Available in this repo as "PreintegratedIMUJacobians.pdf".
- * [4] C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza, "IMU Preintegration on
- *     Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation",
+ * [4] C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza, "IMU Preintegration
+ * on Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation",
  *     Robotics: Science and Systems (RSS), 2015.
  */
 
