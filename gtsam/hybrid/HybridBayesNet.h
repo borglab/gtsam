@@ -127,6 +127,8 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @brief Get the Gaussian Bayes Net which corresponds to a specific discrete
    * value assignment.
    *
+   * @note Any pure discrete factors are ignored.
+   *
    * @param assignment The discrete value assignment for the discrete keys.
    * @return GaussianBayesNet
    */

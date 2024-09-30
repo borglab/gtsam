@@ -206,7 +206,7 @@ GaussianBayesNet HybridBayesNet::choose(
   for (auto &&conditional : *this) {
     if (auto gm = conditional->asHybrid()) {
       // If conditional is hybrid, select based on assignment.
-      gbn.push_back((*gm)(assignment));
+      gbn.push_back(gm->choose(assignment));
     } else if (auto gc = conditional->asGaussian()) {
       // If continuous only, add Gaussian conditional.
       gbn.push_back(gc);
