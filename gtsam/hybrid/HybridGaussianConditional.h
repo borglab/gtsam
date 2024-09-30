@@ -225,8 +225,10 @@ class GTSAM_EXPORT HybridGaussianConditional
    * `discreteProbs`.
    *
    * @param discreteProbs A pruned set of probabilities for the discrete keys.
+   * @return Shared pointer to possibly a pruned HybridGaussianConditional
    */
-  void prune(const DecisionTreeFactor &discreteProbs);
+  HybridGaussianConditional::shared_ptr prune(
+      const DecisionTreeFactor &discreteProbs) const;
 
   /// @}
 
