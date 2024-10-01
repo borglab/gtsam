@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/global_includes.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridValues.h>
@@ -77,16 +78,11 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   }
 
   /**
-   * Add a conditional using a shared_ptr, using implicit conversion to
-   * a HybridConditional.
-   *
-   * This is useful when you create a conditional shared pointer as you need it
-   * somewhere else.
-   *
+   * Move a HybridConditional into a shared pointer and add.
+
    * Example:
-   *   auto shared_ptr_to_a_conditional =
-   *     std::make_shared<HybridGaussianConditional>(...);
-   *  hbn.push_back(shared_ptr_to_a_conditional);
+   *   HybridGaussianConditional conditional(...);
+   *   hbn.push_back(conditional); // loses the original conditional
    */
   void push_back(HybridConditional &&conditional) {
     factors_.push_back(
@@ -124,14 +120,21 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   }
 
   /**
-   * @brief Get the Gaussian Bayes Net which corresponds to a specific discrete
-   * value assignment. Note this corresponds to the Gaussian posterior p(X|M=m)
-   * of the continuous variables given the discrete assignment M=m.
+   * @brief Get the discrete Bayes Net P(M). As the hybrid Bayes net defines
+   * P(X,M) = P(X|M) P(M), this method returns the marginal distribution on the
+   * discrete variables.
    *
-   * @note Be careful, as any factors not Gaussian are ignored.
+   * @return discrete marginal as a DiscreteBayesNet.
+   */
+  DiscreteBayesNet discreteMarginal() const;
+
+  /**
+   * @brief Get the Gaussian Bayes net P(X|M=m) corresponding to a specific
+   * assignment m for the discrete variables M. As the hybrid Bayes net defines
+   * P(X,M) = P(X|M) P(M), this method returns the **posterior** p(X|M=m).
    *
    * @param assignment The discrete value assignment for the discrete keys.
-   * @return Gaussian posterior as a GaussianBayesNet
+   * @return Gaussian posterior P(X|M=m) as a GaussianBayesNet.
    */
   GaussianBayesNet choose(const DiscreteValues &assignment) const;
 
@@ -222,7 +225,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    *
    * @note The joint P(X,M) is p(X|M) P(M)
    * Then the posterior on M given X=x is is P(M|x) = p(x|M) P(M) / p(x).
-   * Ideally we want log P(M|x) = log p(x|M) + log P(M) - log P(x), but
+   * Ideally we want log P(M|x) = log p(x|M) + log P(M) - log p(x), but
    * unfortunately log p(x) is expensive, so we compute the log of the
    * unnormalized posterior log P'(M|x) = log p(x|M) + log P(M)
    *
@@ -255,13 +258,6 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// @}
 
  private:
-  /**
-   * @brief Prune all the discrete conditionals.
-   *
-   * @param maxNrLeaves
-   */
-  DecisionTreeFactor pruneDiscreteConditionals(size_t maxNrLeaves);
-
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;

@@ -17,9 +17,12 @@
  */
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridValues.h>
+
+#include <memory>
 
 // In Wrappers we have no access to this so have a default ready
 static std::mt19937_64 kRandomNumberGenerator(42);
@@ -38,48 +41,26 @@ bool HybridBayesNet::equals(const This &bn, double tol) const {
 }
 
 /* ************************************************************************* */
-DecisionTreeFactor HybridBayesNet::pruneDiscreteConditionals(
-    size_t maxNrLeaves) {
-  // Get the joint distribution of only the discrete keys
-  // The joint discrete probability.
-  DiscreteConditional discreteProbs;
-
-  std::vector<size_t> discrete_factor_idxs;
-  // Record frontal keys so we can maintain ordering
-  Ordering discrete_frontals;
-
-  for (size_t i = 0; i < this->size(); i++) {
-    auto conditional = this->at(i);
-    if (conditional->isDiscrete()) {
-      discreteProbs = discreteProbs * (*conditional->asDiscrete());
-
-      Ordering conditional_keys(conditional->frontals());
-      discrete_frontals += conditional_keys;
-      discrete_factor_idxs.push_back(i);
-    }
-  }
-
-  const DecisionTreeFactor prunedDiscreteProbs =
-      discreteProbs.prune(maxNrLeaves);
-
-  // Eliminate joint probability back into conditionals
-  DiscreteFactorGraph dfg{prunedDiscreteProbs};
-  DiscreteBayesNet::shared_ptr dbn = dfg.eliminateSequential(discrete_frontals);
-
-  // Assign pruned discrete conditionals back at the correct indices.
-  for (size_t i = 0; i < discrete_factor_idxs.size(); i++) {
-    size_t idx = discrete_factor_idxs.at(i);
-    this->at(idx) = std::make_shared<HybridConditional>(dbn->at(i));
-  }
-
-  return prunedDiscreteProbs;
-}
-
-/* ************************************************************************* */
+// The implementation is: build the entire joint into one factor and then prune.
+// TODO(Frank): This can be quite expensive *unless* the factors have already
+// been pruned before. Another, possibly faster approach is branch and bound
+// search to find the K-best leaves and then create a single pruned conditional.
 HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) const {
-  HybridBayesNet copy(*this);
-  DecisionTreeFactor prunedDiscreteProbs =
-      copy.pruneDiscreteConditionals(maxNrLeaves);
+  // Collect all the discrete conditionals. Could be small if already pruned.
+  const DiscreteBayesNet marginal = discreteMarginal();
+
+  // Multiply into one big conditional. NOTE: possibly quite expensive.
+  DiscreteConditional joint;
+  for (auto &&conditional : marginal) {
+    joint = joint * (*conditional);
+  }
+
+  // Prune the joint. NOTE: again, possibly quite expensive.
+  const DecisionTreeFactor pruned = joint.prune(maxNrLeaves);
+
+  // Create a the result starting with the pruned joint.
+  HybridBayesNet result;
+  result.emplace_shared<DiscreteConditional>(pruned.size(), pruned);
 
   /* To prune, we visitWith every leaf in the HybridGaussianConditional.
    * For each leaf, using the assignment we can check the discrete decision tree
@@ -88,25 +69,34 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) const {
    * We can later check the HybridGaussianConditional for just nullptrs.
    */
 
-  HybridBayesNet prunedBayesNetFragment;
-
-  // Go through all the conditionals in the
-  // Bayes Net and prune them as per prunedDiscreteProbs.
-  for (auto &&conditional : copy) {
-    if (auto gm = conditional->asHybrid()) {
+  // Go through all the Gaussian conditionals in the Bayes Net and prune them as
+  // per pruned Discrete joint.
+  for (auto &&conditional : *this) {
+    if (auto hgc = conditional->asHybrid()) {
       // Make a copy of the hybrid Gaussian conditional and prune it!
-      auto prunedHybridGaussianConditional = gm->prune(prunedDiscreteProbs);
+      auto prunedHybridGaussianConditional = hgc->prune(pruned);
 
       // Type-erase and add to the pruned Bayes Net fragment.
-      prunedBayesNetFragment.push_back(prunedHybridGaussianConditional);
-
-    } else {
+      result.push_back(prunedHybridGaussianConditional);
+    } else if (auto gc = conditional->asGaussian()) {
       // Add the non-HybridGaussianConditional conditional
-      prunedBayesNetFragment.push_back(conditional);
+      result.push_back(gc);
     }
+    // We ignore DiscreteConditional as they are already pruned and added.
   }
 
-  return prunedBayesNetFragment;
+  return result;
+}
+
+/* ************************************************************************* */
+DiscreteBayesNet HybridBayesNet::discreteMarginal() const {
+  DiscreteBayesNet result;
+  for (auto &&conditional : *this) {
+    if (auto dc = conditional->asDiscrete()) {
+      result.push_back(dc);
+    }
+  }
+  return result;
 }
 
 /* ************************************************************************* */
