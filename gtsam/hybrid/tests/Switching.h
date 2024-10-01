@@ -118,7 +118,7 @@ inline std::pair<KeyVector, std::vector<int>> makeBinaryOrdering(
 using MotionModel = BetweenFactor<double>;
 
 // Test fixture with switching network.
-/// ϕ(X(0)) .. ϕ(X(k),X(k+1)) .. ϕ(X(k);z_k) .. ϕ(M(0)) .. ϕ(M(K-3),M(K-2))
+/// ϕ(X(1)) .. ϕ(X(k),X(k+1)) .. ϕ(X(k);z_k) .. ϕ(M(1)) .. ϕ(M(K-2),M(K-1))
 struct Switching {
   size_t K;
   DiscreteKeys modes;
@@ -141,7 +141,7 @@ struct Switching {
     using noiseModel::Isotropic;
 
     // Create DiscreteKeys for K-1 binary modes.
-    for (size_t k = 0; k < K - 1; k++) {
+    for (size_t k = 1; k < K; k++) {
       modes.emplace_back(M(k), 2);
     }
 
@@ -154,30 +154,30 @@ struct Switching {
 
     // Create hybrid factor graph.
 
-    // Add a prior ϕ(X(0)) on X(0).
+    // Add a prior ϕ(X(1)) on X(1).
     nonlinearFactorGraph.emplace_shared<PriorFactor<double>>(
-        X(0), measurements.at(0), Isotropic::Sigma(1, prior_sigma));
+        X(1), measurements.at(0), Isotropic::Sigma(1, prior_sigma));
 
     // Add "motion models" ϕ(X(k),X(k+1)).
     for (size_t k = 0; k < K - 1; k++) {
-      auto motion_models = motionModels(k, between_sigma);
+      auto motion_models = motionModels(k + 1, between_sigma);
       nonlinearFactorGraph.emplace_shared<HybridNonlinearFactor>(modes[k],
                                                                  motion_models);
     }
 
-    // Add measurement factors ϕ(X(k);z_k).
+    // Add measurement factors ϕ(X(k);z_k), *except* on X(1) ?
     auto measurement_noise = Isotropic::Sigma(1, prior_sigma);
     for (size_t k = 1; k < K; k++) {
       nonlinearFactorGraph.emplace_shared<PriorFactor<double>>(
-          X(k), measurements.at(k), measurement_noise);
+          X(k + 1), measurements.at(k), measurement_noise);
     }
 
-    // Add "mode chain" ϕ(M(0)) ϕ(M(0),M(1)) ... ϕ(M(K-3),M(K-2))
+    // Add "mode chain" ϕ(M(1)) ϕ(M(1),M(2)) ... ϕ(M(K-2),M(K-1))
     addModeChain(&nonlinearFactorGraph, discrete_transition_prob);
 
     // Create the linearization point.
     for (size_t k = 0; k < K; k++) {
-      linearizationPoint.insert<double>(X(k), static_cast<double>(k + 1));
+      linearizationPoint.insert<double>(X(k + 1), static_cast<double>(k + 1));
     }
 
     linearizedFactorGraph = *nonlinearFactorGraph.linearize(linearizationPoint);
@@ -195,8 +195,8 @@ struct Switching {
   }
 
   /**
-   * @brief Add "mode chain" to HybridNonlinearFactorGraph from M(0) to M(K-2).
-   * E.g. if K=4, we want M0, M1 and M2.
+   * @brief Add "mode chain" to HybridNonlinearFactorGraph from M(1) to M(K-1).
+   * E.g. if K=4, we want M1, M2, and M3.
    *
    * @param fg The factor graph to which the mode chain is added.
    */
@@ -204,10 +204,10 @@ struct Switching {
   void addModeChain(FACTORGRAPH *fg,
                     std::string discrete_transition_prob = "1/2 3/2") {
     fg->template emplace_shared<DiscreteDistribution>(modes[0], "1/1");
-    for (size_t k = 0; k < K - 2; k++) {
-      auto parents = {modes[k]};
+    for (size_t k = 1; k < K - 1; k++) {
+      auto parents = {modes[k - 1]};
       fg->template emplace_shared<DiscreteConditional>(
-          modes[k + 1], parents, discrete_transition_prob);
+          modes[k], parents, discrete_transition_prob);
     }
   }
 };
