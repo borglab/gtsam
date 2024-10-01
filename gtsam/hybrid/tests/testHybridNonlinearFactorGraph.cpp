@@ -217,15 +217,28 @@ TEST(HybridNonlinearFactorGraph, ErrorTree) {
   Switching s(3);
 
   HybridNonlinearFactorGraph graph = s.nonlinearFactorGraph;
+  Values values = s.linearizationPoint;
 
   auto error_tree = graph.errorTree(s.linearizationPoint);
 
   auto dkeys = graph.discreteKeys();
-  std::vector<DiscreteKey> discrete_keys(dkeys.begin(), dkeys.end());
-  std::vector<double> leaves = {152.79175946923, 151.59861228867,
-                                151.70397280433, 151.60943791243};
+  DiscreteKeys discrete_keys(dkeys.begin(), dkeys.end());
+
+  // Compute the sum of errors for each factor.
+  auto assignments = DiscreteValues::CartesianProduct(discrete_keys);
+  std::vector<double> leaves(assignments.size());
+  for (auto &&factor : graph) {
+    for (size_t i = 0; i < assignments.size(); ++i) {
+      leaves[i] +=
+          factor->error(HybridValues(VectorValues(), assignments[i], values));
+    }
+  }
+  // Swap i=1 and i=2 to give correct ordering.
+  double temp = leaves[1];
+  leaves[1] = leaves[2];
+  leaves[2] = temp;
   AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
-  // regression
+
   EXPECT(assert_equal(expected_error, error_tree, 1e-7));
 }
 
