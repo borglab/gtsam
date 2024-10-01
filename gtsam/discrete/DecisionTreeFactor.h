@@ -141,7 +141,7 @@ namespace gtsam {
     }
 
     /// Calculate error for DiscreteValues `x`, is -log(probability).
-    double error(const DiscreteValues& values) const;
+    double error(const DiscreteValues& values) const override;
 
     /// multiply two factors
     DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override {
@@ -291,9 +291,6 @@ namespace gtsam {
    * Simply dispatches to DiscreteValues version.
    */
   double error(const HybridValues& values) const override;
-
-  /// Compute error for each assignment and return as a tree
-  AlgebraicDecisionTree<Key> errorTree() const override;
 
   /// @}
 
