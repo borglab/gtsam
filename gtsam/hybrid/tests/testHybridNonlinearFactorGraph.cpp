@@ -211,6 +211,24 @@ TEST(HybridNonlinearFactorGraph, PushBack) {
   // EXPECT_LONGS_EQUAL(3, hnfg.size());
 }
 
+/* ****************************************************************************/
+// Test hybrid nonlinear factor graph errorTree
+TEST(HybridNonlinearFactorGraph, ErrorTree) {
+  Switching s(3);
+
+  HybridNonlinearFactorGraph graph = s.nonlinearFactorGraph;
+
+  auto error_tree = graph.errorTree(s.linearizationPoint);
+
+  auto dkeys = graph.discreteKeys();
+  std::vector<DiscreteKey> discrete_keys(dkeys.begin(), dkeys.end());
+  std::vector<double> leaves = {152.79175946923, 151.59861228867,
+                                151.70397280433, 151.60943791243};
+  AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
+  // regression
+  EXPECT(assert_equal(expected_error, error_tree, 1e-7));
+}
+
 /****************************************************************************
  * Test construction of switching-like hybrid factor graph.
  */
