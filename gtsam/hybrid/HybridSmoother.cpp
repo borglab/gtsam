@@ -72,21 +72,17 @@ void HybridSmoother::update(HybridGaussianFactorGraph graph,
       addConditionals(graph, hybridBayesNet_, ordering);
 
   // Eliminate.
-  HybridBayesNet::shared_ptr bayesNetFragment =
-      graph.eliminateSequential(ordering);
+  HybridBayesNet bayesNetFragment = *graph.eliminateSequential(ordering);
 
   /// Prune
   if (maxNrLeaves) {
     // `pruneBayesNet` sets the leaves with 0 in discreteFactor to nullptr in
     // all the conditionals with the same keys in bayesNetFragment.
-    HybridBayesNet prunedBayesNetFragment =
-        bayesNetFragment->prune(*maxNrLeaves);
-    // Set the bayes net fragment to the pruned version
-    bayesNetFragment = std::make_shared<HybridBayesNet>(prunedBayesNetFragment);
+    bayesNetFragment = bayesNetFragment.prune(*maxNrLeaves);
   }
 
   // Add the partial bayes net to the posterior bayes net.
-  hybridBayesNet_.add(*bayesNetFragment);
+  hybridBayesNet_.add(bayesNetFragment);
 }
 
 /* ************************************************************************* */
