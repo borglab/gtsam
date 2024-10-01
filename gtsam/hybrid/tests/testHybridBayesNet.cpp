@@ -248,9 +248,9 @@ TEST(HybridBayesNet, Choose) {
       s.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   DiscreteValues assignment;
-  assignment[M(0)] = 1;
   assignment[M(1)] = 1;
-  assignment[M(2)] = 0;
+  assignment[M(2)] = 1;
+  assignment[M(3)] = 0;
 
   GaussianBayesNet gbn = hybridBayesNet->choose(assignment);
 
@@ -277,9 +277,9 @@ TEST(HybridBayesNet, OptimizeAssignment) {
       s.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   DiscreteValues assignment;
-  assignment[M(0)] = 1;
   assignment[M(1)] = 1;
   assignment[M(2)] = 1;
+  assignment[M(3)] = 1;
 
   VectorValues delta = hybridBayesNet->optimize(assignment);
 
@@ -287,10 +287,10 @@ TEST(HybridBayesNet, OptimizeAssignment) {
   // e.g. X(0) = 1, X(1) = 2,
   // but the factors specify X(k) = k-1, so delta should be -1.
   VectorValues expected_delta;
-  expected_delta.insert(make_pair(X(0), -Vector1::Ones()));
   expected_delta.insert(make_pair(X(1), -Vector1::Ones()));
   expected_delta.insert(make_pair(X(2), -Vector1::Ones()));
   expected_delta.insert(make_pair(X(3), -Vector1::Ones()));
+  expected_delta.insert(make_pair(X(4), -Vector1::Ones()));
 
   EXPECT(assert_equal(expected_delta, delta));
 }
@@ -307,16 +307,16 @@ TEST(HybridBayesNet, Optimize) {
 
   // NOTE: The true assignment is 111, but the discrete priors cause 101
   DiscreteValues expectedAssignment;
-  expectedAssignment[M(0)] = 1;
   expectedAssignment[M(1)] = 1;
   expectedAssignment[M(2)] = 1;
+  expectedAssignment[M(3)] = 1;
   EXPECT(assert_equal(expectedAssignment, delta.discrete()));
 
   VectorValues expectedValues;
-  expectedValues.insert(X(0), -Vector1::Ones());
   expectedValues.insert(X(1), -Vector1::Ones());
   expectedValues.insert(X(2), -Vector1::Ones());
   expectedValues.insert(X(3), -Vector1::Ones());
+  expectedValues.insert(X(4), -Vector1::Ones());
 
   EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
 }
@@ -325,7 +325,7 @@ TEST(HybridBayesNet, Optimize) {
 // Test Bayes net error
 TEST(HybridBayesNet, Pruning) {
   // Create switching network with three continuous variables and two discrete:
-  // ϕ(x0) ϕ(x0,x1,m0) ϕ(x1,x2,m1) ϕ(x0;z0) ϕ(x1;z1) ϕ(x2;z2) ϕ(m0) ϕ(m0,m1)
+  // ϕ(x1) ϕ(x1,x2,m1) ϕ(x2,x3,m2) ϕ(x1;z1) ϕ(x2;z2) ϕ(x3;z3) ϕ(m1) ϕ(m1,m2)
   Switching s(3);
 
   HybridBayesNet::shared_ptr posterior =
@@ -349,7 +349,7 @@ TEST(HybridBayesNet, Pruning) {
   auto prunedTree = prunedBayesNet.discretePosterior(delta.continuous());
 
   // Verify logProbability computation and check specific logProbability value
-  const DiscreteValues discrete_values{{M(0), 1}, {M(1), 1}};
+  const DiscreteValues discrete_values{{M(1), 1}, {M(2), 1}};
   const HybridValues hybridValues{delta.continuous(), discrete_values};
   double logProbability = 0;
   logProbability += posterior->at(0)->asHybrid()->logProbability(hybridValues);
@@ -398,7 +398,7 @@ TEST(HybridBayesNet, Prune) {
 // Test Bayes net updateDiscreteConditionals
 TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   Switching s(4);
-
+  
   HybridBayesNet::shared_ptr posterior =
       s.linearizedFactorGraph.eliminateSequential();
   EXPECT_LONGS_EQUAL(7, posterior->size());

@@ -53,18 +53,18 @@ TEST(HybridNonlinearFactorGraph, GaussianFactorGraph) {
   HybridNonlinearFactorGraph fg;
 
   // Add a simple prior factor to the nonlinear factor graph
-  fg.emplace_shared<PriorFactor<double>>(X(0), 0, Isotropic::Sigma(1, 0.1));
+  fg.emplace_shared<PriorFactor<double>>(X(1), 0, Isotropic::Sigma(1, 0.1));
 
   // Linearization point
   Values linearizationPoint;
-  linearizationPoint.insert<double>(X(0), 0);
+  linearizationPoint.insert<double>(X(1), 0);
 
   // Linearize the factor graph.
   HybridGaussianFactorGraph ghfg = *fg.linearize(linearizationPoint);
   EXPECT_LONGS_EQUAL(1, ghfg.size());
 
   // Check that the error is the same for the nonlinear values.
-  const VectorValues zero{{X(0), Vector1(0)}};
+  const VectorValues zero{{X(1), Vector1(0)}};
   const HybridValues hybridValues{zero, {}, linearizationPoint};
   EXPECT_DOUBLES_EQUAL(fg.error(hybridValues), ghfg.error(hybridValues), 1e-9);
 }
@@ -115,11 +115,11 @@ TEST(HybridNonlinearFactorGraph, Resize) {
 
 /***************************************************************************/
 namespace test_motion {
-gtsam::DiscreteKey m1(M(1), 2);
+gtsam::DiscreteKey m1(M(2), 2);
 auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
 std::vector<NoiseModelFactor::shared_ptr> components = {
-    std::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
-    std::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model)};
+    std::make_shared<MotionModel>(X(1), X(2), 0.0, noise_model),
+    std::make_shared<MotionModel>(X(1), X(2), 1.0, noise_model)};
 }  // namespace test_motion
 
 /***************************************************************************
@@ -131,7 +131,7 @@ TEST(HybridGaussianFactorGraph, Resize) {
 
   HybridNonlinearFactorGraph hnfg;
   auto nonlinearFactor = std::make_shared<BetweenFactor<double>>(
-      X(0), X(1), 0.0, Isotropic::Sigma(1, 0.1));
+      X(1), X(2), 0.0, Isotropic::Sigma(1, 0.1));
   hnfg.push_back(nonlinearFactor);
   auto discreteFactor = std::make_shared<DecisionTreeFactor>();
   hnfg.push_back(discreteFactor);
@@ -140,8 +140,8 @@ TEST(HybridGaussianFactorGraph, Resize) {
   hnfg.push_back(dcFactor);
 
   Values linearizationPoint;
-  linearizationPoint.insert<double>(X(0), 0);
-  linearizationPoint.insert<double>(X(1), 1);
+  linearizationPoint.insert<double>(X(1), 0);
+  linearizationPoint.insert<double>(X(2), 1);
 
   // Generate `HybridGaussianFactorGraph` by linearizing
   HybridGaussianFactorGraph gfg = *hnfg.linearize(linearizationPoint);
@@ -242,7 +242,7 @@ TEST(HybridNonlinearFactorGraph, EliminationTree) {
 
   // Create ordering.
   Ordering ordering;
-  for (size_t k = 0; k < self.K; k++) ordering.push_back(X(k));
+  for (size_t k = 1; k <= self.K; k++) ordering.push_back(X(k));
 
   // Create elimination tree.
   HybridEliminationTree etree(self.linearizedFactorGraph, ordering);
@@ -263,7 +263,7 @@ TEST(GaussianElimination, Eliminate_x0) {
   factors.push_back(self.linearizedFactorGraph[1]);
 
   // Eliminate x0
-  const Ordering ordering{X(0)};
+  const Ordering ordering{X(1)};
 
   auto result = EliminateHybrid(factors, ordering);
   CHECK(result.first);
@@ -286,7 +286,7 @@ TEST(HybridsGaussianElimination, Eliminate_x1) {
   factors.push_back(self.linearizedFactorGraph[2]);  // involves m1
 
   // Eliminate x1
-  const Ordering ordering{X(1)};
+  const Ordering ordering{X(2)};
 
   auto result = EliminateHybrid(factors, ordering);
   CHECK(result.first);
@@ -302,9 +302,9 @@ TEST(HybridsGaussianElimination, Eliminate_x1) {
 GaussianFactorGraph::shared_ptr batchGFG(double between,
                                          Values linearizationPoint) {
   NonlinearFactorGraph graph;
-  graph.addPrior<double>(X(0), 0, Isotropic::Sigma(1, 0.1));
+  graph.addPrior<double>(X(1), 0, Isotropic::Sigma(1, 0.1));
 
-  auto between_x0_x1 = std::make_shared<MotionModel>(X(0), X(1), between,
+  auto between_x0_x1 = std::make_shared<MotionModel>(X(1), X(2), between,
                                                      Isotropic::Sigma(1, 1.0));
 
   graph.push_back(between_x0_x1);
@@ -321,7 +321,7 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   auto factors = self.linearizedFactorGraph;
 
   // Eliminate x0
-  const Ordering ordering{X(0), X(1)};
+  const Ordering ordering{X(1), X(2)};
 
   const auto [hybridConditional, factorOnModes] =
       EliminateHybrid(factors, ordering);
@@ -353,7 +353,7 @@ TEST(HybridNonlinearFactorGraph, Partial_Elimination) {
 
   // Create ordering of only continuous variables.
   Ordering ordering;
-  for (size_t k = 0; k < self.K; k++) ordering.push_back(X(k));
+  for (size_t k = 1; k <= self.K; k++) ordering.push_back(X(k));
 
   // Eliminate partially i.e. only continuous part.
   const auto [hybridBayesNet, remainingFactorGraph] =
@@ -361,18 +361,18 @@ TEST(HybridNonlinearFactorGraph, Partial_Elimination) {
 
   CHECK(hybridBayesNet);
   EXPECT_LONGS_EQUAL(3, hybridBayesNet->size());
-  EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(0)});
-  EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(1), M(0)}));
-  EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(1)});
-  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(2), M(0), M(1)}));
-  EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(2)});
-  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(0), M(1)}));
+  EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
+  EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
+  EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
+  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(3), M(1), M(2)}));
+  EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(3)});
+  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(1), M(2)}));
 
   CHECK(remainingFactorGraph);
   EXPECT_LONGS_EQUAL(3, remainingFactorGraph->size());
-  EXPECT(remainingFactorGraph->at(0)->keys() == KeyVector({M(0)}));
-  EXPECT(remainingFactorGraph->at(1)->keys() == KeyVector({M(1), M(0)}));
-  EXPECT(remainingFactorGraph->at(2)->keys() == KeyVector({M(0), M(1)}));
+  EXPECT(remainingFactorGraph->at(0)->keys() == KeyVector({M(1)}));
+  EXPECT(remainingFactorGraph->at(1)->keys() == KeyVector({M(2), M(1)}));
+  EXPECT(remainingFactorGraph->at(2)->keys() == KeyVector({M(1), M(2)}));
 }
 
 /* ****************************************************************************/
@@ -381,25 +381,25 @@ TEST(HybridNonlinearFactorGraph, Error) {
   HybridNonlinearFactorGraph fg = self.nonlinearFactorGraph;
 
   {
-    HybridValues values(VectorValues(), DiscreteValues{{M(0), 0}, {M(1), 0}},
+    HybridValues values(VectorValues(), DiscreteValues{{M(1), 0}, {M(2), 0}},
                         self.linearizationPoint);
     // regression
     EXPECT_DOUBLES_EQUAL(152.791759469, fg.error(values), 1e-9);
   }
   {
-    HybridValues values(VectorValues(), DiscreteValues{{M(0), 0}, {M(1), 1}},
+    HybridValues values(VectorValues(), DiscreteValues{{M(1), 0}, {M(2), 1}},
                         self.linearizationPoint);
     // regression
     EXPECT_DOUBLES_EQUAL(151.598612289, fg.error(values), 1e-9);
   }
   {
-    HybridValues values(VectorValues(), DiscreteValues{{M(0), 1}, {M(1), 0}},
+    HybridValues values(VectorValues(), DiscreteValues{{M(1), 1}, {M(2), 0}},
                         self.linearizationPoint);
     // regression
     EXPECT_DOUBLES_EQUAL(151.703972804, fg.error(values), 1e-9);
   }
   {
-    HybridValues values(VectorValues(), DiscreteValues{{M(0), 1}, {M(1), 1}},
+    HybridValues values(VectorValues(), DiscreteValues{{M(1), 1}, {M(2), 1}},
                         self.linearizationPoint);
     // regression
     EXPECT_DOUBLES_EQUAL(151.609437912, fg.error(values), 1e-9);
@@ -441,7 +441,7 @@ TEST(HybridNonlinearFactorGraph, Full_Elimination) {
   {
     // Create ordering.
     Ordering ordering;
-    for (size_t k = 0; k < self.K; k++) ordering.push_back(X(k));
+    for (size_t k = 1; k <= self.K; k++) ordering.push_back(X(k));
 
     // Eliminate partially.
     const auto [hybridBayesNet_partial, remainingFactorGraph_partial] =
@@ -473,22 +473,22 @@ TEST(HybridNonlinearFactorGraph, Full_Elimination) {
   CHECK(hybridBayesNet);
   EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
   // p(x0 | x1, m0)
-  EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(0)});
-  EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(1), M(0)}));
+  EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
+  EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
   // p(x1 | x2, m0, m1)
-  EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(1)});
-  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(2), M(0), M(1)}));
+  EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
+  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(3), M(1), M(2)}));
   // p(x2 | m0, m1)
-  EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(2)});
-  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(0), M(1)}));
+  EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(3)});
+  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(1), M(2)}));
   // P(m0 | m1)
-  EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(0)});
-  EXPECT(hybridBayesNet->at(3)->parents() == KeyVector({M(1)}));
+  EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(1)});
+  EXPECT(hybridBayesNet->at(3)->parents() == KeyVector({M(2)}));
   EXPECT(
       dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(3)->inner())
           ->equals(*discreteBayesNet.at(0)));
   // P(m1)
-  EXPECT(hybridBayesNet->at(4)->frontals() == KeyVector{M(1)});
+  EXPECT(hybridBayesNet->at(4)->frontals() == KeyVector{M(2)});
   EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(4)->nrParents());
   EXPECT(
       dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(4)->inner())
@@ -505,7 +505,7 @@ TEST(HybridNonlinearFactorGraph, Printing) {
 
   // Create ordering.
   Ordering ordering;
-  for (size_t k = 0; k < self.K; k++) ordering.push_back(X(k));
+  for (size_t k = 1; k <= self.K; k++) ordering.push_back(X(k));
 
   // Eliminate partially.
   const auto [hybridBayesNet, remainingFactorGraph] =
@@ -798,7 +798,7 @@ TEST(HybridNonlinearFactorGraph, DefaultDecisionTree) {
   Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
   auto priorNoise = noiseModel::Diagonal::Sigmas(
       Vector3(0.3, 0.3, 0.1));  // 30cm std on x,y, 0.1 rad on theta
-  fg.emplace_shared<PriorFactor<Pose2>>(X(0), prior, priorNoise);
+  fg.emplace_shared<PriorFactor<Pose2>>(X(1), prior, priorNoise);
 
   using PlanarMotionModel = BetweenFactor<Pose2>;
 
@@ -806,10 +806,10 @@ TEST(HybridNonlinearFactorGraph, DefaultDecisionTree) {
   Pose2 odometry(2.0, 0.0, 0.0);
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
   std::vector<NoiseModelFactor::shared_ptr> motion_models = {
-      std::make_shared<PlanarMotionModel>(X(0), X(1), Pose2(0, 0, 0),
+      std::make_shared<PlanarMotionModel>(X(1), X(2), Pose2(0, 0, 0),
                                           noise_model),
-      std::make_shared<PlanarMotionModel>(X(0), X(1), odometry, noise_model)};
-  fg.emplace_shared<HybridNonlinearFactor>(DiscreteKey{M(1), 2}, motion_models);
+      std::make_shared<PlanarMotionModel>(X(1), X(2), odometry, noise_model)};
+  fg.emplace_shared<HybridNonlinearFactor>(DiscreteKey{M(2), 2}, motion_models);
 
   // Add Range-Bearing measurements to from X0 to L0 and X1 to L1.
   // create a noise model for the landmark measurements
@@ -821,19 +821,19 @@ TEST(HybridNonlinearFactorGraph, DefaultDecisionTree) {
 
   // Add Bearing-Range factors
   fg.emplace_shared<BearingRangeFactor<Pose2, Point2>>(
-      X(0), L(0), bearing11, range11, measurementNoise);
+      X(1), L(0), bearing11, range11, measurementNoise);
   fg.emplace_shared<BearingRangeFactor<Pose2, Point2>>(
-      X(1), L(1), bearing22, range22, measurementNoise);
+      X(2), L(1), bearing22, range22, measurementNoise);
 
   // Create (deliberately inaccurate) initial estimate
   Values initialEstimate;
-  initialEstimate.insert(X(0), Pose2(0.5, 0.0, 0.2));
-  initialEstimate.insert(X(1), Pose2(2.3, 0.1, -0.2));
+  initialEstimate.insert(X(1), Pose2(0.5, 0.0, 0.2));
+  initialEstimate.insert(X(2), Pose2(2.3, 0.1, -0.2));
   initialEstimate.insert(L(0), Point2(1.8, 2.1));
   initialEstimate.insert(L(1), Point2(4.1, 1.8));
 
   // We want to eliminate variables not connected to DCFactors first.
-  const Ordering ordering{L(0), L(1), X(0), X(1)};
+  const Ordering ordering{L(0), L(1), X(1), X(2)};
 
   HybridGaussianFactorGraph linearized = *fg.linearize(initialEstimate);
 
@@ -865,9 +865,9 @@ static HybridNonlinearFactorGraph CreateFactorGraph(
   auto prior_noise = noiseModel::Isotropic::Sigma(1, measurement_noise);
 
   auto f0 =
-      std::make_shared<BetweenFactor<double>>(X(0), X(1), means[0], model0);
+      std::make_shared<BetweenFactor<double>>(X(1), X(2), means[0], model0);
   auto f1 =
-      std::make_shared<BetweenFactor<double>>(X(0), X(1), means[1], model1);
+      std::make_shared<BetweenFactor<double>>(X(1), X(2), means[1], model1);
 
   // Create HybridNonlinearFactor
   // We take negative since we want
@@ -879,7 +879,7 @@ static HybridNonlinearFactorGraph CreateFactorGraph(
   HybridNonlinearFactorGraph hfg;
   hfg.push_back(mixtureFactor);
 
-  hfg.push_back(PriorFactor<double>(X(0), x0_measurement, prior_noise));
+  hfg.push_back(PriorFactor<double>(X(1), x0_measurement, prior_noise));
 
   return hfg;
 }
@@ -896,12 +896,12 @@ static HybridNonlinearFactorGraph CreateFactorGraph(
 TEST(HybridNonlinearFactorGraph, DifferentMeans) {
   using namespace test_relinearization;
 
-  DiscreteKey m1(M(1), 2);
+  DiscreteKey m1(M(2), 2);
 
   Values values;
   double x0 = 0.0, x1 = 1.75;
-  values.insert(X(0), x0);
-  values.insert(X(1), x1);
+  values.insert(X(1), x0);
+  values.insert(X(2), x1);
 
   std::vector<double> means = {0.0, 2.0}, sigmas = {1e-0, 1e-0};
 
@@ -912,12 +912,12 @@ TEST(HybridNonlinearFactorGraph, DifferentMeans) {
     HybridValues actual = bn->optimize();
 
     HybridValues expected(
-        VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(-1.75)}},
-        DiscreteValues{{M(1), 0}});
+        VectorValues{{X(1), Vector1(0.0)}, {X(2), Vector1(-1.75)}},
+        DiscreteValues{{M(2), 0}});
 
     EXPECT(assert_equal(expected, actual));
 
-    DiscreteValues dv0{{M(1), 0}};
+    DiscreteValues dv0{{M(2), 0}};
     VectorValues cont0 = bn->optimize(dv0);
     double error0 = bn->error(HybridValues(cont0, dv0));
 
@@ -926,7 +926,7 @@ TEST(HybridNonlinearFactorGraph, DifferentMeans) {
     // regression
     EXPECT_DOUBLES_EQUAL(0.69314718056, error0, 1e-9);
 
-    DiscreteValues dv1{{M(1), 1}};
+    DiscreteValues dv1{{M(2), 1}};
     VectorValues cont1 = bn->optimize(dv1);
     double error1 = bn->error(HybridValues(cont1, dv1));
     EXPECT_DOUBLES_EQUAL(error0, error1, 1e-9);
@@ -935,26 +935,26 @@ TEST(HybridNonlinearFactorGraph, DifferentMeans) {
   {
     // Add measurement on x1
     auto prior_noise = noiseModel::Isotropic::Sigma(1, 1e-3);
-    hfg.push_back(PriorFactor<double>(X(1), means[1], prior_noise));
+    hfg.push_back(PriorFactor<double>(X(2), means[1], prior_noise));
 
     auto bn = hfg.linearize(values)->eliminateSequential();
     HybridValues actual = bn->optimize();
 
     HybridValues expected(
-        VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(0.25)}},
-        DiscreteValues{{M(1), 1}});
+        VectorValues{{X(1), Vector1(0.0)}, {X(2), Vector1(0.25)}},
+        DiscreteValues{{M(2), 1}});
 
     EXPECT(assert_equal(expected, actual));
 
     {
-      DiscreteValues dv{{M(1), 0}};
+      DiscreteValues dv{{M(2), 0}};
       VectorValues cont = bn->optimize(dv);
       double error = bn->error(HybridValues(cont, dv));
       // regression
       EXPECT_DOUBLES_EQUAL(2.12692448787, error, 1e-9);
     }
     {
-      DiscreteValues dv{{M(1), 1}};
+      DiscreteValues dv{{M(2), 1}};
       VectorValues cont = bn->optimize(dv);
       double error = bn->error(HybridValues(cont, dv));
       // regression
@@ -974,12 +974,12 @@ TEST(HybridNonlinearFactorGraph, DifferentMeans) {
 TEST(HybridNonlinearFactorGraph, DifferentCovariances) {
   using namespace test_relinearization;
 
-  DiscreteKey m1(M(1), 2);
+  DiscreteKey m1(M(2), 2);
 
   Values values;
   double x0 = 1.0, x1 = 1.0;
-  values.insert(X(0), x0);
-  values.insert(X(1), x1);
+  values.insert(X(1), x0);
+  values.insert(X(2), x1);
 
   std::vector<double> means = {0.0, 0.0}, sigmas = {1e2, 1e-2};
 
@@ -991,11 +991,11 @@ TEST(HybridNonlinearFactorGraph, DifferentCovariances) {
   auto hbn = hgfg->eliminateSequential();
 
   VectorValues cv;
-  cv.insert(X(0), Vector1(0.0));
   cv.insert(X(1), Vector1(0.0));
+  cv.insert(X(2), Vector1(0.0));
 
-  DiscreteValues dv0{{M(1), 0}};
-  DiscreteValues dv1{{M(1), 1}};
+  DiscreteValues dv0{{M(2), 0}};
+  DiscreteValues dv1{{M(2), 1}};
 
   DiscreteConditional expected_m1(m1, "0.5/0.5");
   DiscreteConditional actual_m1 = *(hbn->at(2)->asDiscrete());
@@ -1006,12 +1006,12 @@ TEST(HybridNonlinearFactorGraph, DifferentCovariances) {
 TEST(HybridNonlinearFactorGraph, Relinearization) {
   using namespace test_relinearization;
 
-  DiscreteKey m1(M(1), 2);
+  DiscreteKey m1(M(2), 2);
 
   Values values;
   double x0 = 0.0, x1 = 0.8;
-  values.insert(X(0), x0);
-  values.insert(X(1), x1);
+  values.insert(X(1), x0);
+  values.insert(X(2), x1);
 
   std::vector<double> means = {0.0, 1.0}, sigmas = {1e-2, 1e-2};
 
@@ -1020,7 +1020,7 @@ TEST(HybridNonlinearFactorGraph, Relinearization) {
   HybridNonlinearFactorGraph hfg =
       CreateFactorGraph(means, sigmas, m1, 0.0, prior_sigma);
   hfg.push_back(PriorFactor<double>(
-      X(1), 1.2, noiseModel::Isotropic::Sigma(1, prior_sigma)));
+      X(2), 1.2, noiseModel::Isotropic::Sigma(1, prior_sigma)));
 
   // Linearize
   auto hgfg = hfg.linearize(values);
@@ -1031,8 +1031,8 @@ TEST(HybridNonlinearFactorGraph, Relinearization) {
   values = values.retract(delta.continuous());
 
   Values expected_first_result;
-  expected_first_result.insert(X(0), 0.0666666666667);
-  expected_first_result.insert(X(1), 1.13333333333);
+  expected_first_result.insert(X(1), 0.0666666666667);
+  expected_first_result.insert(X(2), 1.13333333333);
   EXPECT(assert_equal(expected_first_result, values));
 
   // Re-linearize
@@ -1044,8 +1044,8 @@ TEST(HybridNonlinearFactorGraph, Relinearization) {
                       values.retract(delta.continuous()));
 
   HybridValues expected_result(
-      VectorValues{{X(0), Vector1(0)}, {X(1), Vector1(0)}},
-      DiscreteValues{{M(1), 1}}, expected_first_result);
+      VectorValues{{X(1), Vector1(0)}, {X(2), Vector1(0)}},
+      DiscreteValues{{M(2), 1}}, expected_first_result);
   EXPECT(assert_equal(expected_result, result));
 }
 
