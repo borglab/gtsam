@@ -181,19 +181,19 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
 
 /* ************************************************************************* */
 AlgebraicDecisionTree<Key> HybridNonlinearFactorGraph::errorTree(
-    const Values& values) const {
+    const Values& continuousValues) const {
   AlgebraicDecisionTree<Key> result(0.0);
 
   // Iterate over each factor.
   for (auto& factor : factors_) {
     if (auto hnf = std::dynamic_pointer_cast<HybridNonlinearFactor>(factor)) {
       // Compute factor error and add it.
-      result = result + hnf->errorTree(values);
+      result = result + hnf->errorTree(continuousValues);
 
     } else if (auto nf = std::dynamic_pointer_cast<NonlinearFactor>(factor)) {
       // If continuous only, get the (double) error
       // and add it to every leaf of the result
-      result = result + nf->error(values);
+      result = result + nf->error(continuousValues);
 
     } else if (auto df = std::dynamic_pointer_cast<DiscreteFactor>(factor)) {
       // If discrete, just add its errorTree as well
@@ -210,4 +210,16 @@ AlgebraicDecisionTree<Key> HybridNonlinearFactorGraph::errorTree(
   return result;
 }
 
+/* ************************************************************************ */
+AlgebraicDecisionTree<Key> HybridNonlinearFactorGraph::discretePosterior(
+    const Values& continuousValues) const {
+  AlgebraicDecisionTree<Key> errors = this->errorTree(continuousValues);
+  AlgebraicDecisionTree<Key> p = errors.apply([](double error) {
+    // NOTE: The 0.5 term is handled by each factor
+    return exp(-error);
+  });
+  return p / p.sum();
+}
+
+/* ************************************************************************ */
 }  // namespace gtsam

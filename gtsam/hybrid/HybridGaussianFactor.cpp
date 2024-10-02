@@ -233,7 +233,7 @@ static double PotentiallyPrunedComponentError(
 AlgebraicDecisionTree<Key> HybridGaussianFactor::errorTree(
     const VectorValues &continuousValues) const {
   // functor to convert from sharedFactor to double error value.
-  auto errorFunc = [this, &continuousValues](const auto &pair) {
+  auto errorFunc = [&continuousValues](const auto &pair) {
     return PotentiallyPrunedComponentError(pair.first, continuousValues);
   };
   DecisionTree<Key, double> error_tree(factors_, errorFunc);
