@@ -24,6 +24,7 @@
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridGaussianProductFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
@@ -164,6 +165,14 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
     sum = factor.add(sum);
     return sum;
   }
+   
+   /**
+   * @brief Helper function to return factors and functional to create a
+   * DecisionTree of Gaussian Factor Graphs.
+   *
+   * @return HybridGaussianProductFactor
+   */
+  virtual HybridGaussianProductFactor asProductFactor() const;
   /// @}
 
  protected:
@@ -175,7 +184,8 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    */
   GaussianFactorGraphTree asGaussianFactorGraphTree() const;
 
- private:
+
+private:
   /**
    * @brief Helper function to augment the [A|b] matrices in the factor
    * components with the additional scalar values. This is done by storing the
