@@ -18,11 +18,13 @@ def error_func(this: gtsam.CustomFactor, v: gtsam.Values, H: List[np.ndarray]) -
 `this` is a reference to the `CustomFactor` object. This is required because one can reuse the same
 `error_func` for multiple factors. `v` is a reference to the current set of values, and `H` is a list of
 **references** to the list of required Jacobians (see the corresponding C++ documentation).  Note that 
-the error returned must be a 1D numpy array.
+the error returned must be a 1D `numpy` array.
 
 If `H` is `None`, it means the current factor evaluation does not need Jacobians. For example, the `error`
 method on a factor does not need Jacobians, so we don't evaluate them to save CPU. If `H` is not `None`,
 each entry of `H` can be assigned a (2D) `numpy` array, as the Jacobian for the corresponding variable.
+
+All `numpy` matrices inside should be using `order="F"` to maintain interoperability with C++.
 
 After defining `error_func`, one can create a `CustomFactor` just like any other factor in GTSAM:
 

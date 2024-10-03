@@ -29,9 +29,9 @@ jobs:
         name:
           [
             ubuntu-20.04-gcc-9,
-            ubuntu-20.04-gcc-9-tbb,
             ubuntu-20.04-clang-9,
             macos-12-xcode-14.2,
+            macos-14-xcode-15.4,
             windows-2022-msbuild,
           ]
 
@@ -43,12 +43,6 @@ jobs:
             compiler: gcc
             version: "9"
 
-          - name: ubuntu-20.04-gcc-9-tbb
-            os: ubuntu-20.04
-            compiler: gcc
-            version: "9"
-            flag: tbb
-
           - name: ubuntu-20.04-clang-9
             os: ubuntu-20.04
             compiler: clang
@@ -59,13 +53,18 @@ jobs:
             compiler: xcode
             version: "14.2"
 
+          - name: macos-14-xcode-15.4
+            os: macos-14
+            compiler: xcode
+            version: "15.4"
+
           - name: windows-2022-msbuild
             os: windows-2022
             platform: 64
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install (Linux)
         if: runner.os == 'Linux'
@@ -139,7 +138,12 @@ jobs:
 
           # Use the prebuilt binary for Windows
           $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/$env:BOOST_VERSION/$env:BOOST_EXE-${{matrix.platform}}.exe"
-          (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost.exe")
+
+          # Create WebClient with appropriate settings and download Boost exe
+          $wc = New-Object System.Net.Webclient
+          $wc.Headers.Add("User-Agent: Other");
+          $wc.DownloadFile($Url, "$env:TEMP\boost.exe")
+
           Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=$BOOST_PATH"
 
           # Set the BOOST_ROOT variable
@@ -161,6 +165,14 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           bash .github/scripts/python.sh -d
+
+      - name: Create virtual on MacOS
+        if: runner.os == 'macOS'
+        run: |
+          python$PYTHON_VERSION -m venv venv
+          source venv/bin/activate
+          echo "PATH=$(pwd)/venv/bin:$PATH" >> $GITHUB_ENV
+          python -m pip install --upgrade pip
 
       - name: Install Python Dependencies
         shell: bash

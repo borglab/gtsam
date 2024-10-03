@@ -14,14 +14,15 @@ from __future__ import print_function
 
 import unittest
 
-import gtsam
-from gtsam import (
-    DoglegOptimizer, DoglegParams, DummyPreconditionerParameters, GaussNewtonOptimizer,
-    GaussNewtonParams, GncLMParams, GncLossType, GncLMOptimizer, LevenbergMarquardtOptimizer,
-    LevenbergMarquardtParams, NonlinearFactorGraph, Ordering, PCGSolverParameters, Point2,
-    PriorFactorPoint2, Values
-)
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
+from gtsam import (DoglegOptimizer, DoglegParams,
+                   DummyPreconditionerParameters, GaussNewtonOptimizer,
+                   GaussNewtonParams, GncLMOptimizer, GncLMParams, GncLossType,
+                   LevenbergMarquardtOptimizer, LevenbergMarquardtParams,
+                   NonlinearFactorGraph, Ordering, PCGSolverParameters, Point2,
+                   PriorFactorPoint2, Values)
 
 KEY1 = 1
 KEY2 = 2
@@ -136,7 +137,7 @@ class TestScenario(GtsamTestCase):
         # Test optimizer params
         optimizer = GncLMOptimizer(self.fg, self.initial_values, params)
         for ict_factor in (0.9, 1.1):
-            new_ict = ict_factor * optimizer.getInlierCostThresholds()
+            new_ict = ict_factor * optimizer.getInlierCostThresholds().item()
             optimizer.setInlierCostThresholds(new_ict)
             self.assertAlmostEqual(optimizer.getInlierCostThresholds(), new_ict)
         for w_factor in (0.8, 0.9):

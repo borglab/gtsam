@@ -375,7 +375,8 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   void serialize() const;
 };
 
-pair<gtsam::GaussianConditional, gtsam::JacobianFactor*> EliminateQR(const gtsam::GaussianFactorGraph& factors, const gtsam::Ordering& keys);
+pair<gtsam::GaussianConditional*, gtsam::JacobianFactor*> EliminateQR(
+    const gtsam::GaussianFactorGraph& factors, const gtsam::Ordering& keys);
 
 #include <gtsam/linear/HessianFactor.h>
 virtual class HessianFactor : gtsam::GaussianFactor {
@@ -510,12 +511,17 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   GaussianConditional(size_t key, gtsam::Vector d, gtsam::Matrix R, size_t name1, gtsam::Matrix S,
                       size_t name2, gtsam::Matrix T,
                       const gtsam::noiseModel::Diagonal* sigmas);
+  GaussianConditional(const std::vector<std::pair<gtsam::Key, gtsam::Matrix>> terms,
+                      size_t nrFrontals, gtsam::Vector d,
+                      const gtsam::noiseModel::Diagonal* sigmas);
 
   // Constructors with no noise model
   GaussianConditional(size_t key, gtsam::Vector d, gtsam::Matrix R);
   GaussianConditional(size_t key, gtsam::Vector d, gtsam::Matrix R, size_t name1, gtsam::Matrix S);
   GaussianConditional(size_t key, gtsam::Vector d, gtsam::Matrix R, size_t name1, gtsam::Matrix S,
                       size_t name2, gtsam::Matrix T);
+  GaussianConditional(const gtsam::KeyVector& keys, size_t nrFrontals,
+                      const gtsam::VerticalBlockMatrix& augmentedMatrix);
 
   // Named constructors
   static gtsam::GaussianConditional FromMeanAndStddev(gtsam::Key key, 
@@ -542,7 +548,7 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   bool equals(const gtsam::GaussianConditional& cg, double tol) const;
   
   // Standard Interface
-  double logNormalizationConstant() const;
+  double negLogConstant() const;
   double logProbability(const gtsam::VectorValues& x) const;
   double evaluate(const gtsam::VectorValues& x) const;
   double error(const gtsam::VectorValues& x) const;

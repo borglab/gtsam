@@ -19,6 +19,7 @@
 
 #include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
+
 #include <optional>
 
 namespace gtsam {

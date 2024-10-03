@@ -43,9 +43,9 @@ TEST(HybridConditional, Invariants) {
   auto hc0 = bn.at(0);
   CHECK(hc0->isHybrid());
 
-  // Check invariants as a GaussianMixture.
-  const auto mixture = hc0->asMixture();
-  EXPECT(GaussianMixture::CheckInvariants(*mixture, values));
+  // Check invariants as a HybridGaussianConditional.
+  const auto conditional = hc0->asHybrid();
+  EXPECT(HybridGaussianConditional::CheckInvariants(*conditional, values));
 
   // Check invariants as a HybridConditional.
   EXPECT(HybridConditional::CheckInvariants(*hc0, values));

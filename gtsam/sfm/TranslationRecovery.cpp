@@ -101,9 +101,17 @@ NonlinearFactorGraph TranslationRecovery::buildGraph(
   NonlinearFactorGraph graph;
 
   // Add translation factors for input translation directions.
+  uint64_t i = 0;
   for (auto edge : relativeTranslations) {
-    graph.emplace_shared<TranslationFactor>(edge.key1(), edge.key2(),
-                                            edge.measured(), edge.noiseModel());
+    if (use_bilinear_translation_factor_) {
+      graph.emplace_shared<BilinearAngleTranslationFactor>(
+          edge.key1(), edge.key2(), Symbol('S', i), edge.measured(),
+          edge.noiseModel());
+    } else {
+      graph.emplace_shared<TranslationFactor>(
+          edge.key1(), edge.key2(), edge.measured(), edge.noiseModel());
+    }
+    i++;
   }
   return graph;
 }
@@ -162,6 +170,12 @@ Values TranslationRecovery::initializeRandomly(
   for (auto edge : betweenTranslations) {
     insert(edge.key1());
     insert(edge.key2());
+  }
+
+  if (use_bilinear_translation_factor_) {
+    for (uint64_t i = 0; i < relativeTranslations.size(); i++) {
+      initial.insert<Vector1>(Symbol('S', i), Vector1(1.0));
+    }
   }
   return initial;
 }

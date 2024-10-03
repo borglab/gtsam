@@ -18,9 +18,9 @@
 
 #pragma once
 
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Ordering.h>
@@ -126,6 +126,11 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   /// @brief Default constructor.
   HybridGaussianFactorGraph() = default;
 
+  /** Construct from container of factors (shared_ptr or plain objects) */
+  template <class CONTAINER>
+  explicit HybridGaussianFactorGraph(const CONTAINER& factors)
+      : Base(factors) {}
+
   /**
    * Implicit copy/downcast constructor to override explicit template container
    * constructor. In BayesTree this is used for:
@@ -144,6 +149,14 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   //     const std::string& s = "HybridGaussianFactorGraph",
   //     const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
+  /**
+   * @brief Print the errors of each factor in the hybrid factor graph.
+   *
+   * @param values The HybridValues for the variables used to compute the error.
+   * @param str String that is output before the factor graph and errors.
+   * @param keyFormatter Formatter function for the keys in the factors.
+   * @param printCondition A condition to check if a factor should be printed.
+   */
   void printErrors(
       const HybridValues& values,
       const std::string& str = "HybridGaussianFactorGraph: ",
@@ -197,14 +210,30 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @brief Create a decision tree of factor graphs out of this hybrid factor
    * graph.
    *
-   * For example, if there are two mixture factors, one with a discrete key A
+   * For example, if there are two hybrid factors, one with a discrete key A
    * and one with a discrete key B, then the decision tree will have two levels,
    * one for A and one for B. The leaves of the tree will be the Gaussian
    * factors that have only continuous keys.
    */
   GaussianFactorGraphTree assembleGraphTree() const;
 
+  /**
+   * @brief Eliminate the given continuous keys.
+   *
+   * @param keys The continuous keys to eliminate.
+   * @return The conditional on the  keys and a factor on the separator.
+   */
+  std::pair<std::shared_ptr<HybridConditional>, std::shared_ptr<Factor>>
+  eliminate(const Ordering& keys) const;
   /// @}
+
+  /// Get the GaussianFactorGraph at a given discrete assignment.
+  GaussianFactorGraph operator()(const DiscreteValues& assignment) const;
 };
+
+// traits
+template <>
+struct traits<HybridGaussianFactorGraph>
+    : public Testable<HybridGaussianFactorGraph> {};
 
 }  // namespace gtsam

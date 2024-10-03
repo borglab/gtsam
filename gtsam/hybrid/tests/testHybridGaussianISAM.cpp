@@ -126,31 +126,34 @@ TEST(HybridGaussianElimination, IncrementalInference) {
 
   /********************************************************/
   // Run batch elimination so we can compare results.
-  const Ordering ordering {X(0), X(1), X(2)};
+  const Ordering ordering{X(0), X(1), X(2)};
 
   // Now we calculate the expected factors using full elimination
   const auto [expectedHybridBayesTree, expectedRemainingGraph] =
       switching.linearizedFactorGraph.eliminatePartialMultifrontal(ordering);
 
   // The densities on X(0) should be the same
-  auto x0_conditional =
-      dynamic_pointer_cast<GaussianMixture>(isam[X(0)]->conditional()->inner());
-  auto expected_x0_conditional = dynamic_pointer_cast<GaussianMixture>(
-      (*expectedHybridBayesTree)[X(0)]->conditional()->inner());
+  auto x0_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
+      isam[X(0)]->conditional()->inner());
+  auto expected_x0_conditional =
+      dynamic_pointer_cast<HybridGaussianConditional>(
+          (*expectedHybridBayesTree)[X(0)]->conditional()->inner());
   EXPECT(assert_equal(*x0_conditional, *expected_x0_conditional));
 
   // The densities on X(1) should be the same
-  auto x1_conditional =
-      dynamic_pointer_cast<GaussianMixture>(isam[X(1)]->conditional()->inner());
-  auto expected_x1_conditional = dynamic_pointer_cast<GaussianMixture>(
-      (*expectedHybridBayesTree)[X(1)]->conditional()->inner());
+  auto x1_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
+      isam[X(1)]->conditional()->inner());
+  auto expected_x1_conditional =
+      dynamic_pointer_cast<HybridGaussianConditional>(
+          (*expectedHybridBayesTree)[X(1)]->conditional()->inner());
   EXPECT(assert_equal(*x1_conditional, *expected_x1_conditional));
 
   // The densities on X(2) should be the same
-  auto x2_conditional =
-      dynamic_pointer_cast<GaussianMixture>(isam[X(2)]->conditional()->inner());
-  auto expected_x2_conditional = dynamic_pointer_cast<GaussianMixture>(
-      (*expectedHybridBayesTree)[X(2)]->conditional()->inner());
+  auto x2_conditional = dynamic_pointer_cast<HybridGaussianConditional>(
+      isam[X(2)]->conditional()->inner());
+  auto expected_x2_conditional =
+      dynamic_pointer_cast<HybridGaussianConditional>(
+          (*expectedHybridBayesTree)[X(2)]->conditional()->inner());
   EXPECT(assert_equal(*x2_conditional, *expected_x2_conditional));
 
   // We only perform manual continuous elimination for 0,0.
@@ -279,9 +282,9 @@ TEST(HybridGaussianElimination, Approx_inference) {
 
   // Check that the hybrid nodes of the bayes net match those of the pre-pruning
   // bayes net, at the same positions.
-  auto &unprunedLastDensity = *dynamic_pointer_cast<GaussianMixture>(
+  auto &unprunedLastDensity = *dynamic_pointer_cast<HybridGaussianConditional>(
       unprunedHybridBayesTree->clique(X(3))->conditional()->inner());
-  auto &lastDensity = *dynamic_pointer_cast<GaussianMixture>(
+  auto &lastDensity = *dynamic_pointer_cast<HybridGaussianConditional>(
       incrementalHybrid[X(3)]->conditional()->inner());
 
   std::vector<std::pair<DiscreteValues, double>> assignments =
@@ -330,13 +333,13 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
   // each with 2, 4, 8, and 5 (pruned) leaves respetively.
   EXPECT_LONGS_EQUAL(4, incrementalHybrid.size());
   EXPECT_LONGS_EQUAL(
-      2, incrementalHybrid[X(0)]->conditional()->asMixture()->nrComponents());
+      2, incrementalHybrid[X(0)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      3, incrementalHybrid[X(1)]->conditional()->asMixture()->nrComponents());
+      3, incrementalHybrid[X(1)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(2)]->conditional()->asMixture()->nrComponents());
+      5, incrementalHybrid[X(2)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(3)]->conditional()->asMixture()->nrComponents());
+      5, incrementalHybrid[X(3)]->conditional()->asHybrid()->nrComponents());
 
   /***** Run Round 2 *****/
   HybridGaussianFactorGraph graph2;
@@ -351,9 +354,9 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
   // with 5 (pruned) leaves.
   CHECK_EQUAL(5, incrementalHybrid.size());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(3)]->conditional()->asMixture()->nrComponents());
+      5, incrementalHybrid[X(3)]->conditional()->asHybrid()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(4)]->conditional()->asMixture()->nrComponents());
+      5, incrementalHybrid[X(4)]->conditional()->asHybrid()->nrComponents());
 }
 
 /* ************************************************************************/
@@ -381,11 +384,11 @@ TEST(HybridGaussianISAM, NonTrivial) {
 
   // Add connecting poses similar to PoseFactors in GTD
   fg.emplace_shared<BetweenFactor<Pose2>>(X(0), Y(0), Pose2(0, 1.0, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Y(0), Z(0), Pose2(0, 1.0, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Z(0), W(0), Pose2(0, 1.0, 0),
-                                             poseNoise);
+                                          poseNoise);
 
   // Create initial estimate
   Values initial;
@@ -411,27 +414,24 @@ TEST(HybridGaussianISAM, NonTrivial) {
 
   // Add odometry factor with discrete modes.
   Pose2 odometry(1.0, 0.0, 0.0);
-  KeyVector contKeys = {W(0), W(1)};
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
-  auto still = std::make_shared<PlanarMotionModel>(W(0), W(1), Pose2(0, 0, 0),
-                                                     noise_model),
-       moving = std::make_shared<PlanarMotionModel>(W(0), W(1), odometry,
-                                                      noise_model);
-  std::vector<PlanarMotionModel::shared_ptr> components = {moving, still};
-  auto mixtureFactor = std::make_shared<MixtureFactor>(
-      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
-  fg.push_back(mixtureFactor);
+  std::vector<NoiseModelFactor::shared_ptr> components;
+  components.emplace_back(
+      new PlanarMotionModel(W(0), W(1), odometry, noise_model));  // moving
+  components.emplace_back(
+      new PlanarMotionModel(W(0), W(1), Pose2(0, 0, 0), noise_model));  // still
+  fg.emplace_shared<HybridNonlinearFactor>(DiscreteKey(M(1), 2), components);
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(0), X(1), Pose2(1.0, 0.0, 0),
-                                             poseNoise);
+                                          poseNoise);
   // PoseFactors-like at k=1
   fg.emplace_shared<BetweenFactor<Pose2>>(X(1), Y(1), Pose2(0, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Y(1), Z(1), Pose2(0, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Z(1), W(1), Pose2(-1, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
 
   initial.insert(X(1), Pose2(1.0, 0.0, 0.0));
   initial.insert(Y(1), Pose2(1.0, 1.0, 0.0));
@@ -452,26 +452,23 @@ TEST(HybridGaussianISAM, NonTrivial) {
 
   /*************** Run Round 3 ***************/
   // Add odometry factor with discrete modes.
-  contKeys = {W(1), W(2)};
-  still = std::make_shared<PlanarMotionModel>(W(1), W(2), Pose2(0, 0, 0),
-                                                noise_model);
-  moving =
-      std::make_shared<PlanarMotionModel>(W(1), W(2), odometry, noise_model);
-  components = {moving, still};
-  mixtureFactor = std::make_shared<MixtureFactor>(
-      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(2), 2)}, components);
-  fg.push_back(mixtureFactor);
+  components.clear();
+  components.emplace_back(
+      new PlanarMotionModel(W(1), W(2), odometry, noise_model));  // moving
+  components.emplace_back(
+      new PlanarMotionModel(W(1), W(2), Pose2(0, 0, 0), noise_model));  // still
+  fg.emplace_shared<HybridNonlinearFactor>(DiscreteKey(M(2), 2), components);
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(1), X(2), Pose2(1.0, 0.0, 0),
-                                             poseNoise);
+                                          poseNoise);
   // PoseFactors-like at k=1
   fg.emplace_shared<BetweenFactor<Pose2>>(X(2), Y(2), Pose2(0, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Y(2), Z(2), Pose2(0, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Z(2), W(2), Pose2(-2, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
 
   initial.insert(X(2), Pose2(2.0, 0.0, 0.0));
   initial.insert(Y(2), Pose2(2.0, 1.0, 0.0));
@@ -495,26 +492,23 @@ TEST(HybridGaussianISAM, NonTrivial) {
 
   /*************** Run Round 4 ***************/
   // Add odometry factor with discrete modes.
-  contKeys = {W(2), W(3)};
-  still = std::make_shared<PlanarMotionModel>(W(2), W(3), Pose2(0, 0, 0),
-                                                noise_model);
-  moving =
-      std::make_shared<PlanarMotionModel>(W(2), W(3), odometry, noise_model);
-  components = {moving, still};
-  mixtureFactor = std::make_shared<MixtureFactor>(
-      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(3), 2)}, components);
-  fg.push_back(mixtureFactor);
+  components.clear();
+  components.emplace_back(
+      new PlanarMotionModel(W(2), W(3), odometry, noise_model));  // moving
+  components.emplace_back(
+      new PlanarMotionModel(W(2), W(3), Pose2(0, 0, 0), noise_model));  // still
+  fg.emplace_shared<HybridNonlinearFactor>(DiscreteKey(M(3), 2), components);
 
   // Add equivalent of ImuFactor
   fg.emplace_shared<BetweenFactor<Pose2>>(X(2), X(3), Pose2(1.0, 0.0, 0),
-                                             poseNoise);
+                                          poseNoise);
   // PoseFactors-like at k=3
   fg.emplace_shared<BetweenFactor<Pose2>>(X(3), Y(3), Pose2(0, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Y(3), Z(3), Pose2(0, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
   fg.emplace_shared<BetweenFactor<Pose2>>(Z(3), W(3), Pose2(-3, 1, 0),
-                                             poseNoise);
+                                          poseNoise);
 
   initial.insert(X(3), Pose2(3.0, 0.0, 0.0));
   initial.insert(Y(3), Pose2(3.0, 1.0, 0.0));
@@ -547,7 +541,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
 
   // Test if pruning worked correctly by checking that we only have 3 leaves in
   // the last node.
-  auto lastConditional = inc[X(3)]->conditional()->asMixture();
+  auto lastConditional = inc[X(3)]->conditional()->asHybrid();
   EXPECT_LONGS_EQUAL(3, lastConditional->nrComponents());
 }
 

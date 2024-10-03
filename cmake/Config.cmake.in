@@ -15,10 +15,12 @@ endif()
 # Find dependencies, required by cmake exported targets:
 include(CMakeFindDependencyMacro)
 # Allow using cmake < 3.8
-if(${CMAKE_VERSION} VERSION_LESS "3.8.0")
-find_package(Boost @BOOST_FIND_MINIMUM_VERSION@ COMPONENTS @BOOST_FIND_MINIMUM_COMPONENTS@)
-else()
-find_dependency(Boost @BOOST_FIND_MINIMUM_VERSION@ COMPONENTS @BOOST_FIND_MINIMUM_COMPONENTS@)
+if (@GTSAM_ENABLE_BOOST_SERIALIZATION@ OR @GTSAM_USE_BOOST_FEATURES@)
+  if(${CMAKE_VERSION} VERSION_LESS "3.8.0")
+    find_package(Boost @BOOST_FIND_MINIMUM_VERSION@ COMPONENTS @BOOST_FIND_MINIMUM_COMPONENTS@)
+  else()
+    find_dependency(Boost @BOOST_FIND_MINIMUM_VERSION@ COMPONENTS @BOOST_FIND_MINIMUM_COMPONENTS@)
+  endif()
 endif()
 
 if(@GTSAM_USE_TBB@)

@@ -28,7 +28,8 @@ namespace gtsam {
 
 /**
  * A hybrid Bayes net is a collection of HybridConditionals, which can have
- * discrete conditionals, Gaussian mixtures, or pure Gaussian conditionals.
+ * discrete conditionals, hybrid Gaussian conditionals,
+ * or pure Gaussian conditionals.
  *
  * @ingroup hybrid
  */
@@ -43,8 +44,13 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// @name Standard Constructors
   /// @{
 
-  /** Construct empty Bayes net */
+  /// Construct empty Bayes net.
   HybridBayesNet() = default;
+
+  /// Constructor that takes an initializer list of shared pointers.
+  HybridBayesNet(
+      std::initializer_list<HybridConditional::shared_ptr> conditionals)
+      : Base(conditionals) {}
 
   /// @}
   /// @name Testable
@@ -71,20 +77,6 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   }
 
   /**
-   * Preferred: add a conditional directly using a pointer.
-   *
-   * Examples:
-   *   hbn.emplace_back(new GaussianMixture(...)));
-   *   hbn.emplace_back(new GaussianConditional(...)));
-   *   hbn.emplace_back(new DiscreteConditional(...)));
-   */
-  template <class Conditional>
-  void emplace_back(Conditional *conditional) {
-    factors_.push_back(std::make_shared<HybridConditional>(
-        std::shared_ptr<Conditional>(conditional)));
-  }
-
-  /**
    * Add a conditional using a shared_ptr, using implicit conversion to
    * a HybridConditional.
    *
@@ -93,7 +85,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    *
    * Example:
    *   auto shared_ptr_to_a_conditional =
-   *     std::make_shared<GaussianMixture>(...);
+   *     std::make_shared<HybridGaussianConditional>(...);
    *  hbn.push_back(shared_ptr_to_a_conditional);
    */
   void push_back(HybridConditional &&conditional) {
@@ -102,8 +94,40 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   }
 
   /**
+   * @brief Add a conditional to the Bayes net.
+   * Implicitly convert to a HybridConditional.
+   *
+   * E.g.
+   * hbn.push_back(std::make_shared<DiscreteConditional>(m, "1/1"));
+   *
+   * @tparam CONDITIONAL Type of conditional. This is shared_ptr version.
+   * @param conditional The conditional as a shared pointer.
+   */
+  template <class CONDITIONAL>
+  void push_back(const std::shared_ptr<CONDITIONAL> &conditional) {
+    factors_.push_back(std::make_shared<HybridConditional>(conditional));
+  }
+
+  /**
+   * Preferred: Emplace a conditional directly using arguments.
+   *
+   * Examples:
+   *   hbn.emplace_shared<HybridGaussianConditional>(...)));
+   *   hbn.emplace_shared<GaussianConditional>(...)));
+   *   hbn.emplace_shared<DiscreteConditional>(...)));
+   */
+  template <class CONDITIONAL, class... Args>
+  void emplace_shared(Args &&...args) {
+    auto cond = std::allocate_shared<CONDITIONAL>(
+        Eigen::aligned_allocator<CONDITIONAL>(), std::forward<Args>(args)...);
+    factors_.push_back(std::make_shared<HybridConditional>(std::move(cond)));
+  }
+
+  /**
    * @brief Get the Gaussian Bayes Net which corresponds to a specific discrete
    * value assignment.
+   *
+   * @note Any pure discrete factors are ignored.
    *
    * @param assignment The discrete value assignment for the discrete keys.
    * @return GaussianBayesNet

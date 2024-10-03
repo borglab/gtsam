@@ -50,9 +50,6 @@ namespace gtsam {
     Vector prior_;                 ///< Measurement on tangent space parameters, in compressed form.
     std::vector<size_t> indices_;  ///< Indices of the measured tangent space parameters.
 
-    /** default constructor - only use for serialization */
-    PartialPriorFactor() {}
-
     /**
      * constructor with just minimum requirements for a factor - allows more
      * computation in the constructor.  This should only be used by subclasses
@@ -65,7 +62,8 @@ namespace gtsam {
     // Provide access to the Matrix& version of evaluateError:
     using Base::evaluateError;
 
-    ~PartialPriorFactor() override {}
+    /** default constructor - only use for serialization */
+    PartialPriorFactor() {}
 
     /** Single Element Constructor: Prior on a single parameter at index 'idx' in the tangent vector.*/
     PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
@@ -84,6 +82,8 @@ namespace gtsam {
       assert((size_t)prior_.size() == indices_.size());
       assert(model->dim() == (size_t)prior.size());
     }
+
+    ~PartialPriorFactor() override {}
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {

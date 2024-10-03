@@ -11,212 +11,143 @@
 
 /**
  * @file    testGaussianMixture.cpp
- * @brief   Unit tests for GaussianMixture class
+ * @brief   Test hybrid elimination with a simple mixture model
  * @author  Varun Agrawal
- * @author  Fan Jiang
  * @author  Frank Dellaert
- * @date    December 2021
+ * @date    September 2024
  */
 
-#include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
-#include <gtsam/hybrid/HybridValues.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/HybridGaussianConditional.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianConditional.h>
-
-#include <vector>
+#include <gtsam/linear/NoiseModel.h>
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;
-using noiseModel::Isotropic;
 using symbol_shorthand::M;
-using symbol_shorthand::X;
 using symbol_shorthand::Z;
 
-// Common constants
-static const Key modeKey = M(0);
-static const DiscreteKey mode(modeKey, 2);
-static const VectorValues vv{{Z(0), Vector1(4.9)}, {X(0), Vector1(5.0)}};
-static const DiscreteValues assignment0{{M(0), 0}}, assignment1{{M(0), 1}};
-static const HybridValues hv0{vv, assignment0};
-static const HybridValues hv1{vv, assignment1};
+// Define mode key and an assignment m==1
+const DiscreteKey m(M(0), 2);
+const DiscreteValues m1Assignment{{M(0), 1}};
 
-/* ************************************************************************* */
-namespace equal_constants {
-// Create a simple GaussianMixture
-const double commonSigma = 2.0;
-const std::vector<GaussianConditional::shared_ptr> conditionals{
-    GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
-                                             commonSigma),
-    GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
-                                             commonSigma)};
-const GaussianMixture mixture({Z(0)}, {X(0)}, {mode}, conditionals);
-}  // namespace equal_constants
+// Define a 50/50 prior on the mode
+DiscreteConditional::shared_ptr mixing =
+    std::make_shared<DiscreteConditional>(m, "60/40");
 
-/* ************************************************************************* */
-/// Check that invariants hold
-TEST(GaussianMixture, Invariants) {
-  using namespace equal_constants;
+/// Gaussian density function
+double Gaussian(double mu, double sigma, double z) {
+  return exp(-0.5 * pow((z - mu) / sigma, 2)) / sqrt(2 * M_PI * sigma * sigma);
+};
 
-  // Check that the mixture normalization constant is the max of all constants
-  // which are all equal, in this case, hence:
-  const double K = mixture.logNormalizationConstant();
-  EXPECT_DOUBLES_EQUAL(K, conditionals[0]->logNormalizationConstant(), 1e-8);
-  EXPECT_DOUBLES_EQUAL(K, conditionals[1]->logNormalizationConstant(), 1e-8);
+/**
+ * Closed form computation of P(m=1|z).
+ * If sigma0 == sigma1, it simplifies to a sigmoid function.
+ * Hardcodes 60/40 prior on mode.
+ */
+double prob_m_z(double mu0, double mu1, double sigma0, double sigma1,
+                double z) {
+  const double p0 = 0.6 * Gaussian(mu0, sigma0, z);
+  const double p1 = 0.4 * Gaussian(mu1, sigma1, z);
+  return p1 / (p0 + p1);
+};
 
-  EXPECT(GaussianMixture::CheckInvariants(mixture, hv0));
-  EXPECT(GaussianMixture::CheckInvariants(mixture, hv1));
+/// Given \phi(m;z)\phi(m) use eliminate to obtain P(m|z).
+DiscreteConditional SolveHFG(const HybridGaussianFactorGraph &hfg) {
+  return *hfg.eliminateSequential()->at(0)->asDiscrete();
 }
 
-/* ************************************************************************* */
-/// Check LogProbability.
-TEST(GaussianMixture, LogProbability) {
-  using namespace equal_constants;
-  auto actual = mixture.logProbability(vv);
+/// Given p(z,m) and z, convert to HFG and solve.
+DiscreteConditional SolveHBN(const HybridBayesNet &hbn, double z) {
+  VectorValues given{{Z(0), Vector1(z)}};
+  return SolveHFG(hbn.toFactorGraph(given));
+}
 
-  // Check result.
-  std::vector<DiscreteKey> discrete_keys = {mode};
-  std::vector<double> leaves = {conditionals[0]->logProbability(vv),
-                                conditionals[1]->logProbability(vv)};
-  AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
+/*
+ * Test a Gaussian Mixture Model P(m)p(z|m) with same sigma.
+ * The posterior, as a function of z, should be a sigmoid function.
+ */
+TEST(GaussianMixture, GaussianMixtureModel) {
+  double mu0 = 1.0, mu1 = 3.0;
+  double sigma = 2.0;
 
-  EXPECT(assert_equal(expected, actual, 1e-6));
+  // Create a Gaussian mixture model p(z|m) with same sigma.
+  HybridBayesNet gmm;
+  std::vector<std::pair<Vector, double>> parameters{{Vector1(mu0), sigma},
+                                                    {Vector1(mu1), sigma}};
+  gmm.emplace_shared<HybridGaussianConditional>(m, Z(0), parameters);
+  gmm.push_back(mixing);
 
-  // Check for non-tree version.
-  for (size_t mode : {0, 1}) {
-    const HybridValues hv{vv, {{M(0), mode}}};
-    EXPECT_DOUBLES_EQUAL(conditionals[mode]->logProbability(vv),
-                         mixture.logProbability(hv), 1e-8);
+  // At the halfway point between the means, we should get P(m|z)=0.5
+  double midway = mu1 - mu0;
+  auto pMid = SolveHBN(gmm, midway);
+  EXPECT(assert_equal(DiscreteConditional(m, "60/40"), pMid));
+
+  // Everywhere else, the result should be a sigmoid.
+  for (const double shift : {-4, -2, 0, 2, 4}) {
+    const double z = midway + shift;
+    const double expected = prob_m_z(mu0, mu1, sigma, sigma, z);
+
+    // Workflow 1: convert HBN to HFG and solve
+    auto posterior1 = SolveHBN(gmm, z);
+    EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
+
+    // Workflow 2: directly specify HFG and solve
+    HybridGaussianFactorGraph hfg1;
+    hfg1.emplace_shared<DecisionTreeFactor>(
+        m, std::vector{Gaussian(mu0, sigma, z), Gaussian(mu1, sigma, z)});
+    hfg1.push_back(mixing);
+    auto posterior2 = SolveHFG(hfg1);
+    EXPECT_DOUBLES_EQUAL(expected, posterior2(m1Assignment), 1e-8);
   }
 }
 
-/* ************************************************************************* */
-/// Check error.
-TEST(GaussianMixture, Error) {
-  using namespace equal_constants;
-  auto actual = mixture.errorTree(vv);
+/*
+ * Test a Gaussian Mixture Model P(m)p(z|m) with different sigmas.
+ * The posterior, as a function of z, should be a unimodal function.
+ */
+TEST(GaussianMixture, GaussianMixtureModel2) {
+  double mu0 = 1.0, mu1 = 3.0;
+  double sigma0 = 8.0, sigma1 = 4.0;
 
-  // Check result.
-  std::vector<DiscreteKey> discrete_keys = {mode};
-  std::vector<double> leaves = {conditionals[0]->error(vv),
-                                conditionals[1]->error(vv)};
-  AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
+  // Create a Gaussian mixture model p(z|m) with same sigma.
+  HybridBayesNet gmm;
+  std::vector<std::pair<Vector, double>> parameters{{Vector1(mu0), sigma0},
+                                                    {Vector1(mu1), sigma1}};
+  gmm.emplace_shared<HybridGaussianConditional>(m, Z(0), parameters);
+  gmm.push_back(mixing);
 
-  EXPECT(assert_equal(expected, actual, 1e-6));
+  // We get zMax=3.1333 by finding the maximum value of the function, at which
+  // point the mode m==1 is about twice as probable as m==0.
+  double zMax = 3.133;
+  auto pMax = SolveHBN(gmm, zMax);
+  EXPECT(assert_equal(DiscreteConditional(m, "42/58"), pMax, 1e-4));
 
-  // Check for non-tree version.
-  for (size_t mode : {0, 1}) {
-    const HybridValues hv{vv, {{M(0), mode}}};
-    EXPECT_DOUBLES_EQUAL(conditionals[mode]->error(vv), mixture.error(hv),
-                         1e-8);
+  // Everywhere else, the result should be a bell curve like function.
+  for (const double shift : {-4, -2, 0, 2, 4}) {
+    const double z = zMax + shift;
+    const double expected = prob_m_z(mu0, mu1, sigma0, sigma1, z);
+
+    // Workflow 1: convert HBN to HFG and solve
+    auto posterior1 = SolveHBN(gmm, z);
+    EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
+
+    // Workflow 2: directly specify HFG and solve
+    HybridGaussianFactorGraph hfg;
+    hfg.emplace_shared<DecisionTreeFactor>(
+        m, std::vector{Gaussian(mu0, sigma0, z), Gaussian(mu1, sigma1, z)});
+    hfg.push_back(mixing);
+    auto posterior2 = SolveHFG(hfg);
+    EXPECT_DOUBLES_EQUAL(expected, posterior2(m1Assignment), 1e-8);
   }
-}
-
-/* ************************************************************************* */
-/// Check that the likelihood is proportional to the conditional density given
-/// the measurements.
-TEST(GaussianMixture, Likelihood) {
-  using namespace equal_constants;
-
-  // Compute likelihood
-  auto likelihood = mixture.likelihood(vv);
-
-  // Check that the mixture error and the likelihood error are the same.
-  EXPECT_DOUBLES_EQUAL(mixture.error(hv0), likelihood->error(hv0), 1e-8);
-  EXPECT_DOUBLES_EQUAL(mixture.error(hv1), likelihood->error(hv1), 1e-8);
-
-  // Check that likelihood error is as expected, i.e., just the errors of the
-  // individual likelihoods, in the `equal_constants` case.
-  std::vector<DiscreteKey> discrete_keys = {mode};
-  std::vector<double> leaves = {conditionals[0]->likelihood(vv)->error(vv),
-                                conditionals[1]->likelihood(vv)->error(vv)};
-  AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
-  EXPECT(assert_equal(expected, likelihood->errorTree(vv), 1e-6));
-
-  // Check that the ratio of probPrime to evaluate is the same for all modes.
-  std::vector<double> ratio(2);
-  for (size_t mode : {0, 1}) {
-    const HybridValues hv{vv, {{M(0), mode}}};
-    ratio[mode] = std::exp(-likelihood->error(hv)) / mixture.evaluate(hv);
-  }
-  EXPECT_DOUBLES_EQUAL(ratio[0], ratio[1], 1e-8);
-}
-
-/* ************************************************************************* */
-namespace mode_dependent_constants {
-// Create a GaussianMixture with mode-dependent noise models.
-// 0 is low-noise, 1 is high-noise.
-const std::vector<GaussianConditional::shared_ptr> conditionals{
-    GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
-                                             0.5),
-    GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
-                                             3.0)};
-const GaussianMixture mixture({Z(0)}, {X(0)}, {mode}, conditionals);
-}  // namespace mode_dependent_constants
-
-/* ************************************************************************* */
-// Create a test for continuousParents.
-TEST(GaussianMixture, ContinuousParents) {
-  using namespace mode_dependent_constants;
-  const KeyVector continuousParentKeys = mixture.continuousParents();
-  // Check that the continuous parent keys are correct:
-  EXPECT(continuousParentKeys.size() == 1);
-  EXPECT(continuousParentKeys[0] == X(0));
-}
-
-/* ************************************************************************* */
-/// Check that the likelihood is proportional to the conditional density given
-/// the measurements.
-TEST(GaussianMixture, Likelihood2) {
-  using namespace mode_dependent_constants;
-
-  // Compute likelihood
-  auto likelihood = mixture.likelihood(vv);
-
-  // Check that the mixture error and the likelihood error are as expected,
-  // this invariant is the same as the equal noise case:
-  EXPECT_DOUBLES_EQUAL(mixture.error(hv0), likelihood->error(hv0), 1e-8);
-  EXPECT_DOUBLES_EQUAL(mixture.error(hv1), likelihood->error(hv1), 1e-8);
-
-  // Check the detailed JacobianFactor calculation for mode==1.
-  {
-    // We have a JacobianFactor
-    const auto gf1 = (*likelihood)(assignment1);
-    const auto jf1 = std::dynamic_pointer_cast<JacobianFactor>(gf1);
-    CHECK(jf1);
-
-    // It has 2 rows, not 1!
-    CHECK(jf1->rows() == 2);
-
-    // Check that the constant C1 is properly encoded in the JacobianFactor.
-    const double C1 = mixture.logNormalizationConstant() -
-                      conditionals[1]->logNormalizationConstant();
-    const double c1 = std::sqrt(2.0 * C1);
-    Vector expected_unwhitened(2);
-    expected_unwhitened << 4.9 - 5.0, -c1;
-    Vector actual_unwhitened = jf1->unweighted_error(vv);
-    EXPECT(assert_equal(expected_unwhitened, actual_unwhitened));
-
-    // Make sure the noise model does not touch it.
-    Vector expected_whitened(2);
-    expected_whitened << (4.9 - 5.0) / 3.0, -c1;
-    Vector actual_whitened = jf1->error_vector(vv);
-    EXPECT(assert_equal(expected_whitened, actual_whitened));
-
-    // Check that the error is equal to the mixture error:
-    EXPECT_DOUBLES_EQUAL(mixture.error(hv1), jf1->error(hv1), 1e-8);
-  }
-
-  // Check that the ratio of probPrime to evaluate is the same for all modes.
-  std::vector<double> ratio(2);
-  for (size_t mode : {0, 1}) {
-    const HybridValues hv{vv, {{M(0), mode}}};
-    ratio[mode] = std::exp(-likelihood->error(hv)) / mixture.evaluate(hv);
-  }
-  EXPECT_DOUBLES_EQUAL(ratio[0], ratio[1], 1e-8);
 }
 
 /* ************************************************************************* */
