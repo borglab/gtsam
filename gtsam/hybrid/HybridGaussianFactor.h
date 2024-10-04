@@ -131,16 +131,6 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   sharedFactor operator()(const DiscreteValues &assignment) const;
 
   /**
-   * @brief Combine the Gaussian Factor Graphs in `sum` and `this` while
-   * maintaining the original tree structure.
-   *
-   * @param sum Decision Tree of Gaussian Factor Graphs indexed by the
-   * variables.
-   * @return Sum
-   */
-  GaussianFactorGraphTree add(const GaussianFactorGraphTree &sum) const;
-
-  /**
    * @brief Compute error of the HybridGaussianFactor as a tree.
    *
    * @param continuousValues The continuous VectorValues.
@@ -158,14 +148,6 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
 
   /// Getter for GaussianFactor decision tree
   const FactorValuePairs &factors() const { return factors_; }
-
-  /// Add HybridNonlinearFactor to a Sum, syntactic sugar.
-  friend GaussianFactorGraphTree &operator+=(
-      GaussianFactorGraphTree &sum, const HybridGaussianFactor &factor) {
-    sum = factor.add(sum);
-    return sum;
-  }
-   
    /**
    * @brief Helper function to return factors and functional to create a
    * DecisionTree of Gaussian Factor Graphs.
@@ -174,16 +156,6 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    */
   virtual HybridGaussianProductFactor asProductFactor() const;
   /// @}
-
- protected:
-  /**
-   * @brief Helper function to return factors and functional to create a
-   * DecisionTree of Gaussian Factor Graphs.
-   *
-   * @return GaussianFactorGraphTree
-   */
-  GaussianFactorGraphTree asGaussianFactorGraphTree() const;
-
 
 private:
   /**

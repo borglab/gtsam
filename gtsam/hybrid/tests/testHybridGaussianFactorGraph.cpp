@@ -29,6 +29,7 @@
 #include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+#include <gtsam/hybrid/HybridGaussianProductFactor.h>
 #include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/BayesNet.h>
@@ -674,14 +675,14 @@ TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
 /* ****************************************************************************/
 // Check that assembleGraphTree assembles Gaussian factor graphs for each
 // assignment.
-TEST(HybridGaussianFactorGraph, assembleGraphTree) {
+TEST(HybridGaussianFactorGraph, collectProductFactor) {
   const int num_measurements = 1;
   auto fg = tiny::createHybridGaussianFactorGraph(
       num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
   EXPECT_LONGS_EQUAL(3, fg.size());
 
   // Assemble graph tree:
-  auto actual = fg.assembleGraphTree();
+  auto actual = fg.collectProductFactor();
 
   // Create expected decision tree with two factor graphs:
 
@@ -701,9 +702,9 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
 
   // Expected decision tree with two factor graphs:
   // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
-  GaussianFactorGraphTree expected{
-      M(0), GaussianFactorGraph(std::vector<GF>{(*hybrid)(d0), prior}),
-      GaussianFactorGraph(std::vector<GF>{(*hybrid)(d1), prior})};
+  HybridGaussianProductFactor expected{
+      {M(0), GaussianFactorGraph(std::vector<GF>{(*hybrid)(d0), prior}),
+       GaussianFactorGraph(std::vector<GF>{(*hybrid)(d1), prior})}};
 
   EXPECT(assert_equal(expected(d0), actual(d0), 1e-5));
   EXPECT(assert_equal(expected(d1), actual(d1), 1e-5));

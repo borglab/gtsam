@@ -128,42 +128,27 @@ void HybridGaussianFactorGraph::printErrors(
 }
 
 /* ************************************************************************ */
-static GaussianFactorGraphTree addGaussian(
-    const GaussianFactorGraphTree &gfgTree,
-    const GaussianFactor::shared_ptr &factor) {
-  // If the decision tree is not initialized, then initialize it.
-  if (gfgTree.empty()) {
-    GaussianFactorGraph result{factor};
-    return GaussianFactorGraphTree(result);
-  } else {
-    auto add = [&factor](const GaussianFactorGraph &graph) {
-      auto result = graph;
-      result.push_back(factor);
-      return result;
-    };
-    return gfgTree.apply(add);
-  }
-}
-
-/* ************************************************************************ */
 // TODO(dellaert): it's probably more efficient to first collect the discrete
 // keys, and then loop over all assignments to populate a vector.
-GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
-  GaussianFactorGraphTree result;
+HybridGaussianProductFactor
+HybridGaussianFactorGraph::collectProductFactor() const {
+  HybridGaussianProductFactor result;
 
   for (auto &f : factors_) {
-    // TODO(dellaert): just use a virtual method defined in HybridFactor.
+    // TODO(dellaert): can we make this cleaner and less error-prone?
     if (auto gf = dynamic_pointer_cast<GaussianFactor>(f)) {
-      result = addGaussian(result, gf);
+      result += gf;
+    } else if (auto gc = dynamic_pointer_cast<GaussianConditional>(f)) {
+      result += gc;
     } else if (auto gmf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
-      result = gmf->add(result);
+      result += *gmf;
     } else if (auto gm = dynamic_pointer_cast<HybridGaussianConditional>(f)) {
-      result = gm->add(result);
+      result += *gm; // handled above already?
     } else if (auto hc = dynamic_pointer_cast<HybridConditional>(f)) {
       if (auto gm = hc->asHybrid()) {
-        result = gm->add(result);
+        result += *gm;
       } else if (auto g = hc->asGaussian()) {
-        result = addGaussian(result, g);
+        result += g;
       } else {
         // Has to be discrete.
         // TODO(dellaert): in C++20, we can use std::visit.
@@ -176,7 +161,7 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
     } else {
       // TODO(dellaert): there was an unattributed comment here: We need to
       // handle the case where the object is actually an BayesTreeOrphanWrapper!
-      throwRuntimeError("gtsam::assembleGraphTree", f);
+      throwRuntimeError("gtsam::collectProductFactor", f);
     }
   }
 
@@ -270,21 +255,6 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
 }
 
 /* ************************************************************************ */
-// If any GaussianFactorGraph in the decision tree contains a nullptr, convert
-// that leaf to an empty GaussianFactorGraph. Needed since the DecisionTree will
-// otherwise create a GFG with a single (null) factor,
-// which doesn't register as null.
-GaussianFactorGraphTree removeEmpty(const GaussianFactorGraphTree &sum) {
-  auto emptyGaussian = [](const GaussianFactorGraph &graph) {
-    bool hasNull =
-        std::any_of(graph.begin(), graph.end(),
-                    [](const GaussianFactor::shared_ptr &ptr) { return !ptr; });
-    return hasNull ? GaussianFactorGraph() : graph;
-  };
-  return GaussianFactorGraphTree(sum, emptyGaussian);
-}
-
-/* ************************************************************************ */
 using Result = std::pair<std::shared_ptr<GaussianConditional>,
                          HybridGaussianFactor::sharedFactor>;
 
@@ -334,7 +304,7 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
       // and negative since we want log(k)
       hf->constantTerm() += -2.0 * conditional->negLogConstant();
     }
-    return {factor, 0.0};
+    return {factor, conditional->negLogConstant()};
   };
   DecisionTree<Key, GaussianFactorValuePair> newFactors(eliminationResults,
                                                         correct);
@@ -359,12 +329,12 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
 
   // Collect all the factors to create a set of Gaussian factor graphs in a
   // decision tree indexed by all discrete keys involved.
-  GaussianFactorGraphTree factorGraphTree = assembleGraphTree();
+  HybridGaussianProductFactor productFactor = collectProductFactor();
 
   // Convert factor graphs with a nullptr to an empty factor graph.
   // This is done after assembly since it is non-trivial to keep track of which
   // FG has a nullptr as we're looping over the factors.
-  factorGraphTree = removeEmpty(factorGraphTree);
+  auto prunedProductFactor = productFactor.removeEmpty();
 
   // This is the elimination method on the leaf nodes
   bool someContinuousLeft = false;
@@ -383,7 +353,7 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
   };
 
   // Perform elimination!
-  DecisionTree<Key, Result> eliminationResults(factorGraphTree, eliminate);
+  DecisionTree<Key, Result> eliminationResults(prunedProductFactor, eliminate);
 
   // If there are no more continuous parents we create a DiscreteFactor with the
   // error for each discrete choice. Otherwise, create a HybridGaussianFactor

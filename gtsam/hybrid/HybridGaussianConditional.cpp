@@ -23,6 +23,7 @@
 #include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
+#include <gtsam/hybrid/HybridGaussianProductFactor.h>
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -136,9 +137,9 @@ HybridGaussianConditional::conditionals() const {
 }
 
 /* *******************************************************************************/
-GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree()
+HybridGaussianProductFactor HybridGaussianConditional::asProductFactor()
     const {
-  auto wrap = [this](const GaussianConditional::shared_ptr &gc) {
+  auto wrap = [this](const std::shared_ptr<GaussianConditional> &gc) {
     // First check if conditional has not been pruned
     if (gc) {
       const double Cgm_Kgcm = gc->negLogConstant() - this->negLogConstant_;
@@ -155,7 +156,7 @@ GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree()
     }
     return GaussianFactorGraph{gc};
   };
-  return {conditionals_, wrap};
+  return {{conditionals_, wrap}};
 }
 
 /* *******************************************************************************/

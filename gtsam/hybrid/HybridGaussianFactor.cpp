@@ -196,26 +196,6 @@ HybridGaussianFactor::sharedFactor HybridGaussianFactor::operator()(
 }
 
 /* *******************************************************************************/
-GaussianFactorGraphTree HybridGaussianFactor::add(
-    const GaussianFactorGraphTree &sum) const {
-  using Y = GaussianFactorGraph;
-  auto add = [](const Y &graph1, const Y &graph2) {
-    auto result = graph1;
-    result.push_back(graph2);
-    return result;
-  };
-  const auto tree = asGaussianFactorGraphTree();
-  return sum.empty() ? tree : sum.apply(tree, add);
-}
-
-/* *******************************************************************************/
-GaussianFactorGraphTree HybridGaussianFactor::asGaussianFactorGraphTree()
-    const {
-  auto wrap = [](const auto &pair) { return GaussianFactorGraph{pair.first}; };
-  return {factors_, wrap};
-}
-
-/* *******************************************************************************/
 HybridGaussianProductFactor HybridGaussianFactor::asProductFactor() const {
   return {{factors_,
            [](const auto &pair) { return GaussianFactorGraph{pair.first}; }}};
