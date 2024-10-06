@@ -34,7 +34,6 @@ using namespace std;
 using namespace gtsam;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
-using symbol_shorthand::Z;
 
 /* ************************************************************************* */
 namespace examples {

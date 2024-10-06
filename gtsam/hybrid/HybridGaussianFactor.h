@@ -58,7 +58,7 @@ using GaussianFactorValuePair = std::pair<GaussianFactor::shared_ptr, double>;
  * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
- public:
+public:
   using Base = HybridFactor;
   using This = HybridGaussianFactor;
   using shared_ptr = std::shared_ptr<This>;
@@ -68,11 +68,11 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// typedef for Decision Tree of Gaussian factors and arbitrary value.
   using FactorValuePairs = DecisionTree<Key, GaussianFactorValuePair>;
 
- private:
+private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
   FactorValuePairs factors_;
 
- public:
+public:
   /// @name Constructors
   /// @{
 
@@ -120,8 +120,9 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
 
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 
-  void print(const std::string &s = "", const KeyFormatter &formatter =
-                                            DefaultKeyFormatter) const override;
+  void
+  print(const std::string &s = "",
+        const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
   /// @}
   /// @name Standard API
@@ -137,8 +138,8 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
    * as the factors involved, and leaf values as the error.
    */
-  AlgebraicDecisionTree<Key> errorTree(
-      const VectorValues &continuousValues) const override;
+  AlgebraicDecisionTree<Key>
+  errorTree(const VectorValues &continuousValues) const override;
 
   /**
    * @brief Compute the log-likelihood, including the log-normalizing constant.
@@ -148,13 +149,14 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
 
   /// Getter for GaussianFactor decision tree
   const FactorValuePairs &factors() const { return factors_; }
-   /**
+  /**
    * @brief Helper function to return factors and functional to create a
    * DecisionTree of Gaussian Factor Graphs.
    *
    * @return HybridGaussianProductFactor
    */
   virtual HybridGaussianProductFactor asProductFactor() const;
+
   /// @}
 
 private:
@@ -189,4 +191,4 @@ private:
 template <>
 struct traits<HybridGaussianFactor> : public Testable<HybridGaussianFactor> {};
 
-}  // namespace gtsam
+} // namespace gtsam

@@ -203,9 +203,6 @@ bool HybridGaussianConditional::equals(const HybridFactor &lf,
 void HybridGaussianConditional::print(const std::string &s,
                                       const KeyFormatter &formatter) const {
   std::cout << (s.empty() ? "" : s + "\n");
-  if (isContinuous()) std::cout << "Continuous ";
-  if (isDiscrete()) std::cout << "Discrete ";
-  if (isHybrid()) std::cout << "Hybrid ";
   BaseConditional::print("", formatter);
   std::cout << " Discrete Keys = ";
   for (auto &dk : discreteKeys()) {
