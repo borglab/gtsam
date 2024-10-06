@@ -24,66 +24,64 @@
 
 namespace gtsam {
 
-static GaussianFactorGraph add(const GaussianFactorGraph &graph1,
-                               const GaussianFactorGraph &graph2) {
-  auto result = graph1;
-  result.push_back(graph2);
-  return result;
+using Y = HybridGaussianProductFactor::Y;
+
+static Y add(const Y& y1, const Y& y2) {
+  GaussianFactorGraph result = y1.first;
+  result.push_back(y2.first);
+  return {result, y1.second + y2.second};
 };
 
-HybridGaussianProductFactor operator+(const HybridGaussianProductFactor &a,
-                                      const HybridGaussianProductFactor &b) {
+HybridGaussianProductFactor operator+(const HybridGaussianProductFactor& a,
+                                      const HybridGaussianProductFactor& b) {
   return a.empty() ? b : HybridGaussianProductFactor(a.apply(b, add));
 }
 
 HybridGaussianProductFactor HybridGaussianProductFactor::operator+(
-    const HybridGaussianFactor &factor) const {
+    const HybridGaussianFactor& factor) const {
   return *this + factor.asProductFactor();
 }
 
 HybridGaussianProductFactor HybridGaussianProductFactor::operator+(
-    const GaussianFactor::shared_ptr &factor) const {
+    const GaussianFactor::shared_ptr& factor) const {
   return *this + HybridGaussianProductFactor(factor);
 }
 
-HybridGaussianProductFactor &HybridGaussianProductFactor::operator+=(
-    const GaussianFactor::shared_ptr &factor) {
+HybridGaussianProductFactor& HybridGaussianProductFactor::operator+=(
+    const GaussianFactor::shared_ptr& factor) {
   *this = *this + factor;
   return *this;
 }
 
-HybridGaussianProductFactor &
-HybridGaussianProductFactor::operator+=(const HybridGaussianFactor &factor) {
+HybridGaussianProductFactor& HybridGaussianProductFactor::operator+=(
+    const HybridGaussianFactor& factor) {
   *this = *this + factor;
   return *this;
 }
 
-void HybridGaussianProductFactor::print(const std::string &s,
-                                        const KeyFormatter &formatter) const {
+void HybridGaussianProductFactor::print(const std::string& s, const KeyFormatter& formatter) const {
   KeySet keys;
-  auto printer = [&](const Y &graph) {
-    if (keys.size() == 0)
-      keys = graph.keys();
-    return "Graph of size " + std::to_string(graph.size());
+  auto printer = [&](const Y& y) {
+    if (keys.empty()) keys = y.first.keys();
+    return "Graph of size " + std::to_string(y.first.size()) +
+           ", scalar sum: " + std::to_string(y.second);
   };
   Base::print(s, formatter, printer);
-  if (keys.size() > 0) {
+  if (!keys.empty()) {
     std::stringstream ss;
     ss << s << " Keys:";
-    for (auto &&key : keys)
-      ss << " " << formatter(key);
+    for (auto&& key : keys) ss << " " << formatter(key);
     std::cout << ss.str() << "." << std::endl;
   }
 }
 
 HybridGaussianProductFactor HybridGaussianProductFactor::removeEmpty() const {
-  auto emptyGaussian = [](const GaussianFactorGraph &graph) {
-    bool hasNull =
-        std::any_of(graph.begin(), graph.end(),
-                    [](const GaussianFactor::shared_ptr &ptr) { return !ptr; });
-    return hasNull ? GaussianFactorGraph() : graph;
+  auto emptyGaussian = [](const Y& y) {
+    bool hasNull = std::any_of(
+        y.first.begin(), y.first.end(), [](const GaussianFactor::shared_ptr& ptr) { return !ptr; });
+    return hasNull ? Y{GaussianFactorGraph(), 0.0} : y;
   };
   return {Base(*this, emptyGaussian)};
 }
 
-} // namespace gtsam
+}  // namespace gtsam

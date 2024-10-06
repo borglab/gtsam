@@ -46,6 +46,7 @@
 
 #include "Switching.h"
 #include "TinyHybridExample.h"
+#include "gtsam/linear/GaussianFactorGraph.h"
 
 using namespace std;
 using namespace gtsam;
@@ -73,8 +74,7 @@ TEST(HybridGaussianFactorGraph, Creation) {
   HybridGaussianConditional gm(
       m0,
       {std::make_shared<GaussianConditional>(X(0), Z_3x1, I_3x3, X(1), I_3x3),
-       std::make_shared<GaussianConditional>(X(0), Vector3::Ones(), I_3x3, X(1),
-                                             I_3x3)});
+       std::make_shared<GaussianConditional>(X(0), Vector3::Ones(), I_3x3, X(1), I_3x3)});
   hfg.add(gm);
 
   EXPECT_LONGS_EQUAL(2, hfg.size());
@@ -99,7 +99,7 @@ std::vector<GaussianFactor::shared_ptr> components(Key key) {
   return {std::make_shared<JacobianFactor>(key, I_3x3, Z_3x1),
           std::make_shared<JacobianFactor>(key, I_3x3, Vector3::Ones())};
 }
-} // namespace two
+}  // namespace two
 
 /* ************************************************************************* */
 TEST(HybridGaussianFactorGraph, hybridEliminationOneFactor) {
@@ -239,16 +239,16 @@ TEST(HybridGaussianFactorGraph, Conditionals) {
   Switching switching(4);
 
   HybridGaussianFactorGraph hfg;
-  hfg.push_back(switching.linearizedFactorGraph.at(0)); // P(X0)
+  hfg.push_back(switching.linearizedFactorGraph.at(0));  // P(X0)
   Ordering ordering;
   ordering.push_back(X(0));
   HybridBayesNet::shared_ptr bayes_net = hfg.eliminateSequential(ordering);
 
   HybridGaussianFactorGraph hfg2;
-  hfg2.push_back(*bayes_net);                            // P(X0)
-  hfg2.push_back(switching.linearizedFactorGraph.at(1)); // P(X0, X1 | M0)
-  hfg2.push_back(switching.linearizedFactorGraph.at(2)); // P(X1, X2 | M1)
-  hfg2.push_back(switching.linearizedFactorGraph.at(5)); // P(M1)
+  hfg2.push_back(*bayes_net);                             // P(X0)
+  hfg2.push_back(switching.linearizedFactorGraph.at(1));  // P(X0, X1 | M0)
+  hfg2.push_back(switching.linearizedFactorGraph.at(2));  // P(X1, X2 | M1)
+  hfg2.push_back(switching.linearizedFactorGraph.at(5));  // P(M1)
   ordering += X(1), X(2), M(0), M(1);
 
   // Created product of first two factors and check eliminate:
@@ -282,8 +282,7 @@ TEST(HybridGaussianFactorGraph, Conditionals) {
   expected_continuous.insert<double>(X(1), 1);
   expected_continuous.insert<double>(X(2), 2);
   expected_continuous.insert<double>(X(3), 4);
-  Values result_continuous =
-      switching.linearizationPoint.retract(result.continuous());
+  Values result_continuous = switching.linearizationPoint.retract(result.continuous());
   EXPECT(assert_equal(expected_continuous, result_continuous));
 
   DiscreteValues expected_discrete;
@@ -318,7 +317,7 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
   // ϕ(x0) ϕ(x0,x1,m0) ϕ(x1,x2,m1) ϕ(x0;z0) ϕ(x1;z1) ϕ(x2;z2) ϕ(m0) ϕ(m0,m1)
   Switching s(3);
 
-  const HybridGaussianFactorGraph &graph = s.linearizedFactorGraph;
+  const HybridGaussianFactorGraph& graph = s.linearizedFactorGraph;
 
   const HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
 
@@ -376,19 +375,18 @@ TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   auto error_tree2 = graph.errorTree(delta.continuous());
 
   // regression
-  leaves = {0.50985198, 0.0097577296, 0.50009425, 0,
-            0.52922138, 0.029127133,  0.50985105, 0.0097567964};
+  leaves = {
+      0.50985198, 0.0097577296, 0.50009425, 0, 0.52922138, 0.029127133, 0.50985105, 0.0097567964};
   AlgebraicDecisionTree<Key> expected_error2(s.modes, leaves);
   EXPECT(assert_equal(expected_error, error_tree, 1e-7));
 }
 
 /* ****************************************************************************/
-// Check that assembleGraphTree assembles Gaussian factor graphs for each
-// assignment.
+// Check that collectProductFactor works correctly.
 TEST(HybridGaussianFactorGraph, collectProductFactor) {
   const int num_measurements = 1;
-  auto fg = tiny::createHybridGaussianFactorGraph(
-      num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
+  VectorValues vv{{Z(0), Vector1(5.0)}};
+  auto fg = tiny::createHybridGaussianFactorGraph(num_measurements, vv);
   EXPECT_LONGS_EQUAL(3, fg.size());
 
   // Assemble graph tree:
@@ -411,23 +409,26 @@ TEST(HybridGaussianFactorGraph, collectProductFactor) {
   DiscreteValues d0{{M(0), 0}}, d1{{M(0), 1}};
 
   // Expected decision tree with two factor graphs:
-  // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
-  HybridGaussianProductFactor expected{
-      {M(0), GaussianFactorGraph(std::vector<GF>{(*hybrid)(d0), prior}),
-       GaussianFactorGraph(std::vector<GF>{(*hybrid)(d1), prior})}};
+  // f(x0;mode=0)P(x0)
+  GaussianFactorGraph expectedFG0{(*hybrid)(d0), prior};
+  EXPECT(assert_equal(expectedFG0, actual(d0).first, 1e-5));
+  EXPECT(assert_equal(0.0, actual(d0).second, 1e-5));
 
-  EXPECT(assert_equal(expected(d0), actual(d0), 1e-5));
-  EXPECT(assert_equal(expected(d1), actual(d1), 1e-5));
+  // f(x0;mode=1)P(x0)
+  GaussianFactorGraph expectedFG1{(*hybrid)(d1), prior};
+  EXPECT(assert_equal(expectedFG1, actual(d1).first, 1e-5));
+  EXPECT(assert_equal(1.79176, actual(d1).second, 1e-5));
 }
 
 /* ****************************************************************************/
 // Check that the factor graph unnormalized probability is proportional to the
-    // Bayes net probability for the given measurements.
-    bool
-    ratioTest(const HybridBayesNet &bn, const VectorValues &measurements,
-              const HybridGaussianFactorGraph &fg, size_t num_samples = 100) {
-  auto compute_ratio = [&](HybridValues *sample) -> double {
-    sample->update(measurements); // update sample with given measurements:
+// Bayes net probability for the given measurements.
+bool ratioTest(const HybridBayesNet& bn,
+               const VectorValues& measurements,
+               const HybridGaussianFactorGraph& fg,
+               size_t num_samples = 100) {
+  auto compute_ratio = [&](HybridValues* sample) -> double {
+    sample->update(measurements);  // update sample with given measurements:
     return bn.evaluate(*sample) / fg.probPrime(*sample);
   };
 
@@ -437,8 +438,7 @@ TEST(HybridGaussianFactorGraph, collectProductFactor) {
   // Test ratios for a number of independent samples:
   for (size_t i = 0; i < num_samples; i++) {
     HybridValues sample = bn.sample(&kRng);
-    if (std::abs(expected_ratio - compute_ratio(&sample)) > 1e-6)
-      return false;
+    if (std::abs(expected_ratio - compute_ratio(&sample)) > 1e-6) return false;
   }
   return true;
 }
@@ -446,10 +446,12 @@ TEST(HybridGaussianFactorGraph, collectProductFactor) {
 /* ****************************************************************************/
 // Check that the bayes net unnormalized probability is proportional to the
 // Bayes net probability for the given measurements.
-bool ratioTest(const HybridBayesNet &bn, const VectorValues &measurements,
-               const HybridBayesNet &posterior, size_t num_samples = 100) {
-  auto compute_ratio = [&](HybridValues *sample) -> double {
-    sample->update(measurements); // update sample with given measurements:
+bool ratioTest(const HybridBayesNet& bn,
+               const VectorValues& measurements,
+               const HybridBayesNet& posterior,
+               size_t num_samples = 100) {
+  auto compute_ratio = [&](HybridValues* sample) -> double {
+    sample->update(measurements);  // update sample with given measurements:
     return bn.evaluate(*sample) / posterior.evaluate(*sample);
   };
 
@@ -461,8 +463,7 @@ bool ratioTest(const HybridBayesNet &bn, const VectorValues &measurements,
     HybridValues sample = bn.sample(&kRng);
     // GTSAM_PRINT(sample);
     // std::cout << "ratio: " << compute_ratio(&sample) << std::endl;
-    if (std::abs(expected_ratio - compute_ratio(&sample)) > 1e-6)
-      return false;
+    if (std::abs(expected_ratio - compute_ratio(&sample)) > 1e-6) return false;
   }
   return true;
 }
@@ -484,10 +485,10 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
   // Create hybrid Gaussian factor on X(0).
   using tiny::mode;
   // regression, but mean checked to be 5.0 in both cases:
-  const auto conditional0 = std::make_shared<GaussianConditional>(
-                 X(0), Vector1(14.1421), I_1x1 * 2.82843),
-             conditional1 = std::make_shared<GaussianConditional>(
-                 X(0), Vector1(10.1379), I_1x1 * 2.02759);
+  const auto conditional0 =
+                 std::make_shared<GaussianConditional>(X(0), Vector1(14.1421), I_1x1 * 2.82843),
+             conditional1 =
+                 std::make_shared<GaussianConditional>(X(0), Vector1(10.1379), I_1x1 * 2.02759);
   expectedBayesNet.emplace_shared<HybridGaussianConditional>(
       mode, std::vector{conditional0, conditional1});
 
@@ -515,8 +516,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1Swapped) {
   bn.emplace_shared<HybridGaussianConditional>(m1, Z(0), I_1x1, X(0), parms);
 
   // Create prior on X(0).
-  bn.push_back(
-      GaussianConditional::sharedMeanAndStddev(X(0), Vector1(5.0), 0.5));
+  bn.push_back(GaussianConditional::sharedMeanAndStddev(X(0), Vector1(5.0), 0.5));
 
   // Add prior on m1.
   bn.emplace_shared<DiscreteConditional>(m1, "1/1");
@@ -534,10 +534,10 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1Swapped) {
 
   // Create hybrid Gaussian factor on X(0).
   // regression, but mean checked to be 5.0 in both cases:
-  const auto conditional0 = std::make_shared<GaussianConditional>(
-                 X(0), Vector1(10.1379), I_1x1 * 2.02759),
-             conditional1 = std::make_shared<GaussianConditional>(
-                 X(0), Vector1(14.1421), I_1x1 * 2.82843);
+  const auto conditional0 =
+                 std::make_shared<GaussianConditional>(X(0), Vector1(10.1379), I_1x1 * 2.02759),
+             conditional1 =
+                 std::make_shared<GaussianConditional>(X(0), Vector1(14.1421), I_1x1 * 2.82843);
   expectedBayesNet.emplace_shared<HybridGaussianConditional>(
       m1, std::vector{conditional0, conditional1});
 
@@ -570,10 +570,10 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
   // Create hybrid Gaussian factor on X(0).
   using tiny::mode;
   // regression, but mean checked to be 5.0 in both cases:
-  const auto conditional0 = std::make_shared<GaussianConditional>(
-                 X(0), Vector1(17.3205), I_1x1 * 3.4641),
-             conditional1 = std::make_shared<GaussianConditional>(
-                 X(0), Vector1(10.274), I_1x1 * 2.0548);
+  const auto conditional0 =
+                 std::make_shared<GaussianConditional>(X(0), Vector1(17.3205), I_1x1 * 3.4641),
+             conditional1 =
+                 std::make_shared<GaussianConditional>(X(0), Vector1(10.274), I_1x1 * 2.0548);
   expectedBayesNet.emplace_shared<HybridGaussianConditional>(
       mode, std::vector{conditional0, conditional1});
 
@@ -617,27 +617,25 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   // NOTE: we add reverse topological so we can sample from the Bayes net.:
 
   // Add measurements:
-  std::vector<std::pair<Vector, double>> measurementModels{{Z_1x1, 3},
-                                                           {Z_1x1, 0.5}};
+  std::vector<std::pair<Vector, double>> measurementModels{{Z_1x1, 3}, {Z_1x1, 0.5}};
   for (size_t t : {0, 1, 2}) {
     // Create hybrid Gaussian factor on Z(t) conditioned on X(t) and mode N(t):
     const auto noise_mode_t = DiscreteKey{N(t), 2};
-    bn.emplace_shared<HybridGaussianConditional>(noise_mode_t, Z(t), I_1x1,
-                                                 X(t), measurementModels);
+    bn.emplace_shared<HybridGaussianConditional>(
+        noise_mode_t, Z(t), I_1x1, X(t), measurementModels);
 
     // Create prior on discrete mode N(t):
     bn.emplace_shared<DiscreteConditional>(noise_mode_t, "20/80");
   }
 
   // Add motion models. TODO(frank): why are they exactly the same?
-  std::vector<std::pair<Vector, double>> motionModels{{Z_1x1, 0.2},
-                                                      {Z_1x1, 0.2}};
+  std::vector<std::pair<Vector, double>> motionModels{{Z_1x1, 0.2}, {Z_1x1, 0.2}};
   for (size_t t : {2, 1}) {
     // Create hybrid Gaussian factor on X(t) conditioned on X(t-1)
     // and mode M(t-1):
     const auto motion_model_t = DiscreteKey{M(t), 2};
-    bn.emplace_shared<HybridGaussianConditional>(motion_model_t, X(t), I_1x1,
-                                                 X(t - 1), motionModels);
+    bn.emplace_shared<HybridGaussianConditional>(
+        motion_model_t, X(t), I_1x1, X(t - 1), motionModels);
 
     // Create prior on motion model M(t):
     bn.emplace_shared<DiscreteConditional>(motion_model_t, "40/60");
@@ -650,8 +648,7 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   EXPECT_LONGS_EQUAL(6, bn.sample().continuous().size());
 
   // Create measurements consistent with moving right every time:
-  const VectorValues measurements{
-      {Z(0), Vector1(0.0)}, {Z(1), Vector1(1.0)}, {Z(2), Vector1(2.0)}};
+  const VectorValues measurements{{Z(0), Vector1(0.0)}, {Z(1), Vector1(1.0)}, {Z(2), Vector1(2.0)}};
   const HybridGaussianFactorGraph fg = bn.toFactorGraph(measurements);
 
   // Factor graph is:

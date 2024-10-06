@@ -26,10 +26,11 @@ namespace gtsam {
 
 class HybridGaussianFactor;
 
-/// Alias for DecisionTree of GaussianFactorGraphs
-class HybridGaussianProductFactor : public DecisionTree<Key, GaussianFactorGraph> {
+/// Alias for DecisionTree of GaussianFactorGraphs and their scalar sums
+class HybridGaussianProductFactor
+    : public DecisionTree<Key, std::pair<GaussianFactorGraph, double>> {
  public:
-  using Y = GaussianFactorGraph;
+  using Y = std::pair<GaussianFactorGraph, double>;
   using Base = DecisionTree<Key, Y>;
 
   /// @name Constructors
@@ -44,7 +45,8 @@ class HybridGaussianProductFactor : public DecisionTree<Key, GaussianFactorGraph
    * @param factor Shared pointer to the factor
    */
   template <class FACTOR>
-  HybridGaussianProductFactor(const std::shared_ptr<FACTOR>& factor) : Base(Y{factor}) {}
+  HybridGaussianProductFactor(const std::shared_ptr<FACTOR>& factor)
+      : Base(Y{GaussianFactorGraph{factor}, 0.0}) {}
 
   /**
    * @brief Construct from DecisionTree
@@ -88,7 +90,9 @@ class HybridGaussianProductFactor : public DecisionTree<Key, GaussianFactorGraph
    * @return true if equal, false otherwise
    */
   bool equals(const HybridGaussianProductFactor& other, double tol = 1e-9) const {
-    return Base::equals(other, [tol](const Y& a, const Y& b) { return a.equals(b, tol); });
+    return Base::equals(other, [tol](const Y& a, const Y& b) {
+      return a.first.equals(b.first, tol) && std::abs(a.second - b.second) < tol;
+    });
   }
 
   /// @}
@@ -101,9 +105,9 @@ class HybridGaussianProductFactor : public DecisionTree<Key, GaussianFactorGraph
    * @return A new HybridGaussianProductFactor with empty GaussianFactorGraphs removed
    *
    * If any GaussianFactorGraph in the decision tree contains a nullptr, convert
-   * that leaf to an empty GaussianFactorGraph. This is needed because the DecisionTree
-   * will otherwise create a GaussianFactorGraph with a single (null) factor,
-   * which doesn't register as null.
+   * that leaf to an empty GaussianFactorGraph with zero scalar sum. This is needed because the
+   * DecisionTree will otherwise create a GaussianFactorGraph with a single (null) factor, which
+   * doesn't register as null.
    */
   HybridGaussianProductFactor removeEmpty() const;
 
