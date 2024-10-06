@@ -603,34 +603,31 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
 /* ****************************************************************************/
 // Test hybrid gaussian factor graph error and unnormalized probabilities
 TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
+  // Create switching network with three continuous variables and two discrete:
+  // ϕ(x0) ϕ(x0,x1,m0) ϕ(x1,x2,m1) ϕ(x0;z0) ϕ(x1;z1) ϕ(x2;z2) ϕ(m0) ϕ(m0,m1)
   Switching s(3);
 
-  HybridGaussianFactorGraph graph = s.linearizedFactorGraph;
+  const HybridGaussianFactorGraph &graph = s.linearizedFactorGraph;
 
-  HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
+  const HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
 
-  HybridValues delta = hybridBayesNet->optimize();
-  auto error_tree = graph.errorTree(delta.continuous());
+  const HybridValues delta = hybridBayesNet->optimize();
 
-  std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
-  std::vector<double> leaves = {0.9998558, 0.4902432, 0.5193694, 0.0097568};
-  AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
+  // regression test for errorTree
+  std::vector<double> leaves = {2.7916153, 1.5888555, 1.7233422, 1.6191947};
+  AlgebraicDecisionTree<Key> expectedErrors(s.modes, leaves);
+  const auto error_tree = graph.errorTree(delta.continuous());
+  EXPECT(assert_equal(expectedErrors, error_tree, 1e-7));
 
-  // regression
-  EXPECT(assert_equal(expected_error, error_tree, 1e-7));
-
-  auto probabilities = graph.probPrime(delta.continuous());
-  std::vector<double> prob_leaves = {0.36793249, 0.61247742, 0.59489556,
-                                     0.99029064};
-  AlgebraicDecisionTree<Key> expected_probabilities(discrete_keys, prob_leaves);
-
-  // regression
-  EXPECT(assert_equal(expected_probabilities, probabilities, 1e-7));
+  // regression test for discretePosterior
+  const AlgebraicDecisionTree<Key> expectedPosterior(
+      s.modes, std::vector{0.095516068, 0.31800092, 0.27798511, 0.3084979});
+  auto posterior = graph.discretePosterior(delta.continuous());
+  EXPECT(assert_equal(expectedPosterior, posterior, 1e-7));
 }
 
 /* ****************************************************************************/
-// Test hybrid gaussian factor graph errorTree during
-// incremental operation
+// Test hybrid gaussian factor graph errorTree during incremental operation
 TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   Switching s(4);
 
@@ -650,8 +647,7 @@ TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   auto error_tree = graph.errorTree(delta.continuous());
 
   std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
-  std::vector<double> leaves = {0.99985581, 0.4902432, 0.51936941,
-                                0.0097568009};
+  std::vector<double> leaves = {2.7916153, 1.5888555, 1.7233422, 1.6191947};
   AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
 
   // regression
@@ -668,12 +664,10 @@ TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   delta = hybridBayesNet->optimize();
   auto error_tree2 = graph.errorTree(delta.continuous());
 
-  discrete_keys = {{M(0), 2}, {M(1), 2}, {M(2), 2}};
+  // regression
   leaves = {0.50985198, 0.0097577296, 0.50009425, 0,
             0.52922138, 0.029127133,  0.50985105, 0.0097567964};
-  AlgebraicDecisionTree<Key> expected_error2(discrete_keys, leaves);
-
-  // regression
+  AlgebraicDecisionTree<Key> expected_error2(s.modes, leaves);
   EXPECT(assert_equal(expected_error, error_tree, 1e-7));
 }
 

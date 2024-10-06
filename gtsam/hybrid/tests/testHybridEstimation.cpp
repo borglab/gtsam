@@ -109,6 +109,7 @@ TEST(HybridEstimation, IncrementalSmoother) {
 
   HybridGaussianFactorGraph linearized;
 
+  constexpr size_t maxNrLeaves = 3;
   for (size_t k = 1; k < K; k++) {
     // Motion Model
     graph.push_back(switching.nonlinearFactorGraph.at(k));
@@ -120,8 +121,12 @@ TEST(HybridEstimation, IncrementalSmoother) {
     linearized = *graph.linearize(initial);
     Ordering ordering = smoother.getOrdering(linearized);
 
-    smoother.update(linearized, 3, ordering);
+    smoother.update(linearized, maxNrLeaves, ordering);
     graph.resize(0);
+
+    // Uncomment to print out pruned discrete marginal:
+    // smoother.hybridBayesNet().at(0)->asDiscrete()->dot("smoother_" +
+    //                                                    std::to_string(k));
   }
 
   HybridValues delta = smoother.hybridBayesNet().optimize();

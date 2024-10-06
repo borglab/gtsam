@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @file    testDecisionTree.cpp
- * @brief    Develop DecisionTree
- * @author  Frank Dellaert
- * @date  Mar 6, 2011
+ * @file   testAlgebraicDecisionTree.cpp
+ * @brief  Unit tests for Algebraic decision tree
+ * @author Frank Dellaert
+ * @date   Mar 6, 2011
  */
 
 #include <gtsam/base/Testable.h>
@@ -46,23 +46,35 @@ void dot(const T& f, const string& filename) {
 #endif
 }
 
-/** I can't get this to work !
- class Mul: std::function<double(const double&, const double&)> {
- inline double operator()(const double& a, const double& b) {
- return a * b;
- }
- };
+/* ************************************************************************** */
+// Test arithmetic:
+TEST(ADT, arithmetic) {
+  DiscreteKey A(0, 2), B(1, 2);
+  ADT zero{0}, one{1};
+  ADT a(A, 1, 2);
+  ADT b(B, 3, 4);
 
- // If second argument of binary op is Leaf
- template<typename L>
- typename DecisionTree<L, double>::Node::Ptr DecisionTree<L,
- double>::Choice::apply_fC_op_gL( Cache& cache, const Leaf& gL, Mul op) const {
- Ptr h(new Choice(label(), cardinality()));
- for(const NodePtr& branch: branches_)
- h->push_back(branch->apply_f_op_g(cache, gL, op));
- return Unique(cache, h);
- }
- */
+  // Addition
+  CHECK(assert_equal(a, zero + a));
+
+  // Negate and subtraction
+  CHECK(assert_equal(-a, zero - a));
+  CHECK(assert_equal({zero}, a - a));
+  CHECK(assert_equal(a + b, b + a));
+  CHECK(assert_equal({A, 3, 4}, a + 2));
+  CHECK(assert_equal({B, 1, 2}, b - 2));
+
+  // Multiplication
+  CHECK(assert_equal(zero, zero * a));
+  CHECK(assert_equal(zero, a * zero));
+  CHECK(assert_equal(a, one * a));
+  CHECK(assert_equal(a, a * one));
+  CHECK(assert_equal(a * b, b * a));
+
+  // division
+  // CHECK(assert_equal(a, (a * b) / b)); // not true because no pruning
+  CHECK(assert_equal(b, (a * b) / a));
+}
 
 /* ************************************************************************** */
 // instrumented operators

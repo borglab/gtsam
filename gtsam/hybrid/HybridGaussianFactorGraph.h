@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
@@ -188,23 +189,25 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       const VectorValues& continuousValues) const;
 
   /**
-   * @brief Compute unnormalized probability \f$ P(X | M, Z) \f$
-   * for each discrete assignment, and return as a tree.
-   *
-   * @param continuousValues Continuous values at which to compute the
-   * probability.
-   * @return AlgebraicDecisionTree<Key>
-   */
-  AlgebraicDecisionTree<Key> probPrime(
-      const VectorValues& continuousValues) const;
-
-  /**
    * @brief Compute the unnormalized posterior probability for a continuous
    * vector values given a specific assignment.
    *
    * @return double
    */
   double probPrime(const HybridValues& values) const;
+
+  /**
+   * @brief Computer posterior P(M|X=x) when all continuous values X are given.
+   * This is efficient as this simply probPrime normalized.
+   *
+   * @note Not a DiscreteConditional as the cardinalities of the DiscreteKeys,
+   * which we would need, are hard to recover.
+   *
+   * @param continuousValues Continuous values x to condition on.
+   * @return DecisionTreeFactor
+   */
+  AlgebraicDecisionTree<Key> discretePosterior(
+      const VectorValues& continuousValues) const;
 
   /**
    * @brief Create a decision tree of factor graphs out of this hybrid factor
@@ -227,8 +230,23 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   eliminate(const Ordering& keys) const;
   /// @}
 
-  /// Get the GaussianFactorGraph at a given discrete assignment.
-  GaussianFactorGraph operator()(const DiscreteValues& assignment) const;
+  /**
+   @brief Get the GaussianFactorGraph at a given discrete assignment. Note this
+   * corresponds to the Gaussian posterior p(X|M=m, Z=z) of the continuous
+   * variables X given the discrete assignment M=m and whatever measurements z
+   * where assumed in the creation of the factor Graph.
+   *
+   * @note Be careful, as any factors not Gaussian are ignored.
+   *
+   * @param assignment The discrete value assignment for the discrete keys.
+   * @return Gaussian factors as a GaussianFactorGraph
+   */
+  GaussianFactorGraph choose(const DiscreteValues& assignment) const;
+
+  /// Syntactic sugar for choose
+  GaussianFactorGraph operator()(const DiscreteValues& assignment) const {
+    return choose(assignment);
+  }
 };
 
 // traits

@@ -131,7 +131,7 @@ namespace gtsam {
 
     /// Calculate probability for given values `x`, 
     /// is just look up in AlgebraicDecisionTree.
-    double evaluate(const DiscreteValues& values) const  {
+    double evaluate(const Assignment<Key>& values) const  {
       return ADT::operator()(values);
     }
 
@@ -155,7 +155,7 @@ namespace gtsam {
       return apply(f, safe_div);
     }
 
-    /// Convert into a decisiontree
+    /// Convert into a decision tree
     DecisionTreeFactor toDecisionTreeFactor() const override { return *this; }
 
     /// Create new factor by summing all values with the same separator values

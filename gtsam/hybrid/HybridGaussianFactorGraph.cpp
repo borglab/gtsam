@@ -23,6 +23,7 @@
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteJunctionTree.h>
+#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
@@ -42,7 +43,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <iostream>
-#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <utility>
@@ -343,13 +343,19 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
 }
 
 /* *******************************************************************************/
+/// Get the discrete keys from the HybridGaussianFactorGraph as DiscreteKeys.
+static auto GetDiscreteKeys =
+    [](const HybridGaussianFactorGraph &hfg) -> DiscreteKeys {
+  const std::set<DiscreteKey> discreteKeySet = hfg.discreteKeys();
+  return {discreteKeySet.begin(), discreteKeySet.end()};
+};
+
+/* *******************************************************************************/
 std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
 HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
   // Since we eliminate all continuous variables first,
   // the discrete separator will be *all* the discrete keys.
-  const std::set<DiscreteKey> keysForDiscreteVariables = discreteKeys();
-  DiscreteKeys discreteSeparator(keysForDiscreteVariables.begin(),
-                                 keysForDiscreteVariables.end());
+  DiscreteKeys discreteSeparator = GetDiscreteKeys(*this);
 
   // Collect all the factors to create a set of Gaussian factor graphs in a
   // decision tree indexed by all discrete keys involved.
@@ -499,22 +505,22 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
 /* ************************************************************************ */
 AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::errorTree(
     const VectorValues &continuousValues) const {
-  AlgebraicDecisionTree<Key> error_tree(0.0);
+  AlgebraicDecisionTree<Key> result(0.0);
   // Iterate over each factor.
   for (auto &factor : factors_) {
-    if (auto f = std::dynamic_pointer_cast<HybridFactor>(factor)) {
-      // Check for HybridFactor, and call errorTree
-      error_tree = error_tree + f->errorTree(continuousValues);
-    } else if (auto f = std::dynamic_pointer_cast<DiscreteFactor>(factor)) {
-      // Skip discrete factors
-      continue;
+    if (auto hf = std::dynamic_pointer_cast<HybridFactor>(factor)) {
+      // Add errorTree for hybrid factors, includes HybridGaussianConditionals!
+      result = result + hf->errorTree(continuousValues);
+    } else if (auto df = std::dynamic_pointer_cast<DiscreteFactor>(factor)) {
+      // If discrete, just add its errorTree as well
+      result = result + df->errorTree();
     } else {
       // Everything else is a continuous only factor
       HybridValues hv(continuousValues, DiscreteValues());
-      error_tree = error_tree + AlgebraicDecisionTree<Key>(factor->error(hv));
+      result = result + factor->error(hv);  // NOTE: yes, you can add constants
     }
   }
-  return error_tree;
+  return result;
 }
 
 /* ************************************************************************ */
@@ -525,18 +531,18 @@ double HybridGaussianFactorGraph::probPrime(const HybridValues &values) const {
 }
 
 /* ************************************************************************ */
-AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::probPrime(
+AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::discretePosterior(
     const VectorValues &continuousValues) const {
-  AlgebraicDecisionTree<Key> error_tree = this->errorTree(continuousValues);
-  AlgebraicDecisionTree<Key> prob_tree = error_tree.apply([](double error) {
+  AlgebraicDecisionTree<Key> errors = this->errorTree(continuousValues);
+  AlgebraicDecisionTree<Key> p = errors.apply([](double error) {
     // NOTE: The 0.5 term is handled by each factor
     return exp(-error);
   });
-  return prob_tree;
+  return p / p.sum();
 }
 
 /* ************************************************************************ */
-GaussianFactorGraph HybridGaussianFactorGraph::operator()(
+GaussianFactorGraph HybridGaussianFactorGraph::choose(
     const DiscreteValues &assignment) const {
   GaussianFactorGraph gfg;
   for (auto &&f : *this) {

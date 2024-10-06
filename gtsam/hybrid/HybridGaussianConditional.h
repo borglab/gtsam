@@ -14,6 +14,7 @@
  * @brief  A hybrid conditional in the Conditional Linear Gaussian scheme
  * @author Fan Jiang
  * @author Varun Agrawal
+ * @author Frank Dellaert
  * @date   Mar 12, 2022
  */
 
@@ -195,16 +196,6 @@ class GTSAM_EXPORT HybridGaussianConditional
   const Conditionals &conditionals() const;
 
   /**
-   * @brief Compute logProbability of the HybridGaussianConditional as a tree.
-   *
-   * @param continuousValues The continuous VectorValues.
-   * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
-   * as the conditionals, and leaf values as the logProbability.
-   */
-  AlgebraicDecisionTree<Key> logProbability(
-      const VectorValues &continuousValues) const;
-
-  /**
    * @brief Compute the logProbability of this hybrid Gaussian conditional.
    *
    * @param values Continuous values and discrete assignment.
@@ -225,8 +216,10 @@ class GTSAM_EXPORT HybridGaussianConditional
    * `discreteProbs`.
    *
    * @param discreteProbs A pruned set of probabilities for the discrete keys.
+   * @return Shared pointer to possibly a pruned HybridGaussianConditional
    */
-  void prune(const DecisionTreeFactor &discreteProbs);
+  HybridGaussianConditional::shared_ptr prune(
+      const DecisionTreeFactor &discreteProbs) const;
 
   /// @}
 
@@ -240,17 +233,6 @@ class GTSAM_EXPORT HybridGaussianConditional
 
   /// Convert to a DecisionTree of Gaussian factor graphs.
   GaussianFactorGraphTree asGaussianFactorGraphTree() const;
-
-  /**
-   * @brief Get the pruner function from discrete probabilities.
-   *
-   * @param discreteProbs The probabilities of only discrete keys.
-   * @return std::function<GaussianConditional::shared_ptr(
-   * const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
-   */
-  std::function<GaussianConditional::shared_ptr(
-      const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
-  prunerFunc(const DecisionTreeFactor &prunedProbabilities);
 
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;

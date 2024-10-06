@@ -70,6 +70,7 @@ namespace gtsam {
         return a / b;
       }
       static inline double id(const double& x) { return x; }
+      static inline double negate(const double& x) { return -x; }
     };
 
     AlgebraicDecisionTree(double leaf = 1.0) : Base(leaf) {}
@@ -184,6 +185,16 @@ namespace gtsam {
     /** sum */
     AlgebraicDecisionTree operator+(const AlgebraicDecisionTree& g) const {
       return this->apply(g, &Ring::add);
+    }
+
+    /** negation */
+    AlgebraicDecisionTree operator-() const {
+      return this->apply(&Ring::negate);
+    }
+
+    /** subtract */
+    AlgebraicDecisionTree operator-(const AlgebraicDecisionTree& g) const {
+      return *this + (-g);
     }
 
     /** product */

@@ -39,7 +39,7 @@ class GTSAM_EXPORT HybridSmoother {
    * discrete factor on all discrete keys, plus all discrete factors in the
    * original graph.
    *
-   * \note If maxComponents is given, we look at the discrete factor resulting
+   * \note If maxNrLeaves is given, we look at the discrete factor resulting
    * from this elimination, and prune it and the Gaussian components
    * corresponding to the pruned choices.
    *

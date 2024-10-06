@@ -288,85 +288,32 @@ std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys) {
   return s;
 }
 
-/* ************************************************************************* */
-std::function<GaussianConditional::shared_ptr(
-    const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
-HybridGaussianConditional::prunerFunc(const DecisionTreeFactor &discreteProbs) {
-  // Get the discrete keys as sets for the decision tree
-  // and the hybrid gaussian conditional.
-  auto discreteProbsKeySet = DiscreteKeysAsSet(discreteProbs.discreteKeys());
-  auto hybridGaussianCondKeySet = DiscreteKeysAsSet(this->discreteKeys());
+/* *******************************************************************************/
+HybridGaussianConditional::shared_ptr HybridGaussianConditional::prune(
+    const DecisionTreeFactor &discreteProbs) const {
+  // Find keys in discreteProbs.keys() but not in this->keys():
+  std::set<Key> mine(this->keys().begin(), this->keys().end());
+  std::set<Key> theirs(discreteProbs.keys().begin(),
+                       discreteProbs.keys().end());
+  std::vector<Key> diff;
+  std::set_difference(theirs.begin(), theirs.end(), mine.begin(), mine.end(),
+                      std::back_inserter(diff));
 
-  auto pruner = [discreteProbs, discreteProbsKeySet, hybridGaussianCondKeySet](
-                    const Assignment<Key> &choices,
+  // Find maximum probability value for every combination of our keys.
+  Ordering keys(diff);
+  auto max = discreteProbs.max(keys);
+
+  // Check the max value for every combination of our keys.
+  // If the max value is 0.0, we can prune the corresponding conditional.
+  auto pruner = [&](const Assignment<Key> &choices,
                     const GaussianConditional::shared_ptr &conditional)
       -> GaussianConditional::shared_ptr {
-    // typecast so we can use this to get probability value
-    const DiscreteValues values(choices);
-
-    // Case where the hybrid gaussian conditional has the same
-    // discrete keys as the decision tree.
-    if (hybridGaussianCondKeySet == discreteProbsKeySet) {
-      if (discreteProbs(values) == 0.0) {
-        // empty aka null pointer
-        std::shared_ptr<GaussianConditional> null;
-        return null;
-      } else {
-        return conditional;
-      }
-    } else {
-      std::vector<DiscreteKey> set_diff;
-      std::set_difference(
-          discreteProbsKeySet.begin(), discreteProbsKeySet.end(),
-          hybridGaussianCondKeySet.begin(), hybridGaussianCondKeySet.end(),
-          std::back_inserter(set_diff));
-
-      const std::vector<DiscreteValues> assignments =
-          DiscreteValues::CartesianProduct(set_diff);
-      for (const DiscreteValues &assignment : assignments) {
-        DiscreteValues augmented_values(values);
-        augmented_values.insert(assignment);
-
-        // If any one of the sub-branches are non-zero,
-        // we need this conditional.
-        if (discreteProbs(augmented_values) > 0.0) {
-          return conditional;
-        }
-      }
-      // If we are here, it means that all the sub-branches are 0,
-      // so we prune.
-      return nullptr;
-    }
+    return (max->evaluate(choices) == 0.0) ? nullptr : conditional;
   };
-  return pruner;
-}
-
-/* *******************************************************************************/
-void HybridGaussianConditional::prune(const DecisionTreeFactor &discreteProbs) {
-  // Functional which loops over all assignments and create a set of
-  // GaussianConditionals
-  auto pruner = prunerFunc(discreteProbs);
 
   auto pruned_conditionals = conditionals_.apply(pruner);
-  conditionals_.root_ = pruned_conditionals.root_;
-}
-
-/* *******************************************************************************/
-AlgebraicDecisionTree<Key> HybridGaussianConditional::logProbability(
-    const VectorValues &continuousValues) const {
-  // functor to calculate (double) logProbability value from
-  // GaussianConditional.
-  auto probFunc =
-      [continuousValues](const GaussianConditional::shared_ptr &conditional) {
-        if (conditional) {
-          return conditional->logProbability(continuousValues);
-        } else {
-          // Return arbitrarily small logProbability if conditional is null
-          // Conditional is null if it is pruned out.
-          return -1e20;
-        }
-      };
-  return DecisionTree<Key, double>(conditionals_, probFunc);
+  return std::make_shared<HybridGaussianConditional>(discreteKeys(),
+                                                     pruned_conditionals);
 }
 
 /* *******************************************************************************/
