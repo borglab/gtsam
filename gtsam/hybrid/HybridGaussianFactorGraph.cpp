@@ -240,7 +240,9 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
       // In this case, compute discrete probabilities.
       auto logProbability =
           [&](const GaussianFactor::shared_ptr &factor) -> double {
-        if (!factor) return 0.0;
+        // If the factor is null, it is has been pruned hence return ∞
+        // so that the exp(-∞)=0.
+        if (!factor) return std::numeric_limits<double>::infinity();
         return factor->error(VectorValues());
       };
       AlgebraicDecisionTree<Key> logProbabilities =
@@ -300,8 +302,9 @@ static std::shared_ptr<Factor> createDiscreteFactor(
   auto negLogProbability = [&](const Result &pair) -> double {
     const auto &[conditional, factor] = pair;
     static const VectorValues kEmpty;
-    // If the factor is not null, it has no keys, just contains the residual.
-    if (!factor) return 1.0;  // TODO(dellaert): not loving this.
+    // If the factor is null, it has been pruned, hence return ∞
+    // so that the exp(-∞)=0.
+    if (!factor) return std::numeric_limits<double>::infinity();
 
     // Negative logspace version of:
     // exp(-factor->error(kEmpty)) / conditional->normalizationConstant();
