@@ -162,6 +162,55 @@ TEST(HybridEstimation, IncrementalSmoother) {
 }
 
 /****************************************************************************/
+// Test if pruned factor is set to correct error and no errors are thrown.
+TEST(HybridEstimation, ValidPruningError) {
+  using namespace estimation_fixture;
+
+  size_t K = 8;
+
+  HybridNonlinearFactorGraph graph;
+  Values initial;
+  Switching switching = InitializeEstimationProblem(K, 1e-2, 1e-3, measurements,
+                                                    "1/1 1/1", graph, initial);
+  HybridSmoother smoother;
+
+  HybridGaussianFactorGraph linearized;
+
+  constexpr size_t maxNrLeaves = 3;
+  for (size_t k = 1; k < K; k++) {
+    // Motion Model
+    graph.push_back(switching.nonlinearFactorGraph.at(k));
+    // Measurement
+    graph.push_back(switching.nonlinearFactorGraph.at(k + K - 1));
+
+    initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
+
+    linearized = *graph.linearize(initial);
+    Ordering ordering = smoother.getOrdering(linearized);
+
+    smoother.update(linearized, maxNrLeaves, ordering);
+
+    graph.resize(0);
+  }
+
+  HybridValues delta = smoother.hybridBayesNet().optimize();
+
+  Values result = initial.retract(delta.continuous());
+
+  DiscreteValues expected_discrete;
+  for (size_t k = 0; k < K - 1; k++) {
+    expected_discrete[M(k)] = discrete_seq[k];
+  }
+  EXPECT(assert_equal(expected_discrete, delta.discrete()));
+
+  Values expected_continuous;
+  for (size_t k = 0; k < K; k++) {
+    expected_continuous.insert(X(k), measurements[k]);
+  }
+  EXPECT(assert_equal(expected_continuous, result));
+}
+
+/****************************************************************************/
 // Test approximate inference with an additional pruning step.
 TEST(HybridEstimation, ISAM) {
   using namespace estimation_fixture;
