@@ -53,6 +53,22 @@ std::vector<double> measurements = {0, 1, 2, 2, 2, 2,  3,  4,  5,  6, 6,
 // Ground truth discrete seq
 std::vector<size_t> discrete_seq = {1, 1, 0, 0, 0, 1, 1, 1, 1, 0,
                                     1, 1, 1, 0, 0, 1, 1, 0, 0, 0};
+
+Switching InitializeEstimationProblem(
+    const size_t K, const double between_sigma, const double measurement_sigma,
+    const std::vector<double>& measurements,
+    const std::string& discrete_transition_prob,
+    HybridNonlinearFactorGraph& graph, Values& initial) {
+  Switching switching(K, between_sigma, measurement_sigma, measurements,
+                      discrete_transition_prob);
+
+  // Add the X(0) prior
+  graph.push_back(switching.nonlinearFactorGraph.at(0));
+  initial.insert(X(0), switching.linearizationPoint.at<double>(X(0)));
+
+  return switching;
+}
+
 }  // namespace estimation_fixture
 
 TEST(HybridEstimation, Full) {
@@ -104,14 +120,11 @@ TEST(HybridEstimation, IncrementalSmoother) {
 
   // Switching example of robot moving in 1D
   // with given measurements and equal mode priors.
-  Switching switching(K, 1.0, 0.1, measurements, "1/1 1/1");
-  HybridSmoother smoother;
   HybridNonlinearFactorGraph graph;
   Values initial;
-
-  // Add the X(0) prior
-  graph.push_back(switching.nonlinearFactorGraph.at(0));
-  initial.insert(X(0), switching.linearizationPoint.at<double>(X(0)));
+  Switching switching = InitializeEstimationProblem(K, 1.0, 0.1, measurements,
+                                                    "1/1 1/1", graph, initial);
+  HybridSmoother smoother;
 
   HybridGaussianFactorGraph linearized;
 
@@ -157,16 +170,11 @@ TEST(HybridEstimation, ISAM) {
 
   // Switching example of robot moving in 1D
   // with given measurements and equal mode priors.
-  Switching switching(K, 1.0, 0.1, measurements, "1/1 1/1");
-  HybridNonlinearISAM isam;
   HybridNonlinearFactorGraph graph;
   Values initial;
-
-  // gttic_(Estimation);
-
-  // Add the X(0) prior
-  graph.push_back(switching.nonlinearFactorGraph.at(0));
-  initial.insert(X(0), switching.linearizationPoint.at<double>(X(0)));
+  Switching switching = InitializeEstimationProblem(K, 1.0, 0.1, measurements,
+                                                    "1/1 1/1", graph, initial);
+  HybridNonlinearISAM isam;
 
   HybridGaussianFactorGraph linearized;
 
@@ -367,7 +375,7 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
 /*********************************************************************************
   // Create a hybrid nonlinear factor graph f(x0, x1, m0; z0, z1)
  ********************************************************************************/
-static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
+static HybridNonlinearFactorGraph CreateHybridNonlinearFactorGraph() {
   HybridNonlinearFactorGraph nfg;
 
   constexpr double sigma = 0.5;  // measurement noise
@@ -394,7 +402,7 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
   // Create a hybrid linear factor graph f(x0, x1, m0; z0, z1)
  ********************************************************************************/
 static HybridGaussianFactorGraph::shared_ptr CreateHybridGaussianFactorGraph() {
-  HybridNonlinearFactorGraph nfg = createHybridNonlinearFactorGraph();
+  HybridNonlinearFactorGraph nfg = CreateHybridNonlinearFactorGraph();
 
   Values initial;
   double z0 = 0.0, z1 = 1.0;
@@ -406,7 +414,7 @@ static HybridGaussianFactorGraph::shared_ptr CreateHybridGaussianFactorGraph() {
 /*********************************************************************************
  * Do hybrid elimination and do regression test on discrete conditional.
  ********************************************************************************/
-TEST(HybridEstimation, eliminateSequentialRegression) {
+TEST(HybridEstimation, EliminateSequentialRegression) {
   // Create the factor graph from the nonlinear factor graph.
   HybridGaussianFactorGraph::shared_ptr fg = CreateHybridGaussianFactorGraph();
 
