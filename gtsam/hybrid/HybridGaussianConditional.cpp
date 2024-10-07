@@ -273,13 +273,7 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
       [&](const GaussianConditional::shared_ptr& conditional) -> GaussianFactorValuePair {
         const auto likelihood_m = conditional->likelihood(given);
         const double Cgm_Kgcm = conditional->negLogConstant() - negLogConstant_;
-        if (Cgm_Kgcm == 0.0) {
-          return {likelihood_m, 0.0};
-        } else {
-          // Add a constant to the likelihood in case the noise models
-          // are not all equal.
-          return {likelihood_m, Cgm_Kgcm};
-        }
+        return {likelihood_m, Cgm_Kgcm};
       });
   return std::make_shared<HybridGaussianFactor>(discreteParentKeys, likelihoods);
 }

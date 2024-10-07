@@ -81,7 +81,7 @@ static void printFactor(const std::shared_ptr<Factor>& factor,
     if (assignment.empty())
       hgf->print("HybridGaussianFactor:", keyFormatter);
     else
-      hgf->operator()(assignment)->print("HybridGaussianFactor, component:", keyFormatter);
+      hgf->operator()(assignment).first->print("HybridGaussianFactor, component:", keyFormatter);
   } else if (auto gf = std::dynamic_pointer_cast<GaussianFactor>(factor)) {
     factor->print("GaussianFactor:\n", keyFormatter);
 
@@ -329,6 +329,7 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(const ResultTree& elim
       const double negLogK = conditional->negLogConstant();
       hf->constantTerm() += -2.0 * negLogK;
       return {factor, negLogK};
+      return {factor, scalar + negLogK};
     } else if (!conditional && !factor) {
       return {nullptr, 0.0};  // TODO(frank): or should this be infinity?
     } else {
@@ -355,7 +356,9 @@ HybridGaussianFactorGraph::eliminate(const Ordering& keys) const {
   DiscreteKeys discreteSeparator = GetDiscreteKeys(*this);
 
   // Collect all the factors to create a set of Gaussian factor graphs in a
-  // decision tree indexed by all discrete keys involved.
+  // decision tree indexed by all discrete keys involved. Just like any hybrid factor, every
+  // assignment also has a scalar error, in this case the sum of all errors in the graph. This error
+  // is assignment-specific and accounts for any difference in noise models used.
   HybridGaussianProductFactor productFactor = collectProductFactor();
 
   // Convert factor graphs with a nullptr to an empty factor graph.
@@ -374,11 +377,12 @@ HybridGaussianFactorGraph::eliminate(const Ordering& keys) const {
     }
 
     // Expensive elimination of product factor.
-    auto result = EliminatePreferCholesky(graph, keys);
+    auto result = EliminatePreferCholesky(graph, keys);  /// <<<<<< MOST COMPUTE IS HERE
 
     // Record whether there any continuous variables left
     someContinuousLeft |= !result.second->empty();
 
+    // We pass on the scalar unmodified.
     return {result, scalar};
   };
 
@@ -548,7 +552,7 @@ GaussianFactorGraph HybridGaussianFactorGraph::choose(const DiscreteValues& assi
     } else if (auto gc = std::dynamic_pointer_cast<GaussianConditional>(f)) {
       gfg.push_back(gf);
     } else if (auto hgf = std::dynamic_pointer_cast<HybridGaussianFactor>(f)) {
-      gfg.push_back((*hgf)(assignment));
+      gfg.push_back((*hgf)(assignment).first);
     } else if (auto hgc = std::dynamic_pointer_cast<HybridGaussianConditional>(f)) {
       gfg.push_back((*hgc)(assignment));
     } else if (auto hc = std::dynamic_pointer_cast<HybridConditional>(f)) {

@@ -129,7 +129,7 @@ public:
   /// @{
 
   /// Get factor at a given discrete assignment.
-  sharedFactor operator()(const DiscreteValues &assignment) const;
+  GaussianFactorValuePair operator()(const DiscreteValues &assignment) const;
 
   /**
    * @brief Compute error of the HybridGaussianFactor as a tree.

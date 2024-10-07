@@ -187,9 +187,9 @@ void HybridGaussianFactor::print(const std::string& s, const KeyFormatter& forma
 }
 
 /* *******************************************************************************/
-HybridGaussianFactor::sharedFactor HybridGaussianFactor::operator()(
+GaussianFactorValuePair HybridGaussianFactor::operator()(
     const DiscreteValues& assignment) const {
-  return factors_(assignment).first;
+  return factors_(assignment);
 }
 
 /* *******************************************************************************/

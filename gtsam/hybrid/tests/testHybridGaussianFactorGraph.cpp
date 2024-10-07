@@ -165,8 +165,119 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
   EXPECT_LONGS_EQUAL(4, result->size());
 }
 
-/*
-****************************************************************************/
+/* ************************************************************************* */
+// Test API for the smallest switching network.
+// None of these are regression tests.
+TEST(HybridBayesNet, Switching) {
+  const double betweenSigma = 0.3, priorSigma = 0.1;
+  Switching s(2, betweenSigma, priorSigma);
+  const HybridGaussianFactorGraph& graph = s.linearizedFactorGraph;
+  EXPECT_LONGS_EQUAL(4, graph.size());
+
+  // Create some continuous and discrete values
+  VectorValues continuousValues{{X(0), Vector1(0.1)}, {X(1), Vector1(1.2)}};
+  DiscreteValues modeZero{{M(0), 0}}, modeOne{{M(0), 1}};
+
+  // Get the hybrid gaussian factor and check it is as expected
+  auto hgf = std::dynamic_pointer_cast<HybridGaussianFactor>(graph.at(1));
+  CHECK(hgf);
+
+  // Get factors and scalars for both modes
+  auto [factor0, scalar0] = (*hgf)(modeZero);
+  auto [factor1, scalar1] = (*hgf)(modeOne);
+  CHECK(factor0);
+  CHECK(factor1);
+
+  // Check scalars against negLogConstant of noise model
+  auto betweenModel = noiseModel::Isotropic::Sigma(1, betweenSigma);
+  EXPECT_DOUBLES_EQUAL(betweenModel->negLogConstant(), scalar0, 1e-9);
+  EXPECT_DOUBLES_EQUAL(betweenModel->negLogConstant(), scalar1, 1e-9);
+
+  // Check error for M(0) = 0
+  HybridValues values0{continuousValues, modeZero};
+  double expectedError0 = 0;
+  for (const auto& factor : graph) expectedError0 += factor->error(values0);
+  EXPECT_DOUBLES_EQUAL(expectedError0, graph.error(values0), 1e-5);
+
+  // Check error for M(0) = 1
+  HybridValues values1{continuousValues, modeOne};
+  double expectedError1 = 0;
+  for (const auto& factor : graph) expectedError1 += factor->error(values1);
+  EXPECT_DOUBLES_EQUAL(expectedError1, graph.error(values1), 1e-5);
+
+  // Check errorTree
+  AlgebraicDecisionTree<Key> actualErrors = graph.errorTree(continuousValues);
+  // Create expected error tree
+  AlgebraicDecisionTree<Key> expectedErrors(M(0), expectedError0, expectedError1);
+
+  // Check that the actual error tree matches the expected one
+  EXPECT(assert_equal(expectedErrors, actualErrors, 1e-5));
+
+  // Check probPrime
+  double probPrime0 = graph.probPrime(values0);
+  EXPECT_DOUBLES_EQUAL(std::exp(-expectedError0), probPrime0, 1e-5);
+
+  double probPrime1 = graph.probPrime(values1);
+  EXPECT_DOUBLES_EQUAL(std::exp(-expectedError1), probPrime1, 1e-5);
+
+  // Check discretePosterior
+  AlgebraicDecisionTree<Key> posterior = graph.discretePosterior(continuousValues);
+  double sum = probPrime0 + probPrime1;
+  AlgebraicDecisionTree<Key> expectedPosterior(M(0), probPrime0 / sum, probPrime1 / sum);
+  EXPECT(assert_equal(expectedPosterior, posterior, 1e-5));
+
+  // Make the clique of factors connected to x0:
+  HybridGaussianFactorGraph factors_x0;
+  factors_x0.push_back(graph.at(0));
+  factors_x0.push_back(hgf);
+
+  // Test collectProductFactor
+  auto productFactor = factors_x0.collectProductFactor();
+
+  // For M(0) = 0
+  auto [gaussianFactor0, actualScalar0] = productFactor(modeZero);
+  EXPECT(gaussianFactor0.size() == 2);
+  EXPECT_DOUBLES_EQUAL((*hgf)(modeZero).second, actualScalar0, 1e-5);
+
+  // For M(0) = 1
+  auto [gaussianFactor1, actualScalar1] = productFactor(modeOne);
+  EXPECT(gaussianFactor1.size() == 2);
+  EXPECT_DOUBLES_EQUAL((*hgf)(modeOne).second, actualScalar1, 1e-5);
+
+  // Test eliminate
+  Ordering ordering{X(0)};
+  auto [conditional, factor] = factors_x0.eliminate(ordering);
+
+  // Check the conditional
+  CHECK(conditional);
+  EXPECT(conditional->isHybrid());
+  auto hybridConditional = conditional->asHybrid();
+  CHECK(hybridConditional);
+  EXPECT_LONGS_EQUAL(1, hybridConditional->nrFrontals());  // x0
+  EXPECT_LONGS_EQUAL(2, hybridConditional->nrParents());   // x1, m0
+
+  // Check the remaining factor
+  EXPECT(factor);
+  EXPECT(std::dynamic_pointer_cast<HybridGaussianFactor>(factor));
+  auto hybridFactor = std::dynamic_pointer_cast<HybridGaussianFactor>(factor);
+  EXPECT_LONGS_EQUAL(2, hybridFactor->keys().size());  // x1, m0
+
+  // Check that the conditional and remaining factor are consistent for both modes
+  for (auto&& mode : {modeZero, modeOne}) {
+    auto gc = (*hybridConditional)(mode);
+    auto gf = (*hybridFactor)(mode);
+
+    // The error of the original factors should equal the sum of errors of the conditional and
+    // remaining factor, modulo the normalization constant of the conditional.
+    double originalError = factors_x0.error({continuousValues, mode});
+    EXPECT_DOUBLES_EQUAL(
+        originalError,
+        gc->negLogConstant() + gc->error(continuousValues) + gf.first->error(continuousValues),
+        1e-9);
+  }
+}
+
+/* ************************************************************************* */
 // Select a particular continuous factor graph given a discrete assignment
 TEST(HybridGaussianFactorGraph, DiscreteSelection) {
   Switching s(3);
@@ -410,12 +521,12 @@ TEST(HybridGaussianFactorGraph, collectProductFactor) {
 
   // Expected decision tree with two factor graphs:
   // f(x0;mode=0)P(x0)
-  GaussianFactorGraph expectedFG0{(*hybrid)(d0), prior};
+  GaussianFactorGraph expectedFG0{(*hybrid)(d0).first, prior};
   EXPECT(assert_equal(expectedFG0, actual(d0).first, 1e-5));
   EXPECT(assert_equal(0.0, actual(d0).second, 1e-5));
 
   // f(x0;mode=1)P(x0)
-  GaussianFactorGraph expectedFG1{(*hybrid)(d1), prior};
+  GaussianFactorGraph expectedFG1{(*hybrid)(d1).first, prior};
   EXPECT(assert_equal(expectedFG1, actual(d1).first, 1e-5));
   EXPECT(assert_equal(1.79176, actual(d1).second, 1e-5));
 }
