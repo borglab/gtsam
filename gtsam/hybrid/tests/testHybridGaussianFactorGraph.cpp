@@ -117,7 +117,8 @@ TEST(HybridGaussianFactorGraph, hybridEliminationOneFactor) {
   // Check that factor is discrete and correct
   auto factor = std::dynamic_pointer_cast<DecisionTreeFactor>(result.second);
   CHECK(factor);
-  EXPECT(assert_equal(DecisionTreeFactor{m1, "1 1"}, *factor));
+  // regression test
+  EXPECT(assert_equal(DecisionTreeFactor{m1, "15.74961 15.74961"}, *factor, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -221,10 +222,10 @@ TEST(HybridBayesNet, Switching) {
   EXPECT_DOUBLES_EQUAL(std::exp(-expectedError1), probPrime1, 1e-5);
 
   // Check discretePosterior
-  AlgebraicDecisionTree<Key> posterior = graph.discretePosterior(continuousValues);
+  AlgebraicDecisionTree<Key> graphPosterior = graph.discretePosterior(continuousValues);
   double sum = probPrime0 + probPrime1;
   AlgebraicDecisionTree<Key> expectedPosterior(M(0), probPrime0 / sum, probPrime1 / sum);
-  EXPECT(assert_equal(expectedPosterior, posterior, 1e-5));
+  EXPECT(assert_equal(expectedPosterior, graphPosterior, 1e-5));
 
   // Make the clique of factors connected to x0:
   HybridGaussianFactorGraph factors_x0;
@@ -244,37 +245,100 @@ TEST(HybridBayesNet, Switching) {
   EXPECT(gaussianFactor1.size() == 2);
   EXPECT_DOUBLES_EQUAL((*hgf)(modeOne).second, actualScalar1, 1e-5);
 
-  // Test eliminate
+  // Test eliminate x0
   Ordering ordering{X(0)};
   auto [conditional, factor] = factors_x0.eliminate(ordering);
 
   // Check the conditional
   CHECK(conditional);
   EXPECT(conditional->isHybrid());
-  auto hybridConditional = conditional->asHybrid();
-  CHECK(hybridConditional);
-  EXPECT_LONGS_EQUAL(1, hybridConditional->nrFrontals());  // x0
-  EXPECT_LONGS_EQUAL(2, hybridConditional->nrParents());   // x1, m0
+  auto p_x0_given_x1_m = conditional->asHybrid();
+  CHECK(p_x0_given_x1_m);
+  EXPECT_LONGS_EQUAL(1, p_x0_given_x1_m->nrFrontals());  // x0
+  EXPECT_LONGS_EQUAL(2, p_x0_given_x1_m->nrParents());   // x1, m0
 
   // Check the remaining factor
   EXPECT(factor);
   EXPECT(std::dynamic_pointer_cast<HybridGaussianFactor>(factor));
-  auto hybridFactor = std::dynamic_pointer_cast<HybridGaussianFactor>(factor);
-  EXPECT_LONGS_EQUAL(2, hybridFactor->keys().size());  // x1, m0
+  auto phi_x1_m = std::dynamic_pointer_cast<HybridGaussianFactor>(factor);
+  EXPECT_LONGS_EQUAL(2, phi_x1_m->keys().size());  // x1, m0
+  // Check that the scalars incorporate the negative log constant of the conditional
+  EXPECT_DOUBLES_EQUAL(
+      scalar0 - (*p_x0_given_x1_m)(modeZero)->negLogConstant(), (*phi_x1_m)(modeZero).second, 1e-9);
+  EXPECT_DOUBLES_EQUAL(
+      scalar1 - (*p_x0_given_x1_m)(modeOne)->negLogConstant(), (*phi_x1_m)(modeOne).second, 1e-9);
 
   // Check that the conditional and remaining factor are consistent for both modes
   for (auto&& mode : {modeZero, modeOne}) {
-    auto gc = (*hybridConditional)(mode);
-    auto gf = (*hybridFactor)(mode);
+    auto gc = (*p_x0_given_x1_m)(mode);
+    auto [gf, scalar] = (*phi_x1_m)(mode);
 
     // The error of the original factors should equal the sum of errors of the conditional and
     // remaining factor, modulo the normalization constant of the conditional.
     double originalError = factors_x0.error({continuousValues, mode});
-    EXPECT_DOUBLES_EQUAL(
-        originalError,
-        gc->negLogConstant() + gc->error(continuousValues) + gf.first->error(continuousValues),
-        1e-9);
+    const double actualError =
+        gc->negLogConstant() + gc->error(continuousValues) + gf->error(continuousValues) + scalar;
+    EXPECT_DOUBLES_EQUAL(originalError, actualError, 1e-9);
   }
+
+  // Create a clique for x1
+  HybridGaussianFactorGraph factors_x1;
+  factors_x1.push_back(factor);       // Use the remaining factor from previous elimination
+  factors_x1.push_back(graph.at(2));  // Add the factor for x1 from the original graph
+
+  // Test collectProductFactor for x1 clique
+  auto productFactor_x1 = factors_x1.collectProductFactor();
+
+  // For M(0) = 0
+  auto [gaussianFactor_x1_0, actualScalar_x1_0] = productFactor_x1(modeZero);
+  EXPECT_LONGS_EQUAL(2, gaussianFactor_x1_0.size());
+  // NOTE(Frank): prior on x1 does not contribute to the scalar
+  EXPECT_DOUBLES_EQUAL((*phi_x1_m)(modeZero).second, actualScalar_x1_0, 1e-5);
+
+  // For M(0) = 1
+  auto [gaussianFactor_x1_1, actualScalar_x1_1] = productFactor_x1(modeOne);
+  EXPECT_LONGS_EQUAL(2, gaussianFactor_x1_1.size());
+  // NOTE(Frank): prior on x1 does not contribute to the scalar
+  EXPECT_DOUBLES_EQUAL((*phi_x1_m)(modeOne).second, actualScalar_x1_1, 1e-5);
+
+  // Test eliminate for x1 clique
+  Ordering ordering_x1{X(1)};
+  auto [conditional_x1, factor_x1] = factors_x1.eliminate(ordering_x1);
+
+  // Check the conditional for x1
+  CHECK(conditional_x1);
+  EXPECT(conditional_x1->isHybrid());
+  auto p_x1_given_m = conditional_x1->asHybrid();
+  CHECK(p_x1_given_m);
+  EXPECT_LONGS_EQUAL(1, p_x1_given_m->nrFrontals());  // x1
+  EXPECT_LONGS_EQUAL(1, p_x1_given_m->nrParents());   // m0
+
+  // Check the remaining factor for x1
+  CHECK(factor_x1);
+  auto phi_x1 = std::dynamic_pointer_cast<DecisionTreeFactor>(factor_x1);
+  CHECK(phi_x1);
+  EXPECT_LONGS_EQUAL(1, phi_x1->keys().size());  // m0
+  // We can't really check the error of the decision tree factor phi_x1, because the continuos
+  // factor whose error(kEmpty) we need is not available..
+
+  // However, we can still check the total error for the clique factors_x1 and the elimination
+  // results are equal, modulo -again- the negative log constant of the conditional.
+  for (auto&& mode : {modeZero, modeOne}) {
+    auto gc_x1 = (*p_x1_given_m)(mode);
+    double originalError_x1 = factors_x1.error({continuousValues, mode});
+    const double actualError =
+        gc_x1->negLogConstant() + gc_x1->error(continuousValues) + phi_x1->error(mode);
+    EXPECT_DOUBLES_EQUAL(originalError_x1, actualError, 1e-9);
+  }
+
+  // Now test full elimination of the graph:
+  auto posterior = graph.eliminateSequential();
+  CHECK(posterior);
+
+  // Check that the posterior P(M|X=continuousValues) from the Bayes net is the same as the
+  // same posterior from the graph. This is a sanity check that the elimination is done correctly.
+  AlgebraicDecisionTree<Key> bnPosterior = graph.discretePosterior(continuousValues);
+  EXPECT(assert_equal(graphPosterior, bnPosterior));
 }
 
 /* ************************************************************************* */
@@ -572,7 +636,6 @@ bool ratioTest(const HybridBayesNet& bn,
   // Test ratios for a number of independent samples:
   for (size_t i = 0; i < num_samples; i++) {
     HybridValues sample = bn.sample(&kRng);
-    // GTSAM_PRINT(sample);
     // std::cout << "ratio: " << compute_ratio(&sample) << std::endl;
     if (std::abs(expected_ratio - compute_ratio(&sample)) > 1e-6) return false;
   }
