@@ -385,6 +385,16 @@ namespace gtsam {
     // Now threshold the decision tree
     size_t total = 0;
     auto thresholdFunc = [threshold, &total, N](const double& value) {
+      // There is a possible case where the `threshold` is equal to 0.0
+      // In that case `(value < threshold) == false`
+      // which increases the leaf total erroneously.
+      // Hence we check for 0.0 explicitly.
+      if (fpEqual(value, 0.0, 1e-12)) {
+        return 0.0;
+      }
+
+      // Check if value is less than the threshold and
+      // we haven't exceeded the maximum number of leaves.
       if (value < threshold || total >= N) {
         return 0.0;
       } else {
