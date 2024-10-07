@@ -247,7 +247,8 @@ static std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>> discret
       // In this case, compute discrete probabilities.
       auto logProbability = [&](const auto& pair) -> double {
         auto [factor, _] = pair;
-        if (!factor) return 0.0;
+        // If the factor is null, it is has been pruned hence return ∞
+        // so that the exp(-∞)=0.
         return factor->error(VectorValues());
       };
       AlgebraicDecisionTree<Key> logProbabilities =
@@ -299,7 +300,9 @@ static std::shared_ptr<Factor> createDiscreteFactor(const ResultTree& eliminatio
       // which is `-log(k) = log(1/k) = log(\sqrt{|2πΣ|})`.
       return factor->error(kEmpty) - conditional->negLogConstant();
     } else if (!conditional && !factor) {
-      return 1.0;  // TODO(dellaert): not loving this, what should this be??
+      // If the factor is null, it has been pruned, hence return ∞
+      // so that the exp(-∞)=0.
+      return std::numeric_limits<double>::infinity();
     } else {
       throw std::runtime_error("createDiscreteFactor has mixed NULLs");
     }
