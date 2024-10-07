@@ -73,7 +73,7 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) const {
   // per pruned Discrete joint.
   for (auto &&conditional : *this) {
     if (auto hgc = conditional->asHybrid()) {
-      // Make a copy of the hybrid Gaussian conditional and prune it!
+      // Prune the hybrid Gaussian conditional!
       auto prunedHybridGaussianConditional = hgc->prune(pruned);
 
       // Type-erase and add to the pruned Bayes Net fragment.
