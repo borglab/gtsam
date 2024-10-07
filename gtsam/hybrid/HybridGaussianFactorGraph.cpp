@@ -154,8 +154,6 @@ void HybridGaussianFactorGraph::printErrors(
 }
 
 /* ************************************************************************ */
-// TODO(dellaert): it's probably more efficient to first collect the discrete
-// keys, and then loop over all assignments to populate a vector.
 HybridGaussianProductFactor HybridGaussianFactorGraph::collectProductFactor() const {
   HybridGaussianProductFactor result;
 
@@ -270,6 +268,7 @@ static std::shared_ptr<Factor> createDiscreteFactor(const ResultTree& eliminatio
                                                     const DiscreteKeys& discreteSeparator) {
   auto potential = [&](const auto& pair) -> double {
     const auto& [conditional, factor] = pair.first;
+    const double scalar = pair.second;
     if (conditional && factor) {
       // If the factor is not null, it has no keys, just contains the residual.
 
@@ -278,8 +277,8 @@ static std::shared_ptr<Factor> createDiscreteFactor(const ResultTree& eliminatio
       // negLogConstant gives `-log(k)`
       // which is `-log(k) = log(1/k) = log(\sqrt{|2πΣ|})`.
       const double negLogK = conditional->negLogConstant();
-      const double old = factor->error(kEmpty) - negLogK;
-      return exp(-old);
+      const double error = scalar + factor->error(kEmpty) - negLogK;
+      return exp(-error);
     } else if (!conditional && !factor) {
       // If the factor is null, it has been pruned, hence return potential of zero
       return 0;
@@ -302,17 +301,10 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(const ResultTree& elim
     const auto& [conditional, factor] = pair.first;
     const double scalar = pair.second;
     if (conditional && factor) {
-      auto hf = std::dynamic_pointer_cast<HessianFactor>(factor);
-      if (!hf) throw std::runtime_error("Expected HessianFactor!");
-      // Add 2.0 term since the constant term will be premultiplied by 0.5
-      // as per the Hessian definition,
-      // and negative since we want log(k)
       const double negLogK = conditional->negLogConstant();
-      hf->constantTerm() += -2.0 * negLogK;
-      return {factor, negLogK};
-      return {factor, scalar + negLogK};
+      return {factor, scalar - negLogK};
     } else if (!conditional && !factor) {
-      return {nullptr, 0.0};  // TODO(frank): or should this be infinity?
+      return {nullptr, std::numeric_limits<double>::infinity()};
     } else {
       throw std::runtime_error("createHybridGaussianFactors has mixed NULLs");
     }

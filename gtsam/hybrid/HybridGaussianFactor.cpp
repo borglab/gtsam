@@ -32,45 +32,6 @@
 namespace gtsam {
 
 /* *******************************************************************************/
-HybridGaussianFactor::FactorValuePairs HybridGaussianFactor::augment(
-    const FactorValuePairs& factors) {
-  // Find the minimum value so we can "proselytize" to positive values.
-  // Done because we can't have sqrt of negative numbers.
-  DecisionTree<Key, GaussianFactor::shared_ptr> gaussianFactors;
-  AlgebraicDecisionTree<Key> valueTree;
-  std::tie(gaussianFactors, valueTree) = unzip(factors);
-
-  // Compute minimum value for normalization.
-  double min_value = valueTree.min();
-
-  // Finally, update the [A|b] matrices.
-  auto update = [&min_value](const auto& gfv) -> GaussianFactorValuePair {
-    auto [gf, value] = gfv;
-
-    auto jf = std::dynamic_pointer_cast<JacobianFactor>(gf);
-    if (!jf) return {gf, 0.0};  // should this be zero or infinite?
-
-    double normalized_value = value - min_value;
-
-    // If the value is 0, do nothing
-    if (normalized_value == 0.0) return {gf, value};
-
-    GaussianFactorGraph gfg;
-    gfg.push_back(jf);
-
-    Vector c(1);
-    // When hiding c inside the `b` vector, value == 0.5*c^2
-    c << std::sqrt(2.0 * normalized_value);
-    auto constantFactor = std::make_shared<JacobianFactor>(c);
-
-    gfg.push_back(constantFactor);
-    // NOTE(Frank): we store the actual value, not the normalized value:
-    return {std::make_shared<JacobianFactor>(gfg), value};
-  };
-  return FactorValuePairs(factors, update);
-}
-
-/* *******************************************************************************/
 struct HybridGaussianFactor::ConstructorHelper {
   KeyVector continuousKeys;   // Continuous keys extracted from factors
   DiscreteKeys discreteKeys;  // Discrete keys provided to the constructors
@@ -88,10 +49,10 @@ struct HybridGaussianFactor::ConstructorHelper {
       }
     }
     // Build the FactorValuePairs DecisionTree
-    pairs = FactorValuePairs(DecisionTree<Key, GaussianFactor::shared_ptr>(discreteKeys, factors),
-                             [](const auto& f) {
-                               return std::pair{f, 0.0};
-                             });
+    pairs = FactorValuePairs(
+        DecisionTree<Key, GaussianFactor::shared_ptr>(discreteKeys, factors), [](const auto& f) {
+          return std::pair{f, f ? 0.0 : std::numeric_limits<double>::infinity()};
+        });
   }
 
   /// Constructor for a single discrete key and a vector of GaussianFactorValuePairs
@@ -128,7 +89,7 @@ struct HybridGaussianFactor::ConstructorHelper {
 
 /* *******************************************************************************/
 HybridGaussianFactor::HybridGaussianFactor(const ConstructorHelper& helper)
-    : Base(helper.continuousKeys, helper.discreteKeys), factors_(augment(helper.pairs)) {}
+    : Base(helper.continuousKeys, helper.discreteKeys), factors_(helper.pairs) {}
 
 HybridGaussianFactor::HybridGaussianFactor(
     const DiscreteKey& discreteKey, const std::vector<GaussianFactor::shared_ptr>& factorPairs)
@@ -187,8 +148,7 @@ void HybridGaussianFactor::print(const std::string& s, const KeyFormatter& forma
 }
 
 /* *******************************************************************************/
-GaussianFactorValuePair HybridGaussianFactor::operator()(
-    const DiscreteValues& assignment) const {
+GaussianFactorValuePair HybridGaussianFactor::operator()(const DiscreteValues& assignment) const {
   return factors_(assignment);
 }
 
@@ -203,25 +163,12 @@ HybridGaussianProductFactor HybridGaussianFactor::asProductFactor() const {
 }
 
 /* *******************************************************************************/
-/// Helper method to compute the error of a component.
-static double PotentiallyPrunedComponentError(const GaussianFactor::shared_ptr& gf,
-                                              const VectorValues& values) {
-  // Check if valid pointer
-  if (gf) {
-    return gf->error(values);
-  } else {
-    // If nullptr this component was pruned, so we return maximum error. This
-    // way the negative exponential will give a probability value close to 0.0.
-    return std::numeric_limits<double>::max();
-  }
-}
-
-/* *******************************************************************************/
 AlgebraicDecisionTree<Key> HybridGaussianFactor::errorTree(
     const VectorValues& continuousValues) const {
   // functor to convert from sharedFactor to double error value.
   auto errorFunc = [&continuousValues](const auto& pair) {
-    return PotentiallyPrunedComponentError(pair.first, continuousValues);
+    return pair.first ? pair.first->error(continuousValues) + pair.second
+                      : std::numeric_limits<double>::infinity();
   };
   DecisionTree<Key, double> error_tree(factors_, errorFunc);
   return error_tree;
@@ -231,7 +178,8 @@ AlgebraicDecisionTree<Key> HybridGaussianFactor::errorTree(
 double HybridGaussianFactor::error(const HybridValues& values) const {
   // Directly index to get the component, no need to build the whole tree.
   const auto pair = factors_(values.discrete());
-  return PotentiallyPrunedComponentError(pair.first, values.continuous());
+  return pair.first ? pair.first->error(values.continuous()) + pair.second
+                    : std::numeric_limits<double>::infinity();
 }
 
 }  // namespace gtsam
