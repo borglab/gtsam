@@ -22,7 +22,7 @@
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/inference/Key.h>
 
-#include <iostream>
+#include <string>
 
 namespace gtsam {
 
