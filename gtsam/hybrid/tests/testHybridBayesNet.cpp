@@ -199,7 +199,7 @@ TEST(HybridBayesNet, Tiny) {
   factors_x0.push_back(fg.at(1));
   auto productFactor = factors_x0.collectProductFactor();
 
-  // Check that scalars are 0 and 1.79
+  // Check that scalars are 0 and 1.79 (regression)
   EXPECT_DOUBLES_EQUAL(0.0, productFactor({{M(0), 0}}).second, 1e-9);
   EXPECT_DOUBLES_EQUAL(1.791759, productFactor({{M(0), 1}}).second, 1e-5);
 
