@@ -33,6 +33,15 @@
 
 namespace gtsam {
 /* *******************************************************************************/
+/**
+ * @brief Helper struct for constructing HybridGaussianConditional objects
+ *
+ * This struct contains the following fields:
+ * - nrFrontals: Optional size_t for number of frontal variables
+ * - pairs: FactorValuePairs for storing conditionals with their negLogConstant
+ * - conditionals: Conditionals for storing conditionals. TODO(frank): kill!
+ * - minNegLogConstant: minimum negLogConstant, computed here, subtracted in constructor
+ */
 struct HybridGaussianConditional::Helper {
   std::optional<size_t> nrFrontals;
   FactorValuePairs pairs;
@@ -67,16 +76,12 @@ struct HybridGaussianConditional::Helper {
   /// Construct from tree of GaussianConditionals.
   explicit Helper(const Conditionals& conditionals)
       : conditionals(conditionals), minNegLogConstant(std::numeric_limits<double>::infinity()) {
-    auto func = [this](const GC::shared_ptr& c) -> GaussianFactorValuePair {
-      double value = 0.0;
-      if (c) {
-        if (!nrFrontals.has_value()) {
-          nrFrontals = c->nrFrontals();
-        }
-        value = c->negLogConstant();
-        minNegLogConstant = std::min(minNegLogConstant, value);
-      }
-      return {std::dynamic_pointer_cast<GaussianFactor>(c), value};
+    auto func = [this](const GC::shared_ptr& gc) -> GaussianFactorValuePair {
+      if (!gc) return {nullptr, std::numeric_limits<double>::infinity()};
+      if (!nrFrontals) nrFrontals = gc->nrFrontals();
+      double value = gc->negLogConstant();
+      minNegLogConstant = std::min(minNegLogConstant, value);
+      return {gc, value};
     };
     pairs = FactorValuePairs(conditionals, func);
     if (!nrFrontals.has_value()) {
@@ -90,7 +95,13 @@ struct HybridGaussianConditional::Helper {
 /* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(const DiscreteKeys& discreteParents,
                                                      const Helper& helper)
-    : BaseFactor(discreteParents, helper.pairs),
+    : BaseFactor(
+          discreteParents,
+          FactorValuePairs(
+              helper.pairs,
+              [&](const GaussianFactorValuePair& pair) {  // subtract minNegLogConstant
+                return GaussianFactorValuePair{pair.first, pair.second - helper.minNegLogConstant};
+              })),
       BaseConditional(*helper.nrFrontals),
       conditionals_(helper.conditionals),
       negLogConstant_(helper.minNegLogConstant) {}

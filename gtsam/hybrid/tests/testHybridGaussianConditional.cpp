@@ -18,6 +18,8 @@
  * @date    December 2021
  */
 
+#include <gtsam/discrete/DecisionTree.h>
+#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
@@ -27,9 +29,6 @@
 
 #include <memory>
 #include <vector>
-
-#include "gtsam/discrete/DecisionTree.h"
-#include "gtsam/discrete/DiscreteKey.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -52,10 +51,8 @@ namespace equal_constants {
 // Create a simple HybridGaussianConditional
 const double commonSigma = 2.0;
 const std::vector<GaussianConditional::shared_ptr> conditionals{
-    GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
-                                             commonSigma),
-    GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
-                                             commonSigma)};
+    GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0), commonSigma),
+    GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0), commonSigma)};
 const HybridGaussianConditional hybrid_conditional(mode, conditionals);
 }  // namespace equal_constants
 
@@ -80,8 +77,8 @@ TEST(HybridGaussianConditional, LogProbability) {
   using namespace equal_constants;
   for (size_t mode : {0, 1}) {
     const HybridValues hv{vv, {{M(0), mode}}};
-    EXPECT_DOUBLES_EQUAL(conditionals[mode]->logProbability(vv),
-                         hybrid_conditional.logProbability(hv), 1e-8);
+    EXPECT_DOUBLES_EQUAL(
+        conditionals[mode]->logProbability(vv), hybrid_conditional.logProbability(hv), 1e-8);
   }
 }
 
@@ -93,8 +90,7 @@ TEST(HybridGaussianConditional, Error) {
 
   // Check result.
   DiscreteKeys discrete_keys{mode};
-  std::vector<double> leaves = {conditionals[0]->error(vv),
-                                conditionals[1]->error(vv)};
+  std::vector<double> leaves = {conditionals[0]->error(vv), conditionals[1]->error(vv)};
   AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
 
   EXPECT(assert_equal(expected, actual, 1e-6));
@@ -102,8 +98,7 @@ TEST(HybridGaussianConditional, Error) {
   // Check for non-tree version.
   for (size_t mode : {0, 1}) {
     const HybridValues hv{vv, {{M(0), mode}}};
-    EXPECT_DOUBLES_EQUAL(conditionals[mode]->error(vv),
-                         hybrid_conditional.error(hv), 1e-8);
+    EXPECT_DOUBLES_EQUAL(conditionals[mode]->error(vv), hybrid_conditional.error(hv), 1e-8);
   }
 }
 
@@ -118,10 +113,8 @@ TEST(HybridGaussianConditional, Likelihood) {
 
   // Check that the hybrid conditional error and the likelihood error are the
   // same.
-  EXPECT_DOUBLES_EQUAL(hybrid_conditional.error(hv0), likelihood->error(hv0),
-                       1e-8);
-  EXPECT_DOUBLES_EQUAL(hybrid_conditional.error(hv1), likelihood->error(hv1),
-                       1e-8);
+  EXPECT_DOUBLES_EQUAL(hybrid_conditional.error(hv0), likelihood->error(hv0), 1e-8);
+  EXPECT_DOUBLES_EQUAL(hybrid_conditional.error(hv1), likelihood->error(hv1), 1e-8);
 
   // Check that likelihood error is as expected, i.e., just the errors of the
   // individual likelihoods, in the `equal_constants` case.
@@ -135,8 +128,7 @@ TEST(HybridGaussianConditional, Likelihood) {
   std::vector<double> ratio(2);
   for (size_t mode : {0, 1}) {
     const HybridValues hv{vv, {{M(0), mode}}};
-    ratio[mode] =
-        std::exp(-likelihood->error(hv)) / hybrid_conditional.evaluate(hv);
+    ratio[mode] = std::exp(-likelihood->error(hv)) / hybrid_conditional.evaluate(hv);
   }
   EXPECT_DOUBLES_EQUAL(ratio[0], ratio[1], 1e-8);
 }
@@ -146,10 +138,8 @@ namespace mode_dependent_constants {
 // Create a HybridGaussianConditional with mode-dependent noise models.
 // 0 is low-noise, 1 is high-noise.
 const std::vector<GaussianConditional::shared_ptr> conditionals{
-    GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
-                                             0.5),
-    GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
-                                             3.0)};
+    GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0), 0.5),
+    GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0), 3.0)};
 const HybridGaussianConditional hybrid_conditional(mode, conditionals);
 }  // namespace mode_dependent_constants
 
@@ -181,9 +171,8 @@ TEST(HybridGaussianConditional, Error2) {
   // Expected error is e(X) + log(sqrt(|2πΣ|)).
   // We normalize log(sqrt(|2πΣ|)) with min(negLogConstant)
   // so it is non-negative.
-  std::vector<double> leaves = {
-      conditionals[0]->error(vv) + negLogConstant0 - minErrorConstant,
-      conditionals[1]->error(vv) + negLogConstant1 - minErrorConstant};
+  std::vector<double> leaves = {conditionals[0]->error(vv) + negLogConstant0 - minErrorConstant,
+                                conditionals[1]->error(vv) + negLogConstant1 - minErrorConstant};
   AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
 
   EXPECT(assert_equal(expected, actual, 1e-6));
@@ -191,10 +180,10 @@ TEST(HybridGaussianConditional, Error2) {
   // Check for non-tree version.
   for (size_t mode : {0, 1}) {
     const HybridValues hv{vv, {{M(0), mode}}};
-    EXPECT_DOUBLES_EQUAL(conditionals[mode]->error(vv) +
-                             conditionals[mode]->negLogConstant() -
-                             minErrorConstant,
-                         hybrid_conditional.error(hv), 1e-8);
+    EXPECT_DOUBLES_EQUAL(
+        conditionals[mode]->error(vv) + conditionals[mode]->negLogConstant() - minErrorConstant,
+        hybrid_conditional.error(hv),
+        1e-8);
   }
 }
 
@@ -209,10 +198,8 @@ TEST(HybridGaussianConditional, Likelihood2) {
 
   // Check that the hybrid conditional error and the likelihood error are as
   // expected, this invariant is the same as the equal noise case:
-  EXPECT_DOUBLES_EQUAL(hybrid_conditional.error(hv0), likelihood->error(hv0),
-                       1e-8);
-  EXPECT_DOUBLES_EQUAL(hybrid_conditional.error(hv1), likelihood->error(hv1),
-                       1e-8);
+  EXPECT_DOUBLES_EQUAL(hybrid_conditional.error(hv0), likelihood->error(hv0), 1e-8);
+  EXPECT_DOUBLES_EQUAL(hybrid_conditional.error(hv1), likelihood->error(hv1), 1e-8);
 
   // Check the detailed JacobianFactor calculation for mode==1.
   {
@@ -221,34 +208,18 @@ TEST(HybridGaussianConditional, Likelihood2) {
     const auto jf1 = std::dynamic_pointer_cast<JacobianFactor>(gf1);
     CHECK(jf1);
 
-    // It has 2 rows, not 1!
-    CHECK(jf1->rows() == 2);
-
-    // Check that the constant C1 is properly encoded in the JacobianFactor.
-    const double C1 =
-        conditionals[1]->negLogConstant() - hybrid_conditional.negLogConstant();
-    const double c1 = std::sqrt(2.0 * C1);
-    Vector expected_unwhitened(2);
-    expected_unwhitened << 4.9 - 5.0, -c1;
-    Vector actual_unwhitened = jf1->unweighted_error(vv);
-    EXPECT(assert_equal(expected_unwhitened, actual_unwhitened));
-
-    // Make sure the noise model does not touch it.
-    Vector expected_whitened(2);
-    expected_whitened << (4.9 - 5.0) / 3.0, -c1;
-    Vector actual_whitened = jf1->error_vector(vv);
-    EXPECT(assert_equal(expected_whitened, actual_whitened));
-
-    // Check that the error is equal to the conditional error:
-    EXPECT_DOUBLES_EQUAL(hybrid_conditional.error(hv1), jf1->error(hv1), 1e-8);
+    // Check that the JacobianFactor error with constants is equal to the conditional error:
+    EXPECT_DOUBLES_EQUAL(
+        hybrid_conditional.error(hv1),
+        jf1->error(hv1) + conditionals[1]->negLogConstant() - hybrid_conditional.negLogConstant(),
+        1e-8);
   }
 
   // Check that the ratio of probPrime to evaluate is the same for all modes.
   std::vector<double> ratio(2);
   for (size_t mode : {0, 1}) {
     const HybridValues hv{vv, {{M(0), mode}}};
-    ratio[mode] =
-        std::exp(-likelihood->error(hv)) / hybrid_conditional.evaluate(hv);
+    ratio[mode] = std::exp(-likelihood->error(hv)) / hybrid_conditional.evaluate(hv);
   }
   EXPECT_DOUBLES_EQUAL(ratio[0], ratio[1], 1e-8);
 }
@@ -261,8 +232,7 @@ TEST(HybridGaussianConditional, Prune) {
   DiscreteKeys modes{{M(1), 2}, {M(2), 2}};
   std::vector<GaussianConditional::shared_ptr> gcs;
   for (size_t i = 0; i < 4; i++) {
-    gcs.push_back(
-        GaussianConditional::sharedMeanAndStddev(Z(0), Vector1(i + 1), i + 1));
+    gcs.push_back(GaussianConditional::sharedMeanAndStddev(Z(0), Vector1(i + 1), i + 1));
   }
   auto empty = std::make_shared<GaussianConditional>();
   HybridGaussianConditional::Conditionals conditionals(modes, gcs);
@@ -282,8 +252,14 @@ TEST(HybridGaussianConditional, Prune) {
     }
   }
   {
-    const std::vector<double> potentials{0, 0, 0.5, 0,  //
-                                         0, 0, 0.5, 0};
+    const std::vector<double> potentials{0,
+                                         0,
+                                         0.5,
+                                         0,  //
+                                         0,
+                                         0,
+                                         0.5,
+                                         0};
     const DecisionTreeFactor decisionTreeFactor(keys, potentials);
 
     const auto pruned = hgc.prune(decisionTreeFactor);
@@ -292,8 +268,14 @@ TEST(HybridGaussianConditional, Prune) {
     EXPECT_LONGS_EQUAL(2, pruned->nrComponents());
   }
   {
-    const std::vector<double> potentials{0.2, 0, 0.3, 0,  //
-                                         0,   0, 0.5, 0};
+    const std::vector<double> potentials{0.2,
+                                         0,
+                                         0.3,
+                                         0,  //
+                                         0,
+                                         0,
+                                         0.5,
+                                         0};
     const DecisionTreeFactor decisionTreeFactor(keys, potentials);
 
     const auto pruned = hgc.prune(decisionTreeFactor);
