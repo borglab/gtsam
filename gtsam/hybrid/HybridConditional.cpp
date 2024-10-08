@@ -13,6 +13,7 @@
  *  @file HybridConditional.cpp
  *  @date Mar 11, 2022
  *  @author Fan Jiang
+ *  @author Varun Agrawal
  */
 
 #include <gtsam/hybrid/HybridConditional.h>
@@ -20,6 +21,8 @@
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/inference/Key.h>
+
+#include <iostream>
 
 namespace gtsam {
 

@@ -13,6 +13,7 @@
  *  @file HybridConditional.h
  *  @date Mar 11, 2022
  *  @author Fan Jiang
+ *  @author Varun Agrawal
  */
 
 #pragma once
@@ -25,7 +26,6 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianConditional.h>
 
-#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
