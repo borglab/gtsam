@@ -17,6 +17,8 @@
  *  @author Frank Dellaert
  */
 
+#include <CppUnitLite/Test.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/Vector.h>
@@ -36,9 +38,6 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
-
-#include <CppUnitLite/Test.h>
-#include <CppUnitLite/TestHarness.h>
 
 #include <cstddef>
 #include <memory>
@@ -73,8 +72,8 @@ TEST(HybridGaussianFactorGraph, Creation) {
   HybridGaussianConditional gm(
       m0,
       {std::make_shared<GaussianConditional>(X(0), Z_3x1, I_3x3, X(1), I_3x3),
-       std::make_shared<GaussianConditional>(
-           X(0), Vector3::Ones(), I_3x3, X(1), I_3x3)});
+       std::make_shared<GaussianConditional>(X(0), Vector3::Ones(), I_3x3, X(1),
+                                             I_3x3)});
   hfg.add(gm);
 
   EXPECT_LONGS_EQUAL(2, hfg.size());
@@ -118,8 +117,8 @@ TEST(HybridGaussianFactorGraph, hybridEliminationOneFactor) {
   auto factor = std::dynamic_pointer_cast<DecisionTreeFactor>(result.second);
   CHECK(factor);
   // regression test
-  EXPECT(
-      assert_equal(DecisionTreeFactor{m1, "15.74961 15.74961"}, *factor, 1e-5));
+  // Originally 15.74961, which is normalized to 1
+  EXPECT(assert_equal(DecisionTreeFactor{m1, "1 1"}, *factor, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -177,7 +176,7 @@ TEST(HybridBayesNet, Switching) {
   Switching s(2, betweenSigma, priorSigma);
 
   // Check size of linearized factor graph
-  const HybridGaussianFactorGraph& graph = s.linearizedFactorGraph;
+  const HybridGaussianFactorGraph &graph = s.linearizedFactorGraph;
   EXPECT_LONGS_EQUAL(4, graph.size());
 
   // Create some continuous and discrete values
@@ -203,20 +202,20 @@ TEST(HybridBayesNet, Switching) {
   // Check error for M(0) = 0
   const HybridValues values0{continuousValues, modeZero};
   double expectedError0 = 0;
-  for (const auto& factor : graph) expectedError0 += factor->error(values0);
+  for (const auto &factor : graph) expectedError0 += factor->error(values0);
   EXPECT_DOUBLES_EQUAL(expectedError0, graph.error(values0), 1e-5);
 
   // Check error for M(0) = 1
   const HybridValues values1{continuousValues, modeOne};
   double expectedError1 = 0;
-  for (const auto& factor : graph) expectedError1 += factor->error(values1);
+  for (const auto &factor : graph) expectedError1 += factor->error(values1);
   EXPECT_DOUBLES_EQUAL(expectedError1, graph.error(values1), 1e-5);
 
   // Check errorTree
   AlgebraicDecisionTree<Key> actualErrors = graph.errorTree(continuousValues);
   // Create expected error tree
-  const AlgebraicDecisionTree<Key> expectedErrors(
-      M(0), expectedError0, expectedError1);
+  const AlgebraicDecisionTree<Key> expectedErrors(M(0), expectedError0,
+                                                  expectedError1);
 
   // Check that the actual error tree matches the expected one
   EXPECT(assert_equal(expectedErrors, actualErrors, 1e-5));
@@ -232,8 +231,8 @@ TEST(HybridBayesNet, Switching) {
   const AlgebraicDecisionTree<Key> graphPosterior =
       graph.discretePosterior(continuousValues);
   const double sum = probPrime0 + probPrime1;
-  const AlgebraicDecisionTree<Key> expectedPosterior(
-      M(0), probPrime0 / sum, probPrime1 / sum);
+  const AlgebraicDecisionTree<Key> expectedPosterior(M(0), probPrime0 / sum,
+                                                     probPrime1 / sum);
   EXPECT(assert_equal(expectedPosterior, graphPosterior, 1e-5));
 
   // Make the clique of factors connected to x0:
@@ -275,15 +274,13 @@ TEST(HybridBayesNet, Switching) {
   // Check that the scalars incorporate the negative log constant of the
   // conditional
   EXPECT_DOUBLES_EQUAL(scalar0 - (*p_x0_given_x1_m)(modeZero)->negLogConstant(),
-                       (*phi_x1_m)(modeZero).second,
-                       1e-9);
+                       (*phi_x1_m)(modeZero).second, 1e-9);
   EXPECT_DOUBLES_EQUAL(scalar1 - (*p_x0_given_x1_m)(modeOne)->negLogConstant(),
-                       (*phi_x1_m)(modeOne).second,
-                       1e-9);
+                       (*phi_x1_m)(modeOne).second, 1e-9);
 
   // Check that the conditional and remaining factor are consistent for both
   // modes
-  for (auto&& mode : {modeZero, modeOne}) {
+  for (auto &&mode : {modeZero, modeOne}) {
     const auto gc = (*p_x0_given_x1_m)(mode);
     const auto [gf, scalar] = (*phi_x1_m)(mode);
 
@@ -342,7 +339,7 @@ TEST(HybridBayesNet, Switching) {
   // However, we can still check the total error for the clique factors_x1 and
   // the elimination results are equal, modulo -again- the negative log constant
   // of the conditional.
-  for (auto&& mode : {modeZero, modeOne}) {
+  for (auto &&mode : {modeZero, modeOne}) {
     auto gc_x1 = (*p_x1_given_m)(mode);
     double originalError_x1 = factors_x1.error({continuousValues, mode});
     const double actualError = gc_x1->negLogConstant() +
@@ -372,7 +369,7 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
   Switching s(3);
 
   // Check size of linearized factor graph
-  const HybridGaussianFactorGraph& graph = s.linearizedFactorGraph;
+  const HybridGaussianFactorGraph &graph = s.linearizedFactorGraph;
   EXPECT_LONGS_EQUAL(7, graph.size());
 
   // Eliminate the graph
