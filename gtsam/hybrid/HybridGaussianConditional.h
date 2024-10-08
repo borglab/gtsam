@@ -222,9 +222,6 @@ class GTSAM_EXPORT HybridGaussianConditional
   HybridGaussianConditional::shared_ptr prune(
       const DecisionTreeFactor &discreteProbs) const;
 
-  /// Convert to a DecisionTree of Gaussian factor graphs.
-  HybridGaussianProductFactor asProductFactor() const override;
-
   /// @}
 
  private:

@@ -151,36 +151,6 @@ const HybridGaussianConditional::Conditionals& HybridGaussianConditional::condit
 }
 
 /* *******************************************************************************/
-HybridGaussianProductFactor HybridGaussianConditional::asProductFactor() const {
-  auto wrap = [this](const std::shared_ptr<GaussianConditional>& gc)
-      -> std::pair<GaussianFactorGraph, double> {
-    // First check if conditional has not been pruned
-    if (gc) {
-      const double Cgm_Kgcm = gc->negLogConstant() - this->negLogConstant_;
-      // If there is a difference in the covariances, we need to account for
-      // that since the error is dependent on the mode.
-      if (Cgm_Kgcm > 0.0) {
-        // We add a constant factor which will be used when computing
-        // the probability of the discrete variables.
-        Vector c(1);
-        c << std::sqrt(2.0 * Cgm_Kgcm);
-        auto constantFactor = std::make_shared<JacobianFactor>(c);
-        return {GaussianFactorGraph{gc, constantFactor}, Cgm_Kgcm};
-      } else {
-        // The scalar can be zero.
-        // TODO(Frank): after hiding is gone, this should be only case here.
-        return {GaussianFactorGraph{gc}, Cgm_Kgcm};
-      }
-    } else {
-      // If the conditional is pruned, return an empty GaussianFactorGraph with zero scalar sum
-      // TODO(Frank): Could we just return an *empty* GaussianFactorGraph?
-      return {GaussianFactorGraph{nullptr}, 0.0};
-    }
-  };
-  return {{conditionals_, wrap}};
-}
-
-/* *******************************************************************************/
 size_t HybridGaussianConditional::nrComponents() const {
   size_t total = 0;
   conditionals_.visit([&total](const GaussianFactor::shared_ptr& node) {
