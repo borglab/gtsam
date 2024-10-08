@@ -229,8 +229,13 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
 }
 
 /* ************************************************************************ */
-/// Take negative log-values, shift them so that the minimum value is 0, and
-/// then exponentiate to create a DecisionTreeFactor (not normalized yet!).
+/**
+ * @brief Take negative log-values, shift them so that the minimum value is 0,
+ * and then exponentiate to create a DecisionTreeFactor (not normalized yet!).
+ *
+ * @param errors DecisionTree of (unnormalized) errors.
+ * @return AlgebraicDecisionTree<Key>
+ */
 static DecisionTreeFactor::shared_ptr DiscreteFactorFromErrors(
     const DiscreteKeys &discreteKeys,
     const AlgebraicDecisionTree<Key> &errors) {
@@ -258,7 +263,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
         if (!factor) return std::numeric_limits<double>::infinity();
         return scalar + factor->error(kEmpty);
       };
-      DecisionTree<Key, double> errors(gmf->factors(), calculateError);
+      AlgebraicDecisionTree<Key> errors(gmf->factors(), calculateError);
       dfg.push_back(DiscreteFactorFromErrors(gmf->discreteKeys(), errors));
 
     } else if (auto orphan = dynamic_pointer_cast<OrphanWrapper>(f)) {
@@ -307,7 +312,7 @@ static std::shared_ptr<Factor> createDiscreteFactor(
     }
   };
 
-  DecisionTree<Key, double> errors(eliminationResults, calculateError);
+  AlgebraicDecisionTree<Key> errors(eliminationResults, calculateError);
   return DiscreteFactorFromErrors(discreteSeparator, errors);
 }
 
