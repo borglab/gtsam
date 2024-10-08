@@ -64,8 +64,6 @@ class GTSAM_EXPORT HybridGaussianConditional
   using Conditionals = DecisionTree<Key, GaussianConditional::shared_ptr>;
 
  private:
-  Conditionals conditionals_;  ///< a decision tree of Gaussian conditionals.
-
   ///< Negative-log of the normalization constant (log(\sqrt(|2πΣ|))).
   ///< Take advantage of the neg-log space so everything is a minimization
   double negLogConstant_;
@@ -192,8 +190,8 @@ class GTSAM_EXPORT HybridGaussianConditional
   std::shared_ptr<HybridGaussianFactor> likelihood(
       const VectorValues &given) const;
 
-  /// Getter for the underlying Conditionals DecisionTree
-  const Conditionals &conditionals() const;
+  /// Get Conditionals DecisionTree (dynamic cast from factors)
+  const Conditionals conditionals() const;
 
   /**
    * @brief Compute the logProbability of this hybrid Gaussian conditional.
@@ -241,7 +239,6 @@ class GTSAM_EXPORT HybridGaussianConditional
   void serialize(Archive &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
-    ar &BOOST_SERIALIZATION_NVP(conditionals_);
   }
 #endif
 };
