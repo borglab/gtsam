@@ -170,14 +170,18 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
 // Test API for the smallest switching network.
 // None of these are regression tests.
 TEST(HybridBayesNet, Switching) {
+  // Create switching network with two continuous variables and one discrete:
+  // ϕ(x0) ϕ(x0,x1,m0) ϕ(x1;z1) ϕ(m0)
   const double betweenSigma = 0.3, priorSigma = 0.1;
   Switching s(2, betweenSigma, priorSigma);
+
+  // Check size of linearized factor graph
   const HybridGaussianFactorGraph& graph = s.linearizedFactorGraph;
   EXPECT_LONGS_EQUAL(4, graph.size());
 
   // Create some continuous and discrete values
-  VectorValues continuousValues{{X(0), Vector1(0.1)}, {X(1), Vector1(1.2)}};
-  DiscreteValues modeZero{{M(0), 0}}, modeOne{{M(0), 1}};
+  const VectorValues continuousValues{{X(0), Vector1(0.1)}, {X(1), Vector1(1.2)}};
+  const DiscreteValues modeZero{{M(0), 0}}, modeOne{{M(0), 1}};
 
   // Get the hybrid gaussian factor and check it is as expected
   auto hgf = std::dynamic_pointer_cast<HybridGaussianFactor>(graph.at(1));
@@ -195,13 +199,13 @@ TEST(HybridBayesNet, Switching) {
   EXPECT_DOUBLES_EQUAL(betweenModel->negLogConstant(), scalar1, 1e-9);
 
   // Check error for M(0) = 0
-  HybridValues values0{continuousValues, modeZero};
+  const HybridValues values0{continuousValues, modeZero};
   double expectedError0 = 0;
   for (const auto& factor : graph) expectedError0 += factor->error(values0);
   EXPECT_DOUBLES_EQUAL(expectedError0, graph.error(values0), 1e-5);
 
   // Check error for M(0) = 1
-  HybridValues values1{continuousValues, modeOne};
+  const HybridValues values1{continuousValues, modeOne};
   double expectedError1 = 0;
   for (const auto& factor : graph) expectedError1 += factor->error(values1);
   EXPECT_DOUBLES_EQUAL(expectedError1, graph.error(values1), 1e-5);
@@ -209,22 +213,22 @@ TEST(HybridBayesNet, Switching) {
   // Check errorTree
   AlgebraicDecisionTree<Key> actualErrors = graph.errorTree(continuousValues);
   // Create expected error tree
-  AlgebraicDecisionTree<Key> expectedErrors(M(0), expectedError0, expectedError1);
+  const AlgebraicDecisionTree<Key> expectedErrors(M(0), expectedError0, expectedError1);
 
   // Check that the actual error tree matches the expected one
   EXPECT(assert_equal(expectedErrors, actualErrors, 1e-5));
 
   // Check probPrime
-  double probPrime0 = graph.probPrime(values0);
+  const double probPrime0 = graph.probPrime(values0);
   EXPECT_DOUBLES_EQUAL(std::exp(-expectedError0), probPrime0, 1e-5);
 
-  double probPrime1 = graph.probPrime(values1);
+  const double probPrime1 = graph.probPrime(values1);
   EXPECT_DOUBLES_EQUAL(std::exp(-expectedError1), probPrime1, 1e-5);
 
   // Check discretePosterior
-  AlgebraicDecisionTree<Key> graphPosterior = graph.discretePosterior(continuousValues);
-  double sum = probPrime0 + probPrime1;
-  AlgebraicDecisionTree<Key> expectedPosterior(M(0), probPrime0 / sum, probPrime1 / sum);
+  const AlgebraicDecisionTree<Key> graphPosterior = graph.discretePosterior(continuousValues);
+  const double sum = probPrime0 + probPrime1;
+  const AlgebraicDecisionTree<Key> expectedPosterior(M(0), probPrime0 / sum, probPrime1 / sum);
   EXPECT(assert_equal(expectedPosterior, graphPosterior, 1e-5));
 
   // Make the clique of factors connected to x0:
@@ -246,7 +250,7 @@ TEST(HybridBayesNet, Switching) {
   EXPECT_DOUBLES_EQUAL((*hgf)(modeOne).second, actualScalar1, 1e-5);
 
   // Test eliminate x0
-  Ordering ordering{X(0)};
+  const Ordering ordering{X(0)};
   auto [conditional, factor] = factors_x0.eliminate(ordering);
 
   // Check the conditional
@@ -254,6 +258,7 @@ TEST(HybridBayesNet, Switching) {
   EXPECT(conditional->isHybrid());
   auto p_x0_given_x1_m = conditional->asHybrid();
   CHECK(p_x0_given_x1_m);
+  EXPECT(HybridGaussianConditional::CheckInvariants(*p_x0_given_x1_m, values1));
   EXPECT_LONGS_EQUAL(1, p_x0_given_x1_m->nrFrontals());  // x0
   EXPECT_LONGS_EQUAL(2, p_x0_given_x1_m->nrParents());   // x1, m0
 
@@ -270,8 +275,8 @@ TEST(HybridBayesNet, Switching) {
 
   // Check that the conditional and remaining factor are consistent for both modes
   for (auto&& mode : {modeZero, modeOne}) {
-    auto gc = (*p_x0_given_x1_m)(mode);
-    auto [gf, scalar] = (*phi_x1_m)(mode);
+    const auto gc = (*p_x0_given_x1_m)(mode);
+    const auto [gf, scalar] = (*phi_x1_m)(mode);
 
     // The error of the original factors should equal the sum of errors of the conditional and
     // remaining factor, modulo the normalization constant of the conditional.
@@ -332,12 +337,41 @@ TEST(HybridBayesNet, Switching) {
   }
 
   // Now test full elimination of the graph:
-  auto posterior = graph.eliminateSequential();
-  CHECK(posterior);
+  auto hybridBayesNet = graph.eliminateSequential();
+  CHECK(hybridBayesNet);
 
   // Check that the posterior P(M|X=continuousValues) from the Bayes net is the same as the
   // same posterior from the graph. This is a sanity check that the elimination is done correctly.
-  AlgebraicDecisionTree<Key> bnPosterior = graph.discretePosterior(continuousValues);
+  AlgebraicDecisionTree<Key> bnPosterior = hybridBayesNet->discretePosterior(continuousValues);
+  EXPECT(assert_equal(graphPosterior, bnPosterior));
+}
+
+/* ****************************************************************************/
+// Test subset of API for switching network with 3 states.
+// None of these are regression tests.
+TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
+  // Create switching network with three continuous variables and two discrete:
+  // ϕ(x0) ϕ(x0,x1,m0) ϕ(x1,x2,m1) ϕ(x1;z1) ϕ(x2;z2) ϕ(m0) ϕ(m0,m1)
+  Switching s(3);
+
+  // Check size of linearized factor graph
+  const HybridGaussianFactorGraph& graph = s.linearizedFactorGraph;
+  EXPECT_LONGS_EQUAL(7, graph.size());
+
+  // Eliminate the graph
+  const HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
+
+  const HybridValues delta = hybridBayesNet->optimize();
+  const double error = graph.error(delta);
+
+  // Check that the probability prime is the exponential of the error
+  EXPECT(assert_equal(graph.probPrime(delta), exp(-error), 1e-7));
+
+  // Check that the posterior P(M|X=continuousValues) from the Bayes net is the same as the
+  // same posterior from the graph. This is a sanity check that the elimination is done correctly.
+  const AlgebraicDecisionTree<Key> graphPosterior = graph.discretePosterior(delta.continuous());
+  const AlgebraicDecisionTree<Key> bnPosterior =
+      hybridBayesNet->discretePosterior(delta.continuous());
   EXPECT(assert_equal(graphPosterior, bnPosterior));
 }
 
@@ -467,51 +501,6 @@ TEST(HybridGaussianFactorGraph, Conditionals) {
 }
 
 /* ****************************************************************************/
-// Test hybrid gaussian factor graph error and unnormalized probabilities
-TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
-  Switching s(3);
-
-  HybridGaussianFactorGraph graph = s.linearizedFactorGraph;
-
-  HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
-
-  const HybridValues delta = hybridBayesNet->optimize();
-  const double error = graph.error(delta);
-
-  // regression
-  EXPECT(assert_equal(1.58886, error, 1e-5));
-
-  // Real test:
-  EXPECT(assert_equal(graph.probPrime(delta), exp(-error), 1e-7));
-}
-
-/* ****************************************************************************/
-// Test hybrid gaussian factor graph error and unnormalized probabilities
-TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
-  // Create switching network with three continuous variables and two discrete:
-  // ϕ(x0) ϕ(x0,x1,m0) ϕ(x1,x2,m1) ϕ(x0;z0) ϕ(x1;z1) ϕ(x2;z2) ϕ(m0) ϕ(m0,m1)
-  Switching s(3);
-
-  const HybridGaussianFactorGraph& graph = s.linearizedFactorGraph;
-
-  const HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
-
-  const HybridValues delta = hybridBayesNet->optimize();
-
-  // regression test for errorTree
-  std::vector<double> leaves = {2.7916153, 1.5888555, 1.7233422, 1.6191947};
-  AlgebraicDecisionTree<Key> expectedErrors(s.modes, leaves);
-  const auto error_tree = graph.errorTree(delta.continuous());
-  EXPECT(assert_equal(expectedErrors, error_tree, 1e-7));
-
-  // regression test for discretePosterior
-  const AlgebraicDecisionTree<Key> expectedPosterior(
-      s.modes, std::vector{0.095516068, 0.31800092, 0.27798511, 0.3084979});
-  auto posterior = graph.discretePosterior(delta.continuous());
-  EXPECT(assert_equal(expectedPosterior, posterior, 1e-7));
-}
-
-/* ****************************************************************************/
 // Test hybrid gaussian factor graph errorTree during incremental operation
 TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   Switching s(4);
@@ -528,15 +517,11 @@ TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
   EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
 
+  // Check discrete posterior at optimum
   HybridValues delta = hybridBayesNet->optimize();
-  auto error_tree = graph.errorTree(delta.continuous());
-
-  std::vector<DiscreteKey> discrete_keys = {m0, m1};
-  std::vector<double> leaves = {2.7916153, 1.5888555, 1.7233422, 1.6191947};
-  AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
-
-  // regression
-  EXPECT(assert_equal(expected_error, error_tree, 1e-7));
+  AlgebraicDecisionTree<Key> graphPosterior = graph.discretePosterior(delta.continuous());
+  AlgebraicDecisionTree<Key> bnPosterior = hybridBayesNet->discretePosterior(delta.continuous());
+  EXPECT(assert_equal(graphPosterior, bnPosterior));
 
   graph = HybridGaussianFactorGraph();
   graph.push_back(*hybridBayesNet);
@@ -547,13 +532,9 @@ TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   EXPECT_LONGS_EQUAL(7, hybridBayesNet->size());
 
   delta = hybridBayesNet->optimize();
-  auto error_tree2 = graph.errorTree(delta.continuous());
-
-  // regression
-  leaves = {
-      0.50985198, 0.0097577296, 0.50009425, 0, 0.52922138, 0.029127133, 0.50985105, 0.0097567964};
-  AlgebraicDecisionTree<Key> expected_error2(s.modes, leaves);
-  EXPECT(assert_equal(expected_error, error_tree, 1e-7));
+  graphPosterior = graph.discretePosterior(delta.continuous());
+  bnPosterior = hybridBayesNet->discretePosterior(delta.continuous());
+  EXPECT(assert_equal(graphPosterior, bnPosterior));
 }
 
 /* ****************************************************************************/
