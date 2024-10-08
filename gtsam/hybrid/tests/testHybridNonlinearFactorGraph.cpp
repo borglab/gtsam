@@ -212,6 +212,37 @@ TEST(HybridNonlinearFactorGraph, PushBack) {
   // EXPECT_LONGS_EQUAL(3, hnfg.size());
 }
 
+/* ****************************************************************************/
+// Test hybrid nonlinear factor graph errorTree
+TEST(HybridNonlinearFactorGraph, ErrorTree) {
+  Switching s(3);
+
+  HybridNonlinearFactorGraph graph = s.nonlinearFactorGraph;
+  Values values = s.linearizationPoint;
+
+  auto error_tree = graph.errorTree(s.linearizationPoint);
+
+  auto dkeys = graph.discreteKeys();
+  DiscreteKeys discrete_keys(dkeys.begin(), dkeys.end());
+
+  // Compute the sum of errors for each factor.
+  auto assignments = DiscreteValues::CartesianProduct(discrete_keys);
+  std::vector<double> leaves(assignments.size());
+  for (auto &&factor : graph) {
+    for (size_t i = 0; i < assignments.size(); ++i) {
+      leaves[i] +=
+          factor->error(HybridValues(VectorValues(), assignments[i], values));
+    }
+  }
+  // Swap i=1 and i=2 to give correct ordering.
+  double temp = leaves[1];
+  leaves[1] = leaves[2];
+  leaves[2] = temp;
+  AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
+
+  EXPECT(assert_equal(expected_error, error_tree, 1e-7));
+}
+
 /****************************************************************************
  * Test construction of switching-like hybrid factor graph.
  */

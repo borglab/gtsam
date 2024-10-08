@@ -231,10 +231,8 @@ static std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>> discret
       auto potential = [&](const auto& pair) -> double {
         auto [factor, scalar] = pair;
         // If the factor is null, it has been pruned, hence return potential of zero
-        if (!factor)
-          return 0.0;
-        else
-          return exp(-scalar - factor->error(kEmpty));
+        if (!factor) return 0.0;
+        return exp(-scalar - factor->error(kEmpty));
       };
       DecisionTree<Key, double> potentials(gmf->factors(), potential);
       dfg.emplace_shared<DecisionTreeFactor>(gmf->discreteKeys(), potentials);
@@ -270,18 +268,16 @@ static std::shared_ptr<Factor> createDiscreteFactor(const ResultTree& eliminatio
     const auto& [conditional, factor] = pair.first;
     const double scalar = pair.second;
     if (conditional && factor) {
-      // If the factor is not null, it has no keys, just contains the residual.
-
-      // Negative-log-space version of:
-      // exp(-factor->error(kEmpty)) / conditional->normalizationConstant();
-      // negLogConstant gives `-log(k)`
-      // which is `-log(k) = log(1/k) = log(\sqrt{|2πΣ|})`.
+      // `error` has the following contributions:
+      // - the scalar is the sum of all mode-dependent constants
+      // - factor->error(kempty) is the error remaining after elimination
+      // - negLogK is what is given to the conditional to normalize
       const double negLogK = conditional->negLogConstant();
       const double error = scalar + factor->error(kEmpty) - negLogK;
       return exp(-error);
     } else if (!conditional && !factor) {
       // If the factor is null, it has been pruned, hence return potential of zero
-      return 0;
+      return 0.0;
     } else {
       throw std::runtime_error("createDiscreteFactor has mixed NULLs");
     }
