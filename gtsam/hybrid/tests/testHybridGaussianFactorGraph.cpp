@@ -333,7 +333,7 @@ TEST(HybridBayesNet, Switching) {
   CHECK(phi_x1);
   EXPECT_LONGS_EQUAL(1, phi_x1->keys().size());  // m0
   // We can't really check the error of the decision tree factor phi_x1, because
-  // the continuous factor whose error(kEmpty) we need is not available..
+  // the continuous factor whose error(kEmpty) we need is not available.
 
   // Now test full elimination of the graph:
   auto hybridBayesNet = graph.eliminateSequential();
