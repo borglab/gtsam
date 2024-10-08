@@ -79,7 +79,7 @@ struct HybridGaussianConditional::Helper {
   explicit Helper(const Conditionals &conditionals)
       : conditionals(conditionals),
         minNegLogConstant(std::numeric_limits<double>::infinity()) {
-    auto func = [this](const GC::shared_ptr& gc) -> GaussianFactorValuePair {
+    auto func = [this](const GC::shared_ptr &gc) -> GaussianFactorValuePair {
       if (!gc) return {nullptr, std::numeric_limits<double>::infinity()};
       if (!nrFrontals) nrFrontals = gc->nrFrontals();
       double value = gc->negLogConstant();
@@ -97,10 +97,10 @@ struct HybridGaussianConditional::Helper {
 
 /* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
-    const DiscreteKeys& discreteParents, const Helper& helper)
+    const DiscreteKeys &discreteParents, const Helper &helper)
     : BaseFactor(discreteParents,
                  FactorValuePairs(helper.pairs,
-                                  [&](const GaussianFactorValuePair&
+                                  [&](const GaussianFactorValuePair &
                                           pair) {  // subtract minNegLogConstant
                                     return GaussianFactorValuePair{
                                         pair.first,
@@ -225,7 +225,7 @@ KeyVector HybridGaussianConditional::continuousParents() const {
     // remove that key from continuousParentKeys:
     continuousParentKeys.erase(std::remove(continuousParentKeys.begin(),
                                            continuousParentKeys.end(), key),
-        continuousParentKeys.end());
+                               continuousParentKeys.end());
   }
   return continuousParentKeys;
 }

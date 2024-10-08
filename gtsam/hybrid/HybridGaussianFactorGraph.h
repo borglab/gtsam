@@ -145,9 +145,9 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   /// @name Testable
   /// @{
 
-  void
-  print(const std::string &s = "HybridGaussianFactorGraph",
-        const KeyFormatter &keyFormatter = DefaultKeyFormatter) const override;
+  void print(
+      const std::string& s = "HybridGaussianFactorGraph",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /**
    * @brief Print the errors of each factor in the hybrid factor graph.

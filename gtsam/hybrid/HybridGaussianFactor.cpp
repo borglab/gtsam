@@ -93,27 +93,27 @@ struct HybridGaussianFactor::ConstructorHelper {
 };
 
 /* *******************************************************************************/
-HybridGaussianFactor::HybridGaussianFactor(const ConstructorHelper &helper)
+HybridGaussianFactor::HybridGaussianFactor(const ConstructorHelper& helper)
     : Base(helper.continuousKeys, helper.discreteKeys),
       factors_(helper.pairs) {}
 
 HybridGaussianFactor::HybridGaussianFactor(
-    const DiscreteKey &discreteKey,
-    const std::vector<GaussianFactor::shared_ptr> &factors)
+    const DiscreteKey& discreteKey,
+    const std::vector<GaussianFactor::shared_ptr>& factors)
     : HybridGaussianFactor(ConstructorHelper(discreteKey, factors)) {}
 
 HybridGaussianFactor::HybridGaussianFactor(
-    const DiscreteKey &discreteKey,
-    const std::vector<GaussianFactorValuePair> &factorPairs)
+    const DiscreteKey& discreteKey,
+    const std::vector<GaussianFactorValuePair>& factorPairs)
     : HybridGaussianFactor(ConstructorHelper(discreteKey, factorPairs)) {}
 
-HybridGaussianFactor::HybridGaussianFactor(const DiscreteKeys &discreteKeys,
-                                           const FactorValuePairs &factors)
+HybridGaussianFactor::HybridGaussianFactor(const DiscreteKeys& discreteKeys,
+                                           const FactorValuePairs& factors)
     : HybridGaussianFactor(ConstructorHelper(discreteKeys, factors)) {}
 
 /* *******************************************************************************/
-bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {
-  const This *e = dynamic_cast<const This *>(&lf);
+bool HybridGaussianFactor::equals(const HybridFactor& lf, double tol) const {
+  const This* e = dynamic_cast<const This*>(&lf);
   if (e == nullptr) return false;
 
   // This will return false if either factors_ is empty or e->factors_ is
@@ -130,8 +130,8 @@ bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {
 }
 
 /* *******************************************************************************/
-void HybridGaussianFactor::print(const std::string &s,
-                                 const KeyFormatter &formatter) const {
+void HybridGaussianFactor::print(const std::string& s,
+                                 const KeyFormatter& formatter) const {
   std::cout << (s.empty() ? "" : s + "\n");
   HybridFactor::print("", formatter);
   std::cout << "{\n";
@@ -139,8 +139,7 @@ void HybridGaussianFactor::print(const std::string &s,
     std::cout << "  empty" << std::endl;
   } else {
     factors_.print(
-        "",
-        [&](Key k) { return formatter(k); },
+        "", [&](Key k) { return formatter(k); },
         [&](const auto& pair) -> std::string {
           RedirectCout rd;
           std::cout << ":\n";
@@ -158,7 +157,7 @@ void HybridGaussianFactor::print(const std::string &s,
 
 /* *******************************************************************************/
 GaussianFactorValuePair HybridGaussianFactor::operator()(
-    const DiscreteValues &assignment) const {
+    const DiscreteValues& assignment) const {
   return factors_(assignment);
 }
 
@@ -176,7 +175,7 @@ HybridGaussianProductFactor HybridGaussianFactor::asProductFactor() const {
 
 /* *******************************************************************************/
 AlgebraicDecisionTree<Key> HybridGaussianFactor::errorTree(
-    const VectorValues &continuousValues) const {
+    const VectorValues& continuousValues) const {
   // functor to convert from sharedFactor to double error value.
   auto errorFunc = [&continuousValues](const auto& pair) {
     return pair.first ? pair.first->error(continuousValues) + pair.second
