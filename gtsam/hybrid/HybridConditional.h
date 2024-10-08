@@ -25,6 +25,7 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianConditional.h>
 
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
