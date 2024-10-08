@@ -117,8 +117,7 @@ TEST(HybridGaussianFactorGraph, hybridEliminationOneFactor) {
   auto factor = std::dynamic_pointer_cast<DecisionTreeFactor>(result.second);
   CHECK(factor);
   // regression test
-  // Originally 15.74961, which is normalized to 1
-  EXPECT(assert_equal(DecisionTreeFactor{m1, "1 1"}, *factor, 1e-5));
+  EXPECT(assert_equal(DecisionTreeFactor{m1, "15.74961 15.74961"}, *factor, 1e-5));
 }
 
 /* ************************************************************************* */
