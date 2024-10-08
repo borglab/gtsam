@@ -27,6 +27,7 @@
 #include <gtsam/linear/GaussianJunctionTree.h>
 
 #include <memory>
+#include <string>
 
 #include "gtsam/hybrid/HybridConditional.h"
 
