@@ -73,6 +73,24 @@ TEST(DoglegOptimizer, ComputeBlend) {
 }
 
 /* ************************************************************************* */
+TEST(DoglegOptimizer, ComputeBlendEdgeCases) {
+  // Test Derived from Issue #1861
+  // Evaluate ComputeBlend Behavior for edge cases where the trust region
+  // is equal in size to that of the newton step or the gradient step.
+
+  // Simulated Newton (n) and Gradient Descent (u) step vectors w/ ||n|| > ||u||
+  VectorValues::Dims dims;
+  dims[0] = 3;
+  VectorValues n(Vector3(0.3233546123, -0.2133456123, 0.3664345632), dims);
+  VectorValues u(Vector3(0.0023456342, -0.04535687, 0.087345661212), dims);
+  
+  // Test upper edge case where trust region is equal to magnitude of newton step
+  EXPECT(assert_equal(n, DoglegOptimizerImpl::ComputeBlend(n.norm(), u, n, false)));
+  // Test lower edge case where trust region is equal to magnitude of gradient step 
+  EXPECT(assert_equal(u, DoglegOptimizerImpl::ComputeBlend(u.norm(), u, n, false)));
+}
+
+/* ************************************************************************* */
 TEST(DoglegOptimizer, ComputeDoglegPoint) {
   // Create an arbitrary Bayes Net
   GaussianBayesNet gbn;

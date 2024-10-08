@@ -67,12 +67,14 @@ VectorValues DoglegOptimizerImpl::ComputeBlend(double delta, const VectorValues&
   double tau1 = (-b + sqrt_b_m4ac) / (2.*a);
   double tau2 = (-b - sqrt_b_m4ac) / (2.*a);
 
+  // Determine correct solution accounting for machine precision
   double tau;
-  if(0.0 <= tau1 && tau1 <= 1.0) {
-    assert(!(0.0 <= tau2 && tau2 <= 1.0));
+  const double eps = std::numeric_limits<double>::epsilon();
+  if(-eps <= tau1 && tau1 <= 1.0 + eps) {
+    assert(!(-eps <= tau2 && tau2 <= 1.0 + eps));
     tau = tau1;
   } else {
-    assert(0.0 <= tau2 && tau2 <= 1.0);
+    assert(-eps <= tau2 && tau2 <= 1.0 + eps);
     tau = tau2;
   }
 
