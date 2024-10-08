@@ -27,7 +27,7 @@ namespace gtsam {
 class HybridGaussianFactor;
 
 /// Alias for DecisionTree of GaussianFactorGraphs and their scalar sums
-class HybridGaussianProductFactor
+class GTSAM_EXPORT HybridGaussianProductFactor
     : public DecisionTree<Key, std::pair<GaussianFactorGraph, double>> {
  public:
   using Y = std::pair<GaussianFactorGraph, double>;
