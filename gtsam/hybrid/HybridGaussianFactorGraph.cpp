@@ -57,7 +57,8 @@ using std::dynamic_pointer_cast;
 using OrphanWrapper = BayesTreeOrphanWrapper<HybridBayesTree::Clique>;
 using Result =
     std::pair<std::shared_ptr<GaussianConditional>, GaussianFactor::shared_ptr>;
-using ResultTree = DecisionTree<Key, std::pair<Result, double>>;
+using ResultValuePair = std::pair<Result, double>;
+using ResultTree = DecisionTree<Key, ResultValuePair>;
 
 static const VectorValues kEmpty;
 
@@ -305,7 +306,7 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
     const ResultTree &eliminationResults,
     const DiscreteKeys &discreteSeparator) {
   // Correct for the normalization constant used up by the conditional
-  auto correct = [&](const auto &pair) -> GaussianFactorValuePair {
+  auto correct = [&](const ResultValuePair &pair) -> GaussianFactorValuePair {
     const auto &[conditional, factor] = pair.first;
     const double scalar = pair.second;
     if (conditional && factor) {
@@ -384,7 +385,8 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
 
   // Create the HybridGaussianConditional from the conditionals
   HybridGaussianConditional::Conditionals conditionals(
-      eliminationResults, [](const auto &pair) { return pair.first.first; });
+      eliminationResults,
+      [](const ResultValuePair &pair) { return pair.first.first; });
   auto hybridGaussian = std::make_shared<HybridGaussianConditional>(
       discreteSeparator, conditionals);
 
