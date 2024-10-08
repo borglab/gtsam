@@ -94,12 +94,7 @@ class HybridGaussianProductFactor
    * @return true if equal, false otherwise
    */
   bool equals(const HybridGaussianProductFactor& other,
-              double tol = 1e-9) const {
-    return Base::equals(other, [tol](const Y& a, const Y& b) {
-      return a.first.equals(b.first, tol) &&
-             std::abs(a.second - b.second) < tol;
-    });
-  }
+              double tol = 1e-9) const;
 
   /// @}
 
