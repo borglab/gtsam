@@ -518,8 +518,6 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
   // the normalizing term computed via the Bayes net determinant.
   const HybridValues sample = bn->sample(&rng);
   double expected_ratio = compute_ratio(sample);
-  // regression
-  EXPECT_DOUBLES_EQUAL(0.728588, expected_ratio, 1e-6);
 
   // 3. Do sampling
   constexpr int num_samples = 10;

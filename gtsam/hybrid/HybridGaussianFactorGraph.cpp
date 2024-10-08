@@ -229,12 +229,12 @@ static std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>> discret
       // In this case, compute discrete probabilities.
       // TODO(frank): What about the scalar!?
       auto potential = [&](const auto& pair) -> double {
-        auto [factor, _] = pair;
+        auto [factor, scalar] = pair;
         // If the factor is null, it has been pruned, hence return potential of zero
         if (!factor)
-          return 0;
+          return 0.0;
         else
-          return exp(-factor->error(kEmpty));
+          return exp(-scalar - factor->error(kEmpty));
       };
       DecisionTree<Key, double> potentials(gmf->factors(), potential);
       dfg.emplace_shared<DecisionTreeFactor>(gmf->discreteKeys(), potentials);
