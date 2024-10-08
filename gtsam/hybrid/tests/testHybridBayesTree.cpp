@@ -22,6 +22,8 @@
 #include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/inference/DotWriter.h>
 
+#include <numeric>
+
 #include "Switching.h"
 
 // Include for test suite
@@ -62,7 +64,8 @@ std::vector<GaussianFactor::shared_ptr> components(Key key) {
 }  // namespace two
 
 /* ************************************************************************* */
-TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
+TEST(HybridGaussianFactorGraph,
+     HybridGaussianFactorGraphEliminateFullMultifrontalSimple) {
   HybridGaussianFactorGraph hfg;
 
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
@@ -179,10 +182,8 @@ TEST(HybridGaussianFactorGraph, Switching) {
     std::vector<int> naturalX(N);
     std::iota(naturalX.begin(), naturalX.end(), 1);
     std::vector<Key> ordX;
-    std::transform(
-        naturalX.begin(), naturalX.end(), std::back_inserter(ordX), [](int x) {
-          return X(x);
-        });
+    std::transform(naturalX.begin(), naturalX.end(), std::back_inserter(ordX),
+                   [](int x) { return X(x); });
 
     auto [ndX, lvls] = makeBinaryOrdering(ordX);
     std::copy(ndX.begin(), ndX.end(), std::back_inserter(ordering));
@@ -195,10 +196,8 @@ TEST(HybridGaussianFactorGraph, Switching) {
     std::vector<int> naturalC(N - 1);
     std::iota(naturalC.begin(), naturalC.end(), 1);
     std::vector<Key> ordC;
-    std::transform(
-        naturalC.begin(), naturalC.end(), std::back_inserter(ordC), [](int x) {
-          return M(x);
-        });
+    std::transform(naturalC.begin(), naturalC.end(), std::back_inserter(ordC),
+                   [](int x) { return M(x); });
 
     // std::copy(ordC.begin(), ordC.end(), std::back_inserter(ordering));
     const auto [ndC, lvls] = makeBinaryOrdering(ordC);
@@ -237,10 +236,8 @@ TEST(HybridGaussianFactorGraph, SwitchingISAM) {
     std::vector<int> naturalX(N);
     std::iota(naturalX.begin(), naturalX.end(), 1);
     std::vector<Key> ordX;
-    std::transform(
-        naturalX.begin(), naturalX.end(), std::back_inserter(ordX), [](int x) {
-          return X(x);
-        });
+    std::transform(naturalX.begin(), naturalX.end(), std::back_inserter(ordX),
+                   [](int x) { return X(x); });
 
     auto [ndX, lvls] = makeBinaryOrdering(ordX);
     std::copy(ndX.begin(), ndX.end(), std::back_inserter(ordering));
@@ -253,10 +250,8 @@ TEST(HybridGaussianFactorGraph, SwitchingISAM) {
     std::vector<int> naturalC(N - 1);
     std::iota(naturalC.begin(), naturalC.end(), 1);
     std::vector<Key> ordC;
-    std::transform(
-        naturalC.begin(), naturalC.end(), std::back_inserter(ordC), [](int x) {
-          return M(x);
-        });
+    std::transform(naturalC.begin(), naturalC.end(), std::back_inserter(ordC),
+                   [](int x) { return M(x); });
 
     // std::copy(ordC.begin(), ordC.end(), std::back_inserter(ordering));
     const auto [ndC, lvls] = makeBinaryOrdering(ordC);
