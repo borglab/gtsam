@@ -54,12 +54,15 @@ const auto f22 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
 
 const HybridGaussianFactor hybridFactorB(m2, {{f20, 20}, {f21, 21}, {f22, 22}});
 // Simulate a pruned hybrid factor, in this case m2==1 is nulled out.
-const HybridGaussianFactor prunedFactorB(m2, {{f20, 20}, {nullptr, 1000}, {f22, 22}});
+const HybridGaussianFactor prunedFactorB(
+    m2, {{f20, 20}, {nullptr, 1000}, {f22, 22}});
 }  // namespace examples
 
 /* ************************************************************************* */
 // Constructor
-TEST(HybridGaussianProductFactor, Construct) { HybridGaussianProductFactor product; }
+TEST(HybridGaussianProductFactor, Construct) {
+  HybridGaussianProductFactor product;
+}
 
 /* ************************************************************************* */
 // Add two Gaussian factors and check only one leaf in tree

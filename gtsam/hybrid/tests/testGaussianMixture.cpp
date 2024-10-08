@@ -40,7 +40,8 @@ const DiscreteKey m(M(0), 2);
 const DiscreteValues m1Assignment{{M(0), 1}};
 
 // Define a 50/50 prior on the mode
-DiscreteConditional::shared_ptr mixing = std::make_shared<DiscreteConditional>(m, "60/40");
+DiscreteConditional::shared_ptr mixing =
+    std::make_shared<DiscreteConditional>(m, "60/40");
 
 /// Gaussian density function
 double Gaussian(double mu, double sigma, double z) {
@@ -52,7 +53,8 @@ double Gaussian(double mu, double sigma, double z) {
  * If sigma0 == sigma1, it simplifies to a sigmoid function.
  * Hardcodes 60/40 prior on mode.
  */
-double prob_m_z(double mu0, double mu1, double sigma0, double sigma1, double z) {
+double prob_m_z(double mu0, double mu1, double sigma0, double sigma1,
+                double z) {
   const double p0 = 0.6 * Gaussian(mu0, sigma0, z);
   const double p1 = 0.4 * Gaussian(mu1, sigma1, z);
   return p1 / (p0 + p1);
@@ -68,13 +70,15 @@ TEST(GaussianMixture, GaussianMixtureModel) {
 
   // Create a Gaussian mixture model p(z|m) with same sigma.
   HybridBayesNet gmm;
-  std::vector<std::pair<Vector, double>> parameters{{Vector1(mu0), sigma}, {Vector1(mu1), sigma}};
+  std::vector<std::pair<Vector, double>> parameters{{Vector1(mu0), sigma},
+                                                    {Vector1(mu1), sigma}};
   gmm.emplace_shared<HybridGaussianConditional>(m, Z(0), parameters);
   gmm.push_back(mixing);
 
   // At the halfway point between the means, we should get P(m|z)=0.5
   double midway = mu1 - mu0;
-  auto eliminationResult = gmm.toFactorGraph({{Z(0), Vector1(midway)}}).eliminateSequential();
+  auto eliminationResult =
+      gmm.toFactorGraph({{Z(0), Vector1(midway)}}).eliminateSequential();
   auto pMid = *eliminationResult->at(0)->asDiscrete();
   EXPECT(assert_equal(DiscreteConditional(m, "60/40"), pMid));
 
@@ -84,7 +88,8 @@ TEST(GaussianMixture, GaussianMixtureModel) {
     const double expected = prob_m_z(mu0, mu1, sigma, sigma, z);
 
     // Workflow 1: convert HBN to HFG and solve
-    auto eliminationResult1 = gmm.toFactorGraph({{Z(0), Vector1(z)}}).eliminateSequential();
+    auto eliminationResult1 =
+        gmm.toFactorGraph({{Z(0), Vector1(z)}}).eliminateSequential();
     auto posterior1 = *eliminationResult1->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
 
@@ -109,7 +114,8 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
 
   // Create a Gaussian mixture model p(z|m) with same sigma.
   HybridBayesNet gmm;
-  std::vector<std::pair<Vector, double>> parameters{{Vector1(mu0), sigma0}, {Vector1(mu1), sigma1}};
+  std::vector<std::pair<Vector, double>> parameters{{Vector1(mu0), sigma0},
+                                                    {Vector1(mu1), sigma1}};
   gmm.emplace_shared<HybridGaussianConditional>(m, Z(0), parameters);
   gmm.push_back(mixing);
 
@@ -119,15 +125,18 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
   const VectorValues vv{{Z(0), Vector1(zMax)}};
   auto gfg = gmm.toFactorGraph(vv);
 
-  // Equality of posteriors asserts that the elimination is correct (same ratios for all modes)
+  // Equality of posteriors asserts that the elimination is correct (same ratios
+  // for all modes)
   const auto& expectedDiscretePosterior = gmm.discretePosterior(vv);
   EXPECT(assert_equal(expectedDiscretePosterior, gfg.discretePosterior(vv)));
 
   // Eliminate the graph!
   auto eliminationResultMax = gfg.eliminateSequential();
 
-  // Equality of posteriors asserts that the elimination is correct (same ratios for all modes)
-  EXPECT(assert_equal(expectedDiscretePosterior, eliminationResultMax->discretePosterior(vv)));
+  // Equality of posteriors asserts that the elimination is correct (same ratios
+  // for all modes)
+  EXPECT(assert_equal(expectedDiscretePosterior,
+                      eliminationResultMax->discretePosterior(vv)));
 
   auto pMax = *eliminationResultMax->at(0)->asDiscrete();
   EXPECT(assert_equal(DiscreteConditional(m, "42/58"), pMax, 1e-4));
@@ -138,7 +147,8 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
     const double expected = prob_m_z(mu0, mu1, sigma0, sigma1, z);
 
     // Workflow 1: convert HBN to HFG and solve
-    auto eliminationResult1 = gmm.toFactorGraph({{Z(0), Vector1(z)}}).eliminateSequential();
+    auto eliminationResult1 =
+        gmm.toFactorGraph({{Z(0), Vector1(z)}}).eliminateSequential();
     auto posterior1 = *eliminationResult1->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
 

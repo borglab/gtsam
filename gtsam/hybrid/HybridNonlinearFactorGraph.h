@@ -98,10 +98,10 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
    *
    * @note: Gaussian and hybrid Gaussian factors are not considered!
    *
-   * @param continuousValues Manifold values at which to compute the error.
+   * @param values Manifold values at which to compute the error.
    * @return AlgebraicDecisionTree<Key>
    */
-  AlgebraicDecisionTree<Key> errorTree(const Values& continuousValues) const;
+  AlgebraicDecisionTree<Key> errorTree(const Values& values) const;
 
   /**
    * @brief Computer posterior P(M|X=x) when all continuous values X are given.

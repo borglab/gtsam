@@ -46,25 +46,25 @@ using symbol_shorthand::Z;
 
 DiscreteKey m1(M(1), 2);
 
-void addMeasurement(HybridBayesNet& hbn, Key z_key, Key x_key, double sigma) {
+void addMeasurement(HybridBayesNet &hbn, Key z_key, Key x_key, double sigma) {
   auto measurement_model = noiseModel::Isotropic::Sigma(1, sigma);
-  hbn.emplace_shared<GaussianConditional>(
-      z_key, Vector1(0.0), I_1x1, x_key, -I_1x1, measurement_model);
+  hbn.emplace_shared<GaussianConditional>(z_key, Vector1(0.0), I_1x1, x_key,
+                                          -I_1x1, measurement_model);
 }
 
 /// Create hybrid motion model p(x1 | x0, m1)
-static HybridGaussianConditional::shared_ptr CreateHybridMotionModel(double mu0,
-                                                                     double mu1,
-                                                                     double sigma0,
-                                                                     double sigma1) {
+static HybridGaussianConditional::shared_ptr CreateHybridMotionModel(
+    double mu0, double mu1, double sigma0, double sigma1) {
   std::vector<std::pair<Vector, double>> motionModels{{Vector1(mu0), sigma0},
                                                       {Vector1(mu1), sigma1}};
-  return std::make_shared<HybridGaussianConditional>(m1, X(1), I_1x1, X(0), motionModels);
+  return std::make_shared<HybridGaussianConditional>(m1, X(1), I_1x1, X(0),
+                                                     motionModels);
 }
 
 /// Create two state Bayes network with 1 or two measurement models
-HybridBayesNet CreateBayesNet(const HybridGaussianConditional::shared_ptr& hybridMotionModel,
-                              bool add_second_measurement = false) {
+HybridBayesNet CreateBayesNet(
+    const HybridGaussianConditional::shared_ptr &hybridMotionModel,
+    bool add_second_measurement = false) {
   HybridBayesNet hbn;
 
   // Add measurement model p(z0 | x0)
@@ -86,16 +86,15 @@ HybridBayesNet CreateBayesNet(const HybridGaussianConditional::shared_ptr& hybri
 
 /// Approximate the discrete marginal P(m1) using importance sampling
 std::pair<double, double> approximateDiscreteMarginal(
-    const HybridBayesNet& hbn,
-    const HybridGaussianConditional::shared_ptr& hybridMotionModel,
-    const VectorValues& given,
-    size_t N = 100000) {
+    const HybridBayesNet &hbn,
+    const HybridGaussianConditional::shared_ptr &hybridMotionModel,
+    const VectorValues &given, size_t N = 100000) {
   /// Create importance sampling network q(x0,x1,m) = p(x1|x0,m1) q(x0) P(m1),
   /// using q(x0) = N(z0, sigmaQ) to sample x0.
   HybridBayesNet q;
   q.push_back(hybridMotionModel);  // Add hybrid motion model
   q.emplace_shared<GaussianConditional>(GaussianConditional::FromMeanAndStddev(
-      X(0), given.at(Z(0)), /* sigmaQ = */ 3.0));      // Add proposal q(x0) for x0
+      X(0), given.at(Z(0)), /* sigmaQ = */ 3.0));  // Add proposal q(x0) for x0
   q.emplace_shared<DiscreteConditional>(m1, "50/50");  // Discrete prior.
 
   // Do importance sampling
@@ -195,16 +194,20 @@ TEST(HybridGaussianFactor, TwoStateModel2) {
 
     HybridBayesNet::shared_ptr eliminated = gfg.eliminateSequential();
 
-    for (VectorValues vv : {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
-                            VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
+    for (VectorValues vv :
+         {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
+          VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
       vv.insert(given);  // add measurements for HBN
       const auto& expectedDiscretePosterior = hbn.discretePosterior(vv);
 
-      // Equality of posteriors asserts that the factor graph is correct (same ratios for all modes)
-      EXPECT(assert_equal(expectedDiscretePosterior, gfg.discretePosterior(vv)));
+      // Equality of posteriors asserts that the factor graph is correct (same
+      // ratios for all modes)
+      EXPECT(
+          assert_equal(expectedDiscretePosterior, gfg.discretePosterior(vv)));
 
       // This one asserts that HBN resulting from elimination is correct.
-      EXPECT(assert_equal(expectedDiscretePosterior, eliminated->discretePosterior(vv)));
+      EXPECT(assert_equal(expectedDiscretePosterior,
+                          eliminated->discretePosterior(vv)));
     }
 
     // Importance sampling run with 100k samples gives 50.095/49.905
@@ -227,16 +230,20 @@ TEST(HybridGaussianFactor, TwoStateModel2) {
 
     // Check that ratio of Bayes net and factor graph for different modes is
     // equal for several values of {x0,x1}.
-    for (VectorValues vv : {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
-                            VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
+    for (VectorValues vv :
+         {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
+          VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
       vv.insert(given);  // add measurements for HBN
       const auto& expectedDiscretePosterior = hbn.discretePosterior(vv);
 
-      // Equality of posteriors asserts that the factor graph is correct (same ratios for all modes)
-      EXPECT(assert_equal(expectedDiscretePosterior, gfg.discretePosterior(vv)));
+      // Equality of posteriors asserts that the factor graph is correct (same
+      // ratios for all modes)
+      EXPECT(
+          assert_equal(expectedDiscretePosterior, gfg.discretePosterior(vv)));
 
       // This one asserts that HBN resulting from elimination is correct.
-      EXPECT(assert_equal(expectedDiscretePosterior, eliminated->discretePosterior(vv)));
+      EXPECT(assert_equal(expectedDiscretePosterior,
+                          eliminated->discretePosterior(vv)));
     }
 
     // Values taken from an importance sampling run with 100k samples:
@@ -290,11 +297,13 @@ TEST(HybridGaussianFactor, TwoStateModel3) {
 
     // Check that ratio of Bayes net and factor graph for different modes is
     // equal for several values of {x0,x1}.
-    for (VectorValues vv : {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
-                            VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
+    for (VectorValues vv :
+         {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
+          VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
       vv.insert(given);  // add measurements for HBN
       HybridValues hv0(vv, {{M(1), 0}}), hv1(vv, {{M(1), 1}});
-      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0), gfg.error(hv1) / hbn.error(hv1), 1e-9);
+      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
+                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
     }
 
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
@@ -318,11 +327,13 @@ TEST(HybridGaussianFactor, TwoStateModel3) {
 
     // Check that ratio of Bayes net and factor graph for different modes is
     // equal for several values of {x0,x1}.
-    for (VectorValues vv : {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
-                            VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
+    for (VectorValues vv :
+         {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
+          VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
       vv.insert(given);  // add measurements for HBN
       HybridValues hv0(vv, {{M(1), 0}}), hv1(vv, {{M(1), 1}});
-      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0), gfg.error(hv1) / hbn.error(hv1), 1e-9);
+      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
+                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
     }
 
     HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();

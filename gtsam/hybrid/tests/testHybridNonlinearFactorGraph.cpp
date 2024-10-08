@@ -34,7 +34,6 @@
 #include <gtsam/slam/BetweenFactor.h>
 
 #include "Switching.h"
-#include "Test.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>

@@ -191,4 +191,4 @@ private:
 template <>
 struct traits<HybridGaussianFactor> : public Testable<HybridGaussianFactor> {};
 
-} // namespace gtsam
+}  // namespace gtsam

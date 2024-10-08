@@ -181,19 +181,19 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
 
 /* ************************************************************************* */
 AlgebraicDecisionTree<Key> HybridNonlinearFactorGraph::errorTree(
-    const Values& continuousValues) const {
+    const Values& values) const {
   AlgebraicDecisionTree<Key> result(0.0);
 
   // Iterate over each factor.
   for (auto& factor : factors_) {
     if (auto hnf = std::dynamic_pointer_cast<HybridNonlinearFactor>(factor)) {
       // Compute factor error and add it.
-      result = result + hnf->errorTree(continuousValues);
+      result = result + hnf->errorTree(values);
 
     } else if (auto nf = std::dynamic_pointer_cast<NonlinearFactor>(factor)) {
       // If continuous only, get the (double) error
       // and add it to every leaf of the result
-      result = result + nf->error(continuousValues);
+      result = result + nf->error(values);
 
     } else if (auto df = std::dynamic_pointer_cast<DiscreteFactor>(factor)) {
       // If discrete, just add its errorTree as well

@@ -59,7 +59,8 @@ HybridGaussianProductFactor& HybridGaussianProductFactor::operator+=(
   return *this;
 }
 
-void HybridGaussianProductFactor::print(const std::string& s, const KeyFormatter& formatter) const {
+void HybridGaussianProductFactor::print(const std::string& s,
+                                        const KeyFormatter& formatter) const {
   KeySet keys;
   auto printer = [&](const Y& y) {
     if (keys.empty()) keys = y.first.keys();
@@ -77,8 +78,10 @@ void HybridGaussianProductFactor::print(const std::string& s, const KeyFormatter
 
 HybridGaussianProductFactor HybridGaussianProductFactor::removeEmpty() const {
   auto emptyGaussian = [](const Y& y) {
-    bool hasNull = std::any_of(
-        y.first.begin(), y.first.end(), [](const GaussianFactor::shared_ptr& ptr) { return !ptr; });
+    bool hasNull =
+        std::any_of(y.first.begin(),
+                    y.first.end(),
+                    [](const GaussianFactor::shared_ptr& ptr) { return !ptr; });
     return hasNull ? Y{GaussianFactorGraph(), 0.0} : y;
   };
   return {Base(*this, emptyGaussian)};

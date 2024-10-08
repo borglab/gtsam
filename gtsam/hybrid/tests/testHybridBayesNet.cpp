@@ -168,8 +168,10 @@ TEST(HybridBayesNet, Tiny) {
   EXPECT(!pruned.equals(bayesNet));
 
   // error
-  const double error0 = chosen0.error(vv) + gc0->negLogConstant() - px->negLogConstant() - log(0.4);
-  const double error1 = chosen1.error(vv) + gc1->negLogConstant() - px->negLogConstant() - log(0.6);
+  const double error0 = chosen0.error(vv) + gc0->negLogConstant() -
+                        px->negLogConstant() - log(0.4);
+  const double error1 = chosen1.error(vv) + gc1->negLogConstant() -
+                        px->negLogConstant() - log(0.6);
   // print errors:
   EXPECT_DOUBLES_EQUAL(error0, bayesNet.error(zero), 1e-9);
   EXPECT_DOUBLES_EQUAL(error1, bayesNet.error(one), 1e-9);
@@ -190,7 +192,6 @@ TEST(HybridBayesNet, Tiny) {
   // toFactorGraph
   auto fg = bayesNet.toFactorGraph({{Z(0), Vector1(5.0)}});
   EXPECT_LONGS_EQUAL(3, fg.size());
-  GTSAM_PRINT(fg);
 
   // Create the product factor for eliminating x0:
   HybridGaussianFactorGraph factors_x0;
@@ -204,9 +205,7 @@ TEST(HybridBayesNet, Tiny) {
 
   // Call eliminate and check scalar:
   auto result = factors_x0.eliminate({X(0)});
-  GTSAM_PRINT(*result.first);
   auto df = std::dynamic_pointer_cast<DecisionTreeFactor>(result.second);
-  GTSAM_PRINT(df->errorTree());
 
   // Check that the ratio of probPrime to evaluate is the same for all modes.
   std::vector<double> ratio(2);
@@ -228,13 +227,17 @@ TEST(HybridBayesNet, Tiny) {
 /* ****************************************************************************/
 // Hybrid Bayes net P(X0|X1) P(X1|Asia) P(Asia).
 namespace different_sigmas {
-const auto gc = GaussianConditional::sharedMeanAndStddev(X(0), 2 * I_1x1, X(1), Vector1(-4.0), 5.0);
+const auto gc = GaussianConditional::sharedMeanAndStddev(X(0), 2 * I_1x1, X(1),
+                                                         Vector1(-4.0), 5.0);
 
-const std::vector<std::pair<Vector, double>> parms{{Vector1(5), 2.0}, {Vector1(2), 3.0}};
+const std::vector<std::pair<Vector, double>> parms{{Vector1(5), 2.0},
+                                                   {Vector1(2), 3.0}};
 const auto hgc = std::make_shared<HybridGaussianConditional>(Asia, X(1), parms);
 
 const auto prior = std::make_shared<DiscreteConditional>(Asia, "99/1");
-auto wrap = [](const auto& c) { return std::make_shared<HybridConditional>(c); };
+auto wrap = [](const auto& c) {
+  return std::make_shared<HybridConditional>(c);
+};
 const HybridBayesNet bayesNet{wrap(gc), wrap(hgc), wrap(prior)};
 
 // Create values at which to evaluate.
@@ -248,8 +251,8 @@ TEST(HybridBayesNet, evaluateHybrid) {
 
   const double conditionalProbability = gc->evaluate(values.continuous());
   const double mixtureProbability = hgc->evaluate(values);
-  EXPECT_DOUBLES_EQUAL(
-      conditionalProbability * mixtureProbability * 0.99, bayesNet.evaluate(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(conditionalProbability * mixtureProbability * 0.99,
+                       bayesNet.evaluate(values), 1e-9);
 }
 
 /* ****************************************************************************/
@@ -271,10 +274,14 @@ TEST(HybridBayesNet, Choose) {
 
   EXPECT_LONGS_EQUAL(4, gbn.size());
 
-  EXPECT(assert_equal(*(*hybridBayesNet->at(0)->asHybrid())(assignment), *gbn.at(0)));
-  EXPECT(assert_equal(*(*hybridBayesNet->at(1)->asHybrid())(assignment), *gbn.at(1)));
-  EXPECT(assert_equal(*(*hybridBayesNet->at(2)->asHybrid())(assignment), *gbn.at(2)));
-  EXPECT(assert_equal(*(*hybridBayesNet->at(3)->asHybrid())(assignment), *gbn.at(3)));
+  EXPECT(assert_equal(*(*hybridBayesNet->at(0)->asHybrid())(assignment),
+                      *gbn.at(0)));
+  EXPECT(assert_equal(*(*hybridBayesNet->at(1)->asHybrid())(assignment),
+                      *gbn.at(1)));
+  EXPECT(assert_equal(*(*hybridBayesNet->at(2)->asHybrid())(assignment),
+                      *gbn.at(2)));
+  EXPECT(assert_equal(*(*hybridBayesNet->at(3)->asHybrid())(assignment),
+                      *gbn.at(3)));
 }
 
 /* ****************************************************************************/
@@ -311,7 +318,8 @@ TEST(HybridBayesNet, OptimizeAssignment) {
 TEST(HybridBayesNet, Optimize) {
   Switching s(4, 1.0, 0.1, {0, 1, 2, 3}, "1/1 1/1");
 
-  HybridBayesNet::shared_ptr hybridBayesNet = s.linearizedFactorGraph.eliminateSequential();
+  HybridBayesNet::shared_ptr hybridBayesNet =
+      s.linearizedFactorGraph.eliminateSequential();
 
   HybridValues delta = hybridBayesNet->optimize();
 
@@ -338,7 +346,8 @@ TEST(HybridBayesNet, Pruning) {
   // ϕ(x0) ϕ(x0,x1,m0) ϕ(x1,x2,m1) ϕ(x0;z0) ϕ(x1;z1) ϕ(x2;z2) ϕ(m0) ϕ(m0,m1)
   Switching s(3);
 
-  HybridBayesNet::shared_ptr posterior = s.linearizedFactorGraph.eliminateSequential();
+  HybridBayesNet::shared_ptr posterior =
+      s.linearizedFactorGraph.eliminateSequential();
   EXPECT_LONGS_EQUAL(5, posterior->size());
 
   // Optimize
@@ -364,9 +373,12 @@ TEST(HybridBayesNet, Pruning) {
   logProbability += posterior->at(0)->asHybrid()->logProbability(hybridValues);
   logProbability += posterior->at(1)->asHybrid()->logProbability(hybridValues);
   logProbability += posterior->at(2)->asHybrid()->logProbability(hybridValues);
-  logProbability += posterior->at(3)->asDiscrete()->logProbability(hybridValues);
-  logProbability += posterior->at(4)->asDiscrete()->logProbability(hybridValues);
-  EXPECT_DOUBLES_EQUAL(logProbability, posterior->logProbability(hybridValues), 1e-9);
+  logProbability +=
+      posterior->at(3)->asDiscrete()->logProbability(hybridValues);
+  logProbability +=
+      posterior->at(4)->asDiscrete()->logProbability(hybridValues);
+  EXPECT_DOUBLES_EQUAL(logProbability, posterior->logProbability(hybridValues),
+                       1e-9);
 
   // Check agreement with discrete posterior
   // double density = exp(logProbability);
@@ -387,7 +399,8 @@ TEST(HybridBayesNet, Pruning) {
 TEST(HybridBayesNet, Prune) {
   Switching s(4);
 
-  HybridBayesNet::shared_ptr posterior = s.linearizedFactorGraph.eliminateSequential();
+  HybridBayesNet::shared_ptr posterior =
+      s.linearizedFactorGraph.eliminateSequential();
   EXPECT_LONGS_EQUAL(7, posterior->size());
 
   HybridValues delta = posterior->optimize();
@@ -404,7 +417,8 @@ TEST(HybridBayesNet, Prune) {
 TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   Switching s(4);
 
-  HybridBayesNet::shared_ptr posterior = s.linearizedFactorGraph.eliminateSequential();
+  HybridBayesNet::shared_ptr posterior =
+      s.linearizedFactorGraph.eliminateSequential();
   EXPECT_LONGS_EQUAL(7, posterior->size());
 
   DiscreteConditional joint;
@@ -416,7 +430,8 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   auto prunedDecisionTree = joint.prune(maxNrLeaves);
 
 #ifdef GTSAM_DT_MERGING
-  EXPECT_LONGS_EQUAL(maxNrLeaves + 2 /*2 zero leaves*/, prunedDecisionTree.nrLeaves());
+  EXPECT_LONGS_EQUAL(maxNrLeaves + 2 /*2 zero leaves*/,
+                     prunedDecisionTree.nrLeaves());
 #else
   EXPECT_LONGS_EQUAL(8 /*full tree*/, prunedDecisionTree.nrLeaves());
 #endif
@@ -424,14 +439,16 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   // regression
   // NOTE(Frank): I had to include *three* non-zeroes here now.
   DecisionTreeFactor::ADT potentials(
-      s.modes, std::vector<double>{0, 0, 0, 0.28739288, 0, 0.43106901, 0, 0.2815381});
+      s.modes,
+      std::vector<double>{0, 0, 0, 0.28739288, 0, 0.43106901, 0, 0.2815381});
   DiscreteConditional expectedConditional(3, s.modes, potentials);
 
   // Prune!
   auto pruned = posterior->prune(maxNrLeaves);
 
   // Functor to verify values against the expectedConditional
-  auto checker = [&](const Assignment<Key>& assignment, double probability) -> double {
+  auto checker = [&](const Assignment<Key>& assignment,
+                     double probability) -> double {
     // typecast so we can use this to get probability value
     DiscreteValues choices(assignment);
     if (prunedDecisionTree(choices) == 0) {
@@ -446,7 +463,8 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   CHECK(pruned.at(0)->asDiscrete());
   auto pruned_discrete_conditionals = pruned.at(0)->asDiscrete();
   auto discrete_conditional_tree =
-      std::dynamic_pointer_cast<DecisionTreeFactor::ADT>(pruned_discrete_conditionals);
+      std::dynamic_pointer_cast<DecisionTreeFactor::ADT>(
+          pruned_discrete_conditionals);
 
   // The checker functor verifies the values for us.
   discrete_conditional_tree->apply(checker);
@@ -460,10 +478,13 @@ TEST(HybridBayesNet, Sampling) {
   auto noise_model = noiseModel::Diagonal::Sigmas(Vector1(1.0));
   nfg.emplace_shared<PriorFactor<double>>(X(0), 0.0, noise_model);
 
-  auto zero_motion = std::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
-  auto one_motion = std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
+  auto zero_motion =
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
+  auto one_motion =
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
   nfg.emplace_shared<HybridNonlinearFactor>(
-      DiscreteKey(M(0), 2), std::vector<NoiseModelFactor::shared_ptr>{zero_motion, one_motion});
+      DiscreteKey(M(0), 2),
+      std::vector<NoiseModelFactor::shared_ptr>{zero_motion, one_motion});
 
   DiscreteKey mode(M(0), 2);
   nfg.emplace_shared<DiscreteDistribution>(mode, "1/1");
@@ -535,17 +556,18 @@ TEST(HybridBayesNet, ErrorTreeWithConditional) {
   hbn.emplace_shared<GaussianConditional>(x0, Vector1(0.0), I_1x1, prior_model);
 
   // Add measurement P(z0 | x0)
-  hbn.emplace_shared<GaussianConditional>(z0, Vector1(0.0), -I_1x1, x0, I_1x1, measurement_model);
+  hbn.emplace_shared<GaussianConditional>(z0, Vector1(0.0), -I_1x1, x0, I_1x1,
+                                          measurement_model);
 
   // Add hybrid motion model
   double mu = 0.0;
   double sigma0 = 1e2, sigma1 = 1e-2;
   auto model0 = noiseModel::Isotropic::Sigma(1, sigma0);
   auto model1 = noiseModel::Isotropic::Sigma(1, sigma1);
-  auto c0 =
-           make_shared<GaussianConditional>(f01, Vector1(mu), I_1x1, x1, I_1x1, x0, -I_1x1, model0),
-       c1 =
-           make_shared<GaussianConditional>(f01, Vector1(mu), I_1x1, x1, I_1x1, x0, -I_1x1, model1);
+  auto c0 = make_shared<GaussianConditional>(f01, Vector1(mu), I_1x1, x1, I_1x1,
+                                             x0, -I_1x1, model0),
+       c1 = make_shared<GaussianConditional>(f01, Vector1(mu), I_1x1, x1, I_1x1,
+                                             x0, -I_1x1, model1);
   DiscreteKey m1(M(2), 2);
   hbn.emplace_shared<HybridGaussianConditional>(m1, std::vector{c0, c1});
 
