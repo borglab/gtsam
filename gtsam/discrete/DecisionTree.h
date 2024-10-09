@@ -205,8 +205,8 @@ namespace gtsam {
     /** Create from keys and a corresponding vector of values */
     DecisionTree(const std::vector<LabelC>& labelCs, const std::vector<Y>& ys);
 
-    // /** Create from keys and string table */
-    // DecisionTree(const std::vector<LabelC>& labelCs, const std::string& table);
+    /** Create from keys and string table */
+    DecisionTree(const std::vector<LabelC>& labelCs, const std::string& table);
 
     /** Create DecisionTree from others */
     template<typename Iterator>

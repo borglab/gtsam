@@ -333,17 +333,17 @@ TEST(DecisionTree, Compose) {
 
   // Create from string
   vector<DT::LabelC> keys{DT::LabelC(A, 2), DT::LabelC(B, 2)};
-  DT f2(keys, {0, 2, 1, 3});
+  DT f2(keys, "0 2 1 3");
   EXPECT(assert_equal(f2, f1, 1e-9));
 
   // Put this AB tree together with another one
-  DT f3(keys, {4, 6, 5, 7});
+  DT f3(keys, "4 6 5 7");
   DT f4(C, f1, f3);
   DOT(f4);
 
   // a bigger tree
   keys.push_back(DT::LabelC(C, 2));
-  DT f5(keys, {0, 4, 2, 6, 1, 5, 3, 7});
+  DT f5(keys, "0 4 2 6 1 5 3 7");
   EXPECT(assert_equal(f5, f4, 1e-9));
   DOT(f5);
 }
@@ -508,7 +508,7 @@ TEST(DecisionTree, threshold) {
   // Create three level tree
   const vector<DT::LabelC> keys{DT::LabelC("C", 2), DT::LabelC("B", 2),
                                 DT::LabelC("A", 2)};
-  DT tree(keys, {0, 1, 2, 3, 4, 5, 6, 7});
+  DT tree(keys, "0 1 2 3 4 5 6 7");
 
   // Check number of leaves equal to zero
   auto count = [](const int& value, int count) {
@@ -536,10 +536,10 @@ TEST(DecisionTree, ApplyWithAssignment) {
   // Create three level tree
   const vector<DT::LabelC> keys{DT::LabelC("C", 2), DT::LabelC("B", 2),
                                 DT::LabelC("A", 2)};
-  DT tree(keys, {1, 2, 3, 4, 5, 6, 7, 8});
+  DT tree(keys, "1 2 3 4 5 6 7 8");
 
   DecisionTree<string, double> probTree(
-      keys, {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08});
+      keys, "0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08");
   double threshold = 0.045;
 
   // We test pruning one tree by indexing into another.
@@ -553,7 +553,7 @@ TEST(DecisionTree, ApplyWithAssignment) {
   };
   DT prunedTree = tree.apply(pruner);
 
-  DT expectedTree(keys, {0, 0, 0, 0, 5, 6, 7, 8});
+  DT expectedTree(keys, "0 0 0 0 5 6 7 8");
   EXPECT(assert_equal(expectedTree, prunedTree));
 
   size_t count = 0;
