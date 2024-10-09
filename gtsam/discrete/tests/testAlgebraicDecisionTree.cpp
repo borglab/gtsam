@@ -562,7 +562,7 @@ TEST(ADT, Sum) {
 TEST(ADT, Normalize) {
   ADT a = exampleADT();
   double sum = a.sum();
-  auto actual = a.normalize(sum);
+  auto actual = a.normalize();
 
   DiscreteKey A(0, 2), B(1, 3), C(2, 2);
   DiscreteKeys keys = DiscreteKeys{A, B, C};

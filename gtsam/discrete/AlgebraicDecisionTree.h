@@ -234,12 +234,9 @@ namespace gtsam {
      * @brief Helper method to perform normalization such that all leaves in the
      * tree sum to 1
      *
-     * @param sum
      * @return AlgebraicDecisionTree
      */
-    AlgebraicDecisionTree normalize(double sum) const {
-      return this->apply([&sum](const double& x) { return x / sum; });
-    }
+    AlgebraicDecisionTree normalize() const { return (*this) / this->sum(); }
 
     /// Find the minimum values amongst all leaves
     double min() const {
