@@ -176,12 +176,18 @@ HybridGaussianProductFactor HybridGaussianFactor::asProductFactor() const {
 }
 
 /* *******************************************************************************/
+inline static double PotentiallyPrunedComponentError(
+    const GaussianFactorValuePair& pair, const VectorValues& continuousValues) {
+  return pair.first ? pair.first->error(continuousValues) + pair.second
+                    : std::numeric_limits<double>::infinity();
+}
+
+/* *******************************************************************************/
 AlgebraicDecisionTree<Key> HybridGaussianFactor::errorTree(
     const VectorValues& continuousValues) const {
   // functor to convert from sharedFactor to double error value.
   auto errorFunc = [&continuousValues](const GaussianFactorValuePair& pair) {
-    return pair.first ? pair.first->error(continuousValues) + pair.second
-                      : std::numeric_limits<double>::infinity();
+    return PotentiallyPrunedComponentError(pair, continuousValues);
   };
   DecisionTree<Key, double> error_tree(factors_, errorFunc);
   return error_tree;
@@ -191,8 +197,7 @@ AlgebraicDecisionTree<Key> HybridGaussianFactor::errorTree(
 double HybridGaussianFactor::error(const HybridValues& values) const {
   // Directly index to get the component, no need to build the whole tree.
   const GaussianFactorValuePair pair = factors_(values.discrete());
-  return pair.first ? pair.first->error(values.continuous()) + pair.second
-                    : std::numeric_limits<double>::infinity();
+  return PotentiallyPrunedComponentError(pair, values.continuous());
 }
 
 }  // namespace gtsam
