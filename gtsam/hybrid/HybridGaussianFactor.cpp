@@ -189,8 +189,7 @@ AlgebraicDecisionTree<Key> HybridGaussianFactor::errorTree(
   auto errorFunc = [&continuousValues](const GaussianFactorValuePair& pair) {
     return PotentiallyPrunedComponentError(pair, continuousValues);
   };
-  DecisionTree<Key, double> error_tree(factors_, errorFunc);
-  return error_tree;
+  return {factors_, errorFunc};
 }
 
 /* *******************************************************************************/
