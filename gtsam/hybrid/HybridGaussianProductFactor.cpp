@@ -24,7 +24,7 @@
 
 namespace gtsam {
 
-using Y = HybridGaussianProductFactor::Y;
+using Y = GaussianFactorGraphValuePair;
 
 /* *******************************************************************************/
 static Y add(const Y& y1, const Y& y2) {
