@@ -529,7 +529,7 @@ TEST(HybridNonlinearFactorGraph, Full_Elimination) {
 /****************************************************************************
  * Test printing
  */
-TEST_DISABLED(HybridNonlinearFactorGraph, Printing) {
+TEST(HybridNonlinearFactorGraph, Printing) {
   Switching self(3);
 
   auto linearizedFactorGraph = self.linearizedFactorGraph;
@@ -549,7 +549,7 @@ Factor 0
 GaussianFactor:
 
   A[x0] = [
-        10
+	10
 ]
   b = [ -10 ]
   No noise model
@@ -560,25 +560,25 @@ Hybrid [x0 x1; m0]{
  Choice(m0) 
  0 Leaf :
   A[x0] = [
-        -1
+	-1
 ]
   A[x1] = [
-        1
+	1
 ]
   b = [ -1 ]
   No noise model
-scalar: 0
+scalar: 0.918939
 
  1 Leaf :
   A[x0] = [
-        -1
+	-1
 ]
   A[x1] = [
-        1
+	1
 ]
   b = [ -0 ]
   No noise model
-scalar: 0
+scalar: 0.918939
 
 }
 
@@ -588,25 +588,25 @@ Hybrid [x1 x2; m1]{
  Choice(m1) 
  0 Leaf :
   A[x1] = [
-        -1
+	-1
 ]
   A[x2] = [
-        1
+	1
 ]
   b = [ -1 ]
   No noise model
-scalar: 0
+scalar: 0.918939
 
  1 Leaf :
   A[x1] = [
-        -1
+	-1
 ]
   A[x2] = [
-        1
+	1
 ]
   b = [ -0 ]
   No noise model
-scalar: 0
+scalar: 0.918939
 
 }
 
@@ -614,7 +614,7 @@ Factor 3
 GaussianFactor:
 
   A[x1] = [
-        10
+	10
 ]
   b = [ -10 ]
   No noise model
@@ -623,7 +623,7 @@ Factor 4
 GaussianFactor:
 
   A[x2] = [
-        10
+	10
 ]
   b = [ -10 ]
   No noise model

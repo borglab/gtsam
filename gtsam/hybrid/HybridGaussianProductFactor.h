@@ -22,6 +22,8 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
+#include <iostream>
+
 namespace gtsam {
 
 class HybridGaussianFactor;
@@ -115,11 +117,31 @@ class GTSAM_EXPORT HybridGaussianProductFactor
   HybridGaussianProductFactor removeEmpty() const;
 
   ///@}
+
+ private:
+#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+  }
+#endif
 };
 
 // Testable traits
 template <>
 struct traits<HybridGaussianProductFactor>
     : public Testable<HybridGaussianProductFactor> {};
+
+/**
+ * Create a dummy overload of >> for GaussianFactorGraphValuePair
+ * so that HybridGaussianProductFactor compiles
+ * with the constructor
+ * `DecisionTree(const std::vector<LabelC>& labelCs, const std::string& table)`.
+ *
+ * Needed to compile on Windows.
+ */
+std::istream& operator>>(std::istream& is, GaussianFactorGraphValuePair& pair);
 
 }  // namespace gtsam
