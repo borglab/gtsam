@@ -25,8 +25,6 @@
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 
-#include <string>
-
 namespace gtsam {
 
 /**
