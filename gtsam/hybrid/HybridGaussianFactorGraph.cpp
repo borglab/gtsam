@@ -234,13 +234,13 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
  * and then exponentiate to create a DecisionTreeFactor (not normalized yet!).
  *
  * @param errors DecisionTree of (unnormalized) errors.
- * @return AlgebraicDecisionTree<Key>
+ * @return DecisionTreeFactor::shared_ptr
  */
 static DecisionTreeFactor::shared_ptr DiscreteFactorFromErrors(
     const DiscreteKeys &discreteKeys,
     const AlgebraicDecisionTree<Key> &errors) {
   double min_log = errors.min();
-  AlgebraicDecisionTree<Key> potentials = DecisionTree<Key, double>(
+  AlgebraicDecisionTree<Key> potentials(
       errors, [&min_log](const double x) { return exp(-(x - min_log)); });
   return std::make_shared<DecisionTreeFactor>(discreteKeys, potentials);
 }
