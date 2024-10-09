@@ -70,19 +70,18 @@ HybridGaussianProductFactor& HybridGaussianProductFactor::operator+=(
 /* *******************************************************************************/
 void HybridGaussianProductFactor::print(const std::string& s,
                                         const KeyFormatter& formatter) const {
-  // KeySet keys;
-  // auto printer = [&](const Y& y) {
-  //   if (keys.empty()) keys = y.first.keys();
-  //   return "Graph of size " + std::to_string(y.first.size()) +
-  //          ", scalar sum: " + std::to_string(y.second);
-  // };
-  // Base::print(s, formatter, printer);
-  // if (!keys.empty()) {
-  //   std::cout << s << " Keys:";
-  //   for (auto&& key : keys) std::cout << " " << formatter(key);
-  //   std::cout << "." << std::endl;
-  // }
-  std::cout << "HybridGaussianProductFactor" << std::endl;
+  KeySet keys;
+  auto printer = [&](const Y& y) {
+    if (keys.empty()) keys = y.first.keys();
+    return "Graph of size " + std::to_string(y.first.size()) +
+           ", scalar sum: " + std::to_string(y.second);
+  };
+  Base::print(s, formatter, printer);
+  if (!keys.empty()) {
+    std::cout << s << " Keys:";
+    for (auto&& key : keys) std::cout << " " << formatter(key);
+    std::cout << "." << std::endl;
+  }
 }
 
 /* *******************************************************************************/
