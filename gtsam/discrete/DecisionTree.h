@@ -67,6 +67,9 @@ namespace gtsam {
       return a == b;
     }
 
+    /// Map of Keys and their cardinalities.
+    std::map<L, size_t> cardinalities_map_;
+
    public:
     using LabelFormatter = std::function<std::string(L)>;
     using ValueFormatter = std::function<std::string(Y)>;
@@ -274,6 +277,12 @@ namespace gtsam {
     /** evaluate */
     const Y& operator()(const Assignment<L>& x) const;
 
+    /// Get the cardinalities for all the labels.
+    std::map<L, size_t> allCardinalities() const { return cardinalities_map_; }
+
+    /// Get cardinality for a specific label.
+    size_t nrChoices(L j) const { return cardinalities_map_.at(j); }
+
     /**
      * @brief Visit all leaves in depth-first fashion.
      *
@@ -413,6 +422,7 @@ namespace gtsam {
     template <class ARCHIVE>
     void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
       ar& BOOST_SERIALIZATION_NVP(root_);
+      ar& BOOST_SERIALIZATION_NVP(cardinalities_map_);
     }
 #endif
   };  // DecisionTree
