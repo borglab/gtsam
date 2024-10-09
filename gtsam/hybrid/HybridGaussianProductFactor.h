@@ -57,7 +57,7 @@ class GTSAM_EXPORT HybridGaussianProductFactor
 
   /// Deleted constructor since we don't have istream operator for
   /// GaussianFactorGraphValuePair
-  HybridGaussianProductFactor(const std::vector<Key>& labelCs,
+  HybridGaussianProductFactor(const std::vector<DiscreteKey>& labelCs,
                               const std::string& table) = delete;
 
   ///@}
