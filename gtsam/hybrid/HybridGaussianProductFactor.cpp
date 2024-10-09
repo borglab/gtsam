@@ -103,4 +103,10 @@ HybridGaussianProductFactor HybridGaussianProductFactor::removeEmpty() const {
   return {Base(*this, emptyGaussian)};
 }
 
+/* *******************************************************************************/
+std::istream& operator>>(std::istream& is, GaussianFactorGraphValuePair& pair) {
+  // Dummy, don't do anything
+  return is;
+}
+
 }  // namespace gtsam

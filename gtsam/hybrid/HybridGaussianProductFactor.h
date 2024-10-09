@@ -22,6 +22,8 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
+#include <iostream>
+
 namespace gtsam {
 
 class HybridGaussianFactor;
@@ -54,14 +56,6 @@ class GTSAM_EXPORT HybridGaussianProductFactor
    * @param tree Decision tree to construct from
    */
   HybridGaussianProductFactor(Base&& tree) : Base(std::move(tree)) {}
-
-  /// Deleted constructor since we don't have istream operator for
-  /// GaussianFactorGraphValuePair
-  HybridGaussianProductFactor(const std::vector<DiscreteKey>& labelCs,
-                              const std::string& table) {
-    throw std::runtime_error(
-        "HybridGaussianProductFactor: No way to construct.");
-  }
 
   ///@}
 
@@ -139,5 +133,15 @@ class GTSAM_EXPORT HybridGaussianProductFactor
 template <>
 struct traits<HybridGaussianProductFactor>
     : public Testable<HybridGaussianProductFactor> {};
+
+/**
+ * Create a dummy overload of >> for GaussianFactorGraphValuePair
+ * so that HybridGaussianProductFactor compiles
+ * with the constructor
+ * `DecisionTree(const std::vector<LabelC>& labelCs, const std::string& table)`.
+ *
+ * Needed to compile on Windows.
+ */
+std::istream& operator>>(std::istream& is, GaussianFactorGraphValuePair& pair);
 
 }  // namespace gtsam
