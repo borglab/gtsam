@@ -22,7 +22,6 @@
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/inference/Key.h>
 
-
 namespace gtsam {
 
 /* ************************************************************************ */
