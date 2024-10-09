@@ -78,10 +78,9 @@ void HybridGaussianProductFactor::print(const std::string& s,
   };
   Base::print(s, formatter, printer);
   if (!keys.empty()) {
-    std::stringstream ss;
-    ss << s << " Keys:";
-    for (auto&& key : keys) ss << " " << formatter(key);
-    std::cout << ss.str() << "." << std::endl;
+    std::cout << s << " Keys:";
+    for (auto&& key : keys) std::cout << " " << formatter(key);
+    std::cout << "." << std::endl;
   }
 }
 
