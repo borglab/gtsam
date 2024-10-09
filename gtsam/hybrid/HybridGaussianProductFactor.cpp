@@ -22,7 +22,7 @@
 #include <gtsam/hybrid/HybridGaussianProductFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
-#include <sstream>
+#include <string>
 
 namespace gtsam {
 
