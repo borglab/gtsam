@@ -104,13 +104,12 @@ TEST(HybridGaussianFactor, Keys) {
 }
 
 /* ************************************************************************* */
-TEST_DISABLED(HybridGaussianFactor, Printing) {
+TEST(HybridGaussianFactor, Printing) {
   using namespace test_constructor;
   HybridGaussianFactor hybridFactor(m1, {f10, f11});
 
   std::string expected =
-      R"(HybridGaussianFactor
-Hybrid [x1 x2; 1]{
+      R"(Hybrid [x1 x2; 1]{
  Choice(1) 
  0 Leaf :
   A[x1] = [

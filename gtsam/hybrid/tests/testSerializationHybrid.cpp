@@ -59,6 +59,11 @@ BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::FactorValuePairs::Leaf,
 BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::FactorValuePairs::Choice,
                         "gtsam_HybridGaussianFactor_Factors_Choice");
 
+BOOST_CLASS_EXPORT_GUID(GaussianFactorGraphValuePair,
+                        "gtsam_GaussianFactorGraphValuePair");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianProductFactor,
+                        "gtsam_HybridGaussianProductFactor");
+
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional,
                         "gtsam_HybridGaussianConditional");
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals,
