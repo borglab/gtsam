@@ -22,6 +22,8 @@
 #include <gtsam/hybrid/HybridGaussianProductFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
+#include <sstream>
+
 namespace gtsam {
 
 using Y = GaussianFactorGraphValuePair;
