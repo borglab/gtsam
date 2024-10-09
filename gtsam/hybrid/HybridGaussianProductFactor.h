@@ -55,14 +55,6 @@ class GTSAM_EXPORT HybridGaussianProductFactor
    */
   HybridGaussianProductFactor(Base&& tree) : Base(std::move(tree)) {}
 
-  /// Deleted constructor since we don't have istream operator for
-  /// GaussianFactorGraphValuePair
-  HybridGaussianProductFactor(const std::vector<DiscreteKey>& labelCs,
-                              const std::string& table) {
-    throw std::runtime_error(
-        "HybridGaussianProductFactor: No way to construct.");
-  }
-
   ///@}
 
   /// @name Operators

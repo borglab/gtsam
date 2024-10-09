@@ -523,19 +523,19 @@ namespace gtsam {
     root_ = create(labelCs.begin(), labelCs.end(), ys.begin(), ys.end());
   }
 
-  /****************************************************************************/
-  template<typename L, typename Y>
-  DecisionTree<L, Y>::DecisionTree(const std::vector<LabelC>& labelCs,
-      const std::string& table) {
-    // Convert std::string to values of type Y
-    std::vector<Y> ys;
-    std::istringstream iss(table);
-    copy(std::istream_iterator<Y>(iss), std::istream_iterator<Y>(),
-         back_inserter(ys));
+  // /****************************************************************************/
+  // template<typename L, typename Y>
+  // DecisionTree<L, Y>::DecisionTree(const std::vector<LabelC>& labelCs,
+  //     const std::string& table) {
+  //   // Convert std::string to values of type Y
+  //   std::vector<Y> ys;
+  //   std::istringstream iss(table);
+  //   copy(std::istream_iterator<Y>(iss), std::istream_iterator<Y>(),
+  //        back_inserter(ys));
 
-    // now call recursive Create
-    root_ = create(labelCs.begin(), labelCs.end(), ys.begin(), ys.end());
-  }
+  //   // now call recursive Create
+  //   root_ = create(labelCs.begin(), labelCs.end(), ys.begin(), ys.end());
+  // }
 
   /****************************************************************************/
   template<typename L, typename Y>
