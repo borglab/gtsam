@@ -24,6 +24,7 @@
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteJunctionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
@@ -39,7 +40,6 @@
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
-#include "gtsam/discrete/DiscreteValues.h"
 
 #include <cstddef>
 #include <iostream>
@@ -57,15 +57,16 @@ using std::dynamic_pointer_cast;
 using OrphanWrapper = BayesTreeOrphanWrapper<HybridBayesTree::Clique>;
 using Result =
     std::pair<std::shared_ptr<GaussianConditional>, GaussianFactor::shared_ptr>;
-using ResultTree = DecisionTree<Key, std::pair<Result, double>>;
+using ResultValuePair = std::pair<Result, double>;
+using ResultTree = DecisionTree<Key, ResultValuePair>;
 
 static const VectorValues kEmpty;
 
 /* ************************************************************************ */
 // Throw a runtime exception for method specified in string s, and factor f:
-static void throwRuntimeError(const std::string& s,
-                              const std::shared_ptr<Factor>& f) {
-  auto& fr = *f;
+static void throwRuntimeError(const std::string &s,
+                              const std::shared_ptr<Factor> &f) {
+  auto &fr = *f;
   throw std::runtime_error(s + " not implemented for factor type " +
                            demangle(typeid(fr).name()) + ".");
 }
@@ -83,11 +84,12 @@ static void printFactor(const std::shared_ptr<Factor> &factor,
                         const DiscreteValues &assignment,
                         const KeyFormatter &keyFormatter) {
   if (auto hgf = dynamic_pointer_cast<HybridGaussianFactor>(factor)) {
-    if (assignment.empty())
+    if (assignment.empty()) {
       hgf->print("HybridGaussianFactor:", keyFormatter);
-    else
+    } else {
       hgf->operator()(assignment)
           .first->print("HybridGaussianFactor, component:", keyFormatter);
+    }
   } else if (auto gf = dynamic_pointer_cast<GaussianFactor>(factor)) {
     factor->print("GaussianFactor:\n", keyFormatter);
 
@@ -99,12 +101,13 @@ static void printFactor(const std::shared_ptr<Factor> &factor,
     } else if (hc->isDiscrete()) {
       factor->print("DiscreteConditional:\n", keyFormatter);
     } else {
-      if (assignment.empty())
+      if (assignment.empty()) {
         hc->print("HybridConditional:", keyFormatter);
-      else
+      } else {
         hc->asHybrid()
             ->choose(assignment)
             ->print("HybridConditional, component:\n", keyFormatter);
+      }
     }
   } else {
     factor->print("Unknown factor type\n", keyFormatter);
@@ -112,13 +115,13 @@ static void printFactor(const std::shared_ptr<Factor> &factor,
 }
 
 /* ************************************************************************ */
-void HybridGaussianFactorGraph::print(const std::string& s,
-                                      const KeyFormatter& keyFormatter) const {
+void HybridGaussianFactorGraph::print(const std::string &s,
+                                      const KeyFormatter &keyFormatter) const {
   std::cout << (s.empty() ? "" : s + " ") << std::endl;
   std::cout << "size: " << size() << std::endl;
 
   for (size_t i = 0; i < factors_.size(); i++) {
-    auto&& factor = factors_[i];
+    auto &&factor = factors_[i];
     if (factor == nullptr) {
       std::cout << "Factor " << i << ": nullptr\n";
       continue;
@@ -163,7 +166,7 @@ HybridGaussianProductFactor HybridGaussianFactorGraph::collectProductFactor()
     const {
   HybridGaussianProductFactor result;
 
-  for (auto& f : factors_) {
+  for (auto &f : factors_) {
     // TODO(dellaert): can we make this cleaner and less error-prone?
     if (auto orphan = dynamic_pointer_cast<OrphanWrapper>(f)) {
       continue;  // Ignore OrphanWrapper
@@ -235,7 +238,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     } else if (auto gmf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       // Case where we have a HybridGaussianFactor with no continuous keys.
       // In this case, compute discrete probabilities.
-      auto potential = [&](const auto& pair) -> double {
+      auto potential = [&](const auto &pair) -> double {
         auto [factor, scalar] = pair;
         // If factor is null, it has been pruned, hence return potential zero
         if (!factor) return 0.0;
@@ -270,10 +273,10 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
  * depends on the discrete separator if present.
  */
 static std::shared_ptr<Factor> createDiscreteFactor(
-    const ResultTree& eliminationResults,
+    const ResultTree &eliminationResults,
     const DiscreteKeys &discreteSeparator) {
   auto potential = [&](const auto &pair) -> double {
-    const auto& [conditional, factor] = pair.first;
+    const auto &[conditional, factor] = pair.first;
     const double scalar = pair.second;
     if (conditional && factor) {
       // `error` has the following contributions:
@@ -303,7 +306,7 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
     const ResultTree &eliminationResults,
     const DiscreteKeys &discreteSeparator) {
   // Correct for the normalization constant used up by the conditional
-  auto correct = [&](const auto &pair) -> GaussianFactorValuePair {
+  auto correct = [&](const ResultValuePair &pair) -> GaussianFactorValuePair {
     const auto &[conditional, factor] = pair.first;
     const double scalar = pair.second;
     if (conditional && factor) {
@@ -350,9 +353,9 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
 
   // This is the elimination method on the leaf nodes
   bool someContinuousLeft = false;
-  auto eliminate = [&](const std::pair<GaussianFactorGraph, double>& pair)
+  auto eliminate = [&](const std::pair<GaussianFactorGraph, double> &pair)
       -> std::pair<Result, double> {
-    const auto& [graph, scalar] = pair;
+    const auto &[graph, scalar] = pair;
 
     if (graph.empty()) {
       return {{nullptr, nullptr}, 0.0};
@@ -382,7 +385,8 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
 
   // Create the HybridGaussianConditional from the conditionals
   HybridGaussianConditional::Conditionals conditionals(
-      eliminationResults, [](const auto& pair) { return pair.first.first; });
+      eliminationResults,
+      [](const ResultValuePair &pair) { return pair.first.first; });
   auto hybridGaussian = std::make_shared<HybridGaussianConditional>(
       discreteSeparator, conditionals);
 

@@ -79,7 +79,7 @@ struct HybridGaussianConditional::Helper {
   explicit Helper(const Conditionals &conditionals)
       : conditionals(conditionals),
         minNegLogConstant(std::numeric_limits<double>::infinity()) {
-    auto func = [this](const GC::shared_ptr& gc) -> GaussianFactorValuePair {
+    auto func = [this](const GC::shared_ptr &gc) -> GaussianFactorValuePair {
       if (!gc) return {nullptr, std::numeric_limits<double>::infinity()};
       if (!nrFrontals) nrFrontals = gc->nrFrontals();
       double value = gc->negLogConstant();
@@ -97,10 +97,10 @@ struct HybridGaussianConditional::Helper {
 
 /* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
-    const DiscreteKeys& discreteParents, const Helper& helper)
+    const DiscreteKeys &discreteParents, const Helper &helper)
     : BaseFactor(discreteParents,
                  FactorValuePairs(helper.pairs,
-                                  [&](const GaussianFactorValuePair&
+                                  [&](const GaussianFactorValuePair &
                                           pair) {  // subtract minNegLogConstant
                                     return GaussianFactorValuePair{
                                         pair.first,
@@ -183,10 +183,12 @@ bool HybridGaussianConditional::equals(const HybridFactor &lf,
 
   // Check the base and the factors:
   return BaseFactor::equals(*e, tol) &&
-         conditionals_.equals(
-             e->conditionals_, [tol](const auto &f1, const auto &f2) {
-               return (!f1 && !f2) || (f1 && f2 && f1->equals(*f2, tol));
-             });
+         conditionals_.equals(e->conditionals_,
+                              [tol](const GaussianConditional::shared_ptr &f1,
+                                    const GaussianConditional::shared_ptr &f2) {
+                                return (!f1 && !f2) ||
+                                       (f1 && f2 && f1->equals(*f2, tol));
+                              });
 }
 
 /* *******************************************************************************/
@@ -225,7 +227,7 @@ KeyVector HybridGaussianConditional::continuousParents() const {
     // remove that key from continuousParentKeys:
     continuousParentKeys.erase(std::remove(continuousParentKeys.begin(),
                                            continuousParentKeys.end(), key),
-        continuousParentKeys.end());
+                               continuousParentKeys.end());
   }
   return continuousParentKeys;
 }

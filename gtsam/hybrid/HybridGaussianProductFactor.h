@@ -26,12 +26,13 @@ namespace gtsam {
 
 class HybridGaussianFactor;
 
+using GaussianFactorGraphValuePair = std::pair<GaussianFactorGraph, double>;
+
 /// Alias for DecisionTree of GaussianFactorGraphs and their scalar sums
-class HybridGaussianProductFactor
-    : public DecisionTree<Key, std::pair<GaussianFactorGraph, double>> {
+class GTSAM_EXPORT HybridGaussianProductFactor
+    : public DecisionTree<Key, GaussianFactorGraphValuePair> {
  public:
-  using Y = std::pair<GaussianFactorGraph, double>;
-  using Base = DecisionTree<Key, Y>;
+  using Base = DecisionTree<Key, GaussianFactorGraphValuePair>;
 
   /// @name Constructors
   /// @{
@@ -46,7 +47,7 @@ class HybridGaussianProductFactor
    */
   template <class FACTOR>
   HybridGaussianProductFactor(const std::shared_ptr<FACTOR>& factor)
-      : Base(Y{GaussianFactorGraph{factor}, 0.0}) {}
+      : Base(GaussianFactorGraphValuePair{GaussianFactorGraph{factor}, 0.0}) {}
 
   /**
    * @brief Construct from DecisionTree
@@ -94,12 +95,7 @@ class HybridGaussianProductFactor
    * @return true if equal, false otherwise
    */
   bool equals(const HybridGaussianProductFactor& other,
-              double tol = 1e-9) const {
-    return Base::equals(other, [tol](const Y& a, const Y& b) {
-      return a.first.equals(b.first, tol) &&
-             std::abs(a.second - b.second) < tol;
-    });
-  }
+              double tol = 1e-9) const;
 
   /// @}
 

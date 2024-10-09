@@ -13,6 +13,7 @@
  *  @file HybridConditional.cpp
  *  @date Mar 11, 2022
  *  @author Fan Jiang
+ *  @author Varun Agrawal
  */
 
 #include <gtsam/hybrid/HybridConditional.h>

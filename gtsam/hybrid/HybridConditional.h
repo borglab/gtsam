@@ -13,6 +13,7 @@
  *  @file HybridConditional.h
  *  @date Mar 11, 2022
  *  @author Fan Jiang
+ *  @author Varun Agrawal
  */
 
 #pragma once
