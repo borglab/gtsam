@@ -583,10 +583,16 @@ namespace gtsam {
   template <typename L, typename Y>
   template <typename M, typename X, typename Func>
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<M, X>& other,
-                                   const std::map<M, L>& map, Func Y_of_X)
-      : cardinalities_map_(other.allCardinalities()) {
+                                   const std::map<M, L>& map, Func Y_of_X) {
     auto L_of_M = [&map](const M& label) -> L { return map.at(label); };
     root_ = convertFrom<M, X>(other.root_, L_of_M, Y_of_X);
+
+    // Fill in cardinalities
+    std::map<M, size_t> otherCardinalities = other.allCardinalities();
+    for (auto&& it = otherCardinalities.begin(); it != otherCardinalities.end();
+         it++) {
+      cardinalities_map_[L_of_M(it->first)] = it->second;
+    }
   }
 
   /****************************************************************************/
