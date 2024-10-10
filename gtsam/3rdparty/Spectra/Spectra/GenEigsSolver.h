@@ -1,11 +1,11 @@
-// Copyright (C) 2016-2019 Yixuan Qiu <yixuan.qiu@cos.name>
+// Copyright (C) 2016-2022 Yixuan Qiu <yixuan.qiu@cos.name>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef GEN_EIGS_SOLVER_H
-#define GEN_EIGS_SOLVER_H
+#ifndef SPECTRA_GEN_EIGS_SOLVER_H
+#define SPECTRA_GEN_EIGS_SOLVER_H
 
 #include <Eigen/Core>
 
@@ -25,18 +25,11 @@ namespace Spectra {
 /// also applies to the GenEigsSolver class here, except that the eigenvalues
 /// and eigenvectors of a general matrix can now be complex-valued.
 ///
-/// \tparam Scalar        The element type of the matrix.
-///                       Currently supported types are `float`, `double` and `long double`.
-/// \tparam SelectionRule An enumeration value indicating the selection rule of
-///                       the requested eigenvalues, for example `LARGEST_MAGN`
-///                       to retrieve eigenvalues with the largest magnitude.
-///                       The full list of enumeration values can be found in
-///                       \ref Enumerations.
-/// \tparam OpType        The name of the matrix operation class. Users could either
-///                       use the wrapper classes such as DenseGenMatProd and
-///                       SparseGenMatProd, or define their
-///                       own that implements all the public member functions as in
-///                       DenseGenMatProd.
+/// \tparam OpType  The name of the matrix operation class. Users could either
+///                 use the wrapper classes such as DenseGenMatProd and
+///                 SparseGenMatProd, or define their own that implements the type
+///                 definition `Scalar` and all the public member functions as in
+///                 DenseGenMatProd.
 ///
 /// An example that illustrates the usage of GenEigsSolver is give below:
 ///
@@ -58,15 +51,15 @@ namespace Spectra {
 ///
 ///     // Construct eigen solver object, requesting the largest
 ///     // (in magnitude, or norm) three eigenvalues
-///     GenEigsSolver< double, LARGEST_MAGN, DenseGenMatProd<double> > eigs(&op, 3, 6);
+///     GenEigsSolver<DenseGenMatProd<double>> eigs(op, 3, 6);
 ///
 ///     // Initialize and compute
 ///     eigs.init();
-///     int nconv = eigs.compute();
+///     int nconv = eigs.compute(SortRule::LargestMagn);
 ///
 ///     // Retrieve results
 ///     Eigen::VectorXcd evalues;
-///     if(eigs.info() == SUCCESSFUL)
+///     if (eigs.info() == CompInfo::Successful)
 ///         evalues = eigs.eigenvalues();
 ///
 ///     std::cout << "Eigenvalues found:\n" << evalues << std::endl;
@@ -93,12 +86,12 @@ namespace Spectra {
 ///     const int n = 10;
 ///     Eigen::SparseMatrix<double> M(n, n);
 ///     M.reserve(Eigen::VectorXi::Constant(n, 3));
-///     for(int i = 0; i < n; i++)
+///     for (int i = 0; i < n; i++)
 ///     {
 ///         M.insert(i, i) = 1.0;
-///         if(i > 0)
+///         if (i > 0)
 ///             M.insert(i - 1, i) = 3.0;
-///         if(i < n - 1)
+///         if (i < n - 1)
 ///             M.insert(i + 1, i) = 2.0;
 ///     }
 ///
@@ -106,15 +99,15 @@ namespace Spectra {
 ///     SparseGenMatProd<double> op(M);
 ///
 ///     // Construct eigen solver object, requesting the largest three eigenvalues
-///     GenEigsSolver< double, LARGEST_MAGN, SparseGenMatProd<double> > eigs(&op, 3, 6);
+///     GenEigsSolver<SparseGenMatProd<double>> eigs(op, 3, 6);
 ///
 ///     // Initialize and compute
 ///     eigs.init();
-///     int nconv = eigs.compute();
+///     int nconv = eigs.compute(SortRule::LargestMagn);
 ///
 ///     // Retrieve results
 ///     Eigen::VectorXcd evalues;
-///     if(eigs.info() == SUCCESSFUL)
+///     if (eigs.info() == CompInfo::Successful)
 ///         evalues = eigs.eigenvalues();
 ///
 ///     std::cout << "Eigenvalues found:\n" << evalues << std::endl;
@@ -122,23 +115,21 @@ namespace Spectra {
 ///     return 0;
 /// }
 /// \endcode
-template <typename Scalar = double,
-          int SelectionRule = LARGEST_MAGN,
-          typename OpType = DenseGenMatProd<double> >
-class GenEigsSolver : public GenEigsBase<Scalar, SelectionRule, OpType, IdentityBOp>
+template <typename OpType = DenseGenMatProd<double>>
+class GenEigsSolver : public GenEigsBase<OpType, IdentityBOp>
 {
 private:
-    typedef Eigen::Index Index;
+    using Index = Eigen::Index;
 
 public:
     ///
     /// Constructor to create a solver object.
     ///
-    /// \param op   Pointer to the matrix operation object, which should implement
+    /// \param op   The matrix operation object that implements
     ///             the matrix-vector multiplication operation of \f$A\f$:
     ///             calculating \f$Av\f$ for any vector \f$v\f$. Users could either
     ///             create the object from the wrapper class such as DenseGenMatProd, or
-    ///             define their own that implements all the public member functions
+    ///             define their own that implements all the public members
     ///             as in DenseGenMatProd.
     /// \param nev  Number of eigenvalues requested. This should satisfy \f$1\le nev \le n-2\f$,
     ///             where \f$n\f$ is the size of matrix.
@@ -148,11 +139,11 @@ public:
     ///             in each iteration. This parameter must satisfy \f$nev+2 \le ncv \le n\f$,
     ///             and is advised to take \f$ncv \ge 2\cdot nev + 1\f$.
     ///
-    GenEigsSolver(OpType* op, Index nev, Index ncv) :
-        GenEigsBase<Scalar, SelectionRule, OpType, IdentityBOp>(op, NULL, nev, ncv)
+    GenEigsSolver(OpType& op, Index nev, Index ncv) :
+        GenEigsBase<OpType, IdentityBOp>(op, IdentityBOp(), nev, ncv)
     {}
 };
 
 }  // namespace Spectra
 
-#endif  // GEN_EIGS_SOLVER_H
+#endif  // SPECTRA_GEN_EIGS_SOLVER_H

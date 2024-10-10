@@ -1,11 +1,11 @@
-// Copyright (C) 2019 Yixuan Qiu <yixuan.qiu@cos.name>
+// Copyright (C) 2019-2022 Yixuan Qiu <yixuan.qiu@cos.name>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef BK_LDLT_H
-#define BK_LDLT_H
+#ifndef SPECTRA_BK_LDLT_H
+#define SPECTRA_BK_LDLT_H
 
 #include <Eigen/Core>
 #include <vector>
@@ -27,26 +27,22 @@ template <typename Scalar = double>
 class BKLDLT
 {
 private:
-    typedef Eigen::Index Index;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-    typedef Eigen::Map<Vector> MapVec;
-    typedef Eigen::Map<const Vector> MapConstVec;
-
-    typedef Eigen::Matrix<Index, Eigen::Dynamic, 1> IntVector;
-    typedef Eigen::Ref<Vector> GenericVector;
-    typedef Eigen::Ref<Matrix> GenericMatrix;
-    typedef const Eigen::Ref<const Matrix> ConstGenericMatrix;
-    typedef const Eigen::Ref<const Vector> ConstGenericVector;
+    using Index = Eigen::Index;
+    using Vector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+    using MapVec = Eigen::Map<Vector>;
+    using MapConstVec = Eigen::Map<const Vector>;
+    using IntVector = Eigen::Matrix<Index, Eigen::Dynamic, 1>;
+    using GenericVector = Eigen::Ref<Vector>;
+    using ConstGenericVector = const Eigen::Ref<const Vector>;
 
     Index m_n;
-    Vector m_data;                                  // storage for a lower-triangular matrix
-    std::vector<Scalar*> m_colptr;                  // pointers to columns
-    IntVector m_perm;                               // [-2, -1, 3, 1, 4, 5]: 0 <-> 2, 1 <-> 1, 2 <-> 3, 3 <-> 1, 4 <-> 4, 5 <-> 5
-    std::vector<std::pair<Index, Index> > m_permc;  // compressed version of m_perm: [(0, 2), (2, 3), (3, 1)]
+    Vector m_data;                                 // storage for a lower-triangular matrix
+    std::vector<Scalar*> m_colptr;                 // pointers to columns
+    IntVector m_perm;                              // [-2, -1, 3, 1, 4, 5]: 0 <-> 2, 1 <-> 1, 2 <-> 3, 3 <-> 1, 4 <-> 4, 5 <-> 5
+    std::vector<std::pair<Index, Index>> m_permc;  // compressed version of m_perm: [(0, 2), (2, 3), (3, 1)]
 
     bool m_computed;
-    int m_info;
+    CompInfo m_info;
 
     // Access to elements
     // Pointer to the k-th column
@@ -73,29 +69,38 @@ private:
     }
 
     // Copy mat - shift * I to m_data
-    void copy_data(ConstGenericMatrix& mat, int uplo, const Scalar& shift)
+    template <typename Derived>
+    void copy_data(const Eigen::MatrixBase<Derived>& mat, int uplo, const Scalar& shift)
     {
-        if (uplo == Eigen::Lower)
+        // If mat is an expression, first evaluate it into a temporary object
+        // This can be achieved by assigning mat to a const Eigen::Ref<const Matrix>&
+        // If mat is a plain object, no temporary object is created
+        const Eigen::Ref<const typename Derived::PlainObject>& src(mat);
+
+        // Efficient copying for column-major matrices with lower triangular part
+        if ((!Derived::PlainObject::IsRowMajor) && uplo == Eigen::Lower)
         {
             for (Index j = 0; j < m_n; j++)
             {
-                const Scalar* begin = &mat.coeffRef(j, j);
+                const Scalar* begin = &src.coeffRef(j, j);
                 const Index len = m_n - j;
                 std::copy(begin, begin + len, col_pointer(j));
                 diag_coeff(j) -= shift;
             }
+            return;
         }
-        else
+
+        Scalar* dest = m_data.data();
+        for (Index j = 0; j < m_n; j++)
         {
-            Scalar* dest = m_data.data();
-            for (Index i = 0; i < m_n; i++)
+            for (Index i = j; i < m_n; i++, dest++)
             {
-                for (Index j = i; j < m_n; j++, dest++)
-                {
-                    *dest = mat.coeff(i, j);
-                }
-                diag_coeff(i) -= shift;
+                if (uplo == Eigen::Lower)
+                    *dest = src.coeff(i, j);
+                else
+                    *dest = src.coeff(j, i);
             }
+            diag_coeff(j) -= shift;
         }
     }
 
@@ -309,14 +314,14 @@ private:
         e21 = -e21 / delta;
     }
 
-    // Return value is the status, SUCCESSFUL/NUMERICAL_ISSUE
-    int gaussian_elimination_1x1(Index k)
+    // Return value is the status, CompInfo::Successful/NumericalIssue
+    CompInfo gaussian_elimination_1x1(Index k)
     {
         // D = 1 / A[k, k]
         const Scalar akk = diag_coeff(k);
-        // Return NUMERICAL_ISSUE if not invertible
+        // Return CompInfo::NumericalIssue if not invertible
         if (akk == Scalar(0))
-            return NUMERICAL_ISSUE;
+            return CompInfo::NumericalIssue;
 
         diag_coeff(k) = Scalar(1) / akk;
 
@@ -332,19 +337,19 @@ private:
         // l /= A[k, k]
         l /= akk;
 
-        return SUCCESSFUL;
+        return CompInfo::Successful;
     }
 
-    // Return value is the status, SUCCESSFUL/NUMERICAL_ISSUE
-    int gaussian_elimination_2x2(Index k)
+    // Return value is the status, CompInfo::Successful/NumericalIssue
+    CompInfo gaussian_elimination_2x2(Index k)
     {
         // D = inv(E)
         Scalar& e11 = diag_coeff(k);
         Scalar& e21 = coeff(k + 1, k);
         Scalar& e22 = diag_coeff(k + 1);
-        // Return NUMERICAL_ISSUE if not invertible
+        // Return CompInfo::NumericalIssue if not invertible
         if (e11 * e22 - e21 * e21 == Scalar(0))
-            return NUMERICAL_ISSUE;
+            return CompInfo::NumericalIssue;
 
         inverse_inplace_2x2(e11, e21, e22);
 
@@ -368,22 +373,24 @@ private:
         l1.noalias() = X.col(0);
         l2.noalias() = X.col(1);
 
-        return SUCCESSFUL;
+        return CompInfo::Successful;
     }
 
 public:
     BKLDLT() :
-        m_n(0), m_computed(false), m_info(NOT_COMPUTED)
+        m_n(0), m_computed(false), m_info(CompInfo::NotComputed)
     {}
 
     // Factorize mat - shift * I
-    BKLDLT(ConstGenericMatrix& mat, int uplo = Eigen::Lower, const Scalar& shift = Scalar(0)) :
-        m_n(mat.rows()), m_computed(false), m_info(NOT_COMPUTED)
+    template <typename Derived>
+    BKLDLT(const Eigen::MatrixBase<Derived>& mat, int uplo = Eigen::Lower, const Scalar& shift = Scalar(0)) :
+        m_n(mat.rows()), m_computed(false), m_info(CompInfo::NotComputed)
     {
         compute(mat, uplo, shift);
     }
 
-    void compute(ConstGenericMatrix& mat, int uplo = Eigen::Lower, const Scalar& shift = Scalar(0))
+    template <typename Derived>
+    void compute(const Eigen::MatrixBase<Derived>& mat, int uplo = Eigen::Lower, const Scalar& shift = Scalar(0))
     {
         using std::abs;
 
@@ -418,7 +425,7 @@ public:
             }
 
             // 3. Check status
-            if (m_info != SUCCESSFUL)
+            if (m_info != CompInfo::Successful)
                 break;
         }
         // Invert the last 1x1 block if it exists
@@ -426,7 +433,7 @@ public:
         {
             const Scalar akk = diag_coeff(k);
             if (akk == Scalar(0))
-                m_info = NUMERICAL_ISSUE;
+                m_info = CompInfo::NumericalIssue;
 
             diag_coeff(k) = Scalar(1) / diag_coeff(k);
         }
@@ -522,9 +529,9 @@ public:
         return res;
     }
 
-    int info() const { return m_info; }
+    CompInfo info() const { return m_info; }
 };
 
 }  // namespace Spectra
 
-#endif  // BK_LDLT_H
+#endif  // SPECTRA_BK_LDLT_H

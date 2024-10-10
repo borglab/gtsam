@@ -1,11 +1,11 @@
-// Copyright (C) 2016-2019 Yixuan Qiu <yixuan.qiu@cos.name>
+// Copyright (C) 2016-2022 Yixuan Qiu <yixuan.qiu@cos.name>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef SIMPLE_RANDOM_H
-#define SIMPLE_RANDOM_H
+#ifndef SPECTRA_SIMPLE_RANDOM_H
+#define SPECTRA_SIMPLE_RANDOM_H
 
 #include <Eigen/Core>
 
@@ -29,14 +29,14 @@ template <typename Scalar = double>
 class SimpleRandom
 {
 private:
-    typedef Eigen::Index Index;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+    using Index = Eigen::Index;
+    using Vector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
-    const unsigned int m_a;     // multiplier
-    const unsigned long m_max;  // 2^31 - 1
-    long m_rand;
+    static constexpr unsigned int m_a = 16807;           // multiplier
+    static constexpr unsigned long m_max = 2147483647L;  // 2^31 - 1
+    long m_rand;                                         // RNG state
 
-    inline long next_long_rand(long seed)
+    inline long next_long_rand(long seed) const
     {
         unsigned long lo, hi;
 
@@ -59,27 +59,35 @@ private:
 
 public:
     SimpleRandom(unsigned long init_seed) :
-        m_a(16807),
-        m_max(2147483647L),
         m_rand(init_seed ? (init_seed & m_max) : 1)
     {}
 
+    // Return a single random number, ranging from -0.5 to 0.5
     Scalar random()
     {
         m_rand = next_long_rand(m_rand);
         return Scalar(m_rand) / Scalar(m_max) - Scalar(0.5);
     }
 
-    // Vector of random numbers of type Scalar
+    // Fill the given vector with random numbers
+    // Ranging from -0.5 to 0.5
+    void random_vec(Vector& vec)
+    {
+        const Index len = vec.size();
+        for (Index i = 0; i < len; i++)
+        {
+            m_rand = next_long_rand(m_rand);
+            vec[i] = Scalar(m_rand);
+        }
+        vec.array() = vec.array() / Scalar(m_max) - Scalar(0.5);
+    }
+
+    // Return a vector of random numbers
     // Ranging from -0.5 to 0.5
     Vector random_vec(const Index len)
     {
         Vector res(len);
-        for (Index i = 0; i < len; i++)
-        {
-            m_rand = next_long_rand(m_rand);
-            res[i] = Scalar(m_rand) / Scalar(m_max) - Scalar(0.5);
-        }
+        random_vec(res);
         return res;
     }
 };
@@ -88,4 +96,4 @@ public:
 
 /// \endcond
 
-#endif  // SIMPLE_RANDOM_H
+#endif  // SPECTRA_SIMPLE_RANDOM_H

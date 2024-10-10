@@ -1,11 +1,11 @@
-// Copyright (C) 2016-2019 Yixuan Qiu <yixuan.qiu@cos.name>
+// Copyright (C) 2016-2022 Yixuan Qiu <yixuan.qiu@cos.name>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef SYM_GEIGS_SOLVER_H
-#define SYM_GEIGS_SOLVER_H
+#ifndef SPECTRA_SYM_GEIGS_SOLVER_H
+#define SPECTRA_SYM_GEIGS_SOLVER_H
 
 #include "SymEigsBase.h"
 #include "Util/GEigsMode.h"
@@ -27,25 +27,21 @@ namespace Spectra {
 /// matrices, i.e., to solve \f$Ax=\lambda Bx\f$ where \f$A\f$ is symmetric and
 /// \f$B\f$ is positive definite.
 ///
-/// There are two modes of this solver, specified by the template parameter
-/// GEigsMode. See the pages for the specialized classes for details.
+/// There are two modes of this solver, specified by the template parameter `Mode`.
+/// See the pages for the specialized classes for details.
 /// - The Cholesky mode assumes that \f$B\f$ can be factorized using Cholesky
 ///   decomposition, which is the preferred mode when the decomposition is
 ///   available. (This can be easily done in Eigen using the dense or sparse
 ///   Cholesky solver.)
-///   See \ref SymGEigsSolver<Scalar, SelectionRule, OpType, BOpType, GEIGS_CHOLESKY> "SymGEigsSolver (Cholesky mode)" for more details.
+///   See \ref SymGEigsSolver<OpType, BOpType, GEigsMode::Cholesky> "SymGEigsSolver (Cholesky mode)" for more details.
 /// - The regular inverse mode requires the matrix-vector product \f$Bv\f$ and the
 ///   linear equation solving operation \f$B^{-1}v\f$. This mode should only be
 ///   used when the Cholesky decomposition of \f$B\f$ is hard to implement, or
 ///   when computing \f$B^{-1}v\f$ is much faster than the Cholesky decomposition.
-///   See \ref SymGEigsSolver<Scalar, SelectionRule, OpType, BOpType, GEIGS_REGULAR_INVERSE> "SymGEigsSolver (Regular inverse mode)" for more details.
+///   See \ref SymGEigsSolver<OpType, BOpType, GEigsMode::RegularInverse> "SymGEigsSolver (Regular inverse mode)" for more details.
 
 // Empty class template
-template <typename Scalar,
-          int SelectionRule,
-          typename OpType,
-          typename BOpType,
-          int GEigsMode>
+template <typename OpType, typename BOpType, GEigsMode Mode>
 class SymGEigsSolver
 {};
 
@@ -67,25 +63,17 @@ class SymGEigsSolver
 /// classes. If the users need to define their own operation classes, then they
 /// should implement all the public member functions as in those built-in classes.
 ///
-/// \tparam Scalar        The element type of the matrix.
-///                       Currently supported types are `float`, `double` and `long double`.
-/// \tparam SelectionRule An enumeration value indicating the selection rule of
-///                       the requested eigenvalues, for example `LARGEST_MAGN`
-///                       to retrieve eigenvalues with the largest magnitude.
-///                       The full list of enumeration values can be found in
-///                       \ref Enumerations.
-/// \tparam OpType        The name of the matrix operation class for \f$A\f$. Users could either
-///                       use the wrapper classes such as DenseSymMatProd and
-///                       SparseSymMatProd, or define their
-///                       own that implements all the public member functions as in
-///                       DenseSymMatProd.
-/// \tparam BOpType       The name of the matrix operation class for \f$B\f$. Users could either
-///                       use the wrapper classes such as DenseCholesky and
-///                       SparseCholesky, or define their
-///                       own that implements all the public member functions as in
-///                       DenseCholesky.
-/// \tparam GEigsMode     Mode of the generalized eigen solver. In this solver
-///                       it is Spectra::GEIGS_CHOLESKY.
+/// \tparam OpType   The name of the matrix operation class for \f$A\f$. Users could either
+///                  use the wrapper classes such as DenseSymMatProd and
+///                  SparseSymMatProd, or define their own that implements the type
+///                  definition `Scalar` and all the public member functions as in
+///                  DenseSymMatProd.
+/// \tparam BOpType  The name of the matrix operation class for \f$B\f$. Users could either
+///                  use the wrapper classes such as DenseCholesky and
+///                  SparseCholesky, or define their own that implements all the
+///                  public member functions as in DenseCholesky.
+/// \tparam Mode     Mode of the generalized eigen solver. In this solver
+///                  it is Spectra::GEigsMode::Cholesky.
 ///
 /// Below is an example that demonstrates the usage of this class.
 ///
@@ -112,31 +100,31 @@ class SymGEigsSolver
 ///     // Define the B matrix, a band matrix with 2 on the diagonal and 1 on the subdiagonals
 ///     Eigen::SparseMatrix<double> B(n, n);
 ///     B.reserve(Eigen::VectorXi::Constant(n, 3));
-///     for(int i = 0; i < n; i++)
+///     for (int i = 0; i < n; i++)
 ///     {
 ///         B.insert(i, i) = 2.0;
-///         if(i > 0)
+///         if (i > 0)
 ///             B.insert(i - 1, i) = 1.0;
-///         if(i < n - 1)
+///         if (i < n - 1)
 ///             B.insert(i + 1, i) = 1.0;
 ///     }
 ///
-///     // Construct matrix operation object using the wrapper classes
+///     // Construct matrix operation objects using the wrapper classes
 ///     DenseSymMatProd<double> op(A);
 ///     SparseCholesky<double>  Bop(B);
 ///
 ///     // Construct generalized eigen solver object, requesting the largest three generalized eigenvalues
-///     SymGEigsSolver<double, LARGEST_ALGE, DenseSymMatProd<double>, SparseCholesky<double>, GEIGS_CHOLESKY>
-///         geigs(&op, &Bop, 3, 6);
+///     SymGEigsSolver<DenseSymMatProd<double>, SparseCholesky<double>, GEigsMode::Cholesky>
+///         geigs(op, Bop, 3, 6);
 ///
 ///     // Initialize and compute
 ///     geigs.init();
-///     int nconv = geigs.compute();
+///     int nconv = geigs.compute(SortRule::LargestAlge);
 ///
 ///     // Retrieve results
 ///     Eigen::VectorXd evalues;
 ///     Eigen::MatrixXd evecs;
-///     if(geigs.info() == SUCCESSFUL)
+///     if (geigs.info() == CompInfo::Successful)
 ///     {
 ///         evalues = geigs.eigenvalues();
 ///         evecs = geigs.eigenvectors();
@@ -156,39 +144,39 @@ class SymGEigsSolver
 /// }
 /// \endcode
 
-// Partial specialization for GEigsMode = GEIGS_CHOLESKY
-template <typename Scalar,
-          int SelectionRule,
-          typename OpType,
-          typename BOpType>
-class SymGEigsSolver<Scalar, SelectionRule, OpType, BOpType, GEIGS_CHOLESKY> :
-    public SymEigsBase<Scalar, SelectionRule, SymGEigsCholeskyOp<Scalar, OpType, BOpType>, IdentityBOp>
+// Partial specialization for mode = GEigsMode::Cholesky
+template <typename OpType, typename BOpType>
+class SymGEigsSolver<OpType, BOpType, GEigsMode::Cholesky> :
+    public SymEigsBase<SymGEigsCholeskyOp<OpType, BOpType>, IdentityBOp>
 {
 private:
-    typedef Eigen::Index Index;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+    using Scalar = typename OpType::Scalar;
+    using Index = Eigen::Index;
+    using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+    using Vector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
 
-    BOpType* m_Bop;
+    using ModeMatOp = SymGEigsCholeskyOp<OpType, BOpType>;
+    using Base = SymEigsBase<ModeMatOp, IdentityBOp>;
+
+    const BOpType& m_Bop;
 
 public:
     ///
     /// Constructor to create a solver object.
     ///
-    /// \param op   Pointer to the \f$A\f$ matrix operation object. It
-    ///             should implement the matrix-vector multiplication operation of \f$A\f$:
+    /// \param op   The \f$A\f$ matrix operation object that implements the matrix-vector
+    ///             multiplication operation of \f$A\f$:
     ///             calculating \f$Av\f$ for any vector \f$v\f$. Users could either
     ///             create the object from the wrapper classes such as DenseSymMatProd, or
-    ///             define their own that implements all the public member functions
+    ///             define their own that implements all the public members
     ///             as in DenseSymMatProd.
-    /// \param Bop  Pointer to the \f$B\f$ matrix operation object. It
-    ///             represents a Cholesky decomposition of \f$B\f$, and should
-    ///             implement the lower and upper triangular solving operations:
+    /// \param Bop  The \f$B\f$ matrix operation object that represents a Cholesky decomposition of \f$B\f$.
+    ///             It should implement the lower and upper triangular solving operations:
     ///             calculating \f$L^{-1}v\f$ and \f$(L')^{-1}v\f$ for any vector
     ///             \f$v\f$, where \f$LL'=B\f$. Users could either
     ///             create the object from the wrapper classes such as DenseCholesky, or
     ///             define their own that implements all the public member functions
-    ///             as in DenseCholesky.
+    ///             as in DenseCholesky. \f$B\f$ needs to be positive definite.
     /// \param nev  Number of eigenvalues requested. This should satisfy \f$1\le nev \le n-1\f$,
     ///             where \f$n\f$ is the size of matrix.
     /// \param ncv  Parameter that controls the convergence speed of the algorithm.
@@ -197,37 +185,30 @@ public:
     ///             in each iteration. This parameter must satisfy \f$nev < ncv \le n\f$,
     ///             and is advised to take \f$ncv \ge 2\cdot nev\f$.
     ///
-    SymGEigsSolver(OpType* op, BOpType* Bop, Index nev, Index ncv) :
-        SymEigsBase<Scalar, SelectionRule, SymGEigsCholeskyOp<Scalar, OpType, BOpType>, IdentityBOp>(
-            new SymGEigsCholeskyOp<Scalar, OpType, BOpType>(*op, *Bop), NULL, nev, ncv),
+    SymGEigsSolver(OpType& op, BOpType& Bop, Index nev, Index ncv) :
+        Base(ModeMatOp(op, Bop), IdentityBOp(), nev, ncv),
         m_Bop(Bop)
     {}
 
     /// \cond
 
-    ~SymGEigsSolver()
+    Matrix eigenvectors(Index nvec) const override
     {
-        // m_op contains the constructed SymGEigsCholeskyOp object
-        delete this->m_op;
-    }
-
-    Matrix eigenvectors(Index nvec) const
-    {
-        Matrix res = SymEigsBase<Scalar, SelectionRule, SymGEigsCholeskyOp<Scalar, OpType, BOpType>, IdentityBOp>::eigenvectors(nvec);
+        Matrix res = Base::eigenvectors(nvec);
         Vector tmp(res.rows());
         const Index nconv = res.cols();
         for (Index i = 0; i < nconv; i++)
         {
-            m_Bop->upper_triangular_solve(&res(0, i), tmp.data());
+            m_Bop.upper_triangular_solve(&res(0, i), tmp.data());
             res.col(i).noalias() = tmp;
         }
 
         return res;
     }
 
-    Matrix eigenvectors() const
+    Matrix eigenvectors() const override
     {
-        return SymGEigsSolver<Scalar, SelectionRule, OpType, BOpType, GEIGS_CHOLESKY>::eigenvectors(this->m_nev);
+        return SymGEigsSolver<OpType, BOpType, GEigsMode::Cholesky>::eigenvectors(this->m_nev);
     }
 
     /// \endcond
@@ -252,53 +233,45 @@ public:
 /// is always preferred. If the users need to define their own operation classes, then they
 /// should implement all the public member functions as in those built-in classes.
 ///
-/// \tparam Scalar        The element type of the matrix.
-///                       Currently supported types are `float`, `double` and `long double`.
-/// \tparam SelectionRule An enumeration value indicating the selection rule of
-///                       the requested eigenvalues, for example `LARGEST_MAGN`
-///                       to retrieve eigenvalues with the largest magnitude.
-///                       The full list of enumeration values can be found in
-///                       \ref Enumerations.
-/// \tparam OpType        The name of the matrix operation class for \f$A\f$. Users could either
-///                       use the wrapper classes such as DenseSymMatProd and
-///                       SparseSymMatProd, or define their
-///                       own that implements all the public member functions as in
-///                       DenseSymMatProd.
-/// \tparam BOpType       The name of the matrix operation class for \f$B\f$. Users could either
-///                       use the wrapper class SparseRegularInverse, or define their
-///                       own that implements all the public member functions as in
-///                       SparseRegularInverse.
-/// \tparam GEigsMode     Mode of the generalized eigen solver. In this solver
-///                       it is Spectra::GEIGS_REGULAR_INVERSE.
+/// \tparam OpType   The name of the matrix operation class for \f$A\f$. Users could either
+///                  use the wrapper classes such as DenseSymMatProd and
+///                  SparseSymMatProd, or define their own that implements the type
+///                  definition `Scalar` and all the public member functions as in
+///                  DenseSymMatProd.
+/// \tparam BOpType  The name of the matrix operation class for \f$B\f$. Users could either
+///                  use the wrapper class SparseRegularInverse, or define their
+///                  own that implements all the public member functions as in
+///                  SparseRegularInverse.
+/// \tparam Mode     Mode of the generalized eigen solver. In this solver
+///                  it is Spectra::GEigsMode::RegularInverse.
 ///
 
-// Partial specialization for GEigsMode = GEIGS_REGULAR_INVERSE
-template <typename Scalar,
-          int SelectionRule,
-          typename OpType,
-          typename BOpType>
-class SymGEigsSolver<Scalar, SelectionRule, OpType, BOpType, GEIGS_REGULAR_INVERSE> :
-    public SymEigsBase<Scalar, SelectionRule, SymGEigsRegInvOp<Scalar, OpType, BOpType>, BOpType>
+// Partial specialization for mode = GEigsMode::RegularInverse
+template <typename OpType, typename BOpType>
+class SymGEigsSolver<OpType, BOpType, GEigsMode::RegularInverse> :
+    public SymEigsBase<SymGEigsRegInvOp<OpType, BOpType>, BOpType>
 {
 private:
-    typedef Eigen::Index Index;
+    using Index = Eigen::Index;
+
+    using ModeMatOp = SymGEigsRegInvOp<OpType, BOpType>;
+    using Base = SymEigsBase<ModeMatOp, BOpType>;
 
 public:
     ///
     /// Constructor to create a solver object.
     ///
-    /// \param op   Pointer to the \f$A\f$ matrix operation object. It
-    ///             should implement the matrix-vector multiplication operation of \f$A\f$:
+    /// \param op   The \f$A\f$ matrix operation object that implements the matrix-vector
+    ///             multiplication operation of \f$A\f$:
     ///             calculating \f$Av\f$ for any vector \f$v\f$. Users could either
     ///             create the object from the wrapper classes such as DenseSymMatProd, or
-    ///             define their own that implements all the public member functions
+    ///             define their own that implements all the public members
     ///             as in DenseSymMatProd.
-    /// \param Bop  Pointer to the \f$B\f$ matrix operation object. It should
-    ///             implement the multiplication operation \f$Bv\f$ and the linear equation
-    ///             solving operation \f$B^{-1}v\f$ for any vector \f$v\f$. Users could either
-    ///             create the object from the wrapper class SparseRegularInverse, or
+    /// \param Bop  The \f$B\f$ matrix operation object that implements the multiplication operation
+    ///             \f$Bv\f$ and the linear equation solving operation \f$B^{-1}v\f$ for any vector \f$v\f$.
+    ///             Users could either create the object from the wrapper class SparseRegularInverse, or
     ///             define their own that implements all the public member functions
-    ///             as in SparseRegularInverse.
+    ///             as in SparseRegularInverse. \f$B\f$ needs to be positive definite.
     /// \param nev  Number of eigenvalues requested. This should satisfy \f$1\le nev \le n-1\f$,
     ///             where \f$n\f$ is the size of matrix.
     /// \param ncv  Parameter that controls the convergence speed of the algorithm.
@@ -307,20 +280,11 @@ public:
     ///             in each iteration. This parameter must satisfy \f$nev < ncv \le n\f$,
     ///             and is advised to take \f$ncv \ge 2\cdot nev\f$.
     ///
-    SymGEigsSolver(OpType* op, BOpType* Bop, Index nev, Index ncv) :
-        SymEigsBase<Scalar, SelectionRule, SymGEigsRegInvOp<Scalar, OpType, BOpType>, BOpType>(
-            new SymGEigsRegInvOp<Scalar, OpType, BOpType>(*op, *Bop), Bop, nev, ncv)
+    SymGEigsSolver(OpType& op, BOpType& Bop, Index nev, Index ncv) :
+        Base(ModeMatOp(op, Bop), Bop, nev, ncv)
     {}
-
-    /// \cond
-    ~SymGEigsSolver()
-    {
-        // m_op contains the constructed SymGEigsRegInvOp object
-        delete this->m_op;
-    }
-    /// \endcond
 };
 
 }  // namespace Spectra
 
-#endif  // SYM_GEIGS_SOLVER_H
+#endif  // SPECTRA_SYM_GEIGS_SOLVER_H

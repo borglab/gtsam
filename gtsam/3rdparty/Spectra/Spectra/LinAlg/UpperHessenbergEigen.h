@@ -2,18 +2,19 @@
 //
 // Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
 // Copyright (C) 2010,2012 Jitse Niesen <jitse@maths.leeds.ac.uk>
-// Copyright (C) 2016-2019 Yixuan Qiu <yixuan.qiu@cos.name>
+// Copyright (C) 2016-2022 Yixuan Qiu <yixuan.qiu@cos.name>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef UPPER_HESSENBERG_EIGEN_H
-#define UPPER_HESSENBERG_EIGEN_H
+#ifndef SPECTRA_UPPER_HESSENBERG_EIGEN_H
+#define SPECTRA_UPPER_HESSENBERG_EIGEN_H
 
 #include <Eigen/Core>
-#include <Eigen/Eigenvalues>
 #include <stdexcept>
+
+#include "UpperHessenbergSchur.h"
 
 namespace Spectra {
 
@@ -21,23 +22,21 @@ template <typename Scalar = double>
 class UpperHessenbergEigen
 {
 private:
-    typedef Eigen::Index Index;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+    using Index = Eigen::Index;
+    using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+    using Vector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+    using GenericMatrix = Eigen::Ref<Matrix>;
+    using ConstGenericMatrix = const Eigen::Ref<const Matrix>;
 
-    typedef Eigen::Ref<Matrix> GenericMatrix;
-    typedef const Eigen::Ref<const Matrix> ConstGenericMatrix;
-
-    typedef std::complex<Scalar> Complex;
-    typedef Eigen::Matrix<Complex, Eigen::Dynamic, Eigen::Dynamic> ComplexMatrix;
-    typedef Eigen::Matrix<Complex, Eigen::Dynamic, 1> ComplexVector;
+    using Complex = std::complex<Scalar>;
+    using ComplexMatrix = Eigen::Matrix<Complex, Eigen::Dynamic, Eigen::Dynamic>;
+    using ComplexVector = Eigen::Matrix<Complex, Eigen::Dynamic, 1>;
 
     Index m_n;                             // Size of the matrix
-    Eigen::RealSchur<Matrix> m_realSchur;  // Schur decomposition solver
+    UpperHessenbergSchur<Scalar> m_schur;  // Schur decomposition solver
     Matrix m_matT;                         // Schur T matrix
     Matrix m_eivec;                        // Storing eigenvectors
     ComplexVector m_eivalues;              // Eigenvalues
-
     bool m_computed;
 
     void doComputeEigenvectors()
@@ -177,7 +176,7 @@ private:
                         }
 
                         // Overflow control
-                        Scalar t = std::max(abs(m_matT.coeff(i, n - 1)), abs(m_matT.coeff(i, n)));
+                        Scalar t = (std::max)(abs(m_matT.coeff(i, n - 1)), abs(m_matT.coeff(i, n)));
                         if ((eps * t) * t > Scalar(1))
                             m_matT.block(i, n - 1, size - i, 2) /= t;
                     }
@@ -221,13 +220,9 @@ public:
         const Scalar scale = mat.cwiseAbs().maxCoeff();
 
         // Reduce to real Schur form
-        Matrix Q = Matrix::Identity(m_n, m_n);
-        m_realSchur.computeFromHessenberg(mat / scale, Q, true);
-        if (m_realSchur.info() != Eigen::Success)
-            throw std::runtime_error("UpperHessenbergEigen: eigen decomposition failed");
-
-        m_matT = m_realSchur.matrixT();
-        m_eivec = m_realSchur.matrixU();
+        m_schur.compute(mat / scale);
+        m_schur.swap_T(m_matT);
+        m_schur.swap_U(m_eivec);
 
         // Compute eigenvalues from matT
         m_eivalues.resize(m_n);
@@ -249,7 +244,7 @@ public:
                 {
                     Scalar t0 = m_matT.coeff(i + 1, i);
                     Scalar t1 = m_matT.coeff(i, i + 1);
-                    Scalar maxval = std::max(abs(p), std::max(abs(t0), abs(t1)));
+                    Scalar maxval = (std::max)(abs(p), (std::max)(abs(t0), abs(t1)));
                     t0 /= maxval;
                     t1 /= maxval;
                     Scalar p0 = p / maxval;
@@ -316,4 +311,4 @@ public:
 
 }  // namespace Spectra
 
-#endif  // UPPER_HESSENBERG_EIGEN_H
+#endif  // SPECTRA_UPPER_HESSENBERG_EIGEN_H

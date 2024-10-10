@@ -1,11 +1,11 @@
-// Copyright (C) 2016-2022 Yixuan Qiu <yixuan.qiu@cos.name>
+// Copyright (C) 2020-2022 Yixuan Qiu <yixuan.qiu@cos.name>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef SPECTRA_SPARSE_SYM_SHIFT_SOLVE_H
-#define SPECTRA_SPARSE_SYM_SHIFT_SOLVE_H
+#ifndef SPECTRA_SPARSE_GEN_COMPLEX_SHIFT_SOLVE_H
+#define SPECTRA_SPARSE_GEN_COMPLEX_SHIFT_SOLVE_H
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
@@ -17,20 +17,19 @@ namespace Spectra {
 ///
 /// \ingroup MatOp
 ///
-/// This class defines the shift-solve operation on a sparse real symmetric matrix \f$A\f$,
-/// i.e., calculating \f$y=(A-\sigma I)^{-1}x\f$ for any real \f$\sigma\f$ and
-/// vector \f$x\f$. It is mainly used in the SymEigsShiftSolver eigen solver.
+/// This class defines the complex shift-solve operation on a sparse real matrix \f$A\f$,
+/// i.e., calculating \f$y=\mathrm{Re}\{(A-\sigma I)^{-1}x\}\f$ for any complex-valued
+/// \f$\sigma\f$ and real-valued vector \f$x\f$. It is mainly used in the
+/// GenEigsComplexShiftSolver eigen solver.
 ///
 /// \tparam Scalar_      The element type of the matrix, for example,
 ///                      `float`, `double`, and `long double`.
-/// \tparam Uplo         Either `Eigen::Lower` or `Eigen::Upper`, indicating which
-///                      triangular part of the matrix is used.
 /// \tparam Flags        Either `Eigen::ColMajor` or `Eigen::RowMajor`, indicating
 ///                      the storage format of the input matrix.
 /// \tparam StorageIndex The type of the indices for the sparse matrix.
 ///
-template <typename Scalar_, int Uplo = Eigen::Lower, int Flags = Eigen::ColMajor, typename StorageIndex = int>
-class SparseSymShiftSolve
+template <typename Scalar_, int Flags = Eigen::ColMajor, typename StorageIndex = int>
+class SparseGenComplexShiftSolve
 {
 public:
     ///
@@ -46,9 +45,16 @@ private:
     using SparseMatrix = Eigen::SparseMatrix<Scalar, Flags, StorageIndex>;
     using ConstGenericSparseMatrix = const Eigen::Ref<const SparseMatrix>;
 
+    using Complex = std::complex<Scalar>;
+    using ComplexVector = Eigen::Matrix<Complex, Eigen::Dynamic, 1>;
+    using SparseComplexMatrix = Eigen::SparseMatrix<Complex, Flags, StorageIndex>;
+
+    using ComplexSolver = Eigen::SparseLU<SparseComplexMatrix>;
+
     ConstGenericSparseMatrix m_mat;
     const Index m_n;
-    Eigen::SparseLU<SparseMatrix> m_solver;
+    ComplexSolver m_solver;
+    mutable ComplexVector m_x_cache;
 
 public:
     ///
@@ -59,15 +65,15 @@ public:
     /// `Eigen::Map<Eigen::SparseMatrix<Scalar, ...> >`.
     ///
     template <typename Derived>
-    SparseSymShiftSolve(const Eigen::SparseMatrixBase<Derived>& mat) :
+    SparseGenComplexShiftSolve(const Eigen::SparseMatrixBase<Derived>& mat) :
         m_mat(mat), m_n(mat.rows())
     {
         static_assert(
             static_cast<int>(Derived::PlainObject::IsRowMajor) == static_cast<int>(SparseMatrix::IsRowMajor),
-            "SparseSymShiftSolve: the \"Flags\" template parameter does not match the input matrix (Eigen::ColMajor/Eigen::RowMajor)");
+            "SparseGenComplexShiftSolve: the \"Flags\" template parameter does not match the input matrix (Eigen::ColMajor/Eigen::RowMajor)");
 
         if (mat.rows() != mat.cols())
-            throw std::invalid_argument("SparseSymShiftSolve: matrix must be square");
+            throw std::invalid_argument("SparseGenComplexShiftSolve: matrix must be square");
     }
 
     ///
@@ -80,35 +86,39 @@ public:
     Index cols() const { return m_n; }
 
     ///
-    /// Set the real shift \f$\sigma\f$.
+    /// Set the complex shift \f$\sigma\f$.
     ///
-    void set_shift(const Scalar& sigma)
+    /// \param sigmar Real part of \f$\sigma\f$.
+    /// \param sigmai Imaginary part of \f$\sigma\f$.
+    ///
+    void set_shift(const Scalar& sigmar, const Scalar& sigmai)
     {
-        SparseMatrix mat = m_mat.template selfadjointView<Uplo>();
-        SparseMatrix identity(m_n, m_n);
-        identity.setIdentity();
-        mat = mat - sigma * identity;
-        m_solver.isSymmetric(true);
-        m_solver.compute(mat);
-        if (m_solver.info() != Eigen::Success)
-            throw std::invalid_argument("SparseSymShiftSolve: factorization failed with the given shift");
+        // Create a sparse idendity matrix (1 + 0i on diagonal)
+        SparseComplexMatrix I(m_n, m_n);
+        I.setIdentity();
+        // Sparse LU decomposition
+        m_solver.compute(m_mat.template cast<Complex>() - Complex(sigmar, sigmai) * I);
+        // Set cache to zero
+        m_x_cache.resize(m_n);
+        m_x_cache.setZero();
     }
 
     ///
-    /// Perform the shift-solve operation \f$y=(A-\sigma I)^{-1}x\f$.
+    /// Perform the complex shift-solve operation
+    /// \f$y=\mathrm{Re}\{(A-\sigma I)^{-1}x\}\f$.
     ///
     /// \param x_in  Pointer to the \f$x\f$ vector.
     /// \param y_out Pointer to the \f$y\f$ vector.
     ///
-    // y_out = inv(A - sigma * I) * x_in
+    // y_out = Re( inv(A - sigma * I) * x_in )
     void perform_op(const Scalar* x_in, Scalar* y_out) const
     {
-        MapConstVec x(x_in, m_n);
+        m_x_cache.real() = MapConstVec(x_in, m_n);
         MapVec y(y_out, m_n);
-        y.noalias() = m_solver.solve(x);
+        y.noalias() = m_solver.solve(m_x_cache).real();
     }
 };
 
 }  // namespace Spectra
 
-#endif  // SPECTRA_SPARSE_SYM_SHIFT_SOLVE_H
+#endif  // SPECTRA_SPARSE_GEN_COMPLEX_SHIFT_SOLVE_H

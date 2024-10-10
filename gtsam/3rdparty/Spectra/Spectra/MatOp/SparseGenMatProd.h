@@ -1,17 +1,16 @@
-// Copyright (C) 2016-2019 Yixuan Qiu <yixuan.qiu@cos.name>
+// Copyright (C) 2016-2022 Yixuan Qiu <yixuan.qiu@cos.name>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef SPARSE_GEN_MAT_PROD_H
-#define SPARSE_GEN_MAT_PROD_H
+#ifndef SPECTRA_SPARSE_GEN_MAT_PROD_H
+#define SPECTRA_SPARSE_GEN_MAT_PROD_H
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
 namespace Spectra {
-
 ///
 /// \ingroup MatOp
 ///
@@ -20,16 +19,29 @@ namespace Spectra {
 /// \f$x\f$. It is mainly used in the GenEigsSolver and SymEigsSolver
 /// eigen solvers.
 ///
-template <typename Scalar, int Flags = 0, typename StorageIndex = int>
+/// \tparam Scalar_      The element type of the matrix, for example,
+///                      `float`, `double`, and `long double`.
+/// \tparam Flags        Either `Eigen::ColMajor` or `Eigen::RowMajor`, indicating
+///                      the storage format of the input matrix.
+/// \tparam StorageIndex The type of the indices for the sparse matrix.
+///
+template <typename Scalar_, int Flags = Eigen::ColMajor, typename StorageIndex = int>
 class SparseGenMatProd
 {
+public:
+    ///
+    /// Element type of the matrix.
+    ///
+    using Scalar = Scalar_;
+
 private:
-    typedef Eigen::Index Index;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-    typedef Eigen::Map<const Vector> MapConstVec;
-    typedef Eigen::Map<Vector> MapVec;
-    typedef Eigen::SparseMatrix<Scalar, Flags, StorageIndex> SparseMatrix;
-    typedef const Eigen::Ref<const SparseMatrix> ConstGenericSparseMatrix;
+    using Index = Eigen::Index;
+    using Vector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+    using MapConstVec = Eigen::Map<const Vector>;
+    using MapVec = Eigen::Map<Vector>;
+    using Matrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+    using SparseMatrix = Eigen::SparseMatrix<Scalar, Flags, StorageIndex>;
+    using ConstGenericSparseMatrix = const Eigen::Ref<const SparseMatrix>;
 
     ConstGenericSparseMatrix m_mat;
 
@@ -41,9 +53,14 @@ public:
     /// `Eigen::SparseMatrix<Scalar, ...>` or its mapped version
     /// `Eigen::Map<Eigen::SparseMatrix<Scalar, ...> >`.
     ///
-    SparseGenMatProd(ConstGenericSparseMatrix& mat) :
+    template <typename Derived>
+    SparseGenMatProd(const Eigen::SparseMatrixBase<Derived>& mat) :
         m_mat(mat)
-    {}
+    {
+        static_assert(
+            static_cast<int>(Derived::PlainObject::IsRowMajor) == static_cast<int>(SparseMatrix::IsRowMajor),
+            "SparseGenMatProd: the \"Flags\" template parameter does not match the input matrix (Eigen::ColMajor/Eigen::RowMajor)");
+    }
 
     ///
     /// Return the number of rows of the underlying matrix.
@@ -67,8 +84,24 @@ public:
         MapVec y(y_out, m_mat.rows());
         y.noalias() = m_mat * x;
     }
+
+    ///
+    /// Perform the matrix-matrix multiplication operation \f$y=Ax\f$.
+    ///
+    Matrix operator*(const Eigen::Ref<const Matrix>& mat_in) const
+    {
+        return m_mat * mat_in;
+    }
+
+    ///
+    /// Extract (i,j) element of the underlying matrix.
+    ///
+    Scalar operator()(Index i, Index j) const
+    {
+        return m_mat.coeff(i, j);
+    }
 };
 
 }  // namespace Spectra
 
-#endif  // SPARSE_GEN_MAT_PROD_H
+#endif  // SPECTRA_SPARSE_GEN_MAT_PROD_H
