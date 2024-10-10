@@ -128,7 +128,10 @@ TEST(HybridGaussianProductFactor, AsProductFactor) {
   EXPECT(actual.first.at(0) == f10);
   EXPECT_DOUBLES_EQUAL(10, actual.second, 1e-9);
 
-  // TODO(Frank): when killed hiding, f11 should also be there
+  mode[m1.first] = 1;
+  actual = product(mode);
+  EXPECT(actual.first.at(0) == f11);
+  EXPECT_DOUBLES_EQUAL(11, actual.second, 1e-9);
 }
 
 /* ************************************************************************* */
@@ -145,7 +148,10 @@ TEST(HybridGaussianProductFactor, AddOne) {
   EXPECT(actual.first.at(0) == f10);
   EXPECT_DOUBLES_EQUAL(10, actual.second, 1e-9);
 
-  // TODO(Frank): when killed hiding, f11 should also be there
+  mode[m1.first] = 1;
+  actual = product(mode);
+  EXPECT(actual.first.at(0) == f11);
+  EXPECT_DOUBLES_EQUAL(11, actual.second, 1e-9);
 }
 
 /* ************************************************************************* */
@@ -166,9 +172,8 @@ TEST(HybridGaussianProductFactor, AddTwo) {
   EXPECT_DOUBLES_EQUAL(10 + 20, actual00.second, 1e-9);
 
   auto actual12 = product({{M(1), 1}, {M(2), 2}});
-  // TODO(Frank): when killed hiding, these should also equal:
-  // EXPECT(actual12.first.at(0) == f11);
-  // EXPECT(actual12.first.at(1) == f22);
+  EXPECT(actual12.first.at(0) == f11);
+  EXPECT(actual12.first.at(1) == f22);
   EXPECT_DOUBLES_EQUAL(11 + 22, actual12.second, 1e-9);
 }
 
