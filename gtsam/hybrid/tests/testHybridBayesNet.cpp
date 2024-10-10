@@ -18,9 +18,12 @@
  * @date    December 2021
  */
 
+#include <gtsam/base/Testable.h>
+#include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include "Switching.h"
@@ -28,6 +31,7 @@
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
+#include <memory>
 
 using namespace std;
 using namespace gtsam;
@@ -113,7 +117,7 @@ TEST(HybridBayesNet, EvaluatePureDiscrete) {
 }
 
 /* ****************************************************************************/
-// Test creation of a tiny hybrid Bayes net.
+// Test API for a tiny hybrid Bayes net.
 TEST(HybridBayesNet, Tiny) {
   auto bayesNet = tiny::createHybridBayesNet();  // P(z|x,mode)P(x)P(mode)
   EXPECT_LONGS_EQUAL(3, bayesNet.size());
@@ -188,6 +192,20 @@ TEST(HybridBayesNet, Tiny) {
   // toFactorGraph
   auto fg = bayesNet.toFactorGraph({{Z(0), Vector1(5.0)}});
   EXPECT_LONGS_EQUAL(3, fg.size());
+
+  // Create the product factor for eliminating x0:
+  HybridGaussianFactorGraph factors_x0;
+  factors_x0.push_back(fg.at(0));
+  factors_x0.push_back(fg.at(1));
+  auto productFactor = factors_x0.collectProductFactor();
+
+  // Check that scalars are 0 and 1.79 (regression)
+  EXPECT_DOUBLES_EQUAL(0.0, productFactor({{M(0), 0}}).second, 1e-9);
+  EXPECT_DOUBLES_EQUAL(1.791759, productFactor({{M(0), 1}}).second, 1e-5);
+
+  // Call eliminate and check scalar:
+  auto result = factors_x0.eliminate({X(0)});
+  auto df = std::dynamic_pointer_cast<DecisionTreeFactor>(result.second);
 
   // Check that the ratio of probPrime to evaluate is the same for all modes.
   std::vector<double> ratio(2);

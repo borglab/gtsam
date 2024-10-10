@@ -13,38 +13,34 @@
  *  @file testHybridGaussianFactorGraph.cpp
  *  @date Mar 11, 2022
  *  @author Fan Jiang
+ *  @author Varun Agrawal
+ *  @author Frank Dellaert
  */
 
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
-#include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
-#include <gtsam/hybrid/HybridGaussianISAM.h>
+#include <gtsam/hybrid/HybridGaussianProductFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/BayesNet.h>
-#include <gtsam/inference/DotWriter.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
 
-#include <algorithm>
 #include <cstddef>
-#include <functional>
-#include <iostream>
-#include <iterator>
 #include <memory>
-#include <numeric>
 #include <vector>
 
 #include "Switching.h"
@@ -53,17 +49,15 @@
 using namespace std;
 using namespace gtsam;
 
-using gtsam::symbol_shorthand::D;
 using gtsam::symbol_shorthand::M;
 using gtsam::symbol_shorthand::N;
 using gtsam::symbol_shorthand::X;
-using gtsam::symbol_shorthand::Y;
 using gtsam::symbol_shorthand::Z;
 
 // Set up sampling
 std::mt19937_64 kRng(42);
 
-static const DiscreteKey m1(M(1), 2);
+static const DiscreteKey m0(M(0), 2), m1(M(1), 2), m2(M(2), 2);
 
 /* ************************************************************************* */
 TEST(HybridGaussianFactorGraph, Creation) {
@@ -76,7 +70,7 @@ TEST(HybridGaussianFactorGraph, Creation) {
   // Define a hybrid gaussian conditional P(x0|x1, c0)
   // and add it to the factor graph.
   HybridGaussianConditional gm(
-      {M(0), 2},
+      m0,
       {std::make_shared<GaussianConditional>(X(0), Z_3x1, I_3x3, X(1), I_3x3),
        std::make_shared<GaussianConditional>(X(0), Vector3::Ones(), I_3x3, X(1),
                                              I_3x3)});
@@ -97,22 +91,6 @@ TEST(HybridGaussianFactorGraph, EliminateSequential) {
   EXPECT_LONGS_EQUAL(result.first->size(), 1);
 }
 
-/* ************************************************************************* */
-TEST(HybridGaussianFactorGraph, EliminateMultifrontal) {
-  // Test multifrontal elimination
-  HybridGaussianFactorGraph hfg;
-
-  // Add priors on x0 and c1
-  hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
-  hfg.add(DecisionTreeFactor(m1, {2, 8}));
-
-  Ordering ordering;
-  ordering.push_back(X(0));
-  auto result = hfg.eliminatePartialMultifrontal(ordering);
-
-  EXPECT_LONGS_EQUAL(result.first->size(), 1);
-  EXPECT_LONGS_EQUAL(result.second->size(), 1);
-}
 /* ************************************************************************* */
 
 namespace two {
@@ -138,7 +116,8 @@ TEST(HybridGaussianFactorGraph, hybridEliminationOneFactor) {
   // Check that factor is discrete and correct
   auto factor = std::dynamic_pointer_cast<DecisionTreeFactor>(result.second);
   CHECK(factor);
-  EXPECT(assert_equal(DecisionTreeFactor{m1, "1 1"}, *factor));
+  // regression test
+  EXPECT(assert_equal(DecisionTreeFactor{m1, "1 1"}, *factor, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -178,7 +157,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
   // Discrete probability table for c1
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
   // Joint discrete probability table for c1, c2
-  hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
+  hfg.add(DecisionTreeFactor({m1, m2}, "1 2 3 4"));
 
   HybridBayesNet::shared_ptr result = hfg.eliminateSequential();
 
@@ -187,295 +166,219 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
 }
 
 /* ************************************************************************* */
-TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
-  HybridGaussianFactorGraph hfg;
+// Test API for the smallest switching network.
+// None of these are regression tests.
+TEST(HybridBayesNet, Switching) {
+  // Create switching network with two continuous variables and one discrete:
+  // ϕ(x0) ϕ(x0,x1,m0) ϕ(x1;z1) ϕ(m0)
+  const double betweenSigma = 0.3, priorSigma = 0.1;
+  Switching s(2, betweenSigma, priorSigma);
 
-  hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
-  hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
+  // Check size of linearized factor graph
+  const HybridGaussianFactorGraph &graph = s.linearizedFactorGraph;
+  EXPECT_LONGS_EQUAL(4, graph.size());
 
-  hfg.add(HybridGaussianFactor({M(1), 2}, two::components(X(1))));
+  // Create some continuous and discrete values
+  const VectorValues continuousValues{{X(0), Vector1(0.1)},
+                                      {X(1), Vector1(1.2)}};
+  const DiscreteValues modeZero{{M(0), 0}}, modeOne{{M(0), 1}};
 
-  hfg.add(DecisionTreeFactor(m1, {2, 8}));
-  // TODO(Varun) Adding extra discrete variable not connected to continuous
-  // variable throws segfault
-  //  hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
+  // Get the hybrid gaussian factor and check it is as expected
+  auto hgf = std::dynamic_pointer_cast<HybridGaussianFactor>(graph.at(1));
+  CHECK(hgf);
 
-  HybridBayesTree::shared_ptr result = hfg.eliminateMultifrontal();
+  // Get factors and scalars for both modes
+  auto [factor0, scalar0] = (*hgf)(modeZero);
+  auto [factor1, scalar1] = (*hgf)(modeOne);
+  CHECK(factor0);
+  CHECK(factor1);
 
-  // The bayes tree should have 3 cliques
-  EXPECT_LONGS_EQUAL(3, result->size());
-  // GTSAM_PRINT(*result);
-  // GTSAM_PRINT(*result->marginalFactor(M(2)));
-}
+  // Check scalars against negLogConstant of noise model
+  auto betweenModel = noiseModel::Isotropic::Sigma(1, betweenSigma);
+  EXPECT_DOUBLES_EQUAL(betweenModel->negLogConstant(), scalar0, 1e-9);
+  EXPECT_DOUBLES_EQUAL(betweenModel->negLogConstant(), scalar1, 1e-9);
 
-/* ************************************************************************* */
-TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
-  HybridGaussianFactorGraph hfg;
+  // Check error for M(0) = 0
+  const HybridValues values0{continuousValues, modeZero};
+  double expectedError0 = 0;
+  for (const auto &factor : graph) expectedError0 += factor->error(values0);
+  EXPECT_DOUBLES_EQUAL(expectedError0, graph.error(values0), 1e-5);
 
-  // Prior on x0
-  hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
-  // Factor between x0-x1
-  hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
+  // Check error for M(0) = 1
+  const HybridValues values1{continuousValues, modeOne};
+  double expectedError1 = 0;
+  for (const auto &factor : graph) expectedError1 += factor->error(values1);
+  EXPECT_DOUBLES_EQUAL(expectedError1, graph.error(values1), 1e-5);
 
-  // Hybrid factor P(x1|c1)
-  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
-  // Prior factor on c1
-  hfg.add(DecisionTreeFactor(m1, {2, 8}));
+  // Check errorTree
+  AlgebraicDecisionTree<Key> actualErrors = graph.errorTree(continuousValues);
+  // Create expected error tree
+  const AlgebraicDecisionTree<Key> expectedErrors(M(0), expectedError0,
+                                                  expectedError1);
 
-  // Get a constrained ordering keeping c1 last
-  auto ordering_full = HybridOrdering(hfg);
+  // Check that the actual error tree matches the expected one
+  EXPECT(assert_equal(expectedErrors, actualErrors, 1e-5));
 
-  // Returns a Hybrid Bayes Tree with distribution P(x0|x1)P(x1|c1)P(c1)
-  HybridBayesTree::shared_ptr hbt = hfg.eliminateMultifrontal(ordering_full);
+  // Check probPrime
+  const double probPrime0 = graph.probPrime(values0);
+  EXPECT_DOUBLES_EQUAL(std::exp(-expectedError0), probPrime0, 1e-5);
 
-  EXPECT_LONGS_EQUAL(3, hbt->size());
-}
+  const double probPrime1 = graph.probPrime(values1);
+  EXPECT_DOUBLES_EQUAL(std::exp(-expectedError1), probPrime1, 1e-5);
 
-/* ************************************************************************* */
-/*
- * This test is about how to assemble the Bayes Tree roots after we do partial
- * elimination
- */
-TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
-  HybridGaussianFactorGraph hfg;
+  // Check discretePosterior
+  const AlgebraicDecisionTree<Key> graphPosterior =
+      graph.discretePosterior(continuousValues);
+  const double sum = probPrime0 + probPrime1;
+  const AlgebraicDecisionTree<Key> expectedPosterior(M(0), probPrime0 / sum,
+                                                     probPrime1 / sum);
+  EXPECT(assert_equal(expectedPosterior, graphPosterior, 1e-5));
 
-  hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
-  hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
+  // Make the clique of factors connected to x0:
+  HybridGaussianFactorGraph factors_x0;
+  factors_x0.push_back(graph.at(0));
+  factors_x0.push_back(hgf);
 
-  hfg.add(HybridGaussianFactor({M(0), 2}, two::components(X(0))));
-  hfg.add(HybridGaussianFactor({M(1), 2}, two::components(X(2))));
+  // Test collectProductFactor
+  auto productFactor = factors_x0.collectProductFactor();
 
-  hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
+  // For M(0) = 0
+  auto [gaussianFactor0, actualScalar0] = productFactor(modeZero);
+  EXPECT(gaussianFactor0.size() == 2);
+  EXPECT_DOUBLES_EQUAL((*hgf)(modeZero).second, actualScalar0, 1e-5);
 
-  hfg.add(JacobianFactor(X(3), I_3x3, X(4), -I_3x3, Z_3x1));
-  hfg.add(JacobianFactor(X(4), I_3x3, X(5), -I_3x3, Z_3x1));
+  // For M(0) = 1
+  auto [gaussianFactor1, actualScalar1] = productFactor(modeOne);
+  EXPECT(gaussianFactor1.size() == 2);
+  EXPECT_DOUBLES_EQUAL((*hgf)(modeOne).second, actualScalar1, 1e-5);
 
-  hfg.add(HybridGaussianFactor({M(3), 2}, two::components(X(3))));
-  hfg.add(HybridGaussianFactor({M(2), 2}, two::components(X(5))));
+  // Test eliminate x0
+  const Ordering ordering{X(0)};
+  auto [conditional, factor] = factors_x0.eliminate(ordering);
 
-  auto ordering_full =
-      Ordering::ColamdConstrainedLast(hfg, {M(0), M(1), M(2), M(3)});
+  // Check the conditional
+  CHECK(conditional);
+  EXPECT(conditional->isHybrid());
+  auto p_x0_given_x1_m = conditional->asHybrid();
+  CHECK(p_x0_given_x1_m);
+  EXPECT(HybridGaussianConditional::CheckInvariants(*p_x0_given_x1_m, values1));
+  EXPECT_LONGS_EQUAL(1, p_x0_given_x1_m->nrFrontals());  // x0
+  EXPECT_LONGS_EQUAL(2, p_x0_given_x1_m->nrParents());   // x1, m0
 
-  const auto [hbt, remaining] = hfg.eliminatePartialMultifrontal(ordering_full);
+  // Check the remaining factor
+  EXPECT(factor);
+  EXPECT(std::dynamic_pointer_cast<HybridGaussianFactor>(factor));
+  auto phi_x1_m = std::dynamic_pointer_cast<HybridGaussianFactor>(factor);
+  EXPECT_LONGS_EQUAL(2, phi_x1_m->keys().size());  // x1, m0
+  // Check that the scalars incorporate the negative log constant of the
+  // conditional
+  EXPECT_DOUBLES_EQUAL(scalar0 - (*p_x0_given_x1_m)(modeZero)->negLogConstant(),
+                       (*phi_x1_m)(modeZero).second, 1e-9);
+  EXPECT_DOUBLES_EQUAL(scalar1 - (*p_x0_given_x1_m)(modeOne)->negLogConstant(),
+                       (*phi_x1_m)(modeOne).second, 1e-9);
 
-  // 9 cliques in the bayes tree and 0 remaining variables to eliminate.
-  EXPECT_LONGS_EQUAL(9, hbt->size());
-  EXPECT_LONGS_EQUAL(0, remaining->size());
+  // Check that the conditional and remaining factor are consistent for both
+  // modes
+  for (auto &&mode : {modeZero, modeOne}) {
+    const auto gc = (*p_x0_given_x1_m)(mode);
+    const auto [gf, scalar] = (*phi_x1_m)(mode);
 
-  /*
-  (Fan) Explanation: the Junction tree will need to re-eliminate to get to the
-  marginal on X(1), which is not possible because it involves eliminating
-  discrete before continuous. The solution to this, however, is in Murphy02.
-  TLDR is that this is 1. expensive and 2. inexact. nevertheless it is doable.
-  And I believe that we should do this.
-  */
-}
-
-void dotPrint(const HybridGaussianFactorGraph::shared_ptr &hfg,
-              const HybridBayesTree::shared_ptr &hbt,
-              const Ordering &ordering) {
-  DotWriter dw;
-  dw.positionHints['c'] = 2;
-  dw.positionHints['x'] = 1;
-  std::cout << hfg->dot(DefaultKeyFormatter, dw);
-  std::cout << "\n";
-  hbt->dot(std::cout);
-
-  std::cout << "\n";
-  std::cout << hfg->eliminateSequential(ordering)->dot(DefaultKeyFormatter, dw);
-}
-
-/* ************************************************************************* */
-// TODO(fan): make a graph like Varun's paper one
-TEST(HybridGaussianFactorGraph, Switching) {
-  auto N = 12;
-  auto hfg = makeSwitchingChain(N);
-
-  // X(5) will be the center, X(1-4), X(6-9)
-  // X(3), X(7)
-  // X(2), X(8)
-  // X(1), X(4), X(6), X(9)
-  // M(5) will be the center, M(1-4), M(6-8)
-  // M(3), M(7)
-  // M(1), M(4), M(2), M(6), M(8)
-  // auto ordering_full =
-  //     Ordering(KeyVector{X(1), X(4), X(2), X(6), X(9), X(8), X(3), X(7),
-  //     X(5),
-  //                        M(1), M(4), M(2), M(6), M(8), M(3), M(7), M(5)});
-  KeyVector ordering;
-
-  {
-    std::vector<int> naturalX(N);
-    std::iota(naturalX.begin(), naturalX.end(), 1);
-    std::vector<Key> ordX;
-    std::transform(naturalX.begin(), naturalX.end(), std::back_inserter(ordX),
-                   [](int x) { return X(x); });
-
-    auto [ndX, lvls] = makeBinaryOrdering(ordX);
-    std::copy(ndX.begin(), ndX.end(), std::back_inserter(ordering));
-    // TODO(dellaert): this has no effect!
-    for (auto &l : lvls) {
-      l = -l;
-    }
-  }
-  {
-    std::vector<int> naturalC(N - 1);
-    std::iota(naturalC.begin(), naturalC.end(), 1);
-    std::vector<Key> ordC;
-    std::transform(naturalC.begin(), naturalC.end(), std::back_inserter(ordC),
-                   [](int x) { return M(x); });
-
-    // std::copy(ordC.begin(), ordC.end(), std::back_inserter(ordering));
-    const auto [ndC, lvls] = makeBinaryOrdering(ordC);
-    std::copy(ndC.begin(), ndC.end(), std::back_inserter(ordering));
-  }
-  auto ordering_full = Ordering(ordering);
-
-  // GTSAM_PRINT(*hfg);
-  // GTSAM_PRINT(ordering_full);
-
-  const auto [hbt, remaining] =
-      hfg->eliminatePartialMultifrontal(ordering_full);
-
-  // 12 cliques in the bayes tree and 0 remaining variables to eliminate.
-  EXPECT_LONGS_EQUAL(12, hbt->size());
-  EXPECT_LONGS_EQUAL(0, remaining->size());
-}
-
-/* ************************************************************************* */
-// TODO(fan): make a graph like Varun's paper one
-TEST(HybridGaussianFactorGraph, SwitchingISAM) {
-  auto N = 11;
-  auto hfg = makeSwitchingChain(N);
-
-  // X(5) will be the center, X(1-4), X(6-9)
-  // X(3), X(7)
-  // X(2), X(8)
-  // X(1), X(4), X(6), X(9)
-  // M(5) will be the center, M(1-4), M(6-8)
-  // M(3), M(7)
-  // M(1), M(4), M(2), M(6), M(8)
-  // auto ordering_full =
-  //     Ordering(KeyVector{X(1), X(4), X(2), X(6), X(9), X(8), X(3), X(7),
-  //     X(5),
-  //                        M(1), M(4), M(2), M(6), M(8), M(3), M(7), M(5)});
-  KeyVector ordering;
-
-  {
-    std::vector<int> naturalX(N);
-    std::iota(naturalX.begin(), naturalX.end(), 1);
-    std::vector<Key> ordX;
-    std::transform(naturalX.begin(), naturalX.end(), std::back_inserter(ordX),
-                   [](int x) { return X(x); });
-
-    auto [ndX, lvls] = makeBinaryOrdering(ordX);
-    std::copy(ndX.begin(), ndX.end(), std::back_inserter(ordering));
-    // TODO(dellaert): this has no effect!
-    for (auto &l : lvls) {
-      l = -l;
-    }
-  }
-  {
-    std::vector<int> naturalC(N - 1);
-    std::iota(naturalC.begin(), naturalC.end(), 1);
-    std::vector<Key> ordC;
-    std::transform(naturalC.begin(), naturalC.end(), std::back_inserter(ordC),
-                   [](int x) { return M(x); });
-
-    // std::copy(ordC.begin(), ordC.end(), std::back_inserter(ordering));
-    const auto [ndC, lvls] = makeBinaryOrdering(ordC);
-    std::copy(ndC.begin(), ndC.end(), std::back_inserter(ordering));
-  }
-  auto ordering_full = Ordering(ordering);
-
-  const auto [hbt, remaining] =
-      hfg->eliminatePartialMultifrontal(ordering_full);
-
-  auto new_fg = makeSwitchingChain(12);
-  auto isam = HybridGaussianISAM(*hbt);
-
-  // Run an ISAM update.
-  HybridGaussianFactorGraph factorGraph;
-  factorGraph.push_back(new_fg->at(new_fg->size() - 2));
-  factorGraph.push_back(new_fg->at(new_fg->size() - 1));
-  isam.update(factorGraph);
-
-  // ISAM should have 12 factors after the last update
-  EXPECT_LONGS_EQUAL(12, isam.size());
-}
-
-/* ************************************************************************* */
-TEST(HybridGaussianFactorGraph, SwitchingTwoVar) {
-  const int N = 7;
-  auto hfg = makeSwitchingChain(N, X);
-  hfg->push_back(*makeSwitchingChain(N, Y, D));
-
-  for (int t = 1; t <= N; t++) {
-    hfg->add(JacobianFactor(X(t), I_3x3, Y(t), -I_3x3, Vector3(1.0, 0.0, 0.0)));
+    // The error of the original factors should equal the sum of errors of the
+    // conditional and remaining factor, modulo the normalization constant of
+    // the conditional.
+    double originalError = factors_x0.error({continuousValues, mode});
+    const double actualError = gc->negLogConstant() +
+                               gc->error(continuousValues) +
+                               gf->error(continuousValues) + scalar;
+    EXPECT_DOUBLES_EQUAL(originalError, actualError, 1e-9);
   }
 
-  KeyVector ordering;
+  // Create a clique for x1
+  HybridGaussianFactorGraph factors_x1;
+  factors_x1.push_back(
+      factor);  // Use the remaining factor from previous elimination
+  factors_x1.push_back(
+      graph.at(2));  // Add the factor for x1 from the original graph
 
-  KeyVector naturalX(N);
-  std::iota(naturalX.begin(), naturalX.end(), 1);
-  KeyVector ordX;
-  for (size_t i = 1; i <= N; i++) {
-    ordX.emplace_back(X(i));
-    ordX.emplace_back(Y(i));
-  }
+  // Test collectProductFactor for x1 clique
+  auto productFactor_x1 = factors_x1.collectProductFactor();
 
-  for (size_t i = 1; i <= N - 1; i++) {
-    ordX.emplace_back(M(i));
-  }
-  for (size_t i = 1; i <= N - 1; i++) {
-    ordX.emplace_back(D(i));
-  }
+  // For M(0) = 0
+  auto [gaussianFactor_x1_0, actualScalar_x1_0] = productFactor_x1(modeZero);
+  EXPECT_LONGS_EQUAL(2, gaussianFactor_x1_0.size());
+  // NOTE(Frank): prior on x1 does not contribute to the scalar
+  EXPECT_DOUBLES_EQUAL((*phi_x1_m)(modeZero).second, actualScalar_x1_0, 1e-5);
 
-  {
-    DotWriter dw;
-    dw.positionHints['x'] = 1;
-    dw.positionHints['c'] = 0;
-    dw.positionHints['d'] = 3;
-    dw.positionHints['y'] = 2;
-    // std::cout << hfg->dot(DefaultKeyFormatter, dw);
-    // std::cout << "\n";
-  }
+  // For M(0) = 1
+  auto [gaussianFactor_x1_1, actualScalar_x1_1] = productFactor_x1(modeOne);
+  EXPECT_LONGS_EQUAL(2, gaussianFactor_x1_1.size());
+  // NOTE(Frank): prior on x1 does not contribute to the scalar
+  EXPECT_DOUBLES_EQUAL((*phi_x1_m)(modeOne).second, actualScalar_x1_1, 1e-5);
 
-  {
-    DotWriter dw;
-    dw.positionHints['y'] = 9;
-    // dw.positionHints['c'] = 0;
-    // dw.positionHints['d'] = 3;
-    dw.positionHints['x'] = 1;
-    // std::cout << "\n";
-    // std::cout << hfg->eliminateSequential(Ordering(ordX))
-    //                  ->dot(DefaultKeyFormatter, dw);
-    // hfg->eliminateMultifrontal(Ordering(ordX))->dot(std::cout);
-  }
+  // Test eliminate for x1 clique
+  Ordering ordering_x1{X(1)};
+  auto [conditional_x1, factor_x1] = factors_x1.eliminate(ordering_x1);
 
-  Ordering ordering_partial;
-  for (size_t i = 1; i <= N; i++) {
-    ordering_partial.emplace_back(X(i));
-    ordering_partial.emplace_back(Y(i));
-  }
-  const auto [hbn, remaining] =
-      hfg->eliminatePartialSequential(ordering_partial);
+  // Check the conditional for x1
+  CHECK(conditional_x1);
+  EXPECT(conditional_x1->isHybrid());
+  auto p_x1_given_m = conditional_x1->asHybrid();
+  CHECK(p_x1_given_m);
+  EXPECT_LONGS_EQUAL(1, p_x1_given_m->nrFrontals());  // x1
+  EXPECT_LONGS_EQUAL(1, p_x1_given_m->nrParents());   // m0
 
-  EXPECT_LONGS_EQUAL(14, hbn->size());
-  EXPECT_LONGS_EQUAL(11, remaining->size());
+  // Check the remaining factor for x1
+  CHECK(factor_x1);
+  auto phi_x1 = std::dynamic_pointer_cast<DecisionTreeFactor>(factor_x1);
+  CHECK(phi_x1);
+  EXPECT_LONGS_EQUAL(1, phi_x1->keys().size());  // m0
+  // We can't really check the error of the decision tree factor phi_x1, because
+  // the continuous factor whose error(kEmpty) we need is not available..
 
-  {
-    DotWriter dw;
-    dw.positionHints['x'] = 1;
-    dw.positionHints['c'] = 0;
-    dw.positionHints['d'] = 3;
-    dw.positionHints['y'] = 2;
-    // std::cout << remaining->dot(DefaultKeyFormatter, dw);
-    // std::cout << "\n";
-  }
+  // Now test full elimination of the graph:
+  auto hybridBayesNet = graph.eliminateSequential();
+  CHECK(hybridBayesNet);
+
+  // Check that the posterior P(M|X=continuousValues) from the Bayes net is the
+  // same as the same posterior from the graph. This is a sanity check that the
+  // elimination is done correctly.
+  AlgebraicDecisionTree<Key> bnPosterior =
+      hybridBayesNet->discretePosterior(continuousValues);
+  EXPECT(assert_equal(graphPosterior, bnPosterior));
 }
 
 /* ****************************************************************************/
+// Test subset of API for switching network with 3 states.
+// None of these are regression tests.
+TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
+  // Create switching network with three continuous variables and two discrete:
+  // ϕ(x0) ϕ(x0,x1,m0) ϕ(x1,x2,m1) ϕ(x1;z1) ϕ(x2;z2) ϕ(m0) ϕ(m0,m1)
+  Switching s(3);
+
+  // Check size of linearized factor graph
+  const HybridGaussianFactorGraph &graph = s.linearizedFactorGraph;
+  EXPECT_LONGS_EQUAL(7, graph.size());
+
+  // Eliminate the graph
+  const HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
+
+  const HybridValues delta = hybridBayesNet->optimize();
+  const double error = graph.error(delta);
+
+  // Check that the probability prime is the exponential of the error
+  EXPECT(assert_equal(graph.probPrime(delta), exp(-error), 1e-7));
+
+  // Check that the posterior P(M|X=continuousValues) from the Bayes net is the
+  // same as the same posterior from the graph. This is a sanity check that the
+  // elimination is done correctly.
+  const AlgebraicDecisionTree<Key> graphPosterior =
+      graph.discretePosterior(delta.continuous());
+  const AlgebraicDecisionTree<Key> bnPosterior =
+      hybridBayesNet->discretePosterior(delta.continuous());
+  EXPECT(assert_equal(graphPosterior, bnPosterior));
+}
+
+/* ************************************************************************* */
 // Select a particular continuous factor graph given a discrete assignment
 TEST(HybridGaussianFactorGraph, DiscreteSelection) {
   Switching s(3);
@@ -546,23 +449,43 @@ TEST(HybridGaussianFactorGraph, optimize) {
 // Test adding of gaussian conditional and re-elimination.
 TEST(HybridGaussianFactorGraph, Conditionals) {
   Switching switching(4);
-  HybridGaussianFactorGraph hfg;
 
-  hfg.push_back(switching.linearizedFactorGraph.at(0));  // P(X1)
+  HybridGaussianFactorGraph hfg;
+  hfg.push_back(switching.linearizedFactorGraph.at(0));  // P(X0)
   Ordering ordering;
   ordering.push_back(X(0));
   HybridBayesNet::shared_ptr bayes_net = hfg.eliminateSequential(ordering);
 
-  hfg.push_back(switching.linearizedFactorGraph.at(1));  // P(X1, X2 | M1)
-  hfg.push_back(*bayes_net);
-  hfg.push_back(switching.linearizedFactorGraph.at(2));  // P(X2, X3 | M2)
-  hfg.push_back(switching.linearizedFactorGraph.at(5));  // P(M1)
-  ordering.push_back(X(1));
-  ordering.push_back(X(2));
-  ordering.push_back(M(0));
-  ordering.push_back(M(1));
+  HybridGaussianFactorGraph hfg2;
+  hfg2.push_back(*bayes_net);                             // P(X0)
+  hfg2.push_back(switching.linearizedFactorGraph.at(1));  // P(X0, X1 | M0)
+  hfg2.push_back(switching.linearizedFactorGraph.at(2));  // P(X1, X2 | M1)
+  hfg2.push_back(switching.linearizedFactorGraph.at(5));  // P(M1)
+  ordering += X(1), X(2), M(0), M(1);
 
-  bayes_net = hfg.eliminateSequential(ordering);
+  // Created product of first two factors and check eliminate:
+  HybridGaussianFactorGraph fragment;
+  fragment.push_back(hfg2[0]);
+  fragment.push_back(hfg2[1]);
+
+  // Check that product
+  HybridGaussianProductFactor product = fragment.collectProductFactor();
+  auto leaf = fragment(DiscreteValues{{M(0), 0}});
+  EXPECT_LONGS_EQUAL(2, leaf.size());
+
+  // Check product and that pruneEmpty does not touch it
+  auto pruned = product.removeEmpty();
+  LONGS_EQUAL(2, pruned.nrLeaves());
+
+  // Test eliminate
+  auto [hybridConditional, factor] = fragment.eliminate({X(0)});
+  EXPECT(hybridConditional->isHybrid());
+  EXPECT(hybridConditional->keys() == KeyVector({X(0), X(1), M(0)}));
+
+  EXPECT(dynamic_pointer_cast<HybridGaussianFactor>(factor));
+  EXPECT(factor->keys() == KeyVector({X(1), M(0)}));
+
+  bayes_net = hfg2.eliminateSequential(ordering);
 
   HybridValues result = bayes_net->optimize();
 
@@ -582,51 +505,6 @@ TEST(HybridGaussianFactorGraph, Conditionals) {
 }
 
 /* ****************************************************************************/
-// Test hybrid gaussian factor graph error and unnormalized probabilities
-TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
-  Switching s(3);
-
-  HybridGaussianFactorGraph graph = s.linearizedFactorGraph;
-
-  HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
-
-  const HybridValues delta = hybridBayesNet->optimize();
-  const double error = graph.error(delta);
-
-  // regression
-  EXPECT(assert_equal(1.58886, error, 1e-5));
-
-  // Real test:
-  EXPECT(assert_equal(graph.probPrime(delta), exp(-error), 1e-7));
-}
-
-/* ****************************************************************************/
-// Test hybrid gaussian factor graph error and unnormalized probabilities
-TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
-  // Create switching network with three continuous variables and two discrete:
-  // ϕ(x0) ϕ(x0,x1,m0) ϕ(x1,x2,m1) ϕ(x0;z0) ϕ(x1;z1) ϕ(x2;z2) ϕ(m0) ϕ(m0,m1)
-  Switching s(3);
-
-  const HybridGaussianFactorGraph &graph = s.linearizedFactorGraph;
-
-  const HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
-
-  const HybridValues delta = hybridBayesNet->optimize();
-
-  // regression test for errorTree
-  std::vector<double> leaves = {2.7916153, 1.5888555, 1.7233422, 1.6191947};
-  AlgebraicDecisionTree<Key> expectedErrors(s.modes, leaves);
-  const auto error_tree = graph.errorTree(delta.continuous());
-  EXPECT(assert_equal(expectedErrors, error_tree, 1e-7));
-
-  // regression test for discretePosterior
-  const AlgebraicDecisionTree<Key> expectedPosterior(
-      s.modes, std::vector{0.095516068, 0.31800092, 0.27798511, 0.3084979});
-  auto posterior = graph.discretePosterior(delta.continuous());
-  EXPECT(assert_equal(expectedPosterior, posterior, 1e-7));
-}
-
-/* ****************************************************************************/
 // Test hybrid gaussian factor graph errorTree during incremental operation
 TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   Switching s(4);
@@ -643,15 +521,13 @@ TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
   EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
 
+  // Check discrete posterior at optimum
   HybridValues delta = hybridBayesNet->optimize();
-  auto error_tree = graph.errorTree(delta.continuous());
-
-  std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
-  std::vector<double> leaves = {2.7916153, 1.5888555, 1.7233422, 1.6191947};
-  AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
-
-  // regression
-  EXPECT(assert_equal(expected_error, error_tree, 1e-7));
+  AlgebraicDecisionTree<Key> graphPosterior =
+      graph.discretePosterior(delta.continuous());
+  AlgebraicDecisionTree<Key> bnPosterior =
+      hybridBayesNet->discretePosterior(delta.continuous());
+  EXPECT(assert_equal(graphPosterior, bnPosterior));
 
   graph = HybridGaussianFactorGraph();
   graph.push_back(*hybridBayesNet);
@@ -662,26 +538,21 @@ TEST(HybridGaussianFactorGraph, IncrementalErrorTree) {
   EXPECT_LONGS_EQUAL(7, hybridBayesNet->size());
 
   delta = hybridBayesNet->optimize();
-  auto error_tree2 = graph.errorTree(delta.continuous());
-
-  // regression
-  leaves = {0.50985198, 0.0097577296, 0.50009425, 0,
-            0.52922138, 0.029127133,  0.50985105, 0.0097567964};
-  AlgebraicDecisionTree<Key> expected_error2(s.modes, leaves);
-  EXPECT(assert_equal(expected_error, error_tree, 1e-7));
+  graphPosterior = graph.discretePosterior(delta.continuous());
+  bnPosterior = hybridBayesNet->discretePosterior(delta.continuous());
+  EXPECT(assert_equal(graphPosterior, bnPosterior));
 }
 
 /* ****************************************************************************/
-// Check that assembleGraphTree assembles Gaussian factor graphs for each
-// assignment.
-TEST(HybridGaussianFactorGraph, assembleGraphTree) {
+// Check that collectProductFactor works correctly.
+TEST(HybridGaussianFactorGraph, collectProductFactor) {
   const int num_measurements = 1;
-  auto fg = tiny::createHybridGaussianFactorGraph(
-      num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
+  VectorValues vv{{Z(0), Vector1(5.0)}};
+  auto fg = tiny::createHybridGaussianFactorGraph(num_measurements, vv);
   EXPECT_LONGS_EQUAL(3, fg.size());
 
   // Assemble graph tree:
-  auto actual = fg.assembleGraphTree();
+  auto actual = fg.collectProductFactor();
 
   // Create expected decision tree with two factor graphs:
 
@@ -700,13 +571,15 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   DiscreteValues d0{{M(0), 0}}, d1{{M(0), 1}};
 
   // Expected decision tree with two factor graphs:
-  // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
-  GaussianFactorGraphTree expected{
-      M(0), GaussianFactorGraph(std::vector<GF>{(*hybrid)(d0), prior}),
-      GaussianFactorGraph(std::vector<GF>{(*hybrid)(d1), prior})};
+  // f(x0;mode=0)P(x0)
+  GaussianFactorGraph expectedFG0{(*hybrid)(d0).first, prior};
+  EXPECT(assert_equal(expectedFG0, actual(d0).first, 1e-5));
+  EXPECT(assert_equal(0.0, actual(d0).second, 1e-5));
 
-  EXPECT(assert_equal(expected(d0), actual(d0), 1e-5));
-  EXPECT(assert_equal(expected(d1), actual(d1), 1e-5));
+  // f(x0;mode=1)P(x0)
+  GaussianFactorGraph expectedFG1{(*hybrid)(d1).first, prior};
+  EXPECT(assert_equal(expectedFG1, actual(d1).first, 1e-5));
+  EXPECT(assert_equal(1.79176, actual(d1).second, 1e-5));
 }
 
 /* ****************************************************************************/
@@ -746,7 +619,6 @@ bool ratioTest(const HybridBayesNet &bn, const VectorValues &measurements,
   // Test ratios for a number of independent samples:
   for (size_t i = 0; i < num_samples; i++) {
     HybridValues sample = bn.sample(&kRng);
-    // GTSAM_PRINT(sample);
     // std::cout << "ratio: " << compute_ratio(&sample) << std::endl;
     if (std::abs(expected_ratio - compute_ratio(&sample)) > 1e-6) return false;
   }

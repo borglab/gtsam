@@ -60,17 +60,6 @@ double prob_m_z(double mu0, double mu1, double sigma0, double sigma1,
   return p1 / (p0 + p1);
 };
 
-/// Given \phi(m;z)\phi(m) use eliminate to obtain P(m|z).
-DiscreteConditional SolveHFG(const HybridGaussianFactorGraph &hfg) {
-  return *hfg.eliminateSequential()->at(0)->asDiscrete();
-}
-
-/// Given p(z,m) and z, convert to HFG and solve.
-DiscreteConditional SolveHBN(const HybridBayesNet &hbn, double z) {
-  VectorValues given{{Z(0), Vector1(z)}};
-  return SolveHFG(hbn.toFactorGraph(given));
-}
-
 /*
  * Test a Gaussian Mixture Model P(m)p(z|m) with same sigma.
  * The posterior, as a function of z, should be a sigmoid function.
@@ -88,7 +77,9 @@ TEST(GaussianMixture, GaussianMixtureModel) {
 
   // At the halfway point between the means, we should get P(m|z)=0.5
   double midway = mu1 - mu0;
-  auto pMid = SolveHBN(gmm, midway);
+  auto eliminationResult =
+      gmm.toFactorGraph({{Z(0), Vector1(midway)}}).eliminateSequential();
+  auto pMid = *eliminationResult->at(0)->asDiscrete();
   EXPECT(assert_equal(DiscreteConditional(m, "60/40"), pMid));
 
   // Everywhere else, the result should be a sigmoid.
@@ -97,7 +88,9 @@ TEST(GaussianMixture, GaussianMixtureModel) {
     const double expected = prob_m_z(mu0, mu1, sigma, sigma, z);
 
     // Workflow 1: convert HBN to HFG and solve
-    auto posterior1 = SolveHBN(gmm, z);
+    auto eliminationResult1 =
+        gmm.toFactorGraph({{Z(0), Vector1(z)}}).eliminateSequential();
+    auto posterior1 = *eliminationResult1->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
 
     // Workflow 2: directly specify HFG and solve
@@ -105,7 +98,8 @@ TEST(GaussianMixture, GaussianMixtureModel) {
     hfg1.emplace_shared<DecisionTreeFactor>(
         m, std::vector{Gaussian(mu0, sigma, z), Gaussian(mu1, sigma, z)});
     hfg1.push_back(mixing);
-    auto posterior2 = SolveHFG(hfg1);
+    auto eliminationResult2 = hfg1.eliminateSequential();
+    auto posterior2 = *eliminationResult2->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior2(m1Assignment), 1e-8);
   }
 }
@@ -128,7 +122,23 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
   // We get zMax=3.1333 by finding the maximum value of the function, at which
   // point the mode m==1 is about twice as probable as m==0.
   double zMax = 3.133;
-  auto pMax = SolveHBN(gmm, zMax);
+  const VectorValues vv{{Z(0), Vector1(zMax)}};
+  auto gfg = gmm.toFactorGraph(vv);
+
+  // Equality of posteriors asserts that the elimination is correct (same ratios
+  // for all modes)
+  const auto& expectedDiscretePosterior = gmm.discretePosterior(vv);
+  EXPECT(assert_equal(expectedDiscretePosterior, gfg.discretePosterior(vv)));
+
+  // Eliminate the graph!
+  auto eliminationResultMax = gfg.eliminateSequential();
+
+  // Equality of posteriors asserts that the elimination is correct (same ratios
+  // for all modes)
+  EXPECT(assert_equal(expectedDiscretePosterior,
+                      eliminationResultMax->discretePosterior(vv)));
+
+  auto pMax = *eliminationResultMax->at(0)->asDiscrete();
   EXPECT(assert_equal(DiscreteConditional(m, "42/58"), pMax, 1e-4));
 
   // Everywhere else, the result should be a bell curve like function.
@@ -137,7 +147,9 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
     const double expected = prob_m_z(mu0, mu1, sigma0, sigma1, z);
 
     // Workflow 1: convert HBN to HFG and solve
-    auto posterior1 = SolveHBN(gmm, z);
+    auto eliminationResult1 =
+        gmm.toFactorGraph({{Z(0), Vector1(z)}}).eliminateSequential();
+    auto posterior1 = *eliminationResult1->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
 
     // Workflow 2: directly specify HFG and solve
@@ -145,11 +157,11 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
     hfg.emplace_shared<DecisionTreeFactor>(
         m, std::vector{Gaussian(mu0, sigma0, z), Gaussian(mu1, sigma1, z)});
     hfg.push_back(mixing);
-    auto posterior2 = SolveHFG(hfg);
+    auto eliminationResult2 = hfg.eliminateSequential();
+    auto posterior2 = *eliminationResult2->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior2(m1Assignment), 1e-8);
   }
 }
-
 /* ************************************************************************* */
 int main() {
   TestResult tr;

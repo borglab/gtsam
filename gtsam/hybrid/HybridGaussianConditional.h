@@ -231,9 +231,6 @@ class GTSAM_EXPORT HybridGaussianConditional
   HybridGaussianConditional(const DiscreteKeys &discreteParents,
                             const Helper &helper);
 
-  /// Convert to a DecisionTree of Gaussian factor graphs.
-  GaussianFactorGraphTree asGaussianFactorGraphTree() const;
-
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;
 

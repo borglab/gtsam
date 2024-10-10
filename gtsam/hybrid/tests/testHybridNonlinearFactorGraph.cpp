@@ -545,14 +545,17 @@ TEST(HybridNonlinearFactorGraph, Printing) {
 #ifdef GTSAM_DT_MERGING
   string expected_hybridFactorGraph = R"(
 size: 7
-factor 0: 
+Factor 0
+GaussianFactor:
+
   A[x0] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 1: 
-HybridGaussianFactor
+
+Factor 1
+HybridGaussianFactor:
 Hybrid [x0 x1; m0]{
  Choice(m0) 
  0 Leaf :
@@ -564,6 +567,7 @@ Hybrid [x0 x1; m0]{
 ]
   b = [ -1 ]
   No noise model
+scalar: 0.918939
 
  1 Leaf :
   A[x0] = [
@@ -574,10 +578,12 @@ Hybrid [x0 x1; m0]{
 ]
   b = [ -0 ]
   No noise model
+scalar: 0.918939
 
 }
-factor 2: 
-HybridGaussianFactor
+
+Factor 2
+HybridGaussianFactor:
 Hybrid [x1 x2; m1]{
  Choice(m1) 
  0 Leaf :
@@ -589,6 +595,7 @@ Hybrid [x1 x2; m1]{
 ]
   b = [ -1 ]
   No noise model
+scalar: 0.918939
 
  1 Leaf :
   A[x1] = [
@@ -599,24 +606,37 @@ Hybrid [x1 x2; m1]{
 ]
   b = [ -0 ]
   No noise model
+scalar: 0.918939
 
 }
-factor 3: 
+
+Factor 3
+GaussianFactor:
+
   A[x1] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 4: 
+
+Factor 4
+GaussianFactor:
+
   A[x2] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 5:  P( m0 ):
+
+Factor 5
+DiscreteFactor:
+ P( m0 ):
  Leaf  0.5
 
-factor 6:  P( m1 | m0 ):
+
+Factor 6
+DiscreteFactor:
+ P( m1 | m0 ):
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf 0.33333333
@@ -624,6 +644,7 @@ factor 6:  P( m1 | m0 ):
  1 Choice(m0) 
  1 0 Leaf 0.66666667
  1 1 Leaf  0.4
+
 
 )";
 #else
@@ -717,7 +738,7 @@ factor 6:  P( m1 | m0 ):
   // Expected output for hybridBayesNet.
   string expected_hybridBayesNet = R"(
 size: 3
-conditional 0: Hybrid  P( x0 | x1 m0)
+conditional 0:  P( x0 | x1 m0)
  Discrete Keys = (m0, 2), 
  logNormalizationConstant: 1.38862
 
@@ -736,7 +757,7 @@ conditional 0: Hybrid  P( x0 | x1 m0)
   logNormalizationConstant: 1.38862
   No noise model
 
-conditional 1: Hybrid  P( x1 | x2 m0 m1)
+conditional 1:  P( x1 | x2 m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
  logNormalizationConstant: 1.3935
 
@@ -771,7 +792,7 @@ conditional 1: Hybrid  P( x1 | x2 m0 m1)
   logNormalizationConstant: 1.3935
   No noise model
 
-conditional 2: Hybrid  P( x2 | m0 m1)
+conditional 2:  P( x2 | m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
  logNormalizationConstant: 1.38857
 

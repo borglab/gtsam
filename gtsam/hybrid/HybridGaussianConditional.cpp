@@ -32,6 +32,16 @@
 
 namespace gtsam {
 /* *******************************************************************************/
+/**
+ * @brief Helper struct for constructing HybridGaussianConditional objects
+ *
+ * This struct contains the following fields:
+ * - nrFrontals: Optional size_t for number of frontal variables
+ * - pairs: FactorValuePairs for storing conditionals with their negLogConstant
+ * - conditionals: Conditionals for storing conditionals. TODO(frank): kill!
+ * - minNegLogConstant: minimum negLogConstant, computed here, subtracted in
+ * constructor
+ */
 struct HybridGaussianConditional::Helper {
   std::optional<size_t> nrFrontals;
   FactorValuePairs pairs;
@@ -68,16 +78,12 @@ struct HybridGaussianConditional::Helper {
   explicit Helper(const Conditionals &conditionals)
       : conditionals(conditionals),
         minNegLogConstant(std::numeric_limits<double>::infinity()) {
-    auto func = [this](const GC::shared_ptr &c) -> GaussianFactorValuePair {
-      double value = 0.0;
-      if (c) {
-        if (!nrFrontals.has_value()) {
-          nrFrontals = c->nrFrontals();
-        }
-        value = c->negLogConstant();
-        minNegLogConstant = std::min(minNegLogConstant, value);
-      }
-      return {std::dynamic_pointer_cast<GaussianFactor>(c), value};
+    auto func = [this](const GC::shared_ptr &gc) -> GaussianFactorValuePair {
+      if (!gc) return {nullptr, std::numeric_limits<double>::infinity()};
+      if (!nrFrontals) nrFrontals = gc->nrFrontals();
+      double value = gc->negLogConstant();
+      minNegLogConstant = std::min(minNegLogConstant, value);
+      return {gc, value};
     };
     pairs = FactorValuePairs(conditionals, func);
     if (!nrFrontals.has_value()) {
@@ -91,7 +97,14 @@ struct HybridGaussianConditional::Helper {
 /* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKeys &discreteParents, const Helper &helper)
-    : BaseFactor(discreteParents, helper.pairs),
+    : BaseFactor(discreteParents,
+                 FactorValuePairs(helper.pairs,
+                                  [&](const GaussianFactorValuePair &
+                                          pair) {  // subtract minNegLogConstant
+                                    return GaussianFactorValuePair{
+                                        pair.first,
+                                        pair.second - helper.minNegLogConstant};
+                                  })),
       BaseConditional(*helper.nrFrontals),
       conditionals_(helper.conditionals),
       negLogConstant_(helper.minNegLogConstant) {}
@@ -136,29 +149,6 @@ HybridGaussianConditional::conditionals() const {
 }
 
 /* *******************************************************************************/
-GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree()
-    const {
-  auto wrap = [this](const GaussianConditional::shared_ptr &gc) {
-    // First check if conditional has not been pruned
-    if (gc) {
-      const double Cgm_Kgcm = gc->negLogConstant() - this->negLogConstant_;
-      // If there is a difference in the covariances, we need to account for
-      // that since the error is dependent on the mode.
-      if (Cgm_Kgcm > 0.0) {
-        // We add a constant factor which will be used when computing
-        // the probability of the discrete variables.
-        Vector c(1);
-        c << std::sqrt(2.0 * Cgm_Kgcm);
-        auto constantFactor = std::make_shared<JacobianFactor>(c);
-        return GaussianFactorGraph{gc, constantFactor};
-      }
-    }
-    return GaussianFactorGraph{gc};
-  };
-  return {conditionals_, wrap};
-}
-
-/* *******************************************************************************/
 size_t HybridGaussianConditional::nrComponents() const {
   size_t total = 0;
   conditionals_.visit([&total](const GaussianFactor::shared_ptr &node) {
@@ -192,19 +182,18 @@ bool HybridGaussianConditional::equals(const HybridFactor &lf,
 
   // Check the base and the factors:
   return BaseFactor::equals(*e, tol) &&
-         conditionals_.equals(
-             e->conditionals_, [tol](const auto &f1, const auto &f2) {
-               return (!f1 && !f2) || (f1 && f2 && f1->equals(*f2, tol));
-             });
+         conditionals_.equals(e->conditionals_,
+                              [tol](const GaussianConditional::shared_ptr &f1,
+                                    const GaussianConditional::shared_ptr &f2) {
+                                return (!f1 && !f2) ||
+                                       (f1 && f2 && f1->equals(*f2, tol));
+                              });
 }
 
 /* *******************************************************************************/
 void HybridGaussianConditional::print(const std::string &s,
                                       const KeyFormatter &formatter) const {
   std::cout << (s.empty() ? "" : s + "\n");
-  if (isContinuous()) std::cout << "Continuous ";
-  if (isDiscrete()) std::cout << "Discrete ";
-  if (isHybrid()) std::cout << "Hybrid ";
   BaseConditional::print("", formatter);
   std::cout << " Discrete Keys = ";
   for (auto &dk : discreteKeys()) {
@@ -270,13 +259,7 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
           -> GaussianFactorValuePair {
         const auto likelihood_m = conditional->likelihood(given);
         const double Cgm_Kgcm = conditional->negLogConstant() - negLogConstant_;
-        if (Cgm_Kgcm == 0.0) {
-          return {likelihood_m, 0.0};
-        } else {
-          // Add a constant to the likelihood in case the noise models
-          // are not all equal.
-          return {likelihood_m, Cgm_Kgcm};
-        }
+        return {likelihood_m, Cgm_Kgcm};
       });
   return std::make_shared<HybridGaussianFactor>(discreteParentKeys,
                                                 likelihoods);

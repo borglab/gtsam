@@ -192,24 +192,29 @@ TEST(HybridGaussianFactor, TwoStateModel2) {
     HybridBayesNet hbn = CreateBayesNet(hybridMotionModel);
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
 
-    // Check that ratio of Bayes net and factor graph for different modes is
-    // equal for several values of {x0,x1}.
+    HybridBayesNet::shared_ptr eliminated = gfg.eliminateSequential();
+
     for (VectorValues vv :
          {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
           VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
       vv.insert(given);  // add measurements for HBN
-      HybridValues hv0(vv, {{M(1), 0}}), hv1(vv, {{M(1), 1}});
-      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
-                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
-    }
+      const auto& expectedDiscretePosterior = hbn.discretePosterior(vv);
 
-    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+      // Equality of posteriors asserts that the factor graph is correct (same
+      // ratios for all modes)
+      EXPECT(
+          assert_equal(expectedDiscretePosterior, gfg.discretePosterior(vv)));
+
+      // This one asserts that HBN resulting from elimination is correct.
+      EXPECT(assert_equal(expectedDiscretePosterior,
+                          eliminated->discretePosterior(vv)));
+    }
 
     // Importance sampling run with 100k samples gives 50.095/49.905
     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
 
     // Since no measurement on x1, we a 50/50 probability
-    auto p_m = bn->at(2)->asDiscrete();
+    auto p_m = eliminated->at(2)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(0.5, p_m->operator()({{M(1), 0}}), 1e-9);
     EXPECT_DOUBLES_EQUAL(0.5, p_m->operator()({{M(1), 1}}), 1e-9);
   }
@@ -221,6 +226,7 @@ TEST(HybridGaussianFactor, TwoStateModel2) {
 
     HybridBayesNet hbn = CreateBayesNet(hybridMotionModel, true);
     HybridGaussianFactorGraph gfg = hbn.toFactorGraph(given);
+    HybridBayesNet::shared_ptr eliminated = gfg.eliminateSequential();
 
     // Check that ratio of Bayes net and factor graph for different modes is
     // equal for several values of {x0,x1}.
@@ -228,17 +234,22 @@ TEST(HybridGaussianFactor, TwoStateModel2) {
          {VectorValues{{X(0), Vector1(0.0)}, {X(1), Vector1(1.0)}},
           VectorValues{{X(0), Vector1(0.5)}, {X(1), Vector1(3.0)}}}) {
       vv.insert(given);  // add measurements for HBN
-      HybridValues hv0(vv, {{M(1), 0}}), hv1(vv, {{M(1), 1}});
-      EXPECT_DOUBLES_EQUAL(gfg.error(hv0) / hbn.error(hv0),
-                           gfg.error(hv1) / hbn.error(hv1), 1e-9);
-    }
+      const auto& expectedDiscretePosterior = hbn.discretePosterior(vv);
 
-    HybridBayesNet::shared_ptr bn = gfg.eliminateSequential();
+      // Equality of posteriors asserts that the factor graph is correct (same
+      // ratios for all modes)
+      EXPECT(
+          assert_equal(expectedDiscretePosterior, gfg.discretePosterior(vv)));
+
+      // This one asserts that HBN resulting from elimination is correct.
+      EXPECT(assert_equal(expectedDiscretePosterior,
+                          eliminated->discretePosterior(vv)));
+    }
 
     // Values taken from an importance sampling run with 100k samples:
     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
     DiscreteConditional expected(m1, "48.3158/51.6842");
-    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.002));
+    EXPECT(assert_equal(expected, *(eliminated->at(2)->asDiscrete()), 0.002));
   }
 
   {

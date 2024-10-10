@@ -145,10 +145,9 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   /// @name Testable
   /// @{
 
-  // TODO(dellaert):  customize print and equals.
-  // void print(
-  //     const std::string& s = "HybridGaussianFactorGraph",
-  //     const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+  void print(
+      const std::string& s = "HybridGaussianFactorGraph",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /**
    * @brief Print the errors of each factor in the hybrid factor graph.
@@ -218,7 +217,7 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * one for A and one for B. The leaves of the tree will be the Gaussian
    * factors that have only continuous keys.
    */
-  GaussianFactorGraphTree assembleGraphTree() const;
+  HybridGaussianProductFactor collectProductFactor() const;
 
   /**
    * @brief Eliminate the given continuous keys.
