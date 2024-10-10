@@ -973,8 +973,6 @@ TEST(HybridNonlinearFactorGraph, DifferentMeans) {
     VectorValues cont0 = bn->optimize(dv0);
     double error0 = bn->error(HybridValues(cont0, dv0));
 
-    // TODO(Varun) Perform importance sampling to estimate error?
-
     // regression
     EXPECT_DOUBLES_EQUAL(0.69314718056, error0, 1e-9);
 
