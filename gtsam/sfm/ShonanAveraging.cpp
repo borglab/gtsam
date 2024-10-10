@@ -16,7 +16,7 @@
  * @brief  Shonan Averaging algorithm
  */
 
-#include <SymEigsSolver.h>
+#include <Spectra/SymEigsSolver.h>
 #include <cmath>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
