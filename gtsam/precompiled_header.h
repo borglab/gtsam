@@ -23,7 +23,6 @@
 // numericalDerivative.h : includes things in linear, nonlinear :-(
 // testLie.h: includes numericalDerivative
 #include <gtsam/base/Lie.h>
-#include <gtsam/base/chartTesting.h>
 #include <gtsam/base/cholesky.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/ConcurrentMap.h>
