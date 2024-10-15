@@ -31,16 +31,25 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer
   typedef NonlinearOptimizerParams Parameters;
   typedef std::shared_ptr<NonlinearConjugateGradientOptimizer> shared_ptr;
 
+  enum class DirectionMethod {
+    FletcherReeves,
+    PolakRibiere,
+    HestenesStiefel,
+    DaiYuan
+  };
+
  protected:
   Parameters params_;
+  DirectionMethod directionMethod_;
 
   const NonlinearOptimizerParams &_params() const override { return params_; }
 
  public:
   /// Constructor
-  NonlinearConjugateGradientOptimizer(const NonlinearFactorGraph &graph,
-                                      const Values &initialValues,
-                                      const Parameters &params = Parameters());
+  NonlinearConjugateGradientOptimizer(
+      const NonlinearFactorGraph &graph, const Values &initialValues,
+      const Parameters &params = Parameters(),
+      const DirectionMethod &directionMethod = DirectionMethod::PolakRibiere);
 
   /// Destructor
   ~NonlinearConjugateGradientOptimizer() override {}
