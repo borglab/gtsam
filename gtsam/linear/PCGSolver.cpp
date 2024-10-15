@@ -40,7 +40,7 @@ void PCGSolverParameters::print(ostream &os) const {
 /*****************************************************************************/
 PCGSolver::PCGSolver(const PCGSolverParameters &p) {
   parameters_ = p;
-  preconditioner_ = createPreconditioner(p.preconditioner_);
+  preconditioner_ = createPreconditioner(p.preconditioner());
 }
 
 void PCGSolverParameters::setPreconditionerParams(const std::shared_ptr<PreconditionerParameters> preconditioner) {

@@ -34,26 +34,30 @@ struct PreconditionerParameters;
  * Parameters for PCG
  */
 struct GTSAM_EXPORT PCGSolverParameters: public ConjugateGradientParameters {
-public:
+ public:
   typedef ConjugateGradientParameters Base;
   typedef std::shared_ptr<PCGSolverParameters> shared_ptr;
 
-  PCGSolverParameters() {
-  }
+protected:
+  std::shared_ptr<PreconditionerParameters> preconditioner_;
+
+public:
+  PCGSolverParameters() {}
+
+  PCGSolverParameters(
+      const std::shared_ptr<PreconditionerParameters> &preconditioner)
+      : preconditioner_(preconditioner) {}
 
   void print(std::ostream &os) const override;
 
-  /* interface to preconditioner parameters */
-  inline const PreconditionerParameters& preconditioner() const {
-    return *preconditioner_;
+  const std::shared_ptr<PreconditionerParameters> preconditioner() const {
+    return preconditioner_;
   }
 
-  // needed for python wrapper
+  void setPreconditionerParams(
+      const std::shared_ptr<PreconditionerParameters> preconditioner);
+
   void print(const std::string &s) const;
-
-  std::shared_ptr<PreconditionerParameters> preconditioner_;
-
-  void setPreconditionerParams(const std::shared_ptr<PreconditionerParameters> preconditioner);
 };
 
 /**
