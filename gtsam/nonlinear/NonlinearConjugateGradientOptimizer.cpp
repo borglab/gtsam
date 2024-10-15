@@ -48,26 +48,27 @@ NonlinearConjugateGradientOptimizer::NonlinearConjugateGradientOptimizer(
                       new State(initialValues, graph.error(initialValues)))),
       params_(params) {}
 
-double NonlinearConjugateGradientOptimizer::System::error(
+double NonlinearConjugateGradientOptimizer::error(
     const Values& state) const {
   return graph_.error(state);
 }
 
-VectorValues NonlinearConjugateGradientOptimizer::System::gradient(
+VectorValues NonlinearConjugateGradientOptimizer::gradient(
     const Values& state) const {
   return gradientInPlace(graph_, state);
 }
 
-Values NonlinearConjugateGradientOptimizer::System::advance(
+Values NonlinearConjugateGradientOptimizer::advance(
     const Values& current, const double alpha,
     const VectorValues& gradient) const {
   return current.retract(alpha * gradient);
 }
 
 GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
-  const auto [newValues, dummy] = nonlinearConjugateGradient<System, Values>(
-      System(graph_), state_->values, params_, true /* single iteration */);
-  state_.reset(new State(newValues, graph_.error(newValues), state_->iterations + 1));
+  const auto [newValues, dummy] = nonlinearConjugateGradient<Values>(
+      state_->values, params_, true /* single iteration */);
+  state_.reset(
+      new State(newValues, graph_.error(newValues), state_->iterations + 1));
 
   // NOTE(frank): We don't linearize this system, so we must return null here.
   return nullptr;
@@ -75,10 +76,10 @@ GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
 
 const Values& NonlinearConjugateGradientOptimizer::optimize() {
   // Optimize until convergence
-  System system(graph_);
   const auto [newValues, iterations] =
-      nonlinearConjugateGradient(system, state_->values, params_, false);
-  state_.reset(new State(std::move(newValues), graph_.error(newValues), iterations));
+      nonlinearConjugateGradient(state_->values, params_, false);
+  state_.reset(
+      new State(std::move(newValues), graph_.error(newValues), iterations));
   return state_->values;
 }
 
