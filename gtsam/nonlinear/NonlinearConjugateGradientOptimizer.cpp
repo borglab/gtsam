@@ -65,7 +65,7 @@ Values NonlinearConjugateGradientOptimizer::advance(
 }
 
 GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
-  const auto [newValues, dummy] = nonlinearConjugateGradient<Values>(
+  const auto [newValues, dummy] = nonlinearConjugateGradient(
       state_->values, params_, true /* single iteration */);
   state_.reset(
       new State(newValues, graph_.error(newValues), state_->iterations + 1));

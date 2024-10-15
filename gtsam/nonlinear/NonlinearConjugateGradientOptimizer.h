@@ -52,21 +52,20 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer
   Values advance(const Values &current, const double alpha,
                  const VectorValues &g) const;
 
-  /** 
-   * Perform a single iteration, returning GaussianFactorGraph corresponding to 
+  /**
+   * Perform a single iteration, returning GaussianFactorGraph corresponding to
    * the linearized factor graph.
    */
   GaussianFactorGraph::shared_ptr iterate() override;
 
-  /** 
-   * Optimize for the maximum-likelihood estimate, returning a the optimized 
+  /**
+   * Optimize for the maximum-likelihood estimate, returning a the optimized
    * variable assignments.
    */
-  const Values& optimize() override;
+  const Values &optimize() override;
 
   /** Implement the golden-section line search algorithm */
-  template <class V, class W>
-  double lineSearch(const V currentValues, const W &gradient) {
+  double lineSearch(const Values &currentValues, const VectorValues &gradient) const {
     /* normalize it such that it becomes a unit vector */
     const double g = gradient.norm();
 
@@ -78,7 +77,7 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer
     double minStep = -1.0 / g, maxStep = 0,
            newStep = minStep + (maxStep - minStep) / (phi + 1.0);
 
-    V newValues = advance(currentValues, newStep, gradient);
+    Values newValues = advance(currentValues, newStep, gradient);
     double newError = error(newValues);
 
     while (true) {
@@ -91,7 +90,7 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer
         return 0.5 * (minStep + maxStep);
       }
 
-      const V testValues = advance(currentValues, testStep, gradient);
+      const Values testValues = advance(currentValues, testStep, gradient);
       const double testError = error(testValues);
 
       // update the working range
@@ -120,18 +119,12 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer
    * formula suggested in
    * http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method.
    *
-   * The V class
-   * denotes the state or the solution.
-   *
    * The last parameter is a switch between gradient-descent and conjugate
    * gradient
    */
-  template <class V>
-  std::tuple<V, int> nonlinearConjugateGradient(
-      const V &initial, const NonlinearOptimizerParams &params,
-      const bool singleIteration, const bool gradientDescent = false) {
-    // GTSAM_CONCEPT_MANIFOLD_TYPE(V)
-
+  std::tuple<Values, int> nonlinearConjugateGradient(
+      const Values &initial, const NonlinearOptimizerParams &params,
+      const bool singleIteration, const bool gradientDescent = false) const {
     size_t iteration = 0;
 
     // check if we're already close enough
@@ -144,12 +137,12 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer
       return {initial, iteration};
     }
 
-    V currentValues = initial;
+    Values currentValues = initial;
     VectorValues currentGradient = gradient(currentValues), prevGradient,
                  direction = currentGradient;
 
     /* do one step of gradient descent */
-    V prevValues = currentValues;
+    Values prevValues = currentValues;
     double prevError = currentError;
     double alpha = lineSearch(currentValues, direction);
     currentValues = advance(prevValues, alpha, direction);
@@ -205,5 +198,4 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer
   }
 };
 
-} // \ namespace gtsam
-
+}  // namespace gtsam
