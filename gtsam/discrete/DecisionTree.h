@@ -176,9 +176,9 @@ namespace gtsam {
      * @return NodePtr 
      */
     template <typename M, typename X>
-    NodePtr convertFrom(const typename DecisionTree<M, X>::NodePtr& f,
-                        std::function<L(const M&)> L_of_M,
-                        std::function<Y(const X&)> Y_of_X) const;
+    static NodePtr convertFrom(const typename DecisionTree<M, X>::NodePtr& f,
+                               std::function<L(const M&)> L_of_M,
+                               std::function<Y(const X&)> Y_of_X);
 
    public:
     /// @name Standard Constructors
@@ -402,7 +402,7 @@ namespace gtsam {
 
     // internal use only
     template<typename Iterator> NodePtr
-    compose(Iterator begin, Iterator end, const L& label) const;
+    static compose(Iterator begin, Iterator end, const L& label);
 
     /// @}
 
