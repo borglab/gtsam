@@ -103,9 +103,9 @@ V preconditionedConjugateGradient(const S &system, const V &initial,
   V estimate, residual, direction, q1, q2;
   estimate = residual = direction = q1 = q2 = initial;
 
-  system.residual(estimate, q1);                /* q1 = b-Ax */
-  system.leftPrecondition(q1, residual);        /* r = L^{-1} (b-Ax) */
-  system.rightPrecondition(residual, direction);/* p = L^{-T} r */
+  q1 = system.residual(estimate);                   /* q1 = b-Ax */
+  residual = system.leftPrecondition(q1, residual); /* r = L^{-1} (b-Ax) */
+  direction = system.rightPrecondition(residual, direction); /* p = L^{-T} r */
 
   double currentGamma = system.dot(residual, residual), prevGamma, alpha, beta;
 
@@ -126,22 +126,25 @@ V preconditionedConjugateGradient(const S &system, const V &initial,
   for ( k = 1 ; k <= iMaxIterations && (currentGamma > threshold || k <= iMinIterations) ; k++ ) {
 
     if ( k % iReset == 0 ) {
-      system.residual(estimate, q1);                      /* q1 = b-Ax */
-      system.leftPrecondition(q1, residual);              /* r = L^{-1} (b-Ax) */
-      system.rightPrecondition(residual, direction);      /* p = L^{-T} r */
+      q1 = system.residual(estimate);                   /* q1 = b-Ax */
+      residual = system.leftPrecondition(q1, residual); /* r = L^{-1} (b-Ax) */
+      direction =
+          system.rightPrecondition(residual, direction); /* p = L^{-T} r */
       currentGamma = system.dot(residual, residual);
     }
-    system.multiply(direction, q1);                       /* q1 = A p */
-    alpha = currentGamma / system.dot(direction, q1);     /* alpha = gamma / (p' A p) */
-    system.axpy(alpha, direction, estimate);              /* estimate += alpha * p */
-    system.leftPrecondition(q1, q2);                      /* q2 = L^{-1} * q1 */
-    system.axpy(-alpha, q2, residual);                    /* r -= alpha * q2 */
+    q1 = system.multiply(direction); /* q1 = A p */
+    alpha =
+        currentGamma / system.dot(direction, q1); /* alpha = gamma / (p' A p) */
+    estimate =
+        system.axpy(alpha, direction, estimate);  /* estimate += alpha * p */
+    q2 = system.leftPrecondition(q1, q2);         /* q2 = L^{-1} * q1 */
+    residual = system.axpy(-alpha, q2, residual); /* r -= alpha * q2 */
     prevGamma = currentGamma;
-    currentGamma = system.dot(residual, residual);        /* gamma = |r|^2 */
+    currentGamma = system.dot(residual, residual); /* gamma = |r|^2 */
     beta = currentGamma / prevGamma;
-    system.rightPrecondition(residual, q1);               /* q1 = L^{-T} r */
-    system.scal(beta, direction);
-    system.axpy(1.0, q1, direction);                      /* p = q1 + beta * p */
+    q1 = system.rightPrecondition(residual, q1); /* q1 = L^{-T} r */
+    direction = system.scal(beta, direction);
+    direction = system.axpy(1.0, q1, direction); /* p = q1 + beta * p */
 
     if (parameters.verbosity() >= ConjugateGradientParameters::ERROR )
        std::cout << "[PCG] k = " << k

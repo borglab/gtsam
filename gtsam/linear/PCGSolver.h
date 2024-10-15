@@ -20,11 +20,12 @@
 #pragma once
 
 #include <gtsam/linear/ConjugateGradientSolver.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+
 #include <string>
 
 namespace gtsam {
 
-class GaussianFactorGraph;
 class KeyInfo;
 class Preconditioner;
 class VectorValues;
@@ -92,7 +93,7 @@ public:
  */
 class GTSAM_EXPORT GaussianFactorGraphSystem {
   GaussianFactorGraph gfg_;
-  Preconditioner preconditioner_;
+  const Preconditioner &preconditioner_;
   KeyInfo keyInfo_;
   std::map<Key, Vector> lambda_;
 
@@ -102,15 +103,15 @@ class GTSAM_EXPORT GaussianFactorGraphSystem {
                             const KeyInfo &info,
                             const std::map<Key, Vector> &lambda);
 
-  void residual(const Vector &x, Vector &r) const;
-  void multiply(const Vector &x, Vector& y) const;
-  void leftPrecondition(const Vector &x, Vector &y) const;
-  void rightPrecondition(const Vector &x, Vector &y) const;
-  void scal(const double alpha, Vector &x) const;
+  Vector residual(const Vector &x) const;
+  Vector multiply(const Vector &x) const;
+  Vector leftPrecondition(const Vector &x, Vector &y) const;
+  Vector rightPrecondition(const Vector &x, Vector &y) const;
+  Vector scal(const double alpha, const Vector &x) const;
   double dot(const Vector &x, const Vector &y) const;
-  void axpy(const double alpha, const Vector &x, Vector &y) const;
+  Vector axpy(const double alpha, const Vector &x, const Vector &y) const;
 
-  void getb(Vector &b) const;
+  Vector getb() const;
 };
 
 /// @name utility functions

@@ -78,20 +78,21 @@ GaussianFactorGraphSystem::GaussianFactorGraphSystem(
 }
 
 /*****************************************************************************/
-void GaussianFactorGraphSystem::residual(const Vector &x, Vector &r) const {
+Vector GaussianFactorGraphSystem::residual(const Vector &x) const {
   /* implement b-Ax, assume x and r are pre-allocated */
 
-  /* reset r to b */
-  getb(r);
+  /* get b */
+  Vector r = getb();
 
-  /* substract A*x */
-  Vector Ax = Vector::Zero(r.rows(), 1);
-  multiply(x, Ax);
+  /* subtract A*x */
+  Vector Ax = multiply(x);
   r -= Ax;
+
+  return r;
 }
 
 /*****************************************************************************/
-void GaussianFactorGraphSystem::multiply(const Vector &x, Vector& AtAx) const {
+Vector GaussianFactorGraphSystem::multiply(const Vector &x) const {
   /* implement A^T*(A*x), assume x and AtAx are pre-allocated */
 
   // Build a VectorValues for Vector x
@@ -104,47 +105,55 @@ void GaussianFactorGraphSystem::multiply(const Vector &x, Vector& AtAx) const {
   gfg_.multiplyHessianAdd(1.0, vvX, vvAtAx);
 
   // Make the result as Vector form
-  AtAx = vvAtAx.vector(keyInfo_.ordering());
+  Vector AtAx = vvAtAx.vector(keyInfo_.ordering());
+
+  return AtAx;
 }
 
 /*****************************************************************************/
-void GaussianFactorGraphSystem::getb(Vector &b) const {
+Vector GaussianFactorGraphSystem::getb() const {
   /* compute rhs, assume b pre-allocated */
 
   // Get whitened r.h.s (A^T * b) from each factor in the form of VectorValues
   VectorValues vvb = gfg_.gradientAtZero();
 
   // Make the result as Vector form
-  b = -vvb.vector(keyInfo_.ordering());
+  Vector b = -vvb.vector(keyInfo_.ordering());
+  return b;
 }
 
 /**********************************************************************************/
-void GaussianFactorGraphSystem::leftPrecondition(const Vector &x,
-    Vector &y) const {
+Vector GaussianFactorGraphSystem::leftPrecondition(const Vector &x,
+                                                   Vector &y) const {
   // For a preconditioner M = L*L^T
   // Calculate y = L^{-1} x
   preconditioner_.solve(x, y);
+  return y;
 }
 
 /**********************************************************************************/
-void GaussianFactorGraphSystem::rightPrecondition(const Vector &x,
-    Vector &y) const {
+Vector GaussianFactorGraphSystem::rightPrecondition(const Vector &x,
+                                                    Vector &y) const {
   // For a preconditioner M = L*L^T
   // Calculate y = L^{-T} x
   preconditioner_.transposeSolve(x, y);
+  return y;
 }
 
 /**********************************************************************************/
-void GaussianFactorGraphSystem::scal(const double alpha, Vector &x) const {
-  x *= alpha;
+Vector GaussianFactorGraphSystem::scal(const double alpha,
+                                       const Vector &x) const {
+  return alpha * x;
 }
 double GaussianFactorGraphSystem::dot(const Vector &x, const Vector &y) const {
   return x.dot(y);
 }
-void GaussianFactorGraphSystem::axpy(const double alpha, const Vector &x,
-                                     Vector &y) const {
-  y += alpha * x;
+
+Vector GaussianFactorGraphSystem::axpy(const double alpha, const Vector &x,
+                                       const Vector &y) const {
+  return alpha * x + y;
 }
+
 /**********************************************************************************/
 VectorValues buildVectorValues(const Vector &v, const Ordering &ordering,
     const map<Key, size_t> & dimensions) {
