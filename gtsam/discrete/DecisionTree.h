@@ -156,10 +156,10 @@ namespace gtsam {
     template <typename It, typename ValueIt>
     static NodePtr build(It begin, It end, ValueIt beginY, ValueIt endY);
 
-    /** Internal helper function to create from
-     * keys, cardinalities, and Y values.
-     * Calls `build` which builds thetree bottom-up,
-     * before we prune in a top-down fashion.
+    /**
+     * Internal helper function to create a tree from keys, cardinalities, and Y
+     * values. Calls `build` which builds the tree bottom-up, before we prune in
+     * a top-down fashion.
      */
     template <typename It, typename ValueIt>
     static NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY);
@@ -239,7 +239,7 @@ namespace gtsam {
     DecisionTree(const DecisionTree<L, X>& other, Func Y_of_X);
 
     /**
-     * @brief Convert from a different value type X to value type Y, also transate
+     * @brief Convert from a different value type X to value type Y, also translate
      * labels via map from type M to L.
      *
      * @tparam M Previous label type.
@@ -405,6 +405,18 @@ namespace gtsam {
     std::string dot(const LabelFormatter& labelFormatter,
                     const ValueFormatter& valueFormatter,
                     bool showZero = true) const;
+
+    /**
+     * @brief Convert into two trees with value types A and B.
+     *
+     * @tparam A First new value type.
+     * @tparam B Second new value type.
+     * @param AB_of_Y Functor to convert from type X to std::pair<A, B>.
+     * @return A pair of DecisionTrees with value types A and B respectively.
+     */
+    template <typename A, typename B>
+    std::pair<DecisionTree<L, A>, DecisionTree<L, B>> split(
+        std::function<std::pair<A, B>(const Y&)> AB_of_Y);
 
     /// @name Advanced Interface
     /// @{

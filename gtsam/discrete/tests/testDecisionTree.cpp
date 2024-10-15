@@ -11,7 +11,7 @@
 
 /*
  * @file    testDecisionTree.cpp
- * @brief    Develop DecisionTree
+ * @brief   DecisionTree unit tests
  * @author  Frank Dellaert
  * @author  Can Erdogan
  * @date    Jan 30, 2012
@@ -270,6 +270,37 @@ TEST(DecisionTree, Example) {
   LONGS_EQUAL(125, acnotb(x101))
   DOT(acnotb);
 }
+
+/* ************************************************************************** */
+// Test that we can create two trees out of one, using a function that returns a pair.
+TEST(DecisionTree, Split) {
+  // Create labels
+  string A("A"), B("B");
+
+  // Create a decision tree
+  DT original(A, DT(B, 1, 2), DT(B, 3, 4));
+
+  // Define a function that returns an int/bool pair
+  auto split_function = [](const int& value) -> std::pair<int, bool> {
+    return {value*3, value*3 % 2 == 0};
+  };
+
+  // Split the original tree into two new trees
+  auto [la,lb] = original.split<int,bool>(split_function);
+
+  // Check the first resulting tree
+  EXPECT_LONGS_EQUAL(3, la(Assignment<string>{{A, 0}, {B, 0}}));
+  EXPECT_LONGS_EQUAL(6, la(Assignment<string>{{A, 0}, {B, 1}}));
+  EXPECT_LONGS_EQUAL(9, la(Assignment<string>{{A, 1}, {B, 0}}));
+  EXPECT_LONGS_EQUAL(12, la(Assignment<string>{{A, 1}, {B, 1}}));
+
+  // Check the second resulting tree
+  EXPECT(!lb(Assignment<string>{{A, 0}, {B, 0}}));
+  EXPECT(lb(Assignment<string>{{A, 0}, {B, 1}}));
+  EXPECT(!lb(Assignment<string>{{A, 1}, {B, 0}}));
+  EXPECT(lb(Assignment<string>{{A, 1}, {B, 1}}));
+}
+
 
 /* ************************************************************************** */
 // test Conversion of values

@@ -29,6 +29,7 @@
 #include <optional>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -482,8 +483,8 @@ namespace gtsam {
   /****************************************************************************/
   // DecisionTree
   /****************************************************************************/
-  template<typename L, typename Y>
-  DecisionTree<L, Y>::DecisionTree() {}
+  template <typename L, typename Y>
+  DecisionTree<L, Y>::DecisionTree() : root_(nullptr) {}
 
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const NodePtr& root) :
@@ -951,11 +952,16 @@ namespace gtsam {
     return root_->equals(*other.root_);
   }
 
+  /****************************************************************************/
   template<typename L, typename Y>
   const Y& DecisionTree<L, Y>::operator()(const Assignment<L>& x) const {
+    if (root_ == nullptr)
+      throw std::invalid_argument(
+          "DecisionTree::operator() called on empty tree");
     return root_->operator ()(x);
   }
 
+  /****************************************************************************/
   template<typename L, typename Y>
   DecisionTree<L, Y> DecisionTree<L, Y>::apply(const Unary& op) const {
     // It is unclear what should happen if tree is empty:
@@ -966,6 +972,7 @@ namespace gtsam {
     return DecisionTree(root_->apply(op));
   }
 
+  /****************************************************************************/
   /// Apply unary operator with assignment
   template <typename L, typename Y>
   DecisionTree<L, Y> DecisionTree<L, Y>::apply(
@@ -1049,6 +1056,18 @@ namespace gtsam {
     return ss.str();
   }
 
-/******************************************************************************/
+  /******************************************************************************/
+  template <typename L, typename Y>
+  template <typename A, typename B>
+  std::pair<DecisionTree<L, A>, DecisionTree<L, B>> DecisionTree<L, Y>::split(
+      std::function<std::pair<A, B>(const Y&)> AB_of_Y) {
+    using AB = std::pair<A, B>;
+    const DecisionTree<L, AB> ab(*this, AB_of_Y);
+    const DecisionTree<L, A> a(ab, [](const AB& p) { return p.first; });
+    const DecisionTree<L, B> b(ab, [](const AB& p) { return p.second; });
+    return {a, b};
+  }
+
+  /******************************************************************************/
 
   }  // namespace gtsam
