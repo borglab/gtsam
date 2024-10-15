@@ -22,18 +22,15 @@
 #include <gtsam/discrete/DecisionTree.h>
 
 #include <algorithm>
-
-#include <cmath>
+#include <cassert>
 #include <fstream>
-#include <list>
+#include <iterator>
 #include <map>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <optional>
-#include <cassert>
-#include <iterator>
 
 namespace gtsam {
 
@@ -251,22 +248,28 @@ namespace gtsam {
         label_ = f.label();
         size_t count = f.nrChoices();
         branches_.reserve(count);
-        for (size_t i = 0; i < count; i++)
-          push_back(f.branches_[i]->apply_f_op_g(g, op));
+        for (size_t i = 0; i < count; i++) {
+          NodePtr newBranch = f.branches_[i]->apply_f_op_g(g, op);
+          push_back(std::move(newBranch));
+        }
       } else if (g.label() > f.label()) {
         // f lower than g
         label_ = g.label();
         size_t count = g.nrChoices();
         branches_.reserve(count);
-        for (size_t i = 0; i < count; i++)
-          push_back(g.branches_[i]->apply_g_op_fC(f, op));
+        for (size_t i = 0; i < count; i++) {
+          NodePtr newBranch = g.branches_[i]->apply_g_op_fC(f, op);
+          push_back(std::move(newBranch));
+        }
       } else {
         // f same level as g
         label_ = f.label();
         size_t count = f.nrChoices();
         branches_.reserve(count);
-        for (size_t i = 0; i < count; i++)
-          push_back(f.branches_[i]->apply_f_op_g(*g.branches_[i], op));
+        for (size_t i = 0; i < count; i++) {
+          NodePtr newBranch = f.branches_[i]->apply_f_op_g(*g.branches_[i], op);
+          push_back(std::move(newBranch));
+        }
       }
     }
 
@@ -284,12 +287,12 @@ namespace gtsam {
     }
 
     /** add a branch: TODO merge into constructor */
-    void push_back(const NodePtr& node) {
+    void push_back(NodePtr&& node) {
       // allSame_ is restricted to leaf nodes in a decision tree
       if (allSame_ && !branches_.empty()) {
         allSame_ = node->sameLeaf(*branches_.back());
       }
-      branches_.push_back(node);
+      branches_.push_back(std::move(node));
     }
 
     /// print (as a tree).
@@ -497,9 +500,9 @@ namespace gtsam {
   DecisionTree<L, Y>::DecisionTree(const L& label, const Y& y1, const Y& y2) {
     auto a = std::make_shared<Choice>(label, 2);
     NodePtr l1(new Leaf(y1)), l2(new Leaf(y2));
-    a->push_back(l1);
-    a->push_back(l2);
-    root_ = Choice::Unique(a);
+    a->push_back(std::move(l1));
+    a->push_back(std::move(l2));
+    root_ = Choice::Unique(std::move(a));
   }
 
   /****************************************************************************/
@@ -510,11 +513,10 @@ namespace gtsam {
         "DecisionTree: binary constructor called with non-binary label");
     auto a = std::make_shared<Choice>(labelC.first, 2);
     NodePtr l1(new Leaf(y1)), l2(new Leaf(y2));
-    a->push_back(l1);
-    a->push_back(l2);
-    root_ = Choice::Unique(a);
+    a->push_back(std::move(l1));
+    a->push_back(std::move(l2));
+    root_ = Choice::Unique(std::move(a));
   }
-
   /****************************************************************************/
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const std::vector<LabelC>& labelCs,
@@ -596,8 +598,10 @@ namespace gtsam {
     // if label is already in correct order, just put together a choice on label
     if (!nrChoices || !highestLabel || label > *highestLabel) {
       auto choiceOnLabel = std::make_shared<Choice>(label, end - begin);
-      for (Iterator it = begin; it != end; it++)
-        choiceOnLabel->push_back(it->root_);
+      for (Iterator it = begin; it != end; it++) {
+        NodePtr root = it->root_;
+        choiceOnLabel->push_back(std::move(root));
+      }
       // If no reordering, no need to call Choice::Unique
       return choiceOnLabel;
     } else {
@@ -616,7 +620,7 @@ namespace gtsam {
         }
         // We then recurse, for all values of the highest label
         NodePtr fi = compose(functions.begin(), functions.end(), label);
-        choiceOnHighestLabel->push_back(fi);
+        choiceOnHighestLabel->push_back(std::move(fi));
       }
       return choiceOnHighestLabel;
     }
@@ -673,6 +677,7 @@ namespace gtsam {
     // Creates one tree (i.e.,function) for each choice of current key
     // by calling create recursively, and then puts them all together.
     std::vector<DecisionTree> functions;
+    functions.reserve(nrChoices);
     size_t split = size / nrChoices;
     for (size_t i = 0; i < nrChoices; i++, beginY += split) {
       NodePtr f = build<It, ValueIt>(labelC, end, beginY, beginY + split);
