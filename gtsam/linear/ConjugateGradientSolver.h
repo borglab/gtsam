@@ -24,20 +24,22 @@
 namespace gtsam {
 
 /**
- * parameters for the conjugate gradient method
+ * Parameters for the Conjugate Gradient method
  */
 class GTSAM_EXPORT ConjugateGradientParameters : public IterativeOptimizationParameters {
 
-public:
+ public:
   typedef IterativeOptimizationParameters Base;
   typedef std::shared_ptr<ConjugateGradientParameters> shared_ptr;
 
+ protected:
   size_t minIterations_;  ///< minimum number of cg iterations
   size_t maxIterations_;  ///< maximum number of cg iterations
   size_t reset_;          ///< number of iterations before reset
   double epsilon_rel_;    ///< threshold for relative error decrease
   double epsilon_abs_;    ///< threshold for absolute error decrease
 
+ public:
   /* Matrix Operation Kernel */
   enum BLASKernel {
     GTSAM = 0,        ///< Jacobian Factor Graph of GTSAM

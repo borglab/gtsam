@@ -31,7 +31,7 @@ class VectorValues;
 struct PreconditionerParameters;
 
 /**
- * Parameters for PCG
+ * Parameters for Preconditioned Conjugate Gradient solver.
  */
 struct GTSAM_EXPORT PCGSolverParameters: public ConjugateGradientParameters {
  public:
@@ -91,8 +91,8 @@ public:
  * System class needed for calling preconditionedConjugateGradient
  */
 class GTSAM_EXPORT GaussianFactorGraphSystem {
-  GaussianFactorGraph gfg_;
-  Preconditioner preconditioner_;
+  const GaussianFactorGraph &gfg_;
+  const Preconditioner &preconditioner_;
   KeyInfo keyInfo_;
   std::map<Key, Vector> lambda_;
 
