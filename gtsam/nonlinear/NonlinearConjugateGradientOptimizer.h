@@ -40,7 +40,7 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer
 
  protected:
   Parameters params_;
-  DirectionMethod directionMethod_;
+  DirectionMethod directionMethod_ = DirectionMethod::PolakRibiere;
 
   const NonlinearOptimizerParams &_params() const override { return params_; }
 
