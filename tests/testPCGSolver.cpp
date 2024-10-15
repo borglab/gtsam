@@ -125,8 +125,8 @@ TEST( GaussianFactorGraphSystem, multiply_getb)
 TEST(PCGSolver, dummy) {
   LevenbergMarquardtParams params;
   params.linearSolverType = LevenbergMarquardtParams::Iterative;
-  auto pcg = std::make_shared<PCGSolverParameters>();
-  pcg->preconditioner_ = std::make_shared<DummyPreconditionerParameters>();
+  auto pcg = std::make_shared<PCGSolverParameters>(
+      std::make_shared<DummyPreconditionerParameters>());
   params.iterativeParams = pcg;
 
   NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
@@ -145,9 +145,8 @@ TEST(PCGSolver, dummy) {
 TEST(PCGSolver, blockjacobi) {
   LevenbergMarquardtParams params;
   params.linearSolverType = LevenbergMarquardtParams::Iterative;
-  auto pcg = std::make_shared<PCGSolverParameters>();
-  pcg->preconditioner_ =
-      std::make_shared<BlockJacobiPreconditionerParameters>();
+  auto pcg = std::make_shared<PCGSolverParameters>(
+      std::make_shared<BlockJacobiPreconditionerParameters>());
   params.iterativeParams = pcg;
 
   NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
@@ -166,8 +165,8 @@ TEST(PCGSolver, blockjacobi) {
 TEST(PCGSolver, subgraph) {
   LevenbergMarquardtParams params;
   params.linearSolverType = LevenbergMarquardtParams::Iterative;
-  auto pcg = std::make_shared<PCGSolverParameters>();
-  pcg->preconditioner_ = std::make_shared<SubgraphPreconditionerParameters>();
+  auto pcg = std::make_shared<PCGSolverParameters>(
+      std::make_shared<SubgraphPreconditionerParameters>());
   params.iterativeParams = pcg;
 
   NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
