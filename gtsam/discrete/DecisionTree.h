@@ -166,6 +166,19 @@ namespace gtsam {
     NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY) const;
 
     /**
+     * @brief Convert from a DecisionTree<L, X> to DecisionTree<L, Y>.
+     *
+     * @tparam M The previous label type.
+     * @tparam X The previous value type.
+     * @param f The node pointer to the root of the previous DecisionTree.
+     * @param Y_of_X Functor to convert from value type X to type Y.
+     * @return NodePtr
+     */
+    template <typename X>
+    static NodePtr convertFrom(const typename DecisionTree<L, X>::NodePtr& f,
+                               std::function<Y(const X&)> Y_of_X);
+
+    /**
      * @brief Convert from a DecisionTree<M, X> to DecisionTree<L, Y>.
      * 
      * @tparam M The previous label type.
