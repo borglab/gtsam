@@ -91,16 +91,16 @@ public:
  * System class needed for calling preconditionedConjugateGradient
  */
 class GTSAM_EXPORT GaussianFactorGraphSystem {
-public:
+  GaussianFactorGraph gfg_;
+  Preconditioner preconditioner_;
+  KeyInfo keyInfo_;
+  std::map<Key, Vector> lambda_;
 
+ public:
   GaussianFactorGraphSystem(const GaussianFactorGraph &gfg,
-      const Preconditioner &preconditioner, const KeyInfo &info,
-      const std::map<Key, Vector> &lambda);
-
-  const GaussianFactorGraph &gfg_;
-  const Preconditioner &preconditioner_;
-  const KeyInfo &keyInfo_;
-  const std::map<Key, Vector> &lambda_;
+                            const Preconditioner &preconditioner,
+                            const KeyInfo &info,
+                            const std::map<Key, Vector> &lambda);
 
   void residual(const Vector &x, Vector &r) const;
   void multiply(const Vector &x, Vector& y) const;
