@@ -100,8 +100,7 @@ AlgebraicDecisionTree<Key> HybridNonlinearFactor::errorTree(
         auto [factor, val] = f;
         return factor->error(continuousValues) + val;
       };
-  DecisionTree<Key, double> result(factors_, errorFunc);
-  return result;
+  return {factors_, errorFunc};
 }
 
 /* *******************************************************************************/

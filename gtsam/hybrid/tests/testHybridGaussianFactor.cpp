@@ -82,40 +82,25 @@ TEST(HybridGaussianFactor, ConstructorVariants) {
 }
 
 /* ************************************************************************* */
-// "Add" two hybrid factors together.
-TEST(HybridGaussianFactor, Sum) {
+TEST(HybridGaussianFactor, Keys) {
   using namespace test_constructor;
-  DiscreteKey m2(2, 3);
-
-  auto A3 = Matrix::Zero(2, 3);
-  auto f20 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
-  auto f21 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
-  auto f22 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
-
-  // TODO(Frank): why specify keys at all? And: keys in factor should be *all*
-  // keys, deviating from Kevin's scheme. Should we index DT on DiscreteKey?
-  // Design review!
   HybridGaussianFactor hybridFactorA(m1, {f10, f11});
-  HybridGaussianFactor hybridFactorB(m2, {f20, f21, f22});
-
   // Check the number of keys matches what we expect
   EXPECT_LONGS_EQUAL(3, hybridFactorA.keys().size());
   EXPECT_LONGS_EQUAL(2, hybridFactorA.continuousKeys().size());
   EXPECT_LONGS_EQUAL(1, hybridFactorA.discreteKeys().size());
 
-  // Create sum of two hybrid factors: it will be a decision tree now on both
-  // discrete variables m1 and m2:
-  GaussianFactorGraphTree sum;
-  sum += hybridFactorA;
-  sum += hybridFactorB;
+  DiscreteKey m2(2, 3);
+  auto A3 = Matrix::Zero(2, 3);
+  auto f20 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
+  auto f21 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
+  auto f22 = std::make_shared<JacobianFactor>(X(1), A1, X(3), A3, b);
+  HybridGaussianFactor hybridFactorB(m2, {f20, f21, f22});
 
-  // Let's check that this worked:
-  Assignment<Key> mode;
-  mode[m1.first] = 1;
-  mode[m2.first] = 2;
-  auto actual = sum(mode);
-  EXPECT(actual.at(0) == f11);
-  EXPECT(actual.at(1) == f22);
+  // Check the number of keys matches what we expect
+  EXPECT_LONGS_EQUAL(3, hybridFactorB.keys().size());
+  EXPECT_LONGS_EQUAL(2, hybridFactorB.continuousKeys().size());
+  EXPECT_LONGS_EQUAL(1, hybridFactorB.discreteKeys().size());
 }
 
 /* ************************************************************************* */
@@ -124,8 +109,7 @@ TEST(HybridGaussianFactor, Printing) {
   HybridGaussianFactor hybridFactor(m1, {f10, f11});
 
   std::string expected =
-      R"(HybridGaussianFactor
-Hybrid [x1 x2; 1]{
+      R"(Hybrid [x1 x2; 1]{
  Choice(1) 
  0 Leaf :
   A[x1] = [
@@ -138,6 +122,7 @@ Hybrid [x1 x2; 1]{
 ]
   b = [ 0 0 ]
   No noise model
+scalar: 0
 
  1 Leaf :
   A[x1] = [
@@ -150,6 +135,7 @@ Hybrid [x1 x2; 1]{
 ]
   b = [ 0 0 ]
   No noise model
+scalar: 0
 
 }
 )";

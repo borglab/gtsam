@@ -18,11 +18,13 @@
  * @date   Mar 12, 2022
  */
 
+#include <gtsam/base/types.h>
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
+#include <gtsam/hybrid/HybridGaussianProductFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -30,71 +32,38 @@
 namespace gtsam {
 
 /* *******************************************************************************/
-HybridGaussianFactor::Factors HybridGaussianFactor::augment(
-    const FactorValuePairs &factors) {
-  // Find the minimum value so we can "proselytize" to positive values.
-  // Done because we can't have sqrt of negative numbers.
-  Factors gaussianFactors;
-  AlgebraicDecisionTree<Key> valueTree;
-  std::tie(gaussianFactors, valueTree) = unzip(factors);
-
-  // Compute minimum value for normalization.
-  double min_value = valueTree.min();
-
-  // Finally, update the [A|b] matrices.
-  auto update = [&min_value](const GaussianFactorValuePair &gfv) {
-    auto [gf, value] = gfv;
-
-    auto jf = std::dynamic_pointer_cast<JacobianFactor>(gf);
-    if (!jf) return gf;
-
-    double normalized_value = value - min_value;
-
-    // If the value is 0, do nothing
-    if (normalized_value == 0.0) return gf;
-
-    GaussianFactorGraph gfg;
-    gfg.push_back(jf);
-
-    Vector c(1);
-    // When hiding c inside the `b` vector, value == 0.5*c^2
-    c << std::sqrt(2.0 * normalized_value);
-    auto constantFactor = std::make_shared<JacobianFactor>(c);
-
-    gfg.push_back(constantFactor);
-    return std::dynamic_pointer_cast<GaussianFactor>(
-        std::make_shared<JacobianFactor>(gfg));
-  };
-  return Factors(factors, update);
-}
-
-/* *******************************************************************************/
 struct HybridGaussianFactor::ConstructorHelper {
   KeyVector continuousKeys;   // Continuous keys extracted from factors
   DiscreteKeys discreteKeys;  // Discrete keys provided to the constructors
-  FactorValuePairs pairs;     // Used only if factorsTree is empty
-  Factors factorsTree;
+  FactorValuePairs pairs;     // The decision tree with factors and scalars
 
-  ConstructorHelper(const DiscreteKey &discreteKey,
-                    const std::vector<GaussianFactor::shared_ptr> &factors)
+  /// Constructor for a single discrete key and a vector of Gaussian factors
+  ConstructorHelper(const DiscreteKey& discreteKey,
+                    const std::vector<GaussianFactor::shared_ptr>& factors)
       : discreteKeys({discreteKey}) {
     // Extract continuous keys from the first non-null factor
-    for (const auto &factor : factors) {
+    for (const auto& factor : factors) {
       if (factor && continuousKeys.empty()) {
         continuousKeys = factor->keys();
         break;
       }
     }
-
-    // Build the DecisionTree from the factor vector
-    factorsTree = Factors(discreteKeys, factors);
+    // Build the FactorValuePairs DecisionTree
+    pairs = FactorValuePairs(
+        DecisionTree<Key, GaussianFactor::shared_ptr>(discreteKeys, factors),
+        [](const sharedFactor& f) {
+          return std::pair{f,
+                           f ? 0.0 : std::numeric_limits<double>::infinity()};
+        });
   }
 
-  ConstructorHelper(const DiscreteKey &discreteKey,
-                    const std::vector<GaussianFactorValuePair> &factorPairs)
+  /// Constructor for a single discrete key and a vector of
+  /// GaussianFactorValuePairs
+  ConstructorHelper(const DiscreteKey& discreteKey,
+                    const std::vector<GaussianFactorValuePair>& factorPairs)
       : discreteKeys({discreteKey}) {
     // Extract continuous keys from the first non-null factor
-    for (const auto &pair : factorPairs) {
+    for (const GaussianFactorValuePair& pair : factorPairs) {
       if (pair.first && continuousKeys.empty()) {
         continuousKeys = pair.first->keys();
         break;
@@ -105,11 +74,14 @@ struct HybridGaussianFactor::ConstructorHelper {
     pairs = FactorValuePairs(discreteKeys, factorPairs);
   }
 
-  ConstructorHelper(const DiscreteKeys &discreteKeys,
-                    const FactorValuePairs &factorPairs)
+  /// Constructor for a vector of discrete keys and a vector of
+  /// GaussianFactorValuePairs
+  ConstructorHelper(const DiscreteKeys& discreteKeys,
+                    const FactorValuePairs& factorPairs)
       : discreteKeys(discreteKeys) {
     // Extract continuous keys from the first non-null factor
-    factorPairs.visit([&](const GaussianFactorValuePair &pair) {
+    // TODO: just stop after first non-null factor
+    factorPairs.visit([&](const GaussianFactorValuePair& pair) {
       if (pair.first && continuousKeys.empty()) {
         continuousKeys = pair.first->keys();
       }
@@ -121,31 +93,27 @@ struct HybridGaussianFactor::ConstructorHelper {
 };
 
 /* *******************************************************************************/
-HybridGaussianFactor::HybridGaussianFactor(const ConstructorHelper &helper)
+HybridGaussianFactor::HybridGaussianFactor(const ConstructorHelper& helper)
     : Base(helper.continuousKeys, helper.discreteKeys),
-      factors_(helper.factorsTree.empty() ? augment(helper.pairs)
-                                          : helper.factorsTree) {}
+      factors_(helper.pairs) {}
 
-/* *******************************************************************************/
 HybridGaussianFactor::HybridGaussianFactor(
-    const DiscreteKey &discreteKey,
-    const std::vector<GaussianFactor::shared_ptr> &factors)
+    const DiscreteKey& discreteKey,
+    const std::vector<GaussianFactor::shared_ptr>& factors)
     : HybridGaussianFactor(ConstructorHelper(discreteKey, factors)) {}
 
-/* *******************************************************************************/
 HybridGaussianFactor::HybridGaussianFactor(
-    const DiscreteKey &discreteKey,
-    const std::vector<GaussianFactorValuePair> &factorPairs)
+    const DiscreteKey& discreteKey,
+    const std::vector<GaussianFactorValuePair>& factorPairs)
     : HybridGaussianFactor(ConstructorHelper(discreteKey, factorPairs)) {}
 
-/* *******************************************************************************/
-HybridGaussianFactor::HybridGaussianFactor(const DiscreteKeys &discreteKeys,
-                                           const FactorValuePairs &factors)
+HybridGaussianFactor::HybridGaussianFactor(const DiscreteKeys& discreteKeys,
+                                           const FactorValuePairs& factors)
     : HybridGaussianFactor(ConstructorHelper(discreteKeys, factors)) {}
 
 /* *******************************************************************************/
-bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {
-  const This *e = dynamic_cast<const This *>(&lf);
+bool HybridGaussianFactor::equals(const HybridFactor& lf, double tol) const {
+  const This* e = dynamic_cast<const This*>(&lf);
   if (e == nullptr) return false;
 
   // This will return false if either factors_ is empty or e->factors_ is
@@ -153,17 +121,19 @@ bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {
   if (factors_.empty() ^ e->factors_.empty()) return false;
 
   // Check the base and the factors:
-  return Base::equals(*e, tol) &&
-         factors_.equals(e->factors_, [tol](const auto &f1, const auto &f2) {
-           return (!f1 && !f2) || (f1 && f2 && f1->equals(*f2, tol));
-         });
+  auto compareFunc = [tol](const GaussianFactorValuePair& pair1,
+                           const GaussianFactorValuePair& pair2) {
+    auto f1 = pair1.first, f2 = pair2.first;
+    bool match = (!f1 && !f2) || (f1 && f2 && f1->equals(*f2, tol));
+    return match && gtsam::equal(pair1.second, pair2.second, tol);
+  };
+  return Base::equals(*e, tol) && factors_.equals(e->factors_, compareFunc);
 }
 
 /* *******************************************************************************/
-void HybridGaussianFactor::print(const std::string &s,
-                                 const KeyFormatter &formatter) const {
+void HybridGaussianFactor::print(const std::string& s,
+                                 const KeyFormatter& formatter) const {
   std::cout << (s.empty() ? "" : s + "\n");
-  std::cout << "HybridGaussianFactor" << std::endl;
   HybridFactor::print("", formatter);
   std::cout << "{\n";
   if (factors_.empty()) {
@@ -171,11 +141,12 @@ void HybridGaussianFactor::print(const std::string &s,
   } else {
     factors_.print(
         "", [&](Key k) { return formatter(k); },
-        [&](const sharedFactor &gf) -> std::string {
+        [&](const GaussianFactorValuePair& pair) -> std::string {
           RedirectCout rd;
           std::cout << ":\n";
-          if (gf) {
-            gf->print("", formatter);
+          if (pair.first) {
+            pair.first->print("", formatter);
+            std::cout << "scalar: " << pair.second << "\n";
             return rd.str();
           } else {
             return "nullptr";
@@ -186,61 +157,46 @@ void HybridGaussianFactor::print(const std::string &s,
 }
 
 /* *******************************************************************************/
-HybridGaussianFactor::sharedFactor HybridGaussianFactor::operator()(
-    const DiscreteValues &assignment) const {
+GaussianFactorValuePair HybridGaussianFactor::operator()(
+    const DiscreteValues& assignment) const {
   return factors_(assignment);
 }
 
 /* *******************************************************************************/
-GaussianFactorGraphTree HybridGaussianFactor::add(
-    const GaussianFactorGraphTree &sum) const {
-  using Y = GaussianFactorGraph;
-  auto add = [](const Y &graph1, const Y &graph2) {
-    auto result = graph1;
-    result.push_back(graph2);
-    return result;
-  };
-  const auto tree = asGaussianFactorGraphTree();
-  return sum.empty() ? tree : sum.apply(tree, add);
+HybridGaussianProductFactor HybridGaussianFactor::asProductFactor() const {
+  // Implemented by creating a new DecisionTree where:
+  // - The structure (keys and assignments) is preserved from factors_
+  // - Each leaf converted to a GaussianFactorGraph with just the factor and its
+  // scalar.
+  return {{factors_,
+           [](const GaussianFactorValuePair& pair)
+               -> std::pair<GaussianFactorGraph, double> {
+             return {GaussianFactorGraph{pair.first}, pair.second};
+           }}};
 }
 
 /* *******************************************************************************/
-GaussianFactorGraphTree HybridGaussianFactor::asGaussianFactorGraphTree()
-    const {
-  auto wrap = [](const sharedFactor &gf) { return GaussianFactorGraph{gf}; };
-  return {factors_, wrap};
-}
-
-/* *******************************************************************************/
-/// Helper method to compute the error of a component.
-static double PotentiallyPrunedComponentError(
-    const GaussianFactor::shared_ptr &gf, const VectorValues &values) {
-  // Check if valid pointer
-  if (gf) {
-    return gf->error(values);
-  } else {
-    // If nullptr this component was pruned, so we return maximum error. This
-    // way the negative exponential will give a probability value close to 0.0.
-    return std::numeric_limits<double>::max();
-  }
+inline static double PotentiallyPrunedComponentError(
+    const GaussianFactorValuePair& pair, const VectorValues& continuousValues) {
+  return pair.first ? pair.first->error(continuousValues) + pair.second
+                    : std::numeric_limits<double>::infinity();
 }
 
 /* *******************************************************************************/
 AlgebraicDecisionTree<Key> HybridGaussianFactor::errorTree(
-    const VectorValues &continuousValues) const {
+    const VectorValues& continuousValues) const {
   // functor to convert from sharedFactor to double error value.
-  auto errorFunc = [&continuousValues](const sharedFactor &gf) {
-    return PotentiallyPrunedComponentError(gf, continuousValues);
+  auto errorFunc = [&continuousValues](const GaussianFactorValuePair& pair) {
+    return PotentiallyPrunedComponentError(pair, continuousValues);
   };
-  DecisionTree<Key, double> error_tree(factors_, errorFunc);
-  return error_tree;
+  return {factors_, errorFunc};
 }
 
 /* *******************************************************************************/
-double HybridGaussianFactor::error(const HybridValues &values) const {
+double HybridGaussianFactor::error(const HybridValues& values) const {
   // Directly index to get the component, no need to build the whole tree.
-  const sharedFactor gf = factors_(values.discrete());
-  return PotentiallyPrunedComponentError(gf, values.continuous());
+  const GaussianFactorValuePair pair = factors_(values.discrete());
+  return PotentiallyPrunedComponentError(pair, values.continuous());
 }
 
 }  // namespace gtsam

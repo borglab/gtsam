@@ -52,12 +52,17 @@ BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf");
 BOOST_CLASS_EXPORT_GUID(ADT::Choice, "gtsam_AlgebraicDecisionTree_Choice")
 
 BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor, "gtsam_HybridGaussianFactor");
-BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors,
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::FactorValuePairs,
                         "gtsam_HybridGaussianFactor_Factors");
-BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Leaf,
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::FactorValuePairs::Leaf,
                         "gtsam_HybridGaussianFactor_Factors_Leaf");
-BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Choice,
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::FactorValuePairs::Choice,
                         "gtsam_HybridGaussianFactor_Factors_Choice");
+
+BOOST_CLASS_EXPORT_GUID(GaussianFactorGraphValuePair,
+                        "gtsam_GaussianFactorGraphValuePair");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianProductFactor,
+                        "gtsam_HybridGaussianProductFactor");
 
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional,
                         "gtsam_HybridGaussianConditional");

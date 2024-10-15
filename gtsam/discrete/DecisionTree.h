@@ -31,7 +31,6 @@
 #include <iostream>
 #include <map>
 #include <set>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -158,7 +157,7 @@ namespace gtsam {
      * and Y values 
      */
     template <typename It, typename ValueIt>
-    NodePtr build(It begin, It end, ValueIt beginY, ValueIt endY) const;
+    static NodePtr build(It begin, It end, ValueIt beginY, ValueIt endY);
 
     /** Internal helper function to create from
      * keys, cardinalities, and Y values.
@@ -166,7 +165,20 @@ namespace gtsam {
      * before we prune in a top-down fashion.
      */
     template <typename It, typename ValueIt>
-    NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY) const;
+    static NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY);
+
+    /**
+     * @brief Convert from a DecisionTree<L, X> to DecisionTree<L, Y>.
+     *
+     * @tparam M The previous label type.
+     * @tparam X The previous value type.
+     * @param f The node pointer to the root of the previous DecisionTree.
+     * @param Y_of_X Functor to convert from value type X to type Y.
+     * @return NodePtr
+     */
+    template <typename X>
+    static NodePtr convertFrom(const typename DecisionTree<L, X>::NodePtr& f,
+                               std::function<Y(const X&)> Y_of_X);
 
     /**
      * @brief Convert from a DecisionTree<M, X> to DecisionTree<L, Y>.
@@ -179,9 +191,9 @@ namespace gtsam {
      * @return NodePtr 
      */
     template <typename M, typename X>
-    NodePtr convertFrom(const typename DecisionTree<M, X>::NodePtr& f,
-                        std::function<L(const M&)> L_of_M,
-                        std::function<Y(const X&)> Y_of_X) const;
+    static NodePtr convertFrom(const typename DecisionTree<M, X>::NodePtr& f,
+                               std::function<L(const M&)> L_of_M,
+                               std::function<Y(const X&)> Y_of_X);
 
    public:
     /// @name Standard Constructors
@@ -411,7 +423,7 @@ namespace gtsam {
 
     // internal use only
     template<typename Iterator> NodePtr
-    compose(Iterator begin, Iterator end, const L& label) const;
+    static compose(Iterator begin, Iterator end, const L& label);
 
     /// @}
 

@@ -32,9 +32,6 @@ namespace gtsam {
 
 class HybridValues;
 
-/// Alias for DecisionTree of GaussianFactorGraphs
-using GaussianFactorGraphTree = DecisionTree<Key, GaussianFactorGraph>;
-
 KeyVector CollectKeys(const KeyVector &continuousKeys,
                       const DiscreteKeys &discreteKeys);
 KeyVector CollectKeys(const KeyVector &keys1, const KeyVector &keys2);

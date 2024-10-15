@@ -22,10 +22,12 @@
 #include <gtsam/discrete/DecisionTree-inl.h>
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <string>
 #include <iomanip>
 #include <vector>
+
 namespace gtsam {
 
   /**
@@ -182,6 +184,21 @@ namespace gtsam {
       this->root_ = DecisionTree<L, double>::convertFrom(other.root_, L_of_M, op);
     }
 
+    /**
+     * @brief Create from an arbitrary DecisionTree<L, X> by operating on it
+     * with a functional `f`.
+     *
+     * @tparam X The type of the leaf of the original DecisionTree
+     * @tparam Func Type signature of functional `f`.
+     * @param other The original DecisionTree from which the
+     * AlgbraicDecisionTree is constructed.
+     * @param f Functional used to operate on
+     * the leaves of the input DecisionTree.
+     */
+    template <typename X, typename Func>
+    AlgebraicDecisionTree(const DecisionTree<L, X>& other, Func f)
+        : Base(other, f) {}
+
     /** sum */
     AlgebraicDecisionTree operator+(const AlgebraicDecisionTree& g) const {
       return this->apply(g, &Ring::add);
@@ -219,12 +236,9 @@ namespace gtsam {
      * @brief Helper method to perform normalization such that all leaves in the
      * tree sum to 1
      *
-     * @param sum
      * @return AlgebraicDecisionTree
      */
-    AlgebraicDecisionTree normalize(double sum) const {
-      return this->apply([&sum](const double& x) { return x / sum; });
-    }
+    AlgebraicDecisionTree normalize() const { return (*this) / this->sum(); }
 
     /// Find the minimum values amongst all leaves
     double min() const {

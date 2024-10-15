@@ -18,6 +18,8 @@
  * @date    December 2021
  */
 
+#include <gtsam/discrete/DecisionTree.h>
+#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
@@ -27,9 +29,6 @@
 
 #include <memory>
 #include <vector>
-
-#include "gtsam/discrete/DecisionTree.h"
-#include "gtsam/discrete/DiscreteKey.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -217,30 +216,16 @@ TEST(HybridGaussianConditional, Likelihood2) {
   // Check the detailed JacobianFactor calculation for mode==1.
   {
     // We have a JacobianFactor
-    const auto gf1 = (*likelihood)(assignment1);
+    const auto [gf1, _] = (*likelihood)(assignment1);
     const auto jf1 = std::dynamic_pointer_cast<JacobianFactor>(gf1);
     CHECK(jf1);
 
-    // It has 2 rows, not 1!
-    CHECK(jf1->rows() == 2);
-
-    // Check that the constant C1 is properly encoded in the JacobianFactor.
-    const double C1 =
-        conditionals[1]->negLogConstant() - hybrid_conditional.negLogConstant();
-    const double c1 = std::sqrt(2.0 * C1);
-    Vector expected_unwhitened(2);
-    expected_unwhitened << 4.9 - 5.0, -c1;
-    Vector actual_unwhitened = jf1->unweighted_error(vv);
-    EXPECT(assert_equal(expected_unwhitened, actual_unwhitened));
-
-    // Make sure the noise model does not touch it.
-    Vector expected_whitened(2);
-    expected_whitened << (4.9 - 5.0) / 3.0, -c1;
-    Vector actual_whitened = jf1->error_vector(vv);
-    EXPECT(assert_equal(expected_whitened, actual_whitened));
-
-    // Check that the error is equal to the conditional error:
-    EXPECT_DOUBLES_EQUAL(hybrid_conditional.error(hv1), jf1->error(hv1), 1e-8);
+    // Check that the JacobianFactor error with constants is equal to the
+    // conditional error:
+    EXPECT_DOUBLES_EQUAL(hybrid_conditional.error(hv1),
+                         jf1->error(hv1) + conditionals[1]->negLogConstant() -
+                             hybrid_conditional.negLogConstant(),
+                         1e-8);
   }
 
   // Check that the ratio of probPrime to evaluate is the same for all modes.

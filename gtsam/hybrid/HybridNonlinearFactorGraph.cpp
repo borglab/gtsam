@@ -210,4 +210,16 @@ AlgebraicDecisionTree<Key> HybridNonlinearFactorGraph::errorTree(
   return result;
 }
 
+/* ************************************************************************ */
+AlgebraicDecisionTree<Key> HybridNonlinearFactorGraph::discretePosterior(
+    const Values& continuousValues) const {
+  AlgebraicDecisionTree<Key> errors = this->errorTree(continuousValues);
+  AlgebraicDecisionTree<Key> p = errors.apply([](double error) {
+    // NOTE: The 0.5 term is handled by each factor
+    return exp(-error);
+  });
+  return p / p.sum();
+}
+
+/* ************************************************************************ */
 }  // namespace gtsam
