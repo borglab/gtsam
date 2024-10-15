@@ -650,7 +650,7 @@ namespace gtsam {
   template<typename L, typename Y>
   template<typename It, typename ValueIt>
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::build(
-      It begin, It end, ValueIt beginY, ValueIt endY) const {
+      It begin, It end, ValueIt beginY, ValueIt endY) {
     // get crucial counts
     size_t nrChoices = begin->second;
     size_t size = endY - beginY;
@@ -692,7 +692,7 @@ namespace gtsam {
   template<typename L, typename Y>
   template<typename It, typename ValueIt>
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::create(
-      It begin, It end, ValueIt beginY, ValueIt endY) const {
+      It begin, It end, ValueIt beginY, ValueIt endY) {
     auto node = build(begin, end, beginY, endY);
     if (auto choice = std::dynamic_pointer_cast<const Choice>(node)) {
       return Choice::Unique(choice);
