@@ -22,10 +22,12 @@
 #include <gtsam/discrete/DecisionTree-inl.h>
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <string>
 #include <iomanip>
 #include <vector>
+
 namespace gtsam {
 
   /**
