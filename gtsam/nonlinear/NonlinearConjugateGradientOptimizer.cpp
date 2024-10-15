@@ -42,24 +42,26 @@ static VectorValues gradientInPlace(const NonlinearFactorGraph &nfg,
 }
 
 NonlinearConjugateGradientOptimizer::NonlinearConjugateGradientOptimizer(
-    const NonlinearFactorGraph& graph, const Values& initialValues, const Parameters& params)
-    : Base(graph, std::unique_ptr<State>(new State(initialValues, graph.error(initialValues)))),
-    params_(params) {}
+    const NonlinearFactorGraph& graph, const Values& initialValues,
+    const Parameters& params)
+    : Base(graph, std::unique_ptr<State>(
+                      new State(initialValues, graph.error(initialValues)))),
+      params_(params) {}
 
-double NonlinearConjugateGradientOptimizer::System::error(const State& state) const {
+double NonlinearConjugateGradientOptimizer::System::error(
+    const Values& state) const {
   return graph_.error(state);
 }
 
-NonlinearConjugateGradientOptimizer::System::Gradient NonlinearConjugateGradientOptimizer::System::gradient(
-    const State &state) const {
+VectorValues NonlinearConjugateGradientOptimizer::System::gradient(
+    const Values& state) const {
   return gradientInPlace(graph_, state);
 }
 
-NonlinearConjugateGradientOptimizer::System::State NonlinearConjugateGradientOptimizer::System::advance(
-    const State &current, const double alpha, const Gradient &g) const {
-  Gradient step = g;
-  step *= alpha;
-  return current.retract(step);
+Values NonlinearConjugateGradientOptimizer::System::advance(
+    const Values& current, const double alpha,
+    const VectorValues& gradient) const {
+  return current.retract(alpha * gradient);
 }
 
 GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {

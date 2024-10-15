@@ -29,8 +29,6 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer : public NonlinearOptimiz
   /* a class for the nonlinearConjugateGradient template */
   class System {
   public:
-    typedef Values State;
-    typedef VectorValues Gradient;
     typedef NonlinearOptimizerParams Parameters;
 
   protected:
@@ -40,10 +38,10 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer : public NonlinearOptimiz
     System(const NonlinearFactorGraph &graph) :
         graph_(graph) {
     }
-    double error(const State &state) const;
-    Gradient gradient(const State &state) const;
-    State advance(const State &current, const double alpha,
-        const Gradient &g) const;
+    double error(const Values &state) const;
+    VectorValues gradient(const Values &state) const;
+    Values advance(const Values &current, const double alpha,
+                  const VectorValues &g) const;
   };
 
 public:
@@ -52,7 +50,7 @@ public:
   typedef NonlinearOptimizerParams Parameters;
   typedef std::shared_ptr<NonlinearConjugateGradientOptimizer> shared_ptr;
 
-protected:
+ protected:
   Parameters params_;
 
   const NonlinearOptimizerParams& _params() const override {
@@ -62,8 +60,9 @@ protected:
 public:
 
   /// Constructor
-  NonlinearConjugateGradientOptimizer(const NonlinearFactorGraph& graph,
-      const Values& initialValues, const Parameters& params = Parameters());
+  NonlinearConjugateGradientOptimizer(
+      const NonlinearFactorGraph &graph, const Values &initialValues,
+      const Parameters &params = Parameters());
 
   /// Destructor
   ~NonlinearConjugateGradientOptimizer() override {
@@ -163,8 +162,8 @@ std::tuple<V, int> nonlinearConjugateGradient(const S &system,
   }
 
   V currentValues = initial;
-  typename S::Gradient currentGradient = system.gradient(currentValues),
-      prevGradient, direction = currentGradient;
+  VectorValues currentGradient = system.gradient(currentValues), prevGradient,
+               direction = currentGradient;
 
   /* do one step of gradient descent */
   V prevValues = currentValues;
