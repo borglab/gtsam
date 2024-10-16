@@ -16,11 +16,11 @@
  * @date   Jun 11, 2012
  */
 
-#include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
-#include <gtsam/nonlinear/internal/NonlinearOptimizerState.h>
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/internal/NonlinearOptimizerState.h>
 
 #include <cmath>
 
@@ -34,8 +34,8 @@ typedef internal::NonlinearOptimizerState State;
  * @param values a linearization point
  * Can be moved to NonlinearFactorGraph.h if desired
  */
-static VectorValues gradientInPlace(const NonlinearFactorGraph &nfg,
-    const Values &values) {
+static VectorValues gradientInPlace(const NonlinearFactorGraph& nfg,
+                                    const Values& values) {
   // Linearize graph
   GaussianFactorGraph::shared_ptr linear = nfg.linearize(values);
   return linear->gradientAtZero();
@@ -71,7 +71,8 @@ NonlinearConjugateGradientOptimizer::System::advance(const State& current,
 GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
   const auto [newValues, dummy] = nonlinearConjugateGradient<System, Values>(
       System(graph_), state_->values, params_, true /* single iteration */);
-  state_.reset(new State(newValues, graph_.error(newValues), state_->iterations + 1));
+  state_.reset(
+      new State(newValues, graph_.error(newValues), state_->iterations + 1));
 
   // NOTE(frank): We don't linearize this system, so we must return null here.
   return nullptr;
@@ -82,9 +83,9 @@ const Values& NonlinearConjugateGradientOptimizer::optimize() {
   System system(graph_);
   const auto [newValues, iterations] =
       nonlinearConjugateGradient(system, state_->values, params_, false);
-  state_.reset(new State(std::move(newValues), graph_.error(newValues), iterations));
+  state_.reset(
+      new State(std::move(newValues), graph_.error(newValues), iterations));
   return state_->values;
 }
 
 } /* namespace gtsam */
-

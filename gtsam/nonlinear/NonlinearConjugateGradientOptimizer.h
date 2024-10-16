@@ -24,30 +24,27 @@
 namespace gtsam {
 
 /**  An implementation of the nonlinear CG method using the template below */
-class GTSAM_EXPORT NonlinearConjugateGradientOptimizer : public NonlinearOptimizer {
-
+class GTSAM_EXPORT NonlinearConjugateGradientOptimizer
+    : public NonlinearOptimizer {
   /* a class for the nonlinearConjugateGradient template */
   class System {
-  public:
+   public:
     typedef Values State;
     typedef VectorValues Gradient;
     typedef NonlinearOptimizerParams Parameters;
 
-  protected:
+   protected:
     const NonlinearFactorGraph &graph_;
 
-  public:
-    System(const NonlinearFactorGraph &graph) :
-        graph_(graph) {
-    }
+   public:
+    System(const NonlinearFactorGraph &graph) : graph_(graph) {}
     double error(const State &state) const;
     Gradient gradient(const State &state) const;
     State advance(const State &current, const double alpha,
                   const Gradient &g) const;
   };
 
-public:
-
+ public:
   typedef NonlinearOptimizer Base;
   typedef NonlinearOptimizerParams Parameters;
   typedef std::shared_ptr<NonlinearConjugateGradientOptimizer> shared_ptr;
@@ -55,59 +52,52 @@ public:
  protected:
   Parameters params_;
 
-  const NonlinearOptimizerParams& _params() const override {
-    return params_;
-  }
+  const NonlinearOptimizerParams &_params() const override { return params_; }
 
-public:
-
+ public:
   /// Constructor
-  NonlinearConjugateGradientOptimizer(
-      const NonlinearFactorGraph &graph, const Values &initialValues,
-      const Parameters &params = Parameters());
+  NonlinearConjugateGradientOptimizer(const NonlinearFactorGraph &graph,
+                                      const Values &initialValues,
+                                      const Parameters &params = Parameters());
 
   /// Destructor
-  ~NonlinearConjugateGradientOptimizer() override {
-  }
+  ~NonlinearConjugateGradientOptimizer() override {}
 
-  /** 
-   * Perform a single iteration, returning GaussianFactorGraph corresponding to 
+  /**
+   * Perform a single iteration, returning GaussianFactorGraph corresponding to
    * the linearized factor graph.
    */
   GaussianFactorGraph::shared_ptr iterate() override;
 
-  /** 
-   * Optimize for the maximum-likelihood estimate, returning a the optimized 
+  /**
+   * Optimize for the maximum-likelihood estimate, returning a the optimized
    * variable assignments.
    */
-  const Values& optimize() override;
+  const Values &optimize() override;
 };
 
 /** Implement the golden-section line search algorithm */
-template<class S, class V, class W>
+template <class S, class V, class W>
 double lineSearch(const S &system, const V currentValues, const W &gradient) {
-
   /* normalize it such that it becomes a unit vector */
   const double g = gradient.norm();
 
-  // perform the golden section search algorithm to decide the the optimal step size
-  // detail refer to http://en.wikipedia.org/wiki/Golden_section_search
-  const double phi = 0.5 * (1.0 + std::sqrt(5.0)), resphi = 2.0 - phi, tau =
-      1e-5;
-  double minStep = -1.0 / g, maxStep = 0, newStep = minStep
-      + (maxStep - minStep) / (phi + 1.0);
+  // perform the golden section search algorithm to decide the the optimal step
+  // size detail refer to http://en.wikipedia.org/wiki/Golden_section_search
+  const double phi = 0.5 * (1.0 + std::sqrt(5.0)), resphi = 2.0 - phi,
+               tau = 1e-5;
+  double minStep = -1.0 / g, maxStep = 0,
+         newStep = minStep + (maxStep - minStep) / (phi + 1.0);
 
   V newValues = system.advance(currentValues, newStep, gradient);
   double newError = system.error(newValues);
 
   while (true) {
     const bool flag = (maxStep - newStep > newStep - minStep) ? true : false;
-    const double testStep =
-        flag ? newStep + resphi * (maxStep - newStep) :
-            newStep - resphi * (newStep - minStep);
+    const double testStep = flag ? newStep + resphi * (maxStep - newStep)
+                                 : newStep - resphi * (newStep - minStep);
 
-    if ((maxStep - minStep)
-        < tau * (std::abs(testStep) + std::abs(newStep))) {
+    if ((maxStep - minStep) < tau * (std::abs(testStep) + std::abs(newStep))) {
       return 0.5 * (minStep + maxStep);
     }
 
@@ -136,19 +126,21 @@ double lineSearch(const S &system, const V currentValues, const W &gradient) {
 }
 
 /**
- * Implement the nonlinear conjugate gradient method using the Polak-Ribiere formula suggested in
+ * Implement the nonlinear conjugate gradient method using the Polak-Ribiere
+ * formula suggested in
  * http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method.
  *
- * The S (system) class requires three member functions: error(state), gradient(state) and
- * advance(state, step-size, direction). The V class denotes the state or the solution.
+ * The S (system) class requires three member functions: error(state),
+ * gradient(state) and advance(state, step-size, direction). The V class denotes
+ * the state or the solution.
  *
- * The last parameter is a switch between gradient-descent and conjugate gradient
+ * The last parameter is a switch between gradient-descent and conjugate
+ * gradient
  */
-template<class S, class V>
-std::tuple<V, int> nonlinearConjugateGradient(const S &system,
-    const V &initial, const NonlinearOptimizerParams &params,
+template <class S, class V>
+std::tuple<V, int> nonlinearConjugateGradient(
+    const S &system, const V &initial, const NonlinearOptimizerParams &params,
     const bool singleIteration, const bool gradientDescent = false) {
-
   // GTSAM_CONCEPT_MANIFOLD_TYPE(V)
 
   size_t iteration = 0;
@@ -158,7 +150,7 @@ std::tuple<V, int> nonlinearConjugateGradient(const S &system,
   if (currentError <= params.errorTol) {
     if (params.verbosity >= NonlinearOptimizerParams::ERROR) {
       std::cout << "Exiting, as error = " << currentError << " < "
-          << params.errorTol << std::endl;
+                << params.errorTol << std::endl;
     }
     return {initial, iteration};
   }
@@ -186,9 +178,9 @@ std::tuple<V, int> nonlinearConjugateGradient(const S &system,
       prevGradient = currentGradient;
       currentGradient = system.gradient(currentValues);
       // Polak-Ribiere: beta = g'*(g_n-g_n-1)/g_n-1'*g_n-1
-      const double beta = std::max(0.0,
-          currentGradient.dot(currentGradient - prevGradient)
-              / prevGradient.dot(prevGradient));
+      const double beta =
+          std::max(0.0, currentGradient.dot(currentGradient - prevGradient) /
+                            prevGradient.dot(prevGradient));
       direction = currentGradient + (beta * direction);
     }
 
@@ -206,20 +198,21 @@ std::tuple<V, int> nonlinearConjugateGradient(const S &system,
 
     // Maybe show output
     if (params.verbosity >= NonlinearOptimizerParams::ERROR)
-      std::cout << "iteration: " << iteration << ", currentError: " << currentError << std::endl;
-  } while (++iteration < params.maxIterations && !singleIteration
-      && !checkConvergence(params.relativeErrorTol, params.absoluteErrorTol,
-          params.errorTol, prevError, currentError, params.verbosity));
+      std::cout << "iteration: " << iteration
+                << ", currentError: " << currentError << std::endl;
+  } while (++iteration < params.maxIterations && !singleIteration &&
+           !checkConvergence(params.relativeErrorTol, params.absoluteErrorTol,
+                             params.errorTol, prevError, currentError,
+                             params.verbosity));
 
   // Printing if verbose
-  if (params.verbosity >= NonlinearOptimizerParams::ERROR
-      && iteration >= params.maxIterations)
-    std::cout
-        << "nonlinearConjugateGradient: Terminating because reached maximum iterations"
-        << std::endl;
+  if (params.verbosity >= NonlinearOptimizerParams::ERROR &&
+      iteration >= params.maxIterations)
+    std::cout << "nonlinearConjugateGradient: Terminating because reached "
+                 "maximum iterations"
+              << std::endl;
 
   return {currentValues, iteration};
 }
 
-} // \ namespace gtsam
-
+}  // namespace gtsam
