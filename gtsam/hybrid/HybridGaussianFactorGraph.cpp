@@ -390,7 +390,7 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
   };
 
   // Perform elimination!
-  ResultTree eliminationResults(prunedProductFactor, eliminate);
+  const ResultTree eliminationResults(prunedProductFactor, eliminate);
 
   // If there are no more continuous parents we create a DiscreteFactor with the
   // error for each discrete choice. Otherwise, create a HybridGaussianFactor

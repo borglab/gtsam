@@ -1060,7 +1060,7 @@ namespace gtsam {
   template <typename L, typename Y>
   template <typename A, typename B>
   std::pair<DecisionTree<L, A>, DecisionTree<L, B>> DecisionTree<L, Y>::split(
-      std::function<std::pair<A, B>(const Y&)> AB_of_Y) {
+      std::function<std::pair<A, B>(const Y&)> AB_of_Y) const {
     using AB = std::pair<A, B>;
     const DecisionTree<L, AB> ab(*this, AB_of_Y);
     const DecisionTree<L, A> a(ab, [](const AB& p) { return p.first; });

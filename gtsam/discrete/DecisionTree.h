@@ -416,7 +416,7 @@ namespace gtsam {
      */
     template <typename A, typename B>
     std::pair<DecisionTree<L, A>, DecisionTree<L, B>> split(
-        std::function<std::pair<A, B>(const Y&)> AB_of_Y);
+        std::function<std::pair<A, B>(const Y&)> AB_of_Y) const;
 
     /// @name Advanced Interface
     /// @{
