@@ -70,14 +70,6 @@ struct GTSAM_EXPORT ConjugateGradientParameters
         blas_kernel(GTSAM) {}
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
-  /* general interface */
-  inline size_t minIterations() const { return minIterations; }
-  inline size_t maxIterations() const { return maxIterations; }
-  inline size_t reset() const { return reset; }
-  inline double epsilon() const { return epsilon_rel; }
-  inline double epsilon_rel() const { return epsilon_rel; }
-  inline double epsilon_abs() const { return epsilon_abs; }
-
   inline size_t getMinIterations() const { return minIterations; }
   inline size_t getMaxIterations() const { return maxIterations; }
   inline size_t getReset() const { return reset; }
