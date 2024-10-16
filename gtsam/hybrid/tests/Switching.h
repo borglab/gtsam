@@ -158,7 +158,7 @@ struct Switching {
     nonlinearFactorGraph.emplace_shared<PriorFactor<double>>(
         X(0), measurements.at(0), Isotropic::Sigma(1, prior_sigma));
 
-    // Add "motion models" ϕ(X(k),X(k+1)).
+    // Add "motion models" ϕ(X(k),X(k+1),M(k)).
     for (size_t k = 0; k < K - 1; k++) {
       auto motion_models = motionModels(k, between_sigma);
       nonlinearFactorGraph.emplace_shared<HybridNonlinearFactor>(modes[k],
