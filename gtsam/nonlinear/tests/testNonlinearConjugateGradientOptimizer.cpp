@@ -8,9 +8,12 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 using namespace std;
@@ -77,6 +80,152 @@ TEST(NonlinearConjugateGradientOptimizer, Optimize) {
   //  cout << "cg final error = " << graph.error(result) << endl;
 
   EXPECT_DOUBLES_EQUAL(0.0, graph.error(result), 1e-4);
+}
+
+namespace rosenbrock {
+
+/// Alias for the first term in the Rosenbrock function
+// using Rosenbrock1Factor = PriorFactor<double>;
+
+using symbol_shorthand::X;
+using symbol_shorthand::Y;
+
+class Rosenbrock1Factor : public NoiseModelFactorN<double> {
+ private:
+  typedef Rosenbrock1Factor This;
+  typedef NoiseModelFactorN<double> Base;
+
+  double a_;
+
+ public:
+  /** Constructor: key is x */
+  Rosenbrock1Factor(Key key, double a, const SharedNoiseModel& model = nullptr)
+      : Base(model, key), a_(a) {}
+
+  /// evaluate error
+  Vector evaluateError(const double& x, OptionalMatrixType H) const override {
+    double sqrt_2 = 1.4142135623730951;
+    if (H) (*H) = sqrt_2 * Vector::Ones(1).transpose();
+    return sqrt_2 * Vector1(x - a_);
+  }
+};
+
+/**
+ * @brief Factor for the second term of the Rosenbrock function.
+ * f2 = (x*x - y)
+ *
+ * We use the noise model to premultiply with `b`.
+ */
+class Rosenbrock2Factor : public NoiseModelFactorN<double, double> {
+ private:
+  typedef Rosenbrock2Factor This;
+  typedef NoiseModelFactorN<double, double> Base;
+
+ public:
+  /** Constructor: key1 is x, key2 is y */
+  Rosenbrock2Factor(Key key1, Key key2, const SharedNoiseModel& model = nullptr)
+      : Base(model, key1, key2) {}
+
+  /// evaluate error
+  Vector evaluateError(const double& p1, const double& p2,
+                       OptionalMatrixType H1,
+                       OptionalMatrixType H2) const override {
+    double sqrt_2 = 1.4142135623730951;
+    if (H1) (*H1) = sqrt_2 * p1 * Vector::Ones(1).transpose();
+    if (H2) (*H2) = -sqrt_2 * Vector::Ones(1).transpose();
+    return sqrt_2 * Vector1((p1 * p1) - p2);
+  }
+};
+
+/**
+ * @brief Get a nonlinear factor graph representing
+ * the Rosenbrock Banana function.
+ *
+ * More details: https://en.wikipedia.org/wiki/Rosenbrock_function
+ *
+ * @param a
+ * @param b
+ * @return NonlinearFactorGraph
+ */
+static NonlinearFactorGraph GetRosenbrockGraph(double a = 1.0,
+                                               double b = 100.0) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<Rosenbrock1Factor>(X(0), a, noiseModel::Unit::Create(1));
+  graph.emplace_shared<Rosenbrock2Factor>(
+      X(0), Y(0), noiseModel::Isotropic::Precision(1, b));
+
+  return graph;
+}
+
+/// Compute the Rosenbrock function error given the nonlinear factor graph
+/// and input values.
+double f(const NonlinearFactorGraph& graph, double x, double y) {
+  Values initial;
+  initial.insert<double>(X(0), x);
+  initial.insert<double>(Y(0), y);
+
+  return graph.error(initial);
+}
+
+/// True Rosenbrock Banana function.
+double rosenbrock_func(double x, double y, double a = 1.0, double b = 100.0) {
+  double m = (a - x) * (a - x);
+  double n = b * (y - x * x) * (y - x * x);
+  return m + n;
+}
+}  // namespace rosenbrock
+
+/* ************************************************************************* */
+// Test whether the 2 factors are properly implemented.
+TEST(NonlinearConjugateGradientOptimizer, Rosenbrock) {
+  using namespace rosenbrock;
+  double a = 1.0, b = 100.0;
+  Rosenbrock1Factor f1(X(0), a, noiseModel::Unit::Create(1));
+  Rosenbrock2Factor f2(X(0), Y(0), noiseModel::Isotropic::Sigma(1, b));
+  Values values;
+  values.insert<double>(X(0), 0.0);
+  values.insert<double>(Y(0), 0.0);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f1, values, 1e-7, 1e-5);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f2, values, 1e-7, 1e-5);
+
+  std::mt19937 rng(42);
+  std::uniform_real_distribution<double> dist(0.0, 100.0);
+  for (size_t i = 0; i < 50; ++i) {
+    double x = dist(rng);
+    double y = dist(rng);
+
+    auto graph = GetRosenbrockGraph(a, b);
+    EXPECT_DOUBLES_EQUAL(rosenbrock_func(x, y, a, b), f(graph, x, y), 1e-5);
+  }
+}
+
+/* ************************************************************************* */
+// Optimize the Rosenbrock function to verify optimizer works
+TEST(NonlinearConjugateGradientOptimizer, Optimization) {
+  using namespace rosenbrock;
+
+  double a = 1;
+  auto graph = GetRosenbrockGraph(a);
+
+  // Assert that error at global minimum is 0.
+  double error = f(graph, a, a * a);
+  EXPECT_DOUBLES_EQUAL(0.0, error, 1e-12);
+
+  NonlinearOptimizerParams param;
+  param.maxIterations = 16;
+  // param.verbosity = NonlinearOptimizerParams::LINEAR;
+  param.verbosity = NonlinearOptimizerParams::SILENT;
+
+  Values initialEstimate;
+  initialEstimate.insert<double>(X(0), 0.0);
+  initialEstimate.insert<double>(Y(0), 0.0);
+
+  // std::cout << f(graph, 11.0, 90.0) << std::endl;
+
+  NonlinearConjugateGradientOptimizer optimizer(graph, initialEstimate, param);
+  Values result = optimizer.optimize();
+  result.print();
+  cout << "cg final error = " << graph.error(result) << endl;
 }
 
 /* ************************************************************************* */
