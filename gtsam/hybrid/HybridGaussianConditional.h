@@ -241,7 +241,7 @@ class GTSAM_EXPORT HybridGaussianConditional
 
   /// Private constructor that uses helper struct above.
   HybridGaussianConditional(const DiscreteKeys &discreteParents,
-                            const Helper &helper);
+                            Helper &&helper);
 
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;

@@ -110,15 +110,15 @@ struct HybridGaussianConditional::Helper {
 
 /* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
-    const DiscreteKeys &discreteParents, const Helper &helper)
+    const DiscreteKeys &discreteParents, Helper &&helper)
     : BaseFactor(discreteParents,
-                 FactorValuePairs(helper.pairs,
-                                  [&](const GaussianFactorValuePair &
-                                          pair) {  // subtract minNegLogConstant
-                                    return GaussianFactorValuePair{
-                                        pair.first,
-                                        pair.second - helper.minNegLogConstant};
-                                  })),
+                 FactorValuePairs(
+                     [&](const GaussianFactorValuePair
+                             &pair) {  // subtract minNegLogConstant
+                       return GaussianFactorValuePair{
+                           pair.first, pair.second - helper.minNegLogConstant};
+                     },
+                     std::move(helper.pairs))),
       BaseConditional(*helper.nrFrontals),
       negLogConstant_(helper.minNegLogConstant) {}
 
