@@ -70,7 +70,7 @@ TEST( PCGsolver, verySimpleLinearSystem) {
   pcg->preconditioner =
       std::make_shared<gtsam::BlockJacobiPreconditionerParameters>();
   // It takes more than 1000 iterations for this test
-  pcg->setMaxIterations(1500);
+  pcg->maxIterations = 1500;
   VectorValues deltaPCGJacobi = PCGSolver(*pcg).optimize(simpleGFG);
 
   EXPECT(assert_equal(exactSolution, deltaPCGJacobi, 1e-5));
