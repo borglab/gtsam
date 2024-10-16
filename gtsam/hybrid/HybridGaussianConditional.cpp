@@ -29,6 +29,8 @@
 #include <gtsam/linear/JacobianFactor.h>
 
 #include <cstddef>
+#include <memory>
+#include "gtsam/linear/GaussianConditional.h"
 
 namespace gtsam {
 /* *******************************************************************************/
@@ -38,14 +40,13 @@ namespace gtsam {
  * This struct contains the following fields:
  * - nrFrontals: Optional size_t for number of frontal variables
  * - pairs: FactorValuePairs for storing conditionals with their negLogConstant
- * - conditionals: Conditionals for storing conditionals. TODO(frank): kill!
  * - minNegLogConstant: minimum negLogConstant, computed here, subtracted in
  * constructor
  */
 struct HybridGaussianConditional::Helper {
-  std::optional<size_t> nrFrontals;
   FactorValuePairs pairs;
-  double minNegLogConstant;
+  std::optional<size_t> nrFrontals = {};
+  double minNegLogConstant = std::numeric_limits<double>::infinity();
 
   using GC = GaussianConditional;
   using P = std::vector<std::pair<Vector, double>>;
@@ -54,8 +55,6 @@ struct HybridGaussianConditional::Helper {
   template <typename... Args>
   explicit Helper(const DiscreteKey &mode, const P &p, Args &&...args) {
     nrFrontals = 1;
-    minNegLogConstant = std::numeric_limits<double>::infinity();
-
     std::vector<GaussianFactorValuePair> fvs;
     std::vector<GC::shared_ptr> gcs;
     fvs.reserve(p.size());
@@ -73,8 +72,7 @@ struct HybridGaussianConditional::Helper {
   }
 
   /// Construct from tree of GaussianConditionals.
-  explicit Helper(const Conditionals &conditionals)
-      : minNegLogConstant(std::numeric_limits<double>::infinity()) {
+  explicit Helper(const Conditionals &conditionals) {
     auto func = [this](const GC::shared_ptr &gc) -> GaussianFactorValuePair {
       if (!gc) return {nullptr, std::numeric_limits<double>::infinity()};
       if (!nrFrontals) nrFrontals = gc->nrFrontals();
@@ -83,6 +81,25 @@ struct HybridGaussianConditional::Helper {
       return {gc, value};
     };
     pairs = FactorValuePairs(conditionals, func);
+    if (!nrFrontals.has_value()) {
+      throw std::runtime_error(
+          "HybridGaussianConditional: need at least one frontal variable. "
+          "Provided conditionals do not contain any frontal variables.");
+    }
+  }
+
+  /// Construct from tree of factor/scalar pairs.
+  explicit Helper(const FactorValuePairs &pairs) : pairs(pairs) {
+    auto func = [this](const GaussianFactorValuePair &pair) {
+      if (!pair.first) return;
+      auto gc = std::dynamic_pointer_cast<GaussianConditional>(pair.first);
+      if (!gc)
+        throw std::runtime_error(
+            "HybridGaussianConditional called with non-conditional.");
+      if (!nrFrontals) nrFrontals = gc->nrFrontals();
+      minNegLogConstant = std::min(minNegLogConstant, pair.second);
+    };
+    pairs.visit(func);
     if (!nrFrontals.has_value()) {
       throw std::runtime_error(
           "HybridGaussianConditional: need at least one frontal variable. "
@@ -137,6 +154,10 @@ HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKeys &discreteParents,
     const HybridGaussianConditional::Conditionals &conditionals)
     : HybridGaussianConditional(discreteParents, Helper(conditionals)) {}
+
+HybridGaussianConditional::HybridGaussianConditional(
+    const DiscreteKeys &discreteParents, const FactorValuePairs &pairs)
+    : HybridGaussianConditional(discreteParents, Helper(pairs)) {}
 
 /* *******************************************************************************/
 const HybridGaussianConditional::Conditionals
@@ -300,8 +321,7 @@ HybridGaussianConditional::shared_ptr HybridGaussianConditional::prune(
 
   FactorValuePairs prunedConditionals = factors().apply(pruner);
   return std::shared_ptr<HybridGaussianConditional>(
-      new HybridGaussianConditional(discreteKeys(), nrFrontals_,
-                                    prunedConditionals, negLogConstant_));
+      new HybridGaussianConditional(discreteKeys(), prunedConditionals));
 }
 
 /* *******************************************************************************/

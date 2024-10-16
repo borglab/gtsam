@@ -141,6 +141,19 @@ class GTSAM_EXPORT HybridGaussianConditional
   HybridGaussianConditional(const DiscreteKeys &discreteParents,
                             const Conditionals &conditionals);
 
+  /**
+   * @brief Construct from multiple discrete keys M and a tree of
+   * factor/scalar pairs, where the scalar is assumed to be the
+   * the negative log constant for each assignment m, up to a constant.
+   *
+   * @note Will throw if factors are not actually conditionals.
+   *
+   * @param discreteParents the discrete parents. Will be placed last.
+   * @param conditionalPairs Decision tree of GaussianFactor/scalar pairs.
+   */
+  HybridGaussianConditional(const DiscreteKeys &discreteParents,
+                            const FactorValuePairs &pairs);
+
   /// @}
   /// @name Testable
   /// @{
@@ -229,14 +242,6 @@ class GTSAM_EXPORT HybridGaussianConditional
   /// Private constructor that uses helper struct above.
   HybridGaussianConditional(const DiscreteKeys &discreteParents,
                             const Helper &helper);
-
-  /// Private constructor used when constants have already been calculated.
-  HybridGaussianConditional(const DiscreteKeys &discreteKeys, int nrFrontals,
-                            const FactorValuePairs &factors,
-                            double negLogConstant)
-      : BaseFactor(discreteKeys, factors),
-        BaseConditional(nrFrontals),
-        negLogConstant_(negLogConstant) {}
 
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;
