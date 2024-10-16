@@ -287,6 +287,10 @@ namespace gtsam {
       return branches_;
     }
 
+    std::vector<NodePtr>& branches() {
+      return branches_;
+    }
+
     /** add a branch: TODO merge into constructor */
     void push_back(NodePtr&& node) {
       // allSame_ is restricted to leaf nodes in a decision tree
@@ -557,6 +561,36 @@ namespace gtsam {
 
   /****************************************************************************/
   template <typename L, typename Y>
+  DecisionTree<L, Y>::DecisionTree(const Unary& op,
+                                   DecisionTree&& other) noexcept
+      : root_(std::move(other.root_)) {
+    // Apply the unary operation directly to each leaf in the tree
+    if (root_) {
+      // Define a helper function to traverse and apply the operation
+      struct ApplyUnary {
+        const Unary& op;
+        void operator()(typename DecisionTree<L, Y>::NodePtr& node) const {
+          if (auto leaf = std::dynamic_pointer_cast<Leaf>(node)) {
+            // Apply the unary operation to the leaf's constant value
+            leaf->constant_ = op(leaf->constant_);
+          } else if (auto choice = std::dynamic_pointer_cast<Choice>(node)) {
+            // Recurse into the choice branches
+            for (NodePtr& branch : choice->branches()) {
+              (*this)(branch);
+            }
+          }
+        }
+      };
+
+      ApplyUnary applyUnary{op};
+      applyUnary(root_);
+    }
+    // Reset the other tree's root to nullptr to avoid dangling references
+    other.root_ = nullptr;
+  }
+
+  /****************************************************************************/
+  template <typename L, typename Y>
   template <typename X, typename Func>
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<L, X>& other,
                                    Func Y_of_X) {
@@ -695,7 +729,7 @@ namespace gtsam {
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::create(
       It begin, It end, ValueIt beginY, ValueIt endY) {
     auto node = build(begin, end, beginY, endY);
-    if (auto choice = std::dynamic_pointer_cast<const Choice>(node)) {
+    if (auto choice = std::dynamic_pointer_cast<Choice>(node)) {
       return Choice::Unique(choice);
     } else {
       return node;
@@ -711,7 +745,7 @@ namespace gtsam {
 
     // If leaf, apply unary conversion "op" and create a unique leaf.
     using LXLeaf = typename DecisionTree<L, X>::Leaf;
-    if (auto leaf = std::dynamic_pointer_cast<const LXLeaf>(f)) {
+    if (auto leaf = std::dynamic_pointer_cast<LXLeaf>(f)) {
       return NodePtr(new Leaf(Y_of_X(leaf->constant())));
     }
 

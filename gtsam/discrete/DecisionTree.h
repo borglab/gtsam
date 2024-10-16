@@ -85,7 +85,7 @@ namespace gtsam {
 
     /** ------------------------ Node base class --------------------------- */
     struct Node {
-      using Ptr = std::shared_ptr<const Node>;
+      using Ptr = std::shared_ptr<Node>;
 
 #ifdef DT_DEBUG_MEMORY
       static int nrNodes;
@@ -227,6 +227,15 @@ namespace gtsam {
     /** Create DecisionTree from two others */
     DecisionTree(const L& label, const DecisionTree& f0,
                  const DecisionTree& f1);
+
+    /**
+     * @brief Move constructor for DecisionTree. Very efficient as does not
+     * allocate anything, just changes in-place. But `other` is consumed.
+     *
+     * @param op The unary operation to apply to the moved DecisionTree.
+     * @param other The DecisionTree to move from, will be empty afterwards.
+     */
+    DecisionTree(const Unary& op, DecisionTree&& other) noexcept;
 
     /**
      * @brief Convert from a different value type.
