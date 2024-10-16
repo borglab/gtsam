@@ -191,6 +191,7 @@ class GTSAM_EXPORT HybridGaussianConditional
       const VectorValues &given) const;
 
   /// Get Conditionals DecisionTree (dynamic cast from factors)
+  /// @note Slow: avoid using in favor of factors(), which uses existing tree.
   const Conditionals conditionals() const;
 
   /**
@@ -228,6 +229,14 @@ class GTSAM_EXPORT HybridGaussianConditional
   /// Private constructor that uses helper struct above.
   HybridGaussianConditional(const DiscreteKeys &discreteParents,
                             const Helper &helper);
+
+  /// Private constructor used when constants have already been calculated.
+  HybridGaussianConditional(const DiscreteKeys &discreteKeys, int nrFrontals,
+                            const FactorValuePairs &factors,
+                            double negLogConstant)
+      : BaseFactor(discreteKeys, factors),
+        BaseConditional(nrFrontals),
+        negLogConstant_(negLogConstant) {}
 
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;
