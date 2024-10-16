@@ -34,17 +34,13 @@ namespace gtsam {
 void PCGSolverParameters::print(ostream &os) const {
   Base::print(os);
   os << "PCGSolverParameters:" << endl;
-  preconditioner_->print(os);
+  preconditioner->print(os);
 }
 
 /*****************************************************************************/
 PCGSolver::PCGSolver(const PCGSolverParameters &p) {
   parameters_ = p;
-  preconditioner_ = createPreconditioner(p.preconditioner());
-}
-
-void PCGSolverParameters::setPreconditionerParams(const std::shared_ptr<PreconditionerParameters> preconditioner) {
-  preconditioner_ = preconditioner;
+  preconditioner_ = createPreconditioner(p.preconditioner);
 }
 
 void PCGSolverParameters::print(const std::string &s) const {

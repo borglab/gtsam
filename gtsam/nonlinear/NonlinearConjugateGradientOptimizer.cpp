@@ -49,19 +49,23 @@ NonlinearConjugateGradientOptimizer::NonlinearConjugateGradientOptimizer(
       params_(params) {}
 
 double NonlinearConjugateGradientOptimizer::System::error(
-    const Values& state) const {
+    const State& state) const {
   return graph_.error(state);
 }
 
-VectorValues NonlinearConjugateGradientOptimizer::System::gradient(
-    const Values& state) const {
+NonlinearConjugateGradientOptimizer::System::Gradient
+NonlinearConjugateGradientOptimizer::System::gradient(
+    const State& state) const {
   return gradientInPlace(graph_, state);
 }
 
-Values NonlinearConjugateGradientOptimizer::System::advance(
-    const Values& current, const double alpha,
-    const VectorValues& gradient) const {
-  return current.retract(alpha * gradient);
+NonlinearConjugateGradientOptimizer::System::State
+NonlinearConjugateGradientOptimizer::System::advance(const State& current,
+                                                     const double alpha,
+                                                     const Gradient& g) const {
+  Gradient step = g;
+  step *= alpha;
+  return current.retract(step);
 }
 
 GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {

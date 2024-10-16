@@ -26,59 +26,64 @@ namespace gtsam {
 /**
  * Parameters for the Conjugate Gradient method
  */
-class GTSAM_EXPORT ConjugateGradientParameters : public IterativeOptimizationParameters {
-
- public:
+struct GTSAM_EXPORT ConjugateGradientParameters
+    : public IterativeOptimizationParameters {
   typedef IterativeOptimizationParameters Base;
   typedef std::shared_ptr<ConjugateGradientParameters> shared_ptr;
 
- protected:
-  size_t minIterations_;  ///< minimum number of cg iterations
-  size_t maxIterations_;  ///< maximum number of cg iterations
-  size_t reset_;          ///< number of iterations before reset
-  double epsilon_rel_;    ///< threshold for relative error decrease
-  double epsilon_abs_;    ///< threshold for absolute error decrease
+  size_t minIterations;  ///< minimum number of cg iterations
+  size_t maxIterations;  ///< maximum number of cg iterations
+  size_t reset;          ///< number of iterations before reset
+  double epsilon_rel;    ///< threshold for relative error decrease
+  double epsilon_abs;    ///< threshold for absolute error decrease
 
- public:
   /* Matrix Operation Kernel */
   enum BLASKernel {
-    GTSAM = 0,        ///< Jacobian Factor Graph of GTSAM
-  } blas_kernel_ ;
+    GTSAM = 0,  ///< Jacobian Factor Graph of GTSAM
+  } blas_kernel;
 
   ConjugateGradientParameters()
-    : minIterations_(1), maxIterations_(500), reset_(501), epsilon_rel_(1e-3),
-      epsilon_abs_(1e-3), blas_kernel_(GTSAM) {}
+      : minIterations(1),
+        maxIterations(500),
+        reset(501),
+        epsilon_rel(1e-3),
+        epsilon_abs(1e-3),
+        blas_kernel(GTSAM) {}
 
-  ConjugateGradientParameters(size_t minIterations, size_t maxIterations, size_t reset,
-    double epsilon_rel, double epsilon_abs, BLASKernel blas)
-    : minIterations_(minIterations), maxIterations_(maxIterations), reset_(reset),
-      epsilon_rel_(epsilon_rel), epsilon_abs_(epsilon_abs), blas_kernel_(blas) {}
+  ConjugateGradientParameters(size_t minIterations, size_t maxIterations,
+                              size_t reset, double epsilon_rel,
+                              double epsilon_abs, BLASKernel blas)
+      : minIterations(minIterations),
+        maxIterations(maxIterations),
+        reset(reset),
+        epsilon_rel(epsilon_rel),
+        epsilon_abs(epsilon_abs),
+        blas_kernel(blas) {}
 
   ConjugateGradientParameters(const ConjugateGradientParameters &p)
-    : Base(p), minIterations_(p.minIterations_), maxIterations_(p.maxIterations_), reset_(p.reset_),
-               epsilon_rel_(p.epsilon_rel_), epsilon_abs_(p.epsilon_abs_), blas_kernel_(GTSAM) {}
+      : Base(p),
+        minIterations(p.minIterations),
+        maxIterations(p.maxIterations),
+        reset(p.reset),
+        epsilon_rel(p.epsilon_rel),
+        epsilon_abs(p.epsilon_abs),
+        blas_kernel(GTSAM) {}
 
-  /* general interface */
-  inline size_t minIterations() const { return minIterations_; }
-  inline size_t maxIterations() const { return maxIterations_; }
-  inline size_t reset() const { return reset_; }
-  inline double epsilon() const { return epsilon_rel_; }
-  inline double epsilon_rel() const { return epsilon_rel_; }
-  inline double epsilon_abs() const { return epsilon_abs_; }
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  inline size_t getMinIterations() const { return minIterations; }
+  inline size_t getMaxIterations() const { return maxIterations; }
+  inline size_t getReset() const { return reset; }
+  inline double getEpsilon() const { return epsilon_rel; }
+  inline double getEpsilon_rel() const { return epsilon_rel; }
+  inline double getEpsilon_abs() const { return epsilon_abs; }
 
-  inline size_t getMinIterations() const { return minIterations_; }
-  inline size_t getMaxIterations() const { return maxIterations_; }
-  inline size_t getReset() const { return reset_; }
-  inline double getEpsilon() const { return epsilon_rel_; }
-  inline double getEpsilon_rel() const { return epsilon_rel_; }
-  inline double getEpsilon_abs() const { return epsilon_abs_; }
-
-  inline void setMinIterations(size_t value) { minIterations_ = value; }
-  inline void setMaxIterations(size_t value) { maxIterations_ = value; }
-  inline void setReset(size_t value) { reset_ = value; }
-  inline void setEpsilon(double value) { epsilon_rel_ = value; }
-  inline void setEpsilon_rel(double value) { epsilon_rel_ = value; }
-  inline void setEpsilon_abs(double value) { epsilon_abs_ = value; }
+  inline void setMinIterations(size_t value) { minIterations = value; }
+  inline void setMaxIterations(size_t value) { maxIterations = value; }
+  inline void setReset(size_t value) { reset = value; }
+  inline void setEpsilon(double value) { epsilon_rel = value; }
+  inline void setEpsilon_rel(double value) { epsilon_rel = value; }
+  inline void setEpsilon_abs(double value) { epsilon_abs = value; }
+#endif
 
 
   void print() const { Base::print(); }
@@ -111,18 +116,19 @@ V preconditionedConjugateGradient(const S &system, const V &initial,
 
   double currentGamma = system.dot(residual, residual), prevGamma, alpha, beta;
 
-  const size_t iMaxIterations = parameters.maxIterations(),
-               iMinIterations = parameters.minIterations(),
-               iReset = parameters.reset() ;
-  const double threshold = std::max(parameters.epsilon_abs(),
-                                    parameters.epsilon() * parameters.epsilon() * currentGamma);
+  const size_t iMaxIterations = parameters.maxIterations,
+               iMinIterations = parameters.minIterations,
+               iReset = parameters.reset;
+  const double threshold =
+      std::max(parameters.epsilon_abs,
+               parameters.epsilon_rel * parameters.epsilon_rel * currentGamma);
 
-  if (parameters.verbosity() >= ConjugateGradientParameters::COMPLEXITY )
-    std::cout << "[PCG] epsilon = " << parameters.epsilon()
-             << ", max = " << parameters.maxIterations()
-             << ", reset = " << parameters.reset()
-             << ", ||r0||^2 = " << currentGamma
-             << ", threshold = " << threshold << std::endl;
+  if (parameters.verbosity() >= ConjugateGradientParameters::COMPLEXITY)
+    std::cout << "[PCG] epsilon = " << parameters.epsilon_rel
+              << ", max = " << parameters.maxIterations
+              << ", reset = " << parameters.reset
+              << ", ||r0||^2 = " << currentGamma
+              << ", threshold = " << threshold << std::endl;
 
   size_t k;
   for ( k = 1 ; k <= iMaxIterations && (currentGamma > threshold || k <= iMinIterations) ; k++ ) {
