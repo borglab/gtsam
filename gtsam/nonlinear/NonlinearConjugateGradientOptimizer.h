@@ -74,22 +74,6 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer
    * variable assignments.
    */
   const Values &optimize() override;
-
-  /** Implement the golden-section line search algorithm */
-  double lineSearch(const Values &currentValues,
-                    const VectorValues &gradient) const;
-
-  /**
-   * Implement the nonlinear conjugate gradient method using the Polak-Ribiere
-   * formula suggested in
-   * http://en.wikipedia.org/wiki/Nonlinear_conjugate_gradient_method.
-   *
-   * The last parameter is a switch between gradient-descent and conjugate
-   * gradient
-   */
-  std::tuple<Values, int> nonlinearConjugateGradient(
-      const Values &initial, const NonlinearOptimizerParams &params,
-      const bool singleIteration, const bool gradientDescent = false) const;
 };
 
 /** Implement the golden-section line search algorithm */
