@@ -94,11 +94,10 @@ int main(int argc, char* argv[]) {
   parameters.maxIterations = 500;
   PCGSolverParameters::shared_ptr pcg =
       std::make_shared<PCGSolverParameters>();
-  pcg->preconditioner_ =
-      std::make_shared<BlockJacobiPreconditionerParameters>();
+  pcg->preconditioner = std::make_shared<BlockJacobiPreconditionerParameters>();
   // Following is crucial:
-  pcg->setEpsilon_abs(1e-10);
-  pcg->setEpsilon_rel(1e-10);
+  pcg->epsilon_abs = 1e-10;
+  pcg->epsilon_rel = 1e-10;
   parameters.iterativeParams = pcg;
 
   LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, parameters);

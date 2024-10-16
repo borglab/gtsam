@@ -31,29 +31,22 @@ class VectorValues;
 struct PreconditionerParameters;
 
 /**
- * Parameters for PCG
+ * Parameters for Preconditioned Conjugate Gradient solver.
  */
-struct GTSAM_EXPORT PCGSolverParameters: public ConjugateGradientParameters {
-public:
+struct GTSAM_EXPORT PCGSolverParameters : public ConjugateGradientParameters {
   typedef ConjugateGradientParameters Base;
   typedef std::shared_ptr<PCGSolverParameters> shared_ptr;
 
-  PCGSolverParameters() {
-  }
+  std::shared_ptr<PreconditionerParameters> preconditioner;
+
+  PCGSolverParameters() {}
+
+  PCGSolverParameters(
+      const std::shared_ptr<PreconditionerParameters> &preconditioner)
+      : preconditioner(preconditioner) {}
 
   void print(std::ostream &os) const override;
-
-  /* interface to preconditioner parameters */
-  inline const PreconditionerParameters& preconditioner() const {
-    return *preconditioner_;
-  }
-
-  // needed for python wrapper
   void print(const std::string &s) const;
-
-  std::shared_ptr<PreconditionerParameters> preconditioner_;
-
-  void setPreconditionerParams(const std::shared_ptr<PreconditionerParameters> preconditioner);
 };
 
 /**
@@ -87,16 +80,16 @@ public:
  * System class needed for calling preconditionedConjugateGradient
  */
 class GTSAM_EXPORT GaussianFactorGraphSystem {
-public:
-
-  GaussianFactorGraphSystem(const GaussianFactorGraph &gfg,
-      const Preconditioner &preconditioner, const KeyInfo &info,
-      const std::map<Key, Vector> &lambda);
-
   const GaussianFactorGraph &gfg_;
   const Preconditioner &preconditioner_;
-  const KeyInfo &keyInfo_;
-  const std::map<Key, Vector> &lambda_;
+  KeyInfo keyInfo_;
+  std::map<Key, Vector> lambda_;
+
+ public:
+  GaussianFactorGraphSystem(const GaussianFactorGraph &gfg,
+                            const Preconditioner &preconditioner,
+                            const KeyInfo &info,
+                            const std::map<Key, Vector> &lambda);
 
   void residual(const Vector &x, Vector &r) const;
   void multiply(const Vector &x, Vector& y) const;

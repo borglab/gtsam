@@ -16,11 +16,11 @@
  * @date   Jun 11, 2012
  */
 
-#include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
-#include <gtsam/nonlinear/internal/NonlinearOptimizerState.h>
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/internal/NonlinearOptimizerState.h>
 
 #include <cmath>
 
@@ -34,29 +34,35 @@ typedef internal::NonlinearOptimizerState State;
  * @param values a linearization point
  * Can be moved to NonlinearFactorGraph.h if desired
  */
-static VectorValues gradientInPlace(const NonlinearFactorGraph &nfg,
-    const Values &values) {
+static VectorValues gradientInPlace(const NonlinearFactorGraph& nfg,
+                                    const Values& values) {
   // Linearize graph
   GaussianFactorGraph::shared_ptr linear = nfg.linearize(values);
   return linear->gradientAtZero();
 }
 
 NonlinearConjugateGradientOptimizer::NonlinearConjugateGradientOptimizer(
-    const NonlinearFactorGraph& graph, const Values& initialValues, const Parameters& params)
-    : Base(graph, std::unique_ptr<State>(new State(initialValues, graph.error(initialValues)))),
-    params_(params) {}
+    const NonlinearFactorGraph& graph, const Values& initialValues,
+    const Parameters& params)
+    : Base(graph, std::unique_ptr<State>(
+                      new State(initialValues, graph.error(initialValues)))),
+      params_(params) {}
 
-double NonlinearConjugateGradientOptimizer::System::error(const State& state) const {
+double NonlinearConjugateGradientOptimizer::System::error(
+    const State& state) const {
   return graph_.error(state);
 }
 
-NonlinearConjugateGradientOptimizer::System::Gradient NonlinearConjugateGradientOptimizer::System::gradient(
-    const State &state) const {
+NonlinearConjugateGradientOptimizer::System::Gradient
+NonlinearConjugateGradientOptimizer::System::gradient(
+    const State& state) const {
   return gradientInPlace(graph_, state);
 }
 
-NonlinearConjugateGradientOptimizer::System::State NonlinearConjugateGradientOptimizer::System::advance(
-    const State &current, const double alpha, const Gradient &g) const {
+NonlinearConjugateGradientOptimizer::System::State
+NonlinearConjugateGradientOptimizer::System::advance(const State& current,
+                                                     const double alpha,
+                                                     const Gradient& g) const {
   Gradient step = g;
   step *= alpha;
   return current.retract(step);
@@ -65,7 +71,8 @@ NonlinearConjugateGradientOptimizer::System::State NonlinearConjugateGradientOpt
 GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
   const auto [newValues, dummy] = nonlinearConjugateGradient<System, Values>(
       System(graph_), state_->values, params_, true /* single iteration */);
-  state_.reset(new State(newValues, graph_.error(newValues), state_->iterations + 1));
+  state_.reset(
+      new State(newValues, graph_.error(newValues), state_->iterations + 1));
 
   // NOTE(frank): We don't linearize this system, so we must return null here.
   return nullptr;
@@ -76,9 +83,9 @@ const Values& NonlinearConjugateGradientOptimizer::optimize() {
   System system(graph_);
   const auto [newValues, iterations] =
       nonlinearConjugateGradient(system, state_->values, params_, false);
-  state_.reset(new State(std::move(newValues), graph_.error(newValues), iterations));
+  state_.reset(
+      new State(std::move(newValues), graph_.error(newValues), iterations));
   return state_->values;
 }
 
 } /* namespace gtsam */
-
