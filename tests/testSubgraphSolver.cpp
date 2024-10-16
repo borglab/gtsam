@@ -48,7 +48,7 @@ static double error(const GaussianFactorGraph& fg, const VectorValues& x) {
 TEST( SubgraphSolver, Parameters )
 {
   LONGS_EQUAL(SubgraphSolverParameters::SILENT, kParameters.verbosity());
-  LONGS_EQUAL(500, kParameters.maxIterations());
+  LONGS_EQUAL(500, kParameters.maxIterations);
 }
 
 /* ************************************************************************* */
