@@ -71,26 +71,26 @@ struct GTSAM_EXPORT ConjugateGradientParameters
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /* general interface */
-  inline size_t minIterations() const { return minIterations_; }
-  inline size_t maxIterations() const { return maxIterations_; }
-  inline size_t reset() const { return reset_; }
-  inline double epsilon() const { return epsilon_rel_; }
-  inline double epsilon_rel() const { return epsilon_rel_; }
-  inline double epsilon_abs() const { return epsilon_abs_; }
+  inline size_t minIterations() const { return minIterations; }
+  inline size_t maxIterations() const { return maxIterations; }
+  inline size_t reset() const { return reset; }
+  inline double epsilon() const { return epsilon_rel; }
+  inline double epsilon_rel() const { return epsilon_rel; }
+  inline double epsilon_abs() const { return epsilon_abs; }
 
-  inline size_t getMinIterations() const { return minIterations_; }
-  inline size_t getMaxIterations() const { return maxIterations_; }
-  inline size_t getReset() const { return reset_; }
-  inline double getEpsilon() const { return epsilon_rel_; }
-  inline double getEpsilon_rel() const { return epsilon_rel_; }
-  inline double getEpsilon_abs() const { return epsilon_abs_; }
+  inline size_t getMinIterations() const { return minIterations; }
+  inline size_t getMaxIterations() const { return maxIterations; }
+  inline size_t getReset() const { return reset; }
+  inline double getEpsilon() const { return epsilon_rel; }
+  inline double getEpsilon_rel() const { return epsilon_rel; }
+  inline double getEpsilon_abs() const { return epsilon_abs; }
 
-  inline void setMinIterations(size_t value) { minIterations_ = value; }
-  inline void setMaxIterations(size_t value) { maxIterations_ = value; }
-  inline void setReset(size_t value) { reset_ = value; }
-  inline void setEpsilon(double value) { epsilon_rel_ = value; }
-  inline void setEpsilon_rel(double value) { epsilon_rel_ = value; }
-  inline void setEpsilon_abs(double value) { epsilon_abs_ = value; }
+  inline void setMinIterations(size_t value) { minIterations = value; }
+  inline void setMaxIterations(size_t value) { maxIterations = value; }
+  inline void setReset(size_t value) { reset = value; }
+  inline void setEpsilon(double value) { epsilon_rel = value; }
+  inline void setEpsilon_rel(double value) { epsilon_rel = value; }
+  inline void setEpsilon_abs(double value) { epsilon_abs = value; }
 #endif
 
 
