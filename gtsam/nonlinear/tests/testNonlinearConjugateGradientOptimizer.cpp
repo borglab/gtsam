@@ -69,7 +69,7 @@ std::tuple<NonlinearFactorGraph, Values> generateProblem() {
 }
 
 /* ************************************************************************* */
-TEST_DISABLED(NonlinearConjugateGradientOptimizer, Optimize) {
+TEST(NonlinearConjugateGradientOptimizer, Optimize) {
   const auto [graph, initialEstimate] = generateProblem();
   //  cout << "initial error = " << graph.error(initialEstimate) << endl;
 
@@ -104,8 +104,8 @@ class Rosenbrock1Factor : public NoiseModelFactorN<double> {
   /// evaluate error
   Vector evaluateError(const double& x, OptionalMatrixType H) const override {
     double d = x - a_;
-    // Because linearized gradient is -A'b, it will multiply by d
-    if (H) (*H) = Vector1(2 / sqrt_2).transpose();
+    // Because linearized gradient is -A'b/sigma, it will multiply by d
+    if (H) (*H) = Vector1(1).transpose();
     return Vector1(d);
   }
 };
@@ -130,9 +130,9 @@ class Rosenbrock2Factor : public NoiseModelFactorN<double, double> {
   Vector evaluateError(const double& x, const double& y, OptionalMatrixType H1,
                        OptionalMatrixType H2) const override {
     double x2 = x * x, d = x2 - y;
-    // Because linearized gradient is -A'b, it will multiply by d
-    if (H1) (*H1) = Vector1(4 * x / sqrt_2).transpose();
-    if (H2) (*H2) = Vector1(-2 / sqrt_2).transpose();
+    // Because linearized gradient is -A'b/sigma, it will multiply by d
+    if (H1) (*H1) = Vector1(2 * x).transpose();
+    if (H2) (*H2) = Vector1(-1).transpose();
     return Vector1(d);
   }
 };
@@ -181,13 +181,16 @@ double rosenbrock_func(double x, double y, double a = 1.0, double b = 100.0) {
 TEST(NonlinearConjugateGradientOptimizer, Rosenbrock) {
   using namespace rosenbrock;
   double a = 1.0, b = 100.0;
-  Rosenbrock1Factor f1(X(0), a, noiseModel::Isotropic::Precision(1, 2));
-  Rosenbrock2Factor f2(X(0), Y(0), noiseModel::Isotropic::Precision(1, 2 * b));
+  auto graph = GetRosenbrockGraph(a, b);
+  Rosenbrock1Factor f1 =
+      *std::static_pointer_cast<Rosenbrock1Factor>(graph.at(0));
+  Rosenbrock2Factor f2 =
+      *std::static_pointer_cast<Rosenbrock2Factor>(graph.at(1));
   Values values;
   values.insert<double>(X(0), 3.0);
   values.insert<double>(Y(0), 5.0);
-  // EXPECT_CORRECT_FACTOR_JACOBIANS(f1, values, 1e-7, 1e-5);
-  // EXPECT_CORRECT_FACTOR_JACOBIANS(f2, values, 1e-7, 1e-5);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f1, values, 1e-7, 1e-5);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f2, values, 1e-7, 1e-5);
 
   std::mt19937 rng(42);
   std::uniform_real_distribution<double> dist(0.0, 100.0);
@@ -202,7 +205,7 @@ TEST(NonlinearConjugateGradientOptimizer, Rosenbrock) {
 
 /* ************************************************************************* */
 // Optimize the Rosenbrock function to verify optimizer works
-TEST_DISABLED(NonlinearConjugateGradientOptimizer, Optimization) {
+TEST(NonlinearConjugateGradientOptimizer, Optimization) {
   using namespace rosenbrock;
 
   double a = 12;
