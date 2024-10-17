@@ -19,6 +19,9 @@
 using namespace std;
 using namespace gtsam;
 
+using symbol_shorthand::X;
+using symbol_shorthand::Y;
+
 // Generate a small PoseSLAM problem
 std::tuple<NonlinearFactorGraph, Values> generateProblem() {
   // 1. Create graph container and add factors to it
@@ -83,12 +86,6 @@ TEST(NonlinearConjugateGradientOptimizer, Optimize) {
 }
 
 namespace rosenbrock {
-
-/// Alias for the first term in the Rosenbrock function
-// using Rosenbrock1Factor = PriorFactor<double>;
-
-using symbol_shorthand::X;
-using symbol_shorthand::Y;
 
 constexpr double sqrt_2 = 1.4142135623730951;
 
