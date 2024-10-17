@@ -207,7 +207,7 @@ TEST(NonlinearConjugateGradientOptimizer, Rosenbrock) {
 TEST(NonlinearConjugateGradientOptimizer, Optimization) {
   using namespace rosenbrock;
 
-  double a = 7;
+  double a = 12;
   auto graph = GetRosenbrockGraph(a);
 
   // Assert that error at global minimum is 0.
@@ -215,7 +215,7 @@ TEST(NonlinearConjugateGradientOptimizer, Optimization) {
   EXPECT_DOUBLES_EQUAL(0.0, error, 1e-12);
 
   NonlinearOptimizerParams param;
-  param.maxIterations = 50;
+  param.maxIterations = 350;
   // param.verbosity = NonlinearOptimizerParams::LINEAR;
   param.verbosity = NonlinearOptimizerParams::SILENT;
 
@@ -224,15 +224,20 @@ TEST(NonlinearConjugateGradientOptimizer, Optimization) {
   initialEstimate.insert<double>(X(0), x);
   initialEstimate.insert<double>(Y(0), y);
 
-  std::cout << f(graph, x, y) << std::endl;
   GaussianFactorGraph::shared_ptr linear = graph.linearize(initialEstimate);
+  // std::cout << "error: " << f(graph, x, y) << std::endl;
   // linear->print();
-  linear->gradientAtZero().print("Gradient: ");
+  // linear->gradientAtZero().print("Gradient: ");
 
   NonlinearConjugateGradientOptimizer optimizer(graph, initialEstimate, param);
   Values result = optimizer.optimize();
-  result.print();
-  cout << "cg final error = " << graph.error(result) << endl;
+  // result.print();
+  // cout << "cg final error = " << graph.error(result) << endl;
+
+  Values expected;
+  expected.insert<double>(X(0), a);
+  expected.insert<double>(Y(0), a * a);
+  EXPECT(assert_equal(expected, result, 1e-1));
 }
 
 /* ************************************************************************* */
