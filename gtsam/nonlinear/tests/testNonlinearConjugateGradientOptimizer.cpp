@@ -87,8 +87,6 @@ TEST(NonlinearConjugateGradientOptimizer, Optimize) {
 
 namespace rosenbrock {
 
-constexpr double sqrt_2 = 1.4142135623730951;
-
 class Rosenbrock1Factor : public NoiseModelFactorN<double> {
  private:
   typedef Rosenbrock1Factor This;
