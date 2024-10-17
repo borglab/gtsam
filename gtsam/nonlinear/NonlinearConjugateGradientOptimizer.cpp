@@ -28,18 +28,18 @@ namespace gtsam {
 
 typedef internal::NonlinearOptimizerState State;
 
-/// Fletcher-Reeves formula for computing β, the direction of steepest descent.
-static double FletcherReeves(const VectorValues& currentGradient,
-                             const VectorValues& prevGradient) {
+/* ************************************************************************* */
+double FletcherReeves(const VectorValues& currentGradient,
+                      const VectorValues& prevGradient) {
   // Fletcher-Reeves: beta = g_n'*g_n/g_n-1'*g_n-1
   const double beta = std::max(0.0, currentGradient.dot(currentGradient) /
                                         prevGradient.dot(prevGradient));
   return beta;
 }
 
-/// Polak-Ribiere formula for computing β, the direction of steepest descent.
-static double PolakRibiere(const VectorValues& currentGradient,
-                           const VectorValues& prevGradient) {
+/* ************************************************************************* */
+double PolakRibiere(const VectorValues& currentGradient,
+                    const VectorValues& prevGradient) {
   // Polak-Ribiere: beta = g_n'*(g_n-g_n-1)/g_n-1'*g_n-1
   const double beta =
       std::max(0.0, currentGradient.dot(currentGradient - prevGradient) /
@@ -47,20 +47,20 @@ static double PolakRibiere(const VectorValues& currentGradient,
   return beta;
 }
 
-/// The Hestenes-Stiefel formula for computing β, the direction of steepest descent.
-static double HestenesStiefel(const VectorValues& currentGradient,
-                              const VectorValues& prevGradient,
-                              const VectorValues& direction) {
+/* ************************************************************************* */
+double HestenesStiefel(const VectorValues& currentGradient,
+                       const VectorValues& prevGradient,
+                       const VectorValues& direction) {
   // Hestenes-Stiefel: beta = g_n'*(g_n-g_n-1)/(-s_n-1')*(g_n-g_n-1)
   VectorValues d = currentGradient - prevGradient;
   const double beta = std::max(0.0, currentGradient.dot(d) / -direction.dot(d));
   return beta;
 }
 
-/// The Dai-Yuan formula for computing β, the direction of steepest descent.
-static double DaiYuan(const VectorValues& currentGradient,
-                      const VectorValues& prevGradient,
-                      const VectorValues& direction) {
+/* ************************************************************************* */
+double DaiYuan(const VectorValues& currentGradient,
+               const VectorValues& prevGradient,
+               const VectorValues& direction) {
   // Dai-Yuan: beta = g_n'*g_n/(-s_n-1')*(g_n-g_n-1)
   const double beta =
       std::max(0.0, currentGradient.dot(currentGradient) /
@@ -110,7 +110,8 @@ NonlinearConjugateGradientOptimizer::System::advance(const State& current,
 
 GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
   const auto [newValues, dummy] = nonlinearConjugateGradient<System, Values>(
-      System(graph_), state_->values, params_, true /* single iteration */);
+      System(graph_), state_->values, params_, true /* single iteration */,
+      directionMethod_);
   state_.reset(
       new State(newValues, graph_.error(newValues), state_->iterations + 1));
 
@@ -121,8 +122,8 @@ GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
 const Values& NonlinearConjugateGradientOptimizer::optimize() {
   // Optimize until convergence
   System system(graph_);
-  const auto [newValues, iterations] =
-      nonlinearConjugateGradient(system, state_->values, params_, false);
+  const auto [newValues, iterations] = nonlinearConjugateGradient(
+      system, state_->values, params_, false, directionMethod_);
   state_.reset(
       new State(std::move(newValues), graph_.error(newValues), iterations));
   return state_->values;
