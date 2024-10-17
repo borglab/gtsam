@@ -181,7 +181,7 @@ TEST(NonlinearConjugateGradientOptimizer, Rosenbrock) {
   using namespace rosenbrock;
   double a = 1.0, b = 100.0;
   Rosenbrock1Factor f1(X(0), a, noiseModel::Unit::Create(1));
-  Rosenbrock2Factor f2(X(0), Y(0), noiseModel::Isotropic::Sigma(1, b));
+  Rosenbrock2Factor f2(X(0), Y(0), noiseModel::Isotropic::Precision(1, b));
   Values values;
   values.insert<double>(X(0), 0.0);
   values.insert<double>(Y(0), 0.0);
