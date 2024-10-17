@@ -23,6 +23,31 @@
 
 namespace gtsam {
 
+/// Fletcher-Reeves formula for computing β, the direction of steepest descent.
+double FletcherReeves(const VectorValues &currentGradient,
+                      const VectorValues &prevGradient);
+
+/// Polak-Ribiere formula for computing β, the direction of steepest descent.
+double PolakRibiere(const VectorValues &currentGradient,
+                    const VectorValues &prevGradient);
+
+/// The Hestenes-Stiefel formula for computing β,
+/// the direction of steepest descent.
+double HestenesStiefel(const VectorValues &currentGradient,
+                       const VectorValues &prevGradient,
+                       const VectorValues &direction);
+
+/// The Dai-Yuan formula for computing β, the direction of steepest descent.
+double DaiYuan(const VectorValues &currentGradient,
+               const VectorValues &prevGradient, const VectorValues &direction);
+
+enum class DirectionMethod {
+  FletcherReeves,
+  PolakRibiere,
+  HestenesStiefel,
+  DaiYuan
+};
+
 /**  An implementation of the nonlinear CG method using the template below */
 class GTSAM_EXPORT NonlinearConjugateGradientOptimizer
     : public NonlinearOptimizer {
@@ -51,14 +76,16 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer
 
  protected:
   Parameters params_;
+  DirectionMethod directionMethod_ = DirectionMethod::PolakRibiere;
 
   const NonlinearOptimizerParams &_params() const override { return params_; }
 
  public:
   /// Constructor
-  NonlinearConjugateGradientOptimizer(const NonlinearFactorGraph &graph,
-                                      const Values &initialValues,
-                                      const Parameters &params = Parameters());
+  NonlinearConjugateGradientOptimizer(
+      const NonlinearFactorGraph &graph, const Values &initialValues,
+      const Parameters &params = Parameters(),
+      const DirectionMethod &directionMethod = DirectionMethod::PolakRibiere);
 
   /// Destructor
   ~NonlinearConjugateGradientOptimizer() override {}
@@ -140,7 +167,9 @@ double lineSearch(const S &system, const V currentValues, const W &gradient) {
 template <class S, class V>
 std::tuple<V, int> nonlinearConjugateGradient(
     const S &system, const V &initial, const NonlinearOptimizerParams &params,
-    const bool singleIteration, const bool gradientDescent = false) {
+    const bool singleIteration,
+    const DirectionMethod &directionMethod = DirectionMethod::PolakRibiere,
+    const bool gradientDescent = false) {
   // GTSAM_CONCEPT_MANIFOLD_TYPE(V)
 
   size_t iteration = 0;
@@ -177,10 +206,23 @@ std::tuple<V, int> nonlinearConjugateGradient(
     } else {
       prevGradient = currentGradient;
       currentGradient = system.gradient(currentValues);
-      // Polak-Ribiere: beta = g'*(g_n-g_n-1)/g_n-1'*g_n-1
-      const double beta =
-          std::max(0.0, currentGradient.dot(currentGradient - prevGradient) /
-                            prevGradient.dot(prevGradient));
+
+      double beta;
+      switch (directionMethod) {
+        case DirectionMethod::FletcherReeves:
+          beta = FletcherReeves(currentGradient, prevGradient);
+          break;
+        case DirectionMethod::PolakRibiere:
+          beta = PolakRibiere(currentGradient, prevGradient);
+          break;
+        case DirectionMethod::HestenesStiefel:
+          beta = HestenesStiefel(currentGradient, prevGradient, direction);
+          break;
+        case DirectionMethod::DaiYuan:
+          beta = DaiYuan(currentGradient, prevGradient, direction);
+          break;
+      }
+
       direction = currentGradient + (beta * direction);
     }
 

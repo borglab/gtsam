@@ -28,6 +28,46 @@ namespace gtsam {
 
 typedef internal::NonlinearOptimizerState State;
 
+/* ************************************************************************* */
+double FletcherReeves(const VectorValues& currentGradient,
+                      const VectorValues& prevGradient) {
+  // Fletcher-Reeves: beta = g_n'*g_n/g_n-1'*g_n-1
+  const double beta = std::max(0.0, currentGradient.dot(currentGradient) /
+                                        prevGradient.dot(prevGradient));
+  return beta;
+}
+
+/* ************************************************************************* */
+double PolakRibiere(const VectorValues& currentGradient,
+                    const VectorValues& prevGradient) {
+  // Polak-Ribiere: beta = g_n'*(g_n-g_n-1)/g_n-1'*g_n-1
+  const double beta =
+      std::max(0.0, currentGradient.dot(currentGradient - prevGradient) /
+                        prevGradient.dot(prevGradient));
+  return beta;
+}
+
+/* ************************************************************************* */
+double HestenesStiefel(const VectorValues& currentGradient,
+                       const VectorValues& prevGradient,
+                       const VectorValues& direction) {
+  // Hestenes-Stiefel: beta = g_n'*(g_n-g_n-1)/(-s_n-1')*(g_n-g_n-1)
+  VectorValues d = currentGradient - prevGradient;
+  const double beta = std::max(0.0, currentGradient.dot(d) / -direction.dot(d));
+  return beta;
+}
+
+/* ************************************************************************* */
+double DaiYuan(const VectorValues& currentGradient,
+               const VectorValues& prevGradient,
+               const VectorValues& direction) {
+  // Dai-Yuan: beta = g_n'*g_n/(-s_n-1')*(g_n-g_n-1)
+  const double beta =
+      std::max(0.0, currentGradient.dot(currentGradient) /
+                        -direction.dot(currentGradient - prevGradient));
+  return beta;
+}
+
 /**
  * @brief Return the gradient vector of a nonlinear factor graph
  * @param nfg the graph
@@ -43,7 +83,7 @@ static VectorValues gradientInPlace(const NonlinearFactorGraph& nfg,
 
 NonlinearConjugateGradientOptimizer::NonlinearConjugateGradientOptimizer(
     const NonlinearFactorGraph& graph, const Values& initialValues,
-    const Parameters& params)
+    const Parameters& params, const DirectionMethod& directionMethod)
     : Base(graph, std::unique_ptr<State>(
                       new State(initialValues, graph.error(initialValues)))),
       params_(params) {}
@@ -70,7 +110,8 @@ NonlinearConjugateGradientOptimizer::System::advance(const State& current,
 
 GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
   const auto [newValues, dummy] = nonlinearConjugateGradient<System, Values>(
-      System(graph_), state_->values, params_, true /* single iteration */);
+      System(graph_), state_->values, params_, true /* single iteration */,
+      directionMethod_);
   state_.reset(
       new State(newValues, graph_.error(newValues), state_->iterations + 1));
 
@@ -81,8 +122,8 @@ GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
 const Values& NonlinearConjugateGradientOptimizer::optimize() {
   // Optimize until convergence
   System system(graph_);
-  const auto [newValues, iterations] =
-      nonlinearConjugateGradient(system, state_->values, params_, false);
+  const auto [newValues, iterations] = nonlinearConjugateGradient(
+      system, state_->values, params_, false, directionMethod_);
   state_.reset(
       new State(std::move(newValues), graph_.error(newValues), iterations));
   return state_->values;
