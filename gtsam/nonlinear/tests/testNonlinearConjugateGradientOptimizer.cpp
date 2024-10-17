@@ -90,6 +90,8 @@ namespace rosenbrock {
 using symbol_shorthand::X;
 using symbol_shorthand::Y;
 
+constexpr double sqrt_2 = 1.4142135623730951;
+
 class Rosenbrock1Factor : public NoiseModelFactorN<double> {
  private:
   typedef Rosenbrock1Factor This;
@@ -104,9 +106,9 @@ class Rosenbrock1Factor : public NoiseModelFactorN<double> {
 
   /// evaluate error
   Vector evaluateError(const double& x, OptionalMatrixType H) const override {
-    double sqrt_2 = 1.4142135623730951;
-    double d = a_ - x;
-    if (H) (*H) = -2 * d * Vector::Ones(1).transpose();
+    double d = x - a_;
+    // Because linearized gradient is -A'b, it will multiply by d
+    if (H) (*H) = Vector1(2 / sqrt_2).transpose();
     return Vector1(sqrt_2 * d);
   }
 };
@@ -122,21 +124,18 @@ class Rosenbrock2Factor : public NoiseModelFactorN<double, double> {
   typedef Rosenbrock2Factor This;
   typedef NoiseModelFactorN<double, double> Base;
 
-  double b_;
-
  public:
   /** Constructor: key1 is x, key2 is y */
-  Rosenbrock2Factor(Key key1, Key key2, double b,
-                    const SharedNoiseModel& model = nullptr)
-      : Base(model, key1, key2), b_(b) {}
+  Rosenbrock2Factor(Key key1, Key key2, const SharedNoiseModel& model = nullptr)
+      : Base(model, key1, key2) {}
 
   /// evaluate error
   Vector evaluateError(const double& x, const double& y, OptionalMatrixType H1,
                        OptionalMatrixType H2) const override {
-    double sqrt_2 = 1.4142135623730951;
-    double x2 = x * x, d = y - x2;
-    if (H1) (*H1) = -2 * b_ * d * 2 * x * Vector::Ones(1).transpose();
-    if (H2) (*H2) = 2 * b_ * d * Vector::Ones(1).transpose();
+    double x2 = x * x, d = x2 - y;
+    // Because linearized gradient is -A'b, it will multiply by d
+    if (H1) (*H1) = Vector1(4 * x / sqrt_2).transpose();
+    if (H2) (*H2) = Vector1(-2 / sqrt_2).transpose();
     return Vector1(sqrt_2 * d);
   }
 };
@@ -156,7 +155,7 @@ static NonlinearFactorGraph GetRosenbrockGraph(double a = 1.0,
   NonlinearFactorGraph graph;
   graph.emplace_shared<Rosenbrock1Factor>(X(0), a, noiseModel::Unit::Create(1));
   graph.emplace_shared<Rosenbrock2Factor>(
-      X(0), Y(0), b, noiseModel::Isotropic::Precision(1, b));
+      X(0), Y(0), noiseModel::Isotropic::Precision(1, b));
 
   return graph;
 }
@@ -185,12 +184,12 @@ TEST(NonlinearConjugateGradientOptimizer, Rosenbrock) {
   using namespace rosenbrock;
   double a = 1.0, b = 100.0;
   Rosenbrock1Factor f1(X(0), a, noiseModel::Unit::Create(1));
-  Rosenbrock2Factor f2(X(0), Y(0), b, noiseModel::Isotropic::Sigma(1, b));
+  Rosenbrock2Factor f2(X(0), Y(0), noiseModel::Isotropic::Sigma(1, b));
   Values values;
   values.insert<double>(X(0), 0.0);
   values.insert<double>(Y(0), 0.0);
-  // EXPECT_CORRECT_FACTOR_JACOBIANS(f1, values, 1e-7, 1e-5);
-  // EXPECT_CORRECT_FACTOR_JACOBIANS(f2, values, 1e-7, 1e-5);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f1, values, 1e-7, 1e-5);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f2, values, 1e-7, 1e-5);
 
   std::mt19937 rng(42);
   std::uniform_real_distribution<double> dist(0.0, 100.0);
@@ -208,7 +207,7 @@ TEST(NonlinearConjugateGradientOptimizer, Rosenbrock) {
 TEST(NonlinearConjugateGradientOptimizer, Optimization) {
   using namespace rosenbrock;
 
-  double a = 1;
+  double a = 7;
   auto graph = GetRosenbrockGraph(a);
 
   // Assert that error at global minimum is 0.
@@ -216,20 +215,19 @@ TEST(NonlinearConjugateGradientOptimizer, Optimization) {
   EXPECT_DOUBLES_EQUAL(0.0, error, 1e-12);
 
   NonlinearOptimizerParams param;
-  param.maxIterations = 16;
-  param.verbosity = NonlinearOptimizerParams::LINEAR;
-  // param.verbosity = NonlinearOptimizerParams::SILENT;
+  param.maxIterations = 50;
+  // param.verbosity = NonlinearOptimizerParams::LINEAR;
+  param.verbosity = NonlinearOptimizerParams::SILENT;
 
+  double x = 3.0, y = 5.0;
   Values initialEstimate;
-  initialEstimate.insert<double>(X(0), 0.0);
-  initialEstimate.insert<double>(Y(0), 0.0);
+  initialEstimate.insert<double>(X(0), x);
+  initialEstimate.insert<double>(Y(0), y);
 
-  // std::cout << f(graph, 0, 0) << std::endl;
+  std::cout << f(graph, x, y) << std::endl;
   GaussianFactorGraph::shared_ptr linear = graph.linearize(initialEstimate);
-  linear->print();
+  // linear->print();
   linear->gradientAtZero().print("Gradient: ");
-
-  // std::cout << f(graph, 11.0, 90.0) << std::endl;
 
   NonlinearConjugateGradientOptimizer optimizer(graph, initialEstimate, param);
   Values result = optimizer.optimize();
