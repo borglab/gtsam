@@ -710,17 +710,11 @@ virtual class IterativeOptimizationParameters {
 #include <gtsam/linear/ConjugateGradientSolver.h>
 virtual class ConjugateGradientParameters : gtsam::IterativeOptimizationParameters {
   ConjugateGradientParameters();
-  int getMinIterations() const ;
-  int getMaxIterations() const ;
-  int getReset() const;
-  double getEpsilon_rel() const;
-  double getEpsilon_abs() const;
-
-  void setMinIterations(int value);
-  void setMaxIterations(int value);
-  void setReset(int value);
-  void setEpsilon_rel(double value);
-  void setEpsilon_abs(double value);
+  int minIterations;
+  int maxIterations;
+  int reset;
+  double epsilon_rel;
+  double epsilon_abs;
 };
 
 #include <gtsam/linear/Preconditioner.h>
@@ -739,8 +733,10 @@ virtual class BlockJacobiPreconditionerParameters : gtsam::PreconditionerParamet
 #include <gtsam/linear/PCGSolver.h>
 virtual class PCGSolverParameters : gtsam::ConjugateGradientParameters {
   PCGSolverParameters();
+  PCGSolverParameters(gtsam::PreconditionerParameters* preconditioner);
   void print(string s = "");
-  void setPreconditionerParams(gtsam::PreconditionerParameters* preconditioner);
+  
+  gtsam::PreconditionerParameters* preconditioner;
 };
 
 #include <gtsam/linear/SubgraphSolver.h>

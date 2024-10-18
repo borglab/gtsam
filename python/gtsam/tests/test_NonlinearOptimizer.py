@@ -69,7 +69,7 @@ class TestScenario(GtsamTestCase):
         lmParams = LevenbergMarquardtParams.CeresDefaults()
         lmParams.setLinearSolverType("ITERATIVE")
         cgParams = PCGSolverParameters()
-        cgParams.setPreconditionerParams(DummyPreconditionerParameters())
+        cgParams.preconditioner = DummyPreconditionerParameters()
         lmParams.setIterativeParams(cgParams)
         actual = LevenbergMarquardtOptimizer(self.fg, self.initial_values, lmParams).optimize()
         self.assertAlmostEqual(0, self.fg.error(actual))
