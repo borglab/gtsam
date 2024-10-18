@@ -39,14 +39,14 @@ namespace testing {
 static std::shared_ptr<PreintegratedCombinedMeasurements::Params> Params(
     const Matrix3& biasAccCovariance = Matrix3::Zero(),
     const Matrix3& biasOmegaCovariance = Matrix3::Zero(),
-    const Matrix6& biasAccOmegaInt = Matrix6::Zero()) {
+    const Matrix6& biasAccOmegaInit = Matrix6::Zero()) {
   auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(kGravity);
   p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
   p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
   p->integrationCovariance = 0.0001 * I_3x3;
   p->biasAccCovariance = biasAccCovariance;
   p->biasOmegaCovariance = biasOmegaCovariance;
-  p->biasAccOmegaInt = biasAccOmegaInt;
+  p->biasAccOmegaInit = biasAccOmegaInit;
   return p;
 }
 }  // namespace testing
@@ -349,12 +349,12 @@ TEST(CombinedImuFactor, ResetIntegration) {
   // Test default method
   pim.resetIntegration();
   Matrix6 expected = 0.1 * I_6x6;
-  EXPECT(assert_equal(expected, pim.p().biasAccOmegaInt, 1e-9));
+  EXPECT(assert_equal(expected, pim.p().biasAccOmegaInit, 1e-9));
 
   // Test method where Q_init is provided
   Matrix6 expected_Q_init = I_6x6 * 0.001;
   pim2.resetIntegration(expected_Q_init);
-  EXPECT(assert_equal(expected_Q_init, pim.p().biasAccOmegaInt, 1e-9));
+  EXPECT(assert_equal(expected_Q_init, pim.p().biasAccOmegaInit, 1e-9));
 }
 
 /* ************************************************************************* */

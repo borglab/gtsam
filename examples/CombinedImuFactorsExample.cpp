@@ -123,7 +123,7 @@ std::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
   // PreintegrationCombinedMeasurements params:
   p->biasAccCovariance = bias_acc_cov;      // acc bias in continuous
   p->biasOmegaCovariance = bias_omega_cov;  // gyro bias in continuous
-  p->biasAccOmegaInt = bias_acc_omega_init;
+  p->biasAccOmegaInit = bias_acc_omega_init;
 
   return p;
 }
