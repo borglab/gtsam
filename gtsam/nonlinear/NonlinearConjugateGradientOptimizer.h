@@ -51,7 +51,7 @@ double HestenesStiefel(const Gradient &currentGradient,
                        const Gradient &prevGradient,
                        const Gradient &direction) {
   // Hestenes-Stiefel: beta = g_n'*(g_n-g_n-1)/(-s_n-1')*(g_n-g_n-1)
-  VectorValues d = currentGradient - prevGradient;
+  Gradient d = currentGradient - prevGradient;
   const double beta = std::max(0.0, currentGradient.dot(d) / -direction.dot(d));
   return beta;
 }
@@ -59,7 +59,7 @@ double HestenesStiefel(const Gradient &currentGradient,
 /// The Dai-Yuan formula for computing β, the direction of steepest descent.
 template <typename Gradient>
 double DaiYuan(const Gradient &currentGradient, const Gradient &prevGradient,
-               const VectorValues &direction) {
+               const Gradient &direction) {
   // Dai-Yuan: beta = g_n'*g_n/(-s_n-1')*(g_n-g_n-1)
   const double beta =
       std::max(0.0, currentGradient.dot(currentGradient) /
