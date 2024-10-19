@@ -24,22 +24,48 @@
 namespace gtsam {
 
 /// Fletcher-Reeves formula for computing β, the direction of steepest descent.
-double FletcherReeves(const VectorValues &currentGradient,
-                      const VectorValues &prevGradient);
+template <typename Gradient>
+double FletcherReeves(const Gradient &currentGradient,
+                      const Gradient &prevGradient) {
+  // Fletcher-Reeves: beta = g_n'*g_n/g_n-1'*g_n-1
+  const double beta =
+      currentGradient.dot(currentGradient) / prevGradient.dot(prevGradient);
+  return beta;
+}
 
 /// Polak-Ribiere formula for computing β, the direction of steepest descent.
-double PolakRibiere(const VectorValues &currentGradient,
-                    const VectorValues &prevGradient);
+template <typename Gradient>
+double PolakRibiere(const Gradient &currentGradient,
+                    const Gradient &prevGradient) {
+  // Polak-Ribiere: beta = g_n'*(g_n-g_n-1)/g_n-1'*g_n-1
+  const double beta =
+      std::max(0.0, currentGradient.dot(currentGradient - prevGradient) /
+                        prevGradient.dot(prevGradient));
+  return beta;
+}
 
 /// The Hestenes-Stiefel formula for computing β,
 /// the direction of steepest descent.
-double HestenesStiefel(const VectorValues &currentGradient,
-                       const VectorValues &prevGradient,
-                       const VectorValues &direction);
+template <typename Gradient>
+double HestenesStiefel(const Gradient &currentGradient,
+                       const Gradient &prevGradient,
+                       const Gradient &direction) {
+  // Hestenes-Stiefel: beta = g_n'*(g_n-g_n-1)/(-s_n-1')*(g_n-g_n-1)
+  VectorValues d = currentGradient - prevGradient;
+  const double beta = std::max(0.0, currentGradient.dot(d) / -direction.dot(d));
+  return beta;
+}
 
 /// The Dai-Yuan formula for computing β, the direction of steepest descent.
-double DaiYuan(const VectorValues &currentGradient,
-               const VectorValues &prevGradient, const VectorValues &direction);
+template <typename Gradient>
+double DaiYuan(const Gradient &currentGradient, const Gradient &prevGradient,
+               const VectorValues &direction) {
+  // Dai-Yuan: beta = g_n'*g_n/(-s_n-1')*(g_n-g_n-1)
+  const double beta =
+      std::max(0.0, currentGradient.dot(currentGradient) /
+                        -direction.dot(currentGradient - prevGradient));
+  return beta;
+}
 
 enum class DirectionMethod {
   FletcherReeves,

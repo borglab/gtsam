@@ -28,46 +28,6 @@ namespace gtsam {
 
 typedef internal::NonlinearOptimizerState State;
 
-/* ************************************************************************* */
-double FletcherReeves(const VectorValues& currentGradient,
-                      const VectorValues& prevGradient) {
-  // Fletcher-Reeves: beta = g_n'*g_n/g_n-1'*g_n-1
-  const double beta = std::max(0.0, currentGradient.dot(currentGradient) /
-                                        prevGradient.dot(prevGradient));
-  return beta;
-}
-
-/* ************************************************************************* */
-double PolakRibiere(const VectorValues& currentGradient,
-                    const VectorValues& prevGradient) {
-  // Polak-Ribiere: beta = g_n'*(g_n-g_n-1)/g_n-1'*g_n-1
-  const double beta =
-      std::max(0.0, currentGradient.dot(currentGradient - prevGradient) /
-                        prevGradient.dot(prevGradient));
-  return beta;
-}
-
-/* ************************************************************************* */
-double HestenesStiefel(const VectorValues& currentGradient,
-                       const VectorValues& prevGradient,
-                       const VectorValues& direction) {
-  // Hestenes-Stiefel: beta = g_n'*(g_n-g_n-1)/(-s_n-1')*(g_n-g_n-1)
-  VectorValues d = currentGradient - prevGradient;
-  const double beta = std::max(0.0, currentGradient.dot(d) / -direction.dot(d));
-  return beta;
-}
-
-/* ************************************************************************* */
-double DaiYuan(const VectorValues& currentGradient,
-               const VectorValues& prevGradient,
-               const VectorValues& direction) {
-  // Dai-Yuan: beta = g_n'*g_n/(-s_n-1')*(g_n-g_n-1)
-  const double beta =
-      std::max(0.0, currentGradient.dot(currentGradient) /
-                        -direction.dot(currentGradient - prevGradient));
-  return beta;
-}
-
 /**
  * @brief Return the gradient vector of a nonlinear factor graph
  * @param nfg the graph
