@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/constraint/NonlinearEqualityConstraint.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
 
@@ -40,13 +41,10 @@ namespace gtsam {
  * \nosubgrouping
  */
 template<class VALUE>
-class NonlinearEquality: public NoiseModelFactorN<VALUE> {
+class NonlinearEquality: public NonlinearEqualityConstraint {
 
 public:
   typedef VALUE T;
-
-  // Provide access to the Matrix& version of evaluateError:
-  using NoiseModelFactor1<VALUE>::evaluateError;
 
 private:
 
@@ -63,7 +61,7 @@ private:
   using This = NonlinearEquality<VALUE>;
 
   // typedef to base class
-  using Base = NoiseModelFactorN<VALUE>;
+  using Base = NonlinearEqualityConstraint;
 
 public:
 
@@ -88,7 +86,7 @@ public:
       const CompareFunction &_compare = std::bind(traits<T>::Equals,
           std::placeholders::_1, std::placeholders::_2, 1e-9)) :
       Base(noiseModel::Constrained::All(traits<T>::GetDimension(feasible)),
-          j), feasible_(feasible), allow_error_(false), error_gain_(0.0), //
+          KeyVector{j}), feasible_(feasible), allow_error_(false), error_gain_(0.0), //
       compare_(_compare) {
   }
 
@@ -99,8 +97,12 @@ public:
       const CompareFunction &_compare = std::bind(traits<T>::Equals,
           std::placeholders::_1, std::placeholders::_2, 1e-9)) :
       Base(noiseModel::Constrained::All(traits<T>::GetDimension(feasible)),
-          j), feasible_(feasible), allow_error_(true), error_gain_(error_gain), //
+          KeyVector{j}), feasible_(feasible), allow_error_(true), error_gain_(error_gain), //
       compare_(_compare) {
+  }
+
+  Key key() const {
+    return keys().front();
   }
 
   /// @}
@@ -139,7 +141,7 @@ public:
   }
 
   /// Error function
-  Vector evaluateError(const T& xj, OptionalMatrixType H) const override {
+  Vector evaluateError(const T& xj, OptionalMatrixType H = nullptr) const {
     const size_t nj = traits<T>::GetDimension(feasible_);
     if (allow_error_) {
       if (H)
@@ -158,11 +160,20 @@ public:
     }
   }
 
+  Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override {
+    VALUE x1 = x.at<VALUE>(key());
+    if (H) {
+      return evaluateError(x1, &(H->front()));
+    } else {
+      return evaluateError(x1);
+    }
+  }
+
   /// Linearize is over-written, because base linearization tries to whiten
   GaussianFactor::shared_ptr linearize(const Values& x) const override {
     const T& xj = x.at<T>(this->key());
     Matrix A;
-    Vector b = evaluateError(xj, A);
+    Vector b = evaluateError(xj, &A);
     SharedDiagonal model = noiseModel::Constrained::All(b.size());
     return GaussianFactor::shared_ptr(
         new JacobianFactor(this->key(), A, b, model));
@@ -206,16 +217,13 @@ struct traits<NonlinearEquality<VALUE>> : Testable<NonlinearEquality<VALUE>> {};
  * Simple unary equality constraint - fixes a value for a variable
  */
 template<class VALUE>
-class NonlinearEquality1: public NoiseModelFactorN<VALUE> {
+class NonlinearEquality1: public NonlinearEqualityConstraint {
 
 public:
   typedef VALUE X;
 
-  // Provide access to Matrix& version of evaluateError:
-  using NoiseModelFactor1<VALUE>::evaluateError;
-
 protected:
-  typedef NoiseModelFactorN<VALUE> Base;
+  typedef NonlinearEqualityConstraint Base;
   typedef NonlinearEquality1<VALUE> This;
 
   /// Default constructor to allow for serialization
@@ -240,7 +248,7 @@ public:
   NonlinearEquality1(const X& value, Key key, double mu = 1000.0)
       : Base(noiseModel::Constrained::All(traits<X>::GetDimension(value),
                                           std::abs(mu)),
-             key),
+             KeyVector{key}),
         value_(value) {}
 
   ~NonlinearEquality1() override {
@@ -252,12 +260,23 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
+  Key key() const { return keys().front(); }
+
   /// g(x) with optional derivative
-  Vector evaluateError(const X& x1, OptionalMatrixType H) const override {
+  Vector evaluateError(const X& x1, OptionalMatrixType H = nullptr) const {
     if (H)
       (*H) = Matrix::Identity(traits<X>::GetDimension(x1),traits<X>::GetDimension(x1));
     // manifold equivalent of h(x)-z -> log(z,h(x))
     return traits<X>::Local(value_,x1);
+  }
+
+  Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override {
+    X x1 = x.at<X>(key());
+    if (H) {
+      return evaluateError(x1, &(H->front()));
+    } else {
+      return evaluateError(x1);
+    }
   }
 
   /// Print
@@ -298,10 +317,10 @@ struct traits<NonlinearEquality1<VALUE> >
  * be the same.
  */
 template <class T>
-class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
+class NonlinearEquality2 : public NonlinearEqualityConstraint {
  protected:
-  using Base = NoiseModelFactorN<T, T>;
-  using This = NonlinearEquality2<T>;
+  typedef NonlinearEqualityConstraint Base;
+  typedef NonlinearEquality2<T> This;
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(T)
 
@@ -310,9 +329,6 @@ class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
 
  public:
   typedef std::shared_ptr<NonlinearEquality2<T>> shared_ptr;
-
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
 
 
   /**
@@ -323,7 +339,7 @@ class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
    */
   NonlinearEquality2(Key key1, Key key2, double mu = 1e4)
       : Base(noiseModel::Constrained::All(traits<T>::dimension, std::abs(mu)),
-             key1, key2) {}
+             KeyVector{key1, key2}) {}
   ~NonlinearEquality2() override {}
 
   /// @return a deep copy of this factor
@@ -334,11 +350,21 @@ class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
 
   /// g(x) with optional derivative2
   Vector evaluateError(
-      const T& x1, const T& x2, OptionalMatrixType H1, OptionalMatrixType H2) const override {
+      const T& x1, const T& x2, OptionalMatrixType H1 = nullptr, OptionalMatrixType H2 = nullptr) const {
     static const size_t p = traits<T>::dimension;
     if (H1) *H1 = -Matrix::Identity(p, p);
     if (H2) *H2 = Matrix::Identity(p, p);
     return traits<T>::Local(x1, x2);
+  }
+
+  Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override {
+    T x1 = x.at<T>(keys().front());
+    T x2 = x.at<T>(keys().back());
+    if (H) {
+      return evaluateError(x1, x2, &(H->front()), &(H->back()));
+    } else {
+      return evaluateError(x1, x2);
+    }
   }
 
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
