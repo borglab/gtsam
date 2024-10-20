@@ -43,7 +43,7 @@ static VectorValues gradientInPlace(const NonlinearFactorGraph& nfg,
 
 NonlinearConjugateGradientOptimizer::NonlinearConjugateGradientOptimizer(
     const NonlinearFactorGraph& graph, const Values& initialValues,
-    const Parameters& params)
+    const Parameters& params, const DirectionMethod& directionMethod)
     : Base(graph, std::unique_ptr<State>(
                       new State(initialValues, graph.error(initialValues)))),
       params_(params) {}
@@ -70,7 +70,8 @@ NonlinearConjugateGradientOptimizer::System::advance(const State& current,
 
 GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
   const auto [newValues, dummy] = nonlinearConjugateGradient<System, Values>(
-      System(graph_), state_->values, params_, true /* single iteration */);
+      System(graph_), state_->values, params_, true /* single iteration */,
+      directionMethod_);
   state_.reset(
       new State(newValues, graph_.error(newValues), state_->iterations + 1));
 
@@ -81,8 +82,8 @@ GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
 const Values& NonlinearConjugateGradientOptimizer::optimize() {
   // Optimize until convergence
   System system(graph_);
-  const auto [newValues, iterations] =
-      nonlinearConjugateGradient(system, state_->values, params_, false);
+  const auto [newValues, iterations] = nonlinearConjugateGradient(
+      system, state_->values, params_, false, directionMethod_);
   state_.reset(
       new State(std::move(newValues), graph_.error(newValues), iterations));
   return state_->values;

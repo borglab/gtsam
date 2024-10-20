@@ -80,6 +80,49 @@ TEST(NonlinearConjugateGradientOptimizer, Optimize) {
 }
 
 /* ************************************************************************* */
+/// Test different direction methods
+TEST(NonlinearConjugateGradientOptimizer, DirectionMethods) {
+  const auto [graph, initialEstimate] = generateProblem();
+
+  NonlinearOptimizerParams param;
+  param.maxIterations =
+      500; /* requires a larger number of iterations to converge */
+  param.verbosity = NonlinearOptimizerParams::SILENT;
+
+  // Fletcher-Reeves
+  {
+    NonlinearConjugateGradientOptimizer optimizer(
+        graph, initialEstimate, param, DirectionMethod::FletcherReeves);
+    Values result = optimizer.optimize();
+
+    EXPECT_DOUBLES_EQUAL(0.0, graph.error(result), 1e-4);
+  }
+  // Polak-Ribiere
+  {
+    NonlinearConjugateGradientOptimizer optimizer(
+        graph, initialEstimate, param, DirectionMethod::PolakRibiere);
+    Values result = optimizer.optimize();
+
+    EXPECT_DOUBLES_EQUAL(0.0, graph.error(result), 1e-4);
+  }
+  // Hestenes-Stiefel
+  {
+    NonlinearConjugateGradientOptimizer optimizer(
+        graph, initialEstimate, param, DirectionMethod::HestenesStiefel);
+    Values result = optimizer.optimize();
+
+    EXPECT_DOUBLES_EQUAL(0.0, graph.error(result), 1e-4);
+  }
+  // Dai-Yuan
+  {
+    NonlinearConjugateGradientOptimizer optimizer(graph, initialEstimate, param,
+                                                  DirectionMethod::DaiYuan);
+    Values result = optimizer.optimize();
+
+    EXPECT_DOUBLES_EQUAL(0.0, graph.error(result), 1e-4);
+  }
+}
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
