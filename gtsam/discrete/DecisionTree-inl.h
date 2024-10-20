@@ -503,6 +503,8 @@ namespace gtsam {
     a->push_back(std::move(l1));
     a->push_back(std::move(l2));
     root_ = Choice::Unique(std::move(a));
+
+    cardinalities_map_[label] = 2;
   }
 
   /****************************************************************************/
@@ -511,6 +513,9 @@ namespace gtsam {
                                    const Y& y2) {
     if (labelC.second != 2) throw std::invalid_argument(
         "DecisionTree: binary constructor called with non-binary label");
+
+    cardinalities_map_[labelC.first] = labelC.second;
+
     auto a = std::make_shared<Choice>(labelC.first, 2);
     NodePtr l1(new Leaf(y1)), l2(new Leaf(y2));
     a->push_back(std::move(l1));
@@ -523,6 +528,11 @@ namespace gtsam {
       const std::vector<Y>& ys) {
     // call recursive Create
     root_ = create(labelCs.begin(), labelCs.end(), ys.begin(), ys.end());
+
+    // Fill in cardinalities
+    for (auto&& [label, nrChoices] : labelCs) {
+      cardinalities_map_[label] = nrChoices;
+    }
   }
 
   /****************************************************************************/
@@ -537,6 +547,11 @@ namespace gtsam {
 
     // now call recursive Create
     root_ = create(labelCs.begin(), labelCs.end(), ys.begin(), ys.end());
+
+    // Fill in cardinalities
+    for (auto&& [label, nrChoices] : labelCs) {
+      cardinalities_map_[label] = nrChoices;
+    }
   }
 
   /****************************************************************************/
@@ -552,13 +567,15 @@ namespace gtsam {
       const DecisionTree& f0, const DecisionTree& f1)  {
     const std::vector<DecisionTree> functions{f0, f1};
     root_ = compose(functions.begin(), functions.end(), label);
+
+    cardinalities_map_[label] = 2;
   }
 
   /****************************************************************************/
   template <typename L, typename Y>
   template <typename X, typename Func>
-  DecisionTree<L, Y>::DecisionTree(const DecisionTree<L, X>& other,
-                                   Func Y_of_X) {
+  DecisionTree<L, Y>::DecisionTree(const DecisionTree<L, X>& other, Func Y_of_X)
+      : cardinalities_map_(other.allCardinalities()) {
     root_ = convertFrom<X>(other.root_, Y_of_X);
   }
 
@@ -569,6 +586,13 @@ namespace gtsam {
                                    const std::map<M, L>& map, Func Y_of_X) {
     auto L_of_M = [&map](const M& label) -> L { return map.at(label); };
     root_ = convertFrom<M, X>(other.root_, L_of_M, Y_of_X);
+
+    // Fill in cardinalities
+    std::map<M, size_t> otherCardinalities = other.allCardinalities();
+    for (auto&& it = otherCardinalities.begin(); it != otherCardinalities.end();
+         it++) {
+      cardinalities_map_[L_of_M(it->first)] = it->second;
+    }
   }
 
   /****************************************************************************/
