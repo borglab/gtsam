@@ -367,10 +367,7 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
   // any difference in noise models used.
   HybridGaussianProductFactor productFactor = collectProductFactor();
 
-  // Convert factor graphs with a nullptr to an empty factor graph.
-  // This is done after assembly since it is non-trivial to keep track of which
-  // FG has a nullptr as we're looping over the factors.
-  auto prunedProductFactor = productFactor.removeEmpty();
+  auto isNull = [](const GaussianFactor::shared_ptr& ptr) { return !ptr; };
 
   // This is the elimination method on the leaf nodes
   bool someContinuousLeft = false;
@@ -378,7 +375,7 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
       [&](const std::pair<GaussianFactorGraph, double> &pair) -> Result {
     const auto &[graph, scalar] = pair;
 
-    if (graph.empty()) {
+    if (graph.empty() || std::any_of(graph.begin(), graph.end(), isNull)) {
       return {nullptr, 0.0, nullptr, 0.0};
     }
 
@@ -394,7 +391,7 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
   };
 
   // Perform elimination!
-  const ResultTree eliminationResults(prunedProductFactor, eliminate);
+  const ResultTree eliminationResults(productFactor, eliminate);
 
   // If there are no more continuous parents we create a DiscreteFactor with the
   // error for each discrete choice. Otherwise, create a HybridGaussianFactor
