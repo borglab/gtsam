@@ -339,12 +339,8 @@ TEST(HybridEstimation, Probability) {
   HybridValues hybrid_values = bayesNet->optimize();
 
   // This is the correct sequence as designed
-  DiscreteValues discrete_seq;
-  discrete_seq[M(0)] = 1;
-  discrete_seq[M(1)] = 1;
-  discrete_seq[M(2)] = 0;
-
-  EXPECT(assert_equal(discrete_seq, hybrid_values.discrete()));
+  DiscreteValues expectedSequence{{M(0), 1}, {M(1), 1}, {M(2), 0}};
+  EXPECT(assert_equal(expectedSequence, hybrid_values.discrete()));
 }
 
 /****************************************************************************/
@@ -411,12 +407,8 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
   HybridValues hybrid_values = discreteBayesTree->optimize();
 
   // This is the correct sequence as designed
-  DiscreteValues discrete_seq;
-  discrete_seq[M(0)] = 1;
-  discrete_seq[M(1)] = 1;
-  discrete_seq[M(2)] = 0;
-
-  EXPECT(assert_equal(discrete_seq, hybrid_values.discrete()));
+  DiscreteValues expectedSequence{{M(0), 1}, {M(1), 1}, {M(2), 0}};
+  EXPECT(assert_equal(expectedSequence, hybrid_values.discrete()));
 }
 
 /*********************************************************************************
