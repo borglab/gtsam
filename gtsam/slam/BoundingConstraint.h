@@ -19,6 +19,7 @@
 
 #include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/constraint/NonlinearInequalityConstraint.h>
 
 namespace gtsam {
 
@@ -30,20 +31,17 @@ namespace gtsam {
  * @ingroup slam
  */
 template<class VALUE>
-struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
+struct BoundingConstraint1: public NonlinearInequalityConstraint {
   typedef VALUE X;
-  typedef NoiseModelFactorN<VALUE> Base;
+  typedef NonlinearInequalityConstraint Base;
   typedef std::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
-
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
 
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than
 
   BoundingConstraint1(Key key, double threshold,
       bool isGreaterThan, double mu = 1000.0) :
-        Base(noiseModel::Constrained::All(1, mu), key),
+        Base(noiseModel::Constrained::All(1, mu), KeyVector{key}),
         threshold_(threshold), isGreaterThan_(isGreaterThan) {
   }
 
@@ -51,6 +49,7 @@ struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
 
   inline double threshold() const { return threshold_; }
   inline bool isGreaterThan() const { return isGreaterThan_; }
+  inline Key key() const { return keys().front(); }
 
   /**
    * function producing a scalar value to compare to the threshold
@@ -60,14 +59,23 @@ struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
   virtual double value(const X& x, OptionalMatrixType H =
       OptionalNone) const = 0;
 
-  /** active when constraint *NOT* met */
-  bool active(const Values& c) const override {
-    // note: still active at equality to avoid zigzagging
-    double x = value(c.at<X>(this->key()));
-    return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
+  Vector unwhitenedExpr(const Values& x, OptionalMatrixVecType H = nullptr) const override {
+    if (H) {
+      double d = value(x.at<X>(this->key()), &(H->front()));
+      if (isGreaterThan_) {
+        H->front() *= -1;
+        return Vector1(threshold_ - d);
+      } else {
+        return Vector1(d - threshold_);
+      }
+    } else {
+      double d = value(x.at<X>(this->key()));
+      return Vector1((isGreaterThan_) ? threshold_ - d : d - threshold_);
+    }
   }
 
-  Vector evaluateError(const X& x, OptionalMatrixType H) const override {
+  /// TODO: This should be deprecated.
+  Vector evaluateError(const X& x, OptionalMatrixType H = nullptr) const {
     Matrix D;
     double error = value(x, &D) - threshold_;
     if (H) {
@@ -102,22 +110,19 @@ private:
  * to implement for specific systems
  */
 template<class VALUE1, class VALUE2>
-struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
+struct BoundingConstraint2: public NonlinearInequalityConstraint {
   typedef VALUE1 X1;
   typedef VALUE2 X2;
 
-  typedef NoiseModelFactorN<VALUE1, VALUE2> Base;
+  typedef NonlinearInequalityConstraint Base;
   typedef std::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
-
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
 
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than
 
   BoundingConstraint2(Key key1, Key key2, double threshold,
       bool isGreaterThan, double mu = 1000.0)
-  : Base(noiseModel::Constrained::All(1, mu), key1, key2),
+  : Base(noiseModel::Constrained::All(1, mu), KeyVector{key1, key2}),
     threshold_(threshold), isGreaterThan_(isGreaterThan) {}
 
   ~BoundingConstraint2() override {}
@@ -133,15 +138,27 @@ struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
       OptionalMatrixType H1 = OptionalNone,
       OptionalMatrixType H2 = OptionalNone) const = 0;
 
-  /** active when constraint *NOT* met */
-  bool active(const Values& c) const override {
-    // note: still active at equality to avoid zigzagging
-    double x = value(c.at<X1>(this->key1()), c.at<X2>(this->key2()));
-    return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
+  Vector unwhitenedExpr(const Values& x, OptionalMatrixVecType H = nullptr) const override {
+    X1 x1 = x.at<X1>(keys().front());
+    X2 x2 = x.at<X2>(keys().back());
+    if (H) {
+      double d = value(x1, x2, &(H->front()), &(H->back()));
+      if (isGreaterThan_) {
+        H->front() *= -1;
+        H->back() *= -1;
+        return Vector1(threshold_ - d);
+      } else {
+        return Vector1(d - threshold_);
+      }
+    } else {
+      double d = value(x1, x2);
+      return Vector1((isGreaterThan_) ? threshold_ - d : d - threshold_);
+    }
   }
 
+  /// TODO: This should be deprecated.
   Vector evaluateError(const X1& x1, const X2& x2,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+      OptionalMatrixType H1 = nullptr, OptionalMatrixType H2 = nullptr) const {
     Matrix D1, D2;
     double error = value(x1, x2, &D1, &D2) - threshold_;
     if (H1) {
