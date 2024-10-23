@@ -34,9 +34,8 @@ namespace gtsam {
    *
    * @tparam VALUE is the type of variable the prior effects
    */
-  template<class VALUE>
-  class PartialPriorFactor: public NoiseModelFactorN<VALUE> {
-
+  template <class VALUE>
+  class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
   public:
     typedef VALUE T;
 
@@ -65,10 +64,10 @@ namespace gtsam {
     /** default constructor - only use for serialization */
     PartialPriorFactor() {}
 
-    /** Single Element Constructor: Prior on a single parameter at index 'idx' in the tangent vector.*/
+    /** Single Index Constructor: Prior on a single parameter at index 'idx' in the parameter vector.*/
     PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
       Base(model, key),
-      prior_((Vector(1) << prior).finished()),
+      prior_(Vector1(prior)),
       indices_(1, idx) {
       assert(model->dim() == 1);
     }
@@ -95,7 +94,12 @@ namespace gtsam {
     /** print */
     void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       Base::print(s, keyFormatter);
-      gtsam::print(prior_, "prior");
+      gtsam::print(prior_, "Prior: ");
+      std::cout << "Indices: ";
+      for (const int i : indices_) {
+        std::cout << i << " ";
+      }
+      std::cout << std::endl;
     }
 
     /** equals */
@@ -112,13 +116,14 @@ namespace gtsam {
     Vector evaluateError(const T& p, OptionalMatrixType H) const override {
       Eigen::Matrix<double, T::dimension, T::dimension> H_local;
 
-      // If the Rot3 Cayley map is used, Rot3::LocalCoordinates will throw a runtime error
-      // when asked to compute the Jacobian matrix (see Rot3M.cpp).
-      #ifdef GTSAM_ROT3_EXPMAP
-      const Vector full_tangent = T::LocalCoordinates(p, H ? &H_local : nullptr);
-      #else
+    // If the Rot3 Cayley map is used, Rot3::LocalCoordinates will throw a runtime
+    // error when asked to compute the Jacobian matrix (see Rot3M.cpp).
+#ifdef GTSAM_ROT3_EXPMAP
+      const Vector full_tangent =
+          T::LocalCoordinates(p, H ? &H_local : nullptr);
+#else
       const Vector full_tangent = T::Logmap(p, H ? &H_local : nullptr);
-      #endif
+#endif
 
       if (H) {
         (*H) = Matrix::Zero(indices_.size(), T::dimension);
@@ -150,7 +155,6 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);
       ar & BOOST_SERIALIZATION_NVP(indices_);
-      // ar & BOOST_SERIALIZATION_NVP(H_);
     }
 #endif
   }; // \class PartialPriorFactor
