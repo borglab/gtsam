@@ -13,7 +13,33 @@
 
 namespace gtsam {
 
+/**
+ * @brief Abstract base class for FundamentalMatrix
+ *
+ * This class provides a common interface for all types of fundamental matrices.
+ * It declares a virtual function `matrix()` that must be implemented by derived
+ * classes. The `matrix()` function returns a 3x3 matrix representation of the
+ * fundamental matrix.
+ */
 class FundamentalMatrix {
+ public:
+  /**
+   * @brief Returns a 3x3 matrix representation of the fundamental matrix
+   *
+   * @return A 3x3 matrix representing the fundamental matrix
+   */
+  virtual Matrix3 matrix() const = 0;
+};
+
+/**
+ * @class GeneralFundamentalMatrix
+ * @brief Represents a general fundamental matrix.
+ *
+ * This class represents a general fundamental matrix, which is a 3x3 matrix
+ * that describes the relationship between two images. It is parameterized by a
+ * left rotation U, a scalar s, and a right rotation V.
+ */
+class GeneralFundamentalMatrix : public FundamentalMatrix {
  private:
   Rot3 U_;    ///< Left rotation
   double s_;  ///< Scalar parameter for S
@@ -21,14 +47,23 @@ class FundamentalMatrix {
 
  public:
   /// Default constructor
-  FundamentalMatrix() : U_(Rot3()), s_(1.0), V_(Rot3()) {}
+  GeneralFundamentalMatrix() : U_(Rot3()), s_(1.0), V_(Rot3()) {}
 
-  /// Construct from U, V, and scalar s
-  FundamentalMatrix(const Rot3& U, double s, const Rot3& V)
+  /**
+   * @brief Construct from U, V, and scalar s
+   *
+   * Initializes the GeneralFundamentalMatrix with the given left rotation U,
+   * scalar s, and right rotation V.
+   *
+   * @param U Left rotation matrix
+   * @param s Scalar parameter for the fundamental matrix
+   * @param V Right rotation matrix
+   */
+  GeneralFundamentalMatrix(const Rot3& U, double s, const Rot3& V)
       : U_(U), s_(s), V_(V) {}
 
   /// Return the fundamental matrix representation
-  Matrix3 matrix() const {
+  Matrix3 matrix() const override {
     return U_.matrix() * Vector3(1, s_, 1).asDiagonal() *
            V_.transpose().matrix();
   }
@@ -36,15 +71,16 @@ class FundamentalMatrix {
   /// @name Testable
   /// @{
 
-  /// Print the FundamentalMatrix
+  /// Print the GeneralFundamentalMatrix
   void print(const std::string& s = "") const {
     std::cout << s << "U:\n"
               << U_.matrix() << "\ns: " << s_ << "\nV:\n"
               << V_.matrix() << std::endl;
   }
 
-  /// Check if the FundamentalMatrix is equal to another within a tolerance
-  bool equals(const FundamentalMatrix& other, double tol = 1e-9) const {
+  /// Check if the GeneralFundamentalMatrix is equal to another within a
+  /// tolerance
+  bool equals(const GeneralFundamentalMatrix& other, double tol = 1e-9) const {
     return U_.equals(other.U_, tol) && std::abs(s_ - other.s_) < tol &&
            V_.equals(other.V_, tol);
   }
@@ -57,8 +93,8 @@ class FundamentalMatrix {
   inline static size_t Dim() { return dimension; }
   inline size_t dim() const { return dimension; }
 
-  /// Return local coordinates with respect to another FundamentalMatrix
-  Vector localCoordinates(const FundamentalMatrix& F) const {
+  /// Return local coordinates with respect to another GeneralFundamentalMatrix
+  Vector localCoordinates(const GeneralFundamentalMatrix& F) const {
     Vector result(7);
     result.head<3>() = U_.localCoordinates(F.U_);
     result(3) = F.s_ - s_;  // Difference in scalar
@@ -66,12 +102,12 @@ class FundamentalMatrix {
     return result;
   }
 
-  /// Retract the given vector to get a new FundamentalMatrix
-  FundamentalMatrix retract(const Vector& delta) const {
+  /// Retract the given vector to get a new GeneralFundamentalMatrix
+  GeneralFundamentalMatrix retract(const Vector& delta) const {
     Rot3 newU = U_.retract(delta.head<3>());
     double newS = s_ + delta(3);  // Update scalar
     Rot3 newV = V_.retract(delta.tail<3>());
-    return FundamentalMatrix(newU, newS, newV);
+    return GeneralFundamentalMatrix(newU, newS, newV);
   }
 
   /// @}
@@ -85,7 +121,7 @@ class FundamentalMatrix {
  * parameterization of the essential matrix and focal lengths for left and right
  * cameras. Principal points are not part of the manifold but a convenience.
  */
-class SimpleFundamentalMatrix {
+class SimpleFundamentalMatrix : FundamentalMatrix {
  private:
   EssentialMatrix E_;  ///< Essential matrix
   double fa_;          ///< Focal length for left camera
@@ -106,7 +142,7 @@ class SimpleFundamentalMatrix {
       : E_(E), fa_(fa), fb_(fb), ca_(ca), cb_(cb) {}
 
   /// Return the fundamental matrix representation
-  Matrix3 matrix() const {
+  Matrix3 matrix() const override {
     Matrix3 Ka, Kb;
     Ka << fa_, 0, ca_.x(), 0, fa_, ca_.y(), 0, 0, 1;  // Left calibration
     Kb << fb_, 0, cb_.x(), 0, fb_, cb_.y(), 0, 0, 1;  // Right calibration
@@ -158,8 +194,8 @@ class SimpleFundamentalMatrix {
 };
 
 template <>
-struct traits<FundamentalMatrix>
-    : public internal::Manifold<FundamentalMatrix> {};
+struct traits<GeneralFundamentalMatrix>
+    : public internal::Manifold<GeneralFundamentalMatrix> {};
 
 template <>
 struct traits<SimpleFundamentalMatrix>

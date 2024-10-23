@@ -16,34 +16,34 @@ using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
-GTSAM_CONCEPT_TESTABLE_INST(FundamentalMatrix)
-GTSAM_CONCEPT_MANIFOLD_INST(FundamentalMatrix)
+GTSAM_CONCEPT_TESTABLE_INST(GeneralFundamentalMatrix)
+GTSAM_CONCEPT_MANIFOLD_INST(GeneralFundamentalMatrix)
 
 //*************************************************************************
 // Create two rotations and corresponding fundamental matrix F
 Rot3 trueU = Rot3::Yaw(M_PI_2);
 Rot3 trueV = Rot3::Yaw(M_PI_4);
 double trueS = 0.5;
-FundamentalMatrix trueF(trueU, trueS, trueV);
+GeneralFundamentalMatrix trueF(trueU, trueS, trueV);
 
 //*************************************************************************
-TEST(FundamentalMatrix, localCoordinates) {
+TEST(GeneralFundamentalMatrix, localCoordinates) {
   Vector expected = Z_7x1;  // Assuming 7 dimensions for U, V, and s
   Vector actual = trueF.localCoordinates(trueF);
   EXPECT(assert_equal(expected, actual, 1e-8));
 }
 
 //*************************************************************************
-TEST(FundamentalMatrix, retract) {
-  FundamentalMatrix actual = trueF.retract(Z_7x1);
+TEST(GeneralFundamentalMatrix, retract) {
+  GeneralFundamentalMatrix actual = trueF.retract(Z_7x1);
   EXPECT(assert_equal(trueF, actual));
 }
 
 //*************************************************************************
-TEST(FundamentalMatrix, RoundTrip) {
+TEST(GeneralFundamentalMatrix, RoundTrip) {
   Vector7 d;
   d << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
-  FundamentalMatrix hx = trueF.retract(d);
+  GeneralFundamentalMatrix hx = trueF.retract(d);
   Vector actual = trueF.localCoordinates(hx);
   EXPECT(assert_equal(d, actual, 1e-8));
 }
