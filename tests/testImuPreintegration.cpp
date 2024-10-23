@@ -43,7 +43,7 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
   double gyrNoiseSigma = 0.000208;
   double gyrBiasRwSigma = 0.000004;
   double integrationCovariance = 1e-8;
-  double biasAccOmegaInt = 1e-5;
+  double biasAccOmegaInit = 1e-5;
 
   double gravity = 9.81;
   double rate = 400.0;  // Hz
@@ -76,7 +76,7 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
   imuPreintegratedParams->gyroscopeCovariance = I_3x3 * pow(gyrNoiseSigma, 2);
   imuPreintegratedParams->biasOmegaCovariance = I_3x3 * pow(gyrBiasRwSigma, 2);
   imuPreintegratedParams->integrationCovariance = I_3x3 * integrationCovariance;
-  imuPreintegratedParams->biasAccOmegaInt = I_6x6 * biasAccOmegaInt;
+  imuPreintegratedParams->biasAccOmegaInit = I_6x6 * biasAccOmegaInit;
 
   // Initial state
   Pose3 priorPose;

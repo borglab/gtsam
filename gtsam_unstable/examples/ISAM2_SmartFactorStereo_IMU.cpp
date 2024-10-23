@@ -57,7 +57,7 @@ struct IMUHelper {
     p->biasAccCovariance = I_3x3 * pow(0.00002, 2.0);  // acc bias in continuous
     p->biasOmegaCovariance =
         I_3x3 * pow(0.001, 2.0);  // gyro bias in continuous
-    p->biasAccOmegaInt = Matrix::Identity(6, 6) * 1e-5;
+    p->biasAccOmegaInit = Matrix::Identity(6, 6) * 1e-5;
 
     // body to IMU rotation
     Rot3 iRb(0.036129, -0.998727, 0.035207,

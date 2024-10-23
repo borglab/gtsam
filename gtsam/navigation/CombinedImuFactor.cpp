@@ -41,7 +41,7 @@ void PreintegrationCombinedParams::print(const string& s) const {
        << endl;
   cout << "biasOmegaCovariance:\n[\n" << biasOmegaCovariance << "\n]"
        << endl;
-  cout << "biasAccOmegaInt:\n[\n" << biasAccOmegaInt << "\n]"
+  cout << "biasAccOmegaInit:\n[\n" << biasAccOmegaInit << "\n]"
        << endl;
 }
 
@@ -54,7 +54,7 @@ bool PreintegrationCombinedParams::equals(const PreintegratedRotationParams& oth
                             tol) &&
          equal_with_abs_tol(biasOmegaCovariance, e->biasOmegaCovariance,
                             tol) &&
-         equal_with_abs_tol(biasAccOmegaInt, e->biasAccOmegaInt, tol);
+         equal_with_abs_tol(biasAccOmegaInit, e->biasAccOmegaInit, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -84,7 +84,7 @@ void PreintegratedCombinedMeasurements::resetIntegration(
     const gtsam::Matrix6& Q_init) {
   // Base class method to reset the preintegrated measurements
   PreintegrationType::resetIntegration();
-  p().biasAccOmegaInt = Q_init;
+  p().biasAccOmegaInit = Q_init;
   preintMeasCov_.setZero();
 }
 
@@ -147,7 +147,7 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   const Matrix3& aCov = p().accelerometerCovariance;
   const Matrix3& wCov = p().gyroscopeCovariance;
   const Matrix3& iCov = p().integrationCovariance;
-  const Matrix6& bInitCov = p().biasAccOmegaInt;
+  const Matrix6& bInitCov = p().biasAccOmegaInit;
 
   // first order uncertainty propagation
   // Optimized matrix mult: (1/dt) * G * measurementCovariance * G.transpose()

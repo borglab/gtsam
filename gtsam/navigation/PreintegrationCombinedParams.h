@@ -38,14 +38,14 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
                                 ///< accelerometer bias random walk
   Matrix3 biasOmegaCovariance;  ///< continuous-time "Covariance" describing
                                 ///< gyroscope bias random walk
-  Matrix6 biasAccOmegaInt;  ///< covariance of bias used as initial estimate.
+  Matrix6 biasAccOmegaInit;  ///< covariance of bias used as initial estimate.
 
   /// Default constructor makes uninitialized params struct.
   /// Used for serialization.
   PreintegrationCombinedParams()
       : biasAccCovariance(I_3x3),
         biasOmegaCovariance(I_3x3),
-        biasAccOmegaInt(I_6x6) {}
+        biasAccOmegaInit(I_6x6) {}
 
   /// See two named constructors below for good values of n_gravity in body
   /// frame
@@ -53,7 +53,7 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
       : PreintegrationParams(n_gravity_),
         biasAccCovariance(I_3x3),
         biasOmegaCovariance(I_3x3),
-        biasAccOmegaInt(I_6x6) {}
+        biasAccOmegaInit(I_6x6) {}
 
   // Default Params for a Z-down navigation frame, such as NED: gravity points
   // along positive Z-axis
@@ -77,11 +77,11 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
 
   void setBiasAccCovariance(const Matrix3& cov) { biasAccCovariance = cov; }
   void setBiasOmegaCovariance(const Matrix3& cov) { biasOmegaCovariance = cov; }
-  void setBiasAccOmegaInit(const Matrix6& cov) { biasAccOmegaInt = cov; }
+  void setBiasAccOmegaInit(const Matrix6& cov) { biasAccOmegaInit = cov; }
 
   const Matrix3& getBiasAccCovariance() const { return biasAccCovariance; }
   const Matrix3& getBiasOmegaCovariance() const { return biasOmegaCovariance; }
-  const Matrix6& getBiasAccOmegaInit() const { return biasAccOmegaInt; }
+  const Matrix6& getBiasAccOmegaInit() const { return biasAccOmegaInit; }
 
  private:
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -93,7 +93,7 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationParams);
     ar& BOOST_SERIALIZATION_NVP(biasAccCovariance);
     ar& BOOST_SERIALIZATION_NVP(biasOmegaCovariance);
-    ar& BOOST_SERIALIZATION_NVP(biasAccOmegaInt);
+    ar& BOOST_SERIALIZATION_NVP(biasAccOmegaInit);
   }
 #endif
 
