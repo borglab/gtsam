@@ -64,8 +64,6 @@ class GTSAM_EXPORT HybridGaussianConditional
   using Conditionals = DecisionTree<Key, GaussianConditional::shared_ptr>;
 
  private:
-  Conditionals conditionals_;  ///< a decision tree of Gaussian conditionals.
-
   ///< Negative-log of the normalization constant (log(\sqrt(|2πΣ|))).
   ///< Take advantage of the neg-log space so everything is a minimization
   double negLogConstant_;
@@ -143,6 +141,19 @@ class GTSAM_EXPORT HybridGaussianConditional
   HybridGaussianConditional(const DiscreteKeys &discreteParents,
                             const Conditionals &conditionals);
 
+  /**
+   * @brief Construct from multiple discrete keys M and a tree of
+   * factor/scalar pairs, where the scalar is assumed to be the
+   * the negative log constant for each assignment m, up to a constant.
+   *
+   * @note Will throw if factors are not actually conditionals.
+   *
+   * @param discreteParents the discrete parents. Will be placed last.
+   * @param conditionalPairs Decision tree of GaussianFactor/scalar pairs.
+   */
+  HybridGaussianConditional(const DiscreteKeys &discreteParents,
+                            const FactorValuePairs &pairs);
+
   /// @}
   /// @name Testable
   /// @{
@@ -192,8 +203,9 @@ class GTSAM_EXPORT HybridGaussianConditional
   std::shared_ptr<HybridGaussianFactor> likelihood(
       const VectorValues &given) const;
 
-  /// Getter for the underlying Conditionals DecisionTree
-  const Conditionals &conditionals() const;
+  /// Get Conditionals DecisionTree (dynamic cast from factors)
+  /// @note Slow: avoid using in favor of factors(), which uses existing tree.
+  const Conditionals conditionals() const;
 
   /**
    * @brief Compute the logProbability of this hybrid Gaussian conditional.
@@ -229,7 +241,7 @@ class GTSAM_EXPORT HybridGaussianConditional
 
   /// Private constructor that uses helper struct above.
   HybridGaussianConditional(const DiscreteKeys &discreteParents,
-                            const Helper &helper);
+                            Helper &&helper);
 
   /// Check whether `given` has values for all frontal keys.
   bool allFrontalsGiven(const VectorValues &given) const;
@@ -241,7 +253,6 @@ class GTSAM_EXPORT HybridGaussianConditional
   void serialize(Archive &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
-    ar &BOOST_SERIALIZATION_NVP(conditionals_);
   }
 #endif
 };

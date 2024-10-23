@@ -29,6 +29,7 @@
 #include <optional>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -286,6 +287,10 @@ namespace gtsam {
       return branches_;
     }
 
+    std::vector<NodePtr>& branches() {
+      return branches_;
+    }
+
     /** add a branch: TODO merge into constructor */
     void push_back(NodePtr&& node) {
       // allSame_ is restricted to leaf nodes in a decision tree
@@ -482,8 +487,8 @@ namespace gtsam {
   /****************************************************************************/
   // DecisionTree
   /****************************************************************************/
-  template<typename L, typename Y>
-  DecisionTree<L, Y>::DecisionTree() {}
+  template <typename L, typename Y>
+  DecisionTree<L, Y>::DecisionTree() : root_(nullptr) {}
 
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const NodePtr& root) :
@@ -552,6 +557,36 @@ namespace gtsam {
       const DecisionTree& f0, const DecisionTree& f1)  {
     const std::vector<DecisionTree> functions{f0, f1};
     root_ = compose(functions.begin(), functions.end(), label);
+  }
+
+  /****************************************************************************/
+  template <typename L, typename Y>
+  DecisionTree<L, Y>::DecisionTree(const Unary& op,
+                                   DecisionTree&& other) noexcept
+      : root_(std::move(other.root_)) {
+    // Apply the unary operation directly to each leaf in the tree
+    if (root_) {
+      // Define a helper function to traverse and apply the operation
+      struct ApplyUnary {
+        const Unary& op;
+        void operator()(typename DecisionTree<L, Y>::NodePtr& node) const {
+          if (auto leaf = std::dynamic_pointer_cast<Leaf>(node)) {
+            // Apply the unary operation to the leaf's constant value
+            leaf->constant_ = op(leaf->constant_);
+          } else if (auto choice = std::dynamic_pointer_cast<Choice>(node)) {
+            // Recurse into the choice branches
+            for (NodePtr& branch : choice->branches()) {
+              (*this)(branch);
+            }
+          }
+        }
+      };
+
+      ApplyUnary applyUnary{op};
+      applyUnary(root_);
+    }
+    // Reset the other tree's root to nullptr to avoid dangling references
+    other.root_ = nullptr;
   }
 
   /****************************************************************************/
@@ -694,7 +729,7 @@ namespace gtsam {
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::create(
       It begin, It end, ValueIt beginY, ValueIt endY) {
     auto node = build(begin, end, beginY, endY);
-    if (auto choice = std::dynamic_pointer_cast<const Choice>(node)) {
+    if (auto choice = std::dynamic_pointer_cast<Choice>(node)) {
       return Choice::Unique(choice);
     } else {
       return node;
@@ -710,7 +745,7 @@ namespace gtsam {
 
     // If leaf, apply unary conversion "op" and create a unique leaf.
     using LXLeaf = typename DecisionTree<L, X>::Leaf;
-    if (auto leaf = std::dynamic_pointer_cast<const LXLeaf>(f)) {
+    if (auto leaf = std::dynamic_pointer_cast<LXLeaf>(f)) {
       return NodePtr(new Leaf(Y_of_X(leaf->constant())));
     }
 
@@ -951,11 +986,16 @@ namespace gtsam {
     return root_->equals(*other.root_);
   }
 
+  /****************************************************************************/
   template<typename L, typename Y>
   const Y& DecisionTree<L, Y>::operator()(const Assignment<L>& x) const {
+    if (root_ == nullptr)
+      throw std::invalid_argument(
+          "DecisionTree::operator() called on empty tree");
     return root_->operator ()(x);
   }
 
+  /****************************************************************************/
   template<typename L, typename Y>
   DecisionTree<L, Y> DecisionTree<L, Y>::apply(const Unary& op) const {
     // It is unclear what should happen if tree is empty:
@@ -966,6 +1006,7 @@ namespace gtsam {
     return DecisionTree(root_->apply(op));
   }
 
+  /****************************************************************************/
   /// Apply unary operator with assignment
   template <typename L, typename Y>
   DecisionTree<L, Y> DecisionTree<L, Y>::apply(
@@ -1049,6 +1090,18 @@ namespace gtsam {
     return ss.str();
   }
 
-/******************************************************************************/
+  /******************************************************************************/
+  template <typename L, typename Y>
+  template <typename A, typename B>
+  std::pair<DecisionTree<L, A>, DecisionTree<L, B>> DecisionTree<L, Y>::split(
+      std::function<std::pair<A, B>(const Y&)> AB_of_Y) const {
+    using AB = std::pair<A, B>;
+    const DecisionTree<L, AB> ab(*this, AB_of_Y);
+    const DecisionTree<L, A> a(ab, [](const AB& p) { return p.first; });
+    const DecisionTree<L, B> b(ab, [](const AB& p) { return p.second; });
+    return {a, b};
+  }
+
+  /******************************************************************************/
 
   }  // namespace gtsam
