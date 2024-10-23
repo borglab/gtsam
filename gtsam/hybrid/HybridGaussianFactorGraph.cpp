@@ -367,7 +367,7 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
   // any difference in noise models used.
   HybridGaussianProductFactor productFactor = collectProductFactor();
 
-  auto isNull = [](const GaussianFactor::shared_ptr& ptr) { return !ptr; };
+  auto isNull = [](const GaussianFactor::shared_ptr &ptr) { return !ptr; };
 
   // This is the elimination method on the leaf nodes
   bool someContinuousLeft = false;
@@ -375,6 +375,8 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
       [&](const std::pair<GaussianFactorGraph, double> &pair) -> Result {
     const auto &[graph, scalar] = pair;
 
+    // If any product contains a pruned factor, prune it here. Done here as it's
+    // non non-trivial to do within collectProductFactor.
     if (graph.empty() || std::any_of(graph.begin(), graph.end(), isNull)) {
       return {nullptr, 0.0, nullptr, 0.0};
     }

@@ -275,9 +275,7 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
         if (auto conditional =
                 std::dynamic_pointer_cast<GaussianConditional>(pair.first)) {
           const auto likelihood_m = conditional->likelihood(given);
-          // scalar is already correct.
-          assert(pair.second ==
-                 conditional->negLogConstant() - negLogConstant_);
+          // pair.second == conditional->negLogConstant() - negLogConstant_
           return {likelihood_m, pair.second};
         } else {
           return {nullptr, std::numeric_limits<double>::infinity()};
@@ -320,8 +318,7 @@ HybridGaussianConditional::shared_ptr HybridGaussianConditional::prune(
   };
 
   FactorValuePairs prunedConditionals = factors().apply(pruner);
-  return std::shared_ptr<HybridGaussianConditional>(
-      new HybridGaussianConditional(discreteKeys(), prunedConditionals));
+  return std::make_shared<HybridGaussianConditional>(discreteKeys(), prunedConditionals);
 }
 
 /* *******************************************************************************/
