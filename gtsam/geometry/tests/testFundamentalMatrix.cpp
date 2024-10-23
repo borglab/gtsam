@@ -1,6 +1,6 @@
 /*
  * @file testFundamentalMatrix.cpp
- * @brief Test FundamentalMatrix class
+ * @brief Test FundamentalMatrix classes
  * @author Frank Dellaert
  * @date October 23, 2024
  */
@@ -45,6 +45,38 @@ TEST(FundamentalMatrix, RoundTrip) {
   d << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
   FundamentalMatrix hx = trueF.retract(d);
   Vector actual = trueF.localCoordinates(hx);
+  EXPECT(assert_equal(d, actual, 1e-8));
+}
+
+//*************************************************************************
+// Create essential matrix and focal lengths for
+// SimpleFundamentalMatrix
+EssentialMatrix trueE;  // Assuming a default constructor is available
+double trueFa = 1.0;
+double trueFb = 1.0;
+Point2 trueCa(0.0, 0.0);
+Point2 trueCb(0.0, 0.0);
+SimpleFundamentalMatrix trueSimpleF(trueE, trueFa, trueFb, trueCa, trueCb);
+
+//*************************************************************************
+TEST(SimpleFundamentalMatrix, localCoordinates) {
+  Vector expected = Z_7x1;
+  Vector actual = trueSimpleF.localCoordinates(trueSimpleF);
+  EXPECT(assert_equal(expected, actual, 1e-8));
+}
+
+//*************************************************************************
+TEST(SimpleFundamentalMatrix, retract) {
+  SimpleFundamentalMatrix actual = trueSimpleF.retract(Z_9x1);
+  EXPECT(assert_equal(trueSimpleF, actual));
+}
+
+//*************************************************************************
+TEST(SimpleFundamentalMatrix, RoundTrip) {
+  Vector7 d;
+  d << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
+  SimpleFundamentalMatrix hx = trueSimpleF.retract(d);
+  Vector actual = trueSimpleF.localCoordinates(hx);
   EXPECT(assert_equal(d, actual, 1e-8));
 }
 
