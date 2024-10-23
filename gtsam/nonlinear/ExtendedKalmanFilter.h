@@ -21,6 +21,7 @@
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 
@@ -54,6 +55,8 @@ class ExtendedKalmanFilter {
  protected:
   T x_;                                     // linearization point
   JacobianFactor::shared_ptr priorFactor_;  // Gaussian density on x_
+  GaussianFactorGraph::shared_ptr lastLinearization;
+  Key lastLinearizationPointKey;
 
   static T solve_(const GaussianFactorGraph& linearFactorGraph, const Values& linearizationPoints,
                   Key x, JacobianFactor::shared_ptr* newPrior);

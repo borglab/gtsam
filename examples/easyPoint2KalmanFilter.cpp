@@ -100,7 +100,7 @@ int main() {
   Symbol x2('x',2);
   difference = Point2(1,0);
   BetweenFactor<Point2> factor3(x1, x2, difference, Q);
-  Point2 x2_predict = ekf.predict(factor1);
+  Point2 x2_predict = ekf.predict(factor3);
   traits<Point2>::Print(x2_predict, "X2 Predict");
 
   // Update

@@ -63,11 +63,12 @@ namespace gtsam {
   template <class VALUE>
   ExtendedKalmanFilter<VALUE>::ExtendedKalmanFilter(
       Key key_initial, T x_initial, noiseModel::Gaussian::shared_ptr P_initial)
-      : x_(x_initial)  // Set the initial linearization point
+      : x_(x_initial), lastLinearization(nullptr)  // Set the initial linearization point
   {
     // Create a Jacobian Prior Factor directly P_initial.
     // Since x0 is set to the provided mean, the b vector in the prior will be zero
-    // TODO(Frank): is there a reason why noiseModel is not simply P_initial?
+    // The reason why noiseModel is not simply P_initial is that a JacobianFactor only
+    // accepts Diagonal noise models.
     int n = traits<T>::GetDimension(x_initial);
     priorFactor_ = JacobianFactor::shared_ptr(
         new JacobianFactor(key_initial, P_initial->R(), Vector::Zero(n),
@@ -81,20 +82,39 @@ namespace gtsam {
     const auto keys = motionFactor.keys();
 
     // Create a Gaussian Factor Graph
-    GaussianFactorGraph linearFactorGraph;
+    GaussianFactorGraph::shared_ptr linearFactorGraph = std::make_shared<GaussianFactorGraph>();
 
     // Add in previous posterior as prior on the first state
-    linearFactorGraph.push_back(priorFactor_);
+    linearFactorGraph->push_back(priorFactor_);
 
     // Linearize motion model and add it to the Kalman Filter graph
     Values linearizationPoint;
-    linearizationPoint.insert(keys[0], x_);
-    linearizationPoint.insert(keys[1], x_); // TODO should this really be x_ ?
-    linearFactorGraph.push_back(motionFactor.linearize(linearizationPoint));
+
+    // If we have already run once
+    if (lastLinearization != nullptr) {
+      auto new_prior = std::make_shared<JacobianFactor>(*priorFactor_);
+      new_prior->keys()[0] = lastLinearizationPointKey;
+
+      Values lastLinearizationPoint;
+      lastLinearizationPoint.insert(lastLinearizationPointKey, x_);
+      lastLinearizationPoint.insert(keys[0], x_);
+      T linearEstimate = solve_(*lastLinearization, lastLinearizationPoint, keys[0], &new_prior);
+
+      linearizationPoint.insert(keys[0], x_);
+      linearizationPoint.insert(keys[1], linearEstimate);
+    } else {
+      linearizationPoint.insert(keys[0], x_);
+      linearizationPoint.insert(keys[1], x_);
+    }
+
+    linearFactorGraph->push_back(motionFactor.linearize(linearizationPoint));
 
     // Solve the factor graph and update the current state estimate
     // and the posterior for the next iteration.
-    x_ = solve_(linearFactorGraph, linearizationPoint, keys[1], &priorFactor_);
+    x_ = solve_(*linearFactorGraph, linearizationPoint, keys[1], &priorFactor_);
+
+    lastLinearization.swap(linearFactorGraph);
+    lastLinearizationPointKey = keys[0];
 
     return x_;
   }
