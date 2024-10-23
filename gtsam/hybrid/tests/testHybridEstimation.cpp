@@ -37,6 +37,8 @@
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
 
+#include <string>
+
 #include "Switching.h"
 
 using namespace std;
@@ -55,13 +57,16 @@ std::vector<size_t> discrete_seq = {1, 1, 0, 0, 0, 1, 1, 1, 1, 0,
 Switching InitializeEstimationProblem(
     const size_t K, const double between_sigma, const double measurement_sigma,
     const std::vector<double>& measurements,
-    const std::string& discrete_transition_prob,
+    const std::string& transitionProbabilityTable,
     HybridNonlinearFactorGraph& graph, Values& initial) {
   Switching switching(K, between_sigma, measurement_sigma, measurements,
-                      discrete_transition_prob);
+                      transitionProbabilityTable);
+
+  // Add prior on M(0)
+  graph.push_back(switching.modeChain.at(0));
 
   // Add the X(0) prior
-  graph.push_back(switching.nonlinearFactorGraph.at(0));
+  graph.push_back(switching.unaryFactors.at(0));
   initial.insert(X(0), switching.linearizationPoint.at<double>(X(0)));
 
   return switching;
@@ -128,10 +133,9 @@ TEST(HybridEstimation, IncrementalSmoother) {
 
   constexpr size_t maxNrLeaves = 3;
   for (size_t k = 1; k < K; k++) {
-    // Motion Model
-    graph.push_back(switching.nonlinearFactorGraph.at(k));
-    // Measurement
-    graph.push_back(switching.nonlinearFactorGraph.at(k + K - 1));
+    if (k > 1) graph.push_back(switching.modeChain.at(k - 1));  // Mode chain
+    graph.push_back(switching.binaryFactors.at(k - 1));         // Motion Model
+    graph.push_back(switching.unaryFactors.at(k));              // Measurement
 
     initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
 
@@ -176,10 +180,9 @@ TEST(HybridEstimation, ValidPruningError) {
 
   constexpr size_t maxNrLeaves = 3;
   for (size_t k = 1; k < K; k++) {
-    // Motion Model
-    graph.push_back(switching.nonlinearFactorGraph.at(k));
-    // Measurement
-    graph.push_back(switching.nonlinearFactorGraph.at(k + K - 1));
+    if (k > 1) graph.push_back(switching.modeChain.at(k - 1));  // Mode chain
+    graph.push_back(switching.binaryFactors.at(k - 1));         // Motion Model
+    graph.push_back(switching.unaryFactors.at(k));              // Measurement
 
     initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
 
@@ -225,15 +228,17 @@ TEST(HybridEstimation, ISAM) {
 
   HybridGaussianFactorGraph linearized;
 
+  const size_t maxNrLeaves = 3;
   for (size_t k = 1; k < K; k++) {
-    // Motion Model
-    graph.push_back(switching.nonlinearFactorGraph.at(k));
-    // Measurement
-    graph.push_back(switching.nonlinearFactorGraph.at(k + K - 1));
+    if (k > 1) graph.push_back(switching.modeChain.at(k - 1));  // Mode chain
+    graph.push_back(switching.binaryFactors.at(k - 1));         // Motion Model
+    graph.push_back(switching.unaryFactors.at(k));              // Measurement
 
     initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
 
-    isam.update(graph, initial, 3);
+    isam.update(graph, initial, maxNrLeaves);
+    // isam.saveGraph("NLiSAM" + std::to_string(k) + ".dot");
+    // GTSAM_PRINT(isam);
 
     graph.resize(0);
     initial.clear();
@@ -339,12 +344,8 @@ TEST(HybridEstimation, Probability) {
   HybridValues hybrid_values = bayesNet->optimize();
 
   // This is the correct sequence as designed
-  DiscreteValues discrete_seq;
-  discrete_seq[M(0)] = 1;
-  discrete_seq[M(1)] = 1;
-  discrete_seq[M(2)] = 0;
-
-  EXPECT(assert_equal(discrete_seq, hybrid_values.discrete()));
+  DiscreteValues expectedSequence{{M(0), 1}, {M(1), 1}, {M(2), 0}};
+  EXPECT(assert_equal(expectedSequence, hybrid_values.discrete()));
 }
 
 /****************************************************************************/
@@ -411,12 +412,8 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
   HybridValues hybrid_values = discreteBayesTree->optimize();
 
   // This is the correct sequence as designed
-  DiscreteValues discrete_seq;
-  discrete_seq[M(0)] = 1;
-  discrete_seq[M(1)] = 1;
-  discrete_seq[M(2)] = 0;
-
-  EXPECT(assert_equal(discrete_seq, hybrid_values.discrete()));
+  DiscreteValues expectedSequence{{M(0), 1}, {M(1), 1}, {M(2), 0}};
+  EXPECT(assert_equal(expectedSequence, hybrid_values.discrete()));
 }
 
 /*********************************************************************************

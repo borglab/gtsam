@@ -216,8 +216,8 @@ TEST(HybridNonlinearFactorGraph, PushBack) {
 TEST(HybridNonlinearFactorGraph, ErrorTree) {
   Switching s(3);
 
-  HybridNonlinearFactorGraph graph = s.nonlinearFactorGraph;
-  Values values = s.linearizationPoint;
+  const HybridNonlinearFactorGraph &graph = s.nonlinearFactorGraph();
+  const Values &values = s.linearizationPoint;
 
   auto error_tree = graph.errorTree(s.linearizationPoint);
 
@@ -248,7 +248,7 @@ TEST(HybridNonlinearFactorGraph, ErrorTree) {
 TEST(HybridNonlinearFactorGraph, Switching) {
   Switching self(3);
 
-  EXPECT_LONGS_EQUAL(7, self.nonlinearFactorGraph.size());
+  EXPECT_LONGS_EQUAL(7, self.nonlinearFactorGraph().size());
   EXPECT_LONGS_EQUAL(7, self.linearizedFactorGraph.size());
 }
 
@@ -260,7 +260,7 @@ TEST(HybridNonlinearFactorGraph, Linearization) {
 
   // Linearize here:
   HybridGaussianFactorGraph actualLinearized =
-      *self.nonlinearFactorGraph.linearize(self.linearizationPoint);
+      *self.nonlinearFactorGraph().linearize(self.linearizationPoint);
 
   EXPECT_LONGS_EQUAL(7, actualLinearized.size());
 }
@@ -409,7 +409,7 @@ TEST(HybridNonlinearFactorGraph, Partial_Elimination) {
 /* ****************************************************************************/
 TEST(HybridNonlinearFactorGraph, Error) {
   Switching self(3);
-  HybridNonlinearFactorGraph fg = self.nonlinearFactorGraph;
+  HybridNonlinearFactorGraph fg = self.nonlinearFactorGraph();
 
   {
     HybridValues values(VectorValues(), DiscreteValues{{M(0), 0}, {M(1), 0}},
@@ -441,8 +441,9 @@ TEST(HybridNonlinearFactorGraph, Error) {
 TEST(HybridNonlinearFactorGraph, PrintErrors) {
   Switching self(3);
 
-  // Get nonlinear factor graph and add linear factors to be holistic
-  HybridNonlinearFactorGraph fg = self.nonlinearFactorGraph;
+  // Get nonlinear factor graph and add linear factors to be holistic.
+  // TODO(Frank): ???
+  HybridNonlinearFactorGraph fg = self.nonlinearFactorGraph();
   fg.add(self.linearizedFactorGraph);
 
   // Optimize to get HybridValues

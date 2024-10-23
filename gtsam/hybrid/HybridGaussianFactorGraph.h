@@ -133,6 +133,14 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       : Base(factors) {}
 
   /**
+   * Construct from an initializer lists of GaussianFactor shared pointers.
+   * Example:
+   *   HybridGaussianFactorGraph graph = { factor1, factor2, factor3 };
+   */
+  HybridGaussianFactorGraph(std::initializer_list<sharedFactor> factors)
+      : Base(factors) {}
+
+  /**
    * Implicit copy/downcast constructor to override explicit template container
    * constructor. In BayesTree this is used for:
    * `cachedSeparatorMarginal_.reset(*separatorMarginal)`
