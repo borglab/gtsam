@@ -20,6 +20,7 @@
 
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/Assignment.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteJunctionTree.h>
@@ -47,8 +48,6 @@
 #include <stdexcept>
 #include <utility>
 #include <vector>
-
-#include "gtsam/discrete/DecisionTreeFactor.h"
 
 namespace gtsam {
 
@@ -367,6 +366,7 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
   // any difference in noise models used.
   HybridGaussianProductFactor productFactor = collectProductFactor();
 
+  // Check if a factor is null
   auto isNull = [](const GaussianFactor::shared_ptr &ptr) { return !ptr; };
 
   // This is the elimination method on the leaf nodes
