@@ -22,13 +22,12 @@
 namespace gtsam {
 
 template <typename F>
-struct TransferFactor {
+struct TripletError {
   Point2 p0, p1, p2;
 
   /// vector of errors returns 6D vector
   Vector evaluateError(const F& F01, const F& F12, const F& F20,  //
                        Matrix* H01, Matrix* H12, Matrix* H20) const {
-    Vector error(6);
     std::function<Vector6(F, F, F)> fn = [&](const F& F01, const F& F12,
                                              const F& F20) {
       Vector6 error;
@@ -42,6 +41,25 @@ struct TransferFactor {
     if (H12) *H12 = numericalDerivative32<Vector6, F, F, F>(fn, F01, F12, F20);
     if (H20) *H20 = numericalDerivative33<Vector6, F, F, F>(fn, F01, F12, F20);
     return fn(F01, F12, F20);
+  }
+};
+
+template <typename F>
+struct TransferFactor {
+  Point2 p0, p1, p2;
+
+  /// vector of errors returns 2D vector
+  Vector evaluateError(const F& F12, const F& F20,  //
+                       Matrix* H12, Matrix* H20) const {
+    std::function<Vector2(F, F)> fn = [&](const F& F12, const F& F20) {
+      Vector2 error;
+      error <<  //
+          F::transfer(F20.matrix(), p0, F12.matrix().transpose(), p1) - p2;
+      return error;
+    };
+    if (H12) *H12 = numericalDerivative21<Vector2, F, F>(fn, F12, F20);
+    if (H20) *H20 = numericalDerivative22<Vector2, F, F>(fn, F12, F20);
+    return fn(F12, F20);
   }
 };
 
