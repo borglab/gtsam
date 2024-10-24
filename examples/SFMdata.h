@@ -78,12 +78,27 @@ std::vector<Pose3> createPoses(
 /**
  * Create regularly spaced poses with specified radius and number of cameras
  */
-std::vector<Pose3> posesOnCircle(int num_cameras = 8, double radius = 30) {
-  const Pose3 init(Rot3::Ypr(M_PI_2, 0, -M_PI_2), {radius, 0, 0});
-  const double theta = M_PI / num_cameras;
-  const Pose3 delta(
-      Rot3::Ypr(0, -2 * theta, 0),
-      {sin(2 * theta) * radius, 0, radius * (1 - sin(2 * theta))});
+std::vector<Pose3> posesOnCircle(int num_cameras = 8, double R = 30) {
+  const double theta = 2 * M_PI / num_cameras;
+
+  // Initial pose at angle 0, position (R, 0, 0), facing the center with Y-axis
+  // pointing down
+  const Pose3 init(Rot3::Ypr(M_PI_2, 0, -M_PI_2), {R, 0, 0});
+
+  // Delta rotation: rotate by -theta around Z-axis (counterclockwise movement)
+  Rot3 delta_rotation = Rot3::Ypr(0, -theta, 0);
+
+  // Delta translation in world frame
+  Vector3 delta_translation_world(R * (cos(theta) - 1), R * sin(theta), 0);
+
+  // Transform delta translation to local frame of the camera
+  Vector3 delta_translation_local =
+      init.rotation().inverse() * delta_translation_world;
+
+  // Define delta pose
+  const Pose3 delta(delta_rotation, delta_translation_local);
+
+  // Generate poses using createPoses
   return createPoses(init, delta, num_cameras);
 }
 }  // namespace gtsam
