@@ -21,7 +21,7 @@ namespace gtsam {
  * classes. The `matrix()` function returns a 3x3 matrix representation of the
  * fundamental matrix.
  */
-class FundamentalMatrix {
+class GTSAM_EXPORT FundamentalMatrix {
  public:
   /**
    * @brief Returns a 3x3 matrix representation of the fundamental matrix
@@ -65,7 +65,7 @@ struct TripleF {
 
   /// Transfers a point from camera 0,1 to camera 2.
   Point2 transfer2(const Point2& p0, const Point2& p1) {
-    return FundamentalMatrix::transfer(F01.matrix(), p0,
+    return FundamentalMatrix::transfer(F20.matrix(), p0,
                                        F12.matrix().transpose(), p1);
   }
 };
@@ -78,7 +78,7 @@ struct TripleF {
  * that describes the relationship between two images. It is parameterized by a
  * left rotation U, a scalar s, and a right rotation V.
  */
-class GeneralFundamentalMatrix : public FundamentalMatrix {
+class GTSAM_EXPORT GeneralFundamentalMatrix : public FundamentalMatrix {
  private:
   Rot3 U_;    ///< Left rotation
   double s_;  ///< Scalar parameter for S
@@ -146,7 +146,7 @@ class GeneralFundamentalMatrix : public FundamentalMatrix {
  * parameterization of the essential matrix and focal lengths for left and right
  * cameras. Principal points are not part of the manifold but a convenience.
  */
-class SimpleFundamentalMatrix : public FundamentalMatrix {
+class GTSAM_EXPORT SimpleFundamentalMatrix : public FundamentalMatrix {
  private:
   EssentialMatrix E_;  ///< Essential matrix
   double fa_;          ///< Focal length for left camera
