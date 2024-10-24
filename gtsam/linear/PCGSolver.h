@@ -42,7 +42,7 @@ struct GTSAM_EXPORT PCGSolverParameters : public ConjugateGradientParameters {
   PCGSolverParameters() {}
 
   PCGSolverParameters(
-      const std::shared_ptr<PreconditionerParameters> &preconditioner)
+      const std::shared_ptr<PreconditionerParameters> preconditioner)
       : preconditioner(preconditioner) {}
 
   void print(std::ostream &os) const override;
