@@ -213,9 +213,10 @@ class SimpleFundamentalMatrix : FundamentalMatrix {
 
   /// Print the SimpleFundamentalMatrix
   void print(const std::string& s = "") const {
-    std::cout << s << "E:\n"
+    std::cout << s << " E:\n"
               << E_.matrix() << "\nfa: " << fa_ << "\nfb: " << fb_
-              << "\nca: " << ca_ << "\ncb: " << cb_ << std::endl;
+              << "\nca: " << ca_.transpose() << "\ncb: " << cb_.transpose()
+              << std::endl;
   }
 
   /// Check equality within a tolerance
