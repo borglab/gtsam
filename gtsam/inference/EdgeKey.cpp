@@ -20,9 +20,12 @@
 
 namespace gtsam {
 
-// Output stream operator implementation
+EdgeKey::operator std::string() const {
+  return "{" + std::to_string(i_) + ", " + std::to_string(j_) + "}";
+}
+
 GTSAM_EXPORT std::ostream& operator<<(std::ostream& os, const EdgeKey& key) {
-  os << "{" << key.i() << ", " << key.j() << "}";
+  os << (std::string)key;
   return os;
 }
 

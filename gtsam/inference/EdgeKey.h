@@ -37,6 +37,10 @@ class GTSAM_EXPORT EdgeKey {
   /// Constructor
   EdgeKey(std::uint32_t i, std::uint32_t j) : i_(i), j_(j) {}
 
+  EdgeKey(Key key)
+      : i_(static_cast<std::uint32_t>(key >> 32)),
+        j_(static_cast<std::uint32_t>(key)) {}
+
   /// @}
   /// @name API
   /// @{
@@ -49,6 +53,9 @@ class GTSAM_EXPORT EdgeKey {
 
   /// Retrieve low 32 bits
   inline std::uint32_t j() const { return j_; }
+
+  /** Create a string from the key */
+  operator std::string() const;
 
   /// Output stream operator
   friend GTSAM_EXPORT std::ostream& operator<<(std::ostream&, const EdgeKey&);
