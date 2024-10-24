@@ -29,6 +29,66 @@ class FundamentalMatrix {
    * @return A 3x3 matrix representing the fundamental matrix
    */
   virtual Matrix3 matrix() const = 0;
+
+  /**
+   * @brief Virtual destructor to ensure proper cleanup of derived classes
+   */
+  virtual ~FundamentalMatrix() {}
+
+  /**
+   * @brief Transfer projections from cameras 1 and 2 to camera 0
+   *
+   * Take two fundamental matrices F01 and F02, and two points p1 and p2, and
+   * returns the 2D point in camera 0 where the epipolar lines intersect.
+   */
+  static Point2 transfer(const Matrix3& F01, const Point2& p1,
+                         const Matrix3& F02, const Point2& p2) {
+    // Create lines in camera 0 from projections of the other two cameras
+    Vector3 line1 = F01 * Vector3(p1.x(), p1.y(), 1);
+    Vector3 line2 = F02 * Vector3(p2.x(), p2.y(), 1);
+
+    // Cross the lines to find the intersection point
+    Vector3 intersectionPoint = line1.cross(line2);
+
+    // Normalize the intersection point
+    intersectionPoint /= intersectionPoint(2);
+
+    return intersectionPoint.head<2>();  // Return the 2D point
+  }
+};
+
+/// Represents a set of three fundamental matrices for transferring points
+/// between three cameras.
+template <typename F>
+struct TripleF {
+  F F01, F12, F20;
+
+  /// Transfers a point from two cameras to another.
+  template <size_t Index>
+  Point2 transfer(const Point2& point1, const Point2& point2) {
+    static_assert(Index < 3, "Index must be less than 3");
+  }
+
+  /// Specialization for transferring a point from cameras 1,2 to camera 0.
+  template <>
+  Point2 transfer<0>(const Point2& p1, const Point2& p2) {
+    return FundamentalMatrix::transfer(F01.matrix(), p1,
+                                       F20.matrix().transpose(), p2);
+  }
+
+  /// Specialization for transferring a point from camera 0,2 to camera 1.
+  template <>
+  Point2 transfer<1>(const Point2& p0, const Point2& p2) {
+    return FundamentalMatrix::transfer(F01.matrix().transpose(), p0,
+                                       F12.matrix(), p2);
+  }
+
+  /// Specialization for transferring a point from camera 0,1 to camera 2.
+  template <>
+  Point2 transfer<2>(const Point2& p0, const Point2& p1) {
+    return FundamentalMatrix::transfer(F01.matrix(), p0,
+                                       F12.matrix().transpose(), p1);
+  }
 };
 
 /**

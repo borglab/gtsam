@@ -171,6 +171,7 @@ TEST(stereoWithPrincipalPoints, Conversion) {
 }
 
 //*************************************************************************
+/// Generate three cameras on a circle, looking in
 std::array<Pose3, 3> generateCameraPoses() {
   std::array<Pose3, 3> cameraPoses;
   const double radius = 1.0;
@@ -183,9 +184,10 @@ std::array<Pose3, 3> generateCameraPoses() {
   return cameraPoses;
 }
 
-std::tuple<SimpleFundamentalMatrix, SimpleFundamentalMatrix,
-           SimpleFundamentalMatrix>
-generateFs(const std::array<Pose3, 3> &cameraPoses) {
+//*************************************************************************
+/// Function to generate a TripleF from camera poses
+TripleF<SimpleFundamentalMatrix> generateTripleF(
+    const std::array<Pose3, 3>& cameraPoses) {
   std::array<SimpleFundamentalMatrix, 3> F;
   for (size_t i = 0; i < 3; ++i) {
     size_t j = (i + 1) % 3;
@@ -193,19 +195,19 @@ generateFs(const std::array<Pose3, 3> &cameraPoses) {
     EssentialMatrix E(iPj.rotation(), Unit3(iPj.translation()));
     F[i] = {E, focalLength, focalLength, principalPoint, principalPoint};
   }
-  return {F[0], F[1], F[2]};
+  return {F[0], F[1], F[2]};  // Return a TripleF instance
 }
 
 //*************************************************************************
-TEST(Triplet, Transfer) {
+TEST(TripleF, Transfer) {
   // Generate cameras on a circle, as well as fundamental matrices
   auto cameraPoses = generateCameraPoses();
-  auto [F01, F12, F20] = generateFs(cameraPoses);
+  auto triplet = generateTripleF(cameraPoses);
 
   // Check that they are all equal
-  EXPECT(F01.equals(F12, 1e-9));
-  EXPECT(F12.equals(F20, 1e-9));
-  EXPECT(F20.equals(F01, 1e-9));
+  EXPECT(triplet.F01.equals(triplet.F12, 1e-9));
+  EXPECT(triplet.F12.equals(triplet.F20, 1e-9));
+  EXPECT(triplet.F20.equals(triplet.F01, 1e-9));
 
   // Now project a point into the three cameras
   const Point3 P(0.1, 0.2, 0.3);
@@ -219,19 +221,12 @@ TEST(Triplet, Transfer) {
     p[i] = camera.project(P);
   }
 
-  // Create lines in camera 0 from projections 1 and 2
-  Vector3 line1 = F01.matrix() * Vector3(p[1].x(), p[1].y(), 1);
-  Vector3 line2 = F20.matrix().transpose() * Vector3(p[2].x(), p[2].y(), 1);
-
-  // Cross the lines to find the intersection point
-  Vector3 intersectionPoint = line1.cross(line2);
-
-  // Normalize the intersection point
-  intersectionPoint /= intersectionPoint(2);
-
-  // Compare the intersection point with the original projection in camera 0
-  EXPECT(assert_equal<Point2>(p[0], intersectionPoint.head<2>(), 1e-9));
+  // Check that transfer works
+  EXPECT(assert_equal<Point2>(p[0], triplet.transfer<0>(p[1], p[2]), 1e-9));
+  EXPECT(assert_equal<Point2>(p[1], triplet.transfer<1>(p[0], p[2]), 1e-9));
+  EXPECT(assert_equal<Point2>(p[2], triplet.transfer<2>(p[0], p[1]), 1e-9));
 }
+
 //*************************************************************************
 int main() {
   TestResult tr;
