@@ -49,35 +49,120 @@ TEST(GeneralFundamentalMatrix, RoundTrip) {
 }
 
 //*************************************************************************
-// Create essential matrix and focal lengths for
-// SimpleFundamentalMatrix
-EssentialMatrix trueE;  // Assuming a default constructor is available
-double trueFa = 1.0;
-double trueFb = 1.0;
-Point2 trueCa(0.0, 0.0);
-Point2 trueCb(0.0, 0.0);
-SimpleFundamentalMatrix trueSimpleF(trueE, trueFa, trueFb, trueCa, trueCb);
+// Create the simplest SimpleFundamentalMatrix, a stereo pair
+EssentialMatrix defaultE(Rot3(), Unit3(1, 0, 0));
+Point2 zero(0.0, 0.0);
+SimpleFundamentalMatrix stereoF(defaultE, 1.0, 1.0, zero, zero);
 
 //*************************************************************************
-TEST(SimpleFundamentalMatrix, localCoordinates) {
+TEST(SimpleStereo, Conversion) {
+  GeneralFundamentalMatrix convertedF(stereoF.matrix());
+  EXPECT(assert_equal(stereoF.matrix(), convertedF.matrix(), 1e-8));
+}
+
+//*************************************************************************
+TEST(SimpleStereo, localCoordinates) {
   Vector expected = Z_7x1;
-  Vector actual = trueSimpleF.localCoordinates(trueSimpleF);
+  Vector actual = stereoF.localCoordinates(stereoF);
   EXPECT(assert_equal(expected, actual, 1e-8));
 }
 
 //*************************************************************************
-TEST(SimpleFundamentalMatrix, retract) {
-  SimpleFundamentalMatrix actual = trueSimpleF.retract(Z_9x1);
-  EXPECT(assert_equal(trueSimpleF, actual));
+TEST(SimpleStereo, retract) {
+  SimpleFundamentalMatrix actual = stereoF.retract(Z_9x1);
+  EXPECT(assert_equal(stereoF, actual));
 }
 
 //*************************************************************************
-TEST(SimpleFundamentalMatrix, RoundTrip) {
+TEST(SimpleStereo, RoundTrip) {
   Vector7 d;
   d << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
-  SimpleFundamentalMatrix hx = trueSimpleF.retract(d);
-  Vector actual = trueSimpleF.localCoordinates(hx);
+  SimpleFundamentalMatrix hx = stereoF.retract(d);
+  Vector actual = stereoF.localCoordinates(hx);
   EXPECT(assert_equal(d, actual, 1e-8));
+}
+
+//*************************************************************************
+TEST(SimpleStereo, EpipolarLine) {
+  // Create a point in b
+  Point3 p_b(0, 2, 1);
+  // Convert the point to a horizontal line in a
+  Vector3 l_a = stereoF.matrix() * p_b;
+  // Check if the line is horizontal at height 2
+  EXPECT(assert_equal(Vector3(0, -1, 2), l_a));
+}
+
+//*************************************************************************
+// Create a stereo pair, but in pixels not normalized coordinates.
+// We're still using zero principal points here.
+double fa = 1000;
+double fb = 1000;
+SimpleFundamentalMatrix pixelStereo(defaultE, fa, fb, zero, zero);
+
+//*************************************************************************
+TEST(PixelStereo, Conversion) {
+  auto expected = pixelStereo.matrix();
+
+  GeneralFundamentalMatrix convertedF(pixelStereo.matrix());
+
+  // Check equality of F-matrices up to a scale
+  auto actual = convertedF.matrix();
+  actual *= expected(1, 2) / actual(1, 2);
+  EXPECT(assert_equal(expected, actual, 1e-5));
+}
+
+//*************************************************************************
+TEST(PixelStereo, PointInBToHorizontalLineInA) {
+  // Create a point in b
+  Point3 p_b = Point3(0, 300, 1);
+  // Convert the point to a horizontal line in a
+  Vector3 l_a = pixelStereo.matrix() * p_b;
+  // Check if the line is horizontal at height 2
+  EXPECT(assert_equal(Vector3(0, -0.001, 0.3), l_a));
+}
+
+//*************************************************************************
+// Create a stereo pair with the right camera rotated 90 degrees
+Rot3 aRb = Rot3::Rz(M_PI_2);  // Rotate 90 degrees around the Z-axis
+EssentialMatrix rotatedE(aRb, Unit3(1, 0, 0));
+SimpleFundamentalMatrix rotatedPixelStereo(rotatedE, fa, fb, zero, zero);
+
+//*************************************************************************
+TEST(RotatedPixelStereo, Conversion) {
+  auto expected = rotatedPixelStereo.matrix();
+
+  GeneralFundamentalMatrix convertedF(rotatedPixelStereo.matrix());
+
+  // Check equality of F-matrices up to a scale
+  auto actual = convertedF.matrix();
+  actual *= expected(1, 2) / actual(1, 2);
+  EXPECT(assert_equal(expected, actual, 1e-4));
+}
+
+//*************************************************************************
+TEST(RotatedPixelStereo, PointInBToHorizontalLineInA) {
+  // Create a point in b
+  Point3 p_b = Point3(300, 0, 1);
+  // Convert the point to a horizontal line in a
+  Vector3 l_a = rotatedPixelStereo.matrix() * p_b;
+  // Check if the line is horizontal at height 2
+  EXPECT(assert_equal(Vector3(0, -0.001, 0.3), l_a));
+}
+
+//*************************************************************************
+// Now check that principal points also survive conversion
+SimpleFundamentalMatrix stereoWithPrincipalPoints(rotatedE, fa, fb, zero, zero);
+
+//*************************************************************************
+TEST(stereoWithPrincipalPoints, Conversion) {
+  auto expected = stereoWithPrincipalPoints.matrix();
+
+  GeneralFundamentalMatrix convertedF(stereoWithPrincipalPoints.matrix());
+
+  // Check equality of F-matrices up to a scale
+  auto actual = convertedF.matrix();
+  actual *= expected(1, 2) / actual(1, 2);
+  EXPECT(assert_equal(expected, actual, 1e-4));
 }
 
 //*************************************************************************

@@ -62,9 +62,58 @@ class GeneralFundamentalMatrix : public FundamentalMatrix {
   GeneralFundamentalMatrix(const Rot3& U, double s, const Rot3& V)
       : U_(U), s_(s), V_(V) {}
 
+  /**
+   * @brief Construct from a 3x3 matrix using SVD
+   *
+   * Initializes the GeneralFundamentalMatrix by performing SVD on the given
+   * matrix and ensuring U and V are not reflections.
+   *
+   * @param F A 3x3 matrix representing the fundamental matrix
+   */
+  GeneralFundamentalMatrix(const Matrix3& F) {
+    // Perform SVD
+    Eigen::JacobiSVD<Matrix3> svd(F, Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+    // Extract U and V
+    Matrix3 U = svd.matrixU();
+    Matrix3 V = svd.matrixV();
+    Vector3 singularValues = svd.singularValues();
+
+    // Scale the singular values
+    double scale = singularValues(0);
+    if (scale != 0) {
+      singularValues /= scale;  // Normalize the first singular value to 1.0
+    }
+
+    // Check if the third singular value is close to zero (valid F condition)
+    if (std::abs(singularValues(2)) > 1e-9) {
+      throw std::invalid_argument(
+          "The input matrix does not represent a valid fundamental matrix.");
+    }
+
+    // Ensure the second singular value is recorded as s
+    s_ = singularValues(1);
+
+    // Check if U is a reflection
+    if (U.determinant() < 0) {
+      U = -U;
+      s_ = -s_;  // Change sign of scalar if U is a reflection
+    }
+
+    // Check if V is a reflection
+    if (V.determinant() < 0) {
+      V = -V;
+      s_ = -s_;  // Change sign of scalar if U is a reflection
+    }
+
+    // Assign the rotations
+    U_ = Rot3(U);
+    V_ = Rot3(V);
+  }
+
   /// Return the fundamental matrix representation
   Matrix3 matrix() const override {
-    return U_.matrix() * Vector3(1, s_, 1).asDiagonal() *
+    return U_.matrix() * Vector3(1, s_, 0).asDiagonal() *
            V_.transpose().matrix();
   }
 
@@ -141,14 +190,24 @@ class SimpleFundamentalMatrix : FundamentalMatrix {
                           const Point2& cb = Point2(0.0, 0.0))
       : E_(E), fa_(fa), fb_(fb), ca_(ca), cb_(cb) {}
 
-  /// Return the fundamental matrix representation
-  Matrix3 matrix() const override {
-    Matrix3 Ka, Kb;
-    Ka << fa_, 0, ca_.x(), 0, fa_, ca_.y(), 0, 0, 1;  // Left calibration
-    Kb << fb_, 0, cb_.x(), 0, fb_, cb_.y(), 0, 0, 1;  // Right calibration
-    return Ka * E_.matrix() * Kb.inverse();
+  /// Return the left calibration matrix
+  Matrix3 leftK() const {
+    Matrix3 K;
+    K << fa_, 0, ca_.x(), 0, fa_, ca_.y(), 0, 0, 1;
+    return K;
   }
 
+  /// Return the right calibration matrix
+  Matrix3 rightK() const {
+    Matrix3 K;
+    K << fb_, 0, cb_.x(), 0, fb_, cb_.y(), 0, 0, 1;
+    return K;
+  }
+
+  /// Return the fundamental matrix representation
+  Matrix3 matrix() const override {
+    return leftK().transpose().inverse() * E_.matrix() * rightK().inverse();
+  }
   /// @name Testable
   /// @{
 
