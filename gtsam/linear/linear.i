@@ -733,10 +733,10 @@ virtual class BlockJacobiPreconditionerParameters : gtsam::PreconditionerParamet
 #include <gtsam/linear/PCGSolver.h>
 virtual class PCGSolverParameters : gtsam::ConjugateGradientParameters {
   PCGSolverParameters();
-  PCGSolverParameters(gtsam::PreconditionerParameters* preconditioner);
+  PCGSolverParameters(const gtsam::PreconditionerParameters* preconditioner);
   void print(string s = "");
-  
-  gtsam::PreconditionerParameters* preconditioner;
+
+  std::shared_ptr<gtsam::PreconditionerParameters> preconditioner;
 };
 
 #include <gtsam/linear/SubgraphSolver.h>
