@@ -198,35 +198,6 @@ TripleF<SimpleFundamentalMatrix> generateTripleF(
 }
 
 //*************************************************************************
-
-struct TripletFactor {
-  using F = FundamentalMatrix;
-  using SF = SimpleFundamentalMatrix;
-  Point2 p0, p1, p2;
-
-  /// vector of errors returns 6D vector
-  Vector evaluateError(const SF& F01, const SF& F12, const SF& F20,  //
-                       Matrix* H01, Matrix* H12, Matrix* H20) const {
-    Vector error(6);
-    std::function<Vector6(SF, SF, SF)> fn = [&](const SF& F01, const SF& F12,
-                                                const SF& F20) {
-      Vector6 error;
-      error << F::transfer(F01.matrix(), p1, F20.matrix().transpose(), p2) - p0,
-          F::transfer(F01.matrix().transpose(), p0, F12.matrix(), p2) - p1,
-          F::transfer(F20.matrix(), p0, F12.matrix().transpose(), p1) - p2;
-      return error;
-    };
-    if (H01)
-      *H01 = numericalDerivative31<Vector6, SF, SF, SF>(fn, F01, F12, F20);
-    if (H12)
-      *H12 = numericalDerivative32<Vector6, SF, SF, SF>(fn, F01, F12, F20);
-    if (H20)
-      *H20 = numericalDerivative33<Vector6, SF, SF, SF>(fn, F01, F12, F20);
-    return fn(F01, F12, F20);
-  }
-};
-
-//*************************************************************************
 TEST(TripleF, Transfer) {
   // Generate cameras on a circle, as well as fundamental matrices
   auto cameraPoses = generateCameraPoses();
