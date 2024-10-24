@@ -45,12 +45,19 @@ struct TripletError {
 };
 
 template <typename F>
-struct TransferFactor {
+class TransferFactor : public NoiseModelFactorN<F, F> {
   Point2 p0, p1, p2;
+
+ public:
+  // Constructor
+  TransferFactor(Key key1, Key key2, const Point2& p0, const Point2& p1,
+                 const Point2& p2, const SharedNoiseModel& model = nullptr)
+      : NoiseModelFactorN<F, F>(model, key1, key2), p0(p0), p1(p1), p2(p2) {}
 
   /// vector of errors returns 2D vector
   Vector evaluateError(const F& F12, const F& F20,  //
-                       Matrix* H12, Matrix* H20) const {
+                       OptionalMatrixType H12 = nullptr,
+                       OptionalMatrixType H20 = nullptr) const override {
     std::function<Vector2(F, F)> fn = [&](const F& F12, const F& F20) {
       Vector2 error;
       error <<  //

@@ -80,7 +80,7 @@ TEST(TransferFactor, Jacobians) {
   std::cout << H20 << std::endl;
 
   // Create a TransferFactor
-  TransferFactor<SimpleFundamentalMatrix> factor{p[0], p[1], p[2]};
+  TransferFactor<SimpleFundamentalMatrix> factor{0, 1, p[0], p[1], p[2]};
   Matrix H0, H1;
   Vector e2 = factor.evaluateError(triplet.F12, triplet.F20, &H0, &H1);
   std::cout << "Error: " << e2 << std::endl;
@@ -89,9 +89,9 @@ TEST(TransferFactor, Jacobians) {
 
   // Check Jacobians
   Values values;
-  values.insert(1, triplet.F12);
-  values.insert(2, triplet.F20);
-  // EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-7);
+  values.insert(0, triplet.F12);
+  values.insert(1, triplet.F20);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-7);
 }
 
 //*************************************************************************
