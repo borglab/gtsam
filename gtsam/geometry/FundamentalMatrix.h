@@ -42,19 +42,7 @@ class FundamentalMatrix {
    * returns the 2D point in camera 0 where the epipolar lines intersect.
    */
   static Point2 transfer(const Matrix3& F01, const Point2& p1,
-                         const Matrix3& F02, const Point2& p2) {
-    // Create lines in camera 0 from projections of the other two cameras
-    Vector3 line1 = F01 * Vector3(p1.x(), p1.y(), 1);
-    Vector3 line2 = F02 * Vector3(p2.x(), p2.y(), 1);
-
-    // Cross the lines to find the intersection point
-    Vector3 intersectionPoint = line1.cross(line2);
-
-    // Normalize the intersection point
-    intersectionPoint /= intersectionPoint(2);
-
-    return intersectionPoint.head<2>();  // Return the 2D point
-  }
+                         const Matrix3& F02, const Point2& p2);
 };
 
 /// Represents a set of three fundamental matrices for transferring points

@@ -9,6 +9,23 @@
 
 namespace gtsam {
 
+//*************************************************************************
+Point2 FundamentalMatrix::transfer(const Matrix3& F01, const Point2& p1,
+                                   const Matrix3& F02, const Point2& p2) {
+  // Create lines in camera 0 from projections of the other two cameras
+  Vector3 line1 = F01 * Vector3(p1.x(), p1.y(), 1);
+  Vector3 line2 = F02 * Vector3(p2.x(), p2.y(), 1);
+
+  // Cross the lines to find the intersection point
+  Vector3 intersectionPoint = line1.cross(line2);
+
+  // Normalize the intersection point
+  intersectionPoint /= intersectionPoint(2);
+
+  return intersectionPoint.head<2>();  // Return the 2D point
+}
+
+//*************************************************************************
 GeneralFundamentalMatrix::GeneralFundamentalMatrix(const Matrix3& F) {
   // Perform SVD
   Eigen::JacobiSVD<Matrix3> svd(F, Eigen::ComputeFullU | Eigen::ComputeFullV);
@@ -83,6 +100,7 @@ GeneralFundamentalMatrix GeneralFundamentalMatrix::retract(
   return GeneralFundamentalMatrix(newU, newS, newV);
 }
 
+//*************************************************************************
 Matrix3 SimpleFundamentalMatrix::leftK() const {
   Matrix3 K;
   K << fa_, 0, ca_.x(), 0, fa_, ca_.y(), 0, 0, 1;
@@ -129,5 +147,7 @@ SimpleFundamentalMatrix SimpleFundamentalMatrix::retract(
   double newFb = fb_ + delta(6);  // Update fb
   return SimpleFundamentalMatrix(newE, newFa, newFb, ca_, cb_);
 }
+
+//*************************************************************************
 
 }  // namespace gtsam
