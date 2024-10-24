@@ -17,56 +17,83 @@
 
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/FundamentalMatrix.h>
+#include <gtsam/inference/EdgeKey.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
 
-template <typename F>
-struct TripletError {
-  Point2 p0, p1, p2;
-
-  /// vector of errors returns 6D vector
-  Vector evaluateError(const F& F01, const F& F12, const F& F20,  //
-                       Matrix* H01, Matrix* H12, Matrix* H20) const {
-    std::function<Vector6(F, F, F)> fn = [&](const F& F01, const F& F12,
-                                             const F& F20) {
-      Vector6 error;
-      error <<  //
-          F::transfer(F01.matrix(), p1, F20.matrix().transpose(), p2) - p0,
-          F::transfer(F01.matrix().transpose(), p0, F12.matrix(), p2) - p1,
-          F::transfer(F20.matrix(), p0, F12.matrix().transpose(), p1) - p2;
-      return error;
-    };
-    if (H01) *H01 = numericalDerivative31<Vector6, F, F, F>(fn, F01, F12, F20);
-    if (H12) *H12 = numericalDerivative32<Vector6, F, F, F>(fn, F01, F12, F20);
-    if (H20) *H20 = numericalDerivative33<Vector6, F, F, F>(fn, F01, F12, F20);
-    return fn(F01, F12, F20);
-  }
-};
-
+/**
+ * Binary factor in the context of Structure from Motion (SfM).
+ * It is used to transfer points between different views based on the
+ * fundamental matrices between these views. The factor computes the error
+ * between the transferred points `pi` and `pj`, and the actual point `pk` in
+ * the target view. Jacobians are done using numerical differentiation.
+ */
 template <typename F>
 class TransferFactor : public NoiseModelFactorN<F, F> {
-  Point2 p0, p1, p2;
+  EdgeKey key1_, key2_;  ///< the two EdgeKeys
+  Point2 pi, pj, pk;     ///< The points in the three views
 
  public:
-  // Constructor
-  TransferFactor(Key key1, Key key2, const Point2& p0, const Point2& p1,
-                 const Point2& p2, const SharedNoiseModel& model = nullptr)
-      : NoiseModelFactorN<F, F>(model, key1, key2), p0(p0), p1(p1), p2(p2) {}
+  /**
+   * @brief Constructor for the TransferFactor class.
+   *
+   * Uses EdgeKeys to determine how to use the two fundamental matrix unknowns
+   * F1 and F2, to transfer points pi and pj to the third view, and minimize the
+   * difference with pk.
+   *
+   * The edge keys must represent valid edges for the transfer operation,
+   * specifically one of the following configurations:
+   * - (i, k) and (j, k)
+   * - (i, k) and (k, j)
+   * - (k, i) and (j, k)
+   * - (k, i) and (k, j)
+   *
+   * @param key1 First EdgeKey specifying F1: (i, k) or (k, i).
+   * @param key2 Second EdgeKey specifying F2: (j, k) or (k, j).
+   * @param pi The point in the first view (i).
+   * @param pj The point in the second view (j).
+   * @param pk The point in the third (and transfer target) view (k).
+   * @param model An optional SharedNoiseModel that defines the noise model
+   *              for this factor. Defaults to nullptr.
+   */
+  TransferFactor(EdgeKey key1, EdgeKey key2, const Point2& pi, const Point2& pj,
+                 const Point2& pk, const SharedNoiseModel& model = nullptr)
+      : NoiseModelFactorN<F, F>(model, key1, key2),
+        key1_(key1),
+        key2_(key2),
+        pi(pi),
+        pj(pj),
+        pk(pk) {}
+
+  // Create Matrix3 objects based on EdgeKey configurations
+  std::pair<Matrix3, Matrix3> getMatrices(const F& F1, const F& F2) const {
+    // Fill Fki and Fkj based on EdgeKey configurations
+    if (key1_.i() == key2_.i()) {
+      return {F1.matrix(), F2.matrix()};
+    } else if (key1_.i() == key2_.j()) {
+      return {F1.matrix(), F2.matrix().transpose()};
+    } else if (key1_.j() == key2_.i()) {
+      return {F1.matrix().transpose(), F2.matrix()};
+    } else if (key1_.j() == key2_.j()) {
+      return {F1.matrix().transpose(), F2.matrix().transpose()};
+    } else {
+      throw std::runtime_error(
+          "TransferFactor: invalid EdgeKey configuration.");
+    }
+  }
 
   /// vector of errors returns 2D vector
-  Vector evaluateError(const F& F12, const F& F20,  //
-                       OptionalMatrixType H12 = nullptr,
-                       OptionalMatrixType H20 = nullptr) const override {
-    std::function<Vector2(F, F)> fn = [&](const F& F12, const F& F20) {
-      Vector2 error;
-      error <<  //
-          F::transfer(F20.matrix(), p0, F12.matrix().transpose(), p1) - p2;
-      return error;
+  Vector evaluateError(const F& F1, const F& F2,
+                       OptionalMatrixType H1 = nullptr,
+                       OptionalMatrixType H2 = nullptr) const override {
+    std::function<Point2(F, F)> transfer = [&](const F& F1, const F& F2) {
+      auto [Fki, Fkj] = getMatrices(F1, F2);
+      return F::transfer(Fki, pi, Fkj, pj);
     };
-    if (H12) *H12 = numericalDerivative21<Vector2, F, F>(fn, F12, F20);
-    if (H20) *H20 = numericalDerivative22<Vector2, F, F>(fn, F12, F20);
-    return fn(F12, F20);
+    if (H1) *H1 = numericalDerivative21<Point2, F, F>(transfer, F1, F2);
+    if (H2) *H2 = numericalDerivative22<Point2, F, F>(transfer, F1, F2);
+    return transfer(F1, F2) - pk;
   }
 };
 

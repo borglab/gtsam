@@ -6,19 +6,14 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/EssentialMatrix.h>
-#include <gtsam/geometry/FundamentalMatrix.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SimpleCamera.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/sfm/TransferFactor.h>
 
 using namespace gtsam;
+
+double focalLength = 1000;
+Point2 principalPoint(640 / 2, 480 / 2);
 
 //*************************************************************************
 /// Generate three cameras on a circle, looking in
@@ -34,6 +29,7 @@ std::array<Pose3, 3> generateCameraPoses() {
   return cameraPoses;
 }
 
+//*************************************************************************
 // Function to generate a TripleF from camera poses
 TripleF<SimpleFundamentalMatrix> generateTripleF(
     const std::array<Pose3, 3>& cameraPoses) {
@@ -48,9 +44,7 @@ TripleF<SimpleFundamentalMatrix> generateTripleF(
   return {F[0], F[1], F[2]};  // Return a TripleF instance
 }
 
-double focalLength = 1000;
-Point2 principalPoint(640 / 2, 480 / 2);
-
+//*************************************************************************
 // Test for TransferFactor
 TEST(TransferFactor, Jacobians) {
   // Generate cameras on a circle
@@ -70,28 +64,29 @@ TEST(TransferFactor, Jacobians) {
   }
 
   // Create a TransferFactor
-  TripletError<SimpleFundamentalMatrix> error{p[0], p[1], p[2]};
-  Matrix H01, H12, H20;
-  Vector e = error.evaluateError(triplet.F01, triplet.F12, triplet.F20, &H01,
-                                 &H12, &H20);
-  std::cout << "Error: " << e << std::endl;
-  std::cout << H01 << std::endl << std::endl;
-  std::cout << H12 << std::endl << std::endl;
-  std::cout << H20 << std::endl;
+  EdgeKey key01(0, 1), key12(1, 2), key20(2, 0);
+  TransferFactor<SimpleFundamentalMatrix>  //
+      factor0{key01, key20, p[1], p[2], p[0]},
+      factor1{key12, key01, p[2], p[0], p[1]},
+      factor2{key20, key12, p[0], p[1], p[2]};
 
-  // Create a TransferFactor
-  TransferFactor<SimpleFundamentalMatrix> factor{0, 1, p[0], p[1], p[2]};
-  Matrix H0, H1;
-  Vector e2 = factor.evaluateError(triplet.F12, triplet.F20, &H0, &H1);
-  std::cout << "Error: " << e2 << std::endl;
-  std::cout << H0 << std::endl << std::endl;
-  std::cout << H1 << std::endl << std::endl;
+  // Check that getMatrices is correct
+  auto [Fki, Fkj] = factor2.getMatrices(triplet.Fca, triplet.Fbc);
+  EXPECT(assert_equal<Matrix3>(triplet.Fca.matrix(), Fki));
+  EXPECT(assert_equal<Matrix3>(triplet.Fbc.matrix().transpose(), Fkj));
 
-  // Check Jacobians
+  // Create Values with edge keys
   Values values;
-  values.insert(0, triplet.F12);
-  values.insert(1, triplet.F20);
-  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-7);
+  values.insert(key01, triplet.Fab);
+  values.insert(key12, triplet.Fbc);
+  values.insert(key20, triplet.Fca);
+
+  // Check error and Jacobians
+  for (auto&& f : {factor0, factor1, factor2}) {
+    Vector error = f.unwhitenedError(values);
+    EXPECT(assert_equal<Vector>(Z_2x1, error));
+    EXPECT_CORRECT_FACTOR_JACOBIANS(f, values, 1e-5, 1e-7);
+  }
 }
 
 //*************************************************************************
