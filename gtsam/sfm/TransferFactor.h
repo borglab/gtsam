@@ -67,15 +67,18 @@ class TransferFactor : public NoiseModelFactorN<F, F> {
         pk(pk) {}
 
   // Create Matrix3 objects based on EdgeKey configurations
-  std::pair<Matrix3, Matrix3> getMatrices(const F& F1, const F& F2) const {
+  static std::pair<Matrix3, Matrix3> getMatrices(const EdgeKey& key1,
+                                                 const F& F1,
+                                                 const EdgeKey& key2,
+                                                 const F& F2) {
     // Fill Fki and Fkj based on EdgeKey configurations
-    if (key1_.i() == key2_.i()) {
+    if (key1.i() == key2.i()) {
       return {F1.matrix(), F2.matrix()};
-    } else if (key1_.i() == key2_.j()) {
+    } else if (key1.i() == key2.j()) {
       return {F1.matrix(), F2.matrix().transpose()};
-    } else if (key1_.j() == key2_.i()) {
+    } else if (key1.j() == key2.i()) {
       return {F1.matrix().transpose(), F2.matrix()};
-    } else if (key1_.j() == key2_.j()) {
+    } else if (key1.j() == key2.j()) {
       return {F1.matrix().transpose(), F2.matrix().transpose()};
     } else {
       throw std::runtime_error(
@@ -88,8 +91,8 @@ class TransferFactor : public NoiseModelFactorN<F, F> {
                        OptionalMatrixType H1 = nullptr,
                        OptionalMatrixType H2 = nullptr) const override {
     std::function<Point2(F, F)> transfer = [&](const F& F1, const F& F2) {
-      auto [Fki, Fkj] = getMatrices(F1, F2);
-      return F::transfer(Fki, pi, Fkj, pj);
+      auto [Fki, Fkj] = getMatrices(key1_, F1, key2_, F2);
+      return Transfer(Fki, pi, Fkj, pj);
     };
     if (H1) *H1 = numericalDerivative21<Point2, F, F>(transfer, F1, F2);
     if (H2) *H2 = numericalDerivative22<Point2, F, F>(transfer, F1, F2);
