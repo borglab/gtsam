@@ -222,9 +222,9 @@ TEST(TripleF, Transfer) {
   }
 
   // Check that transfer works
-  EXPECT(assert_equal<Point2>(p[0], triplet.transfer<0>(p[1], p[2]), 1e-9));
-  EXPECT(assert_equal<Point2>(p[1], triplet.transfer<1>(p[0], p[2]), 1e-9));
-  EXPECT(assert_equal<Point2>(p[2], triplet.transfer<2>(p[0], p[1]), 1e-9));
+  EXPECT(assert_equal<Point2>(p[0], triplet.transfer0(p[1], p[2]), 1e-9));
+  EXPECT(assert_equal<Point2>(p[1], triplet.transfer1(p[0], p[2]), 1e-9));
+  EXPECT(assert_equal<Point2>(p[2], triplet.transfer2(p[0], p[1]), 1e-9));
 }
 
 //*************************************************************************
