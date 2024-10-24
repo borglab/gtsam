@@ -68,7 +68,7 @@ class GTSAM_EXPORT LabeledSymbol {
   }
 
   /// @}
-  /// @name API
+  /// @name Standard API
   /// @{
 
   /// Cast to Key
@@ -103,15 +103,13 @@ class GTSAM_EXPORT LabeledSymbol {
   bool operator!=(const LabeledSymbol& comp) const;
   bool operator!=(Key comp) const;
 
-  /** Return a filter function that returns true when evaluated on a Key whose
-   * character (when converted to a LabeledSymbol) matches \c c.  Use this with
-   * the Values::filter() function to retrieve all key-value pairs with the
-   * requested character.
-   */
-
   /// @}
-  /// @name Advanced API
+  /// @name Filtering
   /// @{
+  /// Return a filter function that returns true when evaluated on a Key whose
+  /// character (when converted to a LabeledSymbol) matches \c c.  Use this with
+  /// the Values::filter() function to retrieve all key-value pairs with the
+  /// requested character.
 
   /// Checks only the type
   static std::function<bool(Key)> TypeTest(unsigned char c);
@@ -122,6 +120,10 @@ class GTSAM_EXPORT LabeledSymbol {
   /// Checks both type and the robot ID
   static std::function<bool(Key)> TypeLabelTest(unsigned char c,
                                                 unsigned char label);
+
+  /// @}
+  /// @name Advanced API
+  /// @{
 
   /// Converts to upper/lower versions of labels
   LabeledSymbol upper() const { return LabeledSymbol(c_, toupper(label_), j_); }
@@ -152,20 +154,20 @@ class GTSAM_EXPORT LabeledSymbol {
 #endif
 };  // \class LabeledSymbol
 
-/** Create a symbol key from a character, label and index, i.e. xA5. */
+/// Create a symbol key from a character, label and index, i.e. xA5.
 inline Key mrsymbol(unsigned char c, unsigned char label, size_t j) {
   return (Key)LabeledSymbol(c, label, j);
 }
 
-/** Return the character portion of a symbol key. */
+/// Return the character portion of a symbol key.
 inline unsigned char mrsymbolChr(Key key) { return LabeledSymbol(key).chr(); }
 
-/** Return the label portion of a symbol key. */
+/// Return the label portion of a symbol key.
 inline unsigned char mrsymbolLabel(Key key) {
   return LabeledSymbol(key).label();
 }
 
-/** Return the index portion of a symbol key. */
+/// Return the index portion of a symbol key.
 inline size_t mrsymbolIndex(Key key) { return LabeledSymbol(key).index(); }
 
 /// traits
