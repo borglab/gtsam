@@ -7,7 +7,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/FundamentalMatrix.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SimpleCamera.h>
@@ -205,9 +204,9 @@ TEST(TripleF, Transfer) {
   auto triplet = generateTripleF(cameraPoses);
 
   // Check that they are all equal
-  EXPECT(triplet.F01.equals(triplet.F12, 1e-9));
-  EXPECT(triplet.F12.equals(triplet.F20, 1e-9));
-  EXPECT(triplet.F20.equals(triplet.F01, 1e-9));
+  EXPECT(triplet.Fab.equals(triplet.Fbc, 1e-9));
+  EXPECT(triplet.Fbc.equals(triplet.Fca, 1e-9));
+  EXPECT(triplet.Fca.equals(triplet.Fab, 1e-9));
 
   // Now project a point into the three cameras
   const Point3 P(0.1, 0.2, 0.3);
@@ -222,9 +221,9 @@ TEST(TripleF, Transfer) {
   }
 
   // Check that transfer works
-  EXPECT(assert_equal<Point2>(p[0], triplet.transfer0(p[1], p[2]), 1e-9));
-  EXPECT(assert_equal<Point2>(p[1], triplet.transfer1(p[0], p[2]), 1e-9));
-  EXPECT(assert_equal<Point2>(p[2], triplet.transfer2(p[0], p[1]), 1e-9));
+  EXPECT(assert_equal<Point2>(p[0], triplet.transferToA(p[1], p[2]), 1e-9));
+  EXPECT(assert_equal<Point2>(p[1], triplet.transferToB(p[0], p[2]), 1e-9));
+  EXPECT(assert_equal<Point2>(p[2], triplet.transferToC(p[0], p[1]), 1e-9));
 }
 
 //*************************************************************************

@@ -14,63 +14,6 @@
 namespace gtsam {
 
 /**
- * @brief Abstract base class for FundamentalMatrix
- *
- * This class provides a common interface for all types of fundamental matrices.
- * It declares a virtual function `matrix()` that must be implemented by derived
- * classes. The `matrix()` function returns a 3x3 matrix representation of the
- * fundamental matrix.
- */
-class GTSAM_EXPORT FundamentalMatrix {
- public:
-  /**
-   * @brief Returns a 3x3 matrix representation of the fundamental matrix
-   *
-   * @return A 3x3 matrix representing the fundamental matrix
-   */
-  virtual Matrix3 matrix() const = 0;
-
-  /**
-   * @brief Virtual destructor to ensure proper cleanup of derived classes
-   */
-  virtual ~FundamentalMatrix() {}
-
-  /**
-   * @brief Transfer projections from cameras 1 and 2 to camera 0
-   *
-   * Take two fundamental matrices F01 and F02, and two points p1 and p2, and
-   * returns the 2D point in camera 0 where the epipolar lines intersect.
-   */
-  static Point2 transfer(const Matrix3& F01, const Point2& p1,
-                         const Matrix3& F02, const Point2& p2);
-};
-
-/// Represents a set of three fundamental matrices for transferring points
-/// between three cameras.
-template <typename F>
-struct TripleF {
-  F F01, F12, F20;
-
-  /// Transfers a point from cameras 1,2 to camera 0.
-  Point2 transfer0(const Point2& p1, const Point2& p2) {
-    return FundamentalMatrix::transfer(F01.matrix(), p1,
-                                       F20.matrix().transpose(), p2);
-  }
-
-  /// Transfers a point from camera 0,2 to camera 1.
-  Point2 transfer1(const Point2& p0, const Point2& p2) {
-    return FundamentalMatrix::transfer(F01.matrix().transpose(), p0,
-                                       F12.matrix(), p2);
-  }
-
-  /// Transfers a point from camera 0,1 to camera 2.
-  Point2 transfer2(const Point2& p0, const Point2& p1) {
-    return FundamentalMatrix::transfer(F20.matrix(), p0,
-                                       F12.matrix().transpose(), p1);
-  }
-};
-
-/**
  * @class GeneralFundamentalMatrix
  * @brief Represents a general fundamental matrix.
  *
@@ -78,7 +21,7 @@ struct TripleF {
  * that describes the relationship between two images. It is parameterized by a
  * left rotation U, a scalar s, and a right rotation V.
  */
-class GTSAM_EXPORT GeneralFundamentalMatrix : public FundamentalMatrix {
+class GTSAM_EXPORT GeneralFundamentalMatrix {
  private:
   Rot3 U_;    ///< Left rotation
   double s_;  ///< Scalar parameter for S
@@ -112,7 +55,7 @@ class GTSAM_EXPORT GeneralFundamentalMatrix : public FundamentalMatrix {
   GeneralFundamentalMatrix(const Matrix3& F);
 
   /// Return the fundamental matrix representation
-  Matrix3 matrix() const override;
+  Matrix3 matrix() const;
 
   /// @name Testable
   /// @{
@@ -146,7 +89,7 @@ class GTSAM_EXPORT GeneralFundamentalMatrix : public FundamentalMatrix {
  * parameterization of the essential matrix and focal lengths for left and right
  * cameras. Principal points are not part of the manifold but a convenience.
  */
-class GTSAM_EXPORT SimpleFundamentalMatrix : public FundamentalMatrix {
+class GTSAM_EXPORT SimpleFundamentalMatrix {
  private:
   EssentialMatrix E_;  ///< Essential matrix
   double fa_;          ///< Focal length for left camera
@@ -173,7 +116,7 @@ class GTSAM_EXPORT SimpleFundamentalMatrix : public FundamentalMatrix {
   Matrix3 rightK() const;
 
   /// Return the fundamental matrix representation
-  Matrix3 matrix() const override;
+  Matrix3 matrix() const;
 
   /// @name Testable
   /// @{
@@ -196,6 +139,37 @@ class GTSAM_EXPORT SimpleFundamentalMatrix : public FundamentalMatrix {
   /// Retract the given vector to get a new SimpleFundamentalMatrix
   SimpleFundamentalMatrix retract(const Vector& delta) const;
   /// @}
+};
+
+/**
+ * @brief Transfer projections from cameras a and b to camera c
+ *
+ * Take two fundamental matrices Fca and Fcb, and two points pa and pb, and
+ * returns the 2D point in view (c) where the epipolar lines intersect.
+ */
+Point2 Transfer(const Matrix3& Fca, const Point2& pa, const Matrix3& Fcb,
+                const Point2& pb);
+
+/// Represents a set of three fundamental matrices for transferring points
+/// between three cameras.
+template <typename F>
+struct TripleF {
+  F Fab, Fbc, Fca;
+
+  /// Transfers a point from cameras b,c to camera a.
+  Point2 transferToA(const Point2& pb, const Point2& pc) {
+    return Transfer(Fab.matrix(), pb, Fca.matrix().transpose(), pc);
+  }
+
+  /// Transfers a point from camera a,c to camera b.
+  Point2 transferToB(const Point2& pa, const Point2& pc) {
+    return Transfer(Fab.matrix().transpose(), pa, Fbc.matrix(), pc);
+  }
+
+  /// Transfers a point from cameras a,b to camera c.
+  Point2 transferToC(const Point2& pa, const Point2& pb) {
+    return Transfer(Fca.matrix(), pa, Fbc.matrix().transpose(), pb);
+  }
 };
 
 template <>
