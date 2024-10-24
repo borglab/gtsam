@@ -3,11 +3,11 @@ name: "Bug Report"
 about: Submit a bug report to help us improve GTSAM
 ---
 
+<!-- This is a channel to report bugs/issues, not a support channel to help install/use/debug your own code. We'd love to help, but just don't have the bandwidth. Please post questions in the GTSAM Google group (https://groups.google.com/forum/#!forum/gtsam-users) -->
+
 <!--Please only submit issues/bug reports that come with enough information to reproduce them, ideally a unit test that fails, and possible ideas on what might be wrong. -->
 
 <!-- Even better yet, fix the bug and/or documentation, add a unit test, and create a pull request! -->
-
-<!-- This is a channel to report bugs/issues, not a support channel to help install/use/debug your own code. We'd love to help, but just don't have the bandwidth. Please post questions in the GTSAM Google group (https://groups.google.com/forum/#!forum/gtsam-users) -->
 
 ## Description
 
