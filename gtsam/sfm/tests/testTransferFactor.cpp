@@ -71,7 +71,7 @@ TEST(TransferFactor, Jacobians) {
       factor2{key20, key12, p[0], p[1], p[2]};
 
   // Check that getMatrices is correct
-  auto [Fki, Fkj] = factor2.getMatrices(key20, triplet.Fca, key12, triplet.Fbc);
+  auto [Fki, Fkj] = factor2.getMatrices(triplet.Fca, triplet.Fbc);
   EXPECT(assert_equal<Matrix3>(triplet.Fca.matrix(), Fki));
   EXPECT(assert_equal<Matrix3>(triplet.Fbc.matrix().transpose(), Fkj));
 
