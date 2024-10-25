@@ -25,7 +25,7 @@ Point2 Transfer(const Matrix3& Fca, const Point2& pa,  //
   return intersectionPoint.head<2>();  // Return the 2D point
 }
 //*************************************************************************
-GeneralFundamentalMatrix::GeneralFundamentalMatrix(const Matrix3& F) {
+FundamentalMatrix::FundamentalMatrix(const Matrix3& F) {
   // Perform SVD
   Eigen::JacobiSVD<Matrix3> svd(F, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
@@ -66,24 +66,23 @@ GeneralFundamentalMatrix::GeneralFundamentalMatrix(const Matrix3& F) {
   V_ = Rot3(V);
 }
 
-Matrix3 GeneralFundamentalMatrix::matrix() const {
+Matrix3 FundamentalMatrix::matrix() const {
   return U_.matrix() * Vector3(1, s_, 0).asDiagonal() * V_.transpose().matrix();
 }
 
-void GeneralFundamentalMatrix::print(const std::string& s) const {
+void FundamentalMatrix::print(const std::string& s) const {
   std::cout << s << "U:\n"
             << U_.matrix() << "\ns: " << s_ << "\nV:\n"
             << V_.matrix() << std::endl;
 }
 
-bool GeneralFundamentalMatrix::equals(const GeneralFundamentalMatrix& other,
-                                      double tol) const {
+bool FundamentalMatrix::equals(const FundamentalMatrix& other,
+                               double tol) const {
   return U_.equals(other.U_, tol) && std::abs(s_ - other.s_) < tol &&
          V_.equals(other.V_, tol);
 }
 
-Vector GeneralFundamentalMatrix::localCoordinates(
-    const GeneralFundamentalMatrix& F) const {
+Vector FundamentalMatrix::localCoordinates(const FundamentalMatrix& F) const {
   Vector result(7);
   result.head<3>() = U_.localCoordinates(F.U_);
   result(3) = F.s_ - s_;  // Difference in scalar
@@ -91,12 +90,11 @@ Vector GeneralFundamentalMatrix::localCoordinates(
   return result;
 }
 
-GeneralFundamentalMatrix GeneralFundamentalMatrix::retract(
-    const Vector& delta) const {
+FundamentalMatrix FundamentalMatrix::retract(const Vector& delta) const {
   Rot3 newU = U_.retract(delta.head<3>());
   double newS = s_ + delta(3);  // Update scalar
   Rot3 newV = V_.retract(delta.tail<3>());
-  return GeneralFundamentalMatrix(newU, newS, newV);
+  return FundamentalMatrix(newU, newS, newV);
 }
 
 //*************************************************************************

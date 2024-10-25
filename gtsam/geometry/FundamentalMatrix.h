@@ -14,14 +14,14 @@
 namespace gtsam {
 
 /**
- * @class GeneralFundamentalMatrix
+ * @class FundamentalMatrix
  * @brief Represents a general fundamental matrix.
  *
  * This class represents a general fundamental matrix, which is a 3x3 matrix
  * that describes the relationship between two images. It is parameterized by a
  * left rotation U, a scalar s, and a right rotation V.
  */
-class GTSAM_EXPORT GeneralFundamentalMatrix {
+class GTSAM_EXPORT FundamentalMatrix {
  private:
   Rot3 U_;    ///< Left rotation
   double s_;  ///< Scalar parameter for S
@@ -29,42 +29,42 @@ class GTSAM_EXPORT GeneralFundamentalMatrix {
 
  public:
   /// Default constructor
-  GeneralFundamentalMatrix() : U_(Rot3()), s_(1.0), V_(Rot3()) {}
+  FundamentalMatrix() : U_(Rot3()), s_(1.0), V_(Rot3()) {}
 
   /**
    * @brief Construct from U, V, and scalar s
    *
-   * Initializes the GeneralFundamentalMatrix with the given left rotation U,
+   * Initializes the FundamentalMatrix with the given left rotation U,
    * scalar s, and right rotation V.
    *
    * @param U Left rotation matrix
    * @param s Scalar parameter for the fundamental matrix
    * @param V Right rotation matrix
    */
-  GeneralFundamentalMatrix(const Rot3& U, double s, const Rot3& V)
+  FundamentalMatrix(const Rot3& U, double s, const Rot3& V)
       : U_(U), s_(s), V_(V) {}
 
   /**
    * @brief Construct from a 3x3 matrix using SVD
    *
-   * Initializes the GeneralFundamentalMatrix by performing SVD on the given
+   * Initializes the FundamentalMatrix by performing SVD on the given
    * matrix and ensuring U and V are not reflections.
    *
    * @param F A 3x3 matrix representing the fundamental matrix
    */
-  GeneralFundamentalMatrix(const Matrix3& F);
+  FundamentalMatrix(const Matrix3& F);
 
   /// Return the fundamental matrix representation
   Matrix3 matrix() const;
 
   /// @name Testable
   /// @{
-  /// Print the GeneralFundamentalMatrix
+  /// Print the FundamentalMatrix
   void print(const std::string& s = "") const;
 
-  /// Check if the GeneralFundamentalMatrix is equal to another within a
+  /// Check if the FundamentalMatrix is equal to another within a
   /// tolerance
-  bool equals(const GeneralFundamentalMatrix& other, double tol = 1e-9) const;
+  bool equals(const FundamentalMatrix& other, double tol = 1e-9) const;
   /// @}
 
   /// @name Manifold
@@ -73,11 +73,11 @@ class GTSAM_EXPORT GeneralFundamentalMatrix {
   inline static size_t Dim() { return dimension; }
   inline size_t dim() const { return dimension; }
 
-  /// Return local coordinates with respect to another GeneralFundamentalMatrix
-  Vector localCoordinates(const GeneralFundamentalMatrix& F) const;
+  /// Return local coordinates with respect to another FundamentalMatrix
+  Vector localCoordinates(const FundamentalMatrix& F) const;
 
-  /// Retract the given vector to get a new GeneralFundamentalMatrix
-  GeneralFundamentalMatrix retract(const Vector& delta) const;
+  /// Retract the given vector to get a new FundamentalMatrix
+  FundamentalMatrix retract(const Vector& delta) const;
   /// @}
 };
 
@@ -173,8 +173,8 @@ struct TripleF {
 };
 
 template <>
-struct traits<GeneralFundamentalMatrix>
-    : public internal::Manifold<GeneralFundamentalMatrix> {};
+struct traits<FundamentalMatrix>
+    : public internal::Manifold<FundamentalMatrix> {};
 
 template <>
 struct traits<SimpleFundamentalMatrix>

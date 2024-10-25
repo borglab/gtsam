@@ -16,34 +16,34 @@ using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
-GTSAM_CONCEPT_TESTABLE_INST(GeneralFundamentalMatrix)
-GTSAM_CONCEPT_MANIFOLD_INST(GeneralFundamentalMatrix)
+GTSAM_CONCEPT_TESTABLE_INST(FundamentalMatrix)
+GTSAM_CONCEPT_MANIFOLD_INST(FundamentalMatrix)
 
 //*************************************************************************
 // Create two rotations and corresponding fundamental matrix F
 Rot3 trueU = Rot3::Yaw(M_PI_2);
 Rot3 trueV = Rot3::Yaw(M_PI_4);
 double trueS = 0.5;
-GeneralFundamentalMatrix trueF(trueU, trueS, trueV);
+FundamentalMatrix trueF(trueU, trueS, trueV);
 
 //*************************************************************************
-TEST(GeneralFundamentalMatrix, localCoordinates) {
+TEST(FundamentalMatrix, localCoordinates) {
   Vector expected = Z_7x1;  // Assuming 7 dimensions for U, V, and s
   Vector actual = trueF.localCoordinates(trueF);
   EXPECT(assert_equal(expected, actual, 1e-8));
 }
 
 //*************************************************************************
-TEST(GeneralFundamentalMatrix, retract) {
-  GeneralFundamentalMatrix actual = trueF.retract(Z_7x1);
+TEST(FundamentalMatrix, retract) {
+  FundamentalMatrix actual = trueF.retract(Z_7x1);
   EXPECT(assert_equal(trueF, actual));
 }
 
 //*************************************************************************
-TEST(GeneralFundamentalMatrix, RoundTrip) {
+TEST(FundamentalMatrix, RoundTrip) {
   Vector7 d;
   d << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
-  GeneralFundamentalMatrix hx = trueF.retract(d);
+  FundamentalMatrix hx = trueF.retract(d);
   Vector actual = trueF.localCoordinates(hx);
   EXPECT(assert_equal(d, actual, 1e-8));
 }
@@ -56,7 +56,7 @@ SimpleFundamentalMatrix stereoF(defaultE, 1.0, 1.0, zero, zero);
 
 //*************************************************************************
 TEST(SimpleStereo, Conversion) {
-  GeneralFundamentalMatrix convertedF(stereoF.matrix());
+  FundamentalMatrix convertedF(stereoF.matrix());
   EXPECT(assert_equal(stereoF.matrix(), convertedF.matrix(), 1e-8));
 }
 
@@ -103,7 +103,7 @@ SimpleFundamentalMatrix pixelStereo(defaultE, focalLength, focalLength, zero,
 TEST(PixelStereo, Conversion) {
   auto expected = pixelStereo.matrix();
 
-  GeneralFundamentalMatrix convertedF(pixelStereo.matrix());
+  FundamentalMatrix convertedF(pixelStereo.matrix());
 
   // Check equality of F-matrices up to a scale
   auto actual = convertedF.matrix();
@@ -132,7 +132,7 @@ SimpleFundamentalMatrix rotatedPixelStereo(rotatedE, focalLength, focalLength,
 TEST(RotatedPixelStereo, Conversion) {
   auto expected = rotatedPixelStereo.matrix();
 
-  GeneralFundamentalMatrix convertedF(rotatedPixelStereo.matrix());
+  FundamentalMatrix convertedF(rotatedPixelStereo.matrix());
 
   // Check equality of F-matrices up to a scale
   auto actual = convertedF.matrix();
@@ -161,7 +161,7 @@ SimpleFundamentalMatrix stereoWithPrincipalPoints(rotatedE, focalLength,
 TEST(stereoWithPrincipalPoints, Conversion) {
   auto expected = stereoWithPrincipalPoints.matrix();
 
-  GeneralFundamentalMatrix convertedF(stereoWithPrincipalPoints.matrix());
+  FundamentalMatrix convertedF(stereoWithPrincipalPoints.matrix());
 
   // Check equality of F-matrices up to a scale
   auto actual = convertedF.matrix();
