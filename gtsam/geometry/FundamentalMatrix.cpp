@@ -71,9 +71,7 @@ Matrix3 FundamentalMatrix::matrix() const {
 }
 
 void FundamentalMatrix::print(const std::string& s) const {
-  std::cout << s << "U:\n"
-            << U_.matrix() << "\ns: " << s_ << "\nV:\n"
-            << V_.matrix() << std::endl;
+  std::cout << s << matrix() << std::endl;
 }
 
 bool FundamentalMatrix::equals(const FundamentalMatrix& other,
