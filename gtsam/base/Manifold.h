@@ -162,7 +162,7 @@ struct FixedDimension {
   typedef const int value_type;
   static const int value = traits<T>::dimension;
   static_assert(value != Eigen::Dynamic,
-      "FixedDimension instantiated for dymanically-sized type.");
+      "FixedDimension instantiated for dynamically-sized type.");
 };
 } // \ namespace gtsam
 
