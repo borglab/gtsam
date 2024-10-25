@@ -57,7 +57,7 @@ class GTSAM_EXPORT FundamentalMatrix {
   /**
    * @brief Construct from calibration matrices Ka, Kb, and pose aPb
    *
-   * Initializes the GeneralFundamentalMatrix from the given calibration
+   * Initializes the FundamentalMatrix from the given calibration
    * matrices Ka and Kb, and the pose aPb.
    *
    * @tparam CAL Calibration type, expected to have a matrix() method
@@ -66,8 +66,8 @@ class GTSAM_EXPORT FundamentalMatrix {
    * @param Kb Calibration matrix for the right camera
    */
   template <typename CAL>
-  GeneralFundamentalMatrix(const CAL& Ka, const Pose3& aPb, const CAL& Kb)
-      : GeneralFundamentalMatrix(Ka.K().transpose().inverse() *
+  FundamentalMatrix(const CAL& Ka, const Pose3& aPb, const CAL& Kb)
+      : FundamentalMatrix(Ka.K().transpose().inverse() *
                                  EssentialMatrix::FromPose3(aPb).matrix() *
                                  Kb.K().inverse()) {}
 

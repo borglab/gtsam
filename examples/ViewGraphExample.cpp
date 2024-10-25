@@ -47,8 +47,8 @@ int main(int argc, char* argv[]) {
   vector<Pose3> poses = posesOnCircle(4, 30);
 
   // Calculate ground truth fundamental matrices, 1 and 2 poses apart
-  auto F1 = GeneralFundamentalMatrix(K, poses[0].between(poses[1]), K);
-  auto F2 = GeneralFundamentalMatrix(K, poses[0].between(poses[2]), K);
+  auto F1 = FundamentalMatrix(K, poses[0].between(poses[1]), K);
+  auto F2 = FundamentalMatrix(K, poses[0].between(poses[2]), K);
 
   // Simulate measurements from each camera pose
   std::array<std::array<Point2, 8>, 4> p;
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
   // in a triplet, we add three binary factors for sparsity during optimization.
   // In this version, we only include triplets between 3 successive cameras.
   NonlinearFactorGraph graph;
-  using Factor = TransferFactor<GeneralFundamentalMatrix>;
+  using Factor = TransferFactor<FundamentalMatrix>;
   for (size_t a = 0; a < 4; ++a) {
     size_t b = (a + 1) % 4;  // Next camera
     size_t c = (a + 2) % 4;  // Camera after next
