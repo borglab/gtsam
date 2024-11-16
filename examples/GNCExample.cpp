@@ -63,7 +63,8 @@ int main() {
 
   // Set GNC-specific options
   GncParams<LevenbergMarquardtParams> gncParams(lmParams);
-  gncParams.setLossType(GncLossType::TLS);
+  gncParams.setLossType(GncLossType::TLS);  // Truncated Least Squares or Geman-McClure 
+  gncParams.setBarc(1.0);                   // Parameter $c$ in Truncated Least Squares or Geman-McClure
 
   // Optimize the graph and print results
   GncOptimizer<GncParams<LevenbergMarquardtParams>> optimizer(graph, initial, gncParams);
