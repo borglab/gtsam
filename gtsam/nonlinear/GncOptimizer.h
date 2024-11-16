@@ -128,7 +128,7 @@ class GncOptimizer {
    * alpha that the inlier residuals are smaller than that threshold
    * */
   void setInlierCostThresholdsAtProbability(const double alpha) {
-    barcSq_  = Vector::Ones(nfg_.size()); // initialize
+    barcSq_  = (params_.barc * params_.barc) * Vector::Ones(nfg_.size()); // initialize threshold to $bar{c}^2$
     for (size_t k = 0; k < nfg_.size(); k++) {
       if (nfg_[k]) {
         barcSq_[k] = 0.5 * Chi2inv(alpha, nfg_[k]->dim()); // 0.5 derives from the error definition in gtsam

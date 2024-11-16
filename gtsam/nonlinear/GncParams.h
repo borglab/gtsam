@@ -71,6 +71,8 @@ class GncParams {
   double muStep = 1.4;  ///< Multiplicative factor to reduce/increase the mu in gnc
   double relativeCostTol = 1e-5;  ///< If relative cost change is below this threshold, stop iterating
   double weightsTol = 1e-4;  ///< If the weights are within weightsTol from being binary, stop iterating (only for TLS)
+  double barc = 1.0; ///< Default inlier threshold $\bar{c}$ = 1
+
   Verbosity verbosity = SILENT;  ///< Verbosity level
 
   /// Use IndexVector for inliers and outliers since it is fast
@@ -106,6 +108,11 @@ class GncParams {
   /// Set the maximum difference between the weights and their rounding in {0,1} to stop iterating.
   void setWeightsTol(double value) {
     weightsTol = value;
+  }
+
+  /// Set the inlier threshold $\bar{c}$.
+  void setBarc(double value) {
+    barc = value;
   }
 
   /// Set the verbosity level.
