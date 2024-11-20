@@ -72,21 +72,17 @@ void HybridSmoother::update(HybridGaussianFactorGraph graph,
       addConditionals(graph, hybridBayesNet_, ordering);
 
   // Eliminate.
-  HybridBayesNet::shared_ptr bayesNetFragment =
-      graph.eliminateSequential(ordering);
+  HybridBayesNet bayesNetFragment = *graph.eliminateSequential(ordering);
 
   /// Prune
   if (maxNrLeaves) {
     // `pruneBayesNet` sets the leaves with 0 in discreteFactor to nullptr in
     // all the conditionals with the same keys in bayesNetFragment.
-    HybridBayesNet prunedBayesNetFragment =
-        bayesNetFragment->prune(*maxNrLeaves);
-    // Set the bayes net fragment to the pruned version
-    bayesNetFragment = std::make_shared<HybridBayesNet>(prunedBayesNetFragment);
+    bayesNetFragment = bayesNetFragment.prune(*maxNrLeaves);
   }
 
   // Add the partial bayes net to the posterior bayes net.
-  hybridBayesNet_.add(*bayesNetFragment);
+  hybridBayesNet_.add(bayesNetFragment);
 }
 
 /* ************************************************************************* */
@@ -100,7 +96,7 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &originalGraph,
   // If hybridBayesNet is not empty,
   // it means we have conditionals to add to the factor graph.
   if (!hybridBayesNet.empty()) {
-    // We add all relevant conditional mixtures on the last continuous variable
+    // We add all relevant hybrid conditionals on the last continuous variable
     // in the previous `hybridBayesNet` to the graph
 
     // Conditionals to remove from the bayes net
@@ -138,9 +134,9 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &originalGraph,
 }
 
 /* ************************************************************************* */
-GaussianMixture::shared_ptr HybridSmoother::gaussianMixture(
+HybridGaussianConditional::shared_ptr HybridSmoother::gaussianMixture(
     size_t index) const {
-  return hybridBayesNet_.at(index)->asMixture();
+  return hybridBayesNet_.at(index)->asHybrid();
 }
 
 /* ************************************************************************* */

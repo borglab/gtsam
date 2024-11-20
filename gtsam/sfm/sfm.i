@@ -23,7 +23,7 @@ virtual class SfmTrack : gtsam::SfmTrack2d {
   SfmTrack();
   SfmTrack(const gtsam::Point3& pt);
   const Point3& point3() const;
-  
+
   Point3 p;
 
   double r;
@@ -37,8 +37,8 @@ virtual class SfmTrack : gtsam::SfmTrack2d {
   bool equals(const gtsam::SfmTrack& expected, double tol) const;
 };
 
-#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmData.h>
 class SfmData {
   SfmData();
@@ -74,6 +74,33 @@ gtsam::SfmData readBal(string filename);
 bool writeBAL(string filename, gtsam::SfmData& data);
 gtsam::Values initialCamerasEstimate(const gtsam::SfmData& db);
 gtsam::Values initialCamerasAndPointsEstimate(const gtsam::SfmData& db);
+
+#include <gtsam/sfm/TransferFactor.h>
+#include <gtsam/geometry/FundamentalMatrix.h>
+template <F = {gtsam::SimpleFundamentalMatrix, gtsam::FundamentalMatrix}>
+virtual class TransferFactor : gtsam::NoiseModelFactor {
+  TransferFactor(gtsam::EdgeKey edge1, gtsam::EdgeKey edge2,
+                 const std::vector<std::tuple<gtsam::Point2, gtsam::Point2, gtsam::Point2>>& triplets,
+                 const gtsam::noiseModel::Base* model = nullptr);
+};
+
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3f.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+template <K = {gtsam::Cal3_S2, gtsam::Cal3f, gtsam::Cal3Bundler}>
+virtual class EssentialTransferFactor : gtsam::NoiseModelFactor {
+  EssentialTransferFactor(gtsam::EdgeKey edge1, gtsam::EdgeKey edge2,
+                          const std::vector<std::tuple<gtsam::Point2, gtsam::Point2, gtsam::Point2>>& triplets,
+                          const K* calibration,
+                          const gtsam::noiseModel::Base* model = nullptr);
+};
+
+template <K = {gtsam::Cal3_S2, gtsam::Cal3f, gtsam::Cal3Bundler}>
+virtual class EssentialTransferFactorK : gtsam::NoiseModelFactor {
+  EssentialTransferFactorK(gtsam::EdgeKey edge1, gtsam::EdgeKey edge2,
+                          const std::vector<std::tuple<gtsam::Point2, gtsam::Point2, gtsam::Point2>>& triplets,
+                          const gtsam::noiseModel::Base* model = nullptr);
+};
 
 #include <gtsam/sfm/ShonanFactor.h>
 
@@ -268,6 +295,8 @@ class MFAS {
 #include <gtsam/sfm/TranslationRecovery.h>
 
 class TranslationRecovery {
+  TranslationRecovery(const gtsam::LevenbergMarquardtParams& lmParams,
+                      const bool use_bilinear_translation_factor);
   TranslationRecovery(const gtsam::LevenbergMarquardtParams& lmParams);
   TranslationRecovery();  // default params.
   void addPrior(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,

@@ -39,7 +39,7 @@
 // Finally, once all of the factors have been added to our factor graph, we will want to
 // solve/optimize to graph to find the best (Maximum A Posteriori) set of variable values.
 // GTSAM includes several nonlinear optimizers to perform this step. Here we will use a
-// trust-region method known as Powell's Degleg
+// trust-region method known as Powell's Dogleg
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 
 // The nonlinear solvers within GTSAM are iterative solvers, meaning they linearize the
@@ -57,7 +57,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
   // Define the camera calibration parameters
-  Cal3_S2::shared_ptr K(new Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0));
+  auto K = std::make_shared<Cal3_S2>(50.0, 50.0, 0.0, 50.0, 50.0);
 
   // Define the camera observation noise model
   auto measurementNoise =

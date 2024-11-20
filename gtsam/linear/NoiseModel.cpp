@@ -238,13 +238,38 @@ void Gaussian::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const
 
 Matrix Gaussian::information() const { return R().transpose() * R(); }
 
+/* *******************************************************************************/
+double Gaussian::logDetR() const {
+  double logDetR =
+      R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
+  return logDetR;
+}
+
+/* *******************************************************************************/
+double Gaussian::logDeterminant() const {
+  // Since noise models are Gaussian, we can get the logDeterminant easily
+  // Sigma = (R'R)^{-1}, det(Sigma) = det((R'R)^{-1}) = det(R'R)^{-1}
+  // log det(Sigma) = -log(det(R'R)) = -2*log(det(R))
+  // Hence, log det(Sigma)) = -2.0 * logDetR()
+  return -2.0 * logDetR();
+}
+
+/* *******************************************************************************/
+double Gaussian::negLogConstant() const {
+  // log(det(Sigma)) = -2.0 * logDetR
+  // which gives neg-log = 0.5*n*log(2*pi) + 0.5*(-2.0 * logDetR())
+  //     = 0.5*n*log(2*pi) - (0.5*2.0 * logDetR())
+  //     = 0.5*n*log(2*pi) - logDetR()
+  size_t n = dim();
+  constexpr double log2pi = 1.8378770664093454835606594728112;
+  // Get -log(1/\sqrt(|2pi Sigma|)) = 0.5*log(|2pi Sigma|)
+  return 0.5 * n * log2pi - logDetR();
+}
+
 /* ************************************************************************* */
 // Diagonal
 /* ************************************************************************* */
-Diagonal::Diagonal() :
-    Gaussian(1) // TODO: Frank asks: really sure about this?
-{
-}
+Diagonal::Diagonal() : Gaussian() {}
 
 /* ************************************************************************* */
 Diagonal::Diagonal(const Vector& sigmas)
@@ -256,31 +281,30 @@ Diagonal::Diagonal(const Vector& sigmas)
 
 /* ************************************************************************* */
 Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
-  if (smart) {
-    // check whether all the same entry
-    size_t n = variances.size();
-    for (size_t j = 1; j < n; j++)
-      if (variances(j) != variances(0)) goto full;
-    return Isotropic::Variance(n, variances(0), true);
-  }
-  full: return shared_ptr(new Diagonal(variances.cwiseSqrt()));
+  // check whether all the same entry
+  return (smart && (variances.array() == variances(0)).all())
+             ? Isotropic::Variance(variances.size(), variances(0), true)
+             : shared_ptr(new Diagonal(variances.cwiseSqrt()));
 }
 
 /* ************************************************************************* */
 Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
   if (smart) {
     size_t n = sigmas.size();
-    if (n==0) goto full;
+    if (n == 0) goto full;
+
     // look for zeros to make a constraint
-    for (size_t j=0; j< n; ++j)
-      if (sigmas(j)<1e-8)
-        return Constrained::MixedSigmas(sigmas);
+    if ((sigmas.array() < 1e-8).any()) {
+      return Constrained::MixedSigmas(sigmas);
+    }
+
     // check whether all the same entry
-    for (size_t j = 1; j < n; j++)
-      if (sigmas(j) != sigmas(0)) goto full;
-    return Isotropic::Sigma(n, sigmas(0), true);
+    if ((sigmas.array() == sigmas(0)).all()) {
+      return Isotropic::Sigma(n, sigmas(0), true);
+    }
   }
-  full: return Diagonal::shared_ptr(new Diagonal(sigmas));
+full:
+  return Diagonal::shared_ptr(new Diagonal(sigmas));
 }
 
 /* ************************************************************************* */
@@ -288,6 +312,7 @@ Diagonal::shared_ptr Diagonal::Precisions(const Vector& precisions,
                                           bool smart) {
   return Variances(precisions.array().inverse(), smart);
 }
+
 /* ************************************************************************* */
 void Diagonal::print(const string& name) const {
   gtsam::print(sigmas_, name + "diagonal sigmas ");
@@ -312,6 +337,11 @@ void Diagonal::WhitenInPlace(Matrix& H) const {
 
 void Diagonal::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H = invsigmas().asDiagonal() * H;
+}
+
+/* *******************************************************************************/
+double Diagonal::logDetR() const {
+  return invsigmas_.unaryExpr([](double x) { return log(x); }).sum();
 }
 
 /* ************************************************************************* */
@@ -642,6 +672,9 @@ void Isotropic::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H *= invsigma_;
 }
 
+/* *******************************************************************************/
+double Isotropic::logDetR() const { return log(invsigma_) * dim(); }
+
 /* ************************************************************************* */
 // Unit
 /* ************************************************************************* */
@@ -653,6 +686,9 @@ void Unit::print(const std::string& name) const {
 double Unit::squaredMahalanobisDistance(const Vector& v) const {
   return v.dot(v);
 }
+
+/* *******************************************************************************/
+double Unit::logDetR() const { return 0.0; }
 
 /* ************************************************************************* */
 // Robust
@@ -707,6 +743,5 @@ const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise){
 }
 
 /* ************************************************************************* */
-
-}
+}  // namespace noiseModel
 } // gtsam

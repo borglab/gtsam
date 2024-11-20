@@ -124,6 +124,28 @@ void NonlinearOptimizerParams::print(const std::string& str) const {
 }
 
 /* ************************************************************************* */
+bool NonlinearOptimizerParams::equals(const NonlinearOptimizerParams& other,
+                                      double tol) const {
+  // Check for equality of shared ptrs
+  bool iterative_params_equal = iterativeParams == other.iterativeParams;
+  // Check equality of components
+  if (iterativeParams && other.iterativeParams) {
+    iterative_params_equal = iterativeParams->equals(*other.iterativeParams);
+  } else {
+    // Check if either is null. If both are null, then true
+    iterative_params_equal = !iterativeParams && !other.iterativeParams;
+  }
+
+  return maxIterations == other.getMaxIterations() &&
+         std::abs(relativeErrorTol - other.getRelativeErrorTol()) <= tol &&
+         std::abs(absoluteErrorTol - other.getAbsoluteErrorTol()) <= tol &&
+         std::abs(errorTol - other.getErrorTol()) <= tol &&
+         verbosityTranslator(verbosity) == other.getVerbosity() &&
+         orderingType == other.orderingType && ordering == other.ordering &&
+         linearSolverType == other.linearSolverType && iterative_params_equal;
+}
+
+/* ************************************************************************* */
 std::string NonlinearOptimizerParams::linearSolverTranslator(
     LinearSolverType linearSolverType) const {
   switch (linearSolverType) {

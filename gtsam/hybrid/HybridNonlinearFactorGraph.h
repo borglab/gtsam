@@ -86,6 +86,36 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
    */
   std::shared_ptr<HybridGaussianFactorGraph> linearize(
       const Values& continuousValues) const;
+
+  /// Expose error(const HybridValues&) method.
+  using Base::error;
+
+  /**
+   * @brief Compute error of (hybrid) nonlinear factors and discrete factors
+   * over each discrete assignment, and return as a tree.
+   *
+   * Error \f$ e = \Vert f(x) - \mu \Vert_{\Sigma} \f$.
+   *
+   * @note: Gaussian and hybrid Gaussian factors are not considered!
+   *
+   * @param values Manifold values at which to compute the error.
+   * @return AlgebraicDecisionTree<Key>
+   */
+  AlgebraicDecisionTree<Key> errorTree(const Values& values) const;
+
+  /**
+   * @brief Computer posterior P(M|X=x) when all continuous values X are given.
+   * This is efficient as this simply takes -exp(.) of errorTree and normalizes.
+   *
+   * @note Not a DiscreteConditional as the cardinalities of the DiscreteKeys,
+   * which we would need, are hard to recover.
+   *
+   * @param continuousValues Continuous values x to condition on.
+   * @return DecisionTreeFactor
+   */
+  AlgebraicDecisionTree<Key> discretePosterior(
+      const Values& continuousValues) const;
+
   /// @}
 };
 

@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/global_includes.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridValues.h>
@@ -28,7 +29,8 @@ namespace gtsam {
 
 /**
  * A hybrid Bayes net is a collection of HybridConditionals, which can have
- * discrete conditionals, Gaussian mixtures, or pure Gaussian conditionals.
+ * discrete conditionals, hybrid Gaussian conditionals,
+ * or pure Gaussian conditionals.
  *
  * @ingroup hybrid
  */
@@ -43,8 +45,13 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// @name Standard Constructors
   /// @{
 
-  /** Construct empty Bayes net */
+  /// Construct empty Bayes net.
   HybridBayesNet() = default;
+
+  /// Constructor that takes an initializer list of shared pointers.
+  HybridBayesNet(
+      std::initializer_list<HybridConditional::shared_ptr> conditionals)
+      : Base(conditionals) {}
 
   /// @}
   /// @name Testable
@@ -71,30 +78,11 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   }
 
   /**
-   * Preferred: add a conditional directly using a pointer.
-   *
-   * Examples:
-   *   hbn.emplace_back(new GaussianMixture(...)));
-   *   hbn.emplace_back(new GaussianConditional(...)));
-   *   hbn.emplace_back(new DiscreteConditional(...)));
-   */
-  template <class Conditional>
-  void emplace_back(Conditional *conditional) {
-    factors_.push_back(std::make_shared<HybridConditional>(
-        std::shared_ptr<Conditional>(conditional)));
-  }
+   * Move a HybridConditional into a shared pointer and add.
 
-  /**
-   * Add a conditional using a shared_ptr, using implicit conversion to
-   * a HybridConditional.
-   *
-   * This is useful when you create a conditional shared pointer as you need it
-   * somewhere else.
-   *
    * Example:
-   *   auto shared_ptr_to_a_conditional =
-   *     std::make_shared<GaussianMixture>(...);
-   *  hbn.push_back(shared_ptr_to_a_conditional);
+   *   HybridGaussianConditional conditional(...);
+   *   hbn.push_back(conditional); // loses the original conditional
    */
   void push_back(HybridConditional &&conditional) {
     factors_.push_back(
@@ -102,11 +90,51 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   }
 
   /**
-   * @brief Get the Gaussian Bayes Net which corresponds to a specific discrete
-   * value assignment.
+   * @brief Add a conditional to the Bayes net.
+   * Implicitly convert to a HybridConditional.
+   *
+   * E.g.
+   * hbn.push_back(std::make_shared<DiscreteConditional>(m, "1/1"));
+   *
+   * @tparam CONDITIONAL Type of conditional. This is shared_ptr version.
+   * @param conditional The conditional as a shared pointer.
+   */
+  template <class CONDITIONAL>
+  void push_back(const std::shared_ptr<CONDITIONAL> &conditional) {
+    factors_.push_back(std::make_shared<HybridConditional>(conditional));
+  }
+
+  /**
+   * Preferred: Emplace a conditional directly using arguments.
+   *
+   * Examples:
+   *   hbn.emplace_shared<HybridGaussianConditional>(...)));
+   *   hbn.emplace_shared<GaussianConditional>(...)));
+   *   hbn.emplace_shared<DiscreteConditional>(...)));
+   */
+  template <class CONDITIONAL, class... Args>
+  void emplace_shared(Args &&...args) {
+    auto cond = std::allocate_shared<CONDITIONAL>(
+        Eigen::aligned_allocator<CONDITIONAL>(), std::forward<Args>(args)...);
+    factors_.push_back(std::make_shared<HybridConditional>(std::move(cond)));
+  }
+
+  /**
+   * @brief Get the discrete Bayes Net P(M). As the hybrid Bayes net defines
+   * P(X,M) = P(X|M) P(M), this method returns the marginal distribution on the
+   * discrete variables.
+   *
+   * @return discrete marginal as a DiscreteBayesNet.
+   */
+  DiscreteBayesNet discreteMarginal() const;
+
+  /**
+   * @brief Get the Gaussian Bayes net P(X|M=m) corresponding to a specific
+   * assignment m for the discrete variables M. As the hybrid Bayes net defines
+   * P(X,M) = P(X|M) P(M), this method returns the **posterior** p(X|M=m).
    *
    * @param assignment The discrete value assignment for the discrete keys.
-   * @return GaussianBayesNet
+   * @return Gaussian posterior P(X|M=m) as a GaussianBayesNet.
    */
   GaussianBayesNet choose(const DiscreteValues &assignment) const;
 
@@ -177,18 +205,13 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    */
   HybridValues sample() const;
 
-  /// Prune the Hybrid Bayes Net such that we have at most maxNrLeaves leaves.
-  HybridBayesNet prune(size_t maxNrLeaves);
-
   /**
-   * @brief Compute conditional error for each discrete assignment,
-   * and return as a tree.
+   * @brief Prune the Bayes Net such that we have at most maxNrLeaves leaves.
    *
-   * @param continuousValues Continuous values at which to compute the error.
-   * @return AlgebraicDecisionTree<Key>
+   * @param maxNrLeaves Continuous values at which to compute the error.
+   * @return A pruned HybridBayesNet
    */
-  AlgebraicDecisionTree<Key> errorTree(
-      const VectorValues &continuousValues) const;
+  HybridBayesNet prune(size_t maxNrLeaves) const;
 
   /**
    * @brief Error method using HybridValues which returns specific error for
@@ -197,29 +220,43 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   using Base::error;
 
   /**
-   * @brief Compute log probability for each discrete assignment,
-   * and return as a tree.
+   * @brief Compute the negative log posterior log P'(M|x) of all assignments up
+   * to a constant, returning the result as an algebraic decision tree.
    *
-   * @param continuousValues Continuous values at which
-   * to compute the log probability.
+   * @note The joint P(X,M) is p(X|M) P(M)
+   * Then the posterior on M given X=x is is P(M|x) = p(x|M) P(M) / p(x).
+   * Ideally we want log P(M|x) = log p(x|M) + log P(M) - log p(x), but
+   * unfortunately log p(x) is expensive, so we compute the log of the
+   * unnormalized posterior log P'(M|x) = log p(x|M) + log P(M)
+   *
+   * @param continuousValues Continuous values x at which to compute log P'(M|x)
    * @return AlgebraicDecisionTree<Key>
    */
-  AlgebraicDecisionTree<Key> logProbability(
+  AlgebraicDecisionTree<Key> errorTree(
       const VectorValues &continuousValues) const;
 
   using BayesNet::logProbability;  // expose HybridValues version
 
   /**
-   * @brief Compute unnormalized probability q(μ|M),
-   * for each discrete assignment, and return as a tree.
-   * q(μ|M) is the unnormalized probability at the MLE point μ,
-   * conditioned on the discrete variables.
+   * @brief Get the negative log of the normalization constant
+   * corresponding to the joint density represented by this Bayes net.
+   * Optionally index by `discrete`.
    *
-   * @param continuousValues Continuous values at which to compute the
-   * probability.
+   * @param discrete Optional DiscreteValues
+   * @return double
+   */
+  double negLogConstant(const std::optional<DiscreteValues> &discrete) const;
+
+  /**
+   * @brief Compute normalized posterior P(M|X=x) and return as a tree.
+   *
+   * @note Not a DiscreteConditional as the cardinalities of the DiscreteKeys,
+   * which we would need, are hard to recover.
+   *
+   * @param continuousValues Continuous values x to condition P(M|X=x) on.
    * @return AlgebraicDecisionTree<Key>
    */
-  AlgebraicDecisionTree<Key> evaluate(
+  AlgebraicDecisionTree<Key> discretePosterior(
       const VectorValues &continuousValues) const;
 
   /**
@@ -231,13 +268,6 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// @}
 
  private:
-  /**
-   * @brief Prune all the discrete conditionals.
-   *
-   * @param maxNrLeaves
-   */
-  DecisionTreeFactor pruneDiscreteConditionals(size_t maxNrLeaves);
-
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;

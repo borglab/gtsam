@@ -38,7 +38,7 @@ using SharedFactor = std::shared_ptr<Factor>;
 class GTSAM_EXPORT HybridFactorGraph : public FactorGraph<Factor> {
  public:
   using Base = FactorGraph<Factor>;
-  using This = HybridFactorGraph;              ///< this class
+  using This = HybridFactorGraph;            ///< this class
   using shared_ptr = std::shared_ptr<This>;  ///< shared_ptr to This
 
   using Values = gtsam::Values;  ///< backwards compatibility
@@ -59,6 +59,10 @@ class GTSAM_EXPORT HybridFactorGraph : public FactorGraph<Factor> {
   template <class DERIVEDFACTOR>
   HybridFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
+  /** Construct from container of factors (shared_ptr or plain objects) */
+  template <class CONTAINER>
+  explicit HybridFactorGraph(const CONTAINER& factors) : Base(factors) {}
+
   /// @}
   /// @name Extra methods to inspect discrete/continuous keys.
   /// @{
@@ -66,11 +70,8 @@ class GTSAM_EXPORT HybridFactorGraph : public FactorGraph<Factor> {
   /// Get all the discrete keys in the factor graph.
   std::set<DiscreteKey> discreteKeys() const;
 
-  /// Get all the discrete keys in the factor graph, as a set.
+  /// Get all the discrete keys in the factor graph, as a set of Keys.
   KeySet discreteKeySet() const;
-
-  /// Get a map from Key to corresponding DiscreteKey.
-  std::unordered_map<Key, DiscreteKey> discreteKeyMap() const;
 
   /// Get all the continuous keys in the factor graph.
   const KeySet continuousKeySet() const;

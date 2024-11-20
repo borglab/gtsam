@@ -22,8 +22,10 @@
 #include <utility>
 
 // assert_throw needs a semicolon in Release mode.
+#if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wextra-semi-stmt"
+#endif
 
 namespace gtsam {
 
@@ -417,5 +419,6 @@ namespace gtsam {
 
 } // \namespace gtsam
 
+#if defined(__clang__)
 #pragma clang diagnostic pop
-
+#endif

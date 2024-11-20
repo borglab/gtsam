@@ -189,7 +189,7 @@ namespace gtsam {
       const_iterator_type it_;
       deref_iterator(const_iterator_type it) : it_(it) {}
       ConstKeyValuePair operator*() const { return {it_->first, *(it_->second)}; }
-      std::unique_ptr<ConstKeyValuePair> operator->() {
+      std::unique_ptr<ConstKeyValuePair> operator->() const {
         return std::make_unique<ConstKeyValuePair>(it_->first, *(it_->second));
       }
       bool operator==(const deref_iterator& other) const {

@@ -22,10 +22,12 @@
 #include <gtsam/discrete/DecisionTree-inl.h>
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <string>
 #include <iomanip>
 #include <vector>
+
 namespace gtsam {
 
   /**
@@ -70,6 +72,7 @@ namespace gtsam {
         return a / b;
       }
       static inline double id(const double& x) { return x; }
+      static inline double negate(const double& x) { return -x; }
     };
 
     AlgebraicDecisionTree(double leaf = 1.0) : Base(leaf) {}
@@ -181,9 +184,34 @@ namespace gtsam {
       this->root_ = DecisionTree<L, double>::convertFrom(other.root_, L_of_M, op);
     }
 
+    /**
+     * @brief Create from an arbitrary DecisionTree<L, X> by operating on it
+     * with a functional `f`.
+     *
+     * @tparam X The type of the leaf of the original DecisionTree
+     * @tparam Func Type signature of functional `f`.
+     * @param other The original DecisionTree from which the
+     * AlgbraicDecisionTree is constructed.
+     * @param f Functional used to operate on
+     * the leaves of the input DecisionTree.
+     */
+    template <typename X, typename Func>
+    AlgebraicDecisionTree(const DecisionTree<L, X>& other, Func f)
+        : Base(other, f) {}
+
     /** sum */
     AlgebraicDecisionTree operator+(const AlgebraicDecisionTree& g) const {
       return this->apply(g, &Ring::add);
+    }
+
+    /** negation */
+    AlgebraicDecisionTree operator-() const {
+      return this->apply(&Ring::negate);
+    }
+
+    /** subtract */
+    AlgebraicDecisionTree operator-(const AlgebraicDecisionTree& g) const {
+      return *this + (-g);
     }
 
     /** product */
@@ -194,6 +222,39 @@ namespace gtsam {
     /** division */
     AlgebraicDecisionTree operator/(const AlgebraicDecisionTree& g) const {
       return this->apply(g, &Ring::div);
+    }
+
+    /// Compute sum of all values
+    double sum() const {
+      double sum = 0;
+      auto visitor = [&](double y) { sum += y; };
+      this->visit(visitor);
+      return sum;
+    }
+
+    /**
+     * @brief Helper method to perform normalization such that all leaves in the
+     * tree sum to 1
+     *
+     * @return AlgebraicDecisionTree
+     */
+    AlgebraicDecisionTree normalize() const { return (*this) / this->sum(); }
+
+    /// Find the minimum values amongst all leaves
+    double min() const {
+      double min = std::numeric_limits<double>::max();
+      auto visitor = [&](double x) { min = x < min ? x : min; };
+      this->visit(visitor);
+      return min;
+    }
+
+    /// Find the maximum values amongst all leaves
+    double max() const {
+      // Get the most negative value
+      double max = -std::numeric_limits<double>::max();
+      auto visitor = [&](double x) { max = x > max ? x : max; };
+      this->visit(visitor);
+      return max;
     }
 
     /** sum out variable */

@@ -26,16 +26,16 @@ namespace gtsam {
 Vector AttitudeFactor::attitudeError(const Rot3& nRb,
     OptionalJacobian<2, 3> H) const {
   if (H) {
-    Matrix23 D_nRef_R;
-    Matrix22 D_e_nRef;
-    Unit3 nRef = nRb.rotate(bRef_, D_nRef_R);
-    Vector e = nZ_.error(nRef, D_e_nRef);
+    Matrix23 D_nRotated_R;
+    Matrix22 D_e_nRotated;
+    Unit3 nRotated = nRb.rotate(bMeasured_, D_nRotated_R);
+    Vector e = nRef_.error(nRotated, D_e_nRotated);
 
-    (*H) = D_e_nRef * D_nRef_R;
+    (*H) = D_e_nRotated * D_nRotated_R;
     return e;
   } else {
-    Unit3 nRef = nRb * bRef_;
-    return nZ_.error(nRef);
+    Unit3 nRotated = nRb * bMeasured_;
+    return nRef_.error(nRotated);
   }
 }
 
@@ -44,8 +44,8 @@ void Rot3AttitudeFactor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
   cout << (s.empty() ? "" : s + " ") << "Rot3AttitudeFactor on "
        << keyFormatter(this->key()) << "\n";
-  nZ_.print("  measured direction in nav frame: ");
-  bRef_.print("  reference direction in body frame: ");
+  nRef_.print("  reference direction in nav frame: ");
+  bMeasured_.print("  measured direction in body frame: ");
   this->noiseModel_->print("  noise model: ");
 }
 
@@ -53,16 +53,16 @@ void Rot3AttitudeFactor::print(const string& s,
 bool Rot3AttitudeFactor::equals(const NonlinearFactor& expected,
     double tol) const {
   const This* e = dynamic_cast<const This*>(&expected);
-  return e != nullptr && Base::equals(*e, tol) && this->nZ_.equals(e->nZ_, tol)
-      && this->bRef_.equals(e->bRef_, tol);
+  return e != nullptr && Base::equals(*e, tol) && this->nRef_.equals(e->nRef_, tol)
+      && this->bMeasured_.equals(e->bMeasured_, tol);
 }
 
 //***************************************************************************
 void Pose3AttitudeFactor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
   cout << s << "Pose3AttitudeFactor on " << keyFormatter(this->key()) << "\n";
-  nZ_.print("  measured direction in nav frame: ");
-  bRef_.print("  reference direction in body frame: ");
+  nRef_.print("  reference direction in nav frame: ");
+  bMeasured_.print("  measured direction in body frame: ");
   this->noiseModel_->print("  noise model: ");
 }
 
@@ -70,8 +70,8 @@ void Pose3AttitudeFactor::print(const string& s,
 bool Pose3AttitudeFactor::equals(const NonlinearFactor& expected,
     double tol) const {
   const This* e = dynamic_cast<const This*>(&expected);
-  return e != nullptr && Base::equals(*e, tol) && this->nZ_.equals(e->nZ_, tol)
-      && this->bRef_.equals(e->bRef_, tol);
+  return e != nullptr && Base::equals(*e, tol) && this->nRef_.equals(e->nRef_, tol)
+      && this->bMeasured_.equals(e->bMeasured_, tol);
 }
 
 //***************************************************************************

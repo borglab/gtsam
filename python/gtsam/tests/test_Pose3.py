@@ -17,63 +17,7 @@ from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
 from gtsam import Point3, Pose3, Rot3
-
-
-def numerical_derivative_pose(pose, method, delta=1e-5):
-    jacobian = np.zeros((6, 6))
-    for idx in range(6):
-        xplus = np.zeros(6)
-        xplus[idx] = delta
-        xminus = np.zeros(6)
-        xminus[idx] = -delta
-        pose_plus = pose.retract(xplus).__getattribute__(method)()
-        pose_minus = pose.retract(xminus).__getattribute__(method)()
-        jacobian[:, idx] = pose_minus.localCoordinates(pose_plus) / (2 * delta)
-    return jacobian
-
-
-def numerical_derivative_2_poses(pose, other_pose, method, delta=1e-5, inputs=()):
-    jacobian = np.zeros((6, 6))
-    other_jacobian = np.zeros((6, 6))
-    for idx in range(6):
-        xplus = np.zeros(6)
-        xplus[idx] = delta
-        xminus = np.zeros(6)
-        xminus[idx] = -delta
-
-        pose_plus = pose.retract(xplus).__getattribute__(method)(*inputs, other_pose)
-        pose_minus = pose.retract(xminus).__getattribute__(method)(*inputs, other_pose)
-        jacobian[:, idx] = pose_minus.localCoordinates(pose_plus) / (2 * delta)
-
-        other_pose_plus = pose.__getattribute__(method)(*inputs, other_pose.retract(xplus))
-        other_pose_minus = pose.__getattribute__(method)(*inputs, other_pose.retract(xminus))
-        other_jacobian[:, idx] = other_pose_minus.localCoordinates(other_pose_plus) / (2 * delta)
-    return jacobian, other_jacobian
-
-
-def numerical_derivative_pose_point(pose, point, method, delta=1e-5):
-    jacobian = np.zeros((3, 6))
-    point_jacobian = np.zeros((3, 3))
-    for idx in range(6):
-        xplus = np.zeros(6)
-        xplus[idx] = delta
-        xminus = np.zeros(6)
-        xminus[idx] = -delta
-
-        point_plus = pose.retract(xplus).__getattribute__(method)(point)
-        point_minus = pose.retract(xminus).__getattribute__(method)(point)
-        jacobian[:, idx] = (point_plus - point_minus) / (2 * delta)
-
-        if idx < 3:
-            xplus = np.zeros(3)
-            xplus[idx] = delta
-            xminus = np.zeros(3)
-            xminus[idx] = -delta
-            point_plus = pose.__getattribute__(method)(point + xplus)
-            point_minus = pose.__getattribute__(method)(point + xminus)
-            point_jacobian[:, idx] = (point_plus - point_minus) / (2 * delta)
-    return jacobian, point_jacobian
-
+from gtsam.utils.numerical_derivative import numericalDerivative11, numericalDerivative21, numericalDerivative22
 
 class TestPose3(GtsamTestCase):
     """Test selected Pose3 methods."""
@@ -90,7 +34,8 @@ class TestPose3(GtsamTestCase):
         jacobian = np.zeros((6, 6), order='F')
         jacobian_other = np.zeros((6, 6), order='F')
         T2.between(T3, jacobian, jacobian_other)
-        jacobian_numerical, jacobian_numerical_other = numerical_derivative_2_poses(T2, T3, 'between')
+        jacobian_numerical = numericalDerivative21(Pose3.between, T2, T3)
+        jacobian_numerical_other = numericalDerivative22(Pose3.between, T2, T3)
         self.gtsamAssertEquals(jacobian, jacobian_numerical)
         self.gtsamAssertEquals(jacobian_other, jacobian_numerical_other)
 
@@ -104,7 +49,7 @@ class TestPose3(GtsamTestCase):
         #test jacobians
         jacobian = np.zeros((6, 6), order='F')
         pose.inverse(jacobian)
-        jacobian_numerical = numerical_derivative_pose(pose, 'inverse')
+        jacobian_numerical = numericalDerivative11(Pose3.inverse, pose)
         self.gtsamAssertEquals(jacobian, jacobian_numerical)
 
     def test_slerp(self):
@@ -123,7 +68,8 @@ class TestPose3(GtsamTestCase):
         jacobian = np.zeros((6, 6), order='F')
         jacobian_other = np.zeros((6, 6), order='F')
         pose0.slerp(0.5, pose1, jacobian, jacobian_other)
-        jacobian_numerical, jacobian_numerical_other = numerical_derivative_2_poses(pose0, pose1, 'slerp', inputs=[0.5])
+        jacobian_numerical = numericalDerivative11(lambda x: x.slerp(0.5, pose1), pose0)
+        jacobian_numerical_other = numericalDerivative11(lambda x: pose0.slerp(0.5, x), pose1)
         self.gtsamAssertEquals(jacobian, jacobian_numerical)
         self.gtsamAssertEquals(jacobian_other, jacobian_numerical_other)
 
@@ -139,7 +85,8 @@ class TestPose3(GtsamTestCase):
         jacobian_pose = np.zeros((3, 6), order='F')
         jacobian_point = np.zeros((3, 3), order='F')
         pose.transformTo(point, jacobian_pose, jacobian_point)
-        jacobian_numerical_pose, jacobian_numerical_point = numerical_derivative_pose_point(pose, point, 'transformTo')
+        jacobian_numerical_pose = numericalDerivative21(Pose3.transformTo, pose, point)
+        jacobian_numerical_point = numericalDerivative22(Pose3.transformTo, pose, point)
         self.gtsamAssertEquals(jacobian_pose, jacobian_numerical_pose)
         self.gtsamAssertEquals(jacobian_point, jacobian_numerical_point)
 
@@ -162,7 +109,8 @@ class TestPose3(GtsamTestCase):
         jacobian_pose = np.zeros((3, 6), order='F')
         jacobian_point = np.zeros((3, 3), order='F')
         pose.transformFrom(point, jacobian_pose, jacobian_point)
-        jacobian_numerical_pose, jacobian_numerical_point = numerical_derivative_pose_point(pose, point, 'transformFrom')
+        jacobian_numerical_pose = numericalDerivative21(Pose3.transformFrom, pose, point)
+        jacobian_numerical_point = numericalDerivative22(Pose3.transformFrom, pose, point)
         self.gtsamAssertEquals(jacobian_pose, jacobian_numerical_pose)
         self.gtsamAssertEquals(jacobian_point, jacobian_numerical_point)
 

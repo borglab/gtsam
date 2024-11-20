@@ -19,13 +19,16 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+#include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
-#include <gtsam/hybrid/MixtureFactor.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
@@ -43,30 +46,31 @@ using symbol_shorthand::X;
  * @brief Create a switching system chain. A switching system is a continuous
  * system which depends on a discrete mode at each time step of the chain.
  *
- * @param n The number of chain elements.
- * @param keyFunc The functional to help specify the continuous key.
- * @param dKeyFunc The functional to help specify the discrete key.
+ * @param K The number of chain elements.
+ * @param x The functional to help specify the continuous key.
+ * @param m The functional to help specify the discrete key.
  * @return HybridGaussianFactorGraph::shared_ptr
  */
 inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
-    size_t n, std::function<Key(int)> keyFunc = X,
-    std::function<Key(int)> dKeyFunc = M) {
+    size_t K, std::function<Key(int)> x = X, std::function<Key(int)> m = M,
+    const std::string &transitionProbabilityTable = "0 1 1 3") {
   HybridGaussianFactorGraph hfg;
 
-  hfg.add(JacobianFactor(keyFunc(1), I_3x3, Z_3x1));
+  hfg.add(JacobianFactor(x(1), I_3x3, Z_3x1));
 
-  // keyFunc(1) to keyFunc(n+1)
-  for (size_t t = 1; t < n; t++) {
-    hfg.add(GaussianMixtureFactor(
-        {keyFunc(t), keyFunc(t + 1)}, {{dKeyFunc(t), 2}},
-        {std::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
-                                            I_3x3, Z_3x1),
-         std::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
-                                            I_3x3, Vector3::Ones())}));
+  // x(1) to x(n+1)
+  for (size_t k = 1; k < K; k++) {
+    DiscreteKeys dKeys{{m(k), 2}};
+    std::vector<GaussianFactor::shared_ptr> components;
+    components.emplace_back(
+        new JacobianFactor(x(k), I_3x3, x(k + 1), I_3x3, Z_3x1));
+    components.emplace_back(
+        new JacobianFactor(x(k), I_3x3, x(k + 1), I_3x3, Vector3::Ones()));
+    hfg.add(HybridGaussianFactor({m(k), 2}, components));
 
-    if (t > 1) {
-      hfg.add(DecisionTreeFactor({{dKeyFunc(t - 1), 2}, {dKeyFunc(t), 2}},
-                                 "0 1 1 3"));
+    if (k > 1) {
+      hfg.add(DecisionTreeFactor({{m(k - 1), 2}, {m(k), 2}},
+                                 transitionProbabilityTable));
     }
   }
 
@@ -112,16 +116,17 @@ inline std::pair<KeyVector, std::vector<int>> makeBinaryOrdering(
   return {new_order, levels};
 }
 
-/* ***************************************************************************
- */
+/* ****************************************************************************/
 using MotionModel = BetweenFactor<double>;
 
 // Test fixture with switching network.
+/// ϕ(X(0)) .. ϕ(X(k),X(k+1)) .. ϕ(X(k);z_k) .. ϕ(M(0)) .. ϕ(M(K-3),M(K-2))
 struct Switching {
+ public:
   size_t K;
   DiscreteKeys modes;
-  HybridNonlinearFactorGraph nonlinearFactorGraph;
-  HybridGaussianFactorGraph linearizedFactorGraph;
+  HybridNonlinearFactorGraph unaryFactors, binaryFactors, modeChain;
+  HybridGaussianFactorGraph linearUnaryFactors, linearBinaryFactors;
   Values linearizationPoint;
 
   /**
@@ -134,12 +139,12 @@ struct Switching {
    */
   Switching(size_t K, double between_sigma = 1.0, double prior_sigma = 0.1,
             std::vector<double> measurements = {},
-            std::string discrete_transition_prob = "1/2 3/2")
+            std::string transitionProbabilityTable = "1/2 3/2")
       : K(K) {
     using noiseModel::Isotropic;
 
-    // Create DiscreteKeys for binary K modes.
-    for (size_t k = 0; k < K; k++) {
+    // Create DiscreteKeys for K-1 binary modes.
+    for (size_t k = 0; k < K - 1; k++) {
       modes.emplace_back(M(k), 2);
     }
 
@@ -151,45 +156,40 @@ struct Switching {
     }
 
     // Create hybrid factor graph.
-    // Add a prior on X(0).
-    nonlinearFactorGraph.emplace_shared<PriorFactor<double>>(
+
+    // Add a prior ϕ(X(0)) on X(0).
+    unaryFactors.emplace_shared<PriorFactor<double>>(
         X(0), measurements.at(0), Isotropic::Sigma(1, prior_sigma));
 
-    // Add "motion models".
+    // Add "motion models" ϕ(X(k),X(k+1),M(k)).
     for (size_t k = 0; k < K - 1; k++) {
-      KeyVector keys = {X(k), X(k + 1)};
       auto motion_models = motionModels(k, between_sigma);
-      std::vector<NonlinearFactor::shared_ptr> components;
-      for (auto &&f : motion_models) {
-        components.push_back(std::dynamic_pointer_cast<NonlinearFactor>(f));
-      }
-      nonlinearFactorGraph.emplace_shared<MixtureFactor>(
-          keys, DiscreteKeys{modes[k]}, components);
+      binaryFactors.emplace_shared<HybridNonlinearFactor>(modes[k],
+                                                          motion_models);
     }
 
-    // Add measurement factors
+    // Add measurement factors ϕ(X(k);z_k).
     auto measurement_noise = Isotropic::Sigma(1, prior_sigma);
     for (size_t k = 1; k < K; k++) {
-      nonlinearFactorGraph.emplace_shared<PriorFactor<double>>(
-          X(k), measurements.at(k), measurement_noise);
+      unaryFactors.emplace_shared<PriorFactor<double>>(X(k), measurements.at(k),
+                                                       measurement_noise);
     }
 
-    // Add "mode chain"
-    addModeChain(&nonlinearFactorGraph, discrete_transition_prob);
+    // Add "mode chain" ϕ(M(0)) ϕ(M(0),M(1)) ... ϕ(M(K-3),M(K-2))
+    modeChain = createModeChain(transitionProbabilityTable);
 
     // Create the linearization point.
     for (size_t k = 0; k < K; k++) {
       linearizationPoint.insert<double>(X(k), static_cast<double>(k + 1));
     }
 
-    // The ground truth is robot moving forward
-    // and one less than the linearization point
-    linearizedFactorGraph = *nonlinearFactorGraph.linearize(linearizationPoint);
+    linearUnaryFactors = *unaryFactors.linearize(linearizationPoint);
+    linearBinaryFactors = *binaryFactors.linearize(linearizationPoint);
   }
 
   // Create motion models for a given time step
-  static std::vector<MotionModel::shared_ptr> motionModels(size_t k,
-                                                           double sigma = 1.0) {
+  static std::vector<NoiseModelFactor::shared_ptr> motionModels(
+      size_t k, double sigma = 1.0) {
     auto noise_model = noiseModel::Isotropic::Sigma(1, sigma);
     auto still =
              std::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
@@ -204,15 +204,34 @@ struct Switching {
    *
    * @param fg The factor graph to which the mode chain is added.
    */
-  template <typename FACTORGRAPH>
-  void addModeChain(FACTORGRAPH *fg,
-                    std::string discrete_transition_prob = "1/2 3/2") {
-    fg->template emplace_shared<DiscreteDistribution>(modes[0], "1/1");
+  HybridNonlinearFactorGraph createModeChain(
+      std::string transitionProbabilityTable = "1/2 3/2") {
+    HybridNonlinearFactorGraph chain;
+    chain.emplace_shared<DiscreteDistribution>(modes[0], "1/1");
     for (size_t k = 0; k < K - 2; k++) {
       auto parents = {modes[k]};
-      fg->template emplace_shared<DiscreteConditional>(
-          modes[k + 1], parents, discrete_transition_prob);
+      chain.emplace_shared<DiscreteConditional>(modes[k + 1], parents,
+                                                transitionProbabilityTable);
     }
+    return chain;
+  }
+
+  /// Get the full linear factor graph.
+  HybridGaussianFactorGraph linearizedFactorGraph() const {
+    HybridGaussianFactorGraph graph;
+    graph.push_back(linearUnaryFactors);
+    graph.push_back(linearBinaryFactors);
+    graph.push_back(modeChain);
+    return graph;
+  }
+
+  /// Get all the nonlinear factors.
+  HybridNonlinearFactorGraph nonlinearFactorGraph() const {
+    HybridNonlinearFactorGraph graph;
+    graph.push_back(unaryFactors);
+    graph.push_back(binaryFactors);
+    graph.push_back(modeChain);
+    return graph;
   }
 };
 

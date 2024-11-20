@@ -36,7 +36,7 @@ namespace internal {
  * @param alpha Quantile value
  * @return double
  */
-double chi_squared_quantile(const double dofs, const double alpha) {
+inline double chi_squared_quantile(const double dofs, const double alpha) {
   return 2 * igami(dofs / 2, alpha);
 }
 

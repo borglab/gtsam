@@ -16,6 +16,7 @@
  */
 
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+#include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/hybrid/HybridNonlinearISAM.h>
 #include <gtsam/inference/Ordering.h>
 
@@ -39,8 +40,7 @@ void HybridNonlinearISAM::update(const HybridNonlinearFactorGraph& newFactors,
   if (newFactors.size() > 0) {
     // Reorder and relinearize every reorderInterval updates
     if (reorderInterval_ > 0 && ++reorderCounter_ >= reorderInterval_) {
-      // TODO(Varun) Relinearization doesn't take into account pruning
-      reorder_relinearize();
+      reorderRelinearize();
       reorderCounter_ = 0;
     }
 
@@ -60,16 +60,29 @@ void HybridNonlinearISAM::update(const HybridNonlinearFactorGraph& newFactors,
 }
 
 /* ************************************************************************* */
-void HybridNonlinearISAM::reorder_relinearize() {
+void HybridNonlinearISAM::reorderRelinearize() {
   if (factors_.size() > 0) {
     // Obtain the new linearization point
     const Values newLinPoint = estimate();
 
+    auto discreteProbs = *(isam_.roots().at(0)->conditional()->asDiscrete());
+
     isam_.clear();
+
+    // Prune nonlinear factors based on discrete conditional probabilities
+    HybridNonlinearFactorGraph pruned_factors;
+    for (auto&& factor : factors_) {
+      if (auto nf = std::dynamic_pointer_cast<HybridNonlinearFactor>(factor)) {
+        pruned_factors.push_back(nf->prune(discreteProbs));
+      } else {
+        pruned_factors.push_back(factor);
+      }
+    }
+    factors_ = pruned_factors;
 
     // Just recreate the whole BayesTree
     // TODO: allow for constrained ordering here
-    // TODO: decouple relinearization and reordering to avoid
+    // TODO: decouple re-linearization and reordering to avoid
     isam_.update(*factors_.linearize(newLinPoint), {}, {},
                  eliminationFunction_);
 

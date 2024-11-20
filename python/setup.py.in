@@ -13,6 +13,7 @@ package_data = {
         "./*.so",
         "./*.dll",
         "./*.pyd",
+        "*.pyi", "**/*.pyi",  # Add the type hints
     ]
 }
 

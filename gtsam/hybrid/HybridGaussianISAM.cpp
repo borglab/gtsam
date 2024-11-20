@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file HybridGaussianISAM.h
+ * @file HybridGaussianISAM.cpp
  * @date March 31, 2022
  * @author Fan Jiang
  * @author Frank Dellaert

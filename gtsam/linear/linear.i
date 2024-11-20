@@ -375,7 +375,8 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   void serialize() const;
 };
 
-pair<gtsam::GaussianConditional, gtsam::JacobianFactor*> EliminateQR(const gtsam::GaussianFactorGraph& factors, const gtsam::Ordering& keys);
+pair<gtsam::GaussianConditional*, gtsam::JacobianFactor*> EliminateQR(
+    const gtsam::GaussianFactorGraph& factors, const gtsam::Ordering& keys);
 
 #include <gtsam/linear/HessianFactor.h>
 virtual class HessianFactor : gtsam::GaussianFactor {
@@ -510,12 +511,17 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   GaussianConditional(size_t key, gtsam::Vector d, gtsam::Matrix R, size_t name1, gtsam::Matrix S,
                       size_t name2, gtsam::Matrix T,
                       const gtsam::noiseModel::Diagonal* sigmas);
+  GaussianConditional(const std::vector<std::pair<gtsam::Key, gtsam::Matrix>> terms,
+                      size_t nrFrontals, gtsam::Vector d,
+                      const gtsam::noiseModel::Diagonal* sigmas);
 
   // Constructors with no noise model
   GaussianConditional(size_t key, gtsam::Vector d, gtsam::Matrix R);
   GaussianConditional(size_t key, gtsam::Vector d, gtsam::Matrix R, size_t name1, gtsam::Matrix S);
   GaussianConditional(size_t key, gtsam::Vector d, gtsam::Matrix R, size_t name1, gtsam::Matrix S,
                       size_t name2, gtsam::Matrix T);
+  GaussianConditional(const gtsam::KeyVector& keys, size_t nrFrontals,
+                      const gtsam::VerticalBlockMatrix& augmentedMatrix);
 
   // Named constructors
   static gtsam::GaussianConditional FromMeanAndStddev(gtsam::Key key, 
@@ -542,7 +548,7 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   bool equals(const gtsam::GaussianConditional& cg, double tol) const;
   
   // Standard Interface
-  double logNormalizationConstant() const;
+  double negLogConstant() const;
   double logProbability(const gtsam::VectorValues& x) const;
   double evaluate(const gtsam::VectorValues& x) const;
   double error(const gtsam::VectorValues& x) const;
@@ -704,17 +710,11 @@ virtual class IterativeOptimizationParameters {
 #include <gtsam/linear/ConjugateGradientSolver.h>
 virtual class ConjugateGradientParameters : gtsam::IterativeOptimizationParameters {
   ConjugateGradientParameters();
-  int getMinIterations() const ;
-  int getMaxIterations() const ;
-  int getReset() const;
-  double getEpsilon_rel() const;
-  double getEpsilon_abs() const;
-
-  void setMinIterations(int value);
-  void setMaxIterations(int value);
-  void setReset(int value);
-  void setEpsilon_rel(double value);
-  void setEpsilon_abs(double value);
+  int minIterations;
+  int maxIterations;
+  int reset;
+  double epsilon_rel;
+  double epsilon_abs;
 };
 
 #include <gtsam/linear/Preconditioner.h>
@@ -733,8 +733,10 @@ virtual class BlockJacobiPreconditionerParameters : gtsam::PreconditionerParamet
 #include <gtsam/linear/PCGSolver.h>
 virtual class PCGSolverParameters : gtsam::ConjugateGradientParameters {
   PCGSolverParameters();
+  PCGSolverParameters(const gtsam::PreconditionerParameters* preconditioner);
   void print(string s = "");
-  void setPreconditionerParams(gtsam::PreconditionerParameters* preconditioner);
+
+  std::shared_ptr<gtsam::PreconditionerParameters> preconditioner;
 };
 
 #include <gtsam/linear/SubgraphSolver.h>

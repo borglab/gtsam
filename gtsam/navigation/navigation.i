@@ -256,34 +256,30 @@ virtual class AHRSFactor : gtsam::NonlinearFactor {
 };
 
 #include <gtsam/navigation/AttitudeFactor.h>
-//virtual class AttitudeFactor : gtsam::NonlinearFactor {
-//  AttitudeFactor(const Unit3& nZ, const Unit3& bRef);
-//  AttitudeFactor();
-//};
-virtual class Rot3AttitudeFactor : gtsam::NonlinearFactor{
-  Rot3AttitudeFactor(size_t key, const gtsam::Unit3& nZ, const gtsam::noiseModel::Diagonal* model,
-      const gtsam::Unit3& bRef);
-  Rot3AttitudeFactor(size_t key, const gtsam::Unit3& nZ, const gtsam::noiseModel::Diagonal* model);
+virtual class Rot3AttitudeFactor : gtsam::NoiseModelFactor {
+  Rot3AttitudeFactor(size_t key, const gtsam::Unit3& nRef, const gtsam::noiseModel::Diagonal* model,
+      const gtsam::Unit3& bMeasured);
+  Rot3AttitudeFactor(size_t key, const gtsam::Unit3& nRef, const gtsam::noiseModel::Diagonal* model);
   Rot3AttitudeFactor();
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::NonlinearFactor& expected, double tol) const;
-  gtsam::Unit3 nZ() const;
-  gtsam::Unit3 bRef() const;
+  gtsam::Unit3 nRef() const;
+  gtsam::Unit3 bMeasured() const;
 };
 
-virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor {
-  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nZ,
+virtual class Pose3AttitudeFactor : gtsam::NoiseModelFactor {
+  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nRef,
                       const gtsam::noiseModel::Diagonal* model,
-                      const gtsam::Unit3& bRef);
-  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nZ,
+                      const gtsam::Unit3& bMeasured);
+  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nRef,
                       const gtsam::noiseModel::Diagonal* model);
   Pose3AttitudeFactor();
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::NonlinearFactor& expected, double tol) const;
-  gtsam::Unit3 nZ() const;
-  gtsam::Unit3 bRef() const;
+  gtsam::Unit3 nRef() const;
+  gtsam::Unit3 bMeasured() const;
 };
 
 #include <gtsam/navigation/GPSFactor.h>

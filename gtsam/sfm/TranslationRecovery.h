@@ -60,14 +60,18 @@ class GTSAM_EXPORT TranslationRecovery {
   // Parameters.
   LevenbergMarquardtParams lmParams_;
 
+  const bool use_bilinear_translation_factor_ = false;
+
  public:
   /**
    * @brief Construct a new Translation Recovery object
    *
    * @param lmParams parameters for optimization.
    */
-  TranslationRecovery(const LevenbergMarquardtParams &lmParams)
-      : lmParams_(lmParams) {}
+  TranslationRecovery(const LevenbergMarquardtParams &lmParams,
+                      bool use_bilinear_translation_factor = false)
+      : lmParams_(lmParams),
+        use_bilinear_translation_factor_(use_bilinear_translation_factor) {}
 
   /**
    * @brief Default constructor.
@@ -115,7 +119,7 @@ class GTSAM_EXPORT TranslationRecovery {
    * @param betweenTranslations relative translations (with scale) between 2
    * points in world coordinate frame known a priori.
    * @param rng random number generator
-   * @param intialValues (optional) initial values from a prior
+   * @param initialValues (optional) initial values from a prior
    * @return Values
    */
   Values initializeRandomly(
@@ -152,7 +156,7 @@ class GTSAM_EXPORT TranslationRecovery {
    * points in world coordinate frame known a priori. Unlike
    * relativeTranslations, zero-magnitude betweenTranslations are not treated as
    * hard constraints.
-   * @param initialValues intial values for optimization. Initializes randomly
+   * @param initialValues initial values for optimization. Initializes randomly
    * if not provided.
    * @return Values
    */

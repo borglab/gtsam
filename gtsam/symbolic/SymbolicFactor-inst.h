@@ -42,7 +42,9 @@ namespace gtsam
       // Gather all keys
       KeySet allKeys;
       for(const std::shared_ptr<FACTOR>& factor: factors) {
-        allKeys.insert(factor->begin(), factor->end());
+        // Non-active factors are nullptr
+        if (factor)
+          allKeys.insert(factor->begin(), factor->end());
       }
 
       // Check keys

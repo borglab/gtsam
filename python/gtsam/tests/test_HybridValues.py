@@ -14,10 +14,11 @@ from __future__ import print_function
 
 import unittest
 
-import gtsam
 import numpy as np
 from gtsam.symbol_shorthand import C, X
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
 
 
 class TestHybridValues(GtsamTestCase):

@@ -179,7 +179,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   double operator()(const DiscreteValues& values) const override;
 
   /// Calculate error for DiscreteValues `x`, is -log(probability).
-  double error(const DiscreteValues& values) const;
+  double error(const DiscreteValues& values) const override;
 
   /// multiply two TableFactors
   TableFactor operator*(const TableFactor& f) const {
@@ -357,9 +357,6 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * Simply dispatches to DiscreteValues version.
    */
   double error(const HybridValues& values) const override;
-
-  /// Compute error for each assignment and return as a tree
-  AlgebraicDecisionTree<Key> errorTree() const override;
 
   /// @}
 };

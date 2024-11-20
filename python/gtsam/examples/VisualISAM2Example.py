@@ -73,7 +73,7 @@ def visual_ISAM2_example():
     points = SFMdata.createPoints()
 
     # Create the set of ground-truth poses
-    poses = SFMdata.createPoses(K)
+    poses = SFMdata.createPoses()
 
     # Create an iSAM2 object. Unlike iSAM1, which performs periodic batch steps
     # to maintain proper linearization and efficient variable ordering, iSAM2

@@ -95,9 +95,9 @@ TEST( Iterative, conjugateGradientDescent_hard_constraint )
   VectorValues zeros = config.zeroVectors();
 
   ConjugateGradientParameters parameters;
-  parameters.setEpsilon_abs(1e-3);
-  parameters.setEpsilon_rel(1e-5);
-  parameters.setMaxIterations(100);
+  parameters.epsilon_abs = 1e-3;
+  parameters.epsilon_rel = 1e-5;
+  parameters.maxIterations = 100;
   VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
 
   VectorValues expected;
@@ -122,9 +122,9 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
   VectorValues zeros = config.zeroVectors();
 
   ConjugateGradientParameters parameters;
-  parameters.setEpsilon_abs(1e-3);
-  parameters.setEpsilon_rel(1e-5);
-  parameters.setMaxIterations(100);
+  parameters.epsilon_abs = 1e-3;
+  parameters.epsilon_rel = 1e-5;
+  parameters.maxIterations = 100;
   VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
 
   VectorValues expected;

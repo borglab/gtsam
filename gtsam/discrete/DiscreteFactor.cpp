@@ -50,6 +50,22 @@ double DiscreteFactor::error(const HybridValues& c) const {
   return this->error(c.discrete());
 }
 
+/* ************************************************************************ */
+AlgebraicDecisionTree<Key> DiscreteFactor::errorTree() const {
+  // Get all possible assignments
+  DiscreteKeys dkeys = discreteKeys();
+  // Reverse to make cartesian product output a more natural ordering.
+  DiscreteKeys rdkeys(dkeys.rbegin(), dkeys.rend());
+  const auto assignments = DiscreteValues::CartesianProduct(rdkeys);
+
+  // Construct vector with error values
+  std::vector<double> errors;
+  for (const auto& assignment : assignments) {
+    errors.push_back(error(assignment));
+  }
+  return AlgebraicDecisionTree<Key>(dkeys, errors);
+}
+
 /* ************************************************************************* */
 std::vector<double> expNormalize(const std::vector<double>& logProbs) {
   double maxLogProb = -std::numeric_limits<double>::infinity();

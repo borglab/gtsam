@@ -36,7 +36,7 @@ def main():
     # Create the set of ground-truth landmarks
     points = SFMdata.createPoints()
     # Create the set of ground-truth poses
-    poses = SFMdata.createPoses(K)
+    poses = SFMdata.createPoses()
 
     # Create a NonlinearISAM object which will relinearize and reorder the variables
     # every "reorderInterval" updates

@@ -292,7 +292,7 @@ TEST(DiscreteConditional, choose) {
 /* ************************************************************************* */
 // Check argmax on P(C|D) and P(D), plus tie-breaking for P(B)
 TEST(DiscreteConditional, Argmax) {
-  DiscreteKey B(2, 2), C(2, 2), D(4, 2);
+  DiscreteKey C(2, 2), D(4, 2);
   DiscreteConditional B_prior(D, "1/1");
   DiscreteConditional D_prior(D, "1/3");
   DiscreteConditional C_given_D((C | D) = "1/4 1/1");

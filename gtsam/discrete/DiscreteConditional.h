@@ -168,7 +168,7 @@ class GTSAM_EXPORT DiscreteConditional
     static_cast<const BaseConditional*>(this)->print(s, formatter);
   }
 
-  /// Evaluate, just look up in AlgebraicDecisonTree
+  /// Evaluate, just look up in AlgebraicDecisionTree
   double evaluate(const DiscreteValues& values) const {
     return ADT::operator()(values);
   }
@@ -264,11 +264,12 @@ class GTSAM_EXPORT DiscreteConditional
   }
 
   /**
-   * logNormalizationConstant K is just zero, such that
-   * logProbability(x) = log(evaluate(x)) = - error(x)
-   * and hence error(x) = - log(evaluate(x)) > 0 for all x.
+   * negLogConstant is just zero, such that
+   * -logProbability(x) = -log(evaluate(x)) = error(x)
+   * and hence error(x) > 0 for all x.
+   * Thus -log(K) for the normalization constant k is 0.
    */
-  double logNormalizationConstant() const override { return 0.0; }
+  double negLogConstant() const override;
 
   /// @}
 

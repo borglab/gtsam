@@ -51,11 +51,10 @@ class HybridEliminationTree;
  */
 class GTSAM_EXPORT HybridJunctionTree
     : public JunctionTree<HybridBayesTree, HybridGaussianFactorGraph> {
-
  public:
   typedef JunctionTree<HybridBayesTree, HybridGaussianFactorGraph>
-      Base;                                    ///< Base class
-  typedef HybridJunctionTree This;             ///< This class
+      Base;                                  ///< Base class
+  typedef HybridJunctionTree This;           ///< This class
   typedef std::shared_ptr<This> shared_ptr;  ///< Shared pointer to this class
 
   /**

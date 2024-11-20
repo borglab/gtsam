@@ -29,7 +29,7 @@ static Cal3Bundler K(500, 1e-3, 1e-3, 1000, 2000);
 static Point2 p(2, 3);
 
 /* ************************************************************************* */
-TEST(Cal3Bundler, vector) {
+TEST(Cal3Bundler, Vector) {
   Cal3Bundler K;
   Vector expected(3);
   expected << 1, 0, 0;
@@ -37,16 +37,19 @@ TEST(Cal3Bundler, vector) {
 }
 
 /* ************************************************************************* */
-TEST(Cal3Bundler, uncalibrate) {
+TEST(Cal3Bundler, Uncalibrate) {
   Vector v = K.vector();
   double r = p.x() * p.x() + p.y() * p.y();
-  double g = v[0] * (1 + v[1] * r + v[2] * r * r);
-  Point2 expected(1000 + g * p.x(), 2000 + g * p.y());
+  double distortion = 1.0 + v[1] * r + v[2] * r * r;
+  double u = K.px() + v[0] * distortion * p.x();
+  double v_coord = K.py() + v[0] * distortion * p.y();
+  Point2 expected(u, v_coord);
   Point2 actual = K.uncalibrate(p);
   CHECK(assert_equal(expected, actual));
 }
 
-TEST(Cal3Bundler, calibrate) {
+/* ************************************************************************* */
+TEST(Cal3Bundler, Calibrate) {
   Point2 pn(0.5, 0.5);
   Point2 pi = K.uncalibrate(pn);
   Point2 pn_hat = K.calibrate(pi);
@@ -63,11 +66,11 @@ Point2 calibrate_(const Cal3Bundler& k, const Point2& pt) {
 }
 
 /* ************************************************************************* */
-TEST(Cal3Bundler, DuncalibrateDefault) {
+TEST(Cal3Bundler, DUncalibrateDefault) {
   Cal3Bundler trueK(1, 0, 0);
   Matrix Dcal, Dp;
   Point2 actual = trueK.uncalibrate(p, Dcal, Dp);
-  Point2 expected = p;
+  Point2 expected(p);  // Since K is identity, uncalibrate should return p
   CHECK(assert_equal(expected, actual, 1e-7));
   Matrix numerical1 = numericalDerivative21(uncalibrate_, trueK, p);
   Matrix numerical2 = numericalDerivative22(uncalibrate_, trueK, p);
@@ -76,7 +79,7 @@ TEST(Cal3Bundler, DuncalibrateDefault) {
 }
 
 /* ************************************************************************* */
-TEST(Cal3Bundler, DcalibrateDefault) {
+TEST(Cal3Bundler, DCalibrateDefault) {
   Cal3Bundler trueK(1, 0, 0);
   Matrix Dcal, Dp;
   Point2 pn(0.5, 0.5);
@@ -90,11 +93,11 @@ TEST(Cal3Bundler, DcalibrateDefault) {
 }
 
 /* ************************************************************************* */
-TEST(Cal3Bundler, DuncalibratePrincipalPoint) {
+TEST(Cal3Bundler, DUncalibratePrincipalPoint) {
   Cal3Bundler K(5, 0, 0, 2, 2);
   Matrix Dcal, Dp;
   Point2 actual = K.uncalibrate(p, Dcal, Dp);
-  Point2 expected(12, 17);
+  Point2 expected(2.0 + 5.0 * p.x(), 2.0 + 5.0 * p.y());
   CHECK(assert_equal(expected, actual, 1e-7));
   Matrix numerical1 = numericalDerivative21(uncalibrate_, K, p);
   Matrix numerical2 = numericalDerivative22(uncalibrate_, K, p);
@@ -103,7 +106,7 @@ TEST(Cal3Bundler, DuncalibratePrincipalPoint) {
 }
 
 /* ************************************************************************* */
-TEST(Cal3Bundler, DcalibratePrincipalPoint) {
+TEST(Cal3Bundler, DCalibratePrincipalPoint) {
   Cal3Bundler K(2, 0, 0, 2, 2);
   Matrix Dcal, Dp;
   Point2 pn(0.5, 0.5);
@@ -117,11 +120,18 @@ TEST(Cal3Bundler, DcalibratePrincipalPoint) {
 }
 
 /* ************************************************************************* */
-TEST(Cal3Bundler, Duncalibrate) {
+TEST(Cal3Bundler, DUncalibrate) {
   Matrix Dcal, Dp;
   Point2 actual = K.uncalibrate(p, Dcal, Dp);
-  Point2 expected(2182, 3773);
+  // Compute expected value manually
+  Vector v = K.vector();
+  double r2 = p.x() * p.x() + p.y() * p.y();
+  double distortion = 1.0 + v[1] * r2 + v[2] * r2 * r2;
+  Point2 expected(
+      K.px() + v[0] * distortion * p.x(),
+      K.py() + v[0] * distortion * p.y());
   CHECK(assert_equal(expected, actual, 1e-7));
+
   Matrix numerical1 = numericalDerivative21(uncalibrate_, K, p);
   Matrix numerical2 = numericalDerivative22(uncalibrate_, K, p);
   CHECK(assert_equal(numerical1, Dcal, 1e-7));
@@ -129,7 +139,7 @@ TEST(Cal3Bundler, Duncalibrate) {
 }
 
 /* ************************************************************************* */
-TEST(Cal3Bundler, Dcalibrate) {
+TEST(Cal3Bundler, DCalibrate) {
   Matrix Dcal, Dp;
   Point2 pn(0.5, 0.5);
   Point2 pi = K.uncalibrate(pn);
@@ -145,7 +155,7 @@ TEST(Cal3Bundler, Dcalibrate) {
 TEST(Cal3Bundler, assert_equal) { CHECK(assert_equal(K, K, 1e-7)); }
 
 /* ************************************************************************* */
-TEST(Cal3Bundler, retract) {
+TEST(Cal3Bundler, Retract) {
   Cal3Bundler expected(510, 2e-3, 2e-3, 1000, 2000);
   EXPECT_LONGS_EQUAL(3, expected.dim());
 

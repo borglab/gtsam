@@ -31,7 +31,6 @@
 #include <iostream>
 #include <map>
 #include <set>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -86,7 +85,7 @@ namespace gtsam {
 
     /** ------------------------ Node base class --------------------------- */
     struct Node {
-      using Ptr = std::shared_ptr<const Node>;
+      using Ptr = std::shared_ptr<Node>;
 
 #ifdef DT_DEBUG_MEMORY
       static int nrNodes;
@@ -155,15 +154,28 @@ namespace gtsam {
      * and Y values 
      */
     template <typename It, typename ValueIt>
-    NodePtr build(It begin, It end, ValueIt beginY, ValueIt endY) const;
+    static NodePtr build(It begin, It end, ValueIt beginY, ValueIt endY);
 
-    /** Internal helper function to create from
-     * keys, cardinalities, and Y values.
-     * Calls `build` which builds thetree bottom-up,
-     * before we prune in a top-down fashion.
+    /**
+     * Internal helper function to create a tree from keys, cardinalities, and Y
+     * values. Calls `build` which builds the tree bottom-up, before we prune in
+     * a top-down fashion.
      */
     template <typename It, typename ValueIt>
-    NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY) const;
+    static NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY);
+
+    /**
+     * @brief Convert from a DecisionTree<L, X> to DecisionTree<L, Y>.
+     *
+     * @tparam M The previous label type.
+     * @tparam X The previous value type.
+     * @param f The node pointer to the root of the previous DecisionTree.
+     * @param Y_of_X Functor to convert from value type X to type Y.
+     * @return NodePtr
+     */
+    template <typename X>
+    static NodePtr convertFrom(const typename DecisionTree<L, X>::NodePtr& f,
+                               std::function<Y(const X&)> Y_of_X);
 
     /**
      * @brief Convert from a DecisionTree<M, X> to DecisionTree<L, Y>.
@@ -176,9 +188,9 @@ namespace gtsam {
      * @return NodePtr 
      */
     template <typename M, typename X>
-    NodePtr convertFrom(const typename DecisionTree<M, X>::NodePtr& f,
-                        std::function<L(const M&)> L_of_M,
-                        std::function<Y(const X&)> Y_of_X) const;
+    static NodePtr convertFrom(const typename DecisionTree<M, X>::NodePtr& f,
+                               std::function<L(const M&)> L_of_M,
+                               std::function<Y(const X&)> Y_of_X);
 
    public:
     /// @name Standard Constructors
@@ -217,6 +229,15 @@ namespace gtsam {
                  const DecisionTree& f1);
 
     /**
+     * @brief Move constructor for DecisionTree. Very efficient as does not
+     * allocate anything, just changes in-place. But `other` is consumed.
+     *
+     * @param op The unary operation to apply to the moved DecisionTree.
+     * @param other The DecisionTree to move from, will be empty afterwards.
+     */
+    DecisionTree(const Unary& op, DecisionTree&& other) noexcept;
+
+    /**
      * @brief Convert from a different value type.
      *
      * @tparam X The previous value type.
@@ -227,7 +248,7 @@ namespace gtsam {
     DecisionTree(const DecisionTree<L, X>& other, Func Y_of_X);
 
     /**
-     * @brief Convert from a different value type X to value type Y, also transate
+     * @brief Convert from a different value type X to value type Y, also translate
      * labels via map from type M to L.
      *
      * @tparam M Previous label type.
@@ -394,6 +415,18 @@ namespace gtsam {
                     const ValueFormatter& valueFormatter,
                     bool showZero = true) const;
 
+    /**
+     * @brief Convert into two trees with value types A and B.
+     *
+     * @tparam A First new value type.
+     * @tparam B Second new value type.
+     * @param AB_of_Y Functor to convert from type X to std::pair<A, B>.
+     * @return A pair of DecisionTrees with value types A and B respectively.
+     */
+    template <typename A, typename B>
+    std::pair<DecisionTree<L, A>, DecisionTree<L, B>> split(
+        std::function<std::pair<A, B>(const Y&)> AB_of_Y) const;
+
     /// @name Advanced Interface
     /// @{
 
@@ -402,7 +435,7 @@ namespace gtsam {
 
     // internal use only
     template<typename Iterator> NodePtr
-    compose(Iterator begin, Iterator end, const L& label) const;
+    static compose(Iterator begin, Iterator end, const L& label);
 
     /// @}
 

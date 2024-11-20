@@ -96,7 +96,7 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
   virtual double operator()(const DiscreteValues&) const = 0;
 
   /// Error is just -log(value)
-  double error(const DiscreteValues& values) const;
+  virtual double error(const DiscreteValues& values) const;
 
   /**
    * The Factor::error simply extracts the \class DiscreteValues from the
@@ -105,7 +105,7 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
   double error(const HybridValues& c) const override;
 
   /// Compute error for each assignment and return as a tree
-  virtual AlgebraicDecisionTree<Key> errorTree() const = 0;
+  virtual AlgebraicDecisionTree<Key> errorTree() const;
 
   /// Multiply in a DecisionTreeFactor and return the result as
   /// DecisionTreeFactor
@@ -158,8 +158,8 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
 // DiscreteFactor
 
 // traits
-template<> struct traits<DiscreteFactor> : public Testable<DiscreteFactor> {};
-
+template <>
+struct traits<DiscreteFactor> : public Testable<DiscreteFactor> {};
 
 /**
  * @brief Normalize a set of log probabilities.
@@ -177,7 +177,6 @@ template<> struct traits<DiscreteFactor> : public Testable<DiscreteFactor> {};
  * of the (unnormalized) log probabilities are either very large or very
  * small.
  */
-std::vector<double> expNormalize(const std::vector<double> &logProbs);
-
+std::vector<double> expNormalize(const std::vector<double>& logProbs);
 
 }  // namespace gtsam

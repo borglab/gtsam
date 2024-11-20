@@ -578,6 +578,8 @@ class Unit3 {
   // Standard Constructors
   Unit3();
   Unit3(const gtsam::Point3& pose);
+  Unit3(double x, double y, double z);
+  Unit3(const gtsam::Point2& p, double f);
 
   // Testable
   void print(string s = "") const;
@@ -620,10 +622,10 @@ class EssentialMatrix {
   EssentialMatrix(const gtsam::Rot3& aRb, const gtsam::Unit3& aTb);
 
   // Constructors from Pose3
-  gtsam::EssentialMatrix FromPose3(const gtsam::Pose3& _1P2_);
+  static gtsam::EssentialMatrix FromPose3(const gtsam::Pose3& _1P2_);
 
-  gtsam::EssentialMatrix FromPose3(const gtsam::Pose3& _1P2_,
-                            Eigen::Ref<Eigen::MatrixXd> H);
+  static gtsam::EssentialMatrix FromPose3(const gtsam::Pose3& _1P2_,
+                                          Eigen::Ref<Eigen::MatrixXd> H);
 
   // Testable
   void print(string s = "") const;
@@ -642,8 +644,36 @@ class EssentialMatrix {
   double error(gtsam::Vector vA, gtsam::Vector vB);
 };
 
+#include <gtsam/geometry/Cal3.h>
+virtual class Cal3 {
+  // Standard Constructors
+  Cal3();
+  Cal3(double fx, double fy, double s, double u0, double v0);
+  Cal3(gtsam::Vector v);
+
+  // Testable
+  void print(string s = "Cal3") const;
+  bool equals(const gtsam::Cal3& rhs, double tol) const;
+
+  // Standard Interface
+  double fx() const;
+  double fy() const;
+  double aspectRatio() const;
+  double skew() const;
+  double px() const;
+  double py() const;
+  gtsam::Point2 principalPoint() const;
+  gtsam::Vector vector() const;
+  gtsam::Matrix K() const;
+  gtsam::Matrix inverse() const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+};
+
 #include <gtsam/geometry/Cal3_S2.h>
-class Cal3_S2 {
+virtual class Cal3_S2 : gtsam::Cal3 {
   // Standard Constructors
   Cal3_S2();
   Cal3_S2(double fx, double fy, double s, double u0, double v0);
@@ -670,23 +700,12 @@ class Cal3_S2 {
                             Eigen::Ref<Eigen::MatrixXd> Dcal,
                             Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
-  // Standard Interface
-  double fx() const;
-  double fy() const;
-  double skew() const;
-  double px() const;
-  double py() const;
-  gtsam::Point2 principalPoint() const;
-  gtsam::Vector vector() const;
-  gtsam::Matrix K() const;
-  gtsam::Matrix inverse() const;
-
   // enabling serialization functionality
   void serialize() const;
 };
 
 #include <gtsam/geometry/Cal3DS2_Base.h>
-virtual class Cal3DS2_Base {
+virtual class Cal3DS2_Base : gtsam::Cal3 {
   // Standard Constructors
   Cal3DS2_Base();
 
@@ -694,16 +713,8 @@ virtual class Cal3DS2_Base {
   void print(string s = "") const;
 
   // Standard Interface
-  double fx() const;
-  double fy() const;
-  double skew() const;
-  double px() const;
-  double py() const;
   double k1() const;
   double k2() const;
-  gtsam::Matrix K() const;
-  gtsam::Vector k() const;
-  gtsam::Vector vector() const;
 
   // Action on Point2
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
@@ -783,7 +794,7 @@ virtual class Cal3Unified : gtsam::Cal3DS2_Base {
 };
 
 #include <gtsam/geometry/Cal3Fisheye.h>
-class Cal3Fisheye {
+virtual class Cal3Fisheye : gtsam::Cal3 {
   // Standard Constructors
   Cal3Fisheye();
   Cal3Fisheye(double fx, double fy, double s, double u0, double v0, double k1,
@@ -795,8 +806,6 @@ class Cal3Fisheye {
   bool equals(const gtsam::Cal3Fisheye& rhs, double tol) const;
 
   // Manifold
-  static size_t Dim();
-  size_t dim() const;
   gtsam::Cal3Fisheye retract(gtsam::Vector v) const;
   gtsam::Vector localCoordinates(const gtsam::Cal3Fisheye& c) const;
 
@@ -811,35 +820,23 @@ class Cal3Fisheye {
                             Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // Standard Interface
-  double fx() const;
-  double fy() const;
-  double skew() const;
   double k1() const;
   double k2() const;
   double k3() const;
   double k4() const;
-  double px() const;
-  double py() const;
-  gtsam::Point2 principalPoint() const;
-  gtsam::Vector vector() const;
-  gtsam::Vector k() const;
-  gtsam::Matrix K() const;
-  gtsam::Matrix inverse() const;
 
   // enabling serialization functionality
   void serialize() const;
 };
 
 #include <gtsam/geometry/Cal3_S2Stereo.h>
-class Cal3_S2Stereo {
+virtual class Cal3_S2Stereo   : gtsam::Cal3{
   // Standard Constructors
   Cal3_S2Stereo();
   Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0, double b);
   Cal3_S2Stereo(gtsam::Vector v);
 
   // Manifold
-  static size_t Dim();
-  size_t dim() const;
   gtsam::Cal3_S2Stereo retract(gtsam::Vector v) const;
   gtsam::Vector localCoordinates(const gtsam::Cal3_S2Stereo& c) const;
 
@@ -848,35 +845,23 @@ class Cal3_S2Stereo {
   bool equals(const gtsam::Cal3_S2Stereo& K, double tol) const;
 
   // Standard Interface
-  double fx() const;
-  double fy() const;
-  double skew() const;
-  double px() const;
-  double py() const;
-  gtsam::Matrix K() const;
-  gtsam::Point2 principalPoint() const;
   double baseline() const;
-  Vector6 vector() const;
-  gtsam::Matrix inverse() const;
+  gtsam::Vector6 vector() const;
 };
 
 #include <gtsam/geometry/Cal3Bundler.h>
-class Cal3Bundler {
+virtual class Cal3f : gtsam::Cal3 {
   // Standard Constructors
-  Cal3Bundler();
-  Cal3Bundler(double fx, double k1, double k2, double u0, double v0);
-  Cal3Bundler(double fx, double k1, double k2, double u0, double v0,
-              double tol);
+  Cal3f();
+  Cal3f(double fx, double u0, double v0);
 
   // Testable
   void print(string s = "") const;
-  bool equals(const gtsam::Cal3Bundler& rhs, double tol) const;
+  bool equals(const gtsam::Cal3f& rhs, double tol) const;
 
   // Manifold
-  static size_t Dim();
-  size_t dim() const;
-  gtsam::Cal3Bundler retract(gtsam::Vector v) const;
-  gtsam::Vector localCoordinates(const gtsam::Cal3Bundler& c) const;
+  gtsam::Cal3f retract(gtsam::Vector v) const;
+  gtsam::Vector localCoordinates(const gtsam::Cal3f& c) const;
 
   // Action on Point2
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
@@ -889,19 +874,89 @@ class Cal3Bundler {
                             Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // Standard Interface
-  double fx() const;
-  double fy() const;
-  double k1() const;
-  double k2() const;
-  double px() const;
-  double py() const;
-  gtsam::Vector vector() const;
-  gtsam::Vector k() const;
-  gtsam::Matrix K() const;
+  double f() const;
 
   // enabling serialization functionality
   void serialize() const;
 };
+
+
+#include <gtsam/geometry/Cal3Bundler.h>
+virtual class Cal3Bundler : gtsam::Cal3f {
+  // Standard Constructors
+  Cal3Bundler();
+  Cal3Bundler(double fx, double k1, double k2, double u0, double v0);
+  Cal3Bundler(double fx, double k1, double k2, double u0, double v0,
+              double tol);
+
+  // Testable
+  void print(string s = "") const;
+  bool equals(const gtsam::Cal3Bundler& rhs, double tol) const;
+
+  // Manifold
+  gtsam::Cal3Bundler retract(gtsam::Vector v) const;
+  gtsam::Vector localCoordinates(const gtsam::Cal3Bundler& c) const;
+
+  // Standard Interface
+  double k1() const;
+  double k2() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
+#include <gtsam/geometry/FundamentalMatrix.h>
+
+// FundamentalMatrix class
+class FundamentalMatrix {
+  // Constructors
+  FundamentalMatrix();
+  FundamentalMatrix(const gtsam::Matrix3& U, double s, const gtsam::Matrix3& V);
+  FundamentalMatrix(const gtsam::Matrix3& F);
+
+  // Overloaded constructors for specific calibration types
+  FundamentalMatrix(const gtsam::Matrix3& Ka, const gtsam::EssentialMatrix& E,
+                    const gtsam::Matrix3& Kb);
+  FundamentalMatrix(const gtsam::Matrix3& Ka, const gtsam::Pose3& aPb,
+                    const gtsam::Matrix3& Kb);
+
+  // Methods
+  gtsam::Matrix3 matrix() const;
+
+  // Testable
+  void print(const std::string& s = "") const;
+  bool equals(const gtsam::FundamentalMatrix& other, double tol = 1e-9) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Vector localCoordinates(const gtsam::FundamentalMatrix& F) const;
+  gtsam::FundamentalMatrix retract(const gtsam::Vector& delta) const;
+};
+
+// SimpleFundamentalMatrix class
+class SimpleFundamentalMatrix {
+  // Constructors
+  SimpleFundamentalMatrix();
+  SimpleFundamentalMatrix(const gtsam::EssentialMatrix& E, double fa, double fb,
+                          const gtsam::Point2& ca, const gtsam::Point2& cb);
+
+  // Methods
+  gtsam::Matrix3 matrix() const;
+
+  // Testable
+  void print(const std::string& s = "") const;
+  bool equals(const gtsam::SimpleFundamentalMatrix& other, double tol = 1e-9) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Vector localCoordinates(const gtsam::SimpleFundamentalMatrix& F) const;
+  gtsam::SimpleFundamentalMatrix retract(const gtsam::Vector& delta) const;
+};
+
+gtsam::Point2 EpipolarTransfer(const gtsam::Matrix3& Fca, const gtsam::Point2& pa,
+                               const gtsam::Matrix3& Fcb, const gtsam::Point2& pb);
 
 #include <gtsam/geometry/CalibratedCamera.h>
 class CalibratedCamera {
@@ -1016,6 +1071,7 @@ typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
 typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
 typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
+typedef gtsam::PinholeCamera<gtsam::Cal3f> PinholeCameraCal3f;
 typedef gtsam::PinholeCamera<gtsam::Cal3Fisheye> PinholeCameraCal3Fisheye;
 
 #include <gtsam/geometry/PinholePose.h>

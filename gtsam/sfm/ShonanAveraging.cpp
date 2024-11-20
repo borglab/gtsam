@@ -67,20 +67,15 @@ ShonanAveragingParameters<d>::ShonanAveragingParameters(
   builderParameters.augmentationWeight = SubgraphBuilderParameters::SKELETON;
   builderParameters.augmentationFactor = 0.0;
 
-  auto pcg = std::make_shared<PCGSolverParameters>();
-
   // Choose optimization method
   if (method == "SUBGRAPH") {
     lm.iterativeParams =
         std::make_shared<SubgraphSolverParameters>(builderParameters);
   } else if (method == "SGPC") {
-    pcg->preconditioner_ =
-        std::make_shared<SubgraphPreconditionerParameters>(builderParameters);
-    lm.iterativeParams = pcg;
+    lm.iterativeParams = std::make_shared<PCGSolverParameters>(
+        std::make_shared<SubgraphPreconditionerParameters>(builderParameters));
   } else if (method == "JACOBI") {
-    pcg->preconditioner_ =
-        std::make_shared<BlockJacobiPreconditionerParameters>();
-    lm.iterativeParams = pcg;
+    lm.iterativeParams = std::make_shared<PCGSolverParameters>(std::make_shared<BlockJacobiPreconditionerParameters>());
   } else if (method == "QR") {
     lm.setLinearSolverType("MULTIFRONTAL_QR");
   } else if (method == "CHOLESKY") {

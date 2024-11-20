@@ -13,7 +13,7 @@ For instructions on updating the version of the [wrap library](https://github.co
   use the `-DGTSAM_PYTHON_VERSION=3.6` option when running `cmake` otherwise the default interpreter will be used.
 - If the interpreter is inside an environment (such as an anaconda environment or virtualenv environment),
   then the environment should be active while building GTSAM.
-- This wrapper needs `pyparsing(>=2.4.2)`, and `numpy(>=1.11.0)`. These can be installed as follows:
+- This wrapper needs [pyparsing(>=2.4.2)](https://github.com/pyparsing/pyparsing), [pybind-stubgen>=2.5.1](https://github.com/sizmailov/pybind11-stubgen) and [numpy(>=1.11.0)](https://numpy.org/). These can all be installed as follows:
 
   ```bash
   pip install -r <gtsam_folder>/python/dev_requirements.txt

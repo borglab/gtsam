@@ -18,8 +18,6 @@
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/discrete/DiscreteLookupDAG.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 
 namespace gtsam {
@@ -60,7 +58,12 @@ DiscreteValues DiscreteBayesNet::sample(DiscreteValues result) const {
   // sample each node in turn in topological sort order (parents first)
   for (auto it = std::make_reverse_iterator(end());
        it != std::make_reverse_iterator(begin()); ++it) {
-    (*it)->sampleInPlace(&result);
+    const DiscreteConditional::shared_ptr& conditional = *it;
+    // Sample the conditional only if value for j not already in result
+    const Key j = conditional->firstFrontalKey();
+    if (result.count(j) == 0) {
+      conditional->sampleInPlace(&result);
+    }
   }
   return result;
 }

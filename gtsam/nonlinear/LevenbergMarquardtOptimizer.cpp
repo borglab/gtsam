@@ -236,9 +236,9 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
     if (currentState->iterations == 0) {
       cout << "iter      cost      cost_change    lambda  success iter_time" << endl;
     }
-    cout << setw(4) << currentState->iterations << " " << setw(8) << newError << " " << setw(3) << setprecision(2)
-         << costChange << " " << setw(3) << setprecision(2) << currentState->lambda << " " << setw(4)
-         << systemSolvedSuccessfully << " " << setw(3) << setprecision(2) << iterationTime << endl;
+    cout << setw(4) << currentState->iterations << " " << setw(12) << newError << " " << setw(12) << setprecision(2)
+         << costChange << " " << setw(10) << setprecision(2) << currentState->lambda << " " << setw(6)
+         << systemSolvedSuccessfully << " " << setw(10) << setprecision(2) << iterationTime << endl;
   }
   if (step_is_successful) {
     // we have successfully decreased the cost and we have good modelFidelity

@@ -131,7 +131,7 @@ namespace gtsam {
 
     /// Calculate probability for given values `x`, 
     /// is just look up in AlgebraicDecisionTree.
-    double evaluate(const DiscreteValues& values) const  {
+    double evaluate(const Assignment<Key>& values) const  {
       return ADT::operator()(values);
     }
 
@@ -141,7 +141,7 @@ namespace gtsam {
     }
 
     /// Calculate error for DiscreteValues `x`, is -log(probability).
-    double error(const DiscreteValues& values) const;
+    double error(const DiscreteValues& values) const override;
 
     /// multiply two factors
     DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override {
@@ -155,7 +155,7 @@ namespace gtsam {
       return apply(f, safe_div);
     }
 
-    /// Convert into a decisiontree
+    /// Convert into a decision tree
     DecisionTreeFactor toDecisionTreeFactor() const override { return *this; }
 
     /// Create new factor by summing all values with the same separator values
@@ -291,9 +291,6 @@ namespace gtsam {
    * Simply dispatches to DiscreteValues version.
    */
   double error(const HybridValues& values) const override;
-
-  /// Compute error for each assignment and return as a tree
-  AlgebraicDecisionTree<Key> errorTree() const override;
 
   /// @}
 

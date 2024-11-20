@@ -118,17 +118,18 @@ TEST(ManifoldPreintegration, CompareWithPreintegratedRotation) {
   // Integrate a single measurement
   const double omega = 0.1;
   const Vector3 trueOmega(omega, 0, 0);
-  const Vector3 bias(1, 2, 3);
-  const Vector3 measuredOmega = trueOmega + bias;
+  const Vector3 biasOmega(1, 2, 3); 
+  const Vector3 measuredOmega = trueOmega + biasOmega;
   const double deltaT = 0.5;
 
   // Check the accumulated rotation.
   Rot3 expected = Rot3::Roll(omega * deltaT);
-  pim.integrateGyroMeasurement(measuredOmega, bias, deltaT);
+  const Vector biasOmegaHat = biasOmega;
+  pim.integrateGyroMeasurement(measuredOmega, biasOmegaHat, deltaT);
   EXPECT(assert_equal(expected, pim.deltaRij(), 1e-9));
 
   // Now do the same for a ManifoldPreintegration object
-  imuBias::ConstantBias biasHat {Z_3x1, bias};
+  imuBias::ConstantBias biasHat {Z_3x1, biasOmega};
   ManifoldPreintegration manifoldPim(testing::Params(), biasHat);
   manifoldPim.integrateMeasurement(Z_3x1, measuredOmega, deltaT);
   EXPECT(assert_equal(expected, manifoldPim.deltaRij(), 1e-9));
@@ -136,17 +137,21 @@ TEST(ManifoldPreintegration, CompareWithPreintegratedRotation) {
   // Check their internal Jacobians are the same:
   EXPECT(assert_equal(pim.delRdelBiasOmega(), manifoldPim.delRdelBiasOmega()));
 
-  // Check PreintegratedRotation::biascorrectedDeltaRij.
-  Matrix3 H;
+  // Let's check the derivatives a delta away from the bias hat
   const double delta = 0.05;
   const Vector3 biasOmegaIncr(delta, 0, 0);
+  imuBias::ConstantBias bias_i {Z_3x1, biasOmegaHat + biasOmegaIncr};
+
+  // Check PreintegratedRotation::biascorrectedDeltaRij.
+  // Note that biascorrectedDeltaRij expects the biasHat to be subtracted already
+  Matrix3 H;
   Rot3 corrected = pim.biascorrectedDeltaRij(biasOmegaIncr, H);
   EQUALITY(Vector3(-deltaT * delta, 0, 0), expected.logmap(corrected));
   const Rot3 expected2 = Rot3::Roll((omega - delta) * deltaT);
   EXPECT(assert_equal(expected2, corrected, 1e-9));
 
   // Check ManifoldPreintegration::biasCorrectedDelta.
-  imuBias::ConstantBias bias_i {Z_3x1, bias + biasOmegaIncr};
+  // Note that, confusingly, biasCorrectedDelta will subtract biasHat inside 
   Matrix96 H2;
   Vector9 biasCorrected = manifoldPim.biasCorrectedDelta(bias_i, H2);
   Vector9 expected3;
@@ -154,12 +159,11 @@ TEST(ManifoldPreintegration, CompareWithPreintegratedRotation) {
   EXPECT(assert_equal(expected3, biasCorrected, 1e-9));
   
   // Check that this one is sane:
-  auto g = [&](const Vector3& increment) {
-    return manifoldPim.biasCorrectedDelta({Z_3x1, bias + increment}, {});
+  auto g = [&](const Vector3& b) {
+    return manifoldPim.biasCorrectedDelta({Z_3x1, b}, {});
   };
-  EXPECT(assert_equal<Matrix>(numericalDerivative11<Vector9, Vector3>(g, Z_3x1),
-                              H2.rightCols<3>(),
-                              1e-4));  // NOTE(frank): reduced tolerance
+  EXPECT(assert_equal<Matrix>(numericalDerivative11<Vector9, Vector3>(g, bias_i.gyroscope()),
+                              H2.rightCols<3>()));                      
 }
 
 /* ************************************************************************* */

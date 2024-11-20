@@ -96,6 +96,19 @@ unsigned char mrsymbolChr(size_t key);
 unsigned char mrsymbolLabel(size_t key);
 size_t mrsymbolIndex(size_t key);
 
+#include <gtsam/inference/EdgeKey.h>
+class EdgeKey {
+  EdgeKey(std::uint32_t i, std::uint32_t j);
+  EdgeKey(size_t key);
+  EdgeKey(const gtsam::EdgeKey& key);
+
+  std::uint32_t i() const;
+  std::uint32_t j() const;
+  size_t key() const;
+
+  void print(string s = "") const;
+};
+
 #include <gtsam/inference/Ordering.h>
 class Ordering {
   /// Type of ordering to use

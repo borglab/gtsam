@@ -183,6 +183,8 @@ namespace gtsam {
         return *sqrt_information_;
       }
 
+      /// Compute the log of |R|. Used for computing log(|Σ|)
+      virtual double logDetR() const;
 
     public:
 
@@ -266,7 +268,18 @@ namespace gtsam {
       /// Compute covariance matrix
       virtual Matrix covariance() const;
 
-    private:
+      /// Compute the log of |Σ|
+      double logDeterminant() const;
+
+      /**
+       * @brief Compute the negative log of the normalization constant
+       * for a Gaussian noise model k = 1/\sqrt(|2πΣ|).
+       * 
+       * @return double 
+       */
+      double negLogConstant() const;
+
+     private:
 #ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
       /** Serialization function */
       friend class boost::serialization::access;
@@ -295,10 +308,11 @@ namespace gtsam {
        */
       Vector sigmas_, invsigmas_, precisions_;
 
-    protected:
-
       /** constructor to allow for disabling initialization of invsigmas */
       Diagonal(const Vector& sigmas);
+
+      /// Compute the log of |R|. Used for computing log(|Σ|)
+      virtual double logDetR() const override;
 
     public:
       /** constructor - no initializations, for serialization */
@@ -532,6 +546,9 @@ namespace gtsam {
       Isotropic(size_t dim, double sigma) :
         Diagonal(Vector::Constant(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
 
+      /// Compute the log of |R|. Used for computing log(|Σ|)
+      virtual double logDetR() const override;
+
     public:
 
       /* dummy constructor to allow for serialization */
@@ -595,6 +612,10 @@ namespace gtsam {
      * Unit: i.i.d. unit-variance noise on all m dimensions.
      */
     class GTSAM_EXPORT Unit : public Isotropic {
+    protected:
+      /// Compute the log of |R|. Used for computing log(|Σ|)
+      virtual double logDetR() const override;
+
     public:
 
       typedef std::shared_ptr<Unit> shared_ptr;

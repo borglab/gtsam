@@ -25,20 +25,26 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          macos-12-xcode-14.2,
+          macos-13-xcode-14.2,
+          macos-14-xcode-15.4,
         ]
 
         build_type: [Debug, Release]
         build_unstable: [ON]
         include:
-          - name: macos-12-xcode-14.2
-            os: macos-12
+          - name: macos-13-xcode-14.2
+            os: macos-13
             compiler: xcode
             version: "14.2"
 
+          - name: macos-14-xcode-15.4
+            os: macos-14
+            compiler: xcode
+            version: "15.4"
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Dependencies
         run: |

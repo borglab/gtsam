@@ -75,13 +75,11 @@ Rot3 IncrementalRotation::operator()(
   Vector3 correctedOmega = measuredOmega - bias;
 
   // Then compensate for sensor-body displacement: we express the quantities
-  // (originally in the IMU frame) into the body frame. If Jacobian is
-  // requested, the rotation matrix is obtained as `rotate` Jacobian.
-  Matrix3 body_R_sensor;
+  // (originally in the IMU frame) into the body frame.
+  // Note that the rotate Jacobian is just body_P_sensor->rotation().matrix().
   if (body_P_sensor) {
     // rotation rate vector in the body frame
-    correctedOmega = body_P_sensor->rotation().rotate(
-        correctedOmega, {}, H_bias ? &body_R_sensor : nullptr);
+    correctedOmega = body_P_sensor->rotation() * correctedOmega;
   }
 
   // rotation vector describing rotation increment computed from the
@@ -90,7 +88,7 @@ Rot3 IncrementalRotation::operator()(
   Rot3 incrR = Rot3::Expmap(integratedOmega, H_bias);  // expensive !!
   if (H_bias) {
     *H_bias *= -deltaT;  // Correct so accurately reflects bias derivative
-    if (body_P_sensor) *H_bias *= body_R_sensor;
+    if (body_P_sensor) *H_bias *= body_P_sensor->rotation().matrix();
   }
   return incrR;
 }

@@ -56,10 +56,8 @@ void Cal3Bundler::print(const std::string& s) const {
 
 /* ************************************************************************* */
 bool Cal3Bundler::equals(const Cal3Bundler& K, double tol) const {
-  const Cal3* base = dynamic_cast<const Cal3*>(&K);
-  return (Cal3::equals(*base, tol) && std::fabs(k1_ - K.k1_) < tol &&
-          std::fabs(k2_ - K.k2_) < tol && std::fabs(u0_ - K.u0_) < tol &&
-          std::fabs(v0_ - K.v0_) < tol);
+  return Cal3f::equals(static_cast<const Cal3f&>(K), tol) &&
+         std::fabs(k1_ - K.k1_) < tol && std::fabs(k2_ - K.k2_) < tol;
 }
 
 /* ************************************************************************* */

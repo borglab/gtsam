@@ -10,22 +10,19 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @file    testDecisionTree.cpp
- * @brief    Develop DecisionTree
- * @author  Frank Dellaert
- * @date  Mar 6, 2011
+ * @file   testAlgebraicDecisionTree.cpp
+ * @brief  Unit tests for Algebraic decision tree
+ * @author Frank Dellaert
+ * @date   Mar 6, 2011
  */
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DiscreteKey.h>  // make sure we have traits
 #include <gtsam/discrete/DiscreteValues.h>
 // headers first to make sure no missing headers
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DecisionTree-inl.h>  // for convert only
-#define DISABLE_TIMING
-
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/timing.h>
 #include <gtsam/discrete/Signature.h>
 
 using namespace std;
@@ -49,38 +46,48 @@ void dot(const T& f, const string& filename) {
 #endif
 }
 
-/** I can't get this to work !
- class Mul: std::function<double(const double&, const double&)> {
- inline double operator()(const double& a, const double& b) {
- return a * b;
- }
- };
+/* ************************************************************************** */
+// Test arithmetic:
+TEST(ADT, arithmetic) {
+  DiscreteKey A(0, 2), B(1, 2);
+  ADT zero{0}, one{1};
+  ADT a(A, 1, 2);
+  ADT b(B, 3, 4);
 
- // If second argument of binary op is Leaf
- template<typename L>
- typename DecisionTree<L, double>::Node::Ptr DecisionTree<L,
- double>::Choice::apply_fC_op_gL( Cache& cache, const Leaf& gL, Mul op) const {
- Ptr h(new Choice(label(), cardinality()));
- for(const NodePtr& branch: branches_)
- h->push_back(branch->apply_f_op_g(cache, gL, op));
- return Unique(cache, h);
- }
- */
+  // Addition
+  CHECK(assert_equal(a, zero + a));
+
+  // Negate and subtraction
+  CHECK(assert_equal(-a, zero - a));
+  CHECK(assert_equal({zero}, a - a));
+  CHECK(assert_equal(a + b, b + a));
+  CHECK(assert_equal({A, 3, 4}, a + 2));
+  CHECK(assert_equal({B, 1, 2}, b - 2));
+
+  // Multiplication
+  CHECK(assert_equal(zero, zero * a));
+  CHECK(assert_equal(zero, a * zero));
+  CHECK(assert_equal(a, one * a));
+  CHECK(assert_equal(a, a * one));
+  CHECK(assert_equal(a * b, b * a));
+
+  // division
+  // CHECK(assert_equal(a, (a * b) / b)); // not true because no pruning
+  CHECK(assert_equal(b, (a * b) / a));
+}
 
 /* ************************************************************************** */
 // instrumented operators
 /* ************************************************************************** */
 size_t muls = 0, adds = 0;
-double elapsed;
 void resetCounts() {
   muls = 0;
   adds = 0;
 }
 void printCounts(const string& s) {
 #ifndef DISABLE_TIMING
-cout << s << ": " << std::setw(3) << muls << " muls, " << 
-  std::setw(3) << adds << " adds, " << 1000 * elapsed << " ms."
-     << endl;
+  cout << s << ": " << std::setw(3) << muls << " muls, " << std::setw(3) << adds
+       << " adds" << endl;
 #endif
   resetCounts();
 }
@@ -131,37 +138,35 @@ ADT create(const Signature& signature) {
   static size_t count = 0;
   const DiscreteKey& key = signature.key();
   std::stringstream ss;
-  ss << "CPT-" << std::setw(3) << std::setfill('0') << ++count << "-" << key.first;
+  ss << "CPT-" << std::setw(3) << std::setfill('0') << ++count << "-"
+     << key.first;
   string DOTfile = ss.str();
   dot(p, DOTfile);
   return p;
 }
 
 /* ************************************************************************* */
+namespace asiaCPTs {
+DiscreteKey A(0, 2), S(1, 2), T(2, 2), L(3, 2), B(4, 2), E(5, 2), X(6, 2),
+    D(7, 2);
+
+ADT pA = create(A % "99/1");
+ADT pS = create(S % "50/50");
+ADT pT = create(T | A = "99/1 95/5");
+ADT pL = create(L | S = "99/1 90/10");
+ADT pB = create(B | S = "70/30 40/60");
+ADT pE = create((E | T, L) = "F T T T");
+ADT pX = create(X | E = "95/5 2/98");
+ADT pD = create((D | E, B) = "9/1 2/8 3/7 1/9");
+}  // namespace asiaCPTs
+
+/* ************************************************************************* */
 // test Asia Joint
 TEST(ADT, joint) {
-  DiscreteKey A(0, 2), S(1, 2), T(2, 2), L(3, 2), B(4, 2), E(5, 2), X(6, 2),
-      D(7, 2);
-
-  resetCounts();
-  gttic_(asiaCPTs);
-  ADT pA = create(A % "99/1");
-  ADT pS = create(S % "50/50");
-  ADT pT = create(T | A = "99/1 95/5");
-  ADT pL = create(L | S = "99/1 90/10");
-  ADT pB = create(B | S = "70/30 40/60");
-  ADT pE = create((E | T, L) = "F T T T");
-  ADT pX = create(X | E = "95/5 2/98");
-  ADT pD = create((D | E, B) = "9/1 2/8 3/7 1/9");
-  gttoc_(asiaCPTs);
-  tictoc_getNode(asiaCPTsNode, asiaCPTs);
-  elapsed = asiaCPTsNode->secs() + asiaCPTsNode->wall();
-  tictoc_reset_();
-  printCounts("Asia CPTs");
+  using namespace asiaCPTs;
 
   // Create joint
   resetCounts();
-  gttic_(asiaJoint);
   ADT joint = pA;
   dot(joint, "Asia-A");
   joint = apply(joint, pS, &mul);
@@ -183,11 +188,12 @@ TEST(ADT, joint) {
 #else
   EXPECT_LONGS_EQUAL(508, muls);
 #endif
-  gttoc_(asiaJoint);
-  tictoc_getNode(asiaJointNode, asiaJoint);
-  elapsed = asiaJointNode->secs() + asiaJointNode->wall();
-  tictoc_reset_();
   printCounts("Asia joint");
+}
+
+/* ************************************************************************* */
+TEST(ADT, combine) {
+  using namespace asiaCPTs;
 
   // Form P(A,S,T,L) = P(A) P(S) P(T|A) P(L|S)
   ADT pASTL = pA;
@@ -203,13 +209,11 @@ TEST(ADT, joint) {
 }
 
 /* ************************************************************************* */
-// test Inference with joint
+// test Inference with joint, created using different ordering
 TEST(ADT, inference) {
   DiscreteKey A(0, 2), D(1, 2),  //
       B(2, 2), L(3, 2), E(4, 2), S(5, 2), T(6, 2), X(7, 2);
 
-  resetCounts();
-  gttic_(infCPTs);
   ADT pA = create(A % "99/1");
   ADT pS = create(S % "50/50");
   ADT pT = create(T | A = "99/1 95/5");
@@ -218,15 +222,9 @@ TEST(ADT, inference) {
   ADT pE = create((E | T, L) = "F T T T");
   ADT pX = create(X | E = "95/5 2/98");
   ADT pD = create((D | E, B) = "9/1 2/8 3/7 1/9");
-  gttoc_(infCPTs);
-  tictoc_getNode(infCPTsNode, infCPTs);
-  elapsed = infCPTsNode->secs() + infCPTsNode->wall();
-  tictoc_reset_();
-  //  printCounts("Inference CPTs");
 
-  // Create joint
+  // Create joint, note different ordering than above: different tree!
   resetCounts();
-  gttic_(asiaProd);
   ADT joint = pA;
   dot(joint, "Joint-Product-A");
   joint = apply(joint, pS, &mul);
@@ -248,14 +246,9 @@ TEST(ADT, inference) {
 #else
   EXPECT_LONGS_EQUAL(508, (long)muls);  // different ordering
 #endif
-  gttoc_(asiaProd);
-  tictoc_getNode(asiaProdNode, asiaProd);
-  elapsed = asiaProdNode->secs() + asiaProdNode->wall();
-  tictoc_reset_();
   printCounts("Asia product");
 
   resetCounts();
-  gttic_(asiaSum);
   ADT marginal = joint;
   marginal = marginal.combine(X, &add_);
   dot(marginal, "Joint-Sum-ADBLEST");
@@ -270,10 +263,6 @@ TEST(ADT, inference) {
 #else
   EXPECT_LONGS_EQUAL(240, (long)adds);
 #endif
-  gttoc_(asiaSum);
-  tictoc_getNode(asiaSumNode, asiaSum);
-  elapsed = asiaSumNode->secs() + asiaSumNode->wall();
-  tictoc_reset_();
   printCounts("Asia sum");
 }
 
@@ -281,8 +270,6 @@ TEST(ADT, inference) {
 TEST(ADT, factor_graph) {
   DiscreteKey B(0, 2), L(1, 2), E(2, 2), S(3, 2), T(4, 2), X(5, 2);
 
-  resetCounts();
-  gttic_(createCPTs);
   ADT pS = create(S % "50/50");
   ADT pT = create(T % "95/5");
   ADT pL = create(L | S = "99/1 90/10");
@@ -290,15 +277,9 @@ TEST(ADT, factor_graph) {
   ADT pX = create(X | E = "95/5 2/98");
   ADT pD = create(B | E = "1/8 7/9");
   ADT pB = create(B | S = "70/30 40/60");
-  gttoc_(createCPTs);
-  tictoc_getNode(createCPTsNode, createCPTs);
-  elapsed = createCPTsNode->secs() + createCPTsNode->wall();
-  tictoc_reset_();
-  //  printCounts("Create CPTs");
 
   // Create joint
   resetCounts();
-  gttic_(asiaFG);
   ADT fg = pS;
   fg = apply(fg, pT, &mul);
   fg = apply(fg, pL, &mul);
@@ -312,14 +293,9 @@ TEST(ADT, factor_graph) {
 #else
   EXPECT_LONGS_EQUAL(188, (long)muls);
 #endif
-  gttoc_(asiaFG);
-  tictoc_getNode(asiaFGNode, asiaFG);
-  elapsed = asiaFGNode->secs() + asiaFGNode->wall();
-  tictoc_reset_();
   printCounts("Asia FG");
 
   resetCounts();
-  gttic_(marg);
   fg = fg.combine(X, &add_);
   dot(fg, "Marginalized-6X");
   fg = fg.combine(T, &add_);
@@ -335,83 +311,54 @@ TEST(ADT, factor_graph) {
 #else
   LONGS_EQUAL(62, adds);
 #endif
-  gttoc_(marg);
-  tictoc_getNode(margNode, marg);
-  elapsed = margNode->secs() + margNode->wall();
-  tictoc_reset_();
   printCounts("marginalize");
 
   // BLESTX
 
   // Eliminate X
   resetCounts();
-  gttic_(elimX);
   ADT fE = pX;
   dot(fE, "Eliminate-01-fEX");
   fE = fE.combine(X, &add_);
   dot(fE, "Eliminate-02-fE");
-  gttoc_(elimX);
-  tictoc_getNode(elimXNode, elimX);
-  elapsed = elimXNode->secs() + elimXNode->wall();
-  tictoc_reset_();
   printCounts("Eliminate X");
 
   // Eliminate T
   resetCounts();
-  gttic_(elimT);
   ADT fLE = pT;
   fLE = apply(fLE, pE, &mul);
   dot(fLE, "Eliminate-03-fLET");
   fLE = fLE.combine(T, &add_);
   dot(fLE, "Eliminate-04-fLE");
-  gttoc_(elimT);
-  tictoc_getNode(elimTNode, elimT);
-  elapsed = elimTNode->secs() + elimTNode->wall();
-  tictoc_reset_();
   printCounts("Eliminate T");
 
   // Eliminate S
   resetCounts();
-  gttic_(elimS);
   ADT fBL = pS;
   fBL = apply(fBL, pL, &mul);
   fBL = apply(fBL, pB, &mul);
   dot(fBL, "Eliminate-05-fBLS");
   fBL = fBL.combine(S, &add_);
   dot(fBL, "Eliminate-06-fBL");
-  gttoc_(elimS);
-  tictoc_getNode(elimSNode, elimS);
-  elapsed = elimSNode->secs() + elimSNode->wall();
-  tictoc_reset_();
   printCounts("Eliminate S");
 
   // Eliminate E
   resetCounts();
-  gttic_(elimE);
   ADT fBL2 = fE;
   fBL2 = apply(fBL2, fLE, &mul);
   fBL2 = apply(fBL2, pD, &mul);
   dot(fBL2, "Eliminate-07-fBLE");
   fBL2 = fBL2.combine(E, &add_);
   dot(fBL2, "Eliminate-08-fBL2");
-  gttoc_(elimE);
-  tictoc_getNode(elimENode, elimE);
-  elapsed = elimENode->secs() + elimENode->wall();
-  tictoc_reset_();
   printCounts("Eliminate E");
 
   // Eliminate L
   resetCounts();
-  gttic_(elimL);
   ADT fB = fBL;
   fB = apply(fB, fBL2, &mul);
   dot(fB, "Eliminate-09-fBL");
   fB = fB.combine(L, &add_);
   dot(fB, "Eliminate-10-fB");
-  gttoc_(elimL);
-  tictoc_getNode(elimLNode, elimL);
-  elapsed = elimLNode->secs() + elimLNode->wall();
-  tictoc_reset_();
   printCounts("Eliminate L");
 }
 
@@ -591,6 +538,55 @@ TEST(ADT, zero) {
   EXPECT_DOUBLES_EQUAL(0, anotb(x01), 1e-9);
   EXPECT_DOUBLES_EQUAL(1, anotb(x10), 1e-9);
   EXPECT_DOUBLES_EQUAL(0, anotb(x11), 1e-9);
+}
+
+/// Example ADT from 0 to 11.
+ADT exampleADT() {
+  DiscreteKey A(0, 2), B(1, 3), C(2, 2);
+  ADT f(A & B & C, "0 6  2 8  4 10    1 7  3 9  5 11");
+  return f;
+}
+/* ************************************************************************** */
+// Test sum
+TEST(ADT, Sum) {
+  ADT a = exampleADT();
+  double expected_sum = 0;
+  for (double i = 0; i < 12; i++) {
+    expected_sum += i;
+  }
+  EXPECT_DOUBLES_EQUAL(expected_sum, a.sum(), 1e-9);
+}
+
+/* ************************************************************************** */
+// Test normalize
+TEST(ADT, Normalize) {
+  ADT a = exampleADT();
+  double sum = a.sum();
+  auto actual = a.normalize();
+
+  DiscreteKey A(0, 2), B(1, 3), C(2, 2);
+  DiscreteKeys keys = DiscreteKeys{A, B, C};
+  std::vector<double> cpt{0 / sum, 6 / sum,  2 / sum, 8 / sum,
+                          4 / sum, 10 / sum, 1 / sum, 7 / sum,
+                          3 / sum, 9 / sum,  5 / sum, 11 / sum};
+  ADT expected(keys, cpt);
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************** */
+// Test min
+TEST(ADT, Min) {
+  ADT a = exampleADT();
+  double min = a.min();
+  EXPECT_DOUBLES_EQUAL(0.0, min, 1e-9);
+}
+
+/* ************************************************************************** */
+// Test max
+TEST(ADT, Max) {
+  ADT a = exampleADT();
+  double max = a.max();
+  EXPECT_DOUBLES_EQUAL(11.0, max, 1e-9);
 }
 
 /* ************************************************************************* */
