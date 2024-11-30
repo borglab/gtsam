@@ -715,6 +715,9 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
   void print(string s = "BatchFixedLagSmoother:\n") const;
 
   gtsam::LevenbergMarquardtParams params() const;
+
+  gtsam::NonlinearFactorGraph getFactors() const;
+
   template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                      gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
                      gtsam::Vector, gtsam::Matrix}>
