@@ -16,6 +16,7 @@
  * @author  Frank Dellaert
  * @author  Alex Hagiopol
  * @author  Varun Agrawal
+ * @author  Fan Jiang
  */
 
 // \callgraph
@@ -193,14 +194,12 @@ GTSAM_EXPORT Vector ediv_(const Vector &a, const Vector &b);
  */
 template<class V1, class V2>
 inline double dot(const V1 &a, const V2& b) {
-  assert (b.size()==a.size());
   return a.dot(b);
 }
 
 /** compatibility version for ublas' inner_prod() */
 template<class V1, class V2>
 inline double inner_prod(const V1 &a, const V2& b) {
-  assert (b.size()==a.size());
   return a.dot(b);
 }
 
