@@ -55,9 +55,9 @@ private:
   R range_;
 
 public:
-  enum { dimB = traits<B>::dimension };
-  enum { dimR = traits<R>::dimension };
-  enum { dimension = dimB + dimR };
+  constexpr static const size_t dimB = traits<B>::dimension;
+  constexpr static const size_t dimR = traits<R>::dimension;
+  constexpr static const size_t dimension = dimB + dimR;
 
   /// @name Standard Constructors
   /// @{

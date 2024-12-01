@@ -32,8 +32,8 @@ class ProductLieGroup: public std::pair<G, H> {
   typedef std::pair<G, H> Base;
 
 protected:
-  enum {dimension1 = traits<G>::dimension};
-  enum {dimension2 = traits<H>::dimension};
+  constexpr static const size_t dimension1 = traits<G>::dimension;
+  constexpr static const size_t dimension2 = traits<H>::dimension;
 
 public:
   /// Default constructor yields identity
