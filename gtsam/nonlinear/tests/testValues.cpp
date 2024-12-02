@@ -54,7 +54,7 @@ int TestValueData::DestructorCount = 0;
 class TestValue {
   TestValueData data_;
 public:
-  enum {dimension = 0};
+  inline constexpr static auto dimension = 0;
   void print(const std::string& str = "") const {}
   bool equals(const TestValue& other, double tol = 1e-9) const { return true; }
   size_t dim() const { return 0; }

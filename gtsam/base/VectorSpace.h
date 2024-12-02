@@ -163,7 +163,7 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
 template<class Class>
 struct HasVectorSpacePrereqs {
 
-  enum { dim = Class::dimension };
+  inline constexpr static auto dim = Class::dimension;
 
   Class p, q;
   Vector v;
@@ -197,7 +197,7 @@ GTSAM_CONCEPT_ASSERT(HasVectorSpacePrereqs<Class>);
 
   /// @name Manifold
   /// @{
-  enum { dimension = Class::dimension};
+  inline constexpr static auto dimension = Class::dimension;
   typedef Class ManifoldType;
   /// @}
 };
@@ -232,7 +232,7 @@ struct ScalarTraits : VectorSpaceImpl<Scalar, 1> {
   /// @name Manifold
   /// @{
   typedef Scalar ManifoldType;
-  enum { dimension = 1 };
+  inline constexpr static auto dimension = 1;
   typedef Eigen::Matrix<double, 1, 1> TangentVector;
   typedef OptionalJacobian<1, 1> ChartJacobian;
 
@@ -305,7 +305,7 @@ struct traits<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > :
 
   /// @name Manifold
   /// @{
-  enum { dimension = M*N};
+  inline constexpr static auto dimension = M * N;
   typedef Fixed ManifoldType;
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef Eigen::Matrix<double, dimension, dimension> Jacobian;
@@ -377,7 +377,7 @@ struct DynamicTraits {
 
   /// @name Manifold
   /// @{
-  enum { dimension = Eigen::Dynamic };
+  inline constexpr static auto dimension = Eigen::Dynamic;
   typedef Eigen::VectorXd TangentVector;
   typedef Eigen::MatrixXd Jacobian;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;

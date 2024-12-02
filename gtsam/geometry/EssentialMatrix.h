@@ -82,7 +82,7 @@ class EssentialMatrix {
 
   /// @name Manifold
   /// @{
-  enum { dimension = 5 };
+  inline constexpr static auto dimension = 5;
   inline static size_t Dim() { return dimension;}
   inline size_t dim() const { return dimension;}
 

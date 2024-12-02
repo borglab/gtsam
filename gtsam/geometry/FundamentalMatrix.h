@@ -102,7 +102,7 @@ class GTSAM_EXPORT FundamentalMatrix {
 
   /// @name Manifold
   /// @{
-  enum { dimension = 7 };  // 3 for U, 1 for s, 3 for V
+  inline constexpr static auto dimension = 7;  // 3 for U, 1 for s, 3 for V
   inline static size_t Dim() { return dimension; }
   inline size_t dim() const { return dimension; }
 
@@ -179,7 +179,7 @@ class GTSAM_EXPORT SimpleFundamentalMatrix {
 
   /// @name Manifold
   /// @{
-  enum { dimension = 7 };  // 5 for E, 1 for fa, 1 for fb
+  inline constexpr static auto dimension = 7;  // 5 for E, 1 for fa, 1 for fb
   inline static size_t Dim() { return dimension; }
   inline size_t dim() const { return dimension; }
 

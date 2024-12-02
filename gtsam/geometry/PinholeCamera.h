@@ -51,9 +51,7 @@ private:
 
 public:
 
-  enum {
-    dimension = 6 + DimK
-  }; ///< Dimension depends on calibration
+  inline constexpr static auto dimension = 6 + DimK; ///< Dimension depends on calibration
 
   /// @name Standard Constructors
   /// @{

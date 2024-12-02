@@ -479,7 +479,7 @@ struct MultiplyWithInverse {
  */
 template <typename T, int N>
 struct MultiplyWithInverseFunction {
-  enum { M = traits<T>::dimension };
+  inline constexpr static auto M = traits<T>::dimension;
   typedef Eigen::Matrix<double, N, 1> VectorN;
   typedef Eigen::Matrix<double, N, N> MatrixN;
 

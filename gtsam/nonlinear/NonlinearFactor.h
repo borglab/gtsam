@@ -433,7 +433,7 @@ class NoiseModelFactorN
       public detail::NoiseModelFactorAliases<ValueTypes...> {
  public:
   /// N is the number of variables (N-way factor)
-  enum { N = sizeof...(ValueTypes) };
+  inline constexpr static auto N = sizeof...(ValueTypes);
 
   using NoiseModelFactor::unwhitenedError;
 

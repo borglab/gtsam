@@ -73,7 +73,7 @@ class GTSAM_EXPORT Cal3 {
   double u0_ = 0.0f, v0_ = 0.0f;  ///< principal point
 
  public:
-  enum { dimension = 5 };
+  inline constexpr static auto dimension = 5;
   ///< shared pointer to calibration object
   using shared_ptr = std::shared_ptr<Cal3>;
 

@@ -41,7 +41,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT EmptyCal {
  public:
-  enum { dimension = 0 };
+  inline constexpr static auto dimension = 0;
   EmptyCal() {}
   virtual ~EmptyCal() = default;
   using shared_ptr = std::shared_ptr<EmptyCal>;
@@ -73,7 +73,7 @@ class GTSAM_EXPORT EmptyCal {
  */
 class GTSAM_EXPORT SphericalCamera {
  public:
-  enum { dimension = 6 };
+  inline constexpr static auto dimension = 6;
 
   using Measurement = Unit3;
   using MeasurementVector = std::vector<Unit3>;

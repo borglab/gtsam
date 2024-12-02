@@ -39,9 +39,7 @@ private:
   double d_;    ///< The perpendicular distance to this plane
 
 public:
-  enum {
-    dimension = 3
-  };
+  inline constexpr static auto dimension = 3;
 
   /// @name Constructors
   /// @{

@@ -34,7 +34,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT Cal3f : public Cal3 {
  public:
-  enum { dimension = 1 };
+  inline constexpr static auto dimension = 1;
   using shared_ptr = std::shared_ptr<Cal3f>;
 
   /// @name Constructors

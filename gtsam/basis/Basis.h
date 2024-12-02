@@ -291,7 +291,7 @@ class Basis {
    */
   template <class T>
   class ManifoldEvaluationFunctor : public VectorEvaluationFunctor {
-    enum { M = traits<T>::dimension };
+    inline constexpr static auto M = traits<T>::dimension;
     using Base = VectorEvaluationFunctor;
 
    public:

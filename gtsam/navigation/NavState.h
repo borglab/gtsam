@@ -42,9 +42,7 @@ private:
 
 public:
 
-  enum {
-    dimension = 9
-  };
+  inline constexpr static auto dimension = 9;
 
   typedef std::pair<Point3, Velocity3> PositionAndVelocity;
 

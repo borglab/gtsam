@@ -184,9 +184,8 @@ public:
 	}
 #endif
 
-
   // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-  enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
+  constexpr static const bool NeedsToAlign = (sizeof(T) % 16) == 0;
 public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };

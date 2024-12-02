@@ -22,7 +22,7 @@ In GTSAM, all properties and operations needed to use a type must be defined thr
 In detail, we ask that the following items are defined in the traits object (although, not all are needed for optimization):
 
 * values:
-   * `enum { dimension = D};`, an enum that indicates the dimensionality *n* of the manifold. In Eigen-fashion, we also support manifolds whose dimensionality is only defined at runtime, by specifying the value -1.
+   * `inline constexpr static auto dimension = D;`, a constexpr that indicates the dimensionality *n* of the manifold. In Eigen-fashion, we also support manifolds whose dimensionality is only defined at runtime, by specifying the value -1.
 * types:
     * `TangentVector`, type that lives in tangent space. This will almost always be an `Eigen::Matrix<double,n,1>`.
     * `ChartJacobian`, a typedef for `OptionalJacobian<dimension, dimension>`.

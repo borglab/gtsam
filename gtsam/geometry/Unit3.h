@@ -53,9 +53,7 @@ private:
 
 public:
 
-  enum {
-    dimension = 2
-  };
+  inline constexpr static auto dimension = 2;
 
   /// @name Constructors
   /// @{

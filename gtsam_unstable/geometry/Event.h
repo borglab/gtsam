@@ -39,7 +39,7 @@ class GTSAM_UNSTABLE_EXPORT Event {
   Point3 location_;  ///< Location at time event was generated
 
  public:
-  enum { dimension = 4 };
+  inline constexpr static auto dimension = 4;
 
   /// Default Constructor
   Event() : time_(0), location_(0, 0, 0) {}

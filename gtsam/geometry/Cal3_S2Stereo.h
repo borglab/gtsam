@@ -32,7 +32,7 @@ class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
   double b_ = 1.0f;  ///< Stereo baseline.
 
  public:
-  enum { dimension = 6 };
+  inline constexpr static auto dimension = 6;
 
   ///< shared pointer to stereo calibration object
   using shared_ptr = std::shared_ptr<Cal3_S2Stereo>;

@@ -252,9 +252,7 @@ class GTSAM_EXPORT CalibratedCamera: public PinholeBase {
 
 public:
 
-  enum {
-    dimension = 6
-  };
+  inline constexpr static auto dimension = 6;
 
   /// @name Standard Constructors
   /// @{

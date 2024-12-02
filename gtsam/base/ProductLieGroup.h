@@ -67,9 +67,9 @@ public:
 
   /// @name Manifold
   /// @{
-  enum {dimension = dimension1 + dimension2};
-  inline static size_t Dim() {return dimension;}
-  inline size_t dim() const {return dimension;}
+  inline constexpr static auto dimension = dimension1 + dimension2;
+  inline static size_t Dim() { return dimension; }
+  inline size_t dim() const { return dimension; }
 
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;

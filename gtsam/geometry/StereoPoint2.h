@@ -37,7 +37,7 @@ private:
   double uL_, uR_, v_;
 
 public:
-  enum { dimension = 3 };
+  inline constexpr static auto dimension = 3;
   /// @name Standard Constructors
   /// @{
 

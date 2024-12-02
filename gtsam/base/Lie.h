@@ -36,7 +36,7 @@ namespace gtsam {
 template <class Class, int N>
 struct LieGroup {
 
-  enum { dimension = N };
+  inline constexpr static auto dimension = N;
   typedef OptionalJacobian<N, N> ChartJacobian;
   typedef Eigen::Matrix<double, N, N> Jacobian;
   typedef Eigen::Matrix<double, N, 1> TangentVector;
@@ -183,7 +183,7 @@ struct LieGroupTraits: GetDimensionImpl<Class, Class::dimension> {
   /// @name Manifold
   /// @{
   typedef Class ManifoldType;
-  enum { dimension = Class::dimension };
+  inline constexpr static auto dimension = Class::dimension;
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 

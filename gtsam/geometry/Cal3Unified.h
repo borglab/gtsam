@@ -50,7 +50,7 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
   double xi_ = 0.0f;  ///< mirror parameter
 
  public:
-  enum { dimension = 10 };
+  inline constexpr static auto dimension = 10;
 
   ///< shared pointer to stereo calibration object
   using shared_ptr = std::shared_ptr<Cal3Unified>;

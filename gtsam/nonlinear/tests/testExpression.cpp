@@ -115,7 +115,7 @@ TEST(Expression, Unary3) {
 // Simple test class that implements the `VectorSpace` protocol.
 class Class : public Point3 {
  public:
-  enum {dimension = 3};
+  inline constexpr static auto dimension = 3;
   using Point3::Point3;
   const Vector3& vector() const { return *this; }
   inline static Class Identity() { return Class(0,0,0); }

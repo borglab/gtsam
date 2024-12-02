@@ -45,7 +45,7 @@ template <class T> T FindKarcherMean(std::initializer_list<T> &&rotations);
  * */
 template <class T> class KarcherMeanFactor : public NonlinearFactor {
   // Compile time dimension: can be -1
-  enum { D = traits<T>::dimension };
+  inline constexpr static auto D = traits<T>::dimension;
 
   // Runtime dimension: always >=0
   size_t d_;

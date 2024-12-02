@@ -37,7 +37,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3f {
   // Note: u0 and v0 are constants and not optimized.
 
  public:
-  enum { dimension = 3 };
+  inline constexpr static auto dimension = 3;
   using shared_ptr = std::shared_ptr<Cal3Bundler>;
 
   /// @name Constructors

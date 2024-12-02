@@ -245,9 +245,7 @@ private:
 
 public:
 
-  enum {
-    dimension = 6
-  }; ///< There are 6 DOF to optimize for
+  inline constexpr static auto dimension = 6; ///< There are 6 DOF to optimize for
 
   /// @name Standard Constructors
   /// @{
