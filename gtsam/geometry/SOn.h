@@ -33,6 +33,7 @@
 #include <type_traits>
 #include <vector>
 #include <random>
+#include <cassert>
 
 namespace gtsam {
 

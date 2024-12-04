@@ -20,6 +20,8 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Lie.h>
 
+#include <cassert>
+
 namespace gtsam {
 
   /**

@@ -16,6 +16,7 @@
  */
 
 #include <cmath>
+#include <cassert>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 
 using namespace std;

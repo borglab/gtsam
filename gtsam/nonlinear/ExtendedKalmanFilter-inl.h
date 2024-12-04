@@ -23,6 +23,8 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
+#include <cassert>
+
 namespace gtsam {
 
   /* ************************************************************************* */

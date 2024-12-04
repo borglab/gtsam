@@ -19,6 +19,7 @@
 #include <mutex>
 #endif
 #include <queue>
+#include <cassert>
 
 namespace gtsam {
 

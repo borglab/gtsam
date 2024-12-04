@@ -19,6 +19,7 @@
 
 #include <stack>
 #include <queue>
+#include <cassert>
 
 #include <gtsam/base/timing.h>
 #include <gtsam/base/treeTraversal-inst.h>

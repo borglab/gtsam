@@ -17,6 +17,7 @@
 #pragma once
 
 #include <iomanip>
+#include <cassert>
 
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/Ordering.h>

@@ -34,6 +34,7 @@
 #include <boost/serialization/optional.hpp>
 #endif
 #include <vector>
+#include <cassert>
 
 namespace gtsam {
 

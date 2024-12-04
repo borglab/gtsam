@@ -25,6 +25,7 @@
 #include <gtsam/base/Vector.h>
 
 #include <stdexcept>
+#include <cassert>
 
 using std::cout;
 using std::endl;

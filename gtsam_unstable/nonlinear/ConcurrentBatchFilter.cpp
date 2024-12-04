@@ -21,6 +21,8 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/debug.h>
 
+#include <cassert>
+
 namespace gtsam {
 
 /* ************************************************************************* */

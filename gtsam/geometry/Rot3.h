@@ -30,6 +30,7 @@
 #include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
 
 #include <random>
+#include <cassert>
 
 // You can override the default coordinate mode using this flag
 #ifndef ROT3_DEFAULT_COORDINATES_MODE

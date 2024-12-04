@@ -25,13 +25,14 @@
 #include <gtsam/base/cholesky.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/FastMap.h>
+#include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/timing.h>
 
 #include <sstream>
+#include <cassert>
 #include <limits>
-#include "gtsam/base/Vector.h"
 
 using namespace std;
 

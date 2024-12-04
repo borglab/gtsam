@@ -28,6 +28,7 @@
 #include <gtsam/geometry/Cal3f.h>
 
 #include <iostream>
+#include <cassert>
 
 namespace gtsam {
 

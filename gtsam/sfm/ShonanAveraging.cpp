@@ -37,6 +37,7 @@
 #include <random>
 #include <set>
 #include <vector>
+#include <cassert>
 
 namespace gtsam {
 

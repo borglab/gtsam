@@ -25,6 +25,7 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 #include <iostream>
+#include <cassert>
 
 namespace gtsam {
 

@@ -29,6 +29,8 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Point2.h>
 
+#include <cassert>
+
 using namespace std;
 using namespace gtsam;
 

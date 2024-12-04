@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "gtsam/geometry/Point3.h"
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Cal3Unified.h>
@@ -35,6 +35,7 @@
 #include <gtsam/slam/TriangulationFactor.h>
 
 #include <optional>
+#include <cassert>
 
 namespace gtsam {
 

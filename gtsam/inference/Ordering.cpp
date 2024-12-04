@@ -18,6 +18,7 @@
 
 #include <vector>
 #include <limits>
+#include <cassert>
 
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>

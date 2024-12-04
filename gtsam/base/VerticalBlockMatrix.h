@@ -21,6 +21,8 @@
 #include <gtsam/base/MatrixSerialization.h>
 #include <gtsam/base/FastVector.h>
 
+#include <cassert>
+
 namespace gtsam {
 
   // Forward declarations

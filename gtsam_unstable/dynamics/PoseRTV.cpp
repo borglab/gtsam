@@ -7,6 +7,8 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Vector.h>
 
+#include <cassert>
+
 namespace gtsam {
 
 using namespace std;

@@ -23,6 +23,7 @@
 #include <gtsam/geometry/SO3.h>
 
 #include <cmath>
+#include <cassert>
 #include <random>
 
 using namespace std;

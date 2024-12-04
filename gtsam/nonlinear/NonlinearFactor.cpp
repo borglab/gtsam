@@ -19,6 +19,8 @@
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
+#include <cassert>
+
 namespace gtsam {
 
 /* ************************************************************************* */

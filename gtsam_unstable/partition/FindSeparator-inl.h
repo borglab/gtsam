@@ -14,6 +14,7 @@
 #include <iostream>
 #include <vector>
 #include <optional>
+#include <cassert>
 #include <boost/shared_array.hpp>
 
 #include <gtsam/base/timing.h>

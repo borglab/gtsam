@@ -48,6 +48,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <cassert>
 
 using namespace gtsam;
 using namespace std;

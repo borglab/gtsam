@@ -25,6 +25,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <cassert>
 
 using namespace std;
 using namespace gtsam;

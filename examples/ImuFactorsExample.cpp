@@ -49,6 +49,7 @@
 #include <gtsam/slam/dataset.h>
 
 #include <cstring>
+#include <cassert>
 #include <fstream>
 #include <iostream>
 

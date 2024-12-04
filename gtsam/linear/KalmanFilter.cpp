@@ -26,6 +26,9 @@
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/base/Testable.h>
 
+#ifndef NDEBUG
+#include <cassert>
+#endif
 
 using namespace std;
 

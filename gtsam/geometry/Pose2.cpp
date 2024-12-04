@@ -20,6 +20,7 @@
 #include <gtsam/base/concepts.h>
 
 #include <cmath>
+#include <cassert>
 #include <iostream>
 #include <iomanip>
 

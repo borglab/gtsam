@@ -28,6 +28,7 @@
 #include <gtsam/base/std_optional_serialization.h>
 
 #include <optional>
+#include <cassert>
 
 namespace gtsam {
 

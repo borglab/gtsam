@@ -21,6 +21,7 @@
 #include <gtsam/base/timing.h>
 
 #include <cmath>
+#include <cassert>
 
 using namespace std;
 

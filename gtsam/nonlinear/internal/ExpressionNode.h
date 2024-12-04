@@ -26,6 +26,7 @@
 #include <typeinfo>       // operator typeid
 #include <ostream>
 #include <map>
+#include <cassert>
 
 class ExpressionFactorBinaryTest;
 // Forward declare for testing

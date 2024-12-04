@@ -36,6 +36,8 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/basis/Basis.h>
 
+#include <cassert>
+
 namespace gtsam {
 
 /**

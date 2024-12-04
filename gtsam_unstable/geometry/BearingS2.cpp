@@ -9,6 +9,8 @@
 
 #include <gtsam_unstable/geometry/BearingS2.h>
 
+#include <cassert>
+
 namespace gtsam {
 
 using namespace std;

@@ -23,6 +23,7 @@
 
 /* External or standard includes */
 #include <ostream>
+#include <cassert>
 
 namespace gtsam {
 

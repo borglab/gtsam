@@ -26,6 +26,7 @@
 #include <gtsam/inference/Key.h>
 
 #include <vector>
+#include <cassert>
 
 namespace gtsam {
 

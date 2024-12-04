@@ -24,6 +24,7 @@
 #include <Eigen/LU>
 
 #include <cstdarg>
+#include <cassert>
 #include <cstring>
 #include <iomanip>
 #include <list>

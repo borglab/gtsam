@@ -6,8 +6,9 @@
  */
 
 #include <iostream>
-#include "gtsam/base/OptionalJacobian.h"
-#include "gtsam/base/Vector.h"
+#include <cassert>
+#include <gtsam/base/OptionalJacobian.h>
+#include <gtsam/base/Vector.h>
 
 #include <gtsam_unstable/geometry/Pose3Upright.h>
 

@@ -28,6 +28,7 @@
 #include <list>
 #include <memory>
 #include <sstream>
+#include <cassert>
 
 using namespace std;
 

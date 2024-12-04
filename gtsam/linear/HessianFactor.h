@@ -23,6 +23,7 @@
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastVector.h>
 
+#include <cassert>
 
 namespace gtsam {
 

@@ -22,6 +22,7 @@
 #include <gtsam/inference/Key.h>
 
 #include <unordered_map>
+#include <cassert>
 
 namespace gtsam {
 

@@ -12,6 +12,8 @@
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 #include <gtsam_unstable/slam/PartialPriorFactor.h>
 
+#include <cassert>
+
 namespace gtsam {
 
 // Indices of relevant variables in the PoseRTV tangent vector:

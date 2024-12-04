@@ -26,6 +26,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <cassert>
 
 
 namespace gtsam {

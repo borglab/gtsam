@@ -20,6 +20,7 @@
 #include <gtsam/base/timing.h>
 
 #include <cmath>
+#include <cassert>
 #include <iostream>
 #include <limits>
 #include <stdexcept>

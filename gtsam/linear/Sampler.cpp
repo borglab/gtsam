@@ -17,6 +17,9 @@
  */
 
 #include <gtsam/linear/Sampler.h>
+
+#include <cassert>
+
 namespace gtsam {
 
 /* ************************************************************************* */

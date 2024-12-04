@@ -17,6 +17,7 @@
 
 #include <gtsam_unstable/nonlinear/LinearizedFactor.h>
 #include <iostream>
+#include <cassert>
 
 namespace gtsam {
 

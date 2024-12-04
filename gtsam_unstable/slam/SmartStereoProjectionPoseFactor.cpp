@@ -21,6 +21,8 @@
 
 #include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
 
+#include <cassert>
+
 namespace gtsam {
 
 SmartStereoProjectionPoseFactor::SmartStereoProjectionPoseFactor(

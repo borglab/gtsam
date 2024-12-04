@@ -32,6 +32,7 @@
 #include <gtsam/base/cholesky.h>
 
 #include <cmath>
+#include <cassert>
 #include <sstream>
 #include <stdexcept>
 

@@ -27,7 +27,7 @@
 
 #include <fstream>
 #include <queue>
-
+#include <cassert>
 namespace gtsam {
 
   /* ************************************************************************* */

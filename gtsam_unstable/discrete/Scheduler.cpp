@@ -14,6 +14,7 @@
 #include <cmath>
 #include <fstream>
 #include <iomanip>
+#include <cassert>
 
 namespace gtsam {
 
