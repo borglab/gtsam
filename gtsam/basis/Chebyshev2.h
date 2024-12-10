@@ -36,8 +36,6 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/basis/Basis.h>
 
-#include <cassert>
-
 namespace gtsam {
 
 /**
@@ -63,13 +61,7 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
    * @param b Upper bound of interval (default: 1)
    * @return double
    */
-  static double Point(size_t N, int j, double a = -1, double b = 1) {
-    assert(j >= 0 && size_t(j) < N);
-    const double dtheta = M_PI / (N > 1 ? (N - 1) : 1);
-    // We add -PI so that we get values ordered from -1 to +1
-    // sin(-M_PI_2 + dtheta*j); also works
-    return a + (b - a) * (1. + cos(-M_PI + dtheta * j)) / 2;
-  }
+  static double Point(size_t N, int j, double a = -1, double b = 1);
 
   /// All Chebyshev points
   static Vector Points(size_t N) {

@@ -28,7 +28,6 @@
 #include <gtsam/base/std_optional_serialization.h>
 
 #include <optional>
-#include <cassert>
 
 namespace gtsam {
 
@@ -82,9 +81,13 @@ public:
   Pose2(const Rot2& r, const Point2& t) : r_(r), t_(t) {}
 
   /** Constructor from 3*3 matrix */
-  Pose2(const Matrix &T) :
-    r_(Rot2::atan2(T(1, 0), T(0, 0))), t_(T(0, 2), T(1, 2)) {
-    assert(T.rows() == 3 && T.cols() == 3);
+  Pose2(const Matrix &T)
+      : r_(Rot2::atan2(T(1, 0), T(0, 0))), t_(T(0, 2), T(1, 2)) {
+#ifndef NDEBUG
+    if (T.rows() != 3 || T.cols() != 3) {
+      throw;
+    }
+#endif
   }
 
   /// @}

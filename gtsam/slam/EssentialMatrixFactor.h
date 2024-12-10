@@ -25,7 +25,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 #include <iostream>
-#include <cassert>
 
 namespace gtsam {
 
@@ -71,7 +70,9 @@ class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
                         const SharedNoiseModel& model,
                         std::shared_ptr<CALIBRATION> K)
       : Base(model, key) {
-    assert(K);
+#ifndef NDEBUG
+    if (K->empty()) throw;
+#endif
     vA_ = EssentialMatrix::Homogeneous(K->calibrate(pA));
     vB_ = EssentialMatrix::Homogeneous(K->calibrate(pB));
   }

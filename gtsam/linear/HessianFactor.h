@@ -23,8 +23,6 @@
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastVector.h>
 
-#include <cassert>
-
 namespace gtsam {
 
   // Forward declarations
@@ -242,14 +240,18 @@ namespace gtsam {
      * use, for example, begin() + 2 to get the 3rd variable in this factor.
      * @return The linear term \f$ g \f$ */
     SymmetricBlockMatrix::constBlock linearTerm(const_iterator j) const {
-      assert(!empty());
+#ifndef NDEBUG
+      if(empty()) throw;
+#endif
       return info_.aboveDiagonalBlock(j - begin(), size());
     }
 
     /** Return the complete linear term \f$ g \f$ as described above.
      * @return The linear term \f$ g \f$ */
     SymmetricBlockMatrix::constBlock linearTerm() const {
-      assert(!empty());
+#ifndef NDEBUG
+      if(empty()) throw;
+#endif
       // get the last column (except the bottom right block)
       return info_.aboveDiagonalRange(0, size(), size(), size() + 1);
     }
@@ -257,7 +259,9 @@ namespace gtsam {
     /** Return the complete linear term \f$ g \f$ as described above.
      * @return The linear term \f$ g \f$ */
     SymmetricBlockMatrix::Block linearTerm() {
-      assert(!empty());
+#ifndef NDEBUG
+      if(empty()) throw;
+#endif
       return info_.aboveDiagonalRange(0, size(), size(), size() + 1);
     }
 
@@ -326,7 +330,9 @@ namespace gtsam {
      * @param other the HessianFactor to be updated
      */
     void updateHessian(HessianFactor* other) const {
-      assert(other);
+#ifndef NDEBUG
+      if(!other) throw;
+#endif
       updateHessian(other->keys_, &other->info_);
     }
 

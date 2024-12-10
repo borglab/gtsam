@@ -35,7 +35,6 @@
 #include <gtsam/slam/TriangulationFactor.h>
 
 #include <optional>
-#include <cassert>
 
 namespace gtsam {
 
@@ -318,7 +317,11 @@ typename CAMERA::MeasurementVector undistortMeasurements(
     const CameraSet<CAMERA>& cameras,
     const typename CAMERA::MeasurementVector& measurements) {
   const size_t nrMeasurements = measurements.size();
-  assert(nrMeasurements == cameras.size());
+#ifndef NDEBUG
+  if (nrMeasurements != cameras.size()) {
+    throw;
+  }
+#endif
   typename CAMERA::MeasurementVector undistortedMeasurements(nrMeasurements);
   for (size_t ii = 0; ii < nrMeasurements; ++ii) {
     // Calibrate with cal and uncalibrate with pinhole version of cal so that

@@ -25,7 +25,6 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
-#include <cassert>
 
 namespace gtsam {
 /**
@@ -93,7 +92,11 @@ public:
     return nKeys_;
   }
   Key intToKey(int32_t value) const {
-    assert(value >= 0);
+#ifndef NDEBUG
+    if (value < 0) {
+      throw;
+    }
+#endif
     return intKeyBMap_.right.find(value)->second;
   }
 
