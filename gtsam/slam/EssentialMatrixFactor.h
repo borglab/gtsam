@@ -71,7 +71,7 @@ class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
                         std::shared_ptr<CALIBRATION> K)
       : Base(model, key) {
 #ifndef NDEBUG
-    if (K->empty()) throw;
+    if (!K) throw;
 #endif
     vA_ = EssentialMatrix::Homogeneous(K->calibrate(pA));
     vB_ = EssentialMatrix::Homogeneous(K->calibrate(pB));
