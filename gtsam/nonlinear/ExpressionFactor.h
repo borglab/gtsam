@@ -43,7 +43,7 @@ namespace gtsam {
  *
  */
 template <typename T>
-class GTSAM_EXPORT ExpressionFactor : public NoiseModelFactor {
+class ExpressionFactor : public NoiseModelFactor {
   GTSAM_CONCEPT_ASSERT(IsTestable<T>);
 
 protected:
@@ -246,7 +246,7 @@ struct traits<ExpressionFactor<T> > : public Testable<ExpressionFactor<T> > {};
  *
  */
 template <typename T, typename... Args>
-class GTSAM_EXPORT ExpressionFactorN : public ExpressionFactor<T> {
+class ExpressionFactorN : public ExpressionFactor<T> {
 public:
   static const std::size_t NARY_EXPRESSION_SIZE = sizeof...(Args);
   using ArrayNKeys = std::array<Key, NARY_EXPRESSION_SIZE>;
