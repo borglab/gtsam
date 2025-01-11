@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/basis/Chebyshev2.h>
+#include <cassert>
 
 namespace gtsam {
 
