@@ -57,7 +57,7 @@ TEST(NavState, Constructor) {
   std::function<NavState(const Rot3&, const Point3&, const Vector3&)> create =
       std::bind(&NavState::Create, std::placeholders::_1, std::placeholders::_2,
                 std::placeholders::_3, nullptr, nullptr, nullptr);
-  Matrix aH1, aH2, aH3;
+  Matrix93 aH1, aH2, aH3;
   EXPECT(
       assert_equal(kState1,
           NavState::Create(kAttitude, kPosition, kVelocity, aH1, aH2, aH3)));
@@ -69,7 +69,7 @@ assert_equal(
       numericalDerivative32(create, kAttitude, kPosition, kVelocity), aH2));
   EXPECT(
 assert_equal(
-      numericalDerivative32(create, kAttitude, kPosition, kVelocity), aH2));
+          numericalDerivative33(create, kAttitude, kPosition, kVelocity), aH3));
 }
 
 /* ************************************************************************* */
