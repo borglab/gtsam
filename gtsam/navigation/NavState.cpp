@@ -371,43 +371,39 @@ NavState NavState::update(const Vector3& b_acceleration, const Vector3& b_omega,
 //------------------------------------------------------------------------------
 Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
     OptionalJacobian<9, 9> H) const {
-  Rot3 nRb = R_;
-  Point3 n_t = t_, n_v = v_;
+  const Rot3& nRb = R_;
+  const Velocity3& n_v = v_;
+  const Point3& n_t = t_;
 
   const double dt2 = dt * dt;
   const Vector3 omega_cross_vel = omega.cross(n_v);
 
-  // Get perturbations in nav frame
-  Vector9 n_xi, xi;
-  Matrix3 D_dR_R, D_dP_R, D_dV_R, D_body_nav;
-  dR(n_xi) << ((-dt) * omega);
-  dP(n_xi) << ((-dt2) * omega_cross_vel); // NOTE(luca): we got rid of the 2 wrt INS paper
-  dV(n_xi) << ((-2.0 * dt) * omega_cross_vel);
+  Vector9 xi;
+  Matrix3 D_dP_R, D_dP_dR, D_dV_dR;
+  dR(xi) << nRb.unrotate((-dt) * omega, H ? &D_dP_R : 0);
+  dP(xi) << nRb.unrotate((-dt2) * omega_cross_vel, H ? &D_dP_dR : 0);
+  dV(xi) << nRb.unrotate((-2.0 * dt) * omega_cross_vel, H ? &D_dV_dR : 0);
+
   if (secondOrder) {
     const Vector3 omega_cross2_t = omega.cross(omega.cross(n_t));
-    dP(n_xi) -= (0.5 * dt2) * omega_cross2_t;
-    dV(n_xi) -= dt * omega_cross2_t;
+    dP(xi) -= (0.5 * dt2) * omega_cross2_t;
+    dV(xi) -= dt * omega_cross2_t;
   }
-
-  // Transform n_xi into the body frame
-  xi << nRb.unrotate(dR(n_xi), H ? &D_dR_R : 0, H ? &D_body_nav : 0), 
-        nRb.unrotate(dP(n_xi), H ? &D_dP_R : 0),
-        nRb.unrotate(dV(n_xi), H ? &D_dV_R : 0);
-
   if (H) {
     H->setZero();
     const Matrix3 Omega = skewSymmetric(omega);
     const Matrix3 D_cross_state = Omega * R();
     H->setZero();
-    D_R_R(H) << D_dR_R;
-    D_t_v(H) << D_body_nav * (-dt2) * D_cross_state;
-    D_t_R(H) << D_dP_R;
-    D_v_v(H) << D_body_nav * (-2.0 * dt) * D_cross_state;
-    D_v_R(H) << D_dV_R;
+    D_R_R(H) << D_dP_R;
+    D_t_v(H) << nRb.transpose() * (-dt2) * D_cross_state;
+    D_v_v(H) << nRb.transpose() * (-2.0 * dt) * D_cross_state;
+    D_t_R(H) << D_dP_dR;
+    D_v_R(H) << D_dV_dR;
+
     if (secondOrder) {
       const Matrix3 D_cross2_state = Omega * D_cross_state;
-      D_t_t(H) -= D_body_nav * (0.5 * dt2) * D_cross2_state;
-      D_v_t(H) -= D_body_nav * dt * D_cross2_state;
+      D_t_t(H) -= (0.5 * dt2) * D_cross2_state;
+      D_v_t(H) -= dt * D_cross2_state;
     }
   }
   return xi;
