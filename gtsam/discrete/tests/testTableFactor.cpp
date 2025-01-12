@@ -18,6 +18,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
