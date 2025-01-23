@@ -38,18 +38,17 @@ static const auto& kWGS84 = Geocentric::WGS84();
 // *************************************************************************
 namespace example {
 // ENU Origin is where the plane was in hold next to runway
-const double lat0 = 33.86998, lon0 = -84.30626, h0 = 274;
+static constexpr double lat0 = 33.86998, lon0 = -84.30626, h0 = 274;
 
 // Convert from GPS to ENU
-LocalCartesian origin_ENU(lat0, lon0, h0, kWGS84);
+static const LocalCartesian origin_ENU(lat0, lon0, h0, kWGS84);
 
 // Dekalb-Peachtree Airport runway 2L
-const double lat = 33.87071, lon = -84.30482, h = 274;\
+static constexpr double lat = 33.87071, lon = -84.30482, h = 274;
 
 // Random lever arm
-const Point3 leverArm(0.1, 0.2, 0.3);
-
-}
+static const Point3 leverArm(0.1, 0.2, 0.3);
+}  // namespace example
 
 // *************************************************************************
 TEST( GPSFactor, Constructor ) {
@@ -135,7 +134,7 @@ TEST( GPSFactorArmCalib, Constructor ) {
 
   // Calculate numerical derivatives
   Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
-      [&factor, &leverArm](const Pose3& pose_arg) {
+      [&factor](const Pose3& pose_arg) {
         return factor.evaluateError(pose_arg, leverArm);
       },
       T);
@@ -235,7 +234,7 @@ TEST( GPSFactor2ArmCalib, Constructor ) {
 
   // Calculate numerical derivatives
   Matrix expectedH1 = numericalDerivative11<Vector, NavState>(
-      [&factor, &leverArm](const NavState& nav_arg) {
+      [&factor](const NavState& nav_arg) {
         return factor.evaluateError(nav_arg, leverArm);
       },
       T);
