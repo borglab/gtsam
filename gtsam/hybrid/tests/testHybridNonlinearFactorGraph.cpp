@@ -851,6 +851,22 @@ conditional 2:  P( x2 | m0 m1)
   EXPECT(assert_print_equal(expected_hybridBayesNet, *hybridBayesNet));
 }
 
+/*****************************************************************************/
+namespace planar {
+using PlanarMotionModel = BetweenFactor<Pose2>;
+
+// Add odometry factor
+Pose2 odo(2.0, 0.0, 0.0);
+auto model = noiseModel::Isotropic::Sigma(3, 1.0);
+static auto CreateHybridFactor(size_t k) {
+  DiscreteKey mode(M(k), 2);
+  std::vector<NoiseModelFactor::shared_ptr> components = {
+      std::make_shared<PlanarMotionModel>(X(k), X(k + 1), Pose2(), model),
+      std::make_shared<PlanarMotionModel>(X(k), X(k + 1), odo, model)};
+  return std::make_shared<HybridNonlinearFactor>(mode, components);
+}
+}  // namespace planar
+
 /****************************************************************************
  * Simple PlanarSLAM example test with 2 poses and 2 landmarks (each pose
  * connects to 1 landmark) to expose issue with default decision tree creation
@@ -868,16 +884,8 @@ TEST(HybridNonlinearFactorGraph, DefaultDecisionTree) {
       Vector3(0.3, 0.3, 0.1));  // 30cm std on x,y, 0.1 rad on theta
   fg.emplace_shared<PriorFactor<Pose2>>(X(0), prior, priorNoise);
 
-  using PlanarMotionModel = BetweenFactor<Pose2>;
-
-  // Add odometry factor
-  Pose2 odometry(2.0, 0.0, 0.0);
-  auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
-  std::vector<NoiseModelFactor::shared_ptr> motion_models = {
-      std::make_shared<PlanarMotionModel>(X(0), X(1), Pose2(0, 0, 0),
-                                          noise_model),
-      std::make_shared<PlanarMotionModel>(X(0), X(1), odometry, noise_model)};
-  fg.emplace_shared<HybridNonlinearFactor>(DiscreteKey{M(1), 2}, motion_models);
+  // Add hybrid odometry factor
+  fg.push_back(planar::CreateHybridFactor(0));
 
   // Add Range-Bearing measurements to from X0 to L0 and X1 to L1.
   // create a noise model for the landmark measurements
@@ -912,7 +920,8 @@ TEST(HybridNonlinearFactorGraph, DefaultDecisionTree) {
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
 }
 
-namespace test_relinearization {
+/* ************************************************************************* */
+namespace direct_factor_specification {
 /**
  * @brief Create a Factor Graph by directly specifying all
  * the factors instead of creating conditionals first.
@@ -951,7 +960,7 @@ static HybridNonlinearFactorGraph CreateFactorGraph(
 
   return hfg;
 }
-}  // namespace test_relinearization
+}  // namespace direct_factor_specification
 
 /* ************************************************************************* */
 /**
@@ -962,7 +971,7 @@ static HybridNonlinearFactorGraph CreateFactorGraph(
  *          M1
  */
 TEST(HybridNonlinearFactorGraph, DifferentMeans) {
-  using namespace test_relinearization;
+  using namespace direct_factor_specification;
 
   DiscreteKey m1(M(1), 2);
 
@@ -1038,7 +1047,7 @@ TEST(HybridNonlinearFactorGraph, DifferentMeans) {
  *          M1
  */
 TEST(HybridNonlinearFactorGraph, DifferentCovariances) {
-  using namespace test_relinearization;
+  using namespace direct_factor_specification;
 
   DiscreteKey m1(M(1), 2);
 
@@ -1070,7 +1079,7 @@ TEST(HybridNonlinearFactorGraph, DifferentCovariances) {
 }
 
 TEST(HybridNonlinearFactorGraph, Relinearization) {
-  using namespace test_relinearization;
+  using namespace direct_factor_specification;
 
   DiscreteKey m1(M(1), 2);
 
