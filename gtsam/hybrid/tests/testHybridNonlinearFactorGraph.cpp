@@ -855,7 +855,15 @@ conditional 2:  P( x2 | m0 m1)
 namespace planar {
 using PlanarMotionModel = BetweenFactor<Pose2>;
 
-// Add odometry factor
+// Prior on pose x0 at the origin.
+// A prior factor consists of a mean and a noise model (covariance matrix)
+Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
+auto priorNoise = noiseModel::Diagonal::Sigmas(
+    Vector3(0.3, 0.3, 0.1));  // 30cm std on x,y, 0.1 rad on theta
+auto priorFactor =
+    std::make_shared<PriorFactor<Pose2>>(X(0), prior, priorNoise);
+
+// Function to add odometry factor
 Pose2 odo(2.0, 0.0, 0.0);
 auto model = noiseModel::Isotropic::Sigma(3, 1.0);
 static auto CreateHybridFactor(size_t k) {
@@ -868,21 +876,44 @@ static auto CreateHybridFactor(size_t k) {
 }  // namespace planar
 
 /****************************************************************************
- * Simple PlanarSLAM example test with 2 poses and 2 landmarks (each pose
- * connects to 1 landmark) to expose issue with default decision tree creation
- * in hybrid elimination. The hybrid factor is between the poses X0 and X1.
- * The issue arises if we eliminate a landmark variable first since it is not
- * connected to a HybridFactor.
+ * Pose2SLAM example with 3 poses and 2 hybrid motion models.
+ */
+TEST(HybridNonlinearFactorGraph, Pose2SLAM) {
+  HybridNonlinearFactorGraph fg;
+
+  // Add a prior on pose x0 at the origin.
+  fg.push_back(planar::priorFactor);
+
+  // Add hybrid odometry factor
+  fg.push_back(planar::CreateHybridFactor(0));
+  fg.push_back(planar::CreateHybridFactor(1));
+
+  // Create (deliberately inaccurate) initial estimate
+  Values initialEstimate;
+  initialEstimate.insert(X(0), Pose2(0.5, 0.0, 0.2));
+  initialEstimate.insert(X(1), Pose2(2.3, 0.1, -0.2));
+  initialEstimate.insert(X(2), Pose2(4.1, 0.1, 0.1));
+
+  // Linearize the factor graph.
+  HybridGaussianFactorGraph linearized = *fg.linearize(initialEstimate);
+
+  // Check that we can eliminate to a hybrid Bayes net
+  const auto hybridBayesNet = linearized.eliminateSequential();
+  EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
+}
+
+/****************************************************************************
+ * PlanarSLAM example test with 2 poses and 2 landmarks (each pose connects to 1
+ * landmark) to expose issue with default decision tree creation in hybrid
+ * elimination. The hybrid factor is between the poses X0 and X1. The issue
+ * arises if we eliminate a landmark variable first since it is not connected to
+ * a HybridFactor.
  */
 TEST(HybridNonlinearFactorGraph, DefaultDecisionTree) {
   HybridNonlinearFactorGraph fg;
 
   // Add a prior on pose x0 at the origin.
-  // A prior factor consists of a mean and a noise model (covariance matrix)
-  Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
-  auto priorNoise = noiseModel::Diagonal::Sigmas(
-      Vector3(0.3, 0.3, 0.1));  // 30cm std on x,y, 0.1 rad on theta
-  fg.emplace_shared<PriorFactor<Pose2>>(X(0), prior, priorNoise);
+  fg.push_back(planar::priorFactor);
 
   // Add hybrid odometry factor
   fg.push_back(planar::CreateHybridFactor(0));
@@ -913,7 +944,7 @@ TEST(HybridNonlinearFactorGraph, DefaultDecisionTree) {
 
   HybridGaussianFactorGraph linearized = *fg.linearize(initialEstimate);
 
-  // This should NOT fail
+  // Check that partial elimination works
   const auto [hybridBayesNet, remainingFactorGraph] =
       linearized.eliminatePartialSequential(ordering);
   EXPECT_LONGS_EQUAL(4, hybridBayesNet->size());
