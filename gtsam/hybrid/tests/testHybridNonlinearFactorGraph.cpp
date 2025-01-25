@@ -900,6 +900,29 @@ TEST(HybridNonlinearFactorGraph, Pose2SLAM) {
   // Check that we can eliminate to a hybrid Bayes net
   const auto hybridBayesNet = linearized.eliminateSequential();
   EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
+
+  // Optimize to get HybridValues
+  HybridValues hv = hybridBayesNet->optimize();
+  EXPECT_LONGS_EQUAL(3, hv.continuous().size());
+  EXPECT_LONGS_EQUAL(2, hv.discrete().size());
+
+  // Optimize for all possible assignments:
+  DiscreteKeys discreteKeys{{M(0), 2}, {M(1), 2}};
+  auto assignments = DiscreteValues::CartesianProduct(discreteKeys);
+  HybridValues hybridInitialEstimate({}, {}, initialEstimate);
+  for (size_t i = 0; i < assignments.size(); ++i) {
+    GTSAM_PRINT(assignments[i]);
+    // Update initial estimate
+    VectorValues vv = hybridBayesNet->optimize(assignments[i]);
+    GTSAM_PRINT(initialEstimate.retract(vv));
+  }
+
+  // TODO:
+  // 1. Create a hybridBayesNet method that creates a decision tree
+  //    auto tree = hybridBayesNet->optimizeTree();
+  // 2. Use the decision tree to linearize the factor graph
+  //    HybridGaussianFactorGraph linearized2 = *fg.linearize(tree);
+  //    This would use different values for every branch in every hybrid factor.
 }
 
 /****************************************************************************
