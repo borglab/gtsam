@@ -1,0 +1,102 @@
+# Nightly build for Linux.
+# Uploads to test.pypi.org.
+
+name: Linux Nightly
+
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.9", "3.10", "3.11", "3.12"]
+
+    env:
+      # PYTHON_VERSION: '3.10'
+      PYTHON_VERSION: ${{matrix.python_version}}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          #python-version: '3.10'
+          python-version: ${{matrix.python_version}}
+
+      - name: Install (Linux)
+        run: |
+          sudo apt-get -y update
+          sudo apt-get -y install cmake build-essential pkg-config python3-numpy libboost-all-dev ninja-build
+
+          sudo apt-get install -y g++ g++-multilib
+          echo "CC=gcc" >> $GITHUB_ENV
+          echo "CXX=g++" >> $GITHUB_ENV
+
+      - name: Set Swap Space (Linux)
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 6
+
+      - name: Install System Dependencies
+        run: bash .github/scripts/nightly.sh -d
+
+      - name: Install Python Dependencies
+        shell: bash
+        run: python3 -m pip install -r python/dev_requirements.txt
+
+      - name: Set Nightly Flag
+        run: echo "NIGHTLY=1" >> $GITHUB_ENV
+
+      - name: Build
+        # Builds the cmake "python-install" target which is a local install.
+        shell: bash
+        run: bash .github/scripts/nightly.sh -b
+
+      - name: Test
+        # Uses the local install for python3 -m unittest.
+        shell: bash
+        run: bash .github/scripts/python.sh -t
+
+      - name: Install Build Tools
+        run: python3 -m pip install --upgrade pip auditwheel
+
+      - name: Build for Publishing
+        run: python3 -m pip wheel build/python -w build/python/dist
+
+      - name: Repair Wheels
+        # TODO: use the actual glibc version here
+        run: python3 -m auditwheel repair --plat manylinux_2_28_x86_64 -w build/python/repaired/ build/python/dist/truher_gtsam_nightly*
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          # TODO: define the name as ENV, use it in CMakeLists.txt
+          name: artifact${{matrix.python_version}}
+          path: build/python/repaired/truher_gtsam_nightly*
+
+  upload_all:
+    # Waits for all the builds to finish
+    # Downloads all their wheels
+    # Uploads them all at once.
+    name: Upload All
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          repository-url: https://test.pypi.org/legacy/

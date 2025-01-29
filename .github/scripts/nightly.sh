@@ -1,0 +1,106 @@
+#!/bin/bash
+
+##########################################################
+# Build and test the GTSAM Python wrapper.
+##########################################################
+
+set -x -e
+
+# install TBB with _debug.so files
+function install_tbb()
+{
+  echo install_tbb
+  if [ "$(uname)" == "Linux" ]; then
+    sudo apt-get -y install libtbb-dev
+
+  elif [ "$(uname)" == "Darwin" ]; then
+    brew install tbb
+  fi
+}
+
+if [ -z ${PYTHON_VERSION+x} ]; then
+    echo "Please provide the Python version to build against!"
+    exit 127
+fi
+
+export PYTHON="python${PYTHON_VERSION}"
+
+function install_dependencies()
+{
+  if [[ $(uname) == "Darwin" ]]; then
+    brew install wget
+  else
+    # Install a system package required by our library
+    sudo apt-get install -y wget libicu-dev python3-pip python3-setuptools
+  fi
+
+  export PATH=$PATH:$($PYTHON -c "import site; print(site.USER_BASE)")/bin
+
+  if [ "${GTSAM_WITH_TBB:-OFF}" == "ON" ]; then
+    install_tbb
+  fi
+}
+
+# Chirality exception is thrown by the camera projection when the solver
+# randomly places the camera such that the landmarks are behind it.
+# This breaks the dependent python custom factor with numeric derivatives.
+
+# Build needs to be static to be included in the wheel at the end.
+
+function build()
+{
+  export CMAKE_GENERATOR=Ninja
+  BUILD_PYBIND="ON"
+  cmake $GITHUB_WORKSPACE \
+      -B build \
+      -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+      -DGTSAM_BUILD_TESTS=OFF \
+      -DGTSAM_FORCE_SHARED_LIB=OFF \
+      -DGTSAM_BUILD_UNSTABLE=${GTSAM_BUILD_UNSTABLE:-ON} \
+      -DGTSAM_THROW_CHEIRALITY_EXCEPTION=OFF \
+      -DGTSAM_USE_QUATERNIONS=OFF \
+      -DGTSAM_WITH_TBB=${GTSAM_WITH_TBB:-OFF} \
+      -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+      -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+      -DGTSAM_BUILD_PYTHON=${BUILD_PYBIND} \
+      -DBUILD_SHARED_LIBS=OFF \
+      -DBUILD_STATIC_METIS=ON \
+      -DGTSAM_UNSTABLE_BUILD_PYTHON=${GTSAM_BUILD_UNSTABLE:-ON} \
+      -DGTSAM_PYTHON_VERSION=$PYTHON_VERSION \
+      -DPYTHON_EXECUTABLE:FILEPATH=$(which $PYTHON) \
+      -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+      -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gtsam_install
+
+
+  # Set to 2 cores so that Actions does not error out during resource provisioning.
+  cmake --build build -j2
+
+  cmake --build build --target python-install
+}
+
+function test()
+{
+  cd $GITHUB_WORKSPACE/python/gtsam/tests
+  $PYTHON -m unittest discover -v
+  cd $GITHUB_WORKSPACE
+
+  cd $GITHUB_WORKSPACE/python/gtsam_unstable/tests
+  $PYTHON -m unittest discover -v
+  cd $GITHUB_WORKSPACE
+
+  # cmake --build build --target python-test
+  # cmake --build build --target python-test-unstable
+}
+
+# select between build or test
+case $1 in
+  -d)
+    install_dependencies
+    ;;
+  -b)
+    build
+    ;;
+  -t)
+    test
+    ;;
+esac
