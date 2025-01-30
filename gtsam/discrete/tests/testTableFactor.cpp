@@ -209,6 +209,50 @@ TEST(TableFactor, Empty) {
 }
 
 /* ************************************************************************* */
+// Check how long it takes to convert a TableFactor to a DecisionTreeFactor
+TEST_DISABLED(TableFactor, ConversionTime) {
+  size_t nKeys = 17;
+
+  DiscreteKeys dkeys;
+  for (size_t i = 0; i < nKeys; i++) {
+    dkeys.push_back({i, 2});
+  }
+
+  // Get an array with value from 0...2^nKeys
+  std::vector<double> v(std::powl(2, nKeys));
+  std::iota(std::begin(v), std::end(v), 0);
+
+  // Randomly set 94% of the vector to be 0
+  std::mt19937 gen(42);
+  std::uniform_int_distribution<> sampler(0, std::powl(2, nKeys));
+  for (size_t i = 0; i < size_t(0.94 * std::powl(2, nKeys)); i++) {
+    v[sampler(gen)] = 0;
+  }
+  gttic_(MakeDTF);
+  DecisionTreeFactor dtf(dkeys, v);
+  gttoc_(MakeDTF);
+
+  auto probs = dtf.probabilities();
+  gttic_(Normal);
+  DecisionTreeFactor(dkeys, probs);
+  gttoc_(Normal);
+
+  // gttic_(Reversed);
+  // DecisionTreeFactor f1(DiscreteKeys(dkeys.rbegin(), dkeys.rend()), probs);
+  // gttoc_(Reversed);
+
+  gttic_(Conversion);
+  TableFactor tf(dtf.discreteKeys(), dtf);
+  gttoc_(Conversion);
+
+  gttic_(BackConversion);
+  tf.toDecisionTreeFactor();
+  gttoc_(BackConversion);
+
+  tictoc_print_();
+}
+
+/* ************************************************************************* */
 // Check multiplication between two TableFactors.
 TEST(TableFactor, multiplication) {
   DiscreteKey v0(0, 2), v1(1, 2), v2(2, 2);
