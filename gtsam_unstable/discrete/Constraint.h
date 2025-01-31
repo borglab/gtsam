@@ -87,6 +87,16 @@ class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
         this->operator*(df->toDecisionTreeFactor()));
   }
 
+  /// Multiply by a scalar
+  virtual DiscreteFactor::shared_ptr operator*(double s) const override {
+    return this->toDecisionTreeFactor() * s;
+  }
+
+  /// Multiply by a DecisionTreeFactor and return a DecisionTreeFactor
+  DecisionTreeFactor operator*(const DecisionTreeFactor& dtf) const override {
+    return this->toDecisionTreeFactor() * dtf;
+  }
+
   /// divide by DiscreteFactor::shared_ptr f (safely)
   DiscreteFactor::shared_ptr operator/(
       const DiscreteFactor::shared_ptr& df) const override {
@@ -103,6 +113,9 @@ class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
   DiscreteFactor::shared_ptr sum(const Ordering& keys) const override {
     return toDecisionTreeFactor().sum(keys);
   }
+
+  /// Find the max value
+  double max() const override { return toDecisionTreeFactor().max(); }
 
   DiscreteFactor::shared_ptr max(size_t nrFrontals) const override {
     return toDecisionTreeFactor().max(nrFrontals);
