@@ -96,6 +96,11 @@ class BinaryAllDiff : public Constraint {
   AlgebraicDecisionTree<Key> errorTree() const override {
     throw std::runtime_error("BinaryAllDiff::error not implemented");
   }
+
+  // Scale just returns the same constraint.
+  DiscreteFactor::shared_ptr scale() const override {
+    return std::make_shared<BinaryAllDiff>(*this);
+  }
 };
 
 }  // namespace gtsam

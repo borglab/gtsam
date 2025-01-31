@@ -136,9 +136,6 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
   /**
    * @brief Multiply in a DiscreteFactor and return the result as
    * DiscreteFactor, both via shared pointers.
-   *
-   * @param df DiscreteFactor shared_ptr
-   * @return DiscreteFactor::shared_ptr
    */
   virtual DiscreteFactor::shared_ptr multiply(
       const DiscreteFactor::shared_ptr& df) const = 0;
@@ -170,7 +167,7 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
    * 
    * @return DiscreteFactor::shared_ptr 
    */
-  DiscreteFactor::shared_ptr scale() const;
+  virtual DiscreteFactor::shared_ptr scale() const;
 
   /**
    * Get the number of non-zero values contained in this factor.

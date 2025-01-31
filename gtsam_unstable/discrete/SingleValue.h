@@ -77,6 +77,11 @@ class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
   /// Partially apply known values, domain version
   Constraint::shared_ptr partiallyApply(
       const Domains& domains) const override;
+
+  // Scale just returns the same constraint.
+  DiscreteFactor::shared_ptr scale() const override {
+    return std::make_shared<SingleValue>(*this);
+  }
 };
 
 }  // namespace gtsam

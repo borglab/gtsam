@@ -29,7 +29,9 @@ class Domain;
 using Domains = std::map<Key, Domain>;
 
 /**
- * Base class for constraint factors
+ * Base class for constraint factors.
+ * This class is used to represent constraints on discrete variables.
+ * The values are always either 0 or 1, with at least one 1.
  * Derived classes include SingleValue, BinaryAllDiff, and AllDiff.
  */
 class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
@@ -79,6 +81,16 @@ class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
 
   /// Partially apply known values, domain version
   virtual shared_ptr partiallyApply(const Domains&) const = 0;
+
+  /// Multiply in a DecisionTreeFactor.
+  DecisionTreeFactor operator*(const DecisionTreeFactor& df) const override {
+    throw std::logic_error("Constraint::operator* not implemented");
+  }
+
+  /// Multiply with scalar just returns the constraint.
+  DiscreteFactor::shared_ptr operator*(double /* s*/) const override {
+    throw std::logic_error("Constraint::operator* not implemented");
+  }
 
   /// Multiply factors, DiscreteFactor::shared_ptr edition
   DiscreteFactor::shared_ptr multiply(
