@@ -82,16 +82,6 @@ class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
   /// Partially apply known values, domain version
   virtual shared_ptr partiallyApply(const Domains&) const = 0;
 
-  /// Multiply in a DecisionTreeFactor.
-  DecisionTreeFactor operator*(const DecisionTreeFactor& df) const override {
-    throw std::logic_error("Constraint::operator* not implemented");
-  }
-
-  /// Multiply with scalar just returns the constraint.
-  DiscreteFactor::shared_ptr operator*(double /* s*/) const override {
-    throw std::logic_error("Constraint::operator* not implemented");
-  }
-
   /// Multiply factors, DiscreteFactor::shared_ptr edition
   DiscreteFactor::shared_ptr multiply(
       const DiscreteFactor::shared_ptr& df) const override {
@@ -104,7 +94,7 @@ class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
     return this->toDecisionTreeFactor() * s;
   }
 
-  /// Multiply by a DecisionTreeFactor and return a DecisionTreeFactor
+  /// Multiply in a DecisionTreeFactor.
   DecisionTreeFactor operator*(const DecisionTreeFactor& dtf) const override {
     return this->toDecisionTreeFactor() * dtf;
   }

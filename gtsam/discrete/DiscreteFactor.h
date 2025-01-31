@@ -167,7 +167,7 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
    * 
    * @return DiscreteFactor::shared_ptr 
    */
-  virtual DiscreteFactor::shared_ptr scale() const;
+  DiscreteFactor::shared_ptr scale() const;
 
   /**
    * Get the number of non-zero values contained in this factor.
