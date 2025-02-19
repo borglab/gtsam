@@ -57,6 +57,9 @@ class GTSAM_EXPORT EdgeKey {
   /// Retrieve low 32 bits
   inline std::uint32_t j() const { return j_; }
 
+  /// Return the reversed edge.
+  EdgeKey reversed() const { return EdgeKey(j_, i_); }
+
   /** Create a string from the key */
   operator std::string() const;
 
