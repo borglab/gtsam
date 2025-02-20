@@ -9,10 +9,6 @@
 #include <gtsam/geometry/FundamentalMatrix.h>
 #include <gtsam/geometry/Point2.h>
 
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-
 namespace gtsam {
 
 //*************************************************************************
@@ -39,7 +35,10 @@ FundamentalMatrix::FundamentalMatrix(const Matrix3& U, double s,
 
 FundamentalMatrix::FundamentalMatrix(const Matrix3& F) {
   // Perform SVD
-  Eigen::JacobiSVD<Matrix3> svd(F, Eigen::ComputeFullU | Eigen::ComputeFullV);
+  Eigen::JacobiSVD<Matrix3, Eigen::ComputeFullU | Eigen::ComputeFullV> svd(F);
+  if (svd.info() != Eigen::ComputationInfo::Success) {
+    throw std::runtime_error("FundamentalMatrix::FundamentalMatrix: SVD computation failure.");
+  }
 
   // Extract U and V
   Matrix3 U = svd.matrixU();
