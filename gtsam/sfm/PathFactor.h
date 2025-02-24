@@ -88,13 +88,16 @@ class PathFactor : public NoiseModelFactor {
     }
 
     std::uint32_t current = i;
-    for (const auto& edge : path) {
-      if (edge.i() != current) {
+    for (const auto& kl : path) {
+      if (kl.i() == current) {
+        current = kl.j();
+      } else if (kl.j() == current) {
+        current = kl.i();
+      } else {
         throw std::invalid_argument(
             "Path is not continuous at edge starting with " +
-            std::to_string(edge.i()));
+            std::to_string(kl.i()));
       }
-      current = edge.j();
     }
 
     if (current != j) {
@@ -114,8 +117,8 @@ class PathFactor : public NoiseModelFactor {
   /**
    * \brief Compute effective measurements along the path.
    *
-   * For each EdgeKey in the path, check whether the Values object contains the
-   * measurement stored as \(\mathtt{g}_{ij}\) (forward) or as
+   * For each EdgeKey in the path, check whether the Values object contains
+   * the measurement stored as \(\mathtt{g}_{ij}\) (forward) or as
    * \(\mathtt{g}_{ji}\) (reversed). In the latter case, the effective
    * measurement is taken as
    * \(\mathtt{g}_{ji}^{-1}\) and the local derivative is
@@ -130,18 +133,25 @@ class PathFactor : public NoiseModelFactor {
       const Values& values,
       std::vector<std::pair<G, Matrix>>* Qs = nullptr) const {
     G prediction = G::Identity();
-    for (const auto& ek : path_) {
+    std::uint32_t current = i_;
+    for (const auto& kl : path_) {
       G Q;
-      bool forward = values.exists(ek);
+      const G G_kl = values.at<G>(kl);
+      const bool forward = (kl.i() == current);
       if (forward) {
-        Q = values.at<G>(ek);  // gij
-        if (Qs) Qs->emplace_back(Q, Id_);
+        Q = G_kl;
+        current = kl.j();
+        if (Qs) Qs->emplace_back(G_kl, Id_);
       } else {
-        G gji = values.at<G>(ek.reversed());
-        Q = gji.inverse();  // inv(gij)
-        if (Qs) Qs->emplace_back(Q, -gji.AdjointMap());
+        assert(kl.j() == current);
+        Q = G_kl.inverse();
+        current = kl.i();
+        if (Qs) Qs->emplace_back(Q, -G_kl.AdjointMap());
       }
       prediction = prediction * Q;
+    }
+    if (current != j_) {
+      throw std::invalid_argument("Path does not end at j");
     }
     return prediction;
   }

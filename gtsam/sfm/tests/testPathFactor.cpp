@@ -95,10 +95,9 @@ TEST(PathFactor, NoiseModel) {
 //--------------------------------------------------------------------------
 TEST(PathFactor, WithReversal) {
   using namespace rotation_example;
-  EdgeKey e12(1, 2), e23(2, 3);
-  PathFactor<Rot3> factor(1, 3, R13, {e12, e23});
-  Values values{{e12, genericValue(R12)},
-                {e23.reversed(), genericValue(R23.inverse())}};
+  EdgeKey e12(1, 2), e32(3, 2);
+  PathFactor<Rot3> factor(1, 3, R13, {e12, e32});
+  Values values{{e12, genericValue(R12)}, {e32, genericValue(R23.inverse())}};
 
   // Check the factor error.
   EXPECT_DOUBLES_EQUAL(0.0, factor.error(values), 1e-6);
@@ -110,12 +109,12 @@ TEST(PathFactor, WithReversal) {
 //--------------------------------------------------------------------------
 // Reverse one of the edges
 //--------------------------------------------------------------------------
-TEST(PathFactor, ReverseBothedges) {
+TEST(PathFactor, ReverseBothEdges) {
   using namespace rotation_example;
-  EdgeKey e12(1, 2), e23(2, 3);
-  PathFactor<Rot3> factor(1, 3, R13, {e12, e23});
-  Values values{{e12.reversed(), genericValue(R12.inverse())},
-                {e23.reversed(), genericValue(R23.inverse())}};
+  EdgeKey e21(1, 2), e32(2, 3);
+  PathFactor<Rot3> factor(1, 3, R13, {e21, e32});
+  Values values{{e21, genericValue(R12.inverse())},
+                {e32, genericValue(R23.inverse())}};
 
   // Check the factor error.
   EXPECT_DOUBLES_EQUAL(0.0, factor.error(values), 1e-6);
