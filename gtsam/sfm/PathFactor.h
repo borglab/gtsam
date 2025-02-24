@@ -1,35 +1,50 @@
-//------------------------------------------------------------------------------
-// PathFactor.h
-//------------------------------------------------------------------------------
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file PathFactor.h
+ * @date February 2025
+ * @author Akshay Krishnan and Frank Dellaert
+ * @brief Product of transforms factor
+ */
+
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/inference/Key.h>
 #include <gtsam/base/types.h>
-#include <vector>
-#include <stdexcept>
 #include <gtsam/inference/EdgeKey.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/Values.h>
 
+#include <stdexcept>
+#include <vector>
 
 namespace gtsam {
 
 /**
  * \brief PathFactor
  *
- * A NonlinearFactor defined on a sequence (path) of relative rotations (or, more generally,
- * Lie group elements) whose predicted overall transformation is given by the composition
- * along the path.
+ * A NonlinearFactor defined on a sequence (path) of relative rotations (or,
+ * more generally, Lie group elements) whose predicted overall transformation is
+ * given by the composition along the path.
  *
  * Template parameter G is assumed to be a LieGroup derivative.
  */
-template<class G>
-class PathFactor : public NonlinearFactor {
-public:
+template <class G>
+class PathFactor : public NoiseModelFactor {
+ public:
   typedef std::shared_ptr<PathFactor> shared_ptr;
 
-private:
+ private:
   /// Ordered sequence of EdgeKeys forming the path.
   std::vector<EdgeKey> pathKeys_;
   /// Measured overall relative transformation along the path.
@@ -48,17 +63,18 @@ private:
    * \brief Compute effective measurements along the path.
    *
    * For each EdgeKey in the path, check whether the Values object contains the
-   * measurement stored as \(\mathtt{g}_{ij}\) (forward) or as \(\mathtt{g}_{ji}\)
-   * (reversed). In the latter case, the effective measurement is taken as
-   * \(\mathtt{g}_{ji}^{-1}\) and the local derivative is \(-\operatorname{Ad}_{\mathtt{g}_{ji}}\).
+   * measurement stored as \(\mathtt{g}_{ij}\) (forward) or as
+   * \(\mathtt{g}_{ji}\) (reversed). In the latter case, the effective
+   * measurement is taken as
+   * \(\mathtt{g}_{ji}^{-1}\) and the local derivative is
+   * \(-\operatorname{Ad}_{\mathtt{g}_{ji}}\).
    *
    * \param c The Values object.
    * \param Qs (Output) Vector of effective measurements.
    * \param localDerivatives (Output) Local derivative for each measurement.
    * \param prediction (Output) The overall composed product along the path.
    */
-  void computeEffectivePath(const Values& c,
-                            std::vector<G>& Qs,
+  void computeEffectivePath(const Values& c, std::vector<G>& Qs,
                             std::vector<Matrix>& localDerivatives,
                             G& prediction) const {
     const size_t d = G::dimension;
@@ -82,47 +98,51 @@ private:
     }
   }
 
-public:
+ public:
   /**
    * \brief Constructor.
    * \param pathKeys Vector of EdgeKey representing the unique path.
-   * \param measured The measured overall transformation (e.g., from a loop closure).
+   * \param measured The measured overall transformation (e.g., from a loop
+   * closure).
    */
-  PathFactor(const std::vector<EdgeKey>& pathKeys, const G& measured)
-      : NonlinearFactor(keysFromEdgeKeys(pathKeys)),
-        pathKeys_(pathKeys), measured_(measured) {}
+  PathFactor(const std::vector<EdgeKey>& pathKeys, const G& measured,
+             const SharedNoiseModel& noiseModel = nullptr)
+      : NoiseModelFactor(noiseModel, keysFromEdgeKeys(pathKeys)),
+        pathKeys_(pathKeys),
+        measured_(measured) {}
 
   /// Return the factor dimension (Lie algebra dimension of G).
-  virtual size_t dim() const override {
-    return G::dimension;
-  }
+  size_t dim() const override { return G::dimension; }
 
   /**
    * \brief Evaluate the error.
    *
-   * For a given set of values \c c, compute the predicted overall transformation by composing
-   * the measurements along the path. For each EdgeKey, the measurement may be stored either as
-   * \(\mathtt{g}_{ij}\) or \(\mathtt{g}_{ji}\). If \(\mathtt{g}_{ij}\) is present, it is used directly;
-   * otherwise, the measurement \(\mathtt{g}_{ji}\) is used and inverted.
+   * For a given set of values \c c, compute the predicted overall
+   * transformation by composing the measurements along the path. For each
+   * EdgeKey, the measurement may be stored either as
+   * \(\mathtt{g}_{ij}\) or \(\mathtt{g}_{ji}\). If \(\mathtt{g}_{ij}\) is
+   * present, it is used directly; otherwise, the measurement
+   * \(\mathtt{g}_{ji}\) is used and inverted.
    *
    * The error is defined as the squared norm of the Logmap of
    * \(\text{measured}^{-1} \circ \text{prediction}\).
    */
-  virtual double error(const Values& c) const override {
+  Vector unwhitenedError(const Values& c,
+                         OptionalMatrixVecType H = nullptr) const override {
     G prediction;
     std::vector<G> Qs;
     std::vector<Matrix> localDerivatives;
     computeEffectivePath(c, Qs, localDerivatives, prediction);
     G residual = measured_.inverse().compose(prediction);
-    return G::Logmap(residual).squaredNorm();
+    return G::Logmap(residual);
   }
 
   /**
    * \brief Linearize the factor.
    *
-   * This method computes the Jacobian by applying the chain rule along the path.
-   * For a product \( h = Q_1 \cdots Q_n \) (with \( Q_k \) taken from the Values),
-   * we backpropagate the adjoint maps:
+   * This method computes the Jacobian by applying the chain rule along the
+   * path. For a product \( h = Q_1 \cdots Q_n \) (with \( Q_k \) taken from the
+   * Values), we backpropagate the adjoint maps:
    * \[
    * A_k = \prod_{l=k+1}^{n} \operatorname{Ad}_{Q_l^{-1}},
    * \]
@@ -130,10 +150,11 @@ public:
    * \[
    * J_k = D\Log(H) \, A_k \, L_k,
    * \]
-   * where \( H = \text{measured}^{-1} \circ \text{prediction} \) and \( L_k \) is the local
-   * derivative (\(I\) when stored forward and \(-\operatorname{Ad}\) when reversed).
+   * where \( H = \text{measured}^{-1} \circ \text{prediction} \) and \( L_k \)
+   * is the local derivative (\(I\) when stored forward and
+   * \(-\operatorname{Ad}\) when reversed).
    */
-  virtual std::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
+  std::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
     const size_t d = G::dimension;
     std::vector<G> Qs;
     std::vector<Matrix> localDerivatives;
@@ -164,9 +185,9 @@ public:
   }
 
   /// Clone the factor.
-  virtual std::shared_ptr<NonlinearFactor> clone() const override{
+  std::shared_ptr<NonlinearFactor> clone() const override {
     return std::make_shared<PathFactor<G>>(*this);
   }
 };
 
-} // namespace gtsam
+}  // namespace gtsam
