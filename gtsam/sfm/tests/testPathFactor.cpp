@@ -34,26 +34,30 @@
 using namespace gtsam;
 using namespace std::placeholders;
 
+namespace rotation_example {
+// Define initial rotations R1, R2, R3 about the Z-axis.
+Rot3 R1 = Rot3::Rz(M_PI / 6);  // 30 degrees
+Rot3 R2 = Rot3::Rz(M_PI / 4);  // 45 degrees
+Rot3 R3 = Rot3::Rz(M_PI / 3);  // 60 degrees
+
+// Calculate ground truth measurements
+Rot3 R12 = R1.between(R2);
+Rot3 R23 = R2.between(R3);
+Rot3 R13 = R1.between(R3);
+}  // namespace rotation_example
+
 //--------------------------------------------------------------------------
 // Test: Factor Error
 //--------------------------------------------------------------------------
-
 TEST(PathFactor, Error) {
+  using namespace rotation_example;
+
   // Create a simple path: from node 1->2 and 2->3.
   EdgeKey e12(1, 2), e23(2, 3);
   std::vector<EdgeKey> pathKeys = {e12, e23};
 
-  // Define rotations.
-  // R12: rotation about Z-axis by 30 degrees.
-  Rot3 R12 = Rot3::Rz(30 * M_PI / 180.0);
-  // R23: rotation about Z-axis by 45 degrees.
-  Rot3 R23 = Rot3::Rz(45 * M_PI / 180.0);
-
-  // The predicted overall rotation is R12 * R23.
-  Rot3 predicted = R12.compose(R23);
-
   // Create a PathFactor with measured rotation equal to the predicted one.
-  PathFactor<Rot3> factor(pathKeys, predicted);
+  PathFactor<Rot3> factor({e12, e23}, R13);
 
   // Populate a Values object with the appropriate measurements.
   Values values{{e12, genericValue(R12)}, {e23, genericValue(R23)}};
@@ -61,35 +65,6 @@ TEST(PathFactor, Error) {
   // Compute the factor error.
   double error_val = factor.error(values);
   EXPECT(abs(error_val) < 1e-6);
-}
-
-Vector3 residualFunc(const Rot3& R12, const Rot3& R32, const Rot3& R13) {
-  Rot3 prediction = R12.compose(R32.inverse());
-  Rot3 residual = R13.inverse().compose(prediction);
-  return Rot3::Logmap(residual);
-};
-
-//--------------------------------------------------------------------------
-// Test: Jacobian (Analytical vs. Numerical)
-//--------------------------------------------------------------------------
-TEST(PathFactor, Jacobian) {
-  // Create a simple path: from node 1->2 and 2->3.
-  EdgeKey e12(1, 2), e23(2, 3);
-  std::vector<EdgeKey> pathKeys = {e12, e23};
-
-  // Define rotations.
-  Rot3 R12 = Rot3::Rz(30 * M_PI / 180.0);  // for edge e12 (forward)
-  Rot3 R23 = Rot3::Rz(45 * M_PI /
-                      180.0);  // for edge e23 (measurement stored reversed)
-
-  // The predicted overall rotation is R12 * R23.
-  Rot3 R13 = R12.compose(R23);
-
-  // Create the PathFactor.
-  PathFactor<Rot3> factor(pathKeys, R13);
-
-  // Populate a Values object.
-  Values values{{e12, genericValue(R12)}, {e23, genericValue(R23)}};
 
   // Use the macro to check the correctness of the Jacobians
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
