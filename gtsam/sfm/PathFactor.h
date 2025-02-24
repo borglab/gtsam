@@ -48,18 +48,67 @@ class PathFactor : public NoiseModelFactor {
   static const Matrix Id_;
 
  private:
-  /// Ordered sequence of EdgeKeys forming the path.
-  std::vector<EdgeKey> pathKeys_;
+  std::uint32_t i_, j_;
   /// Measured overall relative transformation along the path.
   G measured_;
+  /// Ordered sequence of EdgeKeys forming the path.
+  std::vector<EdgeKey> path_;
+
+ public:
+  /**
+   * \brief Constructor.
+   * \param i,j: the start and end of the path.
+   * \param measured The measured overall transformation.
+   * \param path Vector of EdgeKeys representing a path from i to j.
+   *
+   * \note The edges are the ones in the tree, and might be reversed. For
+   * example, to predict R14, we might have edge keys (1,2),(3,2),(3,4).
+   * In this case, the measurement for the middle key will be inverted.
+   */
+  PathFactor(std::uint32_t i, std::uint32_t j, const G& measured,
+             const std::vector<EdgeKey>& path,
+             const SharedNoiseModel& noiseModel = nullptr)
+      : NoiseModelFactor(noiseModel, KeysfromPath(path)),
+        i_(i),
+        j_(j),
+        measured_(measured),
+        path_(path) {
+    CheckPath(i, j, path);
+  }
+
+  /// Return the factor dimension (Lie algebra dimension of G).
+  size_t dim() const override { return G::dimension; }
+
+ private:
+  /// Helper: Check that the path is valid for given (i,j) prediction.
+  static void CheckPath(std::uint32_t i, std::uint32_t j,
+                        const std::vector<EdgeKey>& path) {
+    if (path.empty()) {
+      throw std::invalid_argument("Path is empty");
+    }
+
+    std::uint32_t current = i;
+    for (const auto& edge : path) {
+      if (edge.i() != current) {
+        throw std::invalid_argument(
+            "Path is not continuous at edge starting with " +
+            std::to_string(edge.i()));
+      }
+      current = edge.j();
+    }
+
+    if (current != j) {
+      throw std::invalid_argument("Path does not end at j");
+    }
+  }
 
   /// Helper: Extract Keys from a vector of EdgeKey.
-  static KeyVector keysFromEdgeKeys(const std::vector<EdgeKey>& keys) {
-    KeyVector keyVec;
-    for (const auto& ek : keys) {
-      keyVec.push_back(static_cast<Key>(ek));
+  static KeyVector KeysfromPath(const std::vector<EdgeKey>& path) {
+    KeyVector keys;
+    for (const auto& ek : path) {
+      keys.push_back(static_cast<Key>(ek));
     }
-    return keyVec;
+    return keys;
   }
 
   /**
@@ -77,44 +126,25 @@ class PathFactor : public NoiseModelFactor {
    * \param localDerivatives (Output) Local derivative for each measurement.
    * \param prediction (Output) The overall composed product along the path.
    */
-  void computeEffectivePath(const Values& c, std::vector<G>& Qs,
-                            std::vector<Matrix>& localDerivatives,
-                            G& prediction) const {
-    Qs.clear();
-    localDerivatives.clear();
-    prediction = G::Identity();
-    for (const auto& ek : pathKeys_) {
-      Key k = static_cast<Key>(ek);
-      bool forward = c.exists(k);
+  G computeEffectivePath(
+      const Values& values,
+      std::vector<std::pair<G, Matrix>>* Qs = nullptr) const {
+    G prediction = G::Identity();
+    for (const auto& ek : path_) {
+      G Q;
+      bool forward = values.exists(ek);
       if (forward) {
-        G gij = c.at<G>(k);
-        Qs.push_back(gij);
-        localDerivatives.push_back(Id_);
+        Q = values.at<G>(ek);  // gij
+        if (Qs) Qs->emplace_back(Q, Id_);
       } else {
-        Key k_rev = static_cast<Key>(ek.reversed());
-        G gji = c.at<G>(k_rev);
-        Qs.push_back(gji.inverse());
-        localDerivatives.push_back(-gji.AdjointMap());
+        G gji = values.at<G>(ek.reversed());
+        Q = gji.inverse();  // inv(gij)
+        if (Qs) Qs->emplace_back(Q, -gji.AdjointMap());
       }
-      prediction = prediction.compose(Qs.back());
+      prediction = prediction * Q;
     }
+    return prediction;
   }
-
- public:
-  /**
-   * \brief Constructor.
-   * \param pathKeys Vector of EdgeKey representing the unique path.
-   * \param measured The measured overall transformation (e.g., from a loop
-   * closure).
-   */
-  PathFactor(const std::vector<EdgeKey>& pathKeys, const G& measured,
-             const SharedNoiseModel& noiseModel = nullptr)
-      : NoiseModelFactor(noiseModel, keysFromEdgeKeys(pathKeys)),
-        pathKeys_(pathKeys),
-        measured_(measured) {}
-
-  /// Return the factor dimension (Lie algebra dimension of G).
-  size_t dim() const override { return G::dimension; }
 
   /**
    * \brief Evaluate the error.
@@ -129,62 +159,36 @@ class PathFactor : public NoiseModelFactor {
    * The error is defined as the squared norm of the Logmap of
    * \(\text{measured}^{-1} \circ \text{prediction}\).
    */
-  Vector unwhitenedError(const Values& c,
+  Vector unwhitenedError(const Values& values,
                          OptionalMatrixVecType H = nullptr) const override {
-    G prediction;
-    std::vector<G> Qs;
-    std::vector<Matrix> localDerivatives;
-    computeEffectivePath(c, Qs, localDerivatives, prediction);
-    G residual = measured_.inverse().compose(prediction);
-    return G::Logmap(residual);
-  }
+    std::vector<std::pair<G, Matrix>> Qs;
+    const G prediction = computeEffectivePath(values, H ? &Qs : nullptr);
+    G residual = measured_.between(prediction);
 
-  /**
-   * \brief Linearize the factor.
-   *
-   * This method computes the Jacobian by applying the chain rule along the
-   * path. For a product \( h = Q_1 \cdots Q_n \) (with \( Q_k \) taken from the
-   * Values), we backpropagate the adjoint maps:
-   * \[
-   * A_k = \prod_{l=k+1}^{n} \operatorname{Ad}_{Q_l^{-1}},
-   * \]
-   * and obtain the Jacobian with respect to the \(k\)th measurement as
-   * \[
-   * J_k = D\Log(H) \, A_k \, L_k,
-   * \]
-   * where \( H = \text{measured}^{-1} \circ \text{prediction} \) and \( L_k \)
-   * is the local derivative (\(I\) when stored forward and
-   * \(-\operatorname{Ad}\) when reversed).
-   */
-  std::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
-    std::vector<G> Qs;
-    std::vector<Matrix> localDerivatives;
-    G prediction;
-    computeEffectivePath(c, Qs, localDerivatives, prediction);
+    if (H) {
+      Matrix DLog;
+      Vector b = G::Logmap(residual, DLog);
 
-    // Compute residual: H = measured^{-1} * prediction.
-    G H = measured_.inverse().compose(prediction);
-    Matrix DLog;
-    Vector b = G::Logmap(H, DLog);
+      // Backpropagate adjoint maps:
+      // A[k] = \prod_{l=k+1}^{n} Ad_{Q_l^{-1}}, with A[n] = I.
+      std::vector<Matrix> A(path_.size(), Id_);
+      Matrix accum = Id_;
+      for (int k = static_cast<int>(path_.size()) - 1; k >= 0; --k) {
+        A[k] = accum;
+        auto [Q, _] = Qs[k];
+        accum = Q.inverse().AdjointMap() * accum;
+      }
 
-    // Backpropagate adjoint maps:
-    // A[k] = \prod_{l=k+1}^{n} Ad_{Q_l^{-1}}, with A[n] = I.
-    std::vector<Matrix> A(pathKeys_.size(), Id_);
-    Matrix accum = Id_;
-    for (int k = static_cast<int>(pathKeys_.size()) - 1; k >= 0; --k) {
-      A[k] = accum;
-      accum = Qs[k].inverse().AdjointMap() * accum;
+      // Assemble the Jacobians.
+      for (size_t k = 0; k < path_.size(); ++k) {
+        auto [_, localDerivative] = Qs[k];
+        H->at(k) = DLog * A[k] * localDerivative;
+      }
+      return b;
+    } else {
+      return G::Logmap(residual);
     }
-
-    // Assemble the Jacobians.
-    std::vector<std::pair<Key, Matrix>> jacobians;
-    for (size_t k = 0; k < pathKeys_.size(); ++k) {
-      Matrix J = DLog * A[k] * localDerivatives[k];
-      jacobians.push_back(std::make_pair(static_cast<Key>(pathKeys_[k]), J));
-    }
-    return std::make_shared<JacobianFactor>(jacobians, b);
   }
-
   /// Clone the factor.
   std::shared_ptr<NonlinearFactor> clone() const override {
     return std::make_shared<PathFactor<G>>(*this);
