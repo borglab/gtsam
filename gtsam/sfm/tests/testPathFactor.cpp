@@ -47,14 +47,13 @@ Rot3 R13 = R1.between(R3);
 }  // namespace rotation_example
 
 //--------------------------------------------------------------------------
-// Test: Factor Error
+// Test a simple path
 //--------------------------------------------------------------------------
-TEST(PathFactor, Error) {
+TEST(PathFactor, SimplePath) {
   using namespace rotation_example;
 
   // Create a simple path: from node 1->2 and 2->3.
   EdgeKey e12(1, 2), e23(2, 3);
-  std::vector<EdgeKey> pathKeys = {e12, e23};
 
   // Create a PathFactor with measured rotation equal to the predicted one.
   PathFactor<Rot3> factor({e12, e23}, R13);
@@ -62,13 +61,68 @@ TEST(PathFactor, Error) {
   // Populate a Values object with the appropriate measurements.
   Values values{{e12, genericValue(R12)}, {e23, genericValue(R23)}};
 
-  // Compute the factor error.
-  double error_val = factor.error(values);
-  EXPECT(abs(error_val) < 1e-6);
+  // Check the factor error.
+  EXPECT_DOUBLES_EQUAL(0.0, factor.error(values), 1e-6);
 
   // Use the macro to check the correctness of the Jacobians
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
 }
+// //--------------------------------------------------------------------------
+// // Test with a noise model
+// //--------------------------------------------------------------------------
+// TEST(PathFactor, NoiseModel) {
+//   using namespace rotation_example;
+
+//   // Create a simple path: from node 1->2 and 2->3.
+//   EdgeKey e12(1, 2), e23(2, 3);
+
+//   // Create a PathFactor with measured rotation equal to the predicted one.
+//   PathFactor<Rot3> factor({e12, e23}, R13,
+//                           noiseModel::Isotropic::Sigma(3, 0.1));
+
+//   // Populate a Values object with the appropriate measurements.
+//   Values values{{e12, genericValue(R12)}, {e23, genericValue(R23)}};
+
+//   // Check the factor error.
+//   EXPECT_DOUBLES_EQUAL(0.0, factor.error(values), 1e-6);
+
+//   // Use the macro to check the correctness of the Jacobians
+//   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
+// }
+
+// //--------------------------------------------------------------------------
+// // Reverse one of the edges
+// //--------------------------------------------------------------------------
+// TEST(PathFactor, WithReversal) {
+//   using namespace rotation_example;
+//   EdgeKey e12(1, 2), e32(3, 2);
+//   PathFactor<Rot3> factor({e12, e32}, R13);
+//   Values values{{e12, genericValue(R12)}, {e32,
+//   genericValue(R23.inverse())}};
+
+//   // Check the factor error.
+//   EXPECT_DOUBLES_EQUAL(0.0, factor.error(values), 1e-6);
+
+//   // Use the macro to check the correctness of the Jacobians
+//   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
+// }
+
+// //--------------------------------------------------------------------------
+// // Reverse one of the edges
+// //--------------------------------------------------------------------------
+// TEST(PathFactor, ReverseBothedges) {
+//   using namespace rotation_example;
+//   EdgeKey e21(2, 1), e32(3, 2);
+//   PathFactor<Rot3> factor({e21, e32}, R13);
+//   Values values{{e21, genericValue(R12.inverse())},
+//                 {e32, genericValue(R23.inverse())}};
+
+//   // Check the factor error.
+//   EXPECT_DOUBLES_EQUAL(0.0, factor.error(values), 1e-6);
+
+//   // Use the macro to check the correctness of the Jacobians
+//   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
+// }
 
 /* ************************************************************************* */
 int main() {
