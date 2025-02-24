@@ -44,6 +44,9 @@ class PathFactor : public NoiseModelFactor {
  public:
   typedef std::shared_ptr<PathFactor> shared_ptr;
 
+  // _d is a static constexpr member that specifies the dimension of G
+  static const Matrix Id_;
+
  private:
   /// Ordered sequence of EdgeKeys forming the path.
   std::vector<EdgeKey> pathKeys_;
@@ -77,7 +80,6 @@ class PathFactor : public NoiseModelFactor {
   void computeEffectivePath(const Values& c, std::vector<G>& Qs,
                             std::vector<Matrix>& localDerivatives,
                             G& prediction) const {
-    const size_t d = G::dimension;
     Qs.clear();
     localDerivatives.clear();
     prediction = G::Identity();
@@ -87,7 +89,7 @@ class PathFactor : public NoiseModelFactor {
       if (forward) {
         G gij = c.at<G>(k);
         Qs.push_back(gij);
-        localDerivatives.push_back(Matrix::Identity(d, d));
+        localDerivatives.push_back(Id_);
       } else {
         Key k_rev = static_cast<Key>(ek.reversed());
         G gji = c.at<G>(k_rev);
@@ -155,7 +157,6 @@ class PathFactor : public NoiseModelFactor {
    * \(-\operatorname{Ad}\) when reversed).
    */
   std::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
-    const size_t d = G::dimension;
     std::vector<G> Qs;
     std::vector<Matrix> localDerivatives;
     G prediction;
@@ -168,8 +169,8 @@ class PathFactor : public NoiseModelFactor {
 
     // Backpropagate adjoint maps:
     // A[k] = \prod_{l=k+1}^{n} Ad_{Q_l^{-1}}, with A[n] = I.
-    std::vector<Matrix> A(pathKeys_.size(), Matrix::Identity(d, d));
-    Matrix accum = Matrix::Identity(d, d);
+    std::vector<Matrix> A(pathKeys_.size(), Id_);
+    Matrix accum = Id_;
     for (int k = static_cast<int>(pathKeys_.size()) - 1; k >= 0; --k) {
       A[k] = accum;
       accum = Qs[k].inverse().AdjointMap() * accum;
@@ -189,5 +190,8 @@ class PathFactor : public NoiseModelFactor {
     return std::make_shared<PathFactor<G>>(*this);
   }
 };
+
+template <class G>
+const Matrix PathFactor<G>::Id_ = Matrix::Identity(G::dimension, G::dimension);
 
 }  // namespace gtsam
