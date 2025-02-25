@@ -119,47 +119,33 @@ class PathFactor : public NoiseModelFactor {
    */
   Vector unwhitenedError(const Values& values,
                          OptionalMatrixVecType H = nullptr) const override {
-    const size_t n = path_.size();
-    std::vector<std::pair<G, Matrix>> Qs;
     G T_jk = G::Identity();
-    size_t i = 0;
+    size_t i = path_.size() - 1;
     std::uint32_t current = j_;  // Start from the end node.
     for (auto it = path_.rbegin(); it != path_.rend(); ++it) {
       const auto& kl = *it;
       const G G_kl = values.at<G>(kl);
-      G G_k;
-      Matrix localDerivative;
+      if (H) H->at(i) = T_jk.AdjointMap();
       if (kl.j() == current) {
-        G_k = G_kl.inverse();
         current = kl.i();
-        localDerivative = Id_;
-        if (H) Qs.emplace_back(T_jk, Id_);
+        T_jk = T_jk * G_kl.inverse();
       } else {
-        assert(kl.i() == current);
-        G_k = G_kl;
         current = kl.j();
-        localDerivative = -G_kl.AdjointMap();
-        if (H) Qs.emplace_back(T_jk, -G_kl.AdjointMap());
+        if (H) H->at(i) *= -G_kl.AdjointMap();
+        T_jk = T_jk * G_kl;
       }
-      if (H) H->at(n - 1 - i) = T_jk.AdjointMap() * localDerivative;
-      T_jk = T_jk * G_k;
-      i += 1;
+      i -= 1;
     }
     // The overall effective transform is the inverse of T_jk.
-    G T_ij = T_jk.inverse();
-    G residual = measured_.between(T_ij);
+    const G& T_ji = T_jk;
+    G residual = measured_.inverse() * T_ji.inverse();
 
+    Matrix DLog;
+    const Vector b = G::Logmap(residual, H ? &DLog : nullptr);
     if (H) {
-      Matrix DLog;
-      Vector b = G::Logmap(residual, DLog);
-      // Compute the Jacobians in forward order.
-      for (size_t i = 0; i < n; i++) {
-        H->at(i) = DLog * H->at(i);
-      }
-      return b;
-    } else {
-      return G::Logmap(residual);
+      for (size_t i = 0; i < path_.size(); i++) H->at(i) = DLog * H->at(i);
     }
+    return b;
   }
 
   /// Clone the factor.
