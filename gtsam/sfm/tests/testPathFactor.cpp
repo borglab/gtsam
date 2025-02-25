@@ -18,6 +18,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/types.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/inference/EdgeKey.h>
@@ -114,7 +115,7 @@ TEST(PathFactor, ReverseBothEdges) {
 }
 
 //--------------------------------------------------------------------------
-// SE(2) tests below
+// SE(3) tests below
 //--------------------------------------------------------------------------
 namespace SE3_example {
 using namespace SO3_example;
@@ -175,6 +176,70 @@ TEST(PathFactorSE3, ReverseBothEdges) {
   PathFactor<Pose3> factor(1, 3, T13, {e21, e32});
   Values values{{e21, genericValue(T12.inverse())},
                 {e32, genericValue(T23.inverse())}};
+  EXPECT_DOUBLES_EQUAL(0.0, factor.error(values), 1e-6);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
+}
+
+//--------------------------------------------------------------------------
+// Pose2 tests
+//--------------------------------------------------------------------------
+namespace Pose2_example {
+// Define initial poses
+Pose2 P1(1, 2, 0);             // x=1, y=2, theta=0 radians
+Pose2 P2(3, 4, M_PI / 4);      // x=3, y=4, theta=45 degrees
+Pose2 P3(5, 6, M_PI / 2);      // x=5, y=6, theta=90 degrees
+Pose2 P4(7, 8, 3 * M_PI / 4);  // x=7, y=8, theta=135 degrees
+Pose2 P5(9, 10, M_PI);         // x=9, y=10, theta=180 degrees
+
+// Calculate ground truth measurements
+Pose2 P12 = P1.between(P2);
+Pose2 P23 = P2.between(P3);
+Pose2 P34 = P3.between(P4);
+Pose2 P45 = P4.between(P5);
+Pose2 P15 = P1.between(P5);
+}  // namespace Pose2_example
+
+//--------------------------------------------------------------------------
+// Test a simple path with Pose2
+//--------------------------------------------------------------------------
+TEST(PathFactorPose2, SimplePath) {
+  using namespace Pose2_example;
+  EdgeKey e12(1, 2), e23(2, 3), e34(3, 4), e45(4, 5);
+  PathFactor<Pose2> factor(1, 5, P15, {e12, e23, e34, e45});
+  Values values{{e12, genericValue(P12)},
+                {e23, genericValue(P23)},
+                {e34, genericValue(P34)},
+                {e45, genericValue(P45)}};
+  EXPECT_DOUBLES_EQUAL(0.0, factor.error(values), 1e-6);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
+}
+
+//--------------------------------------------------------------------------
+// Test reversing two edges
+//--------------------------------------------------------------------------
+TEST(PathFactorPose2, ReverseTwo) {
+  using namespace Pose2_example;
+  EdgeKey e12(1, 2), e32(3, 2), e34(3, 4), e54(5, 4);
+  PathFactor<Pose2> factor(1, 5, P15, {e12, e32, e34, e54});
+  Values values{{e12, genericValue(P12)},
+                {e32, genericValue(P23.inverse())},
+                {e34, genericValue(P34)},
+                {e54, genericValue(P45.inverse())}};
+  EXPECT_DOUBLES_EQUAL(0.0, factor.error(values), 1e-6);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
+}
+
+//--------------------------------------------------------------------------
+// Test reversing measurement
+//--------------------------------------------------------------------------
+TEST(PathFactorPose2, ReverseMeasurement) {
+  using namespace Pose2_example;
+  EdgeKey e12(1, 2), e23(2, 3), e34(3, 4), e45(4, 5);
+  PathFactor<Pose2> factor(5, 1, P15.inverse(), {e45, e34, e23, e12});
+  Values values{{e12, genericValue(P12)},
+                {e23, genericValue(P23)},
+                {e34, genericValue(P34)},
+                {e45, genericValue(P45)}};
   EXPECT_DOUBLES_EQUAL(0.0, factor.error(values), 1e-6);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
 }

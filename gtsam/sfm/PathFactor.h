@@ -49,8 +49,8 @@ class PathFactor : public NoiseModelFactor {
 
  private:
   std::uint32_t i_, j_;
-  /// We store inverse of measured transform T_ij.
-  G invTij_;
+  /// We store inverse of measured transform g_ij.
+  G measured_ji_;
   /// Ordered sequence of EdgeKeys forming the path.
   std::vector<EdgeKey> path_;
 
@@ -58,20 +58,20 @@ class PathFactor : public NoiseModelFactor {
   /**
    * \brief Constructor.
    * \param i,j: the start and end of the path.
-   * \param T_ij The measured overall transformation.
+   * \param g_ij The measured overall transformation.
    * \param path Vector of EdgeKeys representing a path from i to j.
    *
    * \note The edges are the ones in the tree, and might be reversed. For
    * example, to predict R14, we might have edge keys (1,2),(3,2),(3,4).
    * In this case, the measurement for the middle key will be inverted.
    */
-  PathFactor(std::uint32_t i, std::uint32_t j, const G& T_ij,
+  PathFactor(std::uint32_t i, std::uint32_t j, const G& g_ij,
              const std::vector<EdgeKey>& path,
              const SharedNoiseModel& noiseModel = nullptr)
       : NoiseModelFactor(noiseModel, KeysfromPath(path)),
         i_(i),
         j_(j),
-        invTij_(T_ij.inverse()),
+        measured_ji_(g_ij.inverse()),
         path_(path) {
     CheckPath(i, j, path);
   }
@@ -119,33 +119,43 @@ class PathFactor : public NoiseModelFactor {
    */
   Vector unwhitenedError(const Values& values,
                          OptionalMatrixVecType H = nullptr) const override {
+    // Below we loop over the path in reverse order, because the Jacobians are
+    // basically Adjoints of the reverse accumulated transform g_ji. After the
+    // loop we take the inverse of g_ji to obtain the prediction g_ij.
     size_t i = path_.size() - 1;
-    G T_ji = G::Identity();
-    std::uint32_t current = j_;  // Start from the end node.
-    for (auto it = path_.rbegin(); it != path_.rend(); ++it) {
-      const auto& kl = *it;
-      const G G_kl = values.at<G>(kl);
-      if (H) H->at(i) = T_ji.AdjointMap();
-      if (kl.j() == current) {
-        current = kl.i();
-        T_ji = T_ji * G_kl.inverse();
+    G g_ji = G::Identity();      // Accumulate reverse transform from j to i
+    std::uint32_t current = j_;  // Start from the end node, j.
+    for (auto kl = path_.rbegin(); kl != path_.rend(); ++kl) {
+      // Retrieve the transform stored in tree edge (k,l)
+      const G g_kl = values.at<G>(*kl);
+      if (kl->j() == current) {
+        // Edge (k,l) is oriented along path: invert g_kl to reverse-accumulate.
+        current = kl->i();
+        if (H) H->at(i) = g_ji.AdjointMap();
+        g_ji = g_ji * g_kl.inverse();
       } else {
-        current = kl.j();
-        if (H) H->at(i) *= -G_kl.AdjointMap();
-        T_ji = T_ji * G_kl;
+        // Edge (k,l) is reversed in path: just use g_kl to reverse-accumulate.
+        current = kl->j();
+        g_ji = g_ji * g_kl;
+        // Non-obvious: putting this after accumulate avoids extra Ad and mult.
+        if (H) H->at(i) = -g_ji.AdjointMap();
       }
       i -= 1;
     }
-    // The predicted transform T_ij is the inverse of T_ji.
-    const G T_ij = T_ji.inverse();
-    G residual = invTij_ * T_ij;
 
+    // The predicted transform g_ij is the inverse of (now complete) g_ji.
+    const G g_ij = g_ji.inverse();
+    G between = measured_ji_ * g_ij;  // inv(\tilde g_ij) g_ij
+
+    // Calculate error as log(inv(\tilde g_ij) g_ij)
     Matrix DLog;
-    const Vector b = G::Logmap(residual, H ? &DLog : nullptr);
-    if (H && !DLog.isIdentity())
-      for (auto H_i : *H) H_i = DLog * H_i;
+    const Vector error = G::Logmap(between, H ? &DLog : nullptr);
 
-    return b;
+    // differential of Logmap is typically approximated as identity, but if not:
+    if (H && !DLog.isIdentity())
+      for (auto H_i : *H) H_i = DLog * H_i;  // chain with DLog!
+
+    return error;
   }
 
   /// Clone the factor.
