@@ -86,17 +86,12 @@ class PathFactor : public NoiseModelFactor {
 
     std::uint32_t current = i;
     for (const auto& kl : originalPath) {
-      bool orientation = true;  // Assume normal orientation initially
-      if (kl.i() == current) {
-        current = kl.j();
-      } else if (kl.j() == current) {
-        current = kl.i();
-        orientation = false;  // Reverse orientation
-      } else {
+      if (kl.i() != current && kl.j() != current)
         throw std::invalid_argument("Path is not continuous at edge " +
                                     (std::string)kl);
-      }
-      path_.emplace_back(kl, orientation);
+      const bool alongPath = (kl.i() == current);
+      current = alongPath ? kl.j() : kl.i();
+      path_.emplace_back(kl, alongPath);
     }
 
     if (current != j) {
@@ -118,16 +113,18 @@ class PathFactor : public NoiseModelFactor {
    */
   G predict(const Values& values, OptionalMatrixVecType H = nullptr) const {
     // Below we loop over the path in reverse order, because the Jacobians are
-    // basically Adjoints of the reverse accumulated transform g_ji. After the
+    // Adjoints of the reverse accumulated transform (partial) g_ji. After the
     // loop we take the inverse of g_ji to obtain the prediction g_ij.
-    G g_ji = G::Identity();  // Accumulate reverse transform from j to i
 
-    // Adjusted loop to use precomputed orientation
+    // Accumulate reverse transform from j to i
+    G g_ji = G::Identity();
     for (int i = path_.size() - 1; i >= 0; --i) {
-      const auto& [edgeKey, orientation] = path_[i];
-      const G g_kl = values.at<G>(edgeKey);
+      // Get spanning tree edge and its transform
+      const auto& [edge_kl, alongPath] = path_[i];
+      const G g_kl = values.at<G>(edge_kl);
 
-      if (orientation) {
+      // Check its orientation wrt path, pre-computed in constructor:
+      if (alongPath) {
         // Edge (k,l) is oriented along path: invert g_kl to reverse-accumulate.
         if (H) H->at(i) = g_ji.AdjointMap();
         g_ji = g_ji * g_kl.inverse();
@@ -138,6 +135,7 @@ class PathFactor : public NoiseModelFactor {
         if (H) H->at(i) = -g_ji.AdjointMap();
       }
     }
+
     // The predicted transform g_ij is the inverse of (now complete) g_ji.
     return g_ji.inverse();
   }
