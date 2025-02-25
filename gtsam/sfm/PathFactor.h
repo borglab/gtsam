@@ -172,27 +172,21 @@ class PathFactor : public NoiseModelFactor {
   Vector unwhitenedError(const Values& values,
                          OptionalMatrixVecType H = nullptr) const override {
     std::vector<std::pair<G, Matrix>> Qs;
-    const G prediction = computeEffectivePath(values, H ? &Qs : nullptr);
-    G residual = measured_.between(prediction);
+    const G T_ij = computeEffectivePath(values, H ? &Qs : nullptr);
+    G residual = measured_.between(T_ij);
 
     if (H) {
       Matrix DLog;
       Vector b = G::Logmap(residual, DLog);
 
-      // Backpropagate adjoint maps:
-      // A[k] = \prod_{l=k+1}^{n} Ad_{Q_l^{-1}}, with A[n] = I.
-      std::vector<Matrix> A(path_.size(), Id_);
-      Matrix accum = Id_;
-      for (int k = static_cast<int>(path_.size()) - 1; k >= 0; --k) {
-        A[k] = accum;
-        auto [Q, _] = Qs[k];
-        accum = Q.inverse().AdjointMap() * accum;
-      }
-
       // Assemble the Jacobians.
+      const G T_ji = T_ij.inverse();
+      G T_ik = G::Identity();
       for (size_t k = 0; k < path_.size(); ++k) {
-        auto [_, localDerivative] = Qs[k];
-        H->at(k) = DLog * A[k] * localDerivative;
+        auto [G_k, localDerivative] = Qs[k];
+        T_ik = T_ik * G_k;
+        const G T_jk = T_ji * T_ik;
+        H->at(k) = DLog * T_jk.AdjointMap() * localDerivative;
       }
       return b;
     } else {
