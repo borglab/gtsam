@@ -115,10 +115,9 @@ class PathFactor : public NoiseModelFactor {
   }
 
   /**
-   * \brief Evaluate the error.
+   * \brief Predict the measurement.
    */
-  Vector unwhitenedError(const Values& values,
-                         OptionalMatrixVecType H = nullptr) const override {
+  G predict(const Values& values, OptionalMatrixVecType H = nullptr) const {
     // Below we loop over the path in reverse order, because the Jacobians are
     // basically Adjoints of the reverse accumulated transform g_ji. After the
     // loop we take the inverse of g_ji to obtain the prediction g_ij.
@@ -144,7 +143,16 @@ class PathFactor : public NoiseModelFactor {
     }
 
     // The predicted transform g_ij is the inverse of (now complete) g_ji.
-    const G g_ij = g_ji.inverse();
+    return g_ji.inverse();
+  }
+
+  /**
+   * \brief Evaluate the error.
+   */
+  Vector unwhitenedError(const Values& values,
+                         OptionalMatrixVecType H = nullptr) const override {
+    // Predict the measurement, with optional derivatives.
+    const G g_ij = predict(values, H);
     G between = measured_ji_ * g_ij;  // inv(\tilde g_ij) g_ij
 
     // Calculate error as log(inv(\tilde g_ij) g_ij)
