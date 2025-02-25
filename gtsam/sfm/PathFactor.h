@@ -119,6 +119,7 @@ class PathFactor : public NoiseModelFactor {
    */
   Vector unwhitenedError(const Values& values,
                          OptionalMatrixVecType H = nullptr) const override {
+    const size_t n = path_.size();
     std::vector<std::pair<G, Matrix>> Qs;
     G T_jk = G::Identity();
     std::uint32_t current = j_;  // Start from the end node.
@@ -129,12 +130,12 @@ class PathFactor : public NoiseModelFactor {
       if (kl.j() == current) {
         G_k = G_kl.inverse();
         current = kl.i();
-        if (H) Qs.emplace_back(G_k, Id_);
+        if (H) Qs.emplace_back(T_jk, Id_);
       } else {
         assert(kl.i() == current);
         G_k = G_kl;
         current = kl.j();
-        if (H) Qs.emplace_back(G_k, -G_kl.AdjointMap());
+        if (H) Qs.emplace_back(T_jk, -G_kl.AdjointMap());
       }
       T_jk = T_jk * G_k;
     }
@@ -145,12 +146,9 @@ class PathFactor : public NoiseModelFactor {
     if (H) {
       Matrix DLog;
       Vector b = G::Logmap(residual, DLog);
-      const size_t n = Qs.size();
       // Compute the Jacobians in forward order.
-      G T_jk = T_ij.inverse();
-      for (int i = static_cast<int>(n) - 1; i >= 0; --i) {
-        auto [G_k, localDerivative] = Qs[i];
-        T_jk = T_jk * G_k.inverse();
+      for (size_t i = 0; i < n; i++) {
+        auto [T_jk, localDerivative] = Qs[i];
         // Qs[i] corresponds to forward index (n - 1 - i).
         H->at(n - 1 - i) = DLog * T_jk.AdjointMap() * localDerivative;
       }
