@@ -120,34 +120,39 @@ class PathFactor : public NoiseModelFactor {
   Vector unwhitenedError(const Values& values,
                          OptionalMatrixVecType H = nullptr) const override {
     std::vector<std::pair<G, Matrix>> Qs;
-    G T_ik = G::Identity();
-    std::uint32_t current = i_;
-    for (const auto& kl : path_) {
-      G Q;
+    G T_kj = G::Identity();
+    std::uint32_t current = j_;  // Start from the end.
+    // Reverse loop over the path.
+    for (auto it = path_.rbegin(); it != path_.rend(); ++it) {
+      const auto& kl = *it;
       const G G_kl = values.at<G>(kl);
-      const bool forward = (kl.i() == current);
-      if (forward) {
-        Q = G_kl;
-        current = kl.j();
+      G G_k;
+      if (kl.j() == current) {
+        G_k = G_kl;
+        current = kl.i();
         if (H) Qs.emplace_back(G_kl, Id_);
       } else {
-        assert(kl.j() == current);
-        Q = G_kl.inverse();
-        current = kl.i();
-        if (H) Qs.emplace_back(Q, -G_kl.AdjointMap());
+        assert(kl.i() == current);
+        G_k = G_kl.inverse();
+        current = kl.j();
+        if (H) Qs.emplace_back(G_k, -G_kl.AdjointMap());
       }
-      T_ik = T_ik * Q;
+      T_kj = G_k * T_kj;
     }
-    G residual = measured_.between(T_ik);
+    // Now, T_kj equals the accumulated transform from i to j in reverse:
+    G T_ij = T_kj;
+    G residual = measured_.between(T_ij);
 
     if (H) {
       Matrix DLog;
       Vector b = G::Logmap(residual, DLog);
-
-      // Assemble the Jacobians.
-      G T_jk = T_ik.inverse();
-      for (size_t k = 0; k < path_.size(); ++k) {
-        auto [G_k, localDerivative] = Qs[k];
+      // To compute the Jacobians in the original (forward) edge order,
+      // we need to "undo" the reverse order accumulation.
+      G T_jk = T_ij.inverse();
+      const size_t n = path_.size();
+      for (size_t k = 0; k < n; ++k) {
+        // Qs was filled in reverse order; reverse it back.
+        auto [G_k, localDerivative] = Qs[n - 1 - k];
         T_jk = T_jk * G_k;
         H->at(k) = DLog * T_jk.AdjointMap() * localDerivative;
       }
@@ -156,7 +161,6 @@ class PathFactor : public NoiseModelFactor {
       return G::Logmap(residual);
     }
   }
-
   /// Clone the factor.
   std::shared_ptr<NonlinearFactor> clone() const override {
     return std::make_shared<PathFactor<G>>(*this);
