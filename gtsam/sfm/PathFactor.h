@@ -127,16 +127,16 @@ class PathFactor : public NoiseModelFactor {
       const G G_kl = values.at<G>(kl);
       G G_k;
       if (kl.j() == current) {
-        G_k = G_kl;
+        G_k = G_kl.inverse();
         current = kl.i();
-        if (H) Qs.emplace_back(G_kl, Id_);
+        if (H) Qs.emplace_back(G_k, Id_);
       } else {
         assert(kl.i() == current);
-        G_k = G_kl.inverse();
+        G_k = G_kl;
         current = kl.j();
         if (H) Qs.emplace_back(G_k, -G_kl.AdjointMap());
       }
-      T_jk = T_jk * G_k.inverse();
+      T_jk = T_jk * G_k;
     }
     // The overall effective transform is the inverse of T_jk.
     G T_ij = T_jk.inverse();
@@ -147,13 +147,12 @@ class PathFactor : public NoiseModelFactor {
       Vector b = G::Logmap(residual, DLog);
       const size_t n = Qs.size();
       // Compute the Jacobians in forward order.
-      G T_jk_forward =
-          T_ij.inverse();  // equivalent to the forward accumulator.
+      G T_jk = T_ij.inverse();
       for (int i = static_cast<int>(n) - 1; i >= 0; --i) {
         auto [G_k, localDerivative] = Qs[i];
-        T_jk_forward = T_jk_forward * G_k;
+        T_jk = T_jk * G_k.inverse();
         // Qs[i] corresponds to forward index (n - 1 - i).
-        H->at(n - 1 - i) = DLog * T_jk_forward.AdjointMap() * localDerivative;
+        H->at(n - 1 - i) = DLog * T_jk.AdjointMap() * localDerivative;
       }
       return b;
     } else {
