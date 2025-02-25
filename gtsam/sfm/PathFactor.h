@@ -180,12 +180,10 @@ class PathFactor : public NoiseModelFactor {
       Vector b = G::Logmap(residual, DLog);
 
       // Assemble the Jacobians.
-      const G T_ji = T_ij.inverse();
-      G T_ik = G::Identity();
+      G T_jk = T_ij.inverse();
       for (size_t k = 0; k < path_.size(); ++k) {
         auto [G_k, localDerivative] = Qs[k];
-        T_ik = T_ik * G_k;
-        const G T_jk = T_ji * T_ik;
+        T_jk = T_jk * G_k;
         H->at(k) = DLog * T_jk.AdjointMap() * localDerivative;
       }
       return b;
@@ -193,6 +191,7 @@ class PathFactor : public NoiseModelFactor {
       return G::Logmap(residual);
     }
   }
+
   /// Clone the factor.
   std::shared_ptr<NonlinearFactor> clone() const override {
     return std::make_shared<PathFactor<G>>(*this);
