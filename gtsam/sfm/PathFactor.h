@@ -48,11 +48,11 @@ class PathFactor : public NoiseModelFactor {
   static const Matrix Id_;
 
  private:
-  std::uint32_t i_, j_;
   /// We store inverse of measured transform g_ij.
   G measured_ji_;
-  /// Ordered sequence of EdgeKeys forming the path.
-  std::vector<EdgeKey> path_;
+
+  /// Ordered sequence of EdgeKeys forming the path, with orientation
+  std::vector<std::pair<EdgeKey, bool>> path_;
 
  public:
   /**
@@ -69,35 +69,34 @@ class PathFactor : public NoiseModelFactor {
              const std::vector<EdgeKey>& path,
              const SharedNoiseModel& noiseModel = nullptr)
       : NoiseModelFactor(noiseModel, KeysfromPath(path)),
-        i_(i),
-        j_(j),
-        measured_ji_(g_ij.inverse()),
-        path_(path) {
-    CheckPath(i, j, path);
+        measured_ji_(g_ij.inverse()) {
+    CheckAndSetPath(i, j, path);
   }
 
   /// Return the factor dimension (Lie algebra dimension of G).
   size_t dim() const override { return G::dimension; }
 
  private:
-  /// Helper: Check that the path is valid for given (i,j) prediction.
-  static void CheckPath(std::uint32_t i, std::uint32_t j,
-                        const std::vector<EdgeKey>& path) {
-    if (path.empty()) {
+  /// Helper: Check that the path is valid and calculate orientations.
+  void CheckAndSetPath(std::uint32_t i, std::uint32_t j,
+                       const std::vector<EdgeKey>& originalPath) {
+    if (originalPath.empty()) {
       throw std::invalid_argument("Path is empty");
     }
 
     std::uint32_t current = i;
-    for (const auto& kl : path) {
+    for (const auto& kl : originalPath) {
+      bool orientation = true;  // Assume normal orientation initially
       if (kl.i() == current) {
         current = kl.j();
       } else if (kl.j() == current) {
         current = kl.i();
+        orientation = false;  // Reverse orientation
       } else {
-        throw std::invalid_argument(
-            "Path is not continuous at edge starting with " +
-            std::to_string(kl.i()));
+        throw std::invalid_argument("Path is not continuous at edge " +
+                                    (std::string)kl);
       }
+      path_.emplace_back(kl, orientation);
     }
 
     if (current != j) {
@@ -121,27 +120,24 @@ class PathFactor : public NoiseModelFactor {
     // Below we loop over the path in reverse order, because the Jacobians are
     // basically Adjoints of the reverse accumulated transform g_ji. After the
     // loop we take the inverse of g_ji to obtain the prediction g_ij.
-    size_t i = path_.size() - 1;
-    G g_ji = G::Identity();      // Accumulate reverse transform from j to i
-    std::uint32_t current = j_;  // Start from the end node, j.
-    for (auto kl = path_.rbegin(); kl != path_.rend(); ++kl) {
-      // Retrieve the transform stored in tree edge (k,l)
-      const G g_kl = values.at<G>(*kl);
-      if (kl->j() == current) {
+    G g_ji = G::Identity();  // Accumulate reverse transform from j to i
+
+    // Adjusted loop to use precomputed orientation
+    for (int i = path_.size() - 1; i >= 0; --i) {
+      const auto& [edgeKey, orientation] = path_[i];
+      const G g_kl = values.at<G>(edgeKey);
+
+      if (orientation) {
         // Edge (k,l) is oriented along path: invert g_kl to reverse-accumulate.
-        current = kl->i();
         if (H) H->at(i) = g_ji.AdjointMap();
         g_ji = g_ji * g_kl.inverse();
       } else {
         // Edge (k,l) is reversed in path: just use g_kl to reverse-accumulate.
-        current = kl->j();
         g_ji = g_ji * g_kl;
         // Non-obvious: putting this after accumulate avoids extra Ad and mult.
         if (H) H->at(i) = -g_ji.AdjointMap();
       }
-      i -= 1;
     }
-
     // The predicted transform g_ij is the inverse of (now complete) g_ji.
     return g_ji.inverse();
   }
