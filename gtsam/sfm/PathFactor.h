@@ -146,21 +146,22 @@ class PathFactor : public NoiseModelFactor {
     if (H) {
       Matrix DLog;
       Vector b = G::Logmap(residual, DLog);
-      // To compute the Jacobians in the original (forward) edge order,
-      // we need to "undo" the reverse order accumulation.
+      const size_t n = Qs.size();
+
       G T_jk = T_ij.inverse();
-      const size_t n = path_.size();
-      for (size_t k = 0; k < n; ++k) {
-        // Qs was filled in reverse order; reverse it back.
-        auto [G_k, localDerivative] = Qs[n - 1 - k];
+      for (int i = static_cast<int>(n) - 1; i >= 0; --i) {
+        auto [G_k, localDerivative] = Qs[i];
         T_jk = T_jk * G_k;
-        H->at(k) = DLog * T_jk.AdjointMap() * localDerivative;
+        // Qs[i] corresponds to the forward index: (n - 1 - i)
+        H->at(n - 1 - i) = DLog * T_jk.AdjointMap() * localDerivative;
       }
+
       return b;
     } else {
       return G::Logmap(residual);
     }
   }
+
   /// Clone the factor.
   std::shared_ptr<NonlinearFactor> clone() const override {
     return std::make_shared<PathFactor<G>>(*this);
