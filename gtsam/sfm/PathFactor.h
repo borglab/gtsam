@@ -115,24 +115,12 @@ class PathFactor : public NoiseModelFactor {
   }
 
   /**
-   * \brief Compute effective measurements along the path.
-   *
-   * For each EdgeKey in the path, check whether the Values object contains
-   * the measurement stored as \(\mathtt{g}_{ij}\) (forward) or as
-   * \(\mathtt{g}_{ji}\) (reversed). In the latter case, the effective
-   * measurement is taken as
-   * \(\mathtt{g}_{ji}^{-1}\) and the local derivative is
-   * \(-\operatorname{Ad}_{\mathtt{g}_{ji}}\).
-   *
-   * \param c The Values object.
-   * \param Qs (Output) Vector of effective measurements.
-   * \param localDerivatives (Output) Local derivative for each measurement.
-   * \param prediction (Output) The overall composed product along the path.
+   * \brief Evaluate the error.
    */
-  G computeEffectivePath(
-      const Values& values,
-      std::vector<std::pair<G, Matrix>>* Qs = nullptr) const {
-    G prediction = G::Identity();
+  Vector unwhitenedError(const Values& values,
+                         OptionalMatrixVecType H = nullptr) const override {
+    std::vector<std::pair<G, Matrix>> Qs;
+    G T_ik = G::Identity();
     std::uint32_t current = i_;
     for (const auto& kl : path_) {
       G Q;
@@ -141,46 +129,23 @@ class PathFactor : public NoiseModelFactor {
       if (forward) {
         Q = G_kl;
         current = kl.j();
-        if (Qs) Qs->emplace_back(G_kl, Id_);
+        if (H) Qs.emplace_back(G_kl, Id_);
       } else {
         assert(kl.j() == current);
         Q = G_kl.inverse();
         current = kl.i();
-        if (Qs) Qs->emplace_back(Q, -G_kl.AdjointMap());
+        if (H) Qs.emplace_back(Q, -G_kl.AdjointMap());
       }
-      prediction = prediction * Q;
+      T_ik = T_ik * Q;
     }
-    if (current != j_) {
-      throw std::invalid_argument("Path does not end at j");
-    }
-    return prediction;
-  }
-
-  /**
-   * \brief Evaluate the error.
-   *
-   * For a given set of values \c c, compute the predicted overall
-   * transformation by composing the measurements along the path. For each
-   * EdgeKey, the measurement may be stored either as
-   * \(\mathtt{g}_{ij}\) or \(\mathtt{g}_{ji}\). If \(\mathtt{g}_{ij}\) is
-   * present, it is used directly; otherwise, the measurement
-   * \(\mathtt{g}_{ji}\) is used and inverted.
-   *
-   * The error is defined as the squared norm of the Logmap of
-   * \(\text{measured}^{-1} \circ \text{prediction}\).
-   */
-  Vector unwhitenedError(const Values& values,
-                         OptionalMatrixVecType H = nullptr) const override {
-    std::vector<std::pair<G, Matrix>> Qs;
-    const G T_ij = computeEffectivePath(values, H ? &Qs : nullptr);
-    G residual = measured_.between(T_ij);
+    G residual = measured_.between(T_ik);
 
     if (H) {
       Matrix DLog;
       Vector b = G::Logmap(residual, DLog);
 
       // Assemble the Jacobians.
-      G T_jk = T_ij.inverse();
+      G T_jk = T_ik.inverse();
       for (size_t k = 0; k < path_.size(); ++k) {
         auto [G_k, localDerivative] = Qs[k];
         T_jk = T_jk * G_k;
