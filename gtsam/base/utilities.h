@@ -56,4 +56,18 @@ template <>
 struct make_index_sequence<1> : index_sequence<0> {};
 template <class... T>
 using index_sequence_for = make_index_sequence<sizeof...(T)>;
+
+/// Exception for when a method or function is not implemented.
+/// (https://stackoverflow.com/a/36851059/1236990)
+class NotImplementedException : public std::logic_error {
+ public:
+  NotImplementedException() : std::logic_error("Not yet implemented"){};
+
+  /**
+   * Constructor which takes the name of the method/function.
+   */
+  NotImplementedException(const std::string& arg)
+      : std::logic_error(arg + " not implemented"){};
+};
+
 }  // namespace gtsam
