@@ -64,6 +64,10 @@ def main():
     arg_parser.add_argument("--is_submodule",
                             default=False,
                             action="store_true")
+    arg_parser.add_argument("--xml_source",
+                            type=str,
+                            default="",
+                            help="The path to the Doxygen-generated XML documentation")
     args = arg_parser.parse_args()
 
     top_module_namespaces = args.top_module_namespaces.split("::")
@@ -79,6 +83,7 @@ def main():
         top_module_namespaces=top_module_namespaces,
         ignore_classes=args.ignore,
         module_template=template_content,
+        xml_source=args.xml_source,
     )
 
     if args.is_submodule:

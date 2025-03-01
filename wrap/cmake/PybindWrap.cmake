@@ -13,6 +13,15 @@ gtwrap_get_python_version(${WRAP_PYTHON_VERSION})
 message(STATUS "Setting Python version for wrapper")
 set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHON_VERSION})
 
+message(STATUS "Should build Python docs: ${GTSAM_BUILD_PYTHON_DOCS_FROM_XML}")
+if(GTSAM_BUILD_PYTHON_DOCS_FROM_XML)
+  message(STATUS "Set Python docs source to '${GTSAM_PYTHON_DOCS_XML_SOURCE}'")
+  set(GTWRAP_PYTHON_DOCS_SOURCE ${GTSAM_PYTHON_DOCS_XML_SOURCE})
+else()
+  message(STATUS "Python doc generation is off.")
+  set(GTWRAP_PYTHON_DOCS_SOURCE "")
+endif()
+
 # User-friendly Pybind11 wrapping and installing function. Builds a Pybind11
 # module from the provided interface_headers. For example, for the interface
 # header gtsam.h, this will build the wrap module 'gtsam_py.cc'.
@@ -82,6 +91,7 @@ function(
           --out "${cpp_file}"  --module_name ${module_name}
           --top_module_namespaces "${top_namespace}" --ignore ${ignore_classes}
           --template ${module_template} --is_submodule ${_WRAP_BOOST_ARG}
+          --xml_source "${GTWRAP_PYTHON_DOCS_SOURCE}"
       DEPENDS "${interface_file}" ${module_template} "${module_name}/specializations/${interface}.h" "${module_name}/preamble/${interface}.h"
       VERBATIM)
 
@@ -100,6 +110,7 @@ function(
       --out "${generated_cpp}" --module_name ${module_name}
       --top_module_namespaces "${top_namespace}" --ignore ${ignore_classes}
       --template ${module_template} ${_WRAP_BOOST_ARG}
+      --xml_source "${GTWRAP_PYTHON_DOCS_SOURCE}"
     DEPENDS "${main_interface}" ${module_template} "${module_name}/specializations/${main_interface_name}.h" "${module_name}/specializations/${main_interface_name}.h"
     VERBATIM)
 
