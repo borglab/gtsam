@@ -25,7 +25,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 double NonlinearFactor::error(const Values& c) const {
-  throw std::runtime_error("NonlinearFactor::error is not implemented");
+  throw NotImplementedException("NonlinearFactor::error");
 }
 
 /* ************************************************************************* */

@@ -366,8 +366,7 @@ double HybridGaussianConditional::evaluate(const HybridValues &values) const {
 /* ************************************************************************ */
 std::shared_ptr<Factor> HybridGaussianConditional::restrict(
     const DiscreteValues &assignment) const {
-  throw std::runtime_error(
-      "HybridGaussianConditional::restrict not implemented");
+  throw NotImplementedException("HybridGaussianConditional::restrict");
 }
 
 /* ************************************************************************ */

@@ -202,7 +202,7 @@ double HybridGaussianFactor::error(const HybridValues& values) const {
 /* ************************************************************************ */
 std::shared_ptr<Factor> HybridGaussianFactor::restrict(
     const DiscreteValues& assignment) const {
-  throw std::runtime_error("HybridGaussianFactor::restrict not implemented");
+  throw NotImplementedException("HybridGaussianFactor::restrict");
 }
 
 /* ************************************************************************ */

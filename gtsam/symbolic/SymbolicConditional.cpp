@@ -34,12 +34,12 @@ bool SymbolicConditional::equals(const This& c, double tol) const {
 
 /* ************************************************************************* */
 double SymbolicConditional::logProbability(const HybridValues& c) const {
-  throw std::runtime_error("SymbolicConditional::logProbability is not implemented");
+  throw NotImplementedException("SymbolicConditional::logProbability");
 }
 
 /* ************************************************************************* */
 double SymbolicConditional::evaluate(const HybridValues& c) const {
-  throw std::runtime_error("SymbolicConditional::evaluate is not implemented");
+  throw NotImplementedException("SymbolicConditional::evaluate");
 }
 
 

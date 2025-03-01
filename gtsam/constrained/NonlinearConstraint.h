@@ -62,7 +62,7 @@ class GTSAM_EXPORT NonlinearConstraint : public NoiseModelFactor {
 
   // return the hessian of unwhitened error function in each dimension.
   virtual std::vector<Matrix> unwhitenedHessian(const Values& x) const {
-    throw std::runtime_error("hessian not implemented");
+    throw NotImplementedException("hessian");
   }
 
  protected:

@@ -82,8 +82,8 @@ static const VectorValues kEmpty;
 static void throwRuntimeError(const std::string &s,
                               const std::shared_ptr<Factor> &f) {
   auto &fr = *f;
-  throw std::runtime_error(s + " not implemented for factor type " +
-                           demangle(typeid(fr).name()) + ".");
+  throw NotImplementedException(
+      s, "for factor type " + demangle(typeid(fr).name()) + ".");
 }
 
 /* ************************************************************************ */

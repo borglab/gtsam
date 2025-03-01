@@ -783,7 +783,7 @@ TableFactor TableFactor::prune(size_t maxNrAssignments) const {
 /* ************************************************************************ */
 DiscreteFactor::shared_ptr TableFactor::restrict(
     const DiscreteValues& assignment) const {
-  throw std::runtime_error("TableFactor::restrict not implemented");
+  throw NotImplementedException("TableFactor::restrict");
 }
 
 /* ************************************************************************ */

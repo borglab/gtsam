@@ -18,6 +18,7 @@
 
 // \callgraph
 
+#include <gtsam/base/utilities.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/VectorValues.h>
@@ -25,7 +26,7 @@
 namespace gtsam {
 
 double GaussianFactor::error(const VectorValues& c) const {
-  throw std::runtime_error("GaussianFactor::error is not implemented");
+  throw NotImplementedException("GaussianFactor::error");
 }
 
 double GaussianFactor::error(const HybridValues& c) const {

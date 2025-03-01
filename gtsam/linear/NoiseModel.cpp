@@ -16,11 +16,12 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/timing.h>
+#include <gtsam/base/utilities.h>
+#include <gtsam/linear/NoiseModel.h>
 
-#include <cmath>
 #include <cassert>
+#include <cmath>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
@@ -70,7 +71,8 @@ std::optional<Vector> checkIfDiagonal(const Matrix& M) {
 
 /* ************************************************************************* */
 Vector Base::sigmas() const {
-  throw("Base::sigmas: sigmas() not implemented for this noise model");
+  throw NotImplementedException("Base::sigmas: sigmas()",
+                                "for this noise model");
 }
 
 /* ************************************************************************* */

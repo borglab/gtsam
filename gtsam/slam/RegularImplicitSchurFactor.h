@@ -497,8 +497,7 @@ public:
 
   /// Gradient wrt a key at any values
   Vector gradient(Key key, const VectorValues& x) const override {
-    throw std::runtime_error(
-        "gradient for RegularImplicitSchurFactor is not implemented yet");
+    throw NotImplementedException("gradient for RegularImplicitSchurFactor");
   }
 
 };

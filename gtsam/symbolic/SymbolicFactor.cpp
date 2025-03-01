@@ -28,7 +28,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double SymbolicFactor::error(const HybridValues& c) const {
-    throw std::runtime_error("SymbolicFactor::error is not implemented");
+    throw NotImplementedException("SymbolicFactor::error");
   }
 
   /* ************************************************************************* */

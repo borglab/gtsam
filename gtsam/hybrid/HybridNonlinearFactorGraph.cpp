@@ -200,10 +200,9 @@ AlgebraicDecisionTree<Key> HybridNonlinearFactorGraph::errorTree(
       result = result + df->errorTree();
 
     } else {
-      throw std::runtime_error(
-          "HybridNonlinearFactorGraph::errorTree(Values) not implemented for "
-          "factor type " +
-          demangle(typeid(factor).name()) + ".");
+      throw NotImplementedException(
+          "HybridNonlinearFactorGraph::errorTree(Values)",
+          " for factor type " + demangle(typeid(factor).name()) + ".");
     }
   }
 

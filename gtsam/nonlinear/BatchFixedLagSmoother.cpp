@@ -45,8 +45,7 @@ bool BatchFixedLagSmoother::equals(const FixedLagSmoother& rhs,
 
 /* ************************************************************************* */
 Matrix BatchFixedLagSmoother::marginalCovariance(Key key) const {
-  throw runtime_error(
-      "BatchFixedLagSmoother::marginalCovariance not implemented");
+  throw NotImplementedException("BatchFixedLagSmoother::marginalCovariance");
 }
 
 /* ************************************************************************* */

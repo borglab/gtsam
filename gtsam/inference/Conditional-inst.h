@@ -18,6 +18,7 @@
 // \callgraph
 #pragma once
 
+#include <gtsam/base/utilities.h>
 #include <gtsam/inference/Conditional.h>
 
 #include <cmath>
@@ -47,20 +48,20 @@ bool Conditional<FACTOR, DERIVEDCONDITIONAL>::equals(const This& c,
 template <class FACTOR, class DERIVEDCONDITIONAL>
 double Conditional<FACTOR, DERIVEDCONDITIONAL>::logProbability(
     const HybridValues& c) const {
-  throw std::runtime_error("Conditional::logProbability is not implemented");
+  throw NotImplementedException("Conditional::logProbability");
 }
 
 /* ************************************************************************* */
 template <class FACTOR, class DERIVEDCONDITIONAL>
 double Conditional<FACTOR, DERIVEDCONDITIONAL>::evaluate(
     const HybridValues& c) const {
-  throw std::runtime_error("Conditional::evaluate is not implemented");
+  throw NotImplementedException("Conditional::evaluate");
 }
 
 /* ************************************************************************* */
 template <class FACTOR, class DERIVEDCONDITIONAL>
 double Conditional<FACTOR, DERIVEDCONDITIONAL>::negLogConstant() const {
-  throw std::runtime_error("Conditional::negLogConstant is not implemented");
+  throw NotImplementedException("Conditional::negLogConstant");
 }
 
 /* ************************************************************************* */
