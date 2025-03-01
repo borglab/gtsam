@@ -152,9 +152,7 @@ public:
    * By default, throws exception if subclass does not implement the function.
    */
   virtual shared_ptr clone() const {
-    // TODO: choose better exception to throw here
-    throw std::runtime_error("NonlinearFactor::clone(): Attempting to clone factor with no clone() implemented!");
-    return shared_ptr();
+    throw NotImplementedException("NonlinearFactor::clone()");
   }
 
   /**
