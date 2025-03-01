@@ -15,7 +15,8 @@ namespace gtsam {
  */
 struct GTSAM_EXPORT RedirectCout {
   /// constructor -- redirect stdout buffer to a stringstream buffer
-  RedirectCout() : ssBuffer_(), coutBuffer_(std::cout.rdbuf(ssBuffer_.rdbuf())) {}
+  RedirectCout()
+      : ssBuffer_(), coutBuffer_(std::cout.rdbuf(ssBuffer_.rdbuf())) {}
 
   /// return the string
   std::string str() const;
@@ -23,12 +24,12 @@ struct GTSAM_EXPORT RedirectCout {
   /// destructor -- redirect stdout buffer to its original buffer
   ~RedirectCout();
 
-private:
+ private:
   std::stringstream ssBuffer_;
   std::streambuf* coutBuffer_;
 };
 
-}
+}  // namespace gtsam
 
 namespace gtsam {
 // Adapted from https://stackoverflow.com/a/32223343/9151520
@@ -61,13 +62,14 @@ using index_sequence_for = make_index_sequence<sizeof...(T)>;
 /// (https://stackoverflow.com/a/36851059/1236990)
 class NotImplementedException : public std::logic_error {
  public:
-  NotImplementedException() : std::logic_error("Not yet implemented"){};
+  NotImplementedException() : std::logic_error("Not yet implemented") {};
 
   /**
    * Constructor which takes the name of the method/function.
    */
-  NotImplementedException(const std::string& arg)
-      : std::logic_error(arg + " not implemented"){};
+  NotImplementedException(const std::string& arg,
+                          const std::string& postfix = "")
+      : std::logic_error(arg + " is not implemented" + postfix) {};
 };
 
 }  // namespace gtsam
