@@ -34,7 +34,7 @@ class XMLDocParser:
         cpp_method: the name of the C++ method whose docstring is to be extracted.
         method_args_names: a list of the names of the cpp_method's parameters.
     """
-    def extract_docstring(self, xml_folder: str, cpp_class: str, cpp_method: str, method_args_names: list[str]):
+    def extract_docstring(self, xml_folder: str, cpp_class: str, cpp_method: str, method_args_names: 'list[str]'):
         if self._verbose: print(f"Extracting docs for {cpp_class}.{cpp_method}")
         
         # Create the path to the Doxygen XML index file.
