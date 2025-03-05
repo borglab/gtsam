@@ -136,7 +136,7 @@ class XMLDocParser:
         # in GTSAM becomes Eigen::Matrix in the pybind11 code.
         documenting_index = 0
         if len(member_defs) > 1:
-            function_key = f'{cpp_class}.{cpp_method}({",".join(method_args_names) if method_args_names else ""})'
+            function_key = f"{cpp_class}.{cpp_method}({','.join(method_args_names) if method_args_names else ''})"
             if function_key in self._memory:
                 self._memory[function_key] += 1
                 documenting_index = self._memory[function_key]
