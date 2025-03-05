@@ -76,7 +76,7 @@ class XMLDocParser:
 
         # Filter out the members which don't match the method_args_names
         for maybe_member_def in maybe_member_defs:
-            if self._verbose: print(f"Investigating member_def with argstring {maybe_member_def.find("argsstring").text}")
+            if self._verbose: print(f"Investigating member_def with argstring {maybe_member_def.find('argsstring').text}")
             # Find the number of required parameters and the number of total parameters from the 
             # Doxygen XML for this member_def
             params = maybe_member_def.findall("param")
