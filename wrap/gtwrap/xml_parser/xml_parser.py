@@ -181,7 +181,7 @@ class XMLDocParser:
                 # Add return value docs
                 return_sect = detailed_description.find(".//simplesect")
                 if return_sect is not None and return_sect.attrib["kind"] == "return" and return_sect.find("para").text is not None:
-                    docstring += f"Returns: {return_sect.find("para").text.strip()}"
+                    docstring += f"Returns: {return_sect.find('para').text.strip()}"
 
         return docstring.strip()
 
