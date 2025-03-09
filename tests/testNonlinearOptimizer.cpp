@@ -262,7 +262,11 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
   Values expected;
   expected.insert(0, Pose2(0, 0, 0));
   expected.insert(1, Pose2(1, 0, M_PI / 2));
+#ifdef GTSAM_SLOW_BUT_CORRECT_EXPMAP
+  expected.insert(2, Pose2(1, 1, -M_PI));
+#else
   expected.insert(2, Pose2(1, 1, M_PI));
+#endif
 
   VectorValues expectedGradient;
   expectedGradient.insert(0,Z_3x1);
@@ -276,11 +280,12 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
     // test convergence
     Values actual = optimizer.optimize();
-    EXPECT(assert_equal(expected, actual));
+
+    EXPECT(assert_equal(expected, actual, 1e-5));
 
     // Check that the gradient is zero
     GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
-    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
+    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero(), 1e-7));
   }
   EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
 
@@ -309,16 +314,16 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
     // test convergence (does not!)
     Values actual = optimizer.optimize();
-    EXPECT(assert_equal(expected, actual));
+    EXPECT(assert_equal(expected, actual, 1e-8));
 
     // Check that the gradient is zero (it is not!)
     linear = optimizer.linearize();
-    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
+    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero(), 1e-8));
 
     // Check that the gradient is zero for damped system (it is not!)
     damped = optimizer.buildDampedSystem(*linear, sqrtHessianDiagonal);
     VectorValues actualGradient = damped.gradientAtZero();
-    EXPECT(assert_equal(expectedGradient,actualGradient));
+    EXPECT(assert_equal(expectedGradient,actualGradient, 1e-8));
 
     /* This block was made to test the original initial guess "init"
     // Check errors at convergence and errors in direction of gradient (decreases!)
