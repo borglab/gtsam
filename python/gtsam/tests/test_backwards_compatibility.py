@@ -211,6 +211,7 @@ class TestBackwardsCompatibility(GtsamTestCase):
 
         i = 0
 
+        # regression values work for both slow and fast retract, with loose threshold
         ground_truth = [
             Pose2(0.995821, 0.0231012, 0.0300001),
             Pose2(1.49284, 0.0457247, 0.045),
@@ -267,7 +268,7 @@ class TestBackwardsCompatibility(GtsamTestCase):
                 smoother_batch.update(new_factors, new_values, new_timestamps)
 
                 estimate = smoother_batch.calculateEstimatePose2(current_key)
-                self.assertTrue(estimate.equals(ground_truth[i], 1e-4))
+                self.gtsamAssertEquals(estimate, ground_truth[i], 1e-2)
                 i += 1
 
                 new_timestamps.clear()
