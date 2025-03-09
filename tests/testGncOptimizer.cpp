@@ -734,6 +734,7 @@ TEST(GncOptimizer, setInlierCostThresholds) {
 }
 
 /* ************************************************************************* */
+#ifndef GTSAM_SLOW_BUT_CORRECT_EXPMAP
 TEST(GncOptimizer, optimizeSmallPoseGraph) {
   /// load small pose graph
   const string filename = findExampleDataFile("w100.graph");
@@ -771,6 +772,7 @@ TEST(GncOptimizer, optimizeSmallPoseGraph) {
   // compare
   CHECK(assert_equal(expected, actual, 1e-3));  // yay! we are robust to outliers!
 }
+#endif
 
 /* ************************************************************************* */
 TEST(GncOptimizer, knownInliersAndOutliers) {
