@@ -402,9 +402,9 @@ public:
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /// @deprecated: use Hat
-  static inline LieAlgebra wedge(double wx, double wy, double wz, double vx, double vy,
-    double vz) {
-    return Hat(TangentVector(wx, wy, wz, vx, vy, vz));
+  static inline LieAlgebra wedge(double wx, double wy, double wz, double vx,
+                                 double vy, double vz) {
+    return Hat((TangentVector() << wx, wy, wz, vx, vy, vz).finished());
   }
 #endif
   /// @}
