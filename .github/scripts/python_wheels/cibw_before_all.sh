@@ -24,8 +24,10 @@ if [ "$(uname)" == "Linux" ]; then
     ./b2 install --prefix=/opt/boost --with=all 
     cd ..
 elif [ "$(uname)" == "Darwin" ]; then
-    brew install wget cmake ninja boost
-    sudo xcode-select -switch /Applications/Xcode.app
+    brew install wget cmake boost
+
+    export CC=clang
+    export CXX=clang++
 fi
 
 $(which $PYTHON) -m pip install -r $PROJECT_DIR/python/dev_requirements.txt
@@ -52,6 +54,7 @@ cmake $PROJECT_DIR \
     -DCMAKE_INSTALL_PREFIX=$PROJECT_DIR/gtsam_install
 
 cd $PROJECT_DIR/build/python
+echo | gcc -E -dM - | grep __GNUC__
 
 # Install the Python wrapper module and generate Python stubs
 if [ "$(uname)" == "Linux" ]; then

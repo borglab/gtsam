@@ -109,12 +109,6 @@ jobs:
           echo "DEVELOP=1" >> $GITHUB_ENV
           echo "TIMESTAMP=${{ needs.get_system_time.outputs.timestamp }}" >> $GITHUB_ENV
 
-      - name: Set compiler to clang if on MacOS
-        if: startsWith(matrix.os, 'macos')
-        run: |
-          echo "CC=clang" >> $GITHUB_ENV
-          echo "CXX=clang++" >> $GITHUB_ENV
-
       - name: Install Dependencies
         run: |
           python3 -m pip install -r python/dev_requirements.txt
