@@ -24,7 +24,8 @@ if [ "$(uname)" == "Linux" ]; then
     ./b2 install --prefix=/opt/boost --with=all 
     cd ..
 elif [ "$(uname)" == "Darwin" ]; then
-    brew install wget cmake boost
+    brew install wget cmake ninja boost
+    sudo xcode-select -switch /Applications/Xcode.app
 fi
 
 $(which $PYTHON) -m pip install -r $PROJECT_DIR/python/dev_requirements.txt
