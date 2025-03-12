@@ -25,7 +25,6 @@ if [ "$(uname)" == "Linux" ]; then
     cd ..
 elif [ "$(uname)" == "Darwin" ]; then
     brew install wget cmake boost
-
     export CC=clang
     export CXX=clang++
 fi
