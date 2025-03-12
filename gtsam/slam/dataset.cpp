@@ -49,7 +49,7 @@
 #include <stdexcept>
 #include <string>
 
-#if defined(__GNUC__) && (__GNUC__ <= 7)
+#if defined(__GNUC__) && (__GNUC__ == 7)
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
 #else
