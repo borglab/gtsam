@@ -153,6 +153,17 @@ class BinaryMeasurementsRot3 {
   void push_back(const gtsam::BinaryMeasurement<gtsam::Rot3>& measurement);
 };
 
+#include <gtsam/sfm/PathFactor.h>
+template <F = {gtsam::Rot3, gtsam::Pose3}>
+virtual class PathFactor : gtsam::NoiseModelFactor{
+  PathFactor(size_t i, size_t j, const F& f_ij,
+             const std::vector<gtsam::EdgeKey>& path,
+             const gtsam::noiseModel::Base* model);
+  size_t dim() const;
+  gtsam::KeyVector keys() const;
+};
+
+
 #include <gtsam/slam/dataset.h>
 #include <gtsam/sfm/ShonanAveraging.h>
 
