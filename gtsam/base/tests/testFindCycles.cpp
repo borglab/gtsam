@@ -11,7 +11,7 @@
 
  /**
   * @file testFindCycles
-  * @brief Unit tests for Kruskal's minimum spanning tree algorithm
+  * @brief Unit tests for finding fundamental cycles in a graph.
   * @author Frank Dellaert
   */
 
@@ -22,15 +22,9 @@
 #include <unordered_set>
 #include <algorithm>
 #include <utility>
-#include <boost/functional/hash.hpp>
 
-  // Edge: templated edge type with size_t fields i and j. (O(1))
-struct Edge {
-    size_t i;
-    size_t j;
-};
 
-// GraphList: adjacency list representation (vector of vectors of int)
+  // GraphList: adjacency list representation (vector of vectors of int)
 using GraphList = std::vector<std::vector<int>>;
 
 // BFSTreeResult: Holds BFS parent and level arrays. (O(1))
@@ -113,19 +107,27 @@ struct FundamentalCyclesResult {
     std::vector<std::pair<int, int>> treeEdges;
 };
 
+// Custom hash function for std::pair<int, int>
+struct PairHash {
+    template <typename T1, typename T2>
+    std::size_t operator()(const std::pair<T1, T2>& pair) const {
+        return std::hash<T1>()(pair.first) ^ (std::hash<T2>()(pair.second) << 1);
+    }
+};
+
 /**
- * computeFundamentalCyclesFromAdjList:
+ * computeFundamentalCycles:
  * Given an adjacency list, computes all fundamental cycles using a BFS tree.
  * Running time: O(V+E) for the BFS plus up to O(E*V) in the worst-case for cycle computation.
  */
-FundamentalCyclesResult computeFundamentalCyclesFromAdjList(const GraphList& graph, int root) {
+FundamentalCyclesResult computeFundamentalCycles(const GraphList& graph, int root) {
     int n = graph.size();
     auto bfsResult = bfsTree(graph, root);
     const auto& parent = bfsResult.parent;
     const auto& level = bfsResult.level;
 
     // Collect tree edges in O(V)
-    std::unordered_set<std::pair<int, int>, boost::hash<std::pair<int, int>>> treeEdgesSet;
+    std::unordered_set<std::pair<int, int>, PairHash> treeEdgesSet;
     std::vector<std::pair<int, int>> treeEdges;
     for (int v = 0; v < n; ++v) {
         if (parent[v] != -1) {
@@ -150,14 +152,14 @@ FundamentalCyclesResult computeFundamentalCyclesFromAdjList(const GraphList& gra
 }
 
 /**
- * computeFundamentalCyclesFromEdges:
+ * computeFundamentalCycles:
  * Given an edge list, converts it to an adjacency list (O(E)) and then computes fundamental cycles.
  * Overall running time: O(E + (Adjacency list version)).
  */
 template <typename EdgeType>
-FundamentalCyclesResult computeFundamentalCyclesFromEdges(const std::vector<EdgeType>& edges, int numNodes, int root) {
+FundamentalCyclesResult computeFundamentalCycles(const std::vector<EdgeType>& edges, int numNodes, int root) {
     GraphList graph = buildAdjacencyList(edges, numNodes); // O(E)
-    return computeFundamentalCyclesFromAdjList(graph, root);   // See function comment above.
+    return computeFundamentalCycles(graph, root);   // See function comment above.
 }
 TEST(FundamentalCycles, AdjacencyList) {
     // Test using adjacency list
@@ -169,7 +171,7 @@ TEST(FundamentalCycles, AdjacencyList) {
             {3}        // neighbors of vertex 4
     };
 
-    auto result = computeFundamentalCyclesFromAdjList(graph, 0);
+    auto result = computeFundamentalCycles(graph, 0);
 
     // Verify the number of fundamental cycles
     EXPECT(result.cycles.size() == 2);
@@ -184,17 +186,22 @@ TEST(FundamentalCycles, AdjacencyList) {
 
 TEST(FundamentalCycles, EdgeList) {
     // Test using edge list
+    struct Edge {
+        size_t i;
+        size_t j;
+    };
+
     std::vector<Edge> edges = {
-            {0, 1},
-            {0, 2},
-            {1, 2},
-            {1, 3},
-            {2, 3},
-            {3, 4}
+        {0, 1},
+        {0, 2},
+        {1, 2},
+        {1, 3},
+        {2, 3},
+        {3, 4}
     };
     int numNodes = 5;
 
-    auto result = computeFundamentalCyclesFromEdges(edges, numNodes, 0);
+    auto result = computeFundamentalCycles(edges, numNodes, 0);
 
     // Verify the number of fundamental cycles
     EXPECT(result.cycles.size() == 2);
