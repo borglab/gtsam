@@ -1,21 +1,22 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
- * Atlanta, Georgia 30332-0415
- * All Rights Reserved
- * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+* GTSAM Copyright 2010, Georgia Tech Research Corporation,
+* Atlanta, Georgia 30332-0415
+* All Rights Reserved
+* Authors: Frank Dellaert, et al. (see THANKS for the full author list)
 
- * See LICENSE for the license information
+* See LICENSE for the license information
 
- * -------------------------------------------------------------------------- */
+* -------------------------------------------------------------------------- */
 
- /**
-  * @file testFindCycles
-  * @brief Unit tests for finding fundamental cycles in a graph.
-  * @author Frank Dellaert
-  */
+/**
+ * @file testFindCycles
+ * @brief Unit tests for finding fundamental cycles in a graph.
+ * @author Frank Dellaert
+ */
 
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
+#include <gtsam/inference/Symbol.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -36,8 +37,8 @@ struct FundamentalCycle {
     std::vector<size_t> cycle;
 };
 
-// BFSTreeResult: Holds BFS tree information. (O(1))
-struct BFSTreeResult {
+// LeveledBfsTree: Holds BFS tree information.
+struct LeveledBfsTree {
     struct Node {
         size_t parent;
         size_t level;
@@ -45,7 +46,7 @@ struct BFSTreeResult {
 
     std::vector<std::optional<Node>> nodes; // nodes[v] = {parent, level} for vertex v
 
-    BFSTreeResult(size_t n, size_t root) : nodes(n, std::nullopt) {
+    LeveledBfsTree(size_t n, size_t root) : nodes(n, std::nullopt) {
         // Root has no parent, so we use itself as parent
         setNode(root, root, 0);
     }
@@ -101,8 +102,8 @@ struct BFSTreeResult {
 using GraphList = std::vector<std::vector<size_t>>;
 
 /** bfsTree: Performs a breadth-first search on the given adjacency list starting at root. O(V+E) */
-BFSTreeResult bfsTree(const GraphList& graph, size_t root) {
-    BFSTreeResult result(graph.size(), root);
+LeveledBfsTree bfsTree(const GraphList& graph, size_t root) {
+    LeveledBfsTree result(graph.size(), root);
 
     std::queue<size_t> queue;
     queue.push(root);
@@ -124,18 +125,10 @@ BFSTreeResult bfsTree(const GraphList& graph, size_t root) {
     return result;
 }
 
-// FundamentalCyclesResult: Holds all computed fundamental cycles and the tree edges. (O(1))
+// FundamentalCyclesResult: Holds all computed fundamental cycles and the tree edges
 struct FundamentalCyclesResult {
     std::vector<FundamentalCycle> cycles;
-    std::vector<std::pair<size_t, size_t>> treeEdges;
-};
-
-// Custom hash function for std::pair<size_t, size_t>
-struct PairHash {
-    template <typename T1, typename T2>
-    std::size_t operator()(const std::pair<T1, T2>& pair) const {
-        return std::hash<T1>()(pair.first) ^ (std::hash<T2>()(pair.second) << 1);
-    }
+    std::set<std::pair<size_t, size_t>> tree; // Tree edges as a set
 };
 
 /**
@@ -147,30 +140,29 @@ FundamentalCyclesResult computeFundamentalCycles(const GraphList& graph, size_t 
     size_t n = graph.size();
     auto bfsResult = bfsTree(graph, root);
 
+    // Initialize result
+    FundamentalCyclesResult result;
+
     // Collect tree edges in O(V)
-    std::unordered_set<std::pair<size_t, size_t>, PairHash> treeEdgesSet;
-    std::vector<std::pair<size_t, size_t>> treeEdges;
     for (size_t v = 0; v < n; ++v) {
         auto node = bfsResult[v];
         if (node->parent != v) {
             size_t a = std::min(v, node->parent);
             size_t b = std::max(v, node->parent);
-            treeEdgesSet.emplace(a, b);
-            treeEdges.emplace_back(a, b);
+            result.tree.emplace(a, b);
         }
     }
 
     // Compute fundamental cycles for each non-tree edge in O(E) iterations (each worst-case O(V))
-    std::vector<FundamentalCycle> cycles;
     for (size_t u = 0; u < n; ++u) {
         for (size_t v : graph[u]) {
-            if (u < v && treeEdgesSet.find({ u, v }) == treeEdgesSet.end()) {
-                cycles.push_back(bfsResult.computeFundamentalCycle(u, v));
+            if (u < v && result.tree.find({ u, v }) == result.tree.end()) {
+                result.cycles.push_back(bfsResult.computeFundamentalCycle(u, v));
             }
         }
     }
 
-    return { cycles, treeEdges };
+    return result;
 }
 
 /** buildAdjacencyList: Converts an edge list to an adjacency list. O(E) */
@@ -257,11 +249,11 @@ FundamentalCyclesResult computeFundamentalCycles(const FactorGraph& graph, Key r
     }
 
     // Convert tree edges
-    for (const auto& edge : result.treeEdges) {
-        keyResult.treeEdges.push_back({
+    for (const auto& edge : result.tree) {
+        keyResult.tree.emplace(
             indexToKey[edge.first],
             indexToKey[edge.second]
-            });
+        );
     }
 
     return keyResult;
@@ -284,11 +276,15 @@ TEST(FundamentalCycles, AdjacencyList) {
     EXPECT(result.cycles.size() == 2);
 
     // Verify the tree edges
-    EXPECT(result.treeEdges.size() == 4);
-    EXPECT(result.treeEdges[0] == std::make_pair(0, 1));
-    EXPECT(result.treeEdges[1] == std::make_pair(0, 2));
-    EXPECT(result.treeEdges[2] == std::make_pair(1, 3));
-    EXPECT(result.treeEdges[3] == std::make_pair(3, 4));
+    EXPECT(result.tree.size() == 4);
+    std::set<std::pair<size_t, size_t>> expectedTree = {
+        {0, 1},
+        {0, 2},
+        {1, 3},
+        {3, 4}
+    };
+
+    EXPECT(result.tree == expectedTree);
 }
 
 /* ************************************************************************* */
@@ -313,36 +309,49 @@ TEST(FundamentalCycles, EdgeList) {
 
     // Verify the number of fundamental cycles
     EXPECT(result.cycles.size() == 2);
+    for (const auto& cycle : result.cycles) {
+        size_t i = cycle.cycle.front();
+        size_t j = cycle.cycle.back();
+        EXPECT(result.tree.find({ i, j }) == result.tree.end());
+    }
 
     // Verify the tree edges
-    EXPECT(result.treeEdges.size() == 4);
-    EXPECT(result.treeEdges[0] == std::make_pair(0, 1));
-    EXPECT(result.treeEdges[1] == std::make_pair(0, 2));
-    EXPECT(result.treeEdges[2] == std::make_pair(1, 3));
-    EXPECT(result.treeEdges[3] == std::make_pair(3, 4));
+    EXPECT(result.tree.size() == 4);
+    std::set<std::pair<size_t, size_t>> expectedTree = {
+        {0, 1},
+        {0, 2},
+        {1, 3},
+        {3, 4}
+    };
+
+    EXPECT(result.tree == expectedTree);
 }
 
 /* ************************************************************************* */
 TEST(FundamentalCycles, SymbolicFactorGraph) {
+    using symbol_shorthand::X;
+
     // Create factor graph.
-
     SymbolicFactorGraph g;
-    g.push_factor(1, 2);
-    g.push_factor(1, 3);
-    g.push_factor(1, 4);
-    g.push_factor(2, 3);
-    g.push_factor(2, 4);
-    g.push_factor(3, 4);
+    g.push_factor(X(1), X(2));
+    g.push_factor(X(1), X(3));
+    g.push_factor(X(1), X(4));
+    g.push_factor(X(2), X(3));
+    g.push_factor(X(2), X(4));
+    g.push_factor(X(3), X(4));
 
-    const auto result = computeFundamentalCycles(g, 1);
+    const auto result = computeFundamentalCycles(g, X(1));
     // Verify the number of fundamental cycles
     EXPECT(result.cycles.size() == 3);
 
     // Verify the tree edges - note we test the actual symbolic keys now
-    EXPECT(result.treeEdges.size() == 3);
-    EXPECT(result.treeEdges[0] == std::make_pair(1, 2));
-    EXPECT(result.treeEdges[1] == std::make_pair(1, 3));
-    EXPECT(result.treeEdges[2] == std::make_pair(1, 4));
+    EXPECT(result.tree.size() == 3);
+    std::set<std::pair<size_t, size_t>> expectedTree = {
+        {X(1), X(2)},
+        {X(1), X(3)},
+        {X(1), X(4)}
+    };
+    EXPECT(result.tree == expectedTree);
 }
 
 
