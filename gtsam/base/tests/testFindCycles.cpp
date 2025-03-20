@@ -31,103 +31,114 @@
 using namespace gtsam;
 
 
-
-// FundamentalCycle: Wraps a cycle (sequence of vertex indices). (O(1))
-struct FundamentalCycle {
-    std::vector<size_t> cycle;
-};
-
-// LeveledBfsTree: Holds BFS tree information.
-struct LeveledBfsTree {
+/**
+ * LeveledSpanningTree: A breadth-first spanning tree that maintains level information.
+ * This data structure supports efficient computation of fundamental cycles by:
+ * 1. Constructing a BFS tree from a root node
+ * 2. Recording both parent and level information for each node
+ * 3. Using level information to quickly compute paths to the least common ancestor
+ *
+ * The level information allows O(V) computation of fundamental cycles where V is the
+ * number of vertices in the graph. Without level information, finding the lowest common
+ * ancestor would require O(V²) time in the worst case.
+ */
+class LeveledSpanningTree {
+public:
+    // Type aliases for graph structures
+    using Graph = std::vector<std::vector<size_t>>;
+    using Cycle = std::vector<size_t>; // Sequence of vertex indices forming a cycle
+private:
     struct Node {
-        size_t parent;
-        size_t level;
+        size_t parent;  ///< Parent vertex in the spanning tree
+        size_t level;   ///< Distance from the root
     };
 
-    std::vector<std::optional<Node>> nodes; // nodes[v] = {parent, level} for vertex v
+    /// nodes[v] = {parent, level} for vertex v, or nullopt if unreachable
+    std::vector<std::optional<Node>> nodes;
 
-    LeveledBfsTree(size_t n, size_t root) : nodes(n, std::nullopt) {
+public:
+    /**
+     * Constructs a leveled spanning tree using breadth-first search.
+     * @param graph The adjacency list representation of the graph
+     * @param root The root vertex for the spanning tree
+     * Time complexity: O(V+E) where V is the number of vertices and E is the number of edges
+     */
+    LeveledSpanningTree(const Graph& graph, size_t root) :nodes(graph.size(), std::nullopt) {
         // Root has no parent, so we use itself as parent
-        setNode(root, root, 0);
+        nodes[root] = { root, 0 };
+
+        std::queue<size_t> queue;
+        queue.push(root);
+
+        while (!queue.empty()) {
+            size_t current = queue.front();
+            queue.pop();
+
+            size_t currentLevel = level(current);
+            for (size_t neighbor : graph[current]) {
+                if (!nodes[neighbor]) {
+                    nodes[neighbor] = { current, currentLevel + 1 };
+                    queue.push(neighbor);
+                }
+            }
+        }
     }
 
-    void setNode(size_t vertex, size_t parent, size_t level) {
-        nodes[vertex] = Node{ parent, level };
-    }
-
-    const std::optional<Node>& operator[](size_t vertex) const {
-        return nodes[vertex];
-    }
-
+    /// Get the level (distance from root) of a vertex.
     size_t level(size_t vertex) const {
         return nodes[vertex]->level;
     }
 
+    /// Get the parent of a vertex in the spanning tree.
     size_t parent(size_t vertex) const {
         return nodes[vertex]->parent;
     }
 
     /**
-     * computeFundamentalCycle: Computes the fundamental cycle corresponding to a non-tree edge (u,v).
-     * Worst-case O(V) if the tree depth is O(V).
+     * Computes the fundamental cycle corresponding to a non-tree edge (u,v).
+     * A fundamental cycle is formed by a non-tree edge plus the unique path
+     * between its endpoints in the spanning tree.
+     *
+     * @param u First endpoint of the non-tree edge
+     * @param v Second endpoint of the non-tree edge
+     * @return The vertices in the fundamental cycle, starting with u, and ending with v
+     * Time complexity: O(V) in the worst case (when the tree has depth O(V))
      */
-    FundamentalCycle computeFundamentalCycle(size_t u, size_t v) {
-        std::vector<size_t> pathU, pathV;
-        // Climb up from u until levels are equal.
+    Cycle computeFundamentalCycle(size_t u, size_t v) const {
+        std::vector<size_t> cycle, path;
+
+        // Climb up from u until levels are equal
         while (level(u) > level(v)) {
-            pathU.push_back(u);
+            cycle.push_back(u);
             u = parent(u);
         }
-        // Climb up from v until levels are equal.
+
+        // Climb up from v until levels are equal
         while (level(v) > level(u)) {
-            pathV.push_back(v);
+            path.push_back(v);
             v = parent(v);
         }
-        // Climb until the lowest common ancestor is reached.
+
+        // Climb until the lowest common ancestor is reached
         while (u != v) {
-            pathU.push_back(u);
-            pathV.push_back(v);
+            cycle.push_back(u);
+            path.push_back(v);
             u = parent(u);
             v = parent(v);
         }
-        pathU.push_back(u); // Add the LCA.
-        // Append the reverse of pathV to complete the cycle.
-        pathU.insert(pathU.end(), pathV.rbegin(), pathV.rend());
-        return { pathU };
-    }
 
+        cycle.push_back(u);  // Add the lowest common ancestor
+
+        // Append the reverse of path to complete the cycle
+        cycle.insert(cycle.end(), path.rbegin(), path.rend());
+
+        return cycle;
+    }
 };
-
-// GraphList: adjacency list representation (vector of vectors of size_t)
-using GraphList = std::vector<std::vector<size_t>>;
-
-/** bfsTree: Performs a breadth-first search on the given adjacency list starting at root. O(V+E) */
-LeveledBfsTree bfsTree(const GraphList& graph, size_t root) {
-    LeveledBfsTree result(graph.size(), root);
-
-    std::queue<size_t> queue;
-    queue.push(root);
-
-    while (!queue.empty()) {
-        size_t current = queue.front();
-        queue.pop();
-
-        const auto& currentNode = result.nodes[current];
-        size_t currentLevel = currentNode->level;
-
-        for (size_t neighbor : graph[current]) {
-            if (!result[neighbor]) {
-                result.setNode(neighbor, current, currentLevel + 1);
-                queue.push(neighbor);
-            }
-        }
-    }
-    return result;
-}
 
 // FundamentalCyclesResult: Holds all computed fundamental cycles and the tree edges
 struct FundamentalCyclesResult {
-    std::vector<FundamentalCycle> cycles;
+    std::vector<LeveledSpanningTree::Cycle> cycles;
     std::set<std::pair<size_t, size_t>> tree; // Tree edges as a set
 };
 
@@ -136,19 +147,19 @@ struct FundamentalCyclesResult {
  * Given an adjacency list, computes all fundamental cycles using a BFS tree.
  * Running time: O(V+E) for the BFS plus up to O(E*V) in the worst-case for cycle computation.
  */
-FundamentalCyclesResult computeFundamentalCycles(const GraphList& graph, size_t root) {
+FundamentalCyclesResult computeFundamentalCycles(const LeveledSpanningTree::Graph& graph, size_t root) {
     size_t n = graph.size();
-    auto bfsResult = bfsTree(graph, root);
+    const LeveledSpanningTree lst(graph, root);
 
     // Initialize result
     FundamentalCyclesResult result;
 
     // Collect tree edges in O(V)
     for (size_t v = 0; v < n; ++v) {
-        auto node = bfsResult[v];
-        if (node->parent != v) {
-            size_t a = std::min(v, node->parent);
-            size_t b = std::max(v, node->parent);
+        auto parent = lst.parent(v);
+        if (parent != v) {
+            size_t a = std::min(v, parent);
+            size_t b = std::max(v, parent);
             result.tree.emplace(a, b);
         }
     }
@@ -157,7 +168,7 @@ FundamentalCyclesResult computeFundamentalCycles(const GraphList& graph, size_t 
     for (size_t u = 0; u < n; ++u) {
         for (size_t v : graph[u]) {
             if (u < v && result.tree.find({ u, v }) == result.tree.end()) {
-                result.cycles.push_back(bfsResult.computeFundamentalCycle(u, v));
+                result.cycles.push_back(lst.computeFundamentalCycle(u, v));
             }
         }
     }
@@ -167,8 +178,8 @@ FundamentalCyclesResult computeFundamentalCycles(const GraphList& graph, size_t 
 
 /** buildAdjacencyList: Converts an edge list to an adjacency list. O(E) */
 template <typename EdgeType>
-GraphList buildAdjacencyList(const std::vector<EdgeType>& edges, size_t numNodes) {
-    GraphList graph(numNodes);
+LeveledSpanningTree::Graph buildAdjacencyList(const std::vector<EdgeType>& edges, size_t numNodes) {
+    LeveledSpanningTree::Graph graph(numNodes);
     for (const auto& edge : edges) {
         // Assuming an undirected graph.
         graph[edge.i].push_back(static_cast<size_t>(edge.j));
@@ -184,22 +195,22 @@ GraphList buildAdjacencyList(const std::vector<EdgeType>& edges, size_t numNodes
  */
 template <typename EdgeType>
 FundamentalCyclesResult computeFundamentalCycles(const std::vector<EdgeType>& edges, size_t numNodes, size_t root) {
-    GraphList graph = buildAdjacencyList(edges, numNodes); // O(E)
+    LeveledSpanningTree::Graph graph = buildAdjacencyList(edges, numNodes); // O(E)
     return computeFundamentalCycles(graph, root);   // See function comment above.
 }
 /**
  * buildAdjacencyListFromFactors: Builds an adjacency list from binary factors in a graph. O(F)
  */
 template <typename FactorGraph>
-GraphList buildAdjacencyListFromFactors(const FactorGraph& graph,
+LeveledSpanningTree::Graph buildAdjacencyListFromFactors(const FactorGraph& factorGraph,
     std::map<Key, size_t>* keyToIndex,
     std::vector<size_t>* indexToKey) {
     keyToIndex->clear();
     indexToKey->clear();
-    GraphList adjacencyList;
+    LeveledSpanningTree::Graph graph;
 
     // Process all binary factors in a single pass
-    for (const auto& factor : graph) {
+    for (const auto& factor : factorGraph) {
         if (!factor || factor->keys().size() != 2) continue;
 
         const auto& keys = factor->keys();
@@ -210,18 +221,18 @@ GraphList buildAdjacencyListFromFactors(const FactorGraph& graph,
                 const size_t n = keyToIndex->size();
                 keyToIndex->emplace(key, n);
                 indexToKey->push_back(key);
-                adjacencyList.push_back({}); // Add a new empty adjacency list
+                graph.push_back({}); // Add a new empty adjacency list
             }
         }
 
         // Add edges in both directions
         const size_t i = keyToIndex->at(keys[0]);
         const size_t j = keyToIndex->at(keys[1]);
-        adjacencyList[i].push_back(j);
-        adjacencyList[j].push_back(i);
+        graph[i].push_back(j);
+        graph[j].push_back(i);
     }
 
-    return adjacencyList;
+    return graph;
 }
 
 /**
@@ -229,21 +240,21 @@ GraphList buildAdjacencyListFromFactors(const FactorGraph& graph,
  * Returns cycles and tree edges with the original factor graph keys.
  */
 template <typename FactorGraph>
-FundamentalCyclesResult computeFundamentalCycles(const FactorGraph& graph, Key rootKey) {
+FundamentalCyclesResult computeFundamentalCycles(const FactorGraph& graph, Key root) {
     std::map<Key, size_t> keyToIndex;
     std::vector<size_t> indexToKey;
 
-    GraphList adjList = buildAdjacencyListFromFactors(graph, &keyToIndex, &indexToKey);
-    auto result = computeFundamentalCycles(adjList, keyToIndex.at(rootKey));
+    LeveledSpanningTree::Graph adjList = buildAdjacencyListFromFactors(graph, &keyToIndex, &indexToKey);
+    auto result = computeFundamentalCycles(adjList, keyToIndex.at(root));
 
     // Translate indices back to original keys
     FundamentalCyclesResult keyResult;
 
     // Convert cycles
     for (const auto& cycle : result.cycles) {
-        FundamentalCycle keyCycle;
-        for (size_t idx : cycle.cycle) {
-            keyCycle.cycle.push_back(indexToKey[idx]);
+        LeveledSpanningTree::Cycle keyCycle;
+        for (size_t idx : cycle) {
+            keyCycle.push_back(indexToKey[idx]);
         }
         keyResult.cycles.push_back(keyCycle);
     }
@@ -262,7 +273,7 @@ FundamentalCyclesResult computeFundamentalCycles(const FactorGraph& graph, Key r
 /* ************************************************************************* */
 TEST(FundamentalCycles, AdjacencyList) {
     // Test using adjacency list
-    GraphList graph = {
+    LeveledSpanningTree::Graph graph = {
             {1, 2},    // neighbors of vertex 0
             {0, 2, 3}, // neighbors of vertex 1
             {0, 1, 3}, // neighbors of vertex 2
@@ -310,8 +321,8 @@ TEST(FundamentalCycles, EdgeList) {
     // Verify the number of fundamental cycles
     EXPECT(result.cycles.size() == 2);
     for (const auto& cycle : result.cycles) {
-        size_t i = cycle.cycle.front();
-        size_t j = cycle.cycle.back();
+        size_t i = cycle.front();
+        size_t j = cycle.back();
         EXPECT(result.tree.find({ i, j }) == result.tree.end());
     }
 
