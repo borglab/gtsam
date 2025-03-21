@@ -15,25 +15,27 @@
  * @author Frank Dellaert
  */
 
+#pragma once
+
 #include <gtsam/base/types.h>
 
 #include <vector>
-#include <queue>
-#include <algorithm>
+#include <optional>
 #include <map>
-#include <utility>
-
 
 namespace gtsam {
 
     /**
-     * LeveledSpanningTree: A breadth-first spanning tree that maintains level information.
+     * @brief A breadth-first spanning tree that maintains level information.
+     *
      * This data structure supports efficient computation of fundamental cycles by:
      * 1. Constructing a BFS tree from a root node
      * 2. Recording both parent and level information for each node
      * 3. Using level information to quickly compute paths to the least common ancestor
      *
-     * The level information allows O(V) computation of fundamental cycles where V is the
+     * This follows Paton's 1969 algorithm for finding fundamental cycles in undirected graphs,
+     * in "An algorithm for finding a fundamental set of cycles for an undirected linear graph".
+     * However, the level information allows O(V) computation of fundamental cycles where V is the
      * number of vertices in the graph. Without level information, finding the lowest common
      * ancestor would require O(V²) time in the worst case.
      */
@@ -42,6 +44,7 @@ namespace gtsam {
         // Type aliases for graph structures
         using Graph = std::vector<std::vector<size_t>>;
         using Cycle = std::vector<size_t>; // Sequence of vertex indices forming a cycle
+
     private:
         struct Node {
             size_t parent;  ///< Parent vertex in the spanning tree
@@ -58,26 +61,7 @@ namespace gtsam {
          * @param root The root vertex for the spanning tree
          * Time complexity: O(V+E) where V is the number of vertices and E is the number of edges
          */
-        LeveledSpanningTree(const Graph& graph, size_t root) :nodes(graph.size(), std::nullopt) {
-            // Root has no parent, so we use itself as parent
-            nodes[root] = { root, 0 };
-
-            std::queue<size_t> queue;
-            queue.push(root);
-
-            while (!queue.empty()) {
-                size_t current = queue.front();
-                queue.pop();
-
-                size_t currentLevel = level(current);
-                for (size_t neighbor : graph[current]) {
-                    if (!nodes[neighbor]) {
-                        nodes[neighbor] = { current, currentLevel + 1 };
-                        queue.push(neighbor);
-                    }
-                }
-            }
-        }
+        LeveledSpanningTree(const Graph& graph, size_t root);
 
         /**
          * Constructs a leveled spanning tree using breadth-first search, templated version.
@@ -152,20 +136,13 @@ namespace gtsam {
         }
 
         /// Get the parent of a vertex in the spanning tree.
-        size_t parent(size_t vertex) const {
-            return nodes[vertex]->parent;
-        }
+        size_t parent(size_t vertex) const;
 
         /// Checks if an edge is part of the spanning tree. Time complexity: O(1)
-        bool contains(size_t u, size_t v) const {
-            return (nodes[u] && nodes[v] &&
-                (nodes[u]->parent == v || nodes[v]->parent == u));
-        }
+        bool contains(size_t u, size_t v) const;
 
         /// Get the level (distance from root) of a vertex.
-        size_t level(size_t vertex) const {
-            return nodes[vertex]->level;
-        }
+        size_t level(size_t vertex) const;
 
         /**
          * Computes the fundamental cycle corresponding to a non-tree edge (u,v).
@@ -177,36 +154,7 @@ namespace gtsam {
          * @return The vertices in the fundamental cycle, starting with u, and ending with v
          * Time complexity: O(V) in the worst case (when the tree has depth O(V))
          */
-        Cycle fundamentalCycle(size_t u, size_t v) const {
-            std::vector<size_t> cycle, path;
-
-            // Climb up from u until levels are equal
-            while (level(u) > level(v)) {
-                cycle.push_back(u);
-                u = parent(u);
-            }
-
-            // Climb up from v until levels are equal
-            while (level(v) > level(u)) {
-                path.push_back(v);
-                v = parent(v);
-            }
-
-            // Climb until the lowest common ancestor is reached
-            while (u != v) {
-                cycle.push_back(u);
-                path.push_back(v);
-                u = parent(u);
-                v = parent(v);
-            }
-
-            cycle.push_back(u);  // Add the lowest common ancestor
-
-            // Append the reverse of path to complete the cycle
-            cycle.insert(cycle.end(), path.rbegin(), path.rend());
-
-            return cycle;
-        }
+        Cycle fundamentalCycle(size_t u, size_t v) const;
 
         // Cycles: Holds all computed fundamental cycles
         using Cycles = std::vector<Cycle>;
@@ -216,20 +164,7 @@ namespace gtsam {
          * @return A list of fundamental cycles, each represented as a sequence of vertices
          * Running time: O(E·V) in the worst case.
          */
-        Cycles allFundamentalCycles(const Graph& graph) const {
-            Cycles result;
-
-            // Compute fundamental cycles for each non-tree edge in O(E) iterations (each worst-case O(V))
-            for (size_t u = 0; u < graph.size(); ++u) {
-                for (size_t v : graph[u]) {
-                    if (u < v && !contains(u, v)) {
-                        result.push_back(fundamentalCycle(u, v));
-                    }
-                }
-            }
-
-            return result;
-        }
+        Cycles allFundamentalCycles(const Graph& graph) const;
 
         /**
          * Compute all fundamental cycles given an edge list.
