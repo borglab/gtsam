@@ -53,12 +53,7 @@ TEST(FundamentalCycles, AdjacencyList) {
 /* ************************************************************************* */
 TEST(FundamentalCycles, EdgeList) {
     // Test using edge list
-    struct Edge {
-        size_t i;
-        size_t j;
-    };
-
-    std::vector<Edge> edges = {
+    std::vector<LeveledSpanningTree::Edge> edges = {
         {0, 1},
         {0, 2},
         {1, 2},

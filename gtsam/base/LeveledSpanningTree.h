@@ -41,9 +41,10 @@ namespace gtsam {
      */
     class LeveledSpanningTree {
     public:
-        // Type aliases for graph structures
-        using Graph = std::vector<std::vector<size_t>>;
-        using Cycle = std::vector<size_t>; // Sequence of vertex indices forming a cycle
+        using Graph = std::vector<std::vector<size_t>>; // Type aliases for graph structures
+        using Cycle = std::vector<size_t>;              // Sequence of vertex indices forming a cycle
+        using Cycles = std::vector<Cycle>;              // Cycles: Holds all computed fundamental cycles
+        using Edge = std::pair<size_t, size_t>;         // Simple edge representation
 
     private:
         struct Node {
@@ -64,34 +65,12 @@ namespace gtsam {
         LeveledSpanningTree(const Graph& graph, size_t root);
 
         /**
-         * Constructs a leveled spanning tree using breadth-first search, templated version.
-         * @param graph The edge list representation of the graph
+         * Constructs a leveled spanning tree from a list of edges.
+         * @param edges The edge list representation of the graph
          * @param root The root vertex for the spanning tree
          * Time complexity: O(V+E) where V is the number of vertices and E is the number of edges
          */
-        template <typename EdgeType>
-        static LeveledSpanningTree FromEdges(const std::vector<EdgeType>& edges, size_t root) {
-            // Calculate the number of vertices.
-            size_t maxVertex = 0;
-            for (const auto& edge : edges) {
-                maxVertex = std::max({ maxVertex, edge.i, edge.j });
-            }
-            const size_t n = maxVertex + 1;
-
-            // Assert that we have at least n-1 vertices
-            if (edges.size() < n - 1) {
-                throw std::invalid_argument("Invalid edge list: need at least n-1 edges to form a tree");
-            }
-
-            // Now create the adjacency list representation
-            Graph graph(n);
-            for (const auto& edge : edges) {
-                // Assuming an undirected graph.
-                graph[edge.i].push_back(edge.j);
-                graph[edge.j].push_back(edge.i);
-            }
-            return LeveledSpanningTree(graph, root);
-        }
+        static LeveledSpanningTree FromEdges(const std::vector<Edge>& edges, size_t root);
 
         /**
          * Constructs a leveled spanning tree using breadth-first search, factor graph version.
@@ -156,9 +135,6 @@ namespace gtsam {
          */
         Cycle fundamentalCycle(size_t u, size_t v) const;
 
-        // Cycles: Holds all computed fundamental cycles
-        using Cycles = std::vector<Cycle>;
-
         /**
          * Compute all fundamental cycles given an adjacency list.
          * @return A list of fundamental cycles, each represented as a sequence of vertices
@@ -171,19 +147,7 @@ namespace gtsam {
          * @return A list of fundamental cycles, each represented as a sequence of vertices
          * Overall running time: O(E·V) in the worst case.
          */
-        template <typename EdgeType>
-        Cycles allFundamentalCycles(const std::vector<EdgeType>& edges) const {
-            Cycles result;
-
-            // Compute fundamental cycles for each non-tree edge in O(E) iterations (each worst-case O(V))
-            for (const auto& edge : edges) {
-                if (!contains(edge.i, edge.j)) {
-                    result.push_back(fundamentalCycle(edge.i, edge.j));
-                }
-            }
-
-            return result;
-        }
+        Cycles allFundamentalCycles(const std::vector<Edge>& edges) const;
 
         /**
          * Computes fundamental cycles in a factor graph using binary factors.

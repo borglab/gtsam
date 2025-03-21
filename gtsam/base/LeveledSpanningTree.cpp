@@ -42,6 +42,29 @@ namespace gtsam {
         }
     }
 
+    LeveledSpanningTree LeveledSpanningTree::FromEdges(const std::vector<Edge>& edges, size_t root) {
+        // Calculate the number of vertices.
+        size_t maxVertex = 0;
+        for (const auto& edge : edges) {
+            maxVertex = std::max({ maxVertex, edge.first, edge.second });
+        }
+        const size_t n = maxVertex + 1;
+
+        // Assert that we have at least n-1 vertices
+        if (edges.size() < n - 1) {
+            throw std::invalid_argument("Invalid edge list: need at least n-1 edges to form a tree");
+        }
+
+        // Now create the adjacency list representation
+        Graph graph(n);
+        for (const auto& edge : edges) {
+            // Assuming an undirected graph.
+            graph[edge.first].push_back(edge.second);
+            graph[edge.second].push_back(edge.first);
+        }
+        return LeveledSpanningTree(graph, root);
+    }
+
     size_t LeveledSpanningTree::parent(size_t vertex) const {
         return nodes[vertex]->parent;
     }
@@ -95,6 +118,19 @@ namespace gtsam {
                 if (u < v && !contains(u, v)) {
                     result.push_back(fundamentalCycle(u, v));
                 }
+            }
+        }
+
+        return result;
+    }
+
+    LeveledSpanningTree::Cycles LeveledSpanningTree::allFundamentalCycles(const std::vector<LeveledSpanningTree::Edge>& edges) const {
+        Cycles result;
+
+        // Compute fundamental cycles for each non-tree edge in O(E) iterations (each worst-case O(V))
+        for (const auto& [i, j] : edges) {
+            if (!contains(i, j)) {
+                result.push_back(fundamentalCycle(i, j));
             }
         }
 
