@@ -114,6 +114,48 @@ public:
         return LeveledSpanningTree(graph, root);
     }
 
+    /**
+     * Constructs a leveled spanning tree using breadth-first search, factor graph version.
+     * @param factorGraph any factor graph
+     * @param root The root vertex for the spanning tree
+     * @param keyToIndex Output parameter: maps keys to vertex indices
+     * @param indexToKey Output parameter: maps vertex indices to keys
+     * Time complexity: O(V+E) where V is the number of vertices and E is the number of edges
+     */
+    template <typename FactorGraph>
+    static LeveledSpanningTree FromFactorGraph(const FactorGraph& factorGraph, Key root,
+        std::map<Key, size_t>* keyToIndex,
+        std::vector<size_t>* indexToKey) {
+        keyToIndex->clear();
+        indexToKey->clear();
+        Graph graph;
+
+        // Process all binary factors in a single pass
+        for (const auto& factor : factorGraph) {
+            if (!factor || factor->keys().size() != 2) continue;
+
+            const auto& keys = factor->keys();
+
+            // Get or create indices for both keys
+            for (const auto& key : keys) {
+                if (keyToIndex->find(key) == keyToIndex->end()) {
+                    const size_t n = keyToIndex->size();
+                    keyToIndex->emplace(key, n);
+                    indexToKey->push_back(key);
+                    graph.push_back({}); // Add a new empty adjacency list
+                }
+            }
+
+            // Add edges in both directions
+            const size_t i = keyToIndex->at(keys[0]);
+            const size_t j = keyToIndex->at(keys[1]);
+            graph[i].push_back(j);
+            graph[j].push_back(i);
+        }
+
+        return LeveledSpanningTree(graph, keyToIndex->at(root));
+    }
+
     /// Get the parent of a vertex in the spanning tree.
     size_t parent(size_t vertex) const {
         return nodes[vertex]->parent;
@@ -176,6 +218,7 @@ public:
 
     /**
      * Compute all fundamental cycles given an adjacency list.
+     * @return A list of fundamental cycles, each represented as a sequence of vertices
      * Running time: O(E·V) in the worst case.
      */
     Cycles allFundamentalCycles(const Graph& graph) const {
@@ -195,6 +238,7 @@ public:
 
     /**
      * Compute all fundamental cycles given an edge list.
+     * @return A list of fundamental cycles, each represented as a sequence of vertices
      * Overall running time: O(E·V) in the worst case.
      */
     template <typename EdgeType>
@@ -210,72 +254,43 @@ public:
 
         return result;
     }
-};
 
-/**
- * buildAdjacencyListFromFactors: Builds an adjacency list from binary factors in a graph. O(F)
- */
-template <typename FactorGraph>
-LeveledSpanningTree::Graph buildAdjacencyListFromFactors(const FactorGraph& factorGraph,
-    std::map<Key, size_t>* keyToIndex,
-    std::vector<size_t>* indexToKey) {
-    keyToIndex->clear();
-    indexToKey->clear();
-    LeveledSpanningTree::Graph graph;
+    /**
+     * Computes fundamental cycles in a factor graph using binary factors.
+     * @param factorGraph The factor graph to analyze
+     * @param keyToIndex maps keys to vertex indices
+     * @param indexToKey maps vertex indices to keys
+     * @return A list of fundamental cycles, each represented as a sequence of keys
+     * Overall running time: O(E·V) in the worst case.
+     */
+    template <typename FactorGraph>
+    Cycles allFundamentalCycles(const FactorGraph& factorGraph,
+        const std::map<Key, size_t>& keyToIndex, const std::vector<size_t>& indexToKey) const {
+        Cycles result;
 
-    // Process all binary factors in a single pass
-    for (const auto& factor : factorGraph) {
-        if (!factor || factor->keys().size() != 2) continue;
+        // Process all binary factors directly
+        for (const auto& factor : factorGraph) {
+            if (!factor || factor->keys().size() != 2) continue;
 
-        const auto& keys = factor->keys();
+            const auto& keys = factor->keys();
+            size_t i = keyToIndex.at(keys[0]);
+            size_t j = keyToIndex.at(keys[1]);
 
-        // Get or create indices for both keys
-        for (const auto& key : keys) {
-            if (keyToIndex->find(key) == keyToIndex->end()) {
-                const size_t n = keyToIndex->size();
-                keyToIndex->emplace(key, n);
-                indexToKey->push_back(key);
-                graph.push_back({}); // Add a new empty adjacency list
+            if (!contains(i, j)) {
+                // Get the fundamental cycle in terms of indices
+                auto cycle = fundamentalCycle(i, j);
+
+                // Convert to keys
+                Cycle keyCycle;
+                for (size_t idx : cycle) keyCycle.push_back(indexToKey[idx]);
+
+                result.push_back(keyCycle);
             }
         }
 
-        // Add edges in both directions
-        const size_t i = keyToIndex->at(keys[0]);
-        const size_t j = keyToIndex->at(keys[1]);
-        graph[i].push_back(j);
-        graph[j].push_back(i);
+        return result;
     }
-
-    return graph;
-}
-
-/**
- * Computes fundamental cycles in a factor graph using binary factors.
- * Returns cycles and tree edges with the original factor graph keys.
- */
-template <typename FactorGraph>
-LeveledSpanningTree::Cycles allFundamentalCycles(const FactorGraph& graph, Key root) {
-    std::map<Key, size_t> keyToIndex;
-    std::vector<size_t> indexToKey;
-
-    auto adjList = buildAdjacencyListFromFactors(graph, &keyToIndex, &indexToKey);
-    const LeveledSpanningTree lst(adjList, keyToIndex.at(root));
-    auto result = lst.allFundamentalCycles(adjList);
-
-    // Translate indices back to original keys
-    LeveledSpanningTree::Cycles keyResult;
-
-    // Convert cycles
-    for (const auto& cycle : result) {
-        LeveledSpanningTree::Cycle keyCycle;
-        for (size_t idx : cycle) {
-            keyCycle.push_back(indexToKey[idx]);
-        }
-        keyResult.push_back(keyCycle);
-    }
-
-    return keyResult;
-}
+};
 
 /* ************************************************************************* */
 TEST(FundamentalCycles, AdjacencyList) {
@@ -337,7 +352,11 @@ TEST(FundamentalCycles, SymbolicFactorGraph) {
     g.push_factor(X(2), X(4));
     g.push_factor(X(3), X(4));
 
-    const auto result = allFundamentalCycles(g, X(1));
+    std::map<Key, size_t> keyToIndex;
+    std::vector<size_t> indexToKey;
+    auto lst = LeveledSpanningTree::FromFactorGraph(g, X(1), &keyToIndex, &indexToKey);
+    auto result = lst.allFundamentalCycles(g, keyToIndex, indexToKey);
+
     // Verify the number of fundamental cycles
     EXPECT(result.size() == 3);
 }
