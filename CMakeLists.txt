@@ -124,6 +124,10 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Set the include directory for matlab.h
     set(GTWRAP_INCLUDE_NAME "wrap")
 
+    if (GTSAM_GENERATE_DOC_XML)
+        set(GTWRAP_ADD_DOCSTRINGS ON)
+    endif()
+
     # Copy matlab.h to the correct folder.
     configure_file(${PROJECT_SOURCE_DIR}/wrap/matlab.h
                ${PROJECT_BINARY_DIR}/wrap/matlab.h COPYONLY)
