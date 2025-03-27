@@ -138,7 +138,7 @@ jobs:
           CIBW_MANYLINUX_AARCH64_IMAGE: ${{ matrix.manylinux_image }}
           CIBW_ARCHS: all
           CIBW_ENVIRONMENT_PASS_LINUX: DEVELOP TIMESTAMP
-          MACOSX_DEPLOYMENT_TARGET: 10.14
+          MACOSX_DEPLOYMENT_TARGET: 10.15
 
           # Use build instead of pip wheel to build the wheels. This is recommended by PyPA.
           # See https://cibuildwheel.pypa.io/en/stable/options/#build-frontend.
