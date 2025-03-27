@@ -15,21 +15,29 @@ export PYTHON="python${PYTHON_VERSION}"
 if [ "$(uname)" == "Linux" ]; then
     # manylinux2014 is based on CentOS 7, so use yum to install dependencies
     yum install -y wget doxygen
-
-    # Install Boost from source
-    wget https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.gz --quiet
-    tar -xzf boost_1_87_0.tar.gz
-    cd boost_1_87_0
-    ./bootstrap.sh --prefix=/opt/boost
-    ./b2 install --prefix=/opt/boost --with=all -d0
-    cd ..
 elif [ "$(uname)" == "Darwin" ]; then
     brew install wget cmake doxygen
-    brew install --build-from-source boost
-
     export CC=clang
     export CXX=clang++
 fi
+
+# Install Boost from source
+wget https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.gz --quiet
+tar -xzf boost_1_87_0.tar.gz
+cd boost_1_87_0
+./bootstrap.sh --prefix=/opt/boost
+
+# Default to macOS 10.15 if MACOSX_DEPLOYMENT_TARGET is not set
+if [[ -z "${MACOSX_DEPLOYMENT_TARGET}" ]]; then
+  export MACOSX_DEPLOYMENT_TARGET="10.15"
+fi
+
+if [ "$(uname)" == "Linux" ]; then
+    ./b2 install --prefix=/opt/boost --with=all -d0
+elif [ "$(uname)" == "Darwin" ]; then
+    ./b2 install --prefix=/opt/boost --with=all -d0 cxxflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" linkflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
+fi
+cd ..
 
 $(which $PYTHON) -m pip install -r $PROJECT_DIR/python/dev_requirements.txt
 
