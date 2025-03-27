@@ -21,7 +21,7 @@ if [ "$(uname)" == "Linux" ]; then
     tar -xzf boost_1_87_0.tar.gz
     cd boost_1_87_0
     ./bootstrap.sh --prefix=/opt/boost
-    ./b2 install --prefix=/opt/boost --with=all 
+    ./b2 install --prefix=/opt/boost --with=all -d0
     cd ..
 elif [ "$(uname)" == "Darwin" ]; then
     brew install wget cmake boost
