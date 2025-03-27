@@ -24,7 +24,9 @@ if [ "$(uname)" == "Linux" ]; then
     ./b2 install --prefix=/opt/boost --with=all -d0
     cd ..
 elif [ "$(uname)" == "Darwin" ]; then
-    brew install wget cmake boost doxygen
+    brew install wget cmake doxygen
+    brew install --build-from-source boost
+
     export CC=clang
     export CXX=clang++
 fi
