@@ -328,6 +328,9 @@ public:
    */
   static std::pair<size_t, size_t> rotationInterval() { return {2, 2}; }
 
+  /// Return vectorized SE(2) matrix in column order.
+  Vector9 vec(OptionalJacobian<9, 3> H = {}) const;
+
   /// Output stream operator
   GTSAM_EXPORT
   friend std::ostream &operator<<(std::ostream &os, const Pose2& p);

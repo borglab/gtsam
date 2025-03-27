@@ -19,6 +19,7 @@
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+#include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 
 #include <optional>
 
@@ -26,8 +27,10 @@ namespace gtsam {
 
 class GTSAM_EXPORT HybridSmoother {
  private:
-  HybridBayesNet hybridBayesNet_;
+  HybridNonlinearFactorGraph allFactors_;
+  Values linearizationPoint_;
 
+  HybridBayesNet hybridBayesNet_;
   /// The threshold above which we make a decision about a mode.
   std::optional<double> marginalThreshold_;
   DiscreteValues fixedValues_;
@@ -73,12 +76,12 @@ class GTSAM_EXPORT HybridSmoother {
    * @param graph The new factors, should be linear only
    * @param maxNrLeaves The maximum number of leaves in the new discrete factor,
    * if applicable
-   * @param given_ordering The (optional) ordering for elimination, only
+   * @param givenOrdering The (optional) ordering for elimination, only
    * continuous variables are allowed
    */
-  void update(const HybridGaussianFactorGraph& graph,
+  void update(const HybridNonlinearFactorGraph& graph, const Values& initial,
               std::optional<size_t> maxNrLeaves = {},
-              const std::optional<Ordering> given_ordering = {});
+              const std::optional<Ordering> givenOrdering = {});
 
   /**
    * @brief Get an elimination ordering which eliminates continuous
@@ -122,6 +125,24 @@ class GTSAM_EXPORT HybridSmoother {
 
   /// Optimize the hybrid Bayes Net, taking into accound fixed values.
   HybridValues optimize() const;
+
+  /// Relinearize the nonlinear factor graph
+  /// with the latest linearization point.
+  void relinearize();
+
+  /// Return the current linearization point.
+  Values linearizationPoint() const;
+
+  /// Return all the recorded nonlinear factors
+  HybridNonlinearFactorGraph allFactors() const;
+
+ private:
+  /// Helper to compute the ordering if ordering is not given.
+  Ordering maybeComputeOrdering(const HybridGaussianFactorGraph& updatedGraph,
+                                const std::optional<Ordering> givenOrdering);
+
+  /// Remove fixed discrete values for discrete keys introduced in `newFactors`.
+  void removeFixedValues(const HybridGaussianFactorGraph& newFactors);
 };
 
 }  // namespace gtsam

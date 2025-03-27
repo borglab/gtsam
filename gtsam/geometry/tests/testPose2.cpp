@@ -959,6 +959,23 @@ TEST(Pose2, Print) {
 }
 
 /* ************************************************************************* */
+TEST(Pose2, vec) {
+  // Test a simple pose
+  Pose2 pose(Rot2::fromAngle(M_PI / 4), Point2(1, 2));
+
+  // Test the 'vec' method
+  Vector9 expected_vec = Eigen::Map<Vector9>(pose.matrix().data());
+  Matrix93 actualH;
+  Vector9 actual_vec = pose.vec(actualH);
+  EXPECT(assert_equal(expected_vec, actual_vec));
+
+  // Verify Jacobian with numerical derivatives
+  std::function<Vector9(const Pose2&)> f = [](const Pose2& p) { return p.vec(); };
+  Matrix93 numericalH = numericalDerivative11<Vector9, Pose2>(f, pose);
+  EXPECT(assert_equal(numericalH, actualH, 1e-9));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

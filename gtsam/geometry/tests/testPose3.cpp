@@ -1402,6 +1402,21 @@ TEST(Pose3, ExpmapChainRule) {
 }
 
 /* ************************************************************************* */
+TEST(Pose3, vec) {
+  // Test the 'vec' method
+  using Vector16 = Eigen::Matrix<double, 16, 1>;
+  Vector16 expected_vec = Eigen::Map<Vector16>(T.matrix().data());
+  Matrix actualH;
+  Vector16 actual_vec = T.vec(actualH);
+  EXPECT(assert_equal(expected_vec, actual_vec));
+
+  // Verify Jacobian with numerical derivatives
+  std::function<Vector16(const Pose3&)> f = [](const Pose3& p) { return p.vec(); };
+  Matrix numericalH = numericalDerivative11<Vector16, Pose3>(f, T);
+  EXPECT(assert_equal(numericalH, actualH, 1e-9));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

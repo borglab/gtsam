@@ -13,6 +13,14 @@
 
 #include <utility>
 
+//__has_include has been part of C++17, no need to check it
+#if defined(PYBIND11_CPP20) && __has_include(<ranges>)
+#    if !defined(PYBIND11_COMPILER_CLANG) || __clang_major__ >= 16 // llvm/llvm-project#52696
+#        define PYBIND11_TEST_PYTYPES_HAS_RANGES
+#        include <ranges>
+#    endif
+#endif
+
 namespace external {
 namespace detail {
 bool check(PyObject *o) { return PyFloat_Check(o) != 0; }
@@ -109,7 +117,7 @@ void m_defs(py::module_ &m) {
 
 } // namespace handle_from_move_only_type_with_operator_PyObject
 
-#if defined(__cpp_nontype_template_parameter_class)
+#if defined(PYBIND11_TYPING_H_HAS_STRING_LITERAL)
 namespace literals {
 enum Color { RED = 0, BLUE = 1 };
 
@@ -905,7 +913,7 @@ TEST_SUBMODULE(pytypes, m) {
     m.def("annotate_optional_to_object",
           [](py::typing::Optional<int> &o) -> py::object { return o; });
 
-#if defined(__cpp_nontype_template_parameter_class)
+#if defined(PYBIND11_TYPING_H_HAS_STRING_LITERAL)
     py::enum_<literals::Color>(m, "Color")
         .value("RED", literals::Color::RED)
         .value("BLUE", literals::Color::BLUE);
@@ -919,8 +927,63 @@ TEST_SUBMODULE(pytypes, m) {
     m.def("annotate_listT_to_T",
           [](const py::typing::List<typevar::TypeVarT> &l) -> typevar::TypeVarT { return l[0]; });
     m.def("annotate_object_to_T", [](const py::object &o) -> typevar::TypeVarT { return o; });
-    m.attr("if_defined__cpp_nontype_template_parameter_class") = true;
+    m.attr("defined_PYBIND11_TYPING_H_HAS_STRING_LITERAL") = true;
 #else
-    m.attr("if_defined__cpp_nontype_template_parameter_class") = false;
+    m.attr("defined_PYBIND11_TYPING_H_HAS_STRING_LITERAL") = false;
+#endif
+
+#if defined(PYBIND11_TEST_PYTYPES_HAS_RANGES)
+
+    // test_tuple_ranges
+    m.def("tuple_iterator_default_initialization", []() {
+        using TupleIterator = decltype(std::declval<py::tuple>().begin());
+        static_assert(std::random_access_iterator<TupleIterator>);
+        return TupleIterator{} == TupleIterator{};
+    });
+
+    m.def("transform_tuple_plus_one", [](py::tuple &tpl) {
+        py::list ret{};
+        for (auto it : tpl | std::views::transform([](auto &o) { return py::cast<int>(o) + 1; })) {
+            ret.append(py::int_(it));
+        }
+        return ret;
+    });
+
+    // test_list_ranges
+    m.def("list_iterator_default_initialization", []() {
+        using ListIterator = decltype(std::declval<py::list>().begin());
+        static_assert(std::random_access_iterator<ListIterator>);
+        return ListIterator{} == ListIterator{};
+    });
+
+    m.def("transform_list_plus_one", [](py::list &lst) {
+        py::list ret{};
+        for (auto it : lst | std::views::transform([](auto &o) { return py::cast<int>(o) + 1; })) {
+            ret.append(py::int_(it));
+        }
+        return ret;
+    });
+
+    // test_dict_ranges
+    m.def("dict_iterator_default_initialization", []() {
+        using DictIterator = decltype(std::declval<py::dict>().begin());
+        static_assert(std::forward_iterator<DictIterator>);
+        return DictIterator{} == DictIterator{};
+    });
+
+    m.def("transform_dict_plus_one", [](py::dict &dct) {
+        py::list ret{};
+        for (auto it : dct | std::views::transform([](auto &o) {
+                           return std::pair{py::cast<int>(o.first) + 1,
+                                            py::cast<int>(o.second) + 1};
+                       })) {
+            ret.append(py::make_tuple(py::int_(it.first), py::int_(it.second)));
+        }
+        return ret;
+    });
+
+    m.attr("defined_PYBIND11_TEST_PYTYPES_HAS_RANGES") = true;
+#else
+    m.attr("defined_PYBIND11_TEST_PYTYPES_HAS_RANGES") = false;
 #endif
 }

@@ -110,7 +110,7 @@ class Experiment {
     gttic_(SmootherUpdate);
     clock_t beforeUpdate = clock();
     auto linearized = newFactors_.linearize(initial_);
-    smoother_.update(*linearized, maxNrHypotheses);
+    smoother_.update(*linearized, initial_);
     allFactors_.push_back(newFactors_);
     newFactors_.resize(0);
     clock_t afterUpdate = clock();

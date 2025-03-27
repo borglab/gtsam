@@ -67,7 +67,7 @@ static Unit3 rotate_(const Rot3& R, const Unit3& p) {
 TEST(Unit3, rotate) {
   Rot3 R = Rot3::Yaw(0.5);
   Unit3 p(1, 0, 0);
-  Unit3 expected = Unit3(R.column(1));
+  Unit3 expected = Unit3(R.matrix().col(0));
   Unit3 actual = R * p;
   EXPECT(assert_equal(expected, actual, 1e-5));
   Matrix actualH, expectedH;

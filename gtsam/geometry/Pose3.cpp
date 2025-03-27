@@ -535,6 +535,34 @@ Pose3 Pose3::slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx, Opti
 }
 
 /* ************************************************************************* */
+// Compute vectorized Lie algebra generators for SE(3)
+using Matrix16x6 = Eigen::Matrix<double, 16, 6>;
+using Vector16 = Eigen::Matrix<double, 16, 1>;
+static Matrix16x6 VectorizedGenerators() {
+  Matrix16x6 G;
+  for (size_t j = 0; j < 6; j++) {
+    const Matrix4 X = Pose3::Hat(Vector::Unit(6, j));
+    G.col(j) = Eigen::Map<const Vector16>(X.data());
+  }
+  return G;
+}
+
+Vector Pose3::vec(OptionalJacobian<16, 6> H) const {
+  // Vectorize
+  const Matrix4 M = matrix();
+  const Vector X = Eigen::Map<const Vector16>(M.data());
+
+  // If requested, calculate H as (I_4 \oplus M) * G.
+  if (H) {
+    static const Matrix16x6 G = VectorizedGenerators(); // static to compute only once
+    for (size_t i = 0; i < 4; i++)
+      H->block(i * 4, 0, 4, dimension) = M * G.block(i * 4, 0, 4, dimension);
+  }
+
+  return X;
+}
+
+/* ************************************************************************* */
 std::ostream &operator<<(std::ostream &os, const Pose3& pose) {
   // Both Rot3 and Point3 have ostream definitions so we use them.
   os << "R: " << pose.rotation() << "\n";

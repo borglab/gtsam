@@ -194,7 +194,6 @@ class Experiment:
 
         self.smoother_ = HybridSmoother(marginal_threshold)
         self.new_factors_ = HybridNonlinearFactorGraph()
-        self.all_factors_ = HybridNonlinearFactorGraph()
         self.initial_ = Values()
 
         self.plot_hypotheses = plot_hypotheses
@@ -231,24 +230,18 @@ class Experiment:
         """Perform smoother update and optimize the graph."""
         print(f"Smoother update: {self.new_factors_.size()}")
         before_update = time.time()
-        linearized = self.new_factors_.linearize(self.initial_)
-        self.smoother_.update(linearized, max_num_hypotheses)
-        self.all_factors_.push_back(self.new_factors_)
+        self.smoother_.update(self.new_factors_, self.initial_,
+                              max_num_hypotheses)
         self.new_factors_.resize(0)
         after_update = time.time()
         return after_update - before_update
 
     def reinitialize(self) -> float:
         """Re-linearize, solve ALL, and re-initialize smoother."""
-        print(f"================= Re-Initialize: {self.all_factors_.size()}")
+        print(f"================= Re-Initialize: {self.smoother_.allFactors().size()}")
         before_update = time.time()
-        self.all_factors_ = self.all_factors_.restrict(
-            self.smoother_.fixedValues())
-        linearized = self.all_factors_.linearize(self.initial_)
-        bayesNet = linearized.eliminateSequential()
-        delta: HybridValues = bayesNet.optimize()
-        self.initial_ = self.initial_.retract(delta.continuous())
-        self.smoother_.reInitialize(bayesNet)
+        self.smoother_.relinearize()
+        self.initial_ = self.smoother_.linearizationPoint()
         after_update = time.time()
         print(f"Took {after_update - before_update} seconds.")
         return after_update - before_update

@@ -94,9 +94,7 @@ TEST(HybridSmoother, IncrementalSmoother) {
 
     initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
 
-    HybridGaussianFactorGraph linearized = *graph.linearize(initial);
-
-    smoother.update(linearized, maxNrLeaves);
+    smoother.update(graph, initial, maxNrLeaves);
 
     // Clear all the factors from the graph
     graph.resize(0);
@@ -152,9 +150,7 @@ TEST(HybridSmoother, ValidPruningError) {
 
     initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
 
-    HybridGaussianFactorGraph linearized = *graph.linearize(initial);
-
-    smoother.update(linearized, maxNrLeaves);
+    smoother.update(graph, initial, maxNrLeaves);
 
     // Clear all the factors from the graph
     graph.resize(0);
@@ -200,9 +196,7 @@ TEST(HybridSmoother, DeadModeRemoval) {
 
     initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
 
-    HybridGaussianFactorGraph linearized = *graph.linearize(initial);
-
-    smoother.update(linearized, maxNrLeaves);
+    smoother.update(graph, initial, maxNrLeaves);
 
     // Clear all the factors from the graph
     graph.resize(0);

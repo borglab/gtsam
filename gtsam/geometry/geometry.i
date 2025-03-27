@@ -395,7 +395,6 @@ class Rot3 {
   // Standard Interface
   gtsam::Matrix matrix() const;
   gtsam::Matrix transpose() const;
-  gtsam::Point3 column(size_t index) const;
   gtsam::Vector xyz() const;
   gtsam::Vector ypr() const;
   gtsam::Vector rpy() const;

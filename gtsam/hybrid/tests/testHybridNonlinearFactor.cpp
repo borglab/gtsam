@@ -81,8 +81,14 @@ TEST(HybridNonlinearFactor, Printing) {
       R"(Hybrid [x1 x2; 1]
 HybridNonlinearFactor
  Choice(1) 
- 0 Leaf Nonlinear factor on 2 keys
- 1 Leaf Nonlinear factor on 2 keys
+ 0 Leaf BetweenFactor(x1,x2)
+  measured:  0
+  noise model: diagonal sigmas [1];
+
+ 1 Leaf BetweenFactor(x1,x2)
+  measured:  1
+  noise model: diagonal sigmas [1];
+
 )";
   EXPECT(assert_print_equal(expected, hybridFactor));
 }

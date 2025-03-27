@@ -16,7 +16,7 @@ import numpy as np
 from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
-from gtsam import Point3, Pose3, Rot3, Similarity3
+from gtsam import Point3, Pose3, Rot3, Similarity3, BetweenFactorSimilarity3, NonlinearFactorGraph, Values, LevenbergMarquardtOptimizer, LevenbergMarquardtParams
 
 
 class TestSim3(GtsamTestCase):
@@ -129,6 +129,65 @@ class TestSim3(GtsamTestCase):
 
         for aTi, bTi in zip(aTi_list, bTi_list):
             self.gtsamAssertEquals(aTi, aSb.transformFrom(bTi))
+
+    def test_sim3_optimization(self)->None:
+        # Create a PriorFactor with a Sim3 prior
+        prior = Similarity3(Rot3.Ypr(0.1, 0.2, 0.3), Point3(1, 2, 3), 4)
+        model = gtsam.noiseModel.Isotropic.Sigma(7, 1)
+
+        # Create graph
+        graph = NonlinearFactorGraph()
+        graph.addPriorSimilarity3(1, prior, model)
+
+        # Create initial estimate with Identity transform
+        initial = Values()
+        initial.insert(1, Similarity3())
+
+        # Optimize
+        params = LevenbergMarquardtParams()
+        params.setVerbosityLM("TRYCONFIG")
+        result = LevenbergMarquardtOptimizer(graph, initial).optimize()
+
+        # After optimization, result should be prior
+        self.gtsamAssertEquals(prior, result.atSimilarity3(1), 1e-4)
+
+    def test_sim3_optimization2(self) -> None:
+        prior = Similarity3()
+        m1 = Similarity3(Rot3.Ypr(np.pi / 4.0, 0, 0), Point3(2.0, 0, 0), 1.0)
+        m2 = Similarity3(Rot3.Ypr(np.pi / 2.0, 0, 0), Point3(np.sqrt(8) * 0.9, 0, 0), 1.0)
+        m3 = Similarity3(Rot3.Ypr(3 * np.pi / 4.0, 0, 0), Point3(np.sqrt(32) * 0.8, 0, 0), 1.0)
+        m4 = Similarity3(Rot3.Ypr(np.pi / 2.0, 0, 0), Point3(6 * 0.7, 0, 0), 1.0)
+        loop = Similarity3(1.42)
+
+        priorNoise = gtsam.noiseModel.Isotropic.Sigma(7, 0.01)
+        betweenNoise = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 10]))
+        betweenNoise2 = gtsam.noiseModel.Diagonal.Sigmas(np.array([ 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1.0]))
+        b1 = BetweenFactorSimilarity3(1, 2, m1, betweenNoise)
+        b2 = BetweenFactorSimilarity3(2, 3, m2, betweenNoise)
+        b3 = BetweenFactorSimilarity3(3, 4, m3, betweenNoise)
+        b4 = BetweenFactorSimilarity3(4, 5, m4, betweenNoise)
+        lc = BetweenFactorSimilarity3(5, 1, loop, betweenNoise2)
+
+        # Create graph
+        graph = NonlinearFactorGraph()
+        graph.addPriorSimilarity3(1, prior, priorNoise)
+        graph.add(b1)
+        graph.add(b2)
+        graph.add(b3)
+        graph.add(b4)
+        graph.add(lc)
+
+        # graph.print("Full Graph\n");
+        initial=Values()
+        initial.insert(1, prior)
+        initial.insert(2, Similarity3(Rot3.Ypr(np.pi / 2.0, 0, 0), Point3(1, 0, 0), 1.1))
+        initial.insert(3, Similarity3(Rot3.Ypr(2.0 * np.pi / 2.0, 0, 0), Point3(0.9, 1.1, 0), 1.2))
+        initial.insert(4, Similarity3(Rot3.Ypr(3.0 * np.pi / 2.0, 0, 0), Point3(0, 1, 0), 1.3))
+        initial.insert(5, Similarity3(Rot3.Ypr(4.0 * np.pi / 2.0, 0, 0), Point3(0, 0, 0), 1.0))
+
+
+        result = LevenbergMarquardtOptimizer(graph, initial).optimizeSafely()
+        self.gtsamAssertEquals(Similarity3(0.7), result.atSimilarity3(5), 0.4)
 
     def test_align_via_Sim3_to_poses_skydio32(self) -> None:
         """Ensure scale estimate of Sim(3) object is non-negative.

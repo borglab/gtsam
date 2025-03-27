@@ -17,9 +17,10 @@
 #include <boost/concept_check.hpp>
 #define GTSAM_CONCEPT_ASSERT(concept) BOOST_CONCEPT_ASSERT((concept))
 #define GTSAM_CONCEPT_REQUIRES(concept, return_type) BOOST_CONCEPT_REQUIRES(((concept)), (return_type))
+#define GTSAM_CONCEPT_USAGE BOOST_CONCEPT_USAGE
 #else 
 // This does something sensible:
-#define BOOST_CONCEPT_USAGE(concept) void check##concept()
+#define GTSAM_CONCEPT_USAGE(concept) void check##concept()
 // These just ignore the concept checking for now:
 #define GTSAM_CONCEPT_ASSERT(concept) static_assert(true, "")
 #define GTSAM_CONCEPT_REQUIRES(concept, return_type) return_type

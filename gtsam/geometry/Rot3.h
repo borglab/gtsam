@@ -459,9 +459,6 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
      */
     Matrix3 transpose() const;
 
-    /// @deprecated, this is base 1, and was just confusing
-    Point3 column(int index) const;
-
     Point3 r1() const; ///< first column
     Point3 r2() const; ///< second column
     Point3 r3() const; ///< third column
@@ -530,12 +527,24 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     /**
      * @brief Spherical Linear intERPolation between *this and other
      * @param t a value between 0 and 1
-     * @param other final point of iterpolation geodesic on manifold
+     * @param other final point of interpolation geodesic on manifold
      */
     Rot3 slerp(double t, const Rot3& other) const;
 
+    /// Vee maps from Lie algebra to tangent vector
+    inline Vector9 vec(OptionalJacobian<9, 3> H = {}) const { return SO3(matrix()).vec(H); }
+
     /// Output stream operator
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Rot3& p);
+
+    /// @}
+    /// @name deprecated
+    /// @{
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+    /// @deprecated, this is base 1, and was just confusing
+    Point3 column(int index) const;
+#endif
 
     /// @}
 

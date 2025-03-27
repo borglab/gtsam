@@ -134,10 +134,12 @@ void HybridNonlinearFactor::print(const std::string& s,
   std::cout << (s.empty() ? "" : s + " ");
   Base::print("", keyFormatter);
   std::cout << "\nHybridNonlinearFactor\n";
-  auto valueFormatter = [](const std::pair<sharedFactor, double>& v) {
+  auto valueFormatter = [&keyFormatter](const std::pair<sharedFactor, double>& v) {
     auto [factor, val] = v;
     if (factor) {
-      return "Nonlinear factor on " + std::to_string(factor->size()) + " keys";
+      RedirectCout rd;
+      factor->print("", keyFormatter);
+      return rd.str();
     } else {
       return std::string("nullptr");
     }

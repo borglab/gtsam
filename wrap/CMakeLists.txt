@@ -20,6 +20,8 @@ set(INSTALL_LIB_DIR lib/${PROJECT_NAME})
 set(INSTALL_BIN_DIR bin/${PROJECT_NAME})
 set(INSTALL_INCLUDE_DIR include/${PROJECT_NAME})
 
+option(GTWRAP_ADD_DOCSTRINGS "Whether to add docstrings to the Python bindings from Doxygen-generated XML located at {project_root}/xml" OFF)
+
 # ##############################################################################
 # Package Configuration
 

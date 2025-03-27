@@ -79,7 +79,7 @@ TEST(Similarity2, HatAndVee) {
 
 /* ************************************************************************* */
 // Checks correct exponential map (Expmap) with brute force matrix exponential
-TEST_DISABLED(Similarity2, BruteForceExpmap) {
+TEST(Similarity2, BruteForceExpmap) {
   const Vector4 xi(0.1, 0.2, 0.3, 0.4);
   EXPECT(assert_equal(Similarity2::Expmap(xi), expm<Similarity2>(xi), 1e-4));
 }

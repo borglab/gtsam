@@ -392,6 +392,9 @@ public:
   Pose3 slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx = {},
                                              OptionalJacobian<6, 6> Hy = {}) const;
 
+  /// Return vectorized SE(3) matrix in column order.
+  Vector vec(OptionalJacobian<16, 6> H = {}) const;
+
   /// Output stream operator
   GTSAM_EXPORT
   friend std::ostream &operator<<(std::ostream &os, const Pose3& p);
@@ -402,9 +405,9 @@ public:
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /// @deprecated: use Hat
-  static inline LieAlgebra wedge(double wx, double wy, double wz, double vx, double vy,
-    double vz) {
-    return Hat(TangentVector(wx, wy, wz, vx, vy, vz));
+  static inline LieAlgebra wedge(double wx, double wy, double wz, double vx,
+                                 double vy, double vz) {
+    return Hat((TangentVector() << wx, wy, wz, vx, vy, vz).finished());
   }
 #endif
   /// @}

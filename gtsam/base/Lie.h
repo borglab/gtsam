@@ -229,7 +229,7 @@ struct LieGroupTraits: public GetDimensionImpl<Class, Class::dimension> {
 /// Both LieGroupTraits and Testable
 template<class Class> struct LieGroup: LieGroupTraits<Class>, Testable<Class> {};
 
-/// Adds LieAlgebra, Hat, and Vie to LieGroupTraits
+/// Adds LieAlgebra, Hat, and Vee to LieGroupTraits
 template<class Class> struct MatrixLieGroupTraits: LieGroupTraits<Class> {
   using LieAlgebra = typename Class::LieAlgebra;
   using TangentVector = typename LieGroupTraits<Class>::TangentVector;
@@ -282,7 +282,7 @@ public:
   typedef typename traits<T>::TangentVector TangentVector;
   typedef typename traits<T>::ChartJacobian ChartJacobian;
 
-  BOOST_CONCEPT_USAGE(IsLieGroup) {
+  GTSAM_CONCEPT_USAGE(IsLieGroup) {
     static_assert(
         (std::is_base_of<lie_group_tag, structure_category_tag>::value),
         "This type's trait does not assert it is a Lie group (or derived)");
@@ -313,7 +313,7 @@ public:
 typedef typename traits<T>::LieAlgebra LieAlgebra;
 typedef typename traits<T>::TangentVector TangentVector;
 
-  BOOST_CONCEPT_USAGE(IsMatrixLieGroup) {
+  GTSAM_CONCEPT_USAGE(IsMatrixLieGroup) {
     // hat and vee
     X = traits<T>::Hat(xi);
     xi = traits<T>::Vee(X);
@@ -351,7 +351,7 @@ template <class T> Matrix wedge(const Vector& x);
  */
 template <class T>
 T expm(const Vector& x, int K = 7) {
-  auto xhat = T::Hat(x);
+  const Matrix xhat = T::Hat(x);
   return T(expm(xhat, K));
 }
 

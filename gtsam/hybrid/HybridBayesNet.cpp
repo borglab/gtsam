@@ -73,9 +73,10 @@ HybridBayesNet HybridBayesNet::prune(
     if (conditional->isDiscrete()) continue;
 
     // No-op if not a HybridGaussianConditional.
-    if (marginalThreshold)
+    if (marginalThreshold) {
       conditional = std::static_pointer_cast<HybridConditional>(
           conditional->restrict(fixed));
+    }
 
     // Now decide on type what to do:
     if (auto hgc = conditional->asHybrid()) {

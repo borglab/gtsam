@@ -535,6 +535,9 @@ TEST(HybridNonlinearFactorGraph, Printing) {
   const auto [hybridBayesNet, remainingFactorGraph] =
       linearizedFactorGraph.eliminatePartialSequential(ordering);
 
+  // Set precision so we are consistent on all platforms
+  std::cout << std::setprecision(6);
+
 #ifdef GTSAM_DT_MERGING
   string expected_hybridFactorGraph = R"(
 size: 7

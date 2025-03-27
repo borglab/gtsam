@@ -17,6 +17,8 @@ namespace gtsam {
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Similarity2.h>
+#include <gtsam/geometry/Similarity3.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
@@ -80,6 +82,8 @@ class Values {
   void insert(size_t j, const gtsam::SOn& P);
   void insert(size_t j, const gtsam::Rot3& rot3);
   void insert(size_t j, const gtsam::Pose3& pose3);
+  void insert(size_t j, const gtsam::Similarity2& similarity2);
+  void insert(size_t j, const gtsam::Similarity3& similarity3);
   void insert(size_t j, const gtsam::Unit3& unit3);
   void insert(size_t j, const gtsam::Cal3Bundler& cal3bundler);
   void insert(size_t j, const gtsam::Cal3f& cal3f);
@@ -122,6 +126,8 @@ class Values {
   void update(size_t j, const gtsam::SOn& P);
   void update(size_t j, const gtsam::Rot3& rot3);
   void update(size_t j, const gtsam::Pose3& pose3);
+  void update(size_t j, const gtsam::Similarity2& similarity2);
+  void update(size_t j, const gtsam::Similarity3& similarity3);
   void update(size_t j, const gtsam::Unit3& unit3);
   void update(size_t j, const gtsam::Cal3Bundler& cal3bundler);
   void update(size_t j, const gtsam::Cal3f& cal3f);
@@ -161,6 +167,8 @@ class Values {
   void insert_or_assign(size_t j, const gtsam::SOn& P);
   void insert_or_assign(size_t j, const gtsam::Rot3& rot3);
   void insert_or_assign(size_t j, const gtsam::Pose3& pose3);
+  void insert_or_assign(size_t j, const gtsam::Similarity2& similarity2);
+  void insert_or_assign(size_t j, const gtsam::Similarity3& similarity3);
   void insert_or_assign(size_t j, const gtsam::Unit3& unit3);
   void insert_or_assign(size_t j, const gtsam::Cal3Bundler& cal3bundler);
   void insert_or_assign(size_t j, const gtsam::Cal3f& cal3f);
@@ -196,6 +204,8 @@ class Values {
                  gtsam::SOn,
                  gtsam::Rot3,
                  gtsam::Pose3,
+                 gtsam::Similarity2,
+                 gtsam::Similarity3,
                  gtsam::Unit3,
                  gtsam::Cal3Bundler,
                  gtsam::Cal3f, 

@@ -88,7 +88,12 @@ set(PYBIND11_TEST_FILTER
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   # We're being loaded directly, i.e. not via add_subdirectory, so make this
   # work as its own project and load the pybind11Config to get the tools we need
-  find_package(pybind11 REQUIRED CONFIG)
+
+  if(SKBUILD)
+    add_subdirectory(.. pybind11_src)
+  else()
+    find_package(pybind11 REQUIRED CONFIG)
+  endif()
 endif()
 
 if(NOT CMAKE_BUILD_TYPE AND NOT DEFINED CMAKE_CONFIGURATION_TYPES)
@@ -122,6 +127,7 @@ set(PYBIND11_TEST_FILES
     test_const_name
     test_constants_and_functions
     test_copy_move
+    test_cpp_conduit
     test_custom_type_casters
     test_custom_type_setup
     test_docstring_options
@@ -153,6 +159,7 @@ set(PYBIND11_TEST_FILES
     test_tagbased_polymorphic
     test_thread
     test_type_caster_pyobject_ptr
+    test_type_caster_std_function_specializations
     test_union
     test_unnamed_namespace_a
     test_unnamed_namespace_b
@@ -220,6 +227,8 @@ tests_extra_targets("test_exceptions.py;test_local_bindings.py;test_stl.py;test_
 # And add additional targets for other tests.
 tests_extra_targets("test_exceptions.py" "cross_module_interleaved_error_already_set")
 tests_extra_targets("test_gil_scoped.py" "cross_module_gil_utils")
+tests_extra_targets("test_cpp_conduit.py"
+                    "exo_planet_pybind11;exo_planet_c_api;home_planet_very_lonely_traveler")
 
 set(PYBIND11_EIGEN_REPO
     "https://gitlab.com/libeigen/eigen.git"
@@ -390,6 +399,9 @@ function(pybind11_enable_warnings target_name)
               -Wdeprecated
               -Wundef
               -Wnon-virtual-dtor)
+    if(DEFINED CMAKE_CXX_STANDARD AND NOT CMAKE_CXX_STANDARD VERSION_LESS 20)
+      target_compile_options(${target_name} PRIVATE -Wpedantic)
+    endif()
   endif()
 
   if(PYBIND11_WERROR)
@@ -488,6 +500,9 @@ foreach(target ${test_targets})
                                                    "${CMAKE_CURRENT_BINARY_DIR}")
       endforeach()
     endif()
+  endif()
+  if(SKBUILD)
+    install(TARGETS ${target} LIBRARY DESTINATION .)
   endif()
 endforeach()
 

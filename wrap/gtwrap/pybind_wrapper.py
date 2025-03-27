@@ -19,6 +19,7 @@ from typing import List
 import gtwrap.interface_parser as parser
 import gtwrap.template_instantiator as instantiator
 
+from gtwrap.xml_parser.xml_parser import XMLDocParser
 
 class PybindWrapper:
     """
@@ -29,8 +30,9 @@ class PybindWrapper:
                  module_name,
                  top_module_namespaces='',
                  use_boost_serialization=False,
-                 ignore_classes=(),
-                 module_template=""):
+                 ignore_classes=(),                 
+                 module_template="",
+                 xml_source=""):
         self.module_name = module_name
         self.top_module_namespaces = top_module_namespaces
         self.use_boost_serialization = use_boost_serialization
@@ -44,6 +46,8 @@ class PybindWrapper:
             'nonlocal', 'yield', 'break', 'for', 'not', 'class', 'from', 'or',
             'continue', 'global', 'pass'
         ]
+        self.xml_source = xml_source
+        self.xml_parser = XMLDocParser()
 
         self.dunder_methods = ('len', 'contains', 'iter')
 
@@ -260,7 +264,7 @@ class PybindWrapper:
                '[]({opt_self}{opt_comma}{args_signature_with_names}){{'
                '{function_call}'
                '}}'
-               '{py_args_names}){suffix}'.format(
+               '{py_args_names}{docstring}){suffix}'.format(
                    prefix=prefix,
                    cdef="def_static" if is_static else "def",
                    py_method=py_method,
@@ -271,6 +275,12 @@ class PybindWrapper:
                    function_call=function_call,
                    py_args_names=py_args_names,
                    suffix=suffix,
+                   # Try to get the function's docstring from the Doxygen XML.
+                   # If extract_docstring errors or fails to find a docstring, it just prints a warning.
+                   # The incantation repr(...)[1:-1].replace('"', r'\"') replaces newlines with \n 
+                   # and " with \" so that the docstring can be put into a C++ string on a single line.
+                   docstring=', "' + repr(self.xml_parser.extract_docstring(self.xml_source, cpp_class, cpp_method, method.args.names()))[1:-1].replace('"', r'\"') + '"' 
+                       if self.xml_source != "" else "",
                ))
 
         # Create __repr__ override

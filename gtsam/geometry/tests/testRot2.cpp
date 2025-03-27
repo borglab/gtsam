@@ -174,6 +174,20 @@ TEST( Rot2, relativeBearing )
   CHECK(assert_equal(expectedH,actualH));
 }
 
+/* ************************************************************************* */
+TEST(Rot2, vec) {
+  // Test the 'vec' method
+  Vector4 expected_vec = Eigen::Map<Vector4>(R.matrix().data());
+  Matrix41 actualH;
+  Vector4 actual_vec = R.vec(actualH);
+  EXPECT(assert_equal(expected_vec, actual_vec));
+
+  // Verify Jacobian with numerical derivatives
+  std::function<Vector4(const Rot2&)> f = [](const Rot2& p) { return p.vec(); };
+  Matrix41 numericalH = numericalDerivative11<Vector4, Rot2>(f, R);
+  EXPECT(assert_equal(numericalH, actualH, 1e-9));
+}
+
 //******************************************************************************
 namespace {
 Rot2 id;

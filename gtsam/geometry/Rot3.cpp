@@ -146,6 +146,7 @@ Point3 Rot3::unrotate(const Point3& p, OptionalJacobian<3,3> H1,
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 Point3 Rot3::column(int index) const{
   if(index == 3)
     return r3();
@@ -156,6 +157,7 @@ Point3 Rot3::column(int index) const{
   else
     throw invalid_argument("Argument to Rot3::column must be 1, 2, or 3");
 }
+#endif
 
 /* ************************************************************************* */
 Vector3 Rot3::xyz(OptionalJacobian<3, 3> H) const {

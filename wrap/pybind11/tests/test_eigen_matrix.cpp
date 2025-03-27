@@ -7,13 +7,23 @@
     BSD-style license that can be found in the LICENSE file.
 */
 
+<<<<<<<< HEAD:pybind11/tests/test_eigen.cpp
+#include <pybind11/eigen.h>
+========
 #include <pybind11/eigen/matrix.h>
+>>>>>>>> 3a9158898134e05c9a2bb59b6f02ee7f7d7e18e0:pybind11/tests/test_eigen_matrix.cpp
 #include <pybind11/stl.h>
 
 #include "constructor_stats.h"
 #include "pybind11_tests.h"
 
+<<<<<<<< HEAD:pybind11/tests/test_eigen.cpp
+#if defined(_MSC_VER)
+#    pragma warning(disable : 4996) // C4996: std::unary_negation is deprecated
+#endif
+========
 PYBIND11_WARNING_DISABLE_MSVC(4996)
+>>>>>>>> 3a9158898134e05c9a2bb59b6f02ee7f7d7e18e0:pybind11/tests/test_eigen_matrix.cpp
 
 #include <Eigen/Cholesky>
 
@@ -55,7 +65,11 @@ void reset_refs() {
 }
 
 // Returns element 2,1 from a matrix (used to test copy/nocopy)
+<<<<<<<< HEAD:pybind11/tests/test_eigen.cpp
 double get_elem(const Eigen::Ref<const Eigen::MatrixXd> &m) { return m(2, 1); };
+========
+double get_elem(const Eigen::Ref<const Eigen::MatrixXd> &m) { return m(2, 1); }
+>>>>>>>> 3a9158898134e05c9a2bb59b6f02ee7f7d7e18e0:pybind11/tests/test_eigen_matrix.cpp
 
 // Returns a matrix with 10*r + 100*c added to each matrix element (to help test that the matrix
 // reference is referencing rows/columns correctly).
@@ -76,7 +90,7 @@ struct CustomOperatorNew {
     Eigen::Matrix4d a = Eigen::Matrix4d::Zero();
     Eigen::Matrix4d b = Eigen::Matrix4d::Identity();
 
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 TEST_SUBMODULE(eigen_matrix, m) {
@@ -195,6 +209,13 @@ TEST_SUBMODULE(eigen_matrix, m) {
 
     // Return a block of a matrix (gives non-standard strides)
     m.def("block",
+<<<<<<<< HEAD:pybind11/tests/test_eigen.cpp
+          [](const Eigen::Ref<const Eigen::MatrixXd> &x,
+             int start_row,
+             int start_col,
+             int block_rows,
+             int block_cols) { return x.block(start_row, start_col, block_rows, block_cols); });
+========
           [m](const py::object &x_obj,
               int start_row,
               int start_col,
@@ -229,6 +250,7 @@ TEST_SUBMODULE(eigen_matrix, m) {
             return x.block(start_row, start_col, block_rows, block_cols);
         },
         py::keep_alive<0, 1>());
+>>>>>>>> 3a9158898134e05c9a2bb59b6f02ee7f7d7e18e0:pybind11/tests/test_eigen_matrix.cpp
 
     // test_eigen_return_references, test_eigen_keepalive
     // return value referencing/copying tests:

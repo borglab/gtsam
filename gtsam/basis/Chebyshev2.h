@@ -52,8 +52,16 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
   using DiffMatrix = Eigen::Matrix<double, /*NxN*/ -1, -1>;
 
   /**
+   * @brief Specific Chebyshev point, within [-1,1] interval.
+   *
+   * @param N The degree of the polynomial
+   * @param j The index of the Chebyshev point
+   * @return double
+   */
+  static double Point(size_t N, int j);
+
+  /**
    * @brief Specific Chebyshev point, within [a,b] interval.
-   * Default interval is [-1, 1]
    *
    * @param N The degree of the polynomial
    * @param j The index of the Chebyshev point
@@ -61,24 +69,13 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
    * @param b Upper bound of interval (default: 1)
    * @return double
    */
-  static double Point(size_t N, int j, double a = -1, double b = 1);
+  static double Point(size_t N, int j, double a, double b);
 
   /// All Chebyshev points
-  static Vector Points(size_t N) {
-    Vector points(N);
-    for (size_t j = 0; j < N; j++) {
-      points(j) = Point(N, j);
-    }
-    return points;
-  }
+  static Vector Points(size_t N);
 
   /// All Chebyshev points, within [a,b] interval
-  static Vector Points(size_t N, double a, double b) {
-    Vector points = Points(N);
-    const double T1 = (a + b) / 2, T2 = (b - a) / 2;
-    points = T1 + (T2 * points).array();
-    return points;
-  }
+  static Vector Points(size_t N, double a, double b);
 
   /**
    * Evaluate Chebyshev Weights on [-1,1] at any x up to order N-1 (N values)
@@ -88,53 +85,61 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
    * obtain a linear map from parameter vectors f to interpolated values f(x).
    * Optional [a,b] interval can be specified as well.
    */
-  static Weights CalculateWeights(size_t N, double x, double a = -1,
-                                  double b = 1);
+  static Weights CalculateWeights(size_t N, double x, double a = -1, double b = 1);
 
   /**
    *  Evaluate derivative of barycentric weights.
    *  This is easy and efficient via the DifferentiationMatrix.
    */
-  static Weights DerivativeWeights(size_t N, double x, double a = -1,
-                                   double b = 1);
+  static Weights DerivativeWeights(size_t N, double x, double a = -1, double b = 1);
 
-  /// compute D = differentiation matrix, Trefethen00book p.53
-  /// when given a parameter vector f of function values at the Chebyshev
+  /// Compute D = differentiation matrix, Trefethen00book p.53
+  /// When given a parameter vector f of function values at the Chebyshev
   /// points, D*f are the values of f'.
   /// https://people.maths.ox.ac.uk/trefethen/8all.pdf Theorem 8.4
-  static DiffMatrix DifferentiationMatrix(size_t N, double a = -1,
-                                          double b = 1);
+  static DiffMatrix DifferentiationMatrix(size_t N);
+
+  /// Compute D = differentiation matrix, for interval [a,b]
+  static DiffMatrix DifferentiationMatrix(size_t N, double a, double b);
+
+  /// IntegrationMatrix returns the (N+1)×(N+1) matrix P such that for any f,
+  /// F = P * f recovers F (the antiderivative) satisfying f = D * F and F(0)=0.
+  static Matrix IntegrationMatrix(size_t N);
+
+  /// IntegrationMatrix returns the (N+1)×(N+1) matrix P for interval [a,b]
+  static Matrix IntegrationMatrix(size_t N, double a, double b);
 
   /**
-   *  Evaluate Clenshaw-Curtis integration weights.
+   *  Calculate Clenshaw-Curtis integration weights.
    *  Trefethen00book, pg 128, clencurt.m
    *  Note that N in clencurt.m is 1 less than our N
-   *  K = N-1;
-      theta = pi*(0:K)'/K;
-      w = zeros(1,N); ii = 2:K; v = ones(K-1, 1);
-      if mod(K,2) == 0
-          w(1) = 1/(K^2-1); w(N) = w(1);
-          for k=1:K/2-1, v = v-2*cos(2*k*theta(ii))/(4*k^2-1); end
-          v = v - cos(K*theta(ii))/(K^2-1);
-      else
-          w(1) = 1/K^2; w(N) = w(1);
-          for k=1:K/2, v = v-2*cos(2*k*theta(ii))/(4*k^2-1); end
-      end
-      w(ii) = 2*v/K;
-
    */
-  static Weights IntegrationWeights(size_t N, double a = -1, double b = 1);
+  static Weights IntegrationWeights(size_t N);
+
+  /// Calculate Clenshaw-Curtis integration weights, for interval [a,b]
+  static Weights IntegrationWeights(size_t N, double a, double b);
 
   /**
-   * Create matrix of values at Chebyshev points given vector-valued function.
+   * Calculate Double Clenshaw-Curtis integration weights
+   * We compute them as W * P, where W are the Clenshaw-Curtis weights and P is
+   * the integration matrix.
    */
+  static Weights DoubleIntegrationWeights(size_t N);
+
+  /// Calculate Double Clenshaw-Curtis integration weights, for interval [a,b]
+  static Weights DoubleIntegrationWeights(size_t N, double a, double b);
+
+  /// Create matrix of values at Chebyshev points given vector-valued function.
+  static Vector vector(std::function<double(double)> f,
+    size_t N, double a = -1, double b = 1);
+
+  /// Create matrix of values at Chebyshev points given vector-valued function.
   template <size_t M>
   static Matrix matrix(std::function<Eigen::Matrix<double, M, 1>(double)> f,
-                       size_t N, double a = -1, double b = 1) {
+    size_t N, double a = -1, double b = 1) {
     Matrix Xmat(M, N);
-    for (size_t j = 0; j < N; j++) {
-      Xmat.col(j) = f(Point(N, j, a, b));
-    }
+    const Vector points = Points(N, a, b);
+    for (size_t j = 0; j < N; j++) Xmat.col(j) = f(points(j));
     return Xmat;
   }
 };  // \ Chebyshev2

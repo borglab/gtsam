@@ -223,6 +223,9 @@ namespace gtsam {
     /** Find closest valid rotation matrix, given a 2x2 matrix */
     static Rot2 ClosestTo(const Matrix2& M);
 
+    /// Return vectorized SO(2) matrix in column order.
+    Vector4 vec(OptionalJacobian<4, 1> H = {}) const;
+
     /// @}
 
     private:
