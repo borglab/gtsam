@@ -54,7 +54,7 @@ class XMLDocParser:
 
         # Find which member to get docs from, if there are multiple that match in name and args
         documenting_index = self.determine_documenting_index(
-            cpp_class, cpp_method, method_args_names)
+            cpp_class, cpp_method, method_args_names, member_defs)
 
         # Extract the docs for the function that matches cpp_class.cpp_method(*method_args_names).
         return self.get_formatted_docstring(member_defs[documenting_index],
