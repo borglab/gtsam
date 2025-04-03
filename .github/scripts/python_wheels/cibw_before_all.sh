@@ -25,7 +25,7 @@ fi
 wget https://archives.boost.io/release/1.87.0/source/boost_1_87_0.tar.gz --quiet
 tar -xzf boost_1_87_0.tar.gz
 cd boost_1_87_0
-./bootstrap.sh
+./bootstrap.sh --prefix=~/opt/boost
 
 # Default to macOS 10.15 if MACOSX_DEPLOYMENT_TARGET is not set
 if [[ -z "${MACOSX_DEPLOYMENT_TARGET}" ]]; then
@@ -33,9 +33,9 @@ if [[ -z "${MACOSX_DEPLOYMENT_TARGET}" ]]; then
 fi
 
 if [ "$(uname)" == "Linux" ]; then
-    ./b2 install --with=all -d0
+    ./b2 install --prefix=~/opt/boost --with=all -d0
 elif [ "$(uname)" == "Darwin" ]; then
-    ./b2 install --with=all -d0 cxxflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" linkflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
+    ./b2 install --prefix=~/opt/boost --with=all -d0 cxxflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" linkflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
 fi
 cd ..
 
