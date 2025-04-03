@@ -46,6 +46,10 @@ export BOOST_ROOT="${BOOST_PREFIX}"
 export BOOST_INCLUDEDIR="${BOOST_PREFIX}/include"
 export BOOST_LIBRARYDIR="${BOOST_PREFIX}/lib"
 
+# Ensure runtime linker can find Boost libraries
+export LD_LIBRARY_PATH="${BOOST_LIBRARYDIR}:$LD_LIBRARY_PATH" # For Linux
+export DYLD_LIBRARY_PATH="${BOOST_LIBRARYDIR}:$DYLD_LIBRARY_PATH" # For macOS
+ 
 $(which $PYTHON) -m pip install -r $PROJECT_DIR/python/dev_requirements.txt
 
 # Remove build/cache files that were generated on host
