@@ -17,8 +17,6 @@ if [ "$(uname)" == "Linux" ]; then
     yum install -y wget doxygen
 elif [ "$(uname)" == "Darwin" ]; then
     brew install wget cmake doxygen
-    export CC=clang
-    export CXX=clang++
 fi
 
 # Install Boost from source
