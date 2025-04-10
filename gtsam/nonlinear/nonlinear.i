@@ -731,6 +731,20 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
   VALUE calculateEstimate(size_t key) const;
 };
 
+#include <gtsam/nonlinear/IncrementalFixedLagSmoother.h>
+virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
+  IncrementalFixedLagSmoother();
+  IncrementalFixedLagSmoother(double smootherLag);
+  IncrementalFixedLagSmoother(double smootherLag, const gtsam::ISAM2Params& params);
+
+  void print(string s = "IncrementalFixedLagSmoother:\n") const;
+
+  gtsam::ISAM2Params params() const;
+
+  gtsam::NonlinearFactorGraph getFactors() const;
+  gtsam::ISAM2 getISAM2() const;
+};
+
 #include <gtsam/nonlinear/ExtendedKalmanFilter.h>
 template <T = {gtsam::Point2,
                gtsam::Point3,

@@ -126,9 +126,13 @@ class GTSAM_EXPORT HybridSmoother {
   /// Optimize the hybrid Bayes Net, taking into accound fixed values.
   HybridValues optimize() const;
 
-  /// Relinearize the nonlinear factor graph
-  /// with the latest linearization point.
-  void relinearize();
+  /**
+   * @brief Relinearize the nonlinear factor graph with
+   * the latest stored linearization point.
+   *
+   * @param givenOrdering An optional elimination ordering.
+   */
+  void relinearize(const std::optional<Ordering> givenOrdering = {});
 
   /// Return the current linearization point.
   Values linearizationPoint() const;

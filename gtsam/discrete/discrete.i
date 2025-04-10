@@ -288,7 +288,7 @@ class DiscreteBayesTree {
   const DiscreteBayesTreeClique* clique(size_t j) const;
   size_t numCachedSeparatorMarginals() const;
 
-  gtsam::DiscreteConditional marginalFactor(size_t key) const;
+  gtsam::DiscreteConditional* marginalFactor(size_t key) const;
   gtsam::DiscreteFactorGraph* joint(size_t j1, size_t j2) const;
   gtsam::DiscreteBayesNet* jointBayesNet(size_t j1, size_t j2) const;
 
@@ -369,7 +369,7 @@ class DiscreteFactorGraph {
   void print(string s = "") const;
   bool equals(const gtsam::DiscreteFactorGraph& fg, double tol = 1e-9) const;
 
-  gtsam::DecisionTreeFactor product() const;
+  gtsam::DiscreteFactor* product() const;
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
 

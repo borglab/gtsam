@@ -109,11 +109,10 @@ class Experiment {
     std::cout << "Smoother update: " << newFactors_.size() << std::endl;
     gttic_(SmootherUpdate);
     clock_t beforeUpdate = clock();
-    auto linearized = newFactors_.linearize(initial_);
-    smoother_.update(*linearized, initial_);
+    smoother_.update(newFactors_, initial_, maxNrHypotheses);
+    clock_t afterUpdate = clock();
     allFactors_.push_back(newFactors_);
     newFactors_.resize(0);
-    clock_t afterUpdate = clock();
     return afterUpdate - beforeUpdate;
   }
 
@@ -262,10 +261,20 @@ class Experiment {
     std::string timeFileName = "Hybrid_City10000_time.txt";
     outfileTime.open(timeFileName);
     for (auto accTime : timeList) {
-      outfileTime << accTime << std::endl;
+      outfileTime << accTime / CLOCKS_PER_SEC << std::endl;
     }
     outfileTime.close();
     std::cout << "Output " << timeFileName << " file." << std::endl;
+
+    std::ofstream timingFile;
+    std::string timingFileName = "Hybrid_City10000_timing.txt";
+    timingFile.open(timingFileName);
+    for (size_t i = 0; i < smootherUpdateTimes.size(); i++) {
+      auto p = smootherUpdateTimes.at(i);
+      timingFile << p.first << ", " << p.second / CLOCKS_PER_SEC << std::endl;
+    }
+    timingFile.close();
+    std::cout << "Wrote timing information to " << timingFileName << std::endl;
   }
 };
 

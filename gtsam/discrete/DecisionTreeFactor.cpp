@@ -547,7 +547,9 @@ namespace gtsam {
 /* ************************************************************************ */
 DiscreteFactor::shared_ptr DecisionTreeFactor::restrict(
     const DiscreteValues& assignment) const {
-  throw std::runtime_error("DecisionTreeFactor::restrict not implemented");
+  ADT restricted_tree = ADT::restrict(assignment);
+  return std::make_shared<DecisionTreeFactor>(this->discreteKeys(),
+                                              restricted_tree);
 }
 
   /* ************************************************************************ */

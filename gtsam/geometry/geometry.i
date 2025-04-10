@@ -1075,9 +1075,14 @@ class PinholeCamera {
   pair<gtsam::Point2, bool> projectSafe(const gtsam::Point3& pw) const;
   gtsam::Point2 project(const gtsam::Point3& point);
   gtsam::Point2 project(const gtsam::Point3& point,
-                        Eigen::Ref<Eigen::MatrixXd> Dpose,
-                        Eigen::Ref<Eigen::MatrixXd> Dpoint,
-                        Eigen::Ref<Eigen::MatrixXd> Dcal);
+    Eigen::Ref<Eigen::MatrixXd> Dpose);
+  gtsam::Point2 project(const gtsam::Point3& point,
+    Eigen::Ref<Eigen::MatrixXd> Dpose,
+    Eigen::Ref<Eigen::MatrixXd> Dpoint);
+  gtsam::Point2 project(const gtsam::Point3& point,
+    Eigen::Ref<Eigen::MatrixXd> Dpose,
+    Eigen::Ref<Eigen::MatrixXd> Dpoint,
+    Eigen::Ref<Eigen::MatrixXd> Dcal);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth,
                             Eigen::Ref<Eigen::MatrixXd> Dresult_dpose,

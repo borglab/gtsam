@@ -532,19 +532,6 @@ virtual class DiscreteEulerPoincareHelicopter : gtsam::NoiseModelFactor {
 // nonlinear
 //*************************************************************************
 #include <gtsam/nonlinear/FixedLagSmoother.h>
-#include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
-virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
-  IncrementalFixedLagSmoother();
-  IncrementalFixedLagSmoother(double smootherLag);
-  IncrementalFixedLagSmoother(double smootherLag, const gtsam::ISAM2Params& params);
-
-  void print(string s = "IncrementalFixedLagSmoother:\n") const;
-
-  gtsam::ISAM2Params params() const;
-
-  gtsam::NonlinearFactorGraph getFactors() const;
-  gtsam::ISAM2 getISAM2() const;
-};
 
 #include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
 virtual class ConcurrentFilter {

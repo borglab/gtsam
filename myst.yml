@@ -8,11 +8,21 @@ project:
   toc:
     - file: README.md
     - file: INSTALL.md
-    - file: ./gtsam/user_guide.md
+    - file: ./doc/user_guide.md
       children: 
       - file: ./gtsam/geometry/geometry.md
         children:
         - pattern: ./gtsam/geometry/doc/*
+      - file: ./gtsam/nonlinear/nonlinear.md
+        children:
+        - pattern: ./gtsam/nonlinear/doc/*
+      - file: ./gtsam/navigation/navigation.md
+        children:
+        - pattern: ./gtsam/navigation/doc/*
+    - file: ./doc/examples.md
+      children: 
+      - pattern: ./python/gtsam/examples/*.ipynb
+    - file: ./doc/expressions.md
 site:
   nav: 
     - title: Getting started

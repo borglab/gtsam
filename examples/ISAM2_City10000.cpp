@@ -74,6 +74,8 @@ class Experiment {
     // Initialize local variables
     size_t index = 0;
 
+    std::vector<std::pair<size_t, double>> smootherUpdateTimes;
+
     std::list<double> timeList;
 
     // Set up initial prior
@@ -82,10 +84,15 @@ class Experiment {
     graph_.addPrior<Pose2>(X(0), priorPose, kPriorNoiseModel);
 
     // Initial update
+    clock_t beforeUpdate = clock();
     isam2_.update(graph_, initial_);
+    results = isam2_.calculateBestEstimate();
+    clock_t afterUpdate = clock();
+    smootherUpdateTimes.push_back(
+        std::make_pair(index, afterUpdate - beforeUpdate));
     graph_.resize(0);
     initial_.clear();
-    results = isam2_.calculateBestEstimate();
+    index += 1;
 
     // Start main loop
     size_t keyS = 0;
@@ -127,10 +134,15 @@ class Experiment {
         index++;
       }
 
+      clock_t beforeUpdate = clock();
       isam2_.update(graph_, initial_);
+      results = isam2_.calculateBestEstimate();
+      clock_t afterUpdate = clock();
+      smootherUpdateTimes.push_back(
+          std::make_pair(index, afterUpdate - beforeUpdate));
       graph_.resize(0);
       initial_.clear();
-      results = isam2_.calculateBestEstimate();
+      index += 1;
 
       // Print loop index and time taken in processor clock ticks
       if (index % 50 == 0 && keyS != keyT - 1) {
@@ -175,6 +187,16 @@ class Experiment {
     outfileTime.close();
     std::cout << "Written cumulative time to: " << timeFileName << " file."
               << std::endl;
+
+    std::ofstream timingFile;
+    std::string timingFileName = "ISAM2_City10000_timing.txt";
+    timingFile.open(timingFileName);
+    for (size_t i = 0; i < smootherUpdateTimes.size(); i++) {
+      auto p = smootherUpdateTimes.at(i);
+      timingFile << p.first << ", " << p.second / CLOCKS_PER_SEC << std::endl;
+    }
+    timingFile.close();
+    std::cout << "Wrote timing information to " << timingFileName << std::endl;
   }
 };
 

@@ -126,12 +126,12 @@ class GTSAM_EXPORT PreintegratedRotation {
   Rot3 deltaRij_;             ///< Preintegrated relative orientation (in frame i)
   Matrix3 delRdelBiasOmega_;  ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
 
-  /// Default constructor for serialization
-  PreintegratedRotation() {}
-
- public:
+  public:
   /// @name Constructors
   /// @{
+    
+  /// Default constructor for serialization
+  PreintegratedRotation() {}
 
   /// Default constructor, resets integration to zero
   explicit PreintegratedRotation(const std::shared_ptr<Params>& p) : p_(p) {
@@ -148,9 +148,6 @@ class GTSAM_EXPORT PreintegratedRotation {
 
   /// @name Basic utilities
   /// @{
-
-  /// Re-initialize PreintegratedMeasurements
-  void resetIntegration();
 
   /// check parameters equality: checks whether shared pointer points to same Params object.
   bool matchesParamsWith(const PreintegratedRotation& other) const {
@@ -174,6 +171,9 @@ class GTSAM_EXPORT PreintegratedRotation {
 
   /// @name Main functionality
   /// @{
+
+  /// Re-initialize PreintegratedMeasurements
+  void resetIntegration();
 
   /**
    * @brief Calculate an incremental rotation given the gyro measurement and a

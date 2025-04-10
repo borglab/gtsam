@@ -22,9 +22,9 @@
  *  - We have measurements between each pose from multiple odometry sensors
  */
 
-// This example demonstrates the use of the Fixed-Lag Smoothers in GTSAM unstable
+// This example demonstrates the use of the Fixed-Lag Smoothers in GTSAM
 #include <gtsam/nonlinear/BatchFixedLagSmoother.h>
-#include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
+#include <gtsam/nonlinear/IncrementalFixedLagSmoother.h>
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.

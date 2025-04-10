@@ -41,7 +41,7 @@ class ConstantVelocityFactor : public NoiseModelFactorN<NavState, NavState> {
     ~ConstantVelocityFactor() override {}
 
     /**
-     * @brief Caclulate error: (x2 - x1.update(dt)))
+     * @brief Calculate error: (x2 - x1.update(dt)))
      * where X1 and X1 are NavStates and dt is
      * the time difference in seconds between the states.
      * @param x1 NavState for key a

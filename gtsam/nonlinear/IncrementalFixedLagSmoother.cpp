@@ -19,8 +19,8 @@
  * @date    Oct 14, 2012
  */
 
-#include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
-#include <gtsam_unstable/nonlinear/BayesTreeMarginalizationHelper.h>
+#include <gtsam/nonlinear/IncrementalFixedLagSmoother.h>
+#include <gtsam/nonlinear/BayesTreeMarginalizationHelper.h>
 #include <gtsam/base/debug.h>
 
 namespace gtsam {

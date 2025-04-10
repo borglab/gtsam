@@ -292,13 +292,19 @@ HybridValues HybridSmoother::optimize() const {
 }
 
 /* ************************************************************************* */
-void HybridSmoother::relinearize() {
+void HybridSmoother::relinearize(const std::optional<Ordering> givenOrdering) {
   allFactors_ = allFactors_.restrict(fixedValues_);
   HybridGaussianFactorGraph::shared_ptr linearized =
       allFactors_.linearize(linearizationPoint_);
-  HybridBayesNet::shared_ptr bayesNet = linearized->eliminateSequential();
+
+  // Compute ordering if not given
+  Ordering ordering = this->maybeComputeOrdering(*linearized, givenOrdering);
+
+  HybridBayesNet::shared_ptr bayesNet =
+      linearized->eliminateSequential(ordering);
   HybridValues delta = bayesNet->optimize();
   linearizationPoint_ = linearizationPoint_.retract(delta.continuous());
+
   reInitialize(*bayesNet);
 }
 

@@ -29,7 +29,7 @@
 namespace gtsam {
 
 /**
- * PreintegratedAHRSMeasurements accumulates (integrates) the Gyroscope
+ * PreintegratedAHRSMeasurements accumulates (integrates) the gyroscope
  * measurements (rotation rates) and the corresponding covariance matrix.
  * Can be built incrementally so as to avoid costly integration at time of factor construction.
  */
@@ -49,7 +49,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
 
   /**
    *  Default constructor, initialize with no measurements
-   *  @param bias Current estimate of acceleration and rotation rate biases
+   *  @param bias Current estimate of rotation rate biases
    */
   PreintegratedAhrsMeasurements(const std::shared_ptr<Params>& p,
       const Vector3& biasHat) :
@@ -60,7 +60,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
   /**
    *  Non-Default constructor, initialize with measurements
    *  @param p: Parameters for AHRS pre-integration
-   *  @param bias_hat: Current estimate of acceleration and rotation rate biases
+   *  @param bias_hat: Current estimate of rotation rate biases
    *  @param deltaTij: Delta time in pre-integration
    *  @param deltaRij: Delta rotation in pre-integration
    *  @param delRdelBiasOmega: Jacobian of rotation wrt. to gyro bias
@@ -87,11 +87,11 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
   /// equals
   bool equals(const PreintegratedAhrsMeasurements&, double tol = 1e-9) const;
 
-  /// Reset inetgrated quantities to zero
+  /// Reset integrated quantities to zero
   void resetIntegration();
 
   /**
-   * Add a single Gyroscope measurement to the preintegration.
+   * Add a single gyroscope measurement to the preintegration.
    * Measurements are taken to be in the sensor
    * frame and conversion to the body frame is handled by `body_P_sensor` in
    * `PreintegratedRotationParams` (if provided).

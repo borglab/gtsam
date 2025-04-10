@@ -83,7 +83,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Pose3& p, OptionalMatrixType H) const override;
+  Vector evaluateError(const Pose3& nTb, OptionalMatrixType H) const override;
 
   /// return the measurement, in the navigation frame
   inline const Point3 & measurementIn() const {
@@ -171,7 +171,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Pose3& p, OptionalMatrixType H) const override;
+  Vector evaluateError(const Pose3& nTb, OptionalMatrixType H) const override;
 
   /// return the measurement, in the navigation frame
   inline const Point3 & measurementIn() const {
@@ -242,7 +242,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Pose3& p, const Point3& bL, OptionalMatrixType H1,
+  Vector evaluateError(const Pose3& nTb, const Point3& bL, OptionalMatrixType H1,
                        OptionalMatrixType H2) const override;
 
   /// return the measurement, in the navigation frame
@@ -304,7 +304,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const NavState& p, OptionalMatrixType H) const override;
+  Vector evaluateError(const NavState& nTb, OptionalMatrixType H) const override;
 
   /// return the measurement, in the navigation frame
   inline const Point3 & measurementIn() const {
@@ -384,7 +384,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const NavState& p, OptionalMatrixType H) const override;
+  Vector evaluateError(const NavState& nTb, OptionalMatrixType H) const override;
 
   /// return the measurement, in the navigation frame
   inline const Point3 & measurementIn() const {
@@ -453,7 +453,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const NavState& p, const Point3& bL,
+  Vector evaluateError(const NavState& nTb, const Point3& bL,
                        OptionalMatrixType H1,
                        OptionalMatrixType H2) const override;
 

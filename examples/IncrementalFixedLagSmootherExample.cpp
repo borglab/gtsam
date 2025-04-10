@@ -59,7 +59,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
+#include <gtsam/nonlinear/IncrementalFixedLagSmoother.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>  // for writeG2o
 
