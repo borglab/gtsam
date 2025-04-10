@@ -167,6 +167,18 @@ virtual class GenericStereoFactor : gtsam::NoiseModelFactor {
   GenericStereoFactor(const gtsam::StereoPoint2& measured,
                       const gtsam::noiseModel::Base* noiseModel, size_t poseKey,
                       size_t landmarkKey, const gtsam::Cal3_S2Stereo* K);
+  GenericStereoFactor(const gtsam::StereoPoint2& measured,
+                      const gtsam::noiseModel::Base* noiseModel,
+                      size_t poseKey, size_t landmarkKey,
+                      const gtsam::Cal3_S2Stereo* K,
+                      const POSE& body_P_sensor);
+  GenericStereoFactor(const gtsam::StereoPoint2& measured,
+                      const gtsam::noiseModel::Base* noiseModel,
+                      size_t poseKey, size_t landmarkKey,
+                      const gtsam::Cal3_S2Stereo* K,
+                      bool throwCheirality, bool verboseCheirality,
+                      const POSE& body_P_sensor);
+  
   gtsam::StereoPoint2 measured() const;
   gtsam::Cal3_S2Stereo* calibration() const;
 
