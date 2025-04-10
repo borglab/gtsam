@@ -36,13 +36,8 @@ elif [ "$(uname)" == "Darwin" ]; then
     fi
 
     ./b2 install --prefix=${BOOST_PREFIX} --with=all -d0 \
-        cxxflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -Wl,-rpath,${BOOST_LIBRARYDIR}" \
+        cxxflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
         linkflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -Wl,-rpath,${BOOST_LIBRARYDIR}"
-
-    # Patch @rpath manually if needed. This is redundant with the above, but serves as a fallback.
-    for dylib in "$BOOST_LIBRARYDIR"/libboost_*.dylib; do
-        install_name_tool -add_rpath "$BOOST_LIBRARYDIR" "$dylib"
-    done
 fi
 cd ..
 
