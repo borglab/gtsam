@@ -37,7 +37,7 @@ elif [ "$(uname)" == "Darwin" ]; then
 
     ./b2 install --prefix=${BOOST_PREFIX} --with=all -d0 \
         cxxflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
-        linkflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -Wl,-rpath,${BOOST_LIBRARYDIR}"
+        linkflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
 fi
 cd ..
 
@@ -48,7 +48,7 @@ export BOOST_LIBRARYDIR="${BOOST_PREFIX}/lib"
 
 # Ensure runtime linker can find Boost libraries
 export LD_LIBRARY_PATH="${BOOST_LIBRARYDIR}:$LD_LIBRARY_PATH" # For Linux
-export DYLD_LIBRARY_PATH="${BOOST_LIBRARYDIR}:$DYLD_LIBRARY_PATH" # For macOS
+export REPAIR_LIBRARY_PATH="${BOOST_LIBRARYDIR}:$DYLD_LIBRARY_PATH" # For macOS
  
 $(which $PYTHON) -m pip install -r $PROJECT_DIR/python/dev_requirements.txt
 

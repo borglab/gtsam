@@ -147,6 +147,7 @@ jobs:
           CIBW_ARCHS: all
           CIBW_ENVIRONMENT_PASS_LINUX: DEVELOP TIMESTAMP
           MACOSX_DEPLOYMENT_TARGET: 10.15
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}
 
           # Use build instead of pip wheel to build the wheels. This is recommended by PyPA.
           # See https://cibuildwheel.pypa.io/en/stable/options/#build-frontend.
