@@ -37,9 +37,6 @@ namespace lago {
 
 using initialize::kAnchorKey;
 
-static const Matrix I = I_1x1;
-static const Matrix I3 = I_3x3;
-
 static const noiseModel::Diagonal::shared_ptr priorOrientationNoise =
     noiseModel::Diagonal::Sigmas(Vector1(0));
 static const noiseModel::Diagonal::shared_ptr priorPose2Noise =
@@ -176,7 +173,7 @@ GaussianFactorGraph buildLinearOrientationGraph(
     const KeyVector& keys = g[factorId]->keys();
     Key key1 = keys[0], key2 = keys[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
-    lagoGraph.add(key1, -I, key2, I, deltaTheta, model_deltaTheta);
+    lagoGraph.add(key1, -I_1x1, key2, I_1x1, deltaTheta, model_deltaTheta);
   }
   // put regularized measurements in the chords
   for(const size_t& factorId: chordsIds) {
@@ -191,10 +188,10 @@ GaussianFactorGraph buildLinearOrientationGraph(
     //if (k2pi_noise - 2*k*M_PI > 1e-5) cout << k2pi_noise - 2*k*M_PI << endl; // for debug
     Vector deltaThetaRegularized = (Vector(1)
         << key1_DeltaTheta_key2 - 2 * k * M_PI).finished();
-    lagoGraph.add(key1, -I, key2, I, deltaThetaRegularized, model_deltaTheta);
+    lagoGraph.add(key1, -I_1x1, key2, I_1x1, deltaThetaRegularized, model_deltaTheta);
   }
   // prior on the anchor orientation
-  lagoGraph.add(kAnchorKey, I, (Vector(1) << 0.0).finished(), priorOrientationNoise);
+  lagoGraph.add(kAnchorKey, I_1x1, (Vector(1) << 0.0).finished(), priorOrientationNoise);
   return lagoGraph;
 }
 
@@ -337,7 +334,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
       Vector globalDeltaCart = //
           (Vector(2) << c1 * dx - s1 * dy, s1 * dx + c1 * dy).finished();
       Vector b = (Vector(3) << globalDeltaCart, linearDeltaRot).finished(); // rhs
-      Matrix J1 = -I3;
+      Matrix J1 = -I_3x3;
       J1(0, 2) = s1 * dx + c1 * dy;
       J1(1, 2) = -c1 * dx + s1 * dy;
       // Retrieve the noise model for the relative rotation
@@ -345,14 +342,14 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
           std::dynamic_pointer_cast<noiseModel::Diagonal>(
               pose2Between->noiseModel());
 
-      linearPose2graph.add(key1, J1, key2, I3, b, diagonalModel);
+      linearPose2graph.add(key1, J1, key2, I_3x3, b, diagonalModel);
     } else {
       throw invalid_argument(
           "computeLagoPoses: cannot manage non between factor here!");
     }
   }
   // add prior
-  linearPose2graph.add(kAnchorKey, I3, Vector3(0.0, 0.0, 0.0), priorPose2Noise);
+  linearPose2graph.add(kAnchorKey, I_3x3, Vector3(0.0, 0.0, 0.0), priorPose2Noise);
 
   // optimize
   VectorValues posesLago = linearPose2graph.optimize();
