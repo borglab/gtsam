@@ -936,9 +936,7 @@ TEST(Pose3, Logmap) {
 TEST(Pose3, LogmapDerivatives) {
   for (bool nearZero : {true, false}) {
     for (const Vector3& w : test_cases::omegas(nearZero)) {
-      std::cout << "w: " << w.transpose() << std::endl;
       for (Vector3 v : test_cases::vs) {
-        std::cout << "v: " << v.transpose() << std::endl;
         const Vector6 xi = (Vector6() << w, v).finished();
         Pose3 pose = Pose3::Expmap(xi);
         const Matrix6 expectedH =

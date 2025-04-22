@@ -319,7 +319,7 @@ Matrix6 Pose3::LogmapDerivative(const Vector6& xi) {
   Matrix3 H_t_w;
   local.applyLeftJacobian(v, H_t_w);
 
-  // Multiply with R^T to account for NavState::Create Jacobian.
+  // Multiply with R^T to account for Pose3::Create Jacobian.
   const Matrix3 R = local.expmap();
   const Matrix3 Qt = R.transpose() * H_t_w;
 
