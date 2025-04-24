@@ -184,4 +184,98 @@ template <typename A1, typename A2, typename T>
 struct traits<RangeFactorWithTransform<A1, A2, T> >
     : public Testable<RangeFactorWithTransform<A1, A2, T> > {};
 
+
+/**
+ * Binary factor for a range measurement, with a transform applied
+ * @ingroup sam
+ */
+template <typename A1, typename A2 = A1,
+          typename T = typename Range<A1, A2>::result_type>
+class RangeFactorWithTransformBias : public ExpressionFactorN<T, A1, A2, T> {
+ private:
+  typedef RangeFactorWithTransformBias<A1, A2> This;
+  typedef ExpressionFactorN<T, A1, A2, T> Base;
+
+  A1 body_T_sensor_;  ///< The pose of the sensor in the body frame
+
+ public:
+  //// Default constructor
+  RangeFactorWithTransformBias() {}
+
+  RangeFactorWithTransformBias(Key key1, Key key2, Key key3, T measured,
+                           const SharedNoiseModel& model,
+                           const A1& body_T_sensor)
+      : Base({key1, key2, key3}, model, measured), body_T_sensor_(body_T_sensor) {
+    this->initialize(expression({key1, key2, key3}));
+  }
+
+  ~RangeFactorWithTransformBias() override {}
+
+  /// @return a deep copy of this factor
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
+  // Return measurement expression
+  Expression<T> expression(const typename Base::ArrayNKeys& keys) const override {
+    Expression<A1> body_T_sensor__(body_T_sensor_);
+    Expression<A1> nav_T_body_(keys[0]);
+    Expression<A1> nav_T_sensor_(traits<A1>::Compose, nav_T_body_,
+                                 body_T_sensor__);
+    Expression<A2> a2_(keys[1]);
+    Expression<T> bias_(keys[2]);
+    Expression<T> range_(Range<A1, A2>(), nav_T_sensor_, a2_);
+    return range_ + bias_;
+  }
+
+  Vector evaluateError(const A1& a1, const A2& a2, const T& bias,
+                       OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 = OptionalNone, OptionalMatrixType H3 = OptionalNone) const {
+    std::vector<Matrix> Hs(3);
+    const auto &keys = Factor::keys();
+    Vector error = Base::unwhitenedError(
+        {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)},
+        {keys[2], genericValue(bias)}},
+        Hs);
+    if (H1) *H1 = Hs[0];
+    if (H2) *H2 = Hs[1];
+    if (H3) *H3 = Hs[2];
+    return error;
+  }
+
+  // An evaluateError overload to accept matrices (Matrix&) and pass it to the
+  // OptionalMatrixType evaluateError overload
+  Vector evaluateError(const A1& a1, const A2& a2, const T& bias, Matrix& H1, Matrix& H2, Matrix& H3) const {
+    return evaluateError(a1, a2, bias, &H1, &H2, &H3);
+  }
+
+  /** print contents */
+  void print(const std::string& s = "",
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
+    std::cout << s << "RangeFactorWithTransformBias" << std::endl;
+    this->body_T_sensor_.print("  sensor pose in body frame: ");
+    Base::print(s, keyFormatter);
+  }
+
+ private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  friend class boost::serialization::access;
+  /** Serialization function */
+  template <typename ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    // **IMPORTANT** We need to (de)serialize parameters before the base class,
+    // since it calls expression() and we need all parameters ready at that
+    // point.
+    ar& BOOST_SERIALIZATION_NVP(body_T_sensor_);
+    ar& boost::serialization::make_nvp(
+        "Base", boost::serialization::base_object<Base>(*this));
+  }
+#endif
+};  // \ RangeFactorWithTransform
+
+/// traits
+template <typename A1, typename A2, typename T>
+struct traits<RangeFactorWithTransformBias<A1, A2, T> >
+    : public Testable<RangeFactorWithTransform<A1, A2, T> > {};
+
 }  // \ namespace gtsam
