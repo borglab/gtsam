@@ -23,6 +23,7 @@
 #include <gtsam/base/concepts.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/SO3.h>
+#include <gtsam/geometry/Quaternion.h>
 
 #include <Eigen/SVD>
 #include <cmath>
@@ -313,52 +314,38 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
   const double &R31 = R(2, 0), R32 = R(2, 1), R33 = R(2, 2);
 
   const double tr = R.trace();
-  Vector3 omega;
-
+  
   // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
   // we do something special
-  if (tr + 1.0 < 1e-3) {
+  if (tr + 1.0 < so3::kNearZeroThresholdSq) {
+    Quaternion q;
     if (R33 > R22 && R33 > R11) {
       // R33 is the largest diagonal, a=3, b=1, c=2
       const double W = R21 - R12;
       const double Q1 = 2.0 + 2.0 * R33;
       const double Q2 = R31 + R13;
       const double Q3 = R23 + R32;
-      const double r = sqrt(Q1);
-      const double one_over_r = 1 / r;
-      const double norm = sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W);
-      const double sgn_w = W < 0 ? -1.0 : 1.0;
-      const double mag = M_PI - (2 * sgn_w * W) / norm;
-      const double scale = 0.5 * one_over_r * mag;
-      omega = sgn_w * scale * Vector3(Q2, Q3, Q1);
+      q = Quaternion(W, Q2, Q3, Q1);
     } else if (R22 > R11) {
       // R22 is the largest diagonal, a=2, b=3, c=1
       const double W = R13 - R31;
       const double Q1 = 2.0 + 2.0 * R22;
       const double Q2 = R23 + R32;
       const double Q3 = R12 + R21;
-      const double r = sqrt(Q1);
-      const double one_over_r = 1 / r;
-      const double norm = sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W);
-      const double sgn_w = W < 0 ? -1.0 : 1.0;
-      const double mag = M_PI - (2 * sgn_w * W) / norm;
-      const double scale = 0.5 * one_over_r * mag;
-      omega = sgn_w * scale * Vector3(Q3, Q1, Q2);
+      q = Quaternion(W, Q3, Q1, Q2);
     } else {
       // R11 is the largest diagonal, a=1, b=2, c=3
       const double W = R32 - R23;
       const double Q1 = 2.0 + 2.0 * R11;
       const double Q2 = R12 + R21;
       const double Q3 = R31 + R13;
-      const double r = sqrt(Q1);
-      const double one_over_r = 1 / r;
-      const double norm = sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W);
-      const double sgn_w = W < 0 ? -1.0 : 1.0;
-      const double mag = M_PI - (2 * sgn_w * W) / norm;
-      const double scale = 0.5 * one_over_r * mag;
-      omega = sgn_w * scale * Vector3(Q1, Q2, Q3);
+      q = Quaternion(W, Q1, Q2, Q3);
     }
+    // normalize quaternion
+    q.normalize();
+    return traits<Quaternion>::Logmap(q, H);
   } else {
+    Vector3 omega;
     double magnitude;
     const double tr_3 = tr - 3.0; // could be non-negative if the matrix is off orthogonal
     if (tr_3 < -so3::kNearZeroThresholdSq) {
@@ -372,10 +359,9 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
       magnitude = 0.5 - tr_3 * so3::one_12th + tr_3 * tr_3 * so3::one_60th;
     }
     omega = magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
+    if (H) *H = LogmapDerivative(omega);
+    return omega;
   }
-
-  if (H) *H = LogmapDerivative(omega);
-  return omega;
 }
 
 //******************************************************************************
