@@ -1,0 +1,142 @@
+/*
+ * Maxima code to compute the series expansion for the area of a plate
+ * carree polygon
+ *
+ * Copyright (c) Charles Karney (2024) <karney@alum.mit.edu> and licensed
+ * under the MIT/X11 License.  For more information, see
+ * https://geographiclib.sourceforge.io/
+ *
+ * Instructions:
+ *
+ *  * [optional] edit to set the desired value of Lmax (currently 6)
+ *
+ *  * start maxima and run
+ *      batch("platecarreearea.mac")$
+ *
+ *  * Now Q[l = 0..Lmax] are coefficients for the area series and
+ *    Qgrass[l = 0..Lmax] are the corresponding coefficients for the
+ *    GRASS formulation.
+ */
+
+/*
+Expansion in cos((2*i+1)*phi) * n^j, multiplicative const = c^2
+This converges the faster than the GRASS formulation.
+Q[0] = - 1
+       + 2/3 * n
+       + 22/45 * n^2
+       + 22/945 * n^3
+       - 274/2025 * n^4
+       - 33974/467775 * n^5
+       + 2578106/638512875 * n^6;
+Q[1] = + 2/9 * n
+       - 1/27 * n^2
+       - 74/405 * n^3
+       - 506/8505 * n^4
+       + 3506/127575 * n^5
+       + 131242/4209975 * n^6;
+Q[2] = - 3/25 * n^2
+       + 0 * n^3
+       + 14/125 * n^4
+       + 22/525 * n^5
+       - 566/39375 * n^6;
+Q[3] = + 4/49 * n^3
+       + 1/147 * n^4
+       - 178/2205 * n^5
+       - 1474/46305 * n^6;
+Q[4] = - 5/81 * n^4
+       - 2/243 * n^5
+       + 46/729 * n^6;
+Q[5] = + 6/121 * n^5
+       + 1/121 * n^6;
+Q[6] = - 7/169 * n^6;
+*/
+
+/*
+Expansion in cos(phi)^(2*i+1) * e2^j, multiplicative const = b^2
+This is the form used by GRASS area_poly1.c
+Qgrass[0] = - 1
+            - 2/3 * e2
+            - 3/5 * e2^2
+            - 4/7 * e2^3
+            - 5/9 * e2^4
+            - 6/11 * e2^5
+            - 7/13 * e2^6;
+Qgrass[1] = + 2/9 * e2
+            + 2/5 * e2^2
+            + 4/7 * e2^3
+            + 20/27 * e2^4
+            + 10/11 * e2^5
+            + 14/13 * e2^6;
+Qgrass[2] = - 3/25 * e2^2
+            - 12/35 * e2^3
+            - 2/3 * e2^4
+            - 12/11 * e2^5
+            - 21/13 * e2^6;
+Qgrass[3] = + 4/49 * e2^3
+            + 20/63 * e2^4
+            + 60/77 * e2^5
+            + 20/13 * e2^6;
+Qgrass[4] = - 5/81 * e2^4
+            - 10/33 * e2^5
+            - 35/39 * e2^6;
+Qgrass[5] = + 6/121 * e2^5
+            + 42/143 * e2^6;
+Qgrass[6] = - 7/169 * e2^6;
+*/
+
+/* Series for auxiliary latitudes available at
+   https://doi.org/10.5281/zenodo.7382666
+*/
+load("auxvals40.mac")$
+
+Lmax:6$
+
+submat(M,rows,cols):=block([r0:length(M),c0:length(M[1]),l],
+  l:append(makelist(r,r,rows+1,r0),[M]),
+  M:apply('submatrix,l),
+  l:append([M],makelist(c,c,cols+1,c0)),
+  apply('submatrix,l))$
+
+/* xi in terms of phi */
+xiphi:block([M:submat(C[xi,phi],Lmax,Lmax)],
+  phi+makelist(sin(2*l*phi),l,1,Lmax).M.
+  transpose(makelist(n^j,j,1,Lmax)))$
+
+kill(C,T)$
+
+/* Expand in n, c^2 is multiplicative constant, series given in terms
+   of cos((2*l+1)*phi) */
+
+sinxi:ratdisrep(taylor(sin(xiphi), n, 0, Lmax))$
+/* integral of sin(xi) */
+S:expand(trigreduce(integrate(sinxi, phi)))$
+kill(Q)$
+Q[l]:=taylor(coeff(S, cos((2*l+1)*phi)), n, 0, Lmax)$
+for l:0 thru Lmax do display(Q[l])$
+
+/* The GRASS approach: expand in e^2, b^2 is multiplicative constant,
+   series given in terms of cos(phi)^(2*l+1) */
+
+A(phi):=(atanh(sqrt(e2)*sin(phi))/sqrt(e2) + sin(phi)/(1-e2*sin(phi)^2))/2$
+Ap:A(%pi/2)$  /* c^2/b^2 */
+Aex:ratdisrep(taylor(A(phi), e2, 0, Lmax))$
+/*
+  This has a nice simple Taylor series
+  Aex = sin(phi) + 2/3  * sin(phi)^3  * e2
+                 + 3/5  * sin(phi)^5  * e2^2
+                 + 4/7  * sin(phi)^7  * e2^3
+                 + 5/9  * sin(phi)^9  * e2^4
+                 + 6/11 * sin(phi)^11 * e2^5
+                 + 7/13 * sin(phi)^13 * e2^6;
+*/
+Sgrass:expand(trigexpand(integrate(Aex, phi)))$
+kill(Qgrass)$
+Qgrass[l]:=taylor(coeff(Sgrass, cos(phi), 2*l+1), e2, 0, Lmax)$
+for l:0 thru Lmax do display(Qgrass[l])$
+
+/* Convert Sgrass to S */
+Scheck:expand(trigreduce(ratdisrep(
+      taylor(subst([e2=4*n/(1+n)^2], Sgrass/Ap), n, 0, Lmax))))$
+
+Sdiff:S-Scheck$
+display(Sdiff)$

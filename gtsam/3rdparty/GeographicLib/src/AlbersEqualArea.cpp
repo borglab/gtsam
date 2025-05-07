@@ -2,17 +2,12 @@
  * \file AlbersEqualArea.cpp
  * \brief Implementation for GeographicLib::AlbersEqualArea class
  *
- * Copyright (c) Charles Karney (2010-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
 #include <GeographicLib/AlbersEqualArea.hpp>
-
-#if defined(_MSC_VER)
-// Squelch warnings about constant conditional expressions
-#  pragma warning (disable: 4127)
-#endif
 
 namespace GeographicLib {
 
@@ -28,19 +23,20 @@ namespace GeographicLib {
     , _f(f)
     , _fm(1 - _f)
     , _e2(_f * (2 - _f))
-    , _e(sqrt(abs(_e2)))
+    , _e(sqrt(fabs(_e2)))
     , _e2m(1 - _e2)
     , _qZ(1 + _e2m * atanhee(real(1)))
     , _qx(_qZ / ( 2 * _e2m ))
   {
-    if (!(Math::isfinite(_a) && _a > 0))
+    if (!(isfinite(_a) && _a > 0))
       throw GeographicErr("Equatorial radius is not positive");
-    if (!(Math::isfinite(_f) && _f < 1))
+    if (!(isfinite(_f) && _f < 1))
       throw GeographicErr("Polar semi-axis is not positive");
-    if (!(Math::isfinite(k0) && k0 > 0))
+    if (!(isfinite(k0) && k0 > 0))
       throw GeographicErr("Scale is not positive");
-    if (!(abs(stdlat) <= 90))
-      throw GeographicErr("Standard latitude not in [-90d, 90d]");
+    if (!(fabs(stdlat) <= Math::qd))
+      throw GeographicErr("Standard latitude not in [-" + to_string(Math::qd)
+                          + "d, " + to_string(Math::qd) + "d]");
     real sphi, cphi;
     Math::sincosd(stdlat, sphi, cphi);
     Init(sphi, cphi, sphi, cphi, k0);
@@ -57,21 +53,25 @@ namespace GeographicLib {
     , _f(f)
     , _fm(1 - _f)
     , _e2(_f * (2 - _f))
-    , _e(sqrt(abs(_e2)))
+    , _e(sqrt(fabs(_e2)))
     , _e2m(1 - _e2)
     , _qZ(1 + _e2m * atanhee(real(1)))
     , _qx(_qZ / ( 2 * _e2m ))
   {
-    if (!(Math::isfinite(_a) && _a > 0))
+    if (!(isfinite(_a) && _a > 0))
       throw GeographicErr("Equatorial radius is not positive");
-    if (!(Math::isfinite(_f) && _f < 1))
+    if (!(isfinite(_f) && _f < 1))
       throw GeographicErr("Polar semi-axis is not positive");
-    if (!(Math::isfinite(k1) && k1 > 0))
+    if (!(isfinite(k1) && k1 > 0))
       throw GeographicErr("Scale is not positive");
-    if (!(abs(stdlat1) <= 90))
-      throw GeographicErr("Standard latitude 1 not in [-90d, 90d]");
-    if (!(abs(stdlat2) <= 90))
-      throw GeographicErr("Standard latitude 2 not in [-90d, 90d]");
+    if (!(fabs(stdlat1) <= Math::qd))
+      throw GeographicErr("Standard latitude 1 not in [-"
+                          + to_string(Math::qd) + "d, "
+                          + to_string(Math::qd) + "d]");
+    if (!(fabs(stdlat2) <= Math::qd))
+      throw GeographicErr("Standard latitude 2 not in [-"
+                          + to_string(Math::qd) + "d, "
+                          + to_string(Math::qd) + "d]");
     real sphi1, cphi1, sphi2, cphi2;
     Math::sincosd(stdlat1, sphi1, cphi1);
     Math::sincosd(stdlat2, sphi2, cphi2);
@@ -91,24 +91,28 @@ namespace GeographicLib {
     , _f(f)
     , _fm(1 - _f)
     , _e2(_f * (2 - _f))
-    , _e(sqrt(abs(_e2)))
+    , _e(sqrt(fabs(_e2)))
     , _e2m(1 - _e2)
     , _qZ(1 + _e2m * atanhee(real(1)))
     , _qx(_qZ / ( 2 * _e2m ))
   {
-    if (!(Math::isfinite(_a) && _a > 0))
+    if (!(isfinite(_a) && _a > 0))
       throw GeographicErr("Equatorial radius is not positive");
-    if (!(Math::isfinite(_f) && _f < 1))
+    if (!(isfinite(_f) && _f < 1))
       throw GeographicErr("Polar semi-axis is not positive");
-    if (!(Math::isfinite(k1) && k1 > 0))
+    if (!(isfinite(k1) && k1 > 0))
       throw GeographicErr("Scale is not positive");
-    if (!(coslat1 >= 0))
-      throw GeographicErr("Standard latitude 1 not in [-90d, 90d]");
-    if (!(coslat2 >= 0))
-      throw GeographicErr("Standard latitude 2 not in [-90d, 90d]");
-    if (!(abs(sinlat1) <= 1 && coslat1 <= 1) || (coslat1 == 0 && sinlat1 == 0))
+    if (signbit(coslat1))
+      throw GeographicErr("Standard latitude 1 not in [-"
+                          + to_string(Math::qd) + "d, "
+                          + to_string(Math::qd) + "d]");
+    if (signbit(coslat2))
+      throw GeographicErr("Standard latitude 2 not in [-"
+                          + to_string(Math::qd) + "d, "
+                          + to_string(Math::qd) + "d]");
+    if (!(fabs(sinlat1) <= 1 && coslat1 <= 1) || (coslat1 == 0 && sinlat1 == 0))
       throw GeographicErr("Bad sine/cosine of standard latitude 1");
-    if (!(abs(sinlat2) <= 1 && coslat2 <= 1) || (coslat2 == 0 && sinlat2 == 0))
+    if (!(fabs(sinlat2) <= 1 && coslat2 <= 1) || (coslat2 == 0 && sinlat2 == 0))
       throw GeographicErr("Bad sine/cosine of standard latitude 2");
     if (coslat1 == 0 && coslat2 == 0 && sinlat1 * sinlat2 <= 0)
       throw GeographicErr
@@ -120,14 +124,14 @@ namespace GeographicLib {
                              real sphi2, real cphi2, real k1) {
     {
       real r;
-      r = Math::hypot(sphi1, cphi1);
+      r = hypot(sphi1, cphi1);
       sphi1 /= r; cphi1 /= r;
-      r = Math::hypot(sphi2, cphi2);
+      r = hypot(sphi2, cphi2);
       sphi2 /= r; cphi2 /= r;
     }
     bool polar = (cphi1 == 0);
-    cphi1 = max(epsx_, cphi1);   // Avoid singularities at poles
-    cphi2 = max(epsx_, cphi2);
+    cphi1 = fmax(epsx_, cphi1);   // Avoid singularities at poles
+    cphi2 = fmax(epsx_, cphi2);
     // Determine hemisphere of tangent latitude
     _sign = sphi1 + sphi2 >= 0 ? 1 : -1;
     // Internally work with tangent latitude positive
@@ -202,8 +206,11 @@ namespace GeographicLib {
       // C = (scbet22*sxi2 - scbet12*sxi1) / (scbet22 * scbet12 * (sx2 - sx1))
       C = den / (2 * scbet12 * scbet22 * dsxi);
       tphi0 = (tphi2 + tphi1)/2;
-      real stol = tol0_ * max(real(1), abs(tphi0));
-      for (int i = 0; i < 2*numit0_ || GEOGRAPHICLIB_PANIC; ++i) {
+      real stol = tol0_ * fmax(real(1), fabs(tphi0));
+      for (int i = 0;
+           i < 2*numit0_ ||
+             GEOGRAPHICLIB_PANIC("Convergence failure in AlbersEqualArea");
+           ++i) {
         // Solve (scbet0^2 * sphi0) / (1/qZ + scbet0^2 * sphi0 * sxi0) = s
         // for tphi0 by Newton's method on
         // v(tphi0) = (scbet0^2 * sphi0) - s * (1/qZ + scbet0^2 * sphi0 * sxi0)
@@ -261,7 +268,7 @@ namespace GeographicLib {
           du = sm1 * dg - s/_qZ * (dD - dg * (A + B) - g * dAB),
           dtu = -u/du * (scphi0 * scphi02);
         tphi0 += dtu;
-        if (!(abs(dtu) >= stol))
+        if (!(fabs(dtu) >= stol))
           break;
       }
     }
@@ -304,30 +311,32 @@ namespace GeographicLib {
     //               atanhee((1-sphi)/(1-e2*sphi)) ) *
     //             ( (1-e2*sphi)*(1+sphi)/( (1-e2*sphi^2) * (1-e2) ) +
     //               atanhee((1+sphi)/(1+e2*sphi)) ) )
+    //     = ( tphi/(1-e2*sphi^2) + atanhee(sphi, e2)/cphi ) /
+    //       sqrt(
+    //       ( (1+e2*sphi)/( (1-e2*sphi^2) * (1-e2) ) + Datanhee(1,  sphi)  ) *
+    //       ( (1-e2*sphi)/( (1-e2*sphi^2) * (1-e2) ) + Datanhee(1, -sphi)  ) )
     //
-    // subst 1-sphi = cphi^2/(1+sphi)
-    int s = tphi < 0 ? -1 : 1;  // Enforce odd parity
-    tphi *= s;
+    // This function maintains odd parity
     real
-      cphi2 = 1 / (1 + Math::sq(tphi)),
-      sphi = tphi * sqrt(cphi2),
+      cphi = 1 / sqrt(1 + Math::sq(tphi)),
+      sphi = tphi * cphi,
       es1 = _e2 * sphi,
-      es2m1 = 1 - es1 * sphi,
-      sp1 = 1 + sphi,
-      es1m1 = (1 - es1) * sp1,
-      es2m1a = _e2m * es2m1,
-      es1p1 = sp1 / (1 + es1);
-    return s * ( sphi / es2m1 + atanhee(sphi) ) /
-      sqrt( ( cphi2 / (es1p1 * es2m1a) + atanhee(cphi2 / es1m1) ) *
-            ( es1m1 / es2m1a + atanhee(es1p1) ) );
+      es2m1 = 1 - es1 * sphi,   // 1 - e2 * sphi^2
+      es2m1a = _e2m * es2m1;    // (1 - e2 * sphi^2) * (1 - e2)
+    return ( tphi / es2m1 + atanhee(sphi) / cphi ) /
+      sqrt( ( (1 + es1) / es2m1a + Datanhee(1,  sphi) ) *
+            ( (1 - es1) / es2m1a + Datanhee(1, -sphi) ) );
   }
 
   Math::real AlbersEqualArea::tphif(real txi) const {
     real
       tphi = txi,
-      stol = tol_ * max(real(1), abs(txi));
+      stol = tol_ * fmax(real(1), fabs(txi));
     // CHECK: min iterations = 1, max iterations = 2; mean = 1.99
-    for (int i = 0; i < numit_ || GEOGRAPHICLIB_PANIC; ++i) {
+    for (int i = 0;
+         i < numit_ ||
+           GEOGRAPHICLIB_PANIC("Convergence failure in AlbersEqualArea");
+         ++i) {
       // dtxi/dtphi = (scxi/scphi)^3 * 2*(1-e^2)/(qZ*(1-e^2*sphi^2)^2)
       real
         txia = txif(tphi),
@@ -337,49 +346,150 @@ namespace GeographicLib {
         dtphi = (txi - txia) * scterm * sqrt(scterm) *
         _qx * Math::sq(1 - _e2 * tphi2 / scphi2);
       tphi += dtphi;
-      if (!(abs(dtphi) >= stol))
+      if (!(fabs(dtphi) >= stol))
         break;
     }
     return tphi;
   }
 
-  // return atanh(sqrt(x))/sqrt(x) - 1 = y/3 + y^2/5 + y^3/7 + ...
+  // return atanh(sqrt(x))/sqrt(x) - 1 = x/3 + x^2/5 + x^3/7 + ...
   // typical x < e^2 = 2*f
   Math::real AlbersEqualArea::atanhxm1(real x) {
     real s = 0;
-    if (abs(x) < real(0.5)) {
-      real os = -1, y = 1, k = 1;
-      while (os != s) {
-        os = s;
-        y *= x;                 // y = x^n
-        k += 2;                 // k = 2*n + 1
-        s += y/k;               // sum( x^n/(2*n + 1) )
-      }
+    if (fabs(x) < real(0.5)) {
+      static const real lg2eps_ = -log2(numeric_limits<real>::epsilon() / 2);
+      int e;
+      (void) frexp(x, &e);
+      e = -e;
+      // x = [0.5,1) * 2^(-e)
+      // estimate n s.t. x^n/(2*n+1) < x/3 * epsilon/2
+      // a stronger condition is x^(n-1) < epsilon/2
+      // taking log2 of both sides, a stronger condition is
+      // (n-1)*(-e) < -lg2eps or (n-1)*e > lg2eps or n > ceiling(lg2eps/e)+1
+      int n = x == 0 ? 1 : int(ceil(lg2eps_ / e)) + 1;
+      while (n--)               // iterating from n-1 down to 0
+        s = x * s + (n ? 1 : 0)/Math::real(2*n + 1);
     } else {
-      real xs = sqrt(abs(x));
-      s = (x > 0 ? Math::atanh(xs) : atan(xs)) / xs - 1;
+      real xs = sqrt(fabs(x));
+      s = (x > 0 ? atanh(xs) : atan(xs)) / xs - 1;
     }
     return s;
   }
 
   // return (Datanhee(1,y) - Datanhee(1,x))/(y-x)
   Math::real AlbersEqualArea::DDatanhee(real x, real y) const {
+    // This function is called with x = sphi1, y = sphi2, phi1 <= phi2, sphi2
+    // >= 0, abs(sphi1) <= phi2.  However for safety's sake we enforce x <= y.
+    if (y < x) swap(x, y);      // ensure that x <= y
+    real q1 = fabs(_e2),
+      q2 = fabs(2 * _e / _e2m * (1 - x));
+    return
+      x <= 0 || !(fmin(q1, q2) < real(0.75)) ? DDatanhee0(x, y) :
+      (q1 < q2 ? DDatanhee1(x, y) : DDatanhee2(x, y));
+  }
+
+  // Rearrange difference so that 1 - x is in the denominator, then do a
+  // straight divided difference.
+  Math::real AlbersEqualArea::DDatanhee0(real x, real y) const {
+    return (Datanhee(1, y) - Datanhee(x, y))/(1 - x);
+  }
+
+  // The expansion for e2 small
+  Math::real AlbersEqualArea::DDatanhee1(real x, real y) const {
+    // The series in e2 is
+    //   sum( c[l] * e2^l, l, 1, N)
+    // where
+    //   c[l] = sum( x^i * y^j; i >= 0, j >= 0, i+j < 2*l) / (2*l + 1)
+    //        = ( (x-y) - (1-y) * x^(2*l+1) + (1-x) * y^(2*l+1) ) /
+    //          ( (2*l+1) * (x-y) * (1-y) * (1-x) )
+    // For x = y = 1, c[l] = l
+    //
+    // In the limit x,y -> 1,
+    //
+    //   DDatanhee -> e2/(1-e2)^2 = sum(l * e2^l, l, 1, inf)
+    //
+    // Use if e2 is sufficiently small.
     real s = 0;
-    if (_e2 * (abs(x) + abs(y)) < real(0.5)) {
-      real os = -1, z = 1, k = 1, t = 0, c = 0, en = 1;
-      while (os != s) {
-        os = s;
-        t = y * t + z; c += t; z *= x;
-        t = y * t + z; c += t; z *= x;
-        k += 2; en *= _e2;
-        // Here en[l] = e2^l, k[l] = 2*l + 1,
-        // c[l] = sum( x^i * y^j; i >= 0, j >= 0, i+j < 2*l)
-        s += en * c / k;
-      }
+    real  z = 1, k = 1, t = 0, c = 0, en = 1;
+    while (true) {
+      t = y * t + z; c += t; z *= x;
+      t = y * t + z; c += t; z *= x;
+      k += 2; en *= _e2;
+      // Here en[l] = e2^l, k[l] = 2*l + 1,
+      // c[l] = sum( x^i * y^j; i >= 0, j >= 0, i+j < 2*l) / (2*l + 1)
       // Taylor expansion is
-      // s = sum( c[l] * e2^l / (2*l + 1), l, 1, N)
-    } else
-      s = (Datanhee(1, y) - Datanhee(x, y))/(1 - x);
+      // s = sum( c[l] * e2^l, l, 1, N)
+      real ds = en * c / k;
+      s += ds;
+      if (!(fabs(ds) > fabs(s) * eps_/2))
+        break;            // Iterate until the added term is sufficiently small
+    }
+    return s;
+  }
+
+  // The expansion for x (and y) close to 1
+  Math::real AlbersEqualArea::DDatanhee2(real x, real y) const {
+    // If x and y are both close to 1, expand in Taylor series in dx = 1-x and
+    // dy = 1-y:
+    //
+    // DDatanhee = sum(C_m * (dx^(m+1) - dy^(m+1)) / (dx - dy), m, 0, inf)
+    //
+    // where
+    //
+    // C_m = sum( (m+2)!! / (m+2-2*k)!! *
+    //            ((m+1)/2)! / ((m+1)/2-k)! /
+    //            (k! * (2*k-1)!!) *
+    //            e2^((m+1)/2+k),
+    //           k, 0, (m+1)/2) * (-1)^m / ((m+2) * (1-e2)^(m+2))
+    // for m odd, and
+    //
+    // C_m = sum( 2 * (m+1)!! / (m+1-2*k)!! *
+    //            (m/2+1)! / (m/2-k)! /
+    //            (k! * (2*k+1)!!) *
+    //            e2^(m/2+1+k),
+    //           k, 0, m/2)) * (-1)^m / ((m+2) * (1-e2)^(m+2))
+    // for m even.
+    //
+    // Here i!! is the double factorial extended to negative i with
+    // i!! = (i+2)!!/(i+2).
+    //
+    // Note that
+    //   (dx^(m+1) - dy^(m+1)) / (dx - dy) =
+    //     dx^m + dx^(m-1)*dy ... + dx*dy^(m-1) + dy^m
+    //
+    // Leading (m = 0) term is e2 / (1 - e2)^2
+    //
+    // Magnitude of mth term relative to the leading term scales as
+    //
+    //   2*(2*e/(1-e2)*dx)^m
+    //
+    // So use series if (2*e/(1-e2)*dx) is sufficiently small
+    real s, dx = 1 - x, dy = 1 - y, xy = 1, yy = 1, ee = _e2 / Math::sq(_e2m);
+    s = ee;
+    for (int m = 1; ; ++m) {
+       real c = m + 2, t = c;
+      yy *= dy;               // yy = dy^m
+      xy = dx * xy + yy;
+      // Now xy = dx^m + dx^(m-1)*dy ... + dx*dy^(m-1) + dy^m
+      //        = (dx^(m+1) - dy^(m+1)) / (dx - dy)
+      // max value = (m+1) * max(dx,dy)^m
+      ee /= -_e2m;
+      if (m % 2 == 0) ee *= _e2;
+      // Now ee = (-1)^m * e2^(floor(m/2)+1) / (1-e2)^(m+2)
+      int kmax = (m+1)/2;
+      for (int k = kmax - 1; k >= 0; --k) {
+        // max coeff is less than 2^(m+1)
+        c *= (k + 1) * (2 * (k + m - 2*kmax) + 3);
+        c /= (kmax - k) * (2 * (kmax - k) + 1);
+        // Horner sum for inner _e2 series
+        t = _e2 * t + c;
+      }
+      // Straight sum for outer m series
+      real ds = t * ee * xy / (m + 2);
+      s = s + ds;
+      if (!(fabs(ds) > fabs(s) * eps_/2))
+        break;            // Iterate until the added term is sufficiently small
+    }
     return s;
   }
 
@@ -389,7 +499,7 @@ namespace GeographicLib {
     lat *= _sign;
     real sphi, cphi;
     Math::sincosd(Math::LatFix(lat) * _sign, sphi, cphi);
-    cphi = max(epsx_, cphi);
+    cphi = fmax(epsx_, cphi);
     real
       lam = lon * Math::degree(),
       tphi = sphi/cphi, txi = txif(tphi), sxi = txi/hyp(txi),
@@ -414,12 +524,12 @@ namespace GeographicLib {
     y *= _sign;
     real
       nx = _k0 * _n0 * x, ny = _k0 * _n0 * y, y1 =  _nrho0 - ny,
-      den = Math::hypot(nx, y1) + _nrho0, // 0 implies origin with polar aspect
+      den = hypot(nx, y1) + _nrho0, // 0 implies origin with polar aspect
       drho = den != 0 ? (_k0*x*nx - 2*_k0*y*_nrho0 + _k0*y*ny) / den : 0,
       // dsxia = scxi0 * dsxi
       dsxia = - _scxi0 * (2 * _nrho0 + _n0 * drho) * drho /
               (Math::sq(_a) * _qZ),
-      txi = (_txi0 + dsxia) / sqrt(max(1 - dsxia * (2*_txi0 + dsxia), epsx2_)),
+      txi = (_txi0 + dsxia) / sqrt(fmax(1 - dsxia * (2*_txi0 + dsxia), epsx2_)),
       tphi = tphif(txi),
       theta = atan2(nx, y1),
       lam = _n0 != 0 ? theta / (_k2 * _n0) : x / (y1 * _k0);
@@ -431,10 +541,12 @@ namespace GeographicLib {
   }
 
   void AlbersEqualArea::SetScale(real lat, real k) {
-    if (!(Math::isfinite(k) && k > 0))
+    if (!(isfinite(k) && k > 0))
       throw GeographicErr("Scale is not positive");
-    if (!(abs(lat) < 90))
-      throw GeographicErr("Latitude for SetScale not in (-90d, 90d)");
+    if (!(fabs(lat) < Math::qd))
+      throw GeographicErr("Latitude for SetScale not in (-"
+                          + to_string(Math::qd) + "d, "
+                          + to_string(Math::qd) + "d)");
     real x, y, gamma, kold;
     Forward(0, lat, 0, x, y, gamma, kold);
     k /= kold;

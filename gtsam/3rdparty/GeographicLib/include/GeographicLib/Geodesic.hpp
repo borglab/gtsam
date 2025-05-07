@@ -2,7 +2,7 @@
  * \file Geodesic.hpp
  * \brief Header for GeographicLib::Geodesic class
  *
- * Copyright (c) Charles Karney (2009-2016) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2009-2024) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -11,6 +11,7 @@
 #define GEOGRAPHICLIB_GEODESIC_HPP 1
 
 #include <GeographicLib/Constants.hpp>
+#include <GeographicLib/GeodesicExact.hpp>
 
 #if !defined(GEOGRAPHICLIB_GEODESIC_ORDER)
 /**
@@ -30,12 +31,12 @@ namespace GeographicLib {
   /**
    * \brief %Geodesic calculations
    *
-   * The shortest path between two points on a ellipsoid at (\e lat1, \e lon1)
+   * The shortest path between two points on an ellipsoid at (\e lat1, \e lon1)
    * and (\e lat2, \e lon2) is called the geodesic.  Its length is \e s12 and
    * the geodesic from point 1 to point 2 has azimuths \e azi1 and \e azi2 at
    * the two end points.  (The azimuth is the heading measured clockwise from
    * north.  \e azi2 is the "forward" azimuth, i.e., the heading that takes you
-   * beyond point 2 not back to point 1.)  In the figure below, latitude if
+   * beyond point 2 not back to point 1.)  In the figure below, latitude is
    * labeled &phi;, longitude &lambda; (with &lambda;<sub>12</sub> =
    * &lambda;<sub>2</sub> &minus; &lambda;<sub>1</sub>), and azimuth &alpha;.
    *
@@ -87,7 +88,7 @@ namespace GeographicLib {
    *   counter-clockwise, of the geodesic quadrilateral with corners
    *   (<i>lat1</i>,<i>lon1</i>), (0,<i>lon1</i>), (0,<i>lon2</i>), and
    *   (<i>lat2</i>,<i>lon2</i>).  It can be used to compute the area of any
-   *   simple geodesic polygon.
+   *   geodesic polygon.
    *
    * Overloaded versions of Geodesic::Direct, Geodesic::ArcDirect, and
    * Geodesic::Inverse allow these quantities to be returned.  In addition
@@ -133,7 +134,8 @@ namespace GeographicLib {
    * The calculations are accurate to better than 15 nm (15 nanometers) for the
    * WGS84 ellipsoid.  See Sec. 9 of
    * <a href="https://arxiv.org/abs/1102.1215v1">arXiv:1102.1215v1</a> for
-   * details.  The algorithms used by this class are based on series expansions
+   * details.  With \e exact = false (the default) in the constructor,
+   * the algorithms used by this class are based on series expansions
    * using the flattening \e f as a small parameter.  These are only accurate
    * for |<i>f</i>| &lt; 0.02; however reasonably accurate results will be
    * obtained for |<i>f</i>| &lt; 0.2.  Here is a table of the approximate
@@ -147,12 +149,13 @@ namespace GeographicLib {
    *     0.1     1.5 mm
    *     0.2     300 mm
    * </pre>
-   * For very eccentric ellipsoids, use GeodesicExact instead.
+   * For very eccentric ellipsoids, set \e exact to true in the constructor;
+   * this will delegate the calculations to the GeodesicExact class.
    *
    * The algorithms are described in
    * - C. F. F. Karney,
    *   <a href="https://doi.org/10.1007/s00190-012-0578-z">
-   *   Algorithms for geodesics</a>,
+   *   <i>Algorithms for geodesics</i></a>,
    *   J. Geodesy <b>87</b>, 43--55 (2013);
    *   DOI: <a href="https://doi.org/10.1007/s00190-012-0578-z">
    *   10.1007/s00190-012-0578-z</a>;
@@ -191,25 +194,26 @@ namespace GeographicLib {
     unsigned maxit2_;
     real tiny_, tol0_, tol1_, tol2_, tolb_, xthresh_;
 
-    enum captype {
-      CAP_NONE = 0U,
-      CAP_C1   = 1U<<0,
-      CAP_C1p  = 1U<<1,
-      CAP_C2   = 1U<<2,
-      CAP_C3   = 1U<<3,
-      CAP_C4   = 1U<<4,
-      CAP_ALL  = 0x1FU,
-      CAP_MASK = CAP_ALL,
-      OUT_ALL  = 0x7F80U,
-      OUT_MASK = 0xFF80U,       // Includes LONG_UNROLL
-    };
+    static constexpr unsigned CAP_NONE = 0U;
+    static constexpr unsigned CAP_C1   = 1U<<0;
+    static constexpr unsigned CAP_C1p  = 1U<<1;
+    static constexpr unsigned CAP_C2   = 1U<<2;
+    static constexpr unsigned CAP_C3   = 1U<<3;
+    static constexpr unsigned CAP_C4   = 1U<<4;
+    static constexpr unsigned CAP_ALL  = 0x1FU;
+    static constexpr unsigned CAP_MASK = CAP_ALL;
+    static constexpr unsigned OUT_ALL  = 0x7F80U;
+    static constexpr unsigned OUT_MASK = 0xFF80U;    // Includes LONG_UNROLL
 
     static real SinCosSeries(bool sinp,
                              real sinx, real cosx, const real c[], int n);
     static real Astroid(real x, real y);
 
-    real _a, _f, _f1, _e2, _ep2, _n, _b, _c2, _etol2;
-    real _A3x[nA3x_], _C3x[nC3x_], _C4x[nC4x_];
+    real _a, _f;
+    bool _exact;
+    real _f1, _e2, _ep2, _n, _b, _c2, _etol2;
+    real _aA3x[nA3x_], _cC3x[nC3x_], _cC4x[nC4x_];
+    GeodesicExact _geodexact;
 
     void Lengths(real eps, real sig12,
                  real ssig1, real csig1, real dn1,
@@ -249,12 +253,11 @@ namespace GeographicLib {
     void C3f(real eps, real c[]) const;
     void C4coeff();
     void C4f(real k2, real c[]) const;
-
   public:
 
     /**
      * Bit masks for what calculations to do.  These masks do double duty.
-     * They signify to the GeodesicLine::GeodesicLine constructor and to
+     * They signify to the GeodesicLine constructor and to
      * Geodesic::Line what capabilities should be included in the GeodesicLine
      * object.  They also specify which results to return in the general
      * routines Geodesic::GenDirect and Geodesic::GenInverse routines.
@@ -290,6 +293,12 @@ namespace GeographicLib {
        **********************************************************************/
       DISTANCE      = 1U<<10 | CAP_C1,
       /**
+       * A combination of the common capabilities: Geodesic::LATITUDE,
+       * Geodesic::LONGITUDE, Geodesic::AZIMUTH, Geodesic::DISTANCE.
+       * @hideinitializer
+       **********************************************************************/
+      STANDARD      = LATITUDE | LONGITUDE | AZIMUTH | DISTANCE,
+      /**
        * Allow distance \e s12 to be used as input in the direct geodesic
        * problem.
        * @hideinitializer
@@ -316,7 +325,7 @@ namespace GeographicLib {
        **********************************************************************/
       LONG_UNROLL   = 1U<<15,
       /**
-       * All capabilities, calculate everything.  (LONG_UNROLL is not
+       * All capabilities, calculate everything.  (Geodesic::LONG_UNROLL is not
        * included in this mask.)
        * @hideinitializer
        **********************************************************************/
@@ -327,15 +336,21 @@ namespace GeographicLib {
      **********************************************************************/
     ///@{
     /**
-     * Constructor for a ellipsoid with
+     * Constructor for an ellipsoid with
      *
      * @param[in] a equatorial radius (meters).
      * @param[in] f flattening of ellipsoid.  Setting \e f = 0 gives a sphere.
      *   Negative \e f gives a prolate ellipsoid.
+     * @param[in] exact if true use exact formulation in terms of elliptic
+     *   integrals instead of series expansions (default false).
      * @exception GeographicErr if \e a or (1 &minus; \e f) \e a is not
      *   positive.
+     *
+     * With \e exact = true, this class delegates the calculations to the
+     * GeodesicExact and GeodesicLineExact classes which solve the geodesic
+     * problems in terms of elliptic integrals.
      **********************************************************************/
-    Geodesic(real a, real f);
+    Geodesic(real a, real f, bool exact = false);
     ///@}
 
     /** \name Direct geodesic problem specified in terms of distance.
@@ -799,6 +814,11 @@ namespace GeographicLib {
     ///@{
 
     /**
+     * Typedef for the class for computing multiple points on a geodesic.
+     **********************************************************************/
+    typedef GeodesicLine LineClass;
+
+    /**
      * Set up to compute several points on a single geodesic.
      *
      * @param[in] lat1 latitude of point 1 (degrees).
@@ -940,13 +960,19 @@ namespace GeographicLib {
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value used in the constructor.
      **********************************************************************/
-    Math::real MajorRadius() const { return _a; }
+    Math::real EquatorialRadius() const { return _a; }
 
     /**
      * @return \e f the  flattening of the ellipsoid.  This is the
      *   value used in the constructor.
      **********************************************************************/
     Math::real Flattening() const { return _f; }
+
+    /**
+     * @return \e exact whether the exact formulation is used.  This is the
+     *   value used in the constructor.
+     **********************************************************************/
+    bool Exact() const { return _exact; }
 
     /**
      * @return total area of ellipsoid in meters<sup>2</sup>.  The area of a

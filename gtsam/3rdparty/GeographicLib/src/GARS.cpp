@@ -2,7 +2,7 @@
  * \file GARS.cpp
  * \brief Implementation for GeographicLib::GARS class
  *
- * Copyright (c) Charles Karney (2015-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2015-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -17,16 +17,19 @@ namespace GeographicLib {
   const char* const GARS::digits_ = "0123456789";
   const char* const GARS::letters_ = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 
-  void GARS::Forward(real lat, real lon, int prec, std::string& gars) {
-    if (abs(lat) > 90)
+  void GARS::Forward(real lat, real lon, int prec, string& gars) {
+    using std::isnan;           // Needed for Centos 7, ubuntu 14
+    if (fabs(lat) > Math::qd)
       throw GeographicErr("Latitude " + Utility::str(lat)
-                          + "d not in [-90d, 90d]");
-    if (Math::isnan(lat) || Math::isnan(lon)) {
+                          + "d not in [-" + to_string(Math::qd)
+                          + "d, " + to_string(Math::qd) + "d]");
+    if (isnan(lat) || isnan(lon)) {
       gars = "INVALID";
       return;
     }
-    lon = Math::AngNormalize(lon); // lon in [-180,180)
-    if (lat == 90) lat *= (1 - numeric_limits<real>::epsilon() / 2);
+    lon = Math::AngNormalize(lon);
+    if (lon == Math::hd) lon = -Math::hd; // lon now in [-180,180)
+    if (lat == Math::qd) lat *= (1 - numeric_limits<real>::epsilon() / 2);
     prec = max(0, min(int(maxprec_), prec));
     int
       x = int(floor(lon * m_)) - lonorig_ * m_,
@@ -54,8 +57,8 @@ namespace GeographicLib {
     copy(gars1, gars1 + baselen_ + prec, gars.begin());
   }
 
-  void GARS::Reverse(const std::string& gars, real& lat, real& lon,
-                        int& prec, bool centerp) {
+  void GARS::Reverse(const string& gars, real& lat, real& lon,
+                     int& prec, bool centerp) {
     int len = int(gars.length());
     if (len >= 3 &&
         toupper(gars[0]) == 'I' &&
@@ -76,7 +79,7 @@ namespace GeographicLib {
         throw GeographicErr("GARS must start with 3 digits " + gars);
       ilon = ilon * baselon_ + k;
     }
-    if (!(ilon >= 1 && ilon <= 720))
+    if (!(ilon >= 1 && ilon <= 2 * Math::td))
         throw GeographicErr("Initial digits in GARS must lie in [1, 720] " +
                             gars);
     --ilon;
@@ -87,7 +90,7 @@ namespace GeographicLib {
         throw GeographicErr("Illegal letters in GARS " + gars.substr(3,2));
       ilat = ilat * baselat_ + k;
     }
-    if (!(ilat < 360))
+    if (!(ilat < Math::td))
       throw  GeographicErr("GARS letters must lie in [AA, QZ] " + gars);
     real
       unit = mult1_,

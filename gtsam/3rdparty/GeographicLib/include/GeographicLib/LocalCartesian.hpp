@@ -2,7 +2,7 @@
  * \file LocalCartesian.hpp
  * \brief Header for GeographicLib::LocalCartesian class
  *
- * Copyright (c) Charles Karney (2008-2016) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -153,8 +153,10 @@ namespace GeographicLib {
      * @param[out] lon longitude of point (degrees).
      * @param[out] h height of point above the ellipsoid (meters).
      *
-     * The value of \e lon returned is in the range [&minus;180&deg;,
-     * 180&deg;].
+     * In general, there are multiple solutions and the result which minimizes
+     * |<i>h</i> |is returned, i.e., (<i>lat</i>, <i>lon</i>) corresponds to
+     * the closest point on the ellipsoid.  The value of \e lon returned is in
+     * the range [&minus;180&deg;, 180&deg;].
      **********************************************************************/
     void Reverse(real x, real y, real z, real& lat, real& lon, real& h)
       const {
@@ -220,7 +222,7 @@ namespace GeographicLib {
      *   the value of \e a inherited from the Geocentric object used in the
      *   constructor.
      **********************************************************************/
-    Math::real MajorRadius() const { return _earth.MajorRadius(); }
+    Math::real EquatorialRadius() const { return _earth.EquatorialRadius(); }
 
     /**
      * @return \e f the flattening of the ellipsoid.  This is the value

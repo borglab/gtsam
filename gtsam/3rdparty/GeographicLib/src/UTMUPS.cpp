@@ -2,7 +2,7 @@
  * \file UTMUPS.cpp
  * \brief Implementation for GeographicLib::UTMUPS class
  *
- * Copyright (c) Charles Karney (2008-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -41,18 +41,16 @@ namespace GeographicLib {
       MGRS::maxutmNrow_ * MGRS::tile_ };
 
   int UTMUPS::StandardZone(real lat, real lon, int setzone) {
+    using std::isnan;           // Needed for Centos 7, ubuntu 14
     if (!(setzone >= MINPSEUDOZONE && setzone <= MAXZONE))
       throw GeographicErr("Illegal zone requested " + Utility::str(setzone));
     if (setzone >= MINZONE || setzone == INVALID)
       return setzone;
-    if (Math::isnan(lat) || Math::isnan(lon)) // Check if lat or lon is a NaN
+    if (isnan(lat) || isnan(lon)) // Check if lat or lon is a NaN
       return INVALID;
     if (setzone == UTM || (lat >= -80 && lat < 84)) {
-      int ilon = int(floor(fmod(lon, real(360))));
-      if (ilon >= 180)
-        ilon -= 360;
-      else if (ilon < -180)
-        ilon += 360;
+      int ilon = int(floor(Math::AngNormalize(lon)));
+      if (ilon == Math::hd) ilon = -Math::hd; // ilon now in [-180,180)
       int zone = (ilon + 186)/6;
       int band = MGRS::LatitudeBand(lat);
       if (band == 7 && zone == 31 && ilon >= 3) // The Norway exception
@@ -68,10 +66,11 @@ namespace GeographicLib {
                        int& zone, bool& northp, real& x, real& y,
                        real& gamma, real& k,
                        int setzone, bool mgrslimits) {
-    if (abs(lat) > 90)
+    if (fabs(lat) > Math::qd)
       throw GeographicErr("Latitude " + Utility::str(lat)
-                          + "d not in [-90d, 90d]");
-    bool northp1 = lat >= 0;
+                          + "d not in [-" + to_string(Math::qd)
+                          + "d, " + to_string(Math::qd) + "d]");
+    bool northp1 = !(signbit(lat));
     int zone1 = StandardZone(lat, lon, setzone);
     if (zone1 == INVALID) {
       zone = zone1;
@@ -84,8 +83,7 @@ namespace GeographicLib {
     if (utmp) {
       real
         lon0 = CentralMeridian(zone1),
-        dlon = lon - lon0;
-      dlon = abs(dlon - 360 * floor((dlon + 180)/360));
+        dlon = Math::AngDiff(lon0, lon);
       if (!(dlon <= 60))
         // Check isn't really necessary because CheckCoords catches this case.
         // But this allows a more meaningful error message to be given.
@@ -94,7 +92,7 @@ namespace GeographicLib {
                             + Utility::str(zone1));
       TransverseMercator::UTM().Forward(lon0, lat, lon, x1, y1, gamma1, k1);
     } else {
-      if (abs(lat) < 70)
+      if (fabs(lat) < 70)
         // Check isn't really necessary ... (see above).
         throw GeographicErr("Latitude " + Utility::str(lat)
                             + "d more than 20d from "
@@ -121,7 +119,8 @@ namespace GeographicLib {
   void UTMUPS::Reverse(int zone, bool northp, real x, real y,
                        real& lat, real& lon, real& gamma, real& k,
                        bool mgrslimits) {
-    if (zone == INVALID || Math::isnan(x) || Math::isnan(y)) {
+    using std::isnan;           // Needed for Centos 7, ubuntu 14
+    if (zone == INVALID || isnan(x) || isnan(y)) {
       lat = lon = gamma = k = Math::NaN();
       return;
     }
@@ -205,7 +204,7 @@ namespace GeographicLib {
     return;
   }
 
-  void UTMUPS::DecodeZone(const std::string& zonestr, int& zone, bool& northp)
+  void UTMUPS::DecodeZone(const string& zonestr, int& zone, bool& northp)
   {
     unsigned zlen = unsigned(zonestr.size());
     if (zlen == 0)
@@ -236,8 +235,8 @@ namespace GeographicLib {
                           + Utility::str(zone1));
 
     string hemi(zonestr, q - c);
-    for (std::string::iterator p = hemi.begin(); p != hemi.end(); ++p)
-      *p = char(std::tolower(*p));
+    for (string::iterator p = hemi.begin(); p != hemi.end(); ++p)
+      *p = char(tolower(*p));
     if (q == c && (hemi == "inv" || hemi == "invalid")) {
       zone = INVALID;
       northp = false;
@@ -251,7 +250,7 @@ namespace GeographicLib {
     northp = northp1;
   }
 
-  std::string UTMUPS::EncodeZone(int zone, bool northp, bool abbrev) {
+  string UTMUPS::EncodeZone(int zone, bool northp, bool abbrev) {
     if (zone == INVALID)
       return string(abbrev ? "inv" : "invalid");
     if (!(zone >= MINZONE && zone <= MAXZONE))

@@ -1,7 +1,7 @@
 /*
 Compute the series expansions for the ellipsoidal geodesic problem.
 
-Copyright (c) Charles Karney (2009-2015) <charles@karney.com> and
+Copyright (c) Charles Karney (2009-2015) <karney@alum.mit.edu> and
 licensed under the MIT/X11 License.  For more information, see
 https://geographiclib.sourceforge.io/
 
@@ -209,6 +209,7 @@ computeI4(maxpow):=block([int,t,intexp,area, x,ep2,k2],
     int),
   int:subst([abs(sin(sigma))=sin(sigma)],int),
   int:subst([k2=4*eps/(1-eps)^2,ep2=4*n/(1-n)^2],int),
+  int:subst([abs(eps-1)=1-eps,abs(n-1)=1-n],int),
   intexp:jtaylor(int,n,eps,maxpow),
   area:trigreduce(integrate(intexp,sigma)),
   area:expand(area-subst(sigma=%pi/2,area)),
@@ -226,8 +227,7 @@ computeall():=(
 
 /* If nA1, nC1, nC1p, nA2, nA3, nC3 are compile-time constants
 indicating the required order, the compiler will include only the needed
-code.  GEOGRAPHICLIB_STATIC_ASSERT is a macro to cause a compile-time
-error if the assertion is false.  */
+code. */
 
 codeA1(maxpow):=block([tab2:"    ",tab3:"      "],
   print("  // The scale factor A1-1 = mean value of (d/dsigma)I1 - 1
@@ -243,7 +243,7 @@ codeA1(maxpow):=block([tab2:"    ",tab3:"      "],
     print(concat(tab3,"t = ",string(q),";")),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nA1_ >= ",string(0),
+  print(concat(tab3,"static_assert(nA1_ >= ",string(0),
       " && nA1_ <= ",string(maxpow),", \"Bad value of nA1_\");")),
   print(concat(tab3,"t = 0;")),
   print("    }
@@ -267,7 +267,7 @@ codeC1(maxpow):=block([tab2:"    ",tab3:"      "],
       print(concat(tab3,"c[",string(m),"] = ",string(q),";"))),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nC1_ >= ",string(0),
+  print(concat(tab3,"static_assert(nC1_ >= ",string(0),
       " && nC1_ <= ",string(maxpow),", \"Bad value of nC1_\");")),
   print("    }
   }"),
@@ -289,7 +289,7 @@ codeC1p(maxpow):=block([tab2:"    ",tab3:"      "],
       print(concat(tab3,"c[",string(m),"] = ",string(q),";"))),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nC1p_ >= ",string(0),
+  print(concat(tab3,"static_assert(nC1p_ >= ",string(0),
       " && nC1p_ <= ",string(maxpow),", \"Bad value of nC1p_\");")),
   print("    }
   }"),
@@ -309,7 +309,7 @@ codeA2(maxpow):=block([tab2:"    ",tab3:"      "],
     print(concat(tab3,"t = ",string(q),";")),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nA2_ >= ",string(0),
+  print(concat(tab3,"static_assert(nA2_ >= ",string(0),
       " && nA2_ <= ",string(maxpow),", \"Bad value of nA2_\");")),
   print(concat(tab3,"t = 0;")),
   print("    }
@@ -333,7 +333,7 @@ codeC2(maxpow):=block([tab2:"    ",tab3:"      "],
       print(concat(tab3,"c[",string(m),"] = ",string(q),";"))),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nC2_ >= ",string(0),
+  print(concat(tab3,"static_assert(nC2_ >= ",string(0),
       " && nC2_ <= ",string(maxpow),", \"Bad value of nC2_\");")),
   print("    }
   }"),
@@ -353,7 +353,7 @@ codeA3(maxpow):=block([tab2:"    ",tab3:"      "],
         string(horner(coeff(q,eps,i))),";")),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nA3_ >= ",string(0),
+  print(concat(tab3,"static_assert(nA3_ >= ",string(0),
       " && nA3_ <= ",string(maxpow),", \"Bad value of nA3_\");")),
   print("    }
   }"),
@@ -377,7 +377,7 @@ codeC3(maxpow):=block([tab2:"    ",tab3:"      "],
     ),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nC3_ >= ",string(0),
+  print(concat(tab3,"static_assert(nC3_ >= ",string(0),
       " && nC3_ <= ",string(maxpow),", \"Bad value of nC3_\");")),
   print("    }
   }"),
@@ -400,7 +400,7 @@ codeC4(maxpow):=block([tab2:"    ",tab3:"      "],
     ),
     print(concat(tab3,"break;"))),
   print(concat(tab2,"default:")),
-  print(concat(tab3,"GEOGRAPHICLIB_STATIC_ASSERT(nC4_ >= ",string(0),
+  print(concat(tab3,"static_assert(nC4_ >= ",string(0),
       " && nC4_ <= ",string(maxpow),", \"Bad value of nC4_\");")),
   print("    }
   }"),
@@ -574,6 +574,18 @@ dispseries():=(
   12    43
   20   571
   30  6671 (111m)
+
+For computeI4(n)
+   n   time(s)
+   8      1.5
+  16       29
+  24      215
+  30      702 = 11.7 m
+  32     1040 = 17.3 m
+  40     3851
+  48    11521
+  64    69960 = 19.4 h
+
   */
 maxpow:8$
 computeall()$

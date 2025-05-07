@@ -2,7 +2,7 @@
  * \file OSGB.hpp
  * \brief Header for GeographicLib::OSGB class
  *
- * Copyright (c) Charles Karney (2010-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2024) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -13,12 +13,6 @@
 #include <GeographicLib/Constants.hpp>
 #include <GeographicLib/TransverseMercator.hpp>
 
-#if defined(_MSC_VER)
-// Squelch warnings about dll vs string
-#  pragma warning (push)
-#  pragma warning (disable: 4251)
-#endif
-
 namespace GeographicLib {
 
   /**
@@ -28,10 +22,10 @@ namespace GeographicLib {
    * maps of Great Britain and conversions to the grid reference system.
    *
    * See
-   * - <a href="http://www.ordnancesurvey.co.uk/docs/support/guide-coordinate-systems-great-britain.pdf">
+   * - <a href="https://www.ordnancesurvey.co.uk/documents/resources/guide-coordinate-systems-great-britain.pdf">
    *   A guide to coordinate systems in Great Britain</a>
-   * - <a href="http://www.ordnancesurvey.co.uk/docs/support/national-grid.pdf">
-   *   Guide to the National Grid</a>
+   * - <a href="https://www.ordnancesurvey.co.uk/documents/resources/guide-to-nationalgrid.pdf">
+   *   Using the National Grid</a>
    *
    * \warning the latitudes and longitudes for the Ordnance Survey grid
    * system do not use the WGS84 datum.  Do not use the values returned by this
@@ -47,23 +41,21 @@ namespace GeographicLib {
     static const char* const letters_;
     static const char* const digits_;
     static const TransverseMercator& OSGBTM();
-    enum {
-      base_ = 10,
-      tile_ = 100000,
-      tilelevel_ = 5,
-      tilegrid_ = 5,
-      tileoffx_ = 2 * tilegrid_,
-      tileoffy_ = 1 * tilegrid_,
-      minx_ = - tileoffx_ * tile_,
-      miny_ = - tileoffy_ * tile_,
-      maxx_ = (tilegrid_*tilegrid_ - tileoffx_) * tile_,
-      maxy_ = (tilegrid_*tilegrid_ - tileoffy_) * tile_,
-      // Maximum precision is um
-      maxprec_ = 5 + 6,
-    };
+    static constexpr int base_ = 10;
+    static constexpr int tile_ = 100000;
+    static constexpr int tilelevel_ = 5;
+    static constexpr int tilegrid_ = 5;
+    static constexpr int tileoffx_ = 2 * tilegrid_;
+    static constexpr int tileoffy_ = 1 * tilegrid_;
+    static constexpr int minx_ = - tileoffx_ * tile_;
+    static constexpr int miny_ = - tileoffy_ * tile_;
+    static constexpr int maxx_ = (tilegrid_*tilegrid_ - tileoffx_) * tile_;
+    static constexpr int maxy_ = (tilegrid_*tilegrid_ - tileoffy_) * tile_;
+    // Maximum precision is um
+    static constexpr int maxprec_ = 5 + 6;
     static real computenorthoffset();
     static void CheckCoords(real x, real y);
-    OSGB();                     // Disable constructor
+    OSGB() = delete;            // Disable constructor
   public:
 
     /**
@@ -154,7 +146,7 @@ namespace GeographicLib {
     static void GridReference(real x, real y, int prec, std::string& gridref);
 
     /**
-     * Convert OSGB coordinates to a grid reference.
+     * Convert OSGB grid reference to coordinates.
      *
      * @param[in] gridref National Grid reference.
      * @param[out] x easting of point (meters).
@@ -184,11 +176,11 @@ namespace GeographicLib {
      * 10<sup>9.48401603&minus;10</sup> m.  The Airy 1830 value is returned
      * because the OSGB projection is based on this ellipsoid.  The conversion
      * factor from feet to meters is the one used for the 1936 retriangulation
-     * of Britain; see Section A.1 (p. 37) of <i>A guide to coordinate systems
-     * in Great Britain</i>, v2.2 (Dec. 2013).
+     * of Britain; see Section A.1 (footnote 10 on p. 44) of <i>A guide to
+     * coordinate systems in Great Britain</i>, v3.6 (2020).
      **********************************************************************/
-    static Math::real MajorRadius() {
-    // result is about 6377563.3960320664406 m
+    static Math::real EquatorialRadius() {
+      // result is about 6377563.3960320664406 m
       using std::pow;
       return pow(real(10), real(48401603 - 100000000) / 100000000)
         * real(20923713);
@@ -241,9 +233,5 @@ namespace GeographicLib {
   };
 
 } // namespace GeographicLib
-
-#if defined(_MSC_VER)
-#  pragma warning (pop)
-#endif
 
 #endif  // GEOGRAPHICLIB_OSGB_HPP

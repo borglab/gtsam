@@ -2,7 +2,7 @@
  * \file PolarStereographic.hpp
  * \brief Header for GeographicLib::PolarStereographic class
  *
- * Copyright (c) Charles Karney (2008-2016) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -19,7 +19,7 @@ namespace GeographicLib {
    *
    * Implementation taken from the report,
    * - J. P. Snyder,
-   *   <a href="http://pubs.er.usgs.gov/usgspubs/pp/pp1395"> Map Projections: A
+   *   <a href="https://pubs.usgs.gov/publication/pp1395"> Map Projections: A
    *   Working Manual</a>, USGS Professional Paper 1395 (1987),
    *   pp. 160--163.
    *
@@ -41,7 +41,7 @@ namespace GeographicLib {
   public:
 
     /**
-     * Constructor for a ellipsoid with
+     * Constructor for an ellipsoid with
      *
      * @param[in] a equatorial radius (meters).
      * @param[in] f flattening of ellipsoid.  Setting \e f = 0 gives a sphere.
@@ -125,7 +125,7 @@ namespace GeographicLib {
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value used in the constructor.
      **********************************************************************/
-    Math::real MajorRadius() const { return _a; }
+    Math::real EquatorialRadius() const { return _a; }
 
     /**
      * @return \e f the flattening of the ellipsoid.  This is the value used in

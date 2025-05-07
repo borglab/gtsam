@@ -2,7 +2,7 @@
  * \file DMS.hpp
  * \brief Header for GeographicLib::DMS class
  *
- * Copyright (c) Charles Karney (2008-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -12,12 +12,6 @@
 
 #include <GeographicLib/Constants.hpp>
 #include <GeographicLib/Utility.hpp>
-
-#if defined(_MSC_VER)
-// Squelch warnings about dll vs vector and constant conditional expressions
-#  pragma warning (push)
-#  pragma warning (disable: 4251 4127)
-#endif
 
 namespace GeographicLib {
 
@@ -90,16 +84,8 @@ namespace GeographicLib {
 
   private:
     typedef Math::real real;
-    // Replace all occurrences of pat by c
-    static void replace(std::string& s, const std::string& pat, char c) {
-      std::string::size_type p = 0;
-      while (true) {
-        p = s.find(pat, p);
-        if (p == std::string::npos)
-          break;
-        s.replace(p, pat.length(), 1, c);
-      }
-    }
+    // Replace all occurrences of pat by c.  If c is NULL remove pat.
+    static void replace(std::string& s, const std::string& pat, char c);
     static const char* const hemispheres_;
     static const char* const signs_;
     static const char* const digits_;
@@ -107,7 +93,7 @@ namespace GeographicLib {
     static const char* const components_[3];
     static Math::real NumMatch(const std::string& s);
     static Math::real InternalDecode(const std::string& dmsa, flag& ind);
-    DMS();                      // Disable constructor
+    DMS() = delete;             // Disable constructor
 
   public:
 
@@ -139,9 +125,10 @@ namespace GeographicLib {
      * result is multiplied by the implied sign of the hemisphere designator
      * (negative for S and W).  In addition \e ind is set to DMS::LATITUDE if N
      * or S is present, to DMS::LONGITUDE if E or W is present, and to
-     * DMS::NONE otherwise.  Throws an error on a malformed string.  No check
-     * is performed on the range of the result.  Examples of legal and illegal
-     * strings are
+     * DMS::NONE otherwise.  Leading and trailing whitespace is removed from
+     * the string before processing.  This routine throws an error on a
+     * malformed string.  No check is performed on the range of the result.
+     * Examples of legal and illegal strings are
      * - <i>LEGAL</i> (all the entries on each line are equivalent)
      *   - -20.51125, 20d30'40.5&quot;S, -20&deg;30'40.5, -20d30.675,
      *     N-20d30'40.5&quot;, -20:30:40.5
@@ -166,7 +153,7 @@ namespace GeographicLib {
      * not allowed after the initial sign).  Examples of legal and illegal
      * combinations are
      * - <i>LEGAL</i> (these are all equivalent)
-     *   - 070:00:45, 70:01:15W+0:0.5, 70:01:15W-0:0:30W, W70:01:15+0:0:30E
+     *   - -070:00:45, 70:01:15W+0:0.5, 70:01:15W-0:0:30W, W70:01:15+0:0:30E
      * - <i>ILLEGAL</i> (the exception thrown explains the problem)
      *   - 70:01:15W+0:0:15N, W70:01:15+W0:0:15
      *
@@ -175,33 +162,67 @@ namespace GeographicLib {
      * <code>(7.0E) + (+1)</code>, yielding the same result as
      * <code>8.0E</code>.
      *
-     * \note At present, all the string handling in the C++
-     * implementation %GeographicLib is with 8-bit characters.  The support for
-     * unicode symbols for degrees, minutes, and seconds is therefore via the
+     * \note At present, all the string handling in the C++ implementation of
+     * %GeographicLib is with 8-bit characters.  The support for unicode
+     * symbols for degrees, minutes, and seconds is therefore via the
      * <a href="https://en.wikipedia.org/wiki/UTF-8">UTF-8</a> encoding.  (The
      * JavaScript implementation of this class uses unicode natively, of
      * course.)
      *
      * Here is the list of Unicode symbols supported for degrees, minutes,
-     * seconds, and the sign:
+     * seconds, and the plus and minus signs; various symbols denoting variants
+     * of a space, which may separate the components of a DMS string, are
+     * removed:
      * - degrees:
      *   - d, D lower and upper case letters
      *   - U+00b0 degree symbol (&deg;)
-     *   - U+00ba masculine ordinal indicator
-     *   - U+2070 superscript zero
-     *   - U+02da ring above
+     *   - U+00ba masculine ordinal indicator (&ordm;)
+     *   - U+2070 superscript zero (⁰)
+     *   - U+02da ring above (˚)
+     *   - U+2218 compose function (∘)
+     *   - * the <a href="https://grid.nga.mil">GRiD</a> symbol for degrees
      * - minutes:
      *   - ' apostrophe
+     *   - ` grave accent
      *   - U+2032 prime (&prime;)
-     *   - U+00b4 acute accent
+     *   - U+2035 back prime (‵)
+     *   - U+00b4 acute accent (&acute;)
+     *   - U+2018 left single quote (&lsquo;)
      *   - U+2019 right single quote (&rsquo;)
+     *   - U+201b reversed-9 single quote (‛)
+     *   - U+02b9 modifier letter prime (ʹ)
+     *   - U+02ca modifier letter acute accent (ˊ)
+     *   - U+02cb modifier letter grave accent (ˋ)
      * - seconds:
      *   - &quot; quotation mark
      *   - U+2033 double prime (&Prime;)
+     *   - U+2036 reversed double prime (‶)
+     *   + U+02dd double acute accent (˝)
+     *   - U+201c left double quote (&ldquo;)
      *   - U+201d right double quote (&rdquo;)
-     *   - '&nbsp;' any two consecutive symbols for minutes
-     * - leading sign:
+     *   - U+201f reversed-9 double quote (‟)
+     *   - U+02ba modifier letter double prime (ʺ)
+     *   - '&thinsp;' any two consecutive symbols for minutes
+     * - plus sign:
+     *   - + plus
+     *   - U+2795 heavy plus (➕)
+     *   - U+2064 invisible plus (|⁤|)
+     * - minus sign:
+     *   - - hyphen
+     *   - U+2010 dash (‐)
+     *   - U+2011 non-breaking hyphen (‑)
+     *   - U+2013 en dash (&ndash;)
+     *   - U+2014 em dash (&mdash;)
      *   - U+2212 minus sign (&minus;)
+     *   - U+2796 heavy minus (➖)
+     * - ignored spaces:
+     *   - U+00a0 non-breaking space
+     *   - U+2007 figure space (| |)
+     *   - U+2009 thin space (|&thinsp;|)
+     *   - U+200a hair space ( | |)
+     *   - U+200b invisible space (|​|)
+     *   - U+202f narrow space ( | |)
+     *   - U+2063 invisible separator (|⁣|)
      * .
      * The codes with a leading zero byte, e.g., U+00b0, are accepted in their
      * UTF-8 coded form 0xc2 0xb0 and as a single byte 0xb0.
@@ -221,7 +242,7 @@ namespace GeographicLib {
      * DMS::Decode(-3.0, -20.0).
      **********************************************************************/
     static Math::real Decode(real d, real m = 0, real s = 0)
-    { return d + (m + s / 60) / 60; }
+    { return d + (m + s / real(Math::ms)) / real(Math::dm); }
 
     /**
      * Convert a pair of strings to latitude and longitude.
@@ -343,7 +364,7 @@ namespace GeographicLib {
      * @param[out] m arc minutes.
      **********************************************************************/
     static void Encode(real ang, real& d, real& m) {
-      d = int(ang); m = 60 * (ang - d);
+      d = int(ang); m = real(Math::dm) * (ang - d);
     }
 
     /**
@@ -355,16 +376,12 @@ namespace GeographicLib {
      * @param[out] s arc seconds.
      **********************************************************************/
     static void Encode(real ang, real& d, real& m, real& s) {
-      d = int(ang); ang = 60 * (ang - d);
-      m = int(ang); s = 60 * (ang - m);
+      d = int(ang); ang = real(Math::dm) * (ang - d);
+      m = int(ang); s = real(Math::ms) * (ang - m);
     }
 
   };
 
 } // namespace GeographicLib
-
-#if defined(_MSC_VER)
-#  pragma warning (pop)
-#endif
 
 #endif  // GEOGRAPHICLIB_DMS_HPP

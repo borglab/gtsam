@@ -2,7 +2,7 @@
  * \file MGRS.cpp
  * \brief Implementation for GeographicLib::MGRS class
  *
- * Copyright (c) Charles Karney (2008-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -24,6 +24,8 @@ namespace GeographicLib {
   const char* const MGRS::latband_ = "CDEFGHJKLMNPQRSTUVWX";
   const char* const MGRS::upsband_ = "ABYZ";
   const char* const MGRS::digits_ = "0123456789";
+  const char* const MGRS::alpha_ = // Omit I+O
+    "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjklmnpqrstuvwxyz";
 
   const int MGRS::mineasting_[] =
     { minupsSind_, minupsNind_, minutmcol_, minutmcol_ };
@@ -38,11 +40,12 @@ namespace GeographicLib {
 
   void MGRS::Forward(int zone, bool northp, real x, real y, real lat,
                      int prec, std::string& mgrs) {
+    using std::isnan;           // Needed for Centos 7, ubuntu 14
     // The smallest angle s.t., 90 - angeps() < 90 (approx 50e-12 arcsec)
     // 7 = ceil(log_2(90))
     static const real angeps = ldexp(real(1), -(Math::digits() - 7));
     if (zone == UTMUPS::INVALID ||
-        Math::isnan(x) || Math::isnan(y) || Math::isnan(lat)) {
+        isnan(x) || isnan(y) || isnan(lat)) {
       mgrs = "INVALID";
       return;
     }
@@ -69,17 +72,24 @@ namespace GeographicLib {
     }
     // The C++ standard mandates 64 bits for long long.  But
     // check, to make sure.
-    GEOGRAPHICLIB_STATIC_ASSERT(numeric_limits<long long>::digits >= 44,
-                                "long long not wide enough to store 10e12");
+    static_assert(numeric_limits<long long>::digits >= 44,
+                  "long long not wide enough to store 10e12");
+    // Guard against floor(x * mult_) being computed incorrectly on some
+    // platforms.  The problem occurs when x * mult_ is held in extended
+    // precision and floor is inlined.  This causes tests GeoConvert1[678] to
+    // fail.  Problem reported and diagnosed by Thorkil Naur with g++ 10.2.0
+    // under Cygwin.
+    GEOGRAPHICLIB_VOLATILE real xx = x * mult_;
+    GEOGRAPHICLIB_VOLATILE real yy = y * mult_;
     long long
-      ix = (long long)(floor(x * mult_)),
-      iy = (long long)(floor(y * mult_)),
+      ix = (long long)(floor(xx)),
+      iy = (long long)(floor(yy)),
       m = (long long)(mult_) * (long long)(tile_);
     int xh = int(ix / m), yh = int(iy / m);
     if (utmp) {
       int
         // Correct fuzziness in latitude near equator
-        iband = abs(lat) > angeps ? LatitudeBand(lat) : (northp ? 0 : -1),
+        iband = fabs(lat) < angeps ? (northp ? 0 : -1) : LatitudeBand(lat),
         icol = xh - minutmcol_,
         irow = UTMRow(iband, icol, yh % utmrowperiod_);
       if (irow != yh - (northp ? minutmNrow_ : maxutmSrow_))
@@ -124,7 +134,7 @@ namespace GeographicLib {
       // Here we do a more careful job using the band letter corresponding to
       // the actual latitude.
       ys /= tile_;
-      if (abs(ys) < 1)
+      if (fabs(ys) < 1)
         lat = real(0.9) * ys;         // accurate enough estimate near equator
       else {
         real
@@ -146,7 +156,7 @@ namespace GeographicLib {
     Forward(zone, northp, x, y, lat, prec, mgrs);
   }
 
-  void MGRS::Reverse(const std::string& mgrs,
+  void MGRS::Reverse(const string& mgrs,
                      int& zone, bool& northp, real& x, real& y,
                      int& prec, bool centerp) {
     int
@@ -187,7 +197,7 @@ namespace GeographicLib {
     bool northp1 = iband >= (utmp ? 10 : 2);
     if (p == len) {             // Grid zone only (ignore centerp)
       // Approx length of a degree of meridian arc in units of tile.
-      real deg = real(utmNshift_) / (90 * tile_);
+      real deg = real(utmNshift_) / (Math::qd * tile_);
       zone = zone1;
       northp = northp1;
       if (utmp) {
@@ -341,7 +351,7 @@ namespace GeographicLib {
 
     // Estimate center row number for latitude band
     // 90 deg = 100 tiles; 1 band = 8 deg = 100*8/90 tiles
-    real c = 100 * (8 * iband + 4)/real(90);
+    real c = 100 * (8 * iband + 4) / real(Math::qd);
     bool northp = iband >= 0;
     // These are safe bounds on the rows
     //  iband minrow maxrow
@@ -398,6 +408,43 @@ namespace GeographicLib {
         irow = maxutmSrow_;
     }
     return irow;
+  }
+
+  void MGRS::Decode(const string& mgrs,
+                    string& gridzone, string& block,
+                    string& easting, string& northing) {
+    string::size_type n = mgrs.length();
+    if (n >= 3 &&
+        toupper(mgrs[0]) == 'I' &&
+        toupper(mgrs[1]) == 'N' &&
+        toupper(mgrs[2]) == 'V') {
+      gridzone = mgrs.substr(0, 3);
+      block = easting = northing = "";
+      return;
+    }
+    string::size_type p0 = mgrs.find_first_not_of(digits_);
+    if (p0 == string::npos)
+      throw GeographicErr("MGRS::Decode: ref does not contain alpha chars");
+    if (!(p0 <= 2))
+      throw GeographicErr("MGRS::Decode: ref does not start with 0-2 digits");
+    string::size_type p1 = mgrs.find_first_of(alpha_, p0);
+    if (p1 != p0)
+      throw GeographicErr("MGRS::Decode: ref contains non alphanumeric chars");
+    p1 = min(mgrs.find_first_not_of(alpha_, p0), n);
+    if (!(p1 == p0 + 1 || p1 == p0 + 3))
+      throw GeographicErr("MGRS::Decode: ref must contain 1 or 3 alpha chars");
+    if (p1 == p0 + 1 && p1 < n)
+      throw GeographicErr("MGRS::Decode: ref contains junk after 1 alpha char");
+    if (p1 < n && (mgrs.find_first_of(digits_, p1) != p1 ||
+                   mgrs.find_first_not_of(digits_, p1) != string::npos))
+      throw GeographicErr("MGRS::Decode: ref contains junk at end");
+    if ((n - p1) & 1u)
+      throw GeographicErr("MGRS::Decode: ref must end with even no of digits");
+    // Here [0, p0) = initial digits; [p0, p1) = alpha; [p1, n) = end digits
+    gridzone = mgrs.substr(0, p0+1);
+    block = mgrs.substr(p0+1, p1 - (p0 + 1));
+    easting = mgrs.substr(p1, (n - p1) / 2);
+    northing = mgrs.substr(p1 + (n - p1) / 2);
   }
 
   void MGRS::Check() {

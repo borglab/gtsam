@@ -2,7 +2,7 @@
  * \file GravityCircle.hpp
  * \brief Header for GeographicLib::GravityCircle class
  *
- * Copyright (c) Charles Karney (2011-2016) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -52,41 +52,19 @@ namespace GeographicLib {
     };
 
     unsigned _caps;
-    real _a, _f, _lat, _h, _Z, _Px, _invR, _cpsi, _spsi,
-      _cphi, _sphi, _amodel, _GMmodel, _dzonal0,
+    real _a, _f, _lat, _h, _zZ, _pPx, _invR, _cpsi, _spsi,
+      _cphi, _sphi, _amodel, _gGMmodel, _dzonal0,
       _corrmult, _gamma0, _gamma, _frot;
     CircularEngine _gravitational, _disturbing, _correction;
 
     GravityCircle(mask caps, real a, real f, real lat, real h,
                   real Z, real P, real cphi, real sphi,
-                  real amodel, real GMmodel, real dzonal0, real corrmult,
+                  real amodel, real GMmodel,
+                  real dzonal0, real corrmult,
                   real gamma0, real gamma, real frot,
                   const CircularEngine& gravitational,
                   const CircularEngine& disturbing,
-                  const CircularEngine& correction)
-      : _caps(caps)
-      , _a(a)
-      , _f(f)
-      , _lat(Math::LatFix(lat))
-      , _h(h)
-      , _Z(Z)
-      , _Px(P)
-      , _invR(1 / Math::hypot(_Px, _Z))
-      , _cpsi(_Px * _invR)
-      , _spsi(_Z * _invR)
-      , _cphi(cphi)
-      , _sphi(sphi)
-      , _amodel(amodel)
-      , _GMmodel(GMmodel)
-      , _dzonal0(dzonal0)
-      , _corrmult(corrmult)
-      , _gamma0(gamma0)
-      , _gamma(gamma)
-      , _frot(frot)
-      , _gravitational(gravitational)
-      , _disturbing(disturbing)
-      , _correction(correction)
-    {}
+                  const CircularEngine& correction);
 
     friend class GravityModel; // GravityModel calls the private constructor
     Math::real W(real slam, real clam,
@@ -260,7 +238,7 @@ namespace GeographicLib {
      *   the value inherited from the GravityModel object used in the
      *   constructor.
      **********************************************************************/
-    Math::real MajorRadius() const
+    Math::real EquatorialRadius() const
     { return Init() ? _a : Math::NaN(); }
 
     /**

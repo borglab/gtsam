@@ -2,7 +2,7 @@
  * \file NormalGravity.hpp
  * \brief Header for GeographicLib::NormalGravity class
  *
- * Copyright (c) Charles Karney (2011-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -65,10 +65,11 @@ namespace GeographicLib {
    *   di rotazione, Mem. Soc. Astron. Ital, <b>4</b>, 541--599 (1929).
    * - W. A. Heiskanen and H. Moritz, Physical Geodesy (Freeman, San
    *   Francisco, 1967), Secs. 1-19, 2-7, 2-8 (2-9, 2-10), 6-2 (6-3).
+   *   https://archive.org/details/HeiskanenMoritz1967PhysicalGeodesy
    * - B. Hofmann-Wellenhof, H. Moritz, Physical Geodesy (Second edition,
-   *   Springer, 2006) https://doi.org/10.1007/978-3-211-33545-1
+   *   Springer, 2006). https://doi.org/10.1007/978-3-211-33545-1
    * - H. Moritz, Geodetic Reference System 1980, J. Geodesy 54(3), 395-405
-   *   (1980) https://doi.org/10.1007/BF02521480
+   *   (1980). https://doi.org/10.1007/BF02521480
    *
    * For more information on normal gravity see \ref normalgravity.
    *
@@ -81,8 +82,8 @@ namespace GeographicLib {
     static const int maxit_ = 20;
     typedef Math::real real;
     friend class GravityModel;
-    real _a, _GM, _omega, _f, _J2, _omega2, _aomega2;
-    real _e2, _ep2, _b, _E, _U0, _gammae, _gammap, _Q0, _k, _fstar;
+    real _a, _gGM, _omega, _f, _jJ2, _omega2, _aomega2;
+    real _e2, _ep2, _b, _eE, _uU0, _gammae, _gammap, _qQ0, _k, _fstar;
     Geocentric _earth;
     static real atanzz(real x, bool alt) {
       // This routine obeys the identity
@@ -90,12 +91,13 @@ namespace GeographicLib {
       //
       // Require x >= -1.  Best to call with alt, s.t. x >= 0; this results in
       // a call to atan, instead of asin, or to asinh, instead of atanh.
-      using std::sqrt; using std::abs; using std::atan; using std::asin;
-      real z = sqrt(abs(x));
+      using std::sqrt; using std::fabs; using std::atan; using std::asin;
+      using std::asinh; using std::atanh;
+      real z = sqrt(fabs(x));
       return x == 0 ? 1 :
         (alt ?
-         (!(x < 0) ? Math::asinh(z) : asin(z)) / sqrt(abs(x) / (1 + x)) :
-         (!(x < 0) ? atan(z) : Math::atanh(z)) / z);
+         (!(x < 0) ? asinh(z) : asin(z)) / sqrt(fabs(x) / (1 + x)) :
+         (!(x < 0) ? atan(z) : atanh(z)) / z);
     }
     static real atan7series(real x);
     static real atan5series(real x);
@@ -141,36 +143,6 @@ namespace GeographicLib {
      **********************************************************************/
     NormalGravity(real a, real GM, real omega, real f_J2,
                   bool geometricp = true);
-    /**
-     * \deprecated Old constructor for the normal gravity.
-     *
-     * @param[in] a equatorial radius (meters).
-     * @param[in] GM mass constant of the ellipsoid
-     *   (meters<sup>3</sup>/seconds<sup>2</sup>); this is the product of \e G
-     *   the gravitational constant and \e M the mass of the earth (usually
-     *   including the mass of the earth's atmosphere).
-     * @param[in] omega the angular velocity (rad s<sup>&minus;1</sup>).
-     * @param[in] f the flattening of the ellipsoid.
-     * @param[in] J2 the dynamical form factor.
-     * @exception if \e a is not positive or the other constants are
-     *   inconsistent (see below).
-     *
-     * If \e omega is non-zero, then exactly one of \e f and \e J2 should be
-     * positive and this will be used to define the ellipsoid.  The shape of
-     * the ellipsoid can be given in one of two ways:
-     * - geometrically, the ellipsoid is defined by the flattening \e f = (\e a
-     *   &minus; \e b) / \e a, where \e a and \e b are the equatorial radius
-     *   and the polar semi-axis.
-     * - physically, the ellipsoid is defined by the dynamical form factor
-     *   <i>J</i><sub>2</sub> = (\e C &minus; \e A) / <i>Ma</i><sup>2</sup>,
-     *   where \e A and \e C are the equatorial and polar moments of inertia
-     *   and \e M is the mass of the earth.
-     * .
-     * If \e omega, \e f, and \e J2 are all zero, then the ellipsoid becomes a
-     * sphere.
-     **********************************************************************/
-    GEOGRAPHICLIB_DEPRECATED("Use new NormalGravity constructor")
-    NormalGravity(real a, real GM, real omega, real f, real J2);
 
     /**
      * A default constructor for the normal gravity.  This sets up an
@@ -296,7 +268,7 @@ namespace GeographicLib {
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value used in the constructor.
      **********************************************************************/
-    Math::real MajorRadius() const
+    Math::real EquatorialRadius() const
     { return Init() ? _a : Math::NaN(); }
 
     /**
@@ -305,7 +277,7 @@ namespace GeographicLib {
      *   constructor.
      **********************************************************************/
     Math::real MassConstant() const
-    { return Init() ? _GM : Math::NaN(); }
+    { return Init() ? _gGM : Math::NaN(); }
 
     /**
      * @return <i>J</i><sub><i>n</i></sub> the dynamical form factors of the
@@ -320,7 +292,7 @@ namespace GeographicLib {
      * &minus;<i>J</i><sub><i>n</i></sub> / sqrt(2 \e n + 1).
      **********************************************************************/
     Math::real DynamicalFormFactor(int n = 2) const
-    { return Init() ? ( n == 2 ? _J2 : Jn(n)) : Math::NaN(); }
+    { return Init() ? ( n == 2 ? _jJ2 : Jn(n)) : Math::NaN(); }
 
     /**
      * @return &omega; the angular velocity of the ellipsoid (rad
@@ -362,7 +334,7 @@ namespace GeographicLib {
      *   surface of the ellipsoid (m<sup>2</sup> s<sup>&minus;2</sup>).
      **********************************************************************/
     Math::real SurfacePotential() const
-    { return Init() ? _U0 : Math::NaN(); }
+    { return Init() ? _uU0 : Math::NaN(); }
 
     /**
      * @return the Geocentric object used by this instance.

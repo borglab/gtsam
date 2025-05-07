@@ -1,4 +1,6 @@
 // Example of using the GeographicLib::GravityCircle class
+// This requires that the egm96 gravity model be installed; see
+// https://geographiclib.sourceforge.io/C++/doc/gravity.html#gravityinst
 
 #include <iostream>
 #include <exception>

@@ -29,11 +29,7 @@ using namespace std;
 using namespace gtsam;
 using namespace GeographicLib;
 
-#if GEOGRAPHICLIB_VERSION_MINOR<37
-static const auto& kWGS84 = Geocentric::WGS84;
-#else
 static const auto& kWGS84 = Geocentric::WGS84();
-#endif
 
 // *************************************************************************
 namespace example {

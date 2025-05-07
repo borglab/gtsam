@@ -1,8 +1,0 @@
-// Dummy usage file to be used when the man page isn't available
-
-int usage(int retval, bool /* brief */) {
-  ( retval ? std::cerr : std::cout )
-    << "For full documentation on @TOOL@, see\n"
-    << "    https://geographiclib.sourceforge.io/@PROJECT_VERSION@/@TOOL@.1.html\n";
-  return retval;
-}

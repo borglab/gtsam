@@ -2,7 +2,7 @@
  * \file MagneticModel.cpp
  * \brief Implementation for GeographicLib::MagneticModel class
  *
- * Copyright (c) Charles Karney (2011-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2021) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -22,7 +22,7 @@
 #endif
 
 #if !defined(GEOGRAPHICLIB_MAGNETIC_DEFAULT_NAME)
-#  define GEOGRAPHICLIB_MAGNETIC_DEFAULT_NAME "wmm2015"
+#  define GEOGRAPHICLIB_MAGNETIC_DEFAULT_NAME "wmm2025"
 #endif
 
 #if defined(_MSC_VER)
@@ -34,8 +34,8 @@ namespace GeographicLib {
 
   using namespace std;
 
-  MagneticModel::MagneticModel(const std::string& name,const std::string& path,
-                               const Geocentric& earth)
+  MagneticModel::MagneticModel(const std::string& name, const std::string& path,
+                               const Geocentric& earth, int Nmax, int Mmax)
     : _name(name)
     , _dir(path)
     , _description("NONE")
@@ -47,16 +47,24 @@ namespace GeographicLib {
     , _a(Math::NaN())
     , _hmin(Math::NaN())
     , _hmax(Math::NaN())
-    , _Nmodels(1)
-    , _Nconstants(0)
+    , _nNmodels(1)
+    , _nNconstants(0)
+    , _nmx(-1)
+    , _mmx(-1)
     , _norm(SphericalHarmonic::SCHMIDT)
     , _earth(earth)
   {
     if (_dir.empty())
       _dir = DefaultMagneticPath();
+    bool truncate = Nmax >= 0 || Mmax >= 0;
+    if (truncate) {
+      if (Nmax >= 0 && Mmax < 0) Mmax = Nmax;
+      if (Nmax < 0) Nmax = numeric_limits<int>::max();
+      if (Mmax < 0) Mmax = numeric_limits<int>::max();
+    }
     ReadMetadata(_name);
-    _G.resize(_Nmodels + 1 + _Nconstants);
-    _H.resize(_Nmodels + 1 + _Nconstants);
+    _gG.resize(_nNmodels + 1 + _nNconstants);
+    _hH.resize(_nNmodels + 1 + _nNconstants);
     {
       string coeff = _filename + ".cof";
       ifstream coeffstr(coeff.c_str(), ios::binary);
@@ -69,12 +77,16 @@ namespace GeographicLib {
       id[idlength_] = '\0';
       if (_id != string(id))
         throw GeographicErr("ID mismatch: " + _id + " vs " + id);
-      for (int i = 0; i < _Nmodels + 1 + _Nconstants; ++i) {
+      for (int i = 0; i < _nNmodels + 1 + _nNconstants; ++i) {
         int N, M;
-        SphericalEngine::coeff::readcoeffs(coeffstr, N, M, _G[i], _H[i]);
-        if (!(M < 0 || _G[i][0] == 0))
+        if (truncate) { N = Nmax; M = Mmax; }
+        SphericalEngine::coeff::readcoeffs(coeffstr, N, M, _gG[i], _hH[i],
+                                           truncate);
+        if (!(M < 0 || _gG[i][0] == 0))
           throw GeographicErr("A degree 0 term is not permitted");
-        _harm.push_back(SphericalHarmonic(_G[i], _H[i], N, N, M, _a, _norm));
+        _harm.push_back(SphericalHarmonic(_gG[i], _hH[i], N, N, M, _a, _norm));
+        _nmx = max(_nmx, _harm.back().Coefficients().nmx());
+        _mmx = max(_mmx, _harm.back().Coefficients().mmx());
       }
       int pos = int(coeffstr.tellg());
       coeffstr.seekg(0, ios::end);
@@ -83,7 +95,7 @@ namespace GeographicLib {
     }
   }
 
-  void MagneticModel::ReadMetadata(const std::string& name) {
+  void MagneticModel::ReadMetadata(const string& name) {
     const char* spaces = " \t\n\v\f\r";
     _filename = _dir + "/" + name + ".wmm";
     ifstream metastr(_filename.c_str());
@@ -97,6 +109,11 @@ namespace GeographicLib {
     if (n != string::npos)
       n -= 5;
     string version(line, 5, n);
+    // version 2 added treatment of NumConstants.  The MagneticModel class now
+    // accepts NumConstants for version = 1 or 2.  (The version logic was
+    // necessary to allow old versions of GeographicLib, which didn't
+    // understand NumConstants, to complain when it encountered a version 2
+    // file.)
     if (!(version == "1" || version == "2"))
       throw GeographicErr("Unknown version in " + _filename + ": " + version);
     string key, val;
@@ -120,9 +137,9 @@ namespace GeographicLib {
       else if (key == "DeltaEpoch")
         _dt0 = Utility::val<real>(val);
       else if (key == "NumModels")
-        _Nmodels = Utility::val<int>(val);
+        _nNmodels = Utility::val<int>(val);
       else if (key == "NumConstants")
-        _Nconstants = Utility::val<int>(val);
+        _nNconstants = Utility::val<int>(val);
       else if (key == "MinTime")
         _tmin = Utility::val<real>(val);
       else if (key == "MaxTime")
@@ -148,7 +165,7 @@ namespace GeographicLib {
       // else unrecognized keywords are skipped
     }
     // Check values
-    if (!(Math::isfinite(_a) && _a > 0))
+    if (!(isfinite(_a) && _a > 0))
       throw GeographicErr("Reference radius must be positive");
     if (!(_t0 > 0))
       throw GeographicErr("Epoch time not defined");
@@ -158,67 +175,76 @@ namespace GeographicLib {
       throw GeographicErr("Min height exceeds max height");
     if (int(_id.size()) != idlength_)
       throw GeographicErr("Invalid ID");
-    if (_Nmodels < 1)
+    if (_nNmodels < 1)
       throw GeographicErr("NumModels must be positive");
-    if (!(_Nconstants == 0 || _Nconstants == 1))
+    if (!(_nNconstants == 0 || _nNconstants == 1))
       throw GeographicErr("NumConstants must be 0 or 1");
     if (!(_dt0 > 0)) {
-      if (_Nmodels > 1)
+      if (_nNmodels > 1)
         throw GeographicErr("DeltaEpoch must be positive");
       else
         _dt0 = 1;
     }
   }
 
+  void MagneticModel::FieldGeocentric(real t, real X, real Y, real Z,
+                                      real& BX, real& BY, real& BZ,
+                                      real& BXt, real& BYt, real& BZt) const {
+    t -= _t0;
+    int n = max(min(int(floor(t / _dt0)), _nNmodels - 1), 0);
+    bool interpolate = n + 1 < _nNmodels;
+    t -= n * _dt0;
+    // Components in geocentric basis
+    // initial values to suppress warning
+    real BXc = 0, BYc = 0, BZc = 0;
+    _harm[n](X, Y, Z, BX, BY, BZ);
+    _harm[n + 1](X, Y, Z, BXt, BYt, BZt);
+    if (_nNconstants)
+      _harm[_nNmodels + 1](X, Y, Z, BXc, BYc, BZc);
+    if (interpolate) {
+      // Convert to a time derivative
+      BXt = (BXt - BX) / _dt0;
+      BYt = (BYt - BY) / _dt0;
+      BZt = (BZt - BZ) / _dt0;
+    }
+    BX += t * BXt + BXc;
+    BY += t * BYt + BYc;
+    BZ += t * BZt + BZc;
+
+    BXt = BXt * - _a;
+    BYt = BYt * - _a;
+    BZt = BZt * - _a;
+
+    BX *= - _a;
+    BY *= - _a;
+    BZ *= - _a;
+  }
+
   void MagneticModel::Field(real t, real lat, real lon, real h, bool diffp,
                             real& Bx, real& By, real& Bz,
                             real& Bxt, real& Byt, real& Bzt) const {
-    t -= _t0;
-    int n = max(min(int(floor(t / _dt0)), _Nmodels - 1), 0);
-    bool interpolate = n + 1 < _Nmodels;
-    t -= n * _dt0;
     real X, Y, Z;
     real M[Geocentric::dim2_];
     _earth.IntForward(lat, lon, h, X, Y, Z, M);
     // Components in geocentric basis
     // initial values to suppress warning
-    real BX0 = 0, BY0 = 0, BZ0 = 0, BX1 = 0, BY1 = 0, BZ1 = 0;
-    real BXc = 0, BYc = 0, BZc = 0;
-    _harm[n](X, Y, Z, BX0, BY0, BZ0);
-    _harm[n + 1](X, Y, Z, BX1, BY1, BZ1);
-    if (_Nconstants)
-      _harm[_Nmodels + 1](X, Y, Z, BXc, BYc, BZc);
-    if (interpolate) {
-      // Convert to a time derivative
-      BX1 = (BX1 - BX0) / _dt0;
-      BY1 = (BY1 - BY0) / _dt0;
-      BZ1 = (BZ1 - BZ0) / _dt0;
-    }
-    BX0 += t * BX1 + BXc;
-    BY0 += t * BY1 + BYc;
-    BZ0 += t * BZ1 + BZc;
-    if (diffp) {
-      Geocentric::Unrotate(M, BX1, BY1, BZ1, Bxt, Byt, Bzt);
-      Bxt *= - _a;
-      Byt *= - _a;
-      Bzt *= - _a;
-    }
-    Geocentric::Unrotate(M, BX0, BY0, BZ0, Bx, By, Bz);
-    Bx *= - _a;
-    By *= - _a;
-    Bz *= - _a;
+    real BX = 0, BY = 0, BZ = 0, BXt = 0, BYt = 0, BZt = 0;
+    FieldGeocentric(t, X, Y, Z, BX, BY, BZ, BXt, BYt, BZt);
+    if (diffp)
+      Geocentric::Unrotate(M, BXt, BYt, BZt, Bxt, Byt, Bzt);
+    Geocentric::Unrotate(M, BX, BY, BZ, Bx, By, Bz);
   }
 
   MagneticCircle MagneticModel::Circle(real t, real lat, real h) const {
     real t1 = t - _t0;
-    int n = max(min(int(floor(t1 / _dt0)), _Nmodels - 1), 0);
-    bool interpolate = n + 1 < _Nmodels;
+    int n = max(min(int(floor(t1 / _dt0)), _nNmodels - 1), 0);
+    bool interpolate = n + 1 < _nNmodels;
     t1 -= n * _dt0;
     real X, Y, Z, M[Geocentric::dim2_];
     _earth.IntForward(lat, 0, h, X, Y, Z, M);
     // Y = 0, cphi = M[7], sphi = M[8];
 
-    return (_Nconstants == 0 ?
+    return (_nNconstants == 0 ?
             MagneticCircle(_a, _earth._f, lat, h, t,
                            M[7], M[8], t1, _dt0, interpolate,
                            _harm[n].Circle(X, Z, true),
@@ -227,7 +253,7 @@ namespace GeographicLib {
                            M[7], M[8], t1, _dt0, interpolate,
                            _harm[n].Circle(X, Z, true),
                            _harm[n + 1].Circle(X, Z, true),
-                           _harm[_Nmodels + 1].Circle(X, Z, true)));
+                           _harm[_nNmodels + 1].Circle(X, Z, true)));
   }
 
   void MagneticModel::FieldComponents(real Bx, real By, real Bz,
@@ -235,17 +261,17 @@ namespace GeographicLib {
                                       real& H, real& F, real& D, real& I,
                                       real& Ht, real& Ft,
                                       real& Dt, real& It) {
-    H = Math::hypot(Bx, By);
-    Ht = H != 0 ? (Bx * Bxt + By * Byt) / H : Math::hypot(Bxt, Byt);
+    H = hypot(Bx, By);
+    Ht = H != 0 ? (Bx * Bxt + By * Byt) / H : hypot(Bxt, Byt);
     D = H != 0 ? Math::atan2d(Bx, By) : Math::atan2d(Bxt, Byt);
     Dt = (H != 0 ? (By * Bxt - Bx * Byt) / Math::sq(H) : 0) / Math::degree();
-    F = Math::hypot(H, Bz);
-    Ft = F != 0 ? (H * Ht + Bz * Bzt) / F : Math::hypot(Ht, Bzt);
+    F = hypot(H, Bz);
+    Ft = F != 0 ? (H * Ht + Bz * Bzt) / F : hypot(Ht, Bzt);
     I = F != 0 ? Math::atan2d(-Bz, H) : Math::atan2d(-Bzt, Ht);
     It = (F != 0 ? (Bz * Ht - H * Bzt) / Math::sq(F) : 0) / Math::degree();
   }
 
-  std::string MagneticModel::DefaultMagneticPath() {
+  string MagneticModel::DefaultMagneticPath() {
     string path;
     char* magneticpath = getenv("GEOGRAPHICLIB_MAGNETIC_PATH");
     if (magneticpath)
@@ -258,7 +284,7 @@ namespace GeographicLib {
     return (!path.empty() ? path : string(GEOGRAPHICLIB_DATA)) + "/magnetic";
   }
 
-  std::string MagneticModel::DefaultMagneticName() {
+  string MagneticModel::DefaultMagneticName() {
     string name;
     char* magneticname = getenv("GEOGRAPHICLIB_MAGNETIC_NAME");
     if (magneticname)

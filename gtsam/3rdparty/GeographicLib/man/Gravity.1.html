@@ -17,7 +17,7 @@
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
-<p><b>Gravity</b> [ <b>-n</b> <i>name</i> ] [ <b>-d</b> <i>dir</i> ] [ <b>-G</b> | <b>-D</b> | <b>-A</b> | <b>-H</b> ] [ <b>-c</b> <i>lat</i> <i>h</i> ] [ <b>-w</b> ] [ <b>-p</b> <i>prec</i> ] [ <b>-v</b> ] [ <b>--comment-delimiter</b> <i>commentdelim</i> ] [ <b>--version</b> | <b>-h</b> | <b>--help</b> ] [ <b>--input-file</b> <i>infile</i> | <b>--input-string</b> <i>instring</i> ] [ <b>--line-separator</b> <i>linesep</i> ] [ <b>--output-file</b> <i>outfile</i> ]</p>
+<p><b>Gravity</b> [ <b>-n</b> <i>name</i> ] [ <b>-d</b> <i>dir</i> ] [ <b>-N</b> <i>Nmax</i> ] [ <b>-M</b> <i>Mmax</i> ] [ <b>-G</b> | <b>-D</b> | <b>-A</b> | <b>-H</b> ] [ <b>-c</b> <i>lat</i> <i>h</i> ] [ <b>-w</b> ] [ <b>-p</b> <i>prec</i> ] [ <b>-v</b> ] [ <b>--comment-delimiter</b> <i>commentdelim</i> ] [ <b>--version</b> | <b>-h</b> | <b>--help</b> ] [ <b>--input-file</b> <i>infile</i> | <b>--input-string</b> <i>instring</i> ] [ <b>--line-separator</b> <i>linesep</i> ] [ <b>--output-file</b> <i>outfile</i> ]</p>
 
 <h1 id="DESCRIPTION">DESCRIPTION</h1>
 
@@ -41,6 +41,18 @@
 <dd>
 
 <p>read gravity models from <i>dir</i> instead of the default. See <a href="#MODELS">&quot;MODELS&quot;</a>.</p>
+
+</dd>
+<dt id="N-Nmax"><b>-N</b> <i>Nmax</i></dt>
+<dd>
+
+<p>limit the degree of the model to <i>Nmax</i>.</p>
+
+</dd>
+<dt id="M-Mmax"><b>-M</b> <i>Mmax</i></dt>
+<dd>
+
+<p>limit the order of the model to <i>Mmax</i>.</p>
 
 </dd>
 <dt id="G"><b>-G</b></dt>
@@ -145,22 +157,22 @@
 
 <p><b>Gravity</b> computes the gravity field using one of the following models</p>
 
-<pre><code>    egm84, earth gravity model 1984.  See
-      http://earth-info.nga.mil/GandG/wgs84/gravitymod/wgs84_180/wgs84_180.html
-    egm96, earth gravity model 1996.  See
-      http://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/egm96.html
-    egm2008, earth gravity model 2008.  See
-      http://earth-info.nga.mil/GandG/wgs84/gravitymod/egm2008
-    wgs84, world geodetic system 1984.  This returns the normal
-      gravity for the WGS84 ellipsoid.
-    grs80, geodetic reference system 1980.  This returns the normal
-      gravity for the GRS80 ellipsoid.</code></pre>
+<pre><code>egm84, earth gravity model 1984.  See
+  https://earth-info.nga.mil/index.php?dir=wgs84&amp;action=wgs84#tab_egm84
+egm96, earth gravity model 1996.  See
+  https://earth-info.nga.mil/index.php?dir=wgs84&amp;action=wgs84#tab_egm96
+egm2008, earth gravity model 2008.  See
+  https://earth-info.nga.mil/index.php?dir=wgs84&amp;action=wgs84#tab_egm2008
+wgs84, world geodetic system 1984.  This returns the normal
+  gravity for the WGS84 ellipsoid.
+grs80, geodetic reference system 1980.  This returns the normal
+  gravity for the GRS80 ellipsoid.</code></pre>
 
 <p>These models approximate the gravitation field above the surface of the earth. By default, the <code>egm96</code> gravity model is used. This may changed by setting the environment variable <code>GEOGRAPHICLIB_GRAVITY_NAME</code> or with the <b>-n</b> option.</p>
 
 <p>The gravity models will be loaded from a directory specified at compile time. This may changed by setting the environment variables <code>GEOGRAPHICLIB_GRAVITY_PATH</code> or <code>GEOGRAPHICLIB_DATA</code>, or with the <b>-d</b> option. The <b>-h</b> option prints the default gravity path and name. Use the <b>-v</b> option to ascertain the full path name of the data file.</p>
 
-<p>Instructions for downloading and installing gravity models are available at <a href="https://geographiclib.sourceforge.io/html/gravity.html#gravityinst">https://geographiclib.sourceforge.io/html/gravity.html#gravityinst</a>.</p>
+<p>Instructions for downloading and installing gravity models are available at <a href="https://geographiclib.sourceforge.io/C++/doc/gravity.html#gravityinst">https://geographiclib.sourceforge.io/C++/doc/gravity.html#gravityinst</a>.</p>
 
 <h1 id="ENVIRONMENT">ENVIRONMENT</h1>
 
@@ -194,8 +206,8 @@
 
 <p>The gravity field from EGM2008 at the top of Mount Everest</p>
 
-<pre><code>    echo 27:59:17N 86:55:32E 8820 | Gravity -n egm2008
-    =&gt; -0.00001 0.00103 -9.76782</code></pre>
+<pre><code>echo 27:59:17N 86:55:32E 8820 | Gravity -n egm2008
+=&gt; -0.00001 0.00103 -9.76782</code></pre>
 
 <h1 id="SEE-ALSO">SEE ALSO</h1>
 

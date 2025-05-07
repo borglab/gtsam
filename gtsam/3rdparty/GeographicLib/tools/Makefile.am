@@ -6,8 +6,8 @@
 AM_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include \
            -I$(top_builddir)/man -I$(top_srcdir)/man -Wall -Wextra
 
-LDADD = $(top_builddir)/src/libGeographic.la
-DEPS = $(top_builddir)/src/libGeographic.la
+LDADD = $(top_builddir)/src/libGeographicLib.la
+DEPS = $(top_builddir)/src/libGeographicLib.la
 
 bin_PROGRAMS = CartConvert \
 	ConicProj \
@@ -16,6 +16,7 @@ bin_PROGRAMS = CartConvert \
 	GeodesicProj \
 	GeoidEval \
 	Gravity \
+	IntersectTool \
 	MagneticField \
 	Planimeter \
 	RhumbSolve \
@@ -96,6 +97,18 @@ Gravity_SOURCES = Gravity.cpp \
 	../include/GeographicLib/SphericalHarmonic.hpp \
 	../include/GeographicLib/SphericalHarmonic1.hpp \
 	../include/GeographicLib/Utility.hpp
+IntersectTool_SOURCES = IntersectTool.cpp \
+	../man/IntersectTool.usage \
+	../include/GeographicLib/Config.h \
+	../include/GeographicLib/Constants.hpp \
+	../include/GeographicLib/DMS.hpp \
+	../include/GeographicLib/Geodesic.hpp \
+	../include/GeographicLib/GeodesicExact.hpp \
+	../include/GeographicLib/GeodesicLine.hpp \
+	../include/GeographicLib/GeodesicLineExact.hpp \
+	../include/GeographicLib/Intersect.hpp \
+	../include/GeographicLib/Math.hpp \
+	../include/GeographicLib/Utility.hpp
 MagneticField_SOURCES = MagneticField.cpp \
 	../man/MagneticField.usage \
 	../include/GeographicLib/Config.h \
@@ -120,6 +133,7 @@ Planimeter_SOURCES = Planimeter.cpp \
 	../include/GeographicLib/Geodesic.hpp \
 	../include/GeographicLib/Math.hpp \
 	../include/GeographicLib/PolygonArea.hpp \
+	../include/GeographicLib/Rhumb.hpp \
 	../include/GeographicLib/UTMUPS.hpp \
 	../include/GeographicLib/Utility.hpp
 RhumbSolve_SOURCES = RhumbSolve.cpp \
@@ -129,6 +143,7 @@ RhumbSolve_SOURCES = RhumbSolve.cpp \
 	../include/GeographicLib/DMS.hpp \
 	../include/GeographicLib/Ellipsoid.hpp \
 	../include/GeographicLib/Math.hpp \
+	../include/GeographicLib/Rhumb.hpp \
 	../include/GeographicLib/Utility.hpp
 TransverseMercatorProj_SOURCES = TransverseMercatorProj.cpp \
 	../man/TransverseMercatorProj.usage \
@@ -157,6 +172,6 @@ geographiclib-get-magnetic: geographiclib-get-magnetic.sh
 	chmod +x $@
 
 CLEANFILES = $(sbin_SCRIPTS)
-EXTRA_DIST = Makefile.mk CMakeLists.txt tests.cmake \
+EXTRA_DIST = CMakeLists.txt \
 	geographiclib-get-geoids.sh geographiclib-get-gravity.sh \
 	geographiclib-get-magnetic.sh

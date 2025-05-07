@@ -1,16 +1,19 @@
 #
 # Makefile.am
 #
-# Copyright (C) 2011, Charles Karney <charles@karney.com>
+# Copyright (C) 2011-2023, Charles Karney <karney@alum.mit.edu>
 
 EXAMPLE_FILES = \
 	example-Accumulator.cpp \
 	example-AlbersEqualArea.cpp \
+	example-AuxAngle.cpp \
+	example-AuxLatitude.cpp \
 	example-AzimuthalEquidistant.cpp \
 	example-CassiniSoldner.cpp \
 	example-CircularEngine.cpp \
 	example-Constants.cpp \
 	example-DMS.cpp \
+	example-DST.cpp \
 	example-Ellipsoid.cpp \
 	example-EllipticFunction.cpp \
 	example-GARS.cpp \
@@ -28,6 +31,7 @@ EXAMPLE_FILES = \
 	example-Gnomonic.cpp \
 	example-GravityCircle.cpp \
 	example-GravityModel.cpp \
+	example-Intersect.cpp \
 	example-LambertConformalConic.cpp \
 	example-LocalCartesian.cpp \
 	example-MGRS.cpp \
@@ -50,7 +54,6 @@ EXAMPLE_FILES = \
 	example-UTMUPS.cpp \
 	example-Utility.cpp \
 	GeoidToGTX.cpp \
-	JacobiConformal.cpp JacobiConformal.hpp \
 	make-egmcof.cpp
 
 EXTRA_DIST = CMakeLists.txt $(EXAMPLE_FILES)

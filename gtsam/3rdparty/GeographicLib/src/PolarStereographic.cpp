@@ -2,7 +2,7 @@
  * \file PolarStereographic.cpp
  * \brief Implementation for GeographicLib::PolarStereographic class
  *
- * Copyright (c) Charles Karney (2008-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -17,16 +17,16 @@ namespace GeographicLib {
     : _a(a)
     , _f(f)
     , _e2(_f * (2 - _f))
-    , _es((_f < 0 ? -1 : 1) * sqrt(abs(_e2)))
+    , _es((_f < 0 ? -1 : 1) * sqrt(fabs(_e2)))
     , _e2m(1 - _e2)
     , _c( (1 - _f) * exp(Math::eatanhe(real(1), _es)) )
     , _k0(k0)
   {
-    if (!(Math::isfinite(_a) && _a > 0))
+    if (!(isfinite(_a) && _a > 0))
       throw GeographicErr("Equatorial radius is not positive");
-    if (!(Math::isfinite(_f) && _f < 1))
+    if (!(isfinite(_f) && _f < 1))
       throw GeographicErr("Polar semi-axis is not positive");
-    if (!(Math::isfinite(_k0) && _k0 > 0))
+    if (!(isfinite(_k0) && _k0 > 0))
       throw GeographicErr("Scale is not positive");
   }
 
@@ -65,13 +65,13 @@ namespace GeographicLib {
     lat *= northp ? 1 : -1;
     real
       tau = Math::tand(lat),
-      secphi = Math::hypot(real(1), tau),
+      secphi = hypot(real(1), tau),
       taup = Math::taupf(tau, _es),
-      rho = Math::hypot(real(1), taup) + abs(taup);
-    rho = taup >= 0 ? (lat != 90 ? 1/rho : 0) : rho;
+      rho = hypot(real(1), taup) + fabs(taup);
+    rho = taup >= 0 ? (lat != Math::qd ? 1/rho : 0) : rho;
     rho *= 2 * _k0 * _a / _c;
-    k = lat != 90 ? (rho / _a) * secphi * sqrt(_e2m + _e2 / Math::sq(secphi)) :
-      _k0;
+    k = lat != Math::qd ?
+      (rho / _a) * secphi * sqrt(_e2m + _e2 / Math::sq(secphi)) : _k0;
     Math::sincosd(lon, x, y);
     x *= rho;
     y *= (northp ? -rho : rho);
@@ -82,12 +82,12 @@ namespace GeographicLib {
                                    real& lat, real& lon,
                                    real& gamma, real& k) const {
     real
-      rho = Math::hypot(x, y),
+      rho = hypot(x, y),
       t = rho != 0 ? rho / (2 * _k0 * _a / _c) :
       Math::sq(numeric_limits<real>::epsilon()),
       taup = (1 / t - t) / 2,
       tau = Math::tauf(taup, _es),
-      secphi = Math::hypot(real(1), tau);
+      secphi = hypot(real(1), tau);
     k = rho != 0 ? (rho / _a) * secphi * sqrt(_e2m + _e2 / Math::sq(secphi)) :
       _k0;
     lat = (northp ? 1 : -1) * Math::atand(tau);
@@ -96,10 +96,11 @@ namespace GeographicLib {
   }
 
   void PolarStereographic::SetScale(real lat, real k) {
-    if (!(Math::isfinite(k) && k > 0))
+    if (!(isfinite(k) && k > 0))
       throw GeographicErr("Scale is not positive");
-    if (!(-90 < lat && lat <= 90))
-      throw GeographicErr("Latitude must be in (-90d, 90d]");
+    if (!(-Math::qd < lat && lat <= Math::qd))
+      throw GeographicErr("Latitude must be in (-" + to_string(Math::qd)
+                          + "d, " + to_string(Math::qd) + "d]");
     real x, y, gamma, kold;
     _k0 = 1;
     Forward(true, lat, 0, x, y, gamma, kold);

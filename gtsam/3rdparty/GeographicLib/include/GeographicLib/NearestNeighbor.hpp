@@ -2,7 +2,7 @@
  * \file NearestNeighbor.hpp
  * \brief Header for GeographicLib::NearestNeighbor class
  *
- * Copyright (c) Charles Karney (2016-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2016-2020) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -17,9 +17,8 @@
 #include <cstring>
 #include <limits>
 #include <cmath>
-#include <iostream>
 #include <sstream>
-// Only for GEOGRAPHICLIB_STATIC_ASSERT and GeographicLib::GeographicErr
+// Only for GeographicLib::GeographicErr
 #include <GeographicLib/Constants.hpp>
 
 #if defined(GEOGRAPHICLIB_HAVE_BOOST_SERIALIZATION) && \
@@ -28,12 +27,6 @@
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/vector.hpp>
-#endif
-
-#if defined(_MSC_VER)
-// Squelch warnings about constant conditional expressions
-#  pragma warning (push)
-#  pragma warning (disable: 4127)
 #endif
 
 namespace GeographicLib {
@@ -51,7 +44,7 @@ namespace GeographicLib {
    *   signed integer type; in typical geodetic applications, \e dist_t might
    *   be <code>double</code>.
    * @tparam pos_t the type for specifying the positions of points; geodetic
-   *   application might bundled the latitude and longitude into a
+   *   application might bundle the latitude and longitude into a
    *   <code>std::pair<dist_t, dist_t></code>.
    * @tparam distfun_t the type of a function object which takes takes two
    *   positions (of type \e pos_t) and returns the distance (of type \e
@@ -70,12 +63,11 @@ namespace GeographicLib {
    * square root in the interests of "efficiency"; the squared distance does
    * not satisfy the triangle inequality!
    *
-   * This is a "header-only" implementation and, as such, depends in a minimal
-   * way on the rest of GeographicLib (the only dependency is through the use
-   * of GEOGRAPHICLIB_STATIC_ASSERT and GeographicLib::GeographicErr for
-   * handling run-time and compile-time exceptions).  Therefore, it is easy to
-   * extract this class from the rest of GeographicLib and use it as a
-   * stand-alone facility.
+   * \note This is a "header-only" implementation and, as such, depends in a
+   * minimal way on the rest of GeographicLib (the only dependency is through
+   * the use of GeographicLib::GeographicErr for handling and run-time
+   * exceptions).  Therefore, it is easy to extract this class from the rest of
+   * GeographicLib and use it as a stand-alone facility.
    *
    * The \e dist_t type must support numeric_limits queries (specifically:
    * is_signed, is_integer, max(), digits).
@@ -93,14 +85,14 @@ namespace GeographicLib {
    * Because of the overhead in constructing a NearestNeighbor object for a
    * large set of points, functions Save() and Load() are provided to save the
    * object to an external file.  operator<<(), operator>>() and <a
-   * href="http://www.boost.org/libs/serialization/doc"> Boost
+   * href="https://www.boost.org/libs/serialization/doc"> Boost
    * serialization</a> can also be used to save and restore a NearestNeighbor
    * object.  This is illustrated in the example.
    *
    * Example of use:
    * \include example-NearestNeighbor.cpp
    **********************************************************************/
-  template <typename dist_t, typename pos_t, class distfun_t>
+  template<typename dist_t, typename pos_t, class distfun_t>
   class NearestNeighbor {
     // For tracking changes to the I/O format
     static const int version = 1;
@@ -170,8 +162,8 @@ namespace GeographicLib {
      **********************************************************************/
     void Initialize(const std::vector<pos_t>& pts, const distfun_t& dist,
                     int bucket = 4) {
-      GEOGRAPHICLIB_STATIC_ASSERT(std::numeric_limits<dist_t>::is_signed,
-                                  "dist_t must be a signed type");
+      static_assert(std::numeric_limits<dist_t>::is_signed,
+                    "dist_t must be a signed type");
       if (!( 0 <= bucket && bucket <= maxbucket ))
         throw GeographicLib::GeographicErr
           ("bucket must lie in [0, 2 + 4*sizeof(dist_t)/sizeof(int)]");
@@ -367,7 +359,7 @@ namespace GeographicLib {
      * the initializtion cost is saved.  The format of the binary saves is \e
      * not portable.
      *
-     * \note <a href="http://www.boost.org/libs/serialization/doc">
+     * \note <a href="https://www.boost.org/libs/serialization/doc">
      * Boost serialization</a> can also be used to save and restore a
      * NearestNeighbor object.  This requires that the
      * GEOGRAPHICLIB_HAVE_BOOST_SERIALIZATION macro be defined.
@@ -442,7 +434,7 @@ namespace GeographicLib {
      * architecture.  If an exception is thrown, the state of the
      * NearestNeighbor is unchanged.
      *
-     * \note <a href="http://www.boost.org/libs/serialization/doc">
+     * \note <a href="https://www.boost.org/libs/serialization/doc">
      * Boost serialization</a> can also be used to save and restore a
      * NearestNeighbor object.  This requires that the
      * GEOGRAPHICLIB_HAVE_BOOST_SERIALIZATION macro be defined.
@@ -823,16 +815,12 @@ namespace std {
    * @param[in,out] a the first GeographicLib::NearestNeighbor to swap.
    * @param[in,out] b the second GeographicLib::NearestNeighbor to swap.
    **********************************************************************/
-  template <typename dist_t, typename pos_t, class distfun_t>
+  template<typename dist_t, typename pos_t, class distfun_t>
   void swap(GeographicLib::NearestNeighbor<dist_t, pos_t, distfun_t>& a,
             GeographicLib::NearestNeighbor<dist_t, pos_t, distfun_t>& b) {
     a.swap(b);
   }
 
 } // namespace std
-
-#if defined(_MSC_VER)
-#  pragma warning (pop)
-#endif
 
 #endif  // GEOGRAPHICLIB_NEARESTNEIGHBOR_HPP

@@ -2,7 +2,7 @@
  * \file SphericalHarmonic2.hpp
  * \brief Header for GeographicLib::SphericalHarmonic2 class
  *
- * Copyright (c) Charles Karney (2011-2012) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2012) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -204,6 +204,7 @@ namespace GeographicLib {
           (_c, f, x, y, z, _a, dummy, dummy, dummy);
         break;
       case SCHMIDT:
+      default:                  // To avoid compiler warnings
         v = SphericalEngine::Value<false, SphericalEngine::SCHMIDT, 3>
           (_c, f, x, y, z, _a, dummy, dummy, dummy);
         break;
@@ -241,6 +242,7 @@ namespace GeographicLib {
           (_c, f, x, y, z, _a, gradx, grady, gradz);
         break;
       case SCHMIDT:
+      default:                  // To avoid compiler warnings
         v = SphericalEngine::Value<true, SphericalEngine::SCHMIDT, 3>
           (_c, f, x, y, z, _a, gradx, grady, gradz);
         break;

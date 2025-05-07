@@ -1,4 +1,6 @@
 // Example of using the GeographicLib::Geoid class
+// This requires that the egm96-5 geoid model be installed; see
+// https://geographiclib.sourceforge.io/C++/doc/geoid.html#geoidinst
 
 #include <iostream>
 #include <exception>

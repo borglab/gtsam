@@ -2,7 +2,7 @@
  * \file Geohash.cpp
  * \brief Implementation for GeographicLib::Geohash class
  *
- * Copyright (c) Charles Karney (2012-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2012-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -17,19 +17,22 @@ namespace GeographicLib {
   const char* const Geohash::lcdigits_ = "0123456789bcdefghjkmnpqrstuvwxyz";
   const char* const Geohash::ucdigits_ = "0123456789BCDEFGHJKMNPQRSTUVWXYZ";
 
-  void Geohash::Forward(real lat, real lon, int len, std::string& geohash) {
+  void Geohash::Forward(real lat, real lon, int len, string& geohash) {
+    using std::isnan;           // Needed for Centos 7, ubuntu 14
     static const real shift = ldexp(real(1), 45);
-    static const real loneps = 180 / shift;
-    static const real lateps =  90 / shift;
-    if (abs(lat) > 90)
+    static const real loneps = Math::hd / shift;
+    static const real lateps = Math::qd / shift;
+    if (fabs(lat) > Math::qd)
       throw GeographicErr("Latitude " + Utility::str(lat)
-                          + "d not in [-90d, 90d]");
-    if (Math::isnan(lat) || Math::isnan(lon)) {
+                          + "d not in [-" + to_string(Math::qd)
+                          + "d, " + to_string(Math::qd) + "d]");
+    if (isnan(lat) || isnan(lon)) {
       geohash = "invalid";
       return;
     }
-    if (lat == 90) lat -= lateps / 2;
-    lon = Math::AngNormalize(lon); // lon in [-180,180)
+    if (lat == Math::qd) lat -= lateps / 2;
+    lon = Math::AngNormalize(lon);
+    if (lon == Math::hd) lon = -Math::hd; // lon now in [-180,180)
     // lon/loneps in [-2^45,2^45); lon/loneps + shift in [0,2^46)
     // similarly for lat
     len = max(0, min(int(maxlen_), len));
@@ -56,11 +59,11 @@ namespace GeographicLib {
     copy(geohash1, geohash1 + len, geohash.begin());
   }
 
-  void Geohash::Reverse(const std::string& geohash, real& lat, real& lon,
+  void Geohash::Reverse(const string& geohash, real& lat, real& lon,
                         int& len, bool centerp) {
     static const real shift = ldexp(real(1), 45);
-    static const real loneps = 180 / shift;
-    static const real lateps =  90 / shift;
+    static const real loneps = Math::hd / shift;
+    static const real lateps = Math::qd / shift;
     int len1 = min(int(maxlen_), int(geohash.length()));
     if (len1 >= 3 &&
         ((toupper(geohash[0]) == 'I' &&
@@ -94,8 +97,8 @@ namespace GeographicLib {
     int s = 5 * (maxlen_ - len1);
     ulon <<=     (s / 2);
     ulat <<= s - (s / 2);
-    lon = ulon * loneps - 180;
-    lat = ulat * lateps - 90;
+    lon = ulon * loneps - Math::hd;
+    lat = ulat * lateps - Math::qd;
     len = len1;
   }
 

@@ -2,7 +2,7 @@
  * \file AlbersEqualArea.hpp
  * \brief Header for GeographicLib::AlbersEqualArea class
  *
- * Copyright (c) Charles Karney (2010-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2023) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -19,7 +19,7 @@ namespace GeographicLib {
    *
    * Implementation taken from the report,
    * - J. P. Snyder,
-   *   <a href="http://pubs.er.usgs.gov/usgspubs/pp/pp1395"> Map Projections: A
+   *   <a href="https://pubs.usgs.gov/publication/pp1395"> Map Projections: A
    *   Working Manual</a>, USGS Professional Paper 1395 (1987),
    *   pp. 101--102.
    *
@@ -66,18 +66,16 @@ namespace GeographicLib {
     real _n0, _m02, _nrho0, _k2, _txi0, _scxi0, _sxi0;
     static const int numit_ = 5;   // Newton iterations in Reverse
     static const int numit0_ = 20; // Newton iterations in Init
-    static real hyp(real x) { return Math::hypot(real(1), x); }
+    static real hyp(real x) {
+      using std::hypot;
+      return hypot(real(1), x);
+    }
     // atanh(      e   * x)/      e   if f > 0
     // atan (sqrt(-e2) * x)/sqrt(-e2) if f < 0
     // x                              if f = 0
     real atanhee(real x) const {
-      using std::atan2; using std::abs;
-      return _f > 0 ? Math::atanh(_e * x)/_e :
-        // We only invoke atanhee in txif for positive latitude.  Then x is
-        // only negative for very prolate ellipsoids (_b/_a >= sqrt(2)) and we
-        // still need to return a positive result in this case; hence the need
-        // for the call to atan2.
-        (_f < 0 ? (atan2(_e * abs(x), real(x < 0 ? -1 : 1))/_e) : x);
+      using std::atan; using std::atanh;
+      return _f > 0 ? atanh(_e * x)/_e : (_f < 0 ? (atan(_e * x)/_e) : x);
     }
     // return atanh(sqrt(x))/sqrt(x) - 1, accurate for small x
     static real atanhxm1(real x);
@@ -87,7 +85,7 @@ namespace GeographicLib {
     // See:
     //   W. M. Kahan and R. J. Fateman,
     //   Symbolic computation of divided differences,
-    //   SIGSAM Bull. 33(3), 7-28 (1999)
+    //   SIGSAM Bull. 33(2), 7-28 (1999)
     //   https://doi.org/10.1145/334714.334716
     //   http://www.cs.berkeley.edu/~fateman/papers/divdiff.pdf
     //
@@ -105,18 +103,21 @@ namespace GeographicLib {
       return t > 0 ? (x + y) * Math::sq( (sx * sy)/t ) / (sx + sy) :
         (x - y != 0 ? (sx - sy) / (x - y) : 1);
     }
-    // Datanhee(x,y) = atanhee((x-y)/(1-e^2*x*y))/(x-y)
+    // Datanhee(x,y) = (atanee(x)-atanee(y))/(x-y)
+    //               = atanhee((x-y)/(1-e^2*x*y))/(x-y)
     real Datanhee(real x, real y) const {
-      real t = x - y, d = 1 - _e2 * x * y;
-      return t != 0 ? atanhee(t / d) / t : 1 / d;
+      real t = x - y,  d = 1 - _e2 * x * y;
+      return t == 0 ? 1 / d :
+        (x*y < 0 ? atanhee(x) - atanhee(y) : atanhee(t / d)) / t;
     }
     // DDatanhee(x,y) = (Datanhee(1,y) - Datanhee(1,x))/(y-x)
     real DDatanhee(real x, real y) const;
+    real DDatanhee0(real x, real y) const;
+    real DDatanhee1(real x, real y) const;
+    real DDatanhee2(real x, real y) const;
     void Init(real sphi1, real cphi1, real sphi2, real cphi2, real k1);
     real txif(real tphi) const;
     real tphif(real txi) const;
-
-    friend class Ellipsoid;           // For access to txif, tphif, etc.
   public:
 
     /**
@@ -261,7 +262,7 @@ namespace GeographicLib {
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value used in the constructor.
      **********************************************************************/
-    Math::real MajorRadius() const { return _a; }
+    Math::real EquatorialRadius() const { return _a; }
 
     /**
      * @return \e f the flattening of the ellipsoid.  This is the value used in

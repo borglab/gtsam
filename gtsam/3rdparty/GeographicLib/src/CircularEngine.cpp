@@ -2,7 +2,7 @@
  * \file CircularEngine.cpp
  * \brief Implementation for GeographicLib::CircularEngine class
  *
- * Copyright (c) Charles Karney (2011) <charles@karney.com> and licensed under
+ * Copyright (c) Charles Karney (2011) <karney@alum.mit.edu> and licensed under
  * the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -26,7 +26,7 @@ namespace GeographicLib {
     real vrc = 0, vrc2 = 0, vrs = 0, vrs2 = 0;   // vr[N + 1], vr[N + 2]
     real vtc = 0, vtc2 = 0, vts = 0, vts2 = 0;   // vt[N + 1], vt[N + 2]
     real vlc = 0, vlc2 = 0, vls = 0, vls2 = 0;   // vl[N + 1], vl[N + 2]
-    for (int m = _M; m >= 0; --m) {   // m = M .. 0
+    for (int m = _mM; m >= 0; --m) {             // m = M .. 0
       // Now Sc[m] = wc, Ss[m] = ws
       // Sc'[m] = wtc, Ss'[m] = wtc
       if (m) {

@@ -19,8 +19,7 @@ int main() {
     double
       lat1 = 40.640, lon1 = -73.779, // JFK
       lat2 =  1.359, lon2 = 103.989; // SIN
-    const GeographicLib::GeodesicLineExact line =
-      geod.InverseLine(lat1, lon1, lat2, lon2);
+    GeodesicLineExact line = geod.InverseLine(lat1, lon1, lat2, lon2);
     double ds0 = 500e3;             // Nominal distance between points = 500 km
     int num = int(ceil(line.Distance() / ds0)); // The number of intervals
     cout << fixed << setprecision(3);

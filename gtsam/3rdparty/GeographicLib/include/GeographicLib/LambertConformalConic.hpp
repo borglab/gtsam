@@ -2,7 +2,7 @@
  * \file LambertConformalConic.hpp
  * \brief Header for GeographicLib::LambertConformalConic class
  *
- * Copyright (c) Charles Karney (2010-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -19,7 +19,7 @@ namespace GeographicLib {
    *
    * Implementation taken from the report,
    * - J. P. Snyder,
-   *   <a href="http://pubs.er.usgs.gov/usgspubs/pp/pp1395"> Map Projections: A
+   *   <a href="https://pubs.usgs.gov/publication/pp1395"> Map Projections: A
    *   Working Manual</a>, USGS Professional Paper 1395 (1987),
    *   pp. 107--109.
    *
@@ -52,7 +52,7 @@ namespace GeographicLib {
    * class for specifying a false easting or false northing or a different
    * latitude of origin.  However these are can be simply included by the
    * calling function.  For example the Pennsylvania South state coordinate
-   * system (<a href="http://www.spatialreference.org/ref/epsg/3364/">
+   * system (<a href="https://www.spatialreference.org/ref/epsg/3364/">
    * EPSG:3364</a>) is obtained by:
    * \include example-LambertConformalConic.cpp
    *
@@ -68,13 +68,16 @@ namespace GeographicLib {
     real _sign, _n, _nc, _t0nm1, _scale, _lat0, _k0;
     real _scbet0, _tchi0, _scchi0, _psi0, _nrho0, _drhomax;
     static const int numit_ = 5;
-    static real hyp(real x) { return Math::hypot(real(1), x); }
+    static real hyp(real x) {
+      using std::hypot;
+      return hypot(real(1), x);
+    }
     // Divided differences
     // Definition: Df(x,y) = (f(x)-f(y))/(x-y)
     // See:
     //   W. M. Kahan and R. J. Fateman,
     //   Symbolic computation of divided differences,
-    //   SIGSAM Bull. 33(3), 7-28 (1999)
+    //   SIGSAM Bull. 33(2), 7-28 (1999)
     //   https://doi.org/10.1145/334714.334716
     //   http://www.cs.berkeley.edu/~fateman/papers/divdiff.pdf
     //
@@ -98,8 +101,9 @@ namespace GeographicLib {
     }
     // Dlog1p(x,y) = log1p((x-y)/(1+y))/(x-y)
     static real Dlog1p(real x, real y) {
+      using std::log1p;
       real t = x - y; if (t < 0) { t = -t; y = x; }
-      return t != 0 ? Math::log1p(t / (1 + y)) / t : 1 / (1 + x);
+      return t != 0 ? log1p(t / (1 + y)) / t : 1 / (1 + x);
     }
     // Dexp(x,y) = exp((x+y)/2) * 2*sinh((x-y)/2)/(x-y)
     static real Dexp(real x, real y) {
@@ -124,10 +128,11 @@ namespace GeographicLib {
     //             = asinh((x*sqrt(1+y^2)-y*sqrt(1+x^2)))/(x-y)
     static real Dasinh(real x, real y, real hx, real hy) {
       // hx = hyp(x)
+      using std::asinh;
       real t = x - y;
       return t != 0 ?
-        Math::asinh(x*y > 0 ? t * (x+y) / (x*hy + y*hx) : x*hy - y*hx) / t :
-        1/hx;
+        asinh(x*y > 0 ? t * (x + y) / (x*hy + y*hx) : x*hy - y*hx) / t :
+        1 / hx;
     }
     // Deatanhe(x,y) = eatanhe((x-y)/(1-e^2*x*y))/(x-y)
     real Deatanhe(real x, real y) const {
@@ -282,7 +287,7 @@ namespace GeographicLib {
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value used in the constructor.
      **********************************************************************/
-    Math::real MajorRadius() const { return _a; }
+    Math::real EquatorialRadius() const { return _a; }
 
     /**
      * @return \e f the flattening of the ellipsoid.  This is the

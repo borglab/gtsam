@@ -4,7 +4,477 @@ For more information, see
 
     https://geographiclib.sourceforge.io/
 
-The current version of the library is 1.49.
+The current version of the library is 2.5
+
+Changes between 2.5 (released 2024-12-28) and 2.4 versions:
+
+   * New magnetic models provided
+
+     + World Magnetic Model 2025, wmm2025; this covers the period
+       2025-2030.  This is now the model returned by
+       MagneticModel::DefaultMagneticName and is default magnetic
+       model for MagneticField (replacing wmm2020 which is only valid
+       thru the end of 2024).
+     + World Magnetic Model High Resolution 2025, wmmhr2025; this is a
+       high-resolution version of wmm2025 including terms up to degree
+       133 (as opposed to 12 for wmm2025).
+     + International Geomagnetic Reference Field (14th generation),
+       igrf14, which approximates the main magnetic field of the earth
+       for the period 1900-2030.
+
+   * Update CMake's cmake_minimum_required to 3.17.0 (to facilitate
+     integration with Qt projects).
+
+   * For GEOGRAPHICLIB_PRECISION > 2, readarray treats doubles as
+     approximations to exact decimal constants.
+
+Changes between 2.4 (released 2024-07-14) and 2.3 versions:
+
+   * Math::sind, Math::sincosd, etc., now return accurate results for
+     arguments = 30d, 45d, 60d, ...
+
+   * Add Math::hypot3.
+
+   * Add EllipticFunction::am.
+
+   * Make constructor for AuxAngle explicit.
+
+   * Include notes for plate carree areas.
+
+   * C++14 compliant compiler required (this requirement tracks the
+     Boost Math library).
+
+   * CMake configuration changes
+     + update cmake_minimum_required to 3.16.0.
+     + exclude the tools and doc targets from the default build (make
+       all) if these components won't be installed (BINDIR or DOCDIR
+       set to OFF).
+     + testprograms is now excluded from the default build and it now
+       depends on tools.  Before running the test suite, build
+       testprograms, e.g., make testprograms test.
+     + added a target libs to build only the static and/or shared
+       libraries.
+     + document the use of CMake's FetchContent as an alternative to
+       find_package.
+     + stop requiring that CMAKE_CROSSCOMPILING match with
+       find_package(GeographicLib).
+
+   * Internal code changes
+     + stop using reserved identifiers (_N in the DST class and _R in
+       the Intersect class).
+     + remove the workaround for the boost-quadmath bug with
+       setprecision(0).
+     + GEOGRAPHICLIB_PANIC(msg) macro now takes a message argument.
+
+Changes between 2.3 (released 2023-07-25) and 2.2 versions:
+
+   * Add the Intersect class and the IntersectTool utility.  The
+     methods are described in "Geodesic intersections",
+     https://arxiv.org/abs/2308.00495.
+
+   * Add typedefs Geodesic::LineClass, GeodesicExact::LineClass,
+     Rhumb::LineClass, GeodesicLine::BaseClass,
+     GeodesicLineExact::BaseClass, RhumbLine::BaseClass.
+
+   * Geodesic constructor accepts optional third argument exact, default
+     false.  If true, then the calculations are delegated to
+     GeodesicExact.  GeodSolve and Planimeter now use this simplified
+     interface.
+
+   * PolygonAreaExact is deprecated; use PolygonArea instead.
+
+   * Bug in Planimeter -Q (introduced in version 2.2) has been fixed.
+
+   * TransverseMercator constructor accepts optional arguments exact
+     and extendp (default false for both).  If exact = true, then the
+     calculations are delegated to TransverseMercatorExact.
+     TransverseMercatorProj now uses this simplified interface.
+
+   * Minor fixes:
+     + Fix documentation bug for TransverseMercatorProj (incorrectly
+       stated that -t for the extended domain was the default).
+     + Remove unnecessary friend declarations for Ellipsoid in
+       AlbersEqualArea and TransverseMercator. (As of version 2.2,
+       Ellipsoid uses the AuxLatitude class for this functionality.)
+     + Small change in EllipticFunction to speed up the default
+       contructor.
+     + Remove workaround for boost 1.76 with enums (not needed for boost
+       1.78).
+     + Remove unused header from NearestNeighbor.
+
+Changes between 2.2 (released 2023-03-07) and 2.1.2 versions:
+
+   * Completely redo Rhumb and RhumbLine classes to yield accurate
+     results for the course and the area even for very eccentric
+     ellipsoids:
+     + these methods are accurate for 1/100 < b/a < 100 (the previous
+       methods for the course were limited to 1/4 < b/a < 4 for the
+       course and the area calculation was only valid for |f| < 0.01);
+     + the meaning of the exact flag in the constructor is now more
+       straightforward: exact = false (the default) consistently uses
+       series expansions valid for |f| < 0.01; exact = true uses exact
+       equations for the course of the rhumb line and an accurate DFT
+       fit for the area computation;
+     + the RhumbSolve(1) utiity accepts the -u to unroll the
+       longitudes for the results of direct calculations;
+     + rhumb lines which include a pole as one of the endpoints are
+       treated properly (previously point at the pole were moved
+       slightly away from the pole);
+     + this treatment of rhumb areas is described in "The area of
+       rhumb polygons", https://doi.org/10.1007/s11200-024-0709-z.
+
+   * The -E option for Planimeter(1) is now a toggle switching on
+     exact treatment for geodesics (-G option), rhumb lines (-R
+     option), authlatic lines (-Q option).  Previously -E has turned
+     on the exact treatment for geodesics.
+
+   * The online version of Planimeter now allows the ellipsoid to be
+     specified.
+
+   * The deprecated -l option for GeodSolve and RhumbSolve has been
+     removed.
+
+   * Add AuxAngle and AuxLatitude classes to perform accurate
+     conversions between auxiliary latitudes.  The Ellipsoid class has
+     been mostly reimplimented in terms of the AuxLatitude class.  The
+     DAuxLatitude class computes the divides differences of auxiliary
+     latitude. and implements additional divided difference formulas
+     needed by Rhumb.
+
+   * Created an "experimental" directory + namespace and moved the
+     JacobiConformal class there.  Use the cmake target "experimental"
+     to build this directory.
+
+Changes between 2.1.2 (released 2022-12-13) and 2.1.1 versions:
+
+   * Add MGRS::Decode to break an MGRS string into its components.
+
+   * Add definite integral overload for DST::integral.  This is used in
+     GeodesicExact.
+
+   * Add example code examples/AuxLatitude.[hc]pp implementating the
+     AuxAngle and AuxLatitude classes.  These classes implement the
+     methods documented in the paper "On auxiliary latitudes",
+     https://arxiv.org/abs/2212.05818.  They are *not* part of
+     GeographicLib.  See Auxiliary latitudes for more details.
+
+   * Minor cmake issues:
+     + fix cross-compile build on Windows;
+     + check cmake version for "cmake rm -rf";
+     + move cmake_minimum_required to the beginning of the cmake file
+       and update minimum version to 3.13.0.
+
+Changes between 2.1.1 (released 2022-07-25) and 2.1 versions:
+
+   * Paper describing algorithms in GeodesicExact class is available at
+     https://arxiv.org/abs/2208.00492
+
+   * The Planimeter utility used to accept polygon vertices as UTM/UPS
+     or MGRS coordinates.  However, since these are converted to
+     latitude and longitude using the WGS84 ellipoid, this convention
+     is incompatible with the -e option to specify the ellipsoid.  So
+     now, you have to provide the --geoconvert-input option to allow
+     vertices to be specified in this way.
+
+   * Fix sign error in DST::refine.
+
+   * Relax overly strict convergence test for inverse problem in
+     Geodesic and GeodesicExact.
+
+   * Minor:
+     + Use lookup table for selecting number of points for DST in
+       GeodesicExact.
+     + Relax one of the test thresholds in geodtest.cpp.
+
+Changes between 2.1 (released 2022-06-09) and 2.0 versions:
+
+   * Improve the accuracy of the area calculations in GeodesicExact
+     and the Planimeter utility with the -E option.  This now gives
+     full double precision accuracy for b/a in [0.01, 100] or f in
+     [-99, 0.99].  (Previously the range for full accuracy was b/a in
+     [0.5, 2].) The method involves a direct computation of the
+     Fourier series for the integrand of area integral which then
+     allows the integral to be evaluated.
+
+   * Add a new class DST for doing discrete sine transforms.  This is
+     mainly for "internal" use, to compute the area in GeodesicExact.
+     Internally, this uses the kissfft package by Mark Borgerding.
+
+   * Fix various warnings from Visual Studio about arithmetic involving
+     enums.
+
+   * Minor improvement in the logic for the geodesic inverse problem
+     to address a slow down that can occur with
+     GEOGRAPHICLIB_PRECISION = 5 due to the time it takes to
+     calculate, for example, sin(10^(10^8)) accurately.
+
+Changes between 2.0 (released 2022-05-06) and 1.52 versions:
+
+   * Remove non C++ implementations from this package.  These are now
+     managed as separate packages.  See
+     https://geographiclib.sourceforge.io/doc/library.html#languages
+
+   * This allowed the cmake interface to be rationalized:
+     + Replace GEOGRAPHICLIB_LIB_TYPE by BUILD_SHARED_LIBS (a standard
+       cmake variable) and BUILD_BOTH_LIBS.
+     + Remove COMMON_INSTALL_PATH and replace with variables to
+       specify where various components are to be installed.
+     + GEOGRAPHICLIB_DOCUMENTATION is now BUILD_DOCUMENTATION.
+     + Remove BUILD_NETGEOGRAPHICLIB.
+     + Remove legacy cmake config support (non-namespace).
+     + make exampleprograms does a separate cmake configuration to
+       mimic how a user's program might find GeographicLib.
+     + find_package (GeographicLib) now sets and checks the value of
+       GEOGRAPHICLIB_PRECISION.
+     + Improve the separation of end-user and maintain cmake code.
+
+   * More careful treatment of +/-0d and +/-180d.
+     + These behave consistently with taking the limits
+       - +/-0 means +/-eps as eps -> 0+
+       - +/-180 means +/-(180 - eps) as eps -> 0+
+     + As a consequence, azimuths of +0d and +180d are reckoned to be
+       east-going, as far as tracking the longitude with
+       Geodesic::LONG_UNROLL and the area goes, while azimuths -0d and
+       -180d are reckoned to be west-going.
+     + When computing longitude differences, if lat2 - lat1 = +/-180d
+       (mod 360d), then the sign is picked depending on the sign of
+       the difference.
+     + The normal range for returned longitudes and azimuths is
+       [-180d, 180d].
+
+   * Programs in directory tests now allow testing to extend beyond
+     invocations of the utility programs.
+
+   * BUG FIXES:
+     + Fixed bug where in the solution of the inverse geodesic problem
+       where with lat1 = 0 and lat2 = nan was treated as equatorial.
+     + Fixed roundoff corner case in geodesic area computation (only
+       triggered with long double).
+
+   * Minor changes in code:
+     + Use fmin, fmax, fabs instead of min, max, abs, where appropriate.
+     + Parameterize the conversion units for degrees, minutes, seconds
+       as Math::qd, Math::dm, Math::ms.
+     + Ellipsoid::MinorRadius() has be renamed Ellipsoid::PolarRadius().
+     + Remove deprecated functions: XXX::MajorRadius, Utility::val, and
+       placeholders (Math::cbrt, etc.) for C++11 math functions.
+     + Can specify the comment character in Utility::ParseLine.
+     + Rename various internal identifiers to avoid reserved names.
+     + Remove unused internal variable in RhumbLine.
+     + The documentation for EllipticFunction specifies restrictions on
+       the arguments.
+     + Put GeodesicExactC4.cpp back into GeodesicExact.cpp.
+
+   * Library file now called libGeographicLib.so, etc., instead of
+     libGeographic.so.
+
+   * The .NET version of GeographicLib has been removed.
+
+Changes between 1.52 (released 2021-06-22) and 1.51 versions:
+
+   * Add MagneticModel::FieldGeocentric and
+     MagneticCircle::FieldGeocentric to return the field in geocentric
+     coordinates (thanks to Marcelo Banik de Padua).
+
+   * Document realistic errors for PolygonAreaT and Planimeter.
+
+   * Geodesic routines: be more aggressive in preventing negative s12
+     and m12 for short lines (all languages).
+
+   * Fix bug in AlbersEqualArea for extreme prolate ellipsoids (plus
+     general cleanup in the code).
+
+   * Thanks to Thomas Warner, a sample of wrapping the C++ library, so
+     it's accessible in Excel, is given in wrapper/Excel.
+
+   * Minor changes
+     + Work around inaccuracies in hypot routines in Visual Studio
+       (win32), Python, and JavaScript.
+     + Initialize reference argument to remquo (C++ and C).
+     + Get ready to retire unused _exact in RhumbLine.
+     + Declare RhumbLine copy constructor "= default".
+     + Use C++11 "= delete" idiom to delete copy assignment and copy
+       constructors in RhumbLine, Geoid, GravityModel, MagneticModel.
+     + Fix MGRS::Forward to work around aggressive optimization leading to
+       incorrect rounding.
+     + Fix plain makefiles, Makefile.mk, so that PREFIX is handled
+       properly.
+     + Make cmake's GeographicLib_LIBRARIES point to namespace versions.
+
+   * NOTE: In the next version (tentatively 2.0), I plan to split up
+     the git repository and the packaging of GeographicLib into
+     separate entities for each language.  This will simplify
+     development and deployment of the library.
+
+   * WARNING: The .NET version of GeographicLib will not be supported
+     in the next version.
+
+Changes between 1.51 (released 2020-11-22) and 1.50.1 versions:
+
+   * C++11 compiler required for C++ library.  As a consequence:
+     + The workaround implementations for C++11 routines (Math::hypot,
+       Math::expm1, Math::log1p, Math::asinh, Math::atanh,
+       Math::copysign, Math::cbrt, Math::remainder, Math::remquo,
+       Math::round, Math::lround, Math::fma, Math::isfinite, and
+       Math::isnan) are now deprecated.  Just use the versions in the
+       std:: namespace instead.
+     + SphericalEngine class, fix the namespace for using streamoff.
+     + Some templated functions, e.g., Math::degree(), now have default
+       template parameters, T = Math::real.
+
+   * C99 compiler required for C library.
+
+   * Reduce memory footprint in Java implementation.
+
+   * New form of Utility::ParseLine to allow the syntax "KEY = VAL".
+
+   * Add International Geomagnetic Reference Field (13th generation),
+     igrf13, which approximates the main magnetic field of the earth for
+     the period 1900-2025.
+
+   * More symbols allowed with DMS decoding in C++, JS, and cgi-bin
+     packages; see DMS::Decode.
+
+   * Fix bug in cgi-bin argument processing which causes "+" to be
+     misinterpreted.
+
+   * Required minium version of CMake is now 3.7.0 (released
+     2016-11-11).  This is to work around a bug in find_package for
+     cmake 3.4 and 3.5.
+
+Changes between 1.50.1 (released 2019-12-13) and 1.50 versions:
+
+  * Add the World Magnetic Model 2020, wmm2020, covering the period
+    2020-2025.  This is now the model returned by
+    MagneticModel::DefaultMagneticName and is default magnetic model
+    for MagneticField (replacing wmm2015v2 which is only valid thru
+    the end of 2019).
+
+  * Include float instantiations of those templated Math functions
+    which migrated to Math.cpp in version 1.50.
+
+  * WARNING: The next version of GeographicLib will require a C++11
+    compliant compiler.  This means that the minimum version of Visual
+    Studio will be Visual Studio 12 2013.  (This repeats the warning
+    given with version 1.50.  It didn't apply to this version because
+    this is a minor update.)
+
+Changes between 1.50 (released 2019-09-24) and 1.49 versions:
+
+  * BUG fixes:
+      + Java + JavaScript implementations of PolygonArea::TestEdge
+        counted the pole encirclings wrong.
+      + Fix typo in JavaScript implementation which affected unsigned
+        areas.
+      + Adding edges to a polygon counted pole encirclings inconsistent
+        with the way the adding point counted them.  This might have
+        caused an incorrect result if a polygon vertex had longitude =
+        0.  This affected all implementations except Fortran and
+        MATLAB).
+      + GARS::Forward: fix BUG in handling of longitude = +/-180d.
+      + Fix bug in Rhumb class and RhumbSolve(1) utiity which caused
+        incorrect area to be reported if an endpoint is at a pole.
+        Thanks to Natalia Sabourova for reporting this.
+      + Fix bug in MATLAB routine mgrs_inv which resulted in incorrect
+        results for UPS zones with prec = -1.
+      + In geodreckon.m geoddistance.m, suppress (innocuous) "warning:
+        division by zero" messages from Octave.
+      + In python implementation, work around problems caused by
+        sin(inf) and fmod(inf) raising exceptions.
+      + Geoid class, fix the use of streamoff.
+
+  * The PolygonArea class, the Planimeter utility, and their equivalents
+    in C, Fortran, MATLAB, Java, JavaScript, Python, and Maxima can now
+    handle arbitrarily complex polygons.  In the case of
+    self-intersecting polygons the area is accumulated "algebraically",
+    e.g., the areas of the 2 loops in a figure-8 polygon will partially
+    cancel.
+
+  * Changes in gravity and magnetic model handling
+      + SphericalEngine::coeff::readcoeffs takes new optional argument
+        truncate.
+      + The constructors for GravityModel and MagneticModel allow the
+        maximum degree and order to be specified.  The array of
+        coefficients will then be truncated if necessary.
+      + GravityModel::Degree(), GravityModel::Order(),
+        MagneticModel::Degree(), MagneticModel::Order() return the
+        maximum degree and order of all the components of a GravityModel
+        or MagneticModel.
+      + Gravity and MagneticField utilities accept -N and -M options to
+        to allow the maximum degree and order to be specified.
+
+  * The GeodSolve allows fractional distances to be entered as fractions
+    (with the -F flag).
+
+  * MajorRadius() methods are now called EquatorialRadius() for the C++,
+    Java, and .NET libraries.  "Equatorial" is more descriptive in the
+    case of prolate ellipsoids.  MajorRadius() is retained for backward
+    compatibility for C++ and Java but is deprecated.
+
+  * Minimum version updates:
+      + CMake = 3.1.0, released 2014-12-15.
+      + Minimum g++ version = 4.8.0, released 2013-03-22.
+      + Visual Studio 10 2010 (haven't been able to check Visual Studio
+        2008 for a long time).
+      + WARNING: The next version of GeographicLib will require a C++11
+        compliant compiler.  This means that the minimum version of
+        Visual Studio will be Visual Studio 12 2013.
+      + Minimum boost version = 1.64 needed for GEOGRAPHICLIB_PRECISION
+        = 4.
+      + Java = 1.6; this allows the removal of epsilon, min, hypot,
+        log1p, copysign, cbrt from GeoMath.
+
+  * CMake updates:
+      + Fine tune Visual Studio compatibility check in
+        find_package(GeographicLib); this allows GeographicLib compiled
+        with Visual Studio 14 2015 to be used with a project compiled
+        with Visual Studio 15 2017 and 16 2019.
+      + Suppress warnings with dotnet build.
+      + Change CMake target names and add an interface library (thanks
+        to Matthew Woehlke).
+      + Remove pre-3.1.0 cruft and update the documentation to remove
+        the need to call include_dirctories.
+      + Add _d suffix to example and test programs.
+      + Changer installation path for binary installer to the Windows
+        default.
+      + Add support for Intel compiler (for C++, C, Fortran).  This
+        entails supplying the -fp-model precise flag to prevent the
+        compiler from incorrectly simplying (a + b) + c and 0.0 + x.
+
+  * Add version 2 of the World Magnetic Model 2015, wmm2015v2.  This is
+    now the default magnetic model for MagneticField (replacing wmm2015
+    which is now deprecated).  Coming in 2019-12: the wmm2020 model.
+
+  * The -f flag in the scripts geographiclib-get-geoids,
+    geographiclib-get-gravity, and geographiclib-get-magnetic, allows
+    you to load new models (not yet in the set defined by "all").  This
+    is in addition to its original role of allowing you to overwrite
+    existing models.
+
+  * Changes in math function support:
+      + Move some of the functionality from Math.hpp to Math.cpp to make
+        compilation of package which depend on GeographicLib less
+        sensitive to the current compiler environment.
+      + Add Math::remainder, Math::remquo, Math::round, and
+        Math::lround.  Also add implementations of remainder, remquo to
+        C implementation.
+      + Math::cbrt, Math::atanh, and Math::asinh now preserve the sign
+        of -0.  (Also: C, Java, JavaScript, Python, MATLAB.  Not
+        necessary: Fortran because sign is a built-in function.)
+      + JavaScript: fall back to Math.hypot, Math.cbrt, Math.log1p,
+        Math.atanh if they are available.
+
+  * When parsing DMS strings ignore various non-breaking spaces (C++ and
+    JavaScript).
+
+  * Improve code coverage in the tests of geodesic algorithms (C++, C,
+    Java, JavaScript, Python, MATLAB, Fortran).
+
+  * Old deprecated NormalGravity::NormalGravity constructor removed.
+
+  * Additions to the documentation:
+      + add documentation links to ge{distance,reckon}.m;
+      + clarify which solution is returned for Geocentric::Reverse.
 
 Changes between 1.49 (released 2017-10-05) and 1.48 versions:
 
@@ -497,8 +967,7 @@ Changes between 1.42 (released 2015-04-28) and 1.41 versions:
     versions 1.40 and 1.41).
 
   * Mark the computation of the gradient of the geoid height in the
-    Geoid class and the <a href="GeoidEval.1.html">GeoidEval</a> utility
-    as deprecated.
+    Geoid class and the GeoidEval utility as deprecated.
 
   * Work around the boost-quadmath bug with setprecision(0).
 

@@ -2,7 +2,7 @@
  * \file MagneticCircle.hpp
  * \brief Header for GeographicLib::MagneticCircle class
  *
- * Copyright (c) Charles Karney (2011-2015) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -86,6 +86,10 @@ namespace GeographicLib {
                real& Bx, real& By, real& Bz,
                real& Bxt, real& Byt, real& Bzt) const;
 
+    void FieldGeocentric(real slam, real clam,
+                         real& BX, real& BY, real& BZ,
+                         real& BXt, real& BYt, real& BZt) const;
+
     friend class MagneticModel; // MagneticModel calls the private constructor
 
   public:
@@ -134,6 +138,21 @@ namespace GeographicLib {
                     real& Bxt, real& Byt, real& Bzt) const {
       Field(lon, true, Bx, By, Bz, Bxt, Byt, Bzt);
     }
+
+    /**
+     * Evaluate the components of the geomagnetic field and their time
+     * derivatives at a particular longitude.
+     *
+     * @param[in] lon longitude of the point (degrees).
+     * @param[out] BX the \e X component of the magnetic field (nT).
+     * @param[out] BY the \e Y component of the magnetic field (nT).
+     * @param[out] BZ the \e Z component of the magnetic field (nT).
+     * @param[out] BXt the rate of change of \e BX (nT/yr).
+     * @param[out] BYt the rate of change of \e BY (nT/yr).
+     * @param[out] BZt the rate of change of \e BZ (nT/yr).
+     **********************************************************************/
+    void FieldGeocentric(real lon, real& BX, real& BY, real& BZ,
+                         real& BXt, real& BYt, real& BZt) const;
     ///@}
 
     /** \name Inspector functions
@@ -148,7 +167,7 @@ namespace GeographicLib {
      *   the value inherited from the MagneticModel object used in the
      *   constructor.
      **********************************************************************/
-    Math::real MajorRadius() const
+    Math::real EquatorialRadius() const
     { return Init() ? _a : Math::NaN(); }
     /**
      * @return \e f the flattening of the ellipsoid.  This is the value
@@ -171,7 +190,6 @@ namespace GeographicLib {
      **********************************************************************/
     Math::real Time() const
     { return Init() ? _t : Math::NaN(); }
-
     ///@}
   };
 

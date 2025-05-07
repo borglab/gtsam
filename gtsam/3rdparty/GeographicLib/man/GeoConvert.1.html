@@ -30,11 +30,11 @@
 
 <p>2 tokens (output options <b>-g</b>, <b>-d</b>, or <b>-:</b>) given as <i>latitude</i> <i>longitude</i> using decimal degrees or degrees, minutes, and seconds. Latitude is given first (unless the <b>-w</b> option is given). See <a href="#GEOGRAPHIC-COORDINATES">&quot;GEOGRAPHIC COORDINATES&quot;</a> for a description of the format. For example, the following are all equivalent</p>
 
-<pre><code>    33.3 44.4
-    E44.4 N33.3
-    33d18&#39;N 44d24&#39;E
-    44d24 33d18N
-    33:18 +44:24</code></pre>
+<pre><code>33.3 44.4
+E44.4 N33.3
+33d18&#39;N 44d24&#39;E
+44d24 33d18N
+33:18 +44:24</code></pre>
 
 </dd>
 <dt id="UTM-UPS"><b>UTM/UPS</b></dt>
@@ -42,10 +42,10 @@
 
 <p>3 tokens (output option <b>-u</b>) given as <i>zone</i>+<i>hemisphere</i> <i>easting</i> <i>northing</i> or <i>easting</i> <i>northing</i> <i>zone</i>+<i>hemisphere</i>, where <i>hemisphere</i> is either <i>n</i> (or <i>north</i>) or <i>s</i> (or <i>south</i>). The <i>zone</i> is absent for a UPS specification. For example,</p>
 
-<pre><code>    38n 444140.54 3684706.36
-    444140.54 3684706.36 38n
-    s 2173854.98 2985980.58
-    2173854.98 2985980.58 s</code></pre>
+<pre><code>38n 444140.54 3684706.36
+444140.54 3684706.36 38n
+s 2173854.98 2985980.58
+2173854.98 2985980.58 s</code></pre>
 
 </dd>
 <dt id="MRGS"><b>MRGS</b></dt>
@@ -53,8 +53,8 @@
 
 <p>1 token (output option <b>-m</b>) is used to specify the center of an MGRS grid square. For example,</p>
 
-<pre><code>    38SMB4484
-    38SMB44140847064</code></pre>
+<pre><code>38SMB4484
+38SMB44140847064</code></pre>
 
 </dd>
 </dl>
@@ -205,7 +205,7 @@
 
 <h1 id="PRECISION">PRECISION</h1>
 
-<p><i>prec</i> gives precision of the output with <i>prec</i> = 0 giving 1 m precision, <i>prec</i> = 3 giving 1 mm precision, etc. <i>prec</i> is the number of digits after the decimal point for UTM/UPS. For MGRS, The number of digits per coordinate is 5 + <i>prec</i>; &lt;prec&gt; = -6 results in just the grid zone. For decimal degrees, the number of digits after the decimal point is 5 + <i>prec</i>. For DMS (degree, minute, seconds) output, the number of digits after the decimal point in the seconds components is 1 + <i>prec</i>; if this is negative then use minutes (<i>prec</i> = -2 or -3) or degrees (<i>prec</i> &lt;= -4) as the least significant component. Print convergence, resp. scale, with 5 + <i>prec</i>, resp. 7 + <i>prec</i>, digits after the decimal point. The minimum value of <i>prec</i> is -5 (-6 for MGRS) and the maximum is 9 for UTM/UPS, 9 for decimal degrees, 10 for DMS, 6 for MGRS, and 8 for convergence and scale.</p>
+<p><i>prec</i> gives precision of the output with <i>prec</i> = 0 giving 1 m precision, <i>prec</i> = 3 giving 1 mm precision, etc. <i>prec</i> is the number of digits after the decimal point for UTM/UPS. For MGRS, The number of digits per coordinate is 5 + <i>prec</i>; <i>prec</i> = -6 results in just the grid zone. For decimal degrees, the number of digits after the decimal point is 5 + <i>prec</i>. For DMS (degree, minute, seconds) output, the number of digits after the decimal point in the seconds components is 1 + <i>prec</i>; if this is negative then use minutes (<i>prec</i> = -2 or -3) or degrees (<i>prec</i> &lt;= -4) as the least significant component. Print convergence, resp. scale, with 5 + <i>prec</i>, resp. 7 + <i>prec</i>, digits after the decimal point. The minimum value of <i>prec</i> is -5 (-6 for MGRS) and the maximum is 9 for UTM/UPS, 9 for decimal degrees, 10 for DMS, 6 for MGRS, and 8 for convergence and scale.</p>
 
 <h1 id="GEOGRAPHIC-COORDINATES">GEOGRAPHIC COORDINATES</h1>
 
@@ -213,7 +213,7 @@
 
 <p>It is also possible to carry out addition or subtraction operations in geographic coordinates. If the coordinate includes interior signs (i.e., not at the beginning or immediately after an initial hemisphere designator), then the coordinate is split before such signs; the pieces are parsed separately and the results summed. For example the point 15&quot; east of 39N 70W is</p>
 
-<pre><code>    39N 70W+0:0:15E</code></pre>
+<pre><code>39N 70W+0:0:15E</code></pre>
 
 <p><b>WARNING:</b> &quot;Exponential&quot; notation is not recognized for geographic coordinates. Thus 7.0E1 is illegal, while 7.0E+1 is parsed as (7.0E) + (+1), yielding the same result as 8.0E.</p>
 
@@ -232,13 +232,13 @@
 
 <p>The characters &#39; and &quot; can be quoted by preceding them with a \ (backslash); or you can quote a string containing &#39; with a pair of &quot;s. The two alternatives are illustrated by</p>
 
-<pre><code>   echo 10d20\&#39;30\&quot; &quot;20d30&#39;40&quot; | GeoConvert -d -p -1
-   =&gt; 10d20&#39;30&quot;N 020d30&#39;40&quot;E</code></pre>
+<pre><code>echo 10d20\&#39;30\&quot; &quot;20d30&#39;40&quot; | GeoConvert -d -p -1
+=&gt; 10d20&#39;30&quot;N 020d30&#39;40&quot;E</code></pre>
 
 <p>Quoting of command line arguments is similar</p>
 
-<pre><code>   GeoConvert -d -p -1 --input-string &quot;10d20&#39;30\&quot; 20d30&#39;40&quot;
-   =&gt; 10d20&#39;30&quot;N 020d30&#39;40&quot;E</code></pre>
+<pre><code>GeoConvert -d -p -1 --input-string &quot;10d20&#39;30\&quot; 20d30&#39;40&quot;
+=&gt; 10d20&#39;30&quot;N 020d30&#39;40&quot;E</code></pre>
 
 </dd>
 <dt id="Windows-command-shell-cmd">Windows command shell (cmd)</dt>
@@ -246,13 +246,13 @@
 
 <p>The &#39; character needs no quoting; the &quot; character can either be quoted by a ^ or can be represented by typing &#39; twice. (This quoting is usually unnecessary because the trailing designator can be omitted.) Thus</p>
 
-<pre><code>   echo 10d20&#39;30&#39;&#39; 20d30&#39;40 | GeoConvert -d -p -1
-   =&gt; 10d20&#39;30&quot;N 020d30&#39;40&quot;E</code></pre>
+<pre><code>echo 10d20&#39;30&#39;&#39; 20d30&#39;40 | GeoConvert -d -p -1
+=&gt; 10d20&#39;30&quot;N 020d30&#39;40&quot;E</code></pre>
 
 <p>Use \ to quote the &quot; character in a command line argument</p>
 
-<pre><code>   GeoConvert -d -p -1 --input-string &quot;10d20&#39;30\&quot; 20d30&#39;40&quot;
-   =&gt; 10d20&#39;30&quot;N 020d30&#39;40&quot;E</code></pre>
+<pre><code>GeoConvert -d -p -1 --input-string &quot;10d20&#39;30\&quot; 20d30&#39;40&quot;
+=&gt; 10d20&#39;30&quot;N 020d30&#39;40&quot;E</code></pre>
 
 </dd>
 <dt id="Input-from-a-file">Input from a file</dt>
@@ -260,68 +260,68 @@
 
 <p>No quoting need be done if the input from a file. Thus each line of the file <code>input.txt</code> should just contain the plain coordinates.</p>
 
-<pre><code>  GeoConvert -d -p -1 &lt; input.txt</code></pre>
+<pre><code>GeoConvert -d -p -1 &lt; input.txt</code></pre>
 
 </dd>
 </dl>
 
 <h1 id="MGRS">MGRS</h1>
 
-<p>MGRS coordinates represent a square patch of the earth, thus <code>38SMB4488</code> is in zone <code>38n</code> with 444km &lt;= <i>easting</i> &lt; 445km and 3688km &lt;= <i>northing</i> &lt; 3689km. Consistent with this representation, coordinates are <i>truncated</i> (instead of <i>rounded</i>) to the requested precision. Similarly, on input an MGRS coordinate represents the <i>center</i> of the square (<code>38n 444500 3688500</code> in the example above). However, if the <b>-n</b> option is given then the south-west corner of the square is returned instead (<code>38n 444000 3688000</code> in the example above).</p>
+<p>MGRS coordinates represent a square patch of the earth, thus <code>38SMB4488</code> is in zone <code>38n</code> with 444km &lt;= <i>easting</i> &lt; 445km and 3688km &lt;= <i>northing</i> &lt; 3689km. Consistent with this representation, coordinates are <i>truncated</i> (instead of <i>rounded</i>) to the requested precision. When an MGRS coordinate is provided as input, <b>GeoConvert</b> treats this as a representative point within the square. By default, this representative point is the <i>center</i> of the square (<code>38n 444500 3688500</code> in the example above). (This leads to a stable conversion between MGRS and geographic coordinates.) However, if the <b>-n</b> option is given then the south-west corner of the square is returned instead (<code>38n 444000 3688000</code> in the example above).</p>
 
 <h1 id="ZONE">ZONE</h1>
 
 <p>If the input is <b>geographic</b>, <b>GeoConvert</b> uses the standard rules of selecting UTM vs UPS and for assigning the UTM zone (with the Norway and Svalbard exceptions). If the input is <b>UTM/UPS</b> or <b>MGRS</b>, then the choice between UTM and UPS and the UTM zone mirrors the input. The <b>-z</b> <i>zone</i>, <b>-s</b>, and <b>-t</b> options allow these rules to be overridden with <i>zone</i> = 0 being used to indicate UPS. For example, the point</p>
 
-<pre><code>   79.9S 6.1E</code></pre>
+<pre><code>79.9S 6.1E</code></pre>
 
 <p>corresponds to possible MGRS coordinates</p>
 
-<pre><code>   32CMS4324728161 (standard UTM zone = 32)
-   31CEM6066227959 (neighboring UTM zone = 31)
-     BBZ1945517770 (neighboring UPS zone)</code></pre>
+<pre><code>32CMS4324728161 (standard UTM zone = 32)
+31CEM6066227959 (neighboring UTM zone = 31)
+  BBZ1945517770 (neighboring UPS zone)</code></pre>
 
 <p>then</p>
 
-<pre><code>   echo 79.9S 6.1E      | GeoConvert -p -3 -m       =&gt; 32CMS4328
-   echo 31CEM6066227959 | GeoConvert -p -3 -m       =&gt; 31CEM6027
-   echo 31CEM6066227959 | GeoConvert -p -3 -m -s    =&gt; 32CMS4328
-   echo 31CEM6066227959 | GeoConvert -p -3 -m -z 0  =&gt;   BBZ1917</code></pre>
+<pre><code>echo 79.9S 6.1E      | GeoConvert -p -3 -m       =&gt; 32CMS4328
+echo 31CEM6066227959 | GeoConvert -p -3 -m       =&gt; 31CEM6027
+echo 31CEM6066227959 | GeoConvert -p -3 -m -s    =&gt; 32CMS4328
+echo 31CEM6066227959 | GeoConvert -p -3 -m -z 0  =&gt;   BBZ1917</code></pre>
 
 <p>Is <i>zone</i> is specified with a hemisphere, then this is honored when printing UTM coordinates:</p>
 
-<pre><code>   echo -1 3 | GeoConvert -u         =&gt; 31s 500000 9889470
-   echo -1 3 | GeoConvert -u -z 31   =&gt; 31s 500000 9889470
-   echo -1 3 | GeoConvert -u -z 31s  =&gt; 31s 500000 9889470
-   echo -1 3 | GeoConvert -u -z 31n  =&gt; 31n 500000 -110530</code></pre>
+<pre><code>echo -1 3 | GeoConvert -u         =&gt; 31s 500000 9889470
+echo -1 3 | GeoConvert -u -z 31   =&gt; 31s 500000 9889470
+echo -1 3 | GeoConvert -u -z 31s  =&gt; 31s 500000 9889470
+echo -1 3 | GeoConvert -u -z 31n  =&gt; 31n 500000 -110530</code></pre>
 
 <p><b>NOTE</b>: the letter in the zone specification for UTM is a hemisphere designator <i>n</i> or <i>s</i> and <i>not</i> an MGRS latitude band letter. Convert the MGRS latitude band letter to a hemisphere as follows: replace <i>C</i> thru <i>M</i> by <i>s</i> (or <i>south</i>); replace <i>N</i> thru <i>X</i> by <i>n</i> (or <i>north</i>).</p>
 
 <h1 id="EXAMPLES">EXAMPLES</h1>
 
-<pre><code>   echo 38SMB4488 | GeoConvert         =&gt; 33.33424 44.40363
-   echo 38SMB4488 | GeoConvert -: -p 1 =&gt; 33:20:03.25N 044:2413.06E
-   echo 38SMB4488 | GeoConvert -u      =&gt; 38n 444500 3688500
-   echo E44d24 N33d20 | GeoConvert -m -p -3 =&gt; 38SMB4488</code></pre>
+<pre><code>echo 38SMB4488 | GeoConvert         =&gt; 33.33424 44.40363
+echo 38SMB4488 | GeoConvert -: -p 1 =&gt; 33:20:03.25N 044:2413.06E
+echo 38SMB4488 | GeoConvert -u      =&gt; 38n 444500 3688500
+echo E44d24 N33d20 | GeoConvert -m -p -3 =&gt; 38SMB4488</code></pre>
 
 <p>GeoConvert can be used to do simple arithmetic using degree, minutes, and seconds. For example, sometimes data is tiled in 15 second squares tagged by the DMS representation of the SW corner. The tags of the tile at 38:59:45N 077:02:00W and its 8 neighbors are then given by</p>
 
-<pre><code>    t=0:0:15
-    for y in -$t +0 +$t; do
-        for x in -$t +0 +$t; do
-            echo 38:59:45N$y 077:02:00W$x
-        done
-    done | GeoConvert -: -p -1 | tr -d &#39;: &#39;
-    =&gt;
-    385930N0770215W
-    385930N0770200W
-    385930N0770145W
-    385945N0770215W
-    385945N0770200W
-    385945N0770145W
-    390000N0770215W
-    390000N0770200W
-    390000N0770145W</code></pre>
+<pre><code>t=0:0:15
+for y in -$t +0 +$t; do
+    for x in -$t +0 +$t; do
+        echo 38:59:45N$y 077:02:00W$x
+    done
+done | GeoConvert -: -p -1 | tr -d &#39;: &#39;
+=&gt;
+385930N0770215W
+385930N0770200W
+385930N0770145W
+385945N0770215W
+385945N0770200W
+385945N0770145W
+390000N0770215W
+390000N0770200W
+390000N0770145W</code></pre>
 
 <h1 id="ERRORS">ERRORS</h1>
 

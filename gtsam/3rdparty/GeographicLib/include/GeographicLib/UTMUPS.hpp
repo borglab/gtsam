@@ -2,7 +2,7 @@
  * \file UTMUPS.hpp
  * \brief Header for GeographicLib::UTMUPS class
  *
- * Copyright (c) Charles Karney (2008-2015) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -19,7 +19,7 @@ namespace GeographicLib {
    *
    * UTM and UPS are defined
    * - J. W. Hager, J. F. Behensky, and B. W. Drew,
-   *   <a href="http://earth-info.nga.mil/GandG/publications/tm8358.2/TM8358_2.pdf">
+   *   <a href="https://web.archive.org/web/20161214054445/http://earth-info.nga.mil/GandG/publications/tm8358.2/TM8358_2.pdf">
    *   The Universal Grids: Universal Transverse Mercator (UTM) and Universal
    *   Polar Stereographic (UPS)</a>, Defense Mapping Agency, Technical Manual
    *   TM8358.2 (1989).
@@ -30,9 +30,9 @@ namespace GeographicLib {
    * substitute much more accurate algorithms given by
    * GeographicLib:TransverseMercator and GeographicLib:PolarStereographic.
    * These are the algorithms recommended by the NGA document
-   * - <a href="http://earth-info.nga.mil/GandG/publications/NGA_SIG_0012_2_0_0_UTMUPS/NGA.SIG.0012_2.0.0_UTMUPS.pdf">
+   * - <a href="https://earth-info.nga.mil/php/download.php?file=coord-utmups">
    *   The Universal Grids and the Transverse Mercator and Polar Stereographic
-   *   Map Projections</a>, NGA.SIG.0012_2.0.0_UTMUPS (2014).
+   *   Map Projections</a>, NGA.SIG.0012 (2014).
    *
    * In this implementation, the conversions are closed, i.e., output from
    * Forward is legal input for Reverse and vice versa.  The error is about 5nm
@@ -52,7 +52,7 @@ namespace GeographicLib {
    * generous overlap between UTM and UPS and between UTM zones.
    *
    * The <a href="http://www.nga.mil">NGA</a> software package
-   * <a href="http://earth-info.nga.mil/GandG/geotrans/index.html">geotrans</a>
+   * <a href="https://earth-info.nga.mil/index.php?dir=wgs84&action=wgs84#tab_geotrans">geotrans</a>
    * also provides conversions to and from UTM and UPS.  Version 2.4.2 (and
    * earlier) suffers from some drawbacks:
    * - Inconsistent rules are used to determine the whether a particular UTM or
@@ -93,7 +93,7 @@ namespace GeographicLib {
     // throwp = false, return bool instead.
     static bool CheckCoords(bool utmp, bool northp, real x, real y,
                             bool msgrlimits = false, bool throwp = true);
-    UTMUPS();                   // Disable constructor
+    UTMUPS() = delete;          // Disable constructor
 
   public:
 
@@ -367,10 +367,10 @@ namespace GeographicLib {
      * @param[out] northp hemisphere (true means north, false means south).
      *
      * EPSG (European Petroleum Survery Group) codes are a way to refer to many
-     * different projections.  DecodeEPSG decodes those refering to UTM or UPS
+     * different projections.  DecodeEPSG decodes those referring to UTM or UPS
      * projections for the WGS84 ellipsoid.  If the code does not refer to one
      * of these projections, \e zone is set to UTMUPS::INVALID.  See
-     * http://spatialreference.org/ref/epsg/
+     * https://www.spatialreference.org/ref/epsg/
      **********************************************************************/
     static void DecodeEPSG(int epsg, int& zone, bool& northp);
 
@@ -402,7 +402,7 @@ namespace GeographicLib {
      * (The WGS84 value is returned because the UTM and UPS projections are
      * based on this ellipsoid.)
      **********************************************************************/
-    static Math::real MajorRadius()
+    static Math::real EquatorialRadius()
     { return Constants::WGS84_a(); }
 
     /**

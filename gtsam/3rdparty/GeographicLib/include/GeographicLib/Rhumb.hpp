@@ -2,7 +2,7 @@
  * \file Rhumb.hpp
  * \brief Header for GeographicLib::Rhumb and GeographicLib::RhumbLine classes
  *
- * Copyright (c) Charles Karney (2014-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2014-2023) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -11,27 +11,33 @@
 #define GEOGRAPHICLIB_RHUMB_HPP 1
 
 #include <GeographicLib/Constants.hpp>
-#include <GeographicLib/Ellipsoid.hpp>
+#include <GeographicLib/DAuxLatitude.hpp>
+#include <vector>
 
 #if !defined(GEOGRAPHICLIB_RHUMBAREA_ORDER)
 /**
  * The order of the series approximation used in rhumb area calculations.
- * GEOGRAPHICLIB_RHUMBAREA_ORDER can be set to any integer in [4, 8].
+ * GEOGRAPHICLIB_RHUMBAREA_ORDER can be set to one of [4, 5, 6, 7, 8].
  **********************************************************************/
 #  define GEOGRAPHICLIB_RHUMBAREA_ORDER \
   (GEOGRAPHICLIB_PRECISION == 2 ? 6 : \
    (GEOGRAPHICLIB_PRECISION == 1 ? 4 : 8))
 #endif
 
+#if defined(_MSC_VER)
+// Squelch warnings about dll vs vector
+#  pragma warning (push)
+#  pragma warning (disable: 4251)
+#endif
+
 namespace GeographicLib {
 
   class RhumbLine;
-  template <class T> class PolygonAreaT;
 
   /**
    * \brief Solve of the direct and inverse rhumb problems.
    *
-   * The path of constant azimuth between two points on a ellipsoid at (\e
+   * The path of constant azimuth between two points on an ellipsoid at (\e
    * lat1, \e lon1) and (\e lat2, \e lon2) is called the rhumb line (also
    * called the loxodrome).  Its length is \e s12 and its azimuth is \e azi12.
    * (The azimuth is the heading measured clockwise from north.)
@@ -57,114 +63,40 @@ namespace GeographicLib {
    * and Tokyo Narita via the rhumb line is 11400 km which is 18% longer than
    * the geodesic distance 9600 km.
    *
+   * This implementation is described in
+   * - C. F. F. Karney,<br>
+   *   <a href="https://doi.org/10.1007/s11200-024-0709-z">
+   *   <i>The area of rhumb polygons</i></a>,<br>
+   *   Stud. Geophys. Geod. 68(3--4), 99--120 (2024);
+   *   DOI: <a href="https://doi.org/10.1007/s11200-024-0709-z">
+   *   10.1007/s11200-024-0709-z</a>.
+   * .
    * For more information on rhumb lines see \ref rhumb.
    *
    * Example of use:
    * \include example-Rhumb.cpp
    **********************************************************************/
 
-  class  GEOGRAPHICLIB_EXPORT Rhumb {
+  class GEOGRAPHICLIB_EXPORT Rhumb {
   private:
     typedef Math::real real;
     friend class RhumbLine;
-    template <class T> friend class PolygonAreaT;
-    Ellipsoid _ell;
+    template<class T> friend class PolygonAreaT;
+    DAuxLatitude _aux;
     bool _exact;
-    real _c2;
-    static const int tm_maxord = GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER;
-    static const int maxpow_ = GEOGRAPHICLIB_RHUMBAREA_ORDER;
-    // _R[0] unused
-    real _R[maxpow_ + 1];
-    static real gd(real x)
-    { using std::atan; using std::sinh; return atan(sinh(x)); }
+    real _a, _f, _n, _rm, _c2;
+    int _lL;             // N.B. names of the form _[A-Z].* are reserved in C++
+    std::vector<real> _pP;      // The Fourier coefficients P_l
+    static const int Lmax_ = GEOGRAPHICLIB_RHUMBAREA_ORDER;
+    void AreaCoeffs();
+    class qIntegrand {
+      const AuxLatitude& _aux;
+    public:
+      qIntegrand(const AuxLatitude& aux);
+      real operator()(real chi) const;
+    };
 
-    // Use divided differences to determine (mu2 - mu1) / (psi2 - psi1)
-    // accurately
-    //
-    // Definition: Df(x,y,d) = (f(x) - f(y)) / (x - y)
-    // See:
-    //   W. M. Kahan and R. J. Fateman,
-    //   Symbolic computation of divided differences,
-    //   SIGSAM Bull. 33(3), 7-28 (1999)
-    //   https://doi.org/10.1145/334714.334716
-    //   http://www.cs.berkeley.edu/~fateman/papers/divdiff.pdf
-
-    static real Dlog(real x, real y) {
-      real t = x - y;
-      return t != 0 ? 2 * Math::atanh(t / (x + y)) / t : 1 / x;
-    }
-    // N.B., x and y are in degrees
-    static real Dtan(real x, real y) {
-      real d = x - y, tx = Math::tand(x), ty = Math::tand(y), txy = tx * ty;
-      return d != 0 ?
-        (2 * txy > -1 ? (1 + txy) * Math::tand(d) : tx - ty) /
-        (d * Math::degree()) :
-        1 + txy;
-    }
-    static real Datan(real x, real y) {
-      using std::atan;
-      real d = x - y, xy = x * y;
-      return d != 0 ?
-        (2 * xy > -1 ? atan( d / (1 + xy) ) : atan(x) - atan(y)) / d :
-        1 / (1 + xy);
-    }
-    static real Dsin(real x, real y) {
-      using std::sin; using std::cos;
-      real d = (x - y) / 2;
-      return cos((x + y)/2) * (d != 0 ? sin(d) / d : 1);
-    }
-    static real Dsinh(real x, real y) {
-      using std::sinh; using std::cosh;
-      real d = (x - y) / 2;
-      return cosh((x + y) / 2) * (d != 0 ? sinh(d) / d : 1);
-    }
-    static real Dcosh(real x, real y) {
-      using std::sinh;
-      real d = (x - y) / 2;
-      return sinh((x + y) / 2) * (d != 0 ? sinh(d) / d : 1);
-    }
-    static real Dasinh(real x, real y) {
-      real d = x - y,
-        hx = Math::hypot(real(1), x), hy = Math::hypot(real(1), y);
-      return d != 0 ? Math::asinh(x*y > 0 ? d * (x + y) / (x*hy + y*hx) :
-                                  x*hy - y*hx) / d :
-        1 / hx;
-    }
-    static real Dgd(real x, real y) {
-      using std::sinh;
-      return Datan(sinh(x), sinh(y)) * Dsinh(x, y);
-    }
-    // N.B., x and y are the tangents of the angles
-    static real Dgdinv(real x, real y)
-    { return Dasinh(x, y) / Datan(x, y); }
-    // Copied from LambertConformalConic...
-    // Deatanhe(x,y) = eatanhe((x-y)/(1-e^2*x*y))/(x-y)
-    real Deatanhe(real x, real y) const {
-      real t = x - y, d = 1 - _ell._e2 * x * y;
-      return t != 0 ? Math::eatanhe(t / d, _ell._es) / t : _ell._e2 / d;
-    }
-    // (E(x) - E(y)) / (x - y) -- E = incomplete elliptic integral of 2nd kind
-    real DE(real x, real y) const;
-    // (mux - muy) / (phix - phiy) using elliptic integrals
-    real DRectifying(real latx, real laty) const;
-    // (psix - psiy) / (phix - phiy)
-    real DIsometric(real latx, real laty) const;
-
-    // (sum(c[j]*sin(2*j*x),j=1..n) - sum(c[j]*sin(2*j*x),j=1..n)) / (x - y)
-    static real SinCosSeries(bool sinp,
-                             real x, real y, const real c[], int n);
-    // (mux - muy) / (chix - chiy) using Krueger's series
-    real DConformalToRectifying(real chix, real chiy) const;
-    // (chix - chiy) / (mux - muy) using Krueger's series
-    real DRectifyingToConformal(real mux, real muy) const;
-
-    // (mux - muy) / (psix - psiy)
-    // N.B., psix and psiy are in degrees
-    real DIsometricToRectifying(real psix, real psiy) const;
-    // (psix - psiy) / (mux - muy)
-    real DRectifyingToIsometric(real mux, real muy) const;
-
-    real MeanSinXi(real psi1, real psi2) const;
+    real MeanSinXi(const AuxAngle& chix, const AuxAngle& chiy) const;
 
     // The following two functions (with lots of ignored arguments) mimic the
     // interface to the corresponding Geodesic function.  These are needed by
@@ -180,8 +112,8 @@ namespace GeographicLib {
                     real&, real& , real& , real& , real& S12) const {
       GenInverse(lat1, lon1, lat2, lon2, outmask, s12, azi12, S12);
     }
-  public:
 
+  public:
     /**
      * Bit masks for what calculations to do.  They specify which results to
      * return in the general routines Rhumb::GenDirect and Rhumb::GenInverse
@@ -231,20 +163,18 @@ namespace GeographicLib {
     };
 
     /**
-     * Constructor for a ellipsoid with
+     * Constructor for an ellipsoid with
      *
      * @param[in] a equatorial radius (meters).
      * @param[in] f flattening of ellipsoid.  Setting \e f = 0 gives a sphere.
      *   Negative \e f gives a prolate ellipsoid.
-     * @param[in] exact if true (the default) use an addition theorem for
-     *   elliptic integrals to compute divided differences; otherwise use
-     *   series expansion (accurate for |<i>f</i>| < 0.01).
+     * @param[in] exact if true use the exact expressions for the auxiliary
+     *   latitudes; otherwise use series expansion (accurate for |<i>f</i>| <
+     *   0.01) [default false].
      * @exception GeographicErr if \e a or (1 &minus; \e f) \e a is not
      *   positive.
-     *
-     * See \ref rhumb, for a detailed description of the \e exact parameter.
      **********************************************************************/
-    Rhumb(real a, real f, bool exact = true);
+    Rhumb(real a, real f, bool exact = false);
 
     /**
      * Solve the direct rhumb problem returning also the area.
@@ -375,6 +305,11 @@ namespace GeographicLib {
                     real& s12, real& azi12, real& S12) const;
 
     /**
+     * Typedef for the class for computing multiple points on a rhumb line.
+     **********************************************************************/
+    typedef RhumbLine LineClass;
+
+    /**
      * Set up to compute several points on a single rhumb line.
      *
      * @param[in] lat1 latitude of point 1 (degrees).
@@ -399,15 +334,25 @@ namespace GeographicLib {
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value used in the constructor.
      **********************************************************************/
-    Math::real MajorRadius() const { return _ell.MajorRadius(); }
+    Math::real EquatorialRadius() const { return _a; }
 
     /**
      * @return \e f the  flattening of the ellipsoid.  This is the
      *   value used in the constructor.
      **********************************************************************/
-    Math::real Flattening() const { return _ell.Flattening(); }
+    Math::real Flattening() const { return _f; }
 
-    Math::real EllipsoidArea() const { return _ell.Area(); }
+    /**
+     * @return total area of ellipsoid in meters<sup>2</sup>.  The area of a
+     *   polygon encircling a pole can be found by adding
+     *   Geodesic::EllipsoidArea()/2 to the sum of \e S12 for each side of the
+     *   polygon.
+     **********************************************************************/
+    Math::real EllipsoidArea() const {
+      // _c2 contains a Math::degrees() factor, so 4*pi -> 2*Math::td.
+      return 2 * real(Math::td) * _c2;
+    }
+    ///@}
 
     /**
      * A global instantiation of Rhumb with the parameters for the WGS84
@@ -434,18 +379,23 @@ namespace GeographicLib {
    * \include example-RhumbLine.cpp
    **********************************************************************/
 
-  class  GEOGRAPHICLIB_EXPORT RhumbLine {
+  class GEOGRAPHICLIB_EXPORT RhumbLine {
   private:
     typedef Math::real real;
     friend class Rhumb;
     const Rhumb& _rh;
-    bool _exact;
-    real _lat1, _lon1, _azi12, _salp, _calp, _mu1, _psi1, _r1;
-    RhumbLine& operator=(const RhumbLine&); // copy assignment not allowed
-    RhumbLine(const Rhumb& rh, real lat1, real lon1, real azi12,
-              bool exact);
+    real _lat1, _lon1, _azi12, _salp, _calp, _mu1, _psi1;
+    AuxAngle _phi1, _chi1;
+    // copy assignment not allowed
+    RhumbLine& operator=(const RhumbLine&) = delete;
+    RhumbLine(const Rhumb& rh, real lat1, real lon1, real azi12);
+
   public:
 
+    /**
+     * Construction is via default copy constructor.
+     **********************************************************************/
+    RhumbLine(const RhumbLine&) = default;
     /**
      * This is a duplication of Rhumb::mask.
      **********************************************************************/
@@ -491,6 +441,11 @@ namespace GeographicLib {
        **********************************************************************/
       ALL           = Rhumb::ALL,
     };
+
+    /**
+     * Typedef for the base class implementing rhumb lines.
+     **********************************************************************/
+    typedef Rhumb BaseClass;
 
     /**
      * Compute the position of point 2 which is a distance \e s12 (meters) from
@@ -576,7 +531,7 @@ namespace GeographicLib {
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value inherited from the Rhumb object used in the constructor.
      **********************************************************************/
-    Math::real MajorRadius() const { return _rh.MajorRadius(); }
+    Math::real EquatorialRadius() const { return _rh.EquatorialRadius(); }
 
     /**
      * @return \e f the flattening of the ellipsoid.  This is the value
@@ -586,5 +541,9 @@ namespace GeographicLib {
   };
 
 } // namespace GeographicLib
+
+#if defined(_MSC_VER)
+#  pragma warning (pop)
+#endif
 
 #endif  // GEOGRAPHICLIB_RHUMB_HPP

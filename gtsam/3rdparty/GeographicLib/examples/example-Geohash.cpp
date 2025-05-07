@@ -24,13 +24,17 @@ int main() {
     {
       // Sample reverse calculation
       string geohash = "u4pruydqqvj";
-      double lat, lon;
+      double lat, lon, latres, lonres;
       cout << fixed;
       for (unsigned i = 0; i <= geohash.length(); ++i) {
         int len;
         Geohash::Reverse(geohash.substr(0, i), lat, lon, len);
+        latres = Geohash::LatitudeResolution(len);
+        lonres = Geohash::LongitudeResolution(len);
         cout << setprecision(max(0, Geohash::DecimalPrecision(len)))
-             << len << " " << lat << " " << lon << "\n";
+             << len << " "
+             << lat << "+/-" << latres/2 << " "
+             << lon << "+/-" << lonres/2 << "\n";
       }
     }
   }

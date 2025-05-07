@@ -2,7 +2,7 @@
  * \file Georef.cpp
  * \brief Implementation for GeographicLib::Georef class
  *
- * Copyright (c) Charles Karney (2015-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2015-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -19,22 +19,24 @@ namespace GeographicLib {
   const char* const Georef::lattile_ = "ABCDEFGHJKLM";
   const char* const Georef::degrees_ = "ABCDEFGHJKLMNPQ";
 
-  void Georef::Forward(real lat, real lon, int prec, std::string& georef) {
-    if (abs(lat) > 90)
+  void Georef::Forward(real lat, real lon, int prec, string& georef) {
+    using std::isnan;           // Needed for Centos 7, ubuntu 14
+    if (fabs(lat) > Math::qd)
       throw GeographicErr("Latitude " + Utility::str(lat)
-                          + "d not in [-90d, 90d]");
-    if (Math::isnan(lat) || Math::isnan(lon)) {
+                          + "d not in [-" + to_string(Math::qd)
+                          + "d, " + to_string(Math::qd) + "d]");
+    if (isnan(lat) || isnan(lon)) {
       georef = "INVALID";
       return;
     }
     lon = Math::AngNormalize(lon); // lon in [-180,180)
-    if (lat == 90) lat *= (1 - numeric_limits<real>::epsilon() / 2);
+    if (lat == Math::qd) lat *= (1 - numeric_limits<real>::epsilon() / 2);
     prec = max(-1, min(int(maxprec_), prec));
     if (prec == 1) ++prec;      // Disallow prec = 1
     // The C++ standard mandates 64 bits for long long.  But
     // check, to make sure.
-    GEOGRAPHICLIB_STATIC_ASSERT(numeric_limits<long long>::digits >= 45,
-                                "long long not wide enough to store 21600e9");
+    static_assert(numeric_limits<long long>::digits >= 45,
+                  "long long not wide enough to store 21600e9");
     const long long m = 60000000000LL;
     long long
       x = (long long)(floor(lon * real(m))) - lonorig_ * m,
@@ -60,8 +62,8 @@ namespace GeographicLib {
     copy(georef1, georef1 + baselen_ + 2 * prec, georef.begin());
   }
 
-  void Georef::Reverse(const std::string& georef, real& lat, real& lon,
-                        int& prec, bool centerp) {
+  void Georef::Reverse(const string& georef, real& lat, real& lon,
+                       int& prec, bool centerp) {
     int len = int(georef.length());
     if (len >= 3 &&
         toupper(georef[0]) == 'I' &&

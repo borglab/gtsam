@@ -2,7 +2,7 @@
  * \file PolygonArea.hpp
  * \brief Header for GeographicLib::PolygonAreaT class
  *
- * Copyright (c) Charles Karney (2010-2016) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2023) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -32,6 +32,10 @@ namespace GeographicLib {
    *   <a href="https://geographiclib.sourceforge.io/geod-addenda.html">
    *   geod-addenda.html</a>.
    *
+   * Arbitrarily complex polygons are allowed.  In the case self-intersecting
+   * of polygons the area is accumulated "algebraically", e.g., the areas of
+   * the 2 loops in a figure-8 polygon will partially cancel.
+   *
    * This class lets you add vertices and edges one at a time to the polygon.
    * The sequence must start with a vertex and thereafter vertices and edges
    * can be added in any order.  Any vertex after the first creates a new edge
@@ -52,6 +56,34 @@ namespace GeographicLib {
    * GeographicLib::PolygonAreaExact, and GeographicLib::PolygonAreaRhumb are
    * typedefs for these cases.
    *
+   * For GeographicLib::PolygonArea (edges defined by Geodesic), an upper bound
+   * on the error is about 0.1 m<sup>2</sup> per vertex.  However this is a
+   * wildly pessimistic estimate in most cases.  A more realistic estimate of
+   * the error is given by a test involving 10<sup>7</sup> approximately
+   * regular polygons on the WGS84 ellipsoid.  The centers and the orientations
+   * of the polygons were uniformly distributed, the number of vertices was
+   * log-uniformly distributed in [3, 300], and the center to vertex distance
+   * log-uniformly distributed in [0.1 m, 9000 km].
+   *
+   * Using double precision (the standard precision for GeographicLib), the
+   * maximum error in the perimeter was 200 nm, and the maximum error in the
+   * area was<pre>
+   *     0.0013 m^2 for perimeter < 10 km
+   *     0.0070 m^2 for perimeter < 100 km
+   *     0.070 m^2 for perimeter < 1000 km
+   *     0.11 m^2 for all perimeters
+   * </pre>
+   * The errors are given in terms of the perimeter, because it is expected
+   * that the errors depend mainly on the number of edges and the edge lengths.
+   *
+   * Using long doubles (GEOGRPAHICLIB_PRECISION = 3), the maximum error in the
+   * perimeter was 200 pm, and the maximum error in the area was<pre>
+   *     0.7 mm^2 for perim < 10 km
+   *     3.2 mm^2 for perimeter < 100 km
+   *     21 mm^2 for perimeter < 1000 km
+   *     45 mm^2 for all perimeters
+   * </pre>
+   *
    * @tparam GeodType the geodesic class to use.
    *
    * Example of use:
@@ -61,7 +93,7 @@ namespace GeographicLib {
    * providing access to the functionality of PolygonAreaT.
    **********************************************************************/
 
-  template <class GeodType = Geodesic>
+  template<class GeodType = Geodesic>
   class PolygonAreaT {
   private:
     typedef Math::real real;
@@ -73,41 +105,17 @@ namespace GeographicLib {
     int _crossings;
     Accumulator<> _areasum, _perimetersum;
     real _lat0, _lon0, _lat1, _lon1;
-    static int transit(real lon1, real lon2) {
-      // Return 1 or -1 if crossing prime meridian in east or west direction.
-      // Otherwise return zero.
-      // Compute lon12 the same way as Geodesic::Inverse.
-      lon1 = Math::AngNormalize(lon1);
-      lon2 = Math::AngNormalize(lon2);
-      real lon12 = Math::AngDiff(lon1, lon2);
-      // Treat 0 as negative in these tests.  This balances +/- 180 being
-      // treated as positive, i.e., +180.
-      int cross =
-        lon1 <= 0 && lon2 > 0 && lon12 > 0 ? 1 :
-        (lon2 <= 0 && lon1 > 0 && lon12 < 0 ? -1 : 0);
-      return cross;
-    }
+    static int transit(real lon1, real lon2);
     // an alternate version of transit to deal with longitudes in the direct
     // problem.
-    static int transitdirect(real lon1, real lon2) {
-      // We want to compute exactly
-      //   int(floor(lon2 / 360)) - int(floor(lon1 / 360))
-      // Since we only need the parity of the result we can use std::remquo;
-      // but this is buggy with g++ 4.8.3 (glibc version < 2.22), see
-      //   https://sourceware.org/bugzilla/show_bug.cgi?id=17569
-      // and requires C++11.  So instead we do
-#if GEOGRAPHICLIB_CXX11_MATH && GEOGRAPHICLIB_PRECISION != 4
+    static int transitdirect(real lon1, real lon2);
+    void Remainder(Accumulator<>& a) const { a.remainder(_area0); }
+    void Remainder(real& a) const {
       using std::remainder;
-      lon1 = remainder(lon1, real(720)); lon2 = remainder(lon2, real(720));
-      return ( (lon2 >= 0 && lon2 < 360 ? 0 : 1) -
-               (lon1 >= 0 && lon1 < 360 ? 0 : 1) );
-#else
-      using std::fmod;
-      lon1 = fmod(lon1, real(720)); lon2 = fmod(lon2, real(720));
-      return ( ((lon2 >= 0 && lon2 < 360) || lon2 < -360 ? 0 : 1) -
-               ((lon1 >= 0 && lon1 < 360) || lon1 < -360 ? 0 : 1) );
-#endif
+      a = remainder(a, _area0);
     }
+    template<typename T>
+    void AreaReduce(T& area, int crossings, bool reverse, bool sign) const;
   public:
 
     /**
@@ -239,7 +247,7 @@ namespace GeographicLib {
      *   the value inherited from the Geodesic object used in the constructor.
      **********************************************************************/
 
-    Math::real MajorRadius() const { return _earth.MajorRadius(); }
+    Math::real EquatorialRadius() const { return _earth.EquatorialRadius(); }
 
     /**
      * @return \e f the flattening of the ellipsoid.  This is the value
@@ -258,6 +266,22 @@ namespace GeographicLib {
      **********************************************************************/
     void CurrentPoint(real& lat, real& lon) const
     { lat = _lat1; lon = _lon1; }
+
+    /**
+     * Report the number of points currently in the polygon or polyline.
+     *
+     * @return the number of points.
+     *
+     * If no points have been added, then 0 is returned.
+     **********************************************************************/
+    unsigned NumberPoints() const { return _num; }
+
+    /**
+     * Report whether the current object is a polygon or a polyline.
+     *
+     * @return true if the object is a polyline.
+     **********************************************************************/
+    bool Polyline() const { return _polyline; }
     ///@}
   };
 
@@ -272,9 +296,8 @@ namespace GeographicLib {
   /**
    * @relates PolygonAreaT
    *
-   * Polygon areas using GeodesicExact.  (But note that the implementation of
-   * areas in GeodesicExact uses a high order series and this is only accurate
-   * for modest flattenings.)
+   * \deprecated Polygon areas using GeodesicExact.  Instead use PolygonArea
+   *   with a Geodesic object specified with \e exact = true.
    **********************************************************************/
   typedef PolygonAreaT<GeodesicExact> PolygonAreaExact;
 

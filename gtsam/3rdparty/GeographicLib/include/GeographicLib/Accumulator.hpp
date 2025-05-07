@@ -2,7 +2,7 @@
  * \file Accumulator.hpp
  * \brief Header for GeographicLib::Accumulator class
  *
- * Copyright (c) Charles Karney (2010-2015) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2020) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -100,8 +100,8 @@ namespace GeographicLib {
      * @param[in] y set \e sum = \e y.
      **********************************************************************/
     Accumulator(T y = T(0)) : _s(y), _t(0) {
-      GEOGRAPHICLIB_STATIC_ASSERT(!std::numeric_limits<T>::is_integer,
-                                  "Accumulator type is not floating point");
+      static_assert(!std::numeric_limits<T>::is_integer,
+                    "Accumulator type is not floating point");
     }
     /**
      * Set the accumulator to a number.
@@ -150,9 +150,21 @@ namespace GeographicLib {
      * @param[in] y set \e sum *= \e y.
      **********************************************************************/
     Accumulator& operator*=(T y) {
+      using std::fma;
       T d = _s; _s *= y;
-      d = Math::fma(y, d, -_s); // the error in the first multiplication
-      _t = Math::fma(y, _t, d); // add error to the second term
+      d = fma(y, d, -_s); // the error in the first multiplication
+      _t = fma(y, _t, d); // add error to the second term
+      return *this;
+    }
+    /**
+     * Reduce accumulator to the range [-y/2, y/2].
+     *
+     * @param[in] y the modulus.
+     **********************************************************************/
+    Accumulator& remainder(T y) {
+      using std::remainder;
+      _s = remainder(_s, y);
+      Add(0);                   // This renormalizes the result.
       return *this;
     }
     /**

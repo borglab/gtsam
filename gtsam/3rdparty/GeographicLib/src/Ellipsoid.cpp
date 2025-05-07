@@ -2,7 +2,7 @@
  * \file Ellipsoid.cpp
  * \brief Implementation for GeographicLib::Ellipsoid class
  *
- * Copyright (c) Charles Karney (2012-2015) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2012-2023) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -13,21 +13,20 @@ namespace GeographicLib {
 
   using namespace std;
 
+  /// \cond SKIP
   Ellipsoid::Ellipsoid(real a, real f)
     : stol_(real(0.01) * sqrt(numeric_limits<real>::epsilon()))
     , _a(a)
     , _f(f)
-    , _f1(1 - _f)
-    , _f12(Math::sq(_f1))
+    , _b(_a * (1 - _f))
     , _e2(_f * (2 - _f))
-    , _es((_f < 0 ? -1 : 1) * sqrt(abs(_e2)))
     , _e12(_e2 / (1 - _e2))
     , _n(_f / (2  - _f))
-    , _b(_a * _f1)
-    , _tm(_a, _f, real(1))
-    , _ell(-_e12)
-    , _au(_a, _f, real(0), real(1), real(0), real(1), real(1))
+    , _aux(_a, _f)
+    , _rm(_aux.RectifyingRadius(true))
+    , _c2(_aux.AuthalicRadiusSquared(true))
   {}
+  /// \endcond
 
   const Ellipsoid& Ellipsoid::WGS84() {
     static const Ellipsoid wgs84(Constants::WGS84_a(), Constants::WGS84_f());
@@ -35,74 +34,92 @@ namespace GeographicLib {
   }
 
   Math::real Ellipsoid::QuarterMeridian() const
-  { return _b * _ell.E(); }
+  { return Math::pi()/2 * _rm; }
 
-  Math::real Ellipsoid::Area() const {
-    return 4 * Math::pi() *
-      ((Math::sq(_a) + Math::sq(_b) *
-        (_e2 == 0 ? 1 :
-         (_e2 > 0 ? Math::atanh(sqrt(_e2)) : atan(sqrt(-_e2))) /
-         sqrt(abs(_e2))))/2);
+  Math::real Ellipsoid::Area() const
+  { return 4 * Math::pi() * _c2; }
+
+  Math::real Ellipsoid::ParametricLatitude(real phi) const {
+    return _aux.Convert(AuxLatitude::PHI, AuxLatitude::BETA,
+                        Math::LatFix(phi), true);
   }
 
-  Math::real Ellipsoid::ParametricLatitude(real phi) const
-  { return Math::atand(_f1 * Math::tand(Math::LatFix(phi))); }
+  Math::real Ellipsoid::InverseParametricLatitude(real beta) const {
+    return _aux.Convert(AuxLatitude::BETA, AuxLatitude::PHI,
+                        Math::LatFix(beta), true);
+  }
 
-  Math::real Ellipsoid::InverseParametricLatitude(real beta) const
-  { return Math::atand(Math::tand(Math::LatFix(beta)) / _f1); }
+  Math::real Ellipsoid::GeocentricLatitude(real phi) const {
+    return _aux.Convert(AuxLatitude::PHI, AuxLatitude::THETA,
+                        Math::LatFix(phi), true);
+  }
 
-  Math::real Ellipsoid::GeocentricLatitude(real phi) const
-  { return Math::atand(_f12 * Math::tand(Math::LatFix(phi))); }
-
-  Math::real Ellipsoid::InverseGeocentricLatitude(real theta) const
-  { return Math::atand(Math::tand(Math::LatFix(theta)) / _f12); }
+  Math::real Ellipsoid::InverseGeocentricLatitude(real theta) const {
+    return _aux.Convert(AuxLatitude::THETA, AuxLatitude::PHI,
+                        Math::LatFix(theta), true);
+  }
 
   Math::real Ellipsoid::RectifyingLatitude(real phi) const {
-    return abs(phi) == 90 ? phi:
-      90 * MeridianDistance(phi) / QuarterMeridian();
+    return _aux.Convert(AuxLatitude::PHI, AuxLatitude::MU,
+                        Math::LatFix(phi), true);
   }
 
   Math::real Ellipsoid::InverseRectifyingLatitude(real mu) const {
-    if (abs(mu) == 90)
-      return mu;
-    return InverseParametricLatitude(_ell.Einv(mu * _ell.E() / 90) /
-                                     Math::degree());
+    return _aux.Convert(AuxLatitude::MU, AuxLatitude::PHI,
+                        Math::LatFix(mu), true);
   }
 
-  Math::real Ellipsoid::AuthalicLatitude(real phi) const
-  { return Math::atand(_au.txif(Math::tand(Math::LatFix(phi)))); }
+  Math::real Ellipsoid::AuthalicLatitude(real phi) const {
+    return _aux.Convert(AuxLatitude::PHI, AuxLatitude::XI,
+                        Math::LatFix(phi), true);
+  }
 
-  Math::real Ellipsoid::InverseAuthalicLatitude(real xi) const
-  { return Math::atand(_au.tphif(Math::tand(Math::LatFix(xi)))); }
+  Math::real Ellipsoid::InverseAuthalicLatitude(real xi) const {
+    return _aux.Convert(AuxLatitude::XI, AuxLatitude::PHI,
+                        Math::LatFix(xi), true);
+  }
 
-  Math::real Ellipsoid::ConformalLatitude(real phi) const
-  { return Math::atand(Math::taupf(Math::tand(Math::LatFix(phi)), _es)); }
+  Math::real Ellipsoid::ConformalLatitude(real phi) const {
+    return _aux.Convert(AuxLatitude::PHI, AuxLatitude::CHI,
+                        Math::LatFix(phi), true);
+  }
 
-  Math::real Ellipsoid::InverseConformalLatitude(real chi) const
-  { return Math::atand(Math::tauf(Math::tand(Math::LatFix(chi)), _es)); }
+  Math::real Ellipsoid::InverseConformalLatitude(real chi) const {
+    return _aux.Convert(AuxLatitude::CHI, AuxLatitude::PHI,
+                        Math::LatFix(chi), true);
+  }
 
-  Math::real Ellipsoid::IsometricLatitude(real phi) const
-  { return Math::asinh(Math::taupf(Math::tand(Math::LatFix(phi)), _es)) /
-      Math::degree(); }
+  Math::real Ellipsoid::IsometricLatitude(real phi) const {
+    return _aux.Convert(AuxLatitude::PHI, AuxLatitude::CHI,
+                        AuxAngle::degrees(Math::LatFix(phi)), true).lamd();
+  }
 
-  Math::real Ellipsoid::InverseIsometricLatitude(real psi) const
-  { return Math::atand(Math::tauf(sinh(psi * Math::degree()), _es)); }
+  Math::real Ellipsoid::InverseIsometricLatitude(real psi) const {
+    return  _aux.Convert(AuxLatitude::CHI, AuxLatitude::PHI,
+                         AuxAngle::lamd(psi), true).degrees();
+  }
 
   Math::real Ellipsoid::CircleRadius(real phi) const {
-    return abs(phi) == 90 ? 0 :
-      // a * cos(beta)
-      _a / Math::hypot(real(1), _f1 * Math::tand(Math::LatFix(phi)));
+    // a * cos(beta)
+    AuxAngle beta(_aux.Convert(AuxLatitude::PHI, AuxLatitude::BETA,
+                               AuxAngle::degrees(Math::LatFix(phi)),
+                               true).normalized());
+    return _a * beta.x();
   }
 
   Math::real Ellipsoid::CircleHeight(real phi) const {
-    real tbeta = _f1 * Math::tand(phi);
     // b * sin(beta)
-    return _b * tbeta / Math::hypot(real(1),
-                                    _f1 * Math::tand(Math::LatFix(phi)));
+    AuxAngle beta(_aux.Convert(AuxLatitude::PHI, AuxLatitude::BETA,
+                               AuxAngle::degrees(Math::LatFix(phi)),
+                               true).normalized());
+    return _b * beta.y();
   }
 
-  Math::real Ellipsoid::MeridianDistance(real phi) const
-  { return _b * _ell.Ed( ParametricLatitude(phi) ); }
+  Math::real Ellipsoid::MeridianDistance(real phi) const {
+    return _rm * _aux.Convert(AuxLatitude::PHI, AuxLatitude::MU,
+                              AuxAngle::degrees(Math::LatFix(phi)),
+                              true).radians();
+  }
 
   Math::real Ellipsoid::MeridionalCurvatureRadius(real phi) const {
     real v = 1 - _e2 * Math::sq(Math::sind(Math::LatFix(phi)));

@@ -1,44 +1,59 @@
 /*
-Compute series expansions for the auxiliary latitudes.
-
-Copyright (c) Charles Karney (2014-2017) <charles@karney.com> and
-licensed under the MIT/X11 License.  For more information, see
-https://geographiclib.sourceforge.io/
-
-This maxima program compute the coefficients for trigonometric series
-relating the six latitudes
-
-  phi     geographic
-  beta    parametric
-  theta   geocentric
-  mu      rectifying
-  chi     conformal
-  xi      authalic
-
-All 30 inter-relations are found.  The coefficients are expressed as
-Taylor series in the third flattening n.  This generates the series
-given on the page
-
-  https://geographiclib.sourceforge.io/html/auxlat.html
-
-Instructions:
-
- * [optional] edit to set the desired value of maxpow (currently 8)
- * start maxima and run
-     batch("auxlat.mac")$
-     writefile("auxlat.txt")$
-     dispall()$
-     closefile()$
-
-Timings:
-maxpow time(s)
-   6     13
-   8     41
-  10    114
-  12    293
-  14    708
-  16   1629
-*/
+ * Maxima code to compute the series expansions for the auxiliary
+ * latitudes.  This generates the series given in the appendix of the
+ * paper
+ *
+ * - C. F. F. Karney,
+ *   On auxiliary latitudes,
+ *   Survey Review 56(395), 165--180 (2024).
+ *   https://doi.org/10.1080/00396265.2023.2217604
+ *   preprint: https://arxiv.org/abs/2212.05818
+ *
+ * Copyright (c) Charles Karney (2014-2022) <karney@alum.mit.edu> and
+ * licensed under the MIT/X11 License.  For more information, see
+ * https://geographiclib.sourceforge.io/
+ *
+ * This maxima program compute the coefficients for trigonometric
+ * series relating the six latitudes
+ *
+ *   phi     geographic
+ *   beta    parametric
+ *   theta   geocentric
+ *   mu      rectifying
+ *   chi     conformal
+ *   xi      authalic
+ *
+ * All 30 inter-relations are found.  The coefficients are expressed
+ * as Taylor series in the third flattening n.
+ *
+ * Instructions:
+ *
+ *  * [optional] edit to set the desired value of Lmax (currently 6)
+ *
+ *  * start maxima and run
+ *      batch("auxlat.mac")$
+ *
+ *  * now the array C[eta,zeta] gives the series expansion for converting
+ *    from zeta to eta and T[param] gives the matrix for converting a
+ *    series expansion in n to one in param = f, f1, e2, e12, e22.
+ *
+ *  * run writelsp(), writemaxima(), writetex(), writecpp(),
+ *    writeoctave(floatp) to save the arrays C and T as lisp, Maxima
+ *    code, LaTeX, C++ code, or Octave/MATLAB code.  For Lmax = 6, the
+ *    files are called auxval6.{lsp,max,tex,cpp,m}.  The argument
+ *    floatp governs whether the entries of matrices are written as
+ *    floating-point numbers or as exact fractions.
+ *
+ * Approx timings:
+ * Lmax time(s)
+ *    6      6
+ *    8     20
+ *   10     54
+ *   12    134
+ *   14    315
+ *   16    693
+ *   20   3094
+ */
 
 /*
     revert
@@ -49,19 +64,19 @@ maxpow time(s)
 Require that expr(var1) = var1 to order eps^0.  This throws in a
 trigreduce to convert to multiple angle trig functions.
 */
-maxpow:8$
+Lmax:6$
 reverta(expr,var1,var2,eps,pow):=block([tauacc:1,sigacc:0,dsig],
   dsig:ratdisrep(taylor(expr-var1,eps,0,pow)),
   dsig:subst([var1=var2],dsig),
   for n:1 thru pow do (tauacc:trigreduce(ratdisrep(taylor(
-    -dsig*tauacc/n,eps,0,pow))),
+          -dsig*tauacc/n,eps,0,pow))),
     sigacc:sigacc+expand(diff(tauacc,var2,n-1))),
   var2+sigacc)$
 
 /* beta in terms of phi */
-beta_phi:phi+sum((-n)^j/j*sin(2*j*phi),j,1,maxpow)$
+beta_phi:phi+sum((-n)^j/j*sin(2*j*phi),j,1,Lmax)$
 /* Alt:
-  beta_phi:taylor(atan((1-n)/(1+n)*tan(phi)),n,0,maxpow)$
+  beta_phi:taylor(atan((1-n)/(1+n)*tan(phi)),n,0,Lmax)$
   beta_phi:subst([atan(tan(phi))=phi,tan(phi)=sin(phi)/cos(phi)],
     ratdisrep(beta_phi))$
   beta_phi:trigreduce(ratsimp(beta_phi))$
@@ -69,201 +84,322 @@ beta_phi:phi+sum((-n)^j/j*sin(2*j*phi),j,1,maxpow)$
 /* phi in terms of beta */
 phi_beta:subst([n=-n,phi=beta],beta_phi)$
 /* Alt:
-  beta_phi:reverta(beta_phi,phi,beta,n,maxpow)$
+  phi_beta:reverta(beta_phi,phi,beta,n,Lmax)$
 */
+
 /* theta in terms of beta */
 theta_beta:subst([phi=beta],beta_phi)$
+beta_theta:subst([beta=theta],phi_beta)$
+
 /* theta in terms of phi */
 theta_phi:subst([beta=beta_phi],theta_beta)$
-theta_phi:trigreduce(taylor(theta_phi,n,0,maxpow))$
+theta_phi:trigreduce(taylor(theta_phi,n,0,Lmax))$
 /* phi in terms of theta */
 phi_theta:subst([n=-n,phi=theta],theta_phi)$
 
+df[i]:=if i<0 then df[i+2]/(i+2) else i!!$
+/* df[-1] = 1; df[-3] = -1 */
+c(k,Lmax):=sum(if oddp(j-k) then 0 else
+  n^j*(df[j+k-3]*df[j-k-3])/(df[j+k]*df[j-k]),
+  j,k,Lmax)$
+
+/* mu in terms of beta */
+mu_beta:expand(ratdisrep(
+    taylor(beta+sum(c(i,Lmax)/i*sin(2*i*beta),i,1,Lmax)/c(0,Lmax),
+      n,0,Lmax)))$
+/* beta in terms of mu */
+beta_mu:reverta(mu_beta,beta,mu,n,Lmax)$
+
 /* chi in terms of phi */
-atanexp(x,eps):=''(ratdisrep(taylor(atan(x+eps),eps,0,maxpow)))$
+atanexp(x,eps):=''(ratdisrep(taylor(atan(x+eps),eps,0,Lmax)))$
 chi_phi:block([psiv,tanchi,chiv,qq,e],
     /* Here qq = atanh(sin(phi)) = asinh(tan(phi)) */
     psiv:qq-e*atanh(e*tanh(qq)),
     psiv:subst([e=sqrt(4*n/(1+n)^2),qq=atanh(sin(phi))],
-      ratdisrep(taylor(psiv,e,0,2*maxpow)))
+      ratdisrep(taylor(psiv,e,0,2*Lmax)))
     +asinh(sin(phi)/cos(phi))-atanh(sin(phi)),
     tanchi:subst([abs(cos(phi))=cos(phi),sqrt(sin(phi)^2+cos(phi)^2)=1],
-      ratdisrep(taylor(sinh(psiv),n,0,maxpow)))+tan(phi)-sin(phi)/cos(phi),
+      ratdisrep(taylor(sinh(psiv),n,0,Lmax)))+tan(phi)-sin(phi)/cos(phi),
     chiv:atanexp(tan(phi),tanchi-tan(phi)),
     chiv:subst([atan(tan(phi))=phi,
       tan(phi)=sin(phi)/cos(phi)],
       (chiv-phi)/cos(phi))*cos(phi)+phi,
-    chiv:ratdisrep(taylor(chiv,n,0,maxpow)),
+    chiv:ratdisrep(taylor(chiv,n,0,Lmax)),
     expand(trigreduce(chiv)))$
-
 /* phi in terms of chi */
-phi_chi:reverta(chi_phi,phi,chi,n,maxpow)$
+phi_chi:reverta(chi_phi,phi,chi,n,Lmax)$
 
-df[i]:=if i<0 then df[i+2]/(i+2) else i!!$
-/* df[-1] = 1; df[-3] = -1 */
-c(k,maxpow):=sum(n^(k+2*j)*(df[2*j-3]*df[2*j+2*k-3])/(df[2*j]*df[2*j+2*k]),
-  j,0,(maxpow-k)/2)$
-
-/* mu in terms of beta */
-mu_beta:expand(ratdisrep(
-    taylor(beta+sum(c(i,maxpow)/i*sin(2*i*beta),i,1,maxpow)/c(0,maxpow),
-      n,0,maxpow)))$
-/* beta in terms of mu */
-beta_mu:reverta(mu_beta,beta,mu,n,maxpow)$
-
+/* xi in terms of phi */
 asinexp(x,eps):=''(sqrt(1-x^2)*
-  sum(ratsimp(diff(asin(x),x,i)/i!/sqrt(1-x^2))*eps^i,i,0,maxpow))$
+  sum(ratsimp(diff(asin(x),x,i)/i!/sqrt(1-x^2))*eps^i,i,0,Lmax))$
 sinxi:(sin(phi)/2*(1/(1-e^2*sin(phi)^2) + atanh(e*sin(phi))/(e*sin(phi))))/
 (1/2*(1/(1-e^2) + atanh(e)/e))$
-sinxi:ratdisrep(taylor(sinxi,e,0,2*maxpow))$
+sinxi:ratdisrep(taylor(sinxi,e,0,2*Lmax))$
 sinxi:subst([e=2*sqrt(n)/(1+n)],sinxi)$
-sinxi:expand(trigreduce(ratdisrep(taylor(sinxi,n,0,maxpow))))$
+sinxi:expand(trigreduce(ratdisrep(taylor(sinxi,n,0,Lmax))))$
 xi_phi:asinexp(sin(phi),sinxi-sin(phi))$
 xi_phi:taylor(subst([sqrt(1-sin(phi)^2)=cos(phi),asin(sin(phi))=phi],
-    xi_phi),n,0,maxpow)$
+    xi_phi),n,0,Lmax)$
 xi_phi:expand(ratdisrep(coeff(xi_phi,n,0))+sum(
-  ratsimp(trigreduce(sin(phi)*ratsimp(
-        subst([sin(phi)=sqrt(1-cos(phi)^2)],
-          ratsimp(trigexpand(ratdisrep(coeff(xi_phi,n,i)))/sin(phi))))))*n^i,
-  i,1,maxpow))$
-phi_xi:reverta(xi_phi,phi,xi,n,maxpow)$
-mu_phi:expand(trigreduce(taylor(subst([beta=beta_phi],mu_beta),n,0,maxpow)))$
-phi_mu:expand(trigreduce(taylor(subst([beta=beta_mu],phi_beta),n,0,maxpow)))$
-chi_mu:expand(trigreduce(taylor(subst([phi=phi_mu],chi_phi),n,0,maxpow)))$
-mu_chi:expand(trigreduce(taylor(subst([phi=phi_chi],mu_phi),n,0,maxpow)))$
-beta_chi:expand(trigreduce(taylor(subst([phi=phi_chi],beta_phi),n,0,maxpow)))$
-chi_beta:expand(trigreduce(taylor(subst([phi=phi_beta],chi_phi),n,0,maxpow)))$
-beta_theta:expand(trigreduce
-  (taylor(subst([phi=phi_theta],beta_phi),n,0,maxpow)))$
-beta_xi:expand(trigreduce(taylor(subst([phi=phi_xi],beta_phi),n,0,maxpow)))$
-chi_theta:expand(trigreduce
-  (taylor(subst([phi=phi_theta],chi_phi),n,0,maxpow)))$
-chi_xi:expand(trigreduce(taylor(subst([phi=phi_xi],chi_phi),n,0,maxpow)))$
-mu_theta:expand(trigreduce(taylor(subst([phi=phi_theta],mu_phi),n,0,maxpow)))$
-mu_xi:expand(trigreduce(taylor(subst([phi=phi_xi],mu_phi),n,0,maxpow)))$
-theta_chi:expand(trigreduce
-  (taylor(subst([phi=phi_chi],theta_phi),n,0,maxpow)))$
-theta_mu:expand(trigreduce(taylor(subst([phi=phi_mu],theta_phi),n,0,maxpow)))$
-theta_xi:expand(trigreduce(taylor(subst([phi=phi_xi],theta_phi),n,0,maxpow)))$
-xi_beta:expand(trigreduce(taylor(subst([phi=phi_beta],xi_phi),n,0,maxpow)))$
-xi_chi:expand(trigreduce(taylor(subst([phi=phi_chi],xi_phi),n,0,maxpow)))$
-xi_mu:expand(trigreduce(taylor(subst([phi=phi_mu],xi_phi),n,0,maxpow)))$
-xi_theta:expand(trigreduce(taylor(subst([phi=phi_theta],xi_phi),n,0,maxpow)))$
+    ratsimp(trigreduce(sin(phi)*ratsimp(
+          subst([sin(phi)=sqrt(1-cos(phi)^2)],
+            ratsimp(trigexpand(ratdisrep(coeff(xi_phi,n,i)))/sin(phi))))))*n^i,
+    i,1,Lmax))$
+/* phi in terms of xi */
+phi_xi:reverta(xi_phi,phi,xi,n,Lmax)$
 
-norm(x):=block([z:subst([n=0],x)],
-  z+sum(coeff(expand(x),sin(2*i*z))*sin(2*i*z),i,1,maxpow))$
+beta_theta:expand(trigreduce
+  (taylor(subst([phi=phi_theta],beta_phi),n,0,Lmax)))$
+
+/* complete the set by using what we have */
+mu_phi:expand(trigreduce(taylor(subst([beta=beta_phi],mu_beta),n,0,Lmax)))$
+phi_mu:expand(trigreduce(taylor(subst([beta=beta_mu],phi_beta),n,0,Lmax)))$
+chi_beta:expand(trigreduce(taylor(subst([phi=phi_beta],chi_phi),n,0,Lmax)))$
+beta_chi:expand(trigreduce(taylor(subst([phi=phi_chi],beta_phi),n,0,Lmax)))$
+xi_beta:expand(trigreduce(taylor(subst([phi=phi_beta],xi_phi),n,0,Lmax)))$
+beta_xi:expand(trigreduce(taylor(subst([phi=phi_xi],beta_phi),n,0,Lmax)))$
+mu_theta:expand(trigreduce
+  (taylor(subst([beta=beta_theta],mu_beta),n,0,Lmax)))$
+theta_mu:expand(trigreduce
+  (taylor(subst([beta=beta_mu],theta_beta),n,0,Lmax)))$
+chi_theta:expand(trigreduce
+  (taylor(subst([beta=beta_theta],chi_beta),n,0,Lmax)))$
+theta_chi:expand(trigreduce
+  (taylor(subst([beta=beta_chi],theta_beta),n,0,Lmax)))$
+xi_theta:expand(trigreduce
+  (taylor(subst([beta=beta_theta],xi_beta),n,0,Lmax)))$
+theta_xi:expand(trigreduce
+  (taylor(subst([beta=beta_xi],theta_beta),n,0,Lmax)))$
+chi_mu:expand(trigreduce(taylor(subst([beta=beta_mu],chi_beta),n,0,Lmax)))$
+mu_chi:expand(trigreduce(taylor(subst([beta=beta_chi],mu_beta),n,0,Lmax)))$
+xi_mu:expand(trigreduce(taylor(subst([beta=beta_mu],xi_beta),n,0,Lmax)))$
+mu_xi:expand(trigreduce(taylor(subst([beta=beta_xi],mu_beta),n,0,Lmax)))$
+xi_chi:expand(trigreduce(taylor(subst([beta=beta_chi],xi_beta),n,0,Lmax)))$
+chi_xi:expand(trigreduce(taylor(subst([beta=beta_xi],chi_beta),n,0,Lmax)))$
+
+/* put series in canonical form */
+norm(x):=block([z:subst([n=0],x)],x:expand(x),
+  z+sum(coeff(x,sin(2*i*z))*sin(2*i*z),i,1,Lmax))$
 
 (
-tx[beta,chi]:norm(beta_chi),
-tx[beta,mu]:norm(beta_mu),
-tx[beta,phi]:norm(beta_phi),
-tx[beta,theta]:norm(beta_theta),
-tx[beta,xi]:norm(beta_xi),
+  tx[beta,chi]:norm(beta_chi),
+  tx[beta,mu]:norm(beta_mu),
+  tx[beta,phi]:norm(beta_phi),
+  tx[beta,theta]:norm(beta_theta),
+  tx[beta,xi]:norm(beta_xi),
+  tx[chi,beta]:norm(chi_beta),
+  tx[chi,mu]:norm(chi_mu),
+  tx[chi,phi]:norm(chi_phi),
+  tx[chi,theta]:norm(chi_theta),
+  tx[chi,xi]:norm(chi_xi),
+  tx[mu,beta]:norm(mu_beta),
+  tx[mu,chi]:norm(mu_chi),
+  tx[mu,phi]:norm(mu_phi),
+  tx[mu,theta]:norm(mu_theta),
+  tx[mu,xi]:norm(mu_xi),
+  tx[phi,beta]:norm(phi_beta),
+  tx[phi,chi]:norm(phi_chi),
+  tx[phi,mu]:norm(phi_mu),
+  tx[phi,theta]:norm(phi_theta),
+  tx[phi,xi]:norm(phi_xi),
+  tx[theta,beta]:norm(theta_beta),
+  tx[theta,chi]:norm(theta_chi),
+  tx[theta,mu]:norm(theta_mu),
+  tx[theta,phi]:norm(theta_phi),
+  tx[theta,xi]:norm(theta_xi),
+  tx[xi,beta]:norm(xi_beta),
+  tx[xi,chi]:norm(xi_chi),
+  tx[xi,mu]:norm(xi_mu),
+  tx[xi,phi]:norm(xi_phi),
+  tx[xi,theta]:norm(xi_theta))$
 
-tx[chi,beta]:norm(chi_beta),
-tx[chi,mu]:norm(chi_mu),
-tx[chi,phi]:norm(chi_phi),
-tx[chi,theta]:norm(chi_theta),
-tx[chi,xi]:norm(chi_xi),
-
-tx[mu,beta]:norm(mu_beta),
-tx[mu,chi]:norm(mu_chi),
-tx[mu,phi]:norm(mu_phi),
-tx[mu,theta]:norm(mu_theta),
-tx[mu,xi]:norm(mu_xi),
-
-tx[phi,beta]:norm(phi_beta),
-tx[phi,chi]:norm(phi_chi),
-tx[phi,mu]:norm(phi_mu),
-tx[phi,theta]:norm(phi_theta),
-tx[phi,xi]:norm(phi_xi),
-
-tx[theta,beta]:norm(theta_beta),
-tx[theta,chi]:norm(theta_chi),
-tx[theta,mu]:norm(theta_mu),
-tx[theta,phi]:norm(theta_phi),
-tx[theta,xi]:norm(theta_xi),
-
-tx[xi,beta]:norm(xi_beta),
-tx[xi,chi]:norm(xi_chi),
-tx[xi,mu]:norm(xi_mu),
-tx[xi,phi]:norm(xi_phi),
-tx[xi,theta]:norm(xi_theta))$
-
-ll1:[
-[beta,phi],
-[theta,phi],
-[theta,beta],
-[mu,phi],
-[mu,beta],
-[mu,theta]]$
-ll2:[
-[chi,phi],
-[chi,beta],
-[chi,theta],
-[chi,mu],
-[xi,phi],
-[xi,beta],
-[xi,theta],
-[xi,mu],
-[xi,chi]]$
-
-tt[i,j]:=if i=j then [] else
+kill(C)$
+C[i,j]:=if i=j then 0*ident(Lmax) else
 block([v:tx[i,j],x:j,l:[]],
-  for i:1 thru maxpow do block([l1:[],c:coeff(v,sin(2*i*x))],
-    for j:i thru maxpow do l1:endcons(coeff(c,n,j),l1),
+  for i:1 thru Lmax do block([l1:[],c:coeff(v,sin(2*i*x))],
+    for j:1 thru Lmax do l1:endcons(coeff(c,n,j),l1),
     l:endcons(l1,l)),
-  l)$
-texa(i,j,pow):=block([x:j,y:i,v:tt[i,j],s:"\\",sn:"\\sin "],
-  x:concat(s,x), y:concat(s,y),
-  print(concat(y, "-",  x, "&=\\textstyle{}")),
-  for k:1 thru pow do block([t:v[k],sgn,nterm:0,str:""],
-    sgn:0,
-    for l:1 thru pow-k+1 do block([m:t[l]],
-      if m # 0 then (nterm:nterm+1,
-        if sgn = 0 then sgn:if m>0 then 1 else -1) ),
-    t:sgn*t,
-    if sgn # 0 then block([f:true],
-      str:concat(str,if sgn > 0 then "+" else "-"),
-      if nterm > 1 then str:concat(str,"\\bigl("),
-      for l:1 thru pow-k+1 do block([c:t[l]],
-      if c # 0 then (sgn:if c > 0 then 1 else -1, c:sgn*c,
-        if not f and nterm > 1 then
-        str:concat(str,if sgn > 0 then "+" else "-"),
-        f:false,
-        if c # 1 then if integerp(c) then str:concat(str,c) else
-        str:concat(str,"\\frac{",num(c),"}{",denom(c),"}"),
-        if l+k-1 > 1 then
-        str:concat(str,"n^{",l+k-1,"}")
-        else
-        str:concat(str,"n"))),
-    if nterm > 1 then str:concat(str,"\\bigr)"),
-    str:concat(str,sn,2*k,x)),
-  print(str)),
-print(concat(if v[pow+1][1] < 0 then "-" else "+","\\ldots\\\\")))$
-cf(i,j):= (
-  print(concat("<p>&",i,";&nbsp;&minus;&nbsp;&",j,";:<br><tt><small>")),
-  for x in tt[i,j] do block([str:"&nbsp;&nbsp;&nbsp;["],
-    for i:1 thru length(x) do
-    str:concat(str,string(x[i]),if i<length(x) then ", " else "]<br>"),
-    print(str)),
-  print("</small></tt>"))$
+  apply('matrix,l))$
+for lata in '[phi,beta,theta,mu,chi,xi] do
+for latb in '[phi,beta,theta,mu,chi,xi] do C[lata,latb]$
 
-disptex(ll,pow):=
-block([linel:1000],
-  print("\\f["),
-  print("\\begin{align}"),
-  for xx in ll do (texa(xx[1],xx[2],pow),texa(xx[2],xx[1],pow)),
-  print("\\end{align}"),
-  print("\\f]"))$
-dispcoeffs(ll):=
-block([linel:1000],
-  for xx in ll do (cf(xx[1],xx[2]),cf(xx[2],xx[1])))$
-dispall():=(
-  print(""),
-  disptex(ll1,4),
-  print(""),
-  disptex(ll2,3),
-  print(""),
-  dispcoeffs(append(ll1,ll2)),
-  print(""))$
+kill(T)$
+T[param]:=block([x,nexpr,l:[],n1,l1],
+  nexpr:if param = n then x else
+  if param = f then x/(2-x) else
+  if param = f1 then x/(2+x) else
+  if param = e2 then x/(1+sqrt(1-x))^2 else
+  if param = e12 then x/(1+sqrt(1+x))^2 else
+  if param = e22 then x/(1+sqrt(1-x^2)),
+  nexpr:taylor(nexpr,x,0,Lmax),n1:1,
+  for i:1 thru Lmax do (l1:[],n1:nexpr*n1,
+    for j:1 thru Lmax do l1:endcons(coeff(n1,x,j),l1),
+    l:endcons(ratdisrep(l1),l)),
+  0+apply('matrix,l))$
+for param in '[n,f,f1,e2,e12,e22] do T[param]$
+
+submat(M,rows,cols):=block([r0:length(M),c0:length(M[1]),l],
+  l:append(makelist(r,r,rows+1,r0),[M],makelist(c,c,cols+1,c0)),
+  apply('submatrix,l))$
+
+writelsp():=block([fname:concat("auxvals",Lmax,".lsp")],
+  save(fname,Lmax,C,T))$
+writemaxima():=block([fname:concat("auxvals",Lmax,".mac"),
+  lats:'[phi,beta,theta,mu,chi,xi],
+  params:'[n,f,f1,e2,e12,e22]],
+  writefile(fname),
+  print(concat("Lmax:",string(Lmax),"$")),
+  for l1 in lats do for l2 in lats do
+  print(concat("C[",l1,",",l2,"]:",
+      if l1=l2 then "zeromatrix(Lmax,Lmax)" else
+      string(submat(C[l1,l2],Lmax,Lmax)),"$")),
+  for p in params do
+  print(concat("T[",p,"]:",
+      if p='n then "ident(Lmax)" else
+      string(submat(T[p],Lmax,Lmax)),"$")),
+  closefile(),'done)$
+
+formatnum(x):=if integerp(x) then string(x) else
+block([s:"",y:x],if x<0 then (s:"-",y:-x),
+  concat(s,"\\frac{",num(y),"}{",denom(y),"}"))$
+texout(M):=block([rows:length(M),cols:length(M[1]),s,linel:2000],
+  print("\\begin{bmatrix}"),
+  for i:1 thru rows do (s:"",
+    for j:1 thru cols do
+    s:concat(s,if j>=i then formatnum(M[i,j]) else "",
+      if j<cols then "&" else if i<rows then "\\\\" else ""),
+    print(s)),
+  print("\\end{bmatrix}"),'done)$
+formatC(x,y):=(print(concat("\\mathsf C_{\\",x,"\\",y,"}=")),
+  texout(submat(C[x,y],Lmax,Lmax)))$
+formatT(x):=block([xf:string(x)],
+  if x = 'f1 then xf:"f'" else
+  if x = 'e2 then xf:"e^2" else
+  if x = 'e12 then xf:"e'^2" else
+  if x = 'e22 then xf:"e''^2",
+  print(concat("\\mathsf T_{",xf,"}=")),
+  texout(submat(T[x],Lmax,Lmax)))$
+writetex():=block([fname:concat("auxvals",Lmax,".tex"),
+  params:'[n,f,f1,e2,e12,e22],
+  lats:'[phi,beta,theta,mu,chi,xi],alt],
+  writefile(fname),
+  for i:2 thru 6 do for j:1 thru i-1 do (
+    l1:lats[i],l2:lats[j],
+    if not (l1 = theta and l2 = beta) then (
+      print(concat("\\begin{equation}\\label{C-",l1,"-",l2,"}")),
+      if l1=beta and l2=phi then (l1:theta,l2:beta,alt:true) else alt:false,
+      if alt then print(concat("\\mathsf C_{\\beta\\phi}=")),
+      formatC(l1,l2),
+      if true /* l1 = xi */ then (
+        print(";\\end{equation}"),
+        print(concat("\\begin{equation}\\label{C-",l2,"-",l1,"}")))
+      else if l1 = chi and l2 = mu then print(";\\quad") else print(";\\qquad"),
+      if alt then print(concat("\\mathsf C_{\\phi\\beta}=")),
+      formatC(l2,l1),
+      if l1 = xi and l2 = chi then
+      print(".\\end{equation}") else print(";\\end{equation}")
+      )),
+  print("\\begin{equation}\\label{T-f-f1}"),
+  formatT(f),print(";\\qquad"),formatT(f1),
+  print(";\\end{equation}"),
+  print("\\begin{equation}\\label{T-e2-e12}"),
+  formatT(e2),print(";\\qquad"),formatT(e12),
+  print(";\\end{equation}"),
+  print("\\begin{equation}\\label{T-e22}"),
+  formatT(e22),
+  print(".\\end{equation}"),
+  closefile(),'done)$
+
+printterm(x,line):=block([lx:slength(x)+2,lline:slength(line)],
+  x:concat(" ",x,","),
+  if lline=0 then line:concat("     ",x)
+  else (if lx+lline<80 then line:concat(line,x)
+    else (print(line),line:concat("     ",x))),
+  line)$
+flushline(line):=(if slength(line)>0 then (print(line),line:""),line)$
+cppnum(x,realp):=block([s],s:if x<2^31 then string(x) else
+  if x<2^63 then concat(string(x),"LL") else
+  concat(string(x),"LLOVERFLOW"),
+  if x<2^63 and (realp or x>=2^53) then concat("real(",s,")") else s)$
+cppfrac(x):=block([s:""], if x<0 then (x:-x,s:"-"),
+  if integerp(x) then s:concat(s,cppnum(x,false)) else
+  concat(s,cppnum(num(x),false),"/",cppnum(denom(x),true)))$
+cppout(name,M,evenp):=block([linel:2000,l:length(M),m:length(M[1]),
+  count:0,line:""],
+  print(concat("      // ", name, if evenp then "; even coeffs only" else "")),
+  for i:1 thru l do block([skip:if evenp then 2 else 1,
+    start:if evenp then l-(if oddp(i) then 1 else 0) else l],
+    for j:i+floor((start-i)/skip)*skip step -skip thru i do
+    (line:printterm(cppfrac(M[i,j]), line),
+      count:count+1),
+    line:flushline(line)),
+  count)$
+writecpp():=block([fname:concat("auxvals",Lmax,".cpp"),linel:90,
+  ll:'[phi,beta,theta,mu,chi,xi],la:'[phi,beta,theta,mu],
+  macro:"GEOGRAPHICLIB_AUXLATITUDE_ORDER"],
+  writefile(fname),
+  for ord:2 thru Lmax do block([inds:[0],cnt:0,num],
+    print(concat(if ord = 2 then "#if " else "#elif ",
+        macro, " == ", string(ord))),
+    print("    static const real coeffs[] = {"),
+    for eta in ll do for zeta in ll do
+    block([name:concat("C[",string(eta),",",string(zeta),"]")],
+      num:if eta = zeta then (print(concat("      // ", name," skipped")),0)
+      else cppout(name, submat(C[eta,zeta],ord,ord),
+        member(eta,la) and member(zeta,la)),
+      cnt:cnt+num,inds:endcons(cnt,inds)),
+    print("    };"),
+    print("    static const int ptrs[] = {"),
+    block([line:""], for i in inds do line:printterm(string(i),line),
+      line:flushline(line)),
+    print("    };")),
+  print("#else
+#error", concat("\"Bad value for ", macro, "\""), "
+#endif
+"),
+closefile(),'done)$
+
+/* Do an exact rounding to 18 digits; 17 digits this may lead to a
+   double-rounding error when the numbers are read as doubles */
+doubleprint(x):=if integerp(x) then string(x) else block([fpprec:18,
+  s:if x<0 then "-" else "",f,e],
+  x:abs(x),
+  e:floor(log(x)/log(10)),
+  x:10^(-e+fpprec-1)*x,
+  f:floor(x+1/2),
+  if abs(f-x) = 1/2 and oddp(f) then f:2*x-f,
+  x:split(string(bfloat(f/10^(-e+fpprec-1))),"b"),
+  f:x[1],e:parse_string(x[2]),
+  if e = 0 then x:f else
+  block([y:split(f,"."),f1,f2,n],
+    f1:y[1],f2:y[2],n:slength(f2),
+    if e>0 and e<n then
+    x:concat(f1,substring(f2,1,1+e),".",substring(f2,1+e)) else
+    if e=n then x:concat(f1,f2,"e0") else
+    if e<0 and e>=-3 then
+    x:concat("0.",smake(-e-1,"0"),f1,
+      if charat(f2, n) = "0" then substring(f2,1,n) else f2) else
+    x:concat(f,"e",e)),
+  concat(s,x))$
+octout(name,M,floatp):=block([linel:2000],
+  print(concat(name,"=[")),
+  for i:1 thru length(M) do
+  print(concat(if floatp then sremove("\"",string(map('doubleprint,M[i])))
+      else string(M[i]),";")),
+  print("];")
+  )$
+writeoctave(floatp):=block([fname:concat("auxvals",Lmax,".m")],
+  writefile(fname),
+  print(concat("Lmax=",Lmax,";")),
+  print("[PHI,BETA,THETA,MU,CHI,XI]=deal(1,2,3,4,5,6);"),
+  print("[N,F,F1,E2,E12,E22]=deal(1,2,3,4,5,6);"),
+  for l1 in '[phi,beta,theta,mu,chi,xi] do
+  for l2 in '[phi,beta,theta,mu,chi,xi] do
+  block([name:concat("C{",supcase(string(l1)),",",supcase(string(l2)),"}")],
+  if l1=l2 then print(concat(name,"=zeros(Lmax,Lmax);"))
+  else octout(name,submat(C[l1,l2],Lmax,Lmax),floatp)),
+  for p in '[n,f,f1,e2,e12,e22] do
+  block([name:concat("T{",supcase(string(p)),"}")],
+  if p = 'n then print(concat(name,"=eye(Lmax);")) else
+  octout(name,submat(T[p],Lmax,Lmax),floatp)),
+  closefile(),'done)$

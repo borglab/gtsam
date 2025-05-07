@@ -2,7 +2,7 @@
  * \file GravityModel.hpp
  * \brief Header for GeographicLib::GravityModel class
  *
- * Copyright (c) Charles Karney (2011-2016) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -86,10 +86,11 @@ namespace GeographicLib {
     friend class GravityCircle;
     static const int idlength_ = 8;
     std::string _name, _dir, _description, _date, _filename, _id;
-    real _amodel, _GMmodel, _zeta0, _corrmult;
+    real _amodel, _gGMmodel, _zeta0, _corrmult;
+    int _nmx, _mmx;
     SphericalHarmonic::normalization _norm;
     NormalGravity _earth;
-    std::vector<real> _Cx, _Sx, _CC, _CS, _zonal;
+    std::vector<real> _cCx, _sSx, _cCC, _cCS, _zonal;
     real _dzonal0;              // A left over contribution to _zonal.
     SphericalHarmonic _gravitational;
     SphericalHarmonic1 _disturbing;
@@ -98,8 +99,9 @@ namespace GeographicLib {
     Math::real InternalT(real X, real Y, real Z,
                          real& deltaX, real& deltaY, real& deltaZ,
                          bool gradp, bool correct) const;
-    GravityModel(const GravityModel&); // copy constructor not allowed
-    GravityModel& operator=(const GravityModel&); // nor copy assignment
+    GravityModel(const GravityModel&) = delete; // copy constructor not allowed
+    // nor copy assignment
+    GravityModel& operator=(const GravityModel&) = delete;
 
     enum captype {
       CAP_NONE   = 0U,
@@ -157,6 +159,17 @@ namespace GeographicLib {
        **********************************************************************/
       ALL = CAP_ALL,
     };
+
+    /**
+     * Move constructs a gravity model.
+     **********************************************************************/
+    GravityModel(GravityModel&&) = default;
+
+    /**
+     * Move assigns a gravity model.
+     **********************************************************************/
+    GravityModel& operator=(GravityModel&&) = default;
+
     /** \name Setting up the gravity model
      **********************************************************************/
     ///@{
@@ -165,8 +178,12 @@ namespace GeographicLib {
      *
      * @param[in] name the name of the model.
      * @param[in] path (optional) directory for data file.
+     * @param[in] Nmax (optional) if non-negative, truncate the degree of the
+     *   model this value.
+     * @param[in] Mmax (optional) if non-negative, truncate the order of the
+     *   model this value.
      * @exception GeographicErr if the data file cannot be found, is
-     *   unreadable, or is corrupt.
+     *   unreadable, or is corrupt, or if \e Mmax > \e Nmax.
      * @exception std::bad_alloc if the memory necessary for storing the model
      *   can't be allocated.
      *
@@ -179,9 +196,14 @@ namespace GeographicLib {
      * model.  The coefficients for the spherical harmonic sums are obtained
      * from a file obtained by appending ".cof" to metadata file (so the
      * filename ends in ".egm.cof").
+     *
+     * If \e Nmax &ge; 0 and \e Mmax < 0, then \e Mmax is set to \e Nmax.
+     * After the model is loaded, the maximum degree and order of the model can
+     * be found by the Degree() and Order() methods.
      **********************************************************************/
     explicit GravityModel(const std::string& name,
-                          const std::string& path = "");
+                          const std::string& path = "",
+                          int Nmax = -1, int Mmax = -1);
     ///@}
 
     /** \name Compute gravity in geodetic coordinates
@@ -459,7 +481,7 @@ namespace GeographicLib {
     /**
      * @return \e a the equatorial radius of the ellipsoid (meters).
      **********************************************************************/
-    Math::real MajorRadius() const { return _earth.MajorRadius(); }
+    Math::real EquatorialRadius() const { return _earth.EquatorialRadius(); }
 
     /**
      * @return \e GM the mass constant of the model (m<sup>3</sup>
@@ -467,7 +489,7 @@ namespace GeographicLib {
      *   constant and \e M the mass of the earth (usually including the mass of
      *   the earth's atmosphere).
      **********************************************************************/
-    Math::real MassConstant() const { return _GMmodel; }
+    Math::real MassConstant() const { return _gGMmodel; }
 
     /**
      * @return \e GM the mass constant of the ReferenceEllipsoid()
@@ -487,6 +509,16 @@ namespace GeographicLib {
      * @return \e f the flattening of the ellipsoid.
      **********************************************************************/
     Math::real Flattening() const { return _earth.Flattening(); }
+
+    /**
+     * @return \e Nmax the maximum degree of the components of the model.
+     **********************************************************************/
+    int Degree() const { return _nmx; }
+
+    /**
+     * @return \e Mmax the maximum order of the components of the model.
+     **********************************************************************/
+    int Order() const { return _mmx; }
     ///@}
 
     /**

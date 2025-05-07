@@ -2,7 +2,7 @@
  * \file OSGB.cpp
  * \brief Implementation for GeographicLib::OSGB class
  *
- * Copyright (c) Charles Karney (2010-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2020) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -18,7 +18,7 @@ namespace GeographicLib {
   const char* const OSGB::digits_ = "0123456789";
 
   const TransverseMercator& OSGB::OSGBTM() {
-    static const TransverseMercator osgbtm(MajorRadius(), Flattening(),
+    static const TransverseMercator osgbtm(EquatorialRadius(), Flattening(),
                                            CentralScale());
     return osgbtm;
   }
@@ -32,12 +32,13 @@ namespace GeographicLib {
   }
 
   void OSGB::GridReference(real x, real y, int prec, std::string& gridref) {
+    using std::isnan;           // Needed for Centos 7, ubuntu 14
     CheckCoords(x, y);
     if (!(prec >= 0 && prec <= maxprec_))
       throw GeographicErr("OSGB precision " + Utility::str(prec)
                           + " not in [0, "
                           + Utility::str(int(maxprec_)) + "]");
-    if (Math::isnan(x) || Math::isnan(y)) {
+    if (isnan(x) || isnan(y)) {
       gridref = "INVALID";
       return;
     }

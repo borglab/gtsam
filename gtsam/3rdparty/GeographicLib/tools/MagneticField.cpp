@@ -2,7 +2,7 @@
  * \file MagneticField.cpp
  * \brief Command line utility for evaluating magnetic fields
  *
- * Copyright (c) Charles Karney (2011-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  *
@@ -17,11 +17,6 @@
 #include <GeographicLib/MagneticCircle.hpp>
 #include <GeographicLib/DMS.hpp>
 #include <GeographicLib/Utility.hpp>
-
-#if defined(_MSC_VER)
-// Squelch warnings about constant conditional expressions
-#  pragma warning (disable: 4127)
-#endif
 
 #include "MagneticField.usage"
 
@@ -38,7 +33,7 @@ int main(int argc, const char* const argv[]) {
     real time = 0, lat = 0, h = 0;
     bool timeset = false, circle = false, rate = false;
     real hguard = 500000, tguard = 50;
-    int prec = 1;
+    int prec = 1, Nmax = -1, Mmax = -1;
 
     for (int m = 1; m < argc; ++m) {
       std::string arg(argv[m]);
@@ -48,6 +43,32 @@ int main(int argc, const char* const argv[]) {
       } else if (arg == "-d") {
         if (++m == argc) return usage(1, true);
         dir = argv[m];
+      } else if (arg == "-N") {
+        if (++m == argc) return usage(1, true);
+        try {
+          Nmax = Utility::val<int>(std::string(argv[m]));
+          if (Nmax < 0) {
+            std::cerr << "Maximum degree " << argv[m] << " is negative\n";
+            return 1;
+          }
+        }
+        catch (const std::exception&) {
+          std::cerr << "Precision " << argv[m] << " is not a number\n";
+          return 1;
+        }
+      } else if (arg == "-M") {
+        if (++m == argc) return usage(1, true);
+        try {
+          Mmax = Utility::val<int>(std::string(argv[m]));
+          if (Mmax < 0) {
+            std::cerr << "Maximum order " << argv[m] << " is negative\n";
+            return 1;
+          }
+        }
+        catch (const std::exception&) {
+          std::cerr << "Precision " << argv[m] << " is not a number\n";
+          return 1;
+        }
       } else if (arg == "-t") {
         if (++m == argc) return usage(1, true);
         try {
@@ -63,14 +84,15 @@ int main(int argc, const char* const argv[]) {
       } else if (arg == "-c") {
         if (m + 3 >= argc) return usage(1, true);
         try {
-          using std::abs;
+          using std::fabs;
           time = Utility::fractionalyear<real>(std::string(argv[++m]));
           DMS::flag ind;
           lat = DMS::Decode(std::string(argv[++m]), ind);
           if (ind == DMS::LONGITUDE)
             throw GeographicErr("Bad hemisphere letter on latitude");
-          if (!(abs(lat) <= 90))
-            throw GeographicErr("Latitude not in [-90d, 90d]");
+          if (!(fabs(lat) <= Math::qd))
+            throw GeographicErr("Latitude not in [-" + std::to_string(Math::qd)
+                                + "d, " + std::to_string(Math::qd) + "d]");
           h = Utility::val<real>(std::string(argv[++m]));
           timeset = false;
           circle = true;
@@ -187,14 +209,16 @@ int main(int argc, const char* const argv[]) {
     }
     std::ostream* output = !ofile.empty() ? &outfile : &std::cout;
 
-    tguard = std::max(real(0), tguard);
-    hguard = std::max(real(0), hguard);
+    using std::fmax;
+    tguard = fmax(real(0), tguard);
+    hguard = fmax(real(0), hguard);
     prec = std::min(10 + Math::extra_digits(), std::max(0, prec));
     int retval = 0;
     try {
-      const MagneticModel m(model, dir);
+      using std::isfinite;
+      const MagneticModel m(model, dir, Geocentric::WGS84(), Nmax, Mmax);
       if ((timeset || circle)
-          && (!Math::isfinite(time) ||
+          && (!isfinite(time) ||
               time < m.MinTime() - tguard ||
               time > m.MaxTime() + tguard))
         throw GeographicErr("Time " + Utility::str(time) +
@@ -202,7 +226,7 @@ int main(int argc, const char* const argv[]) {
                             Utility::str(m.MinTime()) + "," +
                             Utility::str(m.MaxTime()) + "]");
       if (circle
-          && (!Math::isfinite(h) ||
+          && (!isfinite(h) ||
               h < m.MinHeight() - hguard ||
               h > m.MaxHeight() + hguard))
         throw GeographicErr("Height " + Utility::str(h/1000) +

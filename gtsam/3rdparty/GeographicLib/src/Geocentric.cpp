@@ -2,7 +2,7 @@
  * \file Geocentric.cpp
  * \brief Implementation for GeographicLib::Geocentric class
  *
- * Copyright (c) Charles Karney (2008-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -18,13 +18,13 @@ namespace GeographicLib {
     , _f(f)
     , _e2(_f * (2 - _f))
     , _e2m(Math::sq(1 - _f))    // 1 - _e2
-    , _e2a(abs(_e2))
+    , _e2a(fabs(_e2))
     , _e4a(Math::sq(_e2))
     , _maxrad(2 * _a / numeric_limits<real>::epsilon())
   {
-    if (!(Math::isfinite(_a) && _a > 0))
+    if (!(isfinite(_a) && _a > 0))
       throw GeographicErr("Equatorial radius is not positive");
-    if (!(Math::isfinite(_f) && _f < 1))
+    if (!(isfinite(_f) && _f < 1))
       throw GeographicErr("Polar semi-axis is not positive");
   }
 
@@ -52,10 +52,10 @@ namespace GeographicLib {
                               real& lat, real& lon, real& h,
                               real M[dim2_]) const {
     real
-      R = Math::hypot(X, Y),
+      R = hypot(X, Y),
       slam = R != 0 ? Y / R : 0,
       clam = R != 0 ? X / R : 1;
-    h = Math::hypot(R, Z);      // Distance to center of earth
+    h = hypot(R, Z);      // Distance to center of earth
     real sphi, cphi;
     if (h > _maxrad) {
       // We really far away (> 12 million light years); treat the earth as a
@@ -64,17 +64,17 @@ namespace GeographicLib {
       // possible that h has overflowed to inf; but that's OK.
       //
       // Treat the case X, Y finite, but R overflows to +inf by scaling by 2.
-      R = Math::hypot(X/2, Y/2);
+      R = hypot(X/2, Y/2);
       slam = R != 0 ? (Y/2) / R : 0;
       clam = R != 0 ? (X/2) / R : 1;
-      real H = Math::hypot(Z/2, R);
+      real H = hypot(Z/2, R);
       sphi = (Z/2) / H;
       cphi = R / H;
     } else if (_e4a == 0) {
       // Treat the spherical case.  Dealing with underflow in the general case
       // with _e2 = 0 is difficult.  Origin maps to N pole same as with
       // ellipsoid.
-      real H = Math::hypot(h == 0 ? 1 : Z, R);
+      real H = hypot(h == 0 ? 1 : Z, R);
       sphi = (h == 0 ? 1 : Z) / H;
       cphi = R / H;
       h -= _a;
@@ -102,7 +102,7 @@ namespace GeographicLib {
           // because of the way the T is used in definition of u.
           T3 += T3 < 0 ? -sqrt(disc) : sqrt(disc); // T3 = (r * t)^3
           // N.B. cbrt always returns the real root.  cbrt(-8) = -2.
-          real T = Math::cbrt(T3); // T = r * t
+          real T = cbrt(T3); // T = r * t
           // T can be zero; but then r2 / T -> 0.
           u += T + (T != 0 ? r2 / T : 0);
         } else {
@@ -118,17 +118,17 @@ namespace GeographicLib {
           // e4 * q / (v - u) because u ~ e^4 when q is small and u < 0.
           uv = u < 0 ? _e4a * q / (v - u) : u + v, // u+v, guaranteed positive
           // Need to guard against w going negative due to roundoff in uv - q.
-          w = max(real(0), _e2a * (uv - q) / (2 * v)),
+          w = fmax(real(0), _e2a * (uv - q) / (2 * v)),
           // Rearrange expression for k to avoid loss of accuracy due to
           // subtraction.  Division by 0 not possible because uv > 0, w >= 0.
           k = uv / (sqrt(uv + Math::sq(w)) + w),
           k1 = _f >= 0 ? k : k - _e2,
           k2 = _f >= 0 ? k + _e2 : k,
           d = k1 * R / k2,
-          H = Math::hypot(Z/k1, R/k2);
+          H = hypot(Z/k1, R/k2);
         sphi = (Z/k1) / H;
         cphi = (R/k2) / H;
-        h = (1 - _e2m/k1) * Math::hypot(d, Z);
+        h = (1 - _e2m/k1) * hypot(d, Z);
       } else {                  // e4 * q == 0 && r <= 0
         // This leads to k = 0 (oblate, equatorial plane) and k + e^2 = 0
         // (prolate, rotation axis) and the generation of 0/0 in the general
@@ -139,7 +139,7 @@ namespace GeographicLib {
         real
           zz = sqrt((_f >= 0 ? _e4a - p : p) / _e2m),
           xx = sqrt( _f <  0 ? _e4a - p : p        ),
-          H = Math::hypot(zz, xx);
+          H = hypot(zz, xx);
         sphi = zz / H;
         cphi = xx / H;
         if (Z < 0) sphi = -sphi; // for tiny negative Z (not for prolate)

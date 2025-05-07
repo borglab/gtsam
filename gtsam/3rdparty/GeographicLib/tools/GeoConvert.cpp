@@ -2,7 +2,7 @@
  * \file GeoConvert.cpp
  * \brief Command line utility for geographic coordinate conversions
  *
- * Copyright (c) Charles Karney (2008-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2017) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  *
@@ -17,11 +17,6 @@
 #include <GeographicLib/DMS.hpp>
 #include <GeographicLib/Utility.hpp>
 #include <GeographicLib/MGRS.hpp>
-
-#if defined(_MSC_VER)
-// Squelch warnings about constant conditional expressions
-#  pragma warning (disable: 4127)
-#endif
 
 #include "GeoConvert.usage"
 

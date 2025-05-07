@@ -20,9 +20,7 @@ int main() {
       lat2 =  1.359, lon2 = 103.989; // SIN
     double s12, azi12;
     rhumb.Inverse(lat1, lon1, lat2, lon2, s12, azi12);
-    const GeographicLib::RhumbLine line = rhumb.Line(lat1, lon1, azi12);
-    // Alternatively
-    // const GeographicLib::RhumbLine line = rhumb.Line(lat1, lon1, azi1);
+    RhumbLine line = rhumb.Line(lat1, lon1, azi12);
     double ds0 = 500e3;             // Nominal distance between points = 500 km
     int num = int(ceil(s12 / ds0)); // The number of intervals
     cout << fixed << setprecision(3);

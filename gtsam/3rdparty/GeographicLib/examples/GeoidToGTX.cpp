@@ -1,9 +1,9 @@
 // Write out a gtx file of geoid heights above the ellipsoid.  For egm2008 at
-// 1' resolution this takes about 40 mins on a 8-processor Intel 2.66 GHz
+// 1' resolution this takes about 10 mins on a 8-processor Intel 3.0 GHz
 // machine using OpenMP.
 //
 // For the format of gtx files, see
-// http://vdatum.noaa.gov/dev/gtx_info.html#dev_gtx_binary
+// https://vdatum.noaa.gov/docs/gtx_info.html#dev_gtx_binary
 //
 // data is binary big-endian:
 //   south latitude edge (degrees double)
@@ -56,18 +56,19 @@ int main(int argc, const char* const argv[]) {
     string filename(argv[3]);
     GravityModel g(model);
     int
-      nlat = 180 * ndeg + 1,
-      nlon = 360 * ndeg;
+      nlat = Math::hd * ndeg + 1,
+      nlon = Math::td * ndeg;
     Math::real
       delta = 1 / Math::real(ndeg), // Grid spacing
-      latorg = -90,
-      lonorg = -180;
+      latorg = -Math::qd,
+      lonorg = -Math::hd;
     // Write results as floats in binary mode
     ofstream file(filename.c_str(), ios::binary);
 
     // Write header
     {
-      Math::real transform[] = {latorg, lonorg, delta, delta};
+      Math::real transform[] = {latorg, lonorg,
+                                1/Math::real(ndeg), 1/Math::real(ndeg)};
       unsigned sizes[] = {unsigned(nlat), unsigned(nlon)};
       Utility::writearray<double, Math::real, true>(file, transform, 4);
       Utility::writearray<unsigned, unsigned, true>(file, sizes, 2);
@@ -85,13 +86,10 @@ int main(int argc, const char* const argv[]) {
 #endif
       for (int ilat = ilat0; ilat < nlat0; ++ilat) { // Loop over latitudes
         Utility::set_digits(ndigits);                // Set the precision
-        Math::real
-          lat = latorg + (ilat / ndeg) + delta * (ilat - ndeg * (ilat / ndeg)),
-          h = 0;
+        Math::real lat = (latorg * ndeg + ilat) / ndeg, h = 0;
         GravityCircle c(g.Circle(lat, h, GravityModel::GEOID_HEIGHT));
         for (int ilon = 0; ilon < nlon; ++ilon) { // Loop over longitudes
-          Math::real lon = lonorg
-            + (ilon / ndeg) + delta * (ilon - ndeg * (ilon / ndeg));
+          Math::real lon = (lonorg * ndeg + ilon) / ndeg;
           N[ilat - ilat0][ilon] = float(c.GeoidHeight(lon));
         } // longitude loop
       }   // latitude loop -- end of parallel section

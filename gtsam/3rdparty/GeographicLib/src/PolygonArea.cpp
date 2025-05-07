@@ -2,7 +2,7 @@
  * \file PolygonArea.cpp
  * \brief Implementation for GeographicLib::PolygonAreaT class
  *
- * Copyright (c) Charles Karney (2010-2015) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2023) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -13,10 +13,55 @@ namespace GeographicLib {
 
   using namespace std;
 
-  template <class GeodType>
+  template<class GeodType>
+  int PolygonAreaT<GeodType>::transit(real lon1, real lon2) {
+    // Return 1 or -1 if crossing prime meridian in east or west direction.
+    // Otherwise return zero.  longitude = +/-0 considered to be positive.
+    // This is (should be?) compatible with transitdirect which computes
+    // exactly the parity of
+    //   int(floor((lon1 + lon12) / 360)) - int(floor(lon1 / 360)))
+    real lon12 = Math::AngDiff(lon1, lon2);
+    lon1 = Math::AngNormalize(lon1);
+    lon2 = Math::AngNormalize(lon2);
+    // N.B. lon12 == 0 gives cross = 0
+    return
+      // edge case lon1 = 180, lon2 = 360->0, lon12 = 180 to give 1
+      lon12 > 0 && ((lon1 < 0 && lon2 >= 0) ||
+                    // lon12 > 0 && lon1 > 0 && lon2 == 0 implies lon1 == 180
+                    (lon1 > 0 && lon2 == 0)) ? 1 :
+      // non edge case lon1 = -180, lon2 = -360->-0, lon12 = -180
+      (lon12 < 0 && lon1 >= 0 && lon2 < 0 ? -1 : 0);
+    // This was the old method (treating +/- 0 as negative).  However, with the
+    // new scheme for handling longitude differences this fails on:
+    // lon1 = -180, lon2 = -360->-0, lon12 = -180 gives 0 not -1.
+    //    return
+    //      lon1 <= 0 && lon2 > 0 && lon12 > 0 ? 1 :
+    //      (lon2 <= 0 && lon1 > 0 && lon12 < 0 ? -1 : 0);
+  }
+
+  // an alternate version of transit to deal with longitudes in the direct
+  // problem.
+  template<class GeodType>
+  int PolygonAreaT<GeodType>::transitdirect(real lon1, real lon2) {
+    // Compute exactly the parity of
+    //   int(floor(lon2 / 360)) - int(floor(lon1 / 360))
+    // C++ C remainder -> [-360, 360]
+    // Java % -> (-720, 720) switch to IEEEremainder -> [-360, 360]
+    // JS % -> (-720, 720)
+    // Python fmod -> (-720, 720) swith to Math.remainder
+    // Fortran, Octave skip
+    // If mod function gives result in [-360, 360]
+    // [0, 360) -> 0; [-360, 0) or 360 -> 1
+    // If mod function gives result in (-720, 720)
+    // [0, 360) or [-inf, -360) -> 0; [-360, 0) or [360, inf) -> 1
+    lon1 = remainder(lon1, real(2 * Math::td));
+    lon2 = remainder(lon2, real(2 * Math::td));
+    return ( (lon2 >= 0 && lon2 < Math::td ? 0 : 1) -
+             (lon1 >= 0 && lon1 < Math::td ? 0 : 1) );
+  }
+
+  template<class GeodType>
   void PolygonAreaT<GeodType>::AddPoint(real lat, real lon) {
-    lat = Math::LatFix(lat);
-    lon = Math::AngNormalize(lon);
     if (_num == 0) {
       _lat0 = _lat1 = lat;
       _lon0 = _lon1 = lon;
@@ -34,7 +79,7 @@ namespace GeographicLib {
     ++_num;
   }
 
-  template <class GeodType>
+  template<class GeodType>
   void PolygonAreaT<GeodType>::AddEdge(real azi, real s) {
     if (_num) {                 // Do nothing if _num is zero
       real lat, lon, S12, t;
@@ -44,14 +89,13 @@ namespace GeographicLib {
       if (!_polyline) {
         _areasum += S12;
         _crossings += transitdirect(_lon1, lon);
-        lon = Math::AngNormalize(lon);
       }
       _lat1 = lat; _lon1 = lon;
       ++_num;
     }
   }
 
-  template <class GeodType>
+  template<class GeodType>
   unsigned PolygonAreaT<GeodType>::Compute(bool reverse, bool sign,
                                            real& perimeter, real& area) const
   {
@@ -72,29 +116,12 @@ namespace GeographicLib {
     Accumulator<> tempsum(_areasum);
     tempsum += S12;
     int crossings = _crossings + transit(_lon1, _lon0);
-    if (crossings & 1)
-      tempsum += (tempsum < 0 ? 1 : -1) * _area0/2;
-    // area is with the clockwise sense.  If !reverse convert to
-    // counter-clockwise convention.
-    if (!reverse)
-      tempsum *= -1;
-    // If sign put area in (-area0/2, area0/2], else put area in [0, area0)
-    if (sign) {
-      if (tempsum > _area0/2)
-        tempsum -= _area0;
-      else if (tempsum <= -_area0/2)
-        tempsum += _area0;
-    } else {
-      if (tempsum >= _area0)
-        tempsum -= _area0;
-      else if (tempsum < 0)
-        tempsum += _area0;
-    }
-    area = 0 + tempsum();
+    AreaReduce(tempsum, crossings, reverse, sign);
+    area = real(0) + tempsum();
     return _num;
   }
 
-  template <class GeodType>
+  template<class GeodType>
   unsigned PolygonAreaT<GeodType>::TestPoint(real lat, real lon,
                                              bool reverse, bool sign,
                                              real& perimeter, real& area) const
@@ -125,29 +152,12 @@ namespace GeographicLib {
     if (_polyline)
       return num;
 
-    if (crossings & 1)
-      tempsum += (tempsum < 0 ? 1 : -1) * _area0/2;
-    // area is with the clockwise sense.  If !reverse convert to
-    // counter-clockwise convention.
-    if (!reverse)
-      tempsum *= -1;
-    // If sign put area in (-area0/2, area0/2], else put area in [0, area0)
-    if (sign) {
-      if (tempsum > _area0/2)
-        tempsum -= _area0;
-      else if (tempsum <= -_area0/2)
-        tempsum += _area0;
-    } else {
-      if (tempsum >= _area0)
-        tempsum -= _area0;
-      else if (tempsum < 0)
-        tempsum += _area0;
-    }
-    area = 0 + tempsum;
+    AreaReduce(tempsum, crossings, reverse, sign);
+    area = real(0) + tempsum;
     return num;
   }
 
-  template <class GeodType>
+  template<class GeodType>
   unsigned PolygonAreaT<GeodType>::TestEdge(real azi, real s,
                                             bool reverse, bool sign,
                                             real& perimeter, real& area) const
@@ -171,7 +181,6 @@ namespace GeographicLib {
                        lat, lon, t, t, t, t, t, S12);
       tempsum += S12;
       crossings += transitdirect(_lon1, lon);
-      lon = Math::AngNormalize(lon);
       _earth.GenInverse(lat, lon, _lat0, _lon0, _mask,
                         s12, t, t, t, t, t, S12);
       perimeter += s12;
@@ -179,26 +188,32 @@ namespace GeographicLib {
       crossings += transit(lon, _lon0);
     }
 
-    if (crossings & 1)
-      tempsum += (tempsum < 0 ? 1 : -1) * _area0/2;
+    AreaReduce(tempsum, crossings, reverse, sign);
+    area = real(0) + tempsum;
+    return num;
+  }
+
+  template<class GeodType>
+  template<typename T>
+  void PolygonAreaT<GeodType>::AreaReduce(T& area, int crossings,
+                                          bool reverse, bool sign) const {
+    Remainder(area);
+    if (crossings & 1) area += (area < 0 ? 1 : -1) * _area0/2;
     // area is with the clockwise sense.  If !reverse convert to
     // counter-clockwise convention.
-    if (!reverse)
-      tempsum *= -1;
-    // If sign put area in (-area0/2, area0/2], else put area in [0, area0)
+    if (!reverse) area *= -1;
+    // If sign put area in (-_area0/2, _area0/2], else put area in [0, _area0)
     if (sign) {
-      if (tempsum > _area0/2)
-        tempsum -= _area0;
-      else if (tempsum <= -_area0/2)
-        tempsum += _area0;
+      if (area > _area0/2)
+        area -= _area0;
+      else if (area <= -_area0/2)
+        area += _area0;
     } else {
-      if (tempsum >= _area0)
-        tempsum -= _area0;
-      else if (tempsum < 0)
-        tempsum += _area0;
+      if (area >= _area0)
+        area -= _area0;
+      else if (area < 0)
+        area += _area0;
     }
-    area = 0 + tempsum;
-    return num;
   }
 
   template class GEOGRAPHICLIB_EXPORT PolygonAreaT<Geodesic>;

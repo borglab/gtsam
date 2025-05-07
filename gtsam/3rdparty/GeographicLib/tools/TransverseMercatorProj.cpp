@@ -2,7 +2,7 @@
  * \file TransverseMercatorProj.cpp
  * \brief Command line utility for transverse Mercator projections
  *
- * Copyright (c) Charles Karney (2008-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2023) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  *
@@ -14,15 +14,13 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <GeographicLib/TransverseMercatorExact.hpp>
 #include <GeographicLib/TransverseMercator.hpp>
 #include <GeographicLib/DMS.hpp>
 #include <GeographicLib/Utility.hpp>
 
 #if defined(_MSC_VER)
-// Squelch warnings about constant conditional expressions and potentially
-// uninitialized local variables
-#  pragma warning (disable: 4127 4701)
+// Squelch warnings about potentially uninitialized local variables
+#  pragma warning (disable: 4701)
 #endif
 
 #include "TransverseMercatorProj.usage"
@@ -32,8 +30,7 @@ int main(int argc, const char* const argv[]) {
     using namespace GeographicLib;
     typedef Math::real real;
     Utility::set_digits();
-    bool exact = true, extended = false, series = false, reverse = false,
-      longfirst = false;
+    bool exact = true, extended = false, reverse = false, longfirst = false;
     real
       a = Constants::WGS84_a(),
       f = Constants::WGS84_f(),
@@ -50,11 +47,9 @@ int main(int argc, const char* const argv[]) {
       else if (arg == "-t") {
         exact = true;
         extended = true;
-        series = false;
       } else if (arg == "-s") {
         exact = false;
         extended = false;
-        series = true;
       } else if (arg == "-l") {
         if (++m >= argc) return usage(1, true);
         try {
@@ -165,12 +160,7 @@ int main(int argc, const char* const argv[]) {
     }
     std::ostream* output = !ofile.empty() ? &outfile : &std::cout;
 
-    const TransverseMercator& TMS =
-      series ? TransverseMercator(a, f, k0) : TransverseMercator(1, 0, 1);
-
-    const TransverseMercatorExact& TME =
-      exact ? TransverseMercatorExact(a, f, k0, extended)
-      : TransverseMercatorExact(1, real(0.1), 1, false);
+    const TransverseMercator TM(a, f, k0, exact, extended);
 
     // Max precision = 10: 0.1 nm in distance, 10^-15 deg (= 0.11 nm),
     // 10^-11 sec (= 0.3 nm).
@@ -202,19 +192,13 @@ int main(int argc, const char* const argv[]) {
           throw GeographicErr("Extraneous input: " + strc);
         real gamma, k;
         if (reverse) {
-          if (series)
-            TMS.Reverse(lon0, x, y, lat, lon, gamma, k);
-          else
-            TME.Reverse(lon0, x, y, lat, lon, gamma, k);
+          TM.Reverse(lon0, x, y, lat, lon, gamma, k);
           *output << Utility::str(longfirst ? lon : lat, prec + 5) << " "
                   << Utility::str(longfirst ? lat : lon, prec + 5) << " "
                   << Utility::str(gamma, prec + 6) << " "
                   << Utility::str(k, prec + 6) << eol;
         } else {
-          if (series)
-            TMS.Forward(lon0, lat, lon, x, y, gamma, k);
-          else
-            TME.Forward(lon0, lat, lon, x, y, gamma, k);
+          TM.Forward(lon0, lat, lon, x, y, gamma, k);
           *output << Utility::str(x, prec) << " "
                   << Utility::str(y, prec) << " "
                   << Utility::str(gamma, prec + 6) << " "

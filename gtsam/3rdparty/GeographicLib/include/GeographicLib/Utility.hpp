@@ -2,7 +2,7 @@
  * \file Utility.hpp
  * \brief Header for GeographicLib::Utility class
  *
- * Copyright (c) Charles Karney (2011-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2024) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -19,9 +19,9 @@
 #include <cstring>
 
 #if defined(_MSC_VER)
-// Squelch warnings about constant conditional expressions and unsafe gmtime
+// Squelch warnings about constant conditional expressions
 #  pragma warning (push)
-#  pragma warning (disable: 4127 4996)
+#  pragma warning (disable: 4127)
 #endif
 
 namespace GeographicLib {
@@ -41,7 +41,7 @@ namespace GeographicLib {
       // followed by 1752-09-14. We also assume that the year always begins
       // with January 1, whereas in reality it often was reckoned to begin in
       // March.
-      return 100 * (100 * y + m) + d >= 17520914; // or 15821004
+      return 100 * (100 * y + m) + d >= 17520914; // or 15821015
     }
     static bool gregorian(int s) {
       return s >= 639799;       // 1752-09-14
@@ -57,57 +57,7 @@ namespace GeographicLib {
      * @param[in] d the day of the month (must be positive).  Default = 1.
      * @return the sequential day number.
      **********************************************************************/
-    static int day(int y, int m = 1, int d = 1) {
-      // Convert from date to sequential day and vice versa
-      //
-      // Here is some code to convert a date to sequential day and vice
-      // versa. The sequential day is numbered so that January 1, 1 AD is day 1
-      // (a Saturday). So this is offset from the "Julian" day which starts the
-      // numbering with 4713 BC.
-      //
-      // This is inspired by a talk by John Conway at the John von Neumann
-      // National Supercomputer Center when he described his Doomsday algorithm
-      // for figuring the day of the week. The code avoids explicitly doing ifs
-      // (except for the decision of whether to use the Julian or Gregorian
-      // calendar). Instead the equivalent result is achieved using integer
-      // arithmetic. I got this idea from the routine for the day of the week
-      // in MACLisp (I believe that that routine was written by Guy Steele).
-      //
-      // There are three issues to take care of
-      //
-      // 1. the rules for leap years,
-      // 2. the inconvenient placement of leap days at the end of February,
-      // 3. the irregular pattern of month lengths.
-      //
-      // We deal with these as follows:
-      //
-      // 1. Leap years are given by simple rules which are straightforward to
-      // accommodate.
-      //
-      // 2. We simplify the calculations by moving January and February to the
-      // previous year. Here we internally number the months March–December,
-      // January, February as 0–9, 10, 11.
-      //
-      // 3. The pattern of month lengths from March through January is regular
-      // with a 5-month period—31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 31. The
-      // 5-month period is 153 days long. Since February is now at the end of
-      // the year, we don't need to include its length in this part of the
-      // calculation.
-      bool greg = gregorian(y, m, d);
-      y += (m + 9) / 12 - 1; // Move Jan and Feb to previous year,
-      m = (m + 9) % 12;      // making March month 0.
-      return
-        (1461 * y) / 4 // Julian years converted to days.  Julian year is 365 +
-                       // 1/4 = 1461/4 days.
-        // Gregorian leap year corrections.  The 2 offset with respect to the
-        // Julian calendar synchronizes the vernal equinox with that at the
-        // time of the Council of Nicea (325 AD).
-        + (greg ? (y / 100) / 4 - (y / 100) + 2 : 0)
-        + (153 * m + 2) / 5     // The zero-based start of the m'th month
-        + d - 1                 // The zero-based day
-        - 305; // The number of days between March 1 and December 31.
-               // This makes 0001-01-01 day 1
-    }
+    static int day(int y, int m = 1, int d = 1);
 
     /**
      * Convert a date to the day numbering sequentially starting with
@@ -120,20 +70,7 @@ namespace GeographicLib {
      * @exception GeographicErr if the date is invalid and \e check is true.
      * @return the sequential day number.
      **********************************************************************/
-    static int day(int y, int m, int d, bool check) {
-      int s = day(y, m, d);
-      if (!check)
-        return s;
-      int y1, m1, d1;
-      date(s, y1, m1, d1);
-      if (!(s > 0 && y == y1 && m == m1 && d == d1))
-        throw GeographicErr("Invalid date " +
-                            str(y) + "-" + str(m) + "-" + str(d)
-                            + (s > 0 ? "; use " +
-                               str(y1) + "-" + str(m1) + "-" + str(d1) :
-                               " before 0001-01-01"));
-      return s;
-    }
+    static int day(int y, int m, int d, bool check);
 
     /**
      * Given a day (counting from 0001-01-01 as day 1), return the date.
@@ -143,26 +80,7 @@ namespace GeographicLib {
      * @param[out] m the month, Jan = 1, etc.
      * @param[out] d the day of the month.
      **********************************************************************/
-    static void date(int s, int& y, int& m, int& d) {
-      int c = 0;
-      bool greg = gregorian(s);
-      s += 305;                 // s = 0 on March 1, 1BC
-      if (greg) {
-        s -= 2;                 // The 2 day Gregorian offset
-        // Determine century with the Gregorian rules for leap years.  The
-        // Gregorian year is 365 + 1/4 - 1/100 + 1/400 = 146097/400 days.
-        c = (4 * s + 3) / 146097;
-        s -= (c * 146097) / 4;  // s = 0 at beginning of century
-      }
-      y = (4 * s + 3) / 1461;   // Determine the year using Julian rules.
-      s -= (1461 * y) / 4;      // s = 0 at start of year, i.e., March 1
-      y += c * 100;             // Assemble full year
-      m = (5 * s + 2) / 153;    // Determine the month
-      s -= (153 * m + 2) / 5;   // s = 0 at beginning of month
-      d = s + 1;                // Determine day of month
-      y += (m + 2) / 12;        // Move Jan and Feb back to original year
-      m = (m + 2) % 12 + 1;     // Renumber the months so January = 1
-    }
+    static void date(int s, int& y, int& m, int& d);
 
     /**
      * Given a date as a string in the format yyyy, yyyy-mm, or yyyy-mm-dd,
@@ -176,44 +94,7 @@ namespace GeographicLib {
      * @param[out] d the day of the month.
      * @exception GeographicErr is \e s is malformed.
      **********************************************************************/
-    static void date(const std::string& s, int& y, int& m, int& d) {
-      if (s == "now") {
-        std::time_t t = std::time(0);
-        struct tm* now = gmtime(&t);
-        y = now->tm_year + 1900;
-        m = now->tm_mon + 1;
-        d = now->tm_mday;
-        return;
-      }
-      int y1, m1 = 1, d1 = 1;
-      const char* digits = "0123456789";
-      std::string::size_type p1 = s.find_first_not_of(digits);
-      if (p1 == std::string::npos)
-        y1 = val<int>(s);
-      else if (s[p1] != '-')
-        throw GeographicErr("Delimiter not hyphen in date " + s);
-      else if (p1 == 0)
-        throw GeographicErr("Empty year field in date " + s);
-      else {
-        y1 = val<int>(s.substr(0, p1));
-        if (++p1 == s.size())
-          throw GeographicErr("Empty month field in date " + s);
-        std::string::size_type p2 = s.find_first_not_of(digits, p1);
-        if (p2 == std::string::npos)
-          m1 = val<int>(s.substr(p1));
-        else if (s[p2] != '-')
-          throw GeographicErr("Delimiter not hyphen in date " + s);
-        else if (p2 == p1)
-          throw GeographicErr("Empty month field in date " + s);
-        else {
-          m1 = val<int>(s.substr(p1, p2 - p1));
-          if (++p2 == s.size())
-            throw GeographicErr("Empty day field in date " + s);
-          d1 = val<int>(s.substr(p2));
-        }
-      }
-      y = y1; m = m1; d = d1;
-    }
+    static void date(const std::string& s, int& y, int& m, int& d);
 
     /**
      * Given the date, return the day of the week.
@@ -248,7 +129,8 @@ namespace GeographicLib {
      * The string is first read as an ordinary number (e.g., 2010 or 2012.5);
      * if this is successful, the value is returned.  Otherwise the string
      * should be of the form yyyy-mm or yyyy-mm-dd and this is converted to a
-     * number with 2010-01-01 giving 2010.0 and 2012-07-03 giving 2012.5.
+     * number with 2010-01-01 giving 2010.0 and 2012-07-03 giving 2012.5.  The
+     * string "now" is interpreted as the present date.
      **********************************************************************/
     template<typename T> static T fractionalyear(const std::string& s) {
       try {
@@ -270,49 +152,16 @@ namespace GeographicLib {
      * @exception std::bad_alloc if memory for the string can't be allocated.
      * @return the string representation.
      *
-     * If \e p &ge; 0, then the number fixed format is used with p bits of
-     * precision.  With p < 0, there is no manipulation of the format.
+     * If \e p &ge; 0, then the number fixed format is used with \e p bits of
+     * precision.  With \e p < 0, there is no manipulation of the format,
+     * except that <code>boolalpha</code> is used to represent bools as "true"
+     * and "false".  There is an overload of this function if T is Math::real;
+     * this deals with inf and nan.
      **********************************************************************/
     template<typename T> static std::string str(T x, int p = -1) {
       std::ostringstream s;
       if (p >= 0) s << std::fixed << std::setprecision(p);
-      s << x; return s.str();
-    }
-
-    /**
-     * Convert a Math::real object to a string.
-     *
-     * @param[in] x the value to be converted.
-     * @param[in] p the precision used (default &minus;1).
-     * @exception std::bad_alloc if memory for the string can't be allocated.
-     * @return the string representation.
-     *
-     * If \e p &ge; 0, then the number fixed format is used with p bits of
-     * precision.  With p < 0, there is no manipulation of the format.  This is
-     * an overload of str<T> which deals with inf and nan.
-     **********************************************************************/
-    static std::string str(Math::real x, int p = -1) {
-      if (!Math::isfinite(x))
-        return x < 0 ? std::string("-inf") :
-          (x > 0 ? std::string("inf") : std::string("nan"));
-      std::ostringstream s;
-#if GEOGRAPHICLIB_PRECISION == 4
-      // boost-quadmath treats precision == 0 as "use as many digits as
-      // necessary" (see https://svn.boost.org/trac/boost/ticket/10103), so...
-      using std::floor; using std::fmod;
-      if (p == 0) {
-        x += Math::real(0.5);
-        Math::real ix = floor(x);
-        // Implement the "round ties to even" rule
-        x = (ix == x && fmod(ix, Math::real(2)) == 1) ? ix - 1 : ix;
-        s << std::fixed << std::setprecision(1) << x;
-        std::string r(s.str());
-        // strip off trailing ".0"
-        return r.substr(0, (std::max)(int(r.size()) - 2, 0));
-      }
-#endif
-      if (p >= 0) s << std::fixed << std::setprecision(p);
-      s << x; return s.str();
+      s << std::boolalpha << x; return s.str();
     }
 
     /**
@@ -321,16 +170,33 @@ namespace GeographicLib {
      * @param[in] s the string to be trimmed
      * @return the trimmed string
      **********************************************************************/
-    static std::string trim(const std::string& s) {
-      unsigned
-        beg = 0,
-        end = unsigned(s.size());
-      while (beg < end && isspace(s[beg]))
-        ++beg;
-      while (beg < end && isspace(s[end - 1]))
-        --end;
-      return std::string(s, beg, end-beg);
-    }
+    static std::string trim(const std::string& s);
+
+    /**
+     * Lookup up a character in a string.
+     *
+     * @param[in] s the string to be searched.
+     * @param[in] c the character to look for.
+     * @return the index of the first occurrence character in the string or
+     *   &minus;1 is the character is not present.
+     *
+     * \e c is converted to upper case before search \e s.  Therefore, it is
+     * intended that \e s should not contain any lower case letters.
+     **********************************************************************/
+    static int lookup(const std::string& s, char c);
+
+    /**
+     * Lookup up a character in a char*.
+     *
+     * @param[in] s the char* string to be searched.
+     * @param[in] c the character to look for.
+     * @return the index of the first occurrence character in the string or
+     *   &minus;1 is the character is not present.
+     *
+     * \e c is converted to upper case before search \e s.  Therefore, it is
+     * intended that \e s should not contain any lower case letters.
+     **********************************************************************/
+    static int lookup(const char* s, char c);
 
     /**
      * Convert a string to type T.
@@ -379,14 +245,6 @@ namespace GeographicLib {
         throw GeographicErr(errmsg);
       return x;
     }
-    /**
-     * \deprecated An old name for val<T>(s).
-     **********************************************************************/
-    template<typename T>
-      // GEOGRAPHICLIB_DEPRECATED("Use new Utility::val<T>(s)")
-      static T num(const std::string& s) {
-      return val<T>(s);
-    }
 
     /**
      * Match "nan" and "inf" (and variants thereof) in a string.
@@ -417,7 +275,7 @@ namespace GeographicLib {
       if (t == "NAN" || t == "1.#QNAN" || t == "1.#SNAN" || t == "1.#IND" ||
           t == "1.#R")
         return Math::NaN<T>();
-      else if (t == "INF" || t == "1.#INF")
+      else if (t == "INF" || t == "1.#INF" || t == "INFINITY")
         return sign * Math::infinity<T>();
       return 0;
     }
@@ -431,10 +289,11 @@ namespace GeographicLib {
      *   T.
      * @return object of type T
      *
-     * \note The msys shell under Windows converts arguments which look
-     * like pathnames into their Windows equivalents.  As a result the argument
+     * \note The msys shell under Windows converts arguments which look like
+     * pathnames into their Windows equivalents.  As a result the argument
      * "-1/300" gets mangled into something unrecognizable.  A workaround is to
-     * use a floating point number in the numerator, i.e., "-1.0/300".
+     * use a floating point number in the numerator, i.e., "-1.0/300".  (Recent
+     * versions of the msys shell appear \e not to have this problem.)
      **********************************************************************/
     template<typename T> static T fract(const std::string& s) {
       std::string::size_type delim = s.find('/');
@@ -443,38 +302,6 @@ namespace GeographicLib {
         val<T>(s) :
         // delim in [1, size() - 2]
         val<T>(s.substr(0, delim)) / val<T>(s.substr(delim + 1));
-    }
-
-    /**
-     * Lookup up a character in a string.
-     *
-     * @param[in] s the string to be searched.
-     * @param[in] c the character to look for.
-     * @return the index of the first occurrence character in the string or
-     *   &minus;1 is the character is not present.
-     *
-     * \e c is converted to upper case before search \e s.  Therefore, it is
-     * intended that \e s should not contain any lower case letters.
-     **********************************************************************/
-    static int lookup(const std::string& s, char c) {
-      std::string::size_type r = s.find(char(toupper(c)));
-      return r == std::string::npos ? -1 : int(r);
-    }
-
-    /**
-     * Lookup up a character in a char*.
-     *
-     * @param[in] s the char* string to be searched.
-     * @param[in] c the character to look for.
-     * @return the index of the first occurrence character in the string or
-     *   &minus;1 is the character is not present.
-     *
-     * \e c is converted to upper case before search \e s.  Therefore, it is
-     * intended that \e s should not contain any lower case letters.
-     **********************************************************************/
-    static int lookup(const char* s, char c) {
-      const char* p = std::strchr(s, toupper(c));
-      return p != NULL ? int(p - s) : -1;
     }
 
     /**
@@ -493,6 +320,7 @@ namespace GeographicLib {
     template<typename ExtT, typename IntT, bool bigendp>
       static void readarray(std::istream& str, IntT array[], size_t num) {
 #if GEOGRAPHICLIB_PRECISION < 4
+      // for C++17 use if constexpr
       if (sizeof(IntT) == sizeof(ExtT) &&
           std::numeric_limits<IntT>::is_integer ==
           std::numeric_limits<ExtT>::is_integer)
@@ -501,6 +329,7 @@ namespace GeographicLib {
           str.read(reinterpret_cast<char*>(array), num * sizeof(ExtT));
           if (!str.good())
             throw GeographicErr("Failure reading data");
+          // for C++17 use if constexpr
           if (bigendp != Math::bigendian) { // endian mismatch -> swap bytes
             for (size_t i = num; i--;)
               array[i] = Math::swab<IntT>(array[i]);
@@ -518,10 +347,73 @@ namespace GeographicLib {
             str.read(reinterpret_cast<char*>(buffer), n * sizeof(ExtT));
             if (!str.good())
               throw GeographicErr("Failure reading data");
-            for (int j = 0; j < n; ++j)
-              // fix endian-ness and cast to IntT
-              array[i++] = IntT(bigendp == Math::bigendian ? buffer[j] :
-                                Math::swab<ExtT>(buffer[j]));
+            for (int j = 0; j < n; ++j) {
+              // fix endian-ness
+              ExtT x = bigendp == Math::bigendian ? buffer[j] :
+                Math::swab<ExtT>(buffer[j]);
+#if GEOGRAPHICLIB_PRECISION > 2
+              // for C++17 use if constexpr folding in test of
+              if (typeid(ExtT) == typeid(double) &&
+                    typeid(IntT) == typeid(Math::real)) {
+                // readarray is used to read in coefficient data rapidly.  Thus
+                // 8.3n is stored in its IEEE double representation.  This is
+                // fine is the working precision is double.  However, when
+                // working at higher precision, how should be interpret the
+                // constant 8.3 appearing in a published table?  Possibilities
+                // are
+                //
+                // (a) treat this as an exact decimal number 83/10;
+                //
+                // (b) treat this as the approximate decimal representation of
+                // an exact double precision number 2336242306698445/2^48 =
+                // 8.300000000000000710542735760100185871124267578125
+                //
+                // Here use (a) if the number of significant digits in the
+                // number is 15 or less.  Otherwise, we use (b).
+                //
+                // We implement this as follows.  Any double which can be
+                // represented as a decimal number with precision 14 = digis10
+                // - 1 (= 15 sig figs) is treated as an approximation to that
+                // decimal number.  The high precision number is then obtained
+                // by reading the decimal number at that precision.  Otherwise
+                // the double is treated as exact.  The high precision number
+                // is obtained by adding zeros in the binary fraction.
+                //
+                // N.B. printing with precision 14 = digis10 - 1 allows short
+                // numbers to be represended with trailing zeros.  This isn't
+                // necessarily the case with precision = digits10, e.g., 8.3
+                // becomes 8.300000000000001
+                //
+                // This prescription doesn't exactly implement the method
+                // proposed.  If the published table of numbers includes
+                // 8.300000000000001, this will be interpreted as 8.3.  This
+                // doesn't apply to any published magnetic or gravity data.
+                // E.g., the coefficients for EGM96, resp. EGM2008, are given
+                // with precision 11, resp. 14.
+                //
+                // This conversion of doubles to Math::real comes at a
+                // substantial cost.  It adds about 14 s to the time it takes
+                // to read the egm2008 gravity model for quad and mpfr
+                // precisions.  This is acceptable, however, because high
+                // precision is only used for benchmarking.
+                std::ostringstream str;
+                str << std::scientific
+                    << std::setprecision(std::numeric_limits<ExtT>::digits10-1)
+                    << x;
+                if (val<ExtT>(str.str()) == x)
+                  array[i++] = val<IntT>(str.str());
+                else
+                  array[i++] = IntT(x);
+              } else {
+                // Code for GEOGRAPHILIB_PRECISION > 2 but types not
+                // double/real
+                array[i++] = IntT(x);
+              }
+#else
+              // Code for GEOGRAPHILIB_PRECISION <= 2
+              array[i++] = IntT(x);
+#endif
+            }
             k -= n;
           }
         }
@@ -613,22 +505,30 @@ namespace GeographicLib {
     }
 
     /**
-     * Parse a KEY VALUE line.
+     * Parse a KEY [=] VALUE line.
      *
      * @param[in] line the input line.
-     * @param[out] key the key.
-     * @param[out] val the value.
+     * @param[out] key the KEY.
+     * @param[out] value the VALUE.
+     * @param[in] equals character representing "equals" to separate KEY and
+     *   VALUE, if NULL (the default) use first space character.
+     * @param[in] comment character to use as the comment character; if
+     *   non-NULL, this character and everything after it is discarded; default
+     *   is '#'.
      * @exception std::bad_alloc if memory for the internal strings can't be
      *   allocated.
      * @return whether a key was found.
      *
-     * A # character and everything after it are discarded.  If the result is
-     * just white space, the routine returns false (and \e key and \e val are
-     * not set).  Otherwise the first token is taken to be the key and the rest
-     * of the line (trimmed of leading and trailing white space) is the value.
+     * The \e comment character (default is '#') and everything after it are
+     * discarded and the result trimmed of leading and trailing white space.
+     * Use the \e equals delimiter character (or, if it is NULL -- the default,
+     * the first white space) to separate \e key and \e value.  \e key and \e
+     * value are trimmed of leading and trailing white space.  If \e key is
+     * empty, then \e value is set to "" and false is returned.
      **********************************************************************/
     static bool ParseLine(const std::string& line,
-                          std::string& key, std::string& val);
+                          std::string& key, std::string& value,
+                          char equals = '\0', char comment = '#');
 
     /**
      * Set the binary precision of a real number.
@@ -646,6 +546,8 @@ namespace GeographicLib {
      * to be set before a call to any such functions.)  In multi-threaded
      * applications, it is necessary also to set the precision in each thread
      * (see the example GeoidToGTX.cpp).
+     *
+     * \note Use Math::digits() to return the current precision in bits.
      **********************************************************************/
     static int set_digits(int ndigits = 0);
 
@@ -653,24 +555,41 @@ namespace GeographicLib {
 
   /**
    * The specialization of Utility::val<T>() for strings.
+   *
+   * @param[in] s the string to be converted.
+   * @exception GeographicErr is \e s is not readable as a T.
+   * @return the string trimmed of its whitespace.
    **********************************************************************/
   template<> inline std::string Utility::val<std::string>(const std::string& s)
   { return trim(s); }
 
   /**
    * The specialization of Utility::val<T>() for bools.
+   *
+   * @param[in] s the string to be converted.
+   * @exception GeographicErr is \e s is not readable as a T.
+   * @return boolean value.
+   *
+   * \e s should either be string a representing 0 (false)
+   * or 1 (true) or one of the strings
+   * - "false", "f", "nil", "no", "n", "off", or "" meaning false,
+   * - "true", "t", "yes", "y", or "on" meaning true;
+   * .
+   * case is ignored.
    **********************************************************************/
   template<> inline bool Utility::val<bool>(const std::string& s) {
     std::string t(trim(s));
     if (t.empty()) return false;
     bool x;
-    std::istringstream is(t);
-    if (is >> x) {
-      int pos = int(is.tellg()); // Returns -1 at end of string?
-      if (!(pos < 0 || pos == int(t.size())))
-        throw GeographicErr("Extra text " + t.substr(pos) +
-                            " at end of " + t);
-      return x;
+    {
+      std::istringstream is(t);
+      if (is >> x) {
+        int pos = int(is.tellg()); // Returns -1 at end of string?
+        if (!(pos < 0 || pos == int(t.size())))
+          throw GeographicErr("Extra text " + t.substr(pos) +
+                              " at end of " + t);
+        return x;
+      }
     }
     for (std::string::iterator p = t.begin(); p != t.end(); ++p)
       *p = char(std::tolower(*p));
@@ -691,8 +610,32 @@ namespace GeographicLib {
     case 'y':
       if (t == "y" || t == "yes") return true;
       break;
+    default:
+      break;
     }
     throw GeographicErr("Cannot decode " + t + " as a bool");
+  }
+
+  /**
+   * Convert a Math::real object to a string.
+   *
+   * @param[in] x the value to be converted.
+   * @param[in] p the precision used (default &minus;1).
+   * @exception std::bad_alloc if memory for the string can't be allocated.
+   * @return the string representation.
+   *
+   * If \e p &ge; 0, then the number fixed format is used with p bits of
+   * precision.  With p < 0, there is no manipulation of the format.  This is
+   * an overload of str<T> which deals with inf and nan.
+   **********************************************************************/
+  template<> inline std::string Utility::str<Math::real>(Math::real x, int p) {
+    using std::isfinite;
+    if (!isfinite(x))
+      return x < 0 ? std::string("-inf") :
+        (x > 0 ? std::string("inf") : std::string("nan"));
+    std::ostringstream s;
+    if (p >= 0) s << std::fixed << std::setprecision(p);
+    s << x; return s.str();
   }
 
 } // namespace GeographicLib

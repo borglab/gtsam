@@ -2,7 +2,7 @@
  * \file Georef.hpp
  * \brief Header for GeographicLib::Georef class
  *
- * Copyright (c) Charles Karney (2015-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2015-2024) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -12,12 +12,6 @@
 
 #include <GeographicLib/Constants.hpp>
 
-#if defined(_MSC_VER)
-// Squelch warnings about dll vs string
-#  pragma warning (push)
-#  pragma warning (disable: 4251)
-#endif
-
 namespace GeographicLib {
 
   /**
@@ -25,7 +19,7 @@ namespace GeographicLib {
    *
    * The World Geographic Reference System is described in
    * - https://en.wikipedia.org/wiki/Georef
-   * - http://earth-info.nga.mil/GandG/coordsys/grids/georef.pdf
+   * - https://web.archive.org/web/20161214054445/http://earth-info.nga.mil/GandG/coordsys/grids/georef.pdf
    * .
    * It provides a compact string representation of a geographic area
    * (expressed as latitude and longitude).  The classes GARS and Geohash
@@ -42,16 +36,14 @@ namespace GeographicLib {
     static const char* const lontile_;
     static const char* const lattile_;
     static const char* const degrees_;
-    enum {
-      tile_ = 15,               // The size of tile in degrees
-      lonorig_ = -180,          // Origin for longitude
-      latorig_ = -90,           // Origin for latitude
-      base_ = 10,               // Base for minutes
-      baselen_ = 4,
-      maxprec_ = 11,            // approximately equivalent to MGRS class
-      maxlen_ = baselen_ + 2 * maxprec_,
-    };
-    Georef();                     // Disable constructor
+    static constexpr int tile_ = 15;           // The size of tile in degrees
+    static constexpr int lonorig_ = -Math::hd; // Origin for longitude
+    static constexpr int latorig_ = -Math::qd; // Origin for latitude
+    static constexpr int base_ = 10;           // Base for minutes
+    static constexpr int baselen_ = 4;
+    static constexpr int maxprec_ = 11;        // approximately equivalent to MGRS class
+    static constexpr int maxlen_ = baselen_ + 2 * maxprec_;
+    Georef() = delete;          // Disable constructor
 
   public:
 
@@ -140,7 +132,7 @@ namespace GeographicLib {
      * The returned length is in the range [0, 11].
      **********************************************************************/
     static int Precision(real res) {
-      using std::abs; res = abs(res);
+      using std::fabs; res = fabs(res);
       for (int prec = 0; prec < maxprec_; ++prec) {
         if (prec == 1)
           continue;
@@ -153,9 +145,5 @@ namespace GeographicLib {
   };
 
 } // namespace GeographicLib
-
-#if defined(_MSC_VER)
-#  pragma warning (pop)
-#endif
 
 #endif  // GEOGRAPHICLIB_GEOREF_HPP

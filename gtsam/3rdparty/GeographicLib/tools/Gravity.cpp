@@ -2,7 +2,7 @@
  * \file Gravity.cpp
  * \brief Command line utility for evaluating gravity fields
  *
- * Copyright (c) Charles Karney (2011-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  *
@@ -18,12 +18,6 @@
 #include <GeographicLib/DMS.hpp>
 #include <GeographicLib/Utility.hpp>
 
-#if defined(_MSC_VER)
-// Squelch warnings about constant conditional expressions and potentially
-// uninitialized local variables
-#  pragma warning (disable: 4127 4701)
-#endif
-
 #include "Gravity.usage"
 
 int main(int argc, const char* const argv[]) {
@@ -38,7 +32,7 @@ int main(int argc, const char* const argv[]) {
     char lsep = ';';
     real lat = 0, h = 0;
     bool circle = false;
-    int prec = -1;
+    int prec = -1, Nmax = -1, Mmax = -1;
     enum {
       GRAVITY = 0,
       DISTURBANCE = 1,
@@ -54,6 +48,32 @@ int main(int argc, const char* const argv[]) {
       } else if (arg == "-d") {
         if (++m == argc) return usage(1, true);
         dir = argv[m];
+      } else if (arg == "-N") {
+        if (++m == argc) return usage(1, true);
+        try {
+          Nmax = Utility::val<int>(std::string(argv[m]));
+          if (Nmax < 0) {
+            std::cerr << "Maximum degree " << argv[m] << " is negative\n";
+            return 1;
+          }
+        }
+        catch (const std::exception&) {
+          std::cerr << "Precision " << argv[m] << " is not a number\n";
+          return 1;
+        }
+      } else if (arg == "-M") {
+        if (++m == argc) return usage(1, true);
+        try {
+          Mmax = Utility::val<int>(std::string(argv[m]));
+          if (Mmax < 0) {
+            std::cerr << "Maximum order " << argv[m] << " is negative\n";
+            return 1;
+          }
+        }
+        catch (const std::exception&) {
+          std::cerr << "Precision " << argv[m] << " is not a number\n";
+          return 1;
+        }
       } else if (arg == "-G")
         mode = GRAVITY;
       else if (arg == "-D")
@@ -65,13 +85,14 @@ int main(int argc, const char* const argv[]) {
       else if (arg == "-c") {
         if (m + 2 >= argc) return usage(1, true);
         try {
-          using std::abs;
+          using std::fabs;
           DMS::flag ind;
           lat = DMS::Decode(std::string(argv[++m]), ind);
           if (ind == DMS::LONGITUDE)
             throw GeographicErr("Bad hemisphere letter on latitude");
-          if (!(abs(lat) <= 90))
-            throw GeographicErr("Latitude not in [-90d, 90d]");
+          if (!(fabs(lat) <= Math::qd))
+            throw GeographicErr("Latitude not in [-" + std::to_string(Math::qd)
+                                + "d, " + std::to_string(Math::qd) + "d]");
           h = Utility::val<real>(std::string(argv[++m]));
           circle = true;
         }
@@ -180,9 +201,10 @@ int main(int argc, const char* const argv[]) {
     }
     int retval = 0;
     try {
-      const GravityModel g(model, dir);
+      using std::isfinite;
+      const GravityModel g(model, dir, Nmax, Mmax);
       if (circle) {
-        if (!Math::isfinite(h))
+        if (!isfinite(h))
           throw GeographicErr("Bad height");
         else if (mode == UNDULATION && h != 0)
           throw GeographicErr("Height should be zero for geoid undulations");
@@ -267,9 +289,9 @@ int main(int argc, const char* const argv[]) {
                 c.SphericalAnomaly(lon, Dg01, xi, eta);
               else
                 g.SphericalAnomaly(lat, lon, h, Dg01, xi, eta);
-              Dg01 *= 100000;      // Convert to mGals
-              xi *= 3600;       // Convert to arcsecs
-              eta *= 3600;
+              Dg01 *= 100000;   // Convert to mGals
+              xi *= Math::ds;   // Convert to arcsecs
+              eta *= Math::ds;
               *output << Utility::str(Dg01, prec) << " "
                       << Utility::str(xi, prec) << " "
                       << Utility::str(eta, prec) << eol;

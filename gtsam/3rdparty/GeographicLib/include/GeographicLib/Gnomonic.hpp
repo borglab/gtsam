@@ -2,7 +2,7 @@
  * \file Gnomonic.hpp
  * \brief Header for GeographicLib::Gnomonic class
  *
- * Copyright (c) Charles Karney (2010-2016) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2010-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -105,7 +105,15 @@ namespace GeographicLib {
     real eps0_, eps_;
     Geodesic _earth;
     real _a, _f;
-    static const int numit_ = 10;
+    // numit_ increased from 10 to 20 to fix convergence failure with high
+    // precision (e.g., GEOGRAPHICLIB_DIGITS=2000) calculations.  Reverse uses
+    // Newton's method which converges quadratically and so numit_ = 10 would
+    // normally be big enough.  However, since the Geodesic class is based on a
+    // series it is of limited accuracy; in particular, the derivative rules
+    // used by Reverse only hold approximately.  Consequently, after a few
+    // iterations, the convergence in the Reverse falls back to improvements in
+    // each step by a constant (albeit small) factor.
+    static const int numit_ = 20;
   public:
 
     /**
@@ -191,7 +199,7 @@ namespace GeographicLib {
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value inherited from the Geodesic object used in the constructor.
      **********************************************************************/
-    Math::real MajorRadius() const { return _earth.MajorRadius(); }
+    Math::real EquatorialRadius() const { return _earth.EquatorialRadius(); }
 
     /**
      * @return \e f the flattening of the ellipsoid.  This is the value

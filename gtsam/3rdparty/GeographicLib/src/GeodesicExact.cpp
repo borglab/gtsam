@@ -2,7 +2,7 @@
  * \file GeodesicExact.cpp
  * \brief Implementation for GeographicLib::GeodesicExact class
  *
- * Copyright (c) Charles Karney (2012-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2012-2023) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  *
@@ -28,11 +28,11 @@
 
 #include <GeographicLib/GeodesicExact.hpp>
 #include <GeographicLib/GeodesicLineExact.hpp>
+#include <vector>
 
 #if defined(_MSC_VER)
-// Squelch warnings about potentially uninitialized local variables and
-// constant conditional expressions
-#  pragma warning (disable: 4701 4127)
+// Squelch warnings about potentially uninitialized local variables
+#  pragma warning (disable: 4701)
 #endif
 
 namespace GeographicLib {
@@ -51,7 +51,7 @@ namespace GeographicLib {
       // which otherwise failed for Visual Studio 10 (Release and Debug)
     , tol1_(200 * tol0_)
     , tol2_(sqrt(tol0_))
-    , tolb_(tol0_ * tol2_)      // Check on bisection interval
+    , tolb_(tol0_)              // Check on bisection interval
     , xthresh_(1000 * tol2_)
     , _a(a)
     , _f(f)
@@ -62,14 +62,11 @@ namespace GeographicLib {
     , _b(_a * _f1)
       // The Geodesic class substitutes atanh(sqrt(e2)) for asinh(sqrt(ep2)) in
       // the definition of _c2.  The latter is more accurate for very oblate
-      // ellipsoids (which the Geodesic class does not attempt to handle).  Of
-      // course, the area calculation in GeodesicExact is still based on a
-      // series and so only holds for moderately oblate (or prolate)
-      // ellipsoids.
+      // ellipsoids (which the Geodesic class does not attempt to handle).
     , _c2((Math::sq(_a) + Math::sq(_b) *
            (_f == 0 ? 1 :
-            (_f > 0 ? Math::asinh(sqrt(_ep2)) : atan(sqrt(-_e2))) /
-            sqrt(abs(_e2))))/2) // authalic radius squared
+            (_f > 0 ? asinh(sqrt(_ep2)) : atan(sqrt(-_e2))) /
+            sqrt(fabs(_e2))))/2) // authalic radius squared
       // The sig12 threshold for "really short".  Using the auxiliary sphere
       // solution with dnm computed at (bet1 + bet2) / 2, the relative error in
       // the azimuth consistency check is sig12^2 * abs(f) * min(1, 1-f/2) / 2.
@@ -81,39 +78,320 @@ namespace GeographicLib {
       // and max(0.001, abs(f)) stops etol2 getting too large in the nearly
       // spherical case.
     , _etol2(real(0.1) * tol2_ /
-             sqrt( max(real(0.001), abs(_f)) * min(real(1), 1 - _f/2) / 2 ))
+             sqrt( fmax(real(0.001), fabs(_f)) * fmin(real(1), 1 - _f/2) / 2 ))
   {
-    if (!(Math::isfinite(_a) && _a > 0))
+    if (!(isfinite(_a) && _a > 0))
       throw GeographicErr("Equatorial radius is not positive");
-    if (!(Math::isfinite(_b) && _b > 0))
+    if (!(isfinite(_b) && _b > 0))
       throw GeographicErr("Polar semi-axis is not positive");
-    C4coeff();
+
+    // Required number of terms in DST for full accuracy for all precisions as
+    // a function of n in [-0.99, 0.99].  Values determined by running
+    // develop/AreaEst compiled with GEOGRAPHICLIB_PRECISION = 5.  For
+    // precision 4 and 5, GEOGRAPHICLIB_DIGITS was set to, resp., 384 and 768.
+    // The error criterion is relative error less than or equal to epsilon/2 =
+    // 0.5^digits, with digits = 24, 53, 64, 113, 256.  The first 4 are the the
+    // "standard" values for float, double, long double, and float128; the last
+    // is the default for GeographicLib + mpfr.  Also listed is the value of
+    // alp0 resulting in the most error for the given N.
+    //
+    //          float       double   long double    quad         mpfr
+    //  n       N   alp0    N   alp0    N   alp0    N   alp0     N   alp0
+    // -0.99  1024  0.09  3072  0.05  4096  0.04  8192 43.50  16384 22.01
+    // -0.98   512  0.18  1536  0.10  2048  0.09  4096  0.06   8192  0.04
+    // -0.97   384  0.25  1024  0.16  1536  0.13  3072  0.09   6144  0.06
+    // -0.96   256  0.36   768  0.21  1024  0.18  2048  0.13   4096  0.09
+    // -0.95   192  0.47   768  0.23   768  0.23  1536  0.17   4096  0.10
+    // -0.94   192  0.51   512  0.31   768  0.26  1536  0.18   3072  0.13
+    // -0.93   192  0.55   384  0.39   512  0.34  1024  0.24   3072  0.14
+    // -0.92   128  0.73   384  0.42   512  0.37  1024  0.26   2048  0.18
+    // -0.91   128  0.77   384  0.45   384  0.45   768  0.32   2048  0.19
+    // -0.90    96  0.94   256  0.58   384  0.47   768  0.34   2048  0.21
+    // -0.89    96  0.99   256  0.61   384  0.50   768  0.35   1536  0.25
+    // -0.88    96  1.04   256  0.64   384  0.52   768  0.37   1536  0.26
+    // -0.87    96  1.09   192  0.77   256  0.67   512  0.47   1536  0.27
+    // -0.86    64  1.38   192  0.80   256  0.69   512  0.49   1536  0.28
+    // -0.85    64  1.43   192  0.83   256  0.72   512  0.51   1024  0.36
+    // -0.84    64  1.49   192  0.86   256  0.75   384  0.61   1024  0.37
+    // -0.83    64  1.54   192  0.89   192  0.89   384  0.63   1024  0.39
+    // -0.82    48  1.82   192  0.92   192  0.92   384  0.65   1024  0.40
+    // -0.81    48  1.88   128  1.16   192  0.95   384  0.67   1024  0.41
+    // -0.80    48  1.94   128  1.19   192  0.97   384  0.69    768  0.49
+    // -0.79    48  1.99   128  1.23   192  1.00   384  0.71    768  0.50
+    // -0.78    48  2.04   128  1.26   192  1.03   384  0.73    768  0.51
+    // -0.77    48  2.10   128  1.29   192  1.05   256  0.91    768  0.53
+    // -0.76    48  2.15   128  1.32   128  1.32   256  0.93    768  0.54
+    // -0.75    48  2.20    96  1.56   128  1.35   256  0.96    768  0.55
+    // -0.74    32  2.74    96  1.60   128  1.38   256  0.98    768  0.57
+    // -0.73    32  2.81    96  1.63   128  1.41   256  1.00    768  0.58
+    // -0.72    32  2.87    96  1.67   128  1.44   256  1.02    512  0.72
+    // -0.71    32  2.93    96  1.70   128  1.47   192  1.20    512  0.74
+    // -0.70    32  2.99    96  1.73    96  1.73   192  1.23    512  0.75
+    // -0.69    32  3.05    96  1.77    96  1.77   192  1.25    512  0.77
+    // -0.68    32  3.11    96  1.80    96  1.80   192  1.28    512  0.78
+    // -0.67    24  3.64    96  1.84    96  1.84   192  1.30    512  0.80
+    // -0.66    24  3.71    96  1.87    96  1.87   192  1.32    512  0.81
+    // -0.65    24  3.77    64  2.33    96  1.90   192  1.35    384  0.95
+    // -0.64    24  3.84    64  2.37    96  1.93   192  1.37    384  0.97
+    // -0.63    24  3.90    64  2.41    96  1.97   192  1.39    384  0.98
+    // -0.62    24  3.97    64  2.45    96  2.00   192  1.42    384  1.00
+    // -0.61    24  4.04    64  2.49    96  2.03   192  1.44    384  1.02
+    // -0.60    24  4.10    64  2.53    96  2.06   192  1.46    384  1.03
+    // -0.59    24  4.16    64  2.57    64  2.57   128  1.82    384  1.05
+    // -0.58    24  4.23    64  2.60    64  2.60   128  1.84    384  1.07
+    // -0.57    24  4.29    48  3.05    64  2.64   128  1.87    384  1.08
+    // -0.56    24  4.36    48  3.10    64  2.68   128  1.90    384  1.10
+    // -0.55    16  5.38    48  3.14    64  2.72   128  1.93    384  1.11
+    // -0.54    16  5.46    48  3.19    64  2.76   128  1.96    384  1.13
+    // -0.53    16  5.54    48  3.23    64  2.80   128  1.98    256  1.40
+    // -0.52    16  5.61    48  3.27    64  2.84   128  2.01    256  1.42
+    // -0.51    16  5.69    48  3.32    64  2.88   128  2.04    256  1.44
+    // -0.50    16  5.77    48  3.36    64  2.92    96  2.38    256  1.46
+    // -0.49    16  5.85    48  3.41    48  3.41    96  2.42    256  1.48
+    // -0.48    16  5.92    48  3.45    48  3.45    96  2.45    256  1.50
+    // -0.47    16  6.00    48  3.50    48  3.50    96  2.48    256  1.52
+    // -0.46    16  6.08    48  3.54    48  3.54    96  2.51    256  1.54
+    // -0.45    12  7.06    48  3.59    48  3.59    96  2.54    256  1.56
+    // -0.44    12  7.15    48  3.63    48  3.63    96  2.57    256  1.58
+    // -0.43    12  7.24    32  4.49    48  3.68    96  2.61    256  1.60
+    // -0.42    12  7.33    32  4.55    48  3.72    96  2.64    192  1.87
+    // -0.41    12  7.42    32  4.60    48  3.77    96  2.67    192  1.89
+    // -0.40    12  7.51    32  4.66    48  3.81    96  2.70    192  1.91
+    // -0.39    12  7.60    32  4.71    48  3.86    96  2.73    192  1.94
+    // -0.38    12  7.69    32  4.77    48  3.90    96  2.77    192  1.96
+    // -0.37    12  7.77    32  4.82    48  3.95    96  2.80    192  1.98
+    // -0.36    12  7.86    32  4.88    48  3.99    96  2.83    192  2.00
+    // -0.35    12  7.95    32  4.94    32  4.94    64  3.50    192  2.03
+    // -0.34    12  8.04    32  4.99    32  4.99    64  3.54    192  2.05
+    // -0.33    12  8.13    24  5.81    32  5.05    64  3.58    192  2.07
+    // -0.32    12  8.22    24  5.88    32  5.10    64  3.62    192  2.10
+    // -0.31    12  8.31    24  5.94    32  5.16    64  3.66    192  2.12
+    // -0.30     8 10.16    24  6.01    32  5.22    64  3.70    192  2.14
+    // -0.29     8 10.27    24  6.07    32  5.27    64  3.74    192  2.17
+    // -0.28     8 10.38    24  6.14    32  5.33    64  3.78    128  2.68
+    // -0.27     8 10.49    24  6.20    32  5.39    64  3.82    128  2.71
+    // -0.26     8 10.60    24  6.27    32  5.45    64  3.87    128  2.74
+    // -0.25     8 10.72    24  6.34    32  5.50    48  4.51    128  2.77
+    // -0.24     8 10.83    24  6.40    24  6.40    48  4.55    128  2.80
+    // -0.23     8 10.94    24  6.47    24  6.47    48  4.60    128  2.83
+    // -0.22     8 11.05    24  6.54    24  6.54    48  4.65    128  2.86
+    // -0.21     6 12.72    24  6.60    24  6.60    48  4.70    128  2.89
+    // -0.20     6 12.85    24  6.67    24  6.67    48  4.75    128  2.92
+    // -0.19     6 12.97    16  8.21    24  6.74    48  4.80    128  2.95
+    // -0.18     6 13.10    16  8.29    24  6.81    48  4.85     96  3.44
+    // -0.17     6 13.23    16  8.37    24  6.88    48  4.89     96  3.47
+    // -0.16     6 13.36    16  8.46    24  6.95    48  4.94     96  3.51
+    // -0.15     6 13.49    16  8.54    24  7.02    48  5.00     96  3.54
+    // -0.14     6 13.62    16  8.62    24  7.09    48  5.05     96  3.58
+    // -0.13     6 13.75    16  8.71    24  7.16    48  5.10     96  3.62
+    // -0.12     6 13.88    16  8.80    16  8.80    32  6.28     96  3.65
+    // -0.11     6 14.01    12 10.19    16  8.88    32  6.35     96  3.69
+    // -0.10     4 16.85    12 10.28    16  8.97    32  6.41     96  3.73
+    // -0.09     4 17.01    12 10.38    16  9.06    32  6.47     96  3.76
+    // -0.08     4 17.17    12 10.48    16  9.14    32  6.54     96  3.80
+    // -0.07     4 17.32    12 10.58    16  9.23    32  6.60     64  4.69
+    // -0.06     4 17.48    12 10.69    12 10.69    24  7.67     64  4.74
+    // -0.05     4 17.64    12 10.79    12 10.79    24  7.75     64  4.79
+    // -0.04     4 17.80    12 10.89    12 10.89    24  7.82     64  4.84
+    // -0.03     4 17.96     8 13.26    12 10.99    24  7.90     48  5.63
+    // -0.02     4 18.11     8 13.38    12 11.10    24  7.97     48  5.68
+    // -0.01     4 18.27     6 15.36     8 13.51    16  9.78     48  5.74
+    //  0.00     4  1.00     4  1.00     4  1.00     4  1.00      4  1.00
+    //  0.01     4 18.57     6 15.62     8 13.75    16  9.96     48  5.85
+    //  0.02     4 18.70     8 13.86    12 11.51    24  8.28     48  5.91
+    //  0.03     4 18.83     8 13.97    12 11.61    24  8.36     48  5.97
+    //  0.04     4 18.96    12 11.71    12 11.71    24  8.44     64  5.23
+    //  0.05     4 19.09    12 11.81    12 11.81    24  8.52     64  5.28
+    //  0.06     4 19.22    12 11.92    12 11.92    24  8.60     64  5.33
+    //  0.07     4 19.36    12 12.02    16 10.52    32  7.55     64  5.39
+    //  0.08     4 19.49    12 12.13    16 10.61    32  7.63     64  5.44
+    //  0.09     4 19.62    12 12.23    16 10.71    32  7.70     96  4.50
+    //  0.10     4 19.76    12 12.34    16 10.80    32  7.77     96  4.54
+    //  0.11     4 19.89    12 12.45    16 10.90    32  7.85     96  4.59
+    //  0.12     6 17.01    16 11.00    16 11.00    32  7.92     96  4.63
+    //  0.13     6 17.14    16 11.10    16 11.10    32  8.00     96  4.68
+    //  0.14     6 17.27    16 11.20    24  9.26    48  6.64     96  4.73
+    //  0.15     6 17.40    16 11.30    24  9.35    48  6.70     96  4.77
+    //  0.16     6 17.53    16 11.40    24  9.44    48  6.77     96  4.82
+    //  0.17     6 17.67    16 11.51    24  9.53    48  6.84     96  4.87
+    //  0.18     6 17.80    16 11.61    24  9.62    48  6.90     96  4.92
+    //  0.19     6 17.94    16 11.72    24  9.71    48  6.97    128  4.31
+    //  0.20     6 18.07    16 11.83    24  9.80    48  7.04    128  4.36
+    //  0.21     6 18.21    24  9.90    24  9.90    48  7.11    128  4.40
+    //  0.22     6 18.35    24  9.99    24  9.99    48  7.18    128  4.45
+    //  0.23     6 18.49    24 10.09    24 10.09    48  7.26    128  4.49
+    //  0.24     6 18.63    24 10.19    24 10.19    48  7.33    128  4.54
+    //  0.25     6 18.77    24 10.28    24 10.28    48  7.41    128  4.59
+    //  0.26     6 18.92    24 10.39    24 10.39    48  7.48    128  4.64
+    //  0.27     8 17.00    24 10.49    32  9.17    64  6.58    128  4.69
+    //  0.28     8 17.14    24 10.59    32  9.26    64  6.65    128  4.74
+    //  0.29     8 17.28    24 10.69    32  9.35    64  6.72    192  3.92
+    //  0.30     8 17.43    24 10.80    32  9.45    64  6.79    192  3.96
+    //  0.31     8 17.57    24 10.91    32  9.54    64  6.86    192  4.01
+    //  0.32     8 17.72    24 11.02    32  9.64    64  6.93    192  4.05
+    //  0.33     8 17.87    24 11.13    32  9.74    64  7.01    192  4.09
+    //  0.34     8 18.02    24 11.24    32  9.84    64  7.08    192  4.14
+    //  0.35     8 18.17    24 11.36    32  9.95    64  7.16    192  4.19
+    //  0.36     8 18.32    24 11.47    32 10.05    64  7.24    192  4.23
+    //  0.37     8 18.48    32 10.16    32 10.16    64  7.32    192  4.28
+    //  0.38     8 18.63    32 10.27    32 10.27    96  6.08    192  4.33
+    //  0.39     8 18.79    32 10.38    48  8.58    96  6.15    192  4.38
+    //  0.40     8 18.95    32 10.49    48  8.68    96  6.22    192  4.43
+    //  0.41     8 19.11    32 10.60    48  8.78    96  6.30    192  4.49
+    //  0.42    12 16.45    32 10.72    48  8.88    96  6.37    192  4.54
+    //  0.43    12 16.61    32 10.84    48  8.98    96  6.45    192  4.59
+    //  0.44    12 16.77    32 10.96    48  9.08    96  6.52    256  4.04
+    //  0.45    12 16.93    32 11.09    48  9.19    96  6.60    256  4.09
+    //  0.46    12 17.10    32 11.21    48  9.30    96  6.68    256  4.14
+    //  0.47    12 17.26    32 11.34    48  9.41    96  6.77    256  4.19
+    //  0.48    12 17.44    32 11.47    48  9.52    96  6.85    256  4.24
+    //  0.49    12 17.61    48  9.64    48  9.64    96  6.94    256  4.30
+    //  0.50    12 17.79    48  9.76    48  9.76    96  7.03    256  4.35
+    //  0.51    12 17.97    48  9.88    48  9.88    96  7.12    256  4.41
+    //  0.52    12 18.15    48 10.00    48 10.00    96  7.21    256  4.47
+    //  0.53    12 18.34    48 10.13    48 10.13   128  6.36    256  4.53
+    //  0.54    12 18.53    48 10.26    48 10.26   128  6.45    256  4.59
+    //  0.55    12 18.72    48 10.40    64  9.10   128  6.53    384  3.82
+    //  0.56    12 18.92    48 10.53    64  9.22   128  6.63    384  3.87
+    //  0.57    12 19.12    48 10.68    64  9.35   128  6.72    384  3.93
+    //  0.58    12 19.33    48 10.82    64  9.48   128  6.82    384  3.98
+    //  0.59    12 19.54    48 10.97    64  9.61   128  6.92    384  4.05
+    //  0.60    12 19.75    48 11.13    64  9.75   128  7.02    384  4.11
+    //  0.61    12 19.97    48 11.28    64  9.89   128  7.13    384  4.17
+    //  0.62    12 20.20    48 11.45    64 10.04   128  7.24    384  4.24
+    //  0.63    16 18.39    48 11.62    64 10.19   192  6.05    384  4.31
+    //  0.64    16 18.62    64 10.35    64 10.35   192  6.15    384  4.38
+    //  0.65    16 18.86    64 10.51    96  8.71   192  6.25    384  4.45
+    //  0.66    16 19.10    64 10.68    96  8.85   192  6.36    384  4.53
+    //  0.67    16 19.35    64 10.86    96  9.00   192  6.47    512  4.00
+    //  0.68    16 19.60    64 11.04    96  9.16   192  6.58    512  4.08
+    //  0.69    16 19.87    64 11.23    96  9.32   192  6.70    512  4.15
+    //  0.70    16 20.14    64 11.43    96  9.49   192  6.83    512  4.23
+    //  0.71    16 20.42    64 11.63    96  9.67   192  6.96    512  4.32
+    //  0.72    16 20.71    64 11.85    96  9.85   192  7.10    512  4.40
+    //  0.73    16 21.01    96 10.04    96 10.04   192  7.25    512  4.50
+    //  0.74    16 21.32    96 10.25    96 10.25   256  6.44    768  3.76
+    //  0.75    16 21.65    96 10.46    96 10.46   256  6.58    768  3.84
+    //  0.76    16 21.99    96 10.68   128  9.36   256  6.73    768  3.93
+    //  0.77    24 19.41    96 10.92   128  9.57   256  6.89    768  4.03
+    //  0.78    24 19.76    96 11.17   128  9.79   256  7.06    768  4.13
+    //  0.79    24 20.13    96 11.44   128 10.03   256  7.24    768  4.24
+    //  0.80    24 20.51    96 11.72   128 10.29   384  6.11    768  4.35
+    //  0.81    24 20.92    96 12.02   128 10.56   384  6.28    768  4.48
+    //  0.82    24 21.35    96 12.34   192  8.99   384  6.46   1024  4.00
+    //  0.83    24 21.81   128 11.16   192  9.26   384  6.66   1024  4.13
+    //  0.84    24 22.29   128 11.50   192  9.55   384  6.88   1024  4.26
+    //  0.85    24 22.82   128 11.86   192  9.87   384  7.11   1024  4.41
+    //  0.86    24 23.38   128 12.26   192 10.21   384  7.37   1024  4.58
+    //  0.87    24 24.00   128 12.70   192 10.59   512  6.67   1536  3.90
+    //  0.88    24 24.67   192 11.01   192 11.01   512  6.95   1536  4.06
+    //  0.89    24 25.41   192 11.48   256 10.07   512  7.26   1536  4.25
+    //  0.90    24 26.24   192 12.00   256 10.54   768  6.27   1536  4.47
+    //  0.91    24 27.17   192 12.61   256 11.09   768  6.62   2048  4.10
+    //  0.92    24 28.23   192 13.30   384  9.74   768  7.02   2048  4.35
+    //  0.93    24 29.45   256 12.46   384 10.38   768  7.50   3072  3.82
+    //  0.94    24 30.86   256 13.36   384 11.16  1024  7.05   3072  4.13
+    //  0.95    24 32.53   384 12.14   512 10.67  1024  7.72   3072  4.53
+    //  0.96    24 34.51   384 13.42   512 11.83  1536  7.09   4096  4.40
+    //  0.97    24 36.88   512 13.45   768 11.24  2048  7.11   6144  4.16
+    //  0.98    16 41.78   768 13.48  1024 11.88  3072  7.12   8192  4.42
+    //  0.99     8 44.82  1024 16.00  1536 13.51  6144  7.14  16384  4.43
+    static const int ndiv = 100;
+    // Encode N as small integer: 2,3,4,6,8,12... -> 0,1,2,3,4,5...
+    // using this awk script
+    //
+    // {
+    //   n = $1;
+    //   if (n % 3 == 0) {
+    //     s = 1;
+    //     n = n/3;
+    //   } else {
+    //     s = 0;
+    //     n = n/2;
+    //   }
+    //   p = int( log(n)/log(2)+0.5 );
+    //   printf "%d\n", 2*p+s;
+    // }
+    //
+    // A couple of changes have been made: (1) the decrease in N for float and
+    // n > 0.97 has been removed; (2) entrys of n=+/-1 have been included
+    // (incrementing the previous code value by 1).
+#if GEOGRAPHICLIB_PRECISION == 1
+    static const unsigned char narr[2*ndiv+1] = {
+      19,18,16,15,14,13,13,13,12,12,11,11,11,11,10,10,10,10,9,9,9,9,9,9,9,9,8,
+      8,8,8,8,8,8,7,7,7,7,7,7,7,7,7,7,7,7,6,6,6,6,6,6,6,6,6,6,5,5,5,5,5,5,5,5,
+      5,5,5,5,5,5,5,4,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,
+      2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,
+      4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,
+      6,6,6,6,6,6,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,8
+    };
+#elif GEOGRAPHICLIB_PRECISION == 2
+    static const unsigned char narr[2*ndiv+1] = {
+      22,21,19,18,17,17,16,15,15,15,14,14,14,13,13,13,13,13,13,12,12,12,12,12,
+      12,11,11,11,11,11,11,11,11,11,11,10,10,10,10,10,10,10,10,9,9,9,9,9,9,9,9,
+      9,9,9,9,9,9,8,8,8,8,8,8,8,8,8,8,7,7,7,7,7,7,7,7,7,7,7,7,7,7,6,6,6,6,6,6,
+      6,6,5,5,5,5,5,5,5,5,4,4,3,2,3,4,4,5,5,5,5,5,5,5,5,6,6,6,6,6,6,6,6,6,7,7,
+      7,7,7,7,7,7,7,7,7,7,7,7,7,7,8,8,8,8,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9,9,9,
+      9,9,9,9,9,10,10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11,11,11,12,12,
+      12,12,12,13,13,13,13,13,14,14,15,15,16,17,18,19
+    };
+#elif GEOGRAPHICLIB_PRECISION == 3
+    static const unsigned char narr[2*ndiv+1] = {
+      23,22,20,19,18,17,17,16,16,15,15,15,15,14,14,14,14,13,13,13,13,13,13,13,
+      12,12,12,12,12,12,11,11,11,11,11,11,11,11,11,11,11,10,10,10,10,10,10,10,
+      10,10,10,9,9,9,9,9,9,9,9,9,9,9,9,9,9,8,8,8,8,8,8,8,8,8,8,8,7,7,7,7,7,7,7,
+      7,7,7,7,7,6,6,6,6,6,6,5,5,5,5,5,4,2,4,5,5,5,5,5,6,6,6,6,6,6,6,7,7,7,7,7,
+      7,7,7,7,7,7,7,7,8,8,8,8,8,8,8,8,8,8,8,8,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,
+      10,10,10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11,11,11,11,12,12,12,
+      12,12,12,13,13,13,13,13,13,13,14,14,14,15,15,15,16,16,17,18,19,20
+    };
+#elif GEOGRAPHICLIB_PRECISION == 4
+    static const unsigned char narr[2*ndiv+1] = {
+      25,24,22,21,20,19,19,18,18,17,17,17,17,16,16,16,15,15,15,15,15,15,15,14,
+      14,14,14,14,14,13,13,13,13,13,13,13,13,13,13,13,13,12,12,12,12,12,12,12,
+      12,12,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,10,10,10,10,10,10,10,
+      10,10,10,9,9,9,9,9,9,9,9,9,9,9,9,9,8,8,8,8,8,8,7,7,7,7,7,6,2,6,7,7,7,7,7,
+      8,8,8,8,8,8,8,9,9,9,9,9,9,9,9,9,9,9,9,9,10,10,10,10,10,10,10,10,10,10,10,
+      11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,12,12,12,12,12,12,12,12,12,
+      12,13,13,13,13,13,13,13,13,13,13,13,14,14,14,14,14,14,15,15,15,15,15,15,
+      15,16,16,16,17,17,17,17,18,18,19,20,21,23,24
+    };
+#elif GEOGRAPHICLIB_PRECISION == 5
+    static const unsigned char narr[2*ndiv+1] = {
+      27,26,24,23,22,22,21,21,20,20,20,19,19,19,19,18,18,18,18,18,17,17,17,17,
+      17,17,17,17,16,16,16,16,16,16,16,15,15,15,15,15,15,15,15,15,15,15,15,14,
+      14,14,14,14,14,14,14,14,14,14,13,13,13,13,13,13,13,13,13,13,13,13,13,13,
+      12,12,12,12,12,12,12,12,12,12,11,11,11,11,11,11,11,11,11,11,11,10,10,10,
+      10,9,9,9,2,9,9,9,10,10,10,10,10,11,11,11,11,11,11,11,11,11,11,12,12,12,
+      12,12,12,12,12,12,12,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,14,14,
+      14,14,14,14,14,14,14,14,14,15,15,15,15,15,15,15,15,15,15,15,15,16,16,16,
+      16,16,16,16,17,17,17,17,17,17,17,17,18,18,18,18,18,19,19,19,19,20,20,21,
+      21,21,22,23,24,26,27
+    };
+#else
+#error "Bad value for GEOGRAPHICLIB_PRECISION"
+#endif
+    real n = ndiv * _n;         // n in [-ndiv, ndiv]
+    int j = ndiv + int(n < 0 ? floor(n) : ceil(n)); // j in [0, 2*ndiv]
+    int N = int(narr[j]);
+    // Decode 0,1,2,3,4,5... -> 2,3,4,6,8,12...
+    N = (N % 2 == 0 ? 2 : 3) * (1 << (N/2));
+#if GEOGRAPHICLIB_PRECISION == 5
+    if (Math::digits() > 256) {
+      // Scale up N by the number of digits in the precision relative to
+      // the number used for the test = 256.
+      int M = (Math::digits() * N) / 256;
+      while (N < M) N = N % 3 == 0 ? 4*N/3 : 3*N/2;
+    }
+#endif
+    _fft.reset(N);
+    _nC4 = N;
   }
 
   const GeodesicExact& GeodesicExact::WGS84() {
     static const GeodesicExact wgs84(Constants::WGS84_a(),
                                      Constants::WGS84_f());
     return wgs84;
-  }
-
-  Math::real GeodesicExact::CosSeries(real sinx, real cosx,
-                                      const real c[], int n) {
-    // Evaluate
-    // y = sum(c[i] * cos((2*i+1) * x), i, 0, n-1)
-    // using Clenshaw summation.
-    // Approx operation count = (n + 5) mult and (2 * n + 2) add
-    c += n ;                    // Point to one beyond last element
-    real
-      ar = 2 * (cosx - sinx) * (cosx + sinx), // 2 * cos(2 * x)
-      y0 = n & 1 ? *--c : 0, y1 = 0;          // accumulators for sum
-    // Now n is even
-    n /= 2;
-    while (n--) {
-      // Unroll loop x 2, so accumulators return to their original role
-      y1 = ar * y0 - y1 + *--c;
-      y0 = ar * y1 - y0 + *--c;
-    }
-    return cosx * (y0 - y1);    // cos(x) * (y0 - y1)
   }
 
   GeodesicLineExact GeodesicExact::Line(real lat1, real lon1, real azi1,
@@ -172,39 +450,37 @@ namespace GeographicLib {
     // Compute longitude difference (AngDiff does this carefully).  Result is
     // in [-180, 180] but -180 is only for west-going geodesics.  180 is for
     // east-going and meridional geodesics.
+    using std::isnan;           // Needed for Centos 7, ubuntu 14
     real lon12s, lon12 = Math::AngDiff(lon1, lon2, lon12s);
     // Make longitude difference positive.
-    int lonsign = lon12 >= 0 ? 1 : -1;
-    // If very close to being on the same half-meridian, then make it so.
-    lon12 = lonsign * Math::AngRound(lon12);
-    lon12s = Math::AngRound((180 - lon12) - lonsign * lon12s);
+    int lonsign = signbit(lon12) ? -1 : 1;
+    lon12 *= lonsign; lon12s *= lonsign;
     real
       lam12 = lon12 * Math::degree(),
       slam12, clam12;
-    if (lon12 > 90) {
-      Math::sincosd(lon12s, slam12, clam12);
-      clam12 = -clam12;
-    } else
-      Math::sincosd(lon12, slam12, clam12);
+    // Calculate sincos of lon12 + error (this applies AngRound internally).
+    Math::sincosde(lon12, lon12s, slam12, clam12);
+    // the supplementary longitude difference
+    lon12s = (Math::hd - lon12) - lon12s;
 
     // If really close to the equator, treat as on equator.
     lat1 = Math::AngRound(Math::LatFix(lat1));
     lat2 = Math::AngRound(Math::LatFix(lat2));
     // Swap points so that point with higher (abs) latitude is point 1
     // If one latitude is a nan, then it becomes lat1.
-    int swapp = abs(lat1) < abs(lat2) ? -1 : 1;
+    int swapp = fabs(lat1) < fabs(lat2) || isnan(lat2) ? -1 : 1;
     if (swapp < 0) {
       lonsign *= -1;
       swap(lat1, lat2);
     }
-    // Make lat1 <= 0
-    int latsign = lat1 < 0 ? 1 : -1;
+    // Make lat1 <= -0
+    int latsign = signbit(lat1) ? 1 : -1;
     lat1 *= latsign;
     lat2 *= latsign;
     // Now we have
     //
     //     0 <= lon12 <= 180
-    //     -90 <= lat1 <= 0
+    //     -90 <= lat1 <= -0
     //     lat1 <= lat2 <= -lat1
     //
     // longsign, swapp, latsign register the transformation to bring the
@@ -213,7 +489,7 @@ namespace GeographicLib {
     // check, e.g., on verifying quadrants in atan2.  In addition, this
     // enforces some symmetries in the results returned.
 
-    real sbet1, cbet1, sbet2, cbet2, s12x, m12x;
+    real sbet1, cbet1, sbet2, cbet2, s12x, m12x = Math::NaN();
     // Initialize for the meridian.  No longitude calculation is done in this
     // case to let the parameter default to 0.
     EllipticFunction E(-_ep2);
@@ -221,11 +497,11 @@ namespace GeographicLib {
     Math::sincosd(lat1, sbet1, cbet1); sbet1 *= _f1;
     // Ensure cbet1 = +epsilon at poles; doing the fix on beta means that sig12
     // will be <= 2*tiny for two points at the same pole.
-    Math::norm(sbet1, cbet1); cbet1 = max(tiny_, cbet1);
+    Math::norm(sbet1, cbet1); cbet1 = fmax(tiny_, cbet1);
 
     Math::sincosd(lat2, sbet2, cbet2); sbet2 *= _f1;
     // Ensure cbet2 = +epsilon at poles
-    Math::norm(sbet2, cbet2); cbet2 = max(tiny_, cbet2);
+    Math::norm(sbet2, cbet2); cbet2 = fmax(tiny_, cbet2);
 
     // If cbet1 < -sbet1, then cbet2 - cbet1 is a sensitive measure of the
     // |bet1| - |bet2|.  Alternatively (cbet1 >= -sbet1), abs(sbet2) + sbet1 is
@@ -237,9 +513,9 @@ namespace GeographicLib {
 
     if (cbet1 < -sbet1) {
       if (cbet2 == cbet1)
-        sbet2 = sbet2 < 0 ? sbet1 : -sbet1;
+        sbet2 = copysign(sbet1, sbet2);
     } else {
-      if (abs(sbet2) == -sbet1)
+      if (fabs(sbet2) == -sbet1)
         cbet2 = cbet1;
     }
 
@@ -251,7 +527,7 @@ namespace GeographicLib {
 
     real a12, sig12;
 
-    bool meridian = lat1 == -90 || slam12 == 0;
+    bool meridian = lat1 == -Math::qd || slam12 == 0;
 
     if (meridian) {
 
@@ -267,8 +543,8 @@ namespace GeographicLib {
         ssig2 = sbet2, csig2 = calp2 * cbet2;
 
       // sig12 = sig2 - sig1
-      sig12 = atan2(max(real(0), csig1 * ssig2 - ssig1 * csig2),
-                                 csig1 * csig2 + ssig1 * ssig2);
+      sig12 = atan2(fmax(real(0), csig1 * ssig2 - ssig1 * csig2),
+                                  csig1 * csig2 + ssig1 * ssig2);
       {
         real dummy;
         Lengths(E, sig12, ssig1, csig1, dn1, ssig2, csig2, dn2,
@@ -284,7 +560,9 @@ namespace GeographicLib {
       // not a shortest path.
       if (sig12 < 1 || m12x >= 0) {
         // Need at least 2, to handle 90 0 90 180
-        if (sig12 < 3 * tiny_)
+        if (sig12 < 3 * tiny_ ||
+            // Prevent negative s12 or m12 for short lines
+            (sig12 < tol0_ && (s12x < 0 || m12x < 0)))
           sig12 = m12x = s12x = 0;
         m12x *= _b;
         s12x *= _b;
@@ -294,11 +572,11 @@ namespace GeographicLib {
         meridian = false;
     }
 
-    // somg12 > 1 marks that it needs to be calculated
+    // somg12 == 2 marks that it needs to be calculated
     real omg12 = 0, somg12 = 2, comg12 = 0;
     if (!meridian &&
         sbet1 == 0 &&   // and sbet2 == 0
-        (_f <= 0 || lon12s >= _f * 180)) {
+        (_f <= 0 || lon12s >= _f * Math::hd)) {
 
       // Geodesic runs along equator
       calp1 = calp2 = 0; salp1 = salp2 = 1;
@@ -347,9 +625,7 @@ namespace GeographicLib {
         unsigned numit = 0;
         // Bracketing range
         real salp1a = tiny_, calp1a = 1, salp1b = tiny_, calp1b = -1;
-        for (bool tripn = false, tripb = false;
-             numit < maxit2_ || GEOGRAPHICLIB_PANIC;
-             ++numit) {
+        for (bool tripn = false, tripb = false;; ++numit) {
           // 1/4 meridian = 10e6 m and random input.  max err is estimated max
           // error in nm (checking solution of inverse problem by direct
           // solution).  iter is mean and sd of number of iterations
@@ -376,8 +652,12 @@ namespace GeographicLib {
                             slam12, clam12,
                             salp2, calp2, sig12, ssig1, csig1, ssig2, csig2,
                             E, domg12, numit < maxit1_, dv);
-          // Reversed test to allow escape with NaNs
-          if (tripb || !(abs(v) >= (tripn ? 8 : 1) * tol0_)) break;
+          if (tripb ||
+              // Reversed test to allow escape with NaNs
+              !(fabs(v) >= (tripn ? 8 : 1) * tol0_) ||
+              // Enough bisections to get accurate result
+              numit == maxit2_)
+            break;
           // Update bracketing values
           if (v > 0 && (numit > maxit1_ || calp1/salp1 > calp1b/salp1b))
             { salp1b = salp1; calp1b = calp1; }
@@ -386,18 +666,23 @@ namespace GeographicLib {
           if (numit < maxit1_ && dv > 0) {
             real
               dalp1 = -v/dv;
-            real
-              sdalp1 = sin(dalp1), cdalp1 = cos(dalp1),
-              nsalp1 = salp1 * cdalp1 + calp1 * sdalp1;
-            if (nsalp1 > 0 && abs(dalp1) < Math::pi()) {
-              calp1 = calp1 * cdalp1 - salp1 * sdalp1;
-              salp1 = nsalp1;
-              Math::norm(salp1, calp1);
-              // In some regimes we don't get quadratic convergence because
-              // slope -> 0.  So use convergence conditions based on epsilon
-              // instead of sqrt(epsilon).
-              tripn = abs(v) <= 16 * tol0_;
-              continue;
+            // |dalp1| < pi test moved earlier because GEOGRAPHICLIB_PRECISION
+            // = 5 can result in dalp1 = 10^(10^8).  Then sin(dalp1) takes ages
+            // (because of the need to do accurate range reduction).
+            if (fabs(dalp1) < Math::pi()) {
+              real
+                sdalp1 = sin(dalp1), cdalp1 = cos(dalp1),
+                nsalp1 = salp1 * cdalp1 + calp1 * sdalp1;
+              if (nsalp1 > 0) {
+                calp1 = calp1 * cdalp1 - salp1 * sdalp1;
+                salp1 = nsalp1;
+                Math::norm(salp1, calp1);
+                // In some regimes we don't get quadratic convergence because
+                // slope -> 0.  So use convergence conditions based on epsilon
+                // instead of sqrt(epsilon).
+                tripn = fabs(v) <= 16 * tol0_;
+                continue;
+              }
             }
           }
           // Either dv was not positive or updated value was outside legal
@@ -412,8 +697,8 @@ namespace GeographicLib {
           calp1 = (calp1a + calp1b)/2;
           Math::norm(salp1, calp1);
           tripn = false;
-          tripb = (abs(salp1a - salp1) + (calp1a - calp1) < tolb_ ||
-                   abs(salp1 - salp1b) + (calp1 - calp1b) < tolb_);
+          tripb = (fabs(salp1a - salp1) + (calp1a - calp1) < tolb_ ||
+                   fabs(salp1 - salp1b) + (calp1 - calp1b) < tolb_);
         }
         {
           real dummy;
@@ -433,42 +718,37 @@ namespace GeographicLib {
     }
 
     if (outmask & DISTANCE)
-      s12 = 0 + s12x;           // Convert -0 to 0
+      s12 = real(0) + s12x;     // Convert -0 to 0
 
     if (outmask & REDUCEDLENGTH)
-      m12 = 0 + m12x;           // Convert -0 to 0
+      m12 = real(0) + m12x;     // Convert -0 to 0
 
     if (outmask & AREA) {
       real
         // From Lambda12: sin(alp1) * cos(bet1) = sin(alp0)
         salp0 = salp1 * cbet1,
-        calp0 = Math::hypot(calp1, salp1 * sbet1); // calp0 > 0
-      real alp12;
-      if (calp0 != 0 && salp0 != 0) {
+        calp0 = hypot(calp1, salp1 * sbet1); // calp0 > 0
+      real alp12,
+        // Multiplier = a^2 * e^2 * cos(alpha0) * sin(alpha0).
+        A4 = Math::sq(_a) * calp0 * salp0 * _e2;
+      if (A4 != 0) {
         real
+          k2 = Math::sq(calp0) * _ep2,
           // From Lambda12: tan(bet) = tan(sig) * cos(alp)
           ssig1 = sbet1, csig1 = calp1 * cbet1,
-          ssig2 = sbet2, csig2 = calp2 * cbet2,
-          k2 = Math::sq(calp0) * _ep2,
-          eps = k2 / (2 * (1 + sqrt(1 + k2)) + k2),
-          // Multiplier = a^2 * e^2 * cos(alpha0) * sin(alpha0).
-          A4 = Math::sq(_a) * calp0 * salp0 * _e2;
+          ssig2 = sbet2, csig2 = calp2 * cbet2;
         Math::norm(ssig1, csig1);
         Math::norm(ssig2, csig2);
-        real C4a[nC4_];
-        C4f(eps, C4a);
-        real
-          B41 = CosSeries(ssig1, csig1, C4a, nC4_),
-          B42 = CosSeries(ssig2, csig2, C4a, nC4_);
-        S12 = A4 * (B42 - B41);
+        I4Integrand i4(_ep2, k2);
+        vector<real> C4a(_nC4);
+        _fft.transform(i4, C4a.data());
+        S12 = A4 * DST::integral(ssig1, csig1, ssig2, csig2, C4a.data(), _nC4);
       } else
         // Avoid problems with indeterminate sig1, sig2 on equator
         S12 = 0;
 
-      if (!meridian) {
-        if (somg12 > 1) {
-          somg12 = sin(omg12); comg12 = cos(omg12);
-        }
+      if (!meridian && somg12 == 2) {
+        somg12 = sin(omg12); comg12 = cos(omg12);
       }
 
       if (!meridian &&
@@ -620,7 +900,7 @@ namespace GeographicLib {
         // of the way the T is used in definition of u.
         T3 += T3 < 0 ? -sqrt(disc) : sqrt(disc); // T3 = (r * t)^3
         // N.B. cbrt always returns the real root.  cbrt(-8) = -2.
-        real T = Math::cbrt(T3); // T = r * t
+        real T = cbrt(T3); // T = r * t
         // T can be zero; but then r2 / T -> 0.
         u += T + (T != 0 ? r2 / T : 0);
       } else {
@@ -663,23 +943,7 @@ namespace GeographicLib {
       // bet12 = bet2 - bet1 in [0, pi); bet12a = bet2 + bet1 in (-pi, 0]
       sbet12 = sbet2 * cbet1 - cbet2 * sbet1,
       cbet12 = cbet2 * cbet1 + sbet2 * sbet1;
-#if defined(__GNUC__) && __GNUC__ == 4 && \
-  (__GNUC_MINOR__ < 6 || defined(__MINGW32__))
-    // Volatile declaration needed to fix inverse cases
-    // 88.202499451857 0 -88.202499451857 179.981022032992859592
-    // 89.262080389218 0 -89.262080389218 179.992207982775375662
-    // 89.333123580033 0 -89.333123580032997687 179.99295812360148422
-    // which otherwise fail with g++ 4.4.4 x86 -O3 (Linux)
-    // and g++ 4.4.0 (mingw) and g++ 4.6.1 (tdm mingw).
-    real sbet12a;
-    {
-      GEOGRAPHICLIB_VOLATILE real xx1 = sbet2 * cbet1;
-      GEOGRAPHICLIB_VOLATILE real xx2 = cbet2 * sbet1;
-      sbet12a = xx1 + xx2;
-    }
-#else
     real sbet12a = sbet2 * cbet1 + cbet2 * sbet1;
-#endif
     bool shortline = cbet12 >= 0 && sbet12 < real(0.5) &&
       cbet2 * lam12 < real(0.5);
     real somg12, comg12;
@@ -701,7 +965,7 @@ namespace GeographicLib {
       sbet12a - cbet2 * sbet1 * Math::sq(somg12) / (1 - comg12);
 
     real
-      ssig12 = Math::hypot(salp1, calp1),
+      ssig12 = hypot(salp1, calp1),
       csig12 = sbet1 * sbet2 + cbet1 * cbet2 * comg12;
 
     if (shortline && ssig12 < _etol2) {
@@ -712,18 +976,14 @@ namespace GeographicLib {
       Math::norm(salp2, calp2);
       // Set return value
       sig12 = atan2(ssig12, csig12);
-    } else if (abs(_n) > real(0.1) || // Skip astroid calc if too eccentric
+    } else if (fabs(_n) > real(0.1) || // Skip astroid calc if too eccentric
                csig12 >= 0 ||
-               ssig12 >= 6 * abs(_n) * Math::pi() * Math::sq(cbet1)) {
+               ssig12 >= 6 * fabs(_n) * Math::pi() * Math::sq(cbet1)) {
       // Nothing to do, zeroth order spherical approximation is OK
     } else {
       // Scale lam12 and bet2 to x, y coordinate system where antipodal point
       // is at origin and singular point is at y = 0, x = -1.
-      real y, lamscale, betscale;
-      // Volatile declaration needed to fix inverse case
-      // 56.320923501171 0 -56.320923501171 179.664747671772880215
-      // which otherwise fails with g++ 4.4.4 x86 -O3
-      GEOGRAPHICLIB_VOLATILE real x;
+      real x, y, lamscale, betscale;
       real lam12x = atan2(-slam12, -clam12); // lam12 - pi
       if (_f >= 0) {            // In fact f == 0 does not get here
         // x = dlong, y = dlat
@@ -758,9 +1018,9 @@ namespace GeographicLib {
         // strip near cut
         // Need real(x) here to cast away the volatility of x for min/max
         if (_f >= 0) {
-          salp1 = min(real(1), -real(x)); calp1 = - sqrt(1 - Math::sq(salp1));
+          salp1 = fmin(real(1), -x); calp1 = - sqrt(1 - Math::sq(salp1));
         } else {
-          calp1 = max(real(x > -tol1_ ? 0 : -1), real(x));
+          calp1 = fmax(real(x > -tol1_ ? 0 : -1), x);
           salp1 = sqrt(1 - Math::sq(calp1));
         }
       } else {
@@ -837,7 +1097,7 @@ namespace GeographicLib {
     real
       // sin(alp1) * cos(bet1) = sin(alp0)
       salp0 = salp1 * cbet1,
-      calp0 = Math::hypot(calp1, salp1 * sbet1); // calp0 > 0
+      calp0 = hypot(calp1, salp1 * sbet1); // calp0 > 0
 
     real somg1, comg1, somg2, comg2, somg12, comg12, cchi1, cchi2, lam12;
     // tan(bet1) = tan(sig1) * cos(alp1)
@@ -859,12 +1119,12 @@ namespace GeographicLib {
     //       = sqrt(sq(calp0) - sq(sbet2)) / cbet2
     // and subst for calp0 and rearrange to give (choose positive sqrt
     // to give alp2 in [0, pi/2]).
-    calp2 = cbet2 != cbet1 || abs(sbet2) != -sbet1 ?
+    calp2 = cbet2 != cbet1 || fabs(sbet2) != -sbet1 ?
       sqrt(Math::sq(calp1 * cbet1) +
            (cbet1 < -sbet1 ?
             (cbet2 - cbet1) * (cbet1 + cbet2) :
             (sbet1 - sbet2) * (sbet1 + sbet2))) / cbet2 :
-      abs(calp1);
+      fabs(calp1);
     // tan(bet2) = tan(sig2) * cos(alp2)
     // tan(omg2) = sin(alp0) * tan(sig2).
     ssig2 = sbet2; somg2 = salp0 * sbet2;
@@ -876,18 +1136,18 @@ namespace GeographicLib {
     // Math::norm(schi2, cchi2); -- don't need to normalize!
 
     // sig12 = sig2 - sig1, limit to [0, pi]
-    sig12 = atan2(max(real(0), csig1 * ssig2 - ssig1 * csig2),
-                               csig1 * csig2 + ssig1 * ssig2);
+    sig12 = atan2(fmax(real(0), csig1 * ssig2 - ssig1 * csig2),
+                                csig1 * csig2 + ssig1 * ssig2);
 
     // omg12 = omg2 - omg1, limit to [0, pi]
-    somg12 = max(real(0), comg1 * somg2 - somg1 * comg2);
-    comg12 =              comg1 * comg2 + somg1 * somg2;
+    somg12 = fmax(real(0), comg1 * somg2 - somg1 * comg2);
+    comg12 =               comg1 * comg2 + somg1 * somg2;
     real k2 = Math::sq(calp0) * _ep2;
     E.Reset(-k2, -_ep2, 1 + k2, 1 + _ep2);
     // chi12 = chi2 - chi1, limit to [0, pi]
     real
-      schi12 = max(real(0), cchi1 * somg2 - somg1 * cchi2),
-      cchi12 =              cchi1 * cchi2 + somg1 * somg2;
+      schi12 = fmax(real(0), cchi1 * somg2 - somg1 * cchi2),
+      cchi12 =               cchi1 * cchi2 + somg1 * somg2;
     // eta = chi12 - lam120
     real eta = atan2(schi12 * clam120 - cchi12 * slam120,
                      cchi12 * clam120 + schi12 * slam120);
@@ -912,20 +1172,71 @@ namespace GeographicLib {
     return lam12;
   }
 
-  void GeodesicExact::C4f(real eps, real c[]) const {
-    // Evaluate C4 coeffs
-    // Elements c[0] thru c[nC4_ - 1] are set
-    real mult = 1;
-    int o = 0;
-    for (int l = 0; l < nC4_; ++l) { // l is index of C4[l]
-      int m = nC4_ - l - 1;          // order of polynomial in eps
-      c[l] = mult * Math::polyval(m, _C4x + o, eps);
-      o += m + 1;
-      mult *= eps;
-    }
-    // Post condition: o == nC4x_
-    if  (!(o == nC4x_))
-      throw GeographicErr("C4 misalignment");
+  Math::real GeodesicExact::I4Integrand::asinhsqrt(real x) {
+    // return asinh(sqrt(x))/sqrt(x)
+    return x == 0 ? 1 :
+      (x > 0 ? asinh(sqrt(x))/sqrt(x) :
+       asin(sqrt(-x))/sqrt(-x)); // NaNs end up here
+  }
+  Math::real GeodesicExact::I4Integrand::t(real x) {
+    // This differs by from t as defined following Eq 61 in Karney (2013) by
+    // the final subtraction of 1.  This changes nothing since Eq 61 uses the
+    // difference of two evaluations of t and improves the accuracy(?).
+    // Group terms to minimize roundoff
+    // with x = ep2, this is the same as
+    // e2/(1-e2) + (atanh(e)/e - 1)
+    return x + (sqrt(1 + x) * asinhsqrt(x) - 1);
+  }
+  Math::real GeodesicExact::I4Integrand::td(real x) {
+    // d t(x) / dx
+    return x == 0 ? 4/real(3) :
+      // Group terms to minimize roundoff
+      1 + (1 - asinhsqrt(x) / sqrt(1+x)) / (2*x);
+  }
+  // Math::real GeodesicExact::I4Integrand::Dt(real x, real y) {
+  //   // ( t(x) - t(y) ) / (x - y)
+  //   if (x == y) return td(x);
+  //   if (x * y <= 0) return ( t(x) - t(y) ) / (x - y);
+  //   real
+  //     sx = sqrt(fabs(x)), sx1 = sqrt(1 + x),
+  //     sy = sqrt(fabs(y)), sy1 = sqrt(1 + y),
+  //     z = (x - y) / (sx * sy1 + sy * sx1),
+  //     d1 = 2 * sx * sy,
+  //     d2 = 2 * (x * sy * sy1 + y * sx * sx1);
+  //   return x > 0 ?
+  //     ( 1 + (asinh(z)/z) / d1 - (asinh(sx) + asinh(sy)) / d2 ) :
+  //     // NaNs fall through to here
+  //     ( 1 - (asin (z)/z) / d1 - (asin (sx) + asin (sy)) / d2 );
+  // }
+  Math::real GeodesicExact::I4Integrand::DtX(real y) const {
+    // idiot version:
+    // return ( tX - t(y) ) / (X - y);
+    if (X == y) return tdX;
+    if (X * y <= 0) return ( tX - t(y) ) / (X - y);
+    real
+      sy = sqrt(fabs(y)), sy1 = sqrt(1 + y),
+      z = (X - y) / (sX * sy1 + sy * sX1),
+      d1 = 2 * sX * sy,
+      d2 = 2 * (X * sy * sy1 + y * sXX1);
+    return X > 0 ?
+      ( 1 + (asinh(z)/z) / d1 - (asinhsX + asinh(sy)) / d2 ) :
+      // NaNs fall through to here
+      ( 1 - (asin (z)/z) / d1 - (asinhsX + asin (sy)) / d2 );
+  }
+  GeodesicExact::I4Integrand::I4Integrand(real ep2, real k2)
+    : X( ep2 )
+    , tX( t(X) )
+    , tdX( td(X) )
+    , _k2( k2 )
+  {
+    sX = sqrt(fabs(X));     // ep
+    sX1 =  sqrt(1 + X);     // 1/(1-f)
+    sXX1 = sX * sX1;
+    asinhsX = X > 0 ? asinh(sX) : asin(sX); // atanh(e)
+  }
+  Math::real GeodesicExact::I4Integrand::operator()(real sig) const {
+    real ssig = sin(sig);
+    return - DtX(_k2 * Math::sq(ssig)) * ssig/2;
   }
 
 } // namespace GeographicLib

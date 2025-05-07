@@ -2,7 +2,7 @@
  * \file Geoid.hpp
  * \brief Header for GeographicLib::Geoid class
  *
- * Copyright (c) Charles Karney (2009-2015) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2009-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -40,11 +40,11 @@ namespace GeographicLib {
    * EGM96, or EGM2008 by bilinear or cubic interpolation into a rectangular
    * grid of data.  These geoid models are documented in
    * - EGM84:
-   *   http://earth-info.nga.mil/GandG/wgs84/gravitymod/wgs84_180/wgs84_180.html
+   *   https://earth-info.nga.mil/index.php?dir=wgs84&action=wgs84#tab_egm84
    * - EGM96:
-   *   http://earth-info.nga.mil/GandG/wgs84/gravitymod/egm96/egm96.html
+   *   https://earth-info.nga.mil/index.php?dir=wgs84&action=wgs84#tab_egm96
    * - EGM2008:
-   *   http://earth-info.nga.mil/GandG/wgs84/gravitymod/egm2008
+   *   https://earth-info.nga.mil/index.php?dir=wgs84&action=wgs84#tab_egm2008
    *
    * The geoids are defined in terms of spherical harmonics.  However in order
    * to provide a quick and flexible method of evaluating the geoid heights,
@@ -120,11 +120,7 @@ namespace GeographicLib {
     mutable real _v00, _v01, _v10, _v11;
     mutable real _t[nterms_];
     void filepos(int ix, int iy) const {
-      _file.seekg(
-#if !(defined(__GNUC__) && __GNUC__ < 4)
-                  // g++ 3.x doesn't know about the cast to streamoff.
-                  std::ios::streamoff
-#endif
+      _file.seekg(std::streamoff
                   (_datastart +
                    pixel_size_ * (unsigned(iy)*_swidth + unsigned(ix))));
     }
@@ -150,6 +146,7 @@ namespace GeographicLib {
           _file.get(a);
           _file.get(b);
           unsigned r = ((unsigned char)(a) << 8) | (unsigned char)(b);
+          // for C++17 use if constexpr
           if (pixel_size_ == 4) {
             _file.get(a);
             _file.get(b);
@@ -171,8 +168,8 @@ namespace GeographicLib {
       }
     }
     real height(real lat, real lon) const;
-    Geoid(const Geoid&);            // copy constructor not allowed
-    Geoid& operator=(const Geoid&); // copy assignment not allowed
+    Geoid(const Geoid&) = delete;            // copy constructor not allowed
+    Geoid& operator=(const Geoid&) = delete; // copy assignment not allowed
   public:
 
     /**
@@ -181,8 +178,8 @@ namespace GeographicLib {
      **********************************************************************/
     enum convertflag {
       /**
-       * The multiplier for converting from heights above the geoid to heights
-       * above the ellipsoid.
+       * The multiplier for converting from heights above the ellipsoid to
+       * heights above the geoid.
        **********************************************************************/
       ELLIPSOIDTOGEOID = -1,
       /**
@@ -190,8 +187,8 @@ namespace GeographicLib {
        **********************************************************************/
       NONE = 0,
       /**
-       * The multiplier for converting from heights above the ellipsoid to
-       * heights above the geoid.
+       * The multiplier for converting from heights above the geoid to heights
+       * above the ellipsoid.
        **********************************************************************/
       GEOIDTOELLIPSOID = 1,
     };
@@ -259,8 +256,8 @@ namespace GeographicLib {
      * or coarser.  For a 1' grid, the required RAM is 450MB; a 2.5' grid needs
      * 72MB; and a 5' grid needs 18MB.
      **********************************************************************/
-    void CacheAll() const { CacheArea(real(-90), real(0),
-                                      real(90), real(360)); }
+    void CacheAll() const { CacheArea(real(-Math::qd), real(0),
+                                      real( Math::qd), real(Math::td)); }
 
     /**
      * Clear the cache.  This never throws an error.  (This does nothing with a
@@ -415,7 +412,7 @@ namespace GeographicLib {
      * @return north edge of the cached area; the cache includes this edge.
      **********************************************************************/
     Math::real CacheNorth() const {
-      return _cache ? 90 - (_yoffset + _cubic) / _rlatres : 0;
+      return _cache ? real(Math::qd) - (_yoffset + _cubic) / _rlatres : 0;
     }
 
     /**
@@ -423,7 +420,9 @@ namespace GeographicLib {
      *   unless it's the south pole.
      **********************************************************************/
     Math::real CacheSouth() const {
-      return _cache ? 90 - ( _yoffset + _ysize - 1 - _cubic) / _rlatres : 0;
+      return _cache ?
+        real(Math::qd) - ( _yoffset + _ysize - 1 - _cubic) / _rlatres :
+        0;
     }
 
     /**
@@ -432,7 +431,7 @@ namespace GeographicLib {
      * (The WGS84 value is returned because the supported geoid models are all
      * based on this ellipsoid.)
      **********************************************************************/
-    Math::real MajorRadius() const
+    Math::real EquatorialRadius() const
     { return Constants::WGS84_a(); }
 
     /**

@@ -2,8 +2,8 @@
  * \file SphericalHarmonic.hpp
  * \brief Header for GeographicLib::SphericalHarmonic class
  *
- * Copyright (c) Charles Karney (2011) <charles@karney.com> and licensed under
- * the MIT/X11 License.  For more information, see
+ * Copyright (c) Charles Karney (2011-2019) <karney@alum.mit.edu> and licensed
+ * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
 
@@ -51,7 +51,9 @@ namespace GeographicLib {
    * - R. E. Deakin, Derivatives of the earth's potentials, Geomatics
    *   Research Australasia 68, 31--60, (June 1998).
    * - W. A. Heiskanen and H. Moritz, Physical Geodesy, (Freeman, San
-   *   Francisco, 1967).  (See Sec. 1-14, for a definition of Pbar.)
+   *   Francisco, 1967).
+   *   https://archive.org/details/HeiskanenMoritz1967PhysicalGeodesy
+   *   (See Sec. 1-14, for a definition of Pbar.)
    * - S. A. Holmes and W. E. Featherstone,
    *   <a href="https://doi.org/10.1007/s00190-002-0216-2">
    *   A unified approach to the Clenshaw summation and the recursive
@@ -82,8 +84,8 @@ namespace GeographicLib {
        * <b>P</b><sub><i>n</i></sub><sup><i>m</i></sup>(\e z), where
        * <b>P</b><sub><i>n</i></sub><sup><i>m</i></sup>(\e z) is Ferrers
        * function (also known as the Legendre function on the cut or the
-       * associated Legendre polynomial) http://dlmf.nist.gov/14.7.E10 and \e k
-       * = 1 for \e m = 0 and \e k = 2 otherwise.
+       * associated Legendre polynomial) https://dlmf.nist.gov/14.7.E10 and
+       * \e k = 1 for \e m = 0 and \e k = 2 otherwise.
        *
        * The mean squared value of
        * <i>P</i><sub><i>nm</i></sub><sup>full</sup>(cos&theta;)
@@ -104,8 +106,8 @@ namespace GeographicLib {
        * <b>P</b><sub><i>n</i></sub><sup><i>m</i></sup>(\e z), where
        * <b>P</b><sub><i>n</i></sub><sup><i>m</i></sup>(\e z) is Ferrers
        * function (also known as the Legendre function on the cut or the
-       * associated Legendre polynomial) http://dlmf.nist.gov/14.7.E10 and \e k
-       * = 1 for \e m = 0 and \e k = 2 otherwise.
+       * associated Legendre polynomial) https://dlmf.nist.gov/14.7.E10 and
+       * \e k = 1 for \e m = 0 and \e k = 2 otherwise.
        *
        * The mean squared value of
        * <i>P</i><sub><i>nm</i></sub><sup>schmidt</sup>(cos&theta;)
@@ -231,6 +233,7 @@ namespace GeographicLib {
           (_c, f, x, y, z, _a, dummy, dummy, dummy);
         break;
       case SCHMIDT:
+      default:                  // To avoid compiler warnings
         v = SphericalEngine::Value<false, SphericalEngine::SCHMIDT, 1>
           (_c, f, x, y, z, _a, dummy, dummy, dummy);
         break;
@@ -264,6 +267,7 @@ namespace GeographicLib {
           (_c, f, x, y, z, _a, gradx, grady, gradz);
         break;
       case SCHMIDT:
+      default:                  // To avoid compiler warnings
         v = SphericalEngine::Value<true, SphericalEngine::SCHMIDT, 1>
           (_c, f, x, y, z, _a, gradx, grady, gradz);
         break;

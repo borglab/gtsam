@@ -2,7 +2,7 @@
  * \file EllipticFunction.hpp
  * \brief Header for GeographicLib::EllipticFunction class
  *
- * Copyright (c) Charles Karney (2008-2016) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2024) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -21,10 +21,10 @@ namespace GeographicLib {
    * GeodesicExact, and TransverseMercatorExact.  Two categories of function
    * are provided:
    * - \e static functions to compute symmetric elliptic integrals
-   *   (http://dlmf.nist.gov/19.16.i)
+   *   (https://dlmf.nist.gov/19.16.i)
    * - \e member functions to compute Legrendre's elliptic
-   *   integrals (http://dlmf.nist.gov/19.2.ii) and the
-   *   Jacobi elliptic functions (http://dlmf.nist.gov/22.2).
+   *   integrals (https://dlmf.nist.gov/19.2.ii) and the
+   *   Jacobi elliptic functions (https://dlmf.nist.gov/22.2).
    * .
    * In the latter case, an object is constructed giving the modulus \e k (and
    * optionally the parameter &alpha;<sup>2</sup>).  The modulus is always
@@ -44,9 +44,10 @@ namespace GeographicLib {
    * The computation of the elliptic integrals uses the algorithms given in
    * - B. C. Carlson,
    *   <a href="https://doi.org/10.1007/BF02198293"> Computation of real or
-   *   complex elliptic integrals</a>, Numerical Algorithms 10, 13--26 (1995)
+   *   complex elliptic integrals</a>, Numerical Algorithms 10, 13--26 (1995);
+   *   <a href="https://arxiv.org/abs/math/9409227">preprint</a>.
    * .
-   * with the additional optimizations given in http://dlmf.nist.gov/19.36.i.
+   * with the additional optimizations given in https://dlmf.nist.gov/19.36.i.
    * The computation of the Jacobi elliptic functions uses the algorithm given
    * in
    * - R. Bulirsch,
@@ -54,7 +55,7 @@ namespace GeographicLib {
    *   Elliptic Integrals and Elliptic Functions</a>, Numericshe Mathematik 7,
    *   78--90 (1965).
    * .
-   * The notation follows http://dlmf.nist.gov/19 and http://dlmf.nist.gov/22
+   * The notation follows https://dlmf.nist.gov/19 and https://dlmf.nist.gov/22
    *
    * Example of use:
    * \include example-EllipticFunction.cpp
@@ -63,9 +64,9 @@ namespace GeographicLib {
   private:
     typedef Math::real real;
 
-    enum { num_ = 13 }; // Max depth required for sncndn; probably 5 is enough.
+    enum { num_ = 25 }; // Max depth required for sncndn; probably 5 is enough.
     real _k2, _kp2, _alpha2, _alphap2, _eps;
-    real _Kc, _Ec, _Dc, _Pic, _Gc, _Hc;
+    real _kKc, _eEc, _dDc, _pPic, _gGc, _hHc;
   public:
     /** \name Constructor
      **********************************************************************/
@@ -182,37 +183,37 @@ namespace GeographicLib {
      *
      * @return \e K(\e k).
      *
-     * \e K(\e k) is defined in http://dlmf.nist.gov/19.2.E4
+     * \e K(\e k) is defined in https://dlmf.nist.gov/19.2.E4
      * \f[
      *   K(k) = \int_0^{\pi/2} \frac1{\sqrt{1-k^2\sin^2\phi}}\,d\phi.
      * \f]
      **********************************************************************/
-    Math::real K() const { return _Kc; }
+    Math::real K() const { return _kKc; }
 
     /**
      * The complete integral of the second kind.
      *
      * @return \e E(\e k).
      *
-     * \e E(\e k) is defined in http://dlmf.nist.gov/19.2.E5
+     * \e E(\e k) is defined in https://dlmf.nist.gov/19.2.E5
      * \f[
      *   E(k) = \int_0^{\pi/2} \sqrt{1-k^2\sin^2\phi}\,d\phi.
      * \f]
      **********************************************************************/
-    Math::real E() const { return _Ec; }
+    Math::real E() const { return _eEc; }
 
     /**
      * Jahnke's complete integral.
      *
      * @return \e D(\e k).
      *
-     * \e D(\e k) is defined in http://dlmf.nist.gov/19.2.E6
+     * \e D(\e k) is defined in https://dlmf.nist.gov/19.2.E6
      * \f[
      *   D(k) =
      *   \int_0^{\pi/2} \frac{\sin^2\phi}{\sqrt{1-k^2\sin^2\phi}}\,d\phi.
      * \f]
      **********************************************************************/
-    Math::real D() const { return _Dc; }
+    Math::real D() const { return _dDc; }
 
     /**
      * The difference between the complete integrals of the first and second
@@ -220,7 +221,7 @@ namespace GeographicLib {
      *
      * @return \e K(\e k) &minus; \e E(\e k).
      **********************************************************************/
-    Math::real KE() const { return _k2 * _Dc; }
+    Math::real KE() const { return _k2 * _dDc; }
 
     /**
      * The complete integral of the third kind.
@@ -228,13 +229,13 @@ namespace GeographicLib {
      * @return &Pi;(&alpha;<sup>2</sup>, \e k).
      *
      * &Pi;(&alpha;<sup>2</sup>, \e k) is defined in
-     * http://dlmf.nist.gov/19.2.E7
+     * https://dlmf.nist.gov/19.2.E7
      * \f[
      *   \Pi(\alpha^2, k) = \int_0^{\pi/2}
      *     \frac1{\sqrt{1-k^2\sin^2\phi}(1 - \alpha^2\sin^2\phi)}\,d\phi.
      * \f]
      **********************************************************************/
-    Math::real Pi() const { return _Pic; }
+    Math::real Pi() const { return _pPic; }
 
     /**
      * Legendre's complete geodesic longitude integral.
@@ -247,7 +248,7 @@ namespace GeographicLib {
      *     \frac{\sqrt{1-k^2\sin^2\phi}}{1 - \alpha^2\sin^2\phi}\,d\phi.
      * \f]
      **********************************************************************/
-    Math::real G() const { return _Gc; }
+    Math::real G() const { return _gGc; }
 
     /**
      * Cayley's complete geodesic longitude difference integral.
@@ -261,7 +262,7 @@ namespace GeographicLib {
      *     \,d\phi.
      * \f]
      **********************************************************************/
-    Math::real H() const { return _Hc; }
+    Math::real H() const { return _hHc; }
     ///@}
 
     /** \name Incomplete elliptic integrals.
@@ -273,7 +274,7 @@ namespace GeographicLib {
      * @param[in] phi
      * @return \e F(&phi;, \e k).
      *
-     * \e F(&phi;, \e k) is defined in http://dlmf.nist.gov/19.2.E4
+     * \e F(&phi;, \e k) is defined in https://dlmf.nist.gov/19.2.E4
      * \f[
      *   F(\phi, k) = \int_0^\phi \frac1{\sqrt{1-k^2\sin^2\theta}}\,d\theta.
      * \f]
@@ -286,7 +287,7 @@ namespace GeographicLib {
      * @param[in] phi
      * @return \e E(&phi;, \e k).
      *
-     * \e E(&phi;, \e k) is defined in http://dlmf.nist.gov/19.2.E5
+     * \e E(&phi;, \e k) is defined in https://dlmf.nist.gov/19.2.E5
      * \f[
      *   E(\phi, k) = \int_0^\phi \sqrt{1-k^2\sin^2\theta}\,d\theta.
      * \f]
@@ -318,7 +319,7 @@ namespace GeographicLib {
      * @return &Pi;(&phi;, &alpha;<sup>2</sup>, \e k).
      *
      * &Pi;(&phi;, &alpha;<sup>2</sup>, \e k) is defined in
-     * http://dlmf.nist.gov/19.2.E7
+     * https://dlmf.nist.gov/19.2.E7
      * \f[
      *   \Pi(\phi, \alpha^2, k) = \int_0^\phi
      *     \frac1{\sqrt{1-k^2\sin^2\theta}(1 - \alpha^2\sin^2\theta)}\,d\theta.
@@ -332,7 +333,7 @@ namespace GeographicLib {
      * @param[in] phi
      * @return \e D(&phi;, \e k).
      *
-     * \e D(&phi;, \e k) is defined in http://dlmf.nist.gov/19.2.E4
+     * \e D(&phi;, \e k) is defined in https://dlmf.nist.gov/19.2.E4
      * \f[
      *   D(\phi, k) = \int_0^\phi
      *    \frac{\sin^2\theta}{\sqrt{1-k^2\sin^2\theta}}\,d\theta.
@@ -398,6 +399,7 @@ namespace GeographicLib {
 
     /** \name Incomplete integrals in terms of Jacobi elliptic functions.
      **********************************************************************/
+    ///@{
     /**
      * The incomplete integral of the first kind in terms of Jacobi elliptic
      * functions.
@@ -564,12 +566,33 @@ namespace GeographicLib {
      **********************************************************************/
     ///@{
     /**
+     * The Jacobi amplitude function.
+     *
+     * @param[in] x the argument.
+     * @return the value of am(\e x, \e k)
+     **********************************************************************/
+    Math::real am(real x) const;
+
+    /**
+     * The Jacobi amplitude function and associated elliptic functions.
+     *
+     * @param[in] x the argument.
+     * @param[out] sn sn(\e x, \e k).
+     * @param[out] cn cn(\e x, \e k).
+     * @param[out] dn dn(\e x, \e k).
+     * @return the value of am(\e x, \e k)
+     **********************************************************************/
+    Math::real am(real x, real& sn, real& cn, real& dn) const;
+
+    /**
      * The Jacobi elliptic functions.
      *
      * @param[in] x the argument.
      * @param[out] sn sn(\e x, \e k).
      * @param[out] cn cn(\e x, \e k).
      * @param[out] dn dn(\e x, \e k).
+     *
+     * For this routine <i>k</i> is restricted to the interval [0, 1].
      **********************************************************************/
     void sncndn(real x, real& sn, real& cn, real& dn) const;
 
@@ -598,11 +621,13 @@ namespace GeographicLib {
      * @param[in] z
      * @return <i>R</i><sub><i>F</i></sub>(\e x, \e y, \e z).
      *
-     * <i>R</i><sub><i>F</i></sub> is defined in http://dlmf.nist.gov/19.16.E1
+     * <i>R</i><sub><i>F</i></sub> is defined in https://dlmf.nist.gov/19.16.E1
      * \f[ R_F(x, y, z) = \frac12
-     *       \int_0^\infty\frac1{\sqrt{(t + x) (t + y) (t + z)}}\, dt \f]
-     * If one of the arguments is zero, it is more efficient to call the
-     * two-argument version of this function with the non-zero arguments.
+     *       \int_0^\infty\frac1{\sqrt{(t + x) (t + y) (t + z)}}\, dt, \f]
+     * where at most one of arguments, \e x, \e y, \e z, can be zero and those
+     * arguments that are nonzero must be positive.  If one of the arguments is
+     * zero, it is more efficient to call the two-argument version of this
+     * function with the non-zero arguments.
      **********************************************************************/
     static real RF(real x, real y, real z);
 
@@ -613,6 +638,8 @@ namespace GeographicLib {
      * @param[in] x
      * @param[in] y
      * @return <i>R</i><sub><i>F</i></sub>(\e x, \e y, 0).
+     *
+     * The arguments \e x and \e y must be positive.
      **********************************************************************/
     static real RF(real x, real y);
 
@@ -625,9 +652,10 @@ namespace GeographicLib {
      * @return <i>R</i><sub><i>C</i></sub>(\e x, \e y) =
      *   <i>R</i><sub><i>F</i></sub>(\e x, \e y, \e y).
      *
-     * <i>R</i><sub><i>C</i></sub> is defined in http://dlmf.nist.gov/19.2.E17
+     * <i>R</i><sub><i>C</i></sub> is defined in https://dlmf.nist.gov/19.2.E17
      * \f[ R_C(x, y) = \frac12
-     *       \int_0^\infty\frac1{\sqrt{t + x}(t + y)}\,dt \f]
+     *       \int_0^\infty\frac1{\sqrt{t + x}(t + y)}\,dt, \f]
+     * where \e x &ge; 0 and \e y > 0.
      **********************************************************************/
     static real RC(real x, real y);
 
@@ -644,10 +672,12 @@ namespace GeographicLib {
      *       \int_0^\infty[(t + x) (t + y) (t + z)]^{-1/2}
      *        \biggl(
      *             \frac x{t + x} + \frac y{t + y} + \frac z{t + z}
-     *        \biggr)t\,dt \f]
-     * See also http://dlmf.nist.gov/19.16.E3.
-     * If one of the arguments is zero, it is more efficient to call the
-     * two-argument version of this function with the non-zero arguments.
+     *        \biggr)t\,dt, \f]
+     * where at most one of arguments, \e x, \e y, \e z, can be zero and those
+     * arguments that are nonzero must be positive.  See also
+     * https://dlmf.nist.gov/19.23.E6_5.  If one of the arguments is zero, it
+     * is more efficient to call the two-argument version of this function with
+     * the non-zero arguments.
      **********************************************************************/
     static real RG(real x, real y, real z);
 
@@ -658,6 +688,8 @@ namespace GeographicLib {
      * @param[in] x
      * @param[in] y
      * @return <i>R</i><sub><i>G</i></sub>(\e x, \e y, 0).
+     *
+     * The arguments \e x and \e y must be positive.
      **********************************************************************/
     static real RG(real x, real y);
 
@@ -670,10 +702,12 @@ namespace GeographicLib {
      * @param[in] p
      * @return <i>R</i><sub><i>J</i></sub>(\e x, \e y, \e z, \e p).
      *
-     * <i>R</i><sub><i>J</i></sub> is defined in http://dlmf.nist.gov/19.16.E2
+     * <i>R</i><sub><i>J</i></sub> is defined in https://dlmf.nist.gov/19.16.E2
      * \f[ R_J(x, y, z, p) = \frac32
      *       \int_0^\infty
-     *       [(t + x) (t + y) (t + z)]^{-1/2} (t + p)^{-1}\, dt \f]
+     *       [(t + x) (t + y) (t + z)]^{-1/2} (t + p)^{-1}\, dt, \f]
+     * where \e p > 0, and \e x, \e y, \e z are nonnegative with at most one of
+     * them being 0.
      **********************************************************************/
     static real RJ(real x, real y, real z, real p);
 
@@ -687,9 +721,11 @@ namespace GeographicLib {
      * @return <i>R</i><sub><i>D</i></sub>(\e x, \e y, \e z) =
      *   <i>R</i><sub><i>J</i></sub>(\e x, \e y, \e z, \e z).
      *
-     * <i>R</i><sub><i>D</i></sub> is defined in http://dlmf.nist.gov/19.16.E5
+     * <i>R</i><sub><i>D</i></sub> is defined in https://dlmf.nist.gov/19.16.E5
      * \f[ R_D(x, y, z) = \frac32
-     *       \int_0^\infty[(t + x) (t + y)]^{-1/2} (t + z)^{-3/2}\, dt \f]
+     *       \int_0^\infty[(t + x) (t + y)]^{-1/2} (t + z)^{-3/2}\, dt, \f]
+     * where \e x, \e y, \e z are positive except that at most one of \e x and
+     * \e y can be 0.
      **********************************************************************/
     static real RD(real x, real y, real z);
     ///@}

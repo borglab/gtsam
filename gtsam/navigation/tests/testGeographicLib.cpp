@@ -33,11 +33,7 @@ using namespace GeographicLib;
 // Dekalb-Peachtree Airport runway 2L
 static const double lat = 33.87071, lon = -84.30482, h = 274;
 
-#if GEOGRAPHICLIB_VERSION_MINOR<37
-static const auto& kWGS84 = Geocentric::WGS84;
-#else
 static const auto& kWGS84 = Geocentric::WGS84();
-#endif
 
 //**************************************************************************
 TEST( GeographicLib, Geocentric) {

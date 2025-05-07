@@ -21,6 +21,17 @@ int main() {
     double perimeter, area;
     unsigned n = poly.Compute(false, true, perimeter, area);
     cout << n << " " << perimeter << " " << area << "\n";
+    // This adds a test for a bug fix for AddEdge.  (Implements the
+    // Planimeter29 test in geodtest.c.)
+    PolygonArea poly1(geod);
+    poly1.AddPoint(0,0);
+    poly1.AddEdge(90,1000);
+    poly1.AddEdge(0,1000);
+    poly1.AddEdge(-90,1000);
+    n = poly1.Compute(false, true, perimeter, area);
+    // The area should be 1e6.  Prior to the fix it was 1e6 - A/2, where
+    // A = ellipsoid area.
+    cout << n << " " << perimeter << " " << area << "\n";
   }
   catch (const exception& e) {
     cerr << "Caught exception: " << e.what() << "\n";

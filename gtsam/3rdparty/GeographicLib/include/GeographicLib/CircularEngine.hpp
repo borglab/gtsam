@@ -2,7 +2,7 @@
  * \file CircularEngine.hpp
  * \brief Header for GeographicLib::CircularEngine class
  *
- * Copyright (c) Charles Karney (2011-2015) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2015) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -56,7 +56,7 @@ namespace GeographicLib {
       FULL = SphericalEngine::FULL,
       SCHMIDT = SphericalEngine::SCHMIDT,
     };
-    int _M;
+    int _mM;
     bool _gradp;
     unsigned _norm;
     real _a, _r, _u, _t;
@@ -69,19 +69,19 @@ namespace GeographicLib {
     friend class SphericalEngine;
     CircularEngine(int M, bool gradp, unsigned norm,
                    real a, real r, real u, real t)
-      : _M(M)
+      : _mM(M)
       , _gradp(gradp)
       , _norm(norm)
       , _a(a)
       , _r(r)
       , _u(u)
       , _t(t)
-      , _wc(std::vector<real>(_M + 1, 0))
-      , _ws(std::vector<real>(_M + 1, 0))
-      , _wrc(std::vector<real>(_gradp ? _M + 1 : 0, 0))
-      , _wrs(std::vector<real>(_gradp ? _M + 1 : 0, 0))
-      , _wtc(std::vector<real>(_gradp ? _M + 1 : 0, 0))
-      , _wts(std::vector<real>(_gradp ? _M + 1 : 0, 0))
+      , _wc(std::vector<real>(_mM + 1, 0))
+      , _ws(std::vector<real>(_mM + 1, 0))
+      , _wrc(std::vector<real>(_gradp ? _mM + 1 : 0, 0))
+      , _wrs(std::vector<real>(_gradp ? _mM + 1 : 0, 0))
+      , _wtc(std::vector<real>(_gradp ? _mM + 1 : 0, 0))
+      , _wts(std::vector<real>(_gradp ? _mM + 1 : 0, 0))
       {
         _q = _a / _r;
         _uq = _u * _q;
@@ -108,7 +108,7 @@ namespace GeographicLib {
      * of SphericalHarmonic::Circle.
      **********************************************************************/
     CircularEngine()
-      : _M(-1)
+      : _mM(-1)
       , _gradp(true)
       , _u(0)
       , _t(1)

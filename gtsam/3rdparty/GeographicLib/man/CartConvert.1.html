@@ -32,7 +32,7 @@
 <dt id="r"><b>-r</b></dt>
 <dd>
 
-<p>perform the reverse projection. <i>x</i>, <i>y</i>, <i>z</i> are given on standard input and each line of standard output gives <i>latitude</i>, <i>longitude</i>, <i>height</i>.</p>
+<p>perform the reverse projection. <i>x</i>, <i>y</i>, <i>z</i> are given on standard input and each line of standard output gives <i>latitude</i>, <i>longitude</i>, <i>height</i>. In general there are multiple solutions and the result which minimizes the absolute value of <i>height</i> is returned, i.e., (<i>latitude</i>, <i>longitude</i>) corresponds to the closest point on the ellipsoid.</p>
 
 </dd>
 <dt id="l-lat0-lon0-h0"><b>-l</b> <i>lat0</i> <i>lon0</i> <i>h0</i></dt>
@@ -111,12 +111,12 @@
 
 <h1 id="EXAMPLES">EXAMPLES</h1>
 
-<pre><code>   echo 33.3 44.4 6000 | CartConvert
-   =&gt; 3816209.60 3737108.55 3485109.57
-   echo 33.3 44.4 6000 | CartConvert -l 33 44 20
-   =&gt; 37288.97 33374.29 5783.64
-   echo 30000 30000 0 | CartConvert -r
-   =&gt; 6.483 45 -6335709.73</code></pre>
+<pre><code>echo 33.3 44.4 6000 | CartConvert
+=&gt; 3816209.60 3737108.55 3485109.57
+echo 33.3 44.4 6000 | CartConvert -l 33 44 20
+=&gt; 37288.97 33374.29 5783.64
+echo 30000 30000 0 | CartConvert -r
+=&gt; 6.483 45 -6335709.73</code></pre>
 
 <h1 id="ERRORS">ERRORS</h1>
 

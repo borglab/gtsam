@@ -10,5 +10,5 @@ Version: @PACKAGE_VERSION@
 URL: https://geographiclib.sourceforge.io
 
 Requires:
-Libs: -L${libdir} -lGeographic
+Libs: -L${libdir} -l@PACKAGE_NAME@@lib_postfix@
 Cflags: -I${includedir}

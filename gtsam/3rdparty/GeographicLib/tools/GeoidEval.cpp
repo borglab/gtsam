@@ -2,7 +2,7 @@
  * \file GeoidEval.cpp
  * \brief Command line utility for evaluating geoid heights
  *
- * Copyright (c) Charles Karney (2009-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2009-2017) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  *
@@ -19,9 +19,8 @@
 #include <GeographicLib/GeoCoords.hpp>
 
 #if defined(_MSC_VER)
-// Squelch warnings about constant conditional expressions and potentially
-// uninitialized local variables
-#  pragma warning (disable: 4127 4701)
+// Squelch warnings about potentially uninitialized local variables
+#  pragma warning (disable: 4701)
 #endif
 
 #include "GeoidEval.usage"

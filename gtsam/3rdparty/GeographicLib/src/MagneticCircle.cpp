@@ -2,7 +2,7 @@
  * \file MagneticCircle.cpp
  * \brief Implementation for GeographicLib::MagneticCircle class
  *
- * Copyright (c) Charles Karney (2011-2015) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2021) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -16,6 +16,40 @@ namespace GeographicLib {
 
   using namespace std;
 
+  void MagneticCircle::FieldGeocentric(real slam, real clam,
+                                       real& BX, real& BY, real& BZ,
+                                       real& BXt, real& BYt, real& BZt) const {
+    real BXc = 0, BYc = 0, BZc = 0;
+    _circ0(slam, clam, BX, BY, BZ);
+    _circ1(slam, clam, BXt, BYt, BZt);
+    if (_constterm)
+      _circ2(slam, clam, BXc, BYc, BZc);
+    if (_interpolate) {
+      BXt = (BXt - BX) / _dt0;
+      BYt = (BYt - BY) / _dt0;
+      BZt = (BZt - BZ) / _dt0;
+    }
+    BX += _t1 * BXt + BXc;
+    BY += _t1 * BYt + BYc;
+    BZ += _t1 * BZt + BZc;
+
+    BXt *= - _a;
+    BYt *= - _a;
+    BZt *= - _a;
+
+    BX *= - _a;
+    BY *= - _a;
+    BZ *= - _a;
+  }
+
+  void MagneticCircle::FieldGeocentric(real lon,
+                                       real& BX, real& BY, real& BZ,
+                                       real& BXt, real& BYt, real& BZt) const {
+    real slam, clam;
+    Math::sincosd(lon, slam, clam);
+    FieldGeocentric(slam, clam, BX, BY, BZ, BXt, BYt, BZt);
+  }
+
   void MagneticCircle::Field(real lon, bool diffp,
                              real& Bx, real& By, real& Bz,
                              real& Bxt, real& Byt, real& Bzt) const {
@@ -23,30 +57,11 @@ namespace GeographicLib {
     Math::sincosd(lon, slam, clam);
     real M[Geocentric::dim2_];
     Geocentric::Rotation(_sphi, _cphi, slam, clam, M);
-    real BX0, BY0, BZ0, BX1, BY1, BZ1; // Components in geocentric basis
-    real BXc = 0, BYc = 0, BZc = 0;
-    _circ0(slam, clam, BX0, BY0, BZ0);
-    _circ1(slam, clam, BX1, BY1, BZ1);
-    if (_constterm)
-      _circ2(slam, clam, BXc, BYc, BZc);
-    if (_interpolate) {
-      BX1 = (BX1 - BX0) / _dt0;
-      BY1 = (BY1 - BY0) / _dt0;
-      BZ1 = (BZ1 - BZ0) / _dt0;
-    }
-    BX0 += _t1 * BX1 + BXc;
-    BY0 += _t1 * BY1 + BYc;
-    BZ0 += _t1 * BZ1 + BZc;
-    if (diffp) {
-      Geocentric::Unrotate(M, BX1, BY1, BZ1, Bxt, Byt, Bzt);
-      Bxt *= - _a;
-      Byt *= - _a;
-      Bzt *= - _a;
-    }
-    Geocentric::Unrotate(M, BX0, BY0, BZ0, Bx, By, Bz);
-    Bx *= - _a;
-    By *= - _a;
-    Bz *= - _a;
+    real BX, BY, BZ, BXt, BYt, BZt; // Components in geocentric basis
+    FieldGeocentric(slam, clam, BX, BY, BZ, BXt, BYt, BZt);
+    if (diffp)
+      Geocentric::Unrotate(M, BXt, BYt, BZt, Bxt, Byt, Bzt);
+    Geocentric::Unrotate(M, BX, BY, BZ, Bx, By, Bz);
   }
 
 } // namespace GeographicLib

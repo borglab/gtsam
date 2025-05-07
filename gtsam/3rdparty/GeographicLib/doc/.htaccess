@@ -1,0 +1,5 @@
+Options +Indexes +FollowSymLinks
+IndexOptions FancyIndexing SuppressSize SuppressDescription
+IndexOrderDefault Descending Date
+IndexIgnore HEADER.html FOOTER.html
+ReadmeName FOOTER.html

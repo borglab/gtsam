@@ -1,6 +1,5 @@
+cmake_minimum_required (VERSION 3.17.0)
 project (geoidtest)
-
-cmake_minimum_required (VERSION 2.8.8)
 
 # Set a default build type for single-configuration cmake generators if
 # no build type is set.
@@ -20,7 +19,6 @@ else ()
 endif ()
 
 find_package (GeographicLib REQUIRED COMPONENTS SHARED)
-include_directories (${GeographicLib_INCLUDE_DIRS})
 
 add_executable (${PROJECT_NAME} ${PROJECT_NAME}.c cgeoid.cpp)
 target_link_libraries (${PROJECT_NAME} ${GeographicLib_LIBRARIES})

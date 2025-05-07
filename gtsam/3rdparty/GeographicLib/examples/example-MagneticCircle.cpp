@@ -1,4 +1,6 @@
 // Example of using the GeographicLib::MagneticCircle class
+// This requires that the wmm2010 magnetic model be installed; see
+// https://geographiclib.sourceforge.io/C++/doc/magnetic.html#magneticinst
 
 #include <iostream>
 #include <exception>

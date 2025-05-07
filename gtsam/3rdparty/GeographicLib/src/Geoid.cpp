@@ -2,7 +2,7 @@
  * \file Geoid.cpp
  * \brief Implementation for GeographicLib::Geoid class
  *
- * Copyright (c) Charles Karney (2009-2015) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2009-2020) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -47,6 +47,7 @@ namespace GeographicLib {
   //   F. H. Lesh,
   //   Multi-dimensional least-squares polynomial curve fitting,
   //   CACM 2, 29-30 (1959).
+  //   https://doi.org/10.1145/368424.368443
   //
   // Here's the Maxima code to generate this matrix:
   //
@@ -208,8 +209,7 @@ namespace GeographicLib {
     , _eps( sqrt(numeric_limits<real>::epsilon()) )
     , _threadsafe(false)        // Set after cache is read
   {
-    GEOGRAPHICLIB_STATIC_ASSERT(sizeof(pixel_t) == pixel_size_,
-                                "pixel_t has the wrong size");
+    static_assert(sizeof(pixel_t) == pixel_size_, "pixel_t has the wrong size");
     if (_dir.empty())
       _dir = DefaultGeoidPath();
     _filename = _dir + "/" + _name + (pixel_size_ != 4 ? ".pgm" : ".pgm4");
@@ -232,7 +232,7 @@ namespace GeographicLib {
         string commentid, key;
         if (!(is >> commentid >> key) || commentid != "#")
           continue;
-        if (key == "Description" || key =="DateTime") {
+        if (key == "Description" || key == "DateTime") {
           string::size_type p =
             s.find_first_not_of(" \t", unsigned(is.tellg()));
           if (p != string::npos)
@@ -289,8 +289,8 @@ namespace GeographicLib {
       // Possibly this test should be "<" because the file contains, e.g., a
       // second image.  However, for now we are more strict.
       throw GeographicErr("File has the wrong length " + _filename);
-    _rlonres = _width / real(360);
-    _rlatres = (_height - 1) / real(180);
+    _rlonres = _width / real(Math::td);
+    _rlatres = (_height - 1) / real(Math::hd);
     _cache = false;
     _ix = _width;
     _iy = _height;
@@ -304,8 +304,9 @@ namespace GeographicLib {
   }
 
   Math::real Geoid::height(real lat, real lon) const {
+    using std::isnan;           // Needed for Centos 7, ubuntu 14
     lat = Math::LatFix(lat);
-    if (Math::isnan(lat) || Math::isnan(lon)) {
+    if (isnan(lat) || isnan(lon)) {
       return Math::NaN();
     }
     lon = Math::AngNormalize(lon);
@@ -416,7 +417,7 @@ namespace GeographicLib {
     west = Math::AngNormalize(west); // west in [-180, 180)
     east = Math::AngNormalize(east);
     if (east <= west)
-      east += 360;              // east - west in (0, 360]
+      east += Math::td;         // east - west in (0, 360]
     int
       iw = int(floor(west * _rlonres)),
       ie = int(floor(east * _rlonres)),
@@ -485,7 +486,7 @@ namespace GeographicLib {
     }
   }
 
-  std::string Geoid::DefaultGeoidPath() {
+  string Geoid::DefaultGeoidPath() {
     string path;
     char* geoidpath = getenv("GEOGRAPHICLIB_GEOID_PATH");
     if (geoidpath)
@@ -498,7 +499,7 @@ namespace GeographicLib {
     return (!path.empty() ? path : string(GEOGRAPHICLIB_DATA)) + "/geoids";
   }
 
-  std::string Geoid::DefaultGeoidName() {
+  string Geoid::DefaultGeoidName() {
     string name;
     char* geoidname = getenv("GEOGRAPHICLIB_GEOID_NAME");
     if (geoidname)

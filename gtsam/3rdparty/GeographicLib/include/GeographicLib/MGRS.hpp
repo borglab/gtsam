@@ -2,7 +2,7 @@
  * \file MGRS.hpp
  * \brief Header for GeographicLib::MGRS class
  *
- * Copyright (c) Charles Karney (2008-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2024) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -13,12 +13,6 @@
 #include <GeographicLib/Constants.hpp>
 #include <GeographicLib/UTMUPS.hpp>
 
-#if defined(_MSC_VER)
-// Squelch warnings about dll vs string
-#  pragma warning (push)
-#  pragma warning (disable: 4251)
-#endif
-
 namespace GeographicLib {
 
   /**
@@ -26,17 +20,17 @@ namespace GeographicLib {
    *
    * MGRS is defined in Chapter 3 of
    * - J. W. Hager, L. L. Fry, S. S. Jacks, D. R. Hill,
-   *   <a href="http://earth-info.nga.mil/GandG/publications/tm8358.1/pdf/TM8358_1.pdf">
+   *   <a href="https://web.archive.org/web/20161214054445/http://earth-info.nga.mil/GandG/publications/tm8358.1/pdf/TM8358_1.pdf">
    *   Datums, Ellipsoids, Grids, and Grid Reference Systems</a>,
    *   Defense Mapping Agency, Technical Manual TM8358.1 (1990).
    * .
    * This document has been updated by the two NGA documents
-   * - <a href="http://earth-info.nga.mil/GandG/publications/NGA_STND_0037_2_0_0_GRIDS/NGA.STND.0037_2.0.0_GRIDS.pdf">
+   * - <a href="https://earth-info.nga.mil/php/download.php?file=coord-grids">
    *   Universal Grids and Grid Reference Systems</a>,
-   *   NGA.STND.0037_2.0.0_GRIDS (2014).
-   * - <a href="http://earth-info.nga.mil/GandG/publications/NGA_SIG_0012_2_0_0_UTMUPS/NGA.SIG.0012_2.0.0_UTMUPS.pdf">
+   *   NGA.STND.0037 (2014).
+   * - <a href="https://earth-info.nga.mil/php/download.php?file=coord-utmups">
    *   The Universal Grids and the Transverse Mercator and Polar Stereographic
-   *   Map Projections</a>, NGA.SIG.0012_2.0.0_UTMUPS (2014).
+   *   Map Projections</a>, NGA.SIG.0012 (2014).
    *
    * This implementation has the following properties:
    * - The conversions are closed, i.e., output from Forward is legal input for
@@ -61,7 +55,7 @@ namespace GeographicLib {
    *   class.
    *
    * The <a href="http://www.nga.mil">NGA</a> software package
-   * <a href="http://earth-info.nga.mil/GandG/geotrans/index.html">geotrans</a>
+   * <a href="https://earth-info.nga.mil/index.php?dir=wgs84&action=wgs84#tab_geotrans">geotrans</a>
    * also provides conversions to and from MGRS.  Version 3.0 (and earlier)
    * suffers from some drawbacks:
    * - Inconsistent rules are used to determine the whether a particular MGRS
@@ -82,24 +76,23 @@ namespace GeographicLib {
     static const char* const latband_;
     static const char* const upsband_;
     static const char* const digits_;
+    static const char* const alpha_;
 
     static const int mineasting_[4];
     static const int maxeasting_[4];
     static const int minnorthing_[4];
     static const int maxnorthing_[4];
-    enum {
-      base_ = 10,
-      // Top-level tiles are 10^5 m = 100 km on a side
-      tilelevel_ = 5,
-      // Period of UTM row letters
-      utmrowperiod_ = 20,
-      // Row letters are shifted by 5 for even zones
-      utmevenrowshift_ = 5,
-      // Maximum precision is um
-      maxprec_ = 5 + 6,
-      // For generating digits at maxprec
-      mult_ = 1000000,
-    };
+    static constexpr int base_ = 10;
+    // Top-level tiles are 10^5 m = 100 km on a side
+    static constexpr int tilelevel_ = 5;
+    // Period of UTM row letters
+    static constexpr int utmrowperiod_ = 20;
+    // Row letters are shifted by 5 for even zones
+    static constexpr int utmevenrowshift_ = 5;
+    // Maximum precision is um
+    static constexpr int maxprec_ = 5 + 6;
+    // For generating digits at maxprec
+    static constexpr int mult_ = 1000000;
     static void CheckCoords(bool utmp, bool& northp, real& x, real& y);
     static int UTMRow(int iband, int icol, int irow);
 
@@ -117,9 +110,8 @@ namespace GeographicLib {
     // function isn't currently used.
     static int ApproxLatitudeBand(real y) {
       // northing at tile center in units of tile = 100km
-      using std::floor; using std::abs;
-      real ya = floor( (std::min)(real(88), abs(y/tile_)) ) +
-        real(0.5);
+      using std::floor; using std::fabs; using std::fmin;
+      real ya = floor( fmin(real(88), fabs(y / real(tile_))) ) + real(0.5);
       // convert to lat (mult by 90/100) and then to band (divide by 8)
       // the +1 fine tunes the boundary between bands 3 and 4
       int b = int(floor( ((ya * 9 + 1) / 10) / 8 ));
@@ -137,25 +129,23 @@ namespace GeographicLib {
       // X 9  80:94  15
       return y >= 0 ? b : -(b + 1);
     }
-    // UTMUPS access these enums
-    enum {
-      tile_ = 100000,            // Size MGRS blocks
-      minutmcol_ = 1,
-      maxutmcol_ = 9,
-      minutmSrow_ = 10,
-      maxutmSrow_ = 100,         // Also used for UTM S false northing
-      minutmNrow_ = 0,           // Also used for UTM N false northing
-      maxutmNrow_ = 95,
-      minupsSind_ = 8,           // These 4 ind's apply to easting and northing
-      maxupsSind_ = 32,
-      minupsNind_ = 13,
-      maxupsNind_ = 27,
-      upseasting_ = 20,          // Also used for UPS false northing
-      utmeasting_ = 5,           // UTM false easting
-      // Difference between S hemisphere northing and N hemisphere northing
-      utmNshift_ = (maxutmSrow_ - minutmNrow_) * tile_
-    };
-    MGRS();                     // Disable constructor
+    // UTMUPS accesses these constants
+    static constexpr int tile_ = 100000;    // Size MGRS blocks
+    static constexpr int minutmcol_ = 1;
+    static constexpr int maxutmcol_ = 9;
+    static constexpr int minutmSrow_ = 10;
+    static constexpr int maxutmSrow_ = 100; // Also used for UTM S false northing
+    static constexpr int minutmNrow_ = 0;   // Also used for UTM N false northing
+    static constexpr int maxutmNrow_ = 95;
+    static constexpr int minupsSind_ = 8;   // These 4 ind's apply to easting and northing
+    static constexpr int maxupsSind_ = 32;
+    static constexpr int minupsNind_ = 13;
+    static constexpr int maxupsNind_ = 27;
+    static constexpr int upseasting_ = 20;  // Also used for UPS false northing
+    static constexpr int utmeasting_ = 5;   // UTM false easting
+    // Difference between S hemisphere northing and N hemisphere northing
+    static constexpr int utmNshift_ = (maxutmSrow_ - minutmNrow_) * tile_;
+    MGRS() = delete;            // Disable constructor
 
   public:
 
@@ -316,6 +306,33 @@ namespace GeographicLib {
                         int& zone, bool& northp, real& x, real& y,
                         int& prec, bool centerp = true);
 
+    /**
+     * Split a MGRS grid reference into its components.
+     *
+     * @param[in] mgrs MGRS string, e.g., 38SMB4488.
+     * @param[out] gridzone the grid zone, e.g., 38S.
+     * @param[out] block the 100km block id, e.g., MB.
+     * @param[out] easting the leading digits of the block easting, e.g., 44.
+     * @param[out] northing the leading digits of the block easting, e.g., 88.
+     * @exception GeographicErr if \e mgrs is illegal.
+     *
+     * Only the most rudimentary checking of MGRS grid ref is done: it is
+     * expected to consist of 0-2 digits followed by 1 or 3 letters, followed
+     * (in the case of 3 letters) by an even number (possibly 0) of digits.  In
+     * reporting errors, the letters I and O (illegal in MSRS) are regarded as
+     * non-alphabetic.  The returned \e gridzone will always be non-empty.  The
+     * other output arguments may be empty strings.
+     *
+     * If the first 3 characters of \e mgrs are "INV", then \e gridzone is set
+     * to those 3 characters and the other return arguments are set to empty
+     * strings..
+     *
+     * If an exception is thrown, then the arguments are unchanged.
+     **********************************************************************/
+    static void Decode(const std::string& mgrs,
+                       std::string& gridzone, std::string& block,
+                       std::string& easting, std::string& northing);
+
     /** \name Inspector functions
      **********************************************************************/
     ///@{
@@ -325,7 +342,7 @@ namespace GeographicLib {
      * (The WGS84 value is returned because the UTM and UPS projections are
      * based on this ellipsoid.)
      **********************************************************************/
-    static Math::real MajorRadius() { return UTMUPS::MajorRadius(); }
+    static Math::real EquatorialRadius() { return UTMUPS::EquatorialRadius(); }
 
     /**
      * @return \e f the flattening of the WGS84 ellipsoid.
@@ -347,9 +364,5 @@ namespace GeographicLib {
   };
 
 } // namespace GeographicLib
-
-#if defined(_MSC_VER)
-#  pragma warning (pop)
-#endif
 
 #endif  // GEOGRAPHICLIB_MGRS_HPP

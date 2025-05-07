@@ -2,7 +2,7 @@
  * \file GeodesicLine.hpp
  * \brief Header for GeographicLib::GeodesicLine class
  *
- * Copyright (c) Charles Karney (2009-2016) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2009-2024) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -12,6 +12,7 @@
 
 #include <GeographicLib/Constants.hpp>
 #include <GeographicLib/Geodesic.hpp>
+#include <GeographicLib/GeodesicLineExact.hpp>
 
 namespace GeographicLib {
 
@@ -42,11 +43,13 @@ namespace GeographicLib {
    * The calculations are accurate to better than 15 nm (15 nanometers).  See
    * Sec. 9 of
    * <a href="https://arxiv.org/abs/1102.1215v1">arXiv:1102.1215v1</a> for
-   * details.  The algorithms used by this class are based on series expansions
-   * using the flattening \e f as a small parameter.  These are only accurate
-   * for |<i>f</i>| &lt; 0.02; however reasonably accurate results will be
-   * obtained for |<i>f</i>| &lt; 0.2.  For very eccentric ellipsoids, use
-   * GeodesicLineExact instead.
+   * details.  With \e exact = false (the default) in the constructor for the
+   * Geodesic object, the algorithms used by this class are based on series
+   * expansions using the flattening \e f as a small parameter.  These are only
+   * accurate for |<i>f</i>| &lt; 0.02; however reasonably accurate results
+   * will be obtained for |<i>f</i>| &lt; 0.2.  For very eccentric ellipsoids,
+   * set \e exact = true in the constructor for the Geodesic object; this will
+   * delegate the calculations to GeodesicLineExact.
    *
    * The algorithms are described in
    * - C. F. F. Karney,
@@ -80,14 +83,17 @@ namespace GeographicLib {
 
     real tiny_;
     real _lat1, _lon1, _azi1;
-    real _a, _f, _b, _c2, _f1, _salp0, _calp0, _k2,
+    real _a, _f;
+    bool _exact;
+    real _b, _c2, _f1, _salp0, _calp0, _k2,
       _salp1, _calp1, _ssig1, _csig1, _dn1, _stau1, _ctau1, _somg1, _comg1,
-      _A1m1, _A2m1, _A3c, _B11, _B21, _B31, _A4, _B41;
+      _aA1m1, _aA2m1, _aA3c, _bB11, _bB21, _bB31, _aA4, _bB41;
     real _a13, _s13;
-    // index zero elements of _C1a, _C1pa, _C2a, _C3a are unused
-    real _C1a[nC1_ + 1], _C1pa[nC1p_ + 1], _C2a[nC2_ + 1], _C3a[nC3_],
-      _C4a[nC4_];    // all the elements of _C4a are used
+    // index zero elements of _cC1a, _cC1pa, _cC2a, _cC3a are unused
+    real _cC1a[nC1_ + 1], _cC1pa[nC1p_ + 1], _cC2a[nC2_ + 1], _cC3a[nC3_],
+      _cC4a[nC4_];              // all the elements of _cC4a are used
     unsigned _caps;
+    GeodesicLineExact _lineexact;
 
     void LineInit(const Geodesic& g,
                   real lat1, real lon1,
@@ -98,18 +104,17 @@ namespace GeographicLib {
                  real azi1, real salp1, real calp1,
                  unsigned caps, bool arcmode, real s13_a13);
 
-    enum captype {
-      CAP_NONE = Geodesic::CAP_NONE,
-      CAP_C1   = Geodesic::CAP_C1,
-      CAP_C1p  = Geodesic::CAP_C1p,
-      CAP_C2   = Geodesic::CAP_C2,
-      CAP_C3   = Geodesic::CAP_C3,
-      CAP_C4   = Geodesic::CAP_C4,
-      CAP_ALL  = Geodesic::CAP_ALL,
-      CAP_MASK = Geodesic::CAP_MASK,
-      OUT_ALL  = Geodesic::OUT_ALL,
-      OUT_MASK = Geodesic::OUT_MASK,
-    };
+    static constexpr unsigned CAP_NONE = Geodesic::CAP_NONE;
+    static constexpr unsigned CAP_C1   = Geodesic::CAP_C1;
+    static constexpr unsigned CAP_C1p  = Geodesic::CAP_C1p;
+    static constexpr unsigned CAP_C2   = Geodesic::CAP_C2;
+    static constexpr unsigned CAP_C3   = Geodesic::CAP_C3;
+    static constexpr unsigned CAP_C4   = Geodesic::CAP_C4;
+    static constexpr unsigned CAP_ALL  = Geodesic::CAP_ALL;
+    static constexpr unsigned CAP_MASK = Geodesic::CAP_MASK;
+    static constexpr unsigned OUT_ALL  = Geodesic::OUT_ALL;
+    static constexpr unsigned OUT_MASK = Geodesic::OUT_MASK;
+
   public:
 
     /**
@@ -148,6 +153,12 @@ namespace GeographicLib {
        **********************************************************************/
       DISTANCE      = Geodesic::DISTANCE,
       /**
+       * A combination of the common capabilities: GeodesicLine::LATITUDE,
+       * GeodesicLine::LONGITUDE, GeodesicLine::AZIMUTH, GeodesicLine::DISTANCE.
+       * @hideinitializer
+       **********************************************************************/
+      STANDARD      = Geodesic::STANDARD,
+      /**
        * Allow distance \e s12 to be used as input in the direct geodesic
        * problem.
        * @hideinitializer
@@ -174,12 +185,17 @@ namespace GeographicLib {
        **********************************************************************/
       LONG_UNROLL   = Geodesic::LONG_UNROLL,
       /**
-       * All capabilities, calculate everything.  (LONG_UNROLL is not
-       * included in this mask.)
+       * All capabilities, calculate everything.  (GeodesicLine::LONG_UNROLL is
+       * not included in this mask.)
        * @hideinitializer
        **********************************************************************/
       ALL           = Geodesic::ALL,
     };
+
+    /**
+     * Typedef for the base class implementing geodesics.
+     **********************************************************************/
+    typedef Geodesic BaseClass;
 
     /** \name Constructors
      **********************************************************************/
@@ -637,7 +653,7 @@ namespace GeographicLib {
      * @return \e a1 the arc length (degrees) between the northward equatorial
      *   crossing and point 1.
      *
-     * The result lies in (&minus;180&deg;, 180&deg;].
+     * The result lies in [&minus;180&deg;, 180&deg;].
      **********************************************************************/
     Math::real EquatorialArc() const {
       return Init() ? Math::atan2d(_ssig1, _csig1) : Math::NaN();
@@ -647,7 +663,7 @@ namespace GeographicLib {
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value inherited from the Geodesic object used in the constructor.
      **********************************************************************/
-    Math::real MajorRadius() const
+    Math::real EquatorialRadius() const
     { return Init() ? _a : Math::NaN(); }
 
     /**
@@ -656,6 +672,12 @@ namespace GeographicLib {
      **********************************************************************/
     Math::real Flattening() const
     { return Init() ? _f : Math::NaN(); }
+
+    /**
+     * @return \e exact whether the exact formulation is used.  This is the
+     *   value returned by the Geodesic object used in the constructor.
+     **********************************************************************/
+    bool Exact() const { return _exact; }
 
     /**
      * @return \e caps the computational capabilities that this object was

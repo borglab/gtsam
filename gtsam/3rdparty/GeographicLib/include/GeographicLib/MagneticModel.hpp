@@ -2,7 +2,7 @@
  * \file MagneticModel.hpp
  * \brief Header for GeographicLib::MagneticModel class
  *
- * Copyright (c) Charles Karney (2011-2015) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2011-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -42,9 +42,19 @@ namespace GeographicLib {
    * - WMM2010:
    *   - https://ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml
    *   - https://ngdc.noaa.gov/geomag/WMM/data/WMM2010/WMM2010COF.zip
-   * - WMM2015:
+   * - WMM2015 (deprecated):
    *   - https://ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml
    *   - https://ngdc.noaa.gov/geomag/WMM/data/WMM2015/WMM2015COF.zip
+   * - WMM2015V2:
+   *   - https://ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml
+   *   - https://ngdc.noaa.gov/geomag/WMM/data/WMM2015/WMM2015v2COF.zip
+   * - WMM2020:
+   *   - https://ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml
+   *   - https://ngdc.noaa.gov/geomag/WMM/data/WMM2020/WMM2020COF.zip
+   * - WMM2025:
+   *   - https://www.ncei.noaa.gov/products/world-magnetic-model
+   * - WMMHR2025:
+   *   - https://www.ncei.noaa.gov/products/world-magnetic-model-high-resolution
    * - IGRF11:
    *   - https://ngdc.noaa.gov/IAGA/vmod/igrf.html
    *   - https://ngdc.noaa.gov/IAGA/vmod/igrf11coeffs.txt
@@ -72,19 +82,31 @@ namespace GeographicLib {
     static const int idlength_ = 8;
     std::string _name, _dir, _description, _date, _filename, _id;
     real _t0, _dt0, _tmin, _tmax, _a, _hmin, _hmax;
-    int _Nmodels, _Nconstants;
+    int _nNmodels, _nNconstants, _nmx, _mmx;
     SphericalHarmonic::normalization _norm;
     Geocentric _earth;
-    std::vector< std::vector<real> > _G;
-    std::vector< std::vector<real> > _H;
+    std::vector< std::vector<real> > _gG;
+    std::vector< std::vector<real> > _hH;
     std::vector<SphericalHarmonic> _harm;
     void Field(real t, real lat, real lon, real h, bool diffp,
                real& Bx, real& By, real& Bz,
                real& Bxt, real& Byt, real& Bzt) const;
     void ReadMetadata(const std::string& name);
-    MagneticModel(const MagneticModel&); // copy constructor not allowed
-    MagneticModel& operator=(const MagneticModel&); // nor copy assignment
+    // copy constructor not allowed
+    MagneticModel(const MagneticModel&) = delete;
+    // nor copy assignment
+    MagneticModel& operator=(const MagneticModel&) = delete;
   public:
+
+    /**
+     * Move constructs a magnetic model.
+     **********************************************************************/
+    MagneticModel(MagneticModel&&) = default;
+
+    /**
+     * Move assigns a magnetic model.
+     **********************************************************************/
+    MagneticModel& operator=(MagneticModel&&) = default;
 
     /** \name Setting up the magnetic model
      **********************************************************************/
@@ -96,8 +118,12 @@ namespace GeographicLib {
      * @param[in] path (optional) directory for data file.
      * @param[in] earth (optional) Geocentric object for converting
      *   coordinates; default Geocentric::WGS84().
+     * @param[in] Nmax (optional) if non-negative, truncate the degree of the
+     *   model this value.
+     * @param[in] Mmax (optional) if non-negative, truncate the order of the
+     *   model this value.
      * @exception GeographicErr if the data file cannot be found, is
-     *   unreadable, or is corrupt.
+     *   unreadable, or is corrupt, or if \e Mmax > \e Nmax.
      * @exception std::bad_alloc if the memory necessary for storing the model
      *   can't be allocated.
      *
@@ -115,10 +141,15 @@ namespace GeographicLib {
      * The final earth argument to the constructor specifies an ellipsoid to
      * allow geodetic coordinates to the transformed into the spherical
      * coordinates used in the spherical harmonic sum.
+     *
+     * If \e Nmax &ge; 0 and \e Mmax < 0, then \e Mmax is set to \e Nmax.
+     * After the model is loaded, the maximum degree and order of the model can
+     * be found by the Degree() and Order() methods.
      **********************************************************************/
     explicit MagneticModel(const std::string& name,
                            const std::string& path = "",
-                           const Geocentric& earth = Geocentric::WGS84());
+                           const Geocentric& earth = Geocentric::WGS84(),
+                           int Nmax = -1, int Mmax = -1);
     ///@}
 
     /** \name Compute the magnetic field
@@ -127,7 +158,7 @@ namespace GeographicLib {
     /**
      * Evaluate the components of the geomagnetic field.
      *
-     * @param[in] t the time (years).
+     * @param[in] t the time (fractional years).
      * @param[in] lat latitude of the point (degrees).
      * @param[in] lon longitude of the point (degrees).
      * @param[in] h the height of the point above the ellipsoid (meters).
@@ -136,6 +167,9 @@ namespace GeographicLib {
      *   (nanotesla).
      * @param[out] Bz the vertical (up) component of the magnetic field
      *   (nanotesla).
+     *
+     * Use Utility::fractionalyear to convert a date of the form yyyy-mm or
+     * yyyy-mm-dd into a fractional year.
      **********************************************************************/
     void operator()(real t, real lat, real lon, real h,
                     real& Bx, real& By, real& Bz) const {
@@ -147,7 +181,7 @@ namespace GeographicLib {
      * Evaluate the components of the geomagnetic field and their time
      * derivatives
      *
-     * @param[in] t the time (years).
+     * @param[in] t the time (fractional years).
      * @param[in] lat latitude of the point (degrees).
      * @param[in] lon longitude of the point (degrees).
      * @param[in] h the height of the point above the ellipsoid (meters).
@@ -159,6 +193,9 @@ namespace GeographicLib {
      * @param[out] Bxt the rate of change of \e Bx (nT/yr).
      * @param[out] Byt the rate of change of \e By (nT/yr).
      * @param[out] Bzt the rate of change of \e Bz (nT/yr).
+     *
+     * Use Utility::fractionalyear to convert a date of the form yyyy-mm or
+     * yyyy-mm-dd into a fractional year.
      **********************************************************************/
     void operator()(real t, real lat, real lon, real h,
                     real& Bx, real& By, real& Bz,
@@ -171,7 +208,7 @@ namespace GeographicLib {
      * points with constant \e lat, \e h, and \e t and varying \e lon to be
      * computed efficiently.
      *
-     * @param[in] t the time (years).
+     * @param[in] t the time (fractional years).
      * @param[in] lat latitude of the point (degrees).
      * @param[in] h the height of the point above the ellipsoid (meters).
      * @exception std::bad_alloc if the memory necessary for creating a
@@ -183,8 +220,32 @@ namespace GeographicLib {
      * If the field at several points on a circle of latitude need to be
      * calculated then creating a MagneticCircle and using its member functions
      * will be substantially faster, especially for high-degree models.
+     *
+     * Use Utility::fractionalyear to convert a date of the form yyyy-mm or
+     * yyyy-mm-dd into a fractional year.
      **********************************************************************/
     MagneticCircle Circle(real t, real lat, real h) const;
+
+    /**
+     * Compute the magnetic field in geocentric coordinate.
+     *
+     * @param[in] t the time (fractional years).
+     * @param[in] X geocentric coordinate (meters).
+     * @param[in] Y geocentric coordinate (meters).
+     * @param[in] Z geocentric coordinate (meters).
+     * @param[out] BX the \e X component of the magnetic field (nT).
+     * @param[out] BY the \e Y component of the magnetic field (nT).
+     * @param[out] BZ the \e Z component of the magnetic field (nT).
+     * @param[out] BXt the rate of change of \e BX (nT/yr).
+     * @param[out] BYt the rate of change of \e BY (nT/yr).
+     * @param[out] BZt the rate of change of \e BZ (nT/yr).
+     *
+     * Use Utility::fractionalyear to convert a date of the form yyyy-mm or
+     * yyyy-mm-dd into a fractional year.
+     **********************************************************************/
+    void FieldGeocentric(real t, real X, real Y, real Z,
+                         real& BX, real& BY, real& BZ,
+                         real& BXt, real& BYt, real& BZt) const;
 
     /**
      * Compute various quantities dependent on the magnetic field.
@@ -313,13 +374,23 @@ namespace GeographicLib {
      *   the value of \e a inherited from the Geocentric object used in the
      *   constructor.
      **********************************************************************/
-    Math::real MajorRadius() const { return _earth.MajorRadius(); }
+    Math::real EquatorialRadius() const { return _earth.EquatorialRadius(); }
 
     /**
      * @return \e f the flattening of the ellipsoid.  This is the value
      *   inherited from the Geocentric object used in the constructor.
      **********************************************************************/
     Math::real Flattening() const { return _earth.Flattening(); }
+
+    /**
+     * @return \e Nmax the maximum degree of the components of the model.
+     **********************************************************************/
+    int Degree() const { return _nmx; }
+
+    /**
+     * @return \e Mmax the maximum order of the components of the model.
+     **********************************************************************/
+    int Order() const { return _mmx; }
     ///@}
 
     /**
@@ -338,7 +409,7 @@ namespace GeographicLib {
      * @return the default name for the magnetic model.
      *
      * This is the value of the environment variable
-     * GEOGRAPHICLIB_MAGNETIC_NAME, if set; otherwise, it is "wmm2015".  The
+     * GEOGRAPHICLIB_MAGNETIC_NAME, if set; otherwise, it is "wmm2025".  The
      * MagneticModel class does not use this function; it is just provided as a
      * convenience for a calling program when constructing a MagneticModel
      * object.

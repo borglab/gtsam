@@ -1,7 +1,7 @@
 /*
 Solve the direct and inverse geodesic problems accurately.
 
-Copyright (c) Charles Karney (2013-2017) <charles@karney.com> and
+Copyright (c) Charles Karney (2013-2021) <karney@alum.mit.edu> and
 licensed under the MIT/X11 License.  For more information, see
 https://geographiclib.sourceforge.io/
 
@@ -96,12 +96,12 @@ This returns a list, [a12, s12, azi1, azi2, m12, M12, M21, S12], e.g.,
 (10) The interface is copied from the C library for geodesics which is
 documented at
 
-  https://geographiclib.sourceforge.io/html/C/index.html
+  https://geographiclib.sourceforge.io/C/doc/index.html
 
 */
 
 /* The corresponding version of GeographicLib */
-geod_version:[1,49,0]$
+geod_version:[1,52,0]$
 
 /* Load series created by geod.mac (NEED TO UNCOMMENT THE LAST LINE OF
 geod.mac TO GENERATE THIS FILE). */
@@ -196,7 +196,7 @@ swapx(x, y):=[y,x]$
 
 norm2(x, y):=block([r : hypotx(x, y)], [x/r, y/r])$
 
-AngNormalize(x):=block([y:x-360b0*floor(x/360b0+0.5)],
+AngNormalize(x):=block([y:x-360b0*round(x/360b0)],
   if y <= -180b0 then y+360b0 else if y <= 180b0 then y else y-360b0)$
 
 AngDiff(x, y) := block([t,d,r:sumx(AngNormalize(-x),AngNormalize(y))],
@@ -208,7 +208,7 @@ AngRound(x) := block([z:1/16b0, y:abs(x)],
   y : if y < z then z - (z - y) else y,
   if x < 0b0 then -y else y)$
 
-sincosdx(x):=block([r,q:floor(x/90b0 + 0.5),s,c],
+sincosdx(x):=block([r,q:round(x/90b0),s,c],
   r:(x-q*90b0)*degree,
   s:sin(r), c:cos(r),
   q:mod(q,4),
@@ -626,7 +626,9 @@ geod_geninverse(g, lat1, lon1, lat2, lon2):=block(
     In fact, we will have sig12 > pi/2 for meridional geodesic which is
     not a shortest path. */
     if sig12 < 1b0 or m12x >= 0b0 then (
-      if sig12 < 3 * tiny then sig12 : m12x : s12x : 0b0,
+      if sig12 < 3 * tiny or
+         (sig12 < tol0 and (s12x < 0 or m12x < 0)) then
+        sig12 : m12x : s12x : 0b0,
       m12x : m12x * g[g_b],
       s12x : s12x * g[g_b],
       a12 : sig12 / degree )
@@ -690,7 +692,6 @@ geod_geninverse(g, lat1, lon1, lat2, lon2):=block(
           ssig1:r[5], csig1:r[6], ssig2:r[7], csig2:r[8],
           if exact then E:r[9] else eps:r[9], domg12:r[10],
           dv:r[11]),
-        /* 2 * tol0 is approximately 1 ulp for a number in [0, pi]. */
         /* Reversed test to allow escape with NaNs */
         if tripb or not(abs(v) >= (if tripn then 8 else 1) * tol0) then
         return(true),
@@ -806,10 +807,10 @@ geod_geninverse(g, lat1, lon1, lat2, lon2)$
 
 SinCosSeries(sinp, sinx, cosx, c):=block([n:length(c), ar, y0, y1, n2, k],
   /* Evaluate
-  * y = sinp ? sum(c[i] * sin( 2*i    * x), i, 1, n) :
-  *            sum(c[i] * cos((2*i-1) * x), i, 1, n)
-  * using Clenshaw summation.  where n = length(c)
-  * Approx operation count = (n + 5) mult and (2 * n + 2) add */
+  y = sinp ? sum(c[i] * sin( 2*i    * x), i, 1, n) :
+             sum(c[i] * cos((2*i-1) * x), i, 1, n)
+  using Clenshaw summation.  where n = length(c)
+  Approx operation count = (n + 5) mult and (2 * n + 2) add */
   /* 2 * cos(2 * x) */
   ar : 2 * (cosx - sinx) * (cosx + sinx),
   /* accumulators for sum */
@@ -924,7 +925,7 @@ InverseStart(g, sbet1, cbet1, dn1, sbet2, cbet2, dn2,
   shortline : is(cbet12 >= 0b0 and sbet12 < 0.5b0 and cbet2 * lam12 < 0.5b0),
   if shortline then block([sbetm2 : sq(sbet1 + sbet2), omg12],
     /* sin((bet1+bet2)/2)^2
-     * =  (sbet1 + sbet2)^2 / ((sbet1 + sbet2)^2 + (cbet1 + cbet2)^2) */
+     =  (sbet1 + sbet2)^2 / ((sbet1 + sbet2)^2 + (cbet1 + cbet2)^2) */
     sbetm2 : sbetm2 / (sbetm2 + sq(cbet1 + cbet2)),
     dnm : sqrt(1 + g[g_ep2] * sbetm2),
     omg12 : lam12 / (g[g_f1] * dnm),
@@ -1159,7 +1160,7 @@ C4f(g, eps):=block(
 
 transit(lon1, lon2):=block([lon12],
   /* Return 1 or -1 if crossing prime meridian in east or west direction.
-  * Otherwise return zero. */
+  Otherwise return zero. */
   /* Compute lon12 the same way as Geodesic::Inverse. */
   lon1 : AngNormalize(lon1),
   lon2 : AngNormalize(lon2),
@@ -1182,6 +1183,7 @@ geod_polygonarea(g, points) := block([n:length(points), crossings : 0,
     /* The minus sign is due to the counter-clockwise convention */
     A : A - S12,
     crossings : crossings + transit(points[i][2], points[mod(i,n)+1][2])),
+  A : mod(A+area0/2, area0) - area0/2,
   if mod(crossings, 2) = 1 then
   A : A + (if A < 0b0 then 1 else -1) * area0/2,
   /* Put area in (-area0/2, area0/2] */

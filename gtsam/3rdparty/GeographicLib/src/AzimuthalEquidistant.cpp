@@ -2,7 +2,7 @@
  * \file AzimuthalEquidistant.cpp
  * \brief Implementation for GeographicLib::AzimuthalEquidistant class
  *
- * Copyright (c) Charles Karney (2009-2015) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2009-2020) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -32,7 +32,7 @@ namespace GeographicLib {
                                      real& azi, real& rk) const {
     real
       azi0 = Math::atan2d(x, y),
-      s = Math::hypot(x, y);
+      s = hypot(x, y);
     real sig, m;
     sig = _earth.Direct(lat0, lon0, azi0, s, lat, lon, azi, m);
     rk = !(sig <= eps_) ? m / s : 1;

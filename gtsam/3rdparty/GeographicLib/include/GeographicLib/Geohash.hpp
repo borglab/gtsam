@@ -2,7 +2,7 @@
  * \file Geohash.hpp
  * \brief Header for GeographicLib::Geohash class
  *
- * Copyright (c) Charles Karney (2012-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2012-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -11,12 +11,6 @@
 #define GEOGRAPHICLIB_GEOHASH_HPP 1
 
 #include <GeographicLib/Constants.hpp>
-
-#if defined(_MSC_VER)
-// Squelch warnings about dll vs string
-#  pragma warning (push)
-#  pragma warning (disable: 4251)
-#endif
 
 namespace GeographicLib {
 
@@ -44,7 +38,7 @@ namespace GeographicLib {
     static const unsigned long long mask_ = 1ULL << 45;
     static const char* const lcdigits_;
     static const char* const ucdigits_;
-    Geohash();                     // Disable constructor
+    Geohash() = delete;         // Disable constructor
 
   public:
 
@@ -99,7 +93,7 @@ namespace GeographicLib {
     static Math::real LatitudeResolution(int len) {
       using std::ldexp;
       len = (std::max)(0, (std::min)(int(maxlen_), len));
-      return ldexp(real(180), -(5 * len / 2));
+      return ldexp(real(Math::hd), -(5 * len / 2));
     }
 
     /**
@@ -113,7 +107,7 @@ namespace GeographicLib {
     static Math::real LongitudeResolution(int len) {
       using std::ldexp;
       len = (std::max)(0, (std::min)(int(maxlen_), len));
-      return ldexp(real(360), -(5 * len - 5 * len / 2));
+      return ldexp(real(Math::td), -(5 * len - 5 * len / 2));
     }
 
     /**
@@ -126,7 +120,7 @@ namespace GeographicLib {
      * The returned length is in the range [0, 18].
      **********************************************************************/
     static int GeohashLength(real res) {
-      using std::abs; res = abs(res);
+      using std::fabs; res = fabs(res);
       for (int len = 0; len < maxlen_; ++len)
         if (LongitudeResolution(len) <= res)
           return len;
@@ -143,9 +137,9 @@ namespace GeographicLib {
      * The returned length is in the range [0, 18].
      **********************************************************************/
     static int GeohashLength(real latres, real lonres) {
-      using std::abs;
-      latres = abs(latres);
-      lonres = abs(lonres);
+      using std::fabs;
+      latres = fabs(latres);
+      lonres = fabs(lonres);
       for (int len = 0; len < maxlen_; ++len)
         if (LatitudeResolution(len) <= latres &&
             LongitudeResolution(len) <= lonres)
@@ -172,9 +166,5 @@ namespace GeographicLib {
   };
 
 } // namespace GeographicLib
-
-#if defined(_MSC_VER)
-#  pragma warning (pop)
-#endif
 
 #endif  // GEOGRAPHICLIB_GEOHASH_HPP

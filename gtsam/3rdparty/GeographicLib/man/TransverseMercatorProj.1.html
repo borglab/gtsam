@@ -129,14 +129,14 @@
 
 <h1 id="EXTENDED-DOMAIN">EXTENDED DOMAIN</h1>
 
-<p>The exact transverse Mercator projection has a <i>branch point</i> on the equator at longitudes (relative to <i>lon0</i>) of +/- (1 - <i>e</i>) 90, where <i>e</i> is the eccentricity of the ellipsoid. The standard convention for handling this branch point is to map positive (negative) latitudes into positive (negative) northings <i>y</i>; i.e., a branch cut is placed on the equator. With the <i>extended</i> domain, the northern sheet of the projection is extended into the south hemisphere by pushing the branch cut south from the branch points. See the reference below for details.</p>
+<p>The exact transverse Mercator projection has a <i>branch point</i> on the equator at longitudes (relative to <i>lon0</i>) of +/- (1 - <i>e</i>) 90 = 82.636..., where <i>e</i> is the eccentricity of the ellipsoid. The standard convention for handling this branch point is to map positive (negative) latitudes into positive (negative) northings <i>y</i>; i.e., a branch cut is placed on the equator. With the <i>extended</i> domain, the northern sheet of the projection is extended into the south hemisphere by pushing the branch cut south from the branch points. See the reference below for details.</p>
 
 <h1 id="EXAMPLES">EXAMPLES</h1>
 
-<pre><code>   echo 0 90 | TransverseMercatorProj
-   =&gt; 25953592.84 9997964.94 90 18.40
-   echo 260e5 100e5 | TransverseMercatorProj -r
-   =&gt; -0.02 90.00 90.01 18.48</code></pre>
+<pre><code>echo 0 90 | TransverseMercatorProj
+=&gt; 25953592.84 9997964.94 90 18.40
+echo 260e5 100e5 | TransverseMercatorProj -r
+=&gt; -0.02 90.00 90.01 18.48</code></pre>
 
 <h1 id="ERRORS">ERRORS</h1>
 

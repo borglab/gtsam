@@ -2,7 +2,7 @@
  * \file Geocentric.hpp
  * \brief Header for GeographicLib::Geocentric class
  *
- * Copyright (c) Charles Karney (2008-2016) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -78,7 +78,7 @@ namespace GeographicLib {
     real _a, _f, _e2, _e2m, _e2a, _e4a, _maxrad;
     static void Rotation(real sphi, real cphi, real slam, real clam,
                          real M[dim2_]);
-    static void Rotate(real M[dim2_], real x, real y, real z,
+    static void Rotate(const real M[dim2_], real x, real y, real z,
                        real& X, real& Y, real& Z) {
       // Perform [X,Y,Z]^t = M.[x,y,z]^t
       // (typically local cartesian to geocentric)
@@ -86,7 +86,7 @@ namespace GeographicLib {
       Y = M[3] * x + M[4] * y + M[5] * z;
       Z = M[6] * x + M[7] * y + M[8] * z;
     }
-    static void Unrotate(real M[dim2_], real X, real Y, real Z,
+    static void Unrotate(const real M[dim2_], real X, real Y, real Z,
                          real& x, real& y, real& z)  {
       // Perform [x,y,z]^t = M^t.[X,Y,Z]^t
       // (typically geocentric to local cartesian)
@@ -102,7 +102,7 @@ namespace GeographicLib {
   public:
 
     /**
-     * Constructor for a ellipsoid with
+     * Constructor for an ellipsoid with
      *
      * @param[in] a equatorial radius (meters).
      * @param[in] f flattening of ellipsoid.  Setting \e f = 0 gives a sphere.
@@ -181,15 +181,16 @@ namespace GeographicLib {
      * @param[out] lon longitude of point (degrees).
      * @param[out] h height of point above the ellipsoid (meters).
      *
-     * In general there are multiple solutions and the result which maximizes
-     * \e h is returned.  If there are still multiple solutions with different
-     * latitudes (applies only if \e Z = 0), then the solution with \e lat > 0
-     * is returned.  If there are still multiple solutions with different
-     * longitudes (applies only if \e X = \e Y = 0) then \e lon = 0 is
-     * returned.  The value of \e h returned satisfies \e h &ge; &minus; \e a
-     * (1 &minus; <i>e</i><sup>2</sup>) / sqrt(1 &minus; <i>e</i><sup>2</sup>
-     * sin<sup>2</sup>\e lat).  The value of \e lon returned is in the range
-     * [&minus;180&deg;, 180&deg;].
+     * In general, there are multiple solutions and the result which minimizes
+     * |<i>h</i> |is returned, i.e., (<i>lat</i>, <i>lon</i>) corresponds to
+     * the closest point on the ellipsoid.  If there are still multiple
+     * solutions with different latitudes (applies only if \e Z = 0), then the
+     * solution with \e lat > 0 is returned.  If there are still multiple
+     * solutions with different longitudes (applies only if \e X = \e Y = 0)
+     * then \e lon = 0 is returned.  The value of \e h returned satisfies \e h
+     * &ge; &minus; \e a (1 &minus; <i>e</i><sup>2</sup>) / sqrt(1 &minus;
+     * <i>e</i><sup>2</sup> sin<sup>2</sup>\e lat).  The value of \e lon
+     * returned is in the range [&minus;180&deg;, 180&deg;].
      **********************************************************************/
     void Reverse(real X, real Y, real Z, real& lat, real& lon, real& h)
       const {
@@ -244,7 +245,7 @@ namespace GeographicLib {
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value used in the constructor.
      **********************************************************************/
-    Math::real MajorRadius() const
+    Math::real EquatorialRadius() const
     { return Init() ? _a : Math::NaN(); }
 
     /**

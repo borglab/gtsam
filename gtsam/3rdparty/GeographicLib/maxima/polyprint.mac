@@ -27,9 +27,11 @@ if abs(x)<2^63 then (if abs(x) < 2^24
   then formatnum(x)
   else concat(s:if x<0 then "-" else "","real(",formatnum(abs(x)),")"))
 else
-block([s:if x<0 then "-" else ""], x:abs(x),
-  concat(s,"reale(",formatnum(floor(x/2^52)),",",
-    formatnum(x-floor(x/2^52)*2^52),")"))$
+block([sb:if x<0 then "-reale(" else "reale(",se:")"], x:abs(x),
+  se:concat(formatnum(x-floor(x/2^52)*2^52),se),x:floor(x/2^52),
+  while x > 0 do (
+  se:concat(formatnum(x-floor(x/2^52)*2^52),",",se),x:floor(x/2^52)),
+  concat(sb,se))$
 printterm(x,line):=block([lx:slength(x)+1,lline:slength(line)],
   count:count+1,
   x:concat(x,if simplenum then ", " else ","),

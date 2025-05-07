@@ -30,7 +30,7 @@
 <li><p>By default, <b>GeodSolve</b> accepts lines on the standard input containing <i>lat1</i> <i>lon1</i> <i>azi1</i> <i>s12</i> and prints <i>lat2</i> <i>lon2</i> <i>azi2</i> on standard output. This is the direct geodesic calculation.</p>
 
 </li>
-<li><p>With the <b>-i</b> command line argument, <b>GeodSolve</b> performs the inverse geodesic calculation. It reads lines containing <i>lat1</i> <i>lon1</i> <i>lat2</i> <i>lon2</i> and prints the corresponding values of <i>azi1</i> <i>azi2</i> <i>s12</i>.</p>
+<li><p>With the <b>-i</b> option, <b>GeodSolve</b> performs the inverse geodesic calculation. It reads lines containing <i>lat1</i> <i>lon1</i> <i>lat2</i> <i>lon2</i> and prints the corresponding values of <i>azi1</i> <i>azi2</i> <i>s12</i>.</p>
 
 </li>
 <li><p>Command line arguments <b>-L</b> <i>lat1</i> <i>lon1</i> <i>azi1</i> specify a geodesic line. <b>GeodSolve</b> then accepts a sequence of <i>s12</i> values (one per line) on standard input and prints <i>lat2</i> <i>lon2</i> <i>azi2</i> for each. This generates a sequence of points on a single geodesic. Command line arguments <b>-D</b> and <b>-I</b> work similarly with the geodesic line defined in terms of a direct or inverse geodesic calculation, respectively.</p>
@@ -51,7 +51,7 @@
 <dt id="L-lat1-lon1-azi1"><b>-L</b> <i>lat1</i> <i>lon1</i> <i>azi1</i></dt>
 <dd>
 
-<p>line mode (see 3 above); generate a sequence of points along the geodesic specified by <i>lat1</i> <i>lon1</i> <i>azi1</i>. The <b>-w</b> flag can be used to swap the default order of the 2 geographic coordinates, provided that it appears before <b>-L</b>. (<b>-l</b> is an alternative, deprecated, spelling of this flag.)</p>
+<p>line mode (see 3 above); generate a sequence of points along the geodesic specified by <i>lat1</i> <i>lon1</i> <i>azi1</i>. The <b>-w</b> flag can be used to swap the default order of the 2 geographic coordinates, provided that it appears before <b>-L</b>.</p>
 
 </dd>
 <dt id="D-lat1-lon1-azi1-s13"><b>-D</b> <i>lat1</i> <i>lon1</i> <i>azi1</i> <i>s13</i></dt>
@@ -87,7 +87,7 @@
 <dt id="F"><b>-F</b></dt>
 <dd>
 
-<p>fractional mode. This only has any effect with the <b>-D</b> and <b>-I</b> options (and is otherwise ignored). The values read on standard input are interpreted as fractional distances to point 3, i.e., as <i>s12</i>/<i>s13</i> instead of <i>s12</i>. If arc mode is in effect, then the values denote fractional arc length, i.e., <i>a12</i>/<i>a13</i>.</p>
+<p>fractional mode. This only has any effect with the <b>-D</b> and <b>-I</b> options (and is otherwise ignored). The values read on standard input are interpreted as fractional distances to point 3, i.e., as <i>s12</i>/<i>s13</i> instead of <i>s12</i>. If arc mode is in effect, then the values denote fractional arc length, i.e., <i>a12</i>/<i>a13</i>. The fractional distances can be entered as a simple fraction, e.g., 3/4.</p>
 
 </dd>
 <dt id="d"><b>-d</b></dt>
@@ -202,12 +202,12 @@
 
 <p>If points 1, 2, and 3 lie on a single geodesic, then the following addition rules hold:</p>
 
-<pre><code>   s13 = s12 + s23,
-   a13 = a12 + a23,
-   S13 = S12 + S23,
-   m13 = m12 M23 + m23 M21,
-   M13 = M12 M23 - (1 - M12 M21) m23 / m12,
-   M31 = M32 M21 - (1 - M23 M32) m12 / m23.</code></pre>
+<pre><code>s13 = s12 + s23,
+a13 = a12 + a23,
+S13 = S12 + S23,
+m13 = m12 M23 + m23 M21,
+M13 = M12 M23 - (1 - M12 M21) m23 / m12,
+M31 = M32 M21 - (1 - M23 M32) m12 / m23.</code></pre>
 
 <p>Finally, <i>S12</i> is the area between the geodesic from point 1 to point 2 and the equator; i.e., it is the area, measured counter-clockwise, of the geodesic quadrilateral with corners (<i>lat1</i>,<i>lon1</i>), (0,<i>lon1</i>), (0,<i>lon2</i>), and (<i>lat2</i>,<i>lon2</i>). It is given in meters^2.</p>
 
@@ -223,31 +223,31 @@
 
 <p>Using the (default) series solution, GeodSolve is accurate to about 15 nm (15 nanometers) for the WGS84 ellipsoid. The approximate maximum error (expressed as a distance) for an ellipsoid with the same equatorial radius as the WGS84 ellipsoid and different values of the flattening is</p>
 
-<pre><code>   |f|     error
-   0.01    25 nm
-   0.02    30 nm
-   0.05    10 um
-   0.1    1.5 mm
-   0.2    300 mm</code></pre>
+<pre><code>|f|     error
+0.01    25 nm
+0.02    30 nm
+0.05    10 um
+0.1    1.5 mm
+0.2    300 mm</code></pre>
 
 <p>If <b>-E</b> is specified, GeodSolve is accurate to about 40 nm (40 nanometers) for the WGS84 ellipsoid. The approximate maximum error (expressed as a distance) for an ellipsoid with a quarter meridian of 10000 km and different values of the <i>a/b</i> = 1 - <i>f</i> is</p>
 
-<pre><code>   1-f    error (nm)
-   1/128   387
-   1/64    345
-   1/32    269
-   1/16    210
-   1/8     115
-   1/4      69
-   1/2      36
-     1      15
-     2      25
-     4      96
-     8     318
-    16     985
-    32    2352
-    64    6008
-   128   19024</code></pre>
+<pre><code>1-f    error (nm)
+1/128   387
+1/64    345
+1/32    269
+1/16    210
+1/8     115
+1/4      69
+1/2      36
+  1      15
+  2      25
+  4      96
+  8     318
+ 16     985
+ 32    2352
+ 64    6008
+128   19024</code></pre>
 
 <h1 id="MULTIPLE-SOLUTIONS">MULTIPLE SOLUTIONS</h1>
 
@@ -285,27 +285,27 @@
 
 <p>Route from JFK Airport to Singapore Changi Airport:</p>
 
-<pre><code>   echo 40:38:23N 073:46:44W 01:21:33N 103:59:22E |
-   GeodSolve -i -: -p 0
+<pre><code>echo 40:38:23N 073:46:44W 01:21:33N 103:59:22E |
+GeodSolve -i -: -p 0
 
-   003:18:29.9 177:29:09.2 15347628</code></pre>
+003:18:29.9 177:29:09.2 15347628</code></pre>
 
 <p>Equally spaced waypoints on the route:</p>
 
-<pre><code>   for ((i = 0; i &lt;= 10; ++i)); do echo ${i}e-1; done |
-   GeodSolve -I 40:38:23N 073:46:44W 01:21:33N 103:59:22E -F -: -p 0
+<pre><code>for ((i = 0; i &lt;= 10; ++i)); do echo $i/10; done |
+GeodSolve -I 40:38:23N 073:46:44W 01:21:33N 103:59:22E -F -: -p 0
 
-   40:38:23.0N 073:46:44.0W 003:18:29.9
-   54:24:51.3N 072:25:39.6W 004:18:44.1
-   68:07:37.7N 069:40:42.9W 006:44:25.4
-   81:38:00.4N 058:37:53.9W 017:28:52.7
-   83:43:26.0N 080:37:16.9E 156:26:00.4
-   70:20:29.2N 097:01:29.4E 172:31:56.4
-   56:38:36.0N 100:14:47.6E 175:26:10.5
-   42:52:37.1N 101:43:37.2E 176:34:28.6
-   29:03:57.0N 102:39:34.8E 177:07:35.2
-   15:13:18.6N 103:22:08.0E 177:23:44.7
-   01:21:33.0N 103:59:22.0E 177:29:09.2</code></pre>
+40:38:23.0N 073:46:44.0W 003:18:29.9
+54:24:51.3N 072:25:39.6W 004:18:44.1
+68:07:37.7N 069:40:42.9W 006:44:25.4
+81:38:00.4N 058:37:53.9W 017:28:52.7
+83:43:26.0N 080:37:16.9E 156:26:00.4
+70:20:29.2N 097:01:29.4E 172:31:56.4
+56:38:36.0N 100:14:47.6E 175:26:10.5
+42:52:37.1N 101:43:37.2E 176:34:28.6
+29:03:57.0N 102:39:34.8E 177:07:35.2
+15:13:18.6N 103:22:08.0E 177:23:44.7
+01:21:33.0N 103:59:22.0E 177:29:09.2</code></pre>
 
 <h1 id="SEE-ALSO">SEE ALSO</h1>
 

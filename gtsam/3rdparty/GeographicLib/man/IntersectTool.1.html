@@ -1,0 +1,223 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><link href="http://search.cpan.org/s/style.css" rel="stylesheet" type="text/css">
+<title>IntersectTool(1)</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+
+
+<h1 id="NAME">NAME</h1>
+
+<p>IntersectTool -- find the intersection of geodesics</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<p><b>IntersectTool</b> [ <b>-c</b> | <b>-n</b> | <b>-i</b> | <b>-o</b> | [ <b>-R</b> <i>maxdist</i> ] [ <b>-e</b> <i>a</i> <i>f</i>] [ <b>-E</b> ] [ <b>-w</b> ] [ <b>-p</b> <i>prec</i> ] [ <b>--comment-delimiter</b> <i>commentdelim</i> ] [ <b>--version</b> | <b>-h</b> | <b>--help</b> ] [ <b>--input-file</b> <i>infile</i> | <b>--input-string</b> <i>instring</i> ] [ <b>--line-separator</b> <i>linesep</i> ] [ <b>--output-file</b> <i>outfile</i> ]</p>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>IntersectTool</b> finds the intersection of two geodesics <i>X</i> and <i>Y</i>. The geodesics may either be specified as a location and an azimuth, <i>latX</i> <i>lonX</i> <i>aziX</i>, or as the shortest geodesic segment between two locations, <i>latX1</i> <i>lonX1</i> and <i>latX2</i> <i>lonX2</i>. The intersection is then specified as the displacements, <i>x</i> and <i>y</i>, along the geodesics <i>X</i> and <i>Y</i> from the starting points to the intersection. In the case of the intersection of geodesic segments, the starting point is first point specified for <i>X</i> or <i>Y</i>.</p>
+
+<p>Usually this tool returns the <i>closest</i> intersection defined as the one that minimizes the &quot;L1&quot; distance, |<i>x</i>| + |<i>y</i>|. However, it is possible to specify an &quot;origin&quot; <i>x0</i> and <i>y0</i> when determining closeness so that the intersection which minimizes |<i>x</i> - <i>x0</i>| + |<i>y</i> - <i>y0</i>| is returned.</p>
+
+<p>In the case of intersecting segments the origin is taken to be the midpoints of the segments; <i>x0</i> is half the distance from <i>X1</i> to <i>X2</i>. In addition a flag is returned specifying whether the intersection is &quot;within&quot; the segments.</p>
+
+<p>The tool also returns a &quot;coincidence indicator&quot; <i>c</i>. This is typically 0. However if the geodesics lie on top of one another at the point of intersection, then <i>c</i> is set to 1, if they are parallel, and -1, if they are antiparallel.</p>
+
+<p><b>IntersectTool</b> operates in one of three modes:</p>
+
+<ol>
+
+<li><p>With the <b>-c</b> option (the default), <b>IntersectTool</b> accepts lines on the standard input containing <i>latX</i> <i>lonX</i> <i>aziX</i> <i>latY</i> <i>lonY</i> <i>aziY</i>, specifying two geodesic lines <i>X</i> and <i>Y</i>, and prints the location of the closest intersection <i>x</i> <i>y</i> <i>c</i> on standard output.</p>
+
+</li>
+<li><p>With the <b>-n</b> option, <b>IntersectTool</b> accepts lines on the standard input containing <i>latX</i> <i>lonX</i> <i>aziX</i> <i>aziY</i> <i>aziY</i>, specifying a point where two geodesic lines <i>X</i> and <i>Y</i> intersect, and prints the location of the next closest intersection <i>x</i> <i>y</i> <i>c</i> on standard output.</p>
+
+</li>
+<li><p>With the <b>-i</b> option, <b>IntersectTool</b> accepts lines on the standard input containing <i>latX1</i> <i>lonX1</i> <i>latX2</i> <i>lonX2</i> <i>latY1</i> <i>lonY1</i> <i>latY2</i> <i>lonY2</i>, specifying two geodesic segments <i>X1</i>-<i>X2</i> and <i>Y1</i>-<i>Y2</i>, and prints <i>x</i> <i>y</i> <i>c</i> <i>k</i> on standard output. Here <i>k</i> is a flag in [-4,4] specifying whether the intersection is within the segments (0) or not (non-zero). <i>x</i> and <i>y</i> give the distances from <i>X1</i> and <i>Y1</i> respectively. <i>k</i> is set to 3 <i>kx</i> + <i>ky</i> where <i>kx</i> = -1 if <i>x</i> &lt; 0, 0 if 0 &lt;= <i>x</i> &lt;= <i>sx</i>, 1 if <i>sx</i> &lt; <i>x</i>, and similarly for <i>ky</i>; <i>sx</i> is the length of the segment <i>X1</i>-<i>X2</i>.</p>
+
+</li>
+<li><p>With the <b>-o</b> option, <b>IntersectTool</b> accepts lines on the standard input containing <i>latX</i> <i>lonX</i> <i>aziX</i> <i>latY</i> <i>lonY</i> <i>aziY</i> <i>x0</i> <i>y0</i>, specifying two geodesic lines <i>X</i> and <i>Y</i> and two offsets, and prints <i>x</i> <i>y</i> <i>c</i> on standard output where [<i>x</i>, <i>y</i>] is the intersection closest to [<i>x0</i>, <i>y0</i>].</p>
+
+</li>
+</ol>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<dl>
+
+<dt id="c"><b>-c</b></dt>
+<dd>
+
+<p>find the closest intersection (see 1 above).</p>
+
+</dd>
+<dt id="n"><b>-n</b></dt>
+<dd>
+
+<p>find the intersection closest to a given intersection (see 2 above).</p>
+
+</dd>
+<dt id="i"><b>-i</b></dt>
+<dd>
+
+<p>find the intersection of two geodesic segments (see 3 above).</p>
+
+</dd>
+<dt id="o"><b>-o</b></dt>
+<dd>
+
+<p>find the closest intersection with an offset.</p>
+
+</dd>
+<dt id="R-maxdist"><b>-R</b> <i>maxdist</i></dt>
+<dd>
+
+<p>modifies the four modes to return all the intersections within an L1 distance, <i>maxdist</i>, of the relevant origin: [0, 0] for <b>-c</b> and <b>-n</b>, the midpoints of the segments for <b>-i</b>, and [<i>x0</i>, <i>y0</i>] for <b>-o</b>. For each intersection, <i>x</i> <i>y</i> <i>c</i> <i>z</i> is printed on standard output. Here <i>z</i> is the L1 distance of the intersection from the origin and the intersections are sorted by the distances. A line &quot;nan nan 0 nan&quot; is added after the intersections, so that the output can be associated with the correct lines of the input. The number of intersections scales as (<i>maxdist</i>/(pi <i>a</i>))^2.</p>
+
+</dd>
+<dt id="C"><b>-C</b></dt>
+<dd>
+
+<p>check the intersections. For each computed intersection, print on <b>standard error</b> a line <i>latX</i> <i>lonX</i> <i>latY</i> <i>lonY</i> <i>sXY</i> giving the computed positions of the intersections points on <i>X</i> and <i>Y</i> and the distance between them. If <b>-w</b> is specified, the longitude is given before the latitude.</p>
+
+</dd>
+<dt id="e-a-f"><b>-e</b> <i>a</i> <i>f</i></dt>
+<dd>
+
+<p>specify the ellipsoid via the equatorial radius, <i>a</i> and the flattening, <i>f</i>. Setting <i>f</i> = 0 results in a sphere. Specify <i>f</i> &lt; 0 for a prolate ellipsoid. A simple fraction, e.g., 1/297, is allowed for <i>f</i>. By default, the WGS84 ellipsoid is used, <i>a</i> = 6378137 m, <i>f</i> = 1/298.257223563.</p>
+
+</dd>
+<dt id="E"><b>-E</b></dt>
+<dd>
+
+<p>use &quot;exact&quot; algorithms (based on elliptic integrals) for the geodesic calculations. These are more accurate than the (default) series expansions for |<i>f</i>| &gt; 0.02.</p>
+
+</dd>
+<dt id="w"><b>-w</b></dt>
+<dd>
+
+<p>on input, longitude precedes latitude (except that on input this can be overridden by a hemisphere designator, <i>N</i>, <i>S</i>, <i>E</i>, <i>W</i>).</p>
+
+</dd>
+<dt id="p-prec"><b>-p</b> <i>prec</i></dt>
+<dd>
+
+<p>set the output precision to <i>prec</i> (default 3); <i>prec</i> is the precision relative to 1 m. See <a href="#PRECISION">&quot;PRECISION&quot;</a>.</p>
+
+</dd>
+<dt id="comment-delimiter-commentdelim"><b>--comment-delimiter</b> <i>commentdelim</i></dt>
+<dd>
+
+<p>set the comment delimiter to <i>commentdelim</i> (e.g., &quot;#&quot; or &quot;//&quot;). If set, the input lines will be scanned for this delimiter and, if found, the delimiter and the rest of the line will be removed prior to processing and subsequently appended to the output line (separated by a space).</p>
+
+</dd>
+<dt id="version"><b>--version</b></dt>
+<dd>
+
+<p>print version and exit.</p>
+
+</dd>
+<dt id="h"><b>-h</b></dt>
+<dd>
+
+<p>print usage and exit.</p>
+
+</dd>
+<dt id="help"><b>--help</b></dt>
+<dd>
+
+<p>print full documentation and exit.</p>
+
+</dd>
+<dt id="input-file-infile"><b>--input-file</b> <i>infile</i></dt>
+<dd>
+
+<p>read input from the file <i>infile</i> instead of from standard input; a file name of &quot;-&quot; stands for standard input.</p>
+
+</dd>
+<dt id="input-string-instring"><b>--input-string</b> <i>instring</i></dt>
+<dd>
+
+<p>read input from the string <i>instring</i> instead of from standard input. All occurrences of the line separator character (default is a semicolon) in <i>instring</i> are converted to newlines before the reading begins.</p>
+
+</dd>
+<dt id="line-separator-linesep"><b>--line-separator</b> <i>linesep</i></dt>
+<dd>
+
+<p>set the line separator character to <i>linesep</i>. By default this is a semicolon.</p>
+
+</dd>
+<dt id="output-file-outfile"><b>--output-file</b> <i>outfile</i></dt>
+<dd>
+
+<p>write output to the file <i>outfile</i> instead of to standard output; a file name of &quot;-&quot; stands for standard output.</p>
+
+</dd>
+</dl>
+
+<h1 id="INPUT">INPUT</h1>
+
+<p><b>IntersectTool</b> measures all angles in degrees and all lengths in meters. On input angles (latitude, longitude, azimuth) can be as decimal degrees or degrees, minutes, seconds. For example, <code>40d30</code>, <code>40d30&#39;</code>, <code>40:30</code>, <code>40.5d</code>, and <code>40.5</code> are all equivalent. By default, latitude precedes longitude for each point (the <b>-w</b> flag switches this convention); however either may be given first by appending (or prepending) <i>N</i> or <i>S</i> to the latitude and <i>E</i> or <i>W</i> to the longitude. Azimuths are measured clockwise from north; however this may be overridden with <i>E</i> or <i>W</i>.</p>
+
+<p>For details on the allowed formats for angles, see the <code>GEOGRAPHIC COORDINATES</code> section of GeoConvert(1).</p>
+
+<h1 id="PRECISION">PRECISION</h1>
+
+<p><i>prec</i> gives precision of the output with <i>prec</i> = 0 giving 1 m precision, <i>prec</i> = 3 giving 1 mm precision, etc. <i>prec</i> is the number of digits after the decimal point for lengths. The latitude and longitude printed to standard error with the <b>-C</b> option are given in decimal degrees with <i>prec</i> + 5 digits after the decimal point. The minimum value of <i>prec</i> is 0 and the maximum is 10.</p>
+
+<h1 id="ERRORS">ERRORS</h1>
+
+<p>An illegal line of input will print an error message to standard output beginning with <code>ERROR:</code> and causes <b>IntersectTool</b> to return an exit code of 1. However, an error does not cause <b>IntersectTool</b> to terminate; following lines will be converted.</p>
+
+<h1 id="ACCURACY">ACCURACY</h1>
+
+<p>This tool will give nearly full double precision accuracy for |<i>f</i>| &lt; 0.02. If the <b>-E</b> option is given, full accuracy is achieved for -1/4 &lt; f &lt; 1/5. The tool had not been tested outside this range.</p>
+
+<h1 id="EXAMPLES">EXAMPLES</h1>
+
+<p>A vessel leaves Plymouth 50N 4W on a geodesic path with initial heading 147.7W. When will it first cross the equator?</p>
+
+<pre><code>echo 50N 4W 147.7W 0 0 90 | IntersectTool -c -p 0 -C
+
+6058049 -3311253 0
+0.00000 -29.74549 -0.00000 -29.74549 0</code></pre>
+
+<p>Answer: after 6058km at longitude 29.7W. When will it cross the date line, longitude 180E? Here we need to use <b>-R</b> because there a closer intersection on the prime meridian:</p>
+
+<pre><code>echo 50N 4W 147.7W 0 180 0 | IntersectTool -c -p 0 -C -R 2.6e7
+
+-494582 14052230 0 14546812
+53.69260 0.00000 53.69260 0.00000 0
+19529110 -5932344 0 25461454
+-53.51867 180.00000 -53.51867 180.00000 0
+nan nan 0 nan
+nan nan nan nan nan</code></pre>
+
+<p>We want the second result: after 19529 km at latitude 53.5S.</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p>GeoConvert(1), GeodSolve(1).</p>
+
+<p>This solution for intersections is described in C. F. F. Karney, <i>Geodesic intersections</i>, J. Surveying Eng. <b>150</b>(3), 04024005:1-9 (2024), DOI: <a href="https://doi.org/10.1061/JSUED2.SUENG-1483">https://doi.org/10.1061/JSUED2.SUENG-1483</a>; preprint <a href="https://arxiv.org/abs/2308.00495">https://arxiv.org/abs/2308.00495</a>. It is based on the work of S. Baseldga and J. C. Martinez-Llario, <i>Intersection and point-to-line solutions for geodesics on the ellipsoid</i>, Stud. Geophys. Geod. <b>62</b>, 353-363 (2018); DOI: <a href="https://doi.org/10.1007/s11200-017-1020-z">https://doi.org/10.1007/s11200-017-1020-z</a>;</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p><b>IntersectTool</b> was written by Charles Karney.</p>
+
+<h1 id="HISTORY">HISTORY</h1>
+
+<p><b>IntersectTool</b> was added to GeographicLib, <a href="https://geographiclib.sourceforge.io">https://geographiclib.sourceforge.io</a>, in version 2.3.</p>
+
+
+</body>
+
+</html>
+
+

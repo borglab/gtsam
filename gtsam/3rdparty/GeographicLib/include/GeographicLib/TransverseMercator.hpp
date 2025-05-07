@@ -2,7 +2,7 @@
  * \file TransverseMercator.hpp
  * \brief Header for GeographicLib::TransverseMercator class
  *
- * Copyright (c) Charles Karney (2008-2016) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2023) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -11,6 +11,7 @@
 #define GEOGRAPHICLIB_TRANSVERSEMERCATOR_HPP 1
 
 #include <GeographicLib/Constants.hpp>
+#include <GeographicLib/TransverseMercatorExact.hpp>
 
 #if !defined(GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER)
 /**
@@ -59,7 +60,8 @@ namespace GeographicLib {
    *
    * TransverseMercatorExact is an alternative implementation of the projection
    * using exact formulas which yield accurate (to 8 nm) results over the
-   * entire ellipsoid.
+   * entire ellipsoid.  This formulation is accessible in this class by calling
+   * the constructor with \e exact = true.
    *
    * The ellipsoid parameters and the central scale are set in the constructor.
    * The central meridian (which is a trivial shift of the longitude) is
@@ -70,7 +72,7 @@ namespace GeographicLib {
    * However these are can be simply included by the calling function.  For
    * example, the UTMUPS class applies the false easting and false northing for
    * the UTM projections.  A more complicated example is the British National
-   * Grid (<a href="http://www.spatialreference.org/ref/epsg/7405/">
+   * Grid (<a href="https://www.spatialreference.org/ref/epsg/7405/">
    * EPSG:7405</a>) which requires the use of a latitude of origin.  This is
    * implemented by the GeographicLib::OSGB class.
    *
@@ -86,8 +88,7 @@ namespace GeographicLib {
    * \include example-TransverseMercator.cpp
    *
    * <a href="TransverseMercatorProj.1.html">TransverseMercatorProj</a> is a
-   * command-line utility providing access to the functionality of
-   * TransverseMercator and TransverseMercatorExact.
+   * command-line utility providing access to the functionality of this class.
    **********************************************************************/
 
   class GEOGRAPHICLIB_EXPORT TransverseMercator {
@@ -95,23 +96,34 @@ namespace GeographicLib {
     typedef Math::real real;
     static const int maxpow_ = GEOGRAPHICLIB_TRANSVERSEMERCATOR_ORDER;
     static const int numit_ = 5;
-    real _a, _f, _k0, _e2, _es, _e2m,  _c, _n;
+    real _a, _f, _k0;
+    bool _exact;
+    real _e2, _es, _e2m,  _c, _n;
     // _alp[0] and _bet[0] unused
     real _a1, _b1, _alp[maxpow_ + 1], _bet[maxpow_ + 1];
-    friend class Ellipsoid;           // For access to taupf, tauf.
+    TransverseMercatorExact _tmexact;
   public:
 
     /**
-     * Constructor for a ellipsoid with
+     * Constructor for an ellipsoid with
      *
      * @param[in] a equatorial radius (meters).
      * @param[in] f flattening of ellipsoid.  Setting \e f = 0 gives a sphere.
      *   Negative \e f gives a prolate ellipsoid.
      * @param[in] k0 central scale factor.
+     * @param[in] exact if true use exact formulation in terms of elliptic
+     *   functions instead of series expansions (default false).
+     * @param[in] extendp use extended domain (default false); should only be
+     *   used if \e exact = true;
      * @exception GeographicErr if \e a, (1 &minus; \e f) \e a, or \e k0 is
      *   not positive.
+     *
+     * With \e exact = true, this class delegates the calculations to the
+     * TransverseMercatorExact classes which compute the projection in terms of
+     * elliptic functions.
      **********************************************************************/
-    TransverseMercator(real a, real f, real k0);
+    TransverseMercator(real a, real f, real k0,
+                       bool exact = false, bool extendp = false);
 
     /**
      * Forward projection, from geographic to transverse Mercator.
@@ -172,7 +184,7 @@ namespace GeographicLib {
      * @return \e a the equatorial radius of the ellipsoid (meters).  This is
      *   the value used in the constructor.
      **********************************************************************/
-    Math::real MajorRadius() const { return _a; }
+    Math::real EquatorialRadius() const { return _a; }
 
     /**
      * @return \e f the flattening of the ellipsoid.  This is the value used in
@@ -185,6 +197,12 @@ namespace GeographicLib {
      *   k0 used in the constructor and is the scale on the central meridian.
      **********************************************************************/
     Math::real CentralScale() const { return _k0; }
+
+    /**
+     * @return \e exact whether the exact formulation is used.  This is the
+     *   value used in the constructor.
+     **********************************************************************/
+    bool Exact() const { return _exact; }
     ///@}
 
     /**

@@ -2,7 +2,7 @@
  * \file GeoCoords.cpp
  * \brief Implementation for GeographicLib::GeoCoords class
  *
- * Copyright (c) Charles Karney (2008-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -33,7 +33,6 @@ namespace GeographicLib {
                       _lat, _long, _gamma, _k);
     } else if (sa.size() == 2) {
       DMS::DecodeLatLon(sa[0], sa[1], _lat, _long, longfirst);
-      _long = Math::AngNormalize(_long);
       UTMUPS::Forward( _lat, _long,
                        _zone, _northp, _easting, _northing, _gamma, _k);
     } else if (sa.size() == 3) {
@@ -60,21 +59,10 @@ namespace GeographicLib {
   }
 
   string GeoCoords::GeoRepresentation(int prec, bool longfirst) const {
+    using std::isnan;           // Needed for Centos 7, ubuntu 14
     prec = max(0, min(9 + Math::extra_digits(), prec) + 5);
-    ostringstream os;
-    os << fixed << setprecision(prec);
-    real a = longfirst ? _long : _lat;
-    real b = longfirst ? _lat : _long;
-    if (!Math::isnan(a))
-      os << a;
-    else
-      os << "nan";
-    os << " ";
-    if (!Math::isnan(b))
-      os << b;
-    else
-      os << "nan";
-    return os.str();
+    return Utility::str(longfirst ? _long : _lat, prec) +
+      " " + Utility::str(longfirst ? _lat : _long, prec);
   }
 
   string GeoCoords::DMSRepresentation(int prec, bool longfirst,
@@ -105,21 +93,21 @@ namespace GeographicLib {
 
   void GeoCoords::UTMUPSString(int zone, bool northp,
                                real easting, real northing, int prec,
-                               bool abbrev, std::string& utm) {
+                               bool abbrev, string& utm) {
     ostringstream os;
     prec = max(-5, min(9 + Math::extra_digits(), prec));
     // Need extra real because, since C++11, pow(float, int) returns double
     real scale = prec < 0 ? real(pow(real(10), -prec)) : real(1);
     os << UTMUPS::EncodeZone(zone, northp, abbrev) << fixed << setfill('0');
-    if (Math::isfinite(easting)) {
+    if (isfinite(easting)) {
       os << " " << Utility::str(easting / scale, max(0, prec));
-      if (prec < 0 && abs(easting / scale) > real(0.5))
+      if (prec < 0 && fabs(easting / scale) > real(0.5))
         os << setw(-prec) << 0;
     } else
       os << " nan";
-    if (Math::isfinite(northing)) {
+    if (isfinite(northing)) {
       os << " " << Utility::str(northing / scale, max(0, prec));
-      if (prec < 0 && abs(northing / scale) > real(0.5))
+      if (prec < 0 && fabs(northing / scale) > real(0.5))
         os << setw(-prec) << 0;
     } else
       os << " nan";
@@ -162,8 +150,9 @@ namespace GeographicLib {
   }
 
   void GeoCoords::FixHemisphere() {
+    using std::isnan;           // Needed for Centos 7, ubuntu 14
     if (_lat == 0 || (_northp && _lat >= 0) || (!_northp && _lat < 0) ||
-        Math::isnan(_lat))
+        isnan(_lat))
       // Allow either hemisphere for equator
       return;
     if (_zone != UTMUPS::UPS) {

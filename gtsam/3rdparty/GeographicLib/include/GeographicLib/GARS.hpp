@@ -2,7 +2,7 @@
  * \file GARS.hpp
  * \brief Header for GeographicLib::GARS class
  *
- * Copyright (c) Charles Karney (2015-2017) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2015-2024) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -12,12 +12,6 @@
 
 #include <GeographicLib/Constants.hpp>
 
-#if defined(_MSC_VER)
-// Squelch warnings about dll vs string
-#  pragma warning (push)
-#  pragma warning (disable: 4251)
-#endif
-
 namespace GeographicLib {
 
   /**
@@ -25,7 +19,7 @@ namespace GeographicLib {
    *
    * The Global Area Reference System is described in
    * - https://en.wikipedia.org/wiki/Global_Area_Reference_System
-   * - http://earth-info.nga.mil/GandG/coordsys/grids/gars.html
+   * - https://earth-info.nga.mil/index.php?dir=coordsys&action=coordsys#tab_gars
    * .
    * It provides a compact string representation of a geographic area
    * (expressed as latitude and longitude).  The classes Georef and Geohash
@@ -40,22 +34,20 @@ namespace GeographicLib {
     typedef Math::real real;
     static const char* const digits_;
     static const char* const letters_;
-    enum {
-      lonorig_ = -180,          // Origin for longitude
-      latorig_ = -90,           // Origin for latitude
-      baselon_ = 10,            // Base for longitude tiles
-      baselat_ = 24,            // Base for latitude tiles
-      lonlen_ = 3,
-      latlen_ = 2,
-      baselen_ = lonlen_ + latlen_,
-      mult1_ = 2,               // base precision = 1/2 degree
-      mult2_ = 2,               // 6th char gives 2x more precision
-      mult3_ = 3,               // 7th char gives 3x more precision
-      m_ = mult1_ * mult2_ * mult3_,
-      maxprec_ = 2,
-      maxlen_ = baselen_ + maxprec_,
-    };
-    GARS();                     // Disable constructor
+    static constexpr int lonorig_ = -Math::hd; // Origin for longitude
+    static constexpr int latorig_ = -Math::qd; // Origin for latitude
+    static constexpr int baselon_ = 10;        // Base for longitude tiles
+    static constexpr int baselat_ = 24;        // Base for latitude tiles
+    static constexpr int lonlen_ = 3;
+    static constexpr int latlen_ = 2;
+    static constexpr int baselen_ = lonlen_ + latlen_;
+    static constexpr int mult1_ = 2;           // base precision = 1/2 degree
+    static constexpr int mult2_ = 2;           // 6th char gives 2x more precision
+    static constexpr int mult3_ = 3;           // 7th char gives 3x more precision
+    static constexpr int m_ = mult1_ * mult2_ * mult3_;
+    static constexpr int maxprec_ = 2;
+    static constexpr int maxlen_ = baselen_ + maxprec_;
+    GARS() = delete;            // Disable constructor
 
   public:
 
@@ -125,7 +117,7 @@ namespace GeographicLib {
      * The returned length is in the range [0, 2].
      **********************************************************************/
     static int Precision(real res) {
-      using std::abs; res = abs(res);
+      using std::fabs; res = fabs(res);
       for (int prec = 0; prec < maxprec_; ++prec)
         if (Resolution(prec) <= res)
           return prec;
@@ -135,9 +127,5 @@ namespace GeographicLib {
   };
 
 } // namespace GeographicLib
-
-#if defined(_MSC_VER)
-#  pragma warning (pop)
-#endif
 
 #endif  // GEOGRAPHICLIB_GARS_HPP

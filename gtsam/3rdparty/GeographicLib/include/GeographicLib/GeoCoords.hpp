@@ -2,7 +2,7 @@
  * \file GeoCoords.hpp
  * \brief Header for GeographicLib::GeoCoords class
  *
- * Copyright (c) Charles Karney (2008-2016) <charles@karney.com> and licensed
+ * Copyright (c) Charles Karney (2008-2022) <karney@alum.mit.edu> and licensed
  * under the MIT/X11 License.  For more information, see
  * https://geographiclib.sourceforge.io/
  **********************************************************************/
@@ -240,9 +240,7 @@ namespace GeographicLib {
                       _zone, _northp, _easting, _northing, _gamma, _k,
                       zone);
       _lat = latitude;
-      _long = longitude;
-      if (_long >= 180) _long -= 360;
-      else if (_long < -180) _long += 360;
+      _long = Math::AngNormalize(longitude);
       CopyToAlt();
     }
 
@@ -529,7 +527,7 @@ namespace GeographicLib {
      * (The WGS84 value is returned because the UTM and UPS projections are
      * based on this ellipsoid.)
      **********************************************************************/
-    Math::real MajorRadius() const { return UTMUPS::MajorRadius(); }
+    Math::real EquatorialRadius() const { return UTMUPS::EquatorialRadius(); }
 
     /**
      * @return \e f the flattening of the WGS84 ellipsoid.
