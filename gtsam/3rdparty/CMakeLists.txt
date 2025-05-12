@@ -53,35 +53,49 @@ endif()
 
 add_subdirectory(ceres)
 
-############ NOTE:  When updating GeographicLib be sure to disable building their examples
-############        and unit tests by commenting out their lines:
-# add_subdirectory (examples)
-# set (TOOLS CartConvert ConicProj GeodesicProj GeoConvert GeodSolve
-#   GeoidEval Gravity MagneticField Planimeter TransverseMercatorProj)
-# add_subdirectory (tools)
+# Developer Note for GeographicLib updates:
+# When updating the bundled GeographicLib, its CMakeLists.txt might need manual
+# adjustments to disable building its examples and tools, as they are not
+# typically needed or desired when GeographicLib is used as a GTSAM dependency.
 
-# Find GeographicLib using the find script distributed with it
-unset(GEOGRAPHICLIB_FOUND CACHE)
+# --- GeographicLib Handling ---
+# Clear any cached GeographicLib find results to ensure a fresh detection.
+unset(GeographicLib_FOUND CACHE)
 unset(GeographicLib_INCLUDE_DIRS CACHE)
 unset(GeographicLib_LIBRARIES CACHE)
 unset(GeographicLib_LIBRARY_DIRS CACHE)
+# Use GeographicLib's own find script to locate an existing system installation.
 include(GeographicLib/cmake/FindGeographicLib.cmake)
 
-# Set up the option to install GeographicLib
-if(GEOGRAPHICLIB-NOTFOUND)
+# Determine default for GTSAM_INSTALL_GEOGRAPHICLIB option.
+# If system GeographicLib is not found, default to installing the bundled version.
+if(NOT GeographicLib_FOUND)
   set(install_geographiclib_default ON)
 else()
   set(install_geographiclib_default OFF)
 endif()
+# Option for users to force build/install of the bundled GeographicLib.
 option(GTSAM_INSTALL_GEOGRAPHICLIB "Build and install the 3rd-party library GeographicLib" ${install_geographiclib_default})
 
-# Print warning if we'll overwrite GeographicLib
-if(GEOGRAPHICLIB_FOUND AND GTSAM_INSTALL_GEOGRAPHICLIB)
+# Warn if a system GeographicLib is found but user also opts to install the bundled version.
+if(GeographicLib_FOUND AND GTSAM_INSTALL_GEOGRAPHICLIB)
   message(WARNING "GeographicLib is installed on your system and GTSAM_INSTALL_GEOGRAPHICLIB is enabled.  Installing gtsam will either overwrite the installed GeographicLib or install a second version that may conflict.  You may want to disable GTSAM_INSTALL_GEOGRAPHICLIB if the installed version was not installed by GTSAM.")
 endif()
 
+# If installing the bundled GeographicLib:
 if(GTSAM_INSTALL_GEOGRAPHICLIB)
+  # Override GeographicLib's default 'INCDIR' ("include") to use CMAKE_INSTALL_INCLUDEDIR.
+  # This ensures its headers are installed to the correct system include path (e.g., for multi-arch),
+  # resolving to ${CMAKE_INSTALL_INCLUDEDIR}/GeographicLib.
+  set(INCDIR "${CMAKE_INSTALL_INCLUDEDIR}" CACHE PATH "Override GeographicLib's INCDIR for GTSAM bundle" FORCE)
+  
+  # Disable installation of GeographicLib examples.
+  # GeographicLib's CMakeLists.txt checks 'if(EXAMPLEDIR)' before adding its 'examples'
+  # subdirectory. Setting EXAMPLEDIR to "OFF" (as a CACHE STRING, matching its original
+  # definition type) makes this condition false.
+  set(EXAMPLEDIR "OFF" CACHE STRING "Disable GeographicLib example installation for GTSAM bundle" FORCE)
+
   add_subdirectory(GeographicLib)
 endif()
 
-set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
+# Propagate any exported targets (like GeographicLib if built) to the parent scope.
