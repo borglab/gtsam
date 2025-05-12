@@ -452,12 +452,9 @@ if (WIN32)
 endif ()
 
 # The list of tools (to be installed into, e.g., /usr/local/bin)
-set (TOOLS CartConvert ConicProj GeodesicProj GeoConvert GeodSolve
-  GeoidEval Gravity IntersectTool MagneticField Planimeter RhumbSolve
-  TransverseMercatorProj)
+# in GTSAM we disable: set (TOOLS CartConvert ConicProj GeodesicProj GeoConvert GeodSolve GeoidEval Gravity IntersectTool MagneticField Planimeter RhumbSolve TransverseMercatorProj)
 # The list of scripts (to be installed into, e.g., /usr/local/sbin)
-set (SCRIPTS geographiclib-get-geoids geographiclib-get-gravity
-  geographiclib-get-magnetic)
+# in GTSAM we disable: set (SCRIPTS geographiclib-get-geoids geographiclib-get-gravity geographiclib-get-magnetic)
 
 set_property (GLOBAL PROPERTY USE_FOLDERS ON)
 
