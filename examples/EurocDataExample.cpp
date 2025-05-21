@@ -1,6 +1,6 @@
 /**
  * @file EurocDataExample.cpp
- * @brief Example evaluating IMU Preintegration consistency (15-DOF) on EuRoC dataset.
+ * @brief Example evaluating IMU preintegration techniques on EuRoC dataset.
  * @author Matt Kielo, Porter Zach
  */
 
@@ -36,10 +36,9 @@
  typedef Eigen::Matrix<double, 15, 15> Matrix15x15;
  
  // --- Configuration ---
- // Update this path with the location of your EuRoC data, which should contain
- // folders like "MH_01", "V2_02", etc.
+ // Update this path with the location of your EuRoC data, which should contain folders like "MH_01", "V2_02", etc.
  const string base_euroc_data_path = "C:/gtsam/euroc/data";
- const vector<string> dataset_sequences = { "MH_01", "V2_02" };
+ const vector<string> dataset_sequences = { "MH_01", /* "MH_02", "MH_03", "MH_04", "MH_05", "V1_01", "V1_02", "V1_03", "V2_01", */ "V2_02" /*, "V2_03" */ };
  const vector<double> deltaTij_values = {0.2, 0.5, 1.0};
  const double integration_noise_sigma = 1e-8;
  const Vector3 gravity_n(0, 0, -9.81);
@@ -168,20 +167,19 @@
          
          // PreintegrationCombinedParams constructor takes gravity magnitude
          auto p_combined = PreintegrationCombinedParams::MakeSharedU(gravity_n_vec.norm());
+ 
+         // Set gyroscopeCovariance, omegaCoriolis, body_P_sensor
+         setupBasePreintegratedRotationParams(static_cast<PreintegratedRotationParams*>(p_combined.get()),
+                                             sensor_params, body_omega_coriolis);
          
          double nominal_imu_dt = 1.0 / sensor_params.rate_hz;
          if (nominal_imu_dt <= 1e-9) nominal_imu_dt = 0.005;
  
-         p_combined->gyroscopeCovariance = pow(sensor_params.gyro_noise_density, 2) / nominal_imu_dt * I_3x3;
          p_combined->accelerometerCovariance = pow(sensor_params.accel_noise_density, 2) / nominal_imu_dt * I_3x3;
          p_combined->integrationCovariance = pow(integration_sigma, 2) * I_3x3; 
          p_combined->biasAccCovariance = pow(sensor_params.accel_bias_rw_density, 2) * nominal_imu_dt * I_3x3;
          p_combined->biasOmegaCovariance = pow(sensor_params.gyro_bias_rw_density, 2) * nominal_imu_dt * I_3x3;
          p_combined->biasAccOmegaInt = I_6x6 * 1e-5; // Default
- 
-         // body_P_sensor and omegaCoriolis will be std::nullopt by default from 
-         // PreintegrationCombinedParams::MakeSharedU. This is consistent with the original
-         // script not explicitly setting these on its PreintegrationCombinedParams object.
  
          return p_combined;
      }
@@ -257,8 +255,7 @@
          
          auto p_manifold = PreintegrationParams::MakeSharedU(gravity_n_vec.norm());
  
-         // For ManifoldIMU, using setupBasePreintegratedRotationParams is standard
-         // as it sets body_P_sensor and omegaCoriolis if needed.
+         // Set gyroscopeCovariance, omegaCoriolis, body_P_sensor
          setupBasePreintegratedRotationParams(static_cast<PreintegratedRotationParams*>(p_manifold.get()),
                                              sensor_params, body_omega_coriolis);
  
@@ -365,7 +362,7 @@
      Vector3 body_omega_Coriolis = Vector3::Zero(); // Set to non-zero if evaluating on rotating frame
  
      // --- List of Preintegration Techniques to Evaluate ---
-     // **TO ADD A NEW TECHNIQUE**: 
+     // TO ADD A NEW TECHNIQUE: 
      // 1. Define YourNewTechniqueClass inheriting from ImuPreintegrationTechnique.
      // 2. Implement its virtual methods (name, createPreintegrationParams, evaluateInterval).
      // 3. Add to this list: techniques.push_back(shared_ptr<ImuPreintegrationTechnique>(new YourNewTechniqueClass()));
@@ -376,7 +373,7 @@
      map<string, map<string, map<double, AggregatedRunResults>>> all_results_by_technique;
  
      for (const auto& tech_ptr : techniques) {
-         cout << "\n\n<<<<< Evaluating Technique: " << tech_ptr->name() << " >>>>>" << endl;
+         cout << "\n<<<<< Evaluating Technique: " << tech_ptr->name() << " >>>>>" << endl;
          map<string, map<double, AggregatedRunResults>> current_technique_run_results;
  
          for (const string& dataset_name : dataset_sequences) {
