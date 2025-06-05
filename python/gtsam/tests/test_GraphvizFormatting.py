@@ -29,9 +29,9 @@ class TestGraphvizFormatting(GtsamTestCase):
         self.graph.add(gtsam.BetweenFactorPose2(1, 2, odometry, odometryNoise))
 
         self.values = gtsam.Values()
-        self.values.insert_pose2(0, gtsam.Pose2(0., 0., 0.))
-        self.values.insert_pose2(1, gtsam.Pose2(2., 0., 0.))
-        self.values.insert_pose2(2, gtsam.Pose2(4., 0., 0.))
+        self.values.insert(0, gtsam.Pose2(0., 0., 0.))
+        self.values.insert(1, gtsam.Pose2(2., 0., 0.))
+        self.values.insert(2, gtsam.Pose2(4., 0., 0.))
 
     def test_default(self):
         """Test with default GraphvizFormatting"""

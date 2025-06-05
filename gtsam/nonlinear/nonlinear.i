@@ -83,7 +83,7 @@ class NonlinearFactorGraph {
                  gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
                  gtsam::PinholeCamera<gtsam::Cal3Unified>,
                  gtsam::imuBias::ConstantBias}>
-  void addPrior(size_t key, const T& prior,
+  void addPrior(gtsam::Key key, const T& prior,
                 const gtsam::noiseModel::Base* noiseModel);
 
   // NonlinearFactorGraph
@@ -757,9 +757,9 @@ class ISAM2 {
                      gtsam::PinholeCamera<gtsam::Cal3_S2>,
                      gtsam::PinholeCamera<gtsam::Cal3Bundler>,
                      gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
-                     gtsam::PinholeCamera<gtsam::Cal3Unified>, Vector, Matrix}>
-  VALUE calculateEstimate(size_t key) const;
-  Matrix marginalCovariance(size_t key) const;
+                     gtsam::PinholeCamera<gtsam::Cal3Unified>, gtsam::Vector, gtsam::Matrix}>
+  VALUE calculateEstimate(gtsam::Key key) const;
+  gtsam::Matrix marginalCovariance(gtsam::Key key) const;
   gtsam::Values calculateBestEstimate() const;
   gtsam::VectorValues getDelta() const;
   double error(const gtsam::VectorValues& x) const;
@@ -787,7 +787,7 @@ class NonlinearISAM {
   void printStats() const;
   void saveGraph(string s) const;
   gtsam::Values estimate() const;
-  Matrix marginalCovariance(size_t key) const;
+  gtsam::Matrix marginalCovariance(gtsam::Key key) const;
   int reorderInterval() const;
   int reorderCounter() const;
   void update(const gtsam::NonlinearFactorGraph& newFactors,
@@ -830,7 +830,7 @@ template <T = {double,
                gtsam::PinholeCamera<gtsam::Cal3Unified>,
                gtsam::imuBias::ConstantBias}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
-  PriorFactor(size_t key, const T& prior,
+  PriorFactor(gtsam::Key key, const T& prior,
               const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
 
