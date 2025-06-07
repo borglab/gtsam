@@ -280,16 +280,16 @@ class VectorValues {
 
   //Standard Interface
   size_t size() const;
-  size_t dim(size_t j) const;
-  bool exists(size_t j) const;
+  size_t dim(gtsam::Key j) const;
+  bool exists(gtsam::Key j) const;
   void print(string s = "VectorValues",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::VectorValues& x, double tol) const;
-  void insert(size_t j, gtsam::Vector value);
+  void insert(gtsam::Key j, gtsam::Vector value);
   gtsam::Vector vector() const;
   gtsam::Vector vector(const gtsam::KeyVector& keys) const;
-  gtsam::Vector at(size_t j) const;
+  gtsam::Vector at(gtsam::Key j) const;
   void insert(const gtsam::VectorValues& values);
   void update(const gtsam::VectorValues& values);
 
