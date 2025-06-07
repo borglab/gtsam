@@ -11,12 +11,7 @@
 
 #pragma once
 
-#ifdef _MSC_VER
 #pragma message("RangeFactor is now an ExpressionFactor in SAM directory")
-#else
-#warning "RangeFactor is now an ExpressionFactor in SAM directory"
-#endif
-
 
 #include <gtsam/sam/RangeFactor.h>
 

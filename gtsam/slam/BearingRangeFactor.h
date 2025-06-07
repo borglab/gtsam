@@ -11,11 +11,8 @@
 
 #pragma once
 
-#ifdef _MSC_VER
 #pragma message( \
     "BearingRangeFactor is now an ExpressionFactor in SAM directory")
-#else
-#warning "BearingRangeFactor is now an ExpressionFactor in SAM directory"
-#endif
+
 
 #include <gtsam/sam/BearingRangeFactor.h>

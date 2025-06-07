@@ -60,11 +60,8 @@ DiscreteValues DiscreteBayesNet::optimize() const {
 
 DiscreteValues DiscreteBayesNet::optimize(DiscreteValues result) const {
   // solve each node in turn in topological sort order (parents first)
-#ifdef _MSC_VER
 #pragma message("DiscreteBayesNet::optimize (deprecated) does not compute MPE!")
-#else
-#warning "DiscreteBayesNet::optimize (deprecated) does not compute MPE!"
-#endif
+
   for (auto conditional : boost::adaptors::reverse(*this))
     conditional->solveInPlace(&result);
   return result;
