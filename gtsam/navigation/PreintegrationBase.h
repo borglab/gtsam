@@ -156,7 +156,7 @@ class GTSAM_EXPORT PreintegrationBase {
                    OptionalJacobian<9, 6> H2 = {}) const;
 
   /// Calculate error given navStates
-  Vector9 computeError(const NavState& state_i, const NavState& state_j,
+  virtual Vector9 computeError(const NavState& state_i, const NavState& state_j,
                        const imuBias::ConstantBias& bias_i,
                        OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2,
                        OptionalJacobian<9, 6> H3) const;
@@ -165,7 +165,7 @@ class GTSAM_EXPORT PreintegrationBase {
    * Compute errors w.r.t. preintegrated measurements and jacobians
    * wrt pose_i, vel_i, bias_i, pose_j, bias_j
    */
-  Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
+  virtual Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
       const Pose3& pose_j, const Vector3& vel_j,
       const imuBias::ConstantBias& bias_i, 
       OptionalJacobian<9, 6> H1 = {}, OptionalJacobian<9, 3> H2 = {},

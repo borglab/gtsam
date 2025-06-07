@@ -59,6 +59,10 @@ public:
 
   /// @}
 
+  // Declare functions to pass down to PIM
+  using PreintegrationBase::computeError;
+  using PreintegrationBase::computeErrorAndJacobians;
+
   /// @name Basic utilities
   /// @{
   /// Re-initialize PreintegratedMeasurements

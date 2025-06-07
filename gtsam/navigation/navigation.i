@@ -148,6 +148,9 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
 };
 
 #include <gtsam/navigation/ImuFactor.h>
+class PreintegratedImuMeasurementsInterface {
+};
+
 class PreintegratedImuMeasurements {
   // Constructors
   PreintegratedImuMeasurements(const gtsam::PreintegrationParams* params);
@@ -182,10 +185,10 @@ class PreintegratedImuMeasurements {
 virtual class ImuFactor: gtsam::NonlinearFactor {
   ImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j,
       size_t bias,
-      const gtsam::PreintegratedImuMeasurements& preintegratedMeasurements);
+      std::shared_ptr<const gtsam::PreintegratedImuMeasurementsInterface> preintegratedMeasurements);
 
   // Standard Interface
-  gtsam::PreintegratedImuMeasurements preintegratedMeasurements() const;
+  std::shared_ptr<const gtsam::PreintegratedImuMeasurementsInterface> preintegratedMeasurements() const;
   gtsam::Vector evaluateError(const gtsam::Pose3& pose_i, gtsam::Vector vel_i,
       const gtsam::Pose3& pose_j, gtsam::Vector vel_j,
       const gtsam::imuBias::ConstantBias& bias);
@@ -198,10 +201,10 @@ virtual class ImuFactor2: gtsam::NonlinearFactor {
   ImuFactor2();
   ImuFactor2(size_t state_i, size_t state_j,
       size_t bias,
-      const gtsam::PreintegratedImuMeasurements& preintegratedMeasurements);
+      std::shared_ptr<const gtsam::PreintegratedImuMeasurementsInterface> preintegratedMeasurements);
 
   // Standard Interface
-  gtsam::PreintegratedImuMeasurements preintegratedMeasurements() const;
+  std::shared_ptr<const gtsam::PreintegratedImuMeasurementsInterface> preintegratedMeasurements() const;
   gtsam::Vector evaluateError(const gtsam::NavState& state_i,
                               gtsam::NavState& state_j,
                               const gtsam::imuBias::ConstantBias& bias_i);

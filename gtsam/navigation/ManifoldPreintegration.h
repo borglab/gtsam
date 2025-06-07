@@ -63,6 +63,10 @@ public:
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
   /// @}
+  
+  // Declare functions to pass down to PIM
+  using PreintegrationBase::computeError;
+  using PreintegrationBase::computeErrorAndJacobians;
 
   /// @name Basic utilities
   /// @{

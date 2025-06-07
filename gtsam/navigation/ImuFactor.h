@@ -59,6 +59,40 @@ typedef ManifoldPreintegration DefaultPreintegrationBackend;
  */
 
 /**
+ * Interface to support user PIM specification for ImuFactor & ImuFactor2.
+ * This class is the minimum interface required for an ImuFactor to interact
+ * with its underlying PreintegratedImuMeasurements, which may be based on
+ * ManifoldPreintegration, TangentPreintegration, etc.
+ */
+class PreintegratedImuMeasurementsInterface {
+ public:
+  virtual Vector9 computeError(const NavState& state_i, const NavState& state_j,
+    const imuBias::ConstantBias& bias_i,
+    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2,
+    OptionalJacobian<9, 6> H3) const = 0;
+
+  virtual Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
+    const Pose3& pose_j, const Vector3& vel_j,
+    const imuBias::ConstantBias& bias_i, 
+    OptionalJacobian<9, 6> H1 = {}, OptionalJacobian<9, 3> H2 = {},
+    OptionalJacobian<9, 6> H3 = {}, OptionalJacobian<9, 3> H4 = {}, 
+    OptionalJacobian<9, 6> H5 = {}) const = 0;
+
+  virtual Matrix preintMeasCov() const = 0;
+
+  virtual void print(const std::string& s) const = 0;
+  virtual bool equals(const PreintegratedImuMeasurementsInterface& expected, double tol) const = 0;
+  
+  virtual ~PreintegratedImuMeasurementsInterface() = default;
+  
+  /**
+  * @brief Create a deep copy of this object and return a shared pointer.
+  * Named deepCopy to avoid conflict with TangentPreintegration.clone().
+  */
+  virtual std::shared_ptr<const PreintegratedImuMeasurementsInterface> deepCopy() const = 0;
+};
+
+/**
  * PreintegratedImuMeasurements accumulates (integrates) the IMU measurements
  * (rotation rates and accelerations) and the corresponding covariance matrix.
  * The measurements are then used to build the Preintegrated IMU factor.
@@ -69,10 +103,11 @@ typedef ManifoldPreintegration DefaultPreintegrationBackend;
  * @ingroup navigation
  */
 template <class PreintegrationBackend>
-class GTSAM_EXPORT PreintegratedImuMeasurementsT: public PreintegrationBackend {
+class GTSAM_EXPORT PreintegratedImuMeasurementsT: public PreintegrationBackend, 
+                                                  public virtual PreintegratedImuMeasurementsInterface {
  
-  template <class PIMType_> friend class ImuFactorT;
-  template <class PIMType_> friend class ImuFactor2T;
+  friend class ImuFactorT;
+  friend class ImuFactor2T;
 
 protected:
 
@@ -116,10 +151,16 @@ public:
   void print(const std::string& s = "Preintegrated Measurements:") const override;
 
   /// equals
-  bool equals(const PreintegratedImuMeasurementsT<PreintegrationBackend>& expected, double tol = 1e-9) const;
+  bool equalsConcrete(const PreintegratedImuMeasurementsT<PreintegrationBackend>& expected, double tol = 1e-9) const;
+  bool equals(const PreintegratedImuMeasurementsInterface& other_interface, double tol = 1e-9) const override;
 
   /// Re-initialize PreintegratedImuMeasurements
   void resetIntegration() override;
+  
+  /// Create a deep copy of this object, wrapped in a shared_ptr.
+  std::shared_ptr<const PreintegratedImuMeasurementsInterface> deepCopy() const override {
+    return std::make_shared<const PreintegratedImuMeasurementsT<PreintegrationBackend>>(*this);
+  }
 
   /**
    * Add a single IMU measurement to the preintegration.
@@ -140,6 +181,24 @@ public:
 
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }
+
+  /// Redeclare compute functions for override
+  Vector9 computeError(const NavState& state_i, const NavState& state_j,
+      const imuBias::ConstantBias& bias_i,
+      OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2,
+      OptionalJacobian<9, 6> H3) const override {
+    return PreintegrationBackend::computeError(
+      state_i, state_j, bias_i, H1, H2, H3);
+  }
+  Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
+      const Pose3& pose_j, const Vector3& vel_j,
+      const imuBias::ConstantBias& bias_i, 
+      OptionalJacobian<9, 6> H1 = {}, OptionalJacobian<9, 3> H2 = {},
+      OptionalJacobian<9, 6> H3 = {}, OptionalJacobian<9, 3> H4 = {}, 
+      OptionalJacobian<9, 6> H5 = {}) const override {
+    return PreintegrationBackend::computeErrorAndJacobians(
+      pose_i, vel_i, pose_j, vel_j, bias_i, H1, H2, H3, H4, H5);
+  }
 
   /// Merge in a different set of measurements and update bias derivatives accordingly
   /// This method is specific to TangentPreintegration backend.
@@ -184,16 +243,15 @@ typedef PreintegratedImuMeasurementsT<DefaultPreintegrationBackend> Preintegrate
  *
  * @ingroup navigation
  */
-template <class PIMType_ = PreintegratedImuMeasurements>
-class GTSAM_EXPORT ImuFactorT: public NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
+class GTSAM_EXPORT ImuFactor: public NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
     imuBias::ConstantBias> {
 private:
 
-  typedef ImuFactorT<PIMType_> This;
+  typedef ImuFactor This;
   typedef NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
       imuBias::ConstantBias> Base;
 
-  PIMType_ _PIM_;
+  std::shared_ptr<const PreintegratedImuMeasurementsInterface> _PIM_;
 
 public:
 
@@ -201,11 +259,15 @@ public:
   using Base::evaluateError;
 
   /** Shorthand for a smart pointer to a factor */
-  typedef std::shared_ptr<This> shared_ptr;
+#if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
+  typedef typename std::shared_ptr<ImuFactor> shared_ptr;
+#else
+  typedef std::shared_ptr<ImuFactor> shared_ptr;
+#endif
 
 
   /** Default constructor - only use for serialization */
-  ImuFactorT() {}
+  ImuFactor() {}
 
   /**
    * Constructor
@@ -217,30 +279,28 @@ public:
    * @param preintegratedMeasurements The preintegreated measurements since the
    * last pose.
    */
-  ImuFactorT(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
-      const PIMType_& preintegratedMeasurements)
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
-             pose_i, vel_i, pose_j, vel_j, bias),
-        _PIM_(preintegratedMeasurements) {}
+  ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
+    const std::shared_ptr<const PreintegratedImuMeasurementsInterface>& preintegratedMeasurements);
 
-  ~ImuFactorT() override {
+  ~ImuFactor() override {
   }
 
   /// @return a deep copy of this factor
-  gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return std::make_shared<This>(*this);
-  }
+  gtsam::NonlinearFactor::shared_ptr clone() const override;
 
   /// @name Testable
   /// @{
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ImuFactor&);
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
                                             DefaultKeyFormatter) const override;
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
   /// @}
 
-  /** Access the preintegrated measurements. */
-
-  const PIMType_& preintegratedMeasurements() const {
+  /** 
+   * Access the preintegrated measurements. 
+   * User is responsible for casting to their underlying PIM type.
+   */
+  const std::shared_ptr<const PreintegratedImuMeasurementsInterface> preintegratedMeasurements() const {
     return _PIM_;
   }
 
@@ -253,78 +313,12 @@ public:
       OptionalMatrixType H3, OptionalMatrixType H4, OptionalMatrixType H5) const override;
 
   /// Merge two pre-integrated measurement classes
-  template <typename MethodPIMArg = PIMType_,
-    // This method is only callable when PIMType_ is PreintegratedImuMeasurementsT<TangentPreintegration>.
-    typename = typename std::enable_if<
-        std::is_same<MethodPIMArg, PreintegratedImuMeasurementsT<TangentPreintegration>>::value
-    >::type
-  >
-  static MethodPIMArg Merge(
-    const MethodPIMArg& pim01,
-    const MethodPIMArg& pim12
-  ) {
-    // When this template is instantiated:
-    // 1. MethodPIMArg = PIMType_. It's mirrored to avoid error C7637 from strict compilers.
-    // 2. The SFINAE condition ensures MethodPIMArg IS PreintegratedImuMeasurementsT<TangentPreintegration>.
-    // So, arguments are const PreintegratedImuMeasurementsT<TangentPreintegration>&
-    // and return is PreintegratedImuMeasurementsT<TangentPreintegration>.
-
-    if (!pim01.matchesParamsWith(pim12))
-      throw std::domain_error(
-          "Cannot merge PreintegratedImuMeasurements with different params");
-
-    if (pim01.p_->body_P_sensor)
-      throw std::domain_error(
-          "Cannot merge PreintegratedImuMeasurements with sensor pose yet");
-
-    // the bias for the merged factor will be the bias from 01
-    MethodPIMArg pim02 = pim01;
-
-    Matrix9 H1, H2;
-    pim02.mergeWith(pim12, &H1, &H2);
-
-    return pim02;
-  }
+  static PreintegratedImuMeasurementsT<TangentPreintegration> Merge(
+    const PreintegratedImuMeasurementsT<TangentPreintegration>& pim01,
+    const PreintegratedImuMeasurementsT<TangentPreintegration>& pim12);
 
   /// Merge two factors
-  template <
-    typename MethodPIMArg = PIMType_,
-    // This method is only callable when PIMType_ is PreintegratedImuMeasurementsT<TangentPreintegration>.
-    typename = typename std::enable_if<
-        std::is_same<MethodPIMArg, PreintegratedImuMeasurementsT<TangentPreintegration>>::value
-    >::type
-  >
-  static typename ImuFactorT<MethodPIMArg>::shared_ptr Merge(
-    const typename ImuFactorT<MethodPIMArg>::shared_ptr& f01,
-    const typename ImuFactorT<MethodPIMArg>::shared_ptr& f12
-  ) {
-    // When this template is instantiated:
-    // 1. MethodPIMArg = PIMType_. It's mirrored to avoid error C7637 from strict compilers.
-    // 2. The SFINAE condition ensures MethodPIMArg IS PreintegratedImuMeasurementsT<TangentPreintegration>.
-    // So, ImuFactorT<MethodPIMArg> is effectively ImuFactorT<PIMType_>, which is `This`.
-    // The signature effectively becomes:
-    // static typename This::shared_ptr Merge(const typename This::shared_ptr&, const typename This::shared_ptr&)
-
-  // IMU bias keys must be the same.
-  if (f01->template key<5>() != f12->template key<5>())
-    throw std::domain_error("ImuFactor::Merge: IMU bias keys must be the same");
-
-  // expect intermediate pose, velocity keys to matchup.
-  if (f01->template key<3>() != f12->template key<1>() || f01->template key<4>() != f12->template key<2>())
-    throw std::domain_error(
-        "ImuFactor::Merge: intermediate pose, velocity keys need to match up");
-
-  // return new factor
-  auto pim02 = This::Merge(f01->preintegratedMeasurements(), f12->preintegratedMeasurements());
-
-  return std::make_shared<This>( // `This` is ImuFactorT<MethodPIMArg> (i.e. ImuFactorT<PIMType_>)
-      f01->template key<1>(),  // P0
-      f01->template key<2>(),  // V0
-      f12->template key<3>(),  // P2
-      f12->template key<4>(),  // V2
-      f01->template key<5>(),  // B
-      pim02);
-  }
+  static shared_ptr Merge(const shared_ptr& f01, const shared_ptr& f12);
 
  private:
   /** Serialization function */
@@ -339,27 +333,19 @@ public:
   }
 #endif
 };
-// class ImuFactorT
-
-// For backward compatibility:
-typedef ImuFactorT<> ImuFactor;
- 
-// operator<< for ImuFactorT
-template <class PIMType_>
-GTSAM_EXPORT std::ostream& operator<<(std::ostream& os, const ImuFactorT<PIMType_>& f);
+// class ImuFactor
 
 /**
  * ImuFactor2 is a ternary factor that uses NavStates rather than Pose/Velocity.
  * @ingroup navigation
  */
-template <class PIMType_ = PreintegratedImuMeasurements>
-class GTSAM_EXPORT ImuFactor2T : public NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias> {
+class GTSAM_EXPORT ImuFactor2 : public NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias> {
 private:
 
-  typedef ImuFactor2T<PIMType_> This;
+  typedef ImuFactor2 This;
   typedef NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias> Base;
 
-  PIMType_ _PIM_;
+  std::shared_ptr<const PreintegratedImuMeasurementsInterface> _PIM_;
 
 public:
 
@@ -367,7 +353,7 @@ public:
   using Base::evaluateError;
 
   /** Default constructor - only use for serialization */
-  ImuFactor2T() {}
+  ImuFactor2() {}
 
   /**
    * Constructor
@@ -375,24 +361,18 @@ public:
    * @param state_j Current state key
    * @param bias    Previous bias key
    */
-  ImuFactor2T(Key state_i, Key state_j, Key bias,
-             const PIMType_& preintegratedMeasurements)
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
-             state_i, state_j, bias),
-        _PIM_(preintegratedMeasurements) {}
+  ImuFactor2(Key state_i, Key state_j, Key bias,
+    std::shared_ptr<const PreintegratedImuMeasurementsInterface> preintegratedMeasurements);
 
-
-  ~ImuFactor2T() override {
+  ~ImuFactor2() override {
   }
 
   /// @return a deep copy of this factor
-  gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return std::make_shared<This>(*this);
-  }
-
+  gtsam::NonlinearFactor::shared_ptr clone() const override;
 
   /// @name Testable
   /// @{
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ImuFactor2&);
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
                                             DefaultKeyFormatter) const override;
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
@@ -400,7 +380,7 @@ public:
 
   /** Access the preintegrated measurements. */
 
-  const PIMType_& preintegratedMeasurements() const {
+  const std::shared_ptr<const PreintegratedImuMeasurementsInterface> preintegratedMeasurements() const {
     return _PIM_;
   }
 
@@ -426,22 +406,15 @@ private:
   }
 #endif
 };
-// class ImuFactor2T
-
-// For backward compatibility:
-typedef ImuFactor2T<> ImuFactor2;
-
-// operator<< for ImuFactor2T
-template <class PIMType_>
-GTSAM_EXPORT std::ostream& operator<<(std::ostream& os, const ImuFactor2T<PIMType_>& f);
+// class ImuFactor2
 
 template <class PreintegrationBackend>
 struct traits<PreintegratedImuMeasurementsT<PreintegrationBackend>> : public Testable<PreintegratedImuMeasurementsT<PreintegrationBackend>> {};
 
-template <class PIMType_>
-struct traits<ImuFactorT<PIMType_>> : public Testable<ImuFactorT<PIMType_>> {};
+template <>
+struct traits<ImuFactor> : public Testable<ImuFactor> {};
 
-template <class PIMType_>
-struct traits<ImuFactor2T<PIMType_>> : public Testable<ImuFactor2T<PIMType_>> {};
+template <>
+struct traits<ImuFactor2> : public Testable<ImuFactor2> {};
 
 } /// namespace gtsam
