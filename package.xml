@@ -23,7 +23,6 @@
 
   <buildtool_depend>cmake</buildtool_depend>
 
-  <depend>boost</depend>
   <depend>eigen</depend>
   <depend>tbb</depend>
 
