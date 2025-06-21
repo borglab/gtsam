@@ -110,7 +110,25 @@ jobs:
             python_version: "3.13"
             cibw_python_version: 313
             platform_id: macosx_arm64
-
+            
+          # Windows x86_64
+          - os: windows-latest
+            python_version: "3.10"
+            cibw_python_version: 310
+            platform_id: windows_x86_64
+          - os: windows-latest
+            python_version: "3.11"
+            cibw_python_version: 311
+            platform_id: windows_x86_64
+          - os: windows-latest
+            python_version: "3.12"
+            cibw_python_version: 312
+            platform_id: windows_x86_64
+          - os: windows-latest
+            python_version: "3.13"
+            cibw_python_version: 313
+            platform_id: windows_x86_64
+            
     steps:
       - name: Checkout
         uses: actions/checkout@v4
