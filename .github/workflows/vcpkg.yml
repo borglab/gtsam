@@ -21,7 +21,7 @@ jobs:
             build_type: Release
             test_target: RUN_TESTS
             binary_cache: C:\Users\runneradmin\AppData\Local\vcpkg\archives
-            vcpkg_info: C:/vcpkg/installed/vcpkg/info/*
+            vcpkg_installed: C:/vcpkg/installed/
             python: python
             # check_constraint_program fail on windows. should fix it for windows.
             # Remove this excluded test when you fix it for windows.
@@ -31,7 +31,7 @@ jobs:
             build_type: Release
             test_target: test
             binary_cache: /home/runner/.cache/vcpkg/archives
-            vcpkg_info: /usr/local/share/vcpkg/installed/vcpkg/info/*
+            vcpkg_installed: /usr/local/share/vcpkg/installed/
             cxxflags: -DCMAKE_CXX_FLAGS="-Wno-error=nonnull -Wno-error=maybe-uninitialized"
             python: python3
           - os: macos-latest
@@ -39,7 +39,7 @@ jobs:
             build_type: Release
             test_target: test
             binary_cache: /Users/runner/.cache/vcpkg/archives
-            vcpkg_info: /usr/local/share/vcpkg/installed/vcpkg/info/*
+            vcpkg_installed: /usr/local/share/vcpkg/installed/
             python: python3
     steps:
       - name: Checkout
@@ -102,8 +102,14 @@ jobs:
       - name: copy files for hash
         shell: bash
         run: |
+          echo $VCPKG_INSTALLATION_ROOT
           mkdir -p vcpkg-info
-          cp ${{ matrix.vcpkg_info }} vcpkg-info
+          find $VCPKG_INSTALLATION_ROOT/installed/ -type f -name 'vcpkg_abi_info.txt' | \
+          while read filepath; do
+            triplet=$(echo "$filepath" | awk -F/ '{print $(NF-3)}')
+            port=$(echo "$filepath" | awk -F/ '{print $(NF-1)}')
+            cp "$filepath" "vcpkg-info/${triplet}_${port}.txt"
+          done
 
       - name: Save cache dependencies
         uses: actions/cache/save@v4
@@ -136,11 +142,12 @@ jobs:
               -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
               -DGTSAM_ROT3_EXPMAP=ON \
               -DGTSAM_POSE3_EXPMAP=ON \
-              -DGTSAM_BUILD_PYTHON=OFF \
+              -DGTSAM_BUILD_PYTHON=ON \
               -DGTSAM_BUILD_TESTS=ON \
               -DGTSAM_BUILD_UNSTABLE=OFF \
               -DGTSAM_USE_SYSTEM_EIGEN=ON \
               -DGTSAM_USE_SYSTEM_METIS=ON \
+              -DGTSAM_USE_SYSTEM_PYBIND=ON \
               -DGTSAM_SUPPORT_NESTED_DISSECTION=ON \
               -DCTEST_EXTRA_ARGS="${{ matrix.ctest_extra_flags }}" \
               ${{ matrix.cxxflags }}
@@ -150,12 +157,11 @@ jobs:
         run: |
           cmake --build build --config Release
 
-      # TODO Add cmake detection of external pybind.
-      # - name: Run Python tests
-      #   shell: bash
-      #   run: |
-      #     cmake --build build --target python-install
-      #     cmake --build build --target python-test
+      - name: Run Python tests
+        shell: bash
+        run: |
+          cmake --build build --target python-install
+          cmake --build build --target python-test
 
       - name: Run tests
         shell: bash
