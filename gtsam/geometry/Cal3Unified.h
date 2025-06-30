@@ -130,7 +130,7 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
   Vector localCoordinates(const Cal3Unified& T2) const;
 
   /// Return dimensions of calibration manifold object
-  size_t dim() const override { return Dim(); }
+  size_t dim() const { return Dim(); }
 
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return dimension; }

@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/**
- * @file   testSimilarity2.cpp
- * @brief  Unit tests for Similarity2 class
- * @author Varun Agrawal
- */
+ /**
+  * @file   testSimilarity2.cpp
+  * @brief  Unit tests for Similarity2 class
+  * @author Varun Agrawal
+  */
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
@@ -71,8 +71,8 @@ TEST(Similarity2, HatAndVee) {
   // Check the structure of the Lie Algebra element
   Matrix3 expected;
   expected << 0, -3, 1,
-              3, 0, 2,
-              0, 0, -4;
+    3, 0, 2,
+    0, 0, -4;
 
   EXPECT(assert_equal(expected, Similarity2::Hat(v1)));
 }
@@ -82,6 +82,100 @@ TEST(Similarity2, HatAndVee) {
 TEST(Similarity2, BruteForceExpmap) {
   const Vector4 xi(0.1, 0.2, 0.3, 0.4);
   EXPECT(assert_equal(Similarity2::Expmap(xi), expm<Similarity2>(xi), 1e-4));
+}
+
+//******************************************************************************
+TEST(Similarity2, Compose) {
+  // Test group operation: compose two Similarity2 elements.
+  Rot2 R1 = Rot2::fromDegrees(30);
+  Point2 t1(1, 2);
+  double s1 = 2.0;
+  Similarity2 S1(R1, t1, s1);
+
+  Rot2 R2 = Rot2::fromDegrees(45);
+  Point2 t2(-1, 1);
+  double s2 = 4.0;
+  Similarity2 S2(R2, t2, s2);
+
+  Similarity2 S3 = S1.compose(S2);
+
+  // Compose manually
+  Rot2 expected_R = R1 * R2;
+  double expected_s = s1 * s2;
+  Point2 expected_t = t1 / s2 + R1.matrix() * t2;
+  Similarity2 expected_S3(expected_R, expected_t, expected_s);
+
+  EXPECT(assert_equal(expected_S3, S3));
+  EXPECT(assert_equal(expected_S3, S1 * S2));
+  EXPECT(assert_equal<Matrix3>(S3.matrix(), S1.matrix() * S2.matrix()));
+}
+
+//******************************************************************************
+TEST(Similarity2, Inverse) {
+  // Test group operation: inverse of a Similarity2 element.
+  Rot2 R = Rot2::fromDegrees(60);
+  Point2 t(3, -2);
+  double s = 4.0;
+  Similarity2 S(R, t, s);
+  Similarity2 S_inv = S.inverse();
+
+  // Check that S * S_inv is identity
+  Similarity2 I_sim = S.compose(S_inv);
+  Similarity2 expected_I;
+  EXPECT(assert_equal(expected_I, I_sim));
+}
+
+//******************************************************************************
+TEST(Similarity2, Identity) {
+  // Test that the identity Similarity2 acts as expected.
+  Similarity2 S_id;
+  Rot2 R = Rot2::fromDegrees(10);
+  Point2 t(5, 7);
+  double s = 2.5;
+  Similarity2 S(R, t, s);
+
+  // Compose with identity
+  EXPECT(assert_equal(S, S.compose(S_id)));
+  EXPECT(assert_equal(S, S_id.compose(S)));
+}
+
+//******************************************************************************
+TEST(Similarity2, TransformFrom_Point2) {
+  // Setup
+  Rot2 R = Rot2::fromAngle(M_PI / 4); // 45 degrees
+  Point2 t(1.0, 2.0);
+  double s = 3.0;
+  Similarity2 sim(R, t, s);
+
+  Point2 p(2.0, 0.0);
+
+  // Expected: s * (R * p + t)
+  Point2 expected = s * (R * p + t);
+
+  Point2 actual = sim.transformFrom(p);
+
+  EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+//******************************************************************************
+TEST(Similarity2, TransformFrom_Pose2) {
+  // Setup
+  Rot2 R_sim = Rot2::fromAngle(M_PI / 6); // 30 degrees
+  Point2 t_sim(1.0, -1.0);
+  double s_sim = 2.0;
+  Similarity2 sim(R_sim, t_sim, s_sim);
+
+  Rot2 R_pose = Rot2::fromAngle(-M_PI / 4); // -45 degrees
+  Point2 t_pose(3.0, 4.0);
+  Pose2 pose(R_pose, t_pose);
+
+  Rot2 expected_R = R_sim * R_pose;
+  Point2 expected_t = s_sim * (R_sim * t_pose + t_sim);
+  Pose2 expected(expected_R, expected_t);
+
+  Pose2 actual = sim.transformFrom(pose);
+
+  EXPECT(assert_equal(expected, actual, 1e-9));
 }
 
 //******************************************************************************

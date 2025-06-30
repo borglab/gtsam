@@ -136,7 +136,7 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   Matrix29 D2d_calibration(const Point2& p) const;
 
   /// return DOF, dimensionality of tangent space
-  size_t dim() const override { return Dim(); }
+  size_t dim() const { return Dim(); }
 
   /// return DOF, dimensionality of tangent space
   static size_t Dim() { return dimension; }

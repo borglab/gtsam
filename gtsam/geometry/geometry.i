@@ -784,10 +784,6 @@ virtual class Cal3 {
   gtsam::Vector vector() const;
   gtsam::Matrix K() const;
   gtsam::Matrix inverse() const;
-
-  // Manifold
-  static size_t Dim();
-  size_t dim() const;
 };
 
 #include <gtsam/geometry/Cal3_S2.h>
@@ -1269,6 +1265,21 @@ class Similarity2 {
   static gtsam::Similarity2 Align(const gtsam::Point2Pairs& abPointPairs);
   static gtsam::Similarity2 Align(const gtsam::Pose2Pairs& abPosePairs);
 
+  // Group
+  static gtsam::Similarity2 Identity();
+  gtsam::Similarity2 inverse() const;
+  gtsam::Similarity2 compose(const gtsam::Similarity2& other) const;
+  gtsam::Similarity2 between(const gtsam::Similarity2& other) const;
+
+  // Operator Overloads
+  gtsam::Similarity2 operator*(const gtsam::Similarity2& other) const;
+
+  // Manifold
+  gtsam::Similarity2 retract(gtsam::Vector v) const;
+  gtsam::Vector localCoordinates(const gtsam::Similarity2& t2) const;
+  size_t dim() const;
+  static size_t Dim();
+
   // Lie group
   static gtsam::Similarity2 Expmap(gtsam::Vector v);
   static gtsam::Vector Logmap(const gtsam::Similarity2& S);
@@ -1300,6 +1311,21 @@ class Similarity3 {
 
   static gtsam::Similarity3 Align(const gtsam::Point3Pairs& abPointPairs);
   static gtsam::Similarity3 Align(const gtsam::Pose3Pairs& abPosePairs);
+
+  // Group
+  static gtsam::Similarity3 Identity();
+  gtsam::Similarity3 inverse() const;
+  gtsam::Similarity3 compose(const gtsam::Similarity3& other) const;
+  gtsam::Similarity3 between(const gtsam::Similarity3& other) const;
+
+  // Operator Overloads
+  gtsam::Similarity3 operator*(const gtsam::Similarity3& other) const;
+
+  // Manifold
+  gtsam::Similarity3 retract(gtsam::Vector v) const;
+  gtsam::Vector localCoordinates(const gtsam::Similarity3& t2) const;
+  size_t dim() const;
+  static size_t Dim();
 
   // Lie group
   static gtsam::Similarity3 Expmap(gtsam::Vector v);

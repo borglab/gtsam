@@ -154,7 +154,7 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @{
 
   /// Return dimensions of calibration manifold object
-  size_t dim() const override { return Dim(); }
+  size_t dim() const { return Dim(); }
 
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return dimension; }
