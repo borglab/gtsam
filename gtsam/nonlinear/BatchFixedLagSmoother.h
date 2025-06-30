@@ -59,7 +59,8 @@ public:
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
                 const Values& newTheta = Values(),
                 const KeyTimestampMap& timestamps = KeyTimestampMap(),
-                const FactorIndices& factorsToRemove = FactorIndices()) override;
+                const FactorIndices& factorsToRemove = FactorIndices(),
+                const double adaptiveSmootherLag = -1.0) override;
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only

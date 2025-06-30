@@ -52,7 +52,8 @@ Matrix BatchFixedLagSmoother::marginalCovariance(Key key) const {
 /* ************************************************************************* */
 FixedLagSmoother::Result BatchFixedLagSmoother::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove) {
+    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
+    const double adaptiveSmootherLag) {
 
   // Update all of the internal variables with the new information
   gttic(augment_system);
@@ -81,9 +82,12 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   // Get current timestamp
   double current_timestamp = getCurrentTimestamp();
 
+  double smootherLagToUse = smootherLag_;
+  if (-1.0 != adaptiveSmootherLag && adaptiveSmootherLag < smootherLag_) {
+    smootherLagToUse = adaptiveSmootherLag;
+  }
   // Find the set of variables to be marginalized out
-  KeyVector marginalizableKeys = findKeysBefore(
-      current_timestamp - smootherLag_);
+  KeyVector marginalizableKeys = findKeysBefore(current_timestamp - smootherLagToUse);
 
   // Reorder
   gttic(reorder);

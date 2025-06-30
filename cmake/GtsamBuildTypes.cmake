@@ -111,7 +111,7 @@ if(MSVC)
   set(CMAKE_3_15 $<VERSION_LESS:${CMAKE_VERSION},3.15>)
   set(CMAKE_3_25 $<VERSION_LESS:${CMAKE_VERSION},3.25>)
   # Common to all configurations, next for each configuration:
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          /W3 /WX /GR /EHsc /MP  CACHE STRING "(User editable) Private compiler flags for all configurations.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          /W3 /GR /EHsc /MP  CACHE STRING "(User editable) Private compiler flags for all configurations.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           $<${CMAKE_3_15}:/MDd> $<${CMAKE_3_25}:/Zi> /Ob0 /Od /RTC1  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  $<${CMAKE_3_15}:/MD> /O2  $<${CMAKE_3_25}:/Zi>  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         $<${CMAKE_3_15}:/MD> /O2  CACHE STRING "(User editable) Private compiler flags for Release configuration.")

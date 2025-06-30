@@ -61,11 +61,22 @@ public:
    * @param newTheta new values for new variables only
    * @param timestamps an (optional) map from keys to real time stamps
    * @param factorsToRemove an (optional) list of factors to remove.
+   * @param adaptiveSmootherLag an (optional) smoother lag.
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
-                const Values& newTheta = Values(), //
+                const Values& newTheta = Values(),  //
                 const KeyTimestampMap& timestamps = KeyTimestampMap(),
-                const FactorIndices& factorsToRemove = FactorIndices()) override;
+                const FactorIndices& factorsToRemove = FactorIndices(),
+                const double adaptiveSmootherLag = -1.0) override;
+  
+  /**
+   * Marginalize using a smaller lag based on the original isam2 solution, keep the origin one.
+   * @param adaptiveSmootherLag a customized smoother lag
+   * @param isamParam isam2 paramter for a temperal optimizer.
+   */
+  Values calculateSubEstimate(
+      const double adaptiveSmootherLag = -1.0,
+      const ISAM2Params& isamParam = DefaultISAM2Params());
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
@@ -117,7 +128,10 @@ public:
   /// Get the iSAM2 object which is used for the inference internally
   const ISAM2& getISAM2() const { return isam_; }
 
-protected:
+  /// Get the sub iSAM2 object which is used for the inference internally
+  const ISAM2& getSubISAM2() const { return subIsam_; }
+
+ protected:
 
   /** Create default parameters */
   static ISAM2Params DefaultISAM2Params() {
@@ -129,6 +143,9 @@ protected:
   /** An iSAM2 object used to perform inference. The smoother lag is controlled
    * by what factors are removed each iteration */
   ISAM2 isam_;
+
+  /** An iSAM2 object used to perform inference for sub inference*/
+  ISAM2 subIsam_;
 
   /** Store results of latest isam2 update */
   ISAM2Result isamResult_;

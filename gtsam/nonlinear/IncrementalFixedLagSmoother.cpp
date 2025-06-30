@@ -44,7 +44,8 @@ bool IncrementalFixedLagSmoother::equals(const FixedLagSmoother& rhs,
 /* ************************************************************************* */
 FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove) {
+    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
+    const double adaptiveSmootherLag) {
 
   const bool debug = ISDEBUG("IncrementalFixedLagSmoother update");
 
@@ -66,9 +67,12 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   if (debug)
     std::cout << "Current Timestamp: " << current_timestamp << std::endl;
 
+  double smootherLagToUse = smootherLag_;
+  if (-1.0 != adaptiveSmootherLag && adaptiveSmootherLag < smootherLag_) {
+    smootherLagToUse = adaptiveSmootherLag;
+  }
   // Find the set of variables to be marginalized out
-  KeyVector marginalizableKeys = findKeysBefore(
-      current_timestamp - smootherLag_);
+  KeyVector marginalizableKeys = findKeysBefore(current_timestamp - smootherLagToUse);
 
   if (debug) {
     std::cout << "Marginalizable Keys: ";
@@ -136,7 +140,48 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   return result;
 }
 
-/* ************************************************************************* */
+Values IncrementalFixedLagSmoother::calculateSubEstimate(
+    const double adaptiveSmootherLag, const ISAM2Params& isamParam) {
+  FastVector<size_t> removedFactors;
+  std::optional<FastMap<Key, int> > constrainedKeys = {};
+
+  // Get current timestamp
+  double current_timestamp = getCurrentTimestamp();
+
+  double smootherLagToUse = smootherLag_;
+  if (-1.0 != adaptiveSmootherLag && adaptiveSmootherLag < smootherLag_) {
+    smootherLagToUse = adaptiveSmootherLag;
+  }
+  // Find the set of variables to be marginalized out
+  KeyVector marginalizableKeys =
+      findKeysBefore(current_timestamp - smootherLagToUse);
+
+  // Force iSAM2 to put the marginalizable variables at the beginning
+  createOrderingConstraints(marginalizableKeys, constrainedKeys);
+
+  std::unordered_set<Key> additionalKeys =
+      BayesTreeMarginalizationHelper<ISAM2>::gatherAdditionalKeysToReEliminate(
+          isam_, marginalizableKeys);
+  KeyList additionalMarkedKeys(additionalKeys.begin(), additionalKeys.end());
+
+  // temp iSAM2
+  ISAM2 tempIsam_(isamParam);
+  subIsam_ = tempIsam_;
+  isamResult_ =
+      subIsam_.update(isam_.getFactorsUnsafe(), isam_.calculateEstimate(), {},
+                       constrainedKeys, {}, additionalMarkedKeys);
+
+  // Marginalize out any needed variables
+  if (marginalizableKeys.size() > 0) {
+    FastList<Key> leafKeys(marginalizableKeys.begin(),
+                           marginalizableKeys.end());
+    subIsam_.marginalizeLeaves(leafKeys);
+  }
+
+  return subIsam_.calculateEstimate();
+}
+
+    /* ************************************************************************* */
 void IncrementalFixedLagSmoother::eraseKeysBefore(double timestamp) {
   TimestampKeyMap::iterator end = timestampKeyMap_.lower_bound(timestamp);
   TimestampKeyMap::iterator iter = timestampKeyMap_.begin();

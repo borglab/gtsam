@@ -92,10 +92,12 @@ public:
   }
 
   /** Add new factors, updating the solution and relinearizing as needed. */
-  virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
-                        const Values& newTheta = Values(),
-                        const KeyTimestampMap& timestamps = KeyTimestampMap(),
-                        const FactorIndices& factorsToRemove = FactorIndices()) = 0;
+  virtual Result update(
+      const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
+      const Values& newTheta = Values(),
+      const KeyTimestampMap& timestamps = KeyTimestampMap(),
+      const FactorIndices& factorsToRemove = FactorIndices(),
+      const double adaptiveSmootherLag = -1.0) = 0;
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
