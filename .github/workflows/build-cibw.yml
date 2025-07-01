@@ -4,9 +4,9 @@
 name: Build Wheels for Develop
 
 on:
-  push:
-    branches:
-      - develop
+  # push:
+  #   branches:
+  #     - develop
   workflow_dispatch:
 
 jobs:
