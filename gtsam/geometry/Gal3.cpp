@@ -437,15 +437,105 @@ Vector10 Gal3::adjoint(const Vector10& xi, const Vector10& y, OptionalJacobian<1
 }
 
 //------------------------------------------------------------------------------
+static Matrix3 computeQMatrix(const so3::DexpFunctor& dexp, const Vector3& vec) {
+    Matrix3 vec_hat = skewSymmetric(vec);
+    Vector4 coeffs;
+    if (dexp.nearZero) {
+        coeffs << 0.5, 1.0 / 6.0, 0.0, 0.0;
+    } else {
+        coeffs << 0.5,
+            dexp.C,
+            (1.0 - 2.0 * dexp.B) / (2.0 * dexp.theta2),
+            (2.0 * dexp.theta - 3.0 * std::sin(dexp.theta) + dexp.theta * std::cos(dexp.theta)) / (2.0 * dexp.theta2 * dexp.theta2 * dexp.theta);
+    }
+    
+    Matrix3 T1 = vec_hat;
+    Matrix3 T2 = dexp.W * vec_hat + vec_hat * dexp.W + dexp.W * vec_hat * dexp.W;
+    Matrix3 T3 = dexp.WW * vec_hat + vec_hat * dexp.WW - 3.0 * (dexp.W * vec_hat * dexp.W);
+    Matrix3 T4 = dexp.WW * vec_hat * dexp.W + dexp.W * vec_hat * dexp.WW;
+    
+    return coeffs(0) * T1 + coeffs(1) * T2 + coeffs(2) * T3 + coeffs(3) * T4;
+}
+
+static Matrix3 computeGal3LeftJacobianU1(const gtsam::so3::DexpFunctor& dexp) {
+	// move into dexpfunctor?
+  if (dexp.nearZero) {
+    return 0.5 * Matrix3::Identity() + (1.0 / 3.0) * dexp.W;
+  } else {
+    return 0.5 * Matrix3::Identity() + (dexp.B - dexp.C) * dexp.W +
+           ((0.5 - dexp.A + dexp.B) / dexp.theta2) * dexp.WW;
+  }
+}
+
+static Matrix3 computeGamma1ThetaNuThetaTau(const so3::DexpFunctor& dexp, const Vector3& nu_vec) {
+    Matrix3 nu_hat = skewSymmetric(nu_vec);
+    Vector7 coeffs;
+    if (dexp.nearZero) {
+        coeffs << 1.0 / 6.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+    } else {
+        const double tn3 = dexp.theta * dexp.theta2;
+        const double tn4 = dexp.theta2 * dexp.theta2;
+        const double tn5 = dexp.theta * tn4;
+        const double tn6 = dexp.theta2 * tn4;
+        const double s = std::sin(dexp.theta);
+        const double c = std::cos(dexp.theta);
+        
+        coeffs << 1.0 / 6.0,
+            dexp.E,  
+            (1.0 - 2.0 * dexp.B) / (2.0 * dexp.theta2), 
+            (tn3 + 6.0 * dexp.theta + 6.0 * dexp.theta * c - 12.0 * s) / (6.0 * tn5),
+            (12.0 * s - 12.0 * dexp.theta * c - 3.0 * dexp.theta2 * s - tn3) / (6.0 * tn5),
+            (tn3 - 6.0 * dexp.theta + 6.0 * s) / (6.0 * tn5),
+            (4.0 + dexp.theta2 + dexp.theta2 * c - 4.0 * dexp.theta * s - 4.0 * c) / (4.0 * tn6);
+    }
+    
+    Matrix3 T0 = nu_hat;
+    Matrix3 T1 = dexp.W * nu_hat;
+    Matrix3 T2 = nu_hat * dexp.W;
+    Matrix3 T3 = dexp.WW * nu_hat;
+    Matrix3 T4 = dexp.W * nu_hat * dexp.W;
+    Matrix3 T5 = nu_hat * dexp.WW;
+    Matrix3 T6 = dexp.WW * nu_hat * dexp.W + dexp.W * nu_hat * dexp.WW;
+    
+    Matrix3 result = coeffs(0) * T0 + coeffs(1) * T1 + coeffs(2) * T2 + coeffs(3) * T3;
+    result += coeffs(4) * T4 + coeffs(5) * T5 + coeffs(6) * T6;
+    
+    return result;
+}
+
 Matrix10 Gal3::ExpmapDerivative(const Vector10& xi) {
-    // Related to the left Jacobian in Equations 31-36, Pages 10-11
-    // NOTE: Using numerical approximation instead of implementing the analytical
-    // expression for the Jacobian. Future work to replace this
-    // with analytical derivative.
-    if (xi.norm() < kSmallAngleThreshold) return Matrix10::Identity();
-    std::function<Gal3(const Vector10&)> fn =
-        [](const Vector10& v) { return Gal3::Expmap(v); };
-    return numericalDerivative11<Gal3, Vector10>(fn, xi, 1e-5);
+    Vector minus_xi = -xi;
+    Vector3 rho_vec = minus_xi.segment<3>(0);
+    Vector3 nu_vec = minus_xi.segment<3>(3);
+    Vector3 theta_vec = minus_xi.segment<3>(6);
+    double t_val = minus_xi(9);
+
+    so3::DexpFunctor dexp(theta_vec);
+
+    Matrix10 Jl_minus_xi = Matrix10::Zero();
+
+    // Note: Because dexp is constructed on -theta, dexp.leftJacobian() returns Jr(theta)
+    Matrix3 right_jacobian = dexp.leftJacobian();
+    Jl_minus_xi.block<3,3>(0,0) = right_jacobian;   // ∂ρ/∂ρ block
+    Jl_minus_xi.block<3,3>(3,3) = right_jacobian;   // ∂ν/∂ν block
+    Jl_minus_xi.block<3,3>(6,6) = right_jacobian;   // ∂ϕ/∂ϕ block
+
+    Jl_minus_xi.block<3,3>(0,3) = -computeGal3LeftJacobianU1(dexp) * t_val;
+    Jl_minus_xi.block<3,3>(3,6) = computeQMatrix(dexp, nu_vec);
+    Jl_minus_xi.block<3,3>(0,6) = computeQMatrix(dexp, rho_vec) - computeGamma1ThetaNuThetaTau(dexp, nu_vec)*t_val;
+    
+	Matrix3 gamma2;
+    if (dexp.nearZero) {
+        gamma2 = 0.5 * Matrix3::Identity() + 1.0 / 6.0 * dexp.W + (1.0/24.0) * dexp.WW;
+    } else {
+        gamma2 = 0.5 * Matrix3::Identity() + dexp.C * dexp.W + (1.0 - 2.0 * dexp.B) / (2.0 * dexp.theta2) * dexp.WW;
+    }
+
+    Jl_minus_xi.block<3,1>(0,9) = gamma2 * nu_vec;
+   
+    Jl_minus_xi(9,9) = 1.0;
+
+    return Jl_minus_xi;
 }
 
 //------------------------------------------------------------------------------
