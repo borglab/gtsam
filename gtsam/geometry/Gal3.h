@@ -20,6 +20,7 @@
 #include <gtsam/geometry/Event.h>
 #include <gtsam/base/Lie.h>       // For LieGroup base class and traits
 #include <gtsam/base/Manifold.h>  // For Manifold traits
+#include <gtsam/base/MatrixLieGroup.h>  // For MatrixLieGroup
 
 #include <cmath> // For std::sqrt, std::cos, std::sin
 #include <functional> // For std::function used in numerical derivatives
@@ -31,6 +32,14 @@ class Gal3;
 
 // Use Vector3 for velocity for consistency with NavState
 using Velocity3 = Vector3;
+// Define Vector10 for tangent space
+using Vector10 = Eigen::Matrix<double, 10, 1>;
+// Define Matrix5 for Lie Algebra matrix representation
+using Matrix5 = Eigen::Matrix<double, 5, 5>;
+// Define Matrix10 for Jacobians
+using Matrix10 = Eigen::Matrix<double, 10, 10>;
+// Define Vector25 for vec() method
+using Vector25 = Eigen::Matrix<double, 25, 1>;
 
 /**
  * Represents an element of the 3D Galilean group SGal(3).
@@ -45,7 +54,9 @@ class GTSAM_EXPORT Gal3 : public MatrixLieGroup<Gal3, 10, 5> {
 
  public:
   using LieAlgebra = Matrix5;
-  using Vector25 = Eigen::Matrix<double, 25, 1>;
+
+  /// The dimension of the tangent space
+  inline static constexpr size_t dimension = 10;
 
   /// @name Constructors
   /// @{
@@ -112,9 +123,6 @@ class GTSAM_EXPORT Gal3 : public MatrixLieGroup<Gal3, 10, 5> {
   /// Return 5x5 homogeneous matrix representation
   Matrix5 matrix() const;
 
-  /// Vectorize 5x5 matrix into a 25-dim vector.
-  Vector25 vec(OptionalJacobian<25, 10> H = {}) const;
-
   /// @}
   /// @name Testable
   /// @{
@@ -139,8 +147,8 @@ class GTSAM_EXPORT Gal3 : public MatrixLieGroup<Gal3, 10, 5> {
   /// Return the inverse of this element
   Gal3 inverse() const;
 
-  // Bring LieGroup::inverse() into scope (version with derivative)
-  using LieGroup<Gal3, 10>::inverse;
+  // Bring MatrixLieGroup::inverse() into scope (version with derivative)
+  using MatrixLieGroup<Gal3, 10, 5>::inverse;
 
   /// Group composition operator
   Gal3 operator*(const Gal3& other) const;
@@ -164,43 +172,40 @@ class GTSAM_EXPORT Gal3 : public MatrixLieGroup<Gal3, 10, 5> {
   /// @{
 
   /// Exponential map at identity: tangent vector xi -> manifold element g
-  static Gal3 Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi = {});
+  static Gal3 Expmap(const Vector10& xi, OptionalJacobian<10, 10> Hxi = {});
 
   /// Logarithmic map at identity: manifold element g -> tangent vector xi
-  static TangentVector Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg = {});
-
-  /// Calculate Adjoint map Ad_g
-  Jacobian AdjointMap() const;
+  static Vector10 Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg = {});
 
   /// Apply this element's AdjointMap Ad_g to a tangent vector xi_base at identity
-  TangentVector Adjoint(const TangentVector& xi_base, OptionalJacobian<10, 10> H_g = {},
+  Vector10 Adjoint(const Vector10& xi_base, OptionalJacobian<10, 10> H_g = {},
                   OptionalJacobian<10, 10> H_xi = {}) const;
 
   /// The adjoint action `ad(xi, y)` = `adjointMap(xi) * y`
-  static TangentVector adjoint(const TangentVector& xi, const TangentVector& y,
+  static Vector10 adjoint(const Vector10& xi, const Vector10& y,
                          OptionalJacobian<10, 10> Hxi = {},
                          OptionalJacobian<10, 10> Hy = {});
 
   /// Compute the adjoint map `ad(xi)` associated with tangent vector xi
-  static Jacobian adjointMap(const TangentVector& xi);
+  static Matrix10 adjointMap(const Vector10& xi);
 
   /// Derivative of Expmap(xi) w.r.t. xi evaluated at xi
-  static Jacobian ExpmapDerivative(const TangentVector& xi);
+  static Matrix10 ExpmapDerivative(const Vector10& xi);
 
   /// Derivative of Logmap(g) w.r.t. g
-  static Jacobian LogmapDerivative(const Gal3& g);
+  static Matrix10 LogmapDerivative(const Gal3& g);
 
   /// Chart at origin, uses Expmap/Logmap for Retract/Local
   struct ChartAtOrigin {
-    static Gal3 Retract(const TangentVector& xi, ChartJacobian Hxi = {});
-    static TangentVector Local(const Gal3& g, ChartJacobian Hg = {});
+    static Gal3 Retract(const Vector10& xi, ChartJacobian Hxi = {});
+    static Vector10 Local(const Gal3& g, ChartJacobian Hg = {});
   };
 
   /// Hat operator: maps tangent vector xi to Lie algebra matrix
-  static LieAlgebra Hat(const TangentVector& xi);
+  static Matrix5 Hat(const Vector10& xi);
 
   /// Vee operator: maps Lie algebra matrix to tangent vector xi
-  static TangentVector Vee(const LieAlgebra& X);
+  static Vector10 Vee(const Matrix5& X);
 
   /// @}
 
@@ -223,9 +228,39 @@ class GTSAM_EXPORT Gal3 : public MatrixLieGroup<Gal3, 10, 5> {
 
 /// Traits specialization for Gal3
 template <>
-struct traits<Gal3> : public internal::MatrixLieGroup<Gal3, 5> {};
+struct traits<Gal3> : public internal::MatrixLieGroup<Gal3, 10> {
+  using LieAlgebra = Matrix5;
+  static constexpr int dimension = 10;
+  
+  static Matrix5 Hat(const Vector10& xi) {
+    return Gal3::Hat(xi);
+  }
+  
+  static Vector10 Vee(const Matrix5& X) {
+    return Gal3::Vee(X);
+  }
+  
+  static Vector25 Vec(const Gal3& g) {
+    return g.vec();
+  }
+};
 
 template <>
-struct traits<const Gal3> : public internal::MatrixLieGroup<Gal3, 5> {};
+struct traits<const Gal3> : public internal::MatrixLieGroup<Gal3, 10> {
+  using LieAlgebra = Matrix5;
+  static constexpr int dimension = 10;
+  
+  static Matrix5 Hat(const Vector10& xi) {
+    return Gal3::Hat(xi);
+  }
+  
+  static Vector10 Vee(const Matrix5& X) {
+    return Gal3::Vee(X);
+  }
+  
+  static Vector25 Vec(const Gal3& g) {
+    return g.vec();
+  }
+};
 
 } // namespace gtsam
