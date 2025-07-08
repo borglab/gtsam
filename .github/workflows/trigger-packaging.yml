@@ -1,13 +1,14 @@
 # This triggers building of packages
 name: Trigger Package Builds
 on:
-  push:
-    branches:
-      - develop
-    paths-ignore:
-      - '**.md'
-      - '**.ipynb' 
-      - 'myst.yml'
+  # push:
+  #   branches:
+  #     - develop
+  #   paths-ignore:
+  #     - '**.md'
+  #     - '**.ipynb' 
+  #     - 'myst.yml'
+  workflow_dispatch:
 jobs:
   trigger-package-build:
     runs-on: ubuntu-latest
