@@ -21,25 +21,22 @@ jobs:
             build_type: Release
             test_target: RUN_TESTS
             binary_cache: C:\Users\runneradmin\AppData\Local\vcpkg\archives
-            vcpkg_info: C:/vcpkg/installed/vcpkg/info/*
             python: python
             # check_constraint_program fail on windows. should fix it for windows.
             # Remove this excluded test when you fix it for windows.
             ctest_extra_flags: -E check_constraint_program
           - os: ubuntu-latest
-            triplet: x64-linux
+            triplet: x64-linux-release
             build_type: Release
             test_target: test
             binary_cache: /home/runner/.cache/vcpkg/archives
-            vcpkg_info: /usr/local/share/vcpkg/installed/vcpkg/info/*
             cxxflags: -DCMAKE_CXX_FLAGS="-Wno-error=nonnull -Wno-error=maybe-uninitialized"
             python: python3
           - os: macos-latest
-            triplet: arm64-osx
+            triplet: arm64-osx-release
             build_type: Release
             test_target: test
             binary_cache: /Users/runner/.cache/vcpkg/archives
-            vcpkg_info: /usr/local/share/vcpkg/installed/vcpkg/info/*
             python: python3
     steps:
       - name: Checkout
@@ -78,7 +75,7 @@ jobs:
 
       - name: "Install dependencies"
         run: >
-          vcpkg x-set-installed --triplet ${{ matrix.triplet }}
+          vcpkg x-set-installed --triplet ${{ matrix.triplet }} --host-triplet ${{ matrix.triplet }}
           boost-assign
           boost-bimap
           boost-chrono
@@ -102,8 +99,15 @@ jobs:
       - name: copy files for hash
         shell: bash
         run: |
+          VCPKG_BASH_PATH=${VCPKG_INSTALLATION_ROOT//\\//}
+          echo $VCPKG_BASH_PATH
           mkdir -p vcpkg-info
-          cp ${{ matrix.vcpkg_info }} vcpkg-info
+          find $VCPKG_BASH_PATH/installed/ -type f -name 'vcpkg_abi_info.txt' | \
+          while read filepath; do
+            triplet=$(echo "$filepath" | awk -F/ '{print $(NF-3)}')
+            port=$(echo "$filepath" | awk -F/ '{print $(NF-1)}')
+            cp "$filepath" "vcpkg-info/${triplet}_${port}.txt"
+          done
 
       - name: Save cache dependencies
         uses: actions/cache/save@v4
@@ -132,15 +136,17 @@ jobs:
               -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake \
               -DVCPKG_INSTALLED_DIR=$VCPKG_INSTALLATION_ROOT/installed \
               -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} \
+              -DVCPKG_HOST_TRIPLET=${{ matrix.triplet }} \
               -DCMAKE_BUILD_TYPE=Release \
               -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
               -DGTSAM_ROT3_EXPMAP=ON \
               -DGTSAM_POSE3_EXPMAP=ON \
-              -DGTSAM_BUILD_PYTHON=OFF \
+              -DGTSAM_BUILD_PYTHON=ON \
               -DGTSAM_BUILD_TESTS=ON \
               -DGTSAM_BUILD_UNSTABLE=OFF \
               -DGTSAM_USE_SYSTEM_EIGEN=ON \
               -DGTSAM_USE_SYSTEM_METIS=ON \
+              -DGTSAM_USE_SYSTEM_PYBIND=ON \
               -DGTSAM_SUPPORT_NESTED_DISSECTION=ON \
               -DCTEST_EXTRA_ARGS="${{ matrix.ctest_extra_flags }}" \
               ${{ matrix.cxxflags }}
@@ -150,12 +156,11 @@ jobs:
         run: |
           cmake --build build --config Release
 
-      # TODO Add cmake detection of external pybind.
-      # - name: Run Python tests
-      #   shell: bash
-      #   run: |
-      #     cmake --build build --target python-install
-      #     cmake --build build --target python-test
+      - name: Run Python tests
+        shell: bash
+        run: |
+          cmake --build build --target python-install
+          cmake --build build --target python-test
 
       - name: Run tests
         shell: bash

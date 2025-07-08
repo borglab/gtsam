@@ -88,6 +88,24 @@ Matrix5 NavState::matrix() const {
 }
 
 //------------------------------------------------------------------------------
+NavState::Vector25 NavState::vec(OptionalJacobian<25, 9> H) const {
+  const Matrix5 T = this->matrix();
+  if (H) {
+    H->setZero();
+    auto R = T.block<3, 3>(0, 0);
+    H->block<3, 1>(0, 1) = -R.col(2);
+    H->block<3, 1>(0, 2) = R.col(1);
+    H->block<3, 1>(5, 0) = R.col(2);
+    H->block<3, 1>(5, 2) = -R.col(0);
+    H->block<3, 1>(10, 0) = -R.col(1);
+    H->block<3, 1>(10, 1) = R.col(0);
+    H->block<3, 3>(15, 3) = R;
+    H->block<3, 3>(20, 6) = R;
+  }
+  return Eigen::Map<const Vector25>(T.data());
+}
+
+//------------------------------------------------------------------------------
 std::ostream& operator<<(std::ostream& os, const NavState& state) {
   os << "R: " << state.attitude() << "\n";
   os << "p: " << state.position().transpose() << "\n";

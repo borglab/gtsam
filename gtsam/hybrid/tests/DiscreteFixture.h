@@ -29,14 +29,32 @@ DiscreteKey dk(D(1), 2);
 Key x1 = X(1);
 
 // Make a factor for non-null hypothesis
-const double loc = 0.0;
-const double sigma1 = 1.0;
-auto prior_noise1 = noiseModel::Isotropic::Sigma(1, sigma1);
-auto f1 = std::make_shared<PriorFactor<double>>(x1, loc, prior_noise1);
+inline std::shared_ptr<gtsam::PriorFactor<double>> f1() {
+  const double loc = 0.0;
+  const double sigma1 = 1.0;
+  static auto prior_noise1 = noiseModel::Isotropic::Sigma(1, sigma1);
+  static auto f = std::make_shared<PriorFactor<double>>(x1, loc, prior_noise1);
+  return f;
+}
 
 // Make a factor for null hypothesis
-const double sigmaNullHypo = 8.0;
-auto prior_noiseNullHypo = noiseModel::Isotropic::Sigma(1, sigmaNullHypo);
-auto fNullHypo =
-    std::make_shared<PriorFactor<double>>(x1, loc, prior_noiseNullHypo);
+inline std::shared_ptr<gtsam::PriorFactor<double>> fNullHypo() {
+  const double loc = 0.0;
+  const double sigmaNullHypo = 8.0;
+  static auto prior_noiseNullHypo = noiseModel::Isotropic::Sigma(1, sigmaNullHypo);
+  static auto f = std::make_shared<PriorFactor<double>>(x1, loc, prior_noiseNullHypo);
+  return f;
+}
+
+inline std::shared_ptr<gtsam::noiseModel::Isotropic> prior_noise1() {
+  const double sigma1 = 1.0;
+  static auto prior_noise1 = noiseModel::Isotropic::Sigma(1, sigma1);
+  return prior_noise1;
+}
+
+inline std::shared_ptr<gtsam::noiseModel::Isotropic> prior_noiseNullHypo() {
+  const double sigmaNullHypo = 8.0;
+  static auto prior_noiseNullHypo = noiseModel::Isotropic::Sigma(1, sigmaNullHypo);
+  return prior_noiseNullHypo;
+}
 }  // namespace discrete_mixture_fixture

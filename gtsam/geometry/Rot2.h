@@ -20,7 +20,7 @@
 #pragma once
 
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/base/Lie.h>
+#include <gtsam/base/MatrixLieGroup.h>
 
 #include <random>
 
@@ -32,7 +32,7 @@ namespace gtsam {
    * @ingroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT Rot2 : public LieGroup<Rot2, 1> {
+  class GTSAM_EXPORT Rot2 : public MatrixLieGroup<Rot2, 1, 2> {
     /** we store cos(theta) and sin(theta) */
     double c_, s_;
 
@@ -217,15 +217,14 @@ namespace gtsam {
     /** return 2*2 rotation matrix */
     Matrix2 matrix() const;
 
-    /** return 2*2 transpose (inverse) rotation matrix   */
+    /** return 2*2 transpose (inverse) rotation matrix */
     Matrix2 transpose() const;
 
     /** Find closest valid rotation matrix, given a 2x2 matrix */
     static Rot2 ClosestTo(const Matrix2& M);
 
-    /// Return vectorized SO(2) matrix in column order.
+    /** Vectorize the rotation matrix into a 4D vector */
     Vector4 vec(OptionalJacobian<4, 1> H = {}) const;
-
     /// @}
 
     private:
@@ -241,10 +240,10 @@ namespace gtsam {
 
   };
 
-  template<>
-  struct traits<Rot2> : public internal::MatrixLieGroup<Rot2> {};
+  template <>
+struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {};
 
-  template<>
-  struct traits<const Rot2> : public internal::MatrixLieGroup<Rot2> {};
+template <>
+struct traits<const Rot2> : public internal::MatrixLieGroup<Rot2, 2> {};
 
 } // gtsam

@@ -76,3 +76,25 @@ struct SomeMeasurements : vector<ImuMeasurement> {
 };
 
 }  // namespace testing
+namespace {
+// Macro to test ImuFactor with both Manifold and Tangent preintegration
+// In the tests below the selected PreintegratedImuMeasurementsT is available
+// as `PIM`, and the combined version as `CombinedPIM`.
+#define TEST_PIM(testGroup, testName)                                           \
+  template <class PIM, class CombinedPIM>                                       \
+  void testGroup##testName##Helper(TestResult& result_,                         \
+                                   const std::string& name_);                   \
+  TEST(testGroup, testName) {                                                   \
+    using M = ManifoldPreintegration;                                           \
+    using PM = PreintegratedImuMeasurementsT<M>;                                \
+    using CM = PreintegratedCombinedMeasurementsT<M>;                           \
+    using T = TangentPreintegration;                                            \
+    using PT = PreintegratedImuMeasurementsT<T>;                                \
+    using CT = PreintegratedCombinedMeasurementsT<T>;                           \
+    testGroup##testName##Helper<PM, CM>(result_, this->name_);                  \
+    testGroup##testName##Helper<PT, CT>(result_, this->name_);                  \
+  }                                                                             \
+  template <class PIM, class CombinedPIM>                                       \
+  void testGroup##testName##Helper(TestResult& result_, const std::string& name_)
+}  // namespace
+

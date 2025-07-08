@@ -26,7 +26,7 @@ using namespace std;
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(StereoPoint2)
-//GTSAM_CONCEPT_LIE_INST(StereoPoint2)
+//GTSAM_CONCEPT_MATRIX_LIE_GROUP_INST(StereoPoint2)
 
 
 //******************************************************************************

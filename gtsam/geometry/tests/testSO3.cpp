@@ -470,6 +470,23 @@ TEST(Matrix, compose) {
 }
 
 //******************************************************************************
+TEST(SO3, AdjointMap) {
+  // Create a non-trivial SO3
+  const SO3 R = SO3::Expmap(Vector3(0.1, 0.2, 0.3));
+
+  // Call the specialized AdjointMap
+  const Matrix3 specialized_Adj = R.AdjointMap();
+  EXPECT(assert_equal(R.matrix(), specialized_Adj));
+
+  // Call the generic AdjointMap from the base class
+  const Matrix3 generic_Adj =
+    static_cast<const MatrixLieGroup<SO3, 3, 3>*>(&R)->AdjointMap();
+
+  // Assert that they are equal
+  EXPECT(assert_equal(specialized_Adj, generic_Adj, 1e-9));
+}
+
+//******************************************************************************
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

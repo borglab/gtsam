@@ -295,4 +295,7 @@ Matrix4 Similarity3::matrix() const {
   return T;
 }
 
+
+
+
 } // namespace gtsam

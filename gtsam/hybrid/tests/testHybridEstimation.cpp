@@ -574,7 +574,7 @@ TEST(HybridEstimation, DiscreteMixture) {
   KeyVector keys;
   keys.push_back(x1);
 
-  std::vector<NoiseModelFactor::shared_ptr> factorComponents{f1, fNullHypo};
+  std::vector<NoiseModelFactor::shared_ptr> factorComponents{f1(), fNullHypo()};
 
   HybridNonlinearFactor dcMixture(dk, factorComponents);
   dcfg.push_back(dcMixture);
@@ -662,8 +662,8 @@ TEST(HybridEstimation, ContinuousMixture) {
   keys.push_back(x1);
 
   std::vector<NonlinearFactorValuePair> factorComponents{
-      {f1, prior_noise1->negLogConstant()},
-      {fNullHypo, prior_noiseNullHypo->negLogConstant()}};
+      {f1(), prior_noise1()->negLogConstant()},
+      {fNullHypo(), prior_noiseNullHypo()->negLogConstant()}};
 
   HybridNonlinearFactor dcMixture(dk, factorComponents);
   dcfg.push_back(dcMixture);

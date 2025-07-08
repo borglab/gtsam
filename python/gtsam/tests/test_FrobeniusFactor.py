@@ -12,14 +12,39 @@ Author: Frank Dellaert
 import unittest
 
 import numpy as np
-from gtsam import (Rot3, SO3, SO4, FrobeniusBetweenFactorSO4, FrobeniusFactorSO4,
-                   ShonanFactor3, SOn)
+from gtsam import (
+    Rot3,
+    SO3,
+    SO4,
+    FrobeniusBetweenFactorSO4,
+    FrobeniusFactorSO4,
+    ShonanFactor3,
+    SOn,
+    Similarity2,
+    Similarity3,
+    FrobeniusFactorSimilarity2,
+    FrobeniusBetweenFactorSimilarity2,
+    FrobeniusFactorSimilarity3,
+    FrobeniusBetweenFactorSimilarity3,
+    Gal3,
+    FrobeniusFactorGal3,
+    FrobeniusBetweenFactorGal3,
+)
 
 id = SO4()
 v1 = np.array([0, 0, 0, 0.1, 0, 0])
 Q1 = SO4.Expmap(v1)
 v2 = np.array([0, 0, 0, 0.01, 0.02, 0.03])
 Q2 = SO4.Expmap(v2)
+
+P1_sim2 = Similarity2.Expmap(np.array([0.1, 0.2, 0.3, 0.4]))
+P2_sim2 = Similarity2.Expmap(np.array([0.2, 0.3, 0.4, 0.5]))
+
+P1_sim3 = Similarity3.Expmap(np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]))
+P2_sim3 = Similarity3.Expmap(np.array([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]))
+
+G1_gal3 = Gal3(Rot3.Rz(0.1), np.array([0.2, 0.3, 0.4]), np.array([0.5, 0.6, 0.7]), 0.8)
+G2_gal3 = Gal3(Rot3.Rz(0.2), np.array([0.3, 0.4, 0.5]), np.array([0.6, 0.7, 0.8]), 0.9)
 
 
 class TestFrobeniusFactorSO4(unittest.TestCase):
@@ -29,7 +54,7 @@ class TestFrobeniusFactorSO4(unittest.TestCase):
         """Test creation of a factor that calculates the Frobenius norm."""
         factor = FrobeniusFactorSO4(1, 2)
         actual = factor.evaluateError(Q1, Q2)
-        expected = (Q2.matrix()-Q1.matrix()).transpose().reshape((16,))
+        expected = (Q2.matrix() - Q1.matrix()).transpose().reshape((16,))
         np.testing.assert_array_equal(actual, expected)
 
     def test_frobenius_between_factor(self):
@@ -50,6 +75,48 @@ class TestFrobeniusFactorSO4(unittest.TestCase):
         actual = factor.evaluateError(Q1, Q2)
         expected = np.zeros((12,))
         np.testing.assert_array_almost_equal(actual, expected, decimal=4)
+
+
+class TestFrobeniusFactorSimilarity2(unittest.TestCase):
+    def test_frobenius_factor(self):
+        factor = FrobeniusFactorSimilarity2(1, 2)
+        actual = factor.evaluateError(P1_sim2, P2_sim2)
+        expected = (P2_sim2.matrix() - P1_sim2.matrix()).transpose().reshape((9,))
+        np.testing.assert_allclose(actual, expected, atol=1e-9)
+
+    def test_frobenius_between_factor(self):
+        factor = FrobeniusBetweenFactorSimilarity2(1, 2, P1_sim2.between(P2_sim2))
+        actual = factor.evaluateError(P1_sim2, P2_sim2)
+        expected = np.zeros((9,))
+        np.testing.assert_allclose(actual, expected, atol=1e-9)
+
+
+class TestFrobeniusFactorSimilarity3(unittest.TestCase):
+    def test_frobenius_factor(self):
+        factor = FrobeniusFactorSimilarity3(1, 2)
+        actual = factor.evaluateError(P1_sim3, P2_sim3)
+        expected = (P2_sim3.matrix() - P1_sim3.matrix()).transpose().reshape((16,))
+        np.testing.assert_allclose(actual, expected, atol=1e-9)
+
+    def test_frobenius_between_factor(self):
+        factor = FrobeniusBetweenFactorSimilarity3(1, 2, P1_sim3.between(P2_sim3))
+        actual = factor.evaluateError(P1_sim3, P2_sim3)
+        expected = np.zeros((16,))
+        np.testing.assert_allclose(actual, expected, atol=1e-9)
+
+
+class TestFrobeniusFactorGal3(unittest.TestCase):
+    def test_frobenius_factor(self):
+        factor = FrobeniusFactorGal3(1, 2)
+        actual = factor.evaluateError(G1_gal3, G2_gal3)
+        expected = (G2_gal3.matrix() - G1_gal3.matrix()).transpose().reshape((25,))
+        np.testing.assert_allclose(actual, expected, atol=1e-9)
+
+    def test_frobenius_between_factor(self):
+        factor = FrobeniusBetweenFactorGal3(1, 2, G1_gal3.between(G2_gal3))
+        actual = factor.evaluateError(G1_gal3, G2_gal3)
+        expected = np.zeros((25,))
+        np.testing.assert_allclose(actual, expected, atol=1e-9)
 
 
 if __name__ == "__main__":

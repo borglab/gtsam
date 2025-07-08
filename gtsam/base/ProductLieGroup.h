@@ -170,6 +170,15 @@ public:
   TangentVector logmap(const ProductLieGroup& g) const {
     return ProductLieGroup::Logmap(between(g));
   }
+  Jacobian AdjointMap() const {
+    const auto& adjG = traits<G>::AdjointMap(this->first);
+    const auto& adjH = traits<H>::AdjointMap(this->second);
+    size_t d1 = adjG.rows(), d2 = adjH.rows();
+    Matrix adj = Matrix::Zero(d1 + d2, d1 + d2);
+    adj.block(0, 0, d1, d1) = adjG;
+    adj.block(d1, d1, d2, d2) = adjH;
+    return adj;
+  }
   /// @}
 
 };

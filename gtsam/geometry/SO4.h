@@ -53,10 +53,6 @@ SO4 SO4::Expmap(const Vector6 &xi, ChartJacobian H);
 
 template <>
 GTSAM_EXPORT
-Matrix6 SO4::AdjointMap() const;
-
-template <>
-GTSAM_EXPORT
 SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const;
 
 template <>
@@ -110,9 +106,9 @@ void serialize(Archive &ar, SO4 &Q, const unsigned int /*version*/) {
  */
 
 template <>
-struct traits<SO4> : public internal::MatrixLieGroup<SO4> {};
+struct traits<SO4> : public internal::MatrixLieGroup<SO4, 4> {};
 
 template <>
-struct traits<const SO4> : public internal::MatrixLieGroup<SO4> {};
+struct traits<const SO4> : public internal::MatrixLieGroup<SO4, 4> {};
 
 }  // end namespace gtsam

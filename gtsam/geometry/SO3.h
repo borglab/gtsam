@@ -57,7 +57,7 @@ Vector3 SO3::Vee(const Matrix3& X);  ///< inverse of Hat
 
 /// Adjoint map
 template <>
-Matrix3 SO3::AdjointMap() const;
+inline Matrix3 SO3::AdjointMap() const{ return matrix_; }
 
 /**
  * Exponential map at identity - create a rotation from canonical coordinates
@@ -231,9 +231,9 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
  */
 
 template <>
-struct traits<SO3> : public internal::MatrixLieGroup<SO3> {};
+struct traits<SO3> : public internal::MatrixLieGroup<SO3, 3> {};
 
 template <>
-struct traits<const SO3> : public internal::MatrixLieGroup<SO3> {};
+struct traits<const SO3> : public internal::MatrixLieGroup<SO3, 3> {};
 
 }  // end namespace gtsam

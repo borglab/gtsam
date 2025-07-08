@@ -157,22 +157,15 @@ Rot2 Rot2::ClosestTo(const Matrix2& M) {
   return Rot2::fromCosSin(c, s);
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 Vector4 Rot2::vec(OptionalJacobian<4, 1> H) const {
-  // Vectorize
-  const Matrix2 M = matrix();
-  const Vector4 X = Eigen::Map<const Vector4>(M.data());
-
-  // If requested, calculate H as (I_3 \oplus M) * G.
+  const Matrix2 R = matrix();
   if (H) {
-    static const Matrix41 G = (Matrix41() << 0, 1, -1, 0).finished();
-    for (size_t i = 0; i < 2; i++)
-      H->block(i * 2, 0, 2, dimension) = M * G.block(i * 2, 0, 2, dimension);
+    H->block<2, 1>(0, 0) = R.col(1);
+    H->block<2, 1>(2, 0) = -R.col(0);
   }
-
-  return X;
+  return Eigen::Map<const Vector4>(R.data());
 }
-
 /* ************************************************************************* */
 
 } // gtsam

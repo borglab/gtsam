@@ -23,6 +23,7 @@
 #include <gtsam/base/Testable.h>
 
 #include <utility>
+#include <type_traits>
 
 namespace gtsam {
 
@@ -47,28 +48,25 @@ public:
 
   GTSAM_CONCEPT_USAGE(IsGroup) {
     static_assert(
-        (std::is_base_of<group_tag, structure_category_tag>::value),
+        (std::is_base_of_v<group_tag, structure_category_tag>),
         "This type's structure_category trait does not assert it as a group (or derived)");
     e = traits<G>::Identity();
     e = traits<G>::Compose(g, h);
     e = traits<G>::Between(g, h);
     e = traits<G>::Inverse(g);
-    operator_usage(flavor);
+
+    if constexpr (std::is_same_v<flavor_tag, multiplicative_group_tag>) {
+      e = g * h;
+      //e = -g; // todo this should work, but it is failing for Quaternions
+    } else if constexpr (std::is_same_v<flavor_tag, additive_group_tag>) {
+      e = g + h;
+      e = h - g;
+      e = -g;
+    }
     // todo: how do we test the act concept? or do we even need to?
   }
 
 private:
-  void operator_usage(multiplicative_group_tag) {
-    e = g * h;
-    //e = -g; // todo this should work, but it is failing for Quaternions
-  }
-  void operator_usage(additive_group_tag) {
-    e = g + h;
-    e = h - g;
-    e = -g;
-  }
-
-  flavor_tag flavor;
   G e, g, h;
   bool b;
 };

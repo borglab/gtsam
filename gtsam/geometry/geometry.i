@@ -829,6 +829,10 @@ virtual class Cal3DS2_Base : gtsam::Cal3 {
   // Standard Interface
   double k1() const;
   double k2() const;
+  double p1() const;
+  double p2() const;
+  gtsam::Vector4 k() const;
+  gtsam::Vector9 vector() const;
 
   // Action on Point2
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
@@ -1342,6 +1346,47 @@ class Similarity3 {
   gtsam::Rot3& rotation();
   gtsam::Point3& translation();
   double scale() const;
+};
+
+#include <gtsam/geometry/Gal3.h>
+class Gal3 {
+  // Standard Constructors
+  Gal3();
+  Gal3(const gtsam::Rot3& R, const gtsam::Point3& r, const gtsam::Vector3& v, double t);
+  Gal3(const gtsam::Matrix5& M);
+
+  // Testable
+  void print(string s = "") const;
+  bool equals(const gtsam::Gal3& other, double tol) const;
+
+  // Group
+  static gtsam::Gal3 Identity();
+  gtsam::Gal3 inverse() const;
+  gtsam::Gal3 compose(const gtsam::Gal3& other) const;
+  gtsam::Gal3 between(const gtsam::Gal3& other) const;
+
+  // Operator Overloads
+  gtsam::Gal3 operator*(const gtsam::Gal3& other) const;
+
+  // Lie Group
+  static gtsam::Gal3 Expmap(const gtsam::Vector10& xi);
+  static gtsam::Vector10 Logmap(const gtsam::Gal3& g);
+  gtsam::Gal3 expmap(const gtsam::Vector10& xi);
+  gtsam::Vector10 logmap(const gtsam::Gal3& g);
+
+  // Manifold
+  gtsam::Gal3 retract(const gtsam::Vector10& xi) const;
+  gtsam::Vector10 localCoordinates(const gtsam::Gal3& g) const;
+
+  // Component Access
+  const gtsam::Rot3& rotation() const;
+  const gtsam::Point3& translation() const;
+  const gtsam::Vector3& velocity() const;
+  const double& time() const;
+
+  // Other methods
+  gtsam::Matrix5 matrix() const;
+  gtsam::Vector25 vec() const;
 };
 
 template <T = {gtsam::PinholePoseCal3_S2}>

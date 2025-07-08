@@ -15,13 +15,17 @@
   * @author Varun Agrawal
   */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Similarity2.h>
+
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
-#include <gtsam/geometry/Similarity2.h>
+#include <gtsam/base/Vector.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <functional>
+#include <vector>
 
 using namespace std::placeholders;
 using namespace gtsam;
@@ -176,6 +180,51 @@ TEST(Similarity2, TransformFrom_Pose2) {
   Pose2 actual = sim.transformFrom(pose);
 
   EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+//******************************************************************************
+TEST(Similarity2, Vec) {
+  const double theta = 0.3;
+  const Rot2 R_test = Rot2::fromAngle(theta);
+  const Point2 t_test(0.2, 0.7);
+  const double s_test = 4.0;
+  const Similarity2 sim(R_test, t_test, s_test);
+
+  // 1. Test the Value
+  Vector9 expected_vec;
+  const double c = cos(theta), si = sin(theta);
+  expected_vec << c, si, 0,               // First column
+    -si, c, 0,                            // Second column
+    t_test.x(), t_test.y(), 1.0 / s_test; // Third column
+  Vector9 actual_vec = sim.vec();
+  EXPECT(assert_equal(expected_vec, actual_vec, 1e-9));
+
+  // 2. Test the Jacobian
+  Matrix94 H_actual;
+  sim.vec(H_actual);
+  auto vec_fun = [](const Similarity2& sim_arg) -> Vector9 {
+    return sim_arg.vec();
+    };
+  Matrix H_numerical = numericalDerivative11<Vector9, Similarity2, 4>(vec_fun, sim);
+  EXPECT(assert_equal(H_numerical, H_actual, 1e-7));
+}
+
+//******************************************************************************
+TEST(Similarity2, AdjointMap) {
+  // Create a non-trivial Similarity2 object
+  const Rot2 R = Rot2::fromAngle(-0.7);
+  const Point2 t(1.5, -2.3);
+  const double s = 0.5;
+  const Similarity2 sim(R, t, s);
+
+  // Call the specialized AdjointMap
+  Matrix4 specialized_Adj = sim.AdjointMap();
+
+  // Call the generic AdjointMap from the base class
+  Matrix4 generic_Adj = static_cast<const MatrixLieGroup<Similarity2, 4, 3>*>(&sim)->AdjointMap();
+
+  // Assert that they are equal
+  EXPECT(assert_equal(specialized_Adj, generic_Adj, 1e-9));
 }
 
 //******************************************************************************

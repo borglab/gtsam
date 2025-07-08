@@ -62,8 +62,8 @@ TEST(DCSAM, SimpleMixtureFactor) {
   keys.push_back(x1);
 
   std::vector<NonlinearFactorValuePair> factorComponents{
-      {f1, prior_noise1->negLogConstant()},
-      {fNullHypo, prior_noiseNullHypo->negLogConstant()}};
+      {f1(), prior_noise1()->negLogConstant()},
+      {fNullHypo(), prior_noiseNullHypo()->negLogConstant()}};
 
   HybridNonlinearFactor dcMixture(dk, factorComponents);
 

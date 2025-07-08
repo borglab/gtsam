@@ -41,19 +41,16 @@ namespace gtsam {
 namespace { // Anonymous namespace for internal linkage
   constexpr double kSmallAngleThreshold = 1e-10;
 
-  // The type of the Lie algebra (matrix representation)
-  using LieAlgebra = Matrix5;
-
   // Helper functions for accessing tangent vector components
-  Eigen::Block<Vector10, 3, 1> rho(Vector10& v) { return v.block<3, 1>(0, 0); }
-  Eigen::Block<Vector10, 3, 1> nu(Vector10& v) { return v.block<3, 1>(3, 0); }
-  Eigen::Block<Vector10, 3, 1> theta(Vector10& v) { return v.block<3, 1>(6, 0); }
-  Eigen::Block<Vector10, 1, 1> t_tan(Vector10& v) { return v.block<1, 1>(9, 0); }
+  Eigen::Block<Gal3::TangentVector, 3, 1> rho(Gal3::TangentVector& v) { return v.block<3, 1>(0, 0); }
+  Eigen::Block<Gal3::TangentVector, 3, 1> nu(Gal3::TangentVector& v) { return v.block<3, 1>(3, 0); }
+  Eigen::Block<Gal3::TangentVector, 3, 1> theta(Gal3::TangentVector& v) { return v.block<3, 1>(6, 0); }
+  Eigen::Block<Gal3::TangentVector, 1, 1> t_tan(Gal3::TangentVector& v) { return v.block<1, 1>(9, 0); }
   // Const versions
-  Eigen::Block<const Vector10, 3, 1> rho(const Vector10& v) { return v.block<3, 1>(0, 0); }
-  Eigen::Block<const Vector10, 3, 1> nu(const Vector10& v) { return v.block<3, 1>(3, 0); }
-  Eigen::Block<const Vector10, 3, 1> theta(const Vector10& v) { return v.block<3, 1>(6, 0); }
-  Eigen::Block<const Vector10, 1, 1> t_tan(const Vector10& v) { return v.block<1, 1>(9, 0); }
+  Eigen::Block<const Gal3::TangentVector, 3, 1> rho(const Gal3::TangentVector& v) { return v.block<3, 1>(0, 0); }
+  Eigen::Block<const Gal3::TangentVector, 3, 1> nu(const Gal3::TangentVector& v) { return v.block<3, 1>(3, 0); }
+  Eigen::Block<const Gal3::TangentVector, 3, 1> theta(const Gal3::TangentVector& v) { return v.block<3, 1>(6, 0); }
+  Eigen::Block<const Gal3::TangentVector, 1, 1> t_tan(const Gal3::TangentVector& v) { return v.block<1, 1>(9, 0); }
 
 } // end anonymous namespace
 
@@ -163,8 +160,6 @@ const double& Gal3::time(OptionalJacobian<1, 10> H) const {
 }
 
 //------------------------------------------------------------------------------
-// Matrix Representation
-//------------------------------------------------------------------------------
 Matrix5 Gal3::matrix() const {
     // Returns 5x5 matrix representation as in Equation 9, Page 5
     Matrix5 M = Matrix5::Identity();
@@ -175,6 +170,26 @@ Matrix5 Gal3::matrix() const {
     M.block<1,3>(3,0).setZero();
     M.block<1,4>(4,0).setZero();
     return M;
+}
+
+//------------------------------------------------------------------------------
+Gal3::Vector25 Gal3::vec(OptionalJacobian<25, 10> H) const {
+    const Matrix5 T = this->matrix();
+    if (H) {
+        H->setZero();
+        auto R = T.block<3, 3>(0, 0);
+        H->block<3, 1>(0, 7) = -R.col(2);
+        H->block<3, 1>(0, 8) = R.col(1);
+        H->block<3, 1>(5, 6) = R.col(2);
+        H->block<3, 1>(5, 8) = -R.col(0);
+        H->block<3, 1>(10, 6) = -R.col(1);
+        H->block<3, 1>(10, 7) = R.col(0);
+        H->block<3, 3>(15, 3) = R;
+        H->block<3, 3>(20, 0) = R;
+        H->block<3, 1>(20, 9) = T.block<3, 1>(0, 3);
+        (*H)(23, 9) = 1;
+    }
+    return Eigen::Map<const Vector25>(T.data());
 }
 
 //------------------------------------------------------------------------------
@@ -235,7 +250,7 @@ Gal3 Gal3::operator*(const Gal3& other) const {
 //------------------------------------------------------------------------------
 // Lie Group Static Functions
 //------------------------------------------------------------------------------
-gtsam::Gal3 gtsam::Gal3::Expmap(const Vector10& xi, OptionalJacobian<10, 10> Hxi) {
+gtsam::Gal3 gtsam::Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
     // Implements exponential map from Equations 16-19, Pages 7-8
     const Vector3 rho_tan = rho(xi);
     const Vector3 nu_tan = nu(xi);
@@ -270,7 +285,7 @@ gtsam::Gal3 gtsam::Gal3::Expmap(const Vector10& xi, OptionalJacobian<10, 10> Hxi
 }
 
 //------------------------------------------------------------------------------
-Vector10 Gal3::Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg) {
+Gal3::TangentVector Gal3::Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg) {
     // Implements logarithmic map from Equations 20-23, Page 8
     const Vector3 theta_vec = Rot3::Logmap(g.R_);
     const gtsam::so3::DexpFunctor dexp_functor_log(theta_vec);
@@ -295,7 +310,7 @@ Vector10 Gal3::Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg) {
     const Vector3 rho_tan = Jl_theta_inv * (r_vec - E * (t_val * nu_tan));
     const double t_tan_val = t_val;
 
-    Vector10 xi;
+    TangentVector xi;
     rho(xi) = rho_tan;
     nu(xi) = nu_tan;
     theta(xi) = theta_vec;
@@ -309,13 +324,13 @@ Vector10 Gal3::Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg) {
 }
 
 //------------------------------------------------------------------------------
-Matrix10 Gal3::AdjointMap() const {
+Gal3::Jacobian Gal3::AdjointMap() const {
     // Implements adjoint map as in Equation 26, Page 9
     const Matrix3 Rmat = R_.matrix();
     const Vector3 v_vec = v_;
     const Vector3 r_minus_tv = Vector3(r_) - t_ * v_;
 
-    Matrix10 Ad = Matrix10::Zero();
+    Jacobian Ad = Jacobian::Zero();
 
     Ad.block<3,3>(0,0) = Rmat;
     Ad.block<3,3>(0,3) = -t_ * Rmat;
@@ -333,9 +348,9 @@ Matrix10 Gal3::AdjointMap() const {
 }
 
 //------------------------------------------------------------------------------
-Vector10 Gal3::Adjoint(const Vector10& xi, OptionalJacobian<10, 10> H_g, OptionalJacobian<10, 10> H_xi) const {
-    Matrix10 Ad = AdjointMap();
-    Vector10 y = Ad * xi;
+Gal3::TangentVector Gal3::Adjoint(const TangentVector& xi, OptionalJacobian<10, 10> H_g, OptionalJacobian<10, 10> H_xi) const {
+    Jacobian Ad = AdjointMap();
+    TangentVector y = Ad * xi;
 
     if (H_xi) {
         *H_xi = Ad;
@@ -345,8 +360,8 @@ Vector10 Gal3::Adjoint(const Vector10& xi, OptionalJacobian<10, 10> H_g, Optiona
         // NOTE: Using numerical derivative for the Jacobian with respect to
         // the group element instead of deriving the analytical expression.
         // Future work to use analytical instead.
-        std::function<Vector10(const Gal3&, const Vector10&)> adjoint_action_wrt_g =
-          [&](const Gal3& g_in, const Vector10& xi_in) {
+        std::function<TangentVector(const Gal3&, const TangentVector&)> adjoint_action_wrt_g =
+          [&](const Gal3& g_in, const TangentVector& xi_in) {
               return g_in.Adjoint(xi_in);
           };
         *H_g = numericalDerivative21(adjoint_action_wrt_g, *this, xi, 1e-7);
@@ -355,7 +370,7 @@ Vector10 Gal3::Adjoint(const Vector10& xi, OptionalJacobian<10, 10> H_g, Optiona
 }
 
 //------------------------------------------------------------------------------
-Matrix10 Gal3::adjointMap(const Vector10& xi) {
+Gal3::Jacobian Gal3::adjointMap(const TangentVector& xi) {
     // Implements adjoint representation as in Equation 28, Page 10
     const Matrix3 Theta_hat = skewSymmetric(theta(xi));
     const Matrix3 Nu_hat = skewSymmetric(nu(xi));
@@ -363,7 +378,7 @@ Matrix10 Gal3::adjointMap(const Vector10& xi) {
     const double t_val = t_tan(xi)(0);
     const Vector3 nu_vec = nu(xi);
 
-    Matrix10 ad = Matrix10::Zero();
+    Gal3::Jacobian ad = Gal3::Jacobian::Zero();
 
     ad.block<3,3>(0,0) = Theta_hat;
     ad.block<3,3>(0,3) = -t_val * Matrix3::Identity();
@@ -379,8 +394,8 @@ Matrix10 Gal3::adjointMap(const Vector10& xi) {
 }
 
 //------------------------------------------------------------------------------
-Vector10 Gal3::adjoint(const Vector10& xi, const Vector10& y, OptionalJacobian<10, 10> Hxi, OptionalJacobian<10, 10> Hy) {
-    Matrix10 ad_xi = adjointMap(xi);
+Gal3::TangentVector Gal3::adjoint(const TangentVector& xi, const TangentVector& y, OptionalJacobian<10, 10> Hxi, OptionalJacobian<10, 10> Hy) {
+    Jacobian ad_xi = adjointMap(xi);
     if (Hy) *Hy = ad_xi;
     if (Hxi) {
          *Hxi = -adjointMap(y);
@@ -389,34 +404,34 @@ Vector10 Gal3::adjoint(const Vector10& xi, const Vector10& y, OptionalJacobian<1
 }
 
 //------------------------------------------------------------------------------
-Matrix10 Gal3::ExpmapDerivative(const Vector10& xi) {
+Gal3::Jacobian Gal3::ExpmapDerivative(const TangentVector& xi) {
     // Related to the left Jacobian in Equations 31-36, Pages 10-11
     // NOTE: Using numerical approximation instead of implementing the analytical
     // expression for the Jacobian. Future work to replace this
     // with analytical derivative.
-    if (xi.norm() < kSmallAngleThreshold) return Matrix10::Identity();
-    std::function<Gal3(const Vector10&)> fn =
-        [](const Vector10& v) { return Gal3::Expmap(v); };
-    return numericalDerivative11<Gal3, Vector10>(fn, xi, 1e-5);
+    if (xi.norm() < kSmallAngleThreshold) return Jacobian::Identity();
+    std::function<Gal3(const TangentVector&)> fn =
+        [](const TangentVector& v) { return Gal3::Expmap(v); };
+    return numericalDerivative11<Gal3, TangentVector>(fn, xi, 1e-5);
 }
 
 //------------------------------------------------------------------------------
-Matrix10 Gal3::LogmapDerivative(const Gal3& g) {
+Gal3::Jacobian Gal3::LogmapDerivative(const Gal3& g) {
     // Related to the inverse of left Jacobian in Equations 31-36, Pages 10-11
     // NOTE: Using numerical approximation instead of implementing the analytical
     // expression for the inverse Jacobian. Future work to replace this
     // with analytical derivative.
-    Vector10 xi = Gal3::Logmap(g);
-    if (xi.norm() < kSmallAngleThreshold) return Matrix10::Identity();
-    std::function<Vector10(const Gal3&)> fn =
+    TangentVector xi = Gal3::Logmap(g);
+    if (xi.norm() < kSmallAngleThreshold) return Jacobian::Identity();
+    std::function<TangentVector(const Gal3&)> fn =
         [](const Gal3& g_in) { return Gal3::Logmap(g_in); };
-    return numericalDerivative11<Vector10, Gal3>(fn, g, 1e-5);
+    return numericalDerivative11<TangentVector, Gal3>(fn, g, 1e-5);
 }
 
 //------------------------------------------------------------------------------
 // Lie Algebra (Hat/Vee maps)
 //------------------------------------------------------------------------------
-Matrix5 Gal3::Hat(const Vector10& xi) {
+Gal3::LieAlgebra Gal3::Hat(const TangentVector& xi) {
     // Implements hat operator as in Equation 13, Page 6
     const Vector3 rho_tan = rho(xi);
     const Vector3 nu_tan = nu(xi);
@@ -432,13 +447,13 @@ Matrix5 Gal3::Hat(const Vector10& xi) {
 }
 
 //------------------------------------------------------------------------------
-Vector10 Gal3::Vee(const Matrix5& X) {
+Gal3::TangentVector Gal3::Vee(const LieAlgebra& X) {
     // Implements vee operator (inverse of hat operator in Equation 13, Page 6)
     if (X.row(4).norm() > 1e-9 || X.row(3).head(3).norm() > 1e-9 || std::abs(X(3,3)) > 1e-9) {
      throw std::invalid_argument("Matrix is not in sgal(3)");
     }
 
-    Vector10 xi;
+    TangentVector xi;
     rho(xi) = X.block<3, 1>(0, 4);
     nu(xi) = X.block<3, 1>(0, 3);
     const Matrix3& S = X.block<3, 3>(0, 0);
@@ -450,12 +465,12 @@ Vector10 Gal3::Vee(const Matrix5& X) {
 //------------------------------------------------------------------------------
 // ChartAtOrigin
 //------------------------------------------------------------------------------
-Gal3 Gal3::ChartAtOrigin::Retract(const Vector10& xi, ChartJacobian Hxi) {
+Gal3 Gal3::ChartAtOrigin::Retract(const TangentVector& xi, ChartJacobian Hxi) {
   return Gal3::Expmap(xi, Hxi);
 }
 
 //------------------------------------------------------------------------------
-Vector10 Gal3::ChartAtOrigin::Local(const Gal3& g, ChartJacobian Hg) {
+Gal3::TangentVector Gal3::ChartAtOrigin::Local(const Gal3& g, ChartJacobian Hg) {
   return Gal3::Logmap(g, Hg);
 }
 

@@ -274,13 +274,6 @@ Vector3 SO3::Vee(const Matrix3& X) {
 //******************************************************************************
 template <>
 GTSAM_EXPORT
-Matrix3 SO3::AdjointMap() const {
-  return matrix_;
-}
-
-//******************************************************************************
-template <>
-GTSAM_EXPORT
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
   so3::DexpFunctor local(omega);
   if (H) *H = local.rightJacobian();
@@ -394,31 +387,20 @@ Vector3 SO3::ChartAtOrigin::Local(const SO3& R, ChartJacobian H) {
 }
 
 //******************************************************************************
-// local vectorize
-static Vector9 vec3(const Matrix3& R) {
-  return Eigen::Map<const Vector9>(R.data());
-}
-
-// so<3> generators
-static std::vector<Matrix3> G3({SO3::Hat(Vector3::Unit(0)),
-                                SO3::Hat(Vector3::Unit(1)),
-                                SO3::Hat(Vector3::Unit(2))});
-
-// vectorized generators
-static const Matrix93 P3 =
-    (Matrix93() << vec3(G3[0]), vec3(G3[1]), vec3(G3[2])).finished();
-
-//******************************************************************************
 template <>
 GTSAM_EXPORT
 Vector9 SO3::vec(OptionalJacobian<9, 3> H) const {
   const Matrix3& R = matrix_;
   if (H) {
-    // As Luca calculated (for SO4), this is (I3 \oplus R) * P3
-    *H << R * P3.block<3, 3>(0, 0), R * P3.block<3, 3>(3, 0),
-        R * P3.block<3, 3>(6, 0);
+    H->setZero();
+    H->block<3, 1>(0, 1) = -R.col(2);
+    H->block<3, 1>(0, 2) = R.col(1);
+    H->block<3, 1>(3, 0) = R.col(2);
+    H->block<3, 1>(3, 2) = -R.col(0);
+    H->block<3, 1>(6, 0) = -R.col(1);
+    H->block<3, 1>(6, 1) = R.col(0);
   }
-  return gtsam::vec3(R);
+  return Eigen::Map<const Vector9>(R.data());
 }
 //******************************************************************************
 

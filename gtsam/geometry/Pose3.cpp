@@ -361,6 +361,28 @@ Matrix4 Pose3::matrix() const {
 }
 
 /* ************************************************************************* */
+Pose3::Vector16 Pose3::vec(OptionalJacobian<16, 6> H) const {
+  // Vectorize
+  const Matrix4 M = matrix();
+  const Vector16 v = Eigen::Map<const Vector16>(M.data());
+
+  // If requested, calculate H
+  if (H) {
+    H->setZero();
+    auto R = M.block<3, 3>(0, 0);
+    H->block<3, 1>(0, 1) = -R.col(2);
+    H->block<3, 1>(0, 2) = R.col(1);
+    H->block<3, 1>(4, 0) = R.col(2);
+    H->block<3, 1>(4, 2) = -R.col(0);
+    H->block<3, 1>(8, 0) = -R.col(1);
+    H->block<3, 1>(8, 1) = R.col(0);
+    H->block<3,3>(12,3) = R;
+  }
+
+  return v;
+}
+
+/* ************************************************************************* */
 Pose3 Pose3::transformPoseFrom(const Pose3& aTb, OptionalJacobian<6, 6> Hself,
                                OptionalJacobian<6, 6> HaTb) const {
   const Pose3& wTa = *this;
@@ -523,34 +545,6 @@ std::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
 /* ************************************************************************* */
 Pose3 Pose3::slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx, OptionalJacobian<6, 6> Hy) const {
   return interpolate(*this, other, t, Hx, Hy);
-}
-
-/* ************************************************************************* */
-// Compute vectorized Lie algebra generators for SE(3)
-using Matrix16x6 = Eigen::Matrix<double, 16, 6>;
-using Vector16 = Eigen::Matrix<double, 16, 1>;
-static Matrix16x6 VectorizedGenerators() {
-  Matrix16x6 G;
-  for (size_t j = 0; j < 6; j++) {
-    const Matrix4 X = Pose3::Hat(Vector::Unit(6, j));
-    G.col(j) = Eigen::Map<const Vector16>(X.data());
-  }
-  return G;
-}
-
-Vector Pose3::vec(OptionalJacobian<16, 6> H) const {
-  // Vectorize
-  const Matrix4 M = matrix();
-  const Vector X = Eigen::Map<const Vector16>(M.data());
-
-  // If requested, calculate H as (I_4 \oplus M) * G.
-  if (H) {
-    static const Matrix16x6 G = VectorizedGenerators(); // static to compute only once
-    for (size_t i = 0; i < 4; i++)
-      H->block(i * 4, 0, 4, dimension) = M * G.block(i * 4, 0, 4, dimension);
-  }
-
-  return X;
 }
 
 /* ************************************************************************* */

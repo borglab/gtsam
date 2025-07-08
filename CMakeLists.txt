@@ -40,6 +40,37 @@ set (CMAKE_PROJECT_VERSION_PATCH ${GTSAM_VERSION_PATCH})
 ###############################################################################
 # Gather information, perform checks, set defaults
 
+# Option to enable AddressSanitizer
+option(GTSAM_ENABLE_ASAN "Enable AddressSanitizer for memory error detection" OFF)
+
+if (GTSAM_ENABLE_ASAN)
+    message(STATUS "Enabling AddressSanitizer (ASan)")
+    if (MSVC)
+        # MSVC-specific ASan flags
+        # /fsanitize=address enables ASan
+        # /Zi is for debug information (PDB files)
+        # /Od is for disabling optimization (Debug builds)
+        # /MD is for linking with the DLL version of the C runtime library
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address /Zi /Od")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address /Zi /Od")
+
+        # Linker flags for MSVC ASan
+        # /fsanitize=address enables ASan linking
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=address")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /fsanitize=address")
+        set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /fsanitize=address")
+    else()
+        # Clang/GCC ASan flags (already there)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+
+        # Linker flags
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
+        set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fsanitize=address")
+    endif()
+endif()
+
 if(MSVC)
   set(MSVC_LINKER_FLAGS "/FORCE:MULTIPLE")
   set(CMAKE_EXE_LINKER_FLAGS ${MSVC_LINKER_FLAGS})

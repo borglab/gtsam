@@ -24,6 +24,8 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/concepts.h>
 
+#include <type_traits>
+
 namespace gtsam {
 
 /// tag to assert a type is a manifold
@@ -67,21 +69,17 @@ struct HasManifoldPrereqs {
   }
 };
 
-/// Extra manifold traits for fixed-dimension types
+/// Traits to get dimension, supporting both fixed and dynamic
 template<class Class, int N>
 struct GetDimensionImpl {
-  // Compile-time dimensionality
-  static int GetDimension(const Class&) {
-    return N;
-  }
-};
-
-/// Extra manifold traits for variable-dimension types
-template<class Class>
-struct GetDimensionImpl<Class, Eigen::Dynamic> {
-  // Run-time dimensionality
+  // Get dimension at compile-time for fixed-size manifolds, and at
+  // run-time for dynamic-size manifolds.
   static int GetDimension(const Class& m) {
-    return m.dim();
+    if constexpr (N == Eigen::Dynamic) {
+      return m.dim();
+    } else {
+      return N;
+    }
   }
 };
 
@@ -134,19 +132,21 @@ class IsManifold {
 
 public:
 
-  typedef typename traits<T>::structure_category structure_category_tag;
-  static const int dim = traits<T>::dimension;
-  typedef typename traits<T>::ManifoldType ManifoldType;
-  typedef typename traits<T>::TangentVector TangentVector;
+  using structure_category_tag = typename traits<T>::structure_category;
+  static inline constexpr int dim = traits<T>::dimension;
+  using ManifoldType = typename traits<T>::ManifoldType;
+  using TangentVector = typename traits<T>::TangentVector;
   // Concept marker: allows checking IsManifold<T>::value in templates
   static constexpr bool value =
-    std::is_base_of<manifold_tag, structure_category_tag>::value;
+    std::is_base_of_v<manifold_tag, structure_category_tag>;
 
   GTSAM_CONCEPT_USAGE(IsManifold) {
     static_assert(
         value,
         "This type's structure_category trait does not assert it as a manifold (or derived)");
-    static_assert(TangentVector::SizeAtCompileTime == dim);
+    if constexpr (dim != Eigen::Dynamic) {
+      static_assert(TangentVector::SizeAtCompileTime == dim);
+    }
 
     // make sure Chart methods are defined
     v = traits<T>::Local(p, q);
@@ -162,8 +162,8 @@ private:
 /// Give fixed size dimension of a type, fails at compile time if dynamic
 template<typename T>
 struct FixedDimension {
-  typedef const int value_type;
-  static const int value = traits<T>::dimension;
+  using value_type = const int;
+  static inline constexpr int value = traits<T>::dimension;
   static_assert(value != Eigen::Dynamic,
       "FixedDimension instantiated for dynamically-sized type.");
 };

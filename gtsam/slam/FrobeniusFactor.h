@@ -48,6 +48,7 @@ ConvertNoiseModel(const SharedNoiseModel &model, size_t n,
  */
 template <class T>
 class FrobeniusPrior : public NoiseModelFactorN<T> {
+  GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
   using MatrixNN = Eigen::Matrix<double, N, N>;
@@ -69,7 +70,7 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
 
   /// Error is just Frobenius norm between T element and vectorized matrix M.
   Vector evaluateError(const T& g, OptionalMatrixType H) const override {
-    return g.vec(H) - vecM_;  // Jacobian is computed only when needed.
+    return traits<T>::Vec(g, H) - vecM_;  // Jacobian is computed only when needed.
   }
 };
 
@@ -79,6 +80,7 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
  */
 template <class T>
 class FrobeniusFactor : public NoiseModelFactorN<T, T> {
+  GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
 
@@ -94,7 +96,7 @@ class FrobeniusFactor : public NoiseModelFactorN<T, T> {
   /// Error is just Frobenius norm between rotation matrices.
   Vector evaluateError(const T& T1, const T& T2,
                        OptionalMatrixType H1, OptionalMatrixType H2) const override {
-    Vector error = T2.vec(H2) - T1.vec(H1);
+    Vector error = traits<T>::Vec(T2, H2) - traits<T>::Vec(T1, H1);
     if (H1) *H1 = -*H1;
     return error;
   }
@@ -108,6 +110,7 @@ class FrobeniusFactor : public NoiseModelFactorN<T, T> {
  */
 template <class T>
 class FrobeniusBetweenFactor : public NoiseModelFactorN<T, T> {
+  GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
   T T12_;  ///< measured rotation between T1 and T2
   Eigen::Matrix<double, T::dimension, T::dimension>
       T2hat_H_T1_;  ///< fixed derivative of T2hat wrpt T1
@@ -129,7 +132,7 @@ class FrobeniusBetweenFactor : public NoiseModelFactorN<T, T> {
                          const SharedNoiseModel& model = nullptr)
       : NoiseModelFactorN<T, T>(ConvertNoiseModel(model, Dim), j1, j2),
         T12_(T12),
-        T2hat_H_T1_(T12.inverse().AdjointMap()) {}
+        T2hat_H_T1_(traits<T>::AdjointMap(traits<T>::Inverse(T12_))) {}
 
   /// @}
   /// @name Testable
@@ -161,9 +164,9 @@ class FrobeniusBetweenFactor : public NoiseModelFactorN<T, T> {
   /// Error is Frobenius norm between T1*T12 and T2.
   Vector evaluateError(const T& T1, const T& T2,
                        OptionalMatrixType H1, OptionalMatrixType H2) const override {
-    const T T2hat = T1.compose(T12_);
+    const T T2hat = traits<T>::Compose(T1, T12_);
     Eigen::Matrix<double, Dim, T::dimension> vec_H_T2hat;
-    Vector error = T2.vec(H2) - T2hat.vec(H1 ? &vec_H_T2hat : nullptr);
+    Vector error = traits<T>::Vec(T2, H2) - traits<T>::Vec(T2hat, H1 ? &vec_H_T2hat : nullptr);
     if (H1) *H1 = -vec_H_T2hat * T2hat_H_T1_;
     return error;
   }

@@ -17,8 +17,7 @@
 
 #pragma once
 
-#include <gtsam/base/Lie.h>
-#include <gtsam/base/Manifold.h>
+#include <gtsam/base/MatrixLieGroup.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
@@ -32,19 +31,19 @@ class Pose2;
 /**
  * 2D similarity transform
  */
-class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
+class GTSAM_EXPORT Similarity2 : public MatrixLieGroup<Similarity2, 4, 3> {
   /// @name Pose Concept
   /// @{
   typedef Rot2 Rotation;
   typedef Point2 Translation;
   /// @}
 
- private:
+private:
   Rot2 R_;
   Point2 t_;
   double s_;
 
- public:
+public:
   /// @name Constructors
   /// @{
 
@@ -182,7 +181,7 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
   /// @name Standard interface
   /// @{
 
-  /// Calculate 4*4 matrix group equivalent
+  /// Calculate 3*3 matrix group equivalent
   Matrix3 matrix() const;
 
   /// Return a GTSAM rotation
@@ -217,9 +216,9 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
 };
 
 template <>
-struct traits<Similarity2> : public internal::MatrixLieGroup<Similarity2> {};
+struct traits<Similarity2> : public internal::MatrixLieGroup<Similarity2, 3> {};
 
 template <>
-struct traits<const Similarity2> : public internal::MatrixLieGroup<Similarity2> {};
+struct traits<const Similarity2> : public internal::MatrixLieGroup<Similarity2, 3> {};
 
 }  // namespace gtsam
