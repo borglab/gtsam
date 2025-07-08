@@ -2,14 +2,15 @@
 
 name: MyST GitHub Pages Deploy
 on:
-  push:
-    # Runs on pushes targeting the develop branch
-    branches: [develop]
-    # Only trigger redeploy if Markdown files, notebooks, or config changes
-    paths:
-      - '**.md'
-      - '**.ipynb' 
-      - 'myst.yml'
+  # push:
+  #   # Runs on pushes targeting the develop branch
+  #   branches: [develop]
+  #   # Only trigger redeploy if Markdown files, notebooks, or config changes
+  #   paths:
+  #     - '**.md'
+  #     - '**.ipynb' 
+  #     - 'myst.yml'
+  workflow_dispatch:
 env:
   # `BASE_URL` determines the website is served from, including CSS & JS assets
   # You may need to change this to `BASE_URL: ''`
