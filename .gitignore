@@ -24,3 +24,4 @@ xcode/
 # MyST build outputs
 _build
 GEMINI.md
+/out/build/x64-Debug
