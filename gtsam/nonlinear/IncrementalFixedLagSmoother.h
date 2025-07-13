@@ -33,7 +33,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT IncrementalFixedLagSmoother: public FixedLagSmoother {
 
-public:
+ public:
 
   /// Typedef for a shared pointer to an Incremental Fixed-Lag Smoother
   typedef std::shared_ptr<IncrementalFixedLagSmoother> shared_ptr;
@@ -77,6 +77,10 @@ public:
   Values calculateSubEstimate(
       const double adaptiveSmootherLag = -1.0,
       const ISAM2Params& isamParam = DefaultISAM2Params());
+
+  /** Deep clone the current Smoother using boost serialization/deserialization function
+   */
+  const IncrementalFixedLagSmoother deepClone(const bool rewrite=false);
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
@@ -131,7 +135,10 @@ public:
   /// Get the sub iSAM2 object which is used for the inference internally
   const ISAM2& getSubISAM2() const { return subIsam_; }
 
- protected:
+  /// Get the initial value when calling update()
+  const gtsam::Values& getInitialTheta() const { return initialTheta_; }
+ 
+protected:
 
   /** Create default parameters */
   static ISAM2Params DefaultISAM2Params() {
@@ -150,6 +157,15 @@ public:
   /** Store results of latest isam2 update */
   ISAM2Result isamResult_;
 
+  /** Store initial value when calling update() */
+  gtsam::Values initialTheta_;
+
+  /** Store serialization string */
+  std::string smootherString_;
+
+  /** Smoother name for serialization */
+  std::string smootherName_ = "IncrementalSmoother";
+
   /** Erase any keys associated with timestamps before the provided time */
   void eraseKeysBefore(double timestamp);
 
@@ -157,7 +173,16 @@ public:
   void createOrderingConstraints(const KeyVector& marginalizableKeys,
       std::optional<FastMap<Key, int> >& constrainedKeys) const;
 
-private:
+  void setISAM2(ISAM2 isam) { isam_ = isam; }
+  void setInitialTheta(gtsam::Values initialTheta) {
+    initialTheta_ = initialTheta;
+  }
+  void setKeyTimestampMap(KeyTimestampMap keyTimestampMap,
+                          TimestampKeyMap timestampKeyMap) {
+    keyTimestampMap_ = keyTimestampMap;
+    timestampKeyMap_ = timestampKeyMap;
+  }
+ private:
   /** Private methods for printing debug information */
   static void PrintKeySet(const std::set<Key>& keys, const std::string& label =
       "Keys:");
@@ -169,8 +194,30 @@ private:
   static void PrintSymbolicTreeHelper(
       const gtsam::ISAM2Clique::shared_ptr& clique, const std::string indent =
           "");
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  /// Serialization function
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int version) {
 
+    // ar& boost::serialization::base_object<FixedLagSmoother>(*this);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(FixedLagSmoother);
+    ar& BOOST_SERIALIZATION_NVP(smootherLag_);
+    ar& BOOST_SERIALIZATION_NVP(timestampKeyMap_);
+    ar& BOOST_SERIALIZATION_NVP(keyTimestampMap_);
+    ar& BOOST_SERIALIZATION_NVP(isam_);
+    ar& BOOST_SERIALIZATION_NVP(subIsam_);
+    ar& BOOST_SERIALIZATION_NVP(isamResult_);
+    ar& BOOST_SERIALIZATION_NVP(initialTheta_);
+    ar& BOOST_SERIALIZATION_NVP(smootherString_);
+    ar& BOOST_SERIALIZATION_NVP(smootherName_);
+  }
+#endif
 };
 // IncrementalFixedLagSmoother
 
 }/// namespace gtsam
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+// BOOST_CLASS_EXPORT_KEY(gtsam::IncrementalFixedLagSmoother)
+#endif

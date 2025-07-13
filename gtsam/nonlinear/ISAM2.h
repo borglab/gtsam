@@ -196,22 +196,20 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    * graph indices of any factor that was removed during the 'marginalizeLeaves'
    * call
    */
-  void marginalizeLeaves(
-      const FastList<Key>& leafKeys,
-      FactorIndices* marginalFactorsIndices = nullptr,
-      FactorIndices* deletedFactorsIndices = nullptr);
+  void marginalizeLeaves(const FastList<Key>& leafKeys,
+                         FactorIndices* marginalFactorsIndices = nullptr,
+                         FactorIndices* deletedFactorsIndices = nullptr);
 
   /** An overload of marginalizeLeaves that takes references
    * to vectors instead of pointers to vectors and passes
    * it to the pointer version of the function.
    */
   template <class... OptArgs>
-      void marginalizeLeaves(const FastList<Key>& leafKeys,
-                             OptArgs&&... optArgs) {
-          // dereference the optional arguments and pass
-          // it to the pointer version
-          marginalizeLeaves(leafKeys, (&optArgs)...);
-      }
+  void marginalizeLeaves(const FastList<Key>& leafKeys, OptArgs&&... optArgs) {
+    // dereference the optional arguments and pass
+    // it to the pointer version
+    marginalizeLeaves(leafKeys, (&optArgs)...);
+  }
 
   /// Access the current linearization point
   const Values& getLinearizationPoint() const { return theta_; }
@@ -290,6 +288,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    */
   VectorValues gradientAtZero() const;
 
+  /* deep clone the current isam object*/
+  ISAM2 deepClone() ;
+
   /// @}
 
  protected:
@@ -339,24 +340,55 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
 
   void updateDelta(bool forceFullSolve = false) const;
 
+  // several functions for deep clone
+  KeySet cloneKeySet(KeySet originKetSet) {
+    KeySet targetKeySet;
+    for (const Key& key : originKetSet) {
+      // Do something with key
+      targetKeySet.insert(key);
+    }
+    return targetKeySet;
+  }
+  void setTheta(Values newTheta) { theta_ = newTheta; }
+  void setDelta(VectorValues delta, VectorValues deltaNewton,
+                VectorValues RgProd, std::optional<double> doglegDelta) {
+    delta_ = delta;
+    deltaNewton_ = deltaNewton;
+    RgProd_ = RgProd;
+    doglegDelta_ = doglegDelta;
+  }
+  void setDeltaReplacedMask(KeySet deltaReplacedMask) {
+    deltaReplacedMask_ = deltaReplacedMask;
+  }
+  void setFactors(NonlinearFactorGraph nonlinearFactors,
+                  GaussianFactorGraph linearFactors) {
+    nonlinearFactors_ = nonlinearFactors;
+    linearFactors_ = linearFactors;
+  }
+  void setVariables(KeySet fixedVariables) { fixedVariables_ = fixedVariables; }
+  void setCounter(int update_count) { update_count_ = update_count; }
+  void setBayesTree(Nodes nodes, Roots roots) {
+    nodes_ = nodes;
+    roots_ = roots;
+  }
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-      ar & BOOST_SERIALIZATION_NVP(theta_);
-      ar & BOOST_SERIALIZATION_NVP(variableIndex_);
-      ar & BOOST_SERIALIZATION_NVP(delta_);
-      ar & BOOST_SERIALIZATION_NVP(deltaNewton_);
-      ar & BOOST_SERIALIZATION_NVP(RgProd_);
-      ar & BOOST_SERIALIZATION_NVP(deltaReplacedMask_);
-      ar & BOOST_SERIALIZATION_NVP(nonlinearFactors_);
-      ar & BOOST_SERIALIZATION_NVP(linearFactors_);
-      ar & BOOST_SERIALIZATION_NVP(doglegDelta_);
-      ar & BOOST_SERIALIZATION_NVP(fixedVariables_);
-      ar & BOOST_SERIALIZATION_NVP(update_count_);
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar& BOOST_SERIALIZATION_NVP(theta_);
+    ar& BOOST_SERIALIZATION_NVP(variableIndex_);
+    ar& BOOST_SERIALIZATION_NVP(delta_);
+    ar& BOOST_SERIALIZATION_NVP(deltaNewton_);
+    ar& BOOST_SERIALIZATION_NVP(RgProd_);
+    ar& BOOST_SERIALIZATION_NVP(deltaReplacedMask_);
+    ar& BOOST_SERIALIZATION_NVP(nonlinearFactors_);
+    ar& BOOST_SERIALIZATION_NVP(linearFactors_);
+    ar& BOOST_SERIALIZATION_NVP(doglegDelta_);
+    ar& BOOST_SERIALIZATION_NVP(fixedVariables_);
+    ar& BOOST_SERIALIZATION_NVP(update_count_);
   }
 #endif
 

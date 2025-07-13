@@ -750,8 +750,12 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
 
   gtsam::NonlinearFactorGraph getFactors() const;
   gtsam::ISAM2 getISAM2() const;
+  gtsam::ISAM2 getSubISAM2() const;
+  gtsam::Values getInitialTheta() const;
 
-  gtsam::Values calculateSubEstimate(double adaptiveSmootherLag, gtsam::ISAM2Params& isamParam);
+  gtsam::Values calculateSubEstimate(double adaptiveSmootherLag, gtsam::ISAM2Params& isamParam) const;
+  gtsam::IncrementalFixedLagSmoother deepClone() const;
+  gtsam::IncrementalFixedLagSmoother deepClone(const bool rewrite) const;
 };
 
 #include <gtsam/nonlinear/ExtendedKalmanFilter.h>

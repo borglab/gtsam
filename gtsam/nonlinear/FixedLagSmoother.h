@@ -28,11 +28,13 @@
 #include <map>
 #include <vector>
 
+#include <boost/serialization/assume_abstract.hpp>
+
 namespace gtsam {
 
 class GTSAM_EXPORT FixedLagSmoother {
 
-public:
+ public:
 
   /// Typedef for a shared pointer to an Incremental Fixed-Lag Smoother
   typedef std::shared_ptr<FixedLagSmoother> shared_ptr;
@@ -130,6 +132,13 @@ protected:
   /** Find all of the keys associated with timestamps before the provided time */
   KeyVector findKeysAfter(double timestamp) const;
 
+private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& /*ar*/, const unsigned int /*version*/) {}
+#endif
+
 }; // FixedLagSmoother
 
 /// Typedef for matlab wrapping
@@ -138,3 +147,7 @@ typedef FixedLagSmootherKeyTimestampMap::value_type FixedLagSmootherKeyTimestamp
 typedef FixedLagSmoother::Result FixedLagSmootherResult;
 
 } /// namespace gtsam
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(gtsam::FixedLagSmoother)
+#endif

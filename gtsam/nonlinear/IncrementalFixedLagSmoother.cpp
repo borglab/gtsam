@@ -22,6 +22,9 @@
 #include <gtsam/nonlinear/IncrementalFixedLagSmoother.h>
 #include <gtsam/nonlinear/BayesTreeMarginalizationHelper.h>
 #include <gtsam/base/debug.h>
+// #include <gtsam/base/serialization.h>
+// #include <gtsam/base/serializationTestHelpers.h>
+// #include <gtsam/nonlinear/serializationNonlinear.h>
 
 namespace gtsam {
 
@@ -126,6 +129,15 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
     PrintSymbolicTree(isam_, "Final Bayes Tree:");
     std::cout << "END" << std::endl;
   }
+  
+  // Update initial Value
+  // Remove marginalized keys from initialTheta_
+  for (Key key : marginalizableKeys) {
+    if (initialTheta_.exists(key)) {
+      initialTheta_.erase(key);
+    }
+  }
+  initialTheta_.insert_or_assign(newTheta);  // insert or update all keys
 
   // TODO: Fill in result structure
   Result result;
@@ -140,6 +152,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   return result;
 }
 
+/* ************************************************************************* */
 Values IncrementalFixedLagSmoother::calculateSubEstimate(
     const double adaptiveSmootherLag, const ISAM2Params& isamParam) {
   FastVector<size_t> removedFactors;
@@ -168,8 +181,8 @@ Values IncrementalFixedLagSmoother::calculateSubEstimate(
   ISAM2 tempIsam_(isamParam);
   subIsam_ = tempIsam_;
   isamResult_ =
-      subIsam_.update(isam_.getFactorsUnsafe(), isam_.calculateEstimate(), {},
-                       constrainedKeys, {}, additionalMarkedKeys);
+      subIsam_.update(isam_.getFactorsUnsafe(), initialTheta_, {},
+                       constrainedKeys, {}, additionalMarkedKeys); // isam_.calculateEstimate()
 
   // Marginalize out any needed variables
   if (marginalizableKeys.size() > 0) {
@@ -181,7 +194,33 @@ Values IncrementalFixedLagSmoother::calculateSubEstimate(
   return subIsam_.calculateEstimate();
 }
 
-    /* ************************************************************************* */
+/* ************************************************************************* */
+const IncrementalFixedLagSmoother IncrementalFixedLagSmoother::deepClone(
+    const bool rewrite) {
+  IncrementalFixedLagSmoother outputSmoother(smootherLag_, params());
+
+  std::string fileName = "saved_solver.xml";
+
+  // smootherString_ = serializeGraph(getFactors());
+  // NonlinearFactorGraph::shared_ptr copiedFactor =
+  // deserializeGraph(smootherString_);
+  
+  // outputIsam = serializationDeepClone(isam_, fileName);
+
+  ISAM2 outputIsam;
+  if (rewrite) {
+    outputIsam = isam_.deepClone();
+  } else {
+    outputIsam = isam_;
+  }
+  // ISAM2 outputIsam = isam_.deepClone();
+  outputSmoother.setISAM2(outputIsam);
+  outputSmoother.setInitialTheta(initialTheta_);
+  outputSmoother.setKeyTimestampMap(keyTimestampMap_, timestampKeyMap_);
+  return outputSmoother;
+};
+
+/* ************************************************************************* */
 void IncrementalFixedLagSmoother::eraseKeysBefore(double timestamp) {
   TimestampKeyMap::iterator end = timestampKeyMap_.lower_bound(timestamp);
   TimestampKeyMap::iterator iter = timestampKeyMap_.begin();
@@ -274,3 +313,8 @@ void IncrementalFixedLagSmoother::PrintSymbolicTreeHelper(
 
 /* ************************************************************************* */
 } /// namespace gtsam
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+// Export this class
+// BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::IncrementalFixedLagSmoother)
+#endif

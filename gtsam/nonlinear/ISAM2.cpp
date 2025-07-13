@@ -24,6 +24,7 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/inference/BayesTree-inst.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
+#include <gtsam/nonlinear/serializationNonlinear.h>
 
 #include <algorithm>
 #include <map>
@@ -832,4 +833,56 @@ VectorValues ISAM2::gradientAtZero() const {
   return g;
 }
 
+/* ************************************************************************* */
+ISAM2 ISAM2::deepClone() {
+  ISAM2 newIsam = ISAM2(params());
+
+  Values newTheta;
+  /*std::string thetaString = serializeValues(theta_);
+  Values::shared_ptr newThetaPtr = deserializeValues(thetaString);
+  newTheta = *newThetaPtr;*/
+  newTheta = theta_;
+  newIsam.setTheta(newTheta);
+
+  newIsam.setDelta(delta_, deltaNewton_, RgProd_, doglegDelta_);
+
+  KeySet newDeltaReplacedMask = cloneKeySet(deltaReplacedMask_);
+  newIsam.setDeltaReplacedMask(newDeltaReplacedMask);
+
+  NonlinearFactorGraph newNonlinearFactors;
+  /*std::string factorString = serializeGraph(nonlinearFactors_);
+  NonlinearFactorGraph::shared_ptr newNonlinearFactorsPtr =
+      deserializeGraph(factorString);
+  newNonlinearFactors = *newNonlinearFactorsPtr;*/
+  for (const auto& factor : nonlinearFactors_) {
+    newNonlinearFactors.push_back(factor->clone());
+  }
+
+  GaussianFactorGraph newLinearFactors;
+  for (const auto& factor : linearFactors_) {
+    newLinearFactors.push_back(factor->clone());
+  }
+  newIsam.setFactors(newNonlinearFactors, newLinearFactors);
+
+  KeySet newFixedVariables = cloneKeySet(fixedVariables_);
+  newIsam.setVariables(newFixedVariables);
+
+  newIsam.setCounter(update_count_);
+
+  Nodes newNodes;
+  Roots newRoot;
+  for (const auto& kv : nodes_) {
+    const Key& key = kv.first;
+    const std::shared_ptr<ISAM2Clique>& node = kv.second;
+
+    //std::shared_ptr < GaussianConditional> conditional = node->conditional();
+    //auto clonedNode = std::make_shared<ISAM2Clique>(conditional);
+    newNodes[key] = node;
+  }
+
+  // newNodes.insert(nodes_.begin(), nodes_.end());
+  newRoot.insert(newRoot.end(), roots_.begin(), roots_.end());
+  newIsam.setBayesTree(newNodes, newRoot);
+  return newIsam;
+}
 }  // namespace gtsam
