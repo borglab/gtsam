@@ -9,16 +9,18 @@
 
  * -------------------------------------------------------------------------- */
 
-/**
- * @file   testSO3.cpp
- * @brief  Unit tests for SO3, as a GTSAM-adapted Lie Group
- * @author Frank Dellaert
- **/
+ /**
+  * @file   testSO3.cpp
+  * @brief  Unit tests for SO3, as a GTSAM-adapted Lie Group
+  * @author Frank Dellaert
+  **/
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/testLie.h>
 #include <gtsam/geometry/SO3.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/base/Vector.h>
 
 using namespace std::placeholders;
 using namespace std;
@@ -54,13 +56,13 @@ TEST(SO3, Constructors) {
 TEST(SO3, ClosestTo) {
   Matrix3 M;
   M << 0.79067393, 0.6051136, -0.0930814,   //
-      0.4155925, -0.64214347, -0.64324489,  //
-      -0.44948549, 0.47046326, -0.75917576;
+    0.4155925, -0.64214347, -0.64324489,  //
+    -0.44948549, 0.47046326, -0.75917576;
 
   Matrix expected(3, 3);
   expected << 0.790687, 0.605096, -0.0931312,  //
-      0.415746, -0.642355, -0.643844,          //
-      -0.449411, 0.47036, -0.759468;
+    0.415746, -0.642355, -0.643844,          //
+    -0.449411, 0.47036, -0.759468;
 
   auto actual = SO3::ClosestTo(3 * M);
   EXPECT(assert_equal(expected, actual.matrix(), 1e-6));
@@ -68,15 +70,15 @@ TEST(SO3, ClosestTo) {
 
 //******************************************************************************
 namespace {
-SO3 id;
-Vector3 z_axis(0, 0, 1), v2(1, 2, 0), v3(1, 2, 3);
-SO3 R1(Eigen::AngleAxisd(0.1, z_axis));
-SO3 R2(Eigen::AngleAxisd(0.2, z_axis));
+  SO3 id;
+  Vector3 z_axis(0, 0, 1), v2(1, 2, 0), v3(1, 2, 3);
+  SO3 R1(Eigen::AngleAxisd(0.1, z_axis));
+  SO3 R2(Eigen::AngleAxisd(0.2, z_axis));
 }  // namespace
 
 /* ************************************************************************* */
 TEST(SO3, ChordalMean) {
-  std::vector<SO3> rotations = {R1, R1.inverse()};
+  std::vector<SO3> rotations = { R1, R1.inverse() };
   EXPECT(assert_equal(SO3(), SO3::ChordalMean(rotations)));
 }
 
@@ -158,7 +160,7 @@ TEST(SO3, ChartDerivatives) {
 TEST(SO3, ExpmapFunctor) {
   Vector axis = Vector3(0., 1., 0.);  // rotation around Y
   double angle = 3.14 / 4.0;
-  Matrix expected(3,3);
+  Matrix expected(3, 3);
   expected << 0.707388, 0, 0.706825, 0, 1, 0, -0.706825, 0, 0.707388;
 
   // axis angle version
@@ -167,7 +169,7 @@ TEST(SO3, ExpmapFunctor) {
   CHECK(assert_equal(expected, actual1.matrix(), 1e-5));
 
   // axis angle version, negative angle
-  so3::ExpmapFunctor f2(axis, angle - 2*M_PI);
+  so3::ExpmapFunctor f2(axis, angle - 2 * M_PI);
   SO3 actual2(f2.expmap());
   CHECK(assert_equal(expected, actual2.matrix(), 1e-5));
 
@@ -177,14 +179,14 @@ TEST(SO3, ExpmapFunctor) {
   CHECK(assert_equal(expected, actual3.matrix(), 1e-5));
 
   // omega version, negative angle
-  so3::ExpmapFunctor f4(axis * (angle - 2*M_PI));
+  so3::ExpmapFunctor f4(axis * (angle - 2 * M_PI));
   SO3 actual4(f4.expmap());
   CHECK(assert_equal(expected, actual4.matrix(), 1e-5));
 }
 
 /* ************************************************************************* */
 namespace exmap_derivative {
-static const Vector3 w(0.1, 0.27, -0.2);
+  static const Vector3 w(0.1, 0.27, -0.2);
 }
 // Left trivialized Derivative of exp(w) wrpt w:
 // How does exp(w) change when w changes?
@@ -199,7 +201,7 @@ TEST(SO3, ExpmapDerivative) {
   using exmap_derivative::w;
   const Matrix actualDexpL = SO3::ExpmapDerivative(w);
   const Matrix expectedDexpL =
-      numericalDerivative11<Vector3, Vector3>(testDexpL, Vector3::Zero(), 1e-2);
+    numericalDerivative11<Vector3, Vector3>(testDexpL, Vector3::Zero(), 1e-2);
   EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-7));
 
   const Matrix actualDexpInvL = SO3::LogmapDerivative(w);
@@ -210,22 +212,22 @@ TEST(SO3, ExpmapDerivative) {
 TEST(SO3, ExpmapDerivative2) {
   const Vector3 theta(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-      std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
+    std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
 
   CHECK(assert_equal(Jexpected, SO3::ExpmapDerivative(theta)));
   CHECK(assert_equal(Matrix3(Jexpected.transpose()),
-                     SO3::ExpmapDerivative(-theta)));
+    SO3::ExpmapDerivative(-theta)));
 }
 
 //******************************************************************************
 TEST(SO3, ExpmapDerivative3) {
   const Vector3 theta(10, 20, 30);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-      std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
+    std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
 
   CHECK(assert_equal(Jexpected, SO3::ExpmapDerivative(theta)));
   CHECK(assert_equal(Matrix3(Jexpected.transpose()),
-                     SO3::ExpmapDerivative(-theta)));
+    SO3::ExpmapDerivative(-theta)));
 }
 
 //******************************************************************************
@@ -276,7 +278,7 @@ TEST(SO3, ExpmapDerivative5) {
 TEST(SO3, ExpmapDerivative6) {
   const Vector3 theta(0.1, 0, 0.1);
   const Matrix expectedH = numericalDerivative11<SO3, Vector3>(
-      std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
+    std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
   Matrix3 actualH;
   SO3::Expmap(theta, actualH);
   EXPECT(assert_equal(expectedH, actualH));
@@ -296,9 +298,9 @@ TEST(SO3, LogmapDerivative) {
     -0.0385114, -0.99819, 0.0461892,
     -0.663175, 0.060108, 0.746047).finished());
   const SO3 R4((Matrix3() <<            // Final pose in a drone experiment
-      0.324237, 0.902975, 0.281968,
-      -0.674322, 0.429668, -0.600562,
-      -0.663445, 0.00458662, 0.748211).finished());
+    0.324237, 0.902975, 0.281968,
+    -0.674322, 0.429668, -0.600562,
+    -0.663445, 0.00458662, 0.748211).finished());
   size_t i = 0;
   for (const SO3& R : { R0, R1, R2, R3, R4 }) {
     const bool nearPi = (i == 2 || i == 3); // Flag cases near pi
@@ -464,7 +466,7 @@ TEST(Matrix, compose) {
   CHECK(assert_equal(expected, actual));
   std::function<Matrix3(const Matrix3&)> f = [R](const Matrix3& M) {
     return so3::compose(M, R);
-  };
+    };
   Matrix numericalH = numericalDerivative11(f, M, 1e-2);
   CHECK(assert_equal(numericalH, actualH));
 }
@@ -484,6 +486,81 @@ TEST(SO3, AdjointMap) {
 
   // Assert that they are equal
   EXPECT(assert_equal(specialized_Adj, generic_Adj, 1e-9));
+}
+
+//******************************************************************************
+namespace gtsam {
+  namespace so3 {
+
+    static constexpr double one_24th = 1.0 / 24.0;
+    static constexpr double one_720th = 1.0 / 720.0;
+
+    // --- Thresholds ---
+    // Tolerance for near zero (theta^2)
+    static constexpr double kNearZeroThresholdSq = 1e-6;
+    // Tolerance for near pi (delta^2 = (pi - theta)^2)
+    static constexpr double kNearPiThresholdSq = 1e-6;
+
+
+    struct GTSAM_EXPORT DexpFunctor2 : public DexpFunctor {
+      double H_coeff; // Renamed from H to avoid conflict with OptionalJacobian H
+      double G_H; // Derivative coefficient for H
+
+      explicit DexpFunctor2(const Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq)
+        : DexpFunctor(omega, nearZeroThresholdSq, nearPiThresholdSq) {
+        if (!nearZero) {
+          H_coeff = (1.0 - 2.0 * B) / (2.0 * theta2);
+          G_H = (-E * theta2 - 0.5 + B) / (theta2 * theta2); // dH/d(theta^2)
+        }
+        else {
+          H_coeff = one_24th - theta2 * one_720th;
+          G_H = -one_720th; // dH/d(theta^2) near zero
+        }
+      }
+
+      explicit DexpFunctor2(const Vector3& omega)
+        : DexpFunctor2(omega, kNearZeroThresholdSq, kNearPiThresholdSq) {
+      }
+
+      Vector3 applyGamma(const Vector3& v, OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const {
+        const Vector3 Wv = gtsam::cross(omega, v);
+        Matrix3 WWv_H_w;
+        const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &WWv_H_w : nullptr);
+
+        if (H1) {
+          // Derivative of C * Wv
+          Matrix3 CWv_H_w = -Wv * F * omega.transpose() - C * skewSymmetric(v);
+          // Derivative of H_coeff * WWv
+          Matrix3 HWWv_H_w = -WWv * G_H * omega.transpose() + H_coeff * WWv_H_w;
+          *H1 = CWv_H_w + HWWv_H_w;
+        }
+
+        if (H2) *H2 = 0.5 * I_3x3 + C * W + H_coeff * WW;
+        return 0.5 * v + C * Wv + H_coeff * WWv;
+      }
+    };
+
+  }  // namespace so3
+}
+
+TEST(SO3, ApplyGamma) {
+  Matrix aH1, aH2;
+  for (bool nearZero : {true, false}) {
+    std::function<Vector3(const Vector3&, const Vector3&)> f =
+      [nearZero](const Vector3& omega, const Vector3& v) {
+      return so3::DexpFunctor2(omega, nearZero ? 1.0 : 0.0, 1e-5).applyGamma(v);
+      };
+    for (const Vector3& omega : test_cases::omegas(nearZero)) {
+      so3::DexpFunctor2 local(omega, nearZero ? 1.0 : 0.0, 1e-5);
+      for (const Vector3& v : test_cases::vs) {
+        EXPECT(assert_equal(Vector3(0.5 * I_3x3 * v + local.C * local.W * v + local.H_coeff * local.WW * v),
+          local.applyGamma(v, aH1, aH2)));
+        EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1));
+        EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2));
+        EXPECT(assert_equal(0.5 * I_3x3 + local.C * local.W + local.H_coeff * local.WW, aH2));
+      }
+    }
+  }
 }
 
 //******************************************************************************
