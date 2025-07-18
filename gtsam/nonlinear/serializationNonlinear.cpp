@@ -5,6 +5,9 @@
  * @author Alex Cunningham
  */
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/export.hpp>
+
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/nonlinear/serializationNonlinear.h>
 
@@ -40,6 +43,7 @@
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/nonlinear/ISAM2.h>
+#include <gtsam/nonlinear/IncrementalFixedLagSmoother.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -102,17 +106,25 @@ typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3>
 
 /* Create GUIDs for Noisemodels */
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(gtsam::noiseModel::Base);
+// BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Base, "gtsam_noiseModel_Base");
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
+
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Base,
+                        "gtsam_noiseModel_mEstimator_Base");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Null,
+                        "gtsam_noiseModel_mEstimator_Null");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Fair,
+                        "gtsam_noiseModel_mEstimator_Fair");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Huber,
+                        "gtsam_noiseModel_mEstimator_Huber");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Tukey,
+                        "gtsam_noiseModel_mEstimator_Tukey");
+
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
-
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Base , "gtsam_noiseModel_mEstimator_Base");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Null , "gtsam_noiseModel_mEstimator_Null");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Fair , "gtsam_noiseModel_mEstimator_Fair");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Huber, "gtsam_noiseModel_mEstimator_Huber");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Tukey, "gtsam_noiseModel_mEstimator_Tukey");
 
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
@@ -120,6 +132,7 @@ BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 
 /* Create GUIDs for pim */
 /* ************************************************************************* */
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(gtsam::PreintegrationBase);
 BOOST_CLASS_EXPORT_GUID(PreintegratedImuMeasurements, "gtsam_PreintegratedImuMeasurements");
 BOOST_CLASS_EXPORT_GUID(PreintegrationCombinedParams, "gtsam_PreintegrationCombinedParams");
 BOOST_CLASS_EXPORT_GUID(PreintegratedCombinedMeasurements, "gtsam_PreintegratedCombinedMeasurements");
@@ -137,6 +150,7 @@ GTSAM_VALUE_EXPORT(gtsam::PinholeCamera<Cal3Bundler>);
 
 /* Create GUIDs for factors */
 /* ************************************************************************* */
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(gtsam::NonlinearFactor);
 BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor");
 BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactor, "gtsam::HessianFactor");
 
@@ -156,6 +170,7 @@ BOOST_CLASS_EXPORT_GUID(PriorFactorStereoCamera,
                         "gtsam::PriorFactorStereoCamera");
 
 BOOST_CLASS_EXPORT_GUID(ImuFactor, "gtsam::ImuFactor");
+BOOST_CLASS_EXPORT_GUID(CombinedImuFactor, "gtsam::CombinedImuFactor");
 BOOST_CLASS_EXPORT_GUID(LinearContainerFactor, "gtsam::LinearContainerFactor");
 
 BOOST_CLASS_EXPORT_GUID(BetweenFactorPoint2, "gtsam::BetweenFactorPoint2");
@@ -207,11 +222,18 @@ BOOST_CLASS_EXPORT_GUID(GeneralSFMFactor2Cal3_S2,
 
 BOOST_CLASS_EXPORT_GUID(GenericStereoFactor3D, "gtsam::GenericStereoFactor3D");
 
+/* Create GUIDs for parameters */
+/* ************************************************************************* */
+
+BOOST_CLASS_EXPORT_GUID(gtsam::imuBias::ConstantBias,
+                        "gtsam::imuBias::ConstantBias")
+// BOOST_CLASS_EXPORT_GUID(gtsam::ISAM2Params, "gtsam::ISAM2Params");
 /* Create GUIDs for smoother */
 /* ************************************************************************* */
 
-BOOST_CLASS_EXPORT_GUID(gtsam::ISAM2, "gtsam::ISAM2");
-// BOOST_CLASS_EXPORT_GUID(gtsam::IncrementalFixedLagSmoother, "gtsam::IncrementalFixedLagSmoother");
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(gtsam::FixedLagSmoother);
+BOOST_CLASS_EXPORT_GUID(gtsam::ISAM2, "gtsam_ISAM2");
+BOOST_CLASS_EXPORT_GUID(gtsam::IncrementalFixedLagSmoother, "gtsam_IncrementalFixedLagSmoother");
 
 /* ************************************************************************* */
 // Actual implementations of functions
@@ -353,5 +375,6 @@ ISAM2 gtsam::serializationDeepClone(ISAM2 originIsam, std::string fileName) {
   }
   return copiedIsam;
 }
+#endif
 
 /* ************************************************************************* */

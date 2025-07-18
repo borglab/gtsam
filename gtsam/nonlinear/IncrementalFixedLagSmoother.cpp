@@ -24,7 +24,7 @@
 #include <gtsam/base/debug.h>
 // #include <gtsam/base/serialization.h>
 // #include <gtsam/base/serializationTestHelpers.h>
-// #include <gtsam/nonlinear/serializationNonlinear.h>
+ #include <gtsam/nonlinear/serializationNonlinear.h>
 
 namespace gtsam {
 
@@ -42,6 +42,26 @@ bool IncrementalFixedLagSmoother::equals(const FixedLagSmoother& rhs,
       dynamic_cast<const IncrementalFixedLagSmoother*>(&rhs);
   return e != nullptr && FixedLagSmoother::equals(*e, tol)
       && isam_.equals(e->isam_, tol);
+}
+
+std::string IncrementalFixedLagSmoother::equalsDetail(
+    const FixedLagSmoother& rhs, double tol) {
+  const IncrementalFixedLagSmoother* e =
+      dynamic_cast<const IncrementalFixedLagSmoother*>(&rhs);
+  std::string ret = "";
+  if (e == nullptr){
+    ret += "nullptr";
+    return ret;
+  }
+  ret += " 1.FixedLagSmoother:";
+  if (FixedLagSmoother::equals(*e, tol)){
+    ret += "true";
+  } else {
+    ret += "false";
+  }
+  ret += " 2.isam:";
+  ret += isam_.equalsDetail(e->isam_, tol);
+  return ret;
 }
 
 /* ************************************************************************* */
@@ -178,8 +198,7 @@ Values IncrementalFixedLagSmoother::calculateSubEstimate(
   KeyList additionalMarkedKeys(additionalKeys.begin(), additionalKeys.end());
 
   // temp iSAM2
-  ISAM2 tempIsam_(isamParam);
-  subIsam_ = tempIsam_;
+  subIsam_ = isam_.deepClone(isamParam);
   isamResult_ =
       subIsam_.update(isam_.getFactorsUnsafe(), initialTheta_, {},
                        constrainedKeys, {}, additionalMarkedKeys); // isam_.calculateEstimate()
@@ -200,25 +219,33 @@ const IncrementalFixedLagSmoother IncrementalFixedLagSmoother::deepClone(
   IncrementalFixedLagSmoother outputSmoother(smootherLag_, params());
 
   std::string fileName = "saved_solver.xml";
+  ISAM2 outputIsam;
 
   // smootherString_ = serializeGraph(getFactors());
   // NonlinearFactorGraph::shared_ptr copiedFactor =
   // deserializeGraph(smootherString_);
-  
-  // outputIsam = serializationDeepClone(isam_, fileName);
-
-  ISAM2 outputIsam;
   if (rewrite) {
-    outputIsam = isam_.deepClone();
+    // outputIsam = serializationDeepClone(isam_, fileName);
+    outputIsam = isam_.deepClone(isam_.params());
   } else {
     outputIsam = isam_;
   }
-  // ISAM2 outputIsam = isam_.deepClone();
   outputSmoother.setISAM2(outputIsam);
-  outputSmoother.setInitialTheta(initialTheta_);
-  outputSmoother.setKeyTimestampMap(keyTimestampMap_, timestampKeyMap_);
+
+  Values newInitialTheta(initialTheta_);
+  outputSmoother.setInitialTheta(newInitialTheta);
+
+  outputSmoother.updateKeyTimestampMap(keyTimestampMap_);
+  // outputSmoother.setKeyTimestampMap(keyTimestampMap_, timestampKeyMap_);
   return outputSmoother;
 };
+
+/* ************************************************************************* */
+const void IncrementalFixedLagSmoother::forceRelinearize() {
+  isam_.update(NonlinearFactorGraph(), Values(), FactorIndices(), {}, {}, {},
+               true);
+  return;
+}
 
 /* ************************************************************************* */
 void IncrementalFixedLagSmoother::eraseKeysBefore(double timestamp) {
@@ -314,7 +341,3 @@ void IncrementalFixedLagSmoother::PrintSymbolicTreeHelper(
 /* ************************************************************************* */
 } /// namespace gtsam
 
-#if GTSAM_ENABLE_BOOST_SERIALIZATION
-// Export this class
-// BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::IncrementalFixedLagSmoother)
-#endif

@@ -10,6 +10,8 @@
 
 #pragma once
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/ISAM2.h>
 
@@ -66,3 +68,5 @@ Values::shared_ptr deserializeValuesFromXMLFile(
 ISAM2 serializationDeepClone(ISAM2 originIsam,
                              std::string fileName = "isam.dat");
 }  // namespace gtsam
+
+#endif

@@ -99,18 +99,24 @@ namespace gtsam {
   /* ************************************************************************ */
   VectorValues& VectorValues::update(const VectorValues& values) {
     iterator hint = begin();
-    for (const auto& [key, value] : values) {
+    for (const KeyValuePair& key_value : values) {
       // Use this trick to find the value using a hint, since we are inserting
       // from another sorted map
+      if (!exists(key_value.first)) {
+        std::cout << "VectorValues Update: key "
+                  << _defaultKeyFormatter(key_value.first) << " does not exist!"
+                  << std::endl;
+        continue;
+      }
       size_t oldSize = values_.size();
-      hint = values_.insert(hint, {key, value});
+      hint = values_.insert(hint, key_value);
       if (values_.size() > oldSize) {
         values_.unsafe_erase(hint);
         throw std::out_of_range(
             "Requested to update a VectorValues with another VectorValues that "
             "contains keys not present in the first.");
       } else {
-        hint->second = value;
+        hint->second = key_value.second;
       }
     }
     return *this;

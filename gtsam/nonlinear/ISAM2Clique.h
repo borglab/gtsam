@@ -35,6 +35,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT ISAM2Clique
     : public BayesTreeCliqueBase<ISAM2Clique, GaussianFactorGraph> {
+  friend class ISAM2;
  public:
   typedef ISAM2Clique This;
   typedef BayesTreeCliqueBase<This, GaussianFactorGraph> Base;
@@ -48,7 +49,6 @@ class GTSAM_EXPORT ISAM2Clique
 #ifdef USE_BROKEN_FAST_BACKSUBSTITUTE
   mutable FastMap<Key, VectorValues::iterator> solnPointers_;
 #endif
-
   /// Default constructor
   ISAM2Clique() : Base() {}
 
@@ -118,6 +118,11 @@ class GTSAM_EXPORT ISAM2Clique
    * Alternatively could we trace up towards the root for each variable here?
    */
   void findAll(const KeySet& markedMask, KeySet* keys) const;
+
+ protected:
+
+  // allow to access parent_
+  void setParent(const std::weak_ptr<ISAM2Clique>& parent) { parent_ = parent; }
 
  private:
   /**

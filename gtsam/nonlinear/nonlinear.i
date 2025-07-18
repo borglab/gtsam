@@ -744,6 +744,7 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
   IncrementalFixedLagSmoother(double smootherLag, const gtsam::ISAM2Params& parameters);
 
   void print(string s = "IncrementalFixedLagSmoother:\n") const;
+  string equalsDetail(const gtsam::FixedLagSmoother& rhs, double tol);
 
   gtsam::Matrix marginalCovariance(gtsam::Key key) const;
   gtsam::ISAM2Params params() const;
@@ -754,8 +755,11 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
   gtsam::Values getInitialTheta() const;
 
   gtsam::Values calculateSubEstimate(double adaptiveSmootherLag, gtsam::ISAM2Params& isamParam) const;
+
   gtsam::IncrementalFixedLagSmoother deepClone() const;
   gtsam::IncrementalFixedLagSmoother deepClone(const bool rewrite) const;
+
+  void forceRelinearize() const;
 };
 
 #include <gtsam/nonlinear/ExtendedKalmanFilter.h>

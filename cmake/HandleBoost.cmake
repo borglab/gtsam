@@ -20,7 +20,6 @@ if(MSVC)
     endif()
 endif()
 
-
 # Store these in variables so they are automatically replicated in GTSAMConfig.cmake and such.
 set(BOOST_FIND_MINIMUM_VERSION 1.65)
 set(BOOST_FIND_MINIMUM_COMPONENTS serialization system filesystem thread program_options date_time timer chrono regex)

@@ -773,5 +773,3 @@ namespace gtsam {
   template<> struct traits<noiseModel::Unit> : public Testable<noiseModel::Unit> {};
 
 } //\ namespace gtsam
-
-

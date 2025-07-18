@@ -280,9 +280,17 @@ namespace gtsam {
       FastVector<const Vector*> items;
       items.reserve(keys.end() - keys.begin());
       for (Key key : keys) {
-        const Vector* v = &at(key);
-        totalDim += v->size();
-        items.push_back(v);
+        if (exists(key)) {
+          const Vector* v = &at(key);
+          totalDim += v->size();
+          items.push_back(v);
+        } else {
+          std::cout << "*******************************************************"
+                       "*******************************************************"
+                    << std::endl;
+          std::cout << "VectorValue: key" << _defaultKeyFormatter(key)
+                    << " does not exist in vector values!" << std::endl;
+        }
       }
 
       Vector result(totalDim);

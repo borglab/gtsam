@@ -55,6 +55,9 @@ class GTSAM_EXPORT IncrementalFixedLagSmoother: public FixedLagSmoother {
   /** Check if two IncrementalFixedLagSmoother Objects are equal */
   bool equals(const FixedLagSmoother& rhs, double tol = 1e-9) const override;
 
+  /** Check equality and get result */
+  std::string equalsDetail(const FixedLagSmoother& rhs, double tol = 1e-9);
+
   /**
    * Add new factors, updating the solution and re-linearizing as needed.
    * @param newFactors new factors on old and/or new variables
@@ -77,10 +80,6 @@ class GTSAM_EXPORT IncrementalFixedLagSmoother: public FixedLagSmoother {
   Values calculateSubEstimate(
       const double adaptiveSmootherLag = -1.0,
       const ISAM2Params& isamParam = DefaultISAM2Params());
-
-  /** Deep clone the current Smoother using boost serialization/deserialization function
-   */
-  const IncrementalFixedLagSmoother deepClone(const bool rewrite=false);
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
@@ -137,8 +136,16 @@ class GTSAM_EXPORT IncrementalFixedLagSmoother: public FixedLagSmoother {
 
   /// Get the initial value when calling update()
   const gtsam::Values& getInitialTheta() const { return initialTheta_; }
- 
-protected:
+
+  /** Deep clone the current Smoother 
+   * @param rewrite deep clone the internal ISAM2 object, default false
+   */
+  const IncrementalFixedLagSmoother deepClone(const bool rewrite = false);
+
+  /// force relinearize the internal ISAM2 object.
+  const void forceRelinearize();
+
+ protected:
 
   /** Create default parameters */
   static ISAM2Params DefaultISAM2Params() {
@@ -218,6 +225,3 @@ protected:
 
 }/// namespace gtsam
 
-#if GTSAM_ENABLE_BOOST_SERIALIZATION
-// BOOST_CLASS_EXPORT_KEY(gtsam::IncrementalFixedLagSmoother)
-#endif

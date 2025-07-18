@@ -116,6 +116,8 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   /** Compare equality */
   virtual bool equals(const ISAM2& other, double tol = 1e-9) const;
 
+  /** Compare equality and get result*/
+  virtual std::string equalsDetail(const ISAM2& other, double tol = 1e-9);
   /**
    * Add new factors, updating the solution and relinearizing as needed.
    *
@@ -289,7 +291,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   VectorValues gradientAtZero() const;
 
   /* deep clone the current isam object*/
-  ISAM2 deepClone() ;
+  ISAM2 deepClone(ISAM2Params isamParam);
 
   /// @}
 
@@ -349,6 +351,12 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
     }
     return targetKeySet;
   }
+  VectorValues cloneVectorValues(VectorValues originVectorValues) {
+    VectorValues newVectorValues(originVectorValues);
+    return newVectorValues;
+  }
+  std::shared_ptr<ISAM2Clique> deepCopyClique(
+      const std::shared_ptr<ISAM2Clique>& originalNode, Nodes& newNodes);
   void setTheta(Values newTheta) { theta_ = newTheta; }
   void setDelta(VectorValues delta, VectorValues deltaNewton,
                 VectorValues RgProd, std::optional<double> doglegDelta) {
@@ -365,7 +373,10 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
     nonlinearFactors_ = nonlinearFactors;
     linearFactors_ = linearFactors;
   }
-  void setVariables(KeySet fixedVariables) { fixedVariables_ = fixedVariables; }
+  void setVariables(KeySet fixedVariables, VariableIndex variableIndex) {
+    fixedVariables_ = fixedVariables;
+    variableIndex_ = variableIndex;
+  }
   void setCounter(int update_count) { update_count_ = update_count; }
   void setBayesTree(Nodes nodes, Roots roots) {
     nodes_ = nodes;

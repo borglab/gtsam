@@ -192,9 +192,11 @@ void ISAM2Clique::restoreFromOriginals(const Vector& originalValues,
                                        VectorValues* delta) const {
   size_t pos = 0;
   for (Key frontal : conditional_->frontals()) {
-    auto v = delta->at(frontal);
-    v = originalValues.segment(pos, v.size());
-    pos += v.size();
+    if (delta->exists(frontal)) {
+      auto v = delta->at(frontal);
+      v = originalValues.segment(pos, v.size());
+      pos += v.size();
+    }
   }
 }
 
@@ -246,7 +248,7 @@ bool ISAM2Clique::optimizeWildfireNode(const KeySet& replaced, double threshold,
 
     // Back-substitute
     fastBackSubstitute(delta);
-    *count += conditional_->nrFrontals();
+    *count += originalValues.size();  // conditional_->nrFrontals();
 
     if (valuesChanged(replaced, originalValues, *delta, threshold)) {
       markFrontalsAsChanged(changed);

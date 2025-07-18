@@ -179,7 +179,7 @@ TEST(Serialization, ISAM2) {
 
   gtsam::Vector6 temp6;
   for (int i = 0; i < 6; ++i) {
-    temp6[i] = 0.0001;
+    temp6[i] = 0.0001*i;
   }
   gtsam::noiseModel::Diagonal::shared_ptr noiseModel = gtsam::noiseModel::Diagonal::Sigmas(temp6);
 

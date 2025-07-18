@@ -335,6 +335,23 @@ struct GTSAM_EXPORT ISAM2Params {
   static std::string factorizationTranslator(const Factorization& value);
 
   /// @}
+
+//  #if GTSAM_ENABLE_BOOST_SERIALIZATION
+//  /** Serialization function */
+//  friend class boost::serialization::access;
+//  template <class ARCHIVE>
+//  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+//    ar& BOOST_SERIALIZATION_NVP(relinearizeThreshold);
+//    ar& BOOST_SERIALIZATION_NVP(relinearizeSkip);
+//    ar& BOOST_SERIALIZATION_NVP(factorization);
+//    ar& BOOST_SERIALIZATION_NVP(enableRelinearization);
+//    ar& BOOST_SERIALIZATION_NVP(evaluateNonlinearError);
+//    ar& BOOST_SERIALIZATION_NVP(cacheLinearizedFactors);
+//    ar& BOOST_SERIALIZATION_NVP(enableDetailedResults);
+//    ar& BOOST_SERIALIZATION_NVP(enablePartialRelinearizationCheck);
+//    ar& BOOST_SERIALIZATION_NVP(findUnusedFactorSlots);
+//  }
+//#endif
 };
 
 }  // namespace gtsam

@@ -147,7 +147,3 @@ typedef FixedLagSmootherKeyTimestampMap::value_type FixedLagSmootherKeyTimestamp
 typedef FixedLagSmoother::Result FixedLagSmootherResult;
 
 } /// namespace gtsam
-
-#if GTSAM_ENABLE_BOOST_SERIALIZATION
-BOOST_SERIALIZATION_ASSUME_ABSTRACT(gtsam::FixedLagSmoother)
-#endif
