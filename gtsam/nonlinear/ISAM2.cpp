@@ -873,49 +873,81 @@ VectorValues ISAM2::gradientAtZero() const {
 
 /* ************************************************************************* */
 std::shared_ptr<ISAM2Clique> ISAM2::deepCopyClique(
-    const std::shared_ptr<ISAM2Clique>& originalNode, Nodes& newNodes) {
+    const std::shared_ptr<ISAM2Clique>& originalNode,
+    std::unordered_map<Key, std::shared_ptr<ISAM2Clique>>& cliqueMemo) {
+  // Lookup frontal key (each clique has unique frontal key)
+  Key frontalKey = originalNode->conditional()->front();
 
-  // Check if already copied
-  for (Key frontalKey : originalNode->conditional()->frontals()) {
-    auto it = newNodes.find(frontalKey);
-    if (it != newNodes.end()) {
-      return it->second;  // Already copied
-    }
-  }
+  // Memoization: check if already copied
+  if (cliqueMemo.find(frontalKey) != cliqueMemo.end())
+    return cliqueMemo[frontalKey];
 
   // 1) Copy base part shallowly first (calls copy ctor)
-  // const ISAM2Clique copy_node(*original);
   // std::cout << "originalNode ";
   auto copy = std::make_shared<ISAM2Clique>(*originalNode);
 
   // 2) Deep copy conditional_
-  // std::cout << "conditional_ ";
-  //if (originalNode->conditional_) {
-  //   copy->conditional_ = originalNode->conditional_;
-  //}
+  //std::cout << "conditional_ ";
+  if (originalNode->conditional_) {
+    auto clonedConditionalFactor = originalNode->conditional_->clone();
+    GaussianConditional clonedConditional =
+        GaussianConditional(*clonedConditionalFactor);
+    auto castedConditional =
+        std::make_shared<GaussianConditional>(clonedConditional);
+    copy->conditional_ = castedConditional;
+
+    ////  1. Downcast to access GaussianConditional methods
+    // auto originalCondition =
+    //     std::dynamic_pointer_cast<gtsam::GaussianConditional>(
+    //     originalNode->conditional_);
+    // if (!originalCondition) {
+    //   throw std::runtime_error("conditional_ is not a GaussianConditional");
+    // }
+    //// 2. Extract the keys
+    // gtsam::KeyVector keys = originalCondition->keys();
+
+    //// 3. Get the number of frontals
+    // size_t nrFrontals = originalCondition->nrFrontals();
+
+    //// 4. Get the augmented matrix
+    // const gtsam::VerticalBlockMatrix& aug =
+    // originalCondition->matrixObject();
+
+    //// 5. Copy the noise model
+    // gtsam::SharedDiagonal sigmas = originalCondition->get_model();
+
+    //// 6. Construct a new GaussianConditional
+    // auto newConditional = std::make_shared<gtsam::GaussianConditional>(
+    //     keys, nrFrontals, aug, sigmas);
+
+    //// 7. Assign it to your copy
+    // copy->conditional_ = newConditional;
+  };
 
   // 3) Deep copy cachedFactor_
-  // std::cout << "cachedFactor_ ";
-  //if (originalNode->cachedFactor_) {
-  //  copy->cachedFactor_ = originalNode->cachedFactor_->clone();
-  //}
+  //std::cout << "cachedFactor_ ";
+  if (originalNode->cachedFactor_) {
+    copy->cachedFactor_ = originalNode->cachedFactor_->clone();
+  }
 
   // 4) Deep copy gradientContribution_ (Eigen vector deep copied by assignment)
   // std::cout << "gradientContribution_ ";
-  //copy->gradientContribution_ = originalNode->gradientContribution_;
+  // copy->gradientContribution_ = originalNode->gradientContribution_;
+
+  // Register early to avoid recursion loops
+  for (Key frontalKey : copy->conditional()->frontals()) {
+    cliqueMemo[frontalKey] = copy;
+  }
 
   // 5) Recursively deep copy children
   // std::cout << "children \n";
   copy->children.clear();
   if (!originalNode->children.empty()) {
     for (const auto& child_ptr : originalNode->children) {
-      auto childCopy = deepCopyClique(child_ptr, newNodes);  // recursive
-      childCopy->setParent(copy);                  // fix parent pointer
+      auto childCopy = deepCopyClique(child_ptr, cliqueMemo);  // recursive
+      childCopy->setParent(copy);  // fix parent pointer
       copy->children.push_back(childCopy);
     }
-  }
-  for (Key frontalKey : copy->conditional()->frontals()) {
-    newNodes[frontalKey] = copy;
   }
   return copy;
 }
@@ -953,6 +985,8 @@ ISAM2 ISAM2::deepClone(ISAM2Params isamParam) {
   std::cout << "6 newTreeNode_Roots\n";
   Nodes newNodes;
   Roots newRoot;
+  std::unordered_map<Key, std::shared_ptr<ISAM2Clique>> cliqueMemo;
+
   newNodes.clear();
   newRoot.clear();
 
@@ -969,10 +1003,12 @@ ISAM2 ISAM2::deepClone(ISAM2Params isamParam) {
  //   }
  // }
  for (const auto& root_ptr : Base::roots_) {
-    auto clonedRoot = deepCopyClique(root_ptr, newNodes);
+    auto clonedRoot = deepCopyClique(root_ptr, cliqueMemo);
     newRoot.push_back(clonedRoot);
   }
-
+ for (const auto& kv : cliqueMemo) {
+   newNodes[kv.first] = kv.second;
+ }
   // newNodes.insert(nodes_.begin(), nodes_.end());
   //newRoot.insert(newRoot.end(), roots_.begin(), roots_.end());
 

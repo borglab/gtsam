@@ -67,6 +67,9 @@ namespace gtsam {
                         const Matrix& S, Key parent2, const Matrix& T,
                         const SharedDiagonal& sigmas = SharedDiagonal());
 
+    /** constructor using base factor */
+    GaussianConditional(GaussianFactor& gf);
+
     /** Constructor with arbitrary number of frontals and parents.
     *   @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
     *           collection of keys and matrices making up the conditional. */

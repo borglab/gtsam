@@ -61,6 +61,11 @@ namespace gtsam {
         BaseConditional(1) {}
 
   /* ************************************************************************ */
+  GaussianConditional::GaussianConditional(GaussianFactor& gf)
+      : BaseFactor(gf),
+        BaseConditional(1) {}
+
+  /* ************************************************************************ */
   GaussianConditional GaussianConditional::FromMeanAndStddev(Key key,
                                                              const Vector& mu,
                                                              double sigma) {

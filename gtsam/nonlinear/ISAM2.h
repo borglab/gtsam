@@ -356,7 +356,8 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
     return newVectorValues;
   }
   std::shared_ptr<ISAM2Clique> deepCopyClique(
-      const std::shared_ptr<ISAM2Clique>& originalNode, Nodes& newNodes);
+      const std::shared_ptr<ISAM2Clique>& originalNode,
+      std::unordered_map<Key, std::shared_ptr<ISAM2Clique>>& cliqueMemo);
   void setTheta(Values newTheta) { theta_ = newTheta; }
   void setDelta(VectorValues delta, VectorValues deltaNewton,
                 VectorValues RgProd, std::optional<double> doglegDelta) {
