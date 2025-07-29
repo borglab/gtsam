@@ -38,15 +38,13 @@ namespace testing {
 // Create default parameters with Z-down and above noise parameters
 static std::shared_ptr<PreintegratedCombinedMeasurements::Params> Params(
     const Matrix3& biasAccCovariance = Matrix3::Zero(),
-    const Matrix3& biasOmegaCovariance = Matrix3::Zero(),
-    const Matrix6& biasAccOmegaInt = Matrix6::Zero()) {
+    const Matrix3& biasOmegaCovariance = Matrix3::Zero()) {
   auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(kGravity);
   p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
   p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
   p->integrationCovariance = 0.0001 * I_3x3;
   p->biasAccCovariance = biasAccCovariance;
   p->biasOmegaCovariance = biasOmegaCovariance;
-  p->biasAccOmegaInt = biasAccOmegaInt;
   return p;
 }
 }  // namespace testing
@@ -223,26 +221,26 @@ TEST_PIM(CombinedImuFactor, CheckCovariance) {
   // Measurements
   Vector3 measuredAcc(0.1577, -0.8251, 9.6111);
   Vector3 measuredOmega(-0.0210, 0.0311, 0.0145);
-  double deltaT = 0.01;
+  double deltaT = 5;
 
   actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   Eigen::Matrix<double, 15, 15> expected;
-  expected << 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,          //
-      0, 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                  //
-      0, 0, 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                  //
-      0, 0, 0, 2.50025e-07, 0, 0, 5.0005e-05, 0, 0, 0, 0, 0, 0, 0, 0,  //
-      0, 0, 0, 0, 2.50025e-07, 0, 0, 5.0005e-05, 0, 0, 0, 0, 0, 0, 0,  //
-      0, 0, 0, 0, 0, 2.50025e-07, 0, 0, 5.0005e-05, 0, 0, 0, 0, 0, 0,  //
-      0, 0, 0, 5.0005e-05, 0, 0, 0.010001, 0, 0, 0, 0, 0, 0, 0, 0,     //
-      0, 0, 0, 0, 5.0005e-05, 0, 0, 0.010001, 0, 0, 0, 0, 0, 0, 0,     //
-      0, 0, 0, 0, 0, 5.0005e-05, 0, 0, 0.010001, 0, 0, 0, 0, 0, 0,     //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0.01, 0, 0, 0, 0, 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.01, 0, 0, 0, 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.01, 0, 0, 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.01, 0, 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.01, 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.01;
+  expected << 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,          //
+      0, 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                  //
+      0, 0, 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                  //
+      0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0, 0, 0,  //
+      0, 0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0, 0,  //
+      0, 0, 0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0,  //
+      0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0, 0, 0,     //
+      0, 0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0, 0,     //
+      0, 0, 0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0,     //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0, 0, 0,                  //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0, 0,                  //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0,                  //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0,                  //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0,                  //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.;
 
   // regression
   EXPECT(assert_equal(expected, actual.preintMeasCov()));
@@ -278,8 +276,6 @@ TEST_PIM(CombinedImuFactor, SameCovariance) {
   // Set bias integration covariance explicitly to zero
   combined_params->setIntegrationCovariance(Z_3x3);
   combined_params->setOmegaCoriolis(Z_3x1);
-  // Set bias initial covariance explicitly to zero
-  combined_params->setBiasAccOmegaInit(Z_6x6);
 
   // The IMU preintegration object for CombinedImuFactor
   CombinedPIM cpim(combined_params, currentBias);
@@ -315,45 +311,6 @@ TEST(CombinedImuFactor, Accelerating) {
   auto estimatedCov = runner.estimateCovariance(T, 100);
   Eigen::Matrix<double, 15, 15> expected = pim.preintMeasCov();
   EXPECT(assert_equal(estimatedCov, expected, 0.1));
-}
-
-/* ************************************************************************* */
-// Runners currently still use the integration type based on the compile flag.
-// So we use the default CombinedScenarioRunner below.
-TEST(CombinedImuFactor, ResetIntegration) {
-  const double a = 0.2, v = 50;
-
-  // Set up body pointing towards y axis, and start at 10,20,0 with velocity
-  // going in X The body itself has Z axis pointing down
-  const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
-  const Point3 initial_position(10, 20, 0);
-  const Vector3 initial_velocity(v, 0, 0);
-
-  const AcceleratingScenario scenario(nRb, initial_position, initial_velocity,
-                                      Vector3(a, 0, 0));
-
-  const double T = 3.0;  // seconds
-
-  auto preinMeasCov = 0.001 * Eigen::Matrix<double, 15, 15>::Identity();
-  CombinedScenarioRunner runner(
-      scenario,
-      testing::Params(Matrix3::Zero(), Matrix3::Zero(),
-                      0.1 * Matrix6::Identity()),
-      T / 10, imuBias::ConstantBias(), preinMeasCov);
-
-  PreintegratedCombinedMeasurements pim = runner.integrate(T);
-  // Make copy for testing different conditions
-  PreintegratedCombinedMeasurements pim2 = pim;
-
-  // Test default method
-  pim.resetIntegration();
-  Matrix6 expected = 0.1 * I_6x6;
-  EXPECT(assert_equal(expected, pim.p().biasAccOmegaInt, 1e-9));
-
-  // Test method where Q_init is provided
-  Matrix6 expected_Q_init = I_6x6 * 0.001;
-  pim2.resetIntegration(expected_Q_init);
-  EXPECT(assert_equal(expected_Q_init, pim.p().biasAccOmegaInt, 1e-9));
 }
 
 /* ************************************************************************* */

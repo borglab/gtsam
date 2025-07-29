@@ -84,7 +84,8 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
   /// @{
 
   /// Default constructor only for serialization and wrappers
-  PreintegratedCombinedMeasurementsT() { this->resetIntegration(); } 
+  PreintegratedCombinedMeasurementsT() { this->resetIntegration(); }
+
   /**
    *  Default constructor, initializes the class with no measurements
    *  @param p Parameters, typically fixed in a single application
@@ -124,14 +125,6 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
   /// Re-initialize PreintegratedCombinedMeasurements
   void resetIntegration() override;
 
-  /**
-   * @brief Re-initialize PreintegratedCombinedMeasurements with initial bias
-   * covariance estimate.
-   *
-   * @param Q_init The initial bias covariance estimates as a 6x6 matrix.
-   */
-  void resetIntegration(const gtsam::Matrix6& Q_init);
-
   /// const reference to params, shadows definition in base class
   Params& p() const { return *std::static_pointer_cast<Params>(this->p_); }
   /// @}
@@ -170,6 +163,15 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
                             const double dt) override;
 
   /// @}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+/// @deprecated: biasAccOmegaInt is no longer used. Use a prior on first bias instead.
+  void resetIntegration(const gtsam::Matrix6& Q_init) {
+    std::cerr << "Warning: setBiasAccOmegaInit() is deprecated and no longer used." << std::endl;
+    PreintegrationType::resetIntegration();
+    preintMeasCov_.setZero();
+  }
+#endif
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION  ///

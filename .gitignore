@@ -26,3 +26,4 @@ _build
 GEMINI.md
 /out/build/x64-Debug
 /wheelhouse
+doc/#*.lyx#

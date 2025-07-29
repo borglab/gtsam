@@ -35,8 +35,8 @@ namespace gtsam {
 
 /// As of GTSAM 4, in order to make GTSAM more lean,
 /// it is now possible to just typedef Point3 to Vector3
-typedef Vector3 Point3;
-typedef std::vector<Point3, Eigen::aligned_allocator<Point3> > Point3Vector;
+using Point3 = Vector3;
+using Point3Vector = std::vector<Point3, Eigen::aligned_allocator<Point3>>;
 
 // Convenience typedef
 using Point3Pair = std::pair<Point3, Point3>;

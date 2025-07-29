@@ -38,22 +38,27 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
                                 ///< accelerometer bias random walk
   Matrix3 biasOmegaCovariance;  ///< continuous-time "Covariance" describing
                                 ///< gyroscope bias random walk
-  Matrix6 biasAccOmegaInt;  ///< covariance of bias used as initial estimate.
 
   /// Default constructor makes uninitialized params struct.
   /// Used for serialization.
   PreintegrationCombinedParams()
-      : biasAccCovariance(I_3x3),
-        biasOmegaCovariance(I_3x3),
-        biasAccOmegaInt(I_6x6) {}
+    : biasAccCovariance(I_3x3),
+    biasOmegaCovariance(I_3x3) {
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+    biasAccOmegaInt.setZero();
+#endif
+  }
 
   /// See two named constructors below for good values of n_gravity in body
   /// frame
   PreintegrationCombinedParams(const Vector3& n_gravity_)
-      : PreintegrationParams(n_gravity_),
-        biasAccCovariance(I_3x3),
-        biasOmegaCovariance(I_3x3),
-        biasAccOmegaInt(I_6x6) {}
+    : PreintegrationParams(n_gravity_),
+    biasAccCovariance(I_3x3),
+    biasOmegaCovariance(I_3x3) {
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+    biasAccOmegaInt.setZero();
+#endif
+  }
 
   // Default Params for a Z-down navigation frame, such as NED: gravity points
   // along positive Z-axis
@@ -77,11 +82,23 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
 
   void setBiasAccCovariance(const Matrix3& cov) { biasAccCovariance = cov; }
   void setBiasOmegaCovariance(const Matrix3& cov) { biasOmegaCovariance = cov; }
-  void setBiasAccOmegaInit(const Matrix6& cov) { biasAccOmegaInt = cov; }
 
   const Matrix3& getBiasAccCovariance() const { return biasAccCovariance; }
   const Matrix3& getBiasOmegaCovariance() const { return biasOmegaCovariance; }
-  const Matrix6& getBiasAccOmegaInit() const { return biasAccOmegaInt; }
+  
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  Matrix6 biasAccOmegaInt;
+  /// @deprecated: biasAccOmegaInt is no longer used. Use a prior on first bias instead.
+  void setBiasAccOmegaInit(const Matrix6& cov) {
+    std::cerr << "Warning: setBiasAccOmegaInit() is deprecated and no longer used." << std::endl;
+    biasAccOmegaInt = cov;
+  }
+  /// @deprecated: biasAccOmegaInt is no longer used. Use a prior on first bias instead.
+  const Matrix6& getBiasAccOmegaInit() const {
+    std::cerr << "Warning: getBiasAccOmegaInit() is deprecated and no longer used." << std::endl;
+    return biasAccOmegaInt;
+  }
+#endif
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -93,7 +110,9 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationParams);
     ar& BOOST_SERIALIZATION_NVP(biasAccCovariance);
     ar& BOOST_SERIALIZATION_NVP(biasOmegaCovariance);
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
     ar& BOOST_SERIALIZATION_NVP(biasAccOmegaInt);
+#endif
   }
 #endif
 

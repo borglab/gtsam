@@ -49,7 +49,7 @@
 | SimpleRotation                                        | :heavy_check_mark: |
 | SolverComparer                                        |        |
 | StereoVOExample                                       | :heavy_check_mark: |
-| StereoVOExample_large                                 |        |
+| StereoVOExample_large                                 | :heavy_check_mark: |
 | TimeTBB                                               |        |
 | UGM_chain                                             | discrete functionality not yet exposed |
 | UGM_small                                             | discrete functionality not yet exposed |

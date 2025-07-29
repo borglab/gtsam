@@ -136,6 +136,20 @@ public:
   }
 
   /// @}
+  /// @name Manifold
+  /// @{
+
+  /// The retract function
+  ConstantBias retract(const Vector6& v) const {
+    return ConstantBias(biasAcc_ + v.head<3>(), biasGyro_ + v.tail<3>());
+  }
+
+  /// The local coordinates function
+  Vector6 localCoordinates(const ConstantBias& other) const {
+    return other.vector() - vector();
+  }
+
+  /// @}
 
 private:
 

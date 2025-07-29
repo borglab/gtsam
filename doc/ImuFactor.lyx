@@ -164,7 +164,8 @@ ImuFactor2 is a 3-way factor between the previous NavState, the current
 
 \begin_layout Standard
 Both variants take a PreintegratedMeasurements object which encodes all
- the IMU measurements between the previous timestep and the current timestep.
+ the IMU measurements between the previous time step and the current time
+ step.
 \end_layout
 
 \begin_layout Standard
@@ -227,7 +228,7 @@ preintegrated_
 
 \begin_layout Standard
 The main function of a factor is to calculate an error.
- This is done exactly the same in both variants: 
+ This is done the same in both variants: 
 \begin_inset Formula 
 \begin{equation}
 e(X_{i},X_{j})=X_{j}\ominus\widehat{X_{j}}\label{eq:imu-factor-error}
@@ -343,27 +344,11 @@ Gyroscope Covariance
 \end_layout
 
 \begin_layout Itemize
-Gyroscope Bias Covariance 
-\begin_inset Formula $Q_{\Delta b^{\omega}}$
-\end_inset
-
- : The covariance associated with the gyroscope bias random walk.
-\end_layout
-
-\begin_layout Itemize
 Accelerometer Covariance 
 \begin_inset Formula $Q_{acc}$
 \end_inset
 
  : Measurement uncertainty of the accelerometer.
-\end_layout
-
-\begin_layout Itemize
-Accelerometer Bias Covariance 
-\begin_inset Formula $Q_{\Delta b^{acc}}$
-\end_inset
-
- : The covariance associated with the accelerometer bias random walk.
 \end_layout
 
 \begin_layout Itemize
@@ -375,13 +360,24 @@ Integration Covariance
  acceleration to velocity and position.
 \end_layout
 
+\begin_layout Standard
+For the CombinedImuFactor, we additionally have:
+\end_layout
+
 \begin_layout Itemize
-Initial Bias Estimate Covariance 
-\begin_inset Formula $Q_{init}$
+Gyroscope Bias Covariance 
+\begin_inset Formula $Q_{\Delta b^{\omega}}$
 \end_inset
 
- : This is the uncertainty associated with the estimation of the bias (since
- we jointly estimate the bias as well).
+ : The covariance associated with the gyroscope bias random walk.
+\end_layout
+
+\begin_layout Itemize
+Accelerometer Bias Covariance 
+\begin_inset Formula $Q_{\Delta b^{acc}}$
+\end_inset
+
+ : The covariance associated with the accelerometer bias random walk.
 \end_layout
 
 \begin_layout Subsubsection*
@@ -391,10 +387,7 @@ Navigation States
 \begin_layout Standard
 Let us assume a setup where frames with image and/or laser measurements
  are processed at some fairly low rate, e.g., 10 Hz.
-\end_layout
-
-\begin_layout Standard
-We define the state of the vehicle at those times as attitude, position,
+ We define the state of the vehicle at those times as attitude, position,
  and velocity.
  These three quantities are jointly referred to as a NavState 
 \begin_inset Formula $X_{b}^{n}\define\left\{ R_{b}^{n},P_{b}^{n},V_{b}^{n}\right\} $
@@ -1501,28 +1494,24 @@ Given the above solutions to the differential equations, we add noise modeling
 \begin_layout Standard
 \begin_inset Formula 
 \begin{eqnarray}
-\theta_{k+1} & = & \theta_{k}+H(\theta_{k})^{-1}\,(\omega_{k}^{b}+\epsilon_{k}^{\omega}-b_{k}^{\omega}-\epsilon_{init}^{\omega})\Delta_{t}\nonumber \\
-p_{k+1} & = & p_{k}+v_{k}\Delta_{t}+R_{k}(a_{k}^{b}+\epsilon_{k}^{a}-b_{k}^{a}-\epsilon_{init}^{a})\frac{\Delta_{t}^{2}}{2}+\epsilon_{k}^{int}\label{eq:preintegration}\\
-v_{k+1} & = & v_{k}+R_{k}(a_{k}^{b}+\epsilon_{k}^{a}-b_{k}^{a}-\epsilon_{init}^{a})\Delta_{t}\nonumber \\
+\theta_{k+1} & = & \theta_{k}+H(\theta_{k})^{-1}\,(\omega_{k}^{b}+\epsilon_{k}^{\omega}-b_{k}^{\omega})\Delta_{t}\nonumber \\
+p_{k+1} & = & p_{k}+v_{k}\Delta_{t}+R_{k}(a_{k}^{b}+\epsilon_{k}^{a}-b_{k}^{a})\frac{\Delta_{t}^{2}}{2}+\epsilon_{k}^{int}\label{eq:preintegration}\\
+v_{k+1} & = & v_{k}+R_{k}(a_{k}^{b}+\epsilon_{k}^{a}-b_{k}^{a})\Delta_{t}\nonumber \\
 b_{k+1}^{a} & = & b_{k}^{a}+\epsilon_{k}^{b^{a}}\nonumber \\
 b_{k+1}^{\omega} & = & b_{k}^{\omega}+\epsilon_{k}^{b^{\omega}}\nonumber 
 \end{eqnarray}
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 which we can write compactly as,
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \begin{eqnarray}
-\theta_{k+1} & = & f_{\theta}(\theta_{k},b_{k}^{w},\epsilon_{k}^{\omega},\epsilon_{init}^{b^{\omega}})\label{eq:compact-preintegration}\\
-p_{k+1} & = & f_{p}(p_{k},v_{k},\theta_{k},b_{k}^{a},\epsilon_{k}^{a},\epsilon_{init}^{a},\epsilon_{k}^{int})\nonumber \\
-v_{k+1} & = & f_{v}(v_{k,}\theta_{k,}b_{k}^{a},\epsilon_{k}^{a},\epsilon_{init}^{a})\nonumber \\
+\theta_{k+1} & = & f_{\theta}(\theta_{k},b_{k}^{w},\epsilon_{k}^{\omega})\label{eq:compact-preintegration}\\
+p_{k+1} & = & f_{p}(p_{k},v_{k},\theta_{k},b_{k}^{a},\epsilon_{k}^{a})\nonumber \\
+v_{k+1} & = & f_{v}(v_{k,}\theta_{k,}b_{k}^{a},\epsilon_{k}^{a})\nonumber \\
 b_{k+1}^{a} & = & f_{b^{a}}(b_{k}^{a},\epsilon_{k}^{b^{a}})\nonumber \\
 b_{k+1}^{\omega} & = & f_{b^{\omega}}(b_{k}^{\omega},\epsilon_{k}^{b^{\omega}})\nonumber 
 \end{eqnarray}
@@ -1565,8 +1554,7 @@ We wish to compute the ImuFactor covariance matrix
 \begin_inset Formula $\zeta_{k}=[\theta_{k},p_{k},v_{k}]$
 \end_inset
 
-, as a 9D vector on tangent space at and rewrite Eqns.
- (
+, as a 9D vector on tangent space at and rewrite equations (
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:euler_theta"
@@ -1616,7 +1604,7 @@ where
 \begin_inset Formula $f$
 \end_inset
 
- wrpt 
+ with respect to 
 \begin_inset Formula $\zeta$
 \end_inset
 
@@ -1795,7 +1783,7 @@ We expand the state vector as
 \end_inset
 
  to include the bias terms and define the augmented noise vector 
-\begin_inset Formula $\epsilon=[\epsilon_{k}^{\omega},\epsilon_{k}^{a},\epsilon_{k}^{b^{a}},\epsilon_{k}^{b^{\omega}},\epsilon_{k}^{int},\epsilon_{init}^{b^{a}},\epsilon_{init}^{b^{\omega}}]$
+\begin_inset Formula $\epsilon=[\epsilon_{k}^{\omega},\epsilon_{k}^{a},\epsilon_{k}^{b^{a}},\epsilon_{k}^{b^{\omega}},\epsilon_{k}^{int}]$
 \end_inset
 
 .
@@ -1810,10 +1798,6 @@ We expand the state vector as
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 where 
 \begin_inset Formula $F_{k}$
 \end_inset
@@ -1896,10 +1880,6 @@ R_{k}\Skew{-a_{k}^{b}}H(\theta_{k})\Delta_{t} & 0_{3\times3} & I_{3\times3} & R_
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 Similarly for 
 \begin_inset Formula $Q_{k},$
 \end_inset
@@ -1910,23 +1890,17 @@ we get
 \begin_layout Standard
 \begin_inset Formula 
 \[
-Q_{k}=\left[\begin{array}{ccccccc}
+Q_{k}=\left[\begin{array}{ccccc}
 \Sigma^{\omega}\\
  & \Sigma^{a}\\
  &  & \Sigma^{b^{a}}\\
  &  &  & \Sigma^{b^{\omega}}\\
- &  &  &  & \Sigma^{int}\\
- &  &  &  &  & \Sigma^{init_{11}} & \Sigma^{init_{12}}\\
- &  &  &  &  & \Sigma^{init_{21}} & \Sigma^{init_{22}}
+ &  &  &  & \Sigma^{int}
 \end{array}\right]
 \]
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 and for 
 \begin_inset Formula $G_{k}$
 \end_inset
@@ -1937,18 +1911,18 @@ and for
 \begin_layout Standard
 \begin_inset Formula 
 \[
-G_{k}=\left[\begin{array}{ccccccc}
-\deriv{\theta}{\epsilon^{\omega}} & \deriv{\theta}{\epsilon^{a}} & \deriv{\theta}{\epsilon^{b^{a}}} & \deriv{\theta}{\epsilon^{b^{\omega}}} & \deriv{\theta}{\epsilon^{int}} & \deriv{\theta}{\epsilon_{init}^{b^{a}}} & \deriv{\theta}{\epsilon_{init}^{b^{\omega}}}\\
-\deriv p{\epsilon^{\omega}} & \deriv p{\epsilon^{a}} & \deriv p{\epsilon^{b^{a}}} & \deriv p{\epsilon^{b^{\omega}}} & \deriv p{\epsilon^{int}} & \deriv p{\epsilon_{init}^{b^{a}}} & \deriv p{\epsilon_{init}^{b^{\omega}}}\\
-\deriv v{\epsilon^{\omega}} & \deriv v{\epsilon^{a}} & \deriv v{\epsilon^{b^{a}}} & \deriv v{\epsilon^{b^{\omega}}} & \deriv v{\epsilon^{int}} & \deriv v{\epsilon_{init}^{b^{a}}} & \deriv v{\epsilon_{init}^{b^{\omega}}}\\
-\deriv{b^{a}}{\epsilon^{\omega}} & \deriv{b^{a}}{\epsilon^{a}} & \deriv{b^{a}}{\epsilon^{b^{a}}} & \deriv{b^{a}}{\epsilon^{b^{\omega}}} & \deriv{b^{a}}{\epsilon^{int}} & \deriv{b^{a}}{\epsilon_{init}^{b^{a}}} & \deriv{b^{a}}{\epsilon_{init}^{b^{\omega}}}\\
-\deriv{b^{\omega}}{\epsilon^{\omega}} & \deriv{b^{\omega}}{\epsilon^{a}} & \deriv{b^{\omega}}{\epsilon^{b^{a}}} & \deriv{b^{\omega}}{\epsilon^{b^{\omega}}} & \deriv{b^{\omega}}{\epsilon^{int}} & \deriv{b^{\omega}}{\epsilon_{init}^{b^{a}}} & \deriv{b^{\omega}}{\epsilon_{init}^{b^{\omega}}}
-\end{array}\right]=\left[\begin{array}{ccccccc}
-\deriv{\theta}{\epsilon^{\omega}} & 0 & 0 & 0 & 0 & 0 & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\\
-0 & \deriv p{\epsilon^{a}} & 0 & 0 & \deriv p{\epsilon^{int}} & \deriv p{\eta_{init}^{b^{a}}} & 0\\
-0 & \deriv v{\epsilon^{a}} & 0 & 0 & 0 & \deriv v{\eta_{init}^{b^{a}}} & 0\\
-0 & 0 & I_{3\times3} & 0 & 0 & 0 & 0\\
-0 & 0 & 0 & I_{3\times3} & 0 & 0 & 0
+G_{k}=\left[\begin{array}{ccccc}
+\deriv{\theta}{\epsilon^{\omega}} & \deriv{\theta}{\epsilon^{a}} & \deriv{\theta}{\epsilon^{b^{a}}} & \deriv{\theta}{\epsilon^{b^{\omega}}} & \deriv{\theta}{\epsilon^{int}}\\
+\deriv p{\epsilon^{\omega}} & \deriv p{\epsilon^{a}} & \deriv p{\epsilon^{b^{a}}} & \deriv p{\epsilon^{b^{\omega}}} & \deriv p{\epsilon^{int}}\\
+\deriv v{\epsilon^{\omega}} & \deriv v{\epsilon^{a}} & \deriv v{\epsilon^{b^{a}}} & \deriv v{\epsilon^{b^{\omega}}} & \deriv v{\epsilon^{int}}\\
+\deriv{b^{a}}{\epsilon^{\omega}} & \deriv{b^{a}}{\epsilon^{a}} & \deriv{b^{a}}{\epsilon^{b^{a}}} & \deriv{b^{a}}{\epsilon^{b^{\omega}}} & \deriv{b^{a}}{\epsilon^{int}}\\
+\deriv{b^{\omega}}{\epsilon^{\omega}} & \deriv{b^{\omega}}{\epsilon^{a}} & \deriv{b^{\omega}}{\epsilon^{b^{a}}} & \deriv{b^{\omega}}{\epsilon^{b^{\omega}}} & \deriv{b^{\omega}}{\epsilon^{int}}
+\end{array}\right]=\left[\begin{array}{ccccc}
+\deriv{\theta}{\epsilon^{\omega}} & 0 & 0 & 0 & 0\\
+0 & \deriv p{\epsilon^{a}} & 0 & 0 & \deriv p{\epsilon^{int}}\\
+0 & \deriv v{\epsilon^{a}} & 0 & 0 & 0\\
+0 & 0 & I_{3\times3} & 0 & 0\\
+0 & 0 & 0 & I_{3\times3} & 0
 \end{array}\right]
 \]
 
@@ -1962,27 +1936,31 @@ We can perform the block-wise computation of
 \begin_inset Formula $G_{k}Q_{k}G_{k}^{T}$
 \end_inset
 
-
+, as
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-G_{k}Q_{k}G_{k}^{T}=\left[\begin{array}{ccccccc}
-\deriv{\theta}{\epsilon^{\omega}} & 0 & 0 & 0 & 0 & 0 & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\\
-0 & \deriv p{\epsilon^{a}} & 0 & 0 & \deriv p{\epsilon^{int}} & \deriv p{\eta_{init}^{b^{a}}} & 0\\
-0 & \deriv v{\epsilon^{a}} & 0 & 0 & 0 & \deriv v{\eta_{init}^{b^{a}}} & 0\\
-0 & 0 & I_{3\times3} & 0 & 0 & 0 & 0\\
-0 & 0 & 0 & I_{3\times3} & 0 & 0 & 0
-\end{array}\right]\left[\begin{array}{ccccccc}
+\left[\begin{array}{ccccc}
+\deriv{\theta}{\epsilon^{\omega}} & 0 & 0 & 0 & 0\\
+0 & \deriv p{\epsilon^{a}} & 0 & 0 & \deriv p{\epsilon^{int}}\\
+0 & \deriv v{\epsilon^{a}} & 0 & 0 & 0\\
+0 & 0 & I_{3\times3} & 0 & 0\\
+0 & 0 & 0 & I_{3\times3} & 0
+\end{array}\right]\left[\begin{array}{ccccc}
 \Sigma^{\omega}\\
  & \Sigma^{a}\\
  &  & \Sigma^{b^{a}}\\
  &  &  & \Sigma^{b^{\omega}}\\
- &  &  &  & \Sigma^{int}\\
- &  &  &  &  & \Sigma^{init_{11}} & \Sigma^{init_{12}}\\
- &  &  &  &  & \Sigma^{init_{21}} & \Sigma^{init_{22}}
-\end{array}\right]G_{k}^{T}
+ &  &  &  & \Sigma^{int}
+\end{array}\right]\left[\begin{array}{ccccc}
+\deriv{\theta}{\epsilon^{\omega}}^{T} & 0 & 0 & 0 & 0\\
+0 & \deriv p{\epsilon^{a}}^{T} & \deriv v{\epsilon^{a}}^{T} & 0 & 0\\
+0 & 0 & 0 & I_{3\times3} & 0\\
+0 & 0 & 0 & 0 & I_{3\times3}\\
+0 & \deriv p{\epsilon^{int}}^{T} & 0 & 0 & 0
+\end{array}\right]
 \]
 
 \end_inset
@@ -1993,96 +1971,15 @@ G_{k}Q_{k}G_{k}^{T}=\left[\begin{array}{ccccccc}
 \begin_layout Standard
 \begin_inset Formula 
 \[
-G_{k}Q_{k}G_{k}^{T}=\left[\begin{array}{ccccccc}
-\deriv{\theta}{\epsilon^{\omega}}\Sigma^{\omega} & 0 & 0 & 0 & 0 & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{22}}\\
-0 & \deriv p{\epsilon^{a}}\Sigma^{a} & 0 & 0 & \deriv p{\epsilon^{int}}\Sigma^{int} & \deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}} & \deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\\
-0 & \deriv v{\epsilon^{a}}\Sigma^{a} & 0 & 0 & 0 & \deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}} & \deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\\
-0 & 0 & \Sigma^{b^{a}} & 0 & 0 & 0 & 0\\
-0 & 0 & 0 & \Sigma^{b^{\omega}} & 0 & 0 & 0
-\end{array}\right]G_{k}^{T}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{multline*}
-G_{k}Q_{k}G_{k}^{T}=\left[\begin{array}{ccccccc}
-\deriv{\theta}{\epsilon^{\omega}}\Sigma^{\omega} & 0 & 0 & 0 & 0 & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{22}}\\
-0 & \deriv p{\epsilon^{a}}\Sigma^{a} & 0 & 0 & \deriv p{\epsilon^{int}}\Sigma^{int} & \deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}} & \deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\\
-0 & \deriv v{\epsilon^{a}}\Sigma^{a} & 0 & 0 & 0 & \deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}} & \deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\\
-0 & 0 & \Sigma^{b^{a}} & 0 & 0 & 0 & 0\\
-0 & 0 & 0 & \Sigma^{b^{\omega}} & 0 & 0 & 0
-\end{array}\right]\\
-\left[\begin{array}{ccccc}
-\deriv{\theta}{\epsilon^{\omega}}^{T} & 0 & 0 & 0 & 0\\
-0 & \deriv p{\epsilon^{a}}^{T} & \deriv v{\epsilon^{a}}^{T} & 0 & 0\\
-0 & 0 & 0 & I_{3\times3} & 0\\
-0 & 0 & 0 & 0 & I_{3\times3}\\
-0 & \deriv p{\epsilon^{int}}^{T} & 0 & 0 & 0\\
-0 & \deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & 0 & 0 & 0 & 0
-\end{array}\right]
-\end{multline*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{multline*}
-=\\
-\left[\begin{array}{ccccc}
-\deriv{\theta}{\epsilon^{\omega}}\Sigma^{\omega}\deriv{\theta}{\epsilon^{\omega}}^{T}+\deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{22}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T}+\deriv p{\epsilon^{int}}\Sigma^{int}\deriv p{\epsilon^{int}}^{T}\\
- & +\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T}+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T}+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T}+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-0 & 0 & 0 & \Sigma^{b^{a}} & 0\\
-0 & 0 & 0 & 0 & \Sigma^{b^{\omega}}
-\end{array}\right]
-\end{multline*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-which we can break into 3 matrices for clarity, representing the main diagonal
- and off-diagonal elements
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{multline*}
-=\\
-\left[\begin{array}{ccccc}
+G_{k}Q_{k}G_{k}^{T}=\left[\begin{array}{ccccc}
 \deriv{\theta}{\epsilon^{\omega}}\Sigma^{\omega}\deriv{\theta}{\epsilon^{\omega}}^{T} & 0 & 0 & 0 & 0\\
-0 & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T} & 0 & 0 & 0\\
-0 & 0 & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T} & 0 & 0\\
+0 & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T}+\deriv p{\epsilon^{int}}\Sigma^{int}\deriv p{\epsilon^{int}}^{T}\\
+ &  & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T} & 0 & 0\\
+0 & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T} & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T} & 0 & 0\\
 0 & 0 & 0 & \Sigma^{b^{a}} & 0\\
 0 & 0 & 0 & 0 & \Sigma^{b^{\omega}}
-\end{array}\right]+\\
-\left[\begin{array}{ccccc}
-\deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{22}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & 0 & 0 & 0 & 0\\
-0 & \deriv p{\epsilon^{int}}\Sigma^{int}\deriv p{\epsilon^{int}}^{T}+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}}^{T} & 0 & 0 & 0\\
-0 & 0 & \deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-0 & 0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0 & 0
-\end{array}\right]+\\
-\left[\begin{array}{ccccc}
-0 & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & 0 & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T}+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
-\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T}+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}}^{T} & 0 & 0 & 0\\
-0 & 0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0 & 0
 \end{array}\right]
-\end{multline*}
+\]
 
 \end_inset
 
@@ -2130,7 +2027,7 @@ literal "false"
 \end_inset
 
 , the measurement noises 
-\begin_inset Formula $[\epsilon^{a},\epsilon^{\omega},\epsilon_{init}]$
+\begin_inset Formula $[\epsilon^{a},\epsilon^{\omega}]$
 \end_inset
 
  are simply scaled by 

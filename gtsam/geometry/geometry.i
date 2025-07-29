@@ -814,6 +814,9 @@ virtual class Cal3_S2 : gtsam::Cal3 {
                             Eigen::Ref<Eigen::MatrixXd> Dcal,
                             Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
+  // Action on Homogeneous Coordinates
+  gtsam::Vector3 calibrate(const gtsam::Vector3& p) const;
+
   // enabling serialization functionality
   void serialize() const;
 };
@@ -948,11 +951,12 @@ virtual class Cal3Fisheye : gtsam::Cal3 {
 };
 
 #include <gtsam/geometry/Cal3_S2Stereo.h>
-virtual class Cal3_S2Stereo   : gtsam::Cal3{
+virtual class Cal3_S2Stereo : gtsam::Cal3_S2{
   // Standard Constructors
   Cal3_S2Stereo();
   Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0, double b);
   Cal3_S2Stereo(gtsam::Vector v);
+  Cal3_S2Stereo(double fov, int w, int h, double b);
 
   // Manifold
   gtsam::Cal3_S2Stereo retract(gtsam::Vector d) const;
@@ -965,6 +969,16 @@ virtual class Cal3_S2Stereo   : gtsam::Cal3{
   // Standard Interface
   double baseline() const;
   gtsam::Vector6 vector() const;
+
+  // Action on Point2
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p,
+                          Eigen::Ref<Eigen::MatrixXd> Dcal,
+                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
+                            Eigen::Ref<Eigen::MatrixXd> Dcal,
+                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 };
 
 #include <gtsam/geometry/Cal3Bundler.h>
