@@ -127,7 +127,14 @@ public:
       const NonlinearFactorGraph& graph, const Values& theta, const KeyVector& keys,
       const GaussianFactorGraph::Eliminate& eliminateFunction = EliminatePreferCholesky);
 
-protected:
+  /** Deep clone the current Smoother
+   */
+  const BatchFixedLagSmoother deepClone();
+
+  /// Get the initial value when calling update()
+  const gtsam::Values& getInitialTheta() const { return initialTheta_; }
+
+ protected:
 
   /** A typedef defining an Key-Factor mapping **/
   typedef std::map<Key, std::set<Key> > FactorIndex;
@@ -160,6 +167,9 @@ protected:
 
   /** A cross-reference structure to allow efficient factor lookups by key **/
   FactorIndex factorIndex_;
+
+  /** Store initial value when calling update() */
+  gtsam::Values initialTheta_;
 
   /** Augment the list of factors with a set of new factors */
   void insertFactors(const NonlinearFactorGraph& newFactors);

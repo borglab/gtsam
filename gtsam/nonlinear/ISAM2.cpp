@@ -895,33 +895,6 @@ std::shared_ptr<ISAM2Clique> ISAM2::deepCopyClique(
     auto castedConditional =
         std::make_shared<GaussianConditional>(clonedConditional);
     copy->conditional_ = castedConditional;
-
-    ////  1. Downcast to access GaussianConditional methods
-    // auto originalCondition =
-    //     std::dynamic_pointer_cast<gtsam::GaussianConditional>(
-    //     originalNode->conditional_);
-    // if (!originalCondition) {
-    //   throw std::runtime_error("conditional_ is not a GaussianConditional");
-    // }
-    //// 2. Extract the keys
-    // gtsam::KeyVector keys = originalCondition->keys();
-
-    //// 3. Get the number of frontals
-    // size_t nrFrontals = originalCondition->nrFrontals();
-
-    //// 4. Get the augmented matrix
-    // const gtsam::VerticalBlockMatrix& aug =
-    // originalCondition->matrixObject();
-
-    //// 5. Copy the noise model
-    // gtsam::SharedDiagonal sigmas = originalCondition->get_model();
-
-    //// 6. Construct a new GaussianConditional
-    // auto newConditional = std::make_shared<gtsam::GaussianConditional>(
-    //     keys, nrFrontals, aug, sigmas);
-
-    //// 7. Assign it to your copy
-    // copy->conditional_ = newConditional;
   };
 
   // 3) Deep copy cachedFactor_

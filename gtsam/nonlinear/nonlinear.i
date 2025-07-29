@@ -735,6 +735,9 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
                      gtsam::Rot3, gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3, gtsam::Cal3_S2, gtsam::Cal3DS2,
                      gtsam::Vector, gtsam::Matrix}>
   VALUE calculateEstimate(gtsam::Key key) const;
+  
+  gtsam::Values getInitialTheta() const;
+  gtsam::BatchFixedLagSmoother deepClone() const;
 };
 
 #include <gtsam/nonlinear/IncrementalFixedLagSmoother.h>
@@ -751,6 +754,11 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
 
   gtsam::NonlinearFactorGraph getFactors() const;
   gtsam::ISAM2 getISAM2() const;
+
+  template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
+                     gtsam::Rot3, gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3, gtsam::Cal3_S2, gtsam::Cal3DS2,
+                     gtsam::Vector, gtsam::Matrix}>
+  VALUE calculateEstimate(gtsam::Key key) const;
   gtsam::ISAM2 getSubISAM2() const;
   gtsam::Values getInitialTheta() const;
 

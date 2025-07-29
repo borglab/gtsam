@@ -173,6 +173,11 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
 }
 
 /* ************************************************************************* */
+void replaceValues(const Values& newTheta){
+
+}
+
+/* ************************************************************************* */
 Values IncrementalFixedLagSmoother::calculateSubEstimate(
     const double adaptiveSmootherLag, const ISAM2Params& isamParam) {
   FastVector<size_t> removedFactors;

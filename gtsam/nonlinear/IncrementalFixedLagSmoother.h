@@ -71,7 +71,13 @@ class GTSAM_EXPORT IncrementalFixedLagSmoother: public FixedLagSmoother {
                 const KeyTimestampMap& timestamps = KeyTimestampMap(),
                 const FactorIndices& factorsToRemove = FactorIndices(),
                 const double adaptiveSmootherLag = -1.0) override;
-  
+
+  /**
+   * replace the Values with a new one, according to the keys in the Values.
+   * @param newTheta new Values
+   */
+  void replaceValues(const Values& newTheta = Values());
+
   /**
    * Marginalize using a smaller lag based on the original isam2 solution, keep the origin one.
    * @param adaptiveSmootherLag a customized smoother lag
@@ -138,9 +144,9 @@ class GTSAM_EXPORT IncrementalFixedLagSmoother: public FixedLagSmoother {
   const gtsam::Values& getInitialTheta() const { return initialTheta_; }
 
   /** Deep clone the current Smoother 
-   * @param rewrite deep clone the internal ISAM2 object, default false
+   * @param rewrite deep clone the internal ISAM2 object, default true
    */
-  const IncrementalFixedLagSmoother deepClone(const bool rewrite = false);
+  const IncrementalFixedLagSmoother deepClone(const bool rewrite = true);
 
   /// force relinearize the internal ISAM2 object.
   const void forceRelinearize();

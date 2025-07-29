@@ -109,6 +109,15 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   }
   gttoc(marginalize);
 
+  // Update initial Value
+  // Remove marginalized keys from initialTheta_
+  for (Key key : marginalizableKeys) {
+    if (initialTheta_.exists(key)) {
+      initialTheta_.erase(key);
+    }
+  }
+  initialTheta_.insert_or_assign(newTheta);  // insert or update all keys
+
   return result;
 }
 
@@ -443,4 +452,17 @@ NonlinearFactorGraph BatchFixedLagSmoother::CalculateMarginalFactors(
 }
 
 /* ************************************************************************* */
+const BatchFixedLagSmoother BatchFixedLagSmoother::deepClone(){
+  BatchFixedLagSmoother outputSmoother(smootherLag_, params(),enforceConsistency_);
+  outputSmoother.factorIndex_ = factorIndex_;
+  outputSmoother.factors_ = factors_.clone();
+  outputSmoother.theta_ = theta_;
+  outputSmoother.linearValues_ = linearValues_;
+  outputSmoother.ordering_ = ordering_;
+  outputSmoother.delta_ = delta_;
+  outputSmoother.availableSlots_ = availableSlots_;
+
+  outputSmoother.initialTheta_ = initialTheta_;
+  return outputSmoother;
+}
 } /// namespace gtsam
