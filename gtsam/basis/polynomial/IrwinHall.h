@@ -1,6 +1,6 @@
 #pragma once
 
-#include "kernels.h"
+#include "PiecewisePolynomial.h"
 
 namespace gtsam {
 namespace kernels {
@@ -39,13 +39,22 @@ High frequencies can be attenuated by processing the control points under a shar
 
 
 */
-extern const piecewise_polynomial<1,1> IrwinHall0;
-extern const piecewise_polynomial<2,2> IrwinHall1;
-extern const piecewise_polynomial<3,3> IrwinHall2;
-extern const piecewise_polynomial<4,4> IrwinHall3; // equivalent to cubic spline
-extern const piecewise_polynomial<5,5> IrwinHall4;
-extern const piecewise_polynomial<6,6> IrwinHall5;
-extern const piecewise_polynomial<7,7> IrwinHall6;
+extern const piecewise_polynomial<0,1> IrwinHall0; // equivalent to a linear interpolator
+extern const piecewise_polynomial<1,2> IrwinHall1;
+extern const piecewise_polynomial<2,3> IrwinHall2;
+extern const piecewise_polynomial<3,4> IrwinHall3; // equivalent to cubic spline
+extern const piecewise_polynomial<4,5> IrwinHall4;
+extern const piecewise_polynomial<5,6> IrwinHall5;
+extern const piecewise_polynomial<6,7> IrwinHall6;
+
+
+extern const piecewise_polynomial<1,1> IrwinHallCDF0; // equivalent to a linear interpolator
+extern const piecewise_polynomial<2,2> IrwinHallCDF1;
+extern const piecewise_polynomial<3,3> IrwinHallCDF2;
+extern const piecewise_polynomial<4,4> IrwinHallCDF3; // equivalent to cubic spline
+extern const piecewise_polynomial<5,5> IrwinHallCDF4;
+extern const piecewise_polynomial<6,6> IrwinHallCDF5;
+extern const piecewise_polynomial<7,7> IrwinHallCDF6;
 
 } // namespace kernels
 } // namespace gtsam
