@@ -24,14 +24,6 @@ public:
 
   virtual ~kernel_base() = default;
 
-
-  // generates a vector of Expressions that will sample the kernel's basis function at `timestamp` during optimisation.
-  std::vector<Double_> sample_kernel(
-    const Double_& timestamp,
-    size_t start, size_t end
-  );
-
-
 };
 
 

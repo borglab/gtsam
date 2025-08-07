@@ -192,12 +192,21 @@ inline Pose3_ getPose(const Expression<PinholeCamera<CALIBRATION> > & cam) {
 //       x1, &T::logmap, x2);
 // }
 
+
 template <typename T>
 gtsam::Expression<typename gtsam::traits<T>::TangentVector> logmap(
     const gtsam::Expression<T> &x1, const gtsam::Expression<T> &x2) {
   return Expression<typename gtsam::traits<T>::TangentVector>(
       gtsam::traits<T>::Logmap, between(x1, x2));
 }
+
+
+template <typename T>
+Expression<T> expmap(const Expression<T> &x,
+  const Expression<typename traits<T>::TangentVector> &v){
+  return compose(x, Expression<T>(&traits<T>::Expmap, v));
+}
+
 
 template <typename T>
 inline Expression<T> interpolate(const Expression<T>& p, const Expression<T>& q,
@@ -208,5 +217,50 @@ inline Expression<T> interpolate(const Expression<T>& p, const Expression<T>& q,
          typename MakeOptionalJacobian<T, double>::type) = &interpolate;
   return Expression<T>(f, p, q, t);
 }
+
+
+
+// Syntax sugar
+namespace internal {
+  // multiply by scalar
+  template <typename T>
+  T scale_vec(
+    double k,
+    T x,
+    typename MakeOptionalJacobian<T, double>::type Hk,
+    typename MakeOptionalJacobian<T,T>::type Hx
+  )
+  {
+    if(Hk) *Hk << x;
+    if(Hx) *Hx << k * MakeJacobian<T,T>::type::Identity();
+    return k * x;
+  }
+
+  //// invert a scalar
+  //double scalar_inverse(const double& x, OptionalJacobian<1, 1>  H = {}){
+  //  double ret = 1/x;
+  //  if(H) *H << -1/(x*x);
+  //  return ret;
+  //}
+
+}
+// allow multiplication by scalar
+// TODO: limit code gen to types that obey vector_space
+template <typename T, typename std::enable_if<!std::is_same<T,double>::value>::type* = nullptr>
+Expression<T> operator*(const Double_& k, const Expression<T>& x)
+{
+  return Expression<T>(internal::scale_vec<T>, k, x);
+}
+
+// provide derivatives for ratios of scalars
+//Double_ operator/(const Double_& lhs, const Double_& rhs)
+//{
+//  return lhs * Double_(internal::scalar_inverse, rhs);
+//}
+
+
+
+
+
 
 }  // \namespace gtsam

@@ -1,15 +1,13 @@
 
 #include "IrwinHall.h"
 namespace gtsam {
-
 namespace kernels {
 
 /*
-Irwin Hall coefficients provide canonical spline basis functions
+Irwin Hall coefficients
 https://oeis.org/A188816
-
-
 */
+
 const piecewise_polynomial<0,1> IrwinHall0({
   {1.},
   {0.,1.},
@@ -28,7 +26,6 @@ const piecewise_polynomial<2,3> IrwinHall2({
   {0.,1.,2.,3.},
   3./2.
 });
-// this captures cubic splines
 const piecewise_polynomial<3,4> IrwinHall3({
   {   0.   ,  0.,  0.,  1./6.,
       2./3., -2.,  2., -1./2.,
@@ -69,5 +66,4 @@ const piecewise_polynomial<6,7> IrwinHall6({
 });
 
 } // namespace kernels
-
 } // namespace gtsam

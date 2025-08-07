@@ -1,34 +1,24 @@
 
 #include "IrwinHall.h"
 namespace gtsam {
-
 namespace kernels {
 
-
 /*
-
-Irwin Hall Cumulative Distribution allows efficient cannonical spline evaluation on Lie groups.
+Irwin Hall Cumulative Distribution Function Coefficients
 https://oeis.org/A188668
-
 */
 
-
-// IrwinHallCDF0 is a linear interpolator with a domain [0-1]
 const piecewise_polynomial<1,1> IrwinHallCDF0({
   {0., 1.},
-  {0., 1.}, // intervals
-  1./2. // centre
+  {0., 1.},
+  1./2.
 });
-
-
 const piecewise_polynomial<2,2> IrwinHallCDF1({
   {  0.   , 0.   ,  1./2.,
     -2./2., 4./2., -1./2.},
-  {0.,1.,2.}, // intervals
-  1. // centre
+  {0.,1.,2.},
+  1.
 });
-
-
 const piecewise_polynomial<3,3> IrwinHallCDF2({
   {   0.   ,  0.   ,  0.   ,  1./6., 
       3./6., -9./6.,  9./6., -2./6., 
@@ -37,7 +27,6 @@ const piecewise_polynomial<3,3> IrwinHallCDF2({
   3./2.
 });
 
-// IrwinHallCDF3 captures cubic splines
 const piecewise_polynomial<4,4> IrwinHallCDF3({
   {    0.    ,    0.    ,  0.    ,    0.    ,  1./24., 
       -4./24.,   16./24., -24./24.,  16./24., -3./24., 
@@ -46,8 +35,6 @@ const piecewise_polynomial<4,4> IrwinHallCDF3({
   {0.,1.,2.,3.,4.},
   2.
 });
-
-
 const piecewise_polynomial<5,5> IrwinHallCDF4({
   {   0.     ,     0.     ,     0.     ,    0.,       0.      ,  1./120.,
       5./120.,   -25./120.,    50./120.,  -50./120.,  25./120., -4./120.,
@@ -57,8 +44,6 @@ const piecewise_polynomial<5,5> IrwinHallCDF4({
   {0.,1.,2.,3.,4.,5.},
   5./2.
 });
-
-
 const piecewise_polynomial<6,6> IrwinHallCDF5({
   {      0.    ,      0.    ,      0.    ,      0.    ,     0.    ,    0.    ,   1./720,
         -6./720,     36./720,    -90./720,    120./720,   -90./720,   36./720,  -5./720,
@@ -69,8 +54,6 @@ const piecewise_polynomial<6,6> IrwinHallCDF5({
   {0.,1.,2.,3.,4.,5.,6.},
   3.
 });
-
-
 const piecewise_polynomial<7,7> IrwinHallCDF6({
   {       0.      ,        0.      ,       0.      ,       0.      ,      0.      ,     0.      ,    0.      ,   1./5040.,
           7./5040.,      -49./5040.,     147./5040.,    -245./5040.,    245./5040.,  -147./5040.,   49./5040.,  -6./5040.,
@@ -83,10 +66,5 @@ const piecewise_polynomial<7,7> IrwinHallCDF6({
   7./2.
 });
 
-// beyond IrwinHallCDF6 is so close to a gaussian it hardly matters any more.
-
-
-
 } // namespace kernels
-
 } // namespace gtsam
