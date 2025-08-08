@@ -1,0 +1,223 @@
+/**
+ * @file    TestGeodesicWeightedSum.cpp
+ * @brief   unit tests for weighted sum
+ * @author  Brett Downing
+ * @date    August 2025
+ */
+
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/nonlinear/Expression.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/basis/polynomial/TrajectoryModel.h>
+#include <gtsam/basis/polynomial/IrwinHall.h>
+
+using namespace gtsam;
+
+
+// The summation of so many terms does get noisy,
+// so split the epsilon and the tolerance
+double epsilon = 1e-9;
+double tolerance = 1e-7;
+
+
+TEST( TrajectoryModel , BasicBounds ) {
+  gtsam::Values v;  // needed for evaluating Expressions
+
+  // choose a cubic spline
+  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+
+  // specify some control points
+  std::vector<Double_> path({
+    Double_(0.0),
+    Double_(1.0),
+    Double_(0.0),
+    Double_(1.0),
+  });
+
+  // rear padding by default
+  // bool pad_front = false;
+  // with padding at the back,
+  //   non-constant timestamps will be in
+  //   [0 : path.size()-1 + basis_function.get_length()]
+  TrajectoryModel<double> model(basis_function, path/*, pad_front*/);
+
+  Key t_key = Key(0); // choose a key to carry the timestamp
+  v.insert<double>(t_key, 0.0); // assign a value to the timestamp
+  Double_ timestamp = Double_(t_key); // associate the timestamp with the key
+
+  // construct an Expression that samples the trajectory
+  Double_ sample = model.sample_trajectory(timestamp);
+
+
+  // bounds check
+  v.update<double>(t_key, 0);
+  CHECK(assert_equal(path.front().value(v), sample.value(v), tolerance));
+
+  v.update<double>(t_key, path.size()-1 + basis_function.get_length());
+  CHECK(assert_equal(path.back().value(v), sample.value(v), tolerance));
+
+  // mid value
+  v.update<double>(t_key, (path.size() + basis_function.get_length())/2);
+  CHECK(assert_equal((path.front().value(v)+path.back().value(v))/2, sample.value(v), tolerance));
+
+}
+
+
+
+TEST( TrajectoryModel , FrontPadding ) {
+  gtsam::Values v;  // needed for evaluating Expressions
+
+  // choose a cubic spline
+  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+
+  // specify some control points
+  std::vector<Double_> path({
+    Double_(0.0),
+    Double_(1.0),
+    Double_(0.0),
+    Double_(1.0),
+  });
+  bool pad_front = true;
+  // with padding at the front,
+  //   non-constant timestamps will be in
+  //   [-basis_function.get_length() : path.size()-1]
+  TrajectoryModel<double> model(basis_function, path, pad_front);
+
+  Key t_key = Key(0); // choose a key to carry the timestamp
+  v.insert<double>(t_key, 0.0); // assign a value to the timestamp
+  Double_ timestamp = Double_(t_key); // associate the timestamp with the key
+
+  // construct an Expression that samples the trajectory
+  Double_ sample = model.sample_trajectory(timestamp);
+
+
+  // bounds check
+  v.update<double>(t_key, -basis_function.get_length());
+  CHECK(assert_equal(path.front().value(v), sample.value(v), tolerance));
+
+  v.update<double>(t_key, path.size()-1);
+  CHECK(assert_equal(path.back().value(v), sample.value(v), tolerance));
+
+  // mid value
+  v.update<double>(t_key, (-basis_function.get_length() + (path.size()))/2);
+  CHECK(assert_equal((path.front().value(v)+path.back().value(v))/2, sample.value(v), tolerance));
+
+}
+
+
+
+
+
+TEST( TrajectoryModel , WindowTruncation ) {
+  // TrajectoryModel can interpolate within a range of control points
+  // the result should be the same as long as enough points are included
+  // before or after the window
+
+  gtsam::Values v;  // needed for evaluating Expressions
+
+  // choose a cubic spline
+  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+
+  // specify some control points
+  std::vector<Double_> path({
+    Double_(4.0),
+    Double_(-4.0),
+    Double_(3.0),
+    Double_(7.0),
+
+    Double_(3.0),
+    Double_(-8.0),
+    Double_(2.0),
+    Double_(6.0),
+
+    Double_(4.0),
+    Double_(1.0),
+    Double_(3.0),
+    Double_(-2.0),
+
+    Double_(5.0),
+    Double_(2.0),
+    Double_(9.0),
+    Double_(-2.0)
+  });
+
+  //rear padding by default
+  TrajectoryModel<double> model(basis_function, path);
+
+  Key t_key = Key(0); // choose a key to carry the timestamp
+  v.insert<double>(t_key, 0.0); // assign a value to the timestamp
+  Double_ timestamp = Double_(t_key); // associate the timestamp with the key
+
+  // construct an Expression that samples from the entire trajectory
+  Double_ sample = model.sample_trajectory(timestamp);
+
+  // construct an Expression that samples from a subset of the trajectory
+  double window_start = 4;
+  double window_end = 7;
+  // TODO: API choice, window automatically calculate pre and post
+  Double_ trunc_back = model.sample_trajectory(timestamp, 0, window_end);
+  Double_ trunc_front = model.sample_trajectory(timestamp, window_start - (basis_function.get_length()+1), -1);
+  Double_ trunc_both = model.sample_trajectory(timestamp, window_start - (basis_function.get_length()+1), window_end);
+
+  for(double t=window_start; t<window_end; t+=0.1)
+  {
+    v.update<double>(t_key, t);
+    CHECK(assert_equal(sample.value(v), trunc_back.value(v), tolerance));
+    CHECK(assert_equal(sample.value(v), trunc_front.value(v), tolerance));
+    CHECK(assert_equal(sample.value(v), trunc_both.value(v), tolerance));
+
+  }
+}
+
+
+// Pose
+
+/*
+
+TEST( TrajectoryModel , WindowTruncation ) {
+  gtsam::Values v;  // needed for evaluating Expressions
+
+  // choose a cubic spline
+  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+
+  // specify some control points
+  std::vector<Pose3_> path({
+    Pose3_(Pose3(Rot3(), Point3(0,0,0))),
+    Pose3_(Pose3(Rot3(), Point3(0,0,0))),
+    Pose3_(Pose3(Rot3(), Point3(0,0,0))),
+    Pose3_(Pose3(Rot3(), Point3(0,0,0))),
+  });
+
+  //rear padding by default
+  TrajectoryModel<Pose3> model(basis_function, path);
+
+  Key t_key = Key(0); // choose a key to carry the timestamp
+  v.insert<double>(t_key, 0.0); // assign a value to the timestamp
+  Double_ timestamp = Double_(t_key); // associate the timestamp with the key
+
+  // construct an Expression that samples from the entire trajectory
+  Pose3_ sample = model.sample_trajectory(timestamp);
+
+  for(double t=window_start; t<window_end; t+=0.1)
+  {
+    v.update<double>(t_key, t);
+    CHECK(assert_equal(sample.value(v), trunc_back.value(v), tolerance));
+    CHECK(assert_equal(sample.value(v), trunc_front.value(v), tolerance));
+    CHECK(assert_equal(sample.value(v), trunc_both.value(v), tolerance));
+  }
+}
+*/
+
+// Mesh
+
+
+/* ************************************************************************* */
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
+/* ************************************************************************* */
+

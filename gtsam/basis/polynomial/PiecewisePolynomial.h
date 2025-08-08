@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gtsam/slam/kernels.h>
+#include <gtsam/basis/polynomial/kernels.h>
 
 namespace gtsam {
 
@@ -57,7 +57,7 @@ public:
     return evaluate_d(0, t, H);
   }
 
-  double evaluate_d(size_t derivative, double t, OptionalJacobian<1, 1>  H = {}) const
+  double evaluate_d(size_t derivative, double t, OptionalJacobian<1, 1>  H = {}) const override
   {
     // bounds check
     if(t < params.intervals[0])
