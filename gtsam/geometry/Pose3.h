@@ -111,7 +111,7 @@ public:
     return Pose3();
   }
 
-  /// inverse transformation with derivatives
+  /// inverse transformation
   Pose3 inverse() const;
 
   /// compose syntactic sugar

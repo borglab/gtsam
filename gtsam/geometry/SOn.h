@@ -204,9 +204,6 @@ class SO : public MatrixLieGroup<SO<N>, internal::DimensionSO(N), N> {
   using TangentVector = Eigen::Matrix<double, dimension, 1>;
   using ChartJacobian = OptionalJacobian<dimension, dimension>;
 
-  /// Return compile-time dimensionality: fixed size N or Eigen::Dynamic
-  static int Dim() { return dimension; }
-
   // Calculate manifold dimensionality for SO(n).
   // Available as dimension or Dim() for fixed N.
   static size_t Dimension(size_t n) { return n * (n - 1) / 2; }
@@ -215,7 +212,6 @@ class SO : public MatrixLieGroup<SO<N>, internal::DimensionSO(N), N> {
   static size_t AmbientDim(size_t d) { return (1 + std::sqrt(1 + 8 * d)) / 2; }
 
   // Calculate run-time dimensionality of manifold.
-  // Available as dimension or Dim() for fixed N.
   size_t dim() const { return Dimension(static_cast<size_t>(matrix_.rows())); }
 
   /**

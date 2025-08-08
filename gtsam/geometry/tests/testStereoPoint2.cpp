@@ -43,29 +43,6 @@ TEST(StereoPoint2, constructor) {
 }
 
 /* ************************************************************************* */
-TEST(StereoPoint2, Lie) {
-  StereoPoint2 p1(1, 2, 3), p2(4, 5, 6);
-  Matrix H1, H2;
-
-  EXPECT(assert_equal(StereoPoint2(5,7,9), p1.compose(p2)));
-
-  EXPECT(assert_equal(StereoPoint2(3,3,3), p1.between(p2)));
-
-  EXPECT(assert_equal(StereoPoint2(5,7,9), p1.retract(Vector3(4., 5., 6.))));
-  EXPECT(assert_equal(Vector3(3., 3., 3.), p1.localCoordinates(p2)));
-}
-
-/* ************************************************************************* */
-TEST( StereoPoint2, retract) {
-  Vector d(3);
-  d(0) = 1;
-  d(1) = -1;
-  d(2) = -3;
-  StereoPoint2 a(4, 5, 6), b = a.retract(d), c(5, 4, 3);
-  EXPECT(assert_equal(b,c));
-}
-
-/* ************************************************************************* */
 TEST( StereoPoint2, arithmetic) {
   EXPECT(assert_equal( StereoPoint2(5,6,7), StereoPoint2(4,5,6)+StereoPoint2(1,1,1)));
   EXPECT(assert_equal( StereoPoint2(3,4,5), StereoPoint2(4,5,6)-StereoPoint2(1,1,1)));

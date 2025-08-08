@@ -6,6 +6,7 @@ namespace gtsam {
 
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/SO4.h>
+#include <gtsam/geometry/SL4.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Similarity2.h>
 #include <gtsam/geometry/Similarity3.h>
@@ -15,8 +16,8 @@ namespace gtsam {
 
 #include <gtsam/slam/BetweenFactor.h>
 template <T = {double, gtsam::Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3,
-               gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3,
-               gtsam::imuBias::ConstantBias}>
+               gtsam::SO4, gtsam::SL4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
+               gtsam::Similarity2, gtsam::Similarity3, gtsam::imuBias::ConstantBias}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
   BetweenFactor(gtsam::Key key1, gtsam::Key key2, const T& relativePose,
                 const gtsam::noiseModel::Base* noiseModel);
@@ -538,6 +539,15 @@ class BetweenFactorPose3s {
   size_t size() const;
   gtsam::BetweenFactor<gtsam::Pose3>* at(size_t i) const;
   void push_back(const gtsam::BetweenFactor<gtsam::Pose3>* factor);
+};
+
+// std::vector<gtsam::BetweenFactor<SL4>::shared_ptr>
+// Used in Matlab wrapper
+class BetweenFactorSL4s {
+  BetweenFactorSL4s();
+  size_t size() const;
+  gtsam::BetweenFactor<gtsam::SL4>* at(size_t i) const;
+  void push_back(const gtsam::BetweenFactor<gtsam::SL4>* factor);
 };
 
 gtsam::BetweenFactorPose3s parse3DFactors(string filename);

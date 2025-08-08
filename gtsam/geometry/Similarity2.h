@@ -193,12 +193,6 @@ public:
   /// Return the scale
   double scale() const { return s_; }
 
-  /// Dimensionality of tangent space = 4 DOF - used to autodetect sizes
-  inline static size_t Dim() { return 4; }
-
-  /// Dimensionality of tangent space = 4 DOF
-  inline size_t dim() const { return 4; }
-
  private:
 
   #if GTSAM_ENABLE_BOOST_SERIALIZATION

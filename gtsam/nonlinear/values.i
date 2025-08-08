@@ -25,6 +25,7 @@ namespace gtsam {
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/geometry/SO4.h>
 #include <gtsam/geometry/SOn.h>
+#include <gtsam/geometry/SL4.h>
 #include <gtsam/geometry/StereoPoint2.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/navigation/ImuBias.h>
@@ -81,6 +82,7 @@ class Values {
   void insert(gtsam::Key j, const gtsam::SO3& R);
   void insert(gtsam::Key j, const gtsam::SO4& Q);
   void insert(gtsam::Key j, const gtsam::SOn& P);
+  void insert(gtsam::Key j, const gtsam::SL4& H);
   void insert(gtsam::Key j, const gtsam::Rot3& rot3);
   void insert(gtsam::Key j, const gtsam::Pose3& pose3);
   void insert(gtsam::Key j, const gtsam::Similarity2& similarity2);
@@ -126,6 +128,7 @@ class Values {
   void update(gtsam::Key j, const gtsam::SO3& R);
   void update(gtsam::Key j, const gtsam::SO4& Q);
   void update(gtsam::Key j, const gtsam::SOn& P);
+  void update(gtsam::Key j, const gtsam::SL4& H);
   void update(gtsam::Key j, const gtsam::Rot3& rot3);
   void update(gtsam::Key j, const gtsam::Pose3& pose3);
   void update(gtsam::Key j, const gtsam::Similarity2& similarity2);
@@ -168,6 +171,7 @@ class Values {
   void insert_or_assign(gtsam::Key j, const gtsam::SO3& R);
   void insert_or_assign(gtsam::Key j, const gtsam::SO4& Q);
   void insert_or_assign(gtsam::Key j, const gtsam::SOn& P);
+  void insert_or_assign(gtsam::Key j, const gtsam::SL4& H);
   void insert_or_assign(gtsam::Key j, const gtsam::Rot3& rot3);
   void insert_or_assign(gtsam::Key j, const gtsam::Pose3& pose3);
   void insert_or_assign(gtsam::Key j, const gtsam::Similarity2& similarity2);
@@ -206,6 +210,7 @@ class Values {
                  gtsam::SO3,
                  gtsam::SO4,
                  gtsam::SOn,
+                 gtsam::SL4,
                  gtsam::Rot3,
                  gtsam::Pose3,
                  gtsam::Similarity2,

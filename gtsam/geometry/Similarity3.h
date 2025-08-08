@@ -200,12 +200,6 @@ class GTSAM_EXPORT Similarity3 : public MatrixLieGroup<Similarity3, 7, 4> {
   /// Return the scale
   double scale() const { return s_; }
 
-  /// Dimensionality of tangent space = 7 DOF - used to autodetect sizes
-  inline static size_t Dim() { return 7; }
-
-  /// Dimensionality of tangent space = 7 DOF
-  inline size_t dim() const { return 7; }
-
   /// @}
   /// @name Deprecated
   /// @{
