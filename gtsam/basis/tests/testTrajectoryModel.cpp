@@ -176,7 +176,7 @@ TEST( TrajectoryModel , WindowTruncation ) {
 
 // Pose
 
-/*
+
 
 TEST( TrajectoryModel , TypesPose3 ) {
   gtsam::Values v;  // needed for evaluating Expressions
@@ -188,8 +188,8 @@ TEST( TrajectoryModel , TypesPose3 ) {
   std::vector<Pose3_> path({
     Pose3_(Pose3(Rot3(), Point3(0,0,0))),
     Pose3_(Pose3(Rot3(), Point3(0,0,0))),
-    Pose3_(Pose3(Rot3(), Point3(0,0,0))),
-    Pose3_(Pose3(Rot3(), Point3(0,0,0))),
+    Pose3_(Pose3(Rot3(), Point3(0,2,0))),
+    Pose3_(Pose3(Rot3(), Point3(0,2,0))),
   });
 
   //rear padding by default
@@ -202,14 +202,12 @@ TEST( TrajectoryModel , TypesPose3 ) {
   // construct an Expression that samples from the entire trajectory
   Pose3_ sample = model.sample_trajectory(timestamp);
 
-  for(double t=window_start; t<window_end; t+=0.1)
-  {
+  v.update<double>(t_key, 3.5);
+  CHECK(assert_equal(Pose3(Rot3(), Point3(0,1,0)), sample.value(v), tolerance));
 
-  }
 }
-*/
 
-/*
+
 
 TEST( TrajectoryModel , MeshModel ) {
   // TrajectoryModel accepts Expressions as control points,
@@ -262,25 +260,27 @@ TEST( TrajectoryModel , MeshModel ) {
   std::vector<TrajectoryModel<double>> rows;
 
   for(const auto& path : mesh){
-    auto row = TrajectoryModel<double> model(basis_function, path);
+    TrajectoryModel<double> row(basis_function, path);
     rows.push_back(row);
     auto row_sample = row.sample_trajectory(x_expr);
     col_path.push_back(row_sample);
   }
-  auto col = TrajectoryModel<double> model(basis_function, col_path);
+  TrajectoryModel<double> col(basis_function, col_path);
   auto sample = col.sample_trajectory(y_expr);
 
 
-  for(double x=0; x<4; x+=0.1)
+  for(double x=0; x<7; x+=0.1)
   {
-    for(double y=0; y<4; y+=0.1)
+    for(double y=0; y<7; y+=0.1)
     {
       v.update<double>(x_key, x);
       v.update<double>(y_key, y);
-      CHECK(assert_equal(, tolerance));
+      CHECK(sample.value(v)<10);
+      CHECK(sample.value(v)>-10);
+    }
   }
 }
-*/
+
 
 /* ************************************************************************* */
 int main() {
