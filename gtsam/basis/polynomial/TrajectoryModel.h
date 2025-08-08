@@ -37,6 +37,12 @@ When used with a time-reversed integral of an impulse response,
 using an Irwin Hall probability density function as the impulse,
   replicates cardinal splines.
 
+
+There is possibly a more numerically way of doing this where reference point
+  is chosen as close to the control point as possible, and the logspace
+  accumulation is performed both ways out from the reference point.
+  The CDF would need to be evaluated and split at the reference point
+
 */
 
 namespace gtsam {
@@ -53,17 +59,25 @@ public:
   ):
     kernel_(kernel),
     points_(points),
-    kernel_offset_(
-      pad_front ?
+    pad_front_(pad_front),
+    kernel_offset_(pad_front ?
         kernel.get_end() :
-        kernel.get_beginning()
-    )
+        kernel.get_beginning()),
+    window_pre_(pad_front ?
+        0 :
+        ceil(kernel.get_length())),
+    window_post_(pad_front ?
+        ceil(kernel.get_length()) :
+        0 )
   {}
 
 private:
   const kernel_base& kernel_;
   std::vector<Expression<T>> points_;
+  const bool pad_front_;
   const double kernel_offset_;
+  const int window_pre_;
+  const int window_post_;
 public:
 
   /**
@@ -174,11 +188,13 @@ Expression<T> TrajectoryModel<T>::sample_trajectory(
   double window_start,
   double window_end)
 {
-  size_t start = floor(window_start);
-  size_t end = floor(window_end);
+
   // sanitise inputs
-  if(window_start<0) start = 0;
-  if(window_end < 0 || window_end > points_.size()) end = points_.size();
+  int start = floor(window_start) - window_pre_;
+  int end = ceil(window_end) + window_post_;
+  if(start < 0) start = 0;
+  if(window_end < 0 || end > points_.size()) end = points_.size();
+
   // pass to internal method
   return kernel_interpolate(kernel_, timestamp, points_, start, end);
 }
@@ -191,10 +207,12 @@ Expression<typename traits<T>::TangentVector> TrajectoryModel<T>::sample_traject
   size_t derivative)
 {
   // sanitise inputs
-  size_t start = floor(window_start);
-  size_t end = floor(window_end);
-  if(window_start<0) start = 0;
-  if(window_end < 0 || window_end > points_.size()) end = points_.size();
+  int start = floor(window_start) - window_pre_;
+  int end = ceil(window_end) + window_post_;
+  if(start < 0) start = 0;
+  if(window_end < 0 || end > points_.size()) end = points_.size();
+
+  // pass to internal method
   return kernel_interpolate_d(kernel_, timestamp, points_, start, end, derivative);
 }
 
@@ -276,7 +294,6 @@ Expression<typename traits<T>::TangentVector> TrajectoryModel<T>::kernel_interpo
 
 
 
-
 /**
 sample the kernel at a range of points
 timestamp is is in units of samples. Be sure to divide your timestamp by the sample rate
@@ -293,13 +310,16 @@ std::vector<Double_> TrajectoryModel<T>::sample_kernel(
 
   // expression constructor requires us to bind to the class member method
   std::function<double(const double&, OptionalJacobian<1, 1>)> keval =
-    [&kernel, derivative](const double& x, OptionalJacobian<1, 1> j) {return kernel.evaluate_d(0, x, j);};
+    [&kernel, derivative](const double& x, OptionalJacobian<1, 1> j)
+    {
+      return kernel.evaluate_d(derivative, x, j);
+    };
 
   for(size_t i = start; i < end; i++)
   {
     Double_ kernel_time =
       Double_(kernel_offset_)
-      + (timestamp - Double_(double(start)))
+      + timestamp
       - Double_(double(i));
     kernel_samples.push_back(Double_(keval, kernel_time));
   }

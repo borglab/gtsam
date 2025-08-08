@@ -113,8 +113,10 @@ TEST( TrajectoryModel , FrontPadding ) {
 
 TEST( TrajectoryModel , WindowTruncation ) {
   // TrajectoryModel can interpolate within a range of control points
+  // bringing the compute cost down to O(window_size).
   // the result should be the same as long as enough points are included
-  // before or after the window
+  // before or after the window.
+  // padding is automatically applied to the window arguments
 
   gtsam::Values v;  // needed for evaluating Expressions
 
@@ -155,12 +157,11 @@ TEST( TrajectoryModel , WindowTruncation ) {
   Double_ sample = model.sample_trajectory(timestamp);
 
   // construct an Expression that samples from a subset of the trajectory
-  double window_start = 4;
-  double window_end = 7;
-  // TODO: API choice, window automatically calculate pre and post
+  double window_start = 6;
+  double window_end = 8;
   Double_ trunc_back = model.sample_trajectory(timestamp, 0, window_end);
-  Double_ trunc_front = model.sample_trajectory(timestamp, window_start - (basis_function.get_length()+1), -1);
-  Double_ trunc_both = model.sample_trajectory(timestamp, window_start - (basis_function.get_length()+1), window_end);
+  Double_ trunc_front = model.sample_trajectory(timestamp, window_start, -1);
+  Double_ trunc_both = model.sample_trajectory(timestamp, window_start, window_end);
 
   for(double t=window_start; t<window_end; t+=0.1)
   {
@@ -177,7 +178,7 @@ TEST( TrajectoryModel , WindowTruncation ) {
 
 /*
 
-TEST( TrajectoryModel , WindowTruncation ) {
+TEST( TrajectoryModel , TypesPose3 ) {
   gtsam::Values v;  // needed for evaluating Expressions
 
   // choose a cubic spline
@@ -203,16 +204,83 @@ TEST( TrajectoryModel , WindowTruncation ) {
 
   for(double t=window_start; t<window_end; t+=0.1)
   {
-    v.update<double>(t_key, t);
-    CHECK(assert_equal(sample.value(v), trunc_back.value(v), tolerance));
-    CHECK(assert_equal(sample.value(v), trunc_front.value(v), tolerance));
-    CHECK(assert_equal(sample.value(v), trunc_both.value(v), tolerance));
+
   }
 }
 */
 
-// Mesh
+/*
 
+TEST( TrajectoryModel , MeshModel ) {
+  // TrajectoryModel accepts Expressions as control points,
+  // allowing arbitrarily complex control point definitions,
+  // such as entire other TrajectoryModel samples
+
+  gtsam::Values v;  // needed for evaluating Expressions
+
+  // choose a cubic spline
+  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+
+  // specify some control points
+  std::vector<std::vector<Double_>> mesh({
+    {
+      Double_(4.0),
+      Double_(-4.0),
+      Double_(3.0),
+      Double_(7.0),
+    },
+    {
+      Double_(3.0),
+      Double_(-8.0),
+      Double_(2.0),
+      Double_(6.0),
+    },
+    {
+      Double_(4.0),
+      Double_(1.0),
+      Double_(3.0),
+      Double_(-2.0),
+    },
+    {
+
+      Double_(5.0),
+      Double_(2.0),
+      Double_(9.0),
+      Double_(-2.0)
+    }
+  });
+  
+
+  Key x_key = Key(0);
+  Key y_key = Key(1);
+  v.insert<double>(x_key, 0.0);
+  v.insert<double>(y_key, 0.0);
+  Double_ x_expr(x_key);
+  Double_ y_expr(y_key);
+
+  std::vector<Double_> col_path;
+  std::vector<TrajectoryModel<double>> rows;
+
+  for(const auto& path : mesh){
+    auto row = TrajectoryModel<double> model(basis_function, path);
+    rows.push_back(row);
+    auto row_sample = row.sample_trajectory(x_expr);
+    col_path.push_back(row_sample);
+  }
+  auto col = TrajectoryModel<double> model(basis_function, col_path);
+  auto sample = col.sample_trajectory(y_expr);
+
+
+  for(double x=0; x<4; x+=0.1)
+  {
+    for(double y=0; y<4; y+=0.1)
+    {
+      v.update<double>(x_key, x);
+      v.update<double>(y_key, y);
+      CHECK(assert_equal(, tolerance));
+  }
+}
+*/
 
 /* ************************************************************************* */
 int main() {
