@@ -169,11 +169,11 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   double C;  // (1 - A) / theta^2
 
   // Constant used in inverse Jacobians
-  double D;  // (1 - A/2B) / theta2
+  double D;  // (1 - A/2B) / theta^2
 
   // Constants used in cross and doubleCross
-  double E;  // (2B - A) / theta2
-  double F;  // (3C - B) / theta2
+  double E;  // (2B - A) / theta^2 = dB/dtheta
+  double F;  // (3C - B) / theta^2 = dC/dtheta
 
   /// Constructor with element of Lie algebra so(3)
   explicit DexpFunctor(const Vector3& omega);
@@ -203,7 +203,7 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   /// Multiplies with rightJacobian(), with optional derivatives
   Vector3 applyRightJacobian(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
                              OptionalJacobian<3, 3> H2 = {}) const {
-    return applyJacobian(v, -B, C, /*x_a*/ -E, /*x_b*/ F, H1, H2);
+    return applyJacobian(v, 1.0, -B, C, /*d_b*/ -E, /*d_c*/ F, H1, H2);
   }
 
   /// Multiplies with rightJacobian().inverse(), with optional derivatives
@@ -214,7 +214,7 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   /// Multiplies with leftJacobian(), with optional derivatives
   Vector3 applyLeftJacobian(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
                             OptionalJacobian<3, 3> H2 = {}) const {
-    return applyJacobian(v, B, C, /*x_a*/ E, /*x_b*/ F, H1, H2);
+    return applyJacobian(v, 1.0, B, C, /*d_b*/ E, /*d_c*/ F, H1, H2);
   }
 
   /// Multiplies with leftJacobianInverse(), with optional derivatives
@@ -222,12 +222,13 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
                                    OptionalJacobian<3, 3> H1 = {},
                                    OptionalJacobian<3, 3> H2 = {}) const;
 
- private:
+ protected:
   // Helper for *applying* left and right Jacobians
-  // v ↦ (I + a W + b W^2) v, with ∂/∂ω using da/dω = x_a ω^T, db/dω = x_b ω^T.
-  Vector3 applyJacobian(const Vector3& v, double a, double b, double x_a,
-                        double x_b, OptionalJacobian<3, 3> H1,  // ∂result/∂ω
-                        OptionalJacobian<3, 3> H2  // ∂result/∂v = I + aW + bW^2
+  // v ↦ (aI + b W + c W^2) v, with ∂/∂ω using db/dω = x_b ω^T, dc/dω = x_c ω^T.
+  Vector3 applyJacobian(
+      const Vector3& v, double a, double b, double c, double d_b, double d_c,
+      OptionalJacobian<3, 3> H1,  // ∂result/∂ω
+      OptionalJacobian<3, 3> H2   // ∂result/∂v = aI + bW + cW^2
   ) const;
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
