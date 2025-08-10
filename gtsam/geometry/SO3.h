@@ -201,20 +201,34 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   Matrix3 leftJacobianInverse() const;
 
   /// Multiplies with rightJacobian(), with optional derivatives
-  Vector3 applyRightJacobian(const Vector3& v,
-    OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
+  Vector3 applyRightJacobian(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
+                             OptionalJacobian<3, 3> H2 = {}) const {
+    return applyJacobian(v, -B, C, /*x_a*/ -E, /*x_b*/ F, H1, H2);
+  }
 
   /// Multiplies with rightJacobian().inverse(), with optional derivatives
   Vector3 applyRightJacobianInverse(const Vector3& v,
-    OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
+                                    OptionalJacobian<3, 3> H1 = {},
+                                    OptionalJacobian<3, 3> H2 = {}) const;
 
   /// Multiplies with leftJacobian(), with optional derivatives
-  Vector3 applyLeftJacobian(const Vector3& v,
-    OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
+  Vector3 applyLeftJacobian(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
+                            OptionalJacobian<3, 3> H2 = {}) const {
+    return applyJacobian(v, B, C, /*x_a*/ E, /*x_b*/ F, H1, H2);
+  }
 
   /// Multiplies with leftJacobianInverse(), with optional derivatives
   Vector3 applyLeftJacobianInverse(const Vector3& v,
-    OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
+                                   OptionalJacobian<3, 3> H1 = {},
+                                   OptionalJacobian<3, 3> H2 = {}) const;
+
+ private:
+  // Helper for *applying* left and right Jacobians
+  // v ↦ (I + a W + b W^2) v, with ∂/∂ω using da/dω = x_a ω^T, db/dω = x_b ω^T.
+  Vector3 applyJacobian(const Vector3& v, double a, double b, double x_a,
+                        double x_b, OptionalJacobian<3, 3> H1,  // ∂result/∂ω
+                        OptionalJacobian<3, 3> H2  // ∂result/∂v = I + aW + bW^2
+  ) const;
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /// @deprecated: use rightJacobian

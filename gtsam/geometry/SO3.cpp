@@ -154,24 +154,29 @@ Matrix3 DexpFunctor::leftJacobianInverse() const {
   return I_3x3 - 0.5 * W + D * WW;
 }
 
-// Multiplies v with left Jacobian through vector operations only.
-Vector3 DexpFunctor::applyRightJacobian(const Vector3& v, OptionalJacobian<3, 3> H1,
-  OptionalJacobian<3, 3> H2) const {
+// v ↦ (I + a W + b W^2) v, with ∂/∂ω using da/dω = x_a ω^T, db/dω = x_b ω^T.
+Vector3 DexpFunctor::applyJacobian(
+    const Vector3& v, double a, double b, double x_a, double x_b,
+    OptionalJacobian<3, 3> H1,  // ∂result/∂ω
+    OptionalJacobian<3, 3> H2   // ∂result/∂v = I + aW + bW^2
+) const {
   const Vector3 Wv = gtsam::cross(omega, v);
 
-  Matrix3 WWv_H_w;
-  const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &WWv_H_w : nullptr);
+  Matrix3 dWWv_domega;  // ∂(W(Wv))/∂ω
+  const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &dWWv_domega : nullptr);
 
   if (H1) {
-    // - E * omega.transpose() is 1x3 Jacobian of B with respect to omega
-    Matrix3 BWv_H_w = -Wv * E * omega.transpose() - B * skewSymmetric(v);
-    // - F * omega.transpose() is 1x3 Jacobian of C with respect to omega
-    Matrix3 CWWv_H_w = -WWv * F * omega.transpose() + C * WWv_H_w;
-    *H1 = -BWv_H_w + CWWv_H_w;
+    const Matrix3 aWv_Hw = -Wv * x_a * omega.transpose() - a * skewSymmetric(v);
+    const Matrix3 bWWv_Hw = -WWv * x_b * omega.transpose() + b * dWWv_domega;
+    *H1 = aWv_Hw + bWWv_Hw;
   }
 
-  if (H2) *H2 = rightJacobian();
-  return v - B * Wv + C * WWv;
+  if (H2) {
+    const Matrix3 W = skewSymmetric(omega);
+    *H2 = Matrix3::Identity() + a * W + b * (W * W);
+  }
+
+  return v + a * Wv + b * WWv;
 }
 
 Vector3 DexpFunctor::applyRightJacobianInverse(const Vector3& v, OptionalJacobian<3, 3> H1,
@@ -185,25 +190,6 @@ Vector3 DexpFunctor::applyRightJacobianInverse(const Vector3& v, OptionalJacobia
   }
   if (H2) *H2 = invJr;
   return c;
-}
-
-Vector3 DexpFunctor::applyLeftJacobian(const Vector3& v,
-  OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) const {
-  const Vector3 Wv = gtsam::cross(omega, v);
-
-  Matrix3 WWv_H_w;
-  const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &WWv_H_w : nullptr);
-
-  if (H1) {
-    // - E * omega.transpose() is 1x3 Jacobian of B with respect to omega
-    Matrix3 BWv_H_w = -Wv * E * omega.transpose() - B * skewSymmetric(v);
-    // - F * omega.transpose() is 1x3 Jacobian of C with respect to omega
-    Matrix3 CWWv_H_w = -WWv * F * omega.transpose() + C * WWv_H_w;
-    *H1 = BWv_H_w + CWWv_H_w;
-  }
-
-  if (H2) *H2 = leftJacobian();
-  return v + B * Wv + C * WWv;
 }
 
 Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
