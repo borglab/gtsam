@@ -19,6 +19,8 @@ If you encounter any functions that do not meet this criterion, please submit a 
 
 ## Wrapper Maintenance: How to fix C++ GTSAM functions not showing up in Python
 
+The GTSAM Python wrapper is created using the [wrap](https://github.com/borglab/wrap) library ([docs](https://github.com/borglab/wrap/blob/master/DOCS.md)). The following brief guide is intended to help users extend the GTSAM wrapper themselves if necessary.
+
 The Python wrapper for a class is defined in the `*.i` interface file present in the same directory as the class. For example, the wrapper for `gtsam/geometry/Pose3.h` is defined in `gtsam/geometry/geometry.i`; for `gtsam/navigation/ImuFactor.h`, it's `gtsam/navigation/navigation.i`, etc. With that knowledge and following these steps, you can manipulate your local clone of GTSAM and rebuild the Python package with your custom extended bindings.
 
 1. Follow steps to clone, build, and install GTSAM with Python bindings on your OS, to be sure that you can do so before changing the source code. See [INSTALL.md](INSTALL.md) and the [Python README.md](python/README.md).
@@ -29,7 +31,7 @@ The Python wrapper for a class is defined in the `*.i` interface file present in
 
 ### Possible remaining issues
 
-- If the source compiled fine, any build issues will be a consequence of errors in your new wrapper code. Look closely for missing namespaces, semicolons, types, etc.
+- If the source compiled fine, any build issues will be a consequence of errors in your new wrapper code. Look closely for missing namespaces, semicolons, types, etc. See the [wrap docs](https://github.com/borglab/wrap/blob/master/DOCS.md) for syntax guidelines.
 - If the new function won't show up in Python, make sure you have properly reinstalled the Python package. You might need to `pip uninstall` before reinstalling. On Windows, you might need to recopy the `.pyd` files and then rebuild as mentioned in the Windows installation instructions.
 
 ## Windows

@@ -181,12 +181,10 @@ public:
   /// @name Manifold
   /// @{
 
-  /// @deprecated
   size_t dim() const {
     return dimension;
   }
 
-  /// @deprecated
   static size_t Dim() {
     return dimension;
   }
@@ -199,7 +197,7 @@ public:
       return PinholeCamera(this->pose().retract(d), calibration());
     else
       return PinholeCamera(this->pose().retract(d.head<6>()),
-          calibration().retract(d.tail(calibration().dim())));
+          calibration().retract(d.tail<DimK>()));
   }
 
   /// return canonical coordinate

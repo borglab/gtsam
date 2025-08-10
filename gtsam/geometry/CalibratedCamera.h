@@ -56,15 +56,15 @@ class GTSAM_EXPORT PinholeBase {
 public:
 
   /** Pose Concept requirements */
-  typedef Rot3 Rotation;
-  typedef Point3 Translation;
+  using Rotation = Rot3;
+  using Translation = Point3;
 
   /**
    *  Some classes template on either PinholeCamera or StereoCamera,
    *  and this typedef informs those classes what "project" returns.
    */
-  typedef Point2 Measurement;
-  typedef Point2Vector MeasurementVector;
+  using Measurement = Point2;
+  using MeasurementVector = Point2Vector;
 
 private:
 
@@ -222,7 +222,7 @@ public:
    * exponential map parameterization
    * @return a pair of [start, end] indices into the tangent space vector
    */
-  inline static std::pair<size_t, size_t> translationInterval() {
+  static std::pair<size_t, size_t> TranslationInterval() {
     return {3, 5};
   }
 
@@ -321,12 +321,10 @@ public:
     PinholeBase::print(s);
   }
 
-  /// @deprecated
   inline size_t dim() const {
     return dimension;
   }
 
-  /// @deprecated
   inline static size_t Dim() {
     return dimension;
   }

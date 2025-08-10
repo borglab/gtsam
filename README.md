@@ -118,9 +118,9 @@ In GTSAM 4 a new and more efficient implementation, based on integrating on the 
 
 ## Additional Information
 
-There is a [`GTSAM users Google group`](https://groups.google.com/forum/#!forum/gtsam-users) for general discussion.
+There is a [GTSAM users Google group](https://groups.google.com/forum/#!forum/gtsam-users) for general discussion.
 
-Read about important [`GTSAM-Concepts`](GTSAM-Concepts.md) here. A primer on GTSAM Expressions,
+Read about important [GTSAM-Concepts](doc/GTSAM-Concepts.md) here. A primer on GTSAM Expressions,
 which support (superfast) automatic differentiation,
 can be found on the [GTSAM wiki on BitBucket](https://bitbucket.org/gtborg/gtsam/wiki/Home).
 

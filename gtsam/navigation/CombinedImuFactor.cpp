@@ -39,24 +39,17 @@ using namespace std;
 //------------------------------------------------------------------------------
 void PreintegrationCombinedParams::print(const string& s) const {
   PreintegrationParams::print(s);
-  cout << "biasAccCovariance:\n[\n" << biasAccCovariance << "\n]"
-       << endl;
-  cout << "biasOmegaCovariance:\n[\n" << biasOmegaCovariance << "\n]"
-       << endl;
-  cout << "biasAccOmegaInt:\n[\n" << biasAccOmegaInt << "\n]"
-       << endl;
+  cout << "biasAccCovariance:\n[\n" << biasAccCovariance << "\n]" << endl;
+  cout << "biasOmegaCovariance:\n[\n" << biasOmegaCovariance << "\n]" << endl;
 }
 
 //------------------------------------------------------------------------------
-bool PreintegrationCombinedParams::equals(const PreintegratedRotationParams& other,
-                                  double tol) const {
+bool PreintegrationCombinedParams::equals(
+    const PreintegratedRotationParams& other, double tol) const {
   auto e = dynamic_cast<const PreintegrationCombinedParams*>(&other);
   return e != nullptr && PreintegrationParams::equals(other, tol) &&
-         equal_with_abs_tol(biasAccCovariance, e->biasAccCovariance,
-                            tol) &&
-         equal_with_abs_tol(biasOmegaCovariance, e->biasOmegaCovariance,
-                            tol) &&
-         equal_with_abs_tol(biasAccOmegaInt, e->biasAccOmegaInt, tol);
+         equal_with_abs_tol(biasAccCovariance, e->biasAccCovariance, tol) &&
+         equal_with_abs_tol(biasOmegaCovariance, e->biasOmegaCovariance, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -85,16 +78,6 @@ void PreintegratedCombinedMeasurementsT<PreintegrationType>::resetIntegration() 
 }
 
 //------------------------------------------------------------------------------
-template <class PreintegrationType>
-void PreintegratedCombinedMeasurementsT<PreintegrationType>::resetIntegration(
-    const gtsam::Matrix6& Q_init) {
-  // Base class method to reset the preintegrated measurements
-  PreintegrationType::resetIntegration();
-  this->p().biasAccOmegaInt = Q_init;
-  preintMeasCov_.setZero();
-}
-
-//------------------------------------------------------------------------------
 // sugar for derivative blocks
 #define D_R_R(H) (H)->block<3,3>(0,0)
 #define D_R_t(H) (H)->block<3,3>(0,3)
@@ -110,16 +93,18 @@ void PreintegratedCombinedMeasurementsT<PreintegrationType>::resetIntegration(
 
 //------------------------------------------------------------------------------
 template <class PreintegrationType>
-void PreintegratedCombinedMeasurementsT<PreintegrationType>::integrateMeasurement(
-    const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
+void PreintegratedCombinedMeasurementsT<
+    PreintegrationType>::integrateMeasurement(const Vector3& measuredAcc,
+                                              const Vector3& measuredOmega,
+                                              double dt) {
   if (dt <= 0) {
     throw std::runtime_error(
         "PreintegratedCombinedMeasurements::integrateMeasurement: dt <=0");
   }
 
   // Update preintegrated measurements.
-  Matrix9 A; // Jacobian wrt preintegrated measurements without bias (df/dx)
-  Matrix93 B, C;  // Jacobian of state wrpt accel bias and omega bias respectively.
+  Matrix9 A;  // Jacobian wrt preintegrated measurements without bias (df/dx)
+  Matrix93 B, C;  // Jacobian of state wrpt accel bias and omega bias.
   PreintegrationType::update(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
   // Update preintegrated measurements covariance: as in [2] we consider a first
@@ -132,10 +117,6 @@ void PreintegratedCombinedMeasurementsT<PreintegrationType>::integrateMeasuremen
   Matrix3 theta_H_omega = C.topRows<3>();
   Matrix3 pos_H_acc = B.middleRows<3>(3);
   Matrix3 vel_H_acc = B.bottomRows<3>();
-
-  Matrix3 theta_H_biasOmegaInit = -theta_H_omega;
-  Matrix3 pos_H_biasAccInit = -pos_H_acc;
-  Matrix3 vel_H_biasAccInit = -vel_H_acc;
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
   Eigen::Matrix<double, 15, 15> F;
@@ -154,51 +135,27 @@ void PreintegratedCombinedMeasurementsT<PreintegrationType>::integrateMeasuremen
   const Matrix3& aCov = this->p().accelerometerCovariance;
   const Matrix3& wCov = this->p().gyroscopeCovariance;
   const Matrix3& iCov = this->p().integrationCovariance;
-  const Matrix6& bInitCov = this->p().biasAccOmegaInt;
 
   // first order uncertainty propagation
   // Optimized matrix mult: (1/dt) * G * measurementCovariance * G.transpose()
   Eigen::Matrix<double, 15, 15> G_measCov_Gt;
   G_measCov_Gt.setZero(15, 15);
 
-  const Matrix3& bInitCov11 = bInitCov.block<3, 3>(0, 0) / dt;
-  const Matrix3& bInitCov12 = bInitCov.block<3, 3>(0, 3) / dt;
-  const Matrix3& bInitCov21 = bInitCov.block<3, 3>(3, 0) / dt;
-  const Matrix3& bInitCov22 = bInitCov.block<3, 3>(3, 3) / dt;
-
   // BLOCK DIAGONAL TERMS
   D_R_R(&G_measCov_Gt) =
-      (theta_H_omega * (wCov / dt) * theta_H_omega.transpose())  //
-      +
-      (theta_H_biasOmegaInit * bInitCov22 * theta_H_biasOmegaInit.transpose());
+      (theta_H_omega * (wCov / dt) * theta_H_omega.transpose());
 
   D_t_t(&G_measCov_Gt) =
-      (pos_H_acc * (aCov / dt) * pos_H_acc.transpose())           //
-      + (pos_H_biasAccInit * bInitCov11 * pos_H_biasAccInit.transpose())  //
-      + (dt * iCov);
+      (pos_H_acc * (aCov / dt) * pos_H_acc.transpose()) + (dt * iCov);
 
-  D_v_v(&G_measCov_Gt) =
-      (vel_H_acc * (aCov / dt) * vel_H_acc.transpose())  //
-      + (vel_H_biasAccInit * bInitCov11 * vel_H_biasAccInit.transpose());
+  D_v_v(&G_measCov_Gt) = (vel_H_acc * (aCov / dt) * vel_H_acc.transpose());
 
   D_a_a(&G_measCov_Gt) = dt * this->p().biasAccCovariance;
   D_g_g(&G_measCov_Gt) = dt * this->p().biasOmegaCovariance;
 
   // OFF BLOCK DIAGONAL TERMS
-  D_R_t(&G_measCov_Gt) =
-      theta_H_biasOmegaInit * bInitCov21 * pos_H_biasAccInit.transpose();
-  D_R_v(&G_measCov_Gt) =
-      theta_H_biasOmegaInit * bInitCov21 * vel_H_biasAccInit.transpose();
-  D_t_R(&G_measCov_Gt) =
-      pos_H_biasAccInit * bInitCov12 * theta_H_biasOmegaInit.transpose();
-  D_t_v(&G_measCov_Gt) =
-      (pos_H_acc * (aCov / dt) * vel_H_acc.transpose()) +
-      (pos_H_biasAccInit * bInitCov11 * vel_H_biasAccInit.transpose());
-  D_v_R(&G_measCov_Gt) =
-      vel_H_biasAccInit * bInitCov12 * theta_H_biasOmegaInit.transpose();
-  D_v_t(&G_measCov_Gt) =
-      (vel_H_acc * (aCov / dt) * pos_H_acc.transpose()) +
-      (vel_H_biasAccInit * bInitCov11 * pos_H_biasAccInit.transpose());
+  D_t_v(&G_measCov_Gt) = (pos_H_acc * (aCov / dt) * vel_H_acc.transpose());
+  D_v_t(&G_measCov_Gt) = (vel_H_acc * (aCov / dt) * pos_H_acc.transpose());
 
   preintMeasCov_.noalias() += G_measCov_Gt;
 }

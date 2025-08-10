@@ -128,16 +128,16 @@ DexpFunctor::DexpFunctor(const Vector3& omega, double nearZeroThresholdSq, doubl
       // General case D:
       D = (1.0 - A / (2.0 * B)) / theta2;
     }
-    // Calculate E and F using standard formulas (stable near pi)
-    E = (2.0 * B - A) / theta2;
-    F = (3.0 * C - B) / theta2;
+    // Radial derivatives: dB = B'(θ)/θ, dC = C'(θ)/θ
+    dB = (A - 2.0 * B) / theta2;  // = B'(θ)/θ
+    dC = (B - 3.0 * C) / theta2;  // = C'(θ)/θ
   } else {
     // Taylor expansion at 0
     // TODO(Frank): flipping signs here does not trigger any tests: harden!
     C = one_6th - theta2 * one_120th;
     D = one_12th + theta2 * one_720th;
-    E = one_12th - theta2 * one_180th;
-    F = one_60th - theta2 * one_1260th;
+    dB = -one_12th + theta2 * one_180th;    // B'(θ)/θ near 0
+    dC = -one_60th + theta2 * one_1260th;   // C'(θ)/θ near 0
   }
 }
 
@@ -154,24 +154,28 @@ Matrix3 DexpFunctor::leftJacobianInverse() const {
   return I_3x3 - 0.5 * W + D * WW;
 }
 
-// Multiplies v with left Jacobian through vector operations only.
-Vector3 DexpFunctor::applyRightJacobian(const Vector3& v, OptionalJacobian<3, 3> H1,
-  OptionalJacobian<3, 3> H2) const {
+Vector3 DexpFunctor::applyJacobian(
+    const Vector3& v, double a, double b, double c, double d_b, double d_c,
+    OptionalJacobian<3, 3> H1,  // ∂result/∂ω
+    OptionalJacobian<3, 3> H2   // ∂result/∂v = aI + bW + cW^2
+) const {
   const Vector3 Wv = gtsam::cross(omega, v);
 
-  Matrix3 WWv_H_w;
-  const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &WWv_H_w : nullptr);
+  Matrix3 dWWv_domega;  // ∂(W(Wv))/∂ω
+  const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &dWWv_domega : nullptr);
 
   if (H1) {
-    // - E * omega.transpose() is 1x3 Jacobian of B with respect to omega
-    Matrix3 BWv_H_w = -Wv * E * omega.transpose() - B * skewSymmetric(v);
-    // - F * omega.transpose() is 1x3 Jacobian of C with respect to omega
-    Matrix3 CWWv_H_w = -WWv * F * omega.transpose() + C * WWv_H_w;
-    *H1 = -BWv_H_w + CWWv_H_w;
+    const Matrix3 aWv_Hw = Wv * d_b * omega.transpose() - b * skewSymmetric(v);
+    const Matrix3 bWWv_Hw = WWv * d_c * omega.transpose() + c * dWWv_domega;
+    *H1 = aWv_Hw + bWWv_Hw;
   }
 
-  if (H2) *H2 = rightJacobian();
-  return v - B * Wv + C * WWv;
+  if (H2) {
+    const Matrix3 W = skewSymmetric(omega);
+    *H2 = a * I_3x3 + b * W + c * (W * W);
+  }
+
+  return a * v + b * Wv + c * WWv;
 }
 
 Vector3 DexpFunctor::applyRightJacobianInverse(const Vector3& v, OptionalJacobian<3, 3> H1,
@@ -187,25 +191,6 @@ Vector3 DexpFunctor::applyRightJacobianInverse(const Vector3& v, OptionalJacobia
   return c;
 }
 
-Vector3 DexpFunctor::applyLeftJacobian(const Vector3& v,
-  OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) const {
-  const Vector3 Wv = gtsam::cross(omega, v);
-
-  Matrix3 WWv_H_w;
-  const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &WWv_H_w : nullptr);
-
-  if (H1) {
-    // - E * omega.transpose() is 1x3 Jacobian of B with respect to omega
-    Matrix3 BWv_H_w = -Wv * E * omega.transpose() - B * skewSymmetric(v);
-    // - F * omega.transpose() is 1x3 Jacobian of C with respect to omega
-    Matrix3 CWWv_H_w = -WWv * F * omega.transpose() + C * WWv_H_w;
-    *H1 = BWv_H_w + CWWv_H_w;
-  }
-
-  if (H2) *H2 = leftJacobian();
-  return v + B * Wv + C * WWv;
-}
-
 Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
   OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) const {
   const Matrix3 invJl = leftJacobianInverse();
@@ -218,6 +203,21 @@ Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
   if (H2) *H2 = invJl;
   return c;
 }
+
+GammaFunctor::GammaFunctor(const Vector3& omega, double nearZeroThresholdSq,
+                           double nearPiThresholdSq)
+    : DexpFunctor(omega, nearZeroThresholdSq, nearPiThresholdSq) {
+  if (!nearZero) {
+    G = (1.0 - 2.0 * B) / (2.0 * theta2);
+    dG = -(dB + 2.0 * G) / theta2;  // = G'(θ)/θ
+  } else {
+    G = one_24th - theta2 * one_720th;
+    dG = -0.5 * one_180th;  // dG near zero
+  }
+}
+
+GammaFunctor::GammaFunctor(const Vector3& omega)
+    : GammaFunctor(omega, kNearZeroThresholdSq, kNearPiThresholdSq) {}
 
 }  // namespace so3
 

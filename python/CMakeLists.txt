@@ -70,6 +70,7 @@ set(ignore
     gtsam::IndexPairVector
     gtsam::BetweenFactorPose2s
     gtsam::BetweenFactorPose3s
+    gtsam::BetweenFactorSL4s
     gtsam::FixedLagSmootherKeyTimestampMap
     gtsam::FixedLagSmootherKeyTimestampMapValue
     gtsam::Point2Vector
@@ -198,6 +199,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::FactorIndices
             gtsam::FactorIndexSet
             gtsam::BetweenFactorPose3s
+            gtsam::BetweenFactorSL4s
             gtsam::Point2Vector
             gtsam::Pose3Vector
             gtsam::KeyVector

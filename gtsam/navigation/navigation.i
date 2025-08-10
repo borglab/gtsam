@@ -31,6 +31,10 @@ class ConstantBias {
   gtsam::Vector correctAccelerometer(gtsam::Vector measurement) const;
   gtsam::Vector correctGyroscope(gtsam::Vector measurement) const;
 
+  // Manifold
+  gtsam::imuBias::ConstantBias retract(const gtsam::Vector& v) const;
+  gtsam::Vector localCoordinates(const gtsam::imuBias::ConstantBias& b) const;
+
   // enabling serialization functionality
   void serialize() const;
 };
@@ -225,11 +229,9 @@ virtual class PreintegrationCombinedParams : gtsam::PreintegrationParams {
 
   void setBiasAccCovariance(gtsam::Matrix cov);
   void setBiasOmegaCovariance(gtsam::Matrix cov);
-  void setBiasAccOmegaInit(gtsam::Matrix cov);
   
   gtsam::Matrix getBiasAccCovariance() const ;
   gtsam::Matrix getBiasOmegaCovariance() const ;
-  gtsam::Matrix getBiasAccOmegaInit() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -555,6 +557,15 @@ virtual class AcceleratingScenario : gtsam::Scenario {
   AcceleratingScenario(const gtsam::Rot3& nRb, const gtsam::Point3& p0,
                        gtsam::Vector v0, gtsam::Vector a_n,
                        gtsam::Vector omega_b);
+};
+
+virtual class DiscreteScenario : gtsam::Scenario {
+  DiscreteScenario(const std::map<double, gtsam::Pose3>& poses,
+                   const std::map<double, gtsam::Vector3>& angularVelocities_b,
+                   const std::map<double, gtsam::Vector3>& velocities_n,
+                   const std::map<double, gtsam::Vector3>& accelerations_n);
+
+  static gtsam::DiscreteScenario FromCSV(const std::string& csv_filepath);
 };
 
 #include <gtsam/navigation/ScenarioRunner.h>

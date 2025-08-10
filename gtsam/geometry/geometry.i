@@ -18,6 +18,10 @@ class Point2 {
   // Group
   static gtsam::Point2 Identity();
 
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+
   // Standard Interface
   double x() const;
   double y() const;
@@ -77,9 +81,6 @@ class StereoPoint2 {
 
   // Group
   static gtsam::StereoPoint2 Identity();
-  gtsam::StereoPoint2 inverse() const;
-  gtsam::StereoPoint2 compose(const gtsam::StereoPoint2& p1) const;
-  gtsam::StereoPoint2 between(const gtsam::StereoPoint2& p2) const;
 
   // Operator Overloads
   gtsam::StereoPoint2 operator-() const;
@@ -87,14 +88,6 @@ class StereoPoint2 {
   // supported
   gtsam::StereoPoint2 operator+(const gtsam::StereoPoint2& p2) const;
   gtsam::StereoPoint2 operator-(const gtsam::StereoPoint2& p2) const;
-
-  // Manifold
-  gtsam::StereoPoint2 retract(gtsam::Vector v) const;
-  gtsam::Vector localCoordinates(const gtsam::StereoPoint2& t2) const;
-
-  // Lie Group
-  static gtsam::StereoPoint2 Expmap(gtsam::Vector d);
-  static gtsam::Vector Logmap(const gtsam::StereoPoint2& p);
 
   // Standard Interface
   gtsam::Vector vector() const;
@@ -119,6 +112,10 @@ class Point3 {
 
   // Group
   static gtsam::Point3 Identity();
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
 
   // Standard Interface
   gtsam::Vector vector() const;
@@ -166,6 +163,8 @@ class Rot2 {
   gtsam::Rot2 operator*(const gtsam::Rot2& p2) const;
 
   // Manifold
+  static size_t Dim();
+  size_t dim() const;
   gtsam::Rot2 retract(gtsam::Vector v) const;
   gtsam::Rot2 retract(gtsam::Vector v, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
   gtsam::Vector localCoordinates(const gtsam::Rot2& p) const;
@@ -176,6 +175,10 @@ class Rot2 {
   static gtsam::Vector Logmap(const gtsam::Rot2& r);
   gtsam::Rot2 expmap(gtsam::Vector v);
   gtsam::Vector logmap(const gtsam::Rot2& g);
+
+  // Matrix Lie Group
+  gtsam::Vector vec() const;
+  gtsam::Matrix matrix() const;
   static gtsam::Matrix Hat(const gtsam::Vector& xi);
   static gtsam::Vector Vee(const gtsam::Matrix& X);
 
@@ -191,7 +194,6 @@ class Rot2 {
   double degrees() const;
   double c() const;
   double s() const;
-  gtsam::Matrix matrix() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -252,6 +254,12 @@ class SO3 {
   // Operator Overloads
   gtsam::SO3 operator*(const gtsam::SO3& R) const;
 
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::SO3 retract(gtsam::Vector3 v) const;
+  gtsam::Vector3 localCoordinates(const gtsam::SO3& R) const;
+
   // Lie Group
   static gtsam::SO3 Expmap(gtsam::Vector3 v);
   static gtsam::Vector3 Logmap(const gtsam::SO3& p);
@@ -262,13 +270,11 @@ class SO3 {
   static gtsam::Matrix3 Hat(const gtsam::Vector3& xi);
   static gtsam::Vector3 Vee(const gtsam::Matrix3& xi);
 
-  // Manifold
-  gtsam::SO3 retract(gtsam::Vector3 v) const;
-  gtsam::Vector3 localCoordinates(const gtsam::SO3& R) const;
-
-  // Other methods
-  gtsam::Vector3 vec() const;
-  gtsam::Matrix3 matrix() const;
+  // Matrix Lie Group
+  gtsam::Vector vec() const;
+  gtsam::Matrix matrix() const;
+  static gtsam::Matrix Hat(const gtsam::Vector& xi);
+  static gtsam::Vector Vee(const gtsam::Matrix& X);
 };
 
 #include <gtsam/geometry/SO4.h>
@@ -291,22 +297,24 @@ class SO4 {
   // Operator Overloads
   gtsam::SO4 operator*(const gtsam::SO4& Q) const;
 
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::SO4 retract(gtsam::Vector v) const;
+  gtsam::Vector localCoordinates(const gtsam::SO4& Q) const;
+
   // Lie Group
   static gtsam::SO4 Expmap(gtsam::Vector v);
   static gtsam::Vector Logmap(const gtsam::SO4& p);
   gtsam::SO4 expmap(gtsam::Vector v);
   gtsam::Vector logmap(const gtsam::SO4& g);
-  static gtsam::Matrix Hat(const gtsam::Vector& xi);
-  static gtsam::Vector Vee(const gtsam::Matrix& xi);
 
-  // Manifold
-  gtsam::SO4 retract(gtsam::Vector v) const;
-  gtsam::Vector localCoordinates(const gtsam::SO4& Q) const;
-  static gtsam::SO4 Expmap(gtsam::Vector v);
-
-  // Other methods
+  // Matrix Lie Group
   gtsam::Vector vec() const;
   gtsam::Matrix matrix() const;
+  static gtsam::Matrix Hat(const gtsam::Vector& xi);
+  static gtsam::Vector Vee(const gtsam::Matrix& X);
+
 };
 
 #include <gtsam/geometry/SOn.h>
@@ -329,22 +337,24 @@ class SOn {
   // Operator Overloads
   gtsam::SOn operator*(const gtsam::SOn& Q) const;
 
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::SOn retract(gtsam::Vector v) const;
+  gtsam::Vector localCoordinates(const gtsam::SOn& Q) const;
+  static gtsam::SOn Expmap(gtsam::Vector v);
+
   // Lie Group
   static gtsam::SOn Expmap(gtsam::Vector v);
   static gtsam::Vector Logmap(const gtsam::SOn& p);
   gtsam::SOn expmap(gtsam::Vector v);
   gtsam::Vector logmap(const gtsam::SOn& g);
-  static gtsam::Matrix Hat(const gtsam::Vector& xi);
-  static gtsam::Vector Vee(const gtsam::Matrix& xi);
 
-  // Manifold
-  gtsam::SOn retract(gtsam::Vector v) const;
-  gtsam::Vector localCoordinates(const gtsam::SOn& Q) const;
-  static gtsam::SOn Expmap(gtsam::Vector v);
-
-  // Other methods
+  // Matrix Lie Group
   gtsam::Vector vec() const;
   gtsam::Matrix matrix() const;
+  static gtsam::Matrix Hat(const gtsam::Vector& xi);
+  static gtsam::Vector Vee(const gtsam::Matrix& X);
 
   // enabling serialization functionality
   void serialize() const;
@@ -402,6 +412,8 @@ class Rot3 {
   gtsam::Rot3 operator*(const gtsam::Rot3& p2) const;
 
   // Manifold
+  static size_t Dim();
+  size_t dim() const;
   // gtsam::Rot3 retractCayley(gtsam::Vector v) const; // TODO, does not exist in both
   // gtsam::Matrix and Quaternion options
   gtsam::Rot3 retract(gtsam::Vector v) const;
@@ -414,6 +426,10 @@ class Rot3 {
   static gtsam::Matrix3 LogmapDerivative(const gtsam::Vector3& omega);
   gtsam::Rot3 expmap(const gtsam::Vector& v);
   gtsam::Vector logmap(const gtsam::Rot3& g);
+
+  // Matrix Lie Group
+  gtsam::Vector vec() const;
+  gtsam::Matrix matrix() const;
   static gtsam::Matrix Hat(const gtsam::Vector& xi);
   static gtsam::Vector Vee(const gtsam::Matrix& X);
 
@@ -429,7 +445,6 @@ class Rot3 {
   gtsam::Unit3 unrotate(const gtsam::Unit3& p) const;
 
   // Standard Interface
-  gtsam::Matrix matrix() const;
   gtsam::Matrix transpose() const;
   gtsam::Vector xyz() const;
   gtsam::Vector ypr() const;
@@ -475,6 +490,8 @@ class Pose2 {
   gtsam::Pose2 operator*(const gtsam::Pose2& p2) const;
 
   // Manifold
+  static size_t Dim();
+  size_t dim() const;
   gtsam::Pose2 retract(gtsam::Vector v) const;
   gtsam::Pose2 retract(gtsam::Vector v, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
   gtsam::Vector localCoordinates(const gtsam::Pose2& p) const;
@@ -496,6 +513,10 @@ class Pose2 {
   static gtsam::Matrix adjointMap_(gtsam::Vector xi);
   static gtsam::Vector adjoint_(gtsam::Vector xi, gtsam::Vector y);
   static gtsam::Vector adjointTranspose(gtsam::Vector xi, gtsam::Vector y);
+
+  // Matrix Lie Group
+  gtsam::Vector vec() const;
+  gtsam::Matrix matrix() const;
   static gtsam::Matrix Hat(const gtsam::Vector& xi);
   static gtsam::Vector Vee(const gtsam::Matrix& X);
 
@@ -517,7 +538,6 @@ class Pose2 {
   gtsam::Point2 translation(Eigen::Ref<Eigen::MatrixXd> Hself) const;
   gtsam::Rot2 rotation() const;
   gtsam::Rot2 rotation(Eigen::Ref<Eigen::MatrixXd> Hself) const;
-  gtsam::Matrix matrix() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -560,6 +580,8 @@ class Pose3 {
   gtsam::Pose3 operator*(const gtsam::Pose3& pose) const;
 
   // Manifold
+  static size_t Dim();
+  size_t dim() const;
   gtsam::Pose3 retract(gtsam::Vector v) const;
   gtsam::Pose3 retract(gtsam::Vector v, Eigen::Ref<Eigen::MatrixXd> Hxi) const;
   gtsam::Vector localCoordinates(const gtsam::Pose3& pose) const;
@@ -593,6 +615,9 @@ class Pose3 {
   static gtsam::Vector adjoint_(gtsam::Vector xi, gtsam::Vector y);
   static gtsam::Vector adjointTranspose(gtsam::Vector xi, gtsam::Vector y);
 
+  // Matrix Lie Group
+  gtsam::Vector vec() const;
+  gtsam::Matrix matrix() const;
   static gtsam::Matrix Hat(const gtsam::Vector& xi);
   static gtsam::Vector Vee(const gtsam::Matrix& X);
 
@@ -616,7 +641,6 @@ class Pose3 {
   double x() const;
   double y() const;
   double z() const;
-  gtsam::Matrix matrix() const;
   gtsam::Pose3 transformPoseFrom(const gtsam::Pose3& aTb) const;
   gtsam::Pose3 transformPoseFrom(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hself,
                                  Eigen::Ref<Eigen::MatrixXd> HaTb) const;
@@ -631,6 +655,56 @@ class Pose3 {
                Eigen::Ref<Eigen::MatrixXd> Hpose);
 
   // enabling serialization functionality
+  void serialize() const;
+};
+
+#include <gtsam/geometry/SL4.h>
+class SL4 {
+  // Standard constructors
+  SL4();
+  SL4(const gtsam::Matrix4& T);
+
+  // Testable
+  void print(string s = "") const;
+  bool equals(const gtsam::SL4& sl4, double tol) const;
+
+  // Group
+  static gtsam::SL4 Identity();
+  gtsam::SL4 inverse() const;
+  gtsam::SL4 inverse(Eigen::Ref<Eigen::MatrixXd> H) const;
+  gtsam::SL4 compose(const gtsam::SL4& sl4) const;
+  gtsam::SL4 compose(const gtsam::SL4& sl4,
+                     Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
+  gtsam::SL4 between(const gtsam::SL4& sl4) const;
+  gtsam::SL4 between(const gtsam::SL4& sl4,
+                     Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
+
+  // Operator overload
+  gtsam::SL4 operator*(const gtsam::SL4& sl4) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::SL4 retract(gtsam::Vector v,
+                     Eigen::Ref<Eigen::MatrixXd> Horigin,
+                     Eigen::Ref<Eigen::MatrixXd> Hv) const;
+  gtsam::Vector localCoordinates(const gtsam::SL4& g,
+                                 Eigen::Ref<Eigen::MatrixXd> Horigin,
+                                 Eigen::Ref<Eigen::MatrixXd> Hp2) const;
+
+  // Lie group
+  static gtsam::SL4 Expmap(gtsam::Vector v);
+  static gtsam::Vector Logmap(const gtsam::SL4& g);
+  gtsam::SL4 expmap(gtsam::Vector v);
+  gtsam::Vector logmap(const gtsam::SL4& g);
+
+  // Matrix Lie Group
+  gtsam::Vector vec() const;
+  gtsam::Matrix matrix() const;
+  static gtsam::Matrix Hat(const gtsam::Vector& xi);
+  static gtsam::Vector Vee(const gtsam::Matrix& X);
+
+  // Serialization
   void serialize() const;
 };
 
@@ -717,13 +791,12 @@ class OrientedPlane3 {
                       Eigen::Ref<Eigen::MatrixXd> H1,
                       Eigen::Ref<Eigen::MatrixXd> H2) const;
 
+  // Manifold
   static size_t Dim();
   size_t dim() const;
-
   gtsam::OrientedPlane3 retract(const gtsam::Vector3& v) const;
   gtsam::OrientedPlane3 retract(const gtsam::Vector3& v,
                         Eigen::Ref<Eigen::MatrixXd> H) const;
-
   gtsam::Vector3 localCoordinates(const gtsam::OrientedPlane3& s) const;
 
   gtsam::Vector planeCoefficients() const;
@@ -813,6 +886,9 @@ virtual class Cal3_S2 : gtsam::Cal3 {
   gtsam::Point2 uncalibrate(const gtsam::Point2& p,
                             Eigen::Ref<Eigen::MatrixXd> Dcal,
                             Eigen::Ref<Eigen::MatrixXd> Dp) const;
+
+  // Action on Homogeneous Coordinates
+  gtsam::Vector3 calibrate(const gtsam::Vector3& p) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -924,6 +1000,8 @@ virtual class Cal3Fisheye : gtsam::Cal3 {
   bool equals(const gtsam::Cal3Fisheye& K, double tol) const;
 
   // Manifold
+  size_t dim() const;
+  static size_t Dim();
   gtsam::Cal3Fisheye retract(gtsam::Vector d) const;
   gtsam::Vector localCoordinates(const gtsam::Cal3Fisheye& T2) const;
 
@@ -948,13 +1026,16 @@ virtual class Cal3Fisheye : gtsam::Cal3 {
 };
 
 #include <gtsam/geometry/Cal3_S2Stereo.h>
-virtual class Cal3_S2Stereo   : gtsam::Cal3{
+virtual class Cal3_S2Stereo : gtsam::Cal3_S2{
   // Standard Constructors
   Cal3_S2Stereo();
   Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0, double b);
   Cal3_S2Stereo(gtsam::Vector v);
+  Cal3_S2Stereo(double fov, int w, int h, double b);
 
   // Manifold
+  size_t dim() const;
+  static size_t Dim();
   gtsam::Cal3_S2Stereo retract(gtsam::Vector d) const;
   gtsam::Vector localCoordinates(const gtsam::Cal3_S2Stereo& T2) const;
 
@@ -965,6 +1046,16 @@ virtual class Cal3_S2Stereo   : gtsam::Cal3{
   // Standard Interface
   double baseline() const;
   gtsam::Vector6 vector() const;
+
+  // Action on Point2
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p,
+                          Eigen::Ref<Eigen::MatrixXd> Dcal,
+                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
+                            Eigen::Ref<Eigen::MatrixXd> Dcal,
+                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 };
 
 #include <gtsam/geometry/Cal3Bundler.h>
@@ -978,6 +1069,8 @@ virtual class Cal3f : gtsam::Cal3 {
   bool equals(const gtsam::Cal3f& K, double tol) const;
 
   // Manifold
+  size_t dim() const;
+  static size_t Dim();
   gtsam::Cal3f retract(gtsam::Vector d) const;
   gtsam::Vector localCoordinates(const gtsam::Cal3f& T2) const;
 
@@ -1012,6 +1105,8 @@ virtual class Cal3Bundler : gtsam::Cal3f {
   bool equals(const gtsam::Cal3Bundler& K, double tol) const;
 
   // Manifold
+  size_t dim() const;
+  static size_t Dim();
   gtsam::Cal3Bundler retract(gtsam::Vector d) const;
   gtsam::Vector localCoordinates(const gtsam::Cal3Bundler& T2) const;
 
@@ -1145,10 +1240,10 @@ class PinholeCamera {
   CALIBRATION calibration() const;
 
   // Manifold
-  This retract(gtsam::Vector d) const;
-  gtsam::Vector localCoordinates(const This& T2) const;
   size_t dim() const;
   static size_t Dim();
+  This retract(gtsam::Vector d) const;
+  gtsam::Vector localCoordinates(const This& T2) const;
 
   // Transformations and measurement functions
   static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
@@ -1218,10 +1313,10 @@ class PinholePose {
   CALIBRATION calibration() const;
 
   // Manifold
-  This retract(gtsam::Vector d) const;
-  gtsam::Vector localCoordinates(const This& p) const;
   size_t dim() const;
   static size_t Dim();
+  This retract(gtsam::Vector d) const;
+  gtsam::Vector localCoordinates(const This& p) const;
 
   // Transformations and measurement functions
   static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
@@ -1279,10 +1374,10 @@ class Similarity2 {
   gtsam::Similarity2 operator*(const gtsam::Similarity2& other) const;
 
   // Manifold
-  gtsam::Similarity2 retract(gtsam::Vector v) const;
-  gtsam::Vector localCoordinates(const gtsam::Similarity2& t2) const;
   size_t dim() const;
   static size_t Dim();
+  gtsam::Similarity2 retract(gtsam::Vector v) const;
+  gtsam::Vector localCoordinates(const gtsam::Similarity2& t2) const;
 
   // Lie group
   static gtsam::Similarity2 Expmap(gtsam::Vector v);
@@ -1326,10 +1421,10 @@ class Similarity3 {
   gtsam::Similarity3 operator*(const gtsam::Similarity3& other) const;
 
   // Manifold
-  gtsam::Similarity3 retract(gtsam::Vector v) const;
-  gtsam::Vector localCoordinates(const gtsam::Similarity3& t2) const;
   size_t dim() const;
   static size_t Dim();
+  gtsam::Similarity3 retract(gtsam::Vector v) const;
+  gtsam::Vector localCoordinates(const gtsam::Similarity3& t2) const;
 
   // Lie group
   static gtsam::Similarity3 Expmap(gtsam::Vector v);
@@ -1375,6 +1470,8 @@ class Gal3 {
   gtsam::Vector10 logmap(const gtsam::Gal3& g);
 
   // Manifold
+  size_t dim() const;
+  static size_t Dim();
   gtsam::Gal3 retract(const gtsam::Vector10& xi) const;
   gtsam::Vector10 localCoordinates(const gtsam::Gal3& g) const;
 
@@ -1384,9 +1481,11 @@ class Gal3 {
   const gtsam::Vector3& velocity() const;
   const double& time() const;
 
-  // Other methods
-  gtsam::Matrix5 matrix() const;
-  gtsam::Vector25 vec() const;
+  // Matrix Lie Group
+  gtsam::Vector vec() const;
+  gtsam::Matrix matrix() const;
+  static gtsam::Matrix Hat(const gtsam::Vector& xi);
+  static gtsam::Vector Vee(const gtsam::Matrix& X);
 };
 
 template <T = {gtsam::PinholePoseCal3_S2}>
@@ -1414,10 +1513,10 @@ class StereoCamera {
   gtsam::Cal3_S2Stereo calibration() const;
 
   // Manifold
+  static size_t Dim();
+  size_t dim() const;
   gtsam::StereoCamera retract(gtsam::Vector v) const;
   gtsam::Vector localCoordinates(const gtsam::StereoCamera& t2) const;
-  size_t dim() const;
-  static size_t Dim();
 
   // Transformations and measurement functions
   gtsam::StereoPoint2 project(const gtsam::Point3& point) const;

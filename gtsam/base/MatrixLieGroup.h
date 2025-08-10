@@ -50,6 +50,8 @@ namespace gtsam {
   struct MatrixLieGroup : public LieGroup<Class, D> {
     using Base = LieGroup<Class, D>;
     using Base::dimension;
+    using Base::Dim;
+    using Base::dim;
     using ChartJacobian = typename Base::ChartJacobian;
     using Jacobian = typename Base::Jacobian;
     using TangentVector = typename Base::TangentVector;

@@ -160,7 +160,7 @@ protected:
 };
 
 /// Functor that implements Exponential map *and* its derivatives
-/// Math extends Ethan theme of elegant I + aW + bWW expressions.
+/// Math extends Ethan theme of elegant a + bW + cWW expressions.
 /// See https://www.ethaneade.org/lie.pdf expmap (82) and left Jacobian (83).
 struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   const Vector3 omega;
@@ -168,18 +168,19 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   // Ethan's C constant used in Jacobians
   double C;  // (1 - A) / theta^2
 
-  // Constant used in inverse Jacobians
-  double D;  // (1 - A/2B) / theta2
+  // Radial derivatives:
+  double dB; // (A - 2B) / theta2 = B'(θ)/θ
+  double dC;  // (B - 3C) / theta2 = C'(θ)/θ
 
-  // Constants used in cross and doubleCross
-  double E;  // (2B - A) / theta2
-  double F;  // (3C - B) / theta2
+  // Constant used in inverse Jacobians
+  double D;  // (1 - A/2B) / theta^2
 
   /// Constructor with element of Lie algebra so(3)
   explicit DexpFunctor(const Vector3& omega);
 
   /// Constructor with custom thresholds (advanced)
-  explicit DexpFunctor(const Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq);
+  explicit DexpFunctor(const Vector3& omega, double nearZeroThresholdSq,
+                       double nearPiThresholdSq);
 
   // NOTE(luca): Right Jacobian for Exponential map in SO(3) - equation
   // (10.86) and following equations in G.S. Chirikjian, "Stochastic Models,
@@ -201,20 +202,35 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   Matrix3 leftJacobianInverse() const;
 
   /// Multiplies with rightJacobian(), with optional derivatives
-  Vector3 applyRightJacobian(const Vector3& v,
-    OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
+  Vector3 applyRightJacobian(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
+                             OptionalJacobian<3, 3> H2 = {}) const {
+    return applyJacobian(v, 1.0, -B, C, /*d_b*/ -dB, /*d_c*/ dC, H1, H2);
+  }
 
   /// Multiplies with rightJacobian().inverse(), with optional derivatives
   Vector3 applyRightJacobianInverse(const Vector3& v,
-    OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
+                                    OptionalJacobian<3, 3> H1 = {},
+                                    OptionalJacobian<3, 3> H2 = {}) const;
 
   /// Multiplies with leftJacobian(), with optional derivatives
-  Vector3 applyLeftJacobian(const Vector3& v,
-    OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
+  Vector3 applyLeftJacobian(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
+                            OptionalJacobian<3, 3> H2 = {}) const {
+    return applyJacobian(v, 1.0, B, C, /*d_b*/ dB, /*d_c*/ dC, H1, H2);
+  }
 
   /// Multiplies with leftJacobianInverse(), with optional derivatives
   Vector3 applyLeftJacobianInverse(const Vector3& v,
-    OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
+                                   OptionalJacobian<3, 3> H1 = {},
+                                   OptionalJacobian<3, 3> H2 = {}) const;
+
+ protected:
+  // Helper for *applying* left and right Jacobians
+  // v ↦ (aI + b W + c W^2) v, with ∂/∂ω using db/dω = x_b ω^T, dc/dω = x_c ω^T.
+  Vector3 applyJacobian(
+      const Vector3& v, double a, double b, double c, double d_b, double d_c,
+      OptionalJacobian<3, 3> H1,  // ∂result/∂ω
+      OptionalJacobian<3, 3> H2   // ∂result/∂v = aI + bW + cW^2
+  ) const;
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /// @deprecated: use rightJacobian
@@ -223,6 +239,27 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   /// @deprecated: use rightJacobianInverse
   inline Matrix3 invDexp() const { return rightJacobianInverse(); }
 #endif
+};
+
+/// Functor that calculates/applies Gamma = 0.5*I + C*W + G*WW, used in Gal3
+struct GTSAM_EXPORT GammaFunctor : public DexpFunctor {
+  double G;   // (1 - 2B) / (2 * theta^2)
+  double dG;  // -(dB + 2G) / theta2 = G'(θ)/θ
+  explicit GammaFunctor(const Vector3& omega, double nearZeroThresholdSq,
+                        double nearPiThresholdSq);
+  explicit GammaFunctor(const Vector3& omega);
+
+  /// Gamma matrix
+  Matrix3 gamma() const { return 0.5 * I_3x3 + C * W + G * WW; }
+
+  /// Gamma(-omega)
+  Matrix3 gammaMinus() const { return 0.5 * I_3x3 - C * W + G * WW; }
+
+  /// Apply, with derivatives
+  Vector3 applyGamma(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
+                     OptionalJacobian<3, 3> H2 = {}) const {
+    return applyJacobian(v, 0.5, C, G, /*d_b*/ dC, /*d_c*/ dG, H1, H2);
+  }
 };
 }  //  namespace so3
 

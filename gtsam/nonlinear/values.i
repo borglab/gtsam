@@ -27,6 +27,7 @@ namespace gtsam {
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/geometry/SO4.h>
 #include <gtsam/geometry/SOn.h>
+#include <gtsam/geometry/SL4.h>
 #include <gtsam/geometry/StereoPoint2.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/navigation/ImuBias.h>

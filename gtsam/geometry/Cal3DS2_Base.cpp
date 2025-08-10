@@ -143,7 +143,7 @@ Point2 Cal3DS2_Base::calibrate(const Point2& pi, OptionalJacobian<2, 9> Dcal,
   Point2 pn = invKPi;
 
   // iterate until the uncalibrate is close to the actual pixel coordinate
-  const int maxIterations = 10;
+  const int maxIterations = 25;
   int iteration;
   for (iteration = 0; iteration < maxIterations; ++iteration) {
     if (distance2(uncalibrate(pn), pi) <= tol_) break;

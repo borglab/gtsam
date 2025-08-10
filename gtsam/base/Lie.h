@@ -43,6 +43,15 @@ struct LieGroup {
   typedef Eigen::Matrix<double, N, N> Jacobian;
   typedef Eigen::Matrix<double, N, 1> TangentVector;
 
+  /// Static method to get the dimension (compile-time or dynamic)
+  static constexpr int Dim() { return N; }
+
+  /// Provided fixed dimension in dim() if needed
+  template <int M = N>
+  std::enable_if_t<M != Eigen::Dynamic, int> dim() const {
+    return N;
+  }
+
   const Class & derived() const {
     return static_cast<const Class&>(*this);
   }

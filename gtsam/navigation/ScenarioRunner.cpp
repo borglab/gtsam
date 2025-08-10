@@ -161,4 +161,44 @@ Eigen::Matrix<double, 15, 15> CombinedScenarioRunner::estimateCovariance(
   return Q / (N - 1);
 }
 
+PreintegratedAhrsMeasurements AhrsScenarioRunner::integrate(
+    double T, const Bias& estimatedBias, bool corrupted) const {
+  PreintegratedAhrsMeasurements pim(p_, estimatedBias.gyroscope());
+  double t = 0.0;
+  while (t < T) {
+    Vector3 omega =
+        corrupted ? measuredAngularVelocity(t) : actualAngularVelocity(t);
+    pim.integrateMeasurement(omega, imuSampleTime_);
+    t += imuSampleTime_;
+  }
+  return pim;
+}
+
+Rot3 AhrsScenarioRunner::predict(const PreintegratedAhrsMeasurements& pim,
+                                 const Bias& estimatedBias) const {
+  const Rot3 rot_i(scenario_.pose(0).rotation());
+  return pim.predict(rot_i, estimatedBias.gyroscope());
+}
+
+Matrix3 AhrsScenarioRunner::estimateCovariance(
+    double T, size_t N, const Bias& estimatedBias) const {
+  Rot3 prediction = predict(integrate(T));
+  Matrix samples(3, N);
+  Vector3 sum = Vector3::Zero();
+  for (size_t i = 0; i < N; i++) {
+    auto pim = integrate(T, estimatedBias, true);
+    Rot3 sampled = predict(pim);
+    Vector3 xi = sampled.localCoordinates(prediction);
+    samples.col(i) = xi;
+    sum += xi;
+  }
+  Vector3 sampleMean = sum / N;
+  Matrix3 Q = Matrix3::Zero();
+  for (size_t i = 0; i < N; i++) {
+    Vector3 xi = samples.col(i) - sampleMean;
+    Q += xi * xi.transpose();
+  }
+  return Q / (N - 1);
+}
+
 }  // namespace gtsam

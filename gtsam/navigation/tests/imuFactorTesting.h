@@ -48,6 +48,14 @@ static const double kAccelSigma = 0.1 / 60;          // 10 cm VRW
 
 namespace testing {
 
+std::shared_ptr<PreintegrationParams> Params() {
+  auto p = PreintegrationParams::MakeSharedD(kGravity);
+  p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
+  p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
+  p->integrationCovariance = 0.0001 * I_3x3;
+  return p;
+}
+
 struct ImuMeasurement {
   ImuMeasurement(const Vector3& acc, const Vector3& gyro, double dt)
       : acc(acc), gyro(gyro), dt(dt) {}

@@ -386,12 +386,10 @@ public:
   /// @name Manifold
   /// @{
 
-  /// @deprecated
   size_t dim() const {
     return 6;
   }
 
-  /// @deprecated
   static size_t Dim() {
     return 6;
   }
