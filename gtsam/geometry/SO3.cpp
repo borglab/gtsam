@@ -128,16 +128,16 @@ DexpFunctor::DexpFunctor(const Vector3& omega, double nearZeroThresholdSq, doubl
       // General case D:
       D = (1.0 - A / (2.0 * B)) / theta2;
     }
-    // Calculate E and F using standard formulas (stable near pi)
-    E = (2.0 * B - A) / theta2;
-    F = (3.0 * C - B) / theta2;
+    // Radial derivatives: dB = B'(θ)/θ, dC = C'(θ)/θ
+    dB = (A - 2.0 * B) / theta2;  // = B'(θ)/θ
+    dC = (B - 3.0 * C) / theta2;  // = C'(θ)/θ
   } else {
     // Taylor expansion at 0
     // TODO(Frank): flipping signs here does not trigger any tests: harden!
     C = one_6th - theta2 * one_120th;
     D = one_12th + theta2 * one_720th;
-    E = one_12th - theta2 * one_180th;
-    F = one_60th - theta2 * one_1260th;
+    dB = -one_12th + theta2 * one_180th;    // B'(θ)/θ near 0
+    dC = -one_60th + theta2 * one_1260th;   // C'(θ)/θ near 0
   }
 }
 
@@ -165,8 +165,8 @@ Vector3 DexpFunctor::applyJacobian(
   const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &dWWv_domega : nullptr);
 
   if (H1) {
-    const Matrix3 aWv_Hw = -Wv * d_b * omega.transpose() - b * skewSymmetric(v);
-    const Matrix3 bWWv_Hw = -WWv * d_c * omega.transpose() + c * dWWv_domega;
+    const Matrix3 aWv_Hw = Wv * d_b * omega.transpose() - b * skewSymmetric(v);
+    const Matrix3 bWWv_Hw = WWv * d_c * omega.transpose() + c * dWWv_domega;
     *H1 = aWv_Hw + bWWv_Hw;
   }
 

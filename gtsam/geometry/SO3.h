@@ -168,12 +168,12 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   // Ethan's C constant used in Jacobians
   double C;  // (1 - A) / theta^2
 
+  // Radial derivatives:
+  double dB; // (A - 2B) / theta2 = B'(θ)/θ
+  double dC; // (B - 3C) / theta2 = C'(θ)/θ
+
   // Constant used in inverse Jacobians
   double D;  // (1 - A/2B) / theta^2
-
-  // Constants used in cross and doubleCross
-  double E;  // (2B - A) / theta^2 = dB/dtheta
-  double F;  // (3C - B) / theta^2 = dC/dtheta
 
   /// Constructor with element of Lie algebra so(3)
   explicit DexpFunctor(const Vector3& omega);
@@ -203,7 +203,7 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   /// Multiplies with rightJacobian(), with optional derivatives
   Vector3 applyRightJacobian(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
                              OptionalJacobian<3, 3> H2 = {}) const {
-    return applyJacobian(v, 1.0, -B, C, /*d_b*/ -E, /*d_c*/ F, H1, H2);
+    return applyJacobian(v, 1.0, -B, C, /*d_b*/ -dB, /*d_c*/ dC, H1, H2);
   }
 
   /// Multiplies with rightJacobian().inverse(), with optional derivatives
@@ -214,7 +214,7 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   /// Multiplies with leftJacobian(), with optional derivatives
   Vector3 applyLeftJacobian(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
                             OptionalJacobian<3, 3> H2 = {}) const {
-    return applyJacobian(v, 1.0, B, C, /*d_b*/ E, /*d_c*/ F, H1, H2);
+    return applyJacobian(v, 1.0, B, C, /*d_b*/ dB, /*d_c*/ dC, H1, H2);
   }
 
   /// Multiplies with leftJacobianInverse(), with optional derivatives
