@@ -490,74 +490,61 @@ TEST(SO3, AdjointMap) {
 
 //******************************************************************************
 namespace gtsam {
-  namespace so3 {
+namespace so3 {
 
-    static constexpr double one_24th = 1.0 / 24.0;
-    static constexpr double one_720th = 1.0 / 720.0;
+static constexpr double one_24th = 1.0 / 24.0;
+static constexpr double one_180th = 1.0 / 180.0;
+static constexpr double one_720th = 1.0 / 720.0;
 
-    // --- Thresholds ---
-    // Tolerance for near zero (theta^2)
-    static constexpr double kNearZeroThresholdSq = 1e-6;
-    // Tolerance for near pi (delta^2 = (pi - theta)^2)
-    static constexpr double kNearPiThresholdSq = 1e-6;
+// --- Thresholds ---
+// Tolerance for near zero (theta^2)
+static constexpr double kNearZeroThresholdSq = 1e-6;
+// Tolerance for near pi (delta^2 = (pi - theta)^2)
+static constexpr double kNearPiThresholdSq = 1e-6;
 
+struct GTSAM_EXPORT DexpFunctor2 : public DexpFunctor {
+  double G;  // (1 - 2B) / (2 * theta^2)
+  double dG;  // -(dB + 2G) / theta2 = G'(θ)/θ
 
-    struct GTSAM_EXPORT DexpFunctor2 : public DexpFunctor {
-      double H_coeff; // Renamed from H to avoid conflict with OptionalJacobian H
-      double G_H; // Derivative coefficient for H
+  explicit DexpFunctor2(const Vector3& omega, double nearZeroThresholdSq,
+                        double nearPiThresholdSq)
+      : DexpFunctor(omega, nearZeroThresholdSq, nearPiThresholdSq) {
+    if (!nearZero) {
+      G = (1.0 - 2.0 * B) / (2.0 * theta2);
+      dG = -(dB + 2.0 * G) / theta2;  // = G'(θ)/θ
+    } else {
+      G = one_24th - theta2 * one_720th;
+      dG = -0.5 * one_180th;  // dG near zero
+    }
+  }
 
-      explicit DexpFunctor2(const Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq)
-        : DexpFunctor(omega, nearZeroThresholdSq, nearPiThresholdSq) {
-        if (!nearZero) {
-          H_coeff = (1.0 - 2.0 * B) / (2.0 * theta2);
-          G_H = (-E * theta2 - 0.5 + B) / (theta2 * theta2); // dH/d(theta^2)
-        }
-        else {
-          H_coeff = one_24th - theta2 * one_720th;
-          G_H = -one_720th; // dH/d(theta^2) near zero
-        }
-      }
+  explicit DexpFunctor2(const Vector3& omega)
+      : DexpFunctor2(omega, kNearZeroThresholdSq, kNearPiThresholdSq) {}
 
-      explicit DexpFunctor2(const Vector3& omega)
-        : DexpFunctor2(omega, kNearZeroThresholdSq, kNearPiThresholdSq) {
-      }
-
-      Vector3 applyGamma(const Vector3& v, OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const {
-        const Vector3 Wv = gtsam::cross(omega, v);
-        Matrix3 WWv_H_w;
-        const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &WWv_H_w : nullptr);
-
-        if (H1) {
-          // Derivative of C * Wv
-          Matrix3 CWv_H_w = -Wv * F * omega.transpose() - C * skewSymmetric(v);
-          // Derivative of H_coeff * WWv
-          Matrix3 HWWv_H_w = -WWv * G_H * omega.transpose() + H_coeff * WWv_H_w;
-          *H1 = CWv_H_w + HWWv_H_w;
-        }
-
-        if (H2) *H2 = 0.5 * I_3x3 + C * W + H_coeff * WW;
-        return 0.5 * v + C * Wv + H_coeff * WWv;
-      }
-    };
-
-  }  // namespace so3
-}
+  Vector3 applyGamma(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
+                     OptionalJacobian<3, 3> H2 = {}) const {
+    return applyJacobian(v, 0.5, C, G, /*d_b*/ dC, /*d_c*/ dG, H1, H2);
+  }
+};
+}  // namespace so3
+}  // namespace gtsam
 
 TEST(SO3, ApplyGamma) {
   Matrix aH1, aH2;
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
-      [nearZero](const Vector3& omega, const Vector3& v) {
-      return so3::DexpFunctor2(omega, nearZero ? 1.0 : 0.0, 1e-5).applyGamma(v);
-      };
+        [nearZero](const Vector3& omega, const Vector3& v) {
+          return so3::DexpFunctor2(omega, nearZero ? 1.0 : 0.0, 1e-5)
+              .applyGamma(v);
+        };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
       so3::DexpFunctor2 local(omega, nearZero ? 1.0 : 0.0, 1e-5);
       for (const Vector3& v : test_cases::vs) {
-        EXPECT(assert_equal(Vector3(0.5 * I_3x3 * v + local.C * local.W * v + local.H_coeff * local.WW * v),
-          local.applyGamma(v, aH1, aH2)));
-        EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1));
-        EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2));
-        EXPECT(assert_equal(0.5 * I_3x3 + local.C * local.W + local.H_coeff * local.WW, aH2));
+        Matrix3 Gamma = 0.5 * I_3x3 + local.C * local.W + local.G * local.WW;
+        EXPECT(assert_equal(Vector3(Gamma * v), local.applyGamma(v, aH1, aH2)));
+        EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1, 1e-5));
+        EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2, 1e-5));
+        EXPECT(assert_equal(Gamma, aH2, 1e-5));
       }
     }
   }
