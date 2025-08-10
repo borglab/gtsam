@@ -489,62 +489,25 @@ TEST(SO3, AdjointMap) {
 }
 
 //******************************************************************************
-namespace gtsam {
-namespace so3 {
-
-static constexpr double one_24th = 1.0 / 24.0;
-static constexpr double one_180th = 1.0 / 180.0;
-static constexpr double one_720th = 1.0 / 720.0;
-
-// --- Thresholds ---
-// Tolerance for near zero (theta^2)
-static constexpr double kNearZeroThresholdSq = 1e-6;
-// Tolerance for near pi (delta^2 = (pi - theta)^2)
-static constexpr double kNearPiThresholdSq = 1e-6;
-
-struct GTSAM_EXPORT DexpFunctor2 : public DexpFunctor {
-  double G;  // (1 - 2B) / (2 * theta^2)
-  double dG;  // -(dB + 2G) / theta2 = G'(θ)/θ
-
-  explicit DexpFunctor2(const Vector3& omega, double nearZeroThresholdSq,
-                        double nearPiThresholdSq)
-      : DexpFunctor(omega, nearZeroThresholdSq, nearPiThresholdSq) {
-    if (!nearZero) {
-      G = (1.0 - 2.0 * B) / (2.0 * theta2);
-      dG = -(dB + 2.0 * G) / theta2;  // = G'(θ)/θ
-    } else {
-      G = one_24th - theta2 * one_720th;
-      dG = -0.5 * one_180th;  // dG near zero
-    }
-  }
-
-  explicit DexpFunctor2(const Vector3& omega)
-      : DexpFunctor2(omega, kNearZeroThresholdSq, kNearPiThresholdSq) {}
-
-  Vector3 applyGamma(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
-                     OptionalJacobian<3, 3> H2 = {}) const {
-    return applyJacobian(v, 0.5, C, G, /*d_b*/ dC, /*d_c*/ dG, H1, H2);
-  }
-};
-}  // namespace so3
-}  // namespace gtsam
-
 TEST(SO3, ApplyGamma) {
   Matrix aH1, aH2;
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
         [nearZero](const Vector3& omega, const Vector3& v) {
-          return so3::DexpFunctor2(omega, nearZero ? 1.0 : 0.0, 1e-5)
+          return so3::GammaFunctor(omega, nearZero ? 1.0 : 0.0, 1e-5)
               .applyGamma(v);
         };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
-      so3::DexpFunctor2 local(omega, nearZero ? 1.0 : 0.0, 1e-5);
+      so3::GammaFunctor local(omega, nearZero ? 1.0 : 0.0, 1e-5);
       for (const Vector3& v : test_cases::vs) {
-        Matrix3 Gamma = 0.5 * I_3x3 + local.C * local.W + local.G * local.WW;
-        EXPECT(assert_equal(Vector3(Gamma * v), local.applyGamma(v, aH1, aH2)));
+        Matrix3 expectedGamma = 0.5 * I_3x3 + local.C * local.W + local.G * local.WW;
+        EXPECT(assert_equal(expectedGamma, local.gamma(), 1e-5));
+        Matrix3 expectedGammaMinus = 0.5 * I_3x3 - local.C * local.W + local.G * local.WW;
+        EXPECT(assert_equal(expectedGammaMinus, local.gammaMinus(), 1e-5));
+        EXPECT(assert_equal(Vector3(expectedGamma * v), local.applyGamma(v, aH1, aH2)));
         EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1, 1e-5));
         EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2, 1e-5));
-        EXPECT(assert_equal(Gamma, aH2, 1e-5));
+        EXPECT(assert_equal(expectedGamma, aH2, 1e-5));
       }
     }
   }

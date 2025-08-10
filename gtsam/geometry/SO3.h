@@ -160,7 +160,7 @@ protected:
 };
 
 /// Functor that implements Exponential map *and* its derivatives
-/// Math extends Ethan theme of elegant I + aW + bWW expressions.
+/// Math extends Ethan theme of elegant a + bW + cWW expressions.
 /// See https://www.ethaneade.org/lie.pdf expmap (82) and left Jacobian (83).
 struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   const Vector3 omega;
@@ -170,7 +170,7 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
 
   // Radial derivatives:
   double dB; // (A - 2B) / theta2 = B'(θ)/θ
-  double dC; // (B - 3C) / theta2 = C'(θ)/θ
+  double dC;  // (B - 3C) / theta2 = C'(θ)/θ
 
   // Constant used in inverse Jacobians
   double D;  // (1 - A/2B) / theta^2
@@ -179,7 +179,8 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   explicit DexpFunctor(const Vector3& omega);
 
   /// Constructor with custom thresholds (advanced)
-  explicit DexpFunctor(const Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq);
+  explicit DexpFunctor(const Vector3& omega, double nearZeroThresholdSq,
+                       double nearPiThresholdSq);
 
   // NOTE(luca): Right Jacobian for Exponential map in SO(3) - equation
   // (10.86) and following equations in G.S. Chirikjian, "Stochastic Models,
@@ -238,6 +239,27 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   /// @deprecated: use rightJacobianInverse
   inline Matrix3 invDexp() const { return rightJacobianInverse(); }
 #endif
+};
+
+/// Functor that calculates/applies Gamma = 0.5*I + C*W + G*WW, used in Gal3
+struct GTSAM_EXPORT GammaFunctor : public DexpFunctor {
+  double G;   // (1 - 2B) / (2 * theta^2)
+  double dG;  // -(dB + 2G) / theta2 = G'(θ)/θ
+  explicit GammaFunctor(const Vector3& omega, double nearZeroThresholdSq,
+                        double nearPiThresholdSq);
+  explicit GammaFunctor(const Vector3& omega);
+
+  /// Gamma matrix
+  Matrix3 gamma() const { return 0.5 * I_3x3 + C * W + G * WW; }
+
+  /// Gamma(-omega)
+  Matrix3 gammaMinus() const { return 0.5 * I_3x3 - C * W + G * WW; }
+
+  /// Apply, with derivatives
+  Vector3 applyGamma(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
+                     OptionalJacobian<3, 3> H2 = {}) const {
+    return applyJacobian(v, 0.5, C, G, /*d_b*/ dC, /*d_c*/ dG, H1, H2);
+  }
 };
 }  //  namespace so3
 

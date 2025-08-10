@@ -204,6 +204,21 @@ Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
   return c;
 }
 
+GammaFunctor::GammaFunctor(const Vector3& omega, double nearZeroThresholdSq,
+                           double nearPiThresholdSq)
+    : DexpFunctor(omega, nearZeroThresholdSq, nearPiThresholdSq) {
+  if (!nearZero) {
+    G = (1.0 - 2.0 * B) / (2.0 * theta2);
+    dG = -(dB + 2.0 * G) / theta2;  // = G'(θ)/θ
+  } else {
+    G = one_24th - theta2 * one_720th;
+    dG = -0.5 * one_180th;  // dG near zero
+  }
+}
+
+GammaFunctor::GammaFunctor(const Vector3& omega)
+    : GammaFunctor(omega, kNearZeroThresholdSq, kNearPiThresholdSq) {}
+
 }  // namespace so3
 
 //******************************************************************************
