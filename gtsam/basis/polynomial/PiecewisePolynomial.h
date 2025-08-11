@@ -34,10 +34,13 @@ public:
   {
     return params.intervals[0];
   }
-
   double get_end() const override
   {
     return params.intervals[pieces];
+  }
+  size_t get_valid_derivatives() const override
+  {
+    return order;
   }
 
   std::array<double, pieces+1> get_intervals() const {

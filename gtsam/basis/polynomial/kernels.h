@@ -29,6 +29,8 @@ public:
   virtual double get_center() const = 0;  
   // last value of t that returns a non-zero kernel value
   virtual double get_end() const = 0;
+  virtual size_t get_valid_derivatives() const = 0;
+
   inline double get_length() const 
   {
     return get_end() - get_beginning();

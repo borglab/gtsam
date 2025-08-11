@@ -1,6 +1,6 @@
 /**
- * @file    TestGeodesicWeightedSum.cpp
- * @brief   unit tests for weighted sum
+ * @file    TestTrajectoryModel.cpp
+ * @brief   unit tests for cardinal spline interpolation
  * @author  Brett Downing
  * @date    August 2025
  */
@@ -17,9 +17,9 @@
 using namespace gtsam;
 
 
-// The summation of so many terms does get noisy,
-// so split the epsilon and the tolerance
-double epsilon = 1e-9;
+
+// Lie comopsitions stay valid for long tangent traversals
+double epsilon = 1e-6;
 double tolerance = 1e-7;
 
 
@@ -186,7 +186,7 @@ TEST( TrajectoryModel , TypesPose3 ) {
 
   // specify some control points
   std::vector<Pose3_> path({
-    Pose3_(Pose3(Rot3(), Point3(0,0,0))),
+    Pose3_(Pose3(Rot3(), Point3(0,0,0))), // XXX use non-trival rotations
     Pose3_(Pose3(Rot3(), Point3(0,0,0))),
     Pose3_(Pose3(Rot3(), Point3(0,2,0))),
     Pose3_(Pose3(Rot3(), Point3(0,2,0))),
@@ -204,6 +204,106 @@ TEST( TrajectoryModel , TypesPose3 ) {
 
   v.update<double>(t_key, 3.5);
   CHECK(assert_equal(Pose3(Rot3(), Point3(0,1,0)), sample.value(v), tolerance));
+
+}
+
+
+
+
+
+TEST( TrajectoryModel , DerivativePose3 ) {
+  gtsam::Values v;  // needed for evaluating Expressions
+
+  // choose a cubic spline
+  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+
+  // specify some control points
+  std::vector<Pose3_> path({
+    Pose3_(Pose3(Rot3(), Point3(0,0,0))), // XXX use non-trival rotations
+    Pose3_(Pose3(Rot3(), Point3(0,0,0))),
+    Pose3_(Pose3(Rot3(), Point3(0,2,0))),
+    Pose3_(Pose3(Rot3(), Point3(0,2,0))),
+  });
+
+  TrajectoryModel<Pose3> model(basis_function, path);
+
+  Key t_key = Key(0); // key to carry the timestamp
+  Key t_eps_key = Key(1); // key to carry the timestamp + epsilon
+
+  // assign types to Keys
+  v.insert<double>(t_key, 0.0);
+  v.insert<double>(t_eps_key, 0.0);
+
+  // cast the Keys to Expressions
+  Double_ t_ref = Double_(t_key);
+  Double_ t_eps = Double_(t_eps_key);
+
+  // construct Expressions that sample the trajectory
+  Pose3_ sample_ref = model.sample_trajectory(t_ref);
+  Pose3_ sample_eps = model.sample_trajectory(t_eps);
+  // construct an expression that captures the tangent
+  auto sample_d = model.sample_trajectory_d(t_ref,0,-1,1);
+
+  for(double sample_time = 0; sample_time<7; sample_time+=0.1)
+  {
+    v.update<double>(t_key, sample_time);
+    v.update<double>(t_eps_key, sample_time + epsilon);
+    CHECK(assert_equal(
+      sample_eps.value(v),
+      expmap(sample_ref, epsilon * sample_d).value(v),
+      tolerance
+    ));
+  }
+
+}
+
+
+
+TEST( TrajectoryModel , NthDerivativePose3 ) {
+  gtsam::Values v;  // needed for evaluating Expressions
+
+  // choose a cubic spline
+  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+
+  // specify some control points
+  std::vector<Pose3_> path({
+    Pose3_(Pose3(Rot3(), Point3(0,0,0))), // XXX use non-trival rotations
+    Pose3_(Pose3(Rot3(), Point3(0,0,0))),
+    Pose3_(Pose3(Rot3(), Point3(0,2,0))),
+    Pose3_(Pose3(Rot3(), Point3(0,2,0))),
+  });
+
+  TrajectoryModel<Pose3> model(basis_function, path);
+
+  Key t_key = Key(0); // key to carry the timestamp
+  Key t_eps_key = Key(1); // key to carry the timestamp + epsilon
+
+  // assign types to Keys
+  v.insert<double>(t_key, 0.0);
+  v.insert<double>(t_eps_key, 0.0);
+
+  // cast the Keys to Expressions
+  Double_ t_ref = Double_(t_key);
+  Double_ t_eps = Double_(t_eps_key);
+
+  for(size_t n=0; n<basis_function.get_valid_derivatives()-1; n++)
+  {
+    // construct Expressions that sample the Nth derivative of the trajectory
+    auto sample_ref = model.sample_trajectory_d(t_ref, 0, -1, n);
+    auto sample_eps = model.sample_trajectory_d(t_eps, 0, -1, n);
+    // construct an Expression that captures the (N+1)th derivative of the trajectory
+    auto sample_d = model.sample_trajectory_d(t_ref,0,-1, n+1);
+    for(double sample_time = 0; sample_time<7; sample_time+=0.1)
+    {
+      v.update<double>(t_key, sample_time);
+      v.update<double>(t_eps_key, sample_time + epsilon);
+      CHECK(assert_equal(
+        sample_eps.value(v),
+        expmap(sample_ref, epsilon * sample_d).value(v),
+        tolerance
+      ));
+    }
+  }
 
 }
 
