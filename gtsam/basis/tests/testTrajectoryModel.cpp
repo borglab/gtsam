@@ -18,9 +18,10 @@ using namespace gtsam;
 
 
 
-// Lie comopsitions stay valid for long tangent traversals
-double epsilon = 1e-6;
-double tolerance = 1e-7;
+// Lie comopsitions stay valid for long tangent traversals,
+// tolerance should accomodate second-order effects
+double epsilon = 1e-4;
+double tolerance = epsilon/4.0;
 
 
 TEST( TrajectoryModel , BasicBounds ) {
@@ -174,11 +175,9 @@ TEST( TrajectoryModel , WindowTruncation ) {
 }
 
 
-// Pose
-
-
 
 TEST( TrajectoryModel , TypesPose3 ) {
+  // tests TrajectoryModel can be constructed for Pose3
   gtsam::Values v;  // needed for evaluating Expressions
 
   // choose a cubic spline
@@ -186,7 +185,7 @@ TEST( TrajectoryModel , TypesPose3 ) {
 
   // specify some control points
   std::vector<Pose3_> path({
-    Pose3_(Pose3(Rot3(), Point3(0,0,0))), // XXX use non-trival rotations
+    Pose3_(Pose3(Rot3(), Point3(0,0,0))),
     Pose3_(Pose3(Rot3(), Point3(0,0,0))),
     Pose3_(Pose3(Rot3(), Point3(0,2,0))),
     Pose3_(Pose3(Rot3(), Point3(0,2,0))),
@@ -219,23 +218,23 @@ TEST( TrajectoryModel , DerivativePose3 ) {
 
   // specify some control points
   std::vector<Pose3_> path({
-    Pose3_(Pose3(Rot3(), Point3(0,0,0))), // XXX use non-trival rotations
-    Pose3_(Pose3(Rot3(), Point3(0,0,0))),
-    Pose3_(Pose3(Rot3(), Point3(0,2,0))),
-    Pose3_(Pose3(Rot3(), Point3(0,2,0))),
+    Pose3_(Pose3(Rot3::Rodrigues(0.3,2.2,0.1), Point3(0,0,0))),
+    Pose3_(Pose3(Rot3::Rodrigues(0.2,2.5,0.1), Point3(0,0,0))),
+    Pose3_(Pose3(Rot3::Rodrigues(0.0,2.2,0.1), Point3(0,2,0))),
+    Pose3_(Pose3(Rot3::Rodrigues(0.2,2.1,0.4), Point3(0,2,0))),
   });
 
   TrajectoryModel<Pose3> model(basis_function, path);
 
-  Key t_key = Key(0); // key to carry the timestamp
+  Key t_ref_key = Key(0); // key to carry the timestamp
   Key t_eps_key = Key(1); // key to carry the timestamp + epsilon
 
   // assign types to Keys
-  v.insert<double>(t_key, 0.0);
+  v.insert<double>(t_ref_key, 0.0);
   v.insert<double>(t_eps_key, 0.0);
 
   // cast the Keys to Expressions
-  Double_ t_ref = Double_(t_key);
+  Double_ t_ref = Double_(t_ref_key);
   Double_ t_eps = Double_(t_eps_key);
 
   // construct Expressions that sample the trajectory
@@ -246,10 +245,11 @@ TEST( TrajectoryModel , DerivativePose3 ) {
 
   for(double sample_time = 0; sample_time<7; sample_time+=0.1)
   {
-    v.update<double>(t_key, sample_time);
+    v.update<double>(t_ref_key, sample_time);
     v.update<double>(t_eps_key, sample_time + epsilon);
     CHECK(assert_equal(
       sample_eps.value(v),
+      //sample_ref.value(v),
       expmap(sample_ref, epsilon * sample_d).value(v),
       tolerance
     ));
@@ -275,15 +275,15 @@ TEST( TrajectoryModel , NthDerivativePose3 ) {
 
   TrajectoryModel<Pose3> model(basis_function, path);
 
-  Key t_key = Key(0); // key to carry the timestamp
+  Key t_ref_key = Key(0); // key to carry the timestamp
   Key t_eps_key = Key(1); // key to carry the timestamp + epsilon
 
   // assign types to Keys
-  v.insert<double>(t_key, 0.0);
+  v.insert<double>(t_ref_key, 0.0);
   v.insert<double>(t_eps_key, 0.0);
 
   // cast the Keys to Expressions
-  Double_ t_ref = Double_(t_key);
+  Double_ t_ref = Double_(t_ref_key);
   Double_ t_eps = Double_(t_eps_key);
 
   for(size_t n=0; n<basis_function.get_valid_derivatives()-1; n++)
@@ -295,7 +295,7 @@ TEST( TrajectoryModel , NthDerivativePose3 ) {
     auto sample_d = model.sample_trajectory_d(t_ref,0,-1, n+1);
     for(double sample_time = 0; sample_time<7; sample_time+=0.1)
     {
-      v.update<double>(t_key, sample_time);
+      v.update<double>(t_ref_key, sample_time);
       v.update<double>(t_eps_key, sample_time + epsilon);
       CHECK(assert_equal(
         sample_eps.value(v),

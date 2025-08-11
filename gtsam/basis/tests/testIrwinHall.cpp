@@ -19,10 +19,11 @@
 using namespace gtsam;
 using namespace gtsam::kernels;
 
-// The summation of so many terms does get noisy,
-// so split the epsilon and the tolerance
-double epsilon = 1e-9;
-double tolerance = 1e-7;
+// these tests look for curve continuity across control-flow boundaries
+// tolerance should be about 2*(maximum gradient)*epsilon
+// actual polynomial construction mistakes will be extremely large
+double epsilon = 1e-7;
+double tolerance = 100*epsilon;
 
 
 
