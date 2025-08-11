@@ -267,10 +267,10 @@ TEST( TrajectoryModel , NthDerivativePose3 ) {
 
   // specify some control points
   std::vector<Pose3_> path({
-    Pose3_(Pose3(Rot3(), Point3(0,0,0))), // XXX use non-trival rotations
-    Pose3_(Pose3(Rot3(), Point3(0,0,0))),
-    Pose3_(Pose3(Rot3(), Point3(0,2,0))),
-    Pose3_(Pose3(Rot3(), Point3(0,2,0))),
+    Pose3_(Pose3(Rot3::Rodrigues(0.3,2.2,0.1), Point3(0,0,0))), // XXX use non-trival rotations
+    Pose3_(Pose3(Rot3::Rodrigues(0.2,2.5,0.1), Point3(0,0,0))),
+    Pose3_(Pose3(Rot3::Rodrigues(0.0,2.2,0.1), Point3(0,2,0))),
+    Pose3_(Pose3(Rot3::Rodrigues(0.2,2.1,0.4), Point3(0,2,0))),
   });
 
   TrajectoryModel<Pose3> model(basis_function, path);
