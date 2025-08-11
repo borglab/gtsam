@@ -196,8 +196,8 @@ Vector9 NavState::Logmap(const NavState& state, OptionalJacobian<9, 9> Hstate) {
 //------------------------------------------------------------------------------
 Matrix9 NavState::AdjointMap() const {
   const Matrix3 R = R_.matrix();
-  Matrix3 A = skewSymmetric(t_.x(), t_.y(), t_.z()) * R;
-  Matrix3 B = skewSymmetric(v_.x(), v_.y(), v_.z()) * R;
+  Matrix3 A = skewSymmetric(t_) * R;
+  Matrix3 B = skewSymmetric(v_) * R;
   // Eqn 2 in Barrau20icra
   Matrix9 adj;
   adj << R, Z_3x3, Z_3x3, A, R, Z_3x3, B, Z_3x3, R;
