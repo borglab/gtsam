@@ -4,22 +4,22 @@ namespace gtsam {
 namespace kernels {
 
 /*
-Irwin Hall Cumulative Distribution Function Coefficients
-https://oeis.org/A188668
-*/
+ * Coefficients for the Irwin Hall Cumulative Distribution Function 
+ * https://oeis.org/A188668
+ */
 
-const piecewise_polynomial<1,1> IrwinHallCDF0({
+const PiecewisePolynomial<1,1> IrwinHallCDF0({
   {0., 1.},
   {0., 1.},
   1./2.
 });
-const piecewise_polynomial<2,2> IrwinHallCDF1({
+const PiecewisePolynomial<2,2> IrwinHallCDF1({
   {  0.   , 0.   ,  1./2.,
     -2./2., 4./2., -1./2.},
   {0.,1.,2.},
   1.
 });
-const piecewise_polynomial<3,3> IrwinHallCDF2({
+const PiecewisePolynomial<3,3> IrwinHallCDF2({
   {   0.   ,  0.   ,  0.   ,  1./6., 
       3./6., -9./6.,  9./6., -2./6., 
     -21./6., 27./6., -9./6.,  1./6.},
@@ -27,7 +27,7 @@ const piecewise_polynomial<3,3> IrwinHallCDF2({
   3./2.
 });
 
-const piecewise_polynomial<4,4> IrwinHallCDF3({
+const PiecewisePolynomial<4,4> IrwinHallCDF3({
   {    0.    ,    0.    ,  0.    ,    0.    ,  1./24., 
       -4./24.,   16./24., -24./24.,  16./24., -3./24., 
       92./24., -176./24., 120./24., -32./24.,  3./24., 
@@ -35,7 +35,7 @@ const piecewise_polynomial<4,4> IrwinHallCDF3({
   {0.,1.,2.,3.,4.},
   2.
 });
-const piecewise_polynomial<5,5> IrwinHallCDF4({
+const PiecewisePolynomial<5,5> IrwinHallCDF4({
   {   0.     ,     0.     ,     0.     ,    0.,       0.      ,  1./120.,
       5./120.,   -25./120.,    50./120.,  -50./120.,  25./120., -4./120.,
    -315./120.,   775./120.,  -750./120.,  350./120., -75./120.,  6./120.,
@@ -44,7 +44,7 @@ const piecewise_polynomial<5,5> IrwinHallCDF4({
   {0.,1.,2.,3.,4.,5.},
   5./2.
 });
-const piecewise_polynomial<6,6> IrwinHallCDF5({
+const PiecewisePolynomial<6,6> IrwinHallCDF5({
   {      0.    ,      0.    ,      0.    ,      0.    ,     0.    ,    0.    ,   1./720,
         -6./720,     36./720,    -90./720,    120./720,   -90./720,   36./720,  -5./720,
        954./720,  -2844./720,   3510./720,  -2280./720,   810./720, -144./720,  10./720,
@@ -54,7 +54,7 @@ const piecewise_polynomial<6,6> IrwinHallCDF5({
   {0.,1.,2.,3.,4.,5.,6.},
   3.
 });
-const piecewise_polynomial<7,7> IrwinHallCDF6({
+const PiecewisePolynomial<7,7> IrwinHallCDF6({
   {       0.      ,        0.      ,       0.      ,       0.      ,      0.      ,     0.      ,    0.      ,   1./5040.,
           7./5040.,      -49./5040.,     147./5040.,    -245./5040.,    245./5040.,  -147./5040.,   49./5040.,  -6./5040.,
       -2681./5040.,     9359./5040.,  -13965./5040.,   11515./5040.,  -5635./5040.,  1617./5040., -245./5040.,  15./5040.,

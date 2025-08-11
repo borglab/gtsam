@@ -28,7 +28,7 @@ TEST( TrajectoryModel , BasicBounds ) {
   gtsam::Values v;  // needed for evaluating Expressions
 
   // choose a cubic spline
-  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+  const KernelBase& basis_function = kernels::IrwinHallCDF2;
 
   // specify some control points
   std::vector<Double_> path({
@@ -42,7 +42,7 @@ TEST( TrajectoryModel , BasicBounds ) {
   // bool pad_front = false;
   // with padding at the back,
   //   non-constant timestamps will be in
-  //   [0 : path.size()-1 + basis_function.get_length()]
+  //   [0 : path.size()-1 + basis_function.getLength()]
   TrajectoryModel<double> model(basis_function, path/*, pad_front*/);
 
   Key t_key = Key(0); // choose a key to carry the timestamp
@@ -50,18 +50,18 @@ TEST( TrajectoryModel , BasicBounds ) {
   Double_ timestamp = Double_(t_key); // associate the timestamp with the key
 
   // construct an Expression that samples the trajectory
-  Double_ sample = model.sample_trajectory(timestamp);
+  Double_ sample = model.sampleTrajectory(timestamp);
 
 
   // bounds check
   v.update<double>(t_key, 0);
   CHECK(assert_equal(path.front().value(v), sample.value(v), tolerance));
 
-  v.update<double>(t_key, path.size()-1 + basis_function.get_length());
+  v.update<double>(t_key, path.size()-1 + basis_function.getLength());
   CHECK(assert_equal(path.back().value(v), sample.value(v), tolerance));
 
   // mid value
-  v.update<double>(t_key, (path.size() + basis_function.get_length())/2);
+  v.update<double>(t_key, (path.size() + basis_function.getLength())/2);
   CHECK(assert_equal((path.front().value(v)+path.back().value(v))/2, sample.value(v), tolerance));
 
 }
@@ -72,7 +72,7 @@ TEST( TrajectoryModel , FrontPadding ) {
   gtsam::Values v;  // needed for evaluating Expressions
 
   // choose a cubic spline
-  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+  const KernelBase& basis_function = kernels::IrwinHallCDF2;
 
   // specify some control points
   std::vector<Double_> path({
@@ -84,7 +84,7 @@ TEST( TrajectoryModel , FrontPadding ) {
   bool pad_front = true;
   // with padding at the front,
   //   non-constant timestamps will be in
-  //   [-basis_function.get_length() : path.size()-1]
+  //   [-basis_function.getLength() : path.size()-1]
   TrajectoryModel<double> model(basis_function, path, pad_front);
 
   Key t_key = Key(0); // choose a key to carry the timestamp
@@ -92,18 +92,18 @@ TEST( TrajectoryModel , FrontPadding ) {
   Double_ timestamp = Double_(t_key); // associate the timestamp with the key
 
   // construct an Expression that samples the trajectory
-  Double_ sample = model.sample_trajectory(timestamp);
+  Double_ sample = model.sampleTrajectory(timestamp);
 
 
   // bounds check
-  v.update<double>(t_key, -basis_function.get_length());
+  v.update<double>(t_key, -basis_function.getLength());
   CHECK(assert_equal(path.front().value(v), sample.value(v), tolerance));
 
   v.update<double>(t_key, path.size()-1);
   CHECK(assert_equal(path.back().value(v), sample.value(v), tolerance));
 
   // mid value
-  v.update<double>(t_key, (-basis_function.get_length() + (path.size()))/2);
+  v.update<double>(t_key, (-basis_function.getLength() + (path.size()))/2);
   CHECK(assert_equal((path.front().value(v)+path.back().value(v))/2, sample.value(v), tolerance));
 
 }
@@ -122,7 +122,7 @@ TEST( TrajectoryModel , WindowTruncation ) {
   gtsam::Values v;  // needed for evaluating Expressions
 
   // choose a cubic spline
-  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+  const KernelBase& basis_function = kernels::IrwinHallCDF2;
 
   // specify some control points
   std::vector<Double_> path({
@@ -155,14 +155,14 @@ TEST( TrajectoryModel , WindowTruncation ) {
   Double_ timestamp = Double_(t_key); // associate the timestamp with the key
 
   // construct an Expression that samples from the entire trajectory
-  Double_ sample = model.sample_trajectory(timestamp);
+  Double_ sample = model.sampleTrajectory(timestamp);
 
   // construct an Expression that samples from a subset of the trajectory
   double window_start = 6;
   double window_end = 8;
-  Double_ trunc_back = model.sample_trajectory(timestamp, 0, window_end);
-  Double_ trunc_front = model.sample_trajectory(timestamp, window_start, -1);
-  Double_ trunc_both = model.sample_trajectory(timestamp, window_start, window_end);
+  Double_ trunc_back = model.sampleTrajectory(timestamp, 0, window_end);
+  Double_ trunc_front = model.sampleTrajectory(timestamp, window_start, -1);
+  Double_ trunc_both = model.sampleTrajectory(timestamp, window_start, window_end);
 
   for(double t=window_start; t<window_end; t+=0.1)
   {
@@ -181,7 +181,7 @@ TEST( TrajectoryModel , TypesPose3 ) {
   gtsam::Values v;  // needed for evaluating Expressions
 
   // choose a cubic spline
-  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+  const KernelBase& basis_function = kernels::IrwinHallCDF2;
 
   // specify some control points
   std::vector<Pose3_> path({
@@ -199,7 +199,7 @@ TEST( TrajectoryModel , TypesPose3 ) {
   Double_ timestamp = Double_(t_key); // associate the timestamp with the key
 
   // construct an Expression that samples from the entire trajectory
-  Pose3_ sample = model.sample_trajectory(timestamp);
+  Pose3_ sample = model.sampleTrajectory(timestamp);
 
   v.update<double>(t_key, 3.5);
   CHECK(assert_equal(Pose3(Rot3(), Point3(0,1,0)), sample.value(v), tolerance));
@@ -208,13 +208,11 @@ TEST( TrajectoryModel , TypesPose3 ) {
 
 
 
-
-
 TEST( TrajectoryModel , DerivativePose3 ) {
   gtsam::Values v;  // needed for evaluating Expressions
 
   // choose a cubic spline
-  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+  const KernelBase& basis_function = kernels::IrwinHallCDF2;
 
   // specify some control points
   std::vector<Pose3_> path({
@@ -238,10 +236,10 @@ TEST( TrajectoryModel , DerivativePose3 ) {
   Double_ t_eps = Double_(t_eps_key);
 
   // construct Expressions that sample the trajectory
-  Pose3_ sample_ref = model.sample_trajectory(t_ref);
-  Pose3_ sample_eps = model.sample_trajectory(t_eps);
+  Pose3_ sample_ref = model.sampleTrajectory(t_ref);
+  Pose3_ sample_eps = model.sampleTrajectory(t_eps);
   // construct an expression that captures the tangent
-  auto sample_d = model.sample_trajectory_d(t_ref,0,-1,1);
+  auto sample_d = model.sampleTrajectoryDerivative(t_ref,0,-1,1);
 
   for(double sample_time = 0; sample_time<7; sample_time+=0.1)
   {
@@ -263,7 +261,7 @@ TEST( TrajectoryModel , NthDerivativePose3 ) {
   gtsam::Values v;  // needed for evaluating Expressions
 
   // choose a cubic spline
-  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+  const KernelBase& basis_function = kernels::IrwinHallCDF2;
 
   // specify some control points
   std::vector<Pose3_> path({
@@ -286,13 +284,13 @@ TEST( TrajectoryModel , NthDerivativePose3 ) {
   Double_ t_ref = Double_(t_ref_key);
   Double_ t_eps = Double_(t_eps_key);
 
-  for(size_t n=0; n<basis_function.get_valid_derivatives()-1; n++)
+  for(size_t n=0; n<basis_function.getValidDerivatives()-1; n++)
   {
     // construct Expressions that sample the Nth derivative of the trajectory
-    auto sample_ref = model.sample_trajectory_d(t_ref, 0, -1, n);
-    auto sample_eps = model.sample_trajectory_d(t_eps, 0, -1, n);
+    auto sample_ref = model.sampleTrajectoryDerivative(t_ref, 0, -1, n);
+    auto sample_eps = model.sampleTrajectoryDerivative(t_eps, 0, -1, n);
     // construct an Expression that captures the (N+1)th derivative of the trajectory
-    auto sample_d = model.sample_trajectory_d(t_ref,0,-1, n+1);
+    auto sample_d = model.sampleTrajectoryDerivative(t_ref,0,-1, n+1);
     for(double sample_time = 0; sample_time<7; sample_time+=0.1)
     {
       v.update<double>(t_ref_key, sample_time);
@@ -317,7 +315,7 @@ TEST( TrajectoryModel , MeshModel ) {
   gtsam::Values v;  // needed for evaluating Expressions
 
   // choose a cubic spline
-  const kernel_base& basis_function = kernels::IrwinHallCDF2;
+  const KernelBase& basis_function = kernels::IrwinHallCDF2;
 
   // specify some control points
   std::vector<std::vector<Double_>> mesh({
@@ -340,7 +338,6 @@ TEST( TrajectoryModel , MeshModel ) {
       Double_(-2.0),
     },
     {
-
       Double_(5.0),
       Double_(2.0),
       Double_(9.0),
@@ -362,11 +359,11 @@ TEST( TrajectoryModel , MeshModel ) {
   for(const auto& path : mesh){
     TrajectoryModel<double> row(basis_function, path);
     rows.push_back(row);
-    auto row_sample = row.sample_trajectory(x_expr);
+    auto row_sample = row.sampleTrajectory(x_expr);
     col_path.push_back(row_sample);
   }
   TrajectoryModel<double> col(basis_function, col_path);
-  auto sample = col.sample_trajectory(y_expr);
+  auto sample = col.sampleTrajectory(y_expr);
 
 
   for(double x=0; x<7; x+=0.1)

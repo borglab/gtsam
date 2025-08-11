@@ -47,46 +47,61 @@ There is possibly a more numerically way of doing this where reference point
 
 namespace gtsam {
 
+
+/**
+ * An Expression factory for cardinal splines and similar convolution-based interpolations
+ * Used to model continuous systems and associate them with asynchronous measurements
+ */
 template <class T>
 class TrajectoryModel 
 {
 public:
 
+  /**
+   * Constructor
+   * @param kernel the interpolating kernel to use, See IrwinHallCDF.cpp for splines
+   * default is IrwinHallCDF2 for cubic splines
+   * @param points Expressions representing control points for the curve, defaults to empty
+   * @param padFront at least `kernel.getLength()` padding control points will be used,
+   *  false places padding at the back, delaying response to the control points (default)
+   *  true places padding at the front, pre-empting response to the control points
+   */
   TrajectoryModel(
-    const kernel_base& kernel = kernels::IrwinHallCDF2, // default to cubic spline
+    const KernelBase& kernel = kernels::IrwinHallCDF2,
     const std::vector<Expression<T>>& points = {},
-    bool pad_front = false
+    bool padFront = false
   ):
     kernel_(kernel),
     points_(points),
-    pad_front_(pad_front),
-    kernel_offset_(pad_front ?
-        kernel.get_end() :
-        kernel.get_beginning()),
-    window_pre_(pad_front ?
+    padFront_(padFront),
+    kernelOffset_(padFront ?
+        kernel.getEnd() :
+        kernel.getBeginning()),
+    windowPre_(padFront ?
         0 :
-        ceil(kernel.get_length())),
-    window_post_(pad_front ?
-        ceil(kernel.get_length()) :
+        ceil(kernel.getLength())),
+    windowPost_(padFront ?
+        ceil(kernel.getLength()) :
         0 )
   {}
 
 private:
-  const kernel_base& kernel_;
+  const KernelBase& kernel_;
   std::vector<Expression<T>> points_;
-  const bool pad_front_;
-  const double kernel_offset_;
-  const int window_pre_;
-  const int window_post_;
+  const bool padFront_;
+  const double kernelOffset_;
+  const int windowPre_;
+  const int windowPost_;
 public:
 
   /**
-  Append control points to the trajectory
-  point can wrap Keys, constants, or other computations.
-  A 2d interpolation mesh can be constructed by using evaluations of
-    an orthogonal TrajectoryModel as the control points.
-  */
-  void add_control_point(Expression<T> point)
+   * Append control points to the trajectory
+   * point can wrap Keys, constants, or other computations.
+   * A 2d interpolation mesh can be constructed by using evaluations of
+   *   an orthogonal TrajectoryModel as the control points.
+   * @param point the control point to insert
+   */
+  void addControlPoint(Expression<T> point)
   {
     points_.push_back(point);
   }
@@ -94,145 +109,212 @@ public:
   /**
   get a read-only reference to the current control points
    */
-  const std::vector<Expression<T>> get_control_points(){
+  const std::vector<Expression<T>> getControlPoints() const {
     return points_;
     }
 
 
   /**
-    Sample the trajectory model at a given timestamp
-    The return value is an expression containing the spline evalation algorithm.
-    timestamp is an Expression, allowing the user to inject solution-dependent sample rate corrections before sampling the spline.
-
-    window_start and window_end are used to limit the number of control points
-      considered in the resulting Expression.
-    Setting window_end beyond `get_points.size()` will not add future points to the resulting expression.
-    Timestamps always start at zero, and control points are spaced with an interval of exactly 1.0.
-    Default window uses all available control points.
-
-  */
-  Expression<T> sample_trajectory(
+   * Sample the trajectory model at a given timestamp
+   * The return value is an expression containing the spline evalation algorithm.
+   * timestamp is an Expression, allowing the user to inject solution-dependent
+   * corrections before sampling the spline.
+   * 
+   * windowStart and windowEnd are used to limit the number of control points
+   *   considered in the resulting Expression.
+   * Setting windowEnd beyond `get_points.size()` will not add future points to the resulting expression.
+   * Timestamps always start at zero, and control points are spaced with an interval of exactly 1.0.
+   * Default window uses all available control points.
+   * 
+   * @param timestamp the evaluation point Expression
+   * @param windowStart the earliest plausible value for timestamp,
+   *   reduces the number of control points evaluated
+   * @param windowEnd the latest plausible value for timestamp,
+   *   reduces the number of control points evaluated.
+   *   a negative value (default) sample up until the `get_points.size()-1`-th point.
+   */
+  Expression<T> sampleTrajectory(
     Double_ timestamp,
-    double window_start = 0,
-    double window_end = -1);
+    double windowStart = 0,
+    double windowEnd = -1) const;
 
 
   /**
-  Sample the Nth derivative of the trajectory.
-  TangentVector obeys vector-space rules, so all subsequent derivatives share the same type.
-  setting derivative to zero yields the logspace difference between `sample_trajectory()` and the pose just prior to window_start
-  */
-  Expression<typename traits<T>::TangentVector> sample_trajectory_d(
+   * Sample the Nth derivative of the trajectory.
+   * TangentVector obeys vector-space rules, so all subsequent derivatives share the same type.
+   * 
+   * @param timestamp the evaluation point Expression
+   * @param windowStart the earliest plausible value for timestamp,
+   *   reduces the number of control points evaluated
+   * @param windowEnd the latest plausible value for timestamp,
+   *   reduces the number of control points evaluated.
+   *   a negative value (default) sample up until the `get_points.size()-1`-th point.
+   * @param derivative how many times to differentiate (1: velocity, 2: acceleration, etc)
+   *    a derivative of zero is equivalent to `logmap(sampleTrajectory(windowStart-kernel.getLength()), sampleTrajectory(timestamp))`
+   */
+  Expression<typename traits<T>::TangentVector> sampleTrajectoryDerivative(
     Double_ timestamp,
-    double window_start = 0,
-    double window_end = -1,
-    size_t derivative = 1);
+    double windowStart = 0,
+    double windowEnd = -1,
+    size_t derivative = 1) const;
 
 
 
-public:
-//private:
+private:
 
   /**
-  interpolate calls sample_kernel and cumulative_path_sum to apply the kernel over a subset of the control points.
-    the return type is an Expression that depends on points and timestamp,
-    performing an automatically differentiated kernel convolution at linearisation time.
-  */
-  Expression<T> kernel_interpolate(
-    const kernel_base& kernel, // the kernel to use for interpolation
+   * kernelInterpolate evaluates the spline by collecting a subset of the
+   * control points and their respective weights, then passes them to cumulativePathSum.
+   * The return value is an Expression referring to timestamp, and all control points in points[start] : points[end]
+   * @param kernel a reference to the kernel being sampled for weights
+   * @param timestamp an Expression for the evaluation point in the resulting curve
+   * @param points a reference to the vector of control points
+   * @param start the index of the first control point to sample
+   * @param end the index of the last control point to sample
+   */
+  static Expression<T> kernelInterpolate(
+    const KernelBase& kernel, // the kernel to use for interpolation
     const Double_& timestamp, // the timestamp to interpolate at
     const std::vector<Expression<T>>& points, // a reference to the control points to interpolate
     size_t start, size_t end // the range of control points to interpolate
-
   );
-  Expression<typename traits<T>::TangentVector> kernel_interpolate_d(
-    const kernel_base& kernel, // the kernel to use for interpolation
+
+
+  /**
+   * kernelInterpolateDerivative  evaluates derivatives of the spline by
+   * collecting a subset of the control points and their respective weights,
+   * then passes them to cumulativePathSum.
+   * The return value is an Expression referring to timestamp and all control points in points[start] : points[end]
+   * @param kernel a reference to the kernel being sampled for weights
+   * @param timestamp an Expression for the evaluation point in the resulting curve
+   * @param points a reference to the vector of control points
+   * @param start the index of the first control point to sample
+   * @param end the index of the last control point to sample
+   * @param derivative which derivative to evaluate (1: velocity, 2:acceleration, etc)
+   */
+  static Expression<typename traits<T>::TangentVector> kernelInterpolateDerivative(
+    const KernelBase& kernel, // the kernel to use for interpolation
     const Double_& timestamp, // the timestamp to interpolate at
     const std::vector<Expression<T>>& points, // a reference to the control points to interpolate
     size_t start, size_t end, // the range of control points to interpolate
     size_t derivative = 1);
+
+
   /**
-  sample the kernel at a range of points
-  timestamp is is in units of samples. Be sure to divide your timestamp by the sample rate
-  start and end are indicies into (and exact timestamps) the vector of control points.
-  */
-  std::vector<Double_> sample_kernel(
-    const kernel_base& kernel,
+   * Sample the kernel at a range of points
+   * timestamp is in units of samples. Be sure to divide your timestamp by the sample rate
+   * start and end are indicies into (and exact timestamps) the vector of control points.
+   * @param kernel a reference to the kernel being sampled
+   * @param timestamp an Expression for the evaluation point in the kernel
+   * @param start the offset into the kernel (subtracted from timestamp)
+   * @param end generate end - start samples
+   * @param derivative how many times to differentiate the kernel
+   */
+  static std::vector<Double_> sampleKernel(
+    const KernelBase& kernel,
     const Double_& timestamp,
     size_t start, size_t end,
     size_t derivative = 0);
 
 
   /**
-    accumulates the log-space differences between points,
-    with each log-space vector scaled by its respective weight.
+   * computes a geodesic weighted sum, by weighting the steps in the path
+   * from the first point and performing the accumulation in the logmap.
+   *
+   * Weights are the integral of a normal convolutional kernel function
+   * the convolutional nature of kernel requires a time-reversal.
+   * interpret this a the sum here performing a numerical derivative,
+   * and the kernel being pre-baked with the integral operator to compensate.
+   * the earliest entries of cdfWeights should be about 1.0.
+   * @param points the control points to accumulate
+   * @param cdfWeights the weights for the logspace differences.
+   * cdfWeights are normally drawn from a time-reversed integral of a
+   * Probability Density Function, ie, a 'Cumulative Distribution Function'
   */
-  Expression<T> cumulative_path_sum(
+  static Expression<T> cumulativePathSum(
     const std::vector<Expression<T>>& points,
-    const std::vector<Double_>& cdf_weights);
+    const std::vector<Double_>& cdfWeights);
 
   /**
-  logspace form of the cumulative path sum, used for derivatives
+   * computes the logmap form of a weighted sum of differences.
+   * @param points the control points to accumulate
+   * @param weights the weights to apply to each logspace difference.
   */
-  Expression<typename traits<T>::TangentVector> cumulative_path_sum_d(
+  static Expression<typename traits<T>::TangentVector> cumulativePathSumDerivative(
     const std::vector<Expression<T>>& points,
     const std::vector<Double_>& weights);
 
 }; // class TrajectoryModel 
 
 
-
+/**
+ * user-facing api,
+ * do input sanitisation 
+ * apply filter ring-down compensations for the window domain.
+ * pass references to the member variables
+ */
 template <class T>
-Expression<T> TrajectoryModel<T>::sample_trajectory(
+Expression<T> TrajectoryModel<T>::sampleTrajectory(
   Double_ timestamp,
-  double window_start,
-  double window_end)
+  double windowStart,
+  double windowEnd) const 
 {
-
+  // apply padding to the window
+  int start = floor(windowStart) - windowPre_;
+  int end = ceil(windowEnd) + windowPost_;
   // sanitise inputs
-  int start = floor(window_start) - window_pre_;
-  int end = ceil(window_end) + window_post_;
   if(start < 0) start = 0;
-  if(window_end < 0 || end > points_.size()) end = points_.size();
+  if(windowEnd < 0 || end > points_.size()) end = points_.size();
 
-  // pass to internal method
-  return kernel_interpolate(kernel_, timestamp, points_, start, end);
+  // apply filter delay correction
+  Double_ kernelTime = timestamp + Double_(kernelOffset_);
+
+  // pass to internal methods
+  return kernelInterpolate(kernel_, kernelTime, points_, start, end);
 }
 
+/**
+ * user-facing api,
+ * do input sanitisation 
+ * apply filter ring-down compensations for the window domain.
+ * pass references to the member variables
+ */
 template <class T>
-Expression<typename traits<T>::TangentVector> TrajectoryModel<T>::sample_trajectory_d(
+Expression<typename traits<T>::TangentVector> TrajectoryModel<T>::sampleTrajectoryDerivative(
   Double_ timestamp,
-  double window_start,
-  double window_end,
-  size_t derivative)
+  double windowStart,
+  double windowEnd,
+  size_t derivative) const
 {
+  // apply padding to the window
+  int start = floor(windowStart) - windowPre_;
+  int end = ceil(windowEnd) + windowPost_;
   // sanitise inputs
-  int start = floor(window_start) - window_pre_;
-  int end = ceil(window_end) + window_post_;
   if(start < 0) start = 0;
-  if(window_end < 0 || end > points_.size()) end = points_.size();
+  if(windowEnd < 0 || end > points_.size()) end = points_.size();
 
-  // pass to internal method
-  return kernel_interpolate_d(kernel_, timestamp, points_, start, end, derivative);
+  // apply filter delay correction
+  Double_ kernelTime = timestamp + Double_(kernelOffset_);
+
+  // pass to internal methods
+  return kernelInterpolateDerivative(kernel_, kernelTime, points_, start, end, derivative);
 }
 
 
-/*
-// compute logspace vectors between adjacent points,
-// scale the vectors by the CDF based weight for the relevant point
-// accumulate the logspace path as a relative vector from the first point
-*/
+/**
+ * compute a weighted sum of logmap differences between adjacent points applied to the first point
+ */
 template <class T>
-Expression<T> TrajectoryModel<T>::cumulative_path_sum(
+Expression<T> TrajectoryModel<T>::cumulativePathSum(
   const std::vector<Expression<T>>& points,
-  const std::vector<Double_>& cdf_weights)
+  const std::vector<Double_>& cdfWeights)
 {
-  return expmap(points[0], cumulative_path_sum_d(points, cdf_weights));
+  return expmap(points[0], cumulativePathSumDerivative(points, cdfWeights));
 }
 
 
 template <class T>
-Expression<typename traits<T>::TangentVector> TrajectoryModel<T>::cumulative_path_sum_d(
+Expression<typename traits<T>::TangentVector> TrajectoryModel<T>::cumulativePathSumDerivative(
   const std::vector<Expression<T>>& points,
   const std::vector<Double_>& weights)
 {
@@ -240,7 +322,7 @@ Expression<typename traits<T>::TangentVector> TrajectoryModel<T>::cumulative_pat
   // compute logspace vectors between adjacent points,
   // scale the vectors by the weight for the relevant point
   // accumulate the logspace vector
-  //  we skip the first weight; cumulative_path_sum assumes it is equal to 1.0
+  //  we skip the first weight; cumulativePathSum assumes it is equal to 1.0
   for (size_t i = 1; i < points.size(); i++)
   {
     v += weights[i] * logmap(points[i-1], points[i]);
@@ -251,45 +333,45 @@ Expression<typename traits<T>::TangentVector> TrajectoryModel<T>::cumulative_pat
 
 
 /**
-interpolate calls sample_kernel and weighted_sum to apply the kernel over subset of the control points.
+interpolate calls sampleKernel and weighted_sum to apply the kernel over subset of the control points.
   the return type is an Expression that depends on points and timestamp,
   performing an automatically differentiated kernel convolution at linearisation time.
 */
 template <class T>
-Expression<T> TrajectoryModel<T>::kernel_interpolate(
-  const kernel_base& kernel, // the kernel to use for interpolation
+Expression<T> TrajectoryModel<T>::kernelInterpolate(
+  const KernelBase& kernel, // the kernel to use for interpolation
   const Double_& timestamp, // the timestamp to interpolate at
   const std::vector<Expression<T>>& points, // a reference to the control points to interpolate
   size_t start, size_t end // the range of control points to interpolate
 )
 {
   // copy the interval of control points that we want to interpolate within
-  std::vector<Expression<T>> points_range(points.begin()+start, points.begin()+end);
+  std::vector<Expression<T>> pointsRange(points.begin()+start, points.begin()+end);
   // generate the basis functions as expressions depending on the timestamp
-  std::vector<Double_> weights_range = sample_kernel(kernel, timestamp, start, end, 0);
+  std::vector<Double_> weights_range = sampleKernel(kernel, timestamp, start, end, 0);
   // apply the weighted sum
-  return cumulative_path_sum(points_range, weights_range);
+  return cumulativePathSum(pointsRange, weights_range);
 }
 
 /**
-interpolate calls sample_kernel and weighted_sum to apply the kernel over subset of the control points.
+interpolate calls sampleKernel and weighted_sum to apply the kernel over subset of the control points.
   the return type is an Expression that depends on points and timestamp,
   performing an automatically differentiated kernel convolution at linearisation time.
 */
 template <class T>
-Expression<typename traits<T>::TangentVector> TrajectoryModel<T>::kernel_interpolate_d(
-  const kernel_base& kernel, // the kernel to use for interpolation
+Expression<typename traits<T>::TangentVector> TrajectoryModel<T>::kernelInterpolateDerivative(
+  const KernelBase& kernel, // the kernel to use for interpolation
   const Double_& timestamp, // the timestamp to interpolate at
   const std::vector<Expression<T>>& points, // a reference to the control points to interpolate
   size_t start, size_t end, // the range of control points to interpolate
   size_t derivative)
 {
   // copy the interval of control points that we want to interpolate within
-  std::vector<Expression<T>> points_range(points.begin()+start, points.begin()+end);
+  std::vector<Expression<T>> pointsRange(points.begin()+start, points.begin()+end);
   // generate the basis functions as expressions depending on the timestamp
-  std::vector<Double_> weights_range = sample_kernel(kernel, timestamp, start, end, derivative);
+  std::vector<Double_> weights_range = sampleKernel(kernel, timestamp, start, end, derivative);
   // apply the weighted sum
-  return cumulative_path_sum_d(points_range, weights_range);
+  return cumulativePathSumDerivative(pointsRange, weights_range);
 }
 
 
@@ -300,31 +382,28 @@ timestamp is is in units of samples. Be sure to divide your timestamp by the sam
 start and end are indicies into (and exact timestamps) the vector of control points.
 */
 template <class T>
-std::vector<Double_> TrajectoryModel<T>::sample_kernel(
-  const kernel_base& kernel,
+std::vector<Double_> TrajectoryModel<T>::sampleKernel(
+  const KernelBase& kernel,
   const Double_& timestamp,
   size_t start, size_t end,
   size_t derivative)
 {
-  std::vector<Double_> kernel_samples;
+  std::vector<Double_> kernelSamples;
 
   // expression constructor requires us to bind to the class member method
   std::function<double(const double&, OptionalJacobian<1, 1>)> keval =
     [&kernel, derivative](const double& x, OptionalJacobian<1, 1> j)
     {
-      return kernel.evaluate_d(derivative, x, j);
+      return kernel.evaluateDerivative(derivative, x, j);
     };
 
   for(size_t i = start; i < end; i++)
   {
-    Double_ kernel_time =
-      Double_(kernel_offset_)
-      + timestamp
-      - Double_(double(i));
-    kernel_samples.push_back(Double_(keval, kernel_time));
+    Double_ kernelTime = timestamp - Double_(double(i));
+    kernelSamples.push_back(Double_(keval, kernelTime));
   }
 
-  return kernel_samples;
+  return kernelSamples;
 }
 
 

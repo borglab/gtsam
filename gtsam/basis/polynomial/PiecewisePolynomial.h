@@ -5,9 +5,14 @@
 namespace gtsam {
 
 
-
+/**
+ * A Piecewise-defined Polynomial in 1d
+ * mostly used for low-order approximations to probability distributions
+ * automatically computes derivatives
+ * 
+ */
 template<size_t O, size_t P>
-class piecewise_polynomial : public kernel_base
+class PiecewisePolynomial : public KernelBase
 {
 public:
   inline constexpr static auto order = O;
@@ -24,43 +29,51 @@ protected:
 
 
 public:
-  piecewise_polynomial(param_s init_list):params(init_list){}
-
-  double get_center() const override
+  PiecewisePolynomial(param_s init_list):params(init_list){}
+  /** returns the centre of the distribution */
+  double getCenter() const override
   {
     return params.center;
   }
-  double get_beginning() const override
+  /** returns the lowest value of t where this polynomial has non-constant return */
+  double getBeginning() const override
   {
     return params.intervals[0];
   }
-  double get_end() const override
+  /** returns the highest value of t where this polynomial has non-constant return */
+  double getEnd() const override
   {
     return params.intervals[pieces];
   }
-  size_t get_valid_derivatives() const override
+  /** returns the number of times this function can be differentiated and still return something useful */
+  size_t getValidDerivatives() const override
   {
     return order;
   }
 
-  std::array<double, pieces+1> get_intervals() const {
+  /** returns the number of pieces this polynomial is defined by, mostly use for testing. */
+  std::array<double, pieces+1> getIntervals() const {
     return params.intervals;
   }
 
-/**
-  evaluates the continuous kernel function at time t
-
-  derivative: how many times to differentiate the kernel function
-  t: the time to evaluate it relative to the kernel's datum
-  H: the jacobian for gtsam (the next derivative, calls this function again.)
-
- */
+  /**
+   * evaluates the polynomial at t
+   * @param t  the evaluation point
+   * @param H  the first derivative at t
+   */
   double evaluate(const double& t, OptionalJacobian<1, 1>  H = {}) const override
   {
-    return evaluate_d(0, t, H);
+    return evaluateDerivative(0, t, H);
   }
 
-  double evaluate_d(size_t derivative, double t, OptionalJacobian<1, 1>  H = {}) const override
+  /**
+   * evaluates the polynomial or its derivatives at t
+   * @param derivative the derivative to evaluate
+   * (0th derivative is the same as evaluate(t,H))
+   * @param t  the evaluation point
+   * @param H  the next derivative at t
+   */
+  double evaluateDerivative(size_t derivative, double t, OptionalJacobian<1, 1>  H = {}) const override
   {
     // bounds check
     if(t < params.intervals[0])
@@ -92,7 +105,7 @@ public:
           //std::cout << "c += " << t_power << " * " << params.coefficients[p][o] << std::endl;
           t_power *= t;
         }
-        if(H) *H << evaluate_d(derivative+1, t, {});
+        if(H) *H << evaluateDerivative(derivative+1, t, {});
         return coeff;
       }
     }

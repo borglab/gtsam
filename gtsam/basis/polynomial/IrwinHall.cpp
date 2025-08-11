@@ -3,30 +3,30 @@
 namespace gtsam {
 namespace kernels {
 
-/*
-Irwin Hall coefficients
-https://oeis.org/A188816
-*/
+/**
+ * coefficients for the Irwin Hall Probability Density Functions
+ * https://oeis.org/A188816
+ */
 
-const piecewise_polynomial<0,1> IrwinHall0({
+const PiecewisePolynomial<0,1> IrwinHall0({
   {1.},
   {0.,1.},
   1./2.
 });
-const piecewise_polynomial<1,2> IrwinHall1({
+const PiecewisePolynomial<1,2> IrwinHall1({
   { 0.,  1.,
     2., -1.},
   {0.,1.,2.},
   1.
 });
-const piecewise_polynomial<2,3> IrwinHall2({
+const PiecewisePolynomial<2,3> IrwinHall2({
   {  0.   ,  0.   ,  1./2.,
     -3./2.,  6./2., -2./2.,
      9./2., -6./2.,  1./2.},
   {0.,1.,2.,3.},
   3./2.
 });
-const piecewise_polynomial<3,4> IrwinHall3({
+const PiecewisePolynomial<3,4> IrwinHall3({
   {   0.   ,  0.,  0.,  1./6.,
       2./3., -2.,  2., -1./2.,
     -22./3., 10., -4.,  1./2.,
@@ -34,7 +34,7 @@ const piecewise_polynomial<3,4> IrwinHall3({
   {0.,1.,2.,3.,4.},
   2.
 });
-const piecewise_polynomial<4,5> IrwinHall4({
+const PiecewisePolynomial<4,5> IrwinHall4({
   {    0.    ,    0.   ,   0.   ,  0.   ,  1./24.,
       -5./24.,    5./6.,  -5./4.,  5./6., -1./6. ,
      155./24.,  -25./2.,  35./4., -5./2.,  1./4. ,
@@ -43,7 +43,7 @@ const piecewise_polynomial<4,5> IrwinHall4({
   {0.,1.,2.,3.,4.,5.},
   5./2.
 });
-const piecewise_polynomial<5,6> IrwinHall5({
+const PiecewisePolynomial<5,6> IrwinHall5({
   {     0.    ,    0.   ,   0.   ,   0.   ,  0.   ,  1./120.,
         1./20.,   -1./4.,   1./2.,  -1./2.,  1./4., -1./24. ,
       -79./20.,   39./4., -19./2.,   9./2., -1.   ,  1./12. ,
@@ -53,7 +53,7 @@ const piecewise_polynomial<5,6> IrwinHall5({
   {0.,1.,2.,3.,4.,5.,6.},
   3.
 });
-const piecewise_polynomial<6,7> IrwinHall6({
+const PiecewisePolynomial<6,7> IrwinHall6({
   {       0.     ,      0.     ,     0.    ,    0.    ,    0.    ,  0.     ,  1./720.,
          -7./720.,      7./120.,    -7./48.,    7./36.,   -7./48.,  7./120., -1./120.,
        1337./720.,   -133./24. ,   329./48., -161./36.,   77./48., -7./24. ,  1./48. ,

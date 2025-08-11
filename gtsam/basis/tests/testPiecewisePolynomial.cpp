@@ -32,11 +32,11 @@ double tolerance = 1e-7;
 TEST( IrwinHall , DerivativeIsJacobian1 ) {
   auto poly = IrwinHall6;
   int max_d = poly.order-2;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     for(int d=0; d<max_d; d++) {
       Eigen::Matrix<double, 1,1> jacobian;
-      poly.evaluate_d(d, t, &jacobian);
-      double derivative = poly.evaluate_d(d+1, t);
+      poly.evaluateDerivative(d, t, &jacobian);
+      double derivative = poly.evaluateDerivative(d+1, t);
       EXPECT_DOUBLES_EQUAL(jacobian[0], derivative, tolerance );
     }
   }
@@ -46,11 +46,11 @@ TEST( IrwinHall , DerivativeIsJacobian1 ) {
 TEST( IrwinHallCDF , DerivativeIsJacobian2 ) {
   auto poly = IrwinHallCDF6;
   int max_d = poly.order-2;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     for(int d=0; d<max_d; d++) {
       Eigen::Matrix<double, 1,1> jacobian;
-      poly.evaluate_d(d, t, &jacobian);
-      double derivative = poly.evaluate_d(d+1, t);
+      poly.evaluateDerivative(d, t, &jacobian);
+      double derivative = poly.evaluateDerivative(d+1, t);
       EXPECT_DOUBLES_EQUAL(jacobian[0], derivative, tolerance );
     }
   }

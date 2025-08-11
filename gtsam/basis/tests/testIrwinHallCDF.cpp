@@ -30,33 +30,33 @@ double tolerance = 1e-7;
 // test boundary conditions for cumulative distribution
 TEST( IrwinHallCDF , Boundaries1 ) {
   auto poly = IrwinHallCDF1;
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.get_intervals().front()), tolerance);
-  EXPECT_DOUBLES_EQUAL( 1.0, poly.evaluate(poly.get_intervals().back()), tolerance);
+  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().front()), tolerance);
+  EXPECT_DOUBLES_EQUAL( 1.0, poly.evaluate(poly.getIntervals().back()), tolerance);
 }
 TEST( IrwinHallCDF , Boundaries2 ) {
   auto poly = IrwinHallCDF2;
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.get_intervals().front()), tolerance);
-  EXPECT_DOUBLES_EQUAL( 1.0, poly.evaluate(poly.get_intervals().back()), tolerance);
+  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().front()), tolerance);
+  EXPECT_DOUBLES_EQUAL( 1.0, poly.evaluate(poly.getIntervals().back()), tolerance);
 }
 TEST( IrwinHallCDF , Boundaries3 ) {
   auto poly = IrwinHallCDF3;
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.get_intervals().front()), tolerance);
-  EXPECT_DOUBLES_EQUAL( 1.0, poly.evaluate(poly.get_intervals().back()), tolerance);
+  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().front()), tolerance);
+  EXPECT_DOUBLES_EQUAL( 1.0, poly.evaluate(poly.getIntervals().back()), tolerance);
 }
 TEST( IrwinHallCDF , Boundaries4 ) {
   auto poly = IrwinHallCDF4;
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.get_intervals().front()), tolerance);
-  EXPECT_DOUBLES_EQUAL( 1.0, poly.evaluate(poly.get_intervals().back()), tolerance);
+  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().front()), tolerance);
+  EXPECT_DOUBLES_EQUAL( 1.0, poly.evaluate(poly.getIntervals().back()), tolerance);
 }
 TEST( IrwinHallCDF , Boundaries5 ) {
   auto poly = IrwinHallCDF5;
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.get_intervals().front()), tolerance);
-  EXPECT_DOUBLES_EQUAL( 1.0, poly.evaluate(poly.get_intervals().back()), tolerance);
+  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().front()), tolerance);
+  EXPECT_DOUBLES_EQUAL( 1.0, poly.evaluate(poly.getIntervals().back()), tolerance);
 }
 TEST( IrwinHallCDF , Boundaries6 ) {
   auto poly = IrwinHallCDF6;
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.get_intervals().front()), tolerance);
-  EXPECT_DOUBLES_EQUAL( 1.0, poly.evaluate(poly.get_intervals().back()), tolerance);
+  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().front()), tolerance);
+  EXPECT_DOUBLES_EQUAL( 1.0, poly.evaluate(poly.getIntervals().back()), tolerance);
 }
 
 
@@ -65,42 +65,42 @@ TEST( IrwinHallCDF , Boundaries6 ) {
 // test continuity where the polynomial pieces join
 TEST( IrwinHallCDF , Continuity1 ) {
   auto poly = IrwinHallCDF1;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     EXPECT_DOUBLES_EQUAL( poly.evaluate(t+epsilon),
                           poly.evaluate(t-epsilon), tolerance );
   }
 }
 TEST( IrwinHallCDF , Continuity2 ) {
   auto poly = IrwinHallCDF2;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     EXPECT_DOUBLES_EQUAL( poly.evaluate(t+epsilon),
                           poly.evaluate(t-epsilon), tolerance );
   }
 }
 TEST( IrwinHallCDF , Continuity3 ) {
   auto poly = IrwinHallCDF3;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     EXPECT_DOUBLES_EQUAL( poly.evaluate(t+epsilon),
                           poly.evaluate(t-epsilon), tolerance );
   }
 }
 TEST( IrwinHallCDF , Continuity4 ) {
   auto poly = IrwinHallCDF4;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     EXPECT_DOUBLES_EQUAL( poly.evaluate(t+epsilon),
                           poly.evaluate(t-epsilon), tolerance );
   }
 }
 TEST( IrwinHallCDF , Continuity5 ) {
   auto poly = IrwinHallCDF5;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     EXPECT_DOUBLES_EQUAL( poly.evaluate(t+epsilon),
                           poly.evaluate(t-epsilon), tolerance );
   }
 }
 TEST( IrwinHallCDF , Continuity6 ) {
   auto poly = IrwinHallCDF6;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     EXPECT_DOUBLES_EQUAL( poly.evaluate(t+epsilon),
                           poly.evaluate(t-epsilon), tolerance );
   }
@@ -111,60 +111,60 @@ TEST( IrwinHallCDF , Continuity6 ) {
 TEST( IrwinHallCDF , DerivativeContinuity1 ) {
   auto poly = IrwinHallCDF1;
   int max_d = poly.order-1;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     for(int d=0; d<max_d; d++) {
-      EXPECT_DOUBLES_EQUAL( poly.evaluate_d(d, t+epsilon),
-                            poly.evaluate_d(d, t-epsilon), tolerance );
+      EXPECT_DOUBLES_EQUAL( poly.evaluateDerivative(d, t+epsilon),
+                            poly.evaluateDerivative(d, t-epsilon), tolerance );
     }
   }
 }
 TEST( IrwinHallCDF , DerivativeContinuity2 ) {
   auto poly = IrwinHallCDF2;
   int max_d = poly.order-1;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     for(int d=0; d<max_d; d++) {
-      EXPECT_DOUBLES_EQUAL( poly.evaluate_d(d, t+epsilon),
-                            poly.evaluate_d(d, t-epsilon), tolerance );
+      EXPECT_DOUBLES_EQUAL( poly.evaluateDerivative(d, t+epsilon),
+                            poly.evaluateDerivative(d, t-epsilon), tolerance );
     }
   }
 }
 TEST( IrwinHallCDF , DerivativeContinuity3 ) {
   auto poly = IrwinHallCDF3;
   int max_d = poly.order-1;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     for(int d=0; d<max_d; d++) {
-      EXPECT_DOUBLES_EQUAL( poly.evaluate_d(d, t+epsilon),
-                            poly.evaluate_d(d, t-epsilon), tolerance );
+      EXPECT_DOUBLES_EQUAL( poly.evaluateDerivative(d, t+epsilon),
+                            poly.evaluateDerivative(d, t-epsilon), tolerance );
     }
   }
 }
 TEST( IrwinHallCDF , DerivativeContinuity4 ) {
   auto poly = IrwinHallCDF4;
   int max_d = poly.order-1;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     for(int d=0; d<max_d; d++) {
-      EXPECT_DOUBLES_EQUAL( poly.evaluate_d(d, t+epsilon),
-                            poly.evaluate_d(d, t-epsilon), tolerance );
+      EXPECT_DOUBLES_EQUAL( poly.evaluateDerivative(d, t+epsilon),
+                            poly.evaluateDerivative(d, t-epsilon), tolerance );
     }
   }
 }
 TEST( IrwinHallCDF , DerivativeContinuity5 ) {
   auto poly = IrwinHallCDF5;
   int max_d = poly.order-1;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     for(int d=0; d<max_d; d++) {
-      EXPECT_DOUBLES_EQUAL( poly.evaluate_d(d, t+epsilon),
-                            poly.evaluate_d(d, t-epsilon), tolerance );
+      EXPECT_DOUBLES_EQUAL( poly.evaluateDerivative(d, t+epsilon),
+                            poly.evaluateDerivative(d, t-epsilon), tolerance );
     }
   }
 }
 TEST( IrwinHallCDF , DerivativeContinuity6 ) {
   auto poly = IrwinHallCDF6;
   int max_d = poly.order-1;
-  for(const double &t : poly.get_intervals()) {
+  for(const double &t : poly.getIntervals()) {
     for(int d=0; d<max_d; d++) {
-      EXPECT_DOUBLES_EQUAL( poly.evaluate_d(d, t+epsilon),
-                            poly.evaluate_d(d, t-epsilon), tolerance );
+      EXPECT_DOUBLES_EQUAL( poly.evaluateDerivative(d, t+epsilon),
+                            poly.evaluateDerivative(d, t-epsilon), tolerance );
     }
   }
 }
