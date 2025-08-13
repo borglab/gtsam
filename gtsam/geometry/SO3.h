@@ -159,6 +159,37 @@ protected:
   void init(double nearZeroThresholdSq);
 };
 
+struct DexpFunctor; // forward declaration
+
+// Bound kernel: M(ω) = a I + b W + c W^2  with radial derivatives (db, dc) for
+// the Fréchet derivative. Holds a const reference to the functor providing
+// Ω = [ω]× and Ω².
+struct GTSAM_EXPORT ABCKernel {
+  const DexpFunctor& S;
+  double a{0.0}, b{0.0}, c{0.0};
+  double db{0.0}, dc{0.0};  // db = b'(θ)/θ, dc = c'(θ)/θ
+
+  /// M(ω) as a 3x3 matrix
+  Matrix3 matrix() const;
+
+  /// Apply: y = M(ω) v
+  Vector3 apply(const Vector3& v,  //
+                OptionalJacobian<3, 3> H1 = {},
+                OptionalJacobian<3, 3> H2 = {}) const;
+
+  /// operator*: y = M(ω) v
+  Vector3 operator*(const Vector3& v) const { return apply(v); }
+
+  /// Fréchet derivative of M(ω) in the direction X \in so(3)
+  /// L_M(Ω)[X] = b X + c (Ω X + X Ω) + s (db Ω + dc Ω²),
+  /// with s = -½ tr(Ω X)
+  Matrix3 frechet(const Matrix3& X) const;
+
+  /// Apply Fréchet derivative to vector
+  /// Should match H1 derivative of apply
+  Matrix3 applyFrechet(const Vector3& v) const;
+};
+
 /// Functor that implements Exponential map *and* its derivatives
 /// Math extends Ethan theme of elegant a + bW + cWW expressions.
 /// See https://www.ethaneade.org/lie.pdf expmap (82) and left Jacobian (83).
@@ -171,6 +202,10 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   // Radial derivatives:
   double dB; // (A - 2B) / theta2 = B'(θ)/θ
   double dC;  // (B - 3C) / theta2 = C'(θ)/θ
+
+  // Factories (right/left Jacobians and Γ kernels)
+  ABCKernel Jr() const { return ABCKernel{*this, 1.0, -B, C, -dB, dC}; }
+  ABCKernel Jl() const { return ABCKernel{*this, 1.0, +B, C, +dB, dC}; }
 
   // Constant used in inverse Jacobians
   double D;  // (1 - A/2B) / theta^2
@@ -187,7 +222,7 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   // Information Theory, and Lie Groups", Volume 2, 2008.
   //   Expmap(xi + dxi) \approx Expmap(xi) * Expmap(dexp * dxi)
   // This maps a perturbation dxi=(w,v) in the tangent space to
-  // a perturbation on the manifold Expmap(dexp * xi)
+  // a perturbation on the manifold Expmap(rightJacobian() * xi)
   Matrix3 rightJacobian() const { return I_3x3 - B * W + C * WW; }
 
   // Compute the left Jacobian for Exponential map in SO(3)
@@ -204,7 +239,7 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   /// Multiplies with rightJacobian(), with optional derivatives
   Vector3 applyRightJacobian(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
                              OptionalJacobian<3, 3> H2 = {}) const {
-    return applyJacobian(v, 1.0, -B, C, /*d_b*/ -dB, /*d_c*/ dC, H1, H2);
+    return Jr().apply(v, H1, H2);
   }
 
   /// Multiplies with rightJacobian().inverse(), with optional derivatives
@@ -215,22 +250,13 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   /// Multiplies with leftJacobian(), with optional derivatives
   Vector3 applyLeftJacobian(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
                             OptionalJacobian<3, 3> H2 = {}) const {
-    return applyJacobian(v, 1.0, B, C, /*d_b*/ dB, /*d_c*/ dC, H1, H2);
+    return Jl().apply(v, H1, H2);
   }
 
   /// Multiplies with leftJacobianInverse(), with optional derivatives
   Vector3 applyLeftJacobianInverse(const Vector3& v,
                                    OptionalJacobian<3, 3> H1 = {},
                                    OptionalJacobian<3, 3> H2 = {}) const;
-
- protected:
-  // Helper for *applying* left and right Jacobians
-  // v ↦ (aI + b W + c W^2) v, with ∂/∂ω using db/dω = x_b ω^T, dc/dω = x_c ω^T.
-  Vector3 applyJacobian(
-      const Vector3& v, double a, double b, double c, double d_b, double d_c,
-      OptionalJacobian<3, 3> H1,  // ∂result/∂ω
-      OptionalJacobian<3, 3> H2   // ∂result/∂v = aI + bW + cW^2
-  ) const;
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /// @deprecated: use rightJacobian
@@ -249,16 +275,18 @@ struct GTSAM_EXPORT GammaFunctor : public DexpFunctor {
                         double nearPiThresholdSq);
   explicit GammaFunctor(const Vector3& omega);
 
-  /// Gamma matrix
-  Matrix3 gamma() const { return 0.5 * I_3x3 + C * W + G * WW; }
-
-  /// Gamma(-omega)
-  Matrix3 gammaMinus() const { return 0.5 * I_3x3 - C * W + G * WW; }
-
-  /// Apply, with derivatives
-  Vector3 applyGamma(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
-                     OptionalJacobian<3, 3> H2 = {}) const {
-    return applyJacobian(v, 0.5, C, G, /*d_b*/ dC, /*d_c*/ dG, H1, H2);
+  ABCKernel Gr() const { return ABCKernel{*this, 0.5, -C, G, -dC, dG}; }
+  ABCKernel Gl() const { return ABCKernel{*this, 0.5, +C, G, +dC, dG}; }
+  Matrix3 rightGamma() const { return Gr().matrix(); }
+  Matrix3 leftGamma() const { return Gl().matrix(); }
+  /// Apply Gamma to vector v, with optional derivatives
+  Vector3 applyRightGamma(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
+                          OptionalJacobian<3, 3> H2 = {}) const {
+    return Gr().apply(v, H1, H2);
+  }
+  Vector3 applyLeftGamma(const Vector3& v, OptionalJacobian<3, 3> H1 = {},
+                         OptionalJacobian<3, 3> H2 = {}) const {
+    return Gl().apply(v, H1, H2);
   }
 };
 }  //  namespace so3

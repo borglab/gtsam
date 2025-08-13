@@ -39,6 +39,7 @@ static constexpr double one_24th = 1.0 / 24.0;
 static constexpr double one_60th = 1.0 / 60.0;
 static constexpr double one_120th = 1.0 / 120.0;
 static constexpr double one_180th = 1.0 / 180.0;
+static constexpr double one_360th = 1.0 / 360.0;
 static constexpr double one_720th = 1.0 / 720.0;
 static constexpr double one_1260th = 1.0 / 1260.0;
 
@@ -70,6 +71,40 @@ GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
   Matrix3 MR = M * R.matrix();
   if (H) *H = Dcompose(R);
   return MR;
+}
+
+Matrix3 ABCKernel::matrix() const { return a * I_3x3 + b * S.W + c * S.WW; }
+
+Vector3 ABCKernel::apply(const Vector3& v, OptionalJacobian<3, 3> H1,
+                         OptionalJacobian<3, 3> H2) const {
+  const Vector3 Wv = S.W * v, WWv = S.WW * v;
+  if (H1) {
+    // Closed-form ∂/∂ω without doubleCross Jacobian:
+    const auto& w = S.omega;
+    const auto wt = w.transpose(), vt = v.transpose();
+    const auto sI = w.dot(v) * I_3x3;
+    *H1 = -b * skewSymmetric(v) +         // d(Wv)/dω = -[v]×
+          c * (w * vt + sI - 2 * v * wt)  // d(WWv)/dω = ω vᵀ + (ω·v) I - 2 v ωᵀ
+          + (db * Wv + dc * WWv) * wt;    // the coefficient derivatives
+  }
+  if (H2) *H2 = matrix();  // ∂y/∂v = a I + b W + c W²
+
+  return a * v + b * Wv + c * WWv;
+}
+
+Matrix3 ABCKernel::frechet(const Matrix3& X) const {
+  const Matrix3& W = S.W;
+  const Matrix3& WW = S.WW;
+  const double s = -0.5 * (W * X).trace();
+  return b * X + c * (W * X + X * W) + s * (db * W + dc * WW);
+}
+
+Matrix3 ABCKernel::applyFrechet(const Vector3& v) const {
+  Matrix3 H;
+  H.col(0) = frechet(skewSymmetric(Vector3::UnitX())) * v;  // δω = e_x
+  H.col(1) = frechet(skewSymmetric(Vector3::UnitY())) * v;  // δω = e_y
+  H.col(2) = frechet(skewSymmetric(Vector3::UnitZ())) * v;  // δω = e_z
+  return H;
 }
 
 void ExpmapFunctor::init(double nearZeroThresholdSq) {
@@ -154,30 +189,6 @@ Matrix3 DexpFunctor::leftJacobianInverse() const {
   return I_3x3 - 0.5 * W + D * WW;
 }
 
-Vector3 DexpFunctor::applyJacobian(
-    const Vector3& v, double a, double b, double c, double d_b, double d_c,
-    OptionalJacobian<3, 3> H1,  // ∂result/∂ω
-    OptionalJacobian<3, 3> H2   // ∂result/∂v = aI + bW + cW^2
-) const {
-  const Vector3 Wv = gtsam::cross(omega, v);
-
-  Matrix3 dWWv_domega;  // ∂(W(Wv))/∂ω
-  const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &dWWv_domega : nullptr);
-
-  if (H1) {
-    const Matrix3 aWv_Hw = Wv * d_b * omega.transpose() - b * skewSymmetric(v);
-    const Matrix3 bWWv_Hw = WWv * d_c * omega.transpose() + c * dWWv_domega;
-    *H1 = aWv_Hw + bWWv_Hw;
-  }
-
-  if (H2) {
-    const Matrix3 W = skewSymmetric(omega);
-    *H2 = a * I_3x3 + b * W + c * (W * W);
-  }
-
-  return a * v + b * Wv + c * WWv;
-}
-
 Vector3 DexpFunctor::applyRightJacobianInverse(const Vector3& v, OptionalJacobian<3, 3> H1,
   OptionalJacobian<3, 3> H2) const {
   const Matrix3 invJr = rightJacobianInverse();
@@ -212,7 +223,7 @@ GammaFunctor::GammaFunctor(const Vector3& omega, double nearZeroThresholdSq,
     dG = -(dB + 2.0 * G) / theta2;  // = G'(θ)/θ
   } else {
     G = one_24th - theta2 * one_720th;
-    dG = -0.5 * one_180th;  // dG near zero
+    dG = -one_360th;  // dG near zero
   }
 }
 
