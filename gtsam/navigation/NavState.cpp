@@ -155,7 +155,7 @@ NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi) {
     const Matrix3 Jr = local.rightJacobian();
     // We are creating a NavState, so we still need to chain H_t_w and H_v_w
     // with R^T, the Jacobian of Navstate::Create with respect to both t and v.
-    const auto Rt = R.matrix().transpose();
+    const Matrix3 Rt = R.transpose();
     *Hxi << Jr, Z_3x3, Z_3x3,   // Jr here *is* the Jacobian of expmap
         Rt * H_t_w, Jr, Z_3x3,  //
         Rt * H_v_w, Z_3x3, Jr;
