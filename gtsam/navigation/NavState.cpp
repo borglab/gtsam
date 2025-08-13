@@ -131,6 +131,7 @@ NavState NavState::inverse() const {
 }
 
 //------------------------------------------------------------------------------
+// See [this document](doc/Jacobians.md) for details.
 NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi) {
   // Get angular velocity w and components rho (for t) and nu (for v) from xi
   Vector3 w = xi.head<3>(), rho = xi.segment<3>(3), nu = xi.tail<3>();
@@ -154,12 +155,12 @@ NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi) {
     const Matrix3 Jr = local.rightJacobian();
     // We are creating a NavState, so we still need to chain H_t_w and H_v_w
     // with R^T, the Jacobian of Navstate::Create with respect to both t and v.
-    const Matrix3 M = R.matrix();
+    const auto Rt = R.matrix().transpose();
     *Hxi << Jr, Z_3x3, Z_3x3,   // Jr here *is* the Jacobian of expmap
-        M.transpose() * H_t_w, Jr, Z_3x3,  //
-        M.transpose() * H_v_w, Z_3x3, Jr;
-        // In the last two rows, Jr = R^T * J_l, see Barfoot eq. (8.83).
-        // J_l is the Jacobian of applyLeftJacobian in the second argument.
+        Rt * H_t_w, Jr, Z_3x3,  //
+        Rt * H_v_w, Z_3x3, Jr;
+    // In the last two rows, Jr = R^T * Jl, see Barfoot eq. (8.83).
+    // Jl is the left Jacobian of SO(3) at w.
   }
 
   return NavState(R, t, v);
