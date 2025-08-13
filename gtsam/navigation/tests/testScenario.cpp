@@ -63,7 +63,7 @@ static DiscreteScenario CreateSimpleDiscreteScenario() {
   accelerations[t0] = acc0;
   accelerations[t1] = acc1;
 
-  return DiscreteScenario(poses, omegas, velocities, accelerations);
+  return DiscreteScenario(poses, omegas, velocities, accelerations, t1 - t0);
 }
 
 /* ************************************************************************* */
@@ -276,13 +276,13 @@ TEST(DiscreteScenario, ConstructorExceptions) {
   map<double, Pose3> empty_poses;
   map<double, Vector3> empty_vectors;
 
-  CHECK_EXCEPTION(DiscreteScenario(empty_poses, omegas, velocities, accelerations),
+  CHECK_EXCEPTION(DiscreteScenario(empty_poses, omegas, velocities, accelerations, 0),
                    std::invalid_argument);
-  CHECK_EXCEPTION(DiscreteScenario(poses, empty_vectors, velocities, accelerations),
+  CHECK_EXCEPTION(DiscreteScenario(poses, empty_vectors, velocities, accelerations, 0),
                    std::invalid_argument);
-  CHECK_EXCEPTION(DiscreteScenario(poses, omegas, empty_vectors, accelerations),
+  CHECK_EXCEPTION(DiscreteScenario(poses, omegas, empty_vectors, accelerations, 0),
                    std::invalid_argument);
-  CHECK_EXCEPTION(DiscreteScenario(poses, omegas, velocities, empty_vectors),
+  CHECK_EXCEPTION(DiscreteScenario(poses, omegas, velocities, empty_vectors, 0),
                    std::invalid_argument);
 }
 
@@ -295,7 +295,7 @@ TEST(DiscreteScenario, FromCSV_Correct) {
   CHECK(csv_file.is_open());
 
   // Header and data
-  csv_file << "timestamp,px,py,pz,qw,qx,qy,qz,vx,vy,vz,omegax,omegay,omegaz,ax,ay,az\n";
+  csv_file << "t,p__x,p_y,p_z,q_w,q_x,q_y,q_z,v_x,v_y,v_z,w_x,w_y,w_z,a_x,a_y,a_z\n";
   csv_file << "100.0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0\n"; // t_norm = 0.0
   const Rot3 R1 = Rot3::Rodrigues(0, 0, 0.2);
   const Quaternion q1 = R1.toQuaternion();
