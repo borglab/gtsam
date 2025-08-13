@@ -115,15 +115,18 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
    * @param angularVelocities_b Map of timestamps to ground truth angular velocities in body frame.
    * @param velocities_n Map of timestamps to ground truth linear velocities in nav frame.
    * @param accelerations_n Map of timestamps to ground truth linear accelerations in nav frame.
+   * @param t The duration of time between the first timestamp and the last.
    */
   DiscreteScenario(const map<double, Pose3>& poses,
                    const map<double, Vector3>& angularVelocities_b,
                    const map<double, Vector3>& velocities_n,
-                   const map<double, Vector3>& accelerations_n)
+                   const map<double, Vector3>& accelerations_n,
+                   const double t)
       : poses_(poses),
         angularVelocities_b_(angularVelocities_b),
         velocities_n_(velocities_n),
-        accelerations_n_(accelerations_n) {
+        accelerations_n_(accelerations_n),
+        t_(t) {
     if (poses_.empty() || angularVelocities_b_.empty() ||
         velocities_n_.empty() || accelerations_n_.empty()) {
       throw invalid_argument(
@@ -138,8 +141,9 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
    * All timestamps will be normalized so that the first timestamp in the file
    * corresponds to t=0 for the scenario.
    *
-   * Expected CSV format (16 columns):
-   * timestamp,px,py,pz,qw,qx,qy,qz,vx,vy,vz,omegax,omegay,omegaz,ax,ay,az
+   * CSV is expected to contain the following columns:
+   * t,q_w,q_x,q_y,q_z,v_x,v_y,v_z,p_x,p_y,p_z,w_x,w_y,w_z,a_x,a_y,a_z
+   * Other columns will be ignored.
    *
    * @param csv_filepath Path to the CSV file.
    * @return A constructed DiscreteScenario.
@@ -154,6 +158,8 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
   Vector3 velocity_n(double t) const override;
   Vector3 acceleration_n(double t) const override;
   /// @}
+  
+  double duration() const;
 
  private:
   /// Map from timestamp to pose.
@@ -164,6 +170,8 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
   map<double, Vector3> velocities_n_;
   /// Map from timestamp to acceleration in navigation frame.
   map<double, Vector3> accelerations_n_;
+  /// Duration.
+  double t_;
 
   /**
    * @brief Internal helper to interpolate values in a time-stamped map.
