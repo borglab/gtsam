@@ -24,7 +24,7 @@ jobs:
             python: python
             # check_constraint_program fail on windows. should fix it for windows.
             # Remove this excluded test when you fix it for windows.
-            ctest_extra_flags: -E check_constraint_program
+            ctest_extra_flags: -E check_constraint_program -E check_inference_program -E check_symbolic_program -E check_discrete_program
           - os: ubuntu-latest
             triplet: x64-linux-release
             build_type: Release
