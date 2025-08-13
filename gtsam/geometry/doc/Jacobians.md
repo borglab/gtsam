@@ -340,7 +340,7 @@ The `Gal3` class implements Galilean relativity, adding time to $SE_2(3)$.  Its 
     \begin{cases}
     R = \exp(\omega) \\
     v = J_l(\omega)\nu \\
-    p = J_l(\omega)\rho + \alpha \cdot \Gamma_l(\omega)\nu \\
+    p = J_l(\omega)\rho + \alpha \, \Gamma_l(\omega)\nu \\
     t = \alpha
     \end{cases}
     $$
@@ -361,14 +361,17 @@ The `Gal3` class implements Galilean relativity, adding time to $SE_2(3)$.  Its 
         $$
         (J_r)_{v,\omega} = R^T \cdot \mathcal{L}_{J_l}(\Omega)[-[\nu]_\times]
         $$
-    -   **Row 3 (p):** The block contains two straightforward Fréchet derivatives applications:
+    -   **Row 3 (p):** The first block contains two straightforward Fréchet derivatives applications, rotated back:
         $$
         (J_r)_{p,\omega} = R^T \left( \mathcal{L}_{J_l}(\Omega)[-[\rho]_\times] + \alpha \mathcal{L}_{\Gamma_l}(\Omega)[-[\nu]_\times] \right)
         $$
-        These derivatives are unexpected:
+
+        The second is straightforward, also rotated back:
         $$
-        (J_r)_{p,\nu} = \alpha (J_r(\omega) - \Gamma_r(\omega))
+        (J_r)_{p,\nu} = R^T \cdot \alpha \, \Gamma_l(\omega)
         $$
+        
+        This derivative is unexpected:
         $$
         (J_r)_{p,\alpha} = -\Gamma_r(\omega)\nu
         $$

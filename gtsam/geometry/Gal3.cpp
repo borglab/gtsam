@@ -272,15 +272,15 @@ Gal3 Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
   Matrix3 H_v_w;
   const Velocity3 v = local.applyLeftJacobian(nu, Hxi ? &H_v_w : nullptr);
 
-  // Compute position: apply left Jacobian
-  Matrix3 H_p_w;
+  // Compute position: apply left Jacobian and compute time-dependent part
+  Matrix3 H_p_w, H_delta_w;
   Point3 p = local.applyLeftJacobian(rho, Hxi ? &H_p_w : nullptr);
+  const Point3 delta = local.applyLeftGamma(nu, Hxi ? &H_delta_w : nullptr);
 
-  // (*) means: negative from Arxiv paper!
-  Matrix3 Jr, Gr;
+  // (*) means: different from Arxiv paper!
   if (Hxi) {
-    Jr = local.rightJacobian();
-    Gr = local.rightGamma();
+    const Matrix3 Jr = local.rightJacobian();
+    const Matrix3 Gr = local.rightGamma();
     *Hxi << Jr, Z_3x3, Z_3x3, Z_3x1,      //
         Rt * H_v_w, Jr, Z_3x3, Z_3x1,     //
         Rt * H_p_w, Z_3x3, Jr, -Gr * nu,  // (*)
@@ -289,13 +289,11 @@ Gal3 Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
 
   // if alpha!=0, augment position with time-dependent bit.
   if (std::abs(alpha) > 1e-12) {
-    Matrix3 H_delta_w;
-    Vector3 delta = local.applyLeftGamma(nu, Hxi ? &H_delta_w : nullptr);
     p += alpha * delta;
     if (Hxi) {
       // Derivative of time-dependent part
       Hxi->block<3, 3>(6, 0) += alpha * Rt * H_delta_w;
-      Hxi->block<3, 3>(6, 3) = alpha * (Jr - Gr);  // (*)
+      Hxi->block<3, 3>(6, 3) = alpha * Rt * local.leftGamma();  // (*)
     }
   }
   return Gal3(R, p, v, alpha);
