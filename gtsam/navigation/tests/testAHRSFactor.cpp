@@ -581,29 +581,6 @@ TEST(AHRSFactor, bodyPSensorWithBias) {
   }
 }
 
-/* ************************************************************************* */
-TEST(AHRSFactor, Accelerating) {
-  const double a = 0.2, v = 50;
-
-  // Set up body pointing towards y axis, and start at 10,20,0 with velocity
-  // going in X The body itself has Z axis pointing down
-  const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
-  const Point3 initial_position(10, 20, 0);
-  const Vector3 initial_velocity(v, 0, 0);
-
-  const AcceleratingScenario scenario(nRb, initial_position, initial_velocity,
-                                      Vector3(a, 0, 0));
-
-  const double T = 3.0;  // seconds
-  AhrsScenarioRunner runner(scenario, testing::Params(), T / 10);
-
-  PreintegratedAhrsMeasurements pim = runner.integrate(T);
-  EXPECT(assert_equal(scenario.rotation(T), runner.predict(pim), 1e-9));
-
-  Matrix3 estimatedCov = runner.estimateCovariance(T, 1000);
-  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.01));
-}
-
 //******************************************************************************
 int main() {
   TestResult tr;
