@@ -101,9 +101,9 @@ The off-diagonal blocks \(Q_r\) and \(Q_\ell\) are obtained by applying the corr
 ---
 ## Part 2 - Connection with Fréchet Derivatives
 
-Part 1 gave us a powerful and efficient "recipe": the $abc$ kernel. We saw that by plugging in coefficients, we can compute $SO(3)$ Jacobians and their derivatives with simple, closed-form expressions.
+Part 1 gave us a powerful and efficient "recipe": the $abc$ kernel. We saw that by plugging in coefficients, we can compute $\text{SO}(3)$ Jacobians and their derivatives with simple, closed-form expressions.
 
-You might now be asking: *Why does this work?* And more importantly, *how can we confidently use this simple $SO(3)$ tool to build the much more complex Jacobians for groups like $SE(3)$, $SE_2(3)$, and $Gal(3)$?*
+You might now be asking: *Why does this work?* And more importantly, *how can we confidently use this simple $\text{SO}(3)$ tool to build the much more complex Jacobians for groups like $\text{SE}(3)$, $\text{SE}_2(3)$, and $\text{Gal}(3)$?*
 
 This section bridges that gap. It will connect our practical kernel recipe to the formal definitions from Lie theory. The goal is **not** to force you through complex derivations, but to give you the high-level understanding of *why* the kernel approach is correct and powerful. We will see that the intimidating integrals that formally define Jacobians have an elegant, closed-form solution for our $abc$ kernels, and this solution is precisely the **Fréchet derivative**.
 
@@ -183,7 +183,7 @@ The (optional) exposition in the box below explains why.
 
 ## The Jacobians for semidirect product groups
 
-The real power of this formalism appears when we look at semidirect product groups like $SE(3) = SO(3) \ltimes \mathbb{R}^3$. An element of the Lie algebra is a pair $\xi = (\omega, v)$. The magic is that the adjoint operator $\mathrm{ad}_\xi$ for these groups has a **block lower-triangular structure**:
+The real power of this formalism appears when we look at semidirect product groups like $\text{SE}(3) = SO(3) \ltimes \mathbb{R}^3$. An element of the Lie algebra is a pair $\xi = (\omega, v)$. The magic is that the adjoint operator $\mathrm{ad}_\xi$ for these groups has a **block lower-triangular structure**:
 $$
 \mathrm{ad}_{(\omega,v)} =
 \begin{pmatrix}
@@ -200,7 +200,7 @@ Q_r(\omega,v) & J_r(\omega)
 \end{pmatrix}
 $$
 This is a profound result! It tells us:
-1.  **The diagonal blocks** are just the familiar $SO(3)$ Jacobians, $J_r(\omega)$.
+1.  **The diagonal blocks** are just the familiar $\text{SO}(3)$ Jacobians, $J_r(\omega)$.
 2.  **The off-diagonal block $Q_r$** captures the coupling between rotation $\omega$ and the vector part $v$. It is this block that we need a simple way to compute.
 
 #### The Fréchet Derivative: A Practical Tool for Matrix Derivatives
@@ -215,20 +215,20 @@ Notice this is just an algebraic formula using the same $b, c, d_b, d_c$ coeffic
 
 #### The Connection: Fréchet Derivatives as the Solution to the Integral
 
-Now we can state the central connection. The off-diagonal block $Q_r$ from the integral can be shown to be an operator acting on the vector part $v$. For semidirect products, this operator takes the form of the Fréchet derivative of the corresponding $SO(3)$ kernel, evaluated in the direction $X = -[v]_\times$.
+Now we can state the central connection. The off-diagonal block $Q_r$ from the integral can be shown to be an operator acting on the vector part $v$. For semidirect products, this operator takes the form of the Fréchet derivative of the corresponding $\text{SO}(3)$ kernel, evaluated in the direction $X = -[v]_\times$.
 
 **In other words, the Fréchet derivative is the closed-form evaluation of the complex $\mathrm{ad}$-integral for our family of $abc$ kernels.**
 
-Let's break this down for $SE(3)$:
+Let's break this down for $\text{SE}(3)$:
 1.  The formal definition gives the off-diagonal block $Q_r$ as a complicated integral involving $\mathrm{ad}_{(\omega,\rho)}$.
 2.  Lie theory proves this integral is equivalent to applying a linear operator to the translation vector $\rho$.
-3.  Our key insight is that this linear operator is *exactly* the Fréchet derivative of the $SO(3)$ Jacobian kernel, $J_r(\omega)$, acting on $\rho$.
+3.  Our key insight is that this linear operator is *exactly* the Fréchet derivative of the $\text{SO}(3)$ Jacobian kernel, $J_r(\omega)$, acting on $\rho$.
 
 $$
 \text{Off-Diagonal Block for SE(3):} \quad Q_r(\omega, \rho) = \mathcal{L}_{J_r}(\Omega)[-[\rho]_\times]
 $$
 
-This is the punchline. We can completely bypass the complicated integrals. The Fréchet derivative, which has a simple formula for our kernels, gives us the exact off-diagonal blocks we need. This provides the theoretical justification for using our simple $SO(3)$ tools to build the Jacobians for more complex groups, which we will do in Part 3.
+This is the punchline. We can completely bypass the complicated integrals. The Fréchet derivative, which has a simple formula for our kernels, gives us the exact off-diagonal blocks we need. This provides the theoretical justification for using our simple $\text{SO}(3)$ tools to build the Jacobians for more complex groups, which we will do in Part 3.
 
 > **(Optional) Proof: How the Adjoint Integral is equal to the Fréchet Derivative**
 > TBD
@@ -236,7 +236,7 @@ This is the punchline. We can completely bypass the complicated integrals. The F
 ---
 ## Part 3 - A Cookbook for Group Jacobians
 
-With the theoretical foundation from Part 2 in place, we now have a powerful recipe. We know that for semidirect products, the Jacobians are block-triangular, and the off-diagonal blocks are given by the Fréchet derivative of the corresponding $SO(3)$ kernel. This allows us to construct Jacobians for complex groups using our simple `abc` kernel building blocks.
+With the theoretical foundation from Part 2 in place, we now have a powerful recipe. We know that for semidirect products, the Jacobians are block-triangular, and the off-diagonal blocks are given by the Fréchet derivative of the corresponding $\text{SO}(3)$ kernel. This allows us to construct Jacobians for complex groups using our simple `abc` kernel building blocks.
 
 This section provides a practical "cookbook" for several common groups. For each group, we will:
 1.  Define the tangent vector $\xi$ and the exponential map $\exp(\xi)$.
@@ -245,12 +245,12 @@ This section provides a practical "cookbook" for several common groups. For each
 
 All formulas are **right-trivialized** unless marked. Left-trivialized versions are found by substituting $J_r \to J_\ell$ and $\Gamma_r \to \Gamma_\ell$.
 
-### $SE(3)$ - Special Euclidean Group
+### $\text{SE}(3)$ - Special Euclidean Group
 
 The group of rigid body motions. This section uses the convention adopted by GTSAM for its `Pose3` class, which is physically motivated by integrating body-centric velocities.
 
 -   **Tangent Vector:** $\xi = (\omega, v) \in \mathbb{R}^6$, where $\omega$ is angular velocity and $v$ is linear velocity, both expressed in the body frame.
--   **Exponential Map:** The map uses the **left Jacobian** of $SO(3)$ to compute the final translation, which corresponds to integrating a body-fixed velocity $v$.
+-   **Exponential Map:** The map uses the **left Jacobian** of $\text{SO}(3)$ to compute the final translation, which corresponds to integrating a body-fixed velocity $v$.
     $$
     \exp(\xi) = (R, t) \quad \text{where} \quad R = \exp(\omega), \quad t = J_l(\omega)v
     $$
@@ -262,8 +262,8 @@ The group of rigid body motions. This section uses the convention adopted by GTS
     Q_r(\omega, v) & J_r(\omega)
     \end{pmatrix}
     $$
--   **Block Formulas:** The diagonal blocks are the standard right Jacobian of $SO(3)$, $J_r(\omega)$. The off-diagonal block $Q_r$ requires a two-step process to derive:
-    1.  **World-Frame Derivative ($Q_l$):** First, we compute the derivative of the translation $t$ with respect to the rotation $\omega$. Since $t$ is a point in the world frame, this derivative is also in the world frame. This is, by definition, the off-diagonal block of the **left Jacobian** of $SE(3)$, which we can call $Q_l$. It is computed using the Fréchet derivative of the $J_l$ kernel.
+-   **Block Formulas:** The diagonal blocks are the standard right Jacobian of $\text{SO}(3)$, $J_r(\omega)$. The off-diagonal block $Q_r$ requires a two-step process to derive:
+    1.  **World-Frame Derivative ($Q_l$):** First, we compute the derivative of the translation $t$ with respect to the rotation $\omega$. Since $t$ is a point in the world frame, this derivative is also in the world frame. This is, by definition, the off-diagonal block of the **left Jacobian** of $\text{SE}(3)$, which we can call $Q_l$. It is computed using the Fréchet derivative of the $J_l$ kernel.
         $$
         Q_l = \frac{\partial t}{\partial \omega} = \frac{\partial (J_l(\omega)v)}{\partial \omega} = \mathcal{L}_{J_l}(\Omega)[-[v]_\times]
         $$
@@ -275,7 +275,7 @@ The group of rigid body motions. This section uses the convention adopted by GTS
         $$
         This two-step process is the correct and principled way to compute the right Jacobian for this choice of exponential map.
 
-### $SE_2(3)$ - The `NavState`
+### $\text{SE}_2(3)$ - The `NavState`
 
 The `NavState` class in GTSAM implements a specific, influential definition of the $SE_2(3)$ Lie group, sourced from the robotics literature (e.g., Barrau, 2012). It is crucial to understand that this definition is a **deliberate modeling choice** and differs from other canonical, physics-based definitions of a constant velocity model.
 
@@ -324,17 +324,17 @@ This group models a state with three components—rotation, position, and veloci
 
 This definition results in a simpler algebraic structure than the canonical "integrated velocity" model, which is advantageous for certain filtering applications and is the one faithfully implemented and tested in GTSAM.
 
-<!-- ### $Gal(3)$ - The Preintegrated IMU Model
+### $\text{Gal}(3)$ - The Galilean group
 
-The `Gal(3)` implementation in GTSAM models the result of preintegrating IMU measurements (constant angular velocity $\omega$ and linear acceleration/velocity tangent $\nu$) over a fixed time interval $\alpha$. It defines a specific Lie group structure that captures these physics, arranged according to the Barrau convention.
+The `Gal3` class implements Galilean relativity, adding time to $SE_2(3)$.  Its Jacobian, as implemented and tested in GTSAM, is the result of formal Lie-theoretic derivations.
 
 -   **Tangent Vector:** $\xi = (\omega, \nu, \rho, \alpha) \in \mathbb{R}^{10}$.
-    -   $\omega$: angular velocity (rad/s)
-    -   $\nu$: tangent vector for velocity (m/s)
-    -   $\rho$: tangent vector for position (m)
-    -   $\alpha$: integration time interval (s)
+    -   $\omega$: angular velocity
+    -   $\nu$: velocity tangent
+    -   $\rho$: position tangent
+    -   $\alpha$: time interval
 
--   **Exponential Map (R, v, p, t):** The map is derived from integrating the system's differential equations. The final state $(R, v, p, t)$ is computed from the tangent vector $\xi$ as follows:
+-   **Exponential Map:** State Order = $(R, v, p, t)$.
     $$
     \exp(\xi) = (R, v, p, t) \quad \text{where} \quad
     \begin{cases}
@@ -344,44 +344,36 @@ The `Gal(3)` implementation in GTSAM models the result of preintegrating IMU mea
     t = \alpha
     \end{cases}
     $$
-    Note the structure: the final velocity $v$ comes only from the velocity tangent $\nu$. The final position $p$ comes from both the position tangent $\rho$ and the integrated effect of the velocity tangent $\nu$.
 
--   **Right Jacobian Structure:** We compute the right Jacobian $J_r(\xi)$ for this group. The Jacobian is a 10x10 matrix with a 4x4 block structure corresponding to the specified state and tangent ordering. The resulting Jacobian is block **lower-triangular**.
+-   **Right Jacobian Structure:** We compute the right Jacobian $J_r(\xi)$. The tangent order is $(\omega, \nu, \rho, \alpha)$ and the internal state order is $(R, v, p, t)$.
     $$
     J_r(\xi) =
     \begin{pmatrix}
     J_r(\omega) & 0 & 0 & 0 \\
-    (J_r)_{v,\omega} & (J_r)_{v,\nu} & 0 & 0 \\
-    (J_r)_{p,\omega} & (J_r)_{p,\nu} & (J_r)_{p,\rho} & (J_r)_{p,\alpha} \\
-    0 & 0 & 0 & 1
+    (J_r)_{v,\omega} & J_r(\omega) & 0 & 0 \\
+    (J_r)_{p,\omega} & (J_r)_{p,\nu} & J_r(\omega) & (J_r)_{p,\alpha} \\
+    (J_r)_{t,\omega} & (J_r)_{t,\nu} & (J_r)_{t,\rho} & 1
     \end{pmatrix}
     $$
 
--   **Block Formulas:**
-    -   **Diagonal Blocks:** These blocks require the standard $R^T J_l = J_r$ transformation to move from the left-Jacobian world of the `Expmap` to the right-Jacobian world of the final matrix.
+-   **Block Formulas (As Implemented in GTSAM):**
+    -   **Row 2 (v):** is just as in $\text{SE}_2(3)$:
         $$
-        (J_r)_{v,\nu} = R^T J_l(\omega) = J_r(\omega)
+        (J_r)_{v,\omega} = R^T \cdot \mathcal{L}_{J_l}(\Omega)[-[\nu]_\times]
+        $$
+    -   **Row 3 (p):** The block contains two straightforward Fréchet derivatives applications:
+        $$
+        (J_r)_{p,\omega} = R^T \left( \mathcal{L}_{J_l}(\Omega)[-[\rho]_\times] + \alpha \mathcal{L}_{\Gamma_l}(\Omega)[-[\nu]_\times] \right)
+        $$
+        These derivatives are unexpected:
+        $$
+        (J_r)_{p,\nu} = \alpha (J_r(\omega) - \Gamma_r(\omega))
         $$
         $$
-        (J_r)_{p,\rho} = R^T J_l(\omega) = J_r(\omega)
+        (J_r)_{p,\alpha} = -\Gamma_r(\omega)\nu
         $$
-    -   **Rotation Coupling Blocks (Column 1):**
-        $$
-        (J_r)_{v,\omega} = R^T \cdot \frac{\partial v}{\partial\omega} = R^T \cdot \mathcal{L}_{J_l}(\Omega)[-[\nu]_\times]
-        $$
-        $$
-        (J_r)_{p,\omega} = R^T \cdot \frac{\partial p}{\partial\omega} = R^T \left( \mathcal{L}_{J_l}(\Omega)[-[\rho]_\times] + \alpha \mathcal{L}_{\Gamma_l}(\Omega)[-[\nu]_\times] \right)
-        $$
-    -   **Velocity-Position Coupling (Block $(J_r)_{p,\nu}$):** This block represents how the final position `p` is affected by the initial velocity tangent $\nu$. This arises from the $\alpha \Gamma_l \nu$ term in the exponential map. The corresponding block in the right Jacobian is $\alpha \Gamma_r(\omega)$.
-        $$
-        (J_r)_{p,\nu} = \alpha \Gamma_r(\omega)
-        $$
-    -   **Time-Position Coupling (Block $(J_r)_{p,\alpha}$):** This is the partial derivative of the final position `p` with respect to the time interval $\alpha$. It is a standard derivative, not a Fréchet one, rotated into the body frame.
-        $$
-        (J_r)_{p,\alpha} = R^T \cdot \frac{\partial p}{\partial \alpha} = R^T \cdot (\Gamma_l(\omega)\nu)
-        $$
-        
-### $Sim(3)$ - The Similarity Group (GTSAM Convention)
+
+<!-- ### $Sim(3)$ - The Similarity Group (GTSAM Convention)
 
 The `Similarity3` class in GTSAM models transformations involving rotation, translation, and uniform scaling. Its exponential map is defined by a specialized, scale-aware kernel, which we'll call $V_l(\omega, \lambda)$, corresponding to the `GetV` function in the code.
 

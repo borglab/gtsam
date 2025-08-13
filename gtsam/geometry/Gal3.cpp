@@ -266,6 +266,7 @@ Gal3 Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
 #else
   const Rot3 R(local.expmap());
 #endif
+  const auto Rt = R.matrix().transpose();
 
   // Compute velocity: just apply left SO(3) Jacobian,
   Matrix3 H_v_w;
@@ -276,26 +277,25 @@ Gal3 Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
   Point3 p = local.applyLeftJacobian(rho, Hxi ? &H_p_w : nullptr);
 
   // (*) means: negative from Arxiv paper!
-  Matrix3 Jr, Rt, GammaMinus;
+  Matrix3 Jr, Gr;
   if (Hxi) {
     Jr = local.rightJacobian();
-    Rt = R.transpose();
-    GammaMinus = local.gammaMinus();
-    *Hxi << Jr, Z_3x3, Z_3x3, Z_3x1,              //
-        Rt * H_v_w, Jr, Z_3x3, Z_3x1,             //
-        Rt * H_p_w, Z_3x3, Jr, -GammaMinus * nu,  // (*)
+    Gr = local.rightGamma();
+    *Hxi << Jr, Z_3x3, Z_3x3, Z_3x1,      //
+        Rt * H_v_w, Jr, Z_3x3, Z_3x1,     //
+        Rt * H_p_w, Z_3x3, Jr, -Gr * nu,  // (*)
         Z_9x1.transpose(), 1.0;
   }
 
   // if alpha!=0, augment position with time-dependent bit.
   if (std::abs(alpha) > 1e-12) {
     Matrix3 H_delta_w;
-    Vector3 delta = local.applyGamma(nu, Hxi ? &H_delta_w : nullptr);
+    Vector3 delta = local.applyLeftGamma(nu, Hxi ? &H_delta_w : nullptr);
     p += alpha * delta;
     if (Hxi) {
       // Derivative of time-dependent part
       Hxi->block<3, 3>(6, 0) += alpha * Rt * H_delta_w;
-      Hxi->block<3, 3>(6, 3) = alpha * (Jr - GammaMinus);  // (*)
+      Hxi->block<3, 3>(6, 3) = alpha * (Jr - Gr);  // (*)
     }
   }
   return Gal3(R, p, v, alpha);
@@ -309,9 +309,9 @@ Gal3::TangentVector Gal3::Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg) {
     
     // Implementation of Equation 23, Page 8
     const Matrix3 Jl_inv = local.leftJacobianInverse();
-    Matrix3 E = local.gamma();
+    Matrix3 Gl = local.leftGamma();
     const Vector3 nu = Jl_inv * g.v_;
-    const Vector3 rho = Jl_inv * (g.r_ - E * (g.t_ * nu));
+    const Vector3 rho = Jl_inv * (g.r_ - Gl * (g.t_ * nu));
 
     TangentVector xi;
     xi_w(xi) = w;
@@ -392,14 +392,9 @@ Gal3::TangentVector Gal3::adjoint(const TangentVector& xi, const TangentVector& 
 
 //------------------------------------------------------------------------------
 Gal3::Jacobian Gal3::ExpmapDerivative(const TangentVector& xi) {
-    // Related to the left Jacobian in Equations 31-36, Pages 10-11
-    // NOTE: Using numerical approximation instead of implementing the analytical
-    // expression for the Jacobian. Future work to replace this
-    // with analytical derivative.
-    if (xi.norm() < kSmallAngleThreshold) return Jacobian::Identity();
-    std::function<Gal3(const TangentVector&)> fn =
-        [](const TangentVector& v) { return Gal3::Expmap(v); };
-    return numericalDerivative11<Gal3, TangentVector>(fn, xi, 1e-5);
+  Gal3::Jacobian J;
+  Expmap(xi, J);
+  return J;
 }
 
 //------------------------------------------------------------------------------
