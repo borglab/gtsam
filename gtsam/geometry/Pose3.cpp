@@ -214,6 +214,7 @@ Pose3 Pose3::interpolateRt(const Pose3& T, double t,
 /* ************************************************************************* */
 // Expmap is implemented in so3::ExpmapFunctor::expmap, based on Ethan Eade's
 // elegant Lie group document, at https://www.ethaneade.org/lie.pdf.
+// See also [this document](doc/Jacobians.md)
 Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   // Get angular velocity omega and translational velocity v from twist xi
   const Vector3 w = xi.head<3>(), v = xi.tail<3>();
@@ -245,9 +246,9 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
     const Matrix3 Jr = local.rightJacobian();
     // We are creating a Pose3, so we still need to chain H with R^T, the
     // Jacobian of Pose3::Create with respect to t.
-    const Matrix3 Q = R.matrix().transpose() * H;
+    const auto Rt = R.matrix().transpose();
     *Hxi << Jr, Z_3x3,  // Jr here *is* the Jacobian of expmap
-        Q, Jr;  // Here Jr = R^T * J_l, with J_l the Jacobian of t in v.
+        Rt * H, Jr;     // Here Jr = R^T * Jl, with Jl the Jacobian of t in v.
   }
 
   return Pose3(R, t);

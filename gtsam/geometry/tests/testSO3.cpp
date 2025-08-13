@@ -494,20 +494,50 @@ TEST(SO3, ApplyGamma) {
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
         [nearZero](const Vector3& omega, const Vector3& v) {
-          return so3::GammaFunctor(omega, nearZero ? 1.0 : 0.0, 1e-5)
-              .applyGamma(v);
+          return so3::GammaFunctor(omega, nearZero ? 1.0 : 0.0, 1e-5).Gl() * v;
         };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
       so3::GammaFunctor local(omega, nearZero ? 1.0 : 0.0, 1e-5);
       for (const Vector3& v : test_cases::vs) {
         Matrix3 expectedGamma = 0.5 * I_3x3 + local.C * local.W + local.G * local.WW;
-        EXPECT(assert_equal(expectedGamma, local.gamma(), 1e-5));
+        EXPECT(assert_equal(expectedGamma, local.leftGamma(), 1e-5));
         Matrix3 expectedGammaMinus = 0.5 * I_3x3 - local.C * local.W + local.G * local.WW;
-        EXPECT(assert_equal(expectedGammaMinus, local.gammaMinus(), 1e-5));
-        EXPECT(assert_equal(Vector3(expectedGamma * v), local.applyGamma(v, aH1, aH2)));
+        EXPECT(assert_equal(expectedGammaMinus, local.rightGamma(), 1e-5));
+        EXPECT(assert_equal(Vector3(expectedGamma * v), local.applyLeftGamma(v, aH1, aH2)));
         EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1, 1e-5));
         EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2, 1e-5));
         EXPECT(assert_equal(expectedGamma, aH2, 1e-5));
+      }
+    }
+  }
+}
+
+
+//******************************************************************************
+TEST(SO3, ApplyJacobianMatchesFrechetApply) {
+  Matrix H_apply, H_dummy;
+  for (bool nearZero : {true, false}) {
+    for (const Vector3& omega : test_cases::omegas(nearZero)) {
+      so3::GammaFunctor local(omega, nearZero ? 1.0 : 0.0, 1e-5);
+      for (const Vector3& v : test_cases::vs) {
+        // Left Jacobian vs Jr/Jl kernels’ Fréchet applied to v
+        Matrix3 H1_leftJ;
+        local.applyLeftJacobian(v, H1_leftJ, H_dummy);
+        EXPECT(assert_equal(H1_leftJ, local.Jl().applyFrechet(v), 1e-5));
+
+        Matrix3 H1_rightJ;
+        local.applyRightJacobian(v, H1_rightJ, H_dummy);
+        EXPECT(assert_equal(H1_rightJ, local.Jr().applyFrechet(v), 1e-5));
+
+        // Left Gamma vs Gl kernel’s Fréchet applied to v
+        Matrix3 H1_leftG;
+        local.applyLeftGamma(v, H1_leftG, H_dummy);
+        EXPECT(assert_equal(H1_leftG, local.Gl().applyFrechet(v), 1e-5));
+
+        // Right Gamma
+        Matrix3 H1_rightG;
+        local.applyRightGamma(v, H1_rightG, H_dummy);
+        EXPECT(assert_equal(H1_rightG, local.Gr().applyFrechet(v), 1e-5));
       }
     }
   }
