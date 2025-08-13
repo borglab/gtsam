@@ -324,72 +324,67 @@ This group models a state with three components—rotation, position, and veloci
 
 This definition results in a simpler algebraic structure than the canonical "integrated velocity" model, which is advantageous for certain filtering applications and is the one faithfully implemented and tested in GTSAM.
 
-<!-- ### $Gal(3)$ - The Preintegrated IMU Model
+### $\text{Gal}(3)$ - The Galilean group
 
-The `Gal(3)` implementation in GTSAM models the result of preintegrating IMU measurements (constant angular velocity $\omega$ and linear acceleration/velocity tangent $\nu$) over a fixed time interval $\alpha$. It defines a specific Lie group structure that captures these physics, arranged according to the Barrau convention.
+The `Gal3` class implements Galilean relativity, adding time to $SE_2(3)$.  Its Jacobian, as implemented and tested in GTSAM, is the result of formal Lie-theoretic derivations.
 
 -   **Tangent Vector:** $\xi = (\omega, \nu, \rho, \alpha) \in \mathbb{R}^{10}$.
-    -   $\omega$: angular velocity (rad/s)
-    -   $\nu$: tangent vector for velocity (m/s)
-    -   $\rho$: tangent vector for position (m)
-    -   $\alpha$: integration time interval (s)
+    -   $\omega$: angular velocity
+    -   $\nu$: velocity tangent
+    -   $\rho$: position tangent
+    -   $\alpha$: time interval
 
--   **Exponential Map (R, v, p, t):** The map is derived from integrating the system's differential equations. The final state $(R, v, p, t)$ is computed from the tangent vector $\xi$ as follows:
+-   **Exponential Map:** State Order = $(R, v, p, t)$.
     $$
     \exp(\xi) = (R, v, p, t) \quad \text{where} \quad
     \begin{cases}
     R = \exp(\omega) \\
     v = J_l(\omega)\nu \\
-    p = J_l(\omega)\rho + \alpha \cdot \Gamma_l(\omega)\nu \\
+    p = J_l(\omega)\rho + \alpha \, \Gamma_l(\omega)\nu \\
     t = \alpha
     \end{cases}
     $$
-    Note the structure: the final velocity $v$ comes only from the velocity tangent $\nu$. The final position $p$ comes from both the position tangent $\rho$ and the integrated effect of the velocity tangent $\nu$.
 
--   **Right Jacobian Structure:** We compute the right Jacobian $J_r(\xi)$ for this group. The Jacobian is a 10x10 matrix with a 4x4 block structure corresponding to the specified state and tangent ordering. The resulting Jacobian is block **lower-triangular**.
+-   **Right Jacobian Structure:** We compute the right Jacobian $J_r(\xi)$. The tangent order is $(\omega, \nu, \rho, \alpha)$ and the internal state order is $(R, v, p, t)$.
     $$
     J_r(\xi) =
     \begin{pmatrix}
     J_r(\omega) & 0 & 0 & 0 \\
-    (J_r)_{v,\omega} & (J_r)_{v,\nu} & 0 & 0 \\
-    (J_r)_{p,\omega} & (J_r)_{p,\nu} & (J_r)_{p,\rho} & (J_r)_{p,\alpha} \\
-    0 & 0 & 0 & 1
+    (J_r)_{v,\omega} & J_r(\omega) & 0 & 0 \\
+    (J_r)_{p,\omega} & (J_r)_{p,\nu} & J_r(\omega) & (J_r)_{p,\alpha} \\
+    (J_r)_{t,\omega} & (J_r)_{t,\nu} & (J_r)_{t,\rho} & 1
     \end{pmatrix}
     $$
 
--   **Block Formulas:**
-    -   **Diagonal Blocks:** These blocks require the standard $R^T J_l = J_r$ transformation to move from the left-Jacobian world of the `Expmap` to the right-Jacobian world of the final matrix.
+-   **Block Formulas (As Implemented in GTSAM):**
+    -   **Row 2 (v):** is just as in $\text{SE}_2(3)$:
         $$
-        (J_r)_{v,\nu} = R^T J_l(\omega) = J_r(\omega)
+        (J_r)_{v,\omega} = R^T \cdot \mathcal{L}_{J_l}(\Omega)[-[\nu]_\times]
         $$
+    -   **Row 3 (p):** The first block contains two straightforward Fréchet derivatives applications, rotated back:
         $$
-        (J_r)_{p,\rho} = R^T J_l(\omega) = J_r(\omega)
+        (J_r)_{p,\omega} = R^T \left( \mathcal{L}_{J_l}(\Omega)[-[\rho]_\times] + \alpha \mathcal{L}_{\Gamma_l}(\Omega)[-[\nu]_\times] \right)
         $$
-    -   **Rotation Coupling Blocks (Column 1):**
+
+        The second is straightforward, also rotated back:
         $$
-        (J_r)_{v,\omega} = R^T \cdot \frac{\partial v}{\partial\omega} = R^T \cdot \mathcal{L}_{J_l}(\Omega)[-[\nu]_\times]
-        $$
-        $$
-        (J_r)_{p,\omega} = R^T \cdot \frac{\partial p}{\partial\omega} = R^T \left( \mathcal{L}_{J_l}(\Omega)[-[\rho]_\times] + \alpha \mathcal{L}_{\Gamma_l}(\Omega)[-[\nu]_\times] \right)
-        $$
-    -   **Velocity-Position Coupling (Block $(J_r)_{p,\nu}$):** This block represents how the final position `p` is affected by the initial velocity tangent $\nu$. This arises from the $\alpha \Gamma_l \nu$ term in the exponential map. The corresponding block in the right Jacobian is $\alpha \Gamma_r(\omega)$.
-        $$
-        (J_r)_{p,\nu} = \alpha \Gamma_r(\omega)
-        $$
-    -   **Time-Position Coupling (Block $(J_r)_{p,\alpha}$):** This is the partial derivative of the final position `p` with respect to the time interval $\alpha$. It is a standard derivative, not a Fréchet one, rotated into the body frame.
-        $$
-        (J_r)_{p,\alpha} = R^T \cdot \frac{\partial p}{\partial \alpha} = R^T \cdot (\Gamma_l(\omega)\nu)
+        (J_r)_{p,\nu} = R^T \cdot \alpha \, \Gamma_l(\omega)
         $$
         
+        This derivative is unexpected:
+        $$
+        (J_r)_{p,\alpha} = -\Gamma_r(\omega)\nu
+        $$
+
 ### $Sim(3)$ - The Similarity Group (GTSAM Convention)
 
-The `Similarity3` class in GTSAM models transformations involving rotation, translation, and uniform scaling. Its exponential map is defined by a specialized, scale-aware kernel, which we'll call $V_l(\omega, \lambda)$, corresponding to the `GetV` function in the code.
+The `Similarity3` class in GTSAM models transformations involving rotation, translation, and uniform scaling. Its exponential map is defined by a specialized, scale-aware kernel, implemented in the `VFunctor`. This functor dynamically creates an `abc` kernel adapted to the specific rotation $\omega$ and log-scale $\lambda$.
 
--   **The Scale-Aware Kernel:** This kernel can still be expressed in the `abc` polynomial form, but the coefficients are now functions of both the rotation angle $\theta = \|\omega\|$ and the log-scale $\lambda$:
+-   **The Scale-Aware Kernel:** The `VFunctor` calculates three coefficients, `P`, `Q`, and `R`, which are functions of both the rotation angle $\theta = \|\omega\|$ and the log-scale $\lambda$. These coefficients define a specialized "left-acting" kernel `V_l` that follows the standard `abc` polynomial structure:
     $$
-    V_l(\omega, \lambda) = a(\theta, \lambda)I + b(\theta, \lambda)\Omega + c(\theta, \lambda)\Omega^2
+    V_l(\omega, \lambda) = P(\theta, \lambda)I + Q(\theta, \lambda)\Omega + R(\theta, \lambda)\Omega^2
     $$
-    This kernel is defined by the integral $V_l = \int_0^1 \exp(s\lambda) \exp(s\Omega) ds$, which shows how both scale and rotation are combined.
+    This kernel is defined by the integral $V_l = \int_0^1 \exp(s\lambda) \exp(s\Omega) ds$. The `VFunctor` provides a closed-form evaluation of this integral.
 
 -   **Tangent Vector:** $\xi = (\omega, u, \lambda) \in \mathbb{R}^7$, where $\omega$ is angular velocity, $u$ is the tangent for translation, and $\lambda$ is the log-scale.
 
@@ -413,28 +408,28 @@ The `Similarity3` class in GTSAM models transformations involving rotation, tran
     \end{pmatrix}
     $$
 
--   **Block Formulas:** The logic remains the same: compute the world-frame derivative, then rotate it into the body frame with $R^T$.
+-   **Block Formulas:** The logic remains consistent: compute the world-frame derivative of the `Expmap`, then rotate it into the body frame with $R^T$.
 
-    -   **$(J_r)_{p,u}$ (Translation Diagonal):** The partial derivative of $p = V_l u$ with respect to $u$ is simply $V_l$. We then rotate it into the body frame.
+    -   **$(J_r)_{p,u}$ (Translation Diagonal):** The partial derivative of $p = V_l u$ with respect to $u$ is simply the kernel matrix $V_l$. We then rotate it into the body frame.
         $$
         (J_r)_{p,u} = R^T \cdot \frac{\partial p}{\partial u} = R^T V_l(\omega, \lambda)
         $$
 
-    -   **$(J_r)_{p,\omega}$ (Rotation Coupling):** This is the Fréchet derivative with respect to $\omega$. The formula is the same, but the internal coefficients ($d_b, d_c$) used to compute it are now also functions of $\lambda$.
+    -   **$(J_r)_{p,\omega}$ (Rotation Coupling):** This is the Fréchet derivative with respect to $\omega$. The `VFunctor::kernel()` method explicitly computes the necessary radial derivatives (`dQ`, `dR`) to construct a valid `so3::ABCKernel`. This allows us to directly apply the Fréchet machinery to our specialized kernel.
         $$
         (J_r)_{p,\omega} = R^T \cdot \frac{\partial p}{\partial \omega} = R^T \cdot \mathcal{L}_{V_l}(\omega, \lambda)[-[u]_\times]
         $$
 
-    -   **$(J_r)_{p,\lambda}$ (Scale Coupling):** This is the derivative with respect to the scalar $\lambda$. We differentiate the kernel itself with respect to $\lambda$:
+    -   **$(J_r)_{p,\lambda}$ (Scale Coupling):** This is the derivative with respect to the scalar $\lambda$. We must differentiate the kernel itself with respect to $\lambda$:
         $$
-        \frac{\partial V_l}{\partial \lambda} = \frac{\partial a}{\partial \lambda}I + \frac{\partial b}{\partial \lambda}\Omega + \frac{\partial c}{\partial \lambda}\Omega^2
+        \frac{\partial V_l}{\partial \lambda} = \frac{\partial P}{\partial \lambda}I + \frac{\partial Q}{\partial \lambda}\Omega + \frac{\partial R}{\partial \lambda}\Omega^2
         $$
-        This defines a **new kernel** whose coefficients are the partial derivatives of the original kernel's coefficients. Let's call this new kernel $W_l(\omega, \lambda)$. The final Jacobian block is then:
+        This defines a **new kernel**, let's call it $W_l(\omega, \lambda)$, whose coefficients are the partial derivatives of the `P, Q, R` coefficients with respect to $\lambda$. The final Jacobian block is this new kernel applied to `u` and rotated into the body frame.
         $$
         (J_r)_{p,\lambda} = R^T \cdot \frac{\partial p}{\partial \lambda} = R^T \cdot W_l(\omega, \lambda) u
         $$
-        This makes it clear that the "other kernel" required for the scale derivative is not arbitrary; it's derived directly from the original scale-aware kernel $V_l$. -->
-
+        This demonstrates how the derivatives for `Sim(3)` require two distinct derivative operations on the underlying `VFunctor` coefficients: radial derivatives for the $\omega$ Jacobian and partial derivatives with respect to $\lambda$ for the scale Jacobian.
+        
 ### API
 
 Mainly for unit-testing, the ABCKernel API also defines:
