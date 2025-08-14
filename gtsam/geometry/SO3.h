@@ -131,13 +131,13 @@ GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
 // and lazily computes A,B,C,D,G,dB,dC,dG on demand.
 /// Math is based on Ethan Eade's elegant Lie group document, at
 /// https://www.ethaneade.org/lie.pdf, and the Kernel idea in doc/Jacobians.md
-struct GTSAM_EXPORT At {
+struct GTSAM_EXPORT Local {
   /// Tolerance for near zero (theta^2)
   static constexpr double kNearZeroThresholdSq = 1e-6;
   /// Tolerance for near pi (delta^2 = (pi - theta)^2)
   static constexpr double kNearPiThresholdSq = 1e-6;
   
-  explicit At(const Vector3& omega, double nearZeroThresholdSq = 1e-6,
+  explicit Local(const Vector3& omega, double nearZeroThresholdSq = 1e-6,
               double nearPiThresholdSq = 1e-6);
 
   // Exponential map
@@ -145,10 +145,10 @@ struct GTSAM_EXPORT At {
 
   // Jacobian kernel
   // Jl = I +/0 B W + C WW  (left/right).
-  struct Kernel J() const;
+  struct Kernel Jacobian() const;
 
   // Specialized kernel for inverse Jacobian, stable even for |omega| > π
-  struct InvJKernel invJ() const;  // I +/- 1/2 W + D WW
+  struct InvJKernel InvJacobian() const;  // I +/- 1/2 W + D WW
 
   // Gamma kernel: 0.5 I +/- C W + G WW (left/right).
   struct Kernel Gamma() const;
@@ -170,7 +170,7 @@ struct GTSAM_EXPORT At {
 // Kernel: M(ω) = a I + b W + c W^2 with radial derivatives db,dc for Fréchet.
 // Right variants flip b→-b, db→-db (no recompute of W/WW).
 struct GTSAM_EXPORT Kernel {
-  std::shared_ptr<const At::Impl> S;
+  std::shared_ptr<const Local::Impl> S;
   double a{0}, b{0}, c{0}, db{0}, dc{0};  // left-specialization form
 
   Matrix3 left() const;   // a I + b W + c WW
@@ -196,7 +196,7 @@ struct GTSAM_EXPORT Kernel {
 
 // Stable inverse Jacobian kernel
 struct GTSAM_EXPORT InvJKernel {
-  std::shared_ptr<const At::Impl> S;
+  std::shared_ptr<const Local::Impl> S;
   Kernel J;  // holds the forward kernel
 
   Matrix3 left() const;
@@ -209,15 +209,15 @@ struct GTSAM_EXPORT InvJKernel {
 };
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
-/// @deprecated: use so3::At
-struct GTSAM_EXPORT ExpmapFunctor : public At {
+/// @deprecated: use so3::Local
+struct GTSAM_EXPORT ExpmapFunctor : public Local {
   explicit ExpmapFunctor(const Vector3& omega);
   ExpmapFunctor(double nearZeroThresholdSq, const Vector3& axis);
   ExpmapFunctor(const Vector3& axis, double angle);
 };
 
-/// @deprecated: use so3::At
-struct GTSAM_EXPORT DexpFunctor : public At {
+/// @deprecated: use so3::Local
+struct GTSAM_EXPORT DexpFunctor : public Local {
   using J33 = OptionalJacobian<3, 3>;
   explicit DexpFunctor(const Vector3& omega, double nearZeroThresholdSq = 1e-6,
                        double nearPiThresholdSq = 1e-6);
