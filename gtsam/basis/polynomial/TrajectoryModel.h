@@ -59,6 +59,7 @@ public:
 
   /**
    * Constructor
+   * @param density the number of control points per unit (1.0) step in sample location
    * @param kernel the interpolating kernel to use, See IrwinHallCDF.cpp for splines
    * default is IrwinHallCDF2 for cubic splines
    * @param points Expressions representing control points for the curve, defaults to empty
@@ -67,10 +68,12 @@ public:
    *  true places padding at the front, pre-empting response to the control points
    */
   TrajectoryModel(
+    double density = 1.0,
     const KernelBase& kernel = kernels::IrwinHallCDF2,
     const std::vector<Expression<T>>& points = {},
     bool padFront = false
   ):
+    density_(density),
     kernel_(kernel),
     points_(points),
     padFront_(padFront),
@@ -85,9 +88,12 @@ public:
         0 )
   {}
 
-private:
+public:
+  const double density_;
   const KernelBase& kernel_;
+private:
   std::vector<Expression<T>> points_;
+public:
   const bool padFront_;
   const double kernelOffset_;
   const int windowPre_;
@@ -260,14 +266,14 @@ Expression<T> TrajectoryModel<T>::sampleTrajectory(
   double windowEnd) const 
 {
   // apply padding to the window
-  int start = floor(windowStart) - windowPre_;
-  int end = ceil(windowEnd) + windowPost_;
+  int start = floor(windowStart * density_) - windowPre_;
+  int end = ceil(windowEnd * density_) + windowPost_;
   // sanitise inputs
   if(start < 0) start = 0;
   if(windowEnd < 0 || end > points_.size()) end = points_.size();
 
   // apply filter delay correction
-  Double_ kernelTime = timestamp + Double_(kernelOffset_);
+  Double_ kernelTime = (density_ * timestamp) + Double_(kernelOffset_);
 
   // pass to internal methods
   return kernelInterpolate(kernel_, kernelTime, points_, start, end);
@@ -287,17 +293,17 @@ Expression<typename traits<T>::TangentVector> TrajectoryModel<T>::sampleTrajecto
   size_t derivative) const
 {
   // apply padding to the window
-  int start = floor(windowStart) - windowPre_;
-  int end = ceil(windowEnd) + windowPost_;
+  int start = floor(windowStart * density_) - windowPre_;
+  int end = ceil(windowEnd * density_) + windowPost_;
   // sanitise inputs
   if(start < 0) start = 0;
   if(windowEnd < 0 || end > points_.size()) end = points_.size();
 
   // apply filter delay correction
-  Double_ kernelTime = timestamp + Double_(kernelOffset_);
+  Double_ kernelTime = (density_ * timestamp) + Double_(kernelOffset_);
 
   // pass to internal methods
-  return kernelInterpolateDerivative(kernel_, kernelTime, points_, start, end, derivative);
+  return pow(density_, derivative) * kernelInterpolateDerivative(kernel_, kernelTime, points_, start, end, derivative);
 }
 
 

@@ -26,6 +26,9 @@ double tolerance = epsilon/4.0;
 
 TEST( TrajectoryModel , BasicBounds ) {
   gtsam::Values v;  // needed for evaluating Expressions
+  
+  //set control point density
+  double density = 1.0;
 
   // choose a cubic spline
   const KernelBase& basis_function = kernels::IrwinHallCDF2;
@@ -43,7 +46,7 @@ TEST( TrajectoryModel , BasicBounds ) {
   // with padding at the back,
   //   non-constant timestamps will be in
   //   [0 : path.size()-1 + basis_function.getLength()]
-  TrajectoryModel<double> model(basis_function, path/*, pad_front*/);
+  TrajectoryModel<double> model(density, basis_function, path/*, pad_front*/);
 
   Key t_key = Key(0); // choose a key to carry the timestamp
   v.insert<double>(t_key, 0.0); // assign a value to the timestamp
@@ -71,6 +74,9 @@ TEST( TrajectoryModel , BasicBounds ) {
 TEST( TrajectoryModel , FrontPadding ) {
   gtsam::Values v;  // needed for evaluating Expressions
 
+  //set control point density
+  double density = 1.0;
+
   // choose a cubic spline
   const KernelBase& basis_function = kernels::IrwinHallCDF2;
 
@@ -85,7 +91,7 @@ TEST( TrajectoryModel , FrontPadding ) {
   // with padding at the front,
   //   non-constant timestamps will be in
   //   [-basis_function.getLength() : path.size()-1]
-  TrajectoryModel<double> model(basis_function, path, pad_front);
+  TrajectoryModel<double> model(density, basis_function, path, pad_front);
 
   Key t_key = Key(0); // choose a key to carry the timestamp
   v.insert<double>(t_key, 0.0); // assign a value to the timestamp
@@ -121,6 +127,9 @@ TEST( TrajectoryModel , WindowTruncation ) {
 
   gtsam::Values v;  // needed for evaluating Expressions
 
+  //set control point density
+  double density = 1.0;
+
   // choose a cubic spline
   const KernelBase& basis_function = kernels::IrwinHallCDF2;
 
@@ -148,7 +157,7 @@ TEST( TrajectoryModel , WindowTruncation ) {
   });
 
   //rear padding by default
-  TrajectoryModel<double> model(basis_function, path);
+  TrajectoryModel<double> model(density, basis_function, path);
 
   Key t_key = Key(0); // choose a key to carry the timestamp
   v.insert<double>(t_key, 0.0); // assign a value to the timestamp
@@ -180,6 +189,9 @@ TEST( TrajectoryModel , TypesPose3 ) {
   // tests TrajectoryModel can be constructed for Pose3
   gtsam::Values v;  // needed for evaluating Expressions
 
+  //set control point density
+  double density = 1.0;
+
   // choose a cubic spline
   const KernelBase& basis_function = kernels::IrwinHallCDF2;
 
@@ -192,7 +204,7 @@ TEST( TrajectoryModel , TypesPose3 ) {
   });
 
   //rear padding by default
-  TrajectoryModel<Pose3> model(basis_function, path);
+  TrajectoryModel<Pose3> model(density, basis_function, path);
 
   Key t_key = Key(0); // choose a key to carry the timestamp
   v.insert<double>(t_key, 0.0); // assign a value to the timestamp
@@ -211,6 +223,9 @@ TEST( TrajectoryModel , TypesPose3 ) {
 TEST( TrajectoryModel , DerivativePose3 ) {
   gtsam::Values v;  // needed for evaluating Expressions
 
+  //set control point density
+  double density = 1.0;
+
   // choose a cubic spline
   const KernelBase& basis_function = kernels::IrwinHallCDF2;
 
@@ -222,7 +237,7 @@ TEST( TrajectoryModel , DerivativePose3 ) {
     Pose3_(Pose3(Rot3::Rodrigues(0.2,2.1,0.4), Point3(0,2,0))),
   });
 
-  TrajectoryModel<Pose3> model(basis_function, path);
+  TrajectoryModel<Pose3> model(density, basis_function, path);
 
   Key t_ref_key = Key(0); // key to carry the timestamp
   Key t_eps_key = Key(1); // key to carry the timestamp + epsilon
@@ -260,6 +275,9 @@ TEST( TrajectoryModel , DerivativePose3 ) {
 TEST( TrajectoryModel , NthDerivativePose3 ) {
   gtsam::Values v;  // needed for evaluating Expressions
 
+  //set control point density
+  double density = 1.0;
+
   // choose a cubic spline
   const KernelBase& basis_function = kernels::IrwinHallCDF2;
 
@@ -271,7 +289,7 @@ TEST( TrajectoryModel , NthDerivativePose3 ) {
     Pose3_(Pose3(Rot3::Rodrigues(0.2,2.1,0.4), Point3(0,2,0))),
   });
 
-  TrajectoryModel<Pose3> model(basis_function, path);
+  TrajectoryModel<Pose3> model(density, basis_function, path);
 
   Key t_ref_key = Key(0); // key to carry the timestamp
   Key t_eps_key = Key(1); // key to carry the timestamp + epsilon
@@ -302,8 +320,61 @@ TEST( TrajectoryModel , NthDerivativePose3 ) {
       ));
     }
   }
-
 }
+
+
+
+TEST( TrajectoryModel , NthDerivativeDensityPose3 ) {
+  gtsam::Values v;  // needed for evaluating Expressions
+
+  //set control point density
+  double density = 10.0;
+
+  // choose a cubic spline
+  const KernelBase& basis_function = kernels::IrwinHallCDF2;
+
+  // specify some control points
+  std::vector<Pose3_> path({
+    Pose3_(Pose3(Rot3::Rodrigues(0.3,2.2,0.1), Point3(0,0,0))), // XXX use non-trival rotations
+    Pose3_(Pose3(Rot3::Rodrigues(0.2,2.5,0.1), Point3(0,0,0))),
+    Pose3_(Pose3(Rot3::Rodrigues(0.0,2.2,0.1), Point3(0,2,0))),
+    Pose3_(Pose3(Rot3::Rodrigues(0.2,2.1,0.4), Point3(0,2,0))),
+  });
+
+  TrajectoryModel<Pose3> model(density, basis_function, path);
+
+  Key t_ref_key = Key(0); // key to carry the timestamp
+  Key t_eps_key = Key(1); // key to carry the timestamp + epsilon
+
+  // assign types to Keys
+  v.insert<double>(t_ref_key, 0.0);
+  v.insert<double>(t_eps_key, 0.0);
+
+  // cast the Keys to Expressions
+  Double_ t_ref = Double_(t_ref_key);
+  Double_ t_eps = Double_(t_eps_key);
+
+  for(size_t n=0; n<basis_function.getValidDerivatives()-1; n++)
+  {
+    // construct Expressions that sample the Nth derivative of the trajectory
+    auto sample_ref = model.sampleTrajectoryDerivative(t_ref, 0, -1, n);
+    auto sample_eps = model.sampleTrajectoryDerivative(t_eps, 0, -1, n);
+    // construct an Expression that captures the (N+1)th derivative of the trajectory
+    auto sample_d = model.sampleTrajectoryDerivative(t_ref,0,-1, n+1);
+    for(double sample_time = 0; sample_time<7; sample_time+=0.1)
+    {
+      v.update<double>(t_ref_key, sample_time);
+      v.update<double>(t_eps_key, sample_time + epsilon);
+      CHECK(assert_equal(
+        sample_eps.value(v),
+        expmap(sample_ref, epsilon * sample_d).value(v),
+        tolerance
+      ));
+    }
+  }
+}
+
+
 
 
 
@@ -313,6 +384,9 @@ TEST( TrajectoryModel , MeshModel ) {
   // such as entire other TrajectoryModel samples
 
   gtsam::Values v;  // needed for evaluating Expressions
+
+  //set control point density
+  double density = 1.0;
 
   // choose a cubic spline
   const KernelBase& basis_function = kernels::IrwinHallCDF2;
@@ -357,12 +431,12 @@ TEST( TrajectoryModel , MeshModel ) {
   std::vector<TrajectoryModel<double>> rows;
 
   for(const auto& path : mesh){
-    TrajectoryModel<double> row(basis_function, path);
+    TrajectoryModel<double> row(density, basis_function, path);
     rows.push_back(row);
     auto row_sample = row.sampleTrajectory(x_expr);
     col_path.push_back(row_sample);
   }
-  TrajectoryModel<double> col(basis_function, col_path);
+  TrajectoryModel<double> col(density, basis_function, col_path);
   auto sample = col.sampleTrajectory(y_expr);
 
 

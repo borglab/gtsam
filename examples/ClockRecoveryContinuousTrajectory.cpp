@@ -65,12 +65,12 @@ inline Point3Deriv_ pose3DerivativeTranslation(const Pose3Deriv_& p) {
 }
 
 // we also need to compose Pose3 TangentVectors with Pose3s
-Pose3Deriv_ adjoint(const Pos3_& p, const Pose3Deriv_& v)
+Pose3Deriv_ adjoint(const Pose3_& p, const Pose3Deriv_& v)
 {
   return Point3_(p, &Pose3::Adjoint, v);
 }
 
-// enum to make the sampleTrajectoryDerivative arguemnts obvious
+// enum to make the sampleTrajectoryDerivative arguments obvious
 struct TimeDerivatives{
   enum TimeDerivatives{
     velocity = 1;
@@ -84,21 +84,26 @@ struct TimeDerivatives{
 
 
 
+
+
 void simulate_run()
 {
 
   gtsam::Values initial_values;
 
-  // model the trajectory with cubic splines (makes accelerations piecewise linear)
-  TrajectoryModel<Pose3> trajectory_model(kernels::IrwinHallCDF2);
-  // model the clock drift with a quadratic spline, (makes drift rate piecewise linear)
-  TrajectoryModel<double> accel_clock_model(kernels::IrwinHallCDF1);
-  TrajectoryModel<double> gyro_clock_model(kernels::IrwinHallCDF1);
+  // First, consider the bandwidth you need to represent the dynamics you want to model.
+  // any valid sensor data above this frequency contributes to graph noise.
+  double trajectory_sample_rate = 20; // control points per unit time
+  double clock_drift_sample_rate = 0.1; // control points per unit time
 
-  // consider the bandwidth you need to represent the dynamics you want to model
-  // any sensor bandwidth above this frequency contributes to graph noise.
-  double trajectory_sample_rate = 20; // control points per second
-  double clock_drift_sample_rate = 0.1; // control points per second
+
+
+  // model the trajectory with cubic splines (makes accelerations piecewise linear)
+  TrajectoryModel<Pose3> trajectory_model(trajectory_sample_rate, kernels::IrwinHallCDF2);
+  // model the clock drift with a quadratic spline, (makes drift rate piecewise linear)
+  TrajectoryModel<double> accel_clock_model(clock_drift_sample_rate, kernels::IrwinHallCDF1);
+  TrajectoryModel<double> gyro_clock_model(clock_drift_sample_rate, kernels::IrwinHallCDF1);
+
 
 
   // Account for typical raw-sensor weirdness:
@@ -126,7 +131,7 @@ void simulate_run()
   // just make sure that the trajectory is longer than your new timestamp + the kernel length before generating expressions.
   double run_length = 10.0; //seconds
   // add some control points for poses
-  for(int i=0;i< ceil(run_length * trajectory_sample_rate); i++)
+  for(int i=0;i< ceil(run_length * trajectory_sample_rate) + 5; i++)
   {
     Key pose_key = Key('p', i);
     trajectory_model.add_control_point(Pose3_(pose_key));
@@ -134,7 +139,7 @@ void simulate_run()
   }
 
   // add control points for clock drift
-  for(int i=0;i< ceil(run_length * clock_drift_sample_rate); i++)
+  for(int i=0;i< ceil(run_length * clock_drift_sample_rate) + 3; i++)
   {
     Key accel_clock_drift_key = Key('a', i);
     Key gyro_clock_drift_key = Key('g', i);
@@ -153,14 +158,13 @@ void simulate_run()
   angular_rate_t angular_rate = sample_gyro();
 
   // use the clock models to estimate the sensor clock's offset from the datum for a given timestamp
-  // being sure to scale the timestamp from seconds to units of control-points before sampling the trajectory
-  Double_ gyro_clock_offset = gyro_clock_model.sampleTrajectory(Double_(angular_rate.timestamp * clock_drift_sample_rate));
-  Double_ accel_clock_offset = accel_clock_model.sampleTrajectory(Double_(acceleration.timestamp * clock_drift_sample_rate));
+  Double_ gyro_clock_offset = gyro_clock_model.sampleTrajectory(Double_(angular_rate.timestamp));
+  Double_ accel_clock_offset = accel_clock_model.sampleTrajectory(Double_(acceleration.timestamp));
 
   // scale the timestamps from seconds into units of control_points and apply clock offsets
-  Double_ camera_time = Double_(shutter_event.timestamp * trajectory_sample_rate);
-  Double_ gyro_time = (Double_(angular_rate.timestamp) - gyro_clock_offset) * trajectory_sample_rate;
-  Double_ accel_time = (Double_(acceleration.timestamp) - accel_clock_offset) * trajectory_sample_rate;
+  Double_ camera_time = Double_(shutter_event.timestamp);
+  Double_ gyro_time = Double_(angular_rate.timestamp) - gyro_clock_offset;
+  Double_ accel_time = Double_(acceleration.timestamp) - accel_clock_offset;
 
 
 
@@ -170,7 +174,6 @@ void simulate_run()
   double window_start = 0;  // timestamp - temporal_uncertainty
   double window_end = -1; // timestamp + temporal_uncertainty
 
-
   // construct an expression that estimates the pose at the shutter time
   Pose3_ camera_pose = trajectory_model.sampleTrajectory(camera_time, window_start, window_end);
   // construct an expression that estimates the velocity at the gyro sample time
@@ -179,11 +182,11 @@ void simulate_run()
   Pose3Accel_ camera_acceleration = trajectory_model.sampleTrajectoryDerivative(accel_time, window_start, window_end, TimeDerivatives::acceleration);
 
 
-  // transform the trajectory velocity and acceleration predictions into the sensor's local coords
+  // transform the trajectory velocity and acceleration predictions into the IMU sensor's local coords
   // XXX I'm not 100% sure that this is the right way of transforming the TangentVector,
-  //     this might need accel_pose.inverse().adjoint()
-  Pose3Vel_ gyro_vel = gyro_pose.adjoint(camera_velocity);
-  Pose3Accel_ accel_accel = accel_pose.adjoint(camera_acceleration);
+  //     this might need to invert gyro_pose
+  Pose3Vel_ gyro_vel = adjoint(gyro_pose, camera_velocity);
+  Pose3Accel_ accel_accel = adjoint(accel_pose, camera_acceleration);
 
 
   // construct the pose factors connecting the trajectory_model to the slam bundle-adjustment graph
