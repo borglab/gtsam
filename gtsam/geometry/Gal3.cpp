@@ -250,70 +250,50 @@ Gal3 Gal3::operator*(const Gal3& other) const {
 //------------------------------------------------------------------------------
 // Lie Group Static Functions
 //------------------------------------------------------------------------------
-gtsam::Gal3 gtsam::Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
-    // Implements exponential map from Equations 16-19, Pages 7-8
-    const Vector3 rho_tan = rho(xi);
-    const Vector3 nu_tan = nu(xi);
-    const Vector3 theta_tan = theta(xi);
-    const double t_tan_val = t_tan(xi)(0);
+gtsam::Gal3 gtsam::Gal3::Expmap(const TangentVector& xi,
+                                OptionalJacobian<10, 10> Hxi) {
+  // Implements exponential map from Equations 16-19, Pages 7-8
+  const Vector3 rho_tan = rho(xi);
+  const Vector3 nu_tan = nu(xi);
+  const Vector3 theta_tan = theta(xi);
+  const double alpha = t_tan(xi)(0);
 
-    const gtsam::so3::DexpFunctor dexp_functor(theta_tan);
-    const Rot3 R = Rot3::Expmap(theta_tan);
-    const Matrix3 Jl_theta = dexp_functor.leftJacobian();
+  const gtsam::so3::At at(theta_tan);
+  const Rot3 R(at.expmap());
+  const Matrix3 Jl = at.J().left();
+  Matrix3 Gl = at.Gamma().left();
 
-    Matrix3 E;
-    if (dexp_functor.nearZero) {
-         // Small angle approximation for E matrix (from Equation 19, Page 8)
-         E = 0.5 * Matrix3::Identity() + (1.0 / 6.0) * dexp_functor.W + (1.0 / 24.0) * dexp_functor.WW;
-    } else {
-         // Closed form for E matrix (from Equation 19, Page 8)
-         const double B_E = (1.0 - 2.0 * dexp_functor.B) / (2.0 * dexp_functor.theta2);
-         E = 0.5 * Matrix3::Identity() + dexp_functor.C * dexp_functor.W + B_E * dexp_functor.WW;
-    }
+  const Point3 r_final = Point3(Jl * rho_tan + Gl * (alpha * nu_tan));
+  const Velocity3 v_final = Jl * nu_tan;
 
-    const Point3 r_final = Point3(Jl_theta * rho_tan + E * (t_tan_val * nu_tan));
-    const Velocity3 v_final = Jl_theta * nu_tan;
-    const double t_final = t_tan_val;
+  if (Hxi) {
+    *Hxi = Gal3::ExpmapDerivative(xi);
+  }
 
-    Gal3 result(R, r_final, v_final, t_final);
-
-    if (Hxi) {
-        *Hxi = Gal3::ExpmapDerivative(xi);
-    }
-
-    return result;
+  return Gal3(R, r_final, v_final, alpha);
 }
 
 //------------------------------------------------------------------------------
 Gal3::TangentVector Gal3::Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg) {
     // Implements logarithmic map from Equations 20-23, Page 8
-    const Vector3 theta_vec = Rot3::Logmap(g.R_);
-    const gtsam::so3::DexpFunctor dexp_functor_log(theta_vec);
-    const Matrix3 Jl_theta_inv = dexp_functor_log.leftJacobianInverse();
-
-    Matrix3 E;
-    if (dexp_functor_log.nearZero) {
-         // Small angle approximation for E matrix
-         E = 0.5 * Matrix3::Identity() + (1.0 / 6.0) * dexp_functor_log.W + (1.0 / 24.0) * dexp_functor_log.WW;
-    } else {
-         // Closed form for E matrix (from Equation 19, Page 8)
-         const double B_E = (1.0 - 2.0 * dexp_functor_log.B) / (2.0 * dexp_functor_log.theta2);
-         E = 0.5 * Matrix3::Identity() + dexp_functor_log.C * dexp_functor_log.W + B_E * dexp_functor_log.WW;
-    }
+    const Vector3 omega = Rot3::Logmap(g.R_);
+    const gtsam::so3::At at(omega);
+    const Matrix3 Jl_inv = at.invJ.left()();
+    Matrix3 Gl = at.Gamma().left();
 
     const Vector3 r_vec = Vector3(g.r_);
     const Velocity3& v_vec = g.v_;
     const double& t_val = g.t_;
 
     // Implementation of Equation 23, Page 8
-    const Vector3 nu_tan = Jl_theta_inv * v_vec;
-    const Vector3 rho_tan = Jl_theta_inv * (r_vec - E * (t_val * nu_tan));
+    const Vector3 nu_tan = Jl_inv * v_vec;
+    const Vector3 rho_tan = Jl_inv * (r_vec - Gl * (t_val * nu_tan));
     const double t_tan_val = t_val;
 
     TangentVector xi;
     rho(xi) = rho_tan;
     nu(xi) = nu_tan;
-    theta(xi) = theta_vec;
+    theta(xi) = omega;
     t_tan(xi)(0) = t_tan_val;
 
     if (Hg) {

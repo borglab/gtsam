@@ -51,12 +51,6 @@ static constexpr double k1_Pi3 = 1.0 / kPi3;
 static constexpr double k2_Pi3 = 2.0 * k1_Pi3;
 static constexpr double k1_4Pi = 0.25 * kPi_inv; // 1/(4*pi)
 
-// --- Thresholds ---
-// Tolerance for near zero (theta^2)
-static constexpr double kNearZeroThresholdSq = 1e-6;
-// Tolerance for near pi (delta^2 = (pi - theta)^2)
-static constexpr double kNearPiThresholdSq = 1e-6;
-
 GTSAM_EXPORT Matrix99 Dcompose(const SO3& Q) {
   Matrix99 H;
   auto R = Q.matrix();
@@ -73,10 +67,14 @@ GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
   return MR;
 }
 
-Matrix3 ABCKernel::matrix() const { return a * I_3x3 + b * S.W + c * S.WW; }
+// --- Thresholds ---
+// Tolerance for near zero (theta^2)
+static constexpr double kNearZeroThresholdSq = 1e-6;
+// Tolerance for near pi (delta^2 = (pi - theta)^2)
+static constexpr double kNearPiThresholdSq = 1e-6;
 
-Vector3 ABCKernel::apply(const Vector3& v, OptionalJacobian<3, 3> H1,
-                         OptionalJacobian<3, 3> H2) const {
+Vector3 ABCKernel::applyLeft(const Vector3& v, OptionalJacobian<3, 3> H1,
+                             OptionalJacobian<3, 3> H2) const {
   const Vector3 Wv = S.W * v, WWv = S.WW * v;
   if (H1) {
     // Closed-form ∂/∂ω without doubleCross Jacobian:
@@ -90,6 +88,46 @@ Vector3 ABCKernel::apply(const Vector3& v, OptionalJacobian<3, 3> H1,
   if (H2) *H2 = matrix();  // ∂y/∂v = a I + b W + c W²
 
   return a * v + b * Wv + c * WWv;
+}
+
+Vector3 Kernel::applyRight(const Vector3& v, OptionalJacobian<3, 3> H1,
+                           OptionalJacobian<3, 3> H2) const {
+  // Implement by flipping b and db and reusing left machinery
+  Kernel tmp{S, a, -b, c, -db, dc};
+  return tmp.applyLeft(v, H1, H2);
+}
+
+/// Left/right inverse matrices
+Matrix3 leftInverse() const { return ia * I_3x3 + ib * S.W + ic * S.WW; }
+Matrix3 rightInverse() const { return ia * I_3x3 - ib * S.W + ic * S.WW; }
+
+Vector3 InvKernel::applyLeftInverse(const Vector3& v, OptionalJacobian<3, 3> H1,
+                                    OptionalJacobian<3, 3> H2) const {
+  const Matrix3 invL = leftInverse();
+  const Vector3 cvec = invL * v;
+  if (H1) {
+    Matrix3 H;
+    // derivative of forward mapping at cvec
+    this->applyLeft(cvec, H);
+    *H1 = -invL * H;
+  }
+  if (H2) *H2 = invL;
+  return cvec;
+}
+
+Vector3 InvKernel::applyRightInverse(const Vector3& v,
+                                     OptionalJacobian<3, 3> H1,
+                                     OptionalJacobian<3, 3> H2) const {
+  const Matrix3 invR = rightInverse();
+  const Vector3 cvec = invR * v;
+  if (H1) {
+    Matrix3 H;
+    // derivative of forward right-mapping at cvec
+    this->applyRight(cvec, H);
+    *H1 = -invR * H;
+  }
+  if (H2) *H2 = invR;
+  return cvec;
 }
 
 Matrix3 ABCKernel::frechet(const Matrix3& X) const {

@@ -226,20 +226,19 @@ Matrix7 Similarity3::AdjointMap() const {
 
 // Functor that implements the Similarity3 V(ω, λ) kernel:
 // See http://www.ethaneade.org/latex2html/lie/node29.html
-struct VFunctor : public so3::GammaFunctor {
+struct VFunctor : public so3::At {
   double lambda;  ///< scale log parameter
   double alpha{0}, beta{0}, mu{0};
   double P{0}, Q{0}, R{0};
 
   explicit VFunctor(const Vector3& omega, double lambda,
                     double nearZeroThresholdSq, double nearPiThresholdSq)
-      : GammaFunctor(omega, nearZeroThresholdSq, nearPiThresholdSq),
-        lambda(lambda) {
+      : At(omega, nearZeroThresholdSq, nearPiThresholdSq), lambda(lambda) {
     compute_();
   }
 
   explicit VFunctor(const Vector3& omega, double lambda)
-      : GammaFunctor(omega), lambda(lambda) {
+      : At(omega), lambda(lambda) {
     compute_();
   }
 
@@ -264,7 +263,7 @@ struct VFunctor : public so3::GammaFunctor {
 
   Matrix3 V() const { return P * I_3x3 + Q * W + R * WW; }
 
-  so3::ABCKernel kernel() const {
+  so3::Kernel kernel() const {
     const double lambda2 = lambda * lambda;
     const double dalpha =
         (lambda2 > 1e-9) ? (-2.0 * alpha * alpha / lambda2) : 0.0;
@@ -272,7 +271,7 @@ struct VFunctor : public so3::GammaFunctor {
         (beta - (B - lambda * C)) * dalpha + (1.0 - alpha) * (dB - lambda * dC);
     const double dR =
         (mu - (C - lambda * G)) * dalpha + (1.0 - alpha) * (dC - lambda * dG);
-    return so3::ABCKernel{*this, P, Q, R, dQ, dR};
+    return so3::Kernel{*this, P, Q, R, dQ, dR};
   }
 };
 
