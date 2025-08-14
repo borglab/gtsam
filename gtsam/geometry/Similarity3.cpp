@@ -231,7 +231,7 @@ static constexpr double one_720th = 1.0 / 720.0;
 
 // Functor that implements the Similarity3 V(ω, λ) kernel:
 // See http://www.ethaneade.org/latex2html/lie/node29.html
-struct VFunctor : public so3::At {
+struct VFunctor : public so3::Local {
   double lambda{0}, lambda2{0};  ///< scale log parameter
   double alpha{0};               ///< Blending
   double A{0}, B{0}, C{0};       ///< L kernel A I + B W + C WW
@@ -240,20 +240,20 @@ struct VFunctor : public so3::At {
 
   explicit VFunctor(const Vector3& omega, double lambda,
                     double nearZeroThresholdSq, double nearPiThresholdSq)
-      : At(omega, nearZeroThresholdSq, nearPiThresholdSq), lambda(lambda) {
+      : Local(omega, nearZeroThresholdSq, nearPiThresholdSq), lambda(lambda) {
     compute_();
   }
 
   explicit VFunctor(const Vector3& omega, double lambda)
-      : At(omega), lambda(lambda) {
+      : Local(omega), lambda(lambda) {
     compute_();
   }
 
   // Compute kernel V = α L + (1-α) (Jl - λ Gl)
   // with α = λ² / (λ² + θ²) and L = I + β W + μ WW
   void compute_() {
-    lambda2 = lambda * lambda;                // λ²
-    
+    lambda2 = lambda * lambda;  // λ²
+
     // L-kernel coefficients: A, B, C where L = A I + B W + C W²
     const double lambda3 = lambda2 * lambda;  // λ³
     if (lambda2 > 1e-9) {
@@ -270,7 +270,7 @@ struct VFunctor : public so3::At {
     }
 
     // Blend V = α L + (1-α)(J - λ Γ)
-    J_ = this->J();
+    J_ = this->Jacobian();
     G_ = this->Gamma();
     const double th2 = this->theta2();
     alpha = (lambda2 + th2 > 0.0) ? (lambda2 / (lambda2 + th2))

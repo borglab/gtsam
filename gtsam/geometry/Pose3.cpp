@@ -220,7 +220,7 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   const Vector3 w = xi.head<3>(), v = xi.tail<3>();
 
   // Instantiate functor for Dexp-related operations:
-  const so3::DexpFunctor local(w);
+  const so3::Local local(w);
 
   // Compute rotation using Expmap
 #ifdef GTSAM_USE_QUATERNIONS
@@ -239,11 +239,11 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   // but functor does not need R, deals automatically with the case where theta2
   // is near zero, and also gives us the machinery for the Jacobians.
   Matrix3 H;
-  const Vector3 t = local.applyLeftJacobian(v, Hxi ? &H : nullptr);
+  const Vector3 t = local.Jacobian().applyLeft(v, Hxi ? &H : nullptr);
 
   if (Hxi) {
     // The Jacobian of expmap is given by the right Jacobian of SO(3):
-    const Matrix3 Jr = local.rightJacobian();
+    const Matrix3 Jr = local.Jacobian().right();
     // We are creating a Pose3, so we still need to chain H with R^T, the
     // Jacobian of Pose3::Create with respect to t.
     const Matrix3 Rt = R.transpose();
@@ -259,10 +259,10 @@ Vector6 Pose3::Logmap(const Pose3& pose, OptionalJacobian<6, 6> Hpose) {
   const Vector3 w = Rot3::Logmap(pose.rotation());
 
   // Instantiate functor for Dexp-related operations:
-  const so3::DexpFunctor local(w);
+  const so3::Local local(w);
 
   const Vector3 t = pose.translation();
-  const Vector3 u = local.applyLeftJacobianInverse(t);
+  const Vector3 u = local.InvJacobian().applyLeft(t);
   Vector6 xi;
   xi << w, u;
   if (Hpose) *Hpose = LogmapDerivative(xi);
@@ -314,11 +314,11 @@ Matrix6 Pose3::LogmapDerivative(const Vector6& xi) {
   Vector3 v = xi.segment<3>(3);
 
   // Instantiate functor for Dexp-related operations:
-  const so3::DexpFunctor local(w);
+  const so3::Local local(w);
 
   // Call applyLeftJacobian to get its Jacobians
   Matrix3 H_t_w;
-  local.applyLeftJacobian(v, H_t_w);
+  local.Jacobian().applyLeft(v, H_t_w);
 
   // Multiply with R^T to account for NavState::Create Jacobian.
   const Matrix3 R = local.expmap();
@@ -484,12 +484,12 @@ Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> Hself,
                      OptionalJacobian<2, 3> Hpoint) const {
   Matrix36 D_local_pose;
   Matrix3 D_local_point;
-  Point3 local = transformTo(point, Hself ? &D_local_pose : 0, Hpoint ? &D_local_point : 0);
+  Point3 at = transformTo(point, Hself ? &D_local_pose : 0, Hpoint ? &D_local_point : 0);
   if (!Hself && !Hpoint) {
-    return Unit3(local);
+    return Unit3(at);
   } else {
     Matrix23 D_b_local;
-    Unit3 b = Unit3::FromPoint3(local, D_b_local);
+    Unit3 b = Unit3::FromPoint3(at, D_b_local);
     if (Hself) *Hself = D_b_local * D_local_pose;
     if (Hpoint) *Hpoint = D_b_local * D_local_point;
     return b;

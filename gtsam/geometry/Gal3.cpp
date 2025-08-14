@@ -258,10 +258,10 @@ gtsam::Gal3 gtsam::Gal3::Expmap(const TangentVector& xi,
   const Vector3 theta_tan = theta(xi);
   const double alpha = t_tan(xi)(0);
 
-  const gtsam::so3::At at(theta_tan);
-  const Rot3 R(at.expmap());
-  const Matrix3 Jl = at.J().left();
-  Matrix3 Gl = at.Gamma().left();
+  const gtsam::so3::Local local(theta_tan);
+  const Rot3 R(local.expmap());
+  const Matrix3 Jl = local.Jacobian().left();
+  Matrix3 Gl = local.Gamma().left();
 
   const Point3 r_final = Point3(Jl * rho_tan + Gl * (alpha * nu_tan));
   const Velocity3 v_final = Jl * nu_tan;
@@ -277,9 +277,9 @@ gtsam::Gal3 gtsam::Gal3::Expmap(const TangentVector& xi,
 Gal3::TangentVector Gal3::Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg) {
     // Implements logarithmic map from Equations 20-23, Page 8
     const Vector3 omega = Rot3::Logmap(g.R_);
-    const gtsam::so3::At at(omega);
-    const Matrix3 Jl_inv = at.invJ().left();
-    Matrix3 Gl = at.Gamma().left();
+    const gtsam::so3::Local local(omega);
+    const Matrix3 Jl_inv = local.InvJacobian().left();
+    Matrix3 Gl = local.Gamma().left();
 
     const Vector3 r_vec = Vector3(g.r_);
     const Velocity3& v_vec = g.v_;
