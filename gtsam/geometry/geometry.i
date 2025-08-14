@@ -202,37 +202,6 @@ class Rot2 {
 #include <gtsam/geometry/SO3.h>
 
 namespace so3 {
-  class ExpmapFunctor {
-    const double theta2;
-    const double theta;
-    const Matrix3 W;
-    const Matrix3 WW;
-    const bool nearZero;
-    double A;  // A = sin(theta) / theta
-    double B;  // B = (1 - cos(theta))
-    ExpmapFunctor(const gtsam::Vector3& omega);
-    ExpmapFunctor(double nearZeroThresholdSq, const gtsam::Vector3& axis);
-    ExpmapFunctor(const gtsam::Vector3& axis, double angle);
-    gtsam::Matrix3 expmap() const;
-  };
-
-  virtual class DexpFunctor : gtsam::so3::ExpmapFunctor {
-    const gtsam::Vector3 omega;
-    const double C;  // (1 - A) / theta^2
-    const double D;  // (1 - A/2B) / theta2
-    DexpFunctor(const gtsam::Vector3& omega);
-    DexpFunctor(const gtsam::Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq);
-    gtsam::Matrix3 rightJacobian() const;
-    gtsam::Matrix3 leftJacobian() const;
-    gtsam::Matrix3 rightJacobianInverse() const;
-    gtsam::Matrix3 leftJacobianInverse() const;
-    gtsam::Vector3 applyRightJacobian(const gtsam::Vector3& v) const;
-    gtsam::Vector3 applyRightJacobianInverse(const gtsam::Vector3& v) const;
-    gtsam::Vector3 applyLeftJacobian(const gtsam::Vector3& v) const;
-    gtsam::Vector3 applyLeftJacobianInverse(const gtsam::Vector3& v) const;
-  };
-}
-
 class SO3 {
   // Standard Constructors
   SO3();

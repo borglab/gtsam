@@ -122,7 +122,7 @@ namespace so3 {
  * We only provide the 9*9 derivative in the first argument M.
  */
 GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
-                OptionalJacobian<9, 9> H = {});
+                             OptionalJacobian<9, 9> H = {});
 
 /// (constant) Jacobian of compose wrpt M
 GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
@@ -132,9 +132,11 @@ GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
 /// Math is based on Ethan Eade's elegant Lie group document, at
 /// https://www.ethaneade.org/lie.pdf, and the Kernel idea in doc/Jacobians.md
 struct GTSAM_EXPORT At {
-  const double theta2, theta;
-  const Matrix3 W, WW;  // [ω]× and [ω]×[ω]×
-  bool nearZero{ false };
+  const Matrix3& W() const;
+  const Matrix3& WW() const;
+  double theta() const;
+  double theta2() const;
+  bool nearZero() const;
 
   explicit At(const Vector3& omega, double nearZeroThresholdSq = 1e-6,
               double nearPiThresholdSq = 1e-6);
@@ -187,11 +189,10 @@ struct GTSAM_EXPORT Kernel {
   Matrix3 applyFrechet(const Vector3& v) const;
 };
 
-
 // Stable inverse Jacobian kernel
 struct GTSAM_EXPORT InvJKernel {
   std::shared_ptr<const At::Impl> S;
-  std::shared_ptr<Kernel> J;  // holds the forward kernel
+  Kernel J;  // holds the forward kernel
 
   Matrix3 left() const;
   Matrix3 right() const;
@@ -208,7 +209,6 @@ struct GTSAM_EXPORT ExpmapFunctor : public At {
   explicit ExpmapFunctor(const Vector3& omega);
   ExpmapFunctor(double nearZeroThresholdSq, const Vector3& axis);
   ExpmapFunctor(const Vector3& axis, double angle);
-  Matrix3 expmap() const;
 };
 
 /// @deprecated: use so3::At

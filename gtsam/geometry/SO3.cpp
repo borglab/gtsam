@@ -27,6 +27,7 @@
 #include <Eigen/SVD>
 #include <cmath>
 #include <limits>
+#include <memory>
 
 namespace gtsam {
 
@@ -39,7 +40,6 @@ static constexpr double one_24th = 1.0 / 24.0;
 static constexpr double one_60th = 1.0 / 60.0;
 static constexpr double one_120th = 1.0 / 120.0;
 static constexpr double one_180th = 1.0 / 180.0;
-static constexpr double one_360th = 1.0 / 360.0;
 static constexpr double one_720th = 1.0 / 720.0;
 static constexpr double one_1260th = 1.0 / 1260.0;
 
@@ -73,200 +73,217 @@ static constexpr double kNearZeroThresholdSq = 1e-6;
 // Tolerance for near pi (delta^2 = (pi - theta)^2)
 static constexpr double kNearPiThresholdSq = 1e-6;
 
-Vector3 ABCKernel::applyLeft(const Vector3& v, OptionalJacobian<3, 3> H1,
-                             OptionalJacobian<3, 3> H2) const {
-  const Vector3 Wv = S.W * v, WWv = S.WW * v;
-  if (H1) {
-    // Closed-form ∂/∂ω without doubleCross Jacobian:
-    const auto& w = S.omega;
-    const auto wt = w.transpose(), vt = v.transpose();
-    const auto sI = w.dot(v) * I_3x3;
-    *H1 = -b * skewSymmetric(v) +         // d(Wv)/dω = -[v]×
-          c * (w * vt + sI - 2 * v * wt)  // d(WWv)/dω = ω vᵀ + (ω·v) I - 2 v ωᵀ
-          + (db * Wv + dc * WWv) * wt;    // the coefficient derivatives
-  }
-  if (H2) *H2 = matrix();  // ∂y/∂v = a I + b W + c W²
+// --- At::Impl and At methods ---
+struct At::Impl {
+  Vector3 omega;
+  double theta2;
+  double theta;
+  Matrix3 W, WW;
+  bool nearZero;
+  bool nearPi;
 
-  return a * v + b * Wv + c * WWv;
-}
+  // Lazy coefficient cache
+  mutable bool A_set=false, B_set=false, C_set=false, D_set=false, G_set=false, dB_set=false, dC_set=false, dG_set=false;
+  mutable double A_val{}, B_val{}, C_val{}, D_val{}, G_val{}, dB_val{}, dC_val{}, dG_val{};
 
-Vector3 Kernel::applyRight(const Vector3& v, OptionalJacobian<3, 3> H1,
-                           OptionalJacobian<3, 3> H2) const {
-  // Implement by flipping b and db and reusing left machinery
-  Kernel tmp{S, a, -b, c, -db, dc};
-  return tmp.applyLeft(v, H1, H2);
-}
-
-/// Left/right inverse matrices
-Matrix3 leftInverse() const { return ia * I_3x3 + ib * S.W + ic * S.WW; }
-Matrix3 rightInverse() const { return ia * I_3x3 - ib * S.W + ic * S.WW; }
-
-Vector3 InvKernel::applyLeftInverse(const Vector3& v, OptionalJacobian<3, 3> H1,
-                                    OptionalJacobian<3, 3> H2) const {
-  const Matrix3 invL = leftInverse();
-  const Vector3 cvec = invL * v;
-  if (H1) {
-    Matrix3 H;
-    // derivative of forward mapping at cvec
-    this->applyLeft(cvec, H);
-    *H1 = -invL * H;
-  }
-  if (H2) *H2 = invL;
-  return cvec;
-}
-
-Vector3 InvKernel::applyRightInverse(const Vector3& v,
-                                     OptionalJacobian<3, 3> H1,
-                                     OptionalJacobian<3, 3> H2) const {
-  const Matrix3 invR = rightInverse();
-  const Vector3 cvec = invR * v;
-  if (H1) {
-    Matrix3 H;
-    // derivative of forward right-mapping at cvec
-    this->applyRight(cvec, H);
-    *H1 = -invR * H;
-  }
-  if (H2) *H2 = invR;
-  return cvec;
-}
-
-Matrix3 ABCKernel::frechet(const Matrix3& X) const {
-  const Matrix3& W = S.W;
-  const Matrix3& WW = S.WW;
-  const double s = -0.5 * (W * X).trace();
-  return b * X + c * (W * X + X * W) + s * (db * W + dc * WW);
-}
-
-Matrix3 ABCKernel::applyFrechet(const Vector3& v) const {
-  Matrix3 H;
-  H.col(0) = frechet(skewSymmetric(Vector3::UnitX())) * v;  // δω = e_x
-  H.col(1) = frechet(skewSymmetric(Vector3::UnitY())) * v;  // δω = e_y
-  H.col(2) = frechet(skewSymmetric(Vector3::UnitZ())) * v;  // δω = e_z
-  return H;
-}
-
-void ExpmapFunctor::init(double nearZeroThresholdSq) {
-  nearZero = (theta2 <= nearZeroThresholdSq);
-
-  if (!nearZero) {
-    // General case: Use standard stable formulas for A and B
-    const double sin_theta = std::sin(theta);
-    A = sin_theta / theta;
-    const double s2 = std::sin(theta / 2.0);
-    const double one_minus_cos =
-        2.0 * s2 * s2;  // numerically better than [1 - cos(theta)]
-    B = one_minus_cos / theta2;
-  } else {
-    // Taylor expansion at 0 for A, B (Order theta^2)
-    A = 1.0 - theta2 * one_6th;
-    B = 0.5 - theta2 * one_24th;
-  }
-}
-
-ExpmapFunctor::ExpmapFunctor(const Vector3& omega) :ExpmapFunctor(kNearZeroThresholdSq, omega) {}
-
-ExpmapFunctor::ExpmapFunctor(double nearZeroThresholdSq, const Vector3& omega)
-    : theta2(omega.dot(omega)),
-      theta(std::sqrt(theta2)),
-      W(skewSymmetric(omega)),
-      WW(W * W) {
-  init(nearZeroThresholdSq);
-}
-
-ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle)
-    : theta2(angle * angle),
-      theta(angle),
-      W(skewSymmetric(axis * angle)),
-      WW(W * W) {
-  init(kNearZeroThresholdSq);
-}
-
-
-Matrix3 ExpmapFunctor::expmap() const { return I_3x3 + A * W + B * WW; }
-
-DexpFunctor::DexpFunctor(const Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq)
-  : ExpmapFunctor(nearZeroThresholdSq, omega), omega(omega) {
-  if (!nearZero) {
-    // General case or nearPi: Use standard stable formulas first
-    C = (1.0 - A) / theta2; // Usually stable, even near pi (1-0)/pi^2
-
-    // Calculate delta = pi - theta (non-negative) for nearPi check
-    const double delta = M_PI > theta ? M_PI - theta : 0.0;
+  Impl(const Vector3& w, double nz, double np)
+      : omega(w),
+        theta2(w.dot(w)),
+        theta(std::sqrt(theta2)),
+        W(skewSymmetric(w)),
+        WW(W*W),
+        nearZero(theta2 <= nz) {
+    const double delta = M_PI > theta ? (M_PI - theta) : 0.0;
     const double delta2 = delta * delta;
-    const bool nearPi = (delta2 < nearPiThresholdSq);
-    if (nearPi) {
-      // Taylor expansion near pi *only for D* (Order delta)
-      D = k1_Pi2 + (k2_Pi3 - k1_4Pi) * delta; // D ~ 1/pi^2 + delta*(2/pi^3 - 1/(4*pi))
-    } else {
-      // General case D:
-      D = (1.0 - A / (2.0 * B)) / theta2;
-    }
-    // Radial derivatives: dB = B'(θ)/θ, dC = C'(θ)/θ
-    dB = (A - 2.0 * B) / theta2;  // = B'(θ)/θ
-    dC = (B - 3.0 * C) / theta2;  // = C'(θ)/θ
-  } else {
-    // Taylor expansion at 0
-    // TODO(Frank): flipping signs here does not trigger any tests: harden!
-    C = one_6th - theta2 * one_120th;
-    D = one_12th + theta2 * one_720th;
-    dB = -one_12th + theta2 * one_180th;    // B'(θ)/θ near 0
-    dC = -one_60th + theta2 * one_1260th;   // C'(θ)/θ near 0
+    nearPi = (delta2 < np);
   }
+
+  inline double A() const {
+    if (!A_set || !B_set) {
+      if (!nearZero) {
+        const double sin_theta = std::sin(theta);
+        A_val = sin_theta / theta;
+        const double s2 = std::sin(theta/2.0);
+        const double one_minus_cos = 2.0 * s2 * s2;
+        B_val = one_minus_cos / theta2;
+      } else {
+        A_val = 1.0 - theta2 * one_6th;
+        B_val = 0.5 - theta2 * one_24th;
+      }
+      A_set = B_set = true;
+    }
+    return A_val;
+  }
+  inline double B() const { (void)A(); return B_val; }
+
+  inline double C() const {
+    if (!C_set) {
+      if (!nearZero) {
+        C_val = (1.0 - A()) / theta2;
+      } else {
+        C_val = one_6th - theta2 * one_120th;
+      }
+      C_set = true;
+    }
+    return C_val;
+  }
+
+  inline double D() const {
+    if (!D_set) {
+      if (!nearZero) {
+        if (nearPi) {
+          D_val = k1_Pi2 + (k2_Pi3 - k1_4Pi) * (M_PI - theta);
+        } else {
+          D_val = (1.0 - A() / (2.0 * B())) / theta2;
+        }
+      } else {
+        D_val = one_12th + theta2 * one_720th;
+      }
+      D_set = true;
+    }
+    return D_val;
+  }
+
+  inline double dB() const {
+    if (!dB_set) {
+      if (!nearZero)
+        dB_val = (A() - 2.0 * B()) / theta2;
+      else
+        dB_val = -one_12th + theta2 * one_180th;
+      dB_set = true;
+    }
+    return dB_val;
+  }
+
+  inline double dC() const {
+    if (!dC_set) {
+      if (!nearZero)
+        dC_val = (B() - 3.0 * C()) / theta2;
+      else
+        dC_val = -one_60th + theta2 * one_1260th;
+      dC_set = true;
+    }
+    return dC_val;
+  }
+
+  inline double G() const {
+    if (!G_set) {
+      if (!nearZero)
+        G_val = (1.0 - 2.0 * B()) / (2.0 * theta2);
+      else
+        G_val = one_24th - theta2 * one_720th;
+      G_set = true;
+    }
+    return G_val;
+  }
+
+  inline double dG() const {
+    if (!dG_set) {
+      dG_val = -(dB() + 2.0 * G()) / theta2;
+      dG_set = true;
+    }
+    return dG_val;
+  }
+};
+
+At::At(const Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq)
+  : p_(std::make_shared<Impl>(omega, nearZeroThresholdSq, nearPiThresholdSq)) {}
+
+const Matrix3& At::W()  const { return p_->W; }
+const Matrix3& At::WW() const { return p_->WW; }
+double At::theta()  const { return p_->theta; }
+double At::theta2() const { return p_->theta2; }
+bool At::nearZero() const { return p_->nearZero; }
+
+// --- Kernel matrices (out-of-line to keep header tight) ---
+Matrix3 Kernel::left() const {
+  // left: a I + b W + c W^2
+  return a * I_3x3 + b * S->W + c * S->WW;
 }
+Matrix3 Kernel::right() const {
+  // right: a I - b W + c W^2
+  return a * I_3x3 - b * S->W + c * S->WW;
+}
+
+// --- InvJKernel matrices (closed form; π-stable via At::invJ() selection) ---
+Matrix3 InvJKernel::left() const {
+  if (S->theta > M_PI) return J.left().inverse();
+  return I_3x3 - 0.5 * S->W + S->D() * S->WW;
+}
+Matrix3 InvJKernel::right() const {
+  if (S->theta > M_PI) return J.right().inverse();
+  return I_3x3 + 0.5 * S->W + S->D() * S->WW;
+}
+
+// --- At high-level helpers ---
+Matrix3 At::expmap() const {
+  // Exp(ω) = I + A W + B W^2
+  return I_3x3 + p_->A() * p_->W + p_->B() * p_->WW;
+}
+
+Kernel At::J() const {
+  // J_l/r share same coefficients; right flips b internally
+  return Kernel{p_, 1.0, p_->B(), p_->C(), p_->dB(), p_->dC()};
+}
+
+InvJKernel At::invJ() const {
+  // Algebraic inverse kernel (matrices only)
+  return InvJKernel{p_, this->J()};
+}
+
+Kernel At::Gamma() const {
+  // Gamma = 1/2 I + C W + G W^2 (left); right flips b internally
+  return Kernel{p_, 0.5, p_->C(), p_->G(), p_->dC(), p_->dG()};
+}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+// --- Backward-compatible functors (deprecated shims) ---
+ExpmapFunctor::ExpmapFunctor(const Vector3& omega)
+    : ExpmapFunctor(kNearZeroThresholdSq, omega) {}
+
+ExpmapFunctor::ExpmapFunctor(double nz, const Vector3& omega) : At(omega, nz) {}
+
+ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle) : At(omega) {}
+
+DexpFunctor::DexpFunctor(const Vector3& omega, double nz, double np)
+    : ExpmapFunctor(nz, omega), omega(omega) {}
 
 DexpFunctor::DexpFunctor(const Vector3& omega)
-  : DexpFunctor(omega, kNearZeroThresholdSq, kNearPiThresholdSq) {}
+    : DexpFunctor(omega, kNearZeroThresholdSq, kNearPiThresholdSq) {}
 
-Matrix3 DexpFunctor::rightJacobianInverse() const {
-  if (theta > M_PI) return rightJacobian().inverse();
-  return I_3x3 + 0.5 * W + D * WW;
+Matrix3 DexpFunctor::rightJacobian() const { return J().right(); }
+Matrix3 DexpFunctor::leftJacobian() const { return J().left(); }
+
+Matrix3 DexpFunctor::rightJacobianInverse() const { return invJ().right(); }
+Matrix3 DexpFunctor::leftJacobianInverse() const { return invJ().left(); }
+
+Vector3 DexpFunctor::applyRightJacobian(const Vector3& v,
+                                        OptionalJacobian<3, 3> H1,
+                                        OptionalJacobian<3, 3> H2) const {
+  return J().applyRight(v, H1, H2);
 }
 
-Matrix3 DexpFunctor::leftJacobianInverse() const {
-  if (theta > M_PI) return leftJacobian().inverse();
-  return I_3x3 - 0.5 * W + D * WW;
+Vector3 DexpFunctor::applyLeftJacobian(const Vector3& v,
+                                       OptionalJacobian<3, 3> H1,
+                                       OptionalJacobian<3, 3> H2) const {
+  return J().applyLeft(v, H1, H2);
 }
 
-Vector3 DexpFunctor::applyRightJacobianInverse(const Vector3& v, OptionalJacobian<3, 3> H1,
-  OptionalJacobian<3, 3> H2) const {
-  const Matrix3 invJr = rightJacobianInverse();
-  const Vector3 c = invJr * v;
-  if (H1) {
-    Matrix3 H;
-    applyRightJacobian(c, H);  // get derivative H of forward mapping
-    *H1 = -invJr * H;
-  }
-  if (H2) *H2 = invJr;
-  return c;
+Vector3 DexpFunctor::applyRightJacobianInverse(
+    const Vector3& v, OptionalJacobian<3, 3> H1,
+    OptionalJacobian<3, 3> H2) const {
+  return invJ().applyRightInverse(v, H1, H2);
 }
 
 Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
-  OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) const {
-  const Matrix3 invJl = leftJacobianInverse();
-  const Vector3 c = invJl * v;
-  if (H1) {
-    Matrix3 H;
-    applyLeftJacobian(c, H);  // get derivative H of forward mapping
-    *H1 = -invJl * H;
-  }
-  if (H2) *H2 = invJl;
-  return c;
+                                              OptionalJacobian<3, 3> H1,
+                                              OptionalJacobian<3, 3> H2) const {
+  return invJ().applyLeftInverse(v, H1, H2);
 }
 
-GammaFunctor::GammaFunctor(const Vector3& omega, double nearZeroThresholdSq,
-                           double nearPiThresholdSq)
-    : DexpFunctor(omega, nearZeroThresholdSq, nearPiThresholdSq) {
-  if (!nearZero) {
-    G = (1.0 - 2.0 * B) / (2.0 * theta2);
-    dG = -(dB + 2.0 * G) / theta2;  // = G'(θ)/θ
-  } else {
-    G = one_24th - theta2 * one_720th;
-    dG = -one_360th;  // dG near zero
-  }
-}
-
-GammaFunctor::GammaFunctor(const Vector3& omega)
-    : GammaFunctor(omega, kNearZeroThresholdSq, kNearPiThresholdSq) {}
+Matrix3 DexpFunctor::dexp() const { return J().right(); }
+Matrix3 DexpFunctor::invDexp() const { return invJ().right(); }
+#endif
 
 }  // namespace so3
 
@@ -274,7 +291,23 @@ GammaFunctor::GammaFunctor(const Vector3& omega)
 template <>
 GTSAM_EXPORT
 SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
-  return SO3(so3::ExpmapFunctor(axis, theta).expmap());
+  const Vector3 w = axis * theta;
+  const double t2 = w.dot(w);
+  const double t  = std::sqrt(t2);
+  double A, B;
+  if (t2 > so3::kNearZeroThresholdSq) {
+    const double sin_t = std::sin(t);
+    A = sin_t / t;
+    const double s2 = std::sin(t / 2.0);
+    const double one_minus_cos = 2.0 * s2 * s2;
+    B = one_minus_cos / t2;
+  } else {
+    A = 1.0 - t2 * so3::one_6th;
+    B = 0.5 - t2 * so3::one_24th;
+  }
+  const Matrix3 W = skewSymmetric(w);
+  const Matrix3 WW = W * W;
+  return SO3(I_3x3 + A * W + B * WW);
 }
 
 //******************************************************************************
@@ -324,22 +357,81 @@ Vector3 SO3::Vee(const Matrix3& X) {
 template <>
 GTSAM_EXPORT
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
-  so3::DexpFunctor local(omega);
-  if (H) *H = local.rightJacobian();
-  return SO3(local.expmap());
+  so3::At at(omega);
+  const double theta2 = at.theta2();
+  const double theta  = at.theta();
+  double A, B;
+  if (theta2 > so3::kNearZeroThresholdSq) {
+    const double sin_theta = std::sin(theta);
+    A = sin_theta / theta;
+    const double s2 = std::sin(theta / 2.0);
+    const double one_minus_cos = 2.0 * s2 * s2;
+    B = one_minus_cos / theta2;
+  } else {
+    A = 1.0 - theta2 * so3::one_6th;
+    B = 0.5 - theta2 * so3::one_24th;
+  }
+  if (H) {
+    // Jr = I - B W + C WW
+    const double C = (theta2 > so3::kNearZeroThresholdSq)
+                       ? (1.0 - A) / theta2
+                       : (so3::one_6th - theta2 * so3::one_120th);
+    *H = I_3x3 - B * at.W() + C * at.WW();
+  }
+  return SO3(I_3x3 + A * at.W() + B * at.WW());
 }
 
 template <>
 GTSAM_EXPORT
 Matrix3 SO3::ExpmapDerivative(const Vector3& omega) {
-  return so3::DexpFunctor(omega).rightJacobian();
+  so3::At at(omega);
+  const double theta2 = at.theta2();
+  const double theta  = at.theta();
+  double A, B, C;
+  if (theta2 > so3::kNearZeroThresholdSq) {
+    const double sin_theta = std::sin(theta);
+    A = sin_theta / theta;
+    const double s2 = std::sin(theta / 2.0);
+    const double one_minus_cos = 2.0 * s2 * s2;
+    B = one_minus_cos / theta2;
+    C = (1.0 - A) / theta2;
+  } else {
+    A = 1.0 - theta2 * so3::one_6th;
+    B = 0.5 - theta2 * so3::one_24th;
+    C = so3::one_6th - theta2 * so3::one_120th;
+  }
+  return I_3x3 - B * at.W() + C * at.WW();
 }
 
 //******************************************************************************
 template <>
 GTSAM_EXPORT
 Matrix3 SO3::LogmapDerivative(const Vector3& omega) {
-  return so3::DexpFunctor(omega).rightJacobianInverse();
+  so3::At at(omega);
+  const double theta2 = at.theta2();
+  const double theta  = at.theta();
+  double A, B, C, D;
+  if (theta2 > so3::kNearZeroThresholdSq) {
+    const double sin_theta = std::sin(theta);
+    A = sin_theta / theta;
+    const double s2 = std::sin(theta / 2.0);
+    const double one_minus_cos = 2.0 * s2 * s2;
+    B = one_minus_cos / theta2;
+    C = (1.0 - A) / theta2;
+    if (theta > M_PI - std::sqrt(so3::kNearPiThresholdSq)) {
+      D = so3::k1_Pi2 + (so3::k2_Pi3 - so3::k1_4Pi) * (M_PI - theta);
+    } else {
+      D = (1.0 - A / (2.0 * B)) / theta2;
+    }
+  } else {
+    A = 1.0 - theta2 * so3::one_6th;
+    B = 0.5 - theta2 * so3::one_24th;
+    C = so3::one_6th - theta2 * so3::one_120th;
+    D = so3::one_12th + theta2 * so3::one_720th;
+  }
+  const Matrix3 Jr = I_3x3 - B * at.W() + C * at.WW();
+  if (theta > M_PI) return Jr.inverse();
+  return I_3x3 + 0.5 * at.W() + D * at.WW();
 }
 
 template <>

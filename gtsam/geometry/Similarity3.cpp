@@ -225,14 +225,9 @@ Matrix7 Similarity3::AdjointMap() const {
 }
 
 static constexpr double one_6th = 1.0 / 6.0;
-static constexpr double one_12th = 1.0 / 12.0;
 static constexpr double one_24th = 1.0 / 24.0;
-static constexpr double one_60th = 1.0 / 60.0;
 static constexpr double one_120th = 1.0 / 120.0;
-static constexpr double one_180th = 1.0 / 180.0;
-static constexpr double one_360th = 1.0 / 360.0;
 static constexpr double one_720th = 1.0 / 720.0;
-static constexpr double one_1260th = 1.0 / 1260.0;
 
 // Functor that implements the Similarity3 V(ω, λ) kernel:
 // See http://www.ethaneade.org/latex2html/lie/node29.html
@@ -241,7 +236,7 @@ struct VFunctor : public so3::At {
   double alpha{0};               ///< Blending
   double beta{0}, mu{0};         ///< L kernel I+beta W + mu WW
   double P{0}, Q{0}, R{0};       ///< V kernel
-  Kernel J_, G_;                 ///< Kernels J() and Gamma()
+  so3::Kernel J_, G_;                 ///< Kernels J() and Gamma()
 
   explicit VFunctor(const Vector3& omega, double lambda,
                     double nearZeroThresholdSq, double nearPiThresholdSq)
@@ -274,7 +269,7 @@ struct VFunctor : public so3::At {
     G_ = this->Gamma();
     if (lambda2 > 1e-9) {
       P = (1.0 - e) / lambda;
-      alpha = 1.0 / (1.0 + (theta2 / lambda2));  // = λ²/(λ²+θ²)
+      alpha = 1.0 / (1.0 + (theta2() / lambda2));  // = λ²/(λ²+θ²)
       const double one_minus_alpha = 1.0 - alpha;
       Q = alpha * beta + one_minus_alpha * (J_.b - lambda * G_.b);
       R = alpha * mu + one_minus_alpha * (G_.c - lambda * G_.c);
@@ -286,16 +281,16 @@ struct VFunctor : public so3::At {
     }
   }
 
-  Matrix3 V() const { return P * I_3x3 + Q * W + R * WW; }
+  Matrix3 V() const { return P * I_3x3 + Q * W() + R * WW(); }
 
   so3::Kernel kernel() const {
     const double lambda2 = lambda * lambda;
     const double dalpha =
         (lambda2 > 1e-9) ? (-2.0 * alpha * alpha / lambda2) : 0.0;
     const double dQ = (beta - (J_.b - lambda * G_.b)) * dalpha +
-                      (1.0 - alpha) * (dB - lambda * dG_.b);
+                      (1.0 - alpha) * (J_.db - lambda * G_.db);
     const double dR = (mu - (J_.c - lambda * G_.c)) * dalpha +
-                      (1.0 - alpha) * (dC - lambda * dG_.c);
+                      (1.0 - alpha) * (J_.dc - lambda * G_.dc);
     return so3::Kernel{this->p_, P, Q, R, dQ, dR};
   }
 };
