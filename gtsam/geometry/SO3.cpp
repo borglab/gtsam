@@ -40,6 +40,7 @@ static constexpr double one_24th = 1.0 / 24.0;
 static constexpr double one_60th = 1.0 / 60.0;
 static constexpr double one_120th = 1.0 / 120.0;
 static constexpr double one_180th = 1.0 / 180.0;
+static constexpr double one_360th = 1.0 / 360.0;
 static constexpr double one_720th = 1.0 / 720.0;
 static constexpr double one_1260th = 1.0 / 1260.0;
 
@@ -66,12 +67,6 @@ GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
   if (H) *H = Dcompose(R);
   return MR;
 }
-
-// --- Thresholds ---
-// Tolerance for near zero (theta^2)
-static constexpr double kNearZeroThresholdSq = 1e-6;
-// Tolerance for near pi (delta^2 = (pi - theta)^2)
-static constexpr double kNearPiThresholdSq = 1e-6;
 
 // --- At::Impl and At methods ---
 struct At::Impl {
@@ -179,7 +174,11 @@ struct At::Impl {
 
   inline double dG() const {
     if (!dG_set) {
-      dG_val = -(dB() + 2.0 * G()) / theta2;
+      if (!nearZero) {
+        dG_val = -(dB() + 2.0 * G()) / theta2;
+      } else {
+        dG_val = -one_360th;
+      }
       dG_set = true;
     }
     return dG_val;
@@ -281,6 +280,10 @@ Vector3 InvJKernel::applyRight(const Vector3& v, OptionalJacobian<3, 3> Hw,
   return c;
 }
 
+// --- Thresholds (class statics) ---
+constexpr double At::kNearZeroThresholdSq;
+constexpr double At::kNearPiThresholdSq;
+
 // --- At high-level helpers ---
 Matrix3 At::expmap() const {
   // Exp(ω) = I + A W + B W^2
@@ -343,23 +346,7 @@ Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
 template <>
 GTSAM_EXPORT
 SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
-  const Vector3 w = axis * theta;
-  const double t2 = w.dot(w);
-  const double t  = std::sqrt(t2);
-  double A, B;
-  if (t2 > so3::kNearZeroThresholdSq) {
-    const double sin_t = std::sin(t);
-    A = sin_t / t;
-    const double s2 = std::sin(t / 2.0);
-    const double one_minus_cos = 2.0 * s2 * s2;
-    B = one_minus_cos / t2;
-  } else {
-    A = 1.0 - t2 * so3::one_6th;
-    B = 0.5 - t2 * so3::one_24th;
-  }
-  const Matrix3 W = skewSymmetric(w);
-  const Matrix3 WW = W * W;
-  return SO3(I_3x3 + A * W + B * WW);
+  return Expmap(axis * theta);
 }
 
 //******************************************************************************
@@ -488,7 +475,7 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
   } else {
     double magnitude;
     const double tr_3 = tr - 3.0; // could be non-negative if the matrix is off orthogonal
-    if (tr_3 < -so3::kNearZeroThresholdSq) {
+    if (tr_3 < -so3::At::kNearZeroThresholdSq) {
       // this is the normal case -1 < trace < 3
       double theta = acos((tr - 1.0) / 2.0);
       magnitude = theta / (2.0 * sin(theta));

@@ -132,12 +132,11 @@ GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
 /// Math is based on Ethan Eade's elegant Lie group document, at
 /// https://www.ethaneade.org/lie.pdf, and the Kernel idea in doc/Jacobians.md
 struct GTSAM_EXPORT At {
-  const Matrix3& W() const;
-  const Matrix3& WW() const;
-  double theta() const;
-  double theta2() const;
-  bool nearZero() const;
-
+  /// Tolerance for near zero (theta^2)
+  static constexpr double kNearZeroThresholdSq = 1e-6;
+  /// Tolerance for near pi (delta^2 = (pi - theta)^2)
+  static constexpr double kNearPiThresholdSq = 1e-6;
+  
   explicit At(const Vector3& omega, double nearZeroThresholdSq = 1e-6,
               double nearPiThresholdSq = 1e-6);
 
@@ -153,6 +152,12 @@ struct GTSAM_EXPORT At {
 
   // Gamma kernel: 0.5 I +/- C W + G WW (left/right).
   struct Kernel Gamma() const;
+
+  const Matrix3& W() const;
+  const Matrix3& WW() const;
+  double theta() const;
+  double theta2() const;
+  bool nearZero() const;
 
  protected:
   // A-G coefficients are lazily computed in Impl.
