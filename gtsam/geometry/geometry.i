@@ -1137,7 +1137,7 @@ class FundamentalMatrix {
   gtsam::Matrix3 matrix() const;
 
   // Testable
-  void print(const std::string& s = "") const;
+  void print(string s = "") const;
   bool equals(const gtsam::FundamentalMatrix& other, double tol = 1e-9) const;
 
   // Manifold
@@ -1158,7 +1158,7 @@ class SimpleFundamentalMatrix {
   gtsam::Matrix3 matrix() const;
 
   // Testable
-  void print(const std::string& s = "") const;
+  void print(string s = "") const;
   bool equals(const gtsam::SimpleFundamentalMatrix& other, double tol = 1e-9) const;
 
   // Manifold
@@ -1389,7 +1389,7 @@ class Similarity2 {
 
   // Standard Interface
   bool equals(const gtsam::Similarity2& sim, double tol) const;
-  void print(const std::string& s = "") const;
+  void print(string s = "") const;
   gtsam::Matrix matrix() const;
   gtsam::Rot2& rotation();
   gtsam::Point2& translation();
@@ -1436,12 +1436,24 @@ class Similarity3 {
 
   // Standard Interface
   bool equals(const gtsam::Similarity3& sim, double tol) const;
-  void print(const std::string& s = "") const;
+  void print(string s = "") const;
   gtsam::Matrix matrix() const;
   gtsam::Rot3& rotation();
   gtsam::Point3& translation();
   double scale() const;
 };
+
+#include <gtsam/geometry/Event.h>
+class Event {
+  Event();
+  Event(double t, const gtsam::Point3& p);
+  Event(double t, double x, double y, double z);
+  double time() const;
+  gtsam::Point3 location() const;
+  double height() const;
+  void print(string s = "") const;
+};
+
 
 #include <gtsam/geometry/Gal3.h>
 class Gal3 {
@@ -1454,11 +1466,24 @@ class Gal3 {
   void print(string s = "") const;
   bool equals(const gtsam::Gal3& other, double tol) const;
 
+  // Manifold
+  const gtsam::Rot3& attitude() const;
+  const gtsam::Point3& position() const;
+  const gtsam::Vector3& velocity() const;
+  size_t dim() const;
+  static size_t Dim();
+  const double& time() const;
+  gtsam::Gal3 retract(const gtsam::Vector10& xi) const;
+  gtsam::Vector10 localCoordinates(const gtsam::Gal3& g) const;
+
   // Group
+  const gtsam::Rot3& rotation() const;
+  const gtsam::Point3& translation() const;
   static gtsam::Gal3 Identity();
   gtsam::Gal3 inverse() const;
   gtsam::Gal3 compose(const gtsam::Gal3& other) const;
   gtsam::Gal3 between(const gtsam::Gal3& other) const;
+  gtsam::Event act(const gtsam::Event& e) const;
 
   // Operator Overloads
   gtsam::Gal3 operator*(const gtsam::Gal3& other) const;
@@ -1468,18 +1493,6 @@ class Gal3 {
   static gtsam::Vector10 Logmap(const gtsam::Gal3& g);
   gtsam::Gal3 expmap(const gtsam::Vector10& xi);
   gtsam::Vector10 logmap(const gtsam::Gal3& g);
-
-  // Manifold
-  size_t dim() const;
-  static size_t Dim();
-  gtsam::Gal3 retract(const gtsam::Vector10& xi) const;
-  gtsam::Vector10 localCoordinates(const gtsam::Gal3& g) const;
-
-  // Component Access
-  const gtsam::Rot3& rotation() const;
-  const gtsam::Point3& translation() const;
-  const gtsam::Vector3& velocity() const;
-  const double& time() const;
 
   // Matrix Lie Group
   gtsam::Vector vec() const;
@@ -1684,18 +1697,6 @@ gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSetCal3Unified& cameras,
     const gtsam::Point2Vector& measurements,
     const gtsam::TriangulationParameters& params);
-
-
-#include <gtsam/geometry/Event.h>
-class Event {
-  Event();
-  Event(double t, const gtsam::Point3& p);
-  Event(double t, double x, double y, double z);
-  double time() const;
-  gtsam::Point3 location() const;
-  double height() const;
-  void print(string s) const;
-};
 
 
 #include <gtsam/geometry/BearingRange.h>

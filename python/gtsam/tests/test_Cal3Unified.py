@@ -94,7 +94,7 @@ class TestCal3Unified(GtsamTestCase):
         pose_key, point_key = P(0), L(0)
         k = self.stereographic
         state.insert(pose_key, gtsam.Pose3())
-        state.insertPoint3(point_key, self.obj_point)
+        state.insert(point_key, self.obj_point)
         factor = gtsam.GenericProjectionFactorCal3Unified(measured, noise_model, pose_key, point_key, k)
         graph.add(factor)
         score = graph.error(state)
@@ -111,7 +111,7 @@ class TestCal3Unified(GtsamTestCase):
         k = self.stereographic
         state.insert(camera_key, k)
         state.insert(pose_key, gtsam.Pose3())
-        state.insertPoint3(landmark_key, self.obj_point)
+        state.insert(landmark_key, self.obj_point)
         factor = gtsam.GeneralSFMFactor2Cal3Unified(measured, noise_model, pose_key, landmark_key, camera_key)
         graph.add(factor)
         score = graph.error(state)
@@ -126,7 +126,7 @@ class TestCal3Unified(GtsamTestCase):
         state = gtsam.Values()
         camera_key, pose_key, landmark_key = K(0), P(0), L(0)
         state.insert(camera_key, camera)
-        state.insertPoint3(landmark_key, obj_point_on_axis)
+        state.insert(landmark_key, obj_point_on_axis)
         state.insert(pose_key, pose)
         g = gtsam.NonlinearFactorGraph()
         noise_model = gtsam.noiseModel.Unit.Create(2)
