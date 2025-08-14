@@ -151,8 +151,8 @@ struct GTSAM_EXPORT At {
 
   // Gamma kernel: 0.5 I +/- C W + G WW (left/right).
   struct Kernel Gamma() const;
-  
-  private:
+
+ protected:
   // A-G coefficients are lazily computed in Impl.
   struct Impl;               // pimpl keeps header tiny
   std::shared_ptr<Impl> p_;  // shared so Kernel can hold a reference

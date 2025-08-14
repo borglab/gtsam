@@ -224,12 +224,24 @@ Matrix7 Similarity3::AdjointMap() const {
   return adj;
 }
 
+static constexpr double one_6th = 1.0 / 6.0;
+static constexpr double one_12th = 1.0 / 12.0;
+static constexpr double one_24th = 1.0 / 24.0;
+static constexpr double one_60th = 1.0 / 60.0;
+static constexpr double one_120th = 1.0 / 120.0;
+static constexpr double one_180th = 1.0 / 180.0;
+static constexpr double one_360th = 1.0 / 360.0;
+static constexpr double one_720th = 1.0 / 720.0;
+static constexpr double one_1260th = 1.0 / 1260.0;
+
 // Functor that implements the Similarity3 V(ω, λ) kernel:
 // See http://www.ethaneade.org/latex2html/lie/node29.html
 struct VFunctor : public so3::At {
-  double lambda;  ///< scale log parameter
-  double alpha{0}, beta{0}, mu{0};
-  double P{0}, Q{0}, R{0};
+  double lambda{0}, lambda2{0};  ///< scale log parameter
+  double alpha{0};               ///< Blending
+  double beta{0}, mu{0};         ///< L kernel I+beta W + mu WW
+  double P{0}, Q{0}, R{0};       ///< V kernel
+  Kernel J_, G_;                 ///< Kernels J() and Gamma()
 
   explicit VFunctor(const Vector3& omega, double lambda,
                     double nearZeroThresholdSq, double nearPiThresholdSq)
@@ -242,23 +254,36 @@ struct VFunctor : public so3::At {
     compute_();
   }
 
+  // Compute kernel V = α L + (1-α) (Jl - λ Gl)
+  // with α = λ² / (λ² + θ²) and L = I + β W + μ WW
   void compute_() {
-    const double lambda2 = lambda * lambda, lambda3 = lambda2 * lambda;
+    lambda2 = lambda * lambda; // calculate lambda^2
+
+    // Kernel L with a,b,c == a, beta, mu:
+    const double e = std::exp(-lambda);
+    const double lambda3 = lambda2 * lambda;
     if (lambda2 > 1e-9) {
-      const double e = std::exp(-lambda);
-      P = (1.0 - e) / lambda;
-      alpha = 1.0 / (1.0 + (theta2 / lambda2));  // = λ²/(λ²+θ²)
       beta = (e - 1.0 + lambda) / lambda2;
       mu = (1.0 - lambda + 0.5 * lambda2 - e) / lambda3;
     } else {
-      P = 1.0 - lambda / 2.0 + lambda2 / 6.0;
-      alpha = 0.0;
-      beta = 0.5 - lambda / 6.0 + lambda2 / 24.0 - lambda3 / 120.0;
-      mu = 1.0 / 6.0 - lambda / 24.0 + lambda2 / 120.0 - lambda3 / 720.0;
+      beta = 0.5 - lambda * one_6th + lambda2 * one_24th - lambda3 * one_120th;
+      mu = one_6th - lambda * one_24th + lambda2 * one_120th - lambda3 * one_720th;
     }
-    const double one_minus_alpha = 1.0 - alpha;
-    Q = alpha * beta + one_minus_alpha * (B - lambda * C);
-    R = alpha * mu + one_minus_alpha * (C - lambda * G);
+
+    J_ = this->J();
+    G_ = this->Gamma();
+    if (lambda2 > 1e-9) {
+      P = (1.0 - e) / lambda;
+      alpha = 1.0 / (1.0 + (theta2 / lambda2));  // = λ²/(λ²+θ²)
+      const double one_minus_alpha = 1.0 - alpha;
+      Q = alpha * beta + one_minus_alpha * (J_.b - lambda * G_.b);
+      R = alpha * mu + one_minus_alpha * (G_.c - lambda * G_.c);
+    } else {
+      P = 1.0 - lambda * 0.5 + lambda2 * one_6th;
+      // alpha = 0.0;
+      Q = J_.b - lambda * G_.b;
+      R = J_.c - lambda * G_.c;
+    }
   }
 
   Matrix3 V() const { return P * I_3x3 + Q * W + R * WW; }
@@ -267,11 +292,11 @@ struct VFunctor : public so3::At {
     const double lambda2 = lambda * lambda;
     const double dalpha =
         (lambda2 > 1e-9) ? (-2.0 * alpha * alpha / lambda2) : 0.0;
-    const double dQ =
-        (beta - (B - lambda * C)) * dalpha + (1.0 - alpha) * (dB - lambda * dC);
-    const double dR =
-        (mu - (C - lambda * G)) * dalpha + (1.0 - alpha) * (dC - lambda * dG);
-    return so3::Kernel{*this, P, Q, R, dQ, dR};
+    const double dQ = (beta - (J_.b - lambda * G_.b)) * dalpha +
+                      (1.0 - alpha) * (dB - lambda * dG_.b);
+    const double dR = (mu - (J_.c - lambda * G_.c)) * dalpha +
+                      (1.0 - alpha) * (dC - lambda * dG_.c);
+    return so3::Kernel{this->p_, P, Q, R, dQ, dR};
   }
 };
 

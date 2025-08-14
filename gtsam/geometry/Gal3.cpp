@@ -278,7 +278,7 @@ Gal3::TangentVector Gal3::Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg) {
     // Implements logarithmic map from Equations 20-23, Page 8
     const Vector3 omega = Rot3::Logmap(g.R_);
     const gtsam::so3::At at(omega);
-    const Matrix3 Jl_inv = at.invJ.left()();
+    const Matrix3 Jl_inv = at.invJ().left();
     Matrix3 Gl = at.Gamma().left();
 
     const Vector3 r_vec = Vector3(g.r_);
