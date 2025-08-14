@@ -234,9 +234,9 @@ static constexpr double one_720th = 1.0 / 720.0;
 struct VFunctor : public so3::At {
   double lambda{0}, lambda2{0};  ///< scale log parameter
   double alpha{0};               ///< Blending
-  double beta{0}, mu{0};         ///< L kernel I+beta W + mu WW
+  double A{0}, B{0}, C{0};       ///< L kernel A I + B W + C WW
   double P{0}, Q{0}, R{0};       ///< V kernel
-  so3::Kernel J_, G_;                 ///< Kernels J() and Gamma()
+  so3::Kernel J_, G_;            ///< Kernels J() and Gamma()
 
   explicit VFunctor(const Vector3& omega, double lambda,
                     double nearZeroThresholdSq, double nearPiThresholdSq)
@@ -252,46 +252,52 @@ struct VFunctor : public so3::At {
   // Compute kernel V = α L + (1-α) (Jl - λ Gl)
   // with α = λ² / (λ² + θ²) and L = I + β W + μ WW
   void compute_() {
-    lambda2 = lambda * lambda; // calculate lambda^2
-
-    // Kernel L with a,b,c == a, beta, mu:
-    const double e = std::exp(-lambda);
-    const double lambda3 = lambda2 * lambda;
+    lambda2 = lambda * lambda;                // λ²
+    
+    // L-kernel coefficients: A, B, C where L = A I + B W + C W²
+    const double lambda3 = lambda2 * lambda;  // λ³
     if (lambda2 > 1e-9) {
-      beta = (e - 1.0 + lambda) / lambda2;
-      mu = (1.0 - lambda + 0.5 * lambda2 - e) / lambda3;
+      const double e = std::exp(-lambda);
+      A = (1.0 - e) / lambda;                            // A(λ)
+      B = (e - 1.0 + lambda) / lambda2;                  // B(λ)
+      C = (1.0 - lambda + 0.5 * lambda2 - e) / lambda3;  // C(λ)
     } else {
-      beta = 0.5 - lambda * one_6th + lambda2 * one_24th - lambda3 * one_120th;
-      mu = one_6th - lambda * one_24th + lambda2 * one_120th - lambda3 * one_720th;
+      // Taylor near λ=0
+      A = 1.0 - 0.5 * lambda + one_6th * lambda2;  // A ≈ 1 - λ/2 + λ²/6
+      B = 0.5 - lambda * one_6th + lambda2 * one_24th - lambda3 * one_120th;
+      C = one_6th - lambda * one_24th + lambda2 * one_120th -
+          lambda3 * one_720th;
     }
 
+    // Blend V = α L + (1-α)(J - λ Γ)
     J_ = this->J();
     G_ = this->Gamma();
-    if (lambda2 > 1e-9) {
-      P = (1.0 - e) / lambda;
-      alpha = 1.0 / (1.0 + (theta2() / lambda2));  // = λ²/(λ²+θ²)
-      const double one_minus_alpha = 1.0 - alpha;
-      Q = alpha * beta + one_minus_alpha * (J_.b - lambda * G_.b);
-      R = alpha * mu + one_minus_alpha * (G_.c - lambda * G_.c);
-    } else {
-      P = 1.0 - lambda * 0.5 + lambda2 * one_6th;
-      // alpha = 0.0;
-      Q = J_.b - lambda * G_.b;
-      R = J_.c - lambda * G_.c;
-    }
+    const double th2 = this->theta2();
+    alpha = (lambda2 + th2 > 0.0) ? (lambda2 / (lambda2 + th2))
+                                  : 0.0;  // α = λ²/(λ²+θ²)
+    const double one_minus_alpha = 1.0 - alpha;
+
+    // Final V(ω,λ) coefficients
+    P = A;  // NOTE: P comes purely from L's a
+    Q = alpha * B + one_minus_alpha * (J_.b - lambda * G_.b);
+    R = alpha * C + one_minus_alpha * (J_.c - lambda * G_.c);
   }
 
   Matrix3 V() const { return P * I_3x3 + Q * W() + R * WW(); }
 
   so3::Kernel kernel() const {
-    const double lambda2 = lambda * lambda;
-    const double dalpha =
-        (lambda2 > 1e-9) ? (-2.0 * alpha * alpha / lambda2) : 0.0;
-    const double dQ = (beta - (J_.b - lambda * G_.b)) * dalpha +
-                      (1.0 - alpha) * (J_.db - lambda * G_.db);
-    const double dR = (mu - (J_.c - lambda * G_.c)) * dalpha +
-                      (1.0 - alpha) * (J_.dc - lambda * G_.dc);
-    return so3::Kernel{this->p_, P, Q, R, dQ, dR};
+    const double denom = lambda2 + theta2();
+    if (denom > 0.0) {
+      const double dalpha = -2.0 * lambda2 / (denom * denom);
+      const double one_minus_alpha = 1.0 - lambda2 / denom;
+      const double dQ = dalpha * (B - (J_.b - lambda * G_.b)) +
+                        one_minus_alpha * (J_.db - lambda * G_.db);
+      const double dR = dalpha * (C - (J_.c - lambda * G_.c)) +
+                        one_minus_alpha * (J_.dc - lambda * G_.dc);
+      return so3::Kernel{this->p_, P, Q, R, dQ, dR};
+    } else {
+      return so3::Kernel{this->p_, P, Q, R, 0.0, 0.0};
+    }
   }
 };
 
