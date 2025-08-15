@@ -136,9 +136,10 @@ struct GTSAM_EXPORT Local {
   static constexpr double kNearZeroThresholdSq = 1e-6;
   /// Tolerance for near pi (delta^2 = (pi - theta)^2)
   static constexpr double kNearPiThresholdSq = 1e-6;
-  
-  explicit Local(const Vector3& omega, double nearZeroThresholdSq = 1e-6,
-              double nearPiThresholdSq = 1e-6);
+
+  explicit Local(const Vector3& omega,
+                 double nearZeroThresholdSq = kNearZeroThresholdSq,
+                 double nearPiThresholdSq = kNearPiThresholdSq);
 
   // Exponential map
   Matrix3 expmap() const;  // I + A(θ) W + B(θ) WW
@@ -153,16 +154,24 @@ struct GTSAM_EXPORT Local {
   // Gamma kernel: 0.5 I +/- C W + G WW (left/right).
   struct Kernel Gamma() const;
 
+  // access to cache
   const Matrix3& W() const;
   const Matrix3& WW() const;
   double theta() const;
   double theta2() const;
   bool nearZero() const;
 
+  // access to (lazily evaluated) coefficients
+  double A() const;
+  double B() const;
+  double C() const;
+  double D() const;
+  double E() const;
+
  protected:
-  // A-G coefficients are lazily computed in Impl.
-  struct Impl;               // pimpl keeps header tiny
-  std::shared_ptr<Impl> p_;  // shared so Kernel can hold a reference
+  // A-G coefficients are lazily computed in Cache.
+  struct Cache;               // pimpl keeps header tiny
+  std::shared_ptr<Cache> p_;  // shared so Kernel can hold a reference
   friend struct Kernel;
   friend struct InvJKernel;
 };
@@ -170,7 +179,7 @@ struct GTSAM_EXPORT Local {
 // Kernel: M(ω) = a I + b W + c W^2 with radial derivatives db,dc for Fréchet.
 // Right variants flip b→-b, db→-db (no recompute of W/WW).
 struct GTSAM_EXPORT Kernel {
-  std::shared_ptr<const Local::Impl> S;
+  std::shared_ptr<const Local::Cache> S;
   double a{0}, b{0}, c{0}, db{0}, dc{0};  // left-specialization form
 
   Matrix3 left() const;   // a I + b W + c WW
@@ -196,7 +205,7 @@ struct GTSAM_EXPORT Kernel {
 
 // Stable inverse Jacobian kernel
 struct GTSAM_EXPORT InvJKernel {
-  std::shared_ptr<const Local::Impl> S;
+  std::shared_ptr<const Local::Cache> S;
   Kernel J;  // holds the forward kernel
 
   Matrix3 left() const;

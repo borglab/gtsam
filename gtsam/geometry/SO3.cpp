@@ -28,6 +28,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <optional>
 
 namespace gtsam {
 
@@ -50,7 +51,7 @@ static constexpr double k1_Pi2 = 1.0 / kPi2;
 static constexpr double kPi3 = M_PI * kPi2;
 static constexpr double k1_Pi3 = 1.0 / kPi3;
 static constexpr double k2_Pi3 = 2.0 * k1_Pi3;
-static constexpr double k1_4Pi = 0.25 * kPi_inv; // 1/(4*pi)
+static constexpr double k1_4Pi = 0.25 * kPi_inv;  // 1/(4*pi)
 
 GTSAM_EXPORT Matrix99 Dcompose(const SO3& Q) {
   Matrix99 H;
@@ -68,22 +69,21 @@ GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
   return MR;
 }
 
-// --- Local::Impl and Local methods ---
-struct Local::Impl {
-  Vector3 omega;
-  double theta2;
-  double theta;
-  Matrix3 W, WW;
-  bool nearZero;
-  bool nearPi;
+// --- Local::Cache and Local methods ---
+struct Local::Cache {
+  Vector3 omega;  ///< The rotation vector.
+  double theta2;  ///< The squared norm of the rotation vector (theta^2).
+  double theta;   ///< The norm of the rotation vector (theta).
+  Matrix3 W;      ///< The skew-symmetric matrix for the rotation vector.
+  Matrix3 WW;     ///< The square of the skew-symmetric matrix (W * W).
+  bool nearZero;  ///< Flag indicating if theta is near zero.
+  bool nearPi;    ///< Flag indicating if theta is near pi.
 
-  // Lazy coefficient cache
-  mutable bool A_set = false, B_set = false, C_set = false, D_set = false,
-               G_set = false, dB_set = false, dC_set = false, dG_set = false;
-  mutable double A_val{}, B_val{}, C_val{}, D_val{}, G_val{}, dB_val{},
-      dC_val{}, dG_val{};
+  // Lazy coefficient cache using optionals
+  mutable std::optional<double> A_, B_, C_, D_, E_;  ///< Coefficients
+  mutable std::optional<double> dB_, dC_, dE_;       ///< Derivatives
 
-  Impl(const Vector3& w, double nz, double np)
+  Cache(const Vector3& w, double nz, double np)
       : omega(w),
         theta2(w.dot(w)),
         theta(std::sqrt(theta2)),
@@ -95,111 +95,89 @@ struct Local::Impl {
     nearPi = (delta2 < np);
   }
 
-  inline double A() const {
-    if (!A_set || !B_set) {
+  double A() const {
+    if (!A_) {
+      A_ = !nearZero ? (std::sin(theta) / theta) : (1.0 - theta2 * one_6th);
+    }
+    return *A_;
+  }
+
+  double B() const {
+    if (!B_) {
       if (!nearZero) {
-        const double sin_theta = std::sin(theta);
-        A_val = sin_theta / theta;
-        const double s2 = std::sin(theta / 2.0);
-        const double one_minus_cos = 2.0 * s2 * s2;
-        B_val = one_minus_cos / theta2;
+        const double sinHalfTheta = std::sin(0.5 * theta);
+        B_ = (2.0 * sinHalfTheta * sinHalfTheta) / theta2;
       } else {
-        A_val = 1.0 - theta2 * one_6th;
-        B_val = 0.5 - theta2 * one_24th;
+        B_ = 0.5 - theta2 * one_24th;
       }
-      A_set = B_set = true;
     }
-    return A_val;
-  }
-  inline double B() const {
-    (void)A();
-    return B_val;
+    return *B_;
   }
 
-  inline double C() const {
-    if (!C_set) {
-      if (!nearZero) {
-        C_val = (1.0 - A()) / theta2;
-      } else {
-        C_val = one_6th - theta2 * one_120th;
-      }
-      C_set = true;
+  double C() const {
+    if (!C_) {
+      C_ = !nearZero ? ((1.0 - A()) / theta2) : (one_6th - theta2 * one_120th);
     }
-    return C_val;
+    return *C_;
   }
 
-  inline double D() const {
-    if (!D_set) {
-      if (!nearZero) {
-        if (nearPi) {
-          D_val = k1_Pi2 + (k2_Pi3 - k1_4Pi) * (M_PI - theta);
-        } else {
-          D_val = (1.0 - A() / (2.0 * B())) / theta2;
-        }
-      } else {
-        D_val = one_12th + theta2 * one_720th;
-      }
-      D_set = true;
+  double D() const {
+    if (!D_) {
+      D_ = !nearZero ? (nearPi ? (k1_Pi2 + (k2_Pi3 - k1_4Pi) * (M_PI - theta))
+                               : ((1.0 - A() / (2.0 * B())) / theta2))
+                     : (one_12th + theta2 * one_720th);
     }
-    return D_val;
+    return *D_;
   }
 
-  inline double dB() const {
-    if (!dB_set) {
-      if (!nearZero)
-        dB_val = (A() - 2.0 * B()) / theta2;
-      else
-        dB_val = -one_12th + theta2 * one_180th;
-      dB_set = true;
+  double E() const {
+    if (!E_) {
+      E_ = !nearZero ? ((1.0 - 2.0 * B()) / (2.0 * theta2))
+                     : (one_24th - theta2 * one_720th);
     }
-    return dB_val;
+    return *E_;
   }
 
-  inline double dC() const {
-    if (!dC_set) {
-      if (!nearZero)
-        dC_val = (B() - 3.0 * C()) / theta2;
-      else
-        dC_val = -one_60th + theta2 * one_1260th;
-      dC_set = true;
+  double dB() const {
+    if (!dB_) {
+      dB_ = !nearZero ? ((A() - 2.0 * B()) / theta2)
+                      : (-one_12th + theta2 * one_180th);
     }
-    return dC_val;
+    return *dB_;
   }
 
-  inline double G() const {
-    if (!G_set) {
-      if (!nearZero)
-        G_val = (1.0 - 2.0 * B()) / (2.0 * theta2);
-      else
-        G_val = one_24th - theta2 * one_720th;
-      G_set = true;
+  double dC() const {
+    if (!dC_) {
+      dC_ = !nearZero ? ((B() - 3.0 * C()) / theta2)
+                      : (-one_60th + theta2 * one_1260th);
     }
-    return G_val;
+    return *dC_;
   }
 
-  inline double dG() const {
-    if (!dG_set) {
-      if (!nearZero) {
-        dG_val = -(dB() + 2.0 * G()) / theta2;
-      } else {
-        dG_val = -one_360th;
-      }
-      dG_set = true;
+  double dE() const {
+    if (!dE_) {
+      dE_ = !nearZero ? (-(dB() + 2.0 * E()) / theta2) : (-one_360th);
     }
-    return dG_val;
+    return *dE_;
   }
 };
 
 Local::Local(const Vector3& omega, double nearZeroThresholdSq,
-       double nearPiThresholdSq)
-    : p_(std::make_shared<Impl>(omega, nearZeroThresholdSq,
-                                nearPiThresholdSq)) {}
+             double nearPiThresholdSq)
+    : p_(std::make_shared<Cache>(omega, nearZeroThresholdSq,
+                                 nearPiThresholdSq)) {}
 
 const Matrix3& Local::W() const { return p_->W; }
 const Matrix3& Local::WW() const { return p_->WW; }
 double Local::theta() const { return p_->theta; }
 double Local::theta2() const { return p_->theta2; }
 bool Local::nearZero() const { return p_->nearZero; }
+
+double Local::A() const { return p_->A(); }
+double Local::B() const { return p_->B(); }
+double Local::C() const { return p_->C(); }
+double Local::D() const { return p_->D(); }
+double Local::E() const { return p_->E(); }
 
 // --- Kernel matrices (out-of-line to keep header tight) ---
 Matrix3 Kernel::left() const {
@@ -311,14 +289,15 @@ InvJKernel Local::InvJacobian() const {
 
 Kernel Local::Gamma() const {
   // Gamma = 1/2 I + C W + G W^2 (left); right flips b internally
-  return Kernel{p_, 0.5, p_->C(), p_->G(), p_->dC(), p_->dG()};
+  return Kernel{p_, 0.5, p_->C(), p_->E(), p_->dC(), p_->dE()};
 }
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 // --- Backward-compatible functors (deprecated shims) ---
 ExpmapFunctor::ExpmapFunctor(const Vector3& omega)
     : ExpmapFunctor(kNearZeroThresholdSq, omega) {}
-ExpmapFunctor::ExpmapFunctor(double nz, const Vector3& omega) : Local(omega, nz) {}
+ExpmapFunctor::ExpmapFunctor(double nz, const Vector3& omega)
+    : Local(omega, nz) {}
 ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle)
     : Local(axis * angle) {}
 DexpFunctor::DexpFunctor(const Vector3& omega, double nz, double np)
