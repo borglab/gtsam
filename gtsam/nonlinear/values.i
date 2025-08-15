@@ -12,16 +12,18 @@ namespace gtsam {
 #include <gtsam/geometry/Cal3Unified.h>
 #include <gtsam/geometry/EssentialMatrix.h>
 #include <gtsam/geometry/FundamentalMatrix.h>
+#include <gtsam/geometry/Gal3.h>
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Similarity2.h>
-#include <gtsam/geometry/Similarity3.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/Similarity2.h>
+#include <gtsam/geometry/Similarity3.h>
+#include <gtsam/geometry/SL4.h>
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/geometry/SO4.h>
 #include <gtsam/geometry/SOn.h>
@@ -77,16 +79,17 @@ class Values {
   void insert(gtsam::Key j, gtsam::Matrix matrix);
   void insert(gtsam::Key j, const gtsam::Point2& point2);
   void insert(gtsam::Key j, const gtsam::Point3& point3);
-  void insert(gtsam::Key j, const gtsam::Rot2& rot2);
+  void insert(gtsam::Key j, const gtsam::Gal3& T);
   void insert(gtsam::Key j, const gtsam::Pose2& pose2);
+  void insert(gtsam::Key j, const gtsam::Pose3& pose3);
+  void insert(gtsam::Key j, const gtsam::Rot2& rot2);
+  void insert(gtsam::Key j, const gtsam::Rot3& rot3);
+  void insert(gtsam::Key j, const gtsam::Similarity2& similarity2);
+  void insert(gtsam::Key j, const gtsam::Similarity3& similarity3);
+  void insert(gtsam::Key j, const gtsam::SL4& H);
   void insert(gtsam::Key j, const gtsam::SO3& R);
   void insert(gtsam::Key j, const gtsam::SO4& Q);
   void insert(gtsam::Key j, const gtsam::SOn& P);
-  void insert(gtsam::Key j, const gtsam::SL4& H);
-  void insert(gtsam::Key j, const gtsam::Rot3& rot3);
-  void insert(gtsam::Key j, const gtsam::Pose3& pose3);
-  void insert(gtsam::Key j, const gtsam::Similarity2& similarity2);
-  void insert(gtsam::Key j, const gtsam::Similarity3& similarity3);
   void insert(gtsam::Key j, const gtsam::Unit3& unit3);
   void insert(gtsam::Key j, const gtsam::Cal3Bundler& cal3bundler);
   void insert(gtsam::Key j, const gtsam::Cal3f& cal3f);
@@ -114,25 +117,23 @@ class Values {
   void insert(gtsam::Key j, const gtsam::NavState& nav_state);
   void insert(gtsam::Key j, double c);
 
-  template <T = {gtsam::Point2, gtsam::Point3}>
-  void insert(gtsam::Key j, const T& val);
-
   // The order is important: gtsam::Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors.
   void update(gtsam::Key j, gtsam::Vector vector);
   void update(gtsam::Key j, gtsam::Matrix matrix);
   void update(gtsam::Key j, const gtsam::Point2& point2);
   void update(gtsam::Key j, const gtsam::Point3& point3);
-  void update(gtsam::Key j, const gtsam::Rot2& rot2);
+  void update(gtsam::Key j, const gtsam::Gal3& T);
   void update(gtsam::Key j, const gtsam::Pose2& pose2);
+  void update(gtsam::Key j, const gtsam::Pose3& pose3);
+  void update(gtsam::Key j, const gtsam::Rot2& rot2);
+  void update(gtsam::Key j, const gtsam::Rot3& rot3);
+  void update(gtsam::Key j, const gtsam::Similarity2& similarity2);
+  void update(gtsam::Key j, const gtsam::Similarity3& similarity3);
+  void update(gtsam::Key j, const gtsam::SL4& H);
   void update(gtsam::Key j, const gtsam::SO3& R);
   void update(gtsam::Key j, const gtsam::SO4& Q);
   void update(gtsam::Key j, const gtsam::SOn& P);
-  void update(gtsam::Key j, const gtsam::SL4& H);
-  void update(gtsam::Key j, const gtsam::Rot3& rot3);
-  void update(gtsam::Key j, const gtsam::Pose3& pose3);
-  void update(gtsam::Key j, const gtsam::Similarity2& similarity2);
-  void update(gtsam::Key j, const gtsam::Similarity3& similarity3);
   void update(gtsam::Key j, const gtsam::Unit3& unit3);
   void update(gtsam::Key j, const gtsam::Cal3Bundler& cal3bundler);
   void update(gtsam::Key j, const gtsam::Cal3f& cal3f);
@@ -166,16 +167,17 @@ class Values {
   void insert_or_assign(gtsam::Key j, gtsam::Matrix matrix);
   void insert_or_assign(gtsam::Key j, const gtsam::Point2& point2);
   void insert_or_assign(gtsam::Key j, const gtsam::Point3& point3);
-  void insert_or_assign(gtsam::Key j, const gtsam::Rot2& rot2);
+  void insert_or_assign(gtsam::Key j, const gtsam::Gal3& T);
   void insert_or_assign(gtsam::Key j, const gtsam::Pose2& pose2);
+  void insert_or_assign(gtsam::Key j, const gtsam::Pose3& pose3);
+  void insert_or_assign(gtsam::Key j, const gtsam::Rot2& rot2);
+  void insert_or_assign(gtsam::Key j, const gtsam::Rot3& rot3);
+  void insert_or_assign(gtsam::Key j, const gtsam::Similarity2& similarity2);
+  void insert_or_assign(gtsam::Key j, const gtsam::Similarity3& similarity3);
+  void insert_or_assign(gtsam::Key j, const gtsam::SL4& H);
   void insert_or_assign(gtsam::Key j, const gtsam::SO3& R);
   void insert_or_assign(gtsam::Key j, const gtsam::SO4& Q);
   void insert_or_assign(gtsam::Key j, const gtsam::SOn& P);
-  void insert_or_assign(gtsam::Key j, const gtsam::SL4& H);
-  void insert_or_assign(gtsam::Key j, const gtsam::Rot3& rot3);
-  void insert_or_assign(gtsam::Key j, const gtsam::Pose3& pose3);
-  void insert_or_assign(gtsam::Key j, const gtsam::Similarity2& similarity2);
-  void insert_or_assign(gtsam::Key j, const gtsam::Similarity3& similarity3);
   void insert_or_assign(gtsam::Key j, const gtsam::Unit3& unit3);
   void insert_or_assign(gtsam::Key j, const gtsam::Cal3Bundler& cal3bundler);
   void insert_or_assign(gtsam::Key j, const gtsam::Cal3f& cal3f);
@@ -203,18 +205,21 @@ class Values {
   void insert_or_assign(gtsam::Key j, const gtsam::NavState& nav_state);
   void insert_or_assign(gtsam::Key j, double c);
 
-  template <T = {gtsam::Point2,
+  template <T = {gtsam::Vector,
+                 gtsam::Matrix,
+                 gtsam::Point2,
                  gtsam::Point3,
-                 gtsam::Rot2,
+                 gtsam::Gal3,
                  gtsam::Pose2,
+                 gtsam::Pose3,
+                 gtsam::Rot2,
+                 gtsam::Rot3,
+                 gtsam::Similarity2,
+                 gtsam::Similarity3,
+                 gtsam::SL4,
                  gtsam::SO3,
                  gtsam::SO4,
                  gtsam::SOn,
-                 gtsam::SL4,
-                 gtsam::Rot3,
-                 gtsam::Pose3,
-                 gtsam::Similarity2,
-                 gtsam::Similarity3,
                  gtsam::Unit3,
                  gtsam::Cal3Bundler,
                  gtsam::Cal3f, 
@@ -240,8 +245,6 @@ class Values {
                  gtsam::PinholePose<gtsam::Cal3Unified>,
                  gtsam::imuBias::ConstantBias,
                  gtsam::NavState,
-                 gtsam::Vector,
-                 gtsam::Matrix,
                  double}>
   T at(gtsam::Key j);
 };

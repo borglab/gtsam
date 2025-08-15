@@ -229,14 +229,14 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   const Rot3 R(local.expmap());
 #endif
 
-  // The translation t = local.leftJacobian() * v.
-  // Here we call applyLeftJacobian, which is faster if you don't need
+  // The translation t = local.Jacobian().left() * v.
+  // Here we call local.Jacobian().applyLeft, which is faster if you don't need
   // Jacobians, and returns Jacobian of t with respect to w if asked.
-  // NOTE(Frank): t = applyLeftJacobian(v) does the same as the intuitive formulas
+  // NOTE(Frank): this does the same as the intuitive formulas:
   //   t_parallel = w * w.dot(v);  // translation parallel to axis
   //   w_cross_v = w.cross(v);     // translation orthogonal to axis
   //   t = (w_cross_v - Rot3::Expmap(w) * w_cross_v + t_parallel) / theta2;
-  // but functor does not need R, deals automatically with the case where theta2
+  // but Local does not need R, deals automatically with the case where theta2
   // is near zero, and also gives us the machinery for the Jacobians.
   Matrix3 H;
   const Vector3 t = local.Jacobian().applyLeft(v, Hxi ? &H : nullptr);

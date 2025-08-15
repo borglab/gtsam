@@ -191,8 +191,8 @@ Matrix3 Kernel::right() const {
 
 Vector3 Kernel::applyLeft(const Vector3& v, OptionalJacobian<3, 3> Hw,
                           OptionalJacobian<3, 3> Hv) const {
-  const Vector3 Wv = S->W * v;
-  const Vector3 WWv = S->WW * v;
+  const Vector3 Wv = S->omega.cross(v);
+  const Vector3 WWv = S->omega.cross(Wv);
   if (Hw) {
     // Closed-form ∂/∂ω without doubleCross Jacobian:
     const auto& w = S->omega;
