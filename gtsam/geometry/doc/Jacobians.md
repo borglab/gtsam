@@ -9,7 +9,7 @@ This note shows how to compute Jacobians for SO(3) - and later for semidirect pr
 \[
 M(\omega) \;=\; a\,I \; + \; b(\theta)\,\Omega \; + \; c(\theta)\,\Omega^2,\qquad \theta=\|\omega\|.
 \]
-We call this the **abc kernel**. Once we can apply \(M(\omega)\) and its **closed-form derivative with respect to \(\omega\)**, we can reuse it everywhere.
+We call this the **kernel**. Once we can apply \(M(\omega)\) and its **closed-form derivative with respect to \(\omega\)**, we can reuse it everywhere.
 
 ### SO(3) essentials
 Let \(\Omega = [\omega]_\times\), \(\theta=\|\omega\|\). Define (Rodrigues/Eade)
@@ -48,27 +48,33 @@ Let \(y(\omega,v)=a v + b\,\Omega v + c\,\Omega^2 v\). Denote the **radial deriv
 \(\partial(\Omega^2 v)/\partial\omega = \omega v^\top + (\omega\!\cdot\! v)I - 2 v\,\omega^\top\). Radial dependence enters via \(\partial b/\partial\omega = d_b\,\omega\), \(\partial c/\partial\omega = d_c\,\omega\), producing the rank-1 outer product with \(\omega^\top\).
 
 ### GTSAM Kernel API
-The **bounded kernel** `ABCKernel` carries the abc coefficients and their radial derivatives, tied to a `DexpFunctor` that supplies \(\omega,\Omega,\Omega^2\):
 
+The GTSAM implementation is centered around two concepts in the `gtsam::so3` namespace: `Local` and `Kernel`.
+
+The `so3::Local` class is a context object, constructed for a specific rotation vector `omega`. It efficiently caches geometric quantities like \(\theta\), \(\Omega=[\omega]_\times\), and \(\Omega^2\), and lazily computes the `A, B, C, ...` coefficients and their derivatives when needed.
+
+`so3::Local` then acts as a factory for `so3::Kernel` objects:
+- `local.expmap()`: returns the rotation matrix \(R(\omega)\).
+- `local.Jacobian()`: returns the kernel for the SO(3) Jacobians \(J_\ell, J_r\).
+- `local.InvJacobian()`: returns the kernel for the inverse Jacobians.
+- `local.Gamma()`: returns the kernel for the "second-order" \(\Gamma\) matrices.
+
+The `so3::Kernel` struct holds the \(a,b,c\) coefficients and their radial derivatives. It provides the core functionality:
 ```c++
-// Bound kernel: M(ω) = a I + b W + c W^2  with radial derivatives (db, dc) for
-// the Fréchet derivative. Holds a const reference to the functor providing
-// Ω = [ω]× and Ω².
-struct GTSAM_EXPORT ABCKernel {
-  const DexpFunctor& S;
-  double a{0.0}, b{0.0}, c{0.0};
-  double db{0.0}, dc{0.0};  // db = b'(θ)/θ, dc = c'(θ)/θ
+struct GTSAM_EXPORT Kernel {
+  // ... fields a, b, c, db, dc ...
 
-  /// M(ω) as a 3x3 matrix
-  Matrix3 matrix() const;
+  Matrix3 left() const;   // a I + b W + c WW
+  Matrix3 right() const;  // a I - b W + c WW
 
-  /// Apply: y = M(ω) v
-  Vector3 apply(const Vector3& v,  //
-                OptionalJacobian<3, 3> H1 = {},
-                OptionalJacobian<3, 3> H2 = {}) const;
+  Vector3 applyLeft(const Vector3& v, OptionalJacobian<3, 3> Hw = {},
+                    OptionalJacobian<3, 3> Hv = {}) const;
+  Vector3 applyRight(const Vector3& v, OptionalJacobian<3, 3> Hw = {},
+                     OptionalJacobian<3, 3> Hv = {}) const;
 
-  /// operator*: y = M(ω) v
-  Vector3 operator*(const Vector3& v) const { return apply(v); }
+  // Shortcuts: K * v == left,  v * K == right
+  Vector3 operator*(const Vector3& v) const;
+  friend Vector3 operator*(const Vector3& v, const Kernel& K);
 };
 ```
   
@@ -80,7 +86,7 @@ No series or integrals are required to implement these.
 
 ### Using the kernels in Other groups: SE(3) example
 
-In SE(3) (ω-first ordering), we reuse the SO(3) **abc kernels** from Part 1. The kernel viewpoint emphasizes that the off-diagonal block is just the derivative \(dM(\omega)/d\omega\) from Part 1 applied to the translation vector. In the API, this is exactly what the `apply()` method returns in its Jacobian `H1`.
+In SE(3) (ω-first ordering), we reuse the SO(3) **kernels** from Part 1. The kernel viewpoint emphasizes that the off-diagonal block is just the derivative \(dM(\omega)/d\omega\) from Part 1 applied to the translation vector. In the API, this is exactly what the `apply()` method returns in its Jacobian `H1`.
 
 The **right** and **left** Jacobians have the block forms
 \[
@@ -101,11 +107,11 @@ The off-diagonal blocks \(Q_r\) and \(Q_\ell\) are obtained by applying the corr
 ---
 ## Part 2 - Connection with Fréchet Derivatives
 
-Part 1 gave us a powerful and efficient "recipe": the $abc$ kernel. We saw that by plugging in coefficients, we can compute $\text{SO}(3)$ Jacobians and their derivatives with simple, closed-form expressions.
+Part 1 gave us a powerful and efficient "recipe": the kernel. We saw that by plugging in coefficients, we can compute $SO(3)$ Jacobians and their derivatives with simple, closed-form expressions.
 
 You might now be asking: *Why does this work?* And more importantly, *how can we confidently use this simple $\text{SO}(3)$ tool to build the much more complex Jacobians for groups like $\text{SE}(3)$, $\text{SE}_2(3)$, and $\text{Gal}(3)$?*
 
-This section bridges that gap. It will connect our practical kernel recipe to the formal definitions from Lie theory. The goal is **not** to force you through complex derivations, but to give you the high-level understanding of *why* the kernel approach is correct and powerful. We will see that the intimidating integrals that formally define Jacobians have an elegant, closed-form solution for our $abc$ kernels, and this solution is precisely the **Fréchet derivative**.
+This section bridges that gap. It will connect our practical kernel recipe to the formal definitions from Lie theory. The goal is **not** to force you through complex derivations, but to give you the high-level understanding of *why* the kernel approach is correct and powerful. We will see that the intimidating integrals that formally define Jacobians have an elegant, closed-form solution for our kernels, and this solution is precisely the **Fréchet derivative**.
 
 ### An integral identity for $\exp$
 
@@ -207,7 +213,7 @@ This is a profound result! It tells us:
 
 Before solving for $Q_r$, let's introduce our main computational tool. The **Fréchet derivative** is the generalization of the familiar derivative to functions that take a matrix as input and produce a matrix as output. For a function $M(\Omega)$, its Fréchet derivative $\mathcal{L}_M(\Omega)[X]$ tells us how $M$ changes in the linear direction $X$.
 
-For our $abc$ kernel $M(\omega) = aI + b(\theta)\Omega + c(\theta)\Omega^2$, the Fréchet derivative in a skew-symmetric direction $X = [\delta\omega]_\times$ has a clean, closed-form expression:
+For our kernel $M(\omega) = aI + b(\theta)\Omega + c(\theta)\Omega^2$, the Fréchet derivative in a skew-symmetric direction $X = [\delta\omega]_\times$ has a clean, closed-form expression:
 $$
 \boxed{\mathcal{L}_{M}(\Omega)[X] = b\,X + c(\Omega X + X \Omega) + s\,(d_b\,\Omega + d_c\,\Omega^2), \quad s=-\tfrac{1}{2}\mathrm{tr}(\Omega X)}
 $$
@@ -217,7 +223,7 @@ Notice this is just an algebraic formula using the same $b, c, d_b, d_c$ coeffic
 
 Now we can state the central connection. The off-diagonal block $Q_r$ from the integral can be shown to be an operator acting on the vector part $v$. For semidirect products, this operator takes the form of the Fréchet derivative of the corresponding $\text{SO}(3)$ kernel, evaluated in the direction $X = -[v]_\times$.
 
-**In other words, the Fréchet derivative is the closed-form evaluation of the complex $\mathrm{ad}$-integral for our family of $abc$ kernels.**
+**In other words, the Fréchet derivative is the closed-form evaluation of the complex $\mathrm{ad}$-integral for our family of kernels.**
 
 Let's break this down for $\text{SE}(3)$:
 1.  The formal definition gives the off-diagonal block $Q_r$ as a complicated integral involving $\mathrm{ad}_{(\omega,\rho)}$.
@@ -236,7 +242,7 @@ This is the punchline. We can completely bypass the complicated integrals. The F
 ---
 ## Part 3 - A Cookbook for Group Jacobians
 
-With the theoretical foundation from Part 2 in place, we now have a powerful recipe. We know that for semidirect products, the Jacobians are block-triangular, and the off-diagonal blocks are given by the Fréchet derivative of the corresponding $\text{SO}(3)$ kernel. This allows us to construct Jacobians for complex groups using our simple `abc` kernel building blocks.
+With the theoretical foundation from Part 2 in place, we now have a powerful recipe. We know that for semidirect products, the Jacobians are block-triangular, and the off-diagonal blocks are given by the Fréchet derivative of the corresponding $SO(3)$ kernel. This allows us to construct Jacobians for complex groups using our simple kernel building blocks.
 
 This section provides a practical "cookbook" for several common groups. For each group, we will:
 1.  Define the tangent vector $\xi$ and the exponential map $\exp(\xi)$.
@@ -376,15 +382,15 @@ The `Gal3` class implements Galilean relativity, adding time to $SE_2(3)$.  Its 
         (J_r)_{p,\alpha} = -\Gamma_r(\omega)\nu
         $$
 
-<!-- ### $Sim(3)$ - The Similarity Group (GTSAM Convention)
+### $Sim(3)$ - The Similarity Group (GTSAM Convention)
 
-The `Similarity3` class in GTSAM models transformations involving rotation, translation, and uniform scaling. Its exponential map is defined by a specialized, scale-aware kernel, which we'll call $V_l(\omega, \lambda)$, corresponding to the `GetV` function in the code.
+The `Similarity3` class in GTSAM models transformations involving rotation, translation, and uniform scaling. Its exponential map is defined by a specialized, scale-aware kernel, implemented in the `VFunctor`. This functor dynamically creates an kernel adapted to the specific rotation $\omega$ and log-scale $\lambda$.
 
--   **The Scale-Aware Kernel:** This kernel can still be expressed in the `abc` polynomial form, but the coefficients are now functions of both the rotation angle $\theta = \|\omega\|$ and the log-scale $\lambda$:
+-   **The Scale-Aware Kernel:** The `VFunctor` calculates three coefficients, `P`, `Q`, and `R`, which are functions of both the rotation angle $\theta = \|\omega\|$ and the log-scale $\lambda$. These coefficients define a specialized "left-acting" kernel `V_l` that follows the standard polynomial structure:
     $$
-    V_l(\omega, \lambda) = a(\theta, \lambda)I + b(\theta, \lambda)\Omega + c(\theta, \lambda)\Omega^2
+    V_l(\omega, \lambda) = P(\theta, \lambda)I + Q(\theta, \lambda)\Omega + R(\theta, \lambda)\Omega^2
     $$
-    This kernel is defined by the integral $V_l = \int_0^1 \exp(s\lambda) \exp(s\Omega) ds$, which shows how both scale and rotation are combined.
+    This kernel is defined by the integral $V_l = \int_0^1 \exp(s\lambda) \exp(s\Omega) ds$. The `VFunctor` provides a closed-form evaluation of this integral.
 
 -   **Tangent Vector:** $\xi = (\omega, u, \lambda) \in \mathbb{R}^7$, where $\omega$ is angular velocity, $u$ is the tangent for translation, and $\lambda$ is the log-scale.
 
@@ -408,42 +414,42 @@ The `Similarity3` class in GTSAM models transformations involving rotation, tran
     \end{pmatrix}
     $$
 
--   **Block Formulas:** The logic remains the same: compute the world-frame derivative, then rotate it into the body frame with $R^T$.
+-   **Block Formulas:** The logic remains consistent: compute the world-frame derivative of the `Expmap`, then rotate it into the body frame with $R^T$.
 
-    -   **$(J_r)_{p,u}$ (Translation Diagonal):** The partial derivative of $p = V_l u$ with respect to $u$ is simply $V_l$. We then rotate it into the body frame.
+    -   **$(J_r)_{p,u}$ (Translation Diagonal):** The partial derivative of $p = V_l u$ with respect to $u$ is simply the kernel matrix $V_l$. We then rotate it into the body frame.
         $$
         (J_r)_{p,u} = R^T \cdot \frac{\partial p}{\partial u} = R^T V_l(\omega, \lambda)
         $$
 
-    -   **$(J_r)_{p,\omega}$ (Rotation Coupling):** This is the Fréchet derivative with respect to $\omega$. The formula is the same, but the internal coefficients ($d_b, d_c$) used to compute it are now also functions of $\lambda$.
+    -   **$(J_r)_{p,\omega}$ (Rotation Coupling):** This is the Fréchet derivative with respect to $\omega$. The `VFunctor::kernel()` method explicitly computes the necessary radial derivatives (`dQ`, `dR`) to construct a valid `so3::ABCKernel`. This allows us to directly apply the Fréchet machinery to our specialized kernel.
         $$
         (J_r)_{p,\omega} = R^T \cdot \frac{\partial p}{\partial \omega} = R^T \cdot \mathcal{L}_{V_l}(\omega, \lambda)[-[u]_\times]
         $$
 
-    -   **$(J_r)_{p,\lambda}$ (Scale Coupling):** This is the derivative with respect to the scalar $\lambda$. We differentiate the kernel itself with respect to $\lambda$:
+    -   **$(J_r)_{p,\lambda}$ (Scale Coupling):** This is the derivative with respect to the scalar $\lambda$. We must differentiate the kernel itself with respect to $\lambda$:
         $$
-        \frac{\partial V_l}{\partial \lambda} = \frac{\partial a}{\partial \lambda}I + \frac{\partial b}{\partial \lambda}\Omega + \frac{\partial c}{\partial \lambda}\Omega^2
+        \frac{\partial V_l}{\partial \lambda} = \frac{\partial P}{\partial \lambda}I + \frac{\partial Q}{\partial \lambda}\Omega + \frac{\partial R}{\partial \lambda}\Omega^2
         $$
-        This defines a **new kernel** whose coefficients are the partial derivatives of the original kernel's coefficients. Let's call this new kernel $W_l(\omega, \lambda)$. The final Jacobian block is then:
+        This defines a **new kernel**, let's call it $W_l(\omega, \lambda)$, whose coefficients are the partial derivatives of the `P, Q, R` coefficients with respect to $\lambda$. The final Jacobian block is this new kernel applied to `u` and rotated into the body frame.
         $$
         (J_r)_{p,\lambda} = R^T \cdot \frac{\partial p}{\partial \lambda} = R^T \cdot W_l(\omega, \lambda) u
         $$
-        This makes it clear that the "other kernel" required for the scale derivative is not arbitrary; it's derived directly from the original scale-aware kernel $V_l$. -->
-
+        This demonstrates how the derivatives for `Sim(3)` require two distinct derivative operations on the underlying `VFunctor` coefficients: radial derivatives for the $\omega$ Jacobian and partial derivatives with respect to $\lambda$ for the scale Jacobian.
+        
 ### API
 
 Mainly for unit-testing, the ABCKernel API also defines:
 ```c++
 
-  /// Fréchet derivative of M(ω) in the direction X \in so(3)
-  /// L_M(Ω)[X] = b X + c (Ω X + X Ω) + s (db Ω + dc Ω²),
-  /// with s = -½ tr(Ω X)
+  /// Fréchet derivative of left-kernel M(ω) in the direction X ∈ so(3)
+  /// L_M(Ω)[X] = b X + c (Ω X + X Ω) + s (db Ω + dc Ω²), with s = -½ tr(Ω X)
   Matrix3 frechet(const Matrix3& X) const;
 
-  /// Apply Fréchet derivative to vector
-  /// Should match H1 derivative of apply
+  /// Apply Fréchet derivative to vector (left specialization)
   Matrix3 applyFrechet(const Vector3& v) const;
 ```
+
+A call to `applyFrechet` should match the `H1` derivative of `Jacobian().left().apply()`.
 
 ## References
 - Eade, *Lie Groups for 2D and 3D Transformations*.

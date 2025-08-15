@@ -258,7 +258,7 @@ Gal3 Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
   const double alpha = xi_t(xi)(0);
 
   // Create functor for SO3::Expmap and derivatives, plus Gamma matrix we need
-  const so3::GammaFunctor local(w);
+  const so3::Local local(w);
 
   // Compute rotation using Expmap
 #ifdef GTSAM_USE_QUATERNIONS
@@ -270,17 +270,17 @@ Gal3 Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
 
   // Compute velocity: just apply left SO(3) Jacobian,
   Matrix3 H_v_w;
-  const Velocity3 v = local.applyLeftJacobian(nu, Hxi ? &H_v_w : nullptr);
+  const Velocity3 v = local.Jacobian().applyLeft(nu, Hxi ? &H_v_w : nullptr);
 
   // Compute position: apply left Jacobian and compute time-dependent part
   Matrix3 H_p_w, H_delta_w;
-  Point3 p = local.applyLeftJacobian(rho, Hxi ? &H_p_w : nullptr);
-  const Point3 delta = local.applyLeftGamma(nu, Hxi ? &H_delta_w : nullptr);
+  Point3 p = local.Jacobian().applyLeft(rho, Hxi ? &H_p_w : nullptr);
+  const Point3 delta = local.Gamma().applyLeft(nu, Hxi ? &H_delta_w : nullptr);
 
   // (*) means: different from Arxiv paper!
   if (Hxi) {
-    const Matrix3 Jr = local.rightJacobian();
-    const Matrix3 Gr = local.rightGamma();
+    const Matrix3 Jr = local.Jacobian().right();
+    const Matrix3 Gr = local.Gamma().right();
     *Hxi << Jr, Z_3x3, Z_3x3, Z_3x1,      //
         Rt * H_v_w, Jr, Z_3x3, Z_3x1,     //
         Rt * H_p_w, Z_3x3, Jr, -Gr * nu,  // (*)
@@ -293,7 +293,7 @@ Gal3 Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
     if (Hxi) {
       // Derivative of time-dependent part
       Hxi->block<3, 3>(6, 0) += alpha * Rt * H_delta_w;
-      Hxi->block<3, 3>(6, 3) = alpha * Rt * local.leftGamma();  // (*)
+      Hxi->block<3, 3>(6, 3) = alpha * Rt * local.Gamma().left();  // (*)
     }
   }
   return Gal3(R, p, v, alpha);
@@ -303,11 +303,11 @@ Gal3 Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
 Gal3::TangentVector Gal3::Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg) {
     // Implements logarithmic map from Equations 20-23, Page 8
     const Vector3 w = Rot3::Logmap(g.R_);
-    const so3::GammaFunctor local(w);
+    const so3::Local local(w);
     
     // Implementation of Equation 23, Page 8
-    const Matrix3 Jl_inv = local.leftJacobianInverse();
-    Matrix3 Gl = local.leftGamma();
+    const Matrix3 Jl_inv = local.InvJacobian().left();
+    Matrix3 Gl = local.Gamma().left();
     const Vector3 nu = Jl_inv * g.v_;
     const Vector3 rho = Jl_inv * (g.r_ - Gl * (g.t_ * nu));
 

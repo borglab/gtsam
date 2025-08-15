@@ -157,29 +157,19 @@ TEST(SO3, ChartDerivatives) {
 }
 
 /* ************************************************************************* */
-TEST(SO3, ExpmapFunctor) {
+TEST(SO3, Local2) {
   Vector axis = Vector3(0., 1., 0.);  // rotation around Y
   double angle = 3.14 / 4.0;
   Matrix expected(3, 3);
   expected << 0.707388, 0, 0.706825, 0, 1, 0, -0.706825, 0, 0.707388;
 
-  // axis angle version
-  so3::ExpmapFunctor f1(axis, angle);
-  SO3 actual1(f1.expmap());
-  CHECK(assert_equal(expected, actual1.matrix(), 1e-5));
-
-  // axis angle version, negative angle
-  so3::ExpmapFunctor f2(axis, angle - 2 * M_PI);
-  SO3 actual2(f2.expmap());
-  CHECK(assert_equal(expected, actual2.matrix(), 1e-5));
-
   // omega version
-  so3::ExpmapFunctor f3(axis * angle);
+  so3::Local f3(axis * angle);
   SO3 actual3(f3.expmap());
   CHECK(assert_equal(expected, actual3.matrix(), 1e-5));
 
   // omega version, negative angle
-  so3::ExpmapFunctor f4(axis * (angle - 2 * M_PI));
+  so3::Local f4(axis * (angle - 2 * M_PI));
   SO3 actual4(f4.expmap());
   CHECK(assert_equal(expected, actual4.matrix(), 1e-5));
 }
@@ -310,9 +300,9 @@ TEST(SO3, LogmapDerivative) {
 
     // 1. Check self-consistency of analytical derivative calculation:
     //    Does the H returned by Logmap match an independent calculation
-    //    of J_r^{-1} using DexpFunctor with the computed omega?
-    so3::DexpFunctor local(omega);
-    Matrix3 J_r_inv = local.rightJacobianInverse(); // J_r^{-1} via DexpFunctor
+    //    of J_r^{-1} using Local with the computed omega?
+    so3::Local local(omega);
+    Matrix3 J_r_inv = local.InvJacobian().right(); // J_r^{-1} via Local
     EXPECT(assert_equal(J_r_inv, actualH)); // This test is crucial and should pass
 
     // 2. Check analytical derivative against numerical derivative:
@@ -349,11 +339,11 @@ TEST(SO3, JacobianInverses) {
   Matrix HR, HL;
   for (bool nearZero : {true, false}) {
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
-      so3::DexpFunctor local(omega, nearZero ? 1.0 : 0.0, 1e-5);
-      EXPECT(assert_equal<Matrix3>(local.rightJacobian().inverse(),
-        local.rightJacobianInverse()));
-      EXPECT(assert_equal<Matrix3>(local.leftJacobian().inverse(),
-        local.leftJacobianInverse()));
+      so3::Local local(omega, nearZero ? 1.0 : 0.0, 1e-5);
+      EXPECT(assert_equal<Matrix3>(local.Jacobian().right().inverse(),
+        local.InvJacobian().right()));
+      EXPECT(assert_equal<Matrix3>(local.Jacobian().left().inverse(),
+        local.InvJacobian().left()));
     }
   }
 }
@@ -364,16 +354,16 @@ TEST(SO3, ApplyRightJacobian) {
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
       [nearZero](const Vector3& omega, const Vector3& v) {
-      return so3::DexpFunctor(omega, nearZero ? 1.0 : 0.0, 1e-5).applyRightJacobian(v);
+      return so3::Local(omega, nearZero ? 1.0 : 0.0, 1e-5).Jacobian().applyRight(v);
       };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
-      so3::DexpFunctor local(omega, nearZero ? 1.0 : 0.0, 1e-5);
+      so3::Local local(omega, nearZero ? 1.0 : 0.0, 1e-5);
       for (const Vector3& v : test_cases::vs) {
-        EXPECT(assert_equal(Vector3(local.rightJacobian() * v),
-          local.applyRightJacobian(v, aH1, aH2)));
+        EXPECT(assert_equal(Vector3(local.Jacobian().right() * v),
+          local.Jacobian().applyRight(v, aH1, aH2)));
         EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1));
         EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2));
-        EXPECT(assert_equal(local.rightJacobian(), aH2));
+        EXPECT(assert_equal(local.Jacobian().right(), aH2));
       }
     }
   }
@@ -385,14 +375,14 @@ TEST(SO3, ApplyRightJacobianInverse) {
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
       [nearZero](const Vector3& omega, const Vector3& v) {
-      return so3::DexpFunctor(omega, nearZero ? 1.0 : 0.0, 1e-5).applyRightJacobianInverse(v);
+      return so3::Local(omega, nearZero ? 1.0 : 0.0, 1e-5).InvJacobian().applyRight(v);
       };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
-      so3::DexpFunctor local(omega, nearZero ? 1.0 : 0.0, 1e-5);
-      Matrix invJr = local.rightJacobianInverse();
+      so3::Local local(omega, nearZero ? 1.0 : 0.0, 1e-5);
+      Matrix invJr = local.InvJacobian().right();
       for (const Vector3& v : test_cases::vs) {
         EXPECT(
-          assert_equal(Vector3(invJr * v), local.applyRightJacobianInverse(v, aH1, aH2)));
+          assert_equal(Vector3(invJr * v), local.InvJacobian().applyRight(v, aH1, aH2)));
         EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1));
         EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2));
         EXPECT(assert_equal(invJr, aH2));
@@ -407,16 +397,16 @@ TEST(SO3, ApplyLeftJacobian) {
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
       [nearZero](const Vector3& omega, const Vector3& v) {
-      return so3::DexpFunctor(omega, nearZero ? 1.0 : 0.0, 1e-5).applyLeftJacobian(v);
+      return so3::Local(omega, nearZero ? 1.0 : 0.0, 1e-5).Jacobian().applyLeft(v);
       };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
-      so3::DexpFunctor local(omega, nearZero ? 1.0 : 0.0, 1e-5);
+      so3::Local local(omega, nearZero ? 1.0 : 0.0, 1e-5);
       for (const Vector3& v : test_cases::vs) {
-        EXPECT(assert_equal(Vector3(local.leftJacobian() * v),
-          local.applyLeftJacobian(v, aH1, aH2)));
+        EXPECT(assert_equal(Vector3(local.Jacobian().left() * v),
+          local.Jacobian().applyLeft(v, aH1, aH2)));
         EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1));
         EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2));
-        EXPECT(assert_equal(local.leftJacobian(), aH2));
+        EXPECT(assert_equal(local.Jacobian().left(), aH2));
       }
     }
   }
@@ -428,14 +418,14 @@ TEST(SO3, ApplyLeftJacobianInverse) {
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
       [nearZero](const Vector3& omega, const Vector3& v) {
-      return so3::DexpFunctor(omega, nearZero ? 1.0 : 0.0, 1e-5).applyLeftJacobianInverse(v);
+      return so3::Local(omega, nearZero ? 1.0 : 0.0, 1e-5).InvJacobian().applyLeft(v);
       };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
-      so3::DexpFunctor local(omega, nearZero ? 1.0 : 0.0, 1e-5);
-      Matrix invJl = local.leftJacobianInverse();
+      so3::Local local(omega, nearZero ? 1.0 : 0.0, 1e-5);
+      Matrix invJl = local.InvJacobian().left();
       for (const Vector3& v : test_cases::vs) {
         EXPECT(assert_equal(Vector3(invJl * v),
-          local.applyLeftJacobianInverse(v, aH1, aH2)));
+          local.InvJacobian().applyLeft(v, aH1, aH2)));
         EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1));
         EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2));
         EXPECT(assert_equal(invJl, aH2));
@@ -494,50 +484,37 @@ TEST(SO3, ApplyGamma) {
   for (bool nearZero : {true, false}) {
     std::function<Vector3(const Vector3&, const Vector3&)> f =
         [nearZero](const Vector3& omega, const Vector3& v) {
-          return so3::GammaFunctor(omega, nearZero ? 1.0 : 0.0, 1e-5).Gl() * v;
+          return so3::Local(omega, nearZero ? 1.0 : 0.0, 1e-5).Gamma().applyLeft(v);
         };
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
-      so3::GammaFunctor local(omega, nearZero ? 1.0 : 0.0, 1e-5);
+      so3::Local local(omega, nearZero ? 1.0 : 0.0, 1e-5);
       for (const Vector3& v : test_cases::vs) {
-        Matrix3 expectedGamma = 0.5 * I_3x3 + local.C * local.W + local.G * local.WW;
-        EXPECT(assert_equal(expectedGamma, local.leftGamma(), 1e-5));
-        Matrix3 expectedGammaMinus = 0.5 * I_3x3 - local.C * local.W + local.G * local.WW;
-        EXPECT(assert_equal(expectedGammaMinus, local.rightGamma(), 1e-5));
-        EXPECT(assert_equal(Vector3(expectedGamma * v), local.applyLeftGamma(v, aH1, aH2)));
+        Matrix3 Gl = local.Gamma().left();
+        EXPECT(assert_equal(Vector3(Gl * v), local.Gamma().applyLeft(v, aH1, aH2)));
         EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1, 1e-5));
         EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2, 1e-5));
-        EXPECT(assert_equal(expectedGamma, aH2, 1e-5));
+        EXPECT(assert_equal(Gl, aH2, 1e-5));
       }
     }
   }
 }
-
 
 //******************************************************************************
 TEST(SO3, ApplyJacobianMatchesFrechetApply) {
   Matrix H_apply, H_dummy;
   for (bool nearZero : {true, false}) {
     for (const Vector3& omega : test_cases::omegas(nearZero)) {
-      so3::GammaFunctor local(omega, nearZero ? 1.0 : 0.0, 1e-5);
+      so3::Local local(omega, nearZero ? 1.0 : 0.0, 1e-5);
       for (const Vector3& v : test_cases::vs) {
         // Left Jacobian vs Jr/Jl kernels’ Fréchet applied to v
         Matrix3 H1_leftJ;
-        local.applyLeftJacobian(v, H1_leftJ, H_dummy);
-        EXPECT(assert_equal(H1_leftJ, local.Jl().applyFrechet(v), 1e-5));
-
-        Matrix3 H1_rightJ;
-        local.applyRightJacobian(v, H1_rightJ, H_dummy);
-        EXPECT(assert_equal(H1_rightJ, local.Jr().applyFrechet(v), 1e-5));
+        local.Jacobian().applyLeft(v, H1_leftJ, H_dummy);
+        EXPECT(assert_equal(H1_leftJ, local.Jacobian().applyFrechet(v), 1e-5));
 
         // Left Gamma vs Gl kernel’s Fréchet applied to v
         Matrix3 H1_leftG;
-        local.applyLeftGamma(v, H1_leftG, H_dummy);
-        EXPECT(assert_equal(H1_leftG, local.Gl().applyFrechet(v), 1e-5));
-
-        // Right Gamma
-        Matrix3 H1_rightG;
-        local.applyRightGamma(v, H1_rightG, H_dummy);
-        EXPECT(assert_equal(H1_rightG, local.Gr().applyFrechet(v), 1e-5));
+        local.Gamma().applyLeft(v, H1_leftG, H_dummy);
+        EXPECT(assert_equal(H1_leftG, local.Gamma().applyFrechet(v), 1e-5));
       }
     }
   }

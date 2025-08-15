@@ -21,6 +21,8 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Manifold.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
+#include <gtsam/geometry/SO3.h>
+#include <cmath>
 
 namespace gtsam {
 
@@ -222,40 +224,68 @@ Matrix7 Similarity3::AdjointMap() const {
   return adj;
 }
 
+static constexpr double one_6th = 1.0 / 6.0;
+static constexpr double one_24th = 1.0 / 24.0;
+static constexpr double one_120th = 1.0 / 120.0;
+static constexpr double one_720th = 1.0 / 720.0;
+
+// Functor that implements the Similarity3 V(ω, λ) kernel:
+// See http://www.ethaneade.org/latex2html/lie/node29.html
+// Compute kernels V = α L + (1-α) (Jl - λ Gl)
+// with α = λ² / (λ² + θ²) and L = a I + b W + c WW
+struct LocalV : public so3::Local {
+  double lambda{0}, lambda2{0};
+  explicit LocalV(const Vector3& omega, double lambda,
+                  double nearZeroThresholdSq = so3::Local::kNearZeroThresholdSq,
+                  double nearPiThresholdSq = so3::Local::kNearPiThresholdSq)
+      : Local(omega, nearZeroThresholdSq, nearPiThresholdSq),
+        lambda(lambda),
+        lambda2(lambda * lambda) {}
+
+  // Return the pure L(λ) SO(3) kernel (no blending)
+  so3::Kernel L() const {
+    const double th2 = this->theta2();
+    const double lambda3 = lambda2 * lambda;
+    const double B0 = 1.0 - 0.5 * lambda;
+
+    double A, B, C;
+    if (lambda2 > 1e-9) {
+      // Use expm1 for stability in all terms
+      const double em1 = std::expm1(-lambda);  // e^{-λ} - 1
+      A = ((lambda2 + th2) * (-em1) / lambda - th2 * B0) / lambda2;
+      B = (em1 + lambda) / lambda2;  // = (e^{-λ} - 1 + λ)/λ²
+      C = (-em1 - lambda + 0.5 * lambda2) /
+          lambda3;  // = (1 - λ + λ²/2 - e^{-λ})/λ³
+    } else {
+      // Taylor near λ = 0 (truncated at O(λ^3))
+      A = 1.0 - 0.5 * lambda + one_6th * (lambda2 + th2) -
+          one_24th * (lambda * (lambda2 + th2));
+      B = 0.5 - lambda * one_6th + lambda2 * one_24th - lambda3 * one_120th;
+      C = one_6th - lambda * one_24th + lambda2 * one_120th -
+          lambda3 * one_720th;
+    }
+    return so3::Kernel{this->p_, A, B, C, 0.0, 0.0};
+  }
+
+  // Return the fully blended kernel K(ω,λ)
+  so3::Kernel kernel() const {
+    // Fast path: when λ = 0, V reduces to the pure Jacobian J (no Γ, no blend)
+    if (lambda == 0.0) return Jacobian();
+
+    const double th2 = this->theta2();
+    const double denom = lambda2 + th2;  // > 0 here
+    const double inv = 1.0 / denom;
+    const double alpha = lambda2 * inv;
+    const double dalpha = -2.0 * lambda2 * inv * inv;  // = (dα/dθ)/θ
+
+    const so3::Kernel Lk = L();
+    const so3::Kernel JmG = so3::axpy(-lambda, Gamma(), Jacobian());
+    return so3::blend(alpha, dalpha, Lk, JmG);
+  }
+};
+
 Matrix3 Similarity3::GetV(Vector3 w, double lambda) {
-  // http://www.ethaneade.org/latex2html/lie/node29.html
-  const double theta2 = w.transpose() * w;
-  double Y, Z, W;
-  if (theta2 > 1e-9) {
-    const double theta = sqrt(theta2);
-    const double X = sin(theta) / theta;
-    Y = (1 - cos(theta)) / theta2;
-    Z = (1 - X) / theta2;
-    W = (0.5 - Y) / theta2;
-  } else {
-    // Taylor series expansion for theta=0, X not needed (as is 1)
-    Y = 0.5 - theta2 / 24.0;
-    Z = 1.0 / 6.0 - theta2 / 120.0;
-    W = 1.0 / 24.0 - theta2 / 720.0;
-  }
-  const double lambda2 = lambda * lambda, lambda3 = lambda2 * lambda;
-  const double expMinLambda = exp(-lambda);
-  double A, alpha = 0.0, beta, mu;
-  if (lambda2 > 1e-9) {
-    A = (1.0 - expMinLambda) / lambda;
-    alpha = 1.0 / (1.0 + theta2 / lambda2);
-    beta = (expMinLambda - 1 + lambda) / lambda2;
-    mu = (1 - lambda + (0.5 * lambda2) - expMinLambda) / lambda3;
-  } else {
-    A = 1.0 - lambda / 2.0 + lambda2 / 6.0;
-    beta = 0.5 - lambda / 6.0 + lambda2 / 24.0 - lambda3 / 120.0;
-    mu = 1.0 / 6.0 - lambda / 24.0 + lambda2 / 120.0 - lambda3 / 720.0;
-  }
-  const double gamma = Y - (lambda * Z), upsilon = Z - (lambda * W);
-  const double B = alpha * (beta - gamma) + gamma;
-  const double C = alpha * (mu - upsilon) + upsilon;
-  const Matrix3 Wx = skewSymmetric(w[0], w[1], w[2]);
-  return A * I_3x3 + B * Wx + C * Wx * Wx;
+  return LocalV(w, lambda).kernel().left();
 }
 
 Vector7 Similarity3::Logmap(const Similarity3& T, OptionalJacobian<7, 7> Hm) {
@@ -295,7 +325,4 @@ Matrix4 Similarity3::matrix() const {
   return T;
 }
 
-
-
-
-} // namespace gtsam
+}  // namespace gtsam

@@ -200,39 +200,51 @@ class Rot2 {
 };
 
 #include <gtsam/geometry/SO3.h>
-
 namespace so3 {
-  class ExpmapFunctor {
-    const double theta2;
-    const double theta;
-    const Matrix3 W;
-    const Matrix3 WW;
-    const bool nearZero;
-    double A;  // A = sin(theta) / theta
-    double B;  // B = (1 - cos(theta))
-    ExpmapFunctor(const gtsam::Vector3& omega);
-    ExpmapFunctor(double nearZeroThresholdSq, const gtsam::Vector3& axis);
-    ExpmapFunctor(const gtsam::Vector3& axis, double angle);
-    gtsam::Matrix3 expmap() const;
-  };
+class Kernel {
+  gtsam::Matrix3 left() const;   // a I + b W + c WW
+  gtsam::Matrix3 right() const;  // a I - b W + c WW
+  gtsam::Vector3 applyLeft(const gtsam::Vector3& v) const;
+  gtsam::Vector3 applyRight(const gtsam::Vector3& v) const;
+  gtsam::Matrix3 frechet(const gtsam::Matrix3& X) const;
+  gtsam::Matrix3 applyFrechet(const gtsam::Vector3& v) const;
+};
+class InvJKernel {
+  gtsam::so3::Kernel J;  // holds the forward kernel
+  gtsam::Matrix3 left() const;
+  gtsam::Matrix3 right() const;
+  gtsam::Vector3 applyLeft(const gtsam::Vector3& v) const;
+  gtsam::Vector3 applyRight(const gtsam::Vector3& v) const;
+};
 
-  virtual class DexpFunctor : gtsam::so3::ExpmapFunctor {
-    const gtsam::Vector3 omega;
-    const double C;  // (1 - A) / theta^2
-    const double D;  // (1 - A/2B) / theta2
-    DexpFunctor(const gtsam::Vector3& omega);
-    DexpFunctor(const gtsam::Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq);
-    gtsam::Matrix3 rightJacobian() const;
-    gtsam::Matrix3 leftJacobian() const;
-    gtsam::Matrix3 rightJacobianInverse() const;
-    gtsam::Matrix3 leftJacobianInverse() const;
-    gtsam::Vector3 applyRightJacobian(const gtsam::Vector3& v) const;
-    gtsam::Vector3 applyRightJacobianInverse(const gtsam::Vector3& v) const;
-    gtsam::Vector3 applyLeftJacobian(const gtsam::Vector3& v) const;
-    gtsam::Vector3 applyLeftJacobianInverse(const gtsam::Vector3& v) const;
-  };
+class Local {
+Local(const gtsam::Vector3& omega, 
+  double nearZeroThresholdSq = 1e-6,
+  double nearPiThresholdSq = 1e-6);
+
+  // Exponential map
+  gtsam::Matrix3 expmap() const;
+
+  // Kernels
+  gtsam::so3::Kernel Jacobian() const;
+  gtsam::so3::InvJKernel InvJacobian() const;  // I +/- 1/2 W + D WW
+  gtsam::so3::Kernel Gamma() const;
+
+  // access to cache
+  const gtsam::Matrix3& W() const;
+  const gtsam::Matrix3& WW() const;
+  double theta() const;
+  double theta2() const;
+  bool nearZero() const;
+
+  // access to (lazily evaluated) coefficients
+  double A() const;
+  double B() const;
+  double C() const;
+  double D() const;
+  double E() const;
+};
 }
-
 class SO3 {
   // Standard Constructors
   SO3();
@@ -1453,7 +1465,6 @@ class Event {
   double height() const;
   void print(string s = "") const;
 };
-
 
 #include <gtsam/geometry/Gal3.h>
 class Gal3 {

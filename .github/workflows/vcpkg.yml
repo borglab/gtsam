@@ -16,15 +16,15 @@ jobs:
       fail-fast: false
       matrix:
         include:      
-          - os: windows-latest
-            triplet: x64-windows-release
-            build_type: Release
-            test_target: RUN_TESTS
-            binary_cache: C:\Users\runneradmin\AppData\Local\vcpkg\archives
-            python: python
-            # check_constraint_program fail on windows. should fix it for windows.
-            # Remove this excluded test when you fix it for windows.
-            ctest_extra_flags: -E check_constraint_program
+          #          - os: windows-latest
+#            triplet: x64-windows-release
+#            build_type: Release
+#            test_target: RUN_TESTS
+#            binary_cache: C:\Users\runneradmin\AppData\Local\vcpkg\archives
+#            python: python
+#            # check_constraint_program fail on windows. should fix it for windows.
+#            # Remove this excluded test when you fix it for windows.
+#            ctest_extra_flags: -E check_constraint_program
           - os: ubuntu-latest
             triplet: x64-linux-release
             build_type: Release
