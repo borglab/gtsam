@@ -40,6 +40,7 @@ namespace gtsam {
 //------------------------------------------------------------------------------
 namespace { // Anonymous namespace for internal linkage
   constexpr double kSmallAngleThreshold = 1e-10;
+  constexpr double kSmallTimeThreshold = 1e-10;
 
   // Helper functions for accessing tangent vector components
   Eigen::Block<Gal3::TangentVector, 3, 1> xi_w(Gal3::TangentVector& v) { return v.block<3, 1>(0, 0); }
@@ -292,7 +293,7 @@ Gal3 Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
   }
 
   // if alpha!=0, augment position with time-dependent bit.
-  if (std::abs(alpha) > 1e-12) {
+  if (std::abs(alpha) > kSmallTimeThreshold) {
     p += alpha * delta;
     if (Hxi) {
       // Derivative of time-dependent part
