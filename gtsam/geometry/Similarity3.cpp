@@ -229,6 +229,18 @@ static constexpr double one_24th = 1.0 / 24.0;
 static constexpr double one_120th = 1.0 / 120.0;
 static constexpr double one_720th = 1.0 / 720.0;
 
+namespace so3 {
+// Return y + alpha * x (functional style)
+inline Kernel axpy(double alpha, const Kernel& x, const Kernel& y) {
+  return Kernel{y.S,  // keep the same S
+                y.a + alpha * x.a,
+                y.b + alpha * x.b,
+                y.c + alpha * x.c,
+                y.db + alpha * x.db,
+                y.dc + alpha * x.dc};
+}
+}  // namespace so3
+
 // Functor that implements the Similarity3 V(ω, λ) kernel:
 // See http://www.ethaneade.org/latex2html/lie/node29.html
 struct VFunctor : public so3::Local {
@@ -236,7 +248,7 @@ struct VFunctor : public so3::Local {
   double alpha{0};               ///< Blending
   double A{0}, B{0}, C{0};       ///< L kernel A I + B W + C WW
   double P{0}, Q{0}, R{0};       ///< V kernel
-  so3::Kernel J_, G_;            ///< Kernels J() and Gamma()
+  so3::Kernel J_lambdaG;         ///< Kernel J() - lambda Gamma()
 
   explicit VFunctor(const Vector3& omega, double lambda,
                     double nearZeroThresholdSq, double nearPiThresholdSq)
@@ -255,32 +267,33 @@ struct VFunctor : public so3::Local {
     lambda2 = lambda * lambda;  // λ²
 
     // L-kernel coefficients: A, B, C where L = A I + B W + C W²
+    const double th2 = this->theta2();
+    const double B0 = 1.0 - 0.5 * lambda;
     const double lambda3 = lambda2 * lambda;  // λ³
     if (lambda2 > 1e-9) {
       const double e = std::exp(-lambda);
-      A = (1.0 - e) / lambda;                            // A(λ)
-      B = (e - 1.0 + lambda) / lambda2;                  // B(λ)
-      C = (1.0 - lambda + 0.5 * lambda2 - e) / lambda3;  // C(λ)
+      A = ((lambda2 + th2) * (1.0 - e) / lambda - th2 * B0) / lambda2;  // A(λ)
+      B = (e - 1.0 + lambda) / lambda2;                                 // B(λ)
+      C = (1.0 - lambda + 0.5 * lambda2 - e) / lambda3;                 // C(λ)
     } else {
       // Taylor near λ=0
-      A = 1.0 - 0.5 * lambda + one_6th * lambda2;  // A ≈ 1 - λ/2 + λ²/6
+      A = 1.0 - 0.5 * lambda + one_6th * (lambda2 + th2) -
+          one_24th * (lambda * (lambda2 + th2));
       B = 0.5 - lambda * one_6th + lambda2 * one_24th - lambda3 * one_120th;
       C = one_6th - lambda * one_24th + lambda2 * one_120th -
           lambda3 * one_720th;
     }
 
     // Blend V = α L + (1-α)(J - λ Γ)
-    J_ = this->Jacobian();
-    G_ = this->Gamma();
-    const double th2 = this->theta2();
+    J_lambdaG = so3::axpy(-lambda, Gamma(), Jacobian());
     alpha = (lambda2 + th2 > 0.0) ? (lambda2 / (lambda2 + th2))
                                   : 0.0;  // α = λ²/(λ²+θ²)
-    const double one_minus_alpha = 1.0 - alpha;
 
     // Final V(ω,λ) coefficients
-    P = A;  // NOTE: P comes purely from L's a
-    Q = alpha * B + one_minus_alpha * (J_.b - lambda * G_.b);
-    R = alpha * C + one_minus_alpha * (J_.c - lambda * G_.c);
+    const double beta = 1.0 - alpha;
+    P = alpha * A + beta * J_lambdaG.a;
+    Q = alpha * B + beta * J_lambdaG.b;
+    R = alpha * C + beta * J_lambdaG.c;
   }
 
   Matrix3 V() const { return P * I_3x3 + Q * W() + R * WW(); }
@@ -289,11 +302,9 @@ struct VFunctor : public so3::Local {
     const double denom = lambda2 + theta2();
     if (denom > 0.0) {
       const double dalpha = -2.0 * lambda2 / (denom * denom);
-      const double one_minus_alpha = 1.0 - lambda2 / denom;
-      const double dQ = dalpha * (B - (J_.b - lambda * G_.b)) +
-                        one_minus_alpha * (J_.db - lambda * G_.db);
-      const double dR = dalpha * (C - (J_.c - lambda * G_.c)) +
-                        one_minus_alpha * (J_.dc - lambda * G_.dc);
+      const double beta = 1.0 - lambda2 / denom;
+      const double dQ = dalpha * (B - J_lambdaG.b) + beta * J_lambdaG.db;
+      const double dR = dalpha * (C - J_lambdaG.c) + beta * J_lambdaG.dc;
       return so3::Kernel{this->p_, P, Q, R, dQ, dR};
     } else {
       return so3::Kernel{this->p_, P, Q, R, 0.0, 0.0};
