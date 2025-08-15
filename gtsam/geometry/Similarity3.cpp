@@ -238,43 +238,49 @@ struct LocalV : public so3::Local {
   explicit LocalV(const Vector3& omega, double lambda,
                   double nearZeroThresholdSq = so3::Local::kNearZeroThresholdSq,
                   double nearPiThresholdSq = so3::Local::kNearPiThresholdSq)
-      : Local(omega, nearZeroThresholdSq, nearPiThresholdSq), lambda(lambda) {}
+      : Local(omega, nearZeroThresholdSq, nearPiThresholdSq),
+        lambda(lambda),
+        lambda2(lambda * lambda) {}
 
-  // Return the fully blended kernel K(ω,λ)
-  so3::Kernel kernel() const {
+  // Return the pure L(λ) SO(3) kernel (no blending)
+  so3::Kernel L() const {
     const double th2 = this->theta2();
-    const double denom = lambda * lambda + th2;
-    const double alpha = denom > 0.0 ? (lambda * lambda) / denom : 0.0;
-    const double dalpha =
-        denom > 0.0 ? (-2.0 * lambda * lambda) / (denom * denom) : 0.0;
-
-    // Build L(λ) with A',B,C; note L.db=L.dc=0 (no θ-dependence)
-    const double lambda2 = lambda * lambda, lambda3 = lambda2 * lambda;
+    const double lambda3 = lambda2 * lambda;
     const double B0 = 1.0 - 0.5 * lambda;
 
     double A, B, C;
     if (lambda2 > 1e-9) {
-      // Use expm1 for stability
-      const double e = std::exp(-lambda);
-      A = ((lambda2 + th2) * (-std::expm1(-lambda)) / lambda - th2 * B0) /
-          lambda2;
-      B = (e - 1.0 + lambda) / lambda2;
-      C = (1.0 - lambda + 0.5 * lambda2 - e) / lambda3;
+      // Use expm1 for stability in all terms
+      const double em1 = std::expm1(-lambda);  // e^{-λ} - 1
+      A = ((lambda2 + th2) * (-em1) / lambda - th2 * B0) / lambda2;
+      B = (em1 + lambda) / lambda2;  // = (e^{-λ} - 1 + λ)/λ²
+      C = (-em1 - lambda + 0.5 * lambda2) /
+          lambda3;  // = (1 - λ + λ²/2 - e^{-λ})/λ³
     } else {
-      // Taylor near λ = 0 (truncated at O(λ^3) as discussed)
+      // Taylor near λ = 0 (truncated at O(λ^3))
       A = 1.0 - 0.5 * lambda + one_6th * (lambda2 + th2) -
           one_24th * (lambda * (lambda2 + th2));
       B = 0.5 - lambda * one_6th + lambda2 * one_24th - lambda3 * one_120th;
       C = one_6th - lambda * one_24th + lambda2 * one_120th -
           lambda3 * one_720th;
     }
-    const so3::Kernel L{this->p_, A, B, C, 0.0, 0.0};
+    return so3::Kernel{this->p_, A, B, C, 0.0, 0.0};
+  }
 
-    // Y = J - λ Γ
+  // Return the fully blended kernel K(ω,λ)
+  so3::Kernel kernel() const {
+    // Fast path: when λ = 0, V reduces to the pure Jacobian J (no Γ, no blend)
+    if (lambda == 0.0) return Jacobian();
+
+    const double th2 = this->theta2();
+    const double denom = lambda2 + th2;  // > 0 here
+    const double inv = 1.0 / denom;
+    const double alpha = lambda2 * inv;
+    const double dalpha = -2.0 * lambda2 * inv * inv;  // = (dα/dθ)/θ
+
+    const so3::Kernel Lk = L();
     const so3::Kernel JmG = so3::axpy(-lambda, Gamma(), Jacobian());
-
-    // K = α L + (1-α)(J - λ Γ), with correct db,dc
-    return so3::blend(alpha, dalpha, L, JmG);
+    return so3::blend(alpha, dalpha, Lk, JmG);
   }
 };
 
