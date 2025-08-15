@@ -83,6 +83,8 @@ struct Local::Cache {
   mutable std::optional<double> A_, B_, C_, D_, E_;  ///< Coefficients
   mutable std::optional<double> dB_, dC_, dE_;       ///< Derivatives
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   Cache(const Vector3& w, double nz, double np)
       : omega(w),
         theta2(w.dot(w)),
