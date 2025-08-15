@@ -217,6 +217,31 @@ struct GTSAM_EXPORT InvJKernel {
                      OptionalJacobian<3, 3> Hv = {}) const;
 };
 
+/// y + alpha * x  (functional)
+inline Kernel axpy(double alpha, const Kernel& X, const Kernel& Y) {
+  return Kernel{Y.S,
+                Y.a + alpha * X.a,
+                Y.b + alpha * X.b,
+                Y.c + alpha * X.c,
+                Y.db + alpha * X.db,
+                Y.dc + alpha * X.dc};
+}
+
+// Blend K = α X + (1-α) Y with radial derivative (·)'/θ via dalpha
+inline Kernel blend(double alpha, double dalpha, const Kernel& X,
+                    const Kernel& Y) {
+  const double beta = 1.0 - alpha;
+  // L has db=dc=0; derivative comes from α only
+  return Kernel{
+      Y.S,
+      alpha * X.a + beta * Y.a,
+      alpha * X.b + beta * Y.b,
+      alpha * X.c + beta * Y.c,
+      dalpha * (X.b - Y.b) + beta * Y.db,  // db
+      dalpha * (X.c - Y.c) + beta * Y.dc   // dc
+  };
+}
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 /// @deprecated: use so3::Local
 struct GTSAM_EXPORT ExpmapFunctor : public Local {
