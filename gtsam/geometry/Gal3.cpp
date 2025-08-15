@@ -58,51 +58,54 @@ namespace { // Anonymous namespace for internal linkage
 // Static Constructor/Create functions
 //------------------------------------------------------------------------------
 Gal3 Gal3::Create(const Rot3& R, const Point3& r, const Velocity3& v, double t,
-                    OptionalJacobian<10, 3> H1, OptionalJacobian<10, 3> H2,
-                    OptionalJacobian<10, 3> H3, OptionalJacobian<10, 1> H4) {
-      if (H1) {
-        H1->setZero();
-        H1->block<3, 3>(0, 0) = I_3x3;
-      }
-      if (H2) {
-        H2->setZero();
-        H2->block<3, 3>(6, 0) = R.transpose();
-      }
-      if (H3) {
-        H3->setZero();
-        H3->block<3, 3>(3, 0) = R.transpose();
-      }
-      if (H4) {
-        H4->setZero();
-        Vector3 drho_dt = -R.transpose() * v;
-        H4->block<3, 1>(6, 0) = drho_dt;
-        (*H4)(9, 0) = 1.0;
-      }
-      return Gal3(R, r, v, t);
+                  OptionalJacobian<10, 3> H1, OptionalJacobian<10, 3> H2,
+                  OptionalJacobian<10, 3> H3, OptionalJacobian<10, 1> H4) {
+  Matrix3 Rt;
+  if (H2 || H3 || H4) Rt = R.transpose();
+  if (H1) {
+    H1->setZero();
+    H1->block<3, 3>(0, 0) = I_3x3;
+  }
+  if (H2) {
+    H2->setZero();
+    H2->block<3, 3>(6, 0) = Rt;
+  }
+  if (H3) {
+    H3->setZero();
+    H3->block<3, 3>(3, 0) = Rt;
+  }
+  if (H4) {
+    H4->setZero();
+    H4->block<3, 1>(6, 0) = -Rt * v; // drho_dt;
+    (*H4)(9, 0) = 1.0;
+  }
+  return Gal3(R, r, v, t);
 }
 
 //------------------------------------------------------------------------------
 Gal3 Gal3::FromPoseVelocityTime(const Pose3& pose, const Velocity3& v, double t,
-                                OptionalJacobian<10, 6> H1, OptionalJacobian<10, 3> H2,
+                                OptionalJacobian<10, 6> H1,
+                                OptionalJacobian<10, 3> H2,
                                 OptionalJacobian<10, 1> H3) {
-    const Rot3& R = pose.rotation();
-    const Point3& r = pose.translation();
-    if (H1) {
-        H1->setZero();
-        H1->block<3, 3>(0, 0) = I_3x3;
-        H1->block<3, 3>(6, 3) = I_3x3;
-    }
-    if (H2) {
-        H2->setZero();
-        H2->block<3, 3>(3, 0) = R.transpose();
-    }
-    if (H3) {
-        H3->setZero();
-        Vector3 drho_dt = -R.transpose() * v;
-        H3->block<3, 1>(6, 0) = drho_dt;
-        (*H3)(9, 0) = 1.0;
-    }
-    return Gal3(R, r, v, t);
+  const Rot3& R = pose.rotation();
+  const Point3& r = pose.translation();
+  Matrix3 Rt;
+  if (H2 || H3) Rt = R.transpose();
+  if (H1) {
+    H1->setZero();
+    H1->block<3, 3>(0, 0) = I_3x3;
+    H1->block<3, 3>(6, 3) = I_3x3;
+  }
+  if (H2) {
+    H2->setZero();
+    H2->block<3, 3>(3, 0) = Rt;
+  }
+  if (H3) {
+    H3->setZero();
+    H3->block<3, 1>(6, 0) = -Rt * v;
+    (*H3)(9, 0) = 1.0;
+  }
+  return Gal3(R, r, v, t);
 }
 
 //------------------------------------------------------------------------------
@@ -266,7 +269,8 @@ Gal3 Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
 #else
   const Rot3 R(local.expmap());
 #endif
-  const auto Rt = R.matrix().transpose();
+  Matrix3 Rt;
+  if (Hxi) Rt = R.transpose();
 
   // Compute velocity: just apply left SO(3) Jacobian,
   Matrix3 H_v_w;

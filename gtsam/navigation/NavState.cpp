@@ -26,12 +26,11 @@ namespace gtsam {
 NavState NavState::Create(const Rot3& R, const Point3& t, const Velocity3& v,
     OptionalJacobian<9, 3> H1, OptionalJacobian<9, 3> H2,
     OptionalJacobian<9, 3> H3) {
-  if (H1)
-    *H1 << I_3x3, Z_3x3, Z_3x3;
-  if (H2)
-    *H2 << Z_3x3, R.transpose(), Z_3x3;
-  if (H3)
-    *H3 << Z_3x3, Z_3x3, R.transpose();
+  Matrix3 Rt;
+  if (H2 || H3) Rt = R.transpose();
+  if (H1) *H1 << I_3x3, Z_3x3, Z_3x3;
+  if (H2) *H2 << Z_3x3, Rt, Z_3x3;
+  if (H3) *H3 << Z_3x3, Z_3x3, Rt;
   return NavState(R, t, v);
 }
 //------------------------------------------------------------------------------
@@ -270,9 +269,9 @@ Matrix9 NavState::LogmapDerivative(const Vector9& xi) {
   local.Jacobian().applyLeft(nu, H_v_w);
 
   // Multiply with R^T to account for NavState::Create Jacobian.
-  const Matrix3 R = local.expmap();
-  const Matrix3 Qt = R.transpose() * H_t_w;
-  const Matrix3 Qv = R.transpose() * H_v_w;
+  const Matrix3 Rt = local.expmap().transpose();
+  const Matrix3 Qt = Rt * H_t_w;
+  const Matrix3 Qv = Rt * H_v_w;
 
   // Now compute the blocks of the LogmapDerivative Jacobian
   const Matrix3 Jw = Rot3::LogmapDerivative(w);
