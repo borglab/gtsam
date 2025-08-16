@@ -122,107 +122,155 @@ namespace so3 {
  * We only provide the 9*9 derivative in the first argument M.
  */
 GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
-                OptionalJacobian<9, 9> H = {});
+                             OptionalJacobian<9, 9> H = {});
 
 /// (constant) Jacobian of compose wrpt M
 GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
 
-// Below are two functors that allow for saving computation when exponential map
-// and its derivatives are needed at the same location in so<3>. The second
-// functor also implements dedicated methods to apply dexp and/or inv(dexp).
+/**
+ * Opaque evaluation context at ω: caches W, WW, θ, θ², nearZero/nearPi,
+ * Lazily computes D, G, dB, dC, dG on demand.
+ * Math is based on Ethan Eade's elegant Lie group document, at
+ * https://www.ethaneade.org/lie.pdf, and the Kernel idea in doc/Jacobians.md
+ */
+struct GTSAM_EXPORT Local {
+  /// Tolerance for near zero (theta^2)
+  static constexpr double kNearZeroThresholdSq = 1e-6;
+  /// Tolerance for near pi (delta^2 = (pi - theta)^2)
+  static constexpr double kNearPiThresholdSq = 1e-6;
 
-/// Functor implementing Exponential map
-/// Math is based on Ethan Eade's elegant Lie group document, at
-/// https://www.ethaneade.org/lie.pdf.
-struct GTSAM_EXPORT ExpmapFunctor {
-  const double theta2, theta;
-  const Matrix3 W, WW;
-  bool nearZero{ false };
-
-  // Ethan Eade's constants:
-  double A;  // A = sin(theta) / theta
-  double B;  // B = (1 - cos(theta))
+  Vector3 omega;         ///< The rotation vector.
+  double theta2;         ///< The squared norm of the rotation vector (theta^2).
+  double theta;          ///< The norm of the rotation vector (theta).
+  Matrix3 W;             ///< The skew-symmetric matrix for the rotation vector.
+  Matrix3 WW;            ///< The square of the skew-symmetric matrix (W * W).
+  bool nearZero{false};  ///< Flag indicating if theta is near zero.
+  bool nearPi{false};    ///< Flag indicating if theta is near pi.
+  double A, B, C;        ///< Ethan's A,B,C coefficients
 
   /// Constructor with element of Lie algebra so(3)
-  explicit ExpmapFunctor(const Vector3& omega);
+  explicit Local(const Vector3& omega,
+                 double nearZeroThresholdSq = kNearZeroThresholdSq,
+                 double nearPiThresholdSq = kNearPiThresholdSq);
 
-  /// Constructor with threshold (advanced)
-  ExpmapFunctor(double nearZeroThresholdSq, const Vector3& axis);
+  // Exponential map via Rodrigues formula: I + A(θ) W + B(θ) WW
+  Matrix3 expmap() const { return I_3x3 + A * W + B * WW; }
 
-  /// Constructor with axis-angle
-  ExpmapFunctor(const Vector3& axis, double angle);
+  // Jacobian kernel J_[l/r] = I +/0 B W + C WW  (left/right).
+  struct Kernel Jacobian() const &;
 
-  /// Rodrigues formula
-  Matrix3 expmap() const;
+  // Specialized kernel for inverse Jacobian, stable even for |omega| > π
+  struct InvJKernel InvJacobian() const &;  // I +/- 1/2 W + D WW
 
-protected:
-  void init(double nearZeroThresholdSq);
+  // Gamma kernel: Γ_[l/r] = 0.5 I ± C W + G WW (left/right).
+  struct Kernel Gamma() const &;
+
+  // access to (lazily evaluated) coefficients
+  double D() const;
+  double E() const;
+  double dB() const;
+  double dC() const;
+  double dE() const;
+
+ protected:
+  mutable std::optional<double> D_, E_;         ///< D-E are lazily computed.
+  mutable std::optional<double> dB_, dC_, dE_;  ///< Radial derivatives c(θ)'/θ
 };
 
-/// Functor that implements Exponential map *and* its derivatives
-/// Math extends Ethan theme of elegant I + aW + bWW expressions.
-/// See https://www.ethaneade.org/lie.pdf expmap (82) and left Jacobian (83).
+/**
+ * Kernel: M(ω) = a I + b W + c W^2 with radial derivatives db,dc for Fréchet.
+ * Right variants flip b→-b, db→-db (no recompute of W/WW).
+ * Keep a pointer to Local: Kernel methods above return a const & to prevent
+ * having a pointer to a temporary.
+ */
+struct GTSAM_EXPORT Kernel {
+  const Local* S;
+  double a{0}, b{0}, c{0}, db{0}, dc{0};  // left-specialization form
+
+  Matrix3 left() const;   // a I + b W + c WW
+  Matrix3 right() const;  // a I - b W + c WW
+
+  Vector3 applyLeft(const Vector3& v, OptionalJacobian<3, 3> Hw = {},
+                    OptionalJacobian<3, 3> Hv = {}) const;
+  Vector3 applyRight(const Vector3& v, OptionalJacobian<3, 3> Hw = {},
+                     OptionalJacobian<3, 3> Hv = {}) const;
+
+  // Shortcuts: K * v == left,  v * K == right
+  Vector3 operator*(const Vector3& v) const { return applyLeft(v); }
+  friend Vector3 operator*(const Vector3& v, const Kernel& K) {
+    return K.applyRight(v);
+  }
+
+  /// Fréchet derivative of left-kernel M(ω) in the direction X ∈ so(3)
+  /// L_M(Ω)[X] = b X + c (Ω X + X Ω) + s (db Ω + dc Ω²), with s = -½ tr(Ω X)
+  Matrix3 frechet(const Matrix3& X) const;
+  /// Apply Fréchet derivative to vector (left specialization)
+  Matrix3 applyFrechet(const Vector3& v) const;
+};
+
+// Stable inverse Jacobian kernel
+struct GTSAM_EXPORT InvJKernel {
+  const Local* S;
+  Kernel J;  // holds the forward kernel
+
+  Matrix3 left() const;
+  Matrix3 right() const;
+
+  Vector3 applyLeft(const Vector3& v, OptionalJacobian<3, 3> Hw = {},
+                    OptionalJacobian<3, 3> Hv = {}) const;
+  Vector3 applyRight(const Vector3& v, OptionalJacobian<3, 3> Hw = {},
+                     OptionalJacobian<3, 3> Hv = {}) const;
+};
+
+/// y + alpha * x  (functional)
+inline Kernel axpy(double alpha, const Kernel& X, const Kernel& Y) {
+  return Kernel{Y.S,
+                Y.a + alpha * X.a,
+                Y.b + alpha * X.b,
+                Y.c + alpha * X.c,
+                Y.db + alpha * X.db,
+                Y.dc + alpha * X.dc};
+}
+
+// Blend K = α X + (1-α) Y with radial derivative (·)'/θ via dalpha
+inline Kernel blend(double alpha, double dalpha, const Kernel& X,
+                    const Kernel& Y) {
+  const double beta = 1.0 - alpha;
+  // L has db=dc=0; derivative comes from α only
+  return Kernel{
+      Y.S,
+      alpha * X.a + beta * Y.a,
+      alpha * X.b + beta * Y.b,
+      alpha * X.c + beta * Y.c,
+      dalpha * (X.b - Y.b) + beta * Y.db,  // db
+      dalpha * (X.c - Y.c) + beta * Y.dc   // dc
+  };
+}
+
+/// @deprecated: use so3::Local
+struct GTSAM_EXPORT ExpmapFunctor : public Local {
+  explicit ExpmapFunctor(const Vector3& omega);
+  ExpmapFunctor(double nearZeroThresholdSq, const Vector3& axis);
+  ExpmapFunctor(const Vector3& axis, double angle);
+};
+
+/// @deprecated: use so3::Local
 struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
-  const Vector3 omega;
-
-  // Ethan's C constant used in Jacobians
-  double C;  // (1 - A) / theta^2
-
-  // Constant used in inverse Jacobians
-  double D;  // (1 - A/2B) / theta2
-
-  // Constants used in cross and doubleCross
-  double E;  // (2B - A) / theta2
-  double F;  // (3C - B) / theta2
-
-  /// Constructor with element of Lie algebra so(3)
-  explicit DexpFunctor(const Vector3& omega);
-
-  /// Constructor with custom thresholds (advanced)
-  explicit DexpFunctor(const Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq);
-
-  // NOTE(luca): Right Jacobian for Exponential map in SO(3) - equation
-  // (10.86) and following equations in G.S. Chirikjian, "Stochastic Models,
-  // Information Theory, and Lie Groups", Volume 2, 2008.
-  //   Expmap(xi + dxi) \approx Expmap(xi) * Expmap(dexp * dxi)
-  // This maps a perturbation dxi=(w,v) in the tangent space to
-  // a perturbation on the manifold Expmap(dexp * xi)
-  Matrix3 rightJacobian() const { return I_3x3 - B * W + C * WW; }
-
-  // Compute the left Jacobian for Exponential map in SO(3)
-  Matrix3 leftJacobian() const { return I_3x3 + B * W + C * WW; }
-
-  /// Inverse of right Jacobian
-  /// For |omega|>pi uses rightJacobian().inverse(), as unstable beyond pi!
+  using J33 = OptionalJacobian<3, 3>;
+  explicit DexpFunctor(const Vector3& omega, double nearZeroThresholdSq = 1e-6,
+                       double nearPiThresholdSq = 1e-6);
+  Matrix3 rightJacobian() const;
+  Matrix3 leftJacobian() const;
   Matrix3 rightJacobianInverse() const;
-
-  // Inverse of left Jacobian
-  /// For |omega|>pi uses leftJacobian().inverse(), as unstable beyond pi!
   Matrix3 leftJacobianInverse() const;
-
-  /// Multiplies with rightJacobian(), with optional derivatives
-  Vector3 applyRightJacobian(const Vector3& v,
-    OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
-
-  /// Multiplies with rightJacobian().inverse(), with optional derivatives
-  Vector3 applyRightJacobianInverse(const Vector3& v,
-    OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
-
-  /// Multiplies with leftJacobian(), with optional derivatives
-  Vector3 applyLeftJacobian(const Vector3& v,
-    OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
-
-  /// Multiplies with leftJacobianInverse(), with optional derivatives
-  Vector3 applyLeftJacobianInverse(const Vector3& v,
-    OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
-  /// @deprecated: use rightJacobian
+  Vector3 applyRightJacobian(const Vector3& v, J33 H1 = {}, J33 H2 = {}) const;
+  Vector3 applyRightJacobianInverse(const Vector3& v, J33 H1 = {},
+                                    J33 H2 = {}) const;
+  Vector3 applyLeftJacobian(const Vector3& v, J33 H1 = {}, J33 H2 = {}) const;
+  Vector3 applyLeftJacobianInverse(const Vector3& v, J33 H1 = {},
+                                   J33 H2 = {}) const;
   inline Matrix3 dexp() const { return rightJacobian(); }
-
-  /// @deprecated: use rightJacobianInverse
   inline Matrix3 invDexp() const { return rightJacobianInverse(); }
-#endif
 };
 }  //  namespace so3
 
