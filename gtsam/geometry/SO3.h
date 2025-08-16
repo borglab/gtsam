@@ -154,7 +154,7 @@ struct GTSAM_EXPORT Local {
                  double nearPiThresholdSq = kNearPiThresholdSq);
 
   // Exponential map via Rodrigues formula: I + A(θ) W + B(θ) WW
-  Matrix3 expmap() const { return I_3x3 + A * W + B * WW; }
+  Matrix3 expmap() const;
 
   // Jacobian kernel J_[l/r] = I +/0 B W + C WW  (left/right).
   struct Kernel Jacobian() const &;
@@ -195,12 +195,6 @@ struct GTSAM_EXPORT Kernel {
   Vector3 applyRight(const Vector3& v, OptionalJacobian<3, 3> Hw = {},
                      OptionalJacobian<3, 3> Hv = {}) const;
 
-  // Shortcuts: K * v == left,  v * K == right
-  Vector3 operator*(const Vector3& v) const { return applyLeft(v); }
-  friend Vector3 operator*(const Vector3& v, const Kernel& K) {
-    return K.applyRight(v);
-  }
-
   /// Fréchet derivative of left-kernel M(ω) in the direction X ∈ so(3)
   /// L_M(Ω)[X] = b X + c (Ω X + X Ω) + s (db Ω + dc Ω²), with s = -½ tr(Ω X)
   Matrix3 frechet(const Matrix3& X) const;
@@ -223,29 +217,10 @@ struct GTSAM_EXPORT InvJKernel {
 };
 
 /// y + alpha * x  (functional)
-inline Kernel axpy(double alpha, const Kernel& X, const Kernel& Y) {
-  return Kernel{Y.S,
-                Y.a + alpha * X.a,
-                Y.b + alpha * X.b,
-                Y.c + alpha * X.c,
-                Y.db + alpha * X.db,
-                Y.dc + alpha * X.dc};
-}
+Kernel axpy(double alpha, const Kernel& X, const Kernel& Y);
 
 // Blend K = α X + (1-α) Y with radial derivative (·)'/θ via dalpha
-inline Kernel blend(double alpha, double dalpha, const Kernel& X,
-                    const Kernel& Y) {
-  const double beta = 1.0 - alpha;
-  // L has db=dc=0; derivative comes from α only
-  return Kernel{
-      Y.S,
-      alpha * X.a + beta * Y.a,
-      alpha * X.b + beta * Y.b,
-      alpha * X.c + beta * Y.c,
-      dalpha * (X.b - Y.b) + beta * Y.db,  // db
-      dalpha * (X.c - Y.c) + beta * Y.dc   // dc
-  };
-}
+Kernel blend(double alpha, double dalpha, const Kernel& X, const Kernel& Y);
 
 /// @deprecated: use so3::Local
 struct GTSAM_EXPORT ExpmapFunctor : public Local {

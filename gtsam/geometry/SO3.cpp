@@ -91,6 +91,9 @@ Local::Local(const Vector3& omega, double nz, double np)
   }
 }
 
+// Exponential map via Rodrigues formula: I + A(θ) W + B(θ) WW
+Matrix3 Local::expmap() const { return I_3x3 + A * W + B * WW; }
+
 double Local::D() const {
   if (!D_) {
     D_ = !nearZero ? (nearPi ? (k1_Pi2 + (k2_Pi3 - k1_4Pi) * (M_PI - theta))
@@ -217,6 +220,28 @@ Vector3 InvJKernel::applyRight(const Vector3& v, OptionalJacobian<3, 3> Hw,
   }
   if (Hv) *Hv = Rinv;
   return c;
+}
+
+Kernel axpy(double alpha, const Kernel& X, const Kernel& Y) {
+  return Kernel{Y.S,
+                Y.a + alpha * X.a,
+                Y.b + alpha * X.b,
+                Y.c + alpha * X.c,
+                Y.db + alpha * X.db,
+                Y.dc + alpha * X.dc};
+}
+
+Kernel blend(double alpha, double dalpha, const Kernel& X, const Kernel& Y) {
+  const double beta = 1.0 - alpha;
+  // L has db=dc=0; derivative comes from α only
+  return Kernel{
+      Y.S,
+      alpha * X.a + beta * Y.a,
+      alpha * X.b + beta * Y.b,
+      alpha * X.c + beta * Y.c,
+      dalpha * (X.b - Y.b) + beta * Y.db,  // db
+      dalpha * (X.c - Y.c) + beta * Y.dc   // dc
+  };
 }
 
 // --- Thresholds (class statics) ---
