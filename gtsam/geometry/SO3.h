@@ -127,9 +127,6 @@ GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
 /// (constant) Jacobian of compose wrpt M
 GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
 
-
-
-
 }  //  namespace so3
 
 /*

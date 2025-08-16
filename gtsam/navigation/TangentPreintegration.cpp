@@ -62,12 +62,12 @@ Vector9 TangentPreintegration::UpdatePreintegrated(const Vector3& a_body,
 
   // This functor allows for saving computation when exponential map and its
   // derivatives are needed at the same location in so<3>
-  so3::DexpFunctor local(theta);
+  so3::Local local(theta);
 
   // Calculate exact mean propagation
   Matrix3 w_tangent_H_theta, invH;
   const Vector3 w_tangent = // angular velocity mapped back to tangent space
-      local.applyRightJacobianInverse(w_body, A ? &w_tangent_H_theta : 0, C ? &invH : 0);
+      local.InvJacobian().applyRight(w_body, A ? &w_tangent_H_theta : 0, C ? &invH : 0);
   const Rot3 R(local.expmap());  // nRb: rotation of body in nav frame
   const Vector3 a_nav = R * a_body;
   const double dt22 = 0.5 * dt * dt;
@@ -80,7 +80,7 @@ Vector9 TangentPreintegration::UpdatePreintegrated(const Vector3& a_body,
 
   if (A) {
     // Exact derivative of R*a with respect to theta:
-    const Matrix3 a_nav_H_theta = R.matrix() * skewSymmetric(-a_body) * local.rightJacobian();
+    const Matrix3 a_nav_H_theta = R.matrix() * skewSymmetric(-a_body) * local.Jacobian().right();
 
     A->setIdentity();
     A->block<3, 3>(0, 0).noalias() += w_tangent_H_theta * dt;  // theta

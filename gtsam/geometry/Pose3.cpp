@@ -215,12 +215,13 @@ Pose3 Pose3::interpolateRt(const Pose3& T, double t,
 /* ************************************************************************* */
 // Expmap is implemented in so3::ExpmapFunctor::expmap, based on Ethan Eade's
 // elegant Lie group document, at https://www.ethaneade.org/lie.pdf.
+// See also [this document](doc/Jacobians.md)
 Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   // Get angular velocity omega and translational velocity v from twist xi
   const Vector3 w = xi.head<3>(), v = xi.tail<3>();
 
   // Instantiate functor for Dexp-related operations:
-  const so3::DexpFunctor local(w);
+  const so3::Local local(w);
 
   // Compute rotation using Expmap
 #ifdef GTSAM_USE_QUATERNIONS
@@ -229,26 +230,26 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   const Rot3 R(local.expmap());
 #endif
 
-  // The translation t = local.leftJacobian() * v.
-  // Here we call applyLeftJacobian, which is faster if you don't need
+  // The translation t = local.Jacobian().left() * v.
+  // Here we call local.Jacobian().applyLeft, which is faster if you don't need
   // Jacobians, and returns Jacobian of t with respect to w if asked.
-  // NOTE(Frank): t = applyLeftJacobian(v) does the same as the intuitive formulas
+  // NOTE(Frank): this does the same as the intuitive formulas:
   //   t_parallel = w * w.dot(v);  // translation parallel to axis
   //   w_cross_v = w.cross(v);     // translation orthogonal to axis
   //   t = (w_cross_v - Rot3::Expmap(w) * w_cross_v + t_parallel) / theta2;
-  // but functor does not need R, deals automatically with the case where theta2
+  // but Local does not need R, deals automatically with the case where theta2
   // is near zero, and also gives us the machinery for the Jacobians.
   Matrix3 H;
-  const Vector3 t = local.applyLeftJacobian(v, Hxi ? &H : nullptr);
+  const Vector3 t = local.Jacobian().applyLeft(v, Hxi ? &H : nullptr);
 
   if (Hxi) {
     // The Jacobian of expmap is given by the right Jacobian of SO(3):
-    const Matrix3 Jr = local.rightJacobian();
+    const Matrix3 Jr = local.Jacobian().right();
     // We are creating a Pose3, so we still need to chain H with R^T, the
     // Jacobian of Pose3::Create with respect to t.
-    const Matrix3 Q = R.matrix().transpose() * H;
+    const Matrix3 Rt = R.transpose();
     *Hxi << Jr, Z_3x3,  // Jr here *is* the Jacobian of expmap
-        Q, Jr;  // Here Jr = R^T * J_l, with J_l the Jacobian of t in v.
+        Rt * H, Jr;     // Here Jr = R^T * Jl, with Jl the Jacobian of t in v.
   }
 
   return Pose3(R, t);
@@ -259,10 +260,10 @@ Vector6 Pose3::Logmap(const Pose3& pose, OptionalJacobian<6, 6> Hpose) {
   const Vector3 w = Rot3::Logmap(pose.rotation());
 
   // Instantiate functor for Dexp-related operations:
-  const so3::DexpFunctor local(w);
+  const so3::Local local(w);
 
   const Vector3 t = pose.translation();
-  const Vector3 u = local.applyLeftJacobianInverse(t);
+  const Vector3 u = local.InvJacobian().applyLeft(t);
   Vector6 xi;
   xi << w, u;
   if (Hpose) *Hpose = LogmapDerivative(xi);
@@ -314,11 +315,11 @@ Matrix6 Pose3::LogmapDerivative(const Vector6& xi) {
   Vector3 v = xi.segment<3>(3);
 
   // Instantiate functor for Dexp-related operations:
-  const so3::DexpFunctor local(w);
+  const so3::Local local(w);
 
   // Call applyLeftJacobian to get its Jacobians
   Matrix3 H_t_w;
-  local.applyLeftJacobian(v, H_t_w);
+  local.Jacobian().applyLeft(v, H_t_w);
 
   // Multiply with R^T to account for NavState::Create Jacobian.
   const Matrix3 R = local.expmap();
@@ -484,12 +485,12 @@ Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> Hself,
                      OptionalJacobian<2, 3> Hpoint) const {
   Matrix36 D_local_pose;
   Matrix3 D_local_point;
-  Point3 local = transformTo(point, Hself ? &D_local_pose : 0, Hpoint ? &D_local_point : 0);
+  Point3 at = transformTo(point, Hself ? &D_local_pose : 0, Hpoint ? &D_local_point : 0);
   if (!Hself && !Hpoint) {
-    return Unit3(local);
+    return Unit3(at);
   } else {
     Matrix23 D_b_local;
-    Unit3 b = Unit3::FromPoint3(local, D_b_local);
+    Unit3 b = Unit3::FromPoint3(at, D_b_local);
     if (Hself) *Hself = D_b_local * D_local_pose;
     if (Hpoint) *Hpoint = D_b_local * D_local_point;
     return b;
