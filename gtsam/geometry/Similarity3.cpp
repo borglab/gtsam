@@ -21,7 +21,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Manifold.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
-#include <gtsam/geometry/SO3.h>
+#include <gtsam/geometry/Kernel.h>
 #include <cmath>
 
 namespace gtsam {
