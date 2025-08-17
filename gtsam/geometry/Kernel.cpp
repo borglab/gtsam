@@ -219,21 +219,22 @@ constexpr double Local::kNearZeroThresholdSq;
 constexpr double Local::kNearPiThresholdSq;
 
 // --- Kernels ---
-Kernel Local::Jacobian() const & {
+Kernel Local::Jacobian() const& {
   // J_l/r share same coefficients; right flips b internally
   return Kernel{this, 1.0, B, C, dB(), dC()};
 }
 
-InvJKernel Local::InvJacobian() const & {
+InvJKernel Local::InvJacobian() const& {
   // Algebraic inverse kernel (matrices only)
   return InvJKernel{this, this->Jacobian()};
 }
 
-Kernel Local::Gamma() const & {
+Kernel Local::Gamma() const& {
   // Gamma = 1/2 I + C W + G W^2 (left); right flips b internally
   return Kernel{this, 0.5, C, E(), dC(), dE()};
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 // --- Backward-compatible functors (deprecated shims) ---
 ExpmapFunctor::ExpmapFunctor(const Vector3& omega)
     : ExpmapFunctor(kNearZeroThresholdSq, omega) {}
@@ -275,7 +276,7 @@ Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
                                               OptionalJacobian<3, 3> H2) const {
   return InvJacobian().applyLeft(v, H1, H2);
 }
+#endif
 
 }  // namespace so3
-} // namespace gtsam
-
+}  // namespace gtsam

@@ -21,13 +21,14 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/dllexport.h>
+
 #include <optional>
 
 namespace gtsam {
 namespace so3 {
 
-struct Kernel;        // forward declare
-struct InvJKernel;    // forward declare
+struct Kernel;      // forward declare
+struct InvJKernel;  // forward declare
 
 /**
  * Opaque evaluation context at ω: caches W, WW, θ, θ², nearZero/nearPi,
@@ -59,13 +60,13 @@ struct GTSAM_EXPORT Local {
   Matrix3 expmap() const;
 
   // Jacobian kernel J_[l/r] = I +/0 B W + C WW  (left/right).
-  Kernel Jacobian() const &;
+  Kernel Jacobian() const&;
 
   // Specialized kernel for inverse Jacobian, stable even for |omega| > π
-  InvJKernel InvJacobian() const &;  // I +/- 1/2 W + D WW
+  InvJKernel InvJacobian() const&;  // I +/- 1/2 W + D WW
 
   // Gamma kernel: Γ_[l/r] = 0.5 I ± C W + G WW (left/right).
-  Kernel Gamma() const &;
+  Kernel Gamma() const&;
 
   // access to (lazily evaluated) coefficients
   double D() const;
@@ -124,6 +125,7 @@ Kernel axpy(double alpha, const Kernel& X, const Kernel& Y);
 // Blend K = α X + (1-α) Y with radial derivative (·)'/θ via dalpha
 Kernel blend(double alpha, double dalpha, const Kernel& X, const Kernel& Y);
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 /// @deprecated: use so3::Local
 struct GTSAM_EXPORT ExpmapFunctor : public Local {
   explicit ExpmapFunctor(const Vector3& omega);
@@ -149,6 +151,7 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   inline Matrix3 dexp() const { return rightJacobian(); }
   inline Matrix3 invDexp() const { return rightJacobianInverse(); }
 };
+#endif
 
 }  // namespace so3
 }  // namespace gtsam
