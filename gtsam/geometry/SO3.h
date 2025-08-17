@@ -25,6 +25,7 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/dllexport.h>
+#include <gtsam/geometry/Kernel.h>
 
 #include <vector>
 
@@ -127,8 +128,7 @@ GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
 /// (constant) Jacobian of compose wrpt M
 GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
 
-struct Kernel;        // forward declare
-struct InvJKernel;    // forward declare
+
 
 /**
  * Opaque evaluation context at ω: caches W, WW, θ, θ², nearZero/nearPi,
@@ -180,50 +180,7 @@ struct GTSAM_EXPORT Local {
   mutable std::optional<double> dB_, dC_, dE_;  ///< Radial derivatives c(θ)'/θ
 };
 
-/**
- * Kernel: M(ω) = a I + b W + c W^2 with radial derivatives db,dc for Fréchet.
- * Right variants flip b→-b, db→-db (no recompute of W/WW).
- * Keep a pointer to Local: Kernel methods above return a const & to prevent
- * having a pointer to a temporary.
- */
-struct GTSAM_EXPORT Kernel {
-  const Local* S;
-  double a{0}, b{0}, c{0}, db{0}, dc{0};  // left-specialization form
 
-  Matrix3 left() const;   // a I + b W + c WW
-  Matrix3 right() const;  // a I - b W + c WW
-
-  Vector3 applyLeft(const Vector3& v, OptionalJacobian<3, 3> Hw = {},
-                    OptionalJacobian<3, 3> Hv = {}) const;
-  Vector3 applyRight(const Vector3& v, OptionalJacobian<3, 3> Hw = {},
-                     OptionalJacobian<3, 3> Hv = {}) const;
-
-  /// Fréchet derivative of left-kernel M(ω) in the direction X ∈ so(3)
-  /// L_M(Ω)[X] = b X + c (Ω X + X Ω) + s (db Ω + dc Ω²), with s = -½ tr(Ω X)
-  Matrix3 frechet(const Matrix3& X) const;
-  /// Apply Fréchet derivative to vector (left specialization)
-  Matrix3 applyFrechet(const Vector3& v) const;
-};
-
-// Stable inverse Jacobian kernel
-struct GTSAM_EXPORT InvJKernel {
-  const Local* S;
-  Kernel J;  // holds the forward kernel
-
-  Matrix3 left() const;
-  Matrix3 right() const;
-
-  Vector3 applyLeft(const Vector3& v, OptionalJacobian<3, 3> Hw = {},
-                    OptionalJacobian<3, 3> Hv = {}) const;
-  Vector3 applyRight(const Vector3& v, OptionalJacobian<3, 3> Hw = {},
-                     OptionalJacobian<3, 3> Hv = {}) const;
-};
-
-/// y + alpha * x  (functional)
-Kernel axpy(double alpha, const Kernel& X, const Kernel& Y);
-
-// Blend K = α X + (1-α) Y with radial derivative (·)'/θ via dalpha
-Kernel blend(double alpha, double dalpha, const Kernel& X, const Kernel& Y);
 
 /// @deprecated: use so3::Local
 struct GTSAM_EXPORT ExpmapFunctor : public Local {
