@@ -127,6 +127,9 @@ GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
 /// (constant) Jacobian of compose wrpt M
 GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
 
+struct Kernel;        // forward declare
+struct InvJKernel;    // forward declare
+
 /**
  * Opaque evaluation context at ω: caches W, WW, θ, θ², nearZero/nearPi,
  * Lazily computes D, G, dB, dC, dG on demand.
@@ -157,13 +160,13 @@ struct GTSAM_EXPORT Local {
   Matrix3 expmap() const;
 
   // Jacobian kernel J_[l/r] = I +/0 B W + C WW  (left/right).
-  struct Kernel Jacobian() const &;
+  Kernel Jacobian() const &;
 
   // Specialized kernel for inverse Jacobian, stable even for |omega| > π
-  struct InvJKernel InvJacobian() const &;  // I +/- 1/2 W + D WW
+  InvJKernel InvJacobian() const &;  // I +/- 1/2 W + D WW
 
   // Gamma kernel: Γ_[l/r] = 0.5 I ± C W + G WW (left/right).
-  struct Kernel Gamma() const &;
+  Kernel Gamma() const &;
 
   // access to (lazily evaluated) coefficients
   double D() const;
