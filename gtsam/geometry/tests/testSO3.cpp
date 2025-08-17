@@ -19,6 +19,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/testLie.h>
 #include <gtsam/geometry/SO3.h>
+#include <gtsam/geometry/Kernel.h>
 
 using namespace std::placeholders;
 using namespace std;

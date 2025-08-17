@@ -199,7 +199,7 @@ class Rot2 {
   void serialize() const;
 };
 
-#include <gtsam/geometry/SO3.h>
+#include <gtsam/geometry/Kernel.h>
 
 namespace so3 {
   class ExpmapFunctor {
@@ -232,6 +232,8 @@ namespace so3 {
     gtsam::Vector3 applyLeftJacobianInverse(const gtsam::Vector3& v) const;
   };
 }
+
+#include <gtsam/geometry/SO3.h>
 
 class SO3 {
   // Standard Constructors

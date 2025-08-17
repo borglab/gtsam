@@ -17,6 +17,7 @@
  **/
 
 #include <gtsam/navigation/NavState.h>
+#include <gtsam/geometry/Kernel.h>
 
 #include <string>
 

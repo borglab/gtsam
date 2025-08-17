@@ -22,7 +22,7 @@
 
 
 #include <gtsam/geometry/Gal3.h>
-#include <gtsam/geometry/SO3.h>
+#include <gtsam/geometry/Kernel.h>
 #include <gtsam/geometry/Event.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/Matrix.h>

@@ -17,7 +17,6 @@
  */
 
 #include <gtsam/geometry/Kernel.h>
-#include <gtsam/geometry/SO3.h>
 
 namespace gtsam {
 namespace so3 {
@@ -132,5 +131,151 @@ Kernel blend(double alpha, double dalpha, const Kernel& X, const Kernel& Y) {
   };
 }
 
+static constexpr double one_6th = 1.0 / 6.0;
+static constexpr double one_12th = 1.0 / 12.0;
+static constexpr double one_24th = 1.0 / 24.0;
+static constexpr double one_60th = 1.0 / 60.0;
+static constexpr double one_120th = 1.0 / 120.0;
+static constexpr double one_180th = 1.0 / 180.0;
+static constexpr double one_360th = 1.0 / 360.0;
+static constexpr double one_720th = 1.0 / 720.0;
+static constexpr double one_1260th = 1.0 / 1260.0;
+
+static constexpr double kPi_inv = 1.0 / M_PI;
+static constexpr double kPi2 = M_PI * M_PI;
+static constexpr double k1_Pi2 = 1.0 / kPi2;
+static constexpr double kPi3 = M_PI * kPi2;
+static constexpr double k1_Pi3 = 1.0 / kPi3;
+static constexpr double k2_Pi3 = 2.0 * k1_Pi3;
+static constexpr double k1_4Pi = 0.25 * kPi_inv;  // 1/(4*pi)
+
+Local::Local(const Vector3& omega, double nz, double np)
+    : omega(omega),
+      theta2(omega.dot(omega)),
+      theta(std::sqrt(theta2)),
+      W(skewSymmetric(omega)),
+      WW(W * W),
+      nearZero(theta2 <= nz) {
+  const double delta = M_PI > theta ? (M_PI - theta) : 0.0;
+  const double delta2 = delta * delta;
+  nearPi = (delta2 < np);
+  if (!nearZero) {
+    A = std::sin(theta) / theta;
+    const double sinHalfTheta = std::sin(0.5 * theta);
+    B = (2.0 * sinHalfTheta * sinHalfTheta) / theta2;
+    C = (1.0 - A) / theta2;
+  } else {
+    A = 1.0 - theta2 * one_6th;
+    B = 0.5 - theta2 * one_24th;
+    C = one_6th - theta2 * one_120th;
+  }
+}
+
+// Exponential map via Rodrigues formula: I + A(θ) W + B(θ) WW
+Matrix3 Local::expmap() const { return I_3x3 + A * W + B * WW; }
+
+double Local::D() const {
+  if (!D_) {
+    D_ = !nearZero ? (nearPi ? (k1_Pi2 + (k2_Pi3 - k1_4Pi) * (M_PI - theta))
+                             : ((1.0 - A / (2.0 * B)) / theta2))
+                   : (one_12th + theta2 * one_720th);
+  }
+  return *D_;
+}
+
+double Local::E() const {
+  if (!E_) {
+    E_ = !nearZero ? ((1.0 - 2.0 * B) / (2.0 * theta2))
+                   : (one_24th - theta2 * one_720th);
+  }
+  return *E_;
+}
+
+double Local::dB() const {
+  if (!dB_) {
+    dB_ =
+        !nearZero ? ((A - 2.0 * B) / theta2) : (-one_12th + theta2 * one_180th);
+  }
+  return *dB_;
+}
+
+double Local::dC() const {
+  if (!dC_) {
+    dC_ = !nearZero ? ((B - 3.0 * C) / theta2)
+                    : (-one_60th + theta2 * one_1260th);
+  }
+  return *dC_;
+}
+
+double Local::dE() const {
+  if (!dE_) {
+    dE_ = !nearZero ? (-(dB() + 2.0 * E()) / theta2) : (-one_360th);
+  }
+  return *dE_;
+}
+
+// --- Thresholds (class statics) ---
+constexpr double Local::kNearZeroThresholdSq;
+constexpr double Local::kNearPiThresholdSq;
+
+// --- Kernels ---
+Kernel Local::Jacobian() const & {
+  // J_l/r share same coefficients; right flips b internally
+  return Kernel{this, 1.0, B, C, dB(), dC()};
+}
+
+InvJKernel Local::InvJacobian() const & {
+  // Algebraic inverse kernel (matrices only)
+  return InvJKernel{this, this->Jacobian()};
+}
+
+Kernel Local::Gamma() const & {
+  // Gamma = 1/2 I + C W + G W^2 (left); right flips b internally
+  return Kernel{this, 0.5, C, E(), dC(), dE()};
+}
+
+// --- Backward-compatible functors (deprecated shims) ---
+ExpmapFunctor::ExpmapFunctor(const Vector3& omega)
+    : ExpmapFunctor(kNearZeroThresholdSq, omega) {}
+ExpmapFunctor::ExpmapFunctor(double nz, const Vector3& omega)
+    : Local(omega, nz) {}
+ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle)
+    : Local(axis * angle) {}
+DexpFunctor::DexpFunctor(const Vector3& omega, double nz, double np)
+    : ExpmapFunctor(nz, omega) {
+  const double delta = M_PI > theta ? (M_PI - theta) : 0.0;
+  const double delta2 = delta * delta;
+  nearPi = (delta2 < np);
+}
+Matrix3 DexpFunctor::rightJacobian() const { return Jacobian().right(); }
+Matrix3 DexpFunctor::leftJacobian() const { return Jacobian().left(); }
+Matrix3 DexpFunctor::rightJacobianInverse() const {
+  return InvJacobian().right();
+}
+Matrix3 DexpFunctor::leftJacobianInverse() const {
+  return InvJacobian().left();
+}
+Vector3 DexpFunctor::applyRightJacobian(const Vector3& v,
+                                        OptionalJacobian<3, 3> H1,
+                                        OptionalJacobian<3, 3> H2) const {
+  return Jacobian().applyRight(v, H1, H2);
+}
+Vector3 DexpFunctor::applyLeftJacobian(const Vector3& v,
+                                       OptionalJacobian<3, 3> H1,
+                                       OptionalJacobian<3, 3> H2) const {
+  return Jacobian().applyLeft(v, H1, H2);
+}
+Vector3 DexpFunctor::applyRightJacobianInverse(
+    const Vector3& v, OptionalJacobian<3, 3> H1,
+    OptionalJacobian<3, 3> H2) const {
+  return InvJacobian().applyRight(v, H1, H2);
+}
+Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
+                                              OptionalJacobian<3, 3> H1,
+                                              OptionalJacobian<3, 3> H2) const {
+  return InvJacobian().applyLeft(v, H1, H2);
+}
+
 }  // namespace so3
-}  // namespace gtsam
+} // namespace gtsam
+

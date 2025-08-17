@@ -15,6 +15,7 @@
  */
 
 #include <gtsam/base/concepts.h>
+#include <gtsam/geometry/Kernel.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
