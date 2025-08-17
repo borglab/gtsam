@@ -44,6 +44,7 @@ jobs:
       PYTHON_VERSION: ${{ matrix.python_version }}
       BOOST_VERSION: 1.72.0
       BOOST_EXE: boost_1_72_0-msvc-14.2
+      GTSAM_ALLOW_DEPRECATED_SINCE_V43: OFF
 
     strategy:
       fail-fast: true

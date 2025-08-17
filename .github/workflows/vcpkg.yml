@@ -141,6 +141,7 @@ jobs:
               -DGTSAM_BUILD_PYTHON=ON \
               -DGTSAM_BUILD_TESTS=ON \
               -DGTSAM_BUILD_UNSTABLE=OFF \
+              -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
               -DGTSAM_USE_SYSTEM_EIGEN=ON \
               -DGTSAM_USE_SYSTEM_METIS=ON \
               -DGTSAM_USE_SYSTEM_PYBIND=ON \
