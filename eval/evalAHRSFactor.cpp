@@ -25,6 +25,19 @@
 using namespace std;
 using namespace gtsam;
 
+// IMU frequency for EuRoC data.
+static const double kImuFreq = 200.0;
+
+/**
+ * This test suite uses the EuRoC MAV dataset, published in:
+ * M. Burri, J. Nikolic, P. Gohl, T. Schneider, J. Rehder, S. Omari, M. Achtelik 
+ * and R. Siegwart, The EuRoC micro aerial vehicle datasets, International 
+ * Journal of Robotic Research, DOI: 10.1177/0278364915620033, early 2016.
+ * 
+ * Data download available at:
+ * https://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets
+ */
+
 /* ************************************************************************* */
 TEST(AHRSFactor, Accelerating) {
   const double a = 0.2, v = 50;
@@ -54,7 +67,7 @@ TEST(AHRSFactor, EurocDataEasy) {
 
   const DiscreteScenario scenario = DiscreteScenario::FromCSV(data_path);
 
-  AhrsScenarioRunner runner(scenario, testing::Params(), 1.0 / 200.0);
+  AhrsScenarioRunner runner(scenario, testing::Params(), 1.0 / kImuFreq);
 
   PreintegratedAhrsMeasurements pim = runner.integrate(scenario.duration());
   EXPECT(assert_equal(scenario.rotation(scenario.duration()), runner.predict(pim), 1e-9));
@@ -69,7 +82,7 @@ TEST(AHRSFactor, EurocDataHard) {
 
   const DiscreteScenario scenario = DiscreteScenario::FromCSV(data_path);
 
-  AhrsScenarioRunner runner(scenario, testing::Params(), 1.0 / 200.0);
+  AhrsScenarioRunner runner(scenario, testing::Params(), 1.0 / kImuFreq);
 
   PreintegratedAhrsMeasurements pim = runner.integrate(scenario.duration());
   EXPECT(assert_equal(scenario.rotation(scenario.duration()), runner.predict(pim), 1e-9));
