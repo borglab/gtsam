@@ -563,8 +563,7 @@ virtual class DiscreteScenario : gtsam::Scenario {
   DiscreteScenario(const std::map<double, gtsam::Pose3>& poses,
                    const std::map<double, gtsam::Vector3>& angularVelocities_b,
                    const std::map<double, gtsam::Vector3>& velocities_n,
-                   const std::map<double, gtsam::Vector3>& accelerations_n,
-                   double t);
+                   const std::map<double, gtsam::Vector3>& accelerations_n);
 
   static gtsam::DiscreteScenario FromCSV(const std::string& csv_filepath);
 };
