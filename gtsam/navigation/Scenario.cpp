@@ -227,10 +227,8 @@ DiscreteScenario DiscreteScenario::FromCSV(const string& csv_filepath) {
     accelerations_n[normalized_t] = dp.acceleration_n;
   }
 
-  double duration = data_points.back().t - t0;
-
   return DiscreteScenario(poses, angularVelocities_b, velocities_n,
-                          accelerations_n, duration);
+                          accelerations_n);
 }
 
 } // namespace gtsam

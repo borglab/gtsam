@@ -115,23 +115,38 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
    * @param angularVelocities_b Map of timestamps to ground truth angular velocities in body frame.
    * @param velocities_n Map of timestamps to ground truth linear velocities in nav frame.
    * @param accelerations_n Map of timestamps to ground truth linear accelerations in nav frame.
-   * @param t The duration of time between the first timestamp and the last.
    */
   DiscreteScenario(const map<double, Pose3>& poses,
                    const map<double, Vector3>& angularVelocities_b,
                    const map<double, Vector3>& velocities_n,
-                   const map<double, Vector3>& accelerations_n,
-                   const double t)
+                   const map<double, Vector3>& accelerations_n)
       : poses_(poses),
         angularVelocities_b_(angularVelocities_b),
         velocities_n_(velocities_n),
-        accelerations_n_(accelerations_n),
-        t_(t) {
+        accelerations_n_(accelerations_n) {
     if (poses_.empty() || angularVelocities_b_.empty() ||
         velocities_n_.empty() || accelerations_n_.empty()) {
       throw invalid_argument(
           "Input maps for DiscreteScenario cannot be empty.");
     }
+
+    // Since std::map is sorted, the first element has the smallest key
+    // and the last element has the largest key. We can access the last
+    // element's key efficiently using rbegin().
+    double min_t = poses_.begin()->first;
+    double max_t = poses_.rbegin()->first;
+
+    min_t = min(min_t, angularVelocities_b_.begin()->first);
+    max_t = max(max_t, angularVelocities_b_.rbegin()->first);
+
+    min_t = min(min_t, velocities_n_.begin()->first);
+    max_t = max(max_t, velocities_n_.rbegin()->first);
+
+    min_t = min(min_t, accelerations_n_.begin()->first);
+    max_t = max(max_t, accelerations_n_.rbegin()->first);
+
+    // Calculate and assign the duration.
+    t_ = max_t - min_t;
   }
 
   /**
@@ -159,6 +174,7 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
   Vector3 acceleration_n(double t) const override;
   /// @}
   
+  /// @brief The duration of time between the first timestamp and the last.
   double duration() const;
 
  private:

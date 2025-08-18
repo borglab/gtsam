@@ -63,7 +63,7 @@ static DiscreteScenario CreateSimpleDiscreteScenario() {
   accelerations[t0] = acc0;
   accelerations[t1] = acc1;
 
-  return DiscreteScenario(poses, omegas, velocities, accelerations, t1 - t0);
+  return DiscreteScenario(poses, omegas, velocities, accelerations);
 }
 
 /* ************************************************************************* */
@@ -276,13 +276,13 @@ TEST(DiscreteScenario, ConstructorExceptions) {
   map<double, Pose3> empty_poses;
   map<double, Vector3> empty_vectors;
 
-  CHECK_EXCEPTION(DiscreteScenario(empty_poses, omegas, velocities, accelerations, 0),
+  CHECK_EXCEPTION(DiscreteScenario(empty_poses, omegas, velocities, accelerations),
                    std::invalid_argument);
-  CHECK_EXCEPTION(DiscreteScenario(poses, empty_vectors, velocities, accelerations, 0),
+  CHECK_EXCEPTION(DiscreteScenario(poses, empty_vectors, velocities, accelerations),
                    std::invalid_argument);
-  CHECK_EXCEPTION(DiscreteScenario(poses, omegas, empty_vectors, accelerations, 0),
+  CHECK_EXCEPTION(DiscreteScenario(poses, omegas, empty_vectors, accelerations),
                    std::invalid_argument);
-  CHECK_EXCEPTION(DiscreteScenario(poses, omegas, velocities, empty_vectors, 0),
+  CHECK_EXCEPTION(DiscreteScenario(poses, omegas, velocities, empty_vectors),
                    std::invalid_argument);
 }
 
