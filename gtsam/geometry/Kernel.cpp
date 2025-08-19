@@ -214,10 +214,6 @@ double Local::dE() const {
   return *dE_;
 }
 
-// --- Thresholds (class statics) ---
-constexpr double Local::kNearZeroThresholdSq;
-constexpr double Local::kNearPiThresholdSq;
-
 // --- Kernels ---
 Kernel Local::Jacobian() const & {
   // J_l/r share same coefficients; right flips b internally
