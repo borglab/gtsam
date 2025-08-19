@@ -21,7 +21,7 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/dllexport.h>
-#include <optional>
+#include <limits>
 
 namespace gtsam {
 namespace so3 {
@@ -31,7 +31,7 @@ struct InvJKernel;    // forward declare
 
 /**
  * Opaque evaluation context at ω: caches W, WW, θ, θ², nearZero/nearPi,
- * Lazily computes D, G, dB, dC, dG on demand.
+ * Lazily computes D, E, dB, dC, dE on demand.
  * Math is based on Ethan Eade's elegant Lie group document, at
  * https://www.ethaneade.org/lie.pdf, and the Kernel idea in doc/Jacobians.md
  */
@@ -64,7 +64,7 @@ struct GTSAM_EXPORT Local {
   // Specialized kernel for inverse Jacobian, stable even for |omega| > π
   InvJKernel InvJacobian() const &;  // I +/- 1/2 W + D WW
 
-  // Gamma kernel: Γ_[l/r] = 0.5 I ± C W + G WW (left/right).
+  // Gamma kernel: Γ_[l/r] = 0.5 I ± C W + E WW (left/right).
   Kernel Gamma() const &;
 
   // access to (lazily evaluated) coefficients
@@ -75,8 +75,10 @@ struct GTSAM_EXPORT Local {
   double dE() const;
 
  protected:
-  mutable std::optional<double> D_, E_;         ///< D-E are lazily computed.
-  mutable std::optional<double> dB_, dC_, dE_;  ///< Radial derivatives c(θ)'/θ
+  // Lazy caches stored as NaN-initialized scalars
+  static constexpr double kUninit = std::numeric_limits<double>::quiet_NaN();
+  mutable double D_{kUninit}, E_{kUninit};         ///< D and E lazily computed.
+  mutable double dB_{kUninit}, dC_{kUninit}, dE_{kUninit};  ///< Radial derivatives c(θ)'/θ
 };
 
 /**

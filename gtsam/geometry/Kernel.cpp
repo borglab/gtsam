@@ -18,6 +18,8 @@
 
 #include <gtsam/geometry/Kernel.h>
 
+#include <cmath>
+
 namespace gtsam {
 namespace so3 {
 
@@ -175,58 +177,58 @@ Local::Local(const Vector3& omega, double nz, double np)
 Matrix3 Local::expmap() const { return I_3x3 + A * W + B * WW; }
 
 double Local::D() const {
-  if (!D_) {
+  if (std::isnan(D_)) {
     D_ = !nearZero ? (nearPi ? (k1_Pi2 + (k2_Pi3 - k1_4Pi) * (M_PI - theta))
                              : ((1.0 - A / (2.0 * B)) / theta2))
                    : (one_12th + theta2 * one_720th);
   }
-  return *D_;
+  return D_;
 }
 
 double Local::E() const {
-  if (!E_) {
+  if (std::isnan(E_)) {
     E_ = !nearZero ? ((1.0 - 2.0 * B) / (2.0 * theta2))
                    : (one_24th - theta2 * one_720th);
   }
-  return *E_;
+  return E_;
 }
 
 double Local::dB() const {
-  if (!dB_) {
+  if (std::isnan(dB_)) {
     dB_ =
         !nearZero ? ((A - 2.0 * B) / theta2) : (-one_12th + theta2 * one_180th);
   }
-  return *dB_;
+  return dB_;
 }
 
 double Local::dC() const {
-  if (!dC_) {
+  if (std::isnan(dC_)) {
     dC_ = !nearZero ? ((B - 3.0 * C) / theta2)
                     : (-one_60th + theta2 * one_1260th);
   }
-  return *dC_;
+  return dC_;
 }
 
 double Local::dE() const {
-  if (!dE_) {
+  if (std::isnan(dE_)) {
     dE_ = !nearZero ? (-(dB() + 2.0 * E()) / theta2) : (-one_360th);
   }
-  return *dE_;
+  return dE_;
 }
 
 // --- Kernels ---
-Kernel Local::Jacobian() const & {
+Kernel Local::Jacobian() const& {
   // J_l/r share same coefficients; right flips b internally
   return Kernel{this, 1.0, B, C, dB(), dC()};
 }
 
-InvJKernel Local::InvJacobian() const & {
+InvJKernel Local::InvJacobian() const& {
   // Algebraic inverse kernel (matrices only)
   return InvJKernel{this, this->Jacobian()};
 }
 
-Kernel Local::Gamma() const & {
-  // Gamma = 1/2 I + C W + G W^2 (left); right flips b internally
+Kernel Local::Gamma() const& {
+  // Gamma = 1/2 I + C W + E W^2 (left); right flips b internally
   return Kernel{this, 0.5, C, E(), dC(), dE()};
 }
 
@@ -273,5 +275,4 @@ Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
 }
 
 }  // namespace so3
-} // namespace gtsam
-
+}  // namespace gtsam
