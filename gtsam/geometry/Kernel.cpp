@@ -25,11 +25,11 @@ namespace so3 {
 
 // --- Kernel matrices (out-of-line to keep header tight) ---
 Matrix3 Kernel::left() const {
-  // left: a I + b W + c W^2
+  // left: a I + b Ω + c Ω²
   return a * I_3x3 + b * S->W + c * S->WW;
 }
 Matrix3 Kernel::right() const {
-  // right: a I - b W + c W^2
+  // right: a I - b Ω + c Ω²
   return a * I_3x3 - b * S->W + c * S->WW;
 }
 
@@ -44,11 +44,11 @@ Vector3 Kernel::applyLeft(const Vector3& v, OptionalJacobian<3, 3> Hw,
     const auto vt = v.transpose();
     const auto sI = w.dot(v) * I_3x3;
     *Hw =
-        -b * skewSymmetric(v) +           // d(Wv)/dω = -[v]×
-        c * (w * vt + sI - 2 * v * wt) +  // d(WWv)/dω = ω vᵀ + (ω·v) I - 2 v ωᵀ
+        -b * skewSymmetric(v) +           // d(Ω v)/dω = -[v]×
+        c * (w * vt + sI - 2 * v * wt) +  // d(Ω² v)/dω = ω vᵀ + (ω·v) I - 2 v ωᵀ
         (db * Wv + dc * WWv) * wt;        // radial derivative terms
   }
-  if (Hv) *Hv = left();  // ∂y/∂v = a I + b W + c W²
+  if (Hv) *Hv = left();  // ∂y/∂v = a I + b Ω + c Ω²
   return a * v + b * Wv + c * WWv;
 }
 
@@ -149,7 +149,7 @@ static constexpr double k1_Pi2 = 1.0 / kPi2;
 static constexpr double kPi3 = M_PI * kPi2;
 static constexpr double k1_Pi3 = 1.0 / kPi3;
 static constexpr double k2_Pi3 = 2.0 * k1_Pi3;
-static constexpr double k1_4Pi = 0.25 * kPi_inv;  // 1/(4*pi)
+static constexpr double k1_4Pi = 0.25 * kPi_inv;  // 1/(4·π)
 
 Local::Local(const Vector3& omega, double nz, double np)
     : omega(omega),
@@ -173,7 +173,7 @@ Local::Local(const Vector3& omega, double nz, double np)
   }
 }
 
-// Exponential map via Rodrigues formula: I + A(θ) W + B(θ) WW
+// Exponential map via Rodrigues formula: I + A(θ) Ω + B(θ) Ω²
 Matrix3 Local::expmap() const { return I_3x3 + A * W + B * WW; }
 
 double Local::D() const {
@@ -223,12 +223,12 @@ Kernel Local::Jacobian() const& {
 }
 
 InvJKernel Local::InvJacobian() const& {
-  // Algebraic inverse kernel (matrices only)
+  // I +/- 1/2 Ω + D Ω²
   return InvJKernel{this, this->Jacobian()};
 }
 
 Kernel Local::Gamma() const& {
-  // Gamma = 1/2 I + C W + E W^2 (left); right flips b internally
+  // Gamma = 1/2 I + C Ω + E Ω² (left); right flips b internally
   return Kernel{this, 0.5, C, E(), dC(), dE()};
 }
 

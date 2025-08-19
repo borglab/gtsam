@@ -26,26 +26,26 @@
 namespace gtsam {
 namespace so3 {
 
-struct Kernel;        // forward declare
-struct InvJKernel;    // forward declare
+struct Kernel;     // forward declare
+struct InvJKernel; // forward declare
 
 /**
- * Opaque evaluation context at ω: caches W, WW, θ, θ², nearZero/nearPi,
+ * Opaque evaluation context at ω: caches Ω, Ω², θ, θ², nearZero/nearPi,
  * Lazily computes D, E, dB, dC, dE on demand.
  * Math is based on Ethan Eade's elegant Lie group document, at
  * https://www.ethaneade.org/lie.pdf, and the Kernel idea in doc/Jacobians.md
  */
 struct GTSAM_EXPORT Local {
-  /// Tolerance for near zero (theta^2)
+  /// Tolerance for near zero (θ²)
   static constexpr double kNearZeroThresholdSq = 1e-6;
-  /// Tolerance for near pi (delta^2 = (pi - theta)^2)
+  /// Tolerance for near π (δ² = (π - θ)²)
   static constexpr double kNearPiThresholdSq = 1e-6;
 
   Vector3 omega;         ///< The rotation vector.
-  double theta2;         ///< The squared norm of the rotation vector (theta^2).
-  double theta;          ///< The norm of the rotation vector (theta).
-  Matrix3 W;             ///< The skew-symmetric matrix for the rotation vector.
-  Matrix3 WW;            ///< The square of the skew-symmetric matrix (W * W).
+  double theta2;         ///< The squared norm of the rotation vector (θ²).
+  double theta;          ///< The norm of the rotation vector (θ).
+  Matrix3 W;             ///< The skew-symmetric matrix Ω for the rotation vector.
+  Matrix3 WW;            ///< The square of the skew-symmetric matrix (Ω²).
   bool nearZero{false};  ///< Flag indicating if theta is near zero.
   bool nearPi{false};    ///< Flag indicating if theta is near pi.
   double A, B, C;        ///< Ethan's A,B,C coefficients
@@ -55,16 +55,16 @@ struct GTSAM_EXPORT Local {
                  double nearZeroThresholdSq = kNearZeroThresholdSq,
                  double nearPiThresholdSq = kNearPiThresholdSq);
 
-  // Exponential map via Rodrigues formula: I + A(θ) W + B(θ) WW
+  // Exponential map via Rodrigues formula: I + A(θ) Ω + B(θ) Ω²
   Matrix3 expmap() const;
 
-  // Jacobian kernel J_[l/r] = I +/0 B W + C WW  (left/right).
+  // Jacobian kernel J_[l/r] = I +/0 B Ω + C Ω²  (left/right).
   Kernel Jacobian() const &;
 
   // Specialized kernel for inverse Jacobian, stable even for |omega| > π
-  InvJKernel InvJacobian() const &;  // I +/- 1/2 W + D WW
+  InvJKernel InvJacobian() const &;  // I +/- 1/2 Ω + D Ω²
 
-  // Gamma kernel: Γ_[l/r] = 0.5 I ± C W + E WW (left/right).
+  // Gamma kernel: Γ_[l/r] = 0.5 I ± C Ω + E Ω² (left/right).
   Kernel Gamma() const &;
 
   // access to (lazily evaluated) coefficients
@@ -78,12 +78,12 @@ struct GTSAM_EXPORT Local {
   // Lazy caches stored as NaN-initialized scalars
   static constexpr double kUninit = std::numeric_limits<double>::quiet_NaN();
   mutable double D_{kUninit}, E_{kUninit};         ///< D and E lazily computed.
-  mutable double dB_{kUninit}, dC_{kUninit}, dE_{kUninit};  ///< Radial derivatives c(θ)'/θ
+  mutable double dB_{kUninit}, dC_{kUninit}, dE_{kUninit};  ///< Radial derivatives c(θ)′/θ
 };
 
 /**
- * Kernel: M(ω) = a I + b W + c W^2 with radial derivatives db,dc for Fréchet.
- * Right variants flip b→-b, db→-db (no recompute of W/WW).
+ * Kernel: M(ω) = a I + b Ω + c Ω² with radial derivatives db,dc for Fréchet.
+ * Right variants flip b→-b, db→-db (no recompute of Ω/Ω²).
  * Keep a pointer to Local: Kernel methods above return a const & to prevent
  * having a pointer to a temporary.
  */
@@ -91,8 +91,8 @@ struct GTSAM_EXPORT Kernel {
   const Local* S;
   double a{0}, b{0}, c{0}, db{0}, dc{0};  // left-specialization form
 
-  Matrix3 left() const;   // a I + b W + c WW
-  Matrix3 right() const;  // a I - b W + c WW
+  Matrix3 left() const;   // a I + b Ω + c Ω²
+  Matrix3 right() const;  // a I - b Ω + c Ω²
 
   Vector3 applyLeft(const Vector3& v, OptionalJacobian<3, 3> Hw = {},
                     OptionalJacobian<3, 3> Hv = {}) const;
