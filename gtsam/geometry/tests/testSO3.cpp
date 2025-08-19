@@ -121,9 +121,16 @@ TEST(SO3, Logmap) {
 
 //******************************************************************************
 TEST(SO3, Expmap) {
-  Vector3 v(0, 0, 0.1);
-  SO3 actual = R1 * SO3::Expmap(v);
-  EXPECT(assert_equal(R2, actual));
+  const Vector3 omega(0, 0, 0.1);
+  EXPECT(assert_equal(R1, SO3::Expmap(omega)));
+}
+
+//******************************************************************************
+TEST(SO3, RodriguesKernel) {
+  const Vector3 omega(0, 0, 0.1);
+  so3::Local local(omega);
+  EXPECT(assert_equal(R1, SO3(local.Rodrigues().left())));
+  EXPECT(assert_equal(R1.inverse(), SO3(local.Rodrigues().right())));
 }
 
 //******************************************************************************

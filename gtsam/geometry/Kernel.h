@@ -21,13 +21,14 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/dllexport.h>
+
 #include <limits>
 
 namespace gtsam {
 namespace so3 {
 
-struct Kernel;     // forward declare
-struct InvJKernel; // forward declare
+struct Kernel;      // forward declare
+struct InvJKernel;  // forward declare
 
 /**
  * Opaque evaluation context at ω: caches Ω, Ω², θ, θ², nearZero/nearPi,
@@ -41,11 +42,11 @@ struct GTSAM_EXPORT Local {
   /// Tolerance for near π (δ² = (π - θ)²)
   static constexpr double kNearPiThresholdSq = 1e-6;
 
-  Vector3 omega;         ///< The rotation vector.
-  double theta2;         ///< The squared norm of the rotation vector (θ²).
-  double theta;          ///< The norm of the rotation vector (θ).
-  Matrix3 W;             ///< The skew-symmetric matrix Ω for the rotation vector.
-  Matrix3 WW;            ///< The square of the skew-symmetric matrix (Ω²).
+  Vector3 omega;  ///< The rotation vector.
+  double theta2;  ///< The squared norm of the rotation vector (θ²).
+  double theta;   ///< The norm of the rotation vector (θ).
+  Matrix3 W;      ///< The skew-symmetric matrix Ω for the rotation vector.
+  Matrix3 WW;     ///< The square of the skew-symmetric matrix (Ω²).
   bool nearZero{false};  ///< Flag indicating if theta is near zero.
   bool nearPi{false};    ///< Flag indicating if theta is near pi.
   double A, B, C;        ///< Ethan's A,B,C coefficients
@@ -56,29 +57,35 @@ struct GTSAM_EXPORT Local {
                  double nearPiThresholdSq = kNearPiThresholdSq);
 
   // Exponential map via Rodrigues formula: I + A(θ) Ω + B(θ) Ω²
-  Matrix3 expmap() const;
+  EIGEN_STRONG_INLINE Matrix3 expmap() const { return I_3x3 + A * W + B * WW; }
 
-  // Jacobian kernel J_[l/r] = I +/0 B Ω + C Ω²  (left/right).
-  Kernel Jacobian() const &;
+  // Rodrigues kernel: R_[l/r](ω) = I + A(θ) Ω + B(θ) Ω² (left).
+  Kernel Rodrigues() const&;
 
-  // Specialized kernel for inverse Jacobian, stable even for |omega| > π
-  InvJKernel InvJacobian() const &;  // I +/- 1/2 Ω + D Ω²
+  // Jacobian kernel J_[l/r](ω) = I +/0 B Ω + C Ω²  (left/right).
+  Kernel Jacobian() const&;
 
-  // Gamma kernel: Γ_[l/r] = 0.5 I ± C Ω + E Ω² (left/right).
-  Kernel Gamma() const &;
+  // Specialized kernel for inverse Jacobian, stable even for |ω| > π
+  InvJKernel InvJacobian() const&;  // I +/- 1/2 Ω + D Ω²
+
+  // Gamma kernel: Γ_[l/r](ω) = 0.5 I ± C Ω + E Ω² (left/right).
+  Kernel Gamma() const&;
 
   // access to (lazily evaluated) coefficients
   double D() const;
   double E() const;
+
+  // access to (lazily evaluated) radial derivatives c'(θ)/θ
+  double dA() const;
   double dB() const;
   double dC() const;
   double dE() const;
 
  protected:
   // Lazy caches stored as NaN-initialized scalars
-  static constexpr double kUninit = std::numeric_limits<double>::quiet_NaN();
-  mutable double D_{kUninit}, E_{kUninit};         ///< D and E lazily computed.
-  mutable double dB_{kUninit}, dC_{kUninit}, dE_{kUninit};  ///< Radial derivatives c(θ)′/θ
+  static constexpr double kNan = std::numeric_limits<double>::quiet_NaN();
+  mutable double D_{kNan}, E_{kNan};  ///< D and E lazily computed.
+  mutable double dA_{kNan}, dB_{kNan}, dC_{kNan}, dE_{kNan};  ///< lazy c(θ)′/θ
 };
 
 /**

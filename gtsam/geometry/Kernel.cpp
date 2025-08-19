@@ -43,10 +43,9 @@ Vector3 Kernel::applyLeft(const Vector3& v, OptionalJacobian<3, 3> Hw,
     const auto wt = w.transpose();
     const auto vt = v.transpose();
     const auto sI = w.dot(v) * I_3x3;
-    *Hw =
-        -b * skewSymmetric(v) +           // d(Ω v)/dω = -[v]×
-        c * (w * vt + sI - 2 * v * wt) +  // d(Ω² v)/dω = ω vᵀ + (ω·v) I - 2 v ωᵀ
-        (db * Wv + dc * WWv) * wt;        // radial derivative terms
+    *Hw = -b * skewSymmetric(v) +           // d(Ω v)/dω = -[v]×
+          c * (w * vt + sI - 2 * v * wt) +  // d(Ω² v)/dω = ωvᵀ + (ω·v)I - 2vωᵀ
+          (db * Wv + dc * WWv) * wt;        // radial derivative terms
   }
   if (Hv) *Hv = left();  // ∂y/∂v = a I + b Ω + c Ω²
   return a * v + b * Wv + c * WWv;
@@ -173,9 +172,6 @@ Local::Local(const Vector3& omega, double nz, double np)
   }
 }
 
-// Exponential map via Rodrigues formula: I + A(θ) Ω + B(θ) Ω²
-Matrix3 Local::expmap() const { return I_3x3 + A * W + B * WW; }
-
 double Local::D() const {
   if (std::isnan(D_)) {
     D_ = !nearZero ? (nearPi ? (k1_Pi2 + (k2_Pi3 - k1_4Pi) * (M_PI - theta))
@@ -191,6 +187,14 @@ double Local::E() const {
                    : (one_24th - theta2 * one_720th);
   }
   return E_;
+}
+
+double Local::dA() const {
+  if (std::isnan(dA_)) {
+    // Identity: dA = A′/θ = C − B (valid for all θ, with our near-zero series)
+    dA_ = C - B;
+  }
+  return dA_;
 }
 
 double Local::dB() const {
@@ -217,20 +221,10 @@ double Local::dE() const {
 }
 
 // --- Kernels ---
-Kernel Local::Jacobian() const& {
-  // J_l/r share same coefficients; right flips b internally
-  return Kernel{this, 1.0, B, C, dB(), dC()};
-}
-
-InvJKernel Local::InvJacobian() const& {
-  // I +/- 1/2 Ω + D Ω²
-  return InvJKernel{this, this->Jacobian()};
-}
-
-Kernel Local::Gamma() const& {
-  // Gamma = 1/2 I + C Ω + E Ω² (left); right flips b internally
-  return Kernel{this, 0.5, C, E(), dC(), dE()};
-}
+Kernel Local::Rodrigues() const& { return Kernel{this, 1.0, A, B, dA(), dB()}; }
+Kernel Local::Jacobian() const& { return Kernel{this, 1.0, B, C, dB(), dC()}; }
+InvJKernel Local::InvJacobian() const& { return InvJKernel{this, Jacobian()}; }
+Kernel Local::Gamma() const& { return Kernel{this, 0.5, C, E(), dC(), dE()}; }
 
 // --- Backward-compatible functors (deprecated shims) ---
 ExpmapFunctor::ExpmapFunctor(const Vector3& omega)
