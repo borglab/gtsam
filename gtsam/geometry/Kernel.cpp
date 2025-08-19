@@ -23,6 +23,32 @@
 namespace gtsam {
 namespace so3 {
 
+// Lightweight 3x3 inverse (adjugate / determinant), avoids Eigen's LU
+// machinery. Assumes M is invertible. Used to keep link-time/code-size small on
+// GCC/Ubuntu.
+static inline Matrix3 inverse3x3(const Matrix3& M) {
+  const double a = M(0, 0), b = M(0, 1), c = M(0, 2);
+  const double d = M(1, 0), e = M(1, 1), f = M(1, 2);
+  const double g = M(2, 0), h = M(2, 1), i = M(2, 2);
+
+  const double A = (e * i - f * h);
+  const double B = -(d * i - f * g);
+  const double C = (d * h - e * g);
+  const double D = -(b * i - c * h);
+  const double E = (a * i - c * g);
+  const double F = -(a * h - b * g);
+  const double G = (b * f - c * e);
+  const double H = -(a * f - c * d);
+  const double I = (a * e - b * d);
+
+  const double det = a * A + b * B + c * C;
+  const double inv_det = 1.0 / det;
+
+  Matrix3 adjT;  // transpose of cofactor matrix = adjugate^T
+  adjT << A, D, G, B, E, H, C, F, I;
+  return inv_det * adjT;
+}
+
 // --- Kernel matrices (out-of-line to keep header tight) ---
 Matrix3 Kernel::left() const {
   // left: a I + b Ω + c Ω²
@@ -76,11 +102,19 @@ Matrix3 Kernel::applyFrechet(const Vector3& v) const {
 // --- InvJKernel matrices (closed form; π-stable via Local::InvJacobian()
 // selection) ---
 Matrix3 InvJKernel::left() const {
-  if (S->theta > M_PI) return J.left().inverse();
+  if (S->theta > M_PI) {
+    // Above π the closed-form coefficients can suffer cancellation; invert
+    // numerically but with a tiny, fixed-cost 3x3 adjugate instead of Eigen's
+    // LU to avoid link-time bloat.
+    return inverse3x3(J.left());
+  }
+  // Closed-form inverse in the {I, Ω, Ω²} basis
   return I_3x3 - 0.5 * S->W + S->D() * S->WW;
 }
 Matrix3 InvJKernel::right() const {
-  if (S->theta > M_PI) return J.right().inverse();
+  if (S->theta > M_PI) {
+    return inverse3x3(J.right());
+  }
   return I_3x3 + 0.5 * S->W + S->D() * S->WW;
 }
 

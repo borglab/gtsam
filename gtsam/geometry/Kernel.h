@@ -36,7 +36,7 @@ struct InvJKernel;  // forward declare
  * Math is based on Ethan Eade's elegant Lie group document, at
  * https://www.ethaneade.org/lie.pdf, and the Kernel idea in doc/Jacobians.md
  */
-struct GTSAM_EXPORT Local {
+struct Local {
   /// Tolerance for near zero (θ²)
   static constexpr double kNearZeroThresholdSq = 1e-6;
   /// Tolerance for near π (δ² = (π - θ)²)
@@ -94,7 +94,7 @@ struct GTSAM_EXPORT Local {
  * Keep a pointer to Local: Kernel methods above return a const & to prevent
  * having a pointer to a temporary.
  */
-struct GTSAM_EXPORT Kernel {
+struct Kernel {
   const Local* S;
   double a{0}, b{0}, c{0}, db{0}, dc{0};  // left-specialization form
 
@@ -114,7 +114,7 @@ struct GTSAM_EXPORT Kernel {
 };
 
 // Stable inverse Jacobian kernel
-struct GTSAM_EXPORT InvJKernel {
+struct InvJKernel {
   const Local* S;
   Kernel J;  // holds the forward kernel
 
