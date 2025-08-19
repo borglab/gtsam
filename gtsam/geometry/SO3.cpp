@@ -114,7 +114,8 @@ GTSAM_EXPORT
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
   so3::Local local(omega);
   if (H) *H = local.Jacobian().right();
-  return SO3(local.expmap());
+  const Matrix M = local.expmap();
+  return SO3(M);
 }
 
 template <>

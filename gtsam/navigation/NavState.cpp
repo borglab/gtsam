@@ -143,7 +143,8 @@ NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi) {
 #ifdef GTSAM_USE_QUATERNIONS
   const Rot3 R = traits<gtsam::Quaternion>::Expmap(w);
 #else
-  const Rot3 R(local.expmap());
+  const Matrix3 M = local.expmap();
+  const Rot3 R(M);
 #endif
 
   // Compute translation and velocity. See Pose3::Expmap
@@ -155,10 +156,10 @@ NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi) {
     const Matrix3 Jr = local.rightJacobian();
     // We are creating a NavState, so we still need to chain H_t_w and H_v_w
     // with R^T, the Jacobian of Navstate::Create with respect to both t and v.
-    const Matrix3 M = R.matrix();
+    const Matrix3 Rt = R.transpose();
     *Hxi << Jr, Z_3x3, Z_3x3,   // Jr here *is* the Jacobian of expmap
-        M.transpose() * H_t_w, Jr, Z_3x3,  //
-        M.transpose() * H_v_w, Z_3x3, Jr;
+        Rt * H_t_w, Jr, Z_3x3,  //
+        Rt * H_v_w, Z_3x3, Jr;
         // In the last two rows, Jr = R^T * J_l, see Barfoot eq. (8.83).
         // J_l is the Jacobian of applyLeftJacobian in the second argument.
   }
