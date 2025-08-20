@@ -36,7 +36,7 @@ struct InvJKernel;  // forward declare
  * Math is based on Ethan Eade's elegant Lie group document, at
  * https://www.ethaneade.org/lie.pdf, and the Kernel idea in doc/Jacobians.md
  */
-struct Local {
+struct GTSAM_EXPORT Local {
   /// Tolerance for near zero (θ²)
   static constexpr double kNearZeroThresholdSq = 1e-6;
   /// Tolerance for near π (δ² = (π - θ)²)
@@ -94,7 +94,7 @@ struct Local {
  * Keep a pointer to Local: Kernel methods above return a const & to prevent
  * having a pointer to a temporary.
  */
-struct Kernel {
+struct GTSAM_EXPORT Kernel {
   const Local* S;
   double a{0}, b{0}, c{0}, db{0}, dc{0};  // left-specialization form
 
@@ -114,7 +114,7 @@ struct Kernel {
 };
 
 // Stable inverse Jacobian kernel
-struct InvJKernel {
+struct GTSAM_EXPORT InvJKernel {
   const Local* S;
   Kernel J;  // holds the forward kernel
 
@@ -128,10 +128,11 @@ struct InvJKernel {
 };
 
 /// y + alpha * x  (functional)
-Kernel axpy(double alpha, const Kernel& X, const Kernel& Y);
+GTSAM_EXPORT Kernel axpy(double alpha, const Kernel& X, const Kernel& Y);
 
 // Blend K = α X + (1-α) Y with radial derivative (·)'/θ via dalpha
-Kernel blend(double alpha, double dalpha, const Kernel& X, const Kernel& Y);
+GTSAM_EXPORT Kernel blend(double alpha, double dalpha, const Kernel& X,
+                          const Kernel& Y);
 
 /// @deprecated: use so3::Local
 struct GTSAM_EXPORT ExpmapFunctor : public Local {
