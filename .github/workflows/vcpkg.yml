@@ -1,6 +1,9 @@
 name: vcpkg
 on:
   pull_request:
+  push:
+    # Runs on pushes targeting the develop branch
+    branches: [develop]
 
 # Every time you make a push to your PR, it cancel immediately the previous checks,
 # and start a new one. The other runner will be available more quickly to your PR.
