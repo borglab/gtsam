@@ -25,6 +25,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
+#include <gtsam/navigation/GalileanImuFactor.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ScenarioRunner.h>
@@ -50,9 +51,13 @@ static std::shared_ptr<PreintegratedCombinedMeasurements::Params> Params(
 }  // namespace combined
 
 /* ************************************************************************* */
-TEST_PIM(CombinedImuFactor, PreintegratedMeasurements ) {
+TEST_PIM(CombinedImuFactor, PreintegratedMeasurements) {
   // Linearization point
-  Bias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); ///< Current estimate of acceleration and angular rate biases
+  Bias bias(
+      Vector3(0, 0, 0),
+      Vector3(
+          0, 0,
+          0));  ///< Current estimate of acceleration and angular rate biases
 
   // Measurements
   Vector3 measuredAcc(0.1, 0.0, 0.0);
@@ -76,19 +81,18 @@ TEST_PIM(CombinedImuFactor, PreintegratedMeasurements ) {
   DOUBLES_EQUAL(expected1.deltaTij(), actual1.deltaTij(), tol);
 }
 
-
 /* ************************************************************************* */
-TEST_PIM(CombinedImuFactor, ErrorWithBiases ) {
-  Bias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
-  Bias bias2(Vector3(0.2, 0.2, 0), Vector3(1, 0, 0.3)); // Biases (acc, rot)
+TEST_PIM(CombinedImuFactor, ErrorWithBiases) {
+  Bias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3));     // Biases (acc, rot)
+  Bias bias2(Vector3(0.2, 0.2, 0), Vector3(1, 0, 0.3));  // Biases (acc, rot)
   Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0)), Point3(5.0, 1.0, -50.0));
   Vector3 v1(0.5, 0.0, 0.0);
   Pose3 x2(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0 + M_PI / 10.0)),
-      Point3(5.5, 1.0, -50.0));
+           Point3(5.5, 1.0, -50.0));
   Vector3 v2(0.5, 0.0, 0.0);
 
   auto p = combined::Params();
-  p->omegaCoriolis = Vector3(0,0.1,0.1);
+  p->omegaCoriolis = Vector3(0, 0.1, 0.1);
   PIM pim(p, Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)));
 
   // Measurements
@@ -101,29 +105,30 @@ TEST_PIM(CombinedImuFactor, ErrorWithBiases ) {
 
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
-  CombinedPIM combined_pim(p, Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)));
+  CombinedPIM combined_pim(
+      p, Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)));
 
   combined_pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
   ImuFactorT<PIM> imuFactor(X(1), V(1), X(2), V(2), B(1), pim);
 
-  CombinedImuFactorT<CombinedPIM> combinedFactor(X(1), V(1), X(2), V(2), B(1), B(2),
-                                   combined_pim);
+  CombinedImuFactorT<CombinedPIM> combinedFactor(X(1), V(1), X(2), V(2), B(1),
+                                                 B(2), combined_pim);
 
   Vector errorExpected = imuFactor.evaluateError(x1, v1, x2, v2, bias);
-  Vector errorActual = combinedFactor.evaluateError(x1, v1, x2, v2, bias,
-      bias2);
+  Vector errorActual =
+      combinedFactor.evaluateError(x1, v1, x2, v2, bias, bias2);
   EXPECT(assert_equal(errorExpected, errorActual.head(9), tol));
 
   // Expected Jacobians
   Matrix H1e, H2e, H3e, H4e, H5e;
-  (void) imuFactor.evaluateError(x1, v1, x2, v2, bias, H1e, H2e, H3e, H4e, H5e);
+  (void)imuFactor.evaluateError(x1, v1, x2, v2, bias, H1e, H2e, H3e, H4e, H5e);
 
   // Actual Jacobians
   Matrix H1a, H2a, H3a, H4a, H5a, H6a;
-  (void) combinedFactor.evaluateError(x1, v1, x2, v2, bias, bias2, H1a, H2a,
-      H3a, H4a, H5a, H6a);
+  (void)combinedFactor.evaluateError(x1, v1, x2, v2, bias, bias2, H1a, H2a, H3a,
+                                     H4a, H5a, H6a);
 
   EXPECT(assert_equal(H1e, H1a.topRows(9)));
   EXPECT(assert_equal(H2e, H2a.topRows(9)));
@@ -148,9 +153,11 @@ TEST(CombinedImuFactor, FirstOrderPreIntegratedMeasurements) {
   PreintegratedCombinedMeasurementsT<TangentPreintegration> pim(p);
   testing::integrateMeasurements(measurements, &pim);
 
-  EXPECT(assert_equal(numericalDerivative21<Vector9, Vector3, Vector3>(preintegrated, Z_3x1, Z_3x1),
+  EXPECT(assert_equal(numericalDerivative21<Vector9, Vector3, Vector3>(
+                          preintegrated, Z_3x1, Z_3x1),
                       pim.preintegrated_H_biasAcc()));
-  EXPECT(assert_equal(numericalDerivative22<Vector9, Vector3, Vector3>(preintegrated, Z_3x1, Z_3x1),
+  EXPECT(assert_equal(numericalDerivative22<Vector9, Vector3, Vector3>(
+                          preintegrated, Z_3x1, Z_3x1),
                       pim.preintegrated_H_biasOmega(), 1e-3));
 }
 
@@ -173,7 +180,8 @@ TEST_PIM(CombinedImuFactor, PredictPositionAndVelocity) {
   // Create factor
   const noiseModel::Gaussian::shared_ptr combinedmodel =
       noiseModel::Gaussian::Covariance(pim.preintMeasCov());
-  const CombinedImuFactorT<CombinedPIM> Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), pim);
+  const CombinedImuFactorT<CombinedPIM> Combinedfactor(X(1), V(1), X(2), V(2),
+                                                       B(1), B(2), pim);
 
   // Predict
   const NavState actual = pim.predict(NavState(), bias);
@@ -185,16 +193,17 @@ TEST_PIM(CombinedImuFactor, PredictPositionAndVelocity) {
 
 /* ************************************************************************* */
 TEST_PIM(CombinedImuFactor, PredictRotation) {
-  const Bias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
+  const Bias bias(Vector3(0, 0, 0), Vector3(0, 0, 0));  // Biases (acc, rot)
   auto p = combined::Params();
   CombinedPIM pim(p, bias);
-  const Vector3 measuredAcc = - kGravityAlongNavZDown;
+  const Vector3 measuredAcc = -kGravityAlongNavZDown;
   const Vector3 measuredOmega(0, 0, M_PI / 10.0);
   const double deltaT = 0.01;
   const double tol = 1e-4;
   for (int i = 0; i < 100; ++i)
     pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-  const CombinedImuFactorT<CombinedPIM> Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), pim);
+  const CombinedImuFactorT<CombinedPIM> Combinedfactor(X(1), V(1), X(2), V(2),
+                                                       B(1), B(2), pim);
 
   // Predict
   const Pose3 x(Rot3::Ypr(0, 0, 0), Point3(0, 0, 0)), x2;
@@ -226,20 +235,20 @@ TEST_PIM(CombinedImuFactor, CheckCovariance) {
   actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   Eigen::Matrix<double, 15, 15> expected;
-  expected << 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,          //
-      0, 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                  //
-      0, 0, 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                  //
-      0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0, 0, 0,  //
-      0, 0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0, 0,  //
-      0, 0, 0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0,  //
-      0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0, 0, 0,     //
-      0, 0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0, 0,     //
-      0, 0, 0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0,     //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0, 0, 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0, 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0,                  //
+  expected << 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  //
+      0, 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,          //
+      0, 0, 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,          //
+      0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0, 0, 0,       //
+      0, 0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0, 0,       //
+      0, 0, 0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0,       //
+      0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0, 0, 0,         //
+      0, 0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0, 0,         //
+      0, 0, 0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0,         //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0, 0, 0,                   //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0, 0,                   //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0,                   //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0,                   //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0,                   //
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.;
 
   // regression
@@ -282,8 +291,8 @@ TEST_PIM(CombinedImuFactor, SameCovariance) {
   cpim.integrateMeasurement(accMeas, omegaMeas, deltaT);
 
   // Assert if the noise covariance
-  EXPECT(assert_equal(pim.preintMeasCov(),
-                      cpim.preintMeasCov().block(0, 0, 9, 9)));
+  EXPECT(assert_equal<Matrix9>(
+      pim.preintMeasCov(), Matrix9(cpim.preintMeasCov().block(0, 0, 9, 9))));
 }
 
 /* ************************************************************************* */

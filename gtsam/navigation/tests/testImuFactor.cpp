@@ -20,16 +20,17 @@
 
 // #define ENABLE_TIMING // uncomment for timing results
 
-#include <gtsam/navigation/ImuFactor.h>
-#include <gtsam/navigation/ScenarioRunner.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/linear/Sampler.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/linear/Sampler.h>
+#include <gtsam/navigation/GalileanImuFactor.h>
+#include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/ScenarioRunner.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/factorTesting.h>
 
-#include <CppUnitLite/TestHarness.h>
 #include <list>
 
 #include "imuFactorTesting.h"
