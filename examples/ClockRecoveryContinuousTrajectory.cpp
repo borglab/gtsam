@@ -129,9 +129,9 @@ void simulate_run()
 
   // we'll build a bunch of trajectory up front, this can be done incrementally the same way
   // just make sure that the trajectory is longer than your new timestamp + the kernel length before generating expressions.
-  double run_length = 10.0; //seconds
+  double max_timestamp = 10.0; //seconds
   // add some control points for poses
-  for(int i=0;i< ceil(run_length * trajectory_sample_rate) + 5; i++)
+  for(int i=0; i<ceil(max_timestamp * trajectory_sample_rate) + trajectory_model.kernel.getLength(); i++)
   {
     Key pose_key = Key('p', i);
     trajectory_model.add_control_point(Pose3_(pose_key));
@@ -139,14 +139,14 @@ void simulate_run()
   }
 
   // add control points for clock drift
-  for(int i=0;i< ceil(run_length * clock_drift_sample_rate) + 3; i++)
+  for(int i=0; i<ceil(max_timestamp * clock_drift_sample_rate) + accel_clock_model.kernel.getLength(); i++)
   {
     Key accel_clock_drift_key = Key('a', i);
     Key gyro_clock_drift_key = Key('g', i);
     initial_values.insert<double>(accel_drift_key, 0.0);
     initial_values.insert<double>(gyro_clock_drift_key, 0.0);
-    accel_clock_model.add_control_point(Pose3_(accel_clock_drift_key));
-    gyro_clock_model.add_control_point(Pose3_(gyro_clock_drift_key));
+    accel_clock_model.add_control_point(Double_(accel_clock_drift_key));
+    gyro_clock_model.add_control_point(Double_(gyro_clock_drift_key));
   }
 
 
@@ -161,7 +161,7 @@ void simulate_run()
   Double_ gyro_clock_offset = gyro_clock_model.sampleTrajectory(Double_(angular_rate.timestamp));
   Double_ accel_clock_offset = accel_clock_model.sampleTrajectory(Double_(acceleration.timestamp));
 
-  // scale the timestamps from seconds into units of control_points and apply clock offsets
+  // apply clock offsets
   Double_ camera_time = Double_(shutter_event.timestamp);
   Double_ gyro_time = Double_(angular_rate.timestamp) - gyro_clock_offset;
   Double_ accel_time = Double_(acceleration.timestamp) - accel_clock_offset;

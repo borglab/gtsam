@@ -38,9 +38,9 @@ using an Irwin Hall probability density function as the impulse,
   replicates cardinal splines.
 
 
-There is possibly a more numerically way of doing this where reference point
-  is chosen as close to the control point as possible, and the logspace
-  accumulation is performed both ways out from the reference point.
+There is possibly a more numerically accurate way of doing this where the
+  reference point is chosen as close to the control point as possible, and the
+  logspace accumulation is performed both ways out from the reference point.
   The CDF would need to be evaluated and split at the reference point
 
 */

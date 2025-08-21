@@ -361,7 +361,7 @@ TEST( TrajectoryModel , NthDerivativeDensityPose3 ) {
     auto sample_eps = model.sampleTrajectoryDerivative(t_eps, 0, -1, n);
     // construct an Expression that captures the (N+1)th derivative of the trajectory
     auto sample_d = model.sampleTrajectoryDerivative(t_ref,0,-1, n+1);
-    for(double sample_time = 0; sample_time<7; sample_time+=0.1)
+    for(double sample_time = 0; sample_time<(7.0/density); sample_time+=0.1)
     {
       v.update<double>(t_ref_key, sample_time);
       v.update<double>(t_eps_key, sample_time + epsilon);
