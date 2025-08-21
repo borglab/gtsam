@@ -114,6 +114,21 @@ void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
 }
 
 //------------------------------------------------------------------------------
+void PreintegrationBase::integrateMeasurements(const Matrix& measuredAccs,
+                                               const Matrix& measuredOmegas,
+                                               const Matrix& dts) {
+  assert(measuredAccs.rows() == 3 && measuredOmegas.rows() == 3 &&
+         dts.rows() == 1);
+  assert(dts.cols() >= 1);
+  assert(measuredAccs.cols() == dts.cols());
+  assert(measuredOmegas.cols() == dts.cols());
+  size_t n = static_cast<size_t>(dts.cols());
+  for (size_t j = 0; j < n; j++) {
+    integrateMeasurement(measuredAccs.col(j), measuredOmegas.col(j), dts(0, j));
+  }
+}
+
+//------------------------------------------------------------------------------
 NavState PreintegrationBase::predict(const NavState& state_i,
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 9> H1,
     OptionalJacobian<9, 6> H2) const {

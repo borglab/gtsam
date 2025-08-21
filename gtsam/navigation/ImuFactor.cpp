@@ -91,22 +91,6 @@ void PreintegratedImuMeasurementsT<PreintegrationType>::integrateMeasurement(
 }
 
 //------------------------------------------------------------------------------
-template <class PreintegrationType>
-void PreintegratedImuMeasurementsT<PreintegrationType>::integrateMeasurements(
-    const Matrix& measuredAccs, const Matrix& measuredOmegas,
-    const Matrix& dts) {
-  assert(
-      measuredAccs.rows() == 3 && measuredOmegas.rows() == 3 && dts.rows() == 1);
-  assert(dts.cols() >= 1);
-  assert(measuredAccs.cols() == dts.cols());
-  assert(measuredOmegas.cols() == dts.cols());
-  size_t n = static_cast<size_t>(dts.cols());
-  for (size_t j = 0; j < n; j++) {
-    integrateMeasurement(measuredAccs.col(j), measuredOmegas.col(j), dts(0, j));
-  }
-}
-
-//------------------------------------------------------------------------------
 // ImuFactorT methods
 //------------------------------------------------------------------------------
 template <class PIM>

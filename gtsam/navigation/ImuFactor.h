@@ -134,10 +134,6 @@ public:
   void integrateMeasurement(const Vector3& measuredAcc,
       const Vector3& measuredOmega, const double dt) override;
 
-  /// Add multiple measurements, in matrix columns
-  void integrateMeasurements(const Matrix& measuredAccs, const Matrix& measuredOmegas,
-                             const Matrix& dts);
-
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }
 
