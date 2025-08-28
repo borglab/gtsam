@@ -63,6 +63,12 @@ jobs:
             version: "14"
             flag: tbb
 
+          - name: ubuntu-clang-geographiclib
+            os: ubuntu-22.04
+            compiler: clang
+            version: "14"
+            flag: geographiclib
+
           - name: ubuntu-clang-cayleymap
             os: ubuntu-22.04
             compiler: clang
@@ -131,6 +137,12 @@ jobs:
         run: |
           echo "GTSAM_WITH_TBB=ON" >> $GITHUB_ENV
           echo "GTSAM Uses TBB"
+
+      - name: Set GTSAM_INSTALL_GEOGRAPHICLIB Flag
+        if: matrix.flag == 'geographiclib'
+        run: |
+          echo "GTSAM_INSTALL_GEOGRAPHICLIB=ON" >> $GITHUB_ENV
+          echo "GTSAM Uses GeographicLib"
 
       - name: Use Cayley Transform for Rot3
         if: matrix.flag == 'cayley'
