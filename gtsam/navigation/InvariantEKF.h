@@ -108,6 +108,80 @@ namespace gtsam {
       predict(U, Q); // Call the group composition predict
     }
 
+        /**
+     * Predict step via tangent control vector and manual imu integration on NavState (SE_2(3)) group.
+     * Gravity vector added to allow overloaded function and account for example code 
+     * IEKF_NavstateExample.cpp that does not have gravity offset
+     *
+     * Motion propagation equations follow the formulation from:
+     * Potokar et al., "Invariant Extended Kalman Filtering for Underwater Navigation"
+     * Link to paper: https://ieeexplore.ieee.org/document/9444664
+     * Source code can be found here: https://bitbucket.org/frostlab/underwateriekf/src/main/src/system.py
+     * 
+     *   Motion Propagation:
+     *   R_new = R * Expmap(omega*dt)
+     *   v_new = v + (R * accel + g) * dt   
+     *   p_new = p + v * dt + ((R * accel + g) * dt^2) / 2
+     *   X_ = NavState(Pose3(R_new, p_new), v_new);
+     * 
+     *   Covariance Update:
+     *   A = motion linearization which is dependent on control u input
+     *   P_ = exp(A) * P_ * exp(A).transpose() + exp(A) * Q * exp(A).transpose() * dt
+     *   
+     * @param u Tangent space control vector.
+     * @param dt Time interval.
+     * @param Q Process noise covariance matrix.
+     * @param g Gravity vector
+     * 
+     * @authors Derek Benham
+     */
+    
+    void predict(const TangentVector&u, double dt, const Covariance& Q, const Vector3 g) {
+      const Rot3 R = this->X_.pose().rotation();
+      const Vector3 v = this->X_.velocity();
+      const Vector3 p = this->X_.pose().translation();
+      
+      Vector3 omega = u.template segment<3>(0);
+      Vector3 accel = u.template segment<3>(6);
+      
+      // Motion propagation
+      Rot3 dR = traits<Rot3>::Expmap(omega * dt);
+      Rot3 R_new = R * dR; // R_new = R * \delta R
+      Vector3 v_new = v + (R * accel + g) * dt;
+      Vector3 p_new = p + v * dt + ((R * accel + g) * dt * dt) / 2;
+      this->X_ = gtsam::NavState(Pose3(R_new, p_new), v_new);
+      
+      // Updating Covariance
+      const Matrix3 zero = Matrix3::Zero();
+      const Matrix3 I = Matrix3::Identity();
+
+      Matrix3 w_cross;
+      w_cross <<     0, -omega(2),  omega(1),
+              omega(2),         0, -omega(0),
+             -omega(1),  omega(0),         0;
+
+      Matrix3 a_cross;
+      a_cross <<     0, -accel(2),  accel(1),
+              accel(2),         0, -accel(0),
+             -accel(1),  accel(0),         0;
+
+      // Left error A matrix
+      Matrix A(9, 9);
+      A << -w_cross,     zero,  zero,
+           -a_cross, -w_cross,  zero,
+               zero,        I,  -w_cross;
+
+      // Compute expA = exp(A * dt), where A is the system's linearized dynamics matrix
+      Matrix expA = (A * dt).exp();
+
+      // Update the covariance with process noise
+      // Pₖ₊₁ = expA * Pₖ * expAᵀ + expA * Q * expAᵀ * dt
+      Matrix P_predict = expA * this->P_ * expA.transpose();
+      Matrix Q_predict = expA * Q * expA.transpose() * dt;
+      this->P_ = P_predict + Q_predict;
+    }
+
+
   }; // InvariantEKF
 
 } // namespace gtsam

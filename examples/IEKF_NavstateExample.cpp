@@ -16,6 +16,8 @@
  * @authors Scott Baker, Matt Kielo, Frank Dellaert
  */
 
+#define GRAVITY_VECTOR gtsam::Vector3(0, 0, 0)
+
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/OptionalJacobian.h>
@@ -77,7 +79,7 @@ int main() {
     << "\n\n";
 
   // --- first predict/update ---
-  ekf.predict(dynamics(imu1), dt, Q);
+  ekf.predict(dynamics(imu1), dt, Q, GRAVITY_VECTOR);
   cout << "--- After predict 1 ---\nX: " << ekf.state()
     << "\nP: " << ekf.covariance() << "\n\n";
   ekf.update(h_gps, z1, R);
@@ -85,7 +87,7 @@ int main() {
     << "\nP: " << ekf.covariance() << "\n\n";
 
   // --- second predict/update ---
-  ekf.predict(dynamics(imu2), dt, Q);
+  ekf.predict(dynamics(imu2), dt, Q, GRAVITY_VECTOR);
   cout << "--- After predict 2 ---\nX: " << ekf.state()
     << "\nP: " << ekf.covariance() << "\n\n";
   ekf.update(h_gps, z2, R);
