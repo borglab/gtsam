@@ -34,20 +34,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template <typename KEYS>
-  JacobianFactor::JacobianFactor(const KEYS& keys,
-                                 const VerticalBlockMatrix& augmentedMatrix,
+  template <
+      typename KEYS, typename MATRIX,
+      std::enable_if_t<
+          std::is_same<std::decay_t<MATRIX>, VerticalBlockMatrix>::value, bool>>
+  JacobianFactor::JacobianFactor(KEYS&& keys, MATRIX&& augmentedMatrix,
                                  const SharedDiagonal& model)
-      : Base(keys), Ab_(augmentedMatrix), model_(model) {
-    checkAb(model, augmentedMatrix);
-  }
-
-  /* ************************************************************************* */
-  template <typename KEYS>
-  JacobianFactor::JacobianFactor(const KEYS& keys,
-                                 VerticalBlockMatrix&& augmentedMatrix,
-                                 const SharedDiagonal& model)
-      : Base(keys), Ab_(std::move(augmentedMatrix)), model_(model) {
+      : Base(std::forward<KEYS>(keys)),
+        Ab_(std::forward<MATRIX>(augmentedMatrix)),
+        model_(model) {
     checkAb(model, Ab_);
   }
 

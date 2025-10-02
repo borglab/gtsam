@@ -40,7 +40,7 @@ TEST(PriorFactor, ConstructorDynamicSizeVector) {
 
 Vector callEvaluateError(const PriorFactor<ConstantBias>& factor,
                          const ConstantBias& bias) {
-  return factor.evaluateError(bias);
+  return factor.evaluateError(bias, nullptr);
 }
 
 // Test for imuBias::ConstantBias

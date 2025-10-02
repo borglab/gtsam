@@ -322,7 +322,7 @@ namespace gtsam {
     for (auto&& key : parents()) newKeys.push_back(key);
 
     // Hopefully second newAb copy below is optimized out...
-    return std::make_shared<JacobianFactor>(newKeys, newAb, model_);
+    return std::make_shared<JacobianFactor>(newKeys, std::move(newAb), model_);
   }
 
   /* **************************************************************************/

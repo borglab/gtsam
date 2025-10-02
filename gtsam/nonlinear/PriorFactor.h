@@ -15,7 +15,7 @@
  **/
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/FastNoiseModelFactorN.h>
 #include <gtsam/base/Testable.h>
 
 #include <string>
@@ -27,18 +27,18 @@ namespace gtsam {
    * @ingroup nonlinear
    */
   template<class VALUE>
-  class PriorFactor: public NoiseModelFactorN<VALUE> {
+  class PriorFactor: public FastNoiseModelFactorN<VALUE> {
 
   public:
     typedef VALUE T;
 
     // Provide access to the Matrix& version of evaluateError:
-    using NoiseModelFactor1<VALUE>::evaluateError;
+    using FastNoiseModelFactorN<VALUE>::evaluateError;
 
 
   private:
 
-    typedef NoiseModelFactorN<VALUE> Base;
+    typedef FastNoiseModelFactorN<VALUE> Base;
 
     VALUE prior_; /** The measurement */
 
@@ -95,7 +95,7 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const T& x, OptionalMatrixType H) const override {
+    Vector evaluateError(const T& x, Eigen::Ref<Matrix>* H) const override {
       if (H) (*H) = Matrix::Identity(traits<T>::GetDimension(x),traits<T>::GetDimension(x));
       // manifold equivalent of z-x -> Local(x,z)
       return -traits<T>::Local(x, prior_);
@@ -110,7 +110,7 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
+      // NoiseModelFactor1 instead of FastNoiseModelFactorN for backward compatibility
       ar & boost::serialization::make_nvp("NoiseModelFactor1",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);

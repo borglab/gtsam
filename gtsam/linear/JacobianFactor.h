@@ -145,17 +145,13 @@ namespace gtsam {
     template<typename TERMS>
     JacobianFactor(const TERMS& terms, const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
-    /** Constructor with arbitrary number keys, and where the augmented matrix
-     * is given all together instead of in block terms.
-     */
-    template <typename KEYS>
-    JacobianFactor(const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix,
-                   const SharedDiagonal& sigmas = SharedDiagonal());
-
     /** Construct with an rvalue VerticalBlockMatrix, to allow std::move. */
-    template <typename KEYS>
-    JacobianFactor(const KEYS& keys, VerticalBlockMatrix&& augmentedMatrix,
-                   const SharedDiagonal& model);
+    template <typename KEYS, typename MATRIX,
+              std::enable_if_t<std::is_same<std::decay_t<MATRIX>,
+                                            VerticalBlockMatrix>::value,
+                               bool> = true>
+    JacobianFactor(KEYS&& keys, MATRIX&& augmentedMatrix,
+                   const SharedDiagonal& model = SharedDiagonal());
 
     /**
      * Build a dense joint factor from all the factors in a factor graph.  If a VariableSlots

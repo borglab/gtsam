@@ -120,7 +120,27 @@ public:
                       "Expected: ") +
           "(" + std::to_string(Rows) + ", " + std::to_string(Cols) + ")");
     }
-  } 
+  }
+
+  /**
+   * @brief Constructor from an Eigen::Ref *value*. Will not usurp if dimension is wrong
+   * @note This is important so we don't overwrite someone else's memory!
+   */
+  template<class MATRIX>
+  OptionalJacobian(Eigen::Ref<MATRIX>* dynamic_optional) :
+      map_(nullptr) {
+    if (!dynamic_optional) return; // stay empty
+    Eigen::Ref<MATRIX>& dynamic_ref = *dynamic_optional;
+    if (dynamic_ref.rows() == Rows && dynamic_ref.cols() == Cols && !dynamic_ref.IsRowMajor) {
+      usurp(dynamic_ref.data());
+    } else {
+      throw std::invalid_argument(
+          std::string("OptionalJacobian called with wrong dimensions or "
+                      "storage order.\n"
+                      "Expected: ") +
+          "(" + std::to_string(Rows) + ", " + std::to_string(Cols) + ")");
+    }
+  }
 
   /// Constructor with std::nullopt just makes empty
   OptionalJacobian(std::nullopt_t /*none*/) :

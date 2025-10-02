@@ -123,12 +123,12 @@ namespace gtsam {
       }
 
       /** in-place whiten, override if can be done more efficiently */
-      virtual void whitenInPlace(Eigen::Block<Vector>& v) const {
-        v = whiten(v);
+      virtual void whitenInPlace(Eigen::Block<Matrix> v) const {
+        v = Whiten(v);
       }
 
       /** in-place unwhiten, override if can be done more efficiently */
-      virtual void unwhitenInPlace(Eigen::Block<Vector>& v) const {
+      virtual void unwhitenInPlace(Eigen::Block<Matrix> v) const {
         v = unwhiten(v);
       }
 
@@ -644,8 +644,8 @@ namespace gtsam {
       void WhitenInPlace(Eigen::Block<Matrix> /*H*/) const override {}
       void whitenInPlace(Vector& /*v*/) const override {}
       void unwhitenInPlace(Vector& /*v*/) const override {}
-      void whitenInPlace(Eigen::Block<Vector>& /*v*/) const override {}
-      void unwhitenInPlace(Eigen::Block<Vector>& /*v*/) const override {}
+      void whitenInPlace(Eigen::Block<Matrix> /*v*/) const override {}
+      void unwhitenInPlace(Eigen::Block<Matrix> /*v*/) const override {}
 
     private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
