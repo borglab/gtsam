@@ -135,27 +135,6 @@ SO4 SO4::Expmap(const Vector6& xi, ChartJacobian H) {
 }
 
 //******************************************************************************
-template <>
-GTSAM_EXPORT
-SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const {
-  const Matrix& Q = matrix_;
-  if (H) {
-    H->setZero();
-    H->block<4, 1>(0, 2) = -Q.col(3);
-    H->block<4, 1>(0, 4) = -Q.col(2);
-    H->block<4, 1>(0, 5) = Q.col(1);
-    H->block<4, 1>(4, 1) = Q.col(3);
-    H->block<4, 1>(4, 3) = Q.col(2);
-    H->block<4, 1>(4, 5) = -Q.col(0);
-    H->block<4, 1>(8, 0) = -Q.col(3);
-    H->block<4, 1>(8, 3) = -Q.col(1);
-    H->block<4, 1>(8, 4) = Q.col(0);
-    H->block<4, 1>(12, 0) = Q.col(2);
-    H->block<4, 1>(12, 1) = -Q.col(1);
-    H->block<4, 1>(12, 2) = Q.col(0);
-  }
-  return Eigen::Map<const SO4::VectorN2>(Q.data());
-}
 
 ///******************************************************************************
 template <>

@@ -96,7 +96,7 @@ GTSAM_EXPORT
 Vector3 SO3::ChartAtOrigin::Local(const SO3& R, ChartJacobian H);
 
 template <>
-GTSAM_EXPORT
+GTSAM_EXTERN_EXPORT
 Vector9 SO3::vec(OptionalJacobian<9, 3> H) const;
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION

@@ -261,7 +261,6 @@ Matrix3 SO3::Hat(const Vector3& xi) {
 
 //******************************************************************************
 template <>
-GTSAM_EXPORT
 Vector3 SO3::Vee(const Matrix3& X) {
   Vector3 xi;
   xi(0) = -X(1, 2);
