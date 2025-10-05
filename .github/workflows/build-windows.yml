@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    name: ${{ matrix.name }} ${{ matrix.build_type }}
+    name: ${{ matrix.name }} ${{ matrix.build_type }} ${{ (matrix.is_shared == 'ON') && 'Shared' || 'Static' }}
     runs-on: ${{ matrix.os }}
 
     env:
@@ -27,7 +27,7 @@ jobs:
       BOOST_EXE: boost_1_72_0-msvc-14.2
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
@@ -39,6 +39,11 @@ jobs:
             Debug,
             Release
           ]
+
+        is_shared: [
+          ON,
+          OFF
+        ]
 
         build_unstable: [ON]
         include:
@@ -102,6 +107,7 @@ jobs:
           cmake -E remove_directory build
           if [ "${{ matrix.build_type }}" = "Release" ]; then
             cmake -B build \
+                  -DBUILD_SHARED_LIBS=${{ matrix.is_shared }} \
                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
                   -DGTSAM_USE_BOOST_FEATURES=ON \
@@ -111,6 +117,7 @@ jobs:
                   -DBOOST_LIBRARYDIR="${BOOST_ROOT_UNIX}/lib"
           else
             cmake -B build \
+                  -DBUILD_SHARED_LIBS=${{ matrix.is_shared }} \
                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
                   -DGTSAM_USE_BOOST_FEATURES=OFF \
