@@ -21,6 +21,7 @@
 #include <gtsam/sfm/ShonanAveraging.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/FrobeniusFactor.h>
+#include <Eigen/Eigenvalues>
 
 #include <algorithm>
 #include <iostream>

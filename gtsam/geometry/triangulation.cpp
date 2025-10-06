@@ -21,6 +21,7 @@
 
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <Eigen/QR>
 
 namespace gtsam {
 

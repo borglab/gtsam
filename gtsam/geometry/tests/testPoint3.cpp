@@ -15,6 +15,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <Eigen/Geometry>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Point3.h>

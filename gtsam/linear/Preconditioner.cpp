@@ -12,6 +12,8 @@
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/NoiseModel.h>
+
+#include <Eigen/Cholesky>
 #include <memory>
 #include <iostream>
 #include <vector>

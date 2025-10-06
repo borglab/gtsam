@@ -21,7 +21,8 @@
 #include <cstddef>
 #include <functional>
 #include <gtsam/config.h>      // Configuration from CMake
-#include <Eigen/Dense>
+#include <Eigen/Core>
+#include <Eigen/LU>
 #include <optional>
 #include <stdexcept>
 #include <string>

@@ -24,6 +24,7 @@
 #include <sstream>
 #include <optional>
 #include <functional>
+#include <Eigen/QR>
 
 using namespace std;
 using namespace gtsam;

@@ -29,7 +29,6 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
 
-#include <Eigen/Dense>
 #include <stdexcept>
 #include <string>
 #include <type_traits>

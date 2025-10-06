@@ -27,7 +27,7 @@
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/base/cholesky.h>
+#include <Eigen/Cholesky>
 
 using namespace std;
 using namespace gtsam;

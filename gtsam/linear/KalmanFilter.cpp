@@ -27,6 +27,8 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/JacobianFactor.h>
 
+#include <Eigen/Cholesky>
+
 #ifndef NDEBUG
 #include <cassert>
 #endif

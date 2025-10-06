@@ -16,6 +16,7 @@
  * @date    Sep 18, 2010
  */
 
+#include <Eigen/Cholesky>
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 #include <gtsam/base/cholesky.h>

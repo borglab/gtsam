@@ -23,7 +23,7 @@
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Matrix.h>
-
+#include <Eigen/Cholesky>
 #include <CppUnitLite/TestHarness.h>
 
 #include <iostream>

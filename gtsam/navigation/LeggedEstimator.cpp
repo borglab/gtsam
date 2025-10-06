@@ -25,6 +25,7 @@
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 
+#include <Eigen/Eigenvalues>
 #include <algorithm>
 #include <map>
 #include <set>
