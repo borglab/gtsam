@@ -575,9 +575,6 @@ namespace gtsam {
        * An isotropic noise model created by specifying a precision
        */
       static shared_ptr Precision(size_t dim, double precision, bool smart = true)  {
-        if (0 == precision) {
-          return nullptr;
-        }
         return Variance(dim, 1.0/precision, smart);
       }
 
