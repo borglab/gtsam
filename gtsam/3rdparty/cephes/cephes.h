@@ -21,7 +21,7 @@ CEPHES_EXTERN_EXPORT double lbeta(double a, double b);
 
 CEPHES_EXTERN_EXPORT double btdtr(double a, double b, double x);
 
-CEPHES_EXTERN_EXPORT double cbrt(double x);
+// CEPHES_EXTERN_EXPORT double cbrt(double x);
 CEPHES_EXTERN_EXPORT double chbevl(double x, double array[], int n);
 CEPHES_EXTERN_EXPORT double chdtrc(double df, double x);
 CEPHES_EXTERN_EXPORT double chdtr(double df, double x);
@@ -36,7 +36,7 @@ CEPHES_EXTERN_EXPORT int ellpj(double u, double m, double *sn, double *cn,
                                double *dn, double *ph);
 CEPHES_EXTERN_EXPORT double ellpk(double x);
 CEPHES_EXTERN_EXPORT double exp10(double x);
-CEPHES_EXTERN_EXPORT double exp2(double x);
+// CEPHES_EXTERN_EXPORT double exp2(double x);
 
 CEPHES_EXTERN_EXPORT double expn(int n, double x);
 
@@ -73,12 +73,12 @@ CEPHES_EXTERN_EXPORT double incbet(double aa, double bb, double xx);
 CEPHES_EXTERN_EXPORT double incbi(double aa, double bb, double yy0);
 
 CEPHES_EXTERN_EXPORT double iv(double v, double x);
-CEPHES_EXTERN_EXPORT double j0(double x);
-CEPHES_EXTERN_EXPORT double y0(double x);
-CEPHES_EXTERN_EXPORT double j1(double x);
-CEPHES_EXTERN_EXPORT double y1(double x);
+// CEPHES_EXTERN_EXPORT double j0(double x);
+// CEPHES_EXTERN_EXPORT double y0(double x);
+// CEPHES_EXTERN_EXPORT double j1(double x);
+// CEPHES_EXTERN_EXPORT double y1(double x);
 
-CEPHES_EXTERN_EXPORT double jn(int n, double x);
+// CEPHES_EXTERN_EXPORT double jn(int n, double x);
 CEPHES_EXTERN_EXPORT double jv(double n, double x);
 CEPHES_EXTERN_EXPORT double k0(double x);
 CEPHES_EXTERN_EXPORT double k0e(double x);
@@ -92,8 +92,8 @@ CEPHES_EXTERN_EXPORT double nbdtri(int k, int n, double p);
 
 CEPHES_EXTERN_EXPORT double ndtr(double a);
 CEPHES_EXTERN_EXPORT double log_ndtr(double a);
-CEPHES_EXTERN_EXPORT double erfc(double a);
-CEPHES_EXTERN_EXPORT double erf(double x);
+// CEPHES_EXTERN_EXPORT double erfc(double a);
+// CEPHES_EXTERN_EXPORT double erf(double x);
 CEPHES_EXTERN_EXPORT double erfinv(double y);
 CEPHES_EXTERN_EXPORT double erfcinv(double y);
 CEPHES_EXTERN_EXPORT double ndtri(double y0);
@@ -107,7 +107,7 @@ CEPHES_EXTERN_EXPORT double poch(double x, double m);
 CEPHES_EXTERN_EXPORT double psi(double x);
 
 CEPHES_EXTERN_EXPORT double rgamma(double x);
-CEPHES_EXTERN_EXPORT double round(double x);
+// CEPHES_EXTERN_EXPORT double round(double x);
 
 CEPHES_EXTERN_EXPORT int shichi(double x, double *si, double *ci);
 CEPHES_EXTERN_EXPORT int sici(double x, double *si, double *ci);
@@ -137,13 +137,13 @@ CEPHES_EXTERN_EXPORT double yv(double v, double x);
 CEPHES_EXTERN_EXPORT double tandg(double x);
 CEPHES_EXTERN_EXPORT double cotdg(double x);
 
-CEPHES_EXTERN_EXPORT double log1p(double x);
+// CEPHES_EXTERN_EXPORT double log1p(double x);
 CEPHES_EXTERN_EXPORT double log1pmx(double x);
-CEPHES_EXTERN_EXPORT double expm1(double x);
+// CEPHES_EXTERN_EXPORT double expm1(double x);
 CEPHES_EXTERN_EXPORT double cosm1(double x);
 CEPHES_EXTERN_EXPORT double lgam1p(double x);
 
-CEPHES_EXTERN_EXPORT double yn(int n, double x);
+// CEPHES_EXTERN_EXPORT double yn(int n, double x);
 CEPHES_EXTERN_EXPORT double zeta(double x, double q);
 CEPHES_EXTERN_EXPORT double zetac(double x);
 

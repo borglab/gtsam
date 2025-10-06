@@ -6,6 +6,8 @@ project(
   VERSION 1.0.0
   LANGUAGES C)
 
+configure_file("dllexport.h.in" "dllexport.h")
+
 set(CEPHES_HEADER_FILES
     cephes.h
     cephes/dd_idefs.h
@@ -17,7 +19,8 @@ set(CEPHES_HEADER_FILES
     cephes/mconf.h
     cephes/polevl.h
     cephes/sf_error.h
-    dllexport.h)
+    ${CMAKE_CURRENT_BINARY_DIR}/dllexport.h
+ )
 
 # Add header files
 install(FILES ${CEPHES_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/cephes)
@@ -94,7 +97,9 @@ add_library(cephes-gtsam ${GTSAM_LIBRARY_TYPE} ${CEPHES_SOURCES})
 # Add include directory (aka headers)
 target_include_directories(
   cephes-gtsam BEFORE PUBLIC $<INSTALL_INTERFACE:include/gtsam/3rdparty/cephes/>
-                             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+                             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+)
 
 set_target_properties(
   cephes-gtsam
