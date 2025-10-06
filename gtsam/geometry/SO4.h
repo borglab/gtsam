@@ -76,7 +76,7 @@ GTSAM_EXPORT Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = {});
 
 template <>
 GTSAM_EXPORT
-SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const {
+inline SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const {
   const Matrix& Q = matrix_;
   if (H) {
     H->setZero();
