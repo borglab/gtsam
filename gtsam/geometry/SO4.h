@@ -74,6 +74,28 @@ GTSAM_EXPORT Matrix3 topLeft(const SO4 &Q, OptionalJacobian<9, 6> H = {});
  */
 GTSAM_EXPORT Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = {});
 
+template <>
+GTSAM_EXPORT
+SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const {
+  const Matrix& Q = matrix_;
+  if (H) {
+    H->setZero();
+    H->block<4, 1>(0, 2) = -Q.col(3);
+    H->block<4, 1>(0, 4) = -Q.col(2);
+    H->block<4, 1>(0, 5) = Q.col(1);
+    H->block<4, 1>(4, 1) = Q.col(3);
+    H->block<4, 1>(4, 3) = Q.col(2);
+    H->block<4, 1>(4, 5) = -Q.col(0);
+    H->block<4, 1>(8, 0) = -Q.col(3);
+    H->block<4, 1>(8, 3) = -Q.col(1);
+    H->block<4, 1>(8, 4) = Q.col(0);
+    H->block<4, 1>(12, 0) = Q.col(2);
+    H->block<4, 1>(12, 1) = -Q.col(1);
+    H->block<4, 1>(12, 2) = Q.col(0);
+  }
+  return Eigen::Map<const SO4::VectorN2>(Q.data());
+}
+
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 template <class Archive>
 /** Serialization function */

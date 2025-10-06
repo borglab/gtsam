@@ -99,6 +99,22 @@ template <>
 GTSAM_EXPORT
 Vector9 SO3::vec(OptionalJacobian<9, 3> H) const;
 
+template <>
+GTSAM_EXPORT
+inline Vector9 SO3::vec(OptionalJacobian<9, 3> H) const {
+  const Matrix3& R = matrix_;
+  if (H) {
+    H->setZero();
+    H->block<3, 1>(0, 1) = -R.col(2);
+    H->block<3, 1>(0, 2) = R.col(1);
+    H->block<3, 1>(3, 0) = R.col(2);
+    H->block<3, 1>(3, 2) = -R.col(0);
+    H->block<3, 1>(6, 0) = -R.col(1);
+    H->block<3, 1>(6, 1) = R.col(0);
+  }
+  return Eigen::Map<const Vector9>(R.data());
+}
+
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 template <class Archive>
 /** Serialization function */
