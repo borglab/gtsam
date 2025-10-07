@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 import pytest
@@ -126,8 +128,8 @@ def test_bytes_to_string():
 
     assert m.strlen(b"hi") == 2
     assert m.string_length(b"world") == 5
-    assert m.string_length("a\x00b".encode()) == 3
-    assert m.strlen("a\x00b".encode()) == 1  # C-string limitation
+    assert m.string_length(b"a\x00b") == 3
+    assert m.strlen(b"a\x00b") == 1  # C-string limitation
 
     # passing in a utf8 encoded string should work
     assert m.string_length("💩".encode()) == 4
@@ -245,7 +247,7 @@ def test_integer_casting():
     assert "incompatible function arguments" in str(excinfo.value)
 
 
-def test_int_convert():
+def test_int_convert(doc):
     class Int:
         def __int__(self):
             return 42
@@ -284,6 +286,9 @@ def test_int_convert():
 
     convert, noconvert = m.int_passthrough, m.int_passthrough_noconvert
 
+    assert doc(convert) == "int_passthrough(arg0: typing.SupportsInt) -> int"
+    assert doc(noconvert) == "int_passthrough_noconvert(arg0: int) -> int"
+
     def requires_conversion(v):
         pytest.raises(TypeError, noconvert, v)
 
@@ -295,7 +300,7 @@ def test_int_convert():
     cant_convert(3.14159)
     # TODO: Avoid DeprecationWarning in `PyLong_AsLong` (and similar)
     # TODO: PyPy 3.8 does not behave like CPython 3.8 here yet (7.3.7)
-    if (3, 8) <= sys.version_info < (3, 10) and env.CPYTHON:
+    if sys.version_info < (3, 10) and env.CPYTHON:
         with env.deprecated_call():
             assert convert(Int()) == 42
     else:
@@ -314,6 +319,22 @@ def test_int_convert():
     requires_conversion(RaisingTypeErrorOnIndex())
     assert convert(RaisingValueErrorOnIndex()) == 42
     requires_conversion(RaisingValueErrorOnIndex())
+
+
+def test_float_convert(doc):
+    class Float:
+        def __float__(self):
+            return 41.45
+
+    convert, noconvert = m.float_passthrough, m.float_passthrough_noconvert
+    assert doc(convert) == "float_passthrough(arg0: typing.SupportsFloat) -> float"
+    assert doc(noconvert) == "float_passthrough_noconvert(arg0: float) -> float"
+
+    def requires_conversion(v):
+        pytest.raises(TypeError, noconvert, v)
+
+    requires_conversion(Float())
+    assert pytest.approx(convert(Float())) == 41.45
 
 
 def test_numpy_int_convert():
@@ -352,7 +373,7 @@ def test_tuple(doc):
     assert (
         doc(m.pair_passthrough)
         == """
-        pair_passthrough(arg0: Tuple[bool, str]) -> Tuple[str, bool]
+        pair_passthrough(arg0: tuple[bool, str]) -> tuple[str, bool]
 
         Return a pair in reversed order
     """
@@ -360,11 +381,13 @@ def test_tuple(doc):
     assert (
         doc(m.tuple_passthrough)
         == """
-        tuple_passthrough(arg0: Tuple[bool, str, int]) -> Tuple[int, str, bool]
+        tuple_passthrough(arg0: tuple[bool, str, typing.SupportsInt]) -> tuple[int, str, bool]
 
         Return a triple in reversed order
     """
     )
+
+    assert doc(m.empty_tuple) == """empty_tuple() -> tuple[()]"""
 
     assert m.rvalue_pair() == ("rvalue", "rvalue")
     assert m.lvalue_pair() == ("lvalue", "lvalue")
@@ -421,13 +444,15 @@ def test_reference_wrapper():
     a2 = m.refwrap_list(copy=True)
     assert [x.value for x in a1] == [2, 3]
     assert [x.value for x in a2] == [2, 3]
-    assert not a1[0] is a2[0] and not a1[1] is a2[1]
+    assert a1[0] is not a2[0]
+    assert a1[1] is not a2[1]
 
     b1 = m.refwrap_list(copy=False)
     b2 = m.refwrap_list(copy=False)
     assert [x.value for x in b1] == [1, 2]
     assert [x.value for x in b2] == [1, 2]
-    assert b1[0] is b2[0] and b1[1] is b2[1]
+    assert b1[0] is b2[0]
+    assert b1[1] is b2[1]
 
     assert m.refwrap_iiw(IncType(5)) == 5
     assert m.refwrap_call_iiw(IncType(10), m.refwrap_iiw) == [10, 10, 10, 10]

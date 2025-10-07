@@ -156,6 +156,55 @@ py::handle auxiliaries(T &&r, T2 &&r2) {
     return l.release();
 }
 
+template <typename PyObjectType>
+PyObjectType convert_to_pyobjecttype(py::object obj);
+
+template <>
+PyObject *convert_to_pyobjecttype<PyObject *>(py::object obj) {
+    return obj.release().ptr();
+}
+
+template <>
+py::handle convert_to_pyobjecttype<py::handle>(py::object obj) {
+    return obj.release();
+}
+
+template <>
+py::object convert_to_pyobjecttype<py::object>(py::object obj) {
+    return obj;
+}
+
+template <typename PyObjectType>
+std::string pass_array_return_sum_str_values(const py::array_t<PyObjectType> &objs) {
+    std::string sum_str_values;
+    for (const auto &obj : objs) {
+        sum_str_values += py::str(obj.attr("value"));
+    }
+    return sum_str_values;
+}
+
+template <typename PyObjectType>
+py::list pass_array_return_as_list(const py::array_t<PyObjectType> &objs) {
+    return objs;
+}
+
+template <typename PyObjectType>
+py::array_t<PyObjectType> return_array_cpp_loop(const py::list &objs) {
+    py::size_t arr_size = py::len(objs);
+    py::array_t<PyObjectType> arr_from_list(static_cast<py::ssize_t>(arr_size));
+    PyObjectType *data = arr_from_list.mutable_data();
+    for (py::size_t i = 0; i < arr_size; i++) {
+        assert(!data[i]);
+        data[i] = convert_to_pyobjecttype<PyObjectType>(objs[i].attr("value"));
+    }
+    return arr_from_list;
+}
+
+template <typename PyObjectType>
+py::array_t<PyObjectType> return_array_from_list(const py::list &objs) {
+    return objs;
+}
+
 // note: declaration at local scope would create a dangling reference!
 static int data_i = 42;
 
@@ -287,8 +336,7 @@ TEST_SUBMODULE(numpy_array, sm) {
     // [workaround(intel)] ICC 20/21 breaks with py::arg().stuff, using py::arg{}.stuff works.
 
     // Only accept the exact types:
-    sm.def(
-        "overloaded3", [](const py::array_t<int> &) { return "int"; }, py::arg{}.noconvert());
+    sm.def("overloaded3", [](const py::array_t<int> &) { return "int"; }, py::arg{}.noconvert());
     sm.def(
         "overloaded3",
         [](const py::array_t<double> &) { return "double"; },
@@ -444,9 +492,8 @@ TEST_SUBMODULE(numpy_array, sm) {
     });
 
     // resize to 3D array with each dimension = N
-    sm.def("array_resize3", [](py::array_t<double> a, size_t N, bool refcheck) {
-        a.resize({N, N, N}, refcheck);
-    });
+    sm.def("array_resize3",
+           [](py::array_t<double> a, size_t N, bool refcheck) { a.resize({N, N, N}, refcheck); });
 
     // test_array_create_and_resize
     // return 2D array with Nrows = Ncols = N
@@ -460,9 +507,8 @@ TEST_SUBMODULE(numpy_array, sm) {
     sm.def("array_view",
            [](py::array_t<uint8_t> a, const std::string &dtype) { return a.view(dtype); });
 
-    sm.def("reshape_initializer_list", [](py::array_t<int> a, size_t N, size_t M, size_t O) {
-        return a.reshape({N, M, O});
-    });
+    sm.def("reshape_initializer_list",
+           [](py::array_t<int> a, size_t N, size_t M, size_t O) { return a.reshape({N, M, O}); });
     sm.def("reshape_tuple", [](py::array_t<int> a, const std::vector<int> &new_shape) {
         return a.reshape(new_shape);
     });
@@ -471,8 +517,7 @@ TEST_SUBMODULE(numpy_array, sm) {
            [](const py::array &a) { return a[py::make_tuple(0, py::ellipsis(), 0)]; });
 
     // test_argument_conversions
-    sm.def(
-        "accept_double", [](const py::array_t<double, 0> &) {}, py::arg("a"));
+    sm.def("accept_double", [](const py::array_t<double, 0> &) {}, py::arg("a"));
     sm.def(
         "accept_double_forcecast",
         [](const py::array_t<double, py::array::forcecast> &) {},
@@ -493,8 +538,7 @@ TEST_SUBMODULE(numpy_array, sm) {
         "accept_double_f_style_forcecast",
         [](const py::array_t<double, py::array::forcecast | py::array::f_style> &) {},
         py::arg("a"));
-    sm.def(
-        "accept_double_noconvert", [](const py::array_t<double, 0> &) {}, "a"_a.noconvert());
+    sm.def("accept_double_noconvert", [](const py::array_t<double, 0> &) {}, "a"_a.noconvert());
     sm.def(
         "accept_double_forcecast_noconvert",
         [](const py::array_t<double, py::array::forcecast> &) {},
@@ -521,4 +565,34 @@ TEST_SUBMODULE(numpy_array, sm) {
     sm.def("test_fmt_desc_double", [](const py::array_t<double> &) {});
     sm.def("test_fmt_desc_const_float", [](const py::array_t<const float> &) {});
     sm.def("test_fmt_desc_const_double", [](const py::array_t<const double> &) {});
+
+    sm.def("round_trip_float", [](double d) { return d; });
+
+    sm.def("pass_array_pyobject_ptr_return_sum_str_values",
+           pass_array_return_sum_str_values<PyObject *>);
+    sm.def("pass_array_handle_return_sum_str_values",
+           pass_array_return_sum_str_values<py::handle>);
+    sm.def("pass_array_object_return_sum_str_values",
+           pass_array_return_sum_str_values<py::object>);
+
+    sm.def("pass_array_pyobject_ptr_return_as_list", pass_array_return_as_list<PyObject *>);
+    sm.def("pass_array_handle_return_as_list", pass_array_return_as_list<py::handle>);
+    sm.def("pass_array_object_return_as_list", pass_array_return_as_list<py::object>);
+
+    sm.def("return_array_pyobject_ptr_cpp_loop", return_array_cpp_loop<PyObject *>);
+    sm.def("return_array_handle_cpp_loop", return_array_cpp_loop<py::handle>);
+    sm.def("return_array_object_cpp_loop", return_array_cpp_loop<py::object>);
+
+    sm.def("return_array_pyobject_ptr_from_list", return_array_from_list<PyObject *>);
+    sm.def("return_array_handle_from_list", return_array_from_list<py::handle>);
+    sm.def("return_array_object_from_list", return_array_from_list<py::object>);
+
+    sm.def(
+        "round_trip_array_t",
+        [](const py::array_t<float> &x) -> py::array_t<float> { return x; },
+        py::arg("x"));
+    sm.def(
+        "round_trip_array_t_noconvert",
+        [](const py::array_t<float> &x) -> py::array_t<float> { return x; },
+        py::arg("x").noconvert());
 }

@@ -127,8 +127,7 @@ before a global translator is tried.
 Inside the translator, ``std::rethrow_exception`` should be used within
 a try block to re-throw the exception.  One or more catch clauses to catch
 the appropriate exceptions should then be used with each clause using
-``PyErr_SetString`` to set a Python exception or ``ex(string)`` to set
-the python exception to a custom exception type (see below).
+``py::set_error()`` (see below).
 
 To declare a custom Python exception type, declare a ``py::exception`` variable
 and use this in the associated exception translator (note: it is often useful
@@ -142,14 +141,16 @@ standard python RuntimeError:
 
 .. code-block:: cpp
 
-    static py::exception<MyCustomException> exc(m, "MyCustomError");
+    PYBIND11_CONSTINIT static py::gil_safe_call_once_and_store<py::object> exc_storage;
+    exc_storage.call_once_and_store_result(
+        [&]() { return py::exception<MyCustomException>(m, "MyCustomError"); });
     py::register_exception_translator([](std::exception_ptr p) {
         try {
             if (p) std::rethrow_exception(p);
         } catch (const MyCustomException &e) {
-            exc(e.what());
+            py::set_error(exc_storage.get_stored(), e.what());
         } catch (const OtherException &e) {
-            PyErr_SetString(PyExc_RuntimeError, e.what());
+            py::set_error(PyExc_RuntimeError, e.what());
         }
     });
 
@@ -168,8 +169,7 @@ section.
 
 .. note::
 
-    Call either ``PyErr_SetString`` or a custom exception's call
-    operator (``exc(string)``) for every exception caught in a custom exception
+    Call ``py::set_error()`` for every exception caught in a custom exception
     translator.  Failure to do so will cause Python to crash with ``SystemError:
     error return without exception set``.
 
@@ -177,9 +177,12 @@ section.
     may be explicitly (re-)thrown to delegate it to the other,
     previously-declared existing exception translators.
 
-    Note that ``libc++`` and ``libstdc++`` `behave differently <https://stackoverflow.com/questions/19496643/using-clang-fvisibility-hidden-and-typeinfo-and-type-erasure/28827430>`_
-    with ``-fvisibility=hidden``. Therefore exceptions that are used across ABI boundaries need to be explicitly exported, as exercised in ``tests/test_exceptions.h``.
-    See also: "Problems with C++ exceptions" under `GCC Wiki <https://gcc.gnu.org/wiki/Visibility>`_.
+    Note that ``libc++`` and ``libstdc++`` `behave differently under macOS
+    <https://stackoverflow.com/questions/19496643/using-clang-fvisibility-hidden-and-typeinfo-and-type-erasure/28827430>`_
+    with ``-fvisibility=hidden``. Therefore exceptions that are used across ABI
+    boundaries need to be explicitly exported, as exercised in
+    ``tests/test_exceptions.h``. See also:
+    "Problems with C++ exceptions" under `GCC Wiki <https://gcc.gnu.org/wiki/Visibility>`_.
 
 
 Local vs Global Exception Translators
@@ -197,7 +200,7 @@ If module1 has the following translator:
         try {
             if (p) std::rethrow_exception(p);
         } catch (const std::invalid_argument &e) {
-            PyErr_SetString("module1 handled this")
+            py::set_error(PyExc_ArgumentError, "module1 handled this");
         }
       }
 
@@ -209,7 +212,7 @@ and module2 has the following similar translator:
         try {
             if (p) std::rethrow_exception(p);
         } catch (const std::invalid_argument &e) {
-            PyErr_SetString("module2 handled this")
+            py::set_error(PyExc_ArgumentError, "module2 handled this");
         }
       }
 
@@ -309,11 +312,11 @@ error protocol, which is outlined here.
 After calling the Python C API, if Python returns an error,
 ``throw py::error_already_set();``, which allows pybind11 to deal with the
 exception and pass it back to the Python interpreter. This includes calls to
-the error setting functions such as ``PyErr_SetString``.
+the error setting functions such as ``py::set_error()``.
 
 .. code-block:: cpp
 
-    PyErr_SetString(PyExc_TypeError, "C API type error demo");
+    py::set_error(PyExc_TypeError, "C API type error demo");
     throw py::error_already_set();
 
     // But it would be easier to simply...
@@ -324,6 +327,28 @@ Alternately, to ignore the error, call `PyErr_Clear
 
 Any Python error must be thrown or cleared, or Python/pybind11 will be left in
 an invalid state.
+
+Handling warnings from the Python C API
+=======================================
+
+Wrappers for handling Python warnings are provided in ``pybind11/warnings.h``.
+This header must be included explicitly; it is not transitively included via
+``pybind11/pybind11.h``.
+
+Warnings can be raised with the ``warn`` function:
+
+.. code-block:: cpp
+
+    py::warnings::warn("This is a warning!", PyExc_Warning);
+
+    // Optionally, a `stack_level` can be specified.
+    py::warnings::warn("Another one!", PyExc_DeprecationWarning, 3);
+
+New warning types can be registered at the module level using ``new_warning_type``:
+
+.. code-block:: cpp
+
+    py::warnings::new_warning_type(m, "CustomWarning", PyExc_RuntimeWarning);
 
 Chaining exceptions ('raise from')
 ==================================
@@ -365,8 +390,7 @@ Should they throw or fail to catch any exceptions in their call graph,
 the C++ runtime calls ``std::terminate()`` to abort immediately.
 
 Similarly, Python exceptions raised in a class's ``__del__`` method do not
-propagate, but are logged by Python as an unraisable error. In Python 3.8+, a
-`system hook is triggered
+propagate, but ``sys.unraisablehook()`` `is triggered
 <https://docs.python.org/3/library/sys.html#sys.unraisablehook>`_
 and an auditing event is logged.
 

@@ -37,24 +37,32 @@
                 return "Hello, World!";
             });
         }
+
+    The third and subsequent macro arguments are optional, and can be used to
+    mark the module as supporting various Python features.
+
+    - ``mod_gil_not_used()``
+    - ``multiple_interpreters::per_interpreter_gil()``
+    - ``multiple_interpreters::shared_gil()``
+    - ``multiple_interpreters::not_supported()``
+
+    .. code-block:: cpp
+
+        PYBIND11_EMBEDDED_MODULE(example, m, py::mod_gil_not_used()) {
+            m.def("foo", []() {
+                return "Hello, Free-threaded World!";
+            });
+        }
+
  \endrst */
-#define PYBIND11_EMBEDDED_MODULE(name, variable)                                                  \
-    static ::pybind11::module_::module_def PYBIND11_CONCAT(pybind11_module_def_, name);           \
-    static void PYBIND11_CONCAT(pybind11_init_, name)(::pybind11::module_ &);                     \
-    static PyObject PYBIND11_CONCAT(*pybind11_init_wrapper_, name)() {                            \
-        auto m = ::pybind11::module_::create_extension_module(                                    \
-            PYBIND11_TOSTRING(name), nullptr, &PYBIND11_CONCAT(pybind11_module_def_, name));      \
-        try {                                                                                     \
-            PYBIND11_CONCAT(pybind11_init_, name)(m);                                             \
-            return m.ptr();                                                                       \
-        }                                                                                         \
-        PYBIND11_CATCH_INIT_EXCEPTIONS                                                            \
-    }                                                                                             \
-    PYBIND11_EMBEDDED_MODULE_IMPL(name)                                                           \
+PYBIND11_WARNING_PUSH
+PYBIND11_WARNING_DISABLE_CLANG("-Wgnu-zero-variadic-macro-arguments")
+#define PYBIND11_EMBEDDED_MODULE(name, variable, ...)                                             \
+    PYBIND11_MODULE_PYINIT(name, {}, ##__VA_ARGS__)                                               \
     ::pybind11::detail::embedded_module PYBIND11_CONCAT(pybind11_module_, name)(                  \
-        PYBIND11_TOSTRING(name), PYBIND11_CONCAT(pybind11_init_impl_, name));                     \
-    void PYBIND11_CONCAT(pybind11_init_, name)(::pybind11::module_                                \
-                                               & variable) // NOLINT(bugprone-macro-parentheses)
+        PYBIND11_TOSTRING(name), PYBIND11_CONCAT(PyInit_, name));                                 \
+    PYBIND11_MODULE_EXEC(name, variable)
+PYBIND11_WARNING_POP
 
 PYBIND11_NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
 PYBIND11_NAMESPACE_BEGIN(detail)
@@ -86,7 +94,76 @@ inline wchar_t *widen_chars(const char *safe_arg) {
     return widened_arg;
 }
 
+inline void precheck_interpreter() {
+    if (Py_IsInitialized() != 0) {
+        pybind11_fail("The interpreter is already running");
+    }
+}
+
+#if !defined(PYBIND11_PYCONFIG_SUPPORT_PY_VERSION_HEX)
+#    define PYBIND11_PYCONFIG_SUPPORT_PY_VERSION_HEX (0x03080000)
+#endif
+
+#if PY_VERSION_HEX < PYBIND11_PYCONFIG_SUPPORT_PY_VERSION_HEX
+inline void initialize_interpreter_pre_pyconfig(bool init_signal_handlers,
+                                                int argc,
+                                                const char *const *argv,
+                                                bool add_program_dir_to_path) {
+    detail::precheck_interpreter();
+    Py_InitializeEx(init_signal_handlers ? 1 : 0);
+
+    auto argv_size = static_cast<size_t>(argc);
+    // SetArgv* on python 3 takes wchar_t, so we have to convert.
+    std::unique_ptr<wchar_t *[]> widened_argv(new wchar_t *[argv_size]);
+    std::vector<std::unique_ptr<wchar_t[], detail::wide_char_arg_deleter>> widened_argv_entries;
+    widened_argv_entries.reserve(argv_size);
+    for (size_t ii = 0; ii < argv_size; ++ii) {
+        widened_argv_entries.emplace_back(detail::widen_chars(argv[ii]));
+        if (!widened_argv_entries.back()) {
+            // A null here indicates a character-encoding failure or the python
+            // interpreter out of memory. Give up.
+            return;
+        }
+        widened_argv[ii] = widened_argv_entries.back().get();
+    }
+
+    auto *pysys_argv = widened_argv.get();
+
+    PySys_SetArgvEx(argc, pysys_argv, static_cast<int>(add_program_dir_to_path));
+}
+#endif
+
 PYBIND11_NAMESPACE_END(detail)
+
+#if PY_VERSION_HEX >= PYBIND11_PYCONFIG_SUPPORT_PY_VERSION_HEX
+inline void initialize_interpreter(PyConfig *config,
+                                   int argc = 0,
+                                   const char *const *argv = nullptr,
+                                   bool add_program_dir_to_path = true) {
+    detail::precheck_interpreter();
+    PyStatus status = PyConfig_SetBytesArgv(config, argc, const_cast<char *const *>(argv));
+    if (PyStatus_Exception(status) != 0) {
+        // A failure here indicates a character-encoding failure or the python
+        // interpreter out of memory. Give up.
+        PyConfig_Clear(config);
+        throw std::runtime_error(PyStatus_IsError(status) != 0 ? status.err_msg
+                                                               : "Failed to prepare CPython");
+    }
+    status = Py_InitializeFromConfig(config);
+    if (PyStatus_Exception(status) != 0) {
+        PyConfig_Clear(config);
+        throw std::runtime_error(PyStatus_IsError(status) != 0 ? status.err_msg
+                                                               : "Failed to init CPython");
+    }
+    if (add_program_dir_to_path) {
+        PyRun_SimpleString("import sys, os.path; "
+                           "sys.path.insert(0, "
+                           "os.path.abspath(os.path.dirname(sys.argv[0])) "
+                           "if sys.argv and os.path.exists(sys.argv[0]) else '')");
+    }
+    PyConfig_Clear(config);
+}
+#endif
 
 /** \rst
     Initialize the Python interpreter. No other pybind11 or CPython API functions can be
@@ -111,68 +188,21 @@ inline void initialize_interpreter(bool init_signal_handlers = true,
                                    int argc = 0,
                                    const char *const *argv = nullptr,
                                    bool add_program_dir_to_path = true) {
-    if (Py_IsInitialized() != 0) {
-        pybind11_fail("The interpreter is already running");
-    }
-
-#if PY_VERSION_HEX < 0x030B0000
-
-    Py_InitializeEx(init_signal_handlers ? 1 : 0);
-
-    // Before it was special-cased in python 3.8, passing an empty or null argv
-    // caused a segfault, so we have to reimplement the special case ourselves.
-    bool special_case = (argv == nullptr || argc <= 0);
-
-    const char *const empty_argv[]{"\0"};
-    const char *const *safe_argv = special_case ? empty_argv : argv;
-    if (special_case) {
-        argc = 1;
-    }
-
-    auto argv_size = static_cast<size_t>(argc);
-    // SetArgv* on python 3 takes wchar_t, so we have to convert.
-    std::unique_ptr<wchar_t *[]> widened_argv(new wchar_t *[argv_size]);
-    std::vector<std::unique_ptr<wchar_t[], detail::wide_char_arg_deleter>> widened_argv_entries;
-    widened_argv_entries.reserve(argv_size);
-    for (size_t ii = 0; ii < argv_size; ++ii) {
-        widened_argv_entries.emplace_back(detail::widen_chars(safe_argv[ii]));
-        if (!widened_argv_entries.back()) {
-            // A null here indicates a character-encoding failure or the python
-            // interpreter out of memory. Give up.
-            return;
-        }
-        widened_argv[ii] = widened_argv_entries.back().get();
-    }
-
-    auto *pysys_argv = widened_argv.get();
-
-    PySys_SetArgvEx(argc, pysys_argv, static_cast<int>(add_program_dir_to_path));
+#if PY_VERSION_HEX < PYBIND11_PYCONFIG_SUPPORT_PY_VERSION_HEX
+    detail::initialize_interpreter_pre_pyconfig(
+        init_signal_handlers, argc, argv, add_program_dir_to_path);
 #else
     PyConfig config;
-    PyConfig_InitIsolatedConfig(&config);
-    config.install_signal_handlers = init_signal_handlers ? 1 : 0;
+    PyConfig_InitPythonConfig(&config);
+    // See PR #4473 for background
+    config.parse_argv = 0;
 
-    PyStatus status = PyConfig_SetBytesArgv(&config, argc, const_cast<char *const *>(argv));
-    if (PyStatus_Exception(status)) {
-        // A failure here indicates a character-encoding failure or the python
-        // interpreter out of memory. Give up.
-        PyConfig_Clear(&config);
-        throw std::runtime_error(PyStatus_IsError(status) ? status.err_msg
-                                                          : "Failed to prepare CPython");
-    }
-    status = Py_InitializeFromConfig(&config);
-    PyConfig_Clear(&config);
-    if (PyStatus_Exception(status)) {
-        throw std::runtime_error(PyStatus_IsError(status) ? status.err_msg
-                                                          : "Failed to init CPython");
-    }
-    if (add_program_dir_to_path) {
-        PyRun_SimpleString("import sys, os.path; "
-                           "sys.path.insert(0, "
-                           "os.path.abspath(os.path.dirname(sys.argv[0])) "
-                           "if sys.argv and os.path.exists(sys.argv[0]) else '')");
-    }
+    config.install_signal_handlers = init_signal_handlers ? 1 : 0;
+    initialize_interpreter(&config, argc, argv, add_program_dir_to_path);
 #endif
+
+    // There is exactly one interpreter alive currently.
+    detail::get_num_interpreters_seen() = 1;
 }
 
 /** \rst
@@ -211,28 +241,32 @@ inline void initialize_interpreter(bool init_signal_handlers = true,
 
  \endrst */
 inline void finalize_interpreter() {
-    handle builtins(PyEval_GetBuiltins());
-    const char *id = PYBIND11_INTERNALS_ID;
+    // get rid of any thread-local interpreter cache that currently exists
+    if (detail::get_num_interpreters_seen() > 1) {
+        detail::get_internals_pp_manager().unref();
+        detail::get_local_internals_pp_manager().unref();
 
-    // Get the internals pointer (without creating it if it doesn't exist).  It's possible for the
-    // internals to be created during Py_Finalize() (e.g. if a py::capsule calls `get_internals()`
-    // during destruction), so we get the pointer-pointer here and check it after Py_Finalize().
-    detail::internals **internals_ptr_ptr = detail::get_internals_pp();
-    // It could also be stashed in builtins, so look there too:
-    if (builtins.contains(id) && isinstance<capsule>(builtins[id])) {
-        internals_ptr_ptr = capsule(builtins[id]);
+        // We know there can be no other interpreter alive now, so we can lower the count
+        detail::get_num_interpreters_seen() = 1;
     }
-    // Local internals contains data managed by the current interpreter, so we must clear them to
-    // avoid undefined behaviors when initializing another interpreter
-    detail::get_local_internals().registered_types_cpp.clear();
-    detail::get_local_internals().registered_exception_translators.clear();
+
+    // Re-fetch the internals pointer-to-pointer (but not the internals itself, which might not
+    // exist). It's possible for the  internals to be created during Py_Finalize() (e.g. if a
+    // py::capsule calls `get_internals()` during destruction), so we get the pointer-pointer here
+    // and check it after Py_Finalize().
+    detail::get_internals_pp_manager().get_pp();
+    detail::get_local_internals_pp_manager().get_pp();
 
     Py_Finalize();
 
-    if (internals_ptr_ptr) {
-        delete *internals_ptr_ptr;
-        *internals_ptr_ptr = nullptr;
-    }
+    detail::get_internals_pp_manager().destroy();
+
+    // Local internals contains data managed by the current interpreter, so we must clear them to
+    // avoid undefined behaviors when initializing another interpreter
+    detail::get_local_internals_pp_manager().destroy();
+
+    // We know there is no interpreter alive now, so we can reset the count
+    detail::get_num_interpreters_seen() = 0;
 }
 
 /** \rst
@@ -258,6 +292,15 @@ public:
                                 bool add_program_dir_to_path = true) {
         initialize_interpreter(init_signal_handlers, argc, argv, add_program_dir_to_path);
     }
+
+#if PY_VERSION_HEX >= PYBIND11_PYCONFIG_SUPPORT_PY_VERSION_HEX
+    explicit scoped_interpreter(PyConfig *config,
+                                int argc = 0,
+                                const char *const *argv = nullptr,
+                                bool add_program_dir_to_path = true) {
+        initialize_interpreter(config, argc, argv, add_program_dir_to_path);
+    }
+#endif
 
     scoped_interpreter(const scoped_interpreter &) = delete;
     scoped_interpreter(scoped_interpreter &&other) noexcept { other.is_valid = false; }

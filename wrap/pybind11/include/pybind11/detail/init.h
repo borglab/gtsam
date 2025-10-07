@@ -10,8 +10,12 @@
 #pragma once
 
 #include "class.h"
+#include "using_smart_holder.h"
 
 PYBIND11_NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
+
+PYBIND11_WARNING_DISABLE_MSVC(4127)
+
 PYBIND11_NAMESPACE_BEGIN(detail)
 
 template <>
@@ -33,7 +37,7 @@ private:
 
 PYBIND11_NAMESPACE_BEGIN(initimpl)
 
-inline void no_nullptr(void *ptr) {
+inline void no_nullptr(const void *ptr) {
     if (!ptr) {
         throw type_error("pybind11::init(): factory function returned nullptr");
     }
@@ -57,12 +61,12 @@ bool is_alias(Cpp<Class> *ptr) {
 }
 // Failing fallback version of the above for a no-alias class (always returns false)
 template <typename /*Class*/>
-constexpr bool is_alias(void *) {
+constexpr bool is_alias(const void *) {
     return false;
 }
 
 // Constructs and returns a new object; if the given arguments don't map to a constructor, we fall
-// back to brace aggregate initiailization so that for aggregate initialization can be used with
+// back to brace aggregate initialization so that for aggregate initialization can be used with
 // py::init, e.g.  `py::init<int, int>` to initialize a `struct T { int a; int b; }`.  For
 // non-aggregate types, we need to use an ordinary T(...) constructor (invoking as `T{...}` usually
 // works, but will not do the expected thing when `T` has an `initializer_list<T>` constructor).
@@ -115,7 +119,7 @@ template <typename Class>
 void construct(value_and_holder &v_h, Cpp<Class> *ptr, bool need_alias) {
     PYBIND11_WORKAROUND_INCORRECT_MSVC_C4100(need_alias);
     no_nullptr(ptr);
-    if (PYBIND11_SILENCE_MSVC_C4127(Class::has_alias) && need_alias && !is_alias<Class>(ptr)) {
+    if (Class::has_alias && need_alias && !is_alias<Class>(ptr)) {
         // We're going to try to construct an alias by moving the cpp type.  Whether or not
         // that succeeds, we still need to destroy the original cpp pointer (either the
         // moved away leftover, if the alias construction works, or the value itself if we
@@ -125,11 +129,13 @@ void construct(value_and_holder &v_h, Cpp<Class> *ptr, bool need_alias) {
         // the holder and destruction happens when we leave the C++ scope, and the holder
         // class gets to handle the destruction however it likes.
         v_h.value_ptr() = ptr;
-        v_h.set_instance_registered(true);          // To prevent init_instance from registering it
-        v_h.type->init_instance(v_h.inst, nullptr); // Set up the holder
+        v_h.set_instance_registered(true); // Trick to prevent init_instance from registering it
+        // DANGER ZONE BEGIN: exceptions will leave v_h in an invalid state.
+        v_h.type->init_instance(v_h.inst, nullptr);                        // Set up the holder
         Holder<Class> temp_holder(std::move(v_h.holder<Holder<Class>>())); // Steal the holder
         v_h.type->dealloc(v_h); // Destroys the moved-out holder remains, resets value ptr to null
         v_h.set_instance_registered(false);
+        // DANGER ZONE END.
 
         construct_alias_from_cpp<Class>(is_alias_constructible<Class>{}, v_h, std::move(*ptr));
     } else {
@@ -150,18 +156,23 @@ void construct(value_and_holder &v_h, Alias<Class> *alias_ptr, bool) {
 // holder.  This also handles types like std::shared_ptr<T> and std::unique_ptr<T> where T is a
 // derived type (through those holder's implicit conversion from derived class holder
 // constructors).
-template <typename Class>
+template <typename Class, detail::enable_if_t<!is_smart_holder<Holder<Class>>::value, int> = 0>
 void construct(value_and_holder &v_h, Holder<Class> holder, bool need_alias) {
     PYBIND11_WORKAROUND_INCORRECT_MSVC_C4100(need_alias);
     auto *ptr = holder_helper<Holder<Class>>::get(holder);
     no_nullptr(ptr);
     // If we need an alias, check that the held pointer is actually an alias instance
-    if (PYBIND11_SILENCE_MSVC_C4127(Class::has_alias) && need_alias && !is_alias<Class>(ptr)) {
+    if (Class::has_alias && need_alias && !is_alias<Class>(ptr)) {
         throw type_error("pybind11::init(): construction failed: returned holder-wrapped instance "
                          "is not an alias instance");
     }
 
-    v_h.value_ptr() = ptr;
+    // Cast away constness to store in void* storage.
+    // The value_and_holder storage is fundamentally untyped (void**), so we lose
+    // const-correctness here by design. The const qualifier will be restored
+    // when the pointer is later retrieved and cast back to the original type.
+    // This explicit const_cast makes the const-removal clearly visible.
+    v_h.value_ptr() = const_cast<void *>(static_cast<const void *>(ptr));
     v_h.type->init_instance(v_h.inst, &holder);
 }
 
@@ -172,9 +183,9 @@ void construct(value_and_holder &v_h, Holder<Class> holder, bool need_alias) {
 template <typename Class>
 void construct(value_and_holder &v_h, Cpp<Class> &&result, bool need_alias) {
     PYBIND11_WORKAROUND_INCORRECT_MSVC_C4100(need_alias);
-    static_assert(std::is_move_constructible<Cpp<Class>>::value,
+    static_assert(is_move_constructible<Cpp<Class>>::value,
                   "pybind11::init() return-by-value factory function requires a movable class");
-    if (PYBIND11_SILENCE_MSVC_C4127(Class::has_alias) && need_alias) {
+    if (Class::has_alias && need_alias) {
         construct_alias_from_cpp<Class>(is_alias_constructible<Class>{}, v_h, std::move(result));
     } else {
         v_h.value_ptr() = new Cpp<Class>(std::move(result));
@@ -187,9 +198,95 @@ void construct(value_and_holder &v_h, Cpp<Class> &&result, bool need_alias) {
 template <typename Class>
 void construct(value_and_holder &v_h, Alias<Class> &&result, bool) {
     static_assert(
-        std::is_move_constructible<Alias<Class>>::value,
+        is_move_constructible<Alias<Class>>::value,
         "pybind11::init() return-by-alias-value factory function requires a movable alias class");
     v_h.value_ptr() = new Alias<Class>(std::move(result));
+}
+
+template <typename T, typename D>
+smart_holder init_smart_holder_from_unique_ptr(std::unique_ptr<T, D> &&unq_ptr,
+                                               bool void_cast_raw_ptr) {
+    void *void_ptr = void_cast_raw_ptr ? static_cast<void *>(unq_ptr.get()) : nullptr;
+    return smart_holder::from_unique_ptr(std::move(unq_ptr), void_ptr);
+}
+
+template <typename Class,
+          typename D = std::default_delete<Cpp<Class>>,
+          detail::enable_if_t<is_smart_holder<Holder<Class>>::value, int> = 0>
+void construct(value_and_holder &v_h, std::unique_ptr<Cpp<Class>, D> &&unq_ptr, bool need_alias) {
+    PYBIND11_WORKAROUND_INCORRECT_MSVC_C4100(need_alias);
+    auto *ptr = unq_ptr.get();
+    no_nullptr(ptr);
+    if (Class::has_alias && need_alias && !is_alias<Class>(ptr)) {
+        throw type_error("pybind11::init(): construction failed: returned std::unique_ptr pointee "
+                         "is not an alias instance");
+    }
+    // Here and below: if the new object is a trampoline, the shared_from_this mechanism needs
+    // to be prevented from accessing the smart_holder vptr, because it does not keep the
+    // trampoline Python object alive. For types that don't inherit from enable_shared_from_this
+    // it does not matter if void_cast_raw_ptr is true or false, therefore it's not necessary
+    // to also inspect the type.
+    auto smhldr = init_smart_holder_from_unique_ptr(
+        std::move(unq_ptr), /*void_cast_raw_ptr*/ Class::has_alias && is_alias<Class>(ptr));
+    v_h.value_ptr() = ptr;
+    v_h.type->init_instance(v_h.inst, &smhldr);
+}
+
+template <typename Class,
+          typename D = std::default_delete<Alias<Class>>,
+          detail::enable_if_t<is_smart_holder<Holder<Class>>::value, int> = 0>
+void construct(value_and_holder &v_h,
+               std::unique_ptr<Alias<Class>, D> &&unq_ptr,
+               bool /*need_alias*/) {
+    auto *ptr = unq_ptr.get();
+    no_nullptr(ptr);
+    auto smhldr
+        = init_smart_holder_from_unique_ptr(std::move(unq_ptr), /*void_cast_raw_ptr*/ true);
+    v_h.value_ptr() = ptr;
+    v_h.type->init_instance(v_h.inst, &smhldr);
+}
+
+template <typename PtrType, typename Class>
+void construct_from_shared_ptr(value_and_holder &v_h,
+                               std::shared_ptr<PtrType> &&shd_ptr,
+                               bool need_alias) {
+    static_assert(std::is_same<PtrType, Cpp<Class>>::value
+                      || std::is_same<PtrType, const Cpp<Class>>::value,
+                  "Expected (const) Cpp<Class> as shared_ptr pointee");
+    auto *ptr = shd_ptr.get();
+    no_nullptr(ptr);
+    if (Class::has_alias && need_alias && !is_alias<Class>(ptr)) {
+        throw type_error("pybind11::init(): construction failed: returned std::shared_ptr pointee "
+                         "is not an alias instance");
+    }
+    // Cast to non-const if needed, consistent with internal design
+    auto smhldr
+        = smart_holder::from_shared_ptr(std::const_pointer_cast<Cpp<Class>>(std::move(shd_ptr)));
+    v_h.value_ptr() = const_cast<Cpp<Class> *>(ptr);
+    v_h.type->init_instance(v_h.inst, &smhldr);
+}
+
+template <typename Class, detail::enable_if_t<is_smart_holder<Holder<Class>>::value, int> = 0>
+void construct(value_and_holder &v_h, std::shared_ptr<Cpp<Class>> &&shd_ptr, bool need_alias) {
+    construct_from_shared_ptr<Cpp<Class>, Class>(v_h, std::move(shd_ptr), need_alias);
+}
+
+template <typename Class, detail::enable_if_t<is_smart_holder<Holder<Class>>::value, int> = 0>
+void construct(value_and_holder &v_h,
+               std::shared_ptr<const Cpp<Class>> &&shd_ptr,
+               bool need_alias) {
+    construct_from_shared_ptr<const Cpp<Class>, Class>(v_h, std::move(shd_ptr), need_alias);
+}
+
+template <typename Class, detail::enable_if_t<is_smart_holder<Holder<Class>>::value, int> = 0>
+void construct(value_and_holder &v_h,
+               std::shared_ptr<Alias<Class>> &&shd_ptr,
+               bool /*need_alias*/) {
+    auto *ptr = shd_ptr.get();
+    no_nullptr(ptr);
+    auto smhldr = smart_holder::from_shared_ptr(shd_ptr);
+    v_h.value_ptr() = ptr;
+    v_h.type->init_instance(v_h.inst, &smhldr);
 }
 
 // Implementing class for py::init<...>()
@@ -199,17 +296,19 @@ struct constructor {
     static void execute(Class &cl, const Extra &...extra) {
         cl.def(
             "__init__",
-            [](value_and_holder &v_h, Args... args) {
+            [](value_and_holder &v_h,
+               Args... args) { // NOLINT(performance-unnecessary-value-param)
                 v_h.value_ptr() = construct_or_initialize<Cpp<Class>>(std::forward<Args>(args)...);
             },
             is_new_style_constructor(),
             extra...);
     }
 
-    template <typename Class,
-              typename... Extra,
-              enable_if_t<Class::has_alias && std::is_constructible<Cpp<Class>, Args...>::value,
-                          int> = 0>
+    template <
+        typename Class,
+        typename... Extra,
+        enable_if_t<Class::has_alias && std::is_constructible<Cpp<Class>, Args...>::value, int>
+        = 0>
     static void execute(Class &cl, const Extra &...extra) {
         cl.def(
             "__init__",
@@ -226,10 +325,11 @@ struct constructor {
             extra...);
     }
 
-    template <typename Class,
-              typename... Extra,
-              enable_if_t<Class::has_alias && !std::is_constructible<Cpp<Class>, Args...>::value,
-                          int> = 0>
+    template <
+        typename Class,
+        typename... Extra,
+        enable_if_t<Class::has_alias && !std::is_constructible<Cpp<Class>, Args...>::value, int>
+        = 0>
     static void execute(Class &cl, const Extra &...extra) {
         cl.def(
             "__init__",
@@ -245,10 +345,11 @@ struct constructor {
 // Implementing class for py::init_alias<...>()
 template <typename... Args>
 struct alias_constructor {
-    template <typename Class,
-              typename... Extra,
-              enable_if_t<Class::has_alias && std::is_constructible<Alias<Class>, Args...>::value,
-                          int> = 0>
+    template <
+        typename Class,
+        typename... Extra,
+        enable_if_t<Class::has_alias && std::is_constructible<Alias<Class>, Args...>::value, int>
+        = 0>
     static void execute(Class &cl, const Extra &...extra) {
         cl.def(
             "__init__",
@@ -374,7 +475,16 @@ void setstate(value_and_holder &v_h, std::pair<T, O> &&result, bool need_alias) 
         // See PR #2972 for details.
         return;
     }
-    setattr((PyObject *) v_h.inst, "__dict__", d);
+    // Our tests never run into an unset dict, but being careful here for now (see #5658)
+    auto dict = getattr((PyObject *) v_h.inst, "__dict__", none());
+    if (dict.is_none()) {
+        setattr((PyObject *) v_h.inst, "__dict__", d);
+    } else {
+        // Keep the original object dict and just update it
+        if (PyDict_Update(dict.ptr(), d.ptr()) < 0) {
+            throw error_already_set();
+        }
+    }
 }
 
 /// Implementation for py::pickle(GetState, SetState)
@@ -402,7 +512,7 @@ struct pickle_factory<Get, Set, RetState(Self), NewInstance(ArgState)> {
 
     template <typename Class, typename... Extra>
     void execute(Class &cl, const Extra &...extra) && {
-        cl.def("__getstate__", std::move(get));
+        cl.def("__getstate__", std::move(get), pos_only());
 
 #if defined(PYBIND11_CPP14)
         cl.def(

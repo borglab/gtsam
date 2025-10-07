@@ -3,6 +3,8 @@
 #include <pybind11/eval.h>
 #include <pybind11/pybind11.h>
 
+#include <memory>
+
 namespace py = pybind11;
 using namespace pybind11::literals;
 
@@ -52,6 +54,17 @@ union IntFloat {
     float f;
 };
 
+class UnusualOpRef {
+public:
+    using NonTrivialType = std::shared_ptr<int>; // Almost any non-trivial type will do.
+    // Overriding operator& should not break pybind11.
+    NonTrivialType operator&() { return non_trivial_member; }
+    NonTrivialType operator&() const { return non_trivial_member; }
+
+private:
+    NonTrivialType non_trivial_member;
+};
+
 /// Custom cast-only type that casts to a string "rvalue" or "lvalue" depending on the cast
 /// context. Used to test recursive casters (e.g. std::tuple, stl containers).
 struct RValueCaster {};
@@ -83,3 +96,24 @@ void ignoreOldStyleInitWarnings(F &&body) {
     )",
              py::dict(py::arg("body") = py::cpp_function(body)));
 }
+
+// See PR #5419 for background.
+class TestContext {
+public:
+    TestContext() = delete;
+    TestContext(const TestContext &) = delete;
+    TestContext(TestContext &&) = delete;
+    static TestContext *createNewContextForInit() { return new TestContext("new-context"); }
+
+    pybind11::object contextEnter() {
+        py::object contextObj = py::cast(*this);
+        return contextObj;
+    }
+    void contextExit(const pybind11::object & /*excType*/,
+                     const pybind11::object & /*excVal*/,
+                     const pybind11::object & /*excTb*/) {}
+
+private:
+    explicit TestContext(const std::string &context) : context(context) {}
+    std::string context;
+};

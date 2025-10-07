@@ -12,10 +12,11 @@
 #include "constructor_stats.h"
 #include "pybind11_tests.h"
 
-#ifndef PYBIND11_HAS_FILESYSTEM_IS_OPTIONAL
-#    define PYBIND11_HAS_FILESYSTEM_IS_OPTIONAL
+#if defined(PYBIND11_HAS_FILESYSTEM) || defined(PYBIND11_HAS_EXPERIMENTAL_FILESYSTEM)
+#    include <pybind11/stl/filesystem.h>
 #endif
-#include <pybind11/stl/filesystem.h>
+
+#include <pybind11/typing.h>
 
 #include <string>
 #include <vector>
@@ -23,7 +24,7 @@
 #if defined(PYBIND11_TEST_BOOST)
 #    include <boost/optional.hpp>
 
-namespace pybind11 {
+namespace PYBIND11_NAMESPACE {
 namespace detail {
 template <typename T>
 struct type_caster<boost::optional<T>> : optional_caster<boost::optional<T>> {};
@@ -31,7 +32,7 @@ struct type_caster<boost::optional<T>> : optional_caster<boost::optional<T>> {};
 template <>
 struct type_caster<boost::none_t> : void_caster<boost::none_t> {};
 } // namespace detail
-} // namespace pybind11
+} // namespace PYBIND11_NAMESPACE
 #endif
 
 // Test with `std::variant` in C++17 mode, or with `boost::variant` in C++11/14
@@ -43,7 +44,7 @@ using std::variant;
 #    define PYBIND11_TEST_VARIANT 1
 using boost::variant;
 
-namespace pybind11 {
+namespace PYBIND11_NAMESPACE {
 namespace detail {
 template <typename... Ts>
 struct type_caster<boost::variant<Ts...>> : variant_caster<boost::variant<Ts...>> {};
@@ -56,10 +57,10 @@ struct visit_helper<boost::variant> {
     }
 };
 } // namespace detail
-} // namespace pybind11
+} // namespace PYBIND11_NAMESPACE
 #endif
 
-PYBIND11_MAKE_OPAQUE(std::vector<std::string, std::allocator<std::string>>);
+PYBIND11_MAKE_OPAQUE(std::vector<std::string, std::allocator<std::string>>)
 
 /// Issue #528: templated constructor
 struct TplCtorClass {
@@ -78,7 +79,7 @@ struct hash<TplCtorClass> {
 template <template <typename> class OptionalImpl, typename T>
 struct OptionalHolder {
     // NOLINTNEXTLINE(modernize-use-equals-default): breaks GCC 4.8
-    OptionalHolder(){};
+    OptionalHolder() {};
     bool member_initialized() const { return member && member->initialized; }
     OptionalImpl<T> member = T{};
 };
@@ -159,13 +160,21 @@ private:
     std::vector<T> storage;
 };
 
-namespace pybind11 {
+namespace PYBIND11_NAMESPACE {
 namespace detail {
 template <typename T>
 struct type_caster<ReferenceSensitiveOptional<T>>
     : optional_caster<ReferenceSensitiveOptional<T>> {};
 } // namespace detail
-} // namespace pybind11
+} // namespace PYBIND11_NAMESPACE
+
+int pass_std_vector_int(const std::vector<int> &v) {
+    int zum = 100;
+    for (const int i : v) {
+        zum += 2 * i;
+    }
+    return zum;
+}
 
 TEST_SUBMODULE(stl, m) {
     // test_vector
@@ -176,9 +185,14 @@ TEST_SUBMODULE(stl, m) {
     m.def("load_bool_vector",
           [](const std::vector<bool> &v) { return v.at(0) == true && v.at(1) == false; });
     // Unnumbered regression (caused by #936): pointers to stl containers aren't castable
-    static std::vector<RValueCaster> lvv{2};
     m.def(
-        "cast_ptr_vector", []() { return &lvv; }, py::return_value_policy::reference);
+        "cast_ptr_vector",
+        []() {
+            // Using no-destructor idiom to side-step warnings from overzealous compilers.
+            static auto *v = new std::vector<RValueCaster>{2};
+            return v;
+        },
+        py::return_value_policy::reference);
 
     // test_deque
     m.def("cast_deque", []() { return std::deque<int>{1}; });
@@ -187,6 +201,23 @@ TEST_SUBMODULE(stl, m) {
     // test_array
     m.def("cast_array", []() { return std::array<int, 2>{{1, 2}}; });
     m.def("load_array", [](const std::array<int, 2> &a) { return a[0] == 1 && a[1] == 2; });
+
+    struct NoDefaultCtor {
+        explicit constexpr NoDefaultCtor(int val) : val{val} {}
+        int val;
+    };
+
+    struct NoDefaultCtorArray {
+        explicit constexpr NoDefaultCtorArray(int i)
+            : arr{{NoDefaultCtor(10 + i), NoDefaultCtor(20 + i)}} {}
+        std::array<NoDefaultCtor, 2> arr;
+    };
+
+    // test_array_no_default_ctor
+    py::class_<NoDefaultCtor>(m, "NoDefaultCtor").def_readonly("val", &NoDefaultCtor::val);
+    py::class_<NoDefaultCtorArray>(m, "NoDefaultCtorArray")
+        .def(py::init<int>())
+        .def_readwrite("arr", &NoDefaultCtorArray::arr);
 
     // test_valarray
     m.def("cast_valarray", []() { return std::valarray<int>{1, 4, 9}; });
@@ -212,9 +243,8 @@ TEST_SUBMODULE(stl, m) {
     // NB: map and set keys are `const`, so while we technically do move them (as `const Type &&`),
     // casters don't typically do anything with that, which means they fall to the `const Type &`
     // caster.
-    m.def("cast_rv_map", []() {
-        return std::unordered_map<std::string, RValueCaster>{{"a", RValueCaster{}}};
-    });
+    m.def("cast_rv_map",
+          []() { return std::unordered_map<std::string, RValueCaster>{{"a", RValueCaster{}}}; });
     m.def("cast_rv_nested", []() {
         std::vector<std::array<std::list<std::unordered_map<std::string, RValueCaster>>, 2>> v;
         v.emplace_back();           // add an array
@@ -237,6 +267,7 @@ TEST_SUBMODULE(stl, m) {
     lvn["b"].emplace_back();        // add a list
     lvn["b"].back().emplace_back(); // add an array
     lvn["b"].back().emplace_back(); // add another array
+    static std::vector<RValueCaster> lvv{2};
     m.def("cast_lv_vector", []() -> const decltype(lvv) & { return lvv; });
     m.def("cast_lv_array", []() -> const decltype(lva) & { return lva; });
     m.def("cast_lv_map", []() -> const decltype(lvm) & { return lvm; });
@@ -423,7 +454,57 @@ TEST_SUBMODULE(stl, m) {
 #ifdef PYBIND11_HAS_FILESYSTEM
     // test_fs_path
     m.attr("has_filesystem") = true;
-    m.def("parent_path", [](const std::filesystem::path &p) { return p.parent_path(); });
+    m.def("parent_path", [](const std::filesystem::path &path) { return path.parent_path(); });
+    m.def("parent_paths", [](const std::vector<std::filesystem::path> &paths) {
+        std::vector<std::filesystem::path> result;
+        result.reserve(paths.size());
+        for (const auto &path : paths) {
+            result.push_back(path.parent_path());
+        }
+        return result;
+    });
+    m.def("parent_paths_list", [](const py::typing::List<std::filesystem::path> &paths) {
+        py::typing::List<std::filesystem::path> result;
+        for (auto path : paths) {
+            result.append(path.cast<std::filesystem::path>().parent_path());
+        }
+        return result;
+    });
+    m.def("parent_paths_nested_list",
+          [](const py::typing::List<py::typing::List<std::filesystem::path>> &paths_lists) {
+              py::typing::List<py::typing::List<std::filesystem::path>> result_lists;
+              for (auto paths : paths_lists) {
+                  py::typing::List<std::filesystem::path> result;
+                  for (auto path : paths) {
+                      result.append(path.cast<std::filesystem::path>().parent_path());
+                  }
+                  result_lists.append(result);
+              }
+              return result_lists;
+          });
+    m.def("parent_paths_tuple",
+          [](const py::typing::Tuple<std::filesystem::path, std::filesystem::path> &paths) {
+              py::typing::Tuple<std::filesystem::path, std::filesystem::path> result
+                  = py::make_tuple(paths[0].cast<std::filesystem::path>().parent_path(),
+                                   paths[1].cast<std::filesystem::path>().parent_path());
+              return result;
+          });
+    m.def("parent_paths_tuple_ellipsis",
+          [](const py::typing::Tuple<std::filesystem::path, py::ellipsis> &paths) {
+              py::typing::Tuple<std::filesystem::path, py::ellipsis> result(paths.size());
+              for (size_t i = 0; i < paths.size(); ++i) {
+                  result[i] = paths[i].cast<std::filesystem::path>().parent_path();
+              }
+              return result;
+          });
+    m.def("parent_paths_dict",
+          [](const py::typing::Dict<std::string, std::filesystem::path> &paths) {
+              py::typing::Dict<std::string, std::filesystem::path> result;
+              for (auto it : paths) {
+                  result[it.first] = it.second.cast<std::filesystem::path>().parent_path();
+              }
+              return result;
+          });
 #endif
 
 #ifdef PYBIND11_TEST_VARIANT
@@ -491,8 +572,7 @@ TEST_SUBMODULE(stl, m) {
     });
 
     // test_stl_pass_by_pointer
-    m.def(
-        "stl_pass_by_pointer", [](std::vector<int> *v) { return *v; }, "v"_a = nullptr);
+    m.def("stl_pass_by_pointer", [](std::vector<int> *v) { return *v; }, "v"_a = nullptr);
 
     // #1258: pybind11/stl.h converts string to vector<string>
     m.def("func_with_string_or_vector_string_arg_overload",
@@ -542,4 +622,45 @@ TEST_SUBMODULE(stl, m) {
         []() { return new std::vector<bool>(4513); },
         // Without explicitly specifying `take_ownership`, this function leaks.
         py::return_value_policy::take_ownership);
+
+    m.def("pass_std_vector_int", pass_std_vector_int);
+    m.def("pass_std_vector_pair_int", [](const std::vector<std::pair<int, int>> &v) {
+        int zum = 0;
+        for (const auto &ij : v) {
+            zum += ij.first * 100 + ij.second;
+        }
+        return zum;
+    });
+    m.def("pass_std_array_int_2", [](const std::array<int, 2> &a) {
+        return pass_std_vector_int(std::vector<int>(a.begin(), a.end())) + 1;
+    });
+    m.def("pass_std_set_int", [](const std::set<int> &s) {
+        int zum = 200;
+        for (const int i : s) {
+            zum += 3 * i;
+        }
+        return zum;
+    });
+    m.def("pass_std_map_int", [](const std::map<int, int> &m) {
+        int zum = 500;
+        for (const auto &p : m) {
+            zum += p.first * 1000 + p.second;
+        }
+        return zum;
+    });
+    m.def("roundtrip_std_vector_int", [](const std::vector<int> &v) { return v; });
+    m.def("roundtrip_std_map_str_int", [](const std::map<std::string, int> &m) { return m; });
+    m.def("roundtrip_std_set_int", [](const std::set<int> &s) { return s; });
+    m.def(
+        "roundtrip_std_vector_int_noconvert",
+        [](const std::vector<int> &v) { return v; },
+        py::arg("v").noconvert());
+    m.def(
+        "roundtrip_std_map_str_int_noconvert",
+        [](const std::map<std::string, int> &m) { return m; },
+        py::arg("m").noconvert());
+    m.def(
+        "roundtrip_std_set_int_noconvert",
+        [](const std::set<int> &s) { return s; },
+        py::arg("s").noconvert());
 }

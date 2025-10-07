@@ -201,3 +201,5 @@ public:
 private:
     T *m_ptr;
 };
+
+#endif /* __OBJECT_H */

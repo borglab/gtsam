@@ -11,6 +11,7 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
+from __future__ import annotations
 
 import os
 import re
@@ -35,6 +36,7 @@ DIR = Path(__file__).parent.resolve()
 # ones.
 extensions = [
     "breathe",
+    "myst_parser",
     "sphinx_copybutton",
     "sphinxcontrib.rsvgconverter",
     "sphinxcontrib.moderncmakedomain",
@@ -48,9 +50,7 @@ breathe_domain_by_extension = {"h": "cpp"}
 templates_path = [".templates"]
 
 # The suffix(es) of source filenames.
-# You can specify multiple suffix as a list of string:
-# source_suffix = ['.rst', '.md']
-source_suffix = ".rst"
+source_suffix = [".rst", ".md"]
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
@@ -68,9 +68,10 @@ author = "Wenzel Jakob"
 # built documents.
 
 # Read the listed version
-with open("../pybind11/_version.py") as f:
-    code = compile(f.read(), "../pybind11/_version.py", "exec")
-loc = {}
+version_file = DIR.parent / "pybind11/_version.py"
+with version_file.open(encoding="utf-8") as f:
+    code = compile(f.read(), version_file, "exec")
+loc = {"__file__": str(version_file)}
 exec(code, loc)
 
 # The full version, including alpha/beta/rc tags.
@@ -81,7 +82,7 @@ version = loc["__version__"]
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -353,12 +354,11 @@ def prepare(app):
         f.write(contents)
 
 
-def clean_up(app, exception):
+def clean_up(app, exception):  # noqa: ARG001
     (DIR / "readme.rst").unlink()
 
 
 def setup(app):
-
     # Add hook for building doxygen xml when needed
     app.connect("builder-inited", generate_doxygen_xml)
 

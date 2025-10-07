@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import sys
 
 import pytest
 
-import env  # noqa: F401
+import env
 from pybind11_tests import ConstructorStats
 from pybind11_tests import methods_and_attributes as m
 
@@ -15,6 +17,13 @@ NO_SETTER_MSG = (
 NO_DELETER_MSG = (
     "can't delete attribute" if sys.version_info < (3, 11) else "object has no deleter"
 )
+
+
+def test_self_only_pos_only():
+    assert (
+        m.ExampleMandA.__str__.__doc__
+        == "__str__(self: pybind11_tests.methods_and_attributes.ExampleMandA, /) -> str\n"
+    )
 
 
 def test_methods_and_attributes():
@@ -65,6 +74,9 @@ def test_methods_and_attributes():
     assert instance1.value == 320
     instance1.value = 100
     assert str(instance1) == "ExampleMandA[value=100]"
+
+    if env.GRAALPY:
+        pytest.skip("ConstructorStats is incompatible with GraalPy.")
 
     cstats = ConstructorStats.get(m.ExampleMandA)
     assert cstats.alive() == 2
@@ -183,9 +195,9 @@ def test_static_properties():
 
     # Only static attributes can be deleted
     del m.TestPropertiesOverride.def_readonly_static
+    assert hasattr(m.TestPropertiesOverride, "def_readonly_static")
     assert (
-        hasattr(m.TestPropertiesOverride, "def_readonly_static")
-        and m.TestPropertiesOverride.def_readonly_static
+        m.TestPropertiesOverride.def_readonly_static
         is m.TestProperties.def_readonly_static
     )
     assert "def_readonly_static" not in m.TestPropertiesOverride.__dict__
@@ -232,34 +244,35 @@ def test_no_mixed_overloads():
 
     with pytest.raises(RuntimeError) as excinfo:
         m.ExampleMandA.add_mixed_overloads1()
-    assert str(
-        excinfo.value
-    ) == "overloading a method with both static and instance methods is not supported; " + (
-        "#define PYBIND11_DETAILED_ERROR_MESSAGES or compile in debug mode for more details"
-        if not detailed_error_messages_enabled
-        else "error while attempting to bind static method ExampleMandA.overload_mixed1"
-        "(arg0: float) -> str"
+    assert (
+        str(excinfo.value)
+        == "overloading a method with both static and instance methods is not supported; "
+        + (
+            "#define PYBIND11_DETAILED_ERROR_MESSAGES or compile in debug mode for more details"
+            if not detailed_error_messages_enabled
+            else "error while attempting to bind static method ExampleMandA.overload_mixed1"
+            "(arg0: typing.SupportsFloat) -> str"
+        )
     )
 
     with pytest.raises(RuntimeError) as excinfo:
         m.ExampleMandA.add_mixed_overloads2()
-    assert str(
-        excinfo.value
-    ) == "overloading a method with both static and instance methods is not supported; " + (
-        "#define PYBIND11_DETAILED_ERROR_MESSAGES or compile in debug mode for more details"
-        if not detailed_error_messages_enabled
-        else "error while attempting to bind instance method ExampleMandA.overload_mixed2"
-        "(self: pybind11_tests.methods_and_attributes.ExampleMandA, arg0: int, arg1: int)"
-        " -> str"
+    assert (
+        str(excinfo.value)
+        == "overloading a method with both static and instance methods is not supported; "
+        + (
+            "#define PYBIND11_DETAILED_ERROR_MESSAGES or compile in debug mode for more details"
+            if not detailed_error_messages_enabled
+            else "error while attempting to bind instance method ExampleMandA.overload_mixed2"
+            "(self: pybind11_tests.methods_and_attributes.ExampleMandA, arg0: typing.SupportsInt, arg1: typing.SupportsInt)"
+            " -> str"
+        )
     )
 
 
 @pytest.mark.parametrize("access", ["ro", "rw", "static_ro", "static_rw"])
 def test_property_return_value_policies(access):
-    if not access.startswith("static"):
-        obj = m.TestPropRVP()
-    else:
-        obj = m.TestPropRVP
+    obj = m.TestPropRVP() if not access.startswith("static") else m.TestPropRVP
 
     ref = getattr(obj, access + "_ref")
     assert ref.value == 1
@@ -292,6 +305,10 @@ def test_property_rvalue_policy():
 
 # https://foss.heptapod.net/pypy/pypy/-/issues/2447
 @pytest.mark.xfail("env.PYPY")
+@pytest.mark.skipif(
+    sys.version_info in ((3, 14, 0, "beta", 1), (3, 14, 0, "beta", 2)),
+    reason="3.14.0b1/2 managed dict bug: https://github.com/python/cpython/issues/133912",
+)
 def test_dynamic_attributes():
     instance = m.DynamicClass()
     assert not hasattr(instance, "foo")
@@ -313,27 +330,36 @@ def test_dynamic_attributes():
         instance.__dict__ = []
     assert str(excinfo.value) == "__dict__ must be set to a dictionary, not a 'list'"
 
+    if env.GRAALPY:
+        pytest.skip("ConstructorStats is incompatible with GraalPy.")
     cstats = ConstructorStats.get(m.DynamicClass)
     assert cstats.alive() == 1
     del instance
+    pytest.gc_collect()
     assert cstats.alive() == 0
 
     # Derived classes should work as well
     class PythonDerivedDynamicClass(m.DynamicClass):
         pass
 
-    for cls in m.CppDerivedDynamicClass, PythonDerivedDynamicClass:
+    for cls in (m.CppDerivedDynamicClass, PythonDerivedDynamicClass):
         derived = cls()
         derived.foobar = 100
         assert derived.foobar == 100
 
         assert cstats.alive() == 1
         del derived
+        pytest.gc_collect()
         assert cstats.alive() == 0
 
 
 # https://foss.heptapod.net/pypy/pypy/-/issues/2447
 @pytest.mark.xfail("env.PYPY")
+@pytest.mark.skipif("env.GRAALPY", reason="Cannot reliably trigger GC")
+@pytest.mark.skipif(
+    sys.version_info in ((3, 14, 0, "beta", 1), (3, 14, 0, "beta", 2)),
+    reason="3.14.0b1/2 managed dict bug: https://github.com/python/cpython/issues/133912",
+)
 def test_cyclic_gc():
     # One object references itself
     instance = m.DynamicClass()
@@ -342,6 +368,7 @@ def test_cyclic_gc():
     cstats = ConstructorStats.get(m.DynamicClass)
     assert cstats.alive() == 1
     del instance
+    pytest.gc_collect()
     assert cstats.alive() == 0
 
     # Two object reference each other
@@ -352,6 +379,7 @@ def test_cyclic_gc():
 
     assert cstats.alive() == 2
     del i1, i2
+    pytest.gc_collect()
     assert cstats.alive() == 0
 
 
@@ -463,7 +491,7 @@ def test_str_issue(msg):
         msg(excinfo.value)
         == """
         __init__(): incompatible constructor arguments. The following argument types are supported:
-            1. m.methods_and_attributes.StrIssue(arg0: int)
+            1. m.methods_and_attributes.StrIssue(arg0: typing.SupportsInt)
             2. m.methods_and_attributes.StrIssue()
 
         Invoked with: 'no', 'such', 'constructor'
@@ -505,18 +533,22 @@ def test_overload_ordering():
     assert m.overload_order("string") == 1
     assert m.overload_order(0) == 4
 
-    assert "1. overload_order(arg0: int) -> int" in m.overload_order.__doc__
+    assert (
+        "1. overload_order(arg0: typing.SupportsInt) -> int" in m.overload_order.__doc__
+    )
     assert "2. overload_order(arg0: str) -> int" in m.overload_order.__doc__
     assert "3. overload_order(arg0: str) -> int" in m.overload_order.__doc__
-    assert "4. overload_order(arg0: int) -> int" in m.overload_order.__doc__
+    assert (
+        "4. overload_order(arg0: typing.SupportsInt) -> int" in m.overload_order.__doc__
+    )
 
     with pytest.raises(TypeError) as err:
         m.overload_order(1.1)
 
-    assert "1. (arg0: int) -> int" in str(err.value)
+    assert "1. (arg0: typing.SupportsInt) -> int" in str(err.value)
     assert "2. (arg0: str) -> int" in str(err.value)
     assert "3. (arg0: str) -> int" in str(err.value)
-    assert "4. (arg0: int) -> int" in str(err.value)
+    assert "4. (arg0: typing.SupportsInt) -> int" in str(err.value)
 
 
 def test_rvalue_ref_param():
@@ -525,3 +557,12 @@ def test_rvalue_ref_param():
     assert r.func2("1234") == 4
     assert r.func3("12345") == 5
     assert r.func4("123456") == 6
+
+
+def test_is_setter():
+    fld = m.exercise_is_setter.Field()
+    assert fld.int_value == -99
+    setter_return = fld.int_value = 100
+    assert isinstance(setter_return, int)
+    assert setter_return == 100
+    assert fld.int_value == 100

@@ -1,8 +1,27 @@
+from __future__ import annotations
+
+import sys
+from unittest import mock
+
 import pytest
 
-import env  # noqa: F401
+import env
 from pybind11_tests import ConstructorStats, UserType
 from pybind11_tests import class_ as m
+
+UINT32MAX = 2**32 - 1
+
+
+def refcount_immortal(ob: object) -> int:
+    if _is_immortal := getattr(sys, "_is_immortal", None):
+        return UINT32MAX if _is_immortal(ob) else sys.getrefcount(ob)
+    return sys.getrefcount(ob)
+
+
+def test_obj_class_name():
+    expected_name = "UserType" if env.PYPY else "pybind11_tests.UserType"
+    assert m.obj_class_name(UserType(1)) == expected_name
+    assert m.obj_class_name(UserType) == expected_name
 
 
 def test_repr():
@@ -17,18 +36,35 @@ def test_instance(msg):
 
     instance = m.NoConstructor.new_instance()
 
+    if env.GRAALPY:
+        pytest.skip("ConstructorStats is incompatible with GraalPy.")
+
     cstats = ConstructorStats.get(m.NoConstructor)
     assert cstats.alive() == 1
     del instance
     assert cstats.alive() == 0
 
 
-def test_instance_new(msg):
+def test_instance_new():
     instance = m.NoConstructorNew()  # .__new__(m.NoConstructor.__class__)
+
+    if env.GRAALPY:
+        pytest.skip("ConstructorStats is incompatible with GraalPy.")
+
     cstats = ConstructorStats.get(m.NoConstructorNew)
     assert cstats.alive() == 1
     del instance
     assert cstats.alive() == 0
+
+
+def test_pass_unique_ptr():
+    obj = m.ToBeHeldByUniquePtr()
+    with pytest.raises(RuntimeError) as execinfo:
+        m.pass_unique_ptr(obj)
+    assert str(execinfo.value).startswith(
+        "Passing `std::unique_ptr<T>` from Python to C++ requires `py::class_<T, py::smart_holder>` (with T = "
+    )
+    assert "ToBeHeldByUniquePtr" in str(execinfo.value)
 
 
 def test_type():
@@ -127,13 +163,13 @@ def test_qualname(doc):
     assert (
         doc(m.NestBase.Nested.fn)
         == """
-        fn(self: m.class_.NestBase.Nested, arg0: int, arg1: m.class_.NestBase, arg2: m.class_.NestBase.Nested) -> None
+        fn(self: m.class_.NestBase.Nested, arg0: typing.SupportsInt, arg1: m.class_.NestBase, arg2: m.class_.NestBase.Nested) -> None
     """
     )
     assert (
         doc(m.NestBase.Nested.fa)
         == """
-        fa(self: m.class_.NestBase.Nested, a: int, b: m.class_.NestBase, c: m.class_.NestBase.Nested) -> None
+        fa(self: m.class_.NestBase.Nested, a: typing.SupportsInt, b: m.class_.NestBase, c: m.class_.NestBase.Nested) -> None
     """
     )
     assert m.NestBase.__module__ == "pybind11_tests.class_"
@@ -176,7 +212,6 @@ def test_inheritance(msg):
 
 
 def test_inheritance_init(msg):
-
     # Single base
     class Python(m.Pet):
         def __init__(self):
@@ -198,6 +233,18 @@ def test_inheritance_init(msg):
     assert msg(exc_info.value) == expected
 
 
+@pytest.mark.parametrize(
+    "mock_return_value", [None, (1, 2, 3), m.Pet("Polly", "parrot"), m.Dog("Molly")]
+)
+def test_mock_new(mock_return_value):
+    with mock.patch.object(
+        m.Pet, "__new__", return_value=mock_return_value
+    ) as mock_new:
+        obj = m.Pet("Noname", "Nospecies")
+    assert obj is mock_return_value
+    mock_new.assert_called_once_with(m.Pet, "Noname", "Nospecies")
+
+
 def test_automatic_upcasting():
     assert type(m.return_class_1()).__name__ == "DerivedClass1"
     assert type(m.return_class_2()).__name__ == "DerivedClass2"
@@ -213,7 +260,7 @@ def test_automatic_upcasting():
 
 
 def test_isinstance():
-    objects = [tuple(), dict(), m.Pet("Polly", "parrot")] + [m.Dog("Molly")] * 4
+    objects = [(), {}, m.Pet("Polly", "parrot")] + [m.Dog("Molly")] * 4
     expected = (True, True, True, True, True, False, False)
     assert m.check_instances(objects) == expected
 
@@ -313,6 +360,8 @@ def test_bind_protected_functions():
 
     b = m.ProtectedB()
     assert b.foo() == 42
+    assert m.read_foo(b.void_foo()) == 42
+    assert m.pointers_equal(b.get_self(), b)
 
     class C(m.ProtectedB):
         def __init__(self):
@@ -338,25 +387,27 @@ def test_brace_initialization():
     assert b.vec == [123, 456]
 
 
-@pytest.mark.xfail("env.PYPY")
+@pytest.mark.xfail("env.PYPY or env.GRAALPY")
 def test_class_refcount():
     """Instances must correctly increase/decrease the reference count of their types (#1029)"""
-    from sys import getrefcount
 
     class PyDog(m.Dog):
         pass
 
     for cls in m.Dog, PyDog:
-        refcount_1 = getrefcount(cls)
+        refcount_1 = refcount_immortal(cls)
         molly = [cls("Molly") for _ in range(10)]
-        refcount_2 = getrefcount(cls)
+        refcount_2 = refcount_immortal(cls)
 
         del molly
         pytest.gc_collect()
-        refcount_3 = getrefcount(cls)
+        refcount_3 = refcount_immortal(cls)
 
+        # Python may report a large value here (above 30 bits), that's also fine
         assert refcount_1 == refcount_3
-        assert refcount_2 > refcount_1
+        assert (refcount_2 > refcount_1) or (
+            refcount_2 == refcount_1 and refcount_1 >= 2**29
+        )
 
 
 def test_reentrant_implicit_conversion_failure(msg):
@@ -417,7 +468,7 @@ def test_exception_rvalue_abort():
 
 
 # https://github.com/pybind/pybind11/issues/1568
-def test_multiple_instances_with_same_pointer(capture):
+def test_multiple_instances_with_same_pointer():
     n = 100
     instances = [m.SamePointer() for _ in range(n)]
     for i in range(n):
@@ -469,3 +520,38 @@ def test_register_duplicate_class():
         m.register_duplicate_nested_class_type(ClassScope)
     expected = 'generic_type: type "YetAnotherDuplicateNested" is already registered!'
     assert str(exc_info.value) == expected
+
+
+def test_pr4220_tripped_over_this():
+    assert (
+        m.Empty0().get_msg()
+        == "This is really only meant to exercise successful compilation."
+    )
+
+
+@pytest.mark.skipif(sys.platform.startswith("emscripten"), reason="Requires threads")
+def test_all_type_info_multithreaded():
+    # See PR #5419 for background.
+    import threading
+
+    from pybind11_tests import TestContext
+
+    class Context(TestContext):
+        pass
+
+    num_runs = 10
+    num_threads = 4
+    barrier = threading.Barrier(num_threads)
+
+    def func():
+        barrier.wait()
+        with Context():
+            pass
+
+    for _ in range(num_runs):
+        threads = [threading.Thread(target=func) for _ in range(num_threads)]
+        for thread in threads:
+            thread.start()
+
+        for thread in threads:
+            thread.join()

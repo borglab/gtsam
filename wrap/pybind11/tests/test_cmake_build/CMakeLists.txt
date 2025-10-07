@@ -1,6 +1,3 @@
-# Built-in in CMake 3.5+
-include(CMakeParseArguments)
-
 add_custom_target(test_cmake_build)
 
 function(pybind11_add_build_test name)
@@ -8,9 +5,8 @@ function(pybind11_add_build_test name)
 
   set(build_options "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
 
+  list(APPEND build_options "-DPYBIND11_FINDPYTHON=${PYBIND11_FINDPYTHON}")
   if(PYBIND11_FINDPYTHON)
-    list(APPEND build_options "-DPYBIND11_FINDPYTHON=${PYBIND11_FINDPYTHON}")
-
     if(DEFINED Python_ROOT_DIR)
       list(APPEND build_options "-DPython_ROOT_DIR=${Python_ROOT_DIR}")
     endif()
@@ -55,12 +51,19 @@ function(pybind11_add_build_test name)
   add_dependencies(test_cmake_build test_build_${name})
 endfunction()
 
+if(PYBIND11_TEST_SMART_HOLDER)
+  add_compile_definitions(
+    -DPYBIND11_RUN_TESTING_WITH_SMART_HOLDER_AS_DEFAULT_BUT_NEVER_USE_IN_PRODUCTION_PLEASE)
+endif()
+
 possibly_uninitialized(PYTHON_MODULE_EXTENSION Python_INTERPRETER_ID)
 
 pybind11_add_build_test(subdirectory_function)
 pybind11_add_build_test(subdirectory_target)
-if("${PYTHON_MODULE_EXTENSION}" MATCHES "pypy" OR "${Python_INTERPRETER_ID}" STREQUAL "PyPy")
-  message(STATUS "Skipping embed test on PyPy")
+if("${PYTHON_MODULE_EXTENSION}" MATCHES "pypy"
+   OR "${Python_INTERPRETER_ID}" STREQUAL "PyPy"
+   OR "${PYTHON_MODULE_EXTENSION}" MATCHES "graalpy")
+  message(STATUS "Skipping embed test on PyPy or GraalPy")
 else()
   pybind11_add_build_test(subdirectory_embed)
 endif()
@@ -70,10 +73,14 @@ if(PYBIND11_INSTALL)
     mock_install ${CMAKE_COMMAND} "-DCMAKE_INSTALL_PREFIX=${pybind11_BINARY_DIR}/mock_install" -P
                  "${pybind11_BINARY_DIR}/cmake_install.cmake")
 
-  pybind11_add_build_test(installed_function INSTALL)
+  if(NOT "${PYTHON_MODULE_EXTENSION}" MATCHES "graalpy")
+    pybind11_add_build_test(installed_function INSTALL)
+  endif()
   pybind11_add_build_test(installed_target INSTALL)
-  if(NOT ("${PYTHON_MODULE_EXTENSION}" MATCHES "pypy" OR "${Python_INTERPRETER_ID}" STREQUAL "PyPy"
-         ))
+  if(NOT
+     ("${PYTHON_MODULE_EXTENSION}" MATCHES "pypy"
+      OR "${Python_INTERPRETER_ID}" STREQUAL "PyPy"
+      OR "${PYTHON_MODULE_EXTENSION}" MATCHES "graalpy"))
     pybind11_add_build_test(installed_embed INSTALL)
   endif()
 endif()

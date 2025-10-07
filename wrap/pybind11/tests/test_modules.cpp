@@ -78,8 +78,7 @@ TEST_SUBMODULE(modules, m) {
         class DupeException {};
 
         // Go ahead and leak, until we have a non-leaking py::module_ constructor
-        auto dm
-            = py::module_::create_extension_module("dummy", nullptr, new py::module_::module_def);
+        auto dm = py::module_::create_extension_module("dummy", nullptr, new PyModuleDef);
         auto failures = py::list();
 
         py::class_<Dupe1>(dm, "Dupe1");
@@ -90,32 +89,32 @@ TEST_SUBMODULE(modules, m) {
         try {
             py::class_<Dupe1>(dm, "Dupe1");
             failures.append("Dupe1 class");
-        } catch (std::runtime_error &) {
+        } catch (std::runtime_error &) { // NOLINT(bugprone-empty-catch)
         }
         try {
             dm.def("Dupe1", []() { return Dupe1(); });
             failures.append("Dupe1 function");
-        } catch (std::runtime_error &) {
+        } catch (std::runtime_error &) { // NOLINT(bugprone-empty-catch)
         }
         try {
             py::class_<Dupe3>(dm, "dupe1_factory");
             failures.append("dupe1_factory");
-        } catch (std::runtime_error &) {
+        } catch (std::runtime_error &) { // NOLINT(bugprone-empty-catch)
         }
         try {
             py::exception<Dupe3>(dm, "Dupe2");
             failures.append("Dupe2");
-        } catch (std::runtime_error &) {
+        } catch (std::runtime_error &) { // NOLINT(bugprone-empty-catch)
         }
         try {
             dm.def("DupeException", []() { return 30; });
             failures.append("DupeException1");
-        } catch (std::runtime_error &) {
+        } catch (std::runtime_error &) { // NOLINT(bugprone-empty-catch)
         }
         try {
             py::class_<DupeException>(dm, "DupeException");
             failures.append("DupeException2");
-        } catch (std::runtime_error &) {
+        } catch (std::runtime_error &) { // NOLINT(bugprone-empty-catch)
         }
 
         return failures;

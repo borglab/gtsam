@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import pytest
 
+import env  # noqa: F401
 from pybind11_tests import copy_move_policies as m
 
 
@@ -15,6 +18,7 @@ def test_lacking_move_ctor():
     assert "is neither movable nor copyable!" in str(excinfo.value)
 
 
+@pytest.mark.skipif("env.GRAALPY", reason="Cannot reliably trigger GC")
 def test_move_and_copy_casts():
     """Cast some values in C++ via custom type casters and count the number of moves/copies."""
 
@@ -42,6 +46,7 @@ def test_move_and_copy_casts():
     assert c_m.alive() + c_mc.alive() + c_c.alive() == 0
 
 
+@pytest.mark.skipif("env.GRAALPY", reason="Cannot reliably trigger GC")
 def test_move_and_copy_loads():
     """Call some functions that load arguments via custom type casters and count the number of
     moves/copies."""
@@ -75,6 +80,7 @@ def test_move_and_copy_loads():
 
 
 @pytest.mark.skipif(not m.has_optional, reason="no <optional>")
+@pytest.mark.skipif("env.GRAALPY", reason="Cannot reliably trigger GC")
 def test_move_and_copy_load_optional():
     """Tests move/copy loads of std::optional arguments"""
 
@@ -130,3 +136,9 @@ def test_pytype_rvalue_cast():
 
     value = m.get_pytype_rvalue_castissue(1.0)
     assert value == 1
+
+
+def test_unusual_op_ref():
+    # Merely to test that this still exists and built successfully.
+    assert m.CallCastUnusualOpRefConstRef().__class__.__name__ == "UnusualOpRef"
+    assert m.CallCastUnusualOpRefMovable().__class__.__name__ == "UnusualOpRef"
