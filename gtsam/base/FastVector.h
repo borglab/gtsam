@@ -27,6 +27,11 @@ namespace gtsam {
  * FastVector is a type alias for std::vector.
  * Previously used a custom memory allocator, but now uses the default allocator.
  * This type alias is maintained for backward compatibility.
+ * 
+ * To use a custom allocator with vectors in GTSAM, you can either:
+ * 1. Use std::vector<T, CustomAllocator<T>> directly where needed
+ * 2. Define your own type alias with the allocator you need
+ * 
  * @ingroup base
  */
 template <typename T>
