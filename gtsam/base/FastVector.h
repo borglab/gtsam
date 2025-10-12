@@ -11,7 +11,7 @@
 
 /**
  * @file    FastVector.h
- * @brief   A thin wrapper around std::vector that uses a custom allocator.
+ * @brief   Type alias for std::vector (previously used a custom allocator).
  * @author  Richard Roberts
  * @author  Frank Dellaert
  * @date    Feb 9, 2011
@@ -19,18 +19,17 @@
 
 #pragma once
 
-#include <gtsam/base/FastDefaultAllocator.h>
 #include <vector>
 
 namespace gtsam {
 
 /**
- * FastVector is a type alias to a std::vector with a custom memory allocator.
- * The particular allocator depends on GTSAM's cmake configuration.
+ * FastVector is a type alias for std::vector.
+ * Previously used a custom memory allocator, but now uses the default allocator.
+ * This type alias is maintained for backward compatibility.
  * @ingroup base
  */
 template <typename T>
-using FastVector =
-    std::vector<T, typename internal::FastDefaultVectorAllocator<T>::type>;
+using FastVector = std::vector<T>;
 
 }  // namespace gtsam
