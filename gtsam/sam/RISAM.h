@@ -9,7 +9,7 @@
 
  * -------------------------------------------------------------------------- */
 
-/** 
+/**
  *  @file RISAM.h
  *  @brief Robust Incremental Smoothing and Mapping (riSAM)
  *  @date October 2025
@@ -137,19 +137,14 @@ class RISAM {
   /// performs a robust update. All extra involved keys will be treated as being
   /// apart of the current update wrt factor convexification
   UpdateResult update(
-      const NonlinearFactorGraph& new_factors =
-          NonlinearFactorGraph(),
+      const NonlinearFactorGraph& new_factors = NonlinearFactorGraph(),
       const Values& new_theta = Values(),
       const boost::optional<std::set<Key>> extra_gnc_involved_keys =
           boost::none,
-      const FactorIndices& remove_factor_indices =
-          FactorIndices(),
-      const boost::optional<FastMap<Key, int>>& constrained_keys =
-          boost::none,
-      const boost::optional<FastList<Key>>& no_relin_keys =
-          boost::none,
-      const boost::optional<FastList<Key>>& extra_reelim_keys =
-          boost::none,
+      const FactorIndices& remove_factor_indices = FactorIndices(),
+      const boost::optional<FastMap<Key, int>>& constrained_keys = boost::none,
+      const boost::optional<FastList<Key>>& no_relin_keys = boost::none,
+      const boost::optional<FastList<Key>>& extra_reelim_keys = boost::none,
       bool force_relinearize = false);
 
   /// @brief Update Interface. See ISAM2 docs for details as parameters match
@@ -157,8 +152,7 @@ class RISAM {
   /// @param force_gnc_solve - overrides internal RISAM logic and performs a
   /// robust update
   UpdateResult update(
-      const NonlinearFactorGraph& new_factors,
-      const Values& new_theta,
+      const NonlinearFactorGraph& new_factors, const Values& new_theta,
       const boost::optional<std::set<Key>> extra_gnc_involved_keys,
       const ISAM2UpdateParams& update_params);
 
@@ -197,8 +191,7 @@ class RISAM {
    * @see ISAM2::update for details on params
    */
   UpdateResult updateRobust(
-      const NonlinearFactorGraph& new_factors,
-      const Values& new_theta,
+      const NonlinearFactorGraph& new_factors, const Values& new_theta,
       const boost::optional<std::set<Key>> extra_gnc_involved_keys,
       const ISAM2UpdateParams& update_params);
 
@@ -239,11 +232,9 @@ class RISAM {
    * the given parameters.
    */
   std::set<FactorIndex> convexifyInvolvedFactors(
-      const NonlinearFactorGraph& new_factors,
-      const Values& new_theta,
+      const NonlinearFactorGraph& new_factors, const Values& new_theta,
       const boost::optional<std::set<Key>> extra_gnc_involved_keys,
-      ISAM2UpdateParams& internal_update_params,
-      UpdateResult& update_result);
+      ISAM2UpdateParams& internal_update_params, UpdateResult& update_result);
 };
 
-}  // namespace risam
+}  // namespace gtsam

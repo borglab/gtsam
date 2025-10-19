@@ -16,7 +16,6 @@
  * @date October 2025
  */
 
-
 #include <gtsam/sam/RISAM.h>
 
 #include <boost/math/distributions/chi_squared.hpp>
@@ -26,23 +25,25 @@
 namespace risam {
 
 /**
- * #### ##    ## ######## ######## ########  ########    ###     ######  ########
+ * #### ##    ## ######## ######## ########  ########    ###     ###### ########
  *  ##  ###   ##    ##    ##       ##     ## ##         ## ##   ##    ## ##
  *  ##  ####  ##    ##    ##       ##     ## ##        ##   ##  ##       ##
  *  ##  ## ## ##    ##    ######   ########  ######   ##     ## ##       ######
  *  ##  ##  ####    ##    ##       ##   ##   ##       ######### ##       ##
  *  ##  ##   ###    ##    ##       ##    ##  ##       ##     ## ##    ## ##
- * #### ##    ##    ##    ######## ##     ## ##       ##     ##  ######  ########
+ * #### ##    ##    ##    ######## ##     ## ##       ##     ##  ###### ########
  */
 
 /*********************************************************************************************************************/
-RISAM::UpdateResult RISAM::update(const gtsam::NonlinearFactorGraph& new_factors, const gtsam::Values& new_theta,
-                                  const boost::optional<std::set<gtsam::Key>> extra_gnc_involved_keys,
-                                  const gtsam::FactorIndices& remove_factor_indices,
-                                  const boost::optional<gtsam::FastMap<gtsam::Key, int>>& constrained_keys,
-                                  const boost::optional<gtsam::FastList<gtsam::Key>>& no_relin_keys,
-                                  const boost::optional<gtsam::FastList<gtsam::Key>>& extra_reelim_keys,
-                                  bool force_relinearize) {
+RISAM::UpdateResult RISAM::update(
+    const gtsam::NonlinearFactorGraph& new_factors,
+    const gtsam::Values& new_theta,
+    const boost::optional<std::set<gtsam::Key>> extra_gnc_involved_keys,
+    const gtsam::FactorIndices& remove_factor_indices,
+    const boost::optional<gtsam::FastMap<gtsam::Key, int>>& constrained_keys,
+    const boost::optional<gtsam::FastList<gtsam::Key>>& no_relin_keys,
+    const boost::optional<gtsam::FastList<gtsam::Key>>& extra_reelim_keys,
+    bool force_relinearize) {
   gtsam::ISAM2UpdateParams update_params;
   update_params.removeFactorIndices = remove_factor_indices;
   update_params.constrainedKeys = constrained_keys;
@@ -53,10 +54,13 @@ RISAM::UpdateResult RISAM::update(const gtsam::NonlinearFactorGraph& new_factors
 }
 
 /*********************************************************************************************************************/
-RISAM::UpdateResult RISAM::update(const gtsam::NonlinearFactorGraph& new_factors, const gtsam::Values& new_theta,
-                                  const boost::optional<std::set<gtsam::Key>> extra_gnc_involved_keys,
-                                  const gtsam::ISAM2UpdateParams& update_params) {
-  // Determine if the update includes any graduated factors (i.e. potential outliers)
+RISAM::UpdateResult RISAM::update(
+    const gtsam::NonlinearFactorGraph& new_factors,
+    const gtsam::Values& new_theta,
+    const boost::optional<std::set<gtsam::Key>> extra_gnc_involved_keys,
+    const gtsam::ISAM2UpdateParams& update_params) {
+  // Determine if the update includes any graduated factors (i.e. potential
+  // outliers)
   bool update_includes_potential_outliers = false;
   for (auto& factor : new_factors) {
     auto grad_factor = boost::dynamic_pointer_cast<GraduatedFactor>(factor);
@@ -66,12 +70,15 @@ RISAM::UpdateResult RISAM::update(const gtsam::NonlinearFactorGraph& new_factors
   // Update housekeeping for any mu_inits
   updateHouseKeeping(new_factors, update_params);
 
-  // Run the update: robust if we have potential outliers (or if requested) otherwise standard iSAM2
+  // Run the update: robust if we have potential outliers (or if requested)
+  // otherwise standard iSAM2
   UpdateResult result;
   if (extra_gnc_involved_keys || update_includes_potential_outliers) {
-    result = updateRobust(new_factors, new_theta, extra_gnc_involved_keys, update_params);
+    result = updateRobust(new_factors, new_theta, extra_gnc_involved_keys,
+                          update_params);
   } else {
-    result.isam2_result = solver_->update(new_factors, new_theta, update_params);
+    result.isam2_result =
+        solver_->update(new_factors, new_theta, update_params);
     solver_->runBackSubstitution();
   }
 
@@ -82,61 +89,80 @@ RISAM::UpdateResult RISAM::update(const gtsam::NonlinearFactorGraph& new_factors
 }
 
 /*********************************************************************************************************************/
-RISAM::UpdateResult RISAM::updateRobust(const gtsam::NonlinearFactorGraph& new_factors, const gtsam::Values& new_theta,
-                                        const boost::optional<std::set<gtsam::Key>> extra_gnc_involved_keys,
-                                        const gtsam::ISAM2UpdateParams& update_params) {
+RISAM::UpdateResult RISAM::updateRobust(
+    const gtsam::NonlinearFactorGraph& new_factors,
+    const gtsam::Values& new_theta,
+    const boost::optional<std::set<gtsam::Key>> extra_gnc_involved_keys,
+    const gtsam::ISAM2UpdateParams& update_params) {
   // Setup the result structure
   UpdateResult update_result;
 
-  // Create params for the initial update, note these may be modified by convexifyInvolvedFactors
+  // Create params for the initial update, note these may be modified by
+  // convexifyInvolvedFactors
   gtsam::ISAM2UpdateParams initial_update_params = update_params;
 
   // Convexify involved factors
   std::set<gtsam::FactorIndex> convex_factors =
-      convexifyInvolvedFactors(new_factors, new_theta, extra_gnc_involved_keys, initial_update_params, update_result);
-  /// Setup a container to count the number of times mu is updated for each convex factor
+      convexifyInvolvedFactors(new_factors, new_theta, extra_gnc_involved_keys,
+                               initial_update_params, update_result);
+  /// Setup a container to count the number of times mu is updated for each
+  /// convex factor
   std::map<gtsam::FactorIndex, size_t> mu_update_count;
   for (auto& fidx : convex_factors) mu_update_count[fidx] = 0;
 
-  // Run the initial update to add new factors, after this the iSAM2 factors/var_index will match the risam copies
-  update_result.isam2_result = solver_->update(new_factors, new_theta, initial_update_params);
+  // Run the initial update to add new factors, after this the iSAM2
+  // factors/var_index will match the risam copies
+  update_result.isam2_result =
+      solver_->update(new_factors, new_theta, initial_update_params);
   solver_->runBackSubstitution();
 
   // Run GNC iterations until all convex factors have converged w.r.t. mu_
-  gtsam::FactorIndices remaining_convex_factors(convex_factors.begin(), convex_factors.end());
-  gtsam::ISAM2UpdateParams update_params_internal;  // Used to force updates convex factors + ensure better ordering
+  gtsam::FactorIndices remaining_convex_factors(convex_factors.begin(),
+                                                convex_factors.end());
+  gtsam::ISAM2UpdateParams
+      update_params_internal;  // Used to force updates convex factors + ensure
+                               // better ordering
   while (remaining_convex_factors.size() > 0) {
     // Get the current solution
     gtsam::Values current_est = solver_->calculateEstimate();
     // Update mu for all convex factors and get the convex keys
     gtsam::FastList<gtsam::Key> convexKeys;
     for (gtsam::FactorIndex fidx : remaining_convex_factors) {
-      auto grad_factor = boost::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
-      *(mu_[fidx]) =
-          grad_factor->kernel()->updateMu(*(mu_[fidx]), grad_factor->residual(current_est), mu_update_count[fidx]);
-      convexKeys.insert(convexKeys.end(), factors_.at(fidx)->begin(), factors_.at(fidx)->end());
+      auto grad_factor =
+          boost::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
+      *(mu_[fidx]) = grad_factor->kernel()->updateMu(
+          *(mu_[fidx]), grad_factor->residual(current_est),
+          mu_update_count[fidx]);
+      convexKeys.insert(convexKeys.end(), factors_.at(fidx)->begin(),
+                        factors_.at(fidx)->end());
       mu_update_count[fidx]++;
     }
 
     // Run the Update, re-eliminating the subproblem defined at this time-step
-    update_params_internal.extraReelimKeys = convexKeys;  // Force update to convex factors
+    update_params_internal.extraReelimKeys =
+        convexKeys;  // Force update to convex factors
     update_params_internal.constrainedKeys =
-        gtsam::FastMap<gtsam::Key, int>();  // Prevent iSAM2 from ordering convex factors first
-    solver_->update(gtsam::NonlinearFactorGraph(), gtsam::Values(), update_params_internal);
+        gtsam::FastMap<gtsam::Key, int>();  // Prevent iSAM2 from ordering
+                                            // convex factors first
+    solver_->update(gtsam::NonlinearFactorGraph(), gtsam::Values(),
+                    update_params_internal);
     solver_->runBackSubstitution();
 
     // Update set of convex Factors
     gtsam::FactorIndices new_remaining_convex_factors;
     for (gtsam::FactorIndex fidx : remaining_convex_factors) {
-      auto grad_factor = boost::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
-      if (!grad_factor->kernel()->isMuConverged(*(mu_[fidx]))) new_remaining_convex_factors.push_back(fidx);
+      auto grad_factor =
+          boost::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
+      if (!grad_factor->kernel()->isMuConverged(*(mu_[fidx])))
+        new_remaining_convex_factors.push_back(fidx);
     }
     remaining_convex_factors = new_remaining_convex_factors;
   }
 
   for (size_t i = 0; i < params_.number_extra_iters; i++) {
     // Orig RISAM preformed 1 extra iteration
-    solver_->update(gtsam::NonlinearFactorGraph(), gtsam::Values(), gtsam::ISAM2UpdateParams());
+    solver_->update(gtsam::NonlinearFactorGraph(), gtsam::Values(),
+                    gtsam::ISAM2UpdateParams());
     solver_->runBackSubstitution();
   }
 
@@ -144,10 +170,13 @@ RISAM::UpdateResult RISAM::updateRobust(const gtsam::NonlinearFactorGraph& new_f
 }
 
 /*********************************************************************************************************************/
-gtsam::Values RISAM::calculateEstimate() { return solver_->calculateEstimate(); }
+gtsam::Values RISAM::calculateEstimate() {
+  return solver_->calculateEstimate();
+}
 
 /*********************************************************************************************************************/
-void RISAM::forceSetLinearization(const gtsam::Key& key, const gtsam::Value& value) {
+void RISAM::forceSetLinearization(const gtsam::Key& key,
+                                  const gtsam::Value& value) {
   solver_->forceSetLinearization(key, value);
 }
 
@@ -158,7 +187,8 @@ std::set<size_t> RISAM::getOutliers(double chi2_outlier_thresh) {
 
   for (size_t i = 0; i < factors_.size(); i++) {
     gtsam::NonlinearFactor::shared_ptr nlf_ptr = factors_.at(i);
-    GraduatedFactor::shared_ptr grad_ptr = boost::dynamic_pointer_cast<GraduatedFactor>(nlf_ptr);
+    GraduatedFactor::shared_ptr grad_ptr =
+        boost::dynamic_pointer_cast<GraduatedFactor>(nlf_ptr);
     if (grad_ptr) {
       auto dist = boost::math::chi_squared_distribution<double>(nlf_ptr->dim());
       const double thresh = boost::math::quantile(dist, chi2_outlier_thresh);
@@ -182,17 +212,19 @@ std::set<size_t> RISAM::getOutliers(double chi2_outlier_thresh) {
 /*********************************************************************************************************************/
 void RISAM::updateHouseKeeping(const gtsam::NonlinearFactorGraph& new_factors,
                                const gtsam::ISAM2UpdateParams& update_params) {
-  // To match the behavior of iSAM2 and ensure matching indices we first add info for new factors then remove info
+  // To match the behavior of iSAM2 and ensure matching indices we first add
+  // info for new factors then remove info
 
   // Add the factors and get their new indices
-  gtsam::FactorIndices new_factor_indices =
-      factors_.add_factors(new_factors, params_.isam2_params.findUnusedFactorSlots);
+  gtsam::FactorIndices new_factor_indices = factors_.add_factors(
+      new_factors, params_.isam2_params.findUnusedFactorSlots);
   // Update the variable index for the new factors
   variable_index_.augment(new_factors, new_factor_indices);
   // Add a mu and mu_init entry for each factor
   augmentMu(new_factors, new_factor_indices);
 
-  // Once we have added new factors we can remove any factors and corresponding info
+  // Once we have added new factors we can remove any factors and corresponding
+  // info
   gtsam::NonlinearFactorGraph removed_factors;
   removed_factors.reserve(update_params.removeFactorIndices.size());
   for (const auto fidx : update_params.removeFactorIndices) {
@@ -201,15 +233,18 @@ void RISAM::updateHouseKeeping(const gtsam::NonlinearFactorGraph& new_factors,
     mu_.at(fidx).reset();
     mu_inits_.at(fidx).reset();
   }
-  variable_index_.remove(update_params.removeFactorIndices.begin(), update_params.removeFactorIndices.end(),
+  variable_index_.remove(update_params.removeFactorIndices.begin(),
+                         update_params.removeFactorIndices.end(),
                          removed_factors);
 }
 
 /*********************************************************************************************************************/
-void RISAM::augmentMu(const gtsam::NonlinearFactorGraph& new_factors, const gtsam::FactorIndices& new_factor_indices) {
+void RISAM::augmentMu(const gtsam::NonlinearFactorGraph& new_factors,
+                      const gtsam::FactorIndices& new_factor_indices) {
   for (size_t i = 0; i < new_factors.nrFactors(); i++) {
     gtsam::FactorIndex fidx = new_factor_indices[i];
-    auto grad_factor = boost::dynamic_pointer_cast<GraduatedFactor>(new_factors.at(i));
+    auto grad_factor =
+        boost::dynamic_pointer_cast<GraduatedFactor>(new_factors.at(i));
 
     // Get the pointers to mu and mu_init for this factor
     std::shared_ptr<double> mu, mu_init;
@@ -235,16 +270,23 @@ void RISAM::augmentMu(const gtsam::NonlinearFactorGraph& new_factors, const gtsa
 /*********************************************************************************************************************/
 void RISAM::incrementMuInits() {
   gtsam::VectorValues delta = solver_->getDelta();
-  if (delta.norm() / delta.size() < params_.outlier_mu_avg_var_convergence_thresh) {
+  if (delta.norm() / delta.size() <
+      params_.outlier_mu_avg_var_convergence_thresh) {
     gtsam::Values theta = solver_->calculateEstimate();
     for (auto fidx : factors_to_check_status_) {
-      auto grad_factor = boost::dynamic_pointer_cast<GraduatedFactor>(factors_[fidx]);
+      auto grad_factor =
+          boost::dynamic_pointer_cast<GraduatedFactor>(factors_[fidx]);
       auto mahdist = grad_factor->residual(theta);
-      auto dist = boost::math::chi_squared_distribution<double>(factors_[fidx]->dim());
-      if (mahdist > boost::math::quantile(dist, params_.outlier_mu_chisq_upper_bound)) {
-        *(mu_inits_[fidx]) = grad_factor->kernel()->incrementMuInit(*(mu_inits_[fidx]));
-      } else if (mahdist < boost::math::quantile(dist, params_.outlier_mu_chisq_lower_bound)) {
-        *(mu_inits_[fidx]) = grad_factor->kernel()->incrementMuInitInv(*(mu_inits_[fidx]));
+      auto dist =
+          boost::math::chi_squared_distribution<double>(factors_[fidx]->dim());
+      if (mahdist >
+          boost::math::quantile(dist, params_.outlier_mu_chisq_upper_bound)) {
+        *(mu_inits_[fidx]) =
+            grad_factor->kernel()->incrementMuInit(*(mu_inits_[fidx]));
+      } else if (mahdist < boost::math::quantile(
+                               dist, params_.outlier_mu_chisq_lower_bound)) {
+        *(mu_inits_[fidx]) =
+            grad_factor->kernel()->incrementMuInitInv(*(mu_inits_[fidx]));
       }
     }
     factors_to_check_status_.clear();
@@ -253,43 +295,53 @@ void RISAM::incrementMuInits() {
 
 /*********************************************************************************************************************/
 std::set<gtsam::FactorIndex> RISAM::convexifyInvolvedFactors(
-    const gtsam::NonlinearFactorGraph& new_factors, const gtsam::Values& new_theta,
-    const boost::optional<std::set<gtsam::Key>> extra_gnc_involved_keys, gtsam::ISAM2UpdateParams& update_params,
-    UpdateResult& update_result) {
-  // Gather all involved keys - Involved keys are directly induced by the new factors
+    const gtsam::NonlinearFactorGraph& new_factors,
+    const gtsam::Values& new_theta,
+    const boost::optional<std::set<gtsam::Key>> extra_gnc_involved_keys,
+    gtsam::ISAM2UpdateParams& update_params, UpdateResult& update_result) {
+  // Gather all involved keys - Involved keys are directly induced by the new
+  // factors
   gtsam::KeySet new_factor_keys = new_factors.keys();
   gtsam::KeySet involved_keys = solver_->traverseTop(new_factors.keyVector());
   involved_keys.insert(new_factor_keys.begin(), new_factor_keys.end());
 
   // Add to the gathered involved keys, any keys specified by the user
   if (extra_gnc_involved_keys) {
-    involved_keys.insert(extra_gnc_involved_keys->begin(), extra_gnc_involved_keys->end());
+    involved_keys.insert(extra_gnc_involved_keys->begin(),
+                         extra_gnc_involved_keys->end());
     // For any user specified involved keys also add them to the extra-reelim
     if (!update_params.extraReelimKeys) {
-      update_params.extraReelimKeys = gtsam::FastList<gtsam::Key>();  // create if it does not exist
+      update_params.extraReelimKeys =
+          gtsam::FastList<gtsam::Key>();  // create if it does not exist
     }
-    update_params.extraReelimKeys->insert(update_params.extraReelimKeys->end(), extra_gnc_involved_keys->begin(),
+    update_params.extraReelimKeys->insert(update_params.extraReelimKeys->end(),
+                                          extra_gnc_involved_keys->begin(),
                                           extra_gnc_involved_keys->end());
   }
 
-  // Gather all affected keys - Super set of involved keys including keys modified by user params
-  auto [affected_keys, is_batch_update] = solver_->preComputeUpdateInfo(new_factors, new_theta, update_params);
+  // Gather all affected keys - Super set of involved keys including keys
+  // modified by user params
+  auto [affected_keys, is_batch_update] =
+      solver_->preComputeUpdateInfo(new_factors, new_theta, update_params);
 
   // Convexify update-involved factors
   std::set<gtsam::FactorIndex> convex_factors;
   for (gtsam::Key affected_key : affected_keys) {
     for (gtsam::FactorIndex fidx : variable_index_[affected_key]) {
-      auto grad_factor = boost::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
+      auto grad_factor =
+          boost::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
       if (grad_factor) {
-        bool inside = true;            // indicates that all variables touched by this factor are in the affected set
-        bool update_involved = false;  // indicates a factor touches at least one variable in the involved set
+        bool inside = true;  // indicates that all variables touched by this
+                             // factor are in the affected set
+        bool update_involved = false;  // indicates a factor touches at least
+                                       // one variable in the involved set
         for (gtsam::Key factor_key : factors_.at(fidx)->keys()) {
           inside = inside && affected_keys.count(factor_key);
           update_involved = update_involved || involved_keys.count(factor_key);
         }
 
-        // If the factor is update involved and marked as inside, we need to convexify
-        // Note: everything is inside on a batch update
+        // If the factor is update involved and marked as inside, we need to
+        // convexify Note: everything is inside on a batch update
         if ((inside || is_batch_update) && update_involved) {
           convex_factors.insert(fidx);
           factors_to_check_status_.insert(fidx);

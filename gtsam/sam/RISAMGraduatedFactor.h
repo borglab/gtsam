@@ -9,10 +9,9 @@
 
  * -------------------------------------------------------------------------- */
 
-
 /** @brief Factor that implements a graduated robust cost function.
- * A Graduated factor overrides a portion of the NoiseModelFactor interface to implement a graduated robust cost
- * function for the factor.
+ * A Graduated factor overrides a portion of the NoiseModelFactor interface to
+ * implement a graduated robust cost function for the factor.
  *
  *  @author Dan McGann
  *  @date Mar 2022
@@ -50,17 +49,22 @@ class GraduatedFactor {
   /// @brief Copy constructor
   GraduatedFactor(const GraduatedFactor& other);
 
-  /** @brief Linearize this factor at a specific point, using the specified convexification parameter mu
-   *  @param current_estimate: the variable estimate at which to linearize the Factor
-   *  @param mu: the current value of the convexification parameter for this factor
+  /** @brief Linearize this factor at a specific point, using the specified
+   * convexification parameter mu
+   *  @param current_estimate: the variable estimate at which to linearize the
+   * Factor
+   *  @param mu: the current value of the convexification parameter for this
+   * factor
    */
-  virtual gtsam::GaussianFactor::shared_ptr linearizeRobust(const gtsam::Values& current_estimate) const = 0;
+  virtual gtsam::GaussianFactor::shared_ptr linearizeRobust(
+      const gtsam::Values& current_estimate) const = 0;
 
   /// @brief returns the residual of the factor
   virtual double residual(const gtsam::Values& current_estimate) const = 0;
 
   /// @brief returns \rho(r) of the factor
-  virtual double robustResidual(const gtsam::Values& current_estimate) const = 0;
+  virtual double robustResidual(
+      const gtsam::Values& current_estimate) const = 0;
 
   /// @brief Returns the value of \mu_{init} for this graduated kernel
   const GraduatedKernel::shared_ptr kernel() const;
@@ -69,14 +73,16 @@ class GraduatedFactor {
   /// WARN: Resets mu_ to the mu_init of the kernel
   void updateKernel(const GraduatedKernel::shared_ptr& new_kernel);
 
-  /// @brief Copies this factor as an instance of its base type without the graduated kernel
+  /// @brief Copies this factor as an instance of its base type without the
+  /// graduated kernel
   virtual gtsam::NonlinearFactor::shared_ptr cloneUngraduated() const = 0;
 };
 
 template <class FACTOR_TYPE>
 class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
   static_assert(std::is_base_of<gtsam::NonlinearFactor, FACTOR_TYPE>::value,
-                "GraduatedFactor Must be instantiated with a Factor Derived from gtsam::NonlinearFactor.");
+                "GraduatedFactor Must be instantiated with a Factor Derived "
+                "from gtsam::NonlinearFactor.");
 
   /** TYPES **/
  public:
@@ -98,18 +104,23 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
   /// @brief makes a deep copy
   gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-        gtsam::NonlinearFactor::shared_ptr(new GenericGraduatedFactor<FACTOR_TYPE>(*this)));
+        gtsam::NonlinearFactor::shared_ptr(
+            new GenericGraduatedFactor<FACTOR_TYPE>(*this)));
   }
 
-  gtsam::GaussianFactor::shared_ptr linearize(const gtsam::Values& current_estimate) const override {
+  gtsam::GaussianFactor::shared_ptr linearize(
+      const gtsam::Values& current_estimate) const override {
     return linearizeRobust(current_estimate);
   }
 
   /// @brief For graduated factors return 0.5 \rho(r)^2
-  double error(const gtsam::Values& values) const override { return 0.5 * std::pow(robustResidual(values), 2); }
+  double error(const gtsam::Values& values) const override {
+    return 0.5 * std::pow(robustResidual(values), 2);
+  }
 
   /** GRADUATED INTERFACE **/
-  gtsam::GaussianFactor::shared_ptr linearizeRobust(const gtsam::Values& current_estimate) const override {
+  gtsam::GaussianFactor::shared_ptr linearizeRobust(
+      const gtsam::Values& current_estimate) const override {
     double r = residual(current_estimate);
 
     gtsam::Matrix A;
@@ -140,18 +151,23 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
     return boost::make_shared<gtsam::JacobianFactor>(Ablock_map, b);
   }
 
-  /* ************************************************************************* */
+  /* *************************************************************************
+   */
   double residual(const gtsam::Values& current_estimate) const override {
     return sqrt(2.0 * FACTOR_TYPE::error(current_estimate));
   }
 
-  /* ************************************************************************* */
+  /* *************************************************************************
+   */
   double robustResidual(const gtsam::Values& current_estimate) const override {
     return kernel_->error(residual(current_estimate), *mu_);
   }
 
-  /* ************************************************************************* */
-  gtsam::NonlinearFactor::shared_ptr cloneUngraduated() const override { return FACTOR_TYPE::clone(); }
+  /* *************************************************************************
+   */
+  gtsam::NonlinearFactor::shared_ptr cloneUngraduated() const override {
+    return FACTOR_TYPE::clone();
+  }
 };
 
 /** HELPERS **/
@@ -161,7 +177,9 @@ GenericGraduatedFactor<FACTOR_TYPE> make_graduated(Args&&... args) {
 }
 
 template <class FACTOR_TYPE, class... Args>
-typename GenericGraduatedFactor<FACTOR_TYPE>::shared_ptr make_shared_graduated(Args&&... args) {
-  return boost::make_shared<GenericGraduatedFactor<FACTOR_TYPE>>(std::forward<Args>(args)...);
+typename GenericGraduatedFactor<FACTOR_TYPE>::shared_ptr make_shared_graduated(
+    Args&&... args) {
+  return boost::make_shared<GenericGraduatedFactor<FACTOR_TYPE>>(
+      std::forward<Args>(args)...);
 }
 }  // namespace risam
