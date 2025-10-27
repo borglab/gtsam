@@ -90,6 +90,12 @@ jobs:
         run: |
           VCPKG_BASH_PATH=${VCPKG_INSTALLATION_ROOT//\\//}
           echo "VCPKG_INSTALLATION_ROOT=$VCPKG_BASH_PATH" >> "$GITHUB_ENV"
+      
+      - name: Update vcpkg
+        shell: bash
+        run: |
+          git -C ${{ env.VCPKG_INSTALLATION_ROOT }} clean -fdx
+          git -C ${{ env.VCPKG_INSTALLATION_ROOT }} pull
 
       - name: "Install dependencies"
         run: >
