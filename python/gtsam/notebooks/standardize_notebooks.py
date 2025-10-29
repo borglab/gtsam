@@ -21,8 +21,9 @@ from typing import Dict, List, Any
 
 def create_colab_button_cell(notebook_path: str) -> Dict[str, Any]:
     # Convert absolute path to relative GitHub path
-    github_path = notebook_path.replace('/Users/apollo/dev/research/gtsam/', '')
-    
+    git_root = Path(__file__).resolve().parent.parent.parent.parent
+    github_path = notebook_path.replace(git_root.as_posix() + '/', '')
+
     return {
         "cell_type": "markdown",
         "id": "colab_button",
