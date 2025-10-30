@@ -208,4 +208,61 @@ Rot3 AHRSFactor::predict(const Rot3& Ri, const Vector3& bias,
   return newPim.predict(Ri, bias);
 }
 
+
+gtsam::NonlinearFactor::shared_ptr AHRSPose3Factor::clone() const {
+  return std::static_pointer_cast<gtsam::NonlinearFactor>(
+      gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+}
+
+AHRSPose3Factor::AHRSPose3Factor(gtsam::Key pose_i, gtsam::Key pose_j, gtsam::Key bias,
+                                 const PreintegratedAhrsMeasurements& pim)
+    : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov()), pose_i, pose_j,
+           bias),
+      _PIM_(pim) {}
+
+void AHRSPose3Factor::print(const std::string& s,
+                            const gtsam::KeyFormatter& keyFormatter) const {
+  cout << s << "AHRSPose3Factor(" << keyFormatter(this->key<1>()) << ","
+       << keyFormatter(this->key<2>()) << "," << keyFormatter(this->key<3>())
+       << ",";
+  _PIM_.print("  preintegrated measurements:");
+  noiseModel_->print("  noise model: ");
+}
+
+bool AHRSPose3Factor::equals(const NonlinearFactor& other, double tol) const {
+  const This* e = dynamic_cast<const This*>(&other);
+  return e != nullptr && Base::equals(*e, tol) && _PIM_.equals(e->_PIM_, tol);
+}
+
+//------------------------------------------------------------------------------
+Vector AHRSPose3Factor::evaluateError(const Pose3& Posei, const Pose3& Posej,
+                                 const Vector3& bias, OptionalMatrixType H1,
+                                 OptionalMatrixType H2,
+                                  OptionalMatrixType H3) const {
+  const Rot3 rot_i = Posei.rotation();
+  const Rot3 rot_j = Posej.rotation();
+
+  // Compute error and rotational Jacobians
+  Matrix3 Hr_i, Hr_j, Hb;
+  Vector error = _PIM_.computeError(rot_i, rot_j, bias,
+                                    H1 ? &Hr_i : nullptr,
+                                    H2 ? &Hr_j : nullptr,
+                                    H3 ? &Hb : nullptr);
+
+  // Lift 3x3 rotational Jacobians to 3x6 Pose3 Jacobians by zeroing translation
+  if (H1) {
+    H1->setZero(3, 6);
+    H1->block<3,3>(0,0) = Hr_i;
+  }
+  if (H2) {
+    H2->setZero(3, 6);
+    H2->block<3,3>(0,0) = Hr_j;
+  }
+  if (H3) {
+    *H3 = Hb;
+  }
+
+  return error;
+}
+
 }  // namespace gtsam

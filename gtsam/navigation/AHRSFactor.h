@@ -271,5 +271,93 @@ class GTSAM_EXPORT AHRSFactor : public NoiseModelFactorN<Rot3, Rot3, Vector3> {
 #endif
 };
 // AHRSFactor
+//
+//
+//
+//
+//
+//
+//
+//
 
+
+class GTSAM_EXPORT AHRSPose3Factor : public NoiseModelFactorN<Pose3, Pose3, Vector3> {
+  typedef AHRSPose3Factor This;
+  typedef NoiseModelFactorN<Pose3, Pose3, Vector3> Base;
+
+  PreintegratedAhrsMeasurements _PIM_;
+
+ public:
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
+  /** Shorthand for a smart pointer to a factor */
+#if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
+  typedef typename std::shared_ptr<AHRSPose3Factor> shared_ptr;
+#else
+  typedef std::shared_ptr<AHRSFactor> shared_ptr;
+#endif
+
+  /** Default constructor - only use for serialization */
+  AHRSPose3Factor() {}
+
+  /**
+   * Constructor
+   * @param rot_i previous rot key
+   * @param rot_j current rot key
+   * @param bias  previous bias key
+   * @param pim preintegrated measurements
+   */
+  AHRSPose3Factor(Key pose_i, Key pose_j, Key bias,
+             const PreintegratedAhrsMeasurements& pim);
+
+  ~AHRSPose3Factor() override {}
+
+  /// @return a deep copy of this factor
+  gtsam::NonlinearFactor::shared_ptr clone() const override;
+
+  /// print
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+                                       DefaultKeyFormatter) const override;
+
+  /// equals
+  bool equals(const NonlinearFactor&, double tol = 1e-9) const override;
+
+  /// Access the preintegrated measurements.
+  const PreintegratedAhrsMeasurements& preintegratedMeasurements() const {
+    return _PIM_;
+  }
+
+  /** implement functions needed to derive from Factor */
+
+  /// vector of errors
+  Vector evaluateError(const Pose3& Ri, const Pose3& Rj, const Vector3& bias,
+                       OptionalMatrixType H1, OptionalMatrixType H2,
+                       OptionalMatrixType H3) const override;
+
+  /// @deprecated constructor, but used in tests.
+  AHRSPose3Factor(gtsam::Key pose_i, gtsam::Key pose_j, gtsam::Key bias,
+             const PreintegratedAhrsMeasurements& pim,
+             const Vector3& omegaCoriolis,
+             const std::optional<Pose3>& body_P_sensor = {});
+
+  /// @deprecated static function, but used in tests.
+  static Pose3 predict(const Pose3& Ri, const Vector3& bias,
+                      const PreintegratedAhrsMeasurements& pim,
+                      const Vector3& omegaCoriolis,
+                      const std::optional<Pose3>& body_P_sensor = {});
+
+ private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    // NoiseModelFactor3 instead of NoiseModelFactorN for backward compatibility
+    ar& boost::serialization::make_nvp(
+        "NoiseModelFactor3", boost::serialization::base_object<Base>(*this));
+    ar& BOOST_SERIALIZATION_NVP(_PIM_);
+  }
+#endif
+};
 }  // namespace gtsam
