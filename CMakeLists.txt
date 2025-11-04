@@ -5,9 +5,9 @@ endif()
 
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 4)
-set (GTSAM_VERSION_MINOR 4)
+set (GTSAM_VERSION_MINOR 3)
 set (GTSAM_VERSION_PATCH 0)
-set (GTSAM_PRERELEASE_VERSION "")
+set (GTSAM_PRERELEASE_VERSION "a0")
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 
 # Set the version string for the library. 
