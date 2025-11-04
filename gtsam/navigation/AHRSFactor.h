@@ -271,31 +271,19 @@ class GTSAM_EXPORT AHRSFactor : public NoiseModelFactorN<Rot3, Rot3, Vector3> {
 #endif
 };
 // AHRSFactor
-//
-//
-//
-//
-//
-//
-//
-//
-
 
 class GTSAM_EXPORT AHRSPose3Factor : public NoiseModelFactorN<Pose3, Pose3, Vector3> {
   typedef AHRSPose3Factor This;
   typedef NoiseModelFactorN<Pose3, Pose3, Vector3> Base;
-
   PreintegratedAhrsMeasurements _PIM_;
-
  public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
-
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
   typedef typename std::shared_ptr<AHRSPose3Factor> shared_ptr;
 #else
-  typedef std::shared_ptr<AHRSFactor> shared_ptr;
+  typedef std::shared_ptr<AHRSPose3Factor> shared_ptr;
 #endif
 
   /** Default constructor - only use for serialization */
