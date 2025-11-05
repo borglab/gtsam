@@ -216,9 +216,10 @@ gtsam::NonlinearFactor::shared_ptr AHRSPose3Factor::clone() const {
 
 AHRSPose3Factor::AHRSPose3Factor(gtsam::Key pose_i, gtsam::Key pose_j, gtsam::Key bias,
                                  const PreintegratedAhrsMeasurements& pim)
-    : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov()), pose_i, pose_j,
+    : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, pose_j,
            bias),
-      _PIM_(pim) {}
+      _PIM_(pim) {
+      }
 
 void AHRSPose3Factor::print(const std::string& s,
                             const gtsam::KeyFormatter& keyFormatter) const {

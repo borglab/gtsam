@@ -57,6 +57,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements
                            ///< *measurementCovariance*)
 
   friend class AHRSFactor;
+  friend class AHRSPose3Factor;
 
  public:
   /// Default constructor, only for serialization and wrappers
@@ -272,6 +273,35 @@ class GTSAM_EXPORT AHRSFactor : public NoiseModelFactorN<Rot3, Rot3, Vector3> {
 };
 // AHRSFactor
 
+
+/**
+ * An AHRSPose3Factor is a three-way factor that is based on the preintegrated
+ * gyroscope measurements.
+ *
+ * @section math_notes Mathematical Formulation
+ *
+ * The factor relates the orientation of pose at two time steps, \f$ R_i \f$ and \f$ R_j \f$,
+ * and the gyroscope bias \f$ b_g \f$. The error function is given by:
+ * \f[
+ * e(R_i, R_j, b_g) = \text{Log}\left( (\Delta \tilde{R}_{ij}(b_g))^{-1} R_i^{-1} R_j \right)
+ * \f]
+ * where \f$ \Delta \tilde{R}_{ij}(b_g) \f$ is the preintegrated rotation corrected
+ * for the current estimate of the gyroscope bias, and \f$ \text{Log}(\cdot) \f$ is
+ * the logarithmic map from SO(3) to \f$ \mathbb{R}^3 \f$.
+ *
+ * The preintegrated rotation \f$ \Delta R_{ij} \f$ is calculated as:
+ * \f[
+ * \Delta R_{ij} = \prod_{k=i}^{j-1} \text{Exp}((\omega_k - \hat{b}_g) \Delta t)
+ * \f]
+ * where \f$ \hat{b}_g \f$ is the bias estimate used for preintegration. The
+ * bias-corrected preintegrated rotation \f$ \Delta \tilde{R}_{ij}(b_g) \f$ is
+ * then approximated using a first-order expansion:
+ * \f[
+ * \Delta \tilde{R}_{ij}(b_g) \approx \Delta R_{ij} \text{Exp}(J_b (b_g - \hat{b}_g))
+ * \f]
+ * where \f$ J_b \f$ is the Jacobian of the preintegrated rotation with respect
+ * to the gyroscope bias.
+ */
 class GTSAM_EXPORT AHRSPose3Factor : public NoiseModelFactorN<Pose3, Pose3, Vector3> {
   typedef AHRSPose3Factor This;
   typedef NoiseModelFactorN<Pose3, Pose3, Vector3> Base;
@@ -297,7 +327,9 @@ class GTSAM_EXPORT AHRSPose3Factor : public NoiseModelFactorN<Pose3, Pose3, Vect
    * @param pim preintegrated measurements
    */
   AHRSPose3Factor(Key pose_i, Key pose_j, Key bias,
-             const PreintegratedAhrsMeasurements& pim);
+             const PreintegratedAhrsMeasurements& pim,
+
+             );
 
   ~AHRSPose3Factor() override {}
 
@@ -305,10 +337,13 @@ class GTSAM_EXPORT AHRSPose3Factor : public NoiseModelFactorN<Pose3, Pose3, Vect
   gtsam::NonlinearFactor::shared_ptr clone() const override;
 
   /// print
+  /// @return void
   void print(const std::string& s, const KeyFormatter& keyFormatter =
                                        DefaultKeyFormatter) const override;
 
   /// equals
+  /// @params other factor to compare
+  /// @params tol tolerance
   bool equals(const NonlinearFactor&, double tol = 1e-9) const override;
 
   /// Access the preintegrated measurements.
@@ -319,7 +354,14 @@ class GTSAM_EXPORT AHRSPose3Factor : public NoiseModelFactorN<Pose3, Pose3, Vect
   /** implement functions needed to derive from Factor */
 
   /// vector of errors
-  Vector evaluateError(const Pose3& Ri, const Pose3& Rj, const Vector3& bias,
+  /// @param pose_i previous pose 
+  /// @param pose_j current pose 
+  /// @param bias current gyroscope bias estimate
+  /// @param H1 jacobian of residuals repected to Ri
+  /// @param H2 jacobian of residuals repected to Rj
+  /// @param H3 jacobian of residuals repected to bias
+  /// @return delta rotation represented in Lie algebra
+  Vector evaluateError(const Pose3& pose_i, const Pose3& pose_j, const Vector3& bias,
                        OptionalMatrixType H1, OptionalMatrixType H2,
                        OptionalMatrixType H3) const override;
 
