@@ -291,8 +291,8 @@ class GTSAM_EXPORT AHRSPose3Factor : public NoiseModelFactorN<Pose3, Pose3, Vect
 
   /**
    * Constructor
-   * @param rot_i previous rot key
-   * @param rot_j current rot key
+   * @param pose_i previous pose key
+   * @param pose_j current pose key
    * @param bias  previous bias key
    * @param pim preintegrated measurements
    */
