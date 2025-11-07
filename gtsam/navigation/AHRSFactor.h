@@ -327,9 +327,7 @@ class GTSAM_EXPORT AHRSPose3Factor : public NoiseModelFactorN<Pose3, Pose3, Vect
    * @param pim preintegrated measurements
    */
   AHRSPose3Factor(Key pose_i, Key pose_j, Key bias,
-             const PreintegratedAhrsMeasurements& pim,
-
-             );
+             const PreintegratedAhrsMeasurements& pim);
 
   ~AHRSPose3Factor() override {}
 
