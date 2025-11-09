@@ -162,6 +162,21 @@ class BearingS2 {
   void serializable() const; // enabling serialization functionality
 };
 
+#include <gtsam_unstable/geometry/DepthCamera3.h>
+template<CALIBRATION = {gtsam::Cal3_S2}>
+class DepthCamera3 {
+  DepthCamera3();
+  DepthCamera3(const gtsam::Point3& measurement, const CALIBRATION::shared_ptr& k);
+
+  void print(string s = "") const;
+  const CALIBRATION::shared_ptr& calibration() const;
+  gtsam::Point3 project(const gtsam::Pose3& pose, const gtsam::Point3& landmark) const;
+  gtsam::Point3 project(const gtsam::Pose3& pose, const gtsam::Point3& landmark,
+      gtsam::OptionalJacobian<3,6> H1, gtsam::OptionalJacobian<3,3> H2) const;
+
+  void serializable() const; // enabling serialization functionality
+};
+typedef gtsam::DepthCamera3<gtsam::Cal3_S2> DepthCamera3Cal3_S2;
 
 #include <gtsam_unstable/geometry/SimWall2D.h>
 class SimWall2D {
