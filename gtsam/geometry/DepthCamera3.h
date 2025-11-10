@@ -148,10 +148,6 @@ private:
   }
 #endif
   /// @}
-}; // \class InvDepthCamera
+}; // \class DepthCamera3
 } // \namespace gtsam
-
-
-
-
 

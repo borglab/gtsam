@@ -1312,6 +1312,23 @@ class PinholeCamera {
 typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
 typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
 typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
+
+#include <gtsam/geometry/DepthCamera3.h>
+template<CALIBRATION = {gtsam::Cal3_S2}>
+class DepthCamera3 {
+  DepthCamera3();
+  DepthCamera3(const gtsam::Point3& measurement, const CALIBRATION::shared_ptr& k);
+  DepthCamera3(const gtsam::Point3& measurement, const CALIBRATION::shared_ptr& k, const gtsam::Pose3& body_P_sensor);
+
+  void print(string s = "") const;
+  const CALIBRATION::shared_ptr& calibration() const;
+  gtsam::Point3 project(const gtsam::Pose3& pose, const gtsam::Point3& landmark) const;
+  gtsam::Point3 project(const gtsam::Pose3& pose, const gtsam::Point3& landmark,
+      gtsam::OptionalJacobian<3,6> H1, gtsam::OptionalJacobian<3,3> H2) const;
+
+  void serializable() const; // enabling serialization functionality
+};
+typedef gtsam::DepthCamera3<gtsam::Cal3_S2> DepthCamera3Cal3_S2;
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
 typedef gtsam::PinholeCamera<gtsam::Cal3f> PinholeCameraCal3f;
 typedef gtsam::PinholeCamera<gtsam::Cal3Fisheye> PinholeCameraCal3Fisheye;

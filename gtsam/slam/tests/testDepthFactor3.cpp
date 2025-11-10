@@ -23,7 +23,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/numericalDerivative.h>
 
-#include <gtsam_unstable/slam/DepthFactor3.h>
+#include <gtsam/slam/DepthFactor3.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 
 using namespace std;

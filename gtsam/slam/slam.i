@@ -102,6 +102,23 @@ typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3,
                                        gtsam::Cal3Unified>
     GenericProjectionFactorCal3Unified;
 
+#include <gtsam/slam/DepthFactor3.h>
+template<POSE = {gtsam::Pose3}, LANDMARK = {gtsam::Point3}>
+virtual class DepthFactor3 : gtsam::NoiseModelFactor {
+  DepthFactor3();
+  DepthFactor3(const gtsam::Point3& measured, const gtsam::noiseModel::Base* model,
+      gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Cal3_S2::shared_ptr& K);
+  DepthFactor3(const gtsam::Point3& measured, const gtsam::noiseModel::Base* model,
+      gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Cal3_S2::shared_ptr& K, const gtsam::Pose3& body_P_sensor);
+
+  void print(string s = "DepthFactor3") const;
+  const gtsam::Point3& measurement() const;
+  const gtsam::Cal3_S2::shared_ptr calibration() const;
+
+  void serializable() const; // enabling serialization functionality
+};
+typedef gtsam::DepthFactor3<gtsam::Pose3, gtsam::Point3> DepthFactor3Pose3Point3;
+
 #include <gtsam/slam/GeneralSFMFactor.h>
 template <CAMERA, LANDMARK>
 virtual class GeneralSFMFactor : gtsam::NoiseModelFactor {

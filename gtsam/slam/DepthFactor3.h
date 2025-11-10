@@ -13,8 +13,8 @@
 #include <optional>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/DepthCamera3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam_unstable/geometry/DepthCamera3.h>
 
 namespace gtsam {
 

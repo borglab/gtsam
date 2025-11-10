@@ -13,7 +13,7 @@
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 
-#include <gtsam_unstable/geometry/DepthCamera3.h>
+#include <gtsam/geometry/DepthCamera3.h>
 
 using namespace std;
 using namespace gtsam;
@@ -145,3 +145,4 @@ TEST(DepthCamera3, ProjectWithBodyPSensorJacobians) {
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
+
