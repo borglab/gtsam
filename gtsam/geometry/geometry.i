@@ -1314,7 +1314,7 @@ typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
 typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 
 #include <gtsam/geometry/DepthCamera3.h>
-template<CALIBRATION = {gtsam::Cal3_S2}>
+template<CALIBRATION>
 class DepthCamera3 {
   DepthCamera3();
   DepthCamera3(const gtsam::Point3& measurement, const CALIBRATION::shared_ptr& k);
