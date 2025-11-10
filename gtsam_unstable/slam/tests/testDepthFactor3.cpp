@@ -24,12 +24,14 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <gtsam_unstable/slam/DepthFactor3.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 
 using namespace std;
 using namespace gtsam;
 
 static Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
 static SharedNoiseModel sigma(noiseModel::Unit::Create(3));
+static SharedNoiseModel sigma_pose(noiseModel::Isotropic::Sigma(6, 1e-6));
 
 // camera pose at (0,0,1) looking straight along the z-axis.
 Pose3 level_pose = Pose3(Rot3::Ypr(0, 0, 0), gtsam::Point3(0,0,1));
@@ -234,6 +236,87 @@ TEST(DepthFactor3, optimizeWithBodyPSensor) {
   EXPECT(assert_equal(landmark, result_landmark, 1e-6));
 }
 
+TEST(DepthFactor3, optimizeWithBodyPSensor_ba) {
+  // Create a body_P_sensor transform
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.0, 0.0, 0.0));
+  
+  // Define body poses in world frame
+  Pose3 ground_truth_body1_pose = Pose3(Rot3::RzRyRx(0, 0.0, 0.0), Point3(0.0, 0.0, 0.0));
+  Pose3 ground_truth_body2_pose = Pose3(Rot3::RzRyRx(0, 0.0, 0.0), Point3(1.0, 0.0, 0.0));
+  std::vector<Pose3> ground_truth_body_poses = {
+    ground_truth_body1_pose,
+    ground_truth_body2_pose,
+  };
+  
+  // Compute camera poses from body poses
+  std::vector<Pose3> ground_truth_camera_poses;
+  for (const auto& body_pose : ground_truth_body_poses) {
+    ground_truth_camera_poses.push_back(body_pose.compose(body_P_sensor));
+  }
+  
+  std::vector<Point3> landmarks = {
+    Point3(5, 0, 0),
+    Point3(6, 0, 1),
+    Point3(7, 1, 0),
+    Point3(8, 0, 1),
+  };
+
+  gtsam::NonlinearFactorGraph graph;
+  Values initial;
+
+  // Insert body poses into initial values
+  for (size_t j = 0; j < ground_truth_body_poses.size(); j++) {
+    Key body_key = Symbol('x', j);
+    // Use ground truth as initial (or add very small noise if needed)
+    Pose3 noisy_body_pose = ground_truth_body_poses[j].compose(Pose3(Rot3::Ypr(0.001, 0.001, 0.001), Point3(0.001, 0.001, 0.001)));
+    initial.insert(body_key, noisy_body_pose);
+    if (j == 0) {
+      graph.emplace_shared<gtsam::PriorFactor<Pose3>>(body_key, ground_truth_body_poses[j], sigma_pose);
+    }
+  }
+
+  for (size_t i = 0; i < landmarks.size(); i++) {
+    const auto& landmark = landmarks[i];
+    Key landmark_key = Symbol('l', i);
+    for (size_t j = 0; j < ground_truth_camera_poses.size(); j++) {
+      Key body_key = Symbol('x', j);
+      const auto& camera_pose = ground_truth_camera_poses[j];
+      
+      // Create camera for projection
+      PinholeCamera<Cal3_S2> camera(camera_pose, *K);
+      
+      // Project landmark to get pixel coordinates
+      Point2 expected_uv = camera.project(landmark);
+      
+      // Compute depth in camera frame
+      Point3 landmark_cam = camera_pose.transformTo(landmark);
+      double depth = landmark_cam.z();
+      
+      Point3 measurement(expected_uv.x(), expected_uv.y(), depth);
+      
+      // Create factor with body_P_sensor (using body key, not camera key)
+      graph.emplace_shared<DepthFactor>(measurement, sigma, body_key, landmark_key, K, body_P_sensor);
+    }
+    Point3 noised_landmark = landmark + Point3(0.001, 0.001, 0.001);
+    initial.insert(landmark_key, noised_landmark);
+  }
+
+  LevenbergMarquardtParams lmParams;
+  Values result = LevenbergMarquardtOptimizer(graph, initial, lmParams).optimize();
+
+  // Verify that the landmark was optimized to the correct position
+  for (size_t i = 0; i < landmarks.size(); i++) {
+    Point3 result_landmark = result.at<Point3>(Symbol('l', i));
+    EXPECT(assert_equal(landmarks[i], result_landmark, 1e-6));
+  }
+
+  // Verify that the body poses were optimized to the correct position
+  for (size_t i = 0; i < ground_truth_body_poses.size(); i++) {
+    Key body_key = Symbol('x', i);
+    Pose3 result_body_pose = result.at<Pose3>(body_key);
+    EXPECT(assert_equal(ground_truth_body_poses[i], result_body_pose, 1e-6));
+  }
+}
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
