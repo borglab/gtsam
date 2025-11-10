@@ -9,6 +9,7 @@
 #pragma once
 
 #include <iostream>
+#include <optional>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point2.h>
@@ -33,6 +34,7 @@ class DepthCamera3 {
 private:
   Point3 measurement_;               ///< The depth measurement  (u, v, depth)
   std::shared_ptr<CALIBRATION> k_;  ///< The fixed camera calibration
+  std::optional<Pose3> body_P_sensor_;  ///< The pose of the sensor in the body frame
 
 public:
 
@@ -45,6 +47,11 @@ public:
   /** constructor with pose and calibration */
   DepthCamera3(const Point3& measurement, const std::shared_ptr<CALIBRATION>& k) :
     measurement_{measurement}, k_(k) {}
+
+  /** constructor with pose, calibration, and body_P_sensor */
+  DepthCamera3(const Point3& measurement, const std::shared_ptr<CALIBRATION>& k,
+               const std::optional<Pose3>& body_P_sensor) :
+    measurement_{measurement}, k_(k), body_P_sensor_(body_P_sensor) {}
 
   /// @}
   /// @name Standard Interface
@@ -61,13 +68,17 @@ public:
     std::cout << s << "DepthCamera3:" << std::endl;
     std::cout << "  measurement: " << measurement_.transpose() << std::endl;
     if (k_) k_->print("  calibration: ");
+    if (body_P_sensor_) {
+      body_P_sensor_->print("  body_P_sensor: ");
+    }
   }
 
 
   /** project a point from world InvDepth parameterization to the image
-   *  @param pw is a point in the world coordinate
-   *  @param H1 is the jacobian w.r.t. [pose3 calibration]
-   *  @param H2 is the jacobian w.r.t. inv_depth_landmark
+   *  @param pose is the body pose in world frame
+   *  @param landmark is a point in the world coordinate
+   *  @param H1 is the jacobian w.r.t. body pose
+   *  @param H2 is the jacobian w.r.t. landmark
    */
   inline gtsam::Point3 project(const Pose3& pose, const Point3& landmark,
       OptionalJacobian<3,6> H1 = {},
@@ -87,12 +98,35 @@ public:
 
     Point3 observation = inv_intrinsics * observation_raw;
     
-    // Compute predicted in camera frame
-    Point3 predicted_cam = pose.transformTo(landmark, H1, H2);
+    // Convert body pose to camera pose using body_P_sensor_
+    Pose3 camera_pose_world;
+    if (body_P_sensor_) {
+      if (H1) {
+        Matrix HbodySensor;
+        camera_pose_world = pose.compose(*body_P_sensor_, HbodySensor);
+        // Transform landmark from world to camera frame
+        Matrix Hcam;
+        Point3 predicted_cam = camera_pose_world.transformTo(landmark, Hcam, H2);
+        *H1 = Hcam * HbodySensor;
+        return predicted_cam - observation;
+      } else {
+        camera_pose_world = pose.compose(*body_P_sensor_);
+      }
+    } else {
+      camera_pose_world = pose;
+    }
     
-    // Negate Jacobians because we're subtracting predicted_cam
-    if (H1) *H1 = (*H1);
-    if (H2) *H2 = (*H2);
+    // Transform landmark from world to camera frame
+    Point3 predicted_cam;
+    if (H1 || H2) {
+      Matrix Hcam;
+      predicted_cam = camera_pose_world.transformTo(landmark, Hcam, H2);
+      if (H1) {
+        *H1 = Hcam;
+      }
+    } else {
+      predicted_cam = camera_pose_world.transformTo(landmark);
+    }
     
     return predicted_cam - observation;
   }
@@ -110,6 +144,7 @@ private:
   void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(measurement_);
     ar & BOOST_SERIALIZATION_NVP(k_);
+    ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
 #endif
   /// @}

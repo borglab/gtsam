@@ -10,7 +10,9 @@
 
 #pragma once
 
+#include <optional>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_unstable/geometry/DepthCamera3.h>
 
@@ -28,6 +30,7 @@ protected:
   // Keep a copy of measurement and calibration for I/O
   Point3 measured_;                ///< 3D measurement (u, v, depth) in pixel coordinates
   std::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
+  std::optional<Pose3> body_P_sensor_;  ///< The pose of the sensor in the body frame
 
 public:
 
@@ -55,10 +58,13 @@ public:
    * @param poseKey is the index of the camera pose
    * @param landmarkKey is the index of the landmark
    * @param K shared pointer to the constant calibration
+   * @param body_P_sensor is the transform from body to sensor frame (default identity)
    */
   DepthFactor3(const Point3& measured, const SharedNoiseModel& model,
-      const Key poseKey, Key landmarkKey, const Cal3_S2::shared_ptr& K) :
-        Base(model, poseKey, landmarkKey), measured_(measured), K_(K) {}
+      const Key poseKey, Key landmarkKey, const Cal3_S2::shared_ptr& K,
+      const std::optional<Pose3>& body_P_sensor = {}) :
+        Base(model, poseKey, landmarkKey), measured_(measured), K_(K),
+        body_P_sensor_(body_P_sensor) {}
 
   /** Virtual destructor */
   ~DepthFactor3() override {}
@@ -73,6 +79,9 @@ public:
     Base::print(s, keyFormatter);
     std::cout << "  measurement: " << measured_.transpose() << std::endl;
     if (K_) K_->print("  calibration: ");
+    if (body_P_sensor_) {
+      body_P_sensor_->print("  body_P_sensor: ");
+    }
   }
 
   /// equals
@@ -80,14 +89,17 @@ public:
     const This *e = dynamic_cast<const This*>(&p);
     return e && Base::equals(p, tol) && 
            traits<Point3>::Equals(this->measured_, e->measured_, tol) && 
-           this->K_->equals(*e->K_, tol);
+           this->K_->equals(*e->K_, tol) &&
+           ((!body_P_sensor_ && !e->body_P_sensor_) ||
+            (body_P_sensor_ && e->body_P_sensor_ && 
+             body_P_sensor_->equals(*e->body_P_sensor_, tol)));
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(const POSE& pose, const LANDMARK& landmark,
       OptionalMatrixType H1, OptionalMatrixType H2) const override {
     try {
-      DepthCamera3<Cal3_S2> camera(measured_, K_);
+      DepthCamera3<Cal3_S2> camera(measured_, K_, body_P_sensor_);
       return camera.project(pose, landmark, H1, H2);
     } catch( CheiralityException& e) {
       if (H1) *H1 = Matrix::Zero(3, 6);
@@ -118,6 +130,7 @@ private:
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(K_);
+    ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
 #endif
 };

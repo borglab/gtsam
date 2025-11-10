@@ -119,6 +119,122 @@ TEST(DepthFactor3, optimize) {
 }
 
 /* ************************************************************************* */
+TEST(DepthFactor3, zeroErrorWhenConsistentWithBodyPSensor) {
+  // Create a body_P_sensor transform (rotation and translation)
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+  
+  // Body pose in world frame
+  Pose3 body_pose_world = level_pose;
+  
+  // Camera pose in world frame (body pose composed with body_P_sensor)
+  Pose3 camera_pose_world = body_pose_world.compose(body_P_sensor);
+  PinholeCamera<Cal3_S2> camera_with_transform(camera_pose_world, *K);
+  
+  double depth = 3.0;
+  // landmark directly in front of camera at depth (in camera frame: (0, 0, depth))
+  Point3 landmark_cam(0, 0, depth);
+  // Transform to world frame
+  Point3 landmark = camera_pose_world.transformFrom(landmark_cam);
+  Point2 expected_uv = camera_with_transform.project(landmark);
+  
+  Point3 measurement(expected_uv.x(), expected_uv.y(), depth);
+  
+  // Create factor with body_P_sensor
+  DepthFactor factor(measurement, sigma, Symbol('x',1), Symbol('l',1), K, body_P_sensor);
+  
+  // Evaluate error using body pose (not camera pose)
+  Vector actual_error = factor.evaluateError(body_pose_world, landmark);
+  
+  // When landmark matches the measurement, error should be approximately zero
+  EXPECT(assert_equal(Vector3::Zero(), actual_error, 1e-6));
+}
+
+/* ************************************************************************* */
+TEST(DepthFactor3, JacobiansWithBodyPSensor) {
+  // Create a body_P_sensor transform
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+  
+  // Body pose in world frame
+  Pose3 body_pose_world = level_pose;
+  
+  // Camera pose in world frame
+  Pose3 camera_pose_world = body_pose_world.compose(body_P_sensor);
+  PinholeCamera<Cal3_S2> camera_with_transform(camera_pose_world, *K);
+  
+  double depth = 3.0;
+  // landmark in camera frame: (5, 3, depth)
+  Point3 landmark_cam(5, 3, depth);
+  // Transform to world frame
+  Point3 landmark = camera_pose_world.transformFrom(landmark_cam);
+  Point2 expected_uv = camera_with_transform.project(landmark);
+  Point3 measurement(expected_uv.x(), expected_uv.y(), depth);
+  
+  // Create factor with body_P_sensor
+  DepthFactor factor(measurement, sigma, Symbol('x',1), Symbol('l',1), K, body_P_sensor);
+
+  // Compute analytic Jacobians (w.r.t. body pose)
+  Matrix H1, H2;
+  factor.evaluateError(body_pose_world, landmark, H1, H2);
+
+  // Numerical Jacobians
+  auto f1 = [&](const Pose3& pose) {
+    return factor.evaluateError(pose, landmark);
+  };
+  auto f2 = [&](const Point3& lm) {
+    return factor.evaluateError(body_pose_world, lm);
+  };
+
+  Matrix H1_num = numericalDerivative11<Vector, Pose3>(f1, body_pose_world, 1e-6);
+  Matrix H2_num = numericalDerivative11<Vector, Point3>(f2, landmark, 1e-6);
+
+  EXPECT(assert_equal(H1_num, H1, 1e-5));
+  EXPECT(assert_equal(H2_num, H2, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(DepthFactor3, optimizeWithBodyPSensor) {
+  // Create a body_P_sensor transform
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+  
+  // Body pose in world frame
+  Pose3 body_pose_world = level_pose;
+  
+  // Camera pose in world frame
+  Pose3 camera_pose_world = body_pose_world.compose(body_P_sensor);
+  PinholeCamera<Cal3_S2> camera_with_transform(camera_pose_world, *K);
+  
+  double depth = 5.0;
+  // landmark 5 meters in front of camera (in camera frame: (0, 0, depth))
+  Point3 landmark_cam(0, 0, depth);
+  // Transform to world frame
+  Point3 landmark = camera_pose_world.transformFrom(landmark_cam);
+
+  // get expected projection using pinhole camera
+  Point2 expected_uv = camera_with_transform.project(landmark);
+  Point3 measurement(expected_uv.x(), expected_uv.y(), depth);
+
+  gtsam::NonlinearFactorGraph graph;
+  Values initial;
+
+  // Create factor with body_P_sensor
+  graph.emplace_shared<DepthFactor>(measurement, sigma,
+      Symbol('x',1), Symbol('l',1), K, body_P_sensor);
+  graph.emplace_shared<PoseConstraint>(Symbol('x', 1), body_pose_world);
+  
+  // Initialize with slightly perturbed landmark
+  Point3 initial_landmark = landmark + Point3(0.1, 0.1, 0.1);
+  initial.insert(Symbol('x',1), body_pose_world);
+  initial.insert(Symbol('l',1), initial_landmark);
+
+  LevenbergMarquardtParams lmParams;
+  Values result = LevenbergMarquardtOptimizer(graph, initial, lmParams).optimize();
+
+  // Verify that the landmark was optimized to the correct position
+  Point3 result_landmark = result.at<Point3>(Symbol('l',1));
+  EXPECT(assert_equal(landmark, result_landmark, 1e-6));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
 

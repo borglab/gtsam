@@ -167,6 +167,7 @@ template<CALIBRATION = {gtsam::Cal3_S2}>
 class DepthCamera3 {
   DepthCamera3();
   DepthCamera3(const gtsam::Point3& measurement, const CALIBRATION::shared_ptr& k);
+  DepthCamera3(const gtsam::Point3& measurement, const CALIBRATION::shared_ptr& k, const gtsam::Pose3& body_P_sensor);
 
   void print(string s = "") const;
   const CALIBRATION::shared_ptr& calibration() const;
@@ -635,6 +636,23 @@ virtual class InvDepthFactorVariant3a : gtsam::NoiseModelFactor {
 virtual class InvDepthFactorVariant3b : gtsam::NoiseModelFactor {
   InvDepthFactorVariant3b(gtsam::Key poseKey1, gtsam::Key poseKey2, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
 };
+
+#include <gtsam_unstable/slam/DepthFactor3.h>
+template<POSE = {gtsam::Pose3}, LANDMARK = {gtsam::Point3}>
+virtual class DepthFactor3 : gtsam::NoiseModelFactor {
+  DepthFactor3();
+  DepthFactor3(const gtsam::Point3& measured, const gtsam::noiseModel::Base* model,
+      gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Cal3_S2::shared_ptr& K);
+  DepthFactor3(const gtsam::Point3& measured, const gtsam::noiseModel::Base* model,
+      gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Cal3_S2::shared_ptr& K, const gtsam::Pose3& body_P_sensor);
+
+  void print(string s = "DepthFactor3") const;
+  const gtsam::Point3& measurement() const;
+  const gtsam::Cal3_S2::shared_ptr calibration() const;
+
+  void serializable() const; // enabling serialization functionality
+};
+typedef gtsam::DepthFactor3<gtsam::Pose3, gtsam::Point3> DepthFactor3Pose3Point3;
 
 
 #include <gtsam_unstable/slam/Mechanization_bRn2.h>
