@@ -317,6 +317,82 @@ TEST(DepthFactor3, optimizeWithBodyPSensor_ba) {
     EXPECT(assert_equal(ground_truth_body_poses[i], result_body_pose, 1e-6));
   }
 }
+
+/* ************************************************************************* */
+TEST(DepthFactor3, NoiseModelTransformation) {
+  // Test that the noise model is correctly transformed
+  double depth = 3.0;
+  Point3 landmark(5, 3, level_pose.z() + depth);
+  Point2 expected_uv = level_camera.project(landmark);
+  Point3 measurement(expected_uv.x(), expected_uv.y(), depth);
+  
+  // Create a noise model with known sigmas
+  Vector3 sigmas(0.5, 0.5, 0.1);  // sigma_u, sigma_v, sigma_depth
+  SharedNoiseModel original_model = noiseModel::Diagonal::Sigmas(sigmas);
+  
+  // Create factor - this should transform the noise model
+  DepthFactor factor(measurement, original_model, Symbol('x',1), Symbol('l',1), K);
+  
+  // Get the transformed noise model
+  SharedNoiseModel transformed_model = factor.noiseModel();
+  
+  // Verify that the noise model has been transformed (should be different from original)
+  // The transformed model should account for the measurement transformation
+  EXPECT(transformed_model != original_model);
+  
+  // Verify the transformation by manually computing expected covariance
+  double u = measurement.x();
+  double v = measurement.y();
+  Matrix33 J = (Matrix33() << depth, 0, u,
+                            0, depth, v,
+                            0, 0, 1).finished();
+  // Original covariance is diagonal with sigmas^2
+  Vector3 sigmas_sq = sigmas.array().square();
+  Matrix33 original_cov = sigmas_sq.asDiagonal();
+  Matrix33 new_cov = J * original_cov * J.transpose();
+  Matrix33 intrinsics_inv = (Matrix33() << 1.0 / K->fx(), 0, -K->px() / K->fx(),
+                            0, 1.0 / K->fy(), -K->py() / K->fy(),
+                            0, 0, 1.0).finished();
+  Matrix33 expected_cov = intrinsics_inv * new_cov * intrinsics_inv.transpose();
+  
+  // Get the covariance from the transformed noise model
+  // For Gaussian noise models, we can get the covariance matrix
+  auto gaussian_model = std::dynamic_pointer_cast<noiseModel::Gaussian>(transformed_model);
+  if (gaussian_model) {
+    Matrix33 actual_cov = gaussian_model->R().inverse() * gaussian_model->R().inverse().transpose();
+    // Verify the covariance is approximately correct
+    EXPECT(assert_equal(expected_cov, actual_cov, 1e-5));
+  }
+  
+  // Verify that the factor still works correctly with the transformed noise model
+  Vector actual_error = factor.evaluateError(level_pose, landmark);
+  
+  // The error should still be approximately zero when landmark matches measurement
+  // (allowing for some numerical error due to noise model transformation)
+  EXPECT(assert_equal(Vector3::Zero(), actual_error, 1e-5));
+  
+  // Test with body_P_sensor as well
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+  Pose3 body_pose_world = level_pose;
+  Pose3 camera_pose_world = body_pose_world.compose(body_P_sensor);
+  PinholeCamera<Cal3_S2> camera_with_transform(camera_pose_world, *K);
+  
+  Point3 landmark_cam(5, 3, depth);
+  Point3 landmark2 = camera_pose_world.transformFrom(landmark_cam);
+  Point2 expected_uv2 = camera_with_transform.project(landmark2);
+  Point3 measurement2(expected_uv2.x(), expected_uv2.y(), depth);
+  
+  DepthFactor factor2(measurement2, original_model, Symbol('x',1), Symbol('l',1), K, body_P_sensor);
+  SharedNoiseModel transformed_model2 = factor2.noiseModel();
+  
+  // Verify transformed model is different from original
+  EXPECT(transformed_model2 != original_model);
+  
+  // Verify factor works correctly
+  Vector actual_error2 = factor2.evaluateError(body_pose_world, landmark2);
+  EXPECT(assert_equal(Vector3::Zero(), actual_error2, 1e-5));
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

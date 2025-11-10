@@ -64,7 +64,28 @@ public:
       const Key poseKey, Key landmarkKey, const Cal3_S2::shared_ptr& K,
       const std::optional<Pose3>& body_P_sensor = {}) :
         Base(model, poseKey, landmarkKey), measured_(measured), K_(K),
-        body_P_sensor_(body_P_sensor) {}
+        body_P_sensor_(body_P_sensor) {
+          // compute the noise model for converted measurement.
+          // jacobian of [u, v, depth] to [u * depth, v * depth, depth]
+          double u = measured_.x();          
+          double v = measured_.y();
+          double depth = measured_.z();
+          Matrix33 J = (Matrix33() << depth, 0, u,
+                                0, depth, v,
+                                0, 0, 1).finished();
+          // sigmas() returns standard deviations, need to square them for covariance
+          Vector3 sigmas = model->sigmas();
+          Vector3 sigmas_sq = sigmas.array().square();
+          Matrix33 original_cov = sigmas_sq.asDiagonal();
+          Matrix33 new_cov = J * original_cov * J.transpose();
+          Matrix33 intrinsics_inv = (Matrix33() << 1.0 / K_->fx(), 0, -K_->px() / K_->fx(),
+                                0, 1.0 / K_->fy(), -K_->py() / K_->fy(),
+                                0, 0, 1.0).finished();
+          Matrix33 new_cov_intrinsics = intrinsics_inv * new_cov * intrinsics_inv.transpose();
+          SharedNoiseModel new_model = noiseModel::Gaussian::Covariance(new_cov_intrinsics);
+          // Directly assign the new noise model (noiseModel_ is protected in NoiseModelFactor)
+          this->noiseModel_ = new_model;
+        }
 
   /** Virtual destructor */
   ~DepthFactor3() override {}
