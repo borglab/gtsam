@@ -103,7 +103,7 @@ typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3,
     GenericProjectionFactorCal3Unified;
 
 #include <gtsam/slam/DepthFactor3.h>
-template<POSE = {gtsam::Pose3}, LANDMARK = {gtsam::Point3}>
+template<POSE, LANDMARK>
 virtual class DepthFactor3 : gtsam::NoiseModelFactor {
   DepthFactor3();
   DepthFactor3(const gtsam::Point3& measured, const gtsam::noiseModel::Base* model,
