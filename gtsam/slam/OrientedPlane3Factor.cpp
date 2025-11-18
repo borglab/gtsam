@@ -68,7 +68,7 @@ Vector OrientedPlane3DirectionPrior::evaluateError(
   Unit3 n_hat_p = measured_p_.normal();
   Unit3 n_hat_q = plane.normal();
   Matrix2 H_p;
-  Vector e = n_hat_p.error(n_hat_q, H ? &H_p : nullptr);
+  Vector e = n_hat_p.errorVector(n_hat_q, {}, H ? &H_p : nullptr);
   if (H) {
     H->resize(2, 3);
     *H << H_p, Z_2x1;

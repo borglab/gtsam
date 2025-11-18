@@ -34,7 +34,7 @@ class Pose2;
  * @ingroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Pose3: public LieGroup<Pose3, 6> {
+class GTSAM_EXPORT Pose3: public MatrixLieGroup<Pose3, 6, 4> {
 public:
 
   /** Pose Concept requirements */
@@ -47,6 +47,7 @@ private:
   Point3 t_; ///< Translation gPp, from global origin to pose frame origin
 
 public:
+  using Vector16 = Eigen::Matrix<double, 16, 1>;
 
   /// @name Standard Constructors
   /// @{
@@ -110,7 +111,7 @@ public:
     return Pose3();
   }
 
-  /// inverse transformation with derivatives
+  /// inverse transformation
   Pose3 inverse() const;
 
   /// compose syntactic sugar
@@ -305,6 +306,9 @@ public:
   /** convert to 4*4 matrix */
   Matrix4 matrix() const;
 
+  /// Return vectorized SE(3) matrix in column order.
+  Vector16 vec(OptionalJacobian<16, 6> H = {}) const;
+
   /** 
     * Assuming self == wTa, takes a pose aTb in local coordinates 
     * and transforms it to world coordinates wTb = wTa * aTb.
@@ -383,9 +387,6 @@ public:
   Pose3 slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx = {},
                                              OptionalJacobian<6, 6> Hy = {}) const;
 
-  /// Return vectorized SE(3) matrix in column order.
-  Vector vec(OptionalJacobian<16, 6> H = {}) const;
-
   /// Output stream operator
   GTSAM_EXPORT
   friend std::ostream &operator<<(std::ostream &os, const Pose3& p);
@@ -440,10 +441,10 @@ using Pose3Pairs = std::vector<std::pair<Pose3, Pose3> >;
 typedef std::vector<Pose3> Pose3Vector;
 
 template <>
-struct traits<Pose3> : public internal::MatrixLieGroup<Pose3> {};
+struct traits<Pose3> : public internal::MatrixLieGroup<Pose3, 4> {};
 
 template <>
-struct traits<const Pose3> : public internal::MatrixLieGroup<Pose3> {};
+struct traits<const Pose3> : public internal::MatrixLieGroup<Pose3, 4> {};
 
 // bearing and range traits, used in RangeFactor
 template <>

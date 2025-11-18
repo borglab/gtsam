@@ -73,7 +73,6 @@ class GTSAM_EXPORT Cal3 {
   double u0_ = 0.0f, v0_ = 0.0f;  ///< principal point
 
  public:
-  inline constexpr static auto dimension = 5;
   ///< shared pointer to calibration object
   using shared_ptr = std::shared_ptr<Cal3>;
 
@@ -136,22 +135,22 @@ class GTSAM_EXPORT Cal3 {
   /// @{
 
   /// focal length x
-  inline double fx() const { return fx_; }
+  double fx() const { return fx_; }
 
   /// focal length y
-  inline double fy() const { return fy_; }
+  double fy() const { return fy_; }
 
   /// aspect ratio
-  inline double aspectRatio() const { return fx_ / fy_; }
+  double aspectRatio() const { return fx_ / fy_; }
 
   /// skew
-  inline double skew() const { return s_; }
+  double skew() const { return s_; }
 
   /// image center in x
-  inline double px() const { return u0_; }
+  double px() const { return u0_; }
 
   /// image center in y
-  inline double py() const { return v0_; }
+  double py() const { return v0_; }
 
   /// return the principal point
   Point2 principalPoint() const { return Point2(u0_, v0_); }
@@ -172,12 +171,6 @@ class GTSAM_EXPORT Cal3 {
 
   /// Return inverted calibration matrix inv(K)
   Matrix3 inverse() const;
-
-  /// return DOF, dimensionality of tangent space
-  inline virtual size_t dim() const { return Dim(); }
-
-  /// return DOF, dimensionality of tangent space
-  inline static size_t Dim() { return dimension; }
 
   /// @}
   /// @name Advanced Interface

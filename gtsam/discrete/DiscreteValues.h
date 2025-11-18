@@ -102,6 +102,15 @@ class GTSAM_EXPORT DiscreteValues : public Assignment<Key> {
   DiscreteValues& update(const DiscreteValues& values);
 
   /**
+   * @brief Insert each element of `values` if it does not already exist,
+   * else assign it.
+   * 
+   * @param values DiscreteValues to insert or assign to this.
+   * @return DiscreteValues& 
+   */
+  DiscreteValues& insert_or_assign(const DiscreteValues& values);
+
+  /**
    * @brief Check if the DiscreteValues contains the given key.
    *
    * @param key The key to check for.

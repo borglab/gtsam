@@ -8,6 +8,7 @@ See LICENSE for the license information
 Sim3 unit tests.
 Author: John Lambert
 """
+
 # pylint: disable=no-name-in-module
 import unittest
 from typing import List, Optional
@@ -16,11 +17,87 @@ import numpy as np
 from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
-from gtsam import Point3, Pose3, Rot3, Similarity3, BetweenFactorSimilarity3, NonlinearFactorGraph, Values, LevenbergMarquardtOptimizer, LevenbergMarquardtParams
+from gtsam import (
+    BetweenFactorSimilarity3,
+    LevenbergMarquardtOptimizer,
+    LevenbergMarquardtParams,
+    NonlinearFactorGraph,
+    Point3,
+    Pose3,
+    Rot3,
+    Similarity3,
+    Values,
+)
 
 
 class TestSim3(GtsamTestCase):
     """Test selected Sim3 methods."""
+
+    # Class constants for reuse
+    R1 = Rot3.RzRyRx(0.1, 0.2, 0.3)
+    t1 = Point3(1, 2, 3)
+    s1 = 2.0
+    S1 = Similarity3(R1, t1, s1)
+
+    R2 = Rot3.RzRyRx(0.4, 0.5, 0.6)
+    t2 = Point3(-1, 1, 0)
+    s2 = 4.0
+    S2 = Similarity3(R2, t2, s2)
+
+    def test_compose(self) -> None:
+        """Test group operation: compose two Similarity3 elements."""
+        S3 = self.S1.compose(self.S2)
+
+        # Compose manually
+        expected_R = self.R1.compose(self.R2)
+        expected_s = self.s1 * self.s2
+        expected_t = self.t1 / self.s2 + self.R1.matrix() @ self.t2
+        expected_S3 = Similarity3(expected_R, expected_t, expected_s)
+
+        self.gtsamAssertEquals(S3, expected_S3)
+        self.gtsamAssertEquals(self.S1 * self.S2, expected_S3)
+        self.gtsamAssertEquals(self.S1.matrix() @ self.S2.matrix(), S3.matrix())
+
+    def test_inverse(self) -> None:
+        """Test group operation: inverse of a Similarity3 element."""
+        S_inv = self.S1.inverse()
+
+        # Check that S1 * S1_inv is identity
+        I_sim = self.S1.compose(S_inv)
+        expected_I = Similarity3()
+        self.gtsamAssertEquals(I_sim, expected_I)
+
+    def test_identity(self) -> None:
+        """Test that the identity Similarity3 acts as expected."""
+        S_id = Similarity3()
+
+        # Compose with identity
+        self.gtsamAssertEquals(self.S1.compose(S_id), self.S1)
+        self.gtsamAssertEquals(S_id.compose(self.S1), self.S1)
+
+    def test_transform_from_point3(self):
+        """Test Similarity3.transformFrom with a Point3."""
+        p = Point3(2.0, 0.0, 1.0)
+
+        # Expected: s * (R * p + t)
+        expected = self.s1 * (self.R1.matrix() @ p + self.t1)
+        actual = self.S1.transformFrom(p)
+
+        np.testing.assert_allclose(expected, actual, atol=1e-9)
+
+    def test_transform_from_pose3(self):
+        """Test Similarity3.transformFrom with a Pose3."""
+        R_pose = Rot3.RzRyRx(0.2, -0.1, 0.3)
+        t_pose = Point3(3.0, 4.0, 5.0)
+        pose = Pose3(R_pose, t_pose)
+
+        expected_R = self.R1.compose(R_pose)
+        expected_t = self.s1 * (self.R1.matrix() @ t_pose + self.t1)
+        expected = Pose3(expected_R, expected_t)
+
+        actual = self.S1.transformFrom(pose)
+
+        self.gtsamAssertEquals(actual, expected)
 
     def test_align_poses_along_straight_line(self):
         """Test Pose3 Align method.
@@ -130,7 +207,7 @@ class TestSim3(GtsamTestCase):
         for aTi, bTi in zip(aTi_list, bTi_list):
             self.gtsamAssertEquals(aTi, aSb.transformFrom(bTi))
 
-    def test_sim3_optimization(self)->None:
+    def test_sim3_optimization(self) -> None:
         # Create a PriorFactor with a Sim3 prior
         prior = Similarity3(Rot3.Ypr(0.1, 0.2, 0.3), Point3(1, 2, 3), 4)
         model = gtsam.noiseModel.Isotropic.Sigma(7, 1)
@@ -154,14 +231,22 @@ class TestSim3(GtsamTestCase):
     def test_sim3_optimization2(self) -> None:
         prior = Similarity3()
         m1 = Similarity3(Rot3.Ypr(np.pi / 4.0, 0, 0), Point3(2.0, 0, 0), 1.0)
-        m2 = Similarity3(Rot3.Ypr(np.pi / 2.0, 0, 0), Point3(np.sqrt(8) * 0.9, 0, 0), 1.0)
-        m3 = Similarity3(Rot3.Ypr(3 * np.pi / 4.0, 0, 0), Point3(np.sqrt(32) * 0.8, 0, 0), 1.0)
+        m2 = Similarity3(
+            Rot3.Ypr(np.pi / 2.0, 0, 0), Point3(np.sqrt(8) * 0.9, 0, 0), 1.0
+        )
+        m3 = Similarity3(
+            Rot3.Ypr(3 * np.pi / 4.0, 0, 0), Point3(np.sqrt(32) * 0.8, 0, 0), 1.0
+        )
         m4 = Similarity3(Rot3.Ypr(np.pi / 2.0, 0, 0), Point3(6 * 0.7, 0, 0), 1.0)
         loop = Similarity3(1.42)
 
         priorNoise = gtsam.noiseModel.Isotropic.Sigma(7, 0.01)
-        betweenNoise = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 10]))
-        betweenNoise2 = gtsam.noiseModel.Diagonal.Sigmas(np.array([ 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1.0]))
+        betweenNoise = gtsam.noiseModel.Diagonal.Sigmas(
+            np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 10])
+        )
+        betweenNoise2 = gtsam.noiseModel.Diagonal.Sigmas(
+            np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1.0])
+        )
         b1 = BetweenFactorSimilarity3(1, 2, m1, betweenNoise)
         b2 = BetweenFactorSimilarity3(2, 3, m2, betweenNoise)
         b3 = BetweenFactorSimilarity3(3, 4, m3, betweenNoise)
@@ -178,13 +263,20 @@ class TestSim3(GtsamTestCase):
         graph.add(lc)
 
         # graph.print("Full Graph\n");
-        initial=Values()
+        initial = Values()
         initial.insert(1, prior)
-        initial.insert(2, Similarity3(Rot3.Ypr(np.pi / 2.0, 0, 0), Point3(1, 0, 0), 1.1))
-        initial.insert(3, Similarity3(Rot3.Ypr(2.0 * np.pi / 2.0, 0, 0), Point3(0.9, 1.1, 0), 1.2))
-        initial.insert(4, Similarity3(Rot3.Ypr(3.0 * np.pi / 2.0, 0, 0), Point3(0, 1, 0), 1.3))
-        initial.insert(5, Similarity3(Rot3.Ypr(4.0 * np.pi / 2.0, 0, 0), Point3(0, 0, 0), 1.0))
-
+        initial.insert(
+            2, Similarity3(Rot3.Ypr(np.pi / 2.0, 0, 0), Point3(1, 0, 0), 1.1)
+        )
+        initial.insert(
+            3, Similarity3(Rot3.Ypr(2.0 * np.pi / 2.0, 0, 0), Point3(0.9, 1.1, 0), 1.2)
+        )
+        initial.insert(
+            4, Similarity3(Rot3.Ypr(3.0 * np.pi / 2.0, 0, 0), Point3(0, 1, 0), 1.3)
+        )
+        initial.insert(
+            5, Similarity3(Rot3.Ypr(4.0 * np.pi / 2.0, 0, 0), Point3(0, 0, 0), 1.0)
+        )
 
         result = LevenbergMarquardtOptimizer(graph, initial).optimizeSafely()
         self.gtsamAssertEquals(Similarity3(0.7), result.atSimilarity3(5), 0.4)
@@ -695,11 +787,15 @@ class TestSim3(GtsamTestCase):
             wTi = unaligned_pose_dict.get(i, None)
             unaligned_pose_list.append(wTi)
         # GT poses are the reference/target
-        rSe = align_poses_sim3_ignore_missing(aTi_list=poses_gt, bTi_list=unaligned_pose_list)
+        rSe = align_poses_sim3_ignore_missing(
+            aTi_list=poses_gt, bTi_list=unaligned_pose_list
+        )
         assert rSe.scale() >= 0
 
 
-def align_poses_sim3_ignore_missing(aTi_list: List[Optional[Pose3]], bTi_list: List[Optional[Pose3]]) -> Similarity3:
+def align_poses_sim3_ignore_missing(
+    aTi_list: List[Optional[Pose3]], bTi_list: List[Optional[Pose3]]
+) -> Similarity3:
     """Align by similarity transformation, but allow missing estimated poses in the input.
 
     Note: this is a wrapper for align_poses_sim3() that allows for missing poses/dropped cameras.
@@ -763,7 +859,9 @@ def align_poses_sim3(aTi_list: List[Pose3], bTi_list: List[Pose3]) -> Similarity
 
         # fit a single translation motion to the centroid
         aTi_centroid = np.array([aTi.translation() for aTi in aTi_list]).mean(axis=0)
-        aTi_rot_aligned_centroid = np.array([aTi.translation() for aTi in aTi_list_rot_aligned]).mean(axis=0)
+        aTi_rot_aligned_centroid = np.array(
+            [aTi.translation() for aTi in aTi_list_rot_aligned]
+        ).mean(axis=0)
 
         # construct the final SIM3 transform
         aSb = Similarity3(aSb.rotation(), aTi_centroid - aTi_rot_aligned_centroid, 1.0)

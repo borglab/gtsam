@@ -46,6 +46,7 @@
 
 #include "Switching.h"
 #include "TinyHybridExample.h"
+#include "DiscreteFixture.h"
 
 using namespace std;
 using namespace gtsam;
@@ -93,18 +94,9 @@ TEST(HybridGaussianFactorGraph, EliminateSequential) {
 }
 
 /* ************************************************************************* */
-
-namespace two {
-std::vector<GaussianFactor::shared_ptr> components(Key key) {
-  return {std::make_shared<JacobianFactor>(key, I_3x3, Z_3x1),
-          std::make_shared<JacobianFactor>(key, I_3x3, Vector3::Ones())};
-}
-}  // namespace two
-
-/* ************************************************************************* */
 TEST(HybridGaussianFactorGraph, hybridEliminationOneFactor) {
   HybridGaussianFactorGraph hfg;
-  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(m1, two_component_fixture::components(X(1))));
 
   auto result = hfg.eliminate({X(1)});
 
@@ -132,7 +124,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
   // Add a hybrid gaussian factor ϕ(x1, c1)
-  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(m1, two_component_fixture::components(X(1))));
 
   auto result = hfg.eliminateSequential();
 
@@ -153,7 +145,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
   // Add factor between x0 and x1
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(m1, two_component_fixture::components(X(1))));
 
   // Discrete probability table for c1
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
@@ -437,7 +429,7 @@ TEST(HybridGaussianFactorGraph, Optimize) {
 
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
-  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(m1, two_component_fixture::components(X(1))));
 
   auto result = hfg.eliminateSequential();
 

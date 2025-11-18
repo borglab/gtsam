@@ -22,10 +22,14 @@
 #include <gtsam/basis/Fourier.h>
 #include <gtsam/nonlinear/factorTesting.h>
 
-#if defined(__GNUC__) && !defined(__clang__)
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ >= 11)
 #pragma GCC diagnostic warning "-Wstringop-overread"
+#endif
+
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic warning "-Warray-bounds"
 #endif
+
 using namespace std;
 using namespace gtsam;
 
@@ -169,7 +173,7 @@ TEST(Basis, Derivative7) {
 
   // Calculate expected values by numerical derivative of proxy.
   const double x = 0.2;
-  Matrix numeric_dTdx = numericalDerivative11<double, double>(proxy, x);
+  Matrix1 numeric_dTdx = numericalDerivative11<double, double>(proxy, x);
 
   // Calculate derivatives at Chebyshev points using D7, interpolate
   Matrix D7 = FourierBasis::DifferentiationMatrix(7);

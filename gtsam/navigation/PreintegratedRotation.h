@@ -64,12 +64,11 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
   PreintegratedRotationParams() : gyroscopeCovariance(I_3x3) {}
 
   PreintegratedRotationParams(const Matrix3& gyroscope_covariance,
-                              std::optional<Vector3> omega_coriolis)
-    : gyroscopeCovariance(gyroscope_covariance) {
-      if (omega_coriolis) {
-        omegaCoriolis = *omega_coriolis;
-      }
-  }
+                              std::optional<Vector3> omega_coriolis = {},
+                              std::optional<Pose3> body_P_sensor = {})
+    : gyroscopeCovariance(gyroscope_covariance),
+      omegaCoriolis(omega_coriolis),
+      body_P_sensor(body_P_sensor) {}
 
   virtual ~PreintegratedRotationParams() {}
 
@@ -196,8 +195,9 @@ class GTSAM_EXPORT PreintegratedRotation {
   Rot3 biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
                              OptionalJacobian<3, 3> H = {}) const;
 
-  /// Integrate coriolis correction in body frame rot_i
-  Vector3 integrateCoriolis(const Rot3& rot_i) const;
+  /// Integrate coriolis correction in body frame Ri
+  Vector3 integrateCoriolis(const Rot3& Ri,
+                            OptionalJacobian<3, 3> H = {}) const;
 
   /// @}
 

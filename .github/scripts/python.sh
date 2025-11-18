@@ -45,6 +45,16 @@ function build()
 {
   export CMAKE_GENERATOR=Ninja
   BUILD_PYBIND="ON"
+
+  # Add Boost hints on Windows
+  BOOST_CMAKE_ARGS=""
+  if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" || "$OSTYPE" == "cygwin" ]]; then
+    if [ -n "${BOOST_ROOT}" ]; then
+     BOOST_ROOT_UNIX=$(echo "$BOOST_ROOT" | sed 's/\\/\//g')
+     BOOST_CMAKE_ARGS="-DBOOST_ROOT=${BOOST_ROOT_UNIX} -DBOOST_INCLUDEDIR=${BOOST_ROOT_UNIX}/include -DBOOST_LIBRARYDIR=${BOOST_ROOT_UNIX}/lib"
+    fi
+  fi
+
   cmake $GITHUB_WORKSPACE \
       -B build \
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
@@ -58,9 +68,11 @@ function build()
       -DGTSAM_UNSTABLE_BUILD_PYTHON=${GTSAM_BUILD_UNSTABLE:-ON} \
       -DGTSAM_PYTHON_VERSION=$PYTHON_VERSION \
       -DPYTHON_EXECUTABLE:FILEPATH=$(which $PYTHON) \
+      -DGTSAM_USE_BOOST_FEATURES=ON \
+      -DGTSAM_ENABLE_BOOST_SERIALIZATION=ON \
       -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
-      -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gtsam_install
-
+      -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gtsam_install \
+      $BOOST_CMAKE_ARGS
 
   # Set to 2 cores so that Actions does not error out during resource provisioning.
   cmake --build build -j2

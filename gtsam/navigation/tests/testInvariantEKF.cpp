@@ -8,9 +8,8 @@
  * -------------------------------------------------------------------------- */
 
  /**
-  * @file testInvariantEKF_Pose2.cpp
-  * @brief Unit test for the InvariantEKF using Pose2 state.
-  *        Based on the logic from IEKF_SE2Example.cpp
+  * @file testInvariantEKF.cpp
+  * @brief Unit tests for the InvariantEKF
   * @date April 26, 2025
   * @authors Frank Dellaert (adapted from example by Scott Baker, Matt Kielo)
   */
@@ -120,7 +119,7 @@ TEST(IEKF_Pose2, PredictUpdateSequence) {
 }
 
 // Define simple dynamics and measurement for a 2x2 Matrix state
-namespace exampleDynamicMatrix {
+namespace invariant_ekf_example {
   Matrix f(const Matrix& p, const Vector& vTangent, double dt) {
     return traits<Matrix>::Retract(p, vTangent * dt);
   }
@@ -131,7 +130,7 @@ namespace exampleDynamicMatrix {
     }
     return p(0, 0) + p(1, 1); // trace !
   }
-} // namespace exampleDynamicMatrix
+} // namespace invariant_ekf_example
 
 TEST(InvariantEKF_DynamicMatrix, PredictAndUpdate) {
   // --- Setup ---
@@ -150,7 +149,7 @@ TEST(InvariantEKF_DynamicMatrix, PredictAndUpdate) {
   ekf.predict(velocityTangent, dt, Q);
 
   // Verification for Predict
-  Matrix pPredictedExpected = exampleDynamicMatrix::f(p0Matrix, velocityTangent, dt);
+  Matrix pPredictedExpected = invariant_ekf_example::f(p0Matrix, velocityTangent, dt);
   Matrix pCovariancePredictedExpected = p0Covariance + Q;
   EXPECT(assert_equal(pPredictedExpected, ekf.state(), 1e-9));
   EXPECT(assert_equal(pCovariancePredictedExpected, ekf.covariance(), 1e-9));
@@ -160,14 +159,14 @@ TEST(InvariantEKF_DynamicMatrix, PredictAndUpdate) {
   Matrix pStateBeforeUpdate = ekf.state();
   Matrix pCovarianceBeforeUpdate = ekf.covariance();
 
-  double zTrue = exampleDynamicMatrix::h(pStateBeforeUpdate);
+  double zTrue = invariant_ekf_example::h(pStateBeforeUpdate);
   double zObserved = zTrue - 0.03; // Simulated measurement with some error
 
-  ekf.update(exampleDynamicMatrix::h, zObserved, R);
+  ekf.update(invariant_ekf_example::h, zObserved, R);
 
   // Verification for Update (Manual Kalman Steps)
   Matrix H(1, 4);
-  double zPredictionManual = exampleDynamicMatrix::h(pStateBeforeUpdate, H);
+  double zPredictionManual = invariant_ekf_example::h(pStateBeforeUpdate, H);
   double innovationY_tangent = zObserved - zPredictionManual;
   Matrix S = H * pCovarianceBeforeUpdate * H.transpose() + R;
   Matrix kalmanGainK = pCovarianceBeforeUpdate * H.transpose() * S.inverse();

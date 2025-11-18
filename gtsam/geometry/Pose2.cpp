@@ -48,6 +48,24 @@ Matrix3 Pose2::matrix() const {
 }
 
 /* ************************************************************************* */
+Vector9 Pose2::vec(OptionalJacobian<9, 3> H) const {
+  // Vectorize
+  const Matrix3 M = matrix();
+  const Vector9 v = Eigen::Map<const Vector9>(M.data());
+
+  // If requested, calculate H
+  if (H) {
+    H->setZero();
+    auto R = M.block<2, 2>(0, 0);
+    H->block<2, 1>(0, 2) = R.col(1);
+    H->block<2, 1>(3, 2) = -R.col(0);
+    H->block<2, 2>(6, 0) = R;
+  }
+
+  return v;
+}
+
+/* ************************************************************************* */
 void Pose2::print(const string& s) const {
   std::cout << (s.empty() ? s : s + " ") << *this << std::endl;
 }
@@ -325,29 +343,7 @@ double Pose2::range(const Pose2& pose,
 
 /* ************************************************************************* */
 // Compute vectorized Lie algebra generators for SE(2)
-static Matrix93 VectorizedGenerators() {
-  Matrix93 G;
-  for (size_t j = 0; j < 3; j++) {
-    const Matrix3 X = Pose2::Hat(Vector::Unit(3, j));
-    G.col(j) = Eigen::Map<const Vector9>(X.data());
-  }
-  return G;
-}
 
-Vector9 Pose2::vec(OptionalJacobian<9, 3> H) const {
-  // Vectorize
-  const Matrix3 M = matrix();
-  const Vector9 X = Eigen::Map<const Vector9>(M.data());
-
-  // If requested, calculate H as (I_3 \oplus M) * G.
-  if (H) {
-    static const Matrix93 G = VectorizedGenerators(); // static to compute only once
-    for (size_t i = 0; i < 3; i++)
-      H->block(i * 3, 0, 3, dimension) = M * G.block(i * 3, 0, 3, dimension);
-  }
-
-  return X;
-}
 
 /* *************************************************************************
  * Align finds the angle using a linear method:

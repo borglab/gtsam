@@ -39,6 +39,7 @@ static constexpr double one_24th = 1.0 / 24.0;
 static constexpr double one_60th = 1.0 / 60.0;
 static constexpr double one_120th = 1.0 / 120.0;
 static constexpr double one_180th = 1.0 / 180.0;
+static constexpr double one_360th = 1.0 / 360.0;
 static constexpr double one_720th = 1.0 / 720.0;
 static constexpr double one_1260th = 1.0 / 1260.0;
 
@@ -113,111 +114,109 @@ Matrix3 ExpmapFunctor::expmap() const { return I_3x3 + A * W + B * WW; }
 
 DexpFunctor::DexpFunctor(const Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq)
   : ExpmapFunctor(nearZeroThresholdSq, omega), omega(omega) {
-  if (!nearZero) {
-    // General case or nearPi: Use standard stable formulas first
-    C = (1.0 - A) / theta2; // Usually stable, even near pi (1-0)/pi^2
-
-    // Calculate delta = pi - theta (non-negative) for nearPi check
-    const double delta = M_PI > theta ? M_PI - theta : 0.0;
-    const double delta2 = delta * delta;
-    const bool nearPi = (delta2 < nearPiThresholdSq);
-    if (nearPi) {
-      // Taylor expansion near pi *only for D* (Order delta)
-      D = k1_Pi2 + (k2_Pi3 - k1_4Pi) * delta; // D ~ 1/pi^2 + delta*(2/pi^3 - 1/(4*pi))
-    } else {
-      // General case D:
-      D = (1.0 - A / (2.0 * B)) / theta2;
-    }
-    // Calculate E and F using standard formulas (stable near pi)
-    E = (2.0 * B - A) / theta2;
-    F = (3.0 * C - B) / theta2;
-  } else {
-    // Taylor expansion at 0
-    // TODO(Frank): flipping signs here does not trigger any tests: harden!
-    C = one_6th - theta2 * one_120th;
-    D = one_12th + theta2 * one_720th;
-    E = one_12th - theta2 * one_180th;
-    F = one_60th - theta2 * one_1260th;
-  }
+  // General case or nearPi: Use standard stable formulas first
+  const double delta = M_PI > theta ? M_PI - theta : 0.0;
+  const double delta2 = delta * delta;
+  nearPi = (delta2 < nearPiThresholdSq);
 }
 
 DexpFunctor::DexpFunctor(const Vector3& omega)
-  : DexpFunctor(omega, kNearZeroThresholdSq, kNearPiThresholdSq) {}
+    : DexpFunctor(omega, kNearZeroThresholdSq, kNearPiThresholdSq) {}
 
+double DexpFunctor::C() const {
+  if (!C_.has_value()) {
+    // Usually stable, even near pi (1-0)/pi^2
+    C_ = !nearZero ? (1.0 - A) / theta2 : (one_6th - theta2 * one_120th);
+  }
+  return C_.value();
+}
+
+double DexpFunctor::D() const {
+  if (!D_.has_value()) {
+    D_ = !nearZero ? (nearPi ? (k1_Pi2 + (k2_Pi3 - k1_4Pi) * (M_PI - theta))
+                             : ((1.0 - A / (2.0 * B)) / theta2))
+                   : (one_12th + theta2 * one_720th);
+  }
+  return D_.value();
+}
+
+double DexpFunctor::E() const {
+  if (!E_.has_value()) {
+    E_ = !nearZero ? ((1.0 - 2.0 * B) / (2.0 * theta2))
+                   : (one_24th - theta2 * one_720th);
+  }
+  return E_.value();
+}
+
+double DexpFunctor::dA() const {
+  if (!dA_.has_value()) {
+    // Identity: dA = A′/θ = C − B (valid for all θ, with our near-zero series)
+    dA_ = C() - B;
+  }
+  return dA_.value();
+}
+
+double DexpFunctor::dB() const {
+  if (!dB_.has_value()) {
+    dB_ =
+        !nearZero ? ((A - 2.0 * B) / theta2) : (-one_12th + theta2 * one_180th);
+  }
+  return dB_.value();
+}
+
+double DexpFunctor::dC() const {
+  if (!dC_.has_value()) {
+    dC_ = !nearZero ? ((B - 3.0 * C()) / theta2)
+                    : (-one_60th + theta2 * one_1260th);
+  }
+  return dC_.value();
+}
+
+double DexpFunctor::dE() const {
+  if (!dE_.has_value()) {
+    dE_ = !nearZero ? (-(dB() + 2.0 * E()) / theta2) : (-one_360th);
+  }
+  return dE_.value();
+}
+
+// --- Kernels ---
+Kernel DexpFunctor::Rodrigues() const& { return Kernel{this, 1.0, A, B, dA(), dB()}; }
+Kernel DexpFunctor::Jacobian() const& { return Kernel{this, 1.0, B, C(), dB(), dC()}; }
+InvJKernel DexpFunctor::InvJacobian() const& { return InvJKernel{this, Jacobian()}; }
+Kernel DexpFunctor::Gamma() const& { return Kernel{this, 0.5, C(), E(), dC(), dE()}; }
+
+// --- If you only need Jacobians, not apply ---
+Matrix3 DexpFunctor::rightJacobian() const { return I_3x3 - B * W + C() * WW; }
+Matrix3 DexpFunctor::leftJacobian() const { return I_3x3 + B * W + C() * WW; }
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 Matrix3 DexpFunctor::rightJacobianInverse() const {
-  if (theta > M_PI) return rightJacobian().inverse();
-  return I_3x3 + 0.5 * W + D * WW;
+  return InvJacobian().right();
 }
-
 Matrix3 DexpFunctor::leftJacobianInverse() const {
-  if (theta > M_PI) return leftJacobian().inverse();
-  return I_3x3 - 0.5 * W + D * WW;
+  return InvJacobian().left();
 }
-
-// Multiplies v with left Jacobian through vector operations only.
-Vector3 DexpFunctor::applyRightJacobian(const Vector3& v, OptionalJacobian<3, 3> H1,
-  OptionalJacobian<3, 3> H2) const {
-  const Vector3 Wv = gtsam::cross(omega, v);
-
-  Matrix3 WWv_H_w;
-  const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &WWv_H_w : nullptr);
-
-  if (H1) {
-    // - E * omega.transpose() is 1x3 Jacobian of B with respect to omega
-    Matrix3 BWv_H_w = -Wv * E * omega.transpose() - B * skewSymmetric(v);
-    // - F * omega.transpose() is 1x3 Jacobian of C with respect to omega
-    Matrix3 CWWv_H_w = -WWv * F * omega.transpose() + C * WWv_H_w;
-    *H1 = -BWv_H_w + CWWv_H_w;
-  }
-
-  if (H2) *H2 = rightJacobian();
-  return v - B * Wv + C * WWv;
+Vector3 DexpFunctor::applyRightJacobian(const Vector3& v,
+                                        OptionalJacobian<3, 3> H1,
+                                        OptionalJacobian<3, 3> H2) const {
+  return Jacobian().applyRight(v, H1, H2);
 }
-
-Vector3 DexpFunctor::applyRightJacobianInverse(const Vector3& v, OptionalJacobian<3, 3> H1,
-  OptionalJacobian<3, 3> H2) const {
-  const Matrix3 invJr = rightJacobianInverse();
-  const Vector3 c = invJr * v;
-  if (H1) {
-    Matrix3 H;
-    applyRightJacobian(c, H);  // get derivative H of forward mapping
-    *H1 = -invJr * H;
-  }
-  if (H2) *H2 = invJr;
-  return c;
-}
-
 Vector3 DexpFunctor::applyLeftJacobian(const Vector3& v,
-  OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) const {
-  const Vector3 Wv = gtsam::cross(omega, v);
-
-  Matrix3 WWv_H_w;
-  const Vector3 WWv = gtsam::doubleCross(omega, v, H1 ? &WWv_H_w : nullptr);
-
-  if (H1) {
-    // - E * omega.transpose() is 1x3 Jacobian of B with respect to omega
-    Matrix3 BWv_H_w = -Wv * E * omega.transpose() - B * skewSymmetric(v);
-    // - F * omega.transpose() is 1x3 Jacobian of C with respect to omega
-    Matrix3 CWWv_H_w = -WWv * F * omega.transpose() + C * WWv_H_w;
-    *H1 = BWv_H_w + CWWv_H_w;
-  }
-
-  if (H2) *H2 = leftJacobian();
-  return v + B * Wv + C * WWv;
+                                       OptionalJacobian<3, 3> H1,
+                                       OptionalJacobian<3, 3> H2) const {
+  return Jacobian().applyLeft(v, H1, H2);
 }
-
+Vector3 DexpFunctor::applyRightJacobianInverse(
+    const Vector3& v, OptionalJacobian<3, 3> H1,
+    OptionalJacobian<3, 3> H2) const {
+  return InvJacobian().applyRight(v, H1, H2);
+}
 Vector3 DexpFunctor::applyLeftJacobianInverse(const Vector3& v,
-  OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) const {
-  const Matrix3 invJl = leftJacobianInverse();
-  const Vector3 c = invJl * v;
-  if (H1) {
-    Matrix3 H;
-    applyLeftJacobian(c, H);  // get derivative H of forward mapping
-    *H1 = -invJl * H;
-  }
-  if (H2) *H2 = invJl;
-  return c;
+                                              OptionalJacobian<3, 3> H1,
+                                              OptionalJacobian<3, 3> H2) const {
+  return InvJacobian().applyLeft(v, H1, H2);
 }
+#endif
 
 }  // namespace so3
 
@@ -274,13 +273,6 @@ Vector3 SO3::Vee(const Matrix3& X) {
 //******************************************************************************
 template <>
 GTSAM_EXPORT
-Matrix3 SO3::AdjointMap() const {
-  return matrix_;
-}
-
-//******************************************************************************
-template <>
-GTSAM_EXPORT
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
   so3::DexpFunctor local(omega);
   if (H) *H = local.rightJacobian();
@@ -297,7 +289,7 @@ Matrix3 SO3::ExpmapDerivative(const Vector3& omega) {
 template <>
 GTSAM_EXPORT
 Matrix3 SO3::LogmapDerivative(const Vector3& omega) {
-  return so3::DexpFunctor(omega).rightJacobianInverse();
+  return so3::DexpFunctor(omega).InvJacobian().right();
 }
 
 template <>
@@ -369,7 +361,7 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
       // when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
       // use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
       // see https://github.com/borglab/gtsam/issues/746 for details
-      magnitude = 0.5 - tr_3 * so3::one_12th + tr_3 * tr_3 * so3::one_60th;
+      magnitude = 0.5 - tr_3 * (1.0 / 12.0) + tr_3 * tr_3 * (1.0 / 60.0);
     }
     omega = magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
   }
@@ -394,31 +386,20 @@ Vector3 SO3::ChartAtOrigin::Local(const SO3& R, ChartJacobian H) {
 }
 
 //******************************************************************************
-// local vectorize
-static Vector9 vec3(const Matrix3& R) {
-  return Eigen::Map<const Vector9>(R.data());
-}
-
-// so<3> generators
-static std::vector<Matrix3> G3({SO3::Hat(Vector3::Unit(0)),
-                                SO3::Hat(Vector3::Unit(1)),
-                                SO3::Hat(Vector3::Unit(2))});
-
-// vectorized generators
-static const Matrix93 P3 =
-    (Matrix93() << vec3(G3[0]), vec3(G3[1]), vec3(G3[2])).finished();
-
-//******************************************************************************
 template <>
 GTSAM_EXPORT
 Vector9 SO3::vec(OptionalJacobian<9, 3> H) const {
   const Matrix3& R = matrix_;
   if (H) {
-    // As Luca calculated (for SO4), this is (I3 \oplus R) * P3
-    *H << R * P3.block<3, 3>(0, 0), R * P3.block<3, 3>(3, 0),
-        R * P3.block<3, 3>(6, 0);
+    H->setZero();
+    H->block<3, 1>(0, 1) = -R.col(2);
+    H->block<3, 1>(0, 2) = R.col(1);
+    H->block<3, 1>(3, 0) = R.col(2);
+    H->block<3, 1>(3, 2) = -R.col(0);
+    H->block<3, 1>(6, 0) = -R.col(1);
+    H->block<3, 1>(6, 1) = R.col(0);
   }
-  return gtsam::vec3(R);
+  return Eigen::Map<const Vector9>(R.data());
 }
 //******************************************************************************
 

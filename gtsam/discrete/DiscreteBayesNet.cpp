@@ -111,6 +111,12 @@ DiscreteBayesNet DiscreteBayesNet::prune(
 
     // Set the fixed values if requested.
     if (fixedValues) {
+      if (!fixedValues->empty()) {
+        throw std::invalid_argument(
+            "DiscreteBayesNet::prune: fixedValues should be empty since it is "
+            "a purely output argument.");
+      }
+
       *fixedValues = deadModesValues;
     }
   }

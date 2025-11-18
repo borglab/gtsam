@@ -35,39 +35,13 @@
 #include <string>
 
 #include "Switching.h"
+#include "DiscreteFixture.h"
 
 using namespace std;
 using namespace gtsam;
 
 using symbol_shorthand::X;
 using symbol_shorthand::Z;
-
-namespace estimation_fixture {
-std::vector<double> measurements = {0, 1, 2, 2, 2, 2,  3,  4,  5,  6, 6,
-                                    7, 8, 9, 9, 9, 10, 11, 11, 11, 11};
-// Ground truth discrete seq
-std::vector<size_t> discrete_seq = {1, 1, 0, 0, 0, 1, 1, 1, 1, 0,
-                                    1, 1, 1, 0, 0, 1, 1, 0, 0, 0};
-
-Switching InitializeEstimationProblem(
-    const size_t K, const double between_sigma, const double measurement_sigma,
-    const std::vector<double>& measurements,
-    const std::string& transitionProbabilityTable,
-    HybridNonlinearFactorGraph* graph, Values* initial) {
-  Switching switching(K, between_sigma, measurement_sigma, measurements,
-                      transitionProbabilityTable);
-
-  // Add prior on M(0)
-  graph->push_back(switching.modeChain.at(0));
-
-  // Add the X(0) prior
-  graph->push_back(switching.unaryFactors.at(0));
-  initial->insert(X(0), switching.linearizationPoint.at<double>(X(0)));
-
-  return switching;
-}
-
-}  // namespace estimation_fixture
 
 /****************************************************************************/
 // Test approximate inference with an additional pruning step.

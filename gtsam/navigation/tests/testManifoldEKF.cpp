@@ -148,7 +148,7 @@ TEST(ManifoldEKF_Unit3, Update) {
 }
 
 // Define simple dynamics and measurement for a 2x2 Matrix state
-namespace exampleDynamicMatrix {
+namespace manifold_ekf_example {
 
   // Predicts the next state given current state (Matrix), tangent "velocity" (Vector), and dt.
   Matrix f(const Matrix& p, const Vector& vTangent, double dt) {
@@ -168,7 +168,7 @@ namespace exampleDynamicMatrix {
     return p(0, 0) + p(1, 1); // Trace of the matrix
   }
 
-} // namespace exampleDynamicMatrix
+} // namespace manifold_ekf_example
 
 TEST(ManifoldEKF_DynamicMatrix, CombinedPredictAndUpdate) {
   Matrix pInitial = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished();
@@ -184,7 +184,7 @@ TEST(ManifoldEKF_DynamicMatrix, CombinedPredictAndUpdate) {
   EXPECT_LONGS_EQUAL(pInitial.rows() * pInitial.cols(), ekf.state().size());
 
   // Predict Step
-  Matrix pPredictedMean = exampleDynamicMatrix::f(pInitial, vTangent, deltaTime);
+  Matrix pPredictedMean = manifold_ekf_example::f(pInitial, vTangent, deltaTime);
 
   // For this linear prediction model (pNext = pCurrent + V*dt in tangent space),
   // Derivative w.r.t deltaXi is Identity.
@@ -201,15 +201,15 @@ TEST(ManifoldEKF_DynamicMatrix, CombinedPredictAndUpdate) {
   Matrix pCurrentCovarianceForUpdate = ekf.covariance();
 
   // True trace of pCurrentForUpdate (which is pPredictedMean)
-  double zTrue = exampleDynamicMatrix::h(pCurrentForUpdate);
+  double zTrue = manifold_ekf_example::h(pCurrentForUpdate);
   EXPECT_DOUBLES_EQUAL(5.0, zTrue, 1e-9);
   double zObserved = zTrue - 0.03;
 
-  ekf.update(exampleDynamicMatrix::h, zObserved, measurementNoiseCovariance);
+  ekf.update(manifold_ekf_example::h, zObserved, measurementNoiseCovariance);
 
   // Manual Kalman Update Steps for Verification
   Matrix hJacobian(1, 4); // Measurement Jacobian H (1x4 for 2x2 matrix, trace measurement)
-  double zPredictionManual = exampleDynamicMatrix::h(pCurrentForUpdate, hJacobian);
+  double zPredictionManual = manifold_ekf_example::h(pCurrentForUpdate, hJacobian);
   Matrix hJacobianExpected = (Matrix(1, 4) << 1.0, 0.0, 0.0, 1.0).finished();
   EXPECT(assert_equal(hJacobianExpected, hJacobian, 1e-9));
 
@@ -227,6 +227,43 @@ TEST(ManifoldEKF_DynamicMatrix, CombinedPredictAndUpdate) {
 
   EXPECT(assert_equal(pUpdatedManualExpected, ekf.state(), 1e-9));
   EXPECT(assert_equal(pUpdatedCovarianceManualExpected, ekf.covariance(), 1e-9));
+}
+
+// Test the non-templated wrapper bridge updateWithVector delegates to
+// update<Vector>
+TEST(ManifoldEKF_DynamicMatrix, UpdateWithVectorBridge) {
+  // State is a 2x2 Matrix manifold (dim=4)
+  Matrix X0 = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished();
+  Matrix P0 = I_4x4 * 0.02;
+  ManifoldEKF<Matrix> ekf(X0, P0);
+
+  // Simple linear measurement: z = H * vec(X) with m=2
+  // Define H to pick [p00 + p11, p01 - p10]
+  Matrix H(2, 4);
+  H << 1.0, 0.0, 0.0, 1.0, 0.0, -1.0, 1.0, 0.0;
+
+  // prediction = h(X) at current state
+  Vector prediction(2);
+  prediction << X0(0, 0) + X0(1, 1), X0(0, 1) - X0(1, 0);
+
+  // Observed z = prediction + noise
+  Vector z = prediction + (Vector(2) << 0.1, -0.05).finished();
+  Matrix R = Matrix::Identity(2, 2) * 0.01;
+
+  // Run the bridge update
+  ekf.updateWithVector(prediction, H, z, R);
+
+  // Manual update to compare
+  Vector innovation = z - prediction;           // size 2
+  Matrix S = H * P0 * H.transpose() + R;        // 2x2
+  Matrix K = P0 * H.transpose() * S.inverse();  // 4x2
+  Vector delta = K * innovation;                // 4x1
+  Matrix X_expected = traits<Matrix>::Retract(X0, delta);
+  Matrix P_expected = (I_4x4 - K * H) * P0 * (I_4x4 - K * H).transpose() +
+                      K * R * K.transpose();
+
+  EXPECT(assert_equal(X_expected, ekf.state(), 1e-9));
+  EXPECT(assert_equal(P_expected, ekf.covariance(), 1e-9));
 }
 
 int main() {

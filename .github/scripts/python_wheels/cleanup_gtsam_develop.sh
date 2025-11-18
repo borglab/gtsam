@@ -33,7 +33,7 @@ echo "         of 'gtsam-develop' on PyPI for user '$PYPI_USER'."
 echo "         This cannot be undone."
 echo "-----------------------------------------------------------------------"
 read -rp "Proceed? [y/N]: " REPLY
-REPLY=${REPLY,,}   # to lowercase
+REPLY=$(echo "$REPLY" | tr '[:upper:]' '[:lower:]')   # to lowercase
 [[ "$REPLY" != "y" && "$REPLY" != "yes" ]] && { echo "Aborted."; exit 0; }
 
 echo "Running pypi_cleanup for user '$PYPI_USER'..."

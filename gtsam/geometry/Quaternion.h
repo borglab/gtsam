@@ -138,6 +138,10 @@ struct traits<QUATERNION_TYPE> {
     return omega;
   }
 
+  static Matrix3 AdjointMap(const Q &g) {
+    return g.toRotationMatrix();
+  }
+
   using LieAlgebra = Matrix3;
 
   static Matrix3 Hat(const Vector3& v) {
@@ -146,6 +150,10 @@ struct traits<QUATERNION_TYPE> {
   
   static Vector3 Vee(const Matrix3& X) {
     return SO3::Vee(X);
+  }
+
+  static Vector9 Vec(const Q& q, OptionalJacobian<9, 3> H = {}) {
+    return SO3(q.toRotationMatrix()).SO3::vec(H);
   }
 
   /// @}

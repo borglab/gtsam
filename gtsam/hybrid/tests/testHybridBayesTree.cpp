@@ -25,6 +25,7 @@
 #include <numeric>
 
 #include "Switching.h"
+#include "DiscreteFixture.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -56,14 +57,6 @@ TEST(HybridGaussianFactorGraph, EliminateMultifrontal) {
 }
 
 /* ************************************************************************* */
-namespace two {
-std::vector<GaussianFactor::shared_ptr> components(Key key) {
-  return {std::make_shared<JacobianFactor>(key, I_3x3, Z_3x1),
-          std::make_shared<JacobianFactor>(key, I_3x3, Vector3::Ones())};
-}
-}  // namespace two
-
-/* ************************************************************************* */
 TEST(HybridGaussianFactorGraph,
      HybridGaussianFactorGraphEliminateFullMultifrontalSimple) {
   HybridGaussianFactorGraph hfg;
@@ -71,7 +64,7 @@ TEST(HybridGaussianFactorGraph,
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(m1, two_component_fixture::components(X(1))));
 
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
   hfg.add(DecisionTreeFactor({m1, m2}, "1 2 3 4"));
@@ -92,7 +85,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
   // Hybrid factor P(x1|c1)
-  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(m1, two_component_fixture::components(X(1))));
   // Prior factor on c1
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
 
@@ -113,16 +106,16 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
 
-  hfg.add(HybridGaussianFactor(m0, two::components(X(0))));
-  hfg.add(HybridGaussianFactor(m1, two::components(X(2))));
+  hfg.add(HybridGaussianFactor(m0, two_component_fixture::components(X(0))));
+  hfg.add(HybridGaussianFactor(m1, two_component_fixture::components(X(2))));
 
   hfg.add(DecisionTreeFactor({m1, m2}, "1 2 3 4"));
 
   hfg.add(JacobianFactor(X(3), I_3x3, X(4), -I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(4), I_3x3, X(5), -I_3x3, Z_3x1));
 
-  hfg.add(HybridGaussianFactor(m3, two::components(X(3))));
-  hfg.add(HybridGaussianFactor(m2, two::components(X(5))));
+  hfg.add(HybridGaussianFactor(m3, two_component_fixture::components(X(3))));
+  hfg.add(HybridGaussianFactor(m2, two_component_fixture::components(X(5))));
 
   auto ordering_full =
       Ordering::ColamdConstrainedLast(hfg, {M(0), M(1), M(2), M(3)});

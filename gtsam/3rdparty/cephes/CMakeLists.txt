@@ -17,7 +17,7 @@ set(CEPHES_HEADER_FILES
     cephes/mconf.h
     cephes/polevl.h
     cephes/sf_error.h
-    dllexport.h)
+   )
 
 # Add header files
 install(FILES ${CEPHES_HEADER_FILES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/cephes)
@@ -100,7 +100,8 @@ set_target_properties(
   cephes-gtsam
   PROPERTIES VERSION ${PROJECT_VERSION}
              SOVERSION ${PROJECT_VERSION_MAJOR}
-             C_STANDARD 99)
+             C_STANDARD 99
+             WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 if(WIN32)
   set_target_properties(cephes-gtsam PROPERTIES COMPILE_FLAGS /w)

@@ -17,36 +17,45 @@
 
 #pragma once
 
-#include <gtsam/navigation/ImuBias.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/navigation/ImuBias.h>
 
 using namespace std;
 using namespace gtsam;
 
 // Convenience for named keys
-using symbol_shorthand::X;
-using symbol_shorthand::V;
 using symbol_shorthand::B;
+using symbol_shorthand::V;
+using symbol_shorthand::X;
 
 namespace {
-static const Vector3 kZero = Z_3x1;
+[[maybe_unused]] static const Vector3 kZero = Z_3x1;
 typedef imuBias::ConstantBias Bias;
-static const Bias kZeroBiasHat, kZeroBias;
+[[maybe_unused]] static const Bias kZeroBiasHat, kZeroBias;
 
-static const Vector3 kZeroOmegaCoriolis(0, 0, 0);
-static const Vector3 kNonZeroOmegaCoriolis(0, 0.1, 0.1);
+[[maybe_unused]] static const Vector3 kZeroOmegaCoriolis(0, 0, 0);
+[[maybe_unused]] static const Vector3 kNonZeroOmegaCoriolis(0, 0.1, 0.1);
 
-static const double kGravity = 10;
-static const Vector3 kGravityAlongNavZDown(0, 0, kGravity);
+[[maybe_unused]] static const double kGravity = 10;
+[[maybe_unused]] static const Vector3 kGravityAlongNavZDown(0, 0, kGravity);
 
 // Realistic MEMS white noise characteristics. Angular and velocity random walk
 // expressed in degrees respectively m/s per sqrt(hr).
 auto radians = [](double t) { return t * M_PI / 180; };
-static const double kGyroSigma = radians(0.5) / 60;  // 0.5 degree ARW
-static const double kAccelSigma = 0.1 / 60;          // 10 cm VRW
-}
+[[maybe_unused]] static const double kGyroSigma =
+    radians(0.5) / 60;                                        // 0.5 degree ARW
+[[maybe_unused]] static const double kAccelSigma = 0.1 / 60;  // 10 cm VRW
+}  // namespace
 
 namespace testing {
+
+[[maybe_unused]] static std::shared_ptr<PreintegrationParams> Params() {
+  auto p = PreintegrationParams::MakeSharedD(kGravity);
+  p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
+  p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
+  p->integrationCovariance = 0.0001 * I_3x3;
+  return p;
+}
 
 struct ImuMeasurement {
   ImuMeasurement(const Vector3& acc, const Vector3& gyro, double dt)
@@ -76,3 +85,25 @@ struct SomeMeasurements : vector<ImuMeasurement> {
 };
 
 }  // namespace testing
+namespace {
+// Macro to test ImuFactor with both Manifold and Tangent preintegration
+// In the tests below the selected PreintegratedImuMeasurementsT is available
+// as `PIM`, and the combined version as `CombinedPIM`.
+#define TEST_PIM(testGroup, testName)                          \
+  template <class PIM, class CombinedPIM>                      \
+  void testGroup##testName##Helper(TestResult& result_,        \
+                                   const std::string& name_);  \
+  TEST(testGroup, testName) {                                  \
+    using M = ManifoldPreintegration;                          \
+    using PM = PreintegratedImuMeasurementsT<M>;               \
+    using CM = PreintegratedCombinedMeasurementsT<M>;          \
+    using T = TangentPreintegration;                           \
+    using PT = PreintegratedImuMeasurementsT<T>;               \
+    using CT = PreintegratedCombinedMeasurementsT<T>;          \
+    testGroup##testName##Helper<PM, CM>(result_, this->name_); \
+    testGroup##testName##Helper<PT, CT>(result_, this->name_); \
+  }                                                            \
+  template <class PIM, class CombinedPIM>                      \
+  void testGroup##testName##Helper(TestResult& result_,        \
+                                   const std::string& name_)
+}  // namespace

@@ -15,11 +15,13 @@
 * @date    November 6, 2013
 */
 
-#include <gtsam/global_includes.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/global_includes.h>
 
-#include <map>
+#include <algorithm>
 #include <iostream>
+#include <map>
+#include <random>
 
 using namespace std;
 using namespace gtsam;
@@ -53,18 +55,30 @@ struct WorkerWithoutAllocation
 {
   vector<double>& results;
 
-  WorkerWithoutAllocation(vector<double>& results) : results(results) {}
+  WorkerWithoutAllocation(vector<double>& results)
+      : results(results), gen(rd()), dis(-1.0, 1.0) {}
+
+  // Copy constructor for TBB
+  WorkerWithoutAllocation(const WorkerWithoutAllocation& other)
+      : results(other.results), gen(rd()), dis(-1.0, 1.0) {}
 
   void operator()(const tbb::blocked_range<size_t>& r) const
   {
     for(size_t i = r.begin(); i != r.end(); ++i)
     {
-      FixedMatrix m1 = FixedMatrix::Random();
-      FixedMatrix m2 = FixedMatrix::Random();
+      FixedMatrix m1;
+      FixedMatrix m2;
+      std::generate(m1.data(), m1.data() + m1.size(),
+                    [&]() { return dis(gen); });
+      std::generate(m2.data(), m2.data() + m2.size(),
+                    [&]() { return dis(gen); });
       FixedMatrix prod = m1 * m2;
       results[i] = prod.norm();
     }
   }
+  std::random_device rd;
+  mutable std::minstd_rand gen;
+  mutable std::uniform_real_distribution<double> dis;
 };
 
 /* ************************************************************************* */
@@ -86,9 +100,11 @@ map<int, double> testWithoutMemoryAllocation(int num_threads)
     tbb::tick_count t0 = tbb::tick_count::now();
 
     // Run parallel code (as a task group) inside of task arena
-    arena.execute([&]{
-      tg.run_and_wait([&]{
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithoutAllocation(results));
+    arena.execute([&] {
+      tg.run_and_wait([&] {
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>(0, numberOfProblems, grainSize),
+            WorkerWithoutAllocation(results));
       });
     });
 
@@ -105,7 +121,12 @@ struct WorkerWithAllocation
 {
   vector<double>& results;
 
-  WorkerWithAllocation(vector<double>& results) : results(results) {}
+  WorkerWithAllocation(vector<double>& results)
+      : results(results), gen(rd()), dis(-1.0, 1.0) {}
+
+  // Copy constructor for TBB
+  WorkerWithAllocation(const WorkerWithAllocation& other)
+      : results(other.results), gen(rd()), dis(-1.0, 1.0) {}
 
   void operator()(const tbb::blocked_range<size_t>& r) const
   {
@@ -119,8 +140,10 @@ struct WorkerWithAllocation
       double *proddata = allocator.allocate(problemSize * problemSize);
       Eigen::Map<Matrix> prod(proddata, problemSize, problemSize);
 
-      m1 = Eigen::Matrix4d::Random(problemSize, problemSize);
-      m2 = Eigen::Matrix4d::Random(problemSize, problemSize);
+      std::generate(m1.data(), m1.data() + m1.size(),
+                    [&]() { return dis(gen); });
+      std::generate(m2.data(), m2.data() + m2.size(),
+                    [&]() { return dis(gen); });
       prod = m1 * m2;
       results[i] = prod.norm();
 
@@ -129,6 +152,10 @@ struct WorkerWithAllocation
       allocator.deallocate(proddata, problemSize * problemSize);
     }
   }
+
+  std::random_device rd;
+  mutable std::minstd_rand gen;
+  mutable std::uniform_real_distribution<double> dis;
 };
 
 /* ************************************************************************* */
@@ -150,9 +177,11 @@ map<int, double> testWithMemoryAllocation(int num_threads)
     tbb::tick_count t0 = tbb::tick_count::now();
 
     // Run parallel code (as a task group) inside of task arena
-    arena.execute([&]{
-      tg.run_and_wait([&]{
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithAllocation(results));
+    arena.execute([&] {
+      tg.run_and_wait([&] {
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>(0, numberOfProblems, grainSize),
+            WorkerWithAllocation(results));
       });
     });
 

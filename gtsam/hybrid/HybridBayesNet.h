@@ -248,7 +248,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @param discrete Optional DiscreteValues
    * @return double
    */
-  double negLogConstant(const std::optional<DiscreteValues> &discrete) const;
+  double negLogConstant(const std::optional<DiscreteValues>& discrete = {}) const;
 
   /**
    * @brief Compute normalized posterior P(M|X=x) and return as a tree.

@@ -46,7 +46,7 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   double tol_ = 1e-5;             ///< tolerance value when calibrating
 
  public:
-  inline constexpr static auto dimension = 9;
+  constexpr static auto dimension = 9;
 
   ///< shared pointer to stereo calibration object
   using shared_ptr = std::shared_ptr<Cal3DS2_Base>;
@@ -98,16 +98,16 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   /// @{
 
   /// First distortion coefficient
-  inline double k1() const { return k1_; }
+  double k1() const { return k1_; }
 
   /// Second distortion coefficient
-  inline double k2() const { return k2_; }
+  double k2() const { return k2_; }
 
   /// First tangential distortion coefficient
-  inline double p1() const { return p1_; }
+  double p1() const { return p1_; }
 
   /// Second tangential distortion coefficient
-  inline double p2() const { return p2_; }
+  double p2() const { return p2_; }
 
   /// return distortion parameter vector
   Vector4 k() const { return Vector4(k1_, k2_, p1_, p2_); }
@@ -136,10 +136,10 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   Matrix29 D2d_calibration(const Point2& p) const;
 
   /// return DOF, dimensionality of tangent space
-  size_t dim() const override { return Dim(); }
+  size_t dim() const { return Dim(); }
 
   /// return DOF, dimensionality of tangent space
-  inline static size_t Dim() { return dimension; }
+  static size_t Dim() { return dimension; }
 
   /// @}
   /// @name Clone

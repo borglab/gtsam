@@ -55,7 +55,7 @@ TEST(HybridGaussianFactor, Constructor) {
 }
 
 /* ************************************************************************* */
-namespace test_constructor {
+namespace test_hgn_constructor {
 DiscreteKey m1(1, 2);
 
 auto A1 = Matrix::Zero(2, 1);
@@ -64,12 +64,12 @@ auto b = Matrix::Zero(2, 1);
 
 auto f10 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
 auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
-}  // namespace test_constructor
+}  // namespace test_hgn_constructor
 
 /* ************************************************************************* */
 // Test simple to complex constructors...
 TEST(HybridGaussianFactor, ConstructorVariants) {
-  using namespace test_constructor;
+  using namespace test_hgn_constructor;
   HybridGaussianFactor fromFactors(m1, {f10, f11});
 
   std::vector<GaussianFactorValuePair> pairs{{f10, 0.0}, {f11, 0.0}};
@@ -83,7 +83,7 @@ TEST(HybridGaussianFactor, ConstructorVariants) {
 
 /* ************************************************************************* */
 TEST(HybridGaussianFactor, Keys) {
-  using namespace test_constructor;
+  using namespace test_hgn_constructor;
   HybridGaussianFactor hybridFactorA(m1, {f10, f11});
   // Check the number of keys matches what we expect
   EXPECT_LONGS_EQUAL(3, hybridFactorA.keys().size());
@@ -105,7 +105,7 @@ TEST(HybridGaussianFactor, Keys) {
 
 /* ************************************************************************* */
 TEST(HybridGaussianFactor, Printing) {
-  using namespace test_constructor;
+  using namespace test_hgn_constructor;
   HybridGaussianFactor hybridFactor(m1, {f10, f11});
 
   std::string expected =

@@ -55,7 +55,7 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   double tol_ = 1e-5;             ///< tolerance value when calibrating
 
  public:
-  inline constexpr static auto dimension = 9;
+  constexpr static auto dimension = 9;
   ///< shared pointer to fisheye calibration object
   using shared_ptr = std::shared_ptr<Cal3Fisheye>;
 
@@ -93,16 +93,16 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @{
 
   /// First distortion coefficient
-  inline double k1() const { return k1_; }
+  double k1() const { return k1_; }
 
   /// Second distortion coefficient
-  inline double k2() const { return k2_; }
+  double k2() const { return k2_; }
 
   /// First tangential distortion coefficient
-  inline double k3() const { return k3_; }
+  double k3() const { return k3_; }
 
   /// Second tangential distortion coefficient
-  inline double k4() const { return k4_; }
+  double k4() const { return k4_; }
 
   /// return distortion parameter vector
   Vector4 k() const { return Vector4(k1_, k2_, k3_, k4_); }
@@ -154,13 +154,13 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @{
 
   /// Return dimensions of calibration manifold object
-  size_t dim() const override { return Dim(); }
+  size_t dim() const { return Dim(); }
 
   /// Return dimensions of calibration manifold object
-  inline static size_t Dim() { return dimension; }
+  static size_t Dim() { return dimension; }
 
   /// Given delta vector, update calibration
-  inline Cal3Fisheye retract(const Vector& d) const {
+  Cal3Fisheye retract(const Vector& d) const {
     return Cal3Fisheye(vector() + d);
   }
 

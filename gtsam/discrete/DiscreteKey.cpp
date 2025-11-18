@@ -51,8 +51,7 @@ namespace gtsam {
                            const KeyFormatter& keyFormatter) const {
     std::cout << (s.empty() ? "" : s + " ") << std::endl;
     for (auto&& dkey : *this) {
-      std::cout << DefaultKeyFormatter(dkey.first) << " " << dkey.second
-                << std::endl;
+      std::cout << keyFormatter(dkey.first) << " " << dkey.second << std::endl;
     }
   }
 

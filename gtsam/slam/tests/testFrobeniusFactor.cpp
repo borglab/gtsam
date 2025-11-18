@@ -20,14 +20,18 @@
 
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/testLie.h>
-#include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/Similarity2.h>
+#include <gtsam/geometry/Similarity3.h>
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/geometry/SO4.h>
+#include <gtsam/geometry/Gal3.h>
+#include <gtsam/geometry/SL4.h>
+#include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/slam/FrobeniusFactor.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -45,7 +49,7 @@ namespace so3 {
 }  // namespace so3
 
 /* ************************************************************************* */
-TEST(FrobeniusPriorSO3, evaluateError) {
+TEST(FrobeniusPriorSO3, EvaluateError) {
   using namespace ::so3;
   auto factor = FrobeniusPrior<SO3>(1, R2.matrix());
   Vector actual = factor.evaluateError(R1);
@@ -105,7 +109,7 @@ TEST(FrobeniusPriorSO3, ChordalL2mean) {
 }
 
 /* ************************************************************************* */
-TEST(FrobeniusFactorSO3, evaluateError) {
+TEST(FrobeniusFactorSO3, EvaluateError) {
   using namespace ::so3;
   auto factor = FrobeniusFactor<SO3>(1, 2);
   Vector actual = factor.evaluateError(R1, R2);
@@ -120,7 +124,7 @@ TEST(FrobeniusFactorSO3, evaluateError) {
 
 /* ************************************************************************* */
 // Commented out as SO(n) not yet supported (and might never be)
-// TEST(FrobeniusBetweenFactorSOn, evaluateError) {
+// TEST(FrobeniusBetweenFactorSOn, EvaluateError) {
 //   using namespace ::so3;
 //   auto factor =
 //       FrobeniusBetweenFactor<SOn>(1, 2, SOn::FromMatrix(R12.matrix()));
@@ -136,7 +140,7 @@ TEST(FrobeniusFactorSO3, evaluateError) {
 // }
 
 /* ************************************************************************* */
-TEST(FrobeniusBetweenFactorSO3, evaluateError) {
+TEST(FrobeniusBetweenFactorSO3, EvaluateError) {
   using namespace ::so3;
   auto factor = FrobeniusBetweenFactor<SO3>(1, 2, R12);
   Vector actual = factor.evaluateError(R1, R2);
@@ -159,7 +163,7 @@ namespace so4 {
 }  // namespace so4
 
 /* ************************************************************************* */
-TEST(FrobeniusFactorSO4, evaluateError) {
+TEST(FrobeniusFactorSO4, EvaluateError) {
   using namespace ::so4;
   auto factor = FrobeniusFactor<SO4>(1, 2, noiseModel::Unit::Create(6));
   Vector actual = factor.evaluateError(Q1, Q2);
@@ -173,7 +177,7 @@ TEST(FrobeniusFactorSO4, evaluateError) {
 }
 
 /* ************************************************************************* */
-TEST(FrobeniusBetweenFactorSO4, evaluateError) {
+TEST(FrobeniusBetweenFactorSO4, EvaluateError) {
   using namespace ::so4;
   Matrix4 M{ I_4x4 };
   M.topLeftCorner<3, 3>() = ::so3::R12.matrix();
@@ -197,7 +201,7 @@ namespace pose2 {
 }  // namespace pose2
 
 /* ************************************************************************* */
-TEST(FrobeniusFactorPose2, evaluateError) {
+TEST(FrobeniusFactorPose2, EvaluateError) {
   using namespace ::pose2;
   auto factor = FrobeniusFactor<Pose2>(1, 2, noiseModel::Unit::Create(3));
   Vector actual = factor.evaluateError(P1, P2);
@@ -211,7 +215,7 @@ TEST(FrobeniusFactorPose2, evaluateError) {
 }
 
 /* ************************************************************************* */
-TEST(FrobeniusBetweenFactorPose2, evaluateError) {
+TEST(FrobeniusBetweenFactorPose2, EvaluateError) {
   using namespace ::pose2;
   auto factor = FrobeniusBetweenFactor<Pose2>(1, 2, P1.between(P2));
   Matrix H1, H2;
@@ -233,9 +237,9 @@ namespace pose3 {
 }  // namespace pose3
 
 /* ************************************************************************* */
-TEST(FrobeniusFactorPose3, evaluateError) {
+TEST(FrobeniusFactorPose3, EvaluateError) {
   using namespace ::pose3;
-  auto factor = FrobeniusFactor<Pose3>(1, 2, noiseModel::Unit::Create(12));
+  auto factor = FrobeniusFactor<Pose3>(1, 2, noiseModel::Unit::Create(6));
   Vector actual = factor.evaluateError(P1, P2);
   Vector expected = P2.vec() - P1.vec();
   EXPECT(assert_equal(expected, actual, 1e-9));
@@ -247,7 +251,7 @@ TEST(FrobeniusFactorPose3, evaluateError) {
 }
 
 /* ************************************************************************* */
-TEST(FrobeniusBetweenFactorPose3, evaluateError) {
+TEST(FrobeniusBetweenFactorPose3, EvaluateError) {
   using namespace ::pose3;
   auto factor = FrobeniusBetweenFactor<Pose3>(1, 2, P1.between(P2));
   Matrix H1, H2;
@@ -260,6 +264,207 @@ TEST(FrobeniusBetweenFactorPose3, evaluateError) {
   values.insert(1, P1);
   values.insert(2, P2);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+namespace sim2 {
+  Similarity2 id;
+  Similarity2 P1 = Similarity2::Expmap(Vector4(0.1, 0.2, 0.3, 0.4));
+  Similarity2 P2 = Similarity2::Expmap(Vector4(0.2, 0.3, 0.4, 0.5));
+}  // namespace sim2
+
+/* ************************************************************************* */
+TEST(FrobeniusFactorSimilarity2, EvaluateError) {
+  using namespace ::sim2;
+  auto factor = FrobeniusFactor<Similarity2>(1, 2, noiseModel::Unit::Create(9));
+  Vector actual = factor.evaluateError(P1, P2);
+  Vector expected = P2.vec() - P1.vec();
+  EXPECT(assert_equal(expected, actual, 1e-9));
+
+  Values values;
+  values.insert(1, P1);
+  values.insert(2, P2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+TEST(FrobeniusBetweenFactorNLSimilarity2, EvaluateError) {
+  using namespace ::sim2;
+  auto factor = FrobeniusBetweenFactorNL<Similarity2>(1, 2, P1.between(P2));
+  Matrix H1, H2;
+  Vector actual = factor.evaluateError(P1, P2, H1, H2);
+  Vector expected(9);
+  expected.setZero();
+  EXPECT(assert_equal(expected, actual, 1e-9));
+
+  Values values;
+  values.insert(1, P1);
+  values.insert(2, P2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+TEST(FrobeniusBetweenFactorNLSimilarity2, Optimization) {
+  using namespace ::sim2;
+  auto factor = FrobeniusBetweenFactorNL<Similarity2>(1, 2, P1.between(P2));
+
+  NonlinearFactorGraph graph;
+  graph.add(factor);
+  graph.add(PriorFactor<Similarity2>(1, P1, noiseModel::Constrained::All(4)));
+
+  Values initial;
+  initial.insert(1, P1);
+  initial.insert(2, P2.retract(Vector4::Constant(0.1)));
+
+  double initial_error = graph.error(initial);
+
+  GaussNewtonParams params;
+  // params.setVerbosity("ERROR");
+  GaussNewtonOptimizer optimizer(graph, initial, params);
+  Values result = optimizer.optimize();
+
+  double final_error = graph.error(result);
+
+  EXPECT(final_error < initial_error);
+}
+
+/* ************************************************************************* */
+namespace sim3 {
+  Similarity3 id;
+  Similarity3 P1 = Similarity3::Expmap(Vector7(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7));
+  Similarity3 P2 = Similarity3::Expmap(Vector7(0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8));
+}  // namespace sim3
+
+/* ************************************************************************* */
+TEST(FrobeniusFactorSimilarity3, EvaluateError) {
+  using namespace ::sim3;
+  auto factor = FrobeniusFactor<Similarity3>(1, 2, noiseModel::Unit::Create(16));
+  Vector actual = factor.evaluateError(P1, P2);
+  Vector expected = P2.vec() - P1.vec();
+  EXPECT(assert_equal(expected, actual, 1e-9));
+
+  Values values;
+  values.insert(1, P1);
+  values.insert(2, P2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+TEST(FrobeniusBetweenFactorNLSimilarity3, EvaluateError) {
+  using namespace ::sim3;
+  auto factor = FrobeniusBetweenFactorNL<Similarity3>(1, 2, P1.between(P2));
+  Matrix H1, H2;
+  Vector actual = factor.evaluateError(P1, P2, H1, H2);
+  Vector expected(16);
+  expected.setZero();
+  EXPECT(assert_equal(expected, actual, 1e-9));
+
+  Values values;
+  values.insert(1, P1);
+  values.insert(2, P2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+namespace gal3 {
+  Gal3 id;
+  Gal3 G1(Rot3::Rz(0.1), Point3(0.2, 0.3, 0.4), Velocity3(0.5, 0.6, 0.7), 0.8);
+  Gal3 G2(Rot3::Rz(0.2), Point3(0.3, 0.4, 0.5), Velocity3(0.6, 0.7, 0.8), 0.9);
+}  // namespace gal3
+
+/* ************************************************************************* */
+TEST(FrobeniusFactorGal3, EvaluateError) {
+  using namespace ::gal3;
+  auto factor = FrobeniusFactor<Gal3>(1, 2, noiseModel::Unit::Create(25));
+  Vector actual = factor.evaluateError(G1, G2);
+  Vector expected = G2.vec() - G1.vec();
+  EXPECT(assert_equal(expected, actual, 1e-9));
+
+  Values values;
+  values.insert(1, G1);
+  values.insert(2, G2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+TEST(FrobeniusBetweenFactorGal3, EvaluateError) {
+  using namespace ::gal3;
+  auto factor = FrobeniusBetweenFactor<Gal3>(1, 2, G1.between(G2));
+  Matrix H1, H2;
+  Vector actual = factor.evaluateError(G1, G2, H1, H2);
+  Vector expected(25);
+  expected.setZero();
+  EXPECT(assert_equal(expected, actual, 1e-9));
+
+  Values values;
+  values.insert(1, G1);
+  values.insert(2, G2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+namespace sl4 {
+SL4 id;
+const Matrix4 T_matrix =
+    (Matrix4() << 1, 0, 0, 1, 0, 1, 0, 2, 0, 0, 1, 3, 0, 0, 0, 1).finished();
+const SL4 T1(T_matrix);
+const Matrix4 T_matrix2 =
+    (Matrix4() << 1, 0, 0, 4, 0, 1, 0, 5, 0, 0, 1, 6, 0, 0, 0, 1).finished();
+const SL4 T2(T_matrix2);
+}  // namespace sl4
+
+/* ************************************************************************* */
+TEST(FrobeniusFactorSL4, EvaluateError) {
+  using namespace ::sl4;
+  auto factor = FrobeniusFactor<SL4>(1, 2, noiseModel::Unit::Create(16));
+  Vector actual = factor.evaluateError(T1, T2);
+  Vector expected = T2.vec() - T1.vec();
+  EXPECT(assert_equal(expected, actual, 1e-9));
+
+  Values values;
+  values.insert(1, T1);
+  values.insert(2, T2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+TEST(FrobeniusBetweenFactorSL4, EvaluateError) {
+  using namespace ::sl4;
+  auto factor = FrobeniusBetweenFactor<SL4>(1, 2, T1.between(T2));
+  Matrix H1, H2;
+  Vector actual = factor.evaluateError(T1, T2, H1, H2);
+  Vector expected(16);
+  expected.setZero();
+  EXPECT(assert_equal(expected, actual, 1e-9));
+
+  Values values;
+  values.insert(1, T1);
+  values.insert(2, T2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+/* ************************************************************************* */
+TEST(FrobeniusBetweenFactorNLSL4, Optimization) {
+  using namespace ::sl4;
+  auto factor = FrobeniusBetweenFactorNL<SL4>(1, 2, T1.between(T2));
+
+  NonlinearFactorGraph graph;
+  graph.add(factor);
+  graph.add(PriorFactor<SL4>(1, T1, noiseModel::Constrained::All(15)));
+
+  Values initial;
+  initial.insert(1, T1);
+  initial.insert(2, T2.retract(Vector15::Constant(0.01)));
+
+  double initial_error = graph.error(initial);
+
+  GaussNewtonParams params;
+  GaussNewtonOptimizer optimizer(graph, initial, params);
+  Values result = optimizer.optimize();
+
+  double final_error = graph.error(result);
+
+  EXPECT(final_error < initial_error);
 }
 
 /* ************************************************************************* */

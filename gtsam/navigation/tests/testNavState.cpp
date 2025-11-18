@@ -30,7 +30,7 @@ using namespace std;
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(NavState)
-GTSAM_CONCEPT_LIE_INST(NavState)
+GTSAM_CONCEPT_MATRIX_LIE_GROUP_INST(NavState)
 
 static const Rot3 kAttitude = Rot3::RzRyRx(0.1, 0.2, 0.3);
 static const Point3 kPosition(1.0, 2.0, 3.0);
@@ -743,6 +743,57 @@ TEST(NavState, ChartDerivatives) {
     CHECK_CHART_DERIVATIVES(T2,id);
     CHECK_CHART_DERIVATIVES(T2,T3);
   }
+}
+
+/* ************************************************************************* */
+TEST(NavState, Vec) {
+  using Vector25 = Eigen::Matrix<double, 25, 1>;
+  const NavState navState(Rot3::Rodrigues(0.1, 0.2, 0.3), Point3(1.0, 2.0, 3.0), Velocity3(0.4, 0.5, 0.6));
+
+  Vector25 expected_vec = Eigen::Map<Vector25>(navState.matrix().data());
+  Eigen::Matrix<double, 25, 9> actualH;
+  Vector25 actual_vec = navState.vec(actualH);
+  EXPECT(assert_equal(expected_vec, actual_vec));
+
+  // Verify Jacobian with numerical derivatives
+  std::function<Vector25(const NavState&)> f = [](const NavState& p) { return p.vec(); };
+  Eigen::Matrix<double, 25, 9> numericalH = numericalDerivative11<Vector25, NavState>(f, navState);
+  EXPECT(assert_equal(numericalH, actualH, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(NavState, AdjointMap_GenericVsSpecialized) {
+  // Create a non-trivial NavState object
+  const NavState navState(Rot3::Rodrigues(0.1, 0.2, 0.3), Point3(1.0, 2.0, 3.0), Velocity3(0.4, 0.5, 0.6));
+
+  // Call the specialized AdjointMap
+  Matrix9 specialized_Adj = navState.AdjointMap();
+
+  // Call the generic AdjointMap from the base class
+  Matrix9 generic_Adj = static_cast<const MatrixLieGroup<NavState, 9, 5>*>(&navState)->AdjointMap();
+
+  // Assert that they are equal
+  EXPECT(assert_equal(specialized_Adj, generic_Adj, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(NavState, AutonomousFlow) {
+  const double dt = 0.1;
+  NavState::AutonomousFlow phi{dt};
+
+  // Check action on identity
+  CHECK(assert_equal(phi(NavState::Identity()), NavState::Identity()));
+
+  // Check action on static const NavState T(R, P2, V2);
+  CHECK(assert_equal(phi(T), {R, P2 + V2 * dt, V2}));
+
+  // Numerical derivative of phi at identity
+  auto numericalPhi = numericalDerivative11<NavState, NavState>(
+      [&](const NavState& X) { return phi(X); }, NavState());
+
+  // Check analytical derivative against numerical derivative
+  auto analyticalPhi = phi.dIdentity();
+  CHECK(assert_equal(numericalPhi, analyticalPhi, 1e-9));
 }
 
 /* ************************************************************************* */

@@ -29,9 +29,9 @@
 
 #include <iomanip>
 
-using std::vector;
-using std::string;
 using std::map;
+using std::string;
+using std::vector;
 using namespace gtsam;
 
 template <typename T>
@@ -54,7 +54,8 @@ struct CrazyDecisionTree : public DecisionTree<string, Crazy> {
     auto keyFormatter = [](const std::string& s) { return s; };
     auto valueFormatter = [](const Crazy& v) {
       std::stringstream ss;
-      ss << "{" << v.a << "," << std::setw(4) << std::setprecision(2) << v.b << "}";
+      ss << "{" << v.a << "," << std::setw(4) << std::setprecision(2) << v.b
+         << "}";
       return ss.str();
     };
     DecisionTree<string, Crazy>::print("", keyFormatter, valueFormatter);
@@ -103,9 +104,7 @@ struct DT : public DecisionTree<string, int> {
   /// print to stdout
   void print(const std::string& s = "") const {
     auto keyFormatter = [](const std::string& s) { return s; };
-    auto valueFormatter = [](const int& v) {
-      return std::to_string(v);
-    };
+    auto valueFormatter = [](const int& v) { return std::to_string(v); };
     std::cout << s;
     Base::print("", keyFormatter, valueFormatter);
   }
@@ -132,10 +131,10 @@ TEST(DecisionTree, ConstructorOrder) {
   string A("A"), B("B");
 
   const std::vector<int> ys1 = {1, 2, 3, 4};
-  DT tree1({{B, 2}, {A, 2}}, ys1); // faster version, as B is "higher" than A!
+  DT tree1({{B, 2}, {A, 2}}, ys1);  // faster version, as B is "higher" than A!
 
   const std::vector<int> ys2 = {1, 3, 2, 4};
-  DT tree2({{A, 2}, {B, 2}}, ys2); // slower version !
+  DT tree2({{A, 2}, {B, 2}}, ys2);  // slower version !
 
   // Both trees will be the same, tree is order from high to low labels.
   // Choice(B)
@@ -266,7 +265,8 @@ TEST(DecisionTree, Example) {
 }
 
 /* ************************************************************************** */
-// Test that we can create two trees out of one, using a function that returns a pair.
+// Test that we can create two trees out of one, using a function that returns a
+// pair.
 TEST(DecisionTree, Split) {
   // Create labels
   string A("A"), B("B");
@@ -276,11 +276,11 @@ TEST(DecisionTree, Split) {
 
   // Define a function that returns an int/bool pair
   auto split_function = [](const int& value) -> std::pair<int, bool> {
-    return {value*3, value*3 % 2 == 0};
+    return {value * 3, value * 3 % 2 == 0};
   };
 
   // Split the original tree into two new trees
-  auto [la,lb] = original.split<int,bool>(split_function);
+  auto [la, lb] = original.split<int, bool>(split_function);
 
   // Check the first resulting tree
   EXPECT_LONGS_EQUAL(3, la(Assignment<string>{{A, 0}, {B, 0}}));
@@ -295,7 +295,6 @@ TEST(DecisionTree, Split) {
   EXPECT(lb(Assignment<string>{{A, 1}, {B, 1}}));
 }
 
-
 /* ************************************************************************** */
 // Test that we can create a tree by modifying an rvalue.
 TEST(DecisionTree, Consume) {
@@ -305,7 +304,7 @@ TEST(DecisionTree, Consume) {
   // Create a decision tree
   DT original(A, DT(B, 1, 2), DT(B, 3, 4));
 
-  DT modified([](int i){return i*2;}, std::move(original));
+  DT modified([](int i) { return i * 2; }, std::move(original));
 
   // Check the first resulting tree
   EXPECT_LONGS_EQUAL(2, modified(Assignment<string>{{A, 0}, {B, 0}}));
@@ -319,7 +318,7 @@ TEST(DecisionTree, Consume) {
 
 /* ************************************************************************** */
 // test Conversion of values
-bool bool_of_int(const int& y) { return y != 0; };
+bool bool_of_int(const int& y) { return y != 0; }
 typedef DecisionTree<string, bool> StringBoolTree;
 
 TEST(DecisionTree, ConvertValuesOnly) {
@@ -333,7 +332,7 @@ TEST(DecisionTree, ConvertValuesOnly) {
   StringBoolTree f2(f1, bool_of_int);
 
   // Check a value
-  Assignment<string> x00 {{A, 0}, {B, 0}};
+  Assignment<string> x00{{A, 0}, {B, 0}};
   EXPECT(!f2(x00));
 }
 

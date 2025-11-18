@@ -66,9 +66,9 @@ Vector9 TangentPreintegration::UpdatePreintegrated(const Vector3& a_body,
   // Calculate exact mean propagation
   Matrix3 w_tangent_H_theta, invH;
   const Vector3 w_tangent = // angular velocity mapped back to tangent space
-      local.applyRightJacobianInverse(w_body, A ? &w_tangent_H_theta : 0, C ? &invH : 0);
-  const Rot3 R(local.expmap());  // nRb: rotation of body in nav frame
-  const Vector3 a_nav = R * a_body;
+      local.InvJacobian().applyRight(w_body, A ? &w_tangent_H_theta : 0, C ? &invH : 0);
+  const Matrix3 nRb = local.expmap();  // nRb: rotation of body in nav frame
+  const Vector3 a_nav = nRb * a_body;
   const double dt22 = 0.5 * dt * dt;
 
   Vector9 preintegratedPlus;
@@ -78,8 +78,8 @@ Vector9 TangentPreintegration::UpdatePreintegrated(const Vector3& a_body,
       velocity + a_nav * dt;                    // velocity
 
   if (A) {
-    // Exact derivative of R*a with respect to theta:
-    const Matrix3 a_nav_H_theta = R.matrix() * skewSymmetric(-a_body) * local.rightJacobian();
+    // Exact derivative of nRb*a with respect to theta:
+    const Matrix3 a_nav_H_theta = nRb * skewSymmetric(-a_body) * local.rightJacobian();
 
     A->setIdentity();
     A->block<3, 3>(0, 0).noalias() += w_tangent_H_theta * dt;  // theta
@@ -89,8 +89,8 @@ Vector9 TangentPreintegration::UpdatePreintegrated(const Vector3& a_body,
   }
   if (B) {
     B->block<3, 3>(0, 0) = Z_3x3;
-    B->block<3, 3>(3, 0) = R.matrix() * dt22;
-    B->block<3, 3>(6, 0) = R.matrix() * dt;
+    B->block<3, 3>(3, 0) = nRb * dt22;
+    B->block<3, 3>(6, 0) = nRb * dt;
   }
   if (C) {
     C->block<3, 3>(0, 0) = invH * dt;

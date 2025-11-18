@@ -33,17 +33,6 @@ Vector9 f(const Vector9& zeta, const Vector3& a, const Vector3& w) {
   return TangentPreintegration::UpdatePreintegrated(a, w, kDt, zeta);
 }
 
-namespace testing {
-// Create default parameters with Z-down and above noise parameters
-static std::shared_ptr<PreintegrationParams> Params() {
-  auto p = PreintegrationParams::MakeSharedD(kGravity);
-  p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
-  p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
-  p->integrationCovariance = 0.0001 * I_3x3;
-  return p;
-}
-}
-
 /* ************************************************************************* */
 TEST(TangentPreintegration, UpdateEstimate1) {
   TangentPreintegration pim(testing::Params());

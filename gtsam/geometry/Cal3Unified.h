@@ -50,7 +50,7 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
   double xi_ = 0.0f;  ///< mirror parameter
 
  public:
-  inline constexpr static auto dimension = 10;
+  constexpr static auto dimension = 10;
 
   ///< shared pointer to stereo calibration object
   using shared_ptr = std::shared_ptr<Cal3Unified>;
@@ -93,7 +93,7 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
   /// @{
 
   /// mirror parameter
-  inline double xi() const { return xi_; }
+  double xi() const { return xi_; }
 
   /// Return all parameters as a vector
   Vector10 vector() const;
@@ -130,10 +130,10 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
   Vector localCoordinates(const Cal3Unified& T2) const;
 
   /// Return dimensions of calibration manifold object
-  size_t dim() const override { return Dim(); }
+  size_t dim() const { return Dim(); }
 
   /// Return dimensions of calibration manifold object
-  inline static size_t Dim() { return dimension; }
+  static size_t Dim() { return dimension; }
 
   /// @}
 

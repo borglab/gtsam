@@ -100,7 +100,7 @@ virtual class EssentialTransferFactorK : gtsam::NoiseModelFactor {
   EssentialTransferFactorK(gtsam::EdgeKey edge1, gtsam::EdgeKey edge2,
                            const std::vector<std::tuple<gtsam::Point2, gtsam::Point2, gtsam::Point2>>& triplets,
                            const gtsam::noiseModel::Base* model = nullptr);
-  EssentialTransferFactorK(gtsam::EdgeKey edge1, gtsam::EdgeKey edge2, size_t keyK,
+  EssentialTransferFactorK(gtsam::EdgeKey edge1, gtsam::EdgeKey edge2, gtsam::Key keyK,
                            const std::vector<std::tuple<gtsam::Point2, gtsam::Point2, gtsam::Point2>>& triplets,
                            const gtsam::noiseModel::Base* model = nullptr);
 };
@@ -108,8 +108,8 @@ virtual class EssentialTransferFactorK : gtsam::NoiseModelFactor {
 #include <gtsam/sfm/ShonanFactor.h>
 
 virtual class ShonanFactor3 : gtsam::NoiseModelFactor {
-  ShonanFactor3(size_t key1, size_t key2, const gtsam::Rot3& R12, size_t p);
-  ShonanFactor3(size_t key1, size_t key2, const gtsam::Rot3& R12, size_t p,
+  ShonanFactor3(gtsam::Key key1, gtsam::Key key2, const gtsam::Rot3& R12, size_t p);
+  ShonanFactor3(gtsam::Key key1, gtsam::Key key2, const gtsam::Rot3& R12, size_t p,
                 gtsam::noiseModel::Base* model);
   gtsam::Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
 };
@@ -117,10 +117,10 @@ virtual class ShonanFactor3 : gtsam::NoiseModelFactor {
 #include <gtsam/sfm/BinaryMeasurement.h>
 template <T>
 class BinaryMeasurement {
-  BinaryMeasurement(size_t key1, size_t key2, const T& measured,
+  BinaryMeasurement(gtsam::Key key1, gtsam::Key key2, const T& measured,
                     const gtsam::noiseModel::Base* model);
-  size_t key1() const;
-  size_t key2() const;
+  gtsam::Key key1() const;
+  gtsam::Key key2() const;
   T measured() const;
   gtsam::noiseModel::Base* noiseModel() const;
 };
@@ -284,7 +284,7 @@ class KeyPairDoubleMap {
   size_t size() const;
   bool empty() const;
   void clear();
-  size_t at(const pair<size_t, size_t>& keypair) const;
+  size_t at(const pair<gtsam::Key, gtsam::Key>& keypair) const;
 };
 
 class MFAS {

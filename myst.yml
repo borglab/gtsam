@@ -8,8 +8,12 @@ project:
   toc:
     - file: README.md
     - file: INSTALL.md
+    - file: ./doc/GTSAM-Concepts.md
     - file: ./doc/user_guide.md
       children: 
+      - file: ./gtsam/base/base.md
+        children:
+        - pattern: ./gtsam/base/doc/*
       - file: ./gtsam/geometry/geometry.md
         children:
         - pattern: ./gtsam/geometry/doc/*
@@ -28,6 +32,12 @@ project:
       - file: ./gtsam/slam/slam.md
         children:
         - pattern: ./gtsam/slam/doc/*
+      - file: ./gtsam/discrete/discrete.md
+        children:
+        - pattern: ./gtsam/discrete/doc/*
+      - file: ./gtsam/hybrid/hybrid.md
+        children:
+        - pattern: ./gtsam/hybrid/doc/*
     - file: ./doc/examples.md
       children: 
       - pattern: ./python/gtsam/examples/*.ipynb

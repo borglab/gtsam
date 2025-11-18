@@ -59,6 +59,9 @@ class GTSAM_EXPORT HybridValues {
   HybridValues(const VectorValues& cv, const DiscreteValues& dv,
                const Values& v);
 
+  /// Construct from DiscreteValues and Values.
+  HybridValues(const DiscreteValues& dv, const Values& v);
+
   /// @}
   /// @name Testable
   /// @{
@@ -95,20 +98,38 @@ class GTSAM_EXPORT HybridValues {
   /// Check whether a variable with key \c j exists.
   bool exists(Key j);
 
-  /** Add a delta config to current config and returns a new config */
+  /**
+   * Add a delta config to current config and returns a new config.
+   * @param delta The delta to be added.
+   * @note This function applies the delta to the  nonlinear values, while keeping
+   * the continuous and discrete values unchanged.
+   */
   HybridValues retract(const VectorValues& delta) const;
 
   /** Insert a vector \c value with key \c j.  Throws an invalid_argument
    * exception if the key \c j is already used.
    * @param value The vector to be inserted.
    * @param j The index with which the value will be associated. */
-  void insert(Key j, const Vector& value);
+  HybridValues& insert(Key j, const Vector& value);
 
   /** Insert a discrete \c value with key \c j.  Replaces the existing value if
    * the key \c j is already used.
    * @param value The vector to be inserted.
    * @param j The index with which the value will be associated. */
-  void insert(Key j, size_t value);
+  HybridValues& insert(Key j, size_t value);
+
+  /**
+   * Insert a nonlinear value with key \c j. Throws an invalid_argument
+   * exception if the key \c j is already used.
+   * @tparam T The type of value to insert.
+   * @param j The index with which the value will be associated.
+   * @param value The value to be inserted.
+   */
+  template <typename T>
+  HybridValues& insertNonlinear(Key j, const T& value) {
+    nonlinear_.insert<T>(j, value);
+    return *this;
+  }
 
   /// insert_or_assign() , similar to Values.h
   void insert_or_assign(Key j, const Vector& value);
@@ -155,6 +176,12 @@ class GTSAM_EXPORT HybridValues {
    * std::out_of_range if any keys in \c values are not present in this object.
    */
   HybridValues& update(const DiscreteValues& values);
+
+  /** For all key/value pairs in \c values, replace nonlinear values with
+   * corresponding keys in this object with those in \c values.  Throws
+   * std::out_of_range if any keys in \c values are not present in this object.
+   */
+  HybridValues& update(const Values& values);
 
   /** For all key/value pairs in \c values, replace all values with
    * corresponding keys in this object with those in \c values.  Throws

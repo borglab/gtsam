@@ -8,6 +8,12 @@ The `navigation` module in GTSAM provides specialized tools for inertial navigat
 - **[NavState](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavState.h)**: Represents the complete navigation state $\mathcal{SE}_2(3)$, i.e., attitude, position, and velocity. It also implements the group ${SE}_2(3)$.
 - **[ImuBias](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/ImuBias.h)**: Models constant biases in IMU measurements (accelerometer and gyroscope).
 
+### Invariant Kalman Filtering
+
+- **[ManifoldEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/ManifoldEKF.h)**: Implements an EKF for states that operate on a differentiable manifold.
+- **[LieGroupEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/LieGroupEKF.h)**: Implements an EKF for states that operate on a Lie group with state dependent dynamics.
+- **[InvariantEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/InvariantEKF.h)**: Implements an EKF for states that operate on a Lie group with group composition (state independent) dynamics.
+
 ### Attitude Estimation
 
 - **[PreintegrationParams](doc/PreintegrationParams.ipynb)**: Parameters for IMU preintegration.
@@ -200,9 +206,9 @@ The key components are:
     * [CombinedImuFactor](doc/CombinedImuFactor.ipynb): A 6-way factor connecting previous pose/velocity, current pose/velocity, previous bias, and current bias. *Includes* a model for bias random walk evolution between the two bias states.
 
 ### Important notes
-- Which implementation is used for `PreintegrationType` depends on the compile flag `GTSAM_TANGENT_PREINTEGRATION`, which is true by default.
+- Which implementation is used for the `DefaultPreintegrationType` used by `ImuFactor`s and `Preintegrated*Measurements` depends on the compile flag `GTSAM_TANGENT_PREINTEGRATION`, which is true by default.
     - If false, `ManifoldPreintegration` is used. Please use this setting to get the exact implementation from {cite:t}`https://doi.org/10.1109/TRO.2016.2597321`.
     - If true, `TangentPreintegration` is used. This does the integration on the tangent space of the NavState manifold.
+- If you wish to use any preintegration type other than the default, you must template your PIMs and factors on the desired preintegration type using the template-supporting classes `PreintegratedImuMeasurementsT`, `ImuFactorT`, `ImuFactor2T`, `PreintegratedCombinedMeasurementsT`, or `CombinedImuFactorT`.
 - Using the combined IMU factor is not recommended. Typically biases evolve slowly, and hence a separate, lower frequency Markov chain on the bias is more appropriate.
 - For short-duration experiments it is even recommended to use a single constant bias. Bias estimation is notoriously hard to tune/debug, and also acts as a "sink" for any modeling errors. Hence, starting with a constant bias is a good idea to get the rest of the pipeline working.
-

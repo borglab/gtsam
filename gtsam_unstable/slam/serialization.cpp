@@ -23,6 +23,7 @@
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/SL4.h>
 #include <gtsam/geometry/Cal3DS2.h>
 //#include <gtsam/geometry/Cal3_S2Stereo.h>
 
@@ -36,6 +37,7 @@ typedef PriorFactor<Rot2>                 PriorFactorRot2;
 typedef PriorFactor<Rot3>                 PriorFactorRot3;
 typedef PriorFactor<Pose2>                PriorFactorPose2;
 typedef PriorFactor<Pose3>                PriorFactorPose3;
+typedef PriorFactor<SL4>                  PriorFactorSL4;
 typedef PriorFactor<Cal3_S2>              PriorFactorCal3_S2;
 typedef PriorFactor<Cal3DS2>              PriorFactorCal3DS2;
 typedef PriorFactor<CalibratedCamera>     PriorFactorCalibratedCamera;
@@ -48,6 +50,7 @@ typedef BetweenFactor<Rot2>            BetweenFactorRot2;
 typedef BetweenFactor<Rot3>            BetweenFactorRot3;
 typedef BetweenFactor<Pose2>           BetweenFactorPose2;
 typedef BetweenFactor<Pose3>           BetweenFactorPose3;
+typedef BetweenFactor<SL4>             BetweenFactorSL4;
 
 typedef NonlinearEquality<Point2>                 NonlinearEqualityPoint2;
 typedef NonlinearEquality<StereoPoint2>           NonlinearEqualityStereoPoint2;
@@ -130,6 +133,7 @@ BOOST_CLASS_EXPORT_GUID(PriorFactorRot2, "gtsam::PriorFactorRot2");
 BOOST_CLASS_EXPORT_GUID(PriorFactorRot3, "gtsam::PriorFactorRot3");
 BOOST_CLASS_EXPORT_GUID(PriorFactorPose2, "gtsam::PriorFactorPose2");
 BOOST_CLASS_EXPORT_GUID(PriorFactorPose3, "gtsam::PriorFactorPose3");
+BOOST_CLASS_EXPORT_GUID(PriorFactorSL4, "gtsam::PriorFactorSL4");
 BOOST_CLASS_EXPORT_GUID(PriorFactorCal3_S2, "gtsam::PriorFactorCal3_S2");
 BOOST_CLASS_EXPORT_GUID(PriorFactorCal3DS2, "gtsam::PriorFactorCal3DS2");
 BOOST_CLASS_EXPORT_GUID(PriorFactorCalibratedCamera, "gtsam::PriorFactorCalibratedCamera");
@@ -141,6 +145,7 @@ BOOST_CLASS_EXPORT_GUID(BetweenFactorRot2, "gtsam::BetweenFactorRot2");
 BOOST_CLASS_EXPORT_GUID(BetweenFactorRot3, "gtsam::BetweenFactorRot3");
 BOOST_CLASS_EXPORT_GUID(BetweenFactorPose2, "gtsam::BetweenFactorPose2");
 BOOST_CLASS_EXPORT_GUID(BetweenFactorPose3, "gtsam::BetweenFactorPose3");
+BOOST_CLASS_EXPORT_GUID(BetweenFactorSL4, "gtsam::BetweenFactorSL4");
 
 BOOST_CLASS_EXPORT_GUID(NonlinearEqualityPoint2, "gtsam::NonlinearEqualityPoint2");
 BOOST_CLASS_EXPORT_GUID(NonlinearEqualityStereoPoint2, "gtsam::NonlinearEqualityStereoPoint2");

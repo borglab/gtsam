@@ -153,8 +153,11 @@ Point3 Rot3::rotate(const Point3& p,
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::Expmap(const Vector3& v, OptionalJacobian<3,3> H) {
-  return Rot3(SO3::Expmap(v, H));
+Rot3 Rot3::Expmap(const Vector3& omega, OptionalJacobian<3, 3> H) {
+  so3::DexpFunctor local(omega);
+  if (H) *H = local.rightJacobian();
+  const Matrix3 M = local.expmap();
+  return Rot3(M);
 }
       
 /* ************************************************************************* */

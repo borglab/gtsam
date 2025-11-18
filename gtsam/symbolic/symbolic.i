@@ -8,13 +8,13 @@ virtual class SymbolicFactor : gtsam::Factor {
   // Standard Constructors and Named Constructors
   SymbolicFactor(const gtsam::SymbolicFactor& f);
   SymbolicFactor();
-  SymbolicFactor(size_t j);
-  SymbolicFactor(size_t j1, size_t j2);
-  SymbolicFactor(size_t j1, size_t j2, size_t j3);
-  SymbolicFactor(size_t j1, size_t j2, size_t j3, size_t j4);
-  SymbolicFactor(size_t j1, size_t j2, size_t j3, size_t j4, size_t j5);
-  SymbolicFactor(size_t j1, size_t j2, size_t j3, size_t j4, size_t j5,
-                 size_t j6);
+  SymbolicFactor(gtsam::Key j);
+  SymbolicFactor(gtsam::Key j1, gtsam::Key j2);
+  SymbolicFactor(gtsam::Key j1, gtsam::Key j2, gtsam::Key j3);
+  SymbolicFactor(gtsam::Key j1, gtsam::Key j2, gtsam::Key j3, gtsam::Key j4);
+  SymbolicFactor(gtsam::Key j1, gtsam::Key j2, gtsam::Key j3, gtsam::Key j4, gtsam::Key j5);
+  SymbolicFactor(gtsam::Key j1, gtsam::Key j2, gtsam::Key j3, gtsam::Key j4, gtsam::Key j5,
+                 gtsam::Key j6);
   static gtsam::SymbolicFactor FromKeys(const gtsam::KeyVector& keys);
 
   // From Factor
@@ -46,10 +46,10 @@ virtual class SymbolicFactorGraph {
   void push_back(const gtsam::SymbolicBayesTree& bayesTree);
 
   // Advanced Interface
-  void push_factor(size_t key);
-  void push_factor(size_t key1, size_t key2);
-  void push_factor(size_t key1, size_t key2, size_t key3);
-  void push_factor(size_t key1, size_t key2, size_t key3, size_t key4);
+  void push_factor(gtsam::Key key);
+  void push_factor(gtsam::Key key1, gtsam::Key key2);
+  void push_factor(gtsam::Key key1, gtsam::Key key2, gtsam::Key key3);
+  void push_factor(gtsam::Key key1, gtsam::Key key2, gtsam::Key key3, gtsam::Key key4);
 
   gtsam::SymbolicBayesNet* eliminateSequential();
   gtsam::SymbolicBayesNet* eliminateSequential(const gtsam::Ordering& ordering);
@@ -90,11 +90,11 @@ virtual class SymbolicConditional : gtsam::SymbolicFactor {
   // Standard Constructors and Named Constructors
   SymbolicConditional();
   SymbolicConditional(const gtsam::SymbolicConditional& other);
-  SymbolicConditional(size_t key);
-  SymbolicConditional(size_t key, size_t parent);
-  SymbolicConditional(size_t key, size_t parent1, size_t parent2);
-  SymbolicConditional(size_t key, size_t parent1, size_t parent2,
-                      size_t parent3);
+  SymbolicConditional(gtsam::Key key);
+  SymbolicConditional(gtsam::Key key, gtsam::Key parent);
+  SymbolicConditional(gtsam::Key key, gtsam::Key parent1, gtsam::Key parent2);
+  SymbolicConditional(gtsam::Key key, gtsam::Key parent1, gtsam::Key parent2,
+                      gtsam::Key parent3);
   static gtsam::SymbolicConditional FromKeys(const gtsam::KeyVector& keys,
                                              size_t nrFrontals);
 
@@ -216,9 +216,9 @@ class SymbolicBayesTree {
   void deleteCachedShortcuts();
   size_t numCachedSeparatorMarginals() const;
 
-  gtsam::SymbolicConditional* marginalFactor(size_t key) const;
-  gtsam::SymbolicFactorGraph* joint(size_t key1, size_t key2) const;
-  gtsam::SymbolicBayesNet* jointBayesNet(size_t key1, size_t key2) const;
+  gtsam::SymbolicConditional* marginalFactor(gtsam::Key key) const;
+  gtsam::SymbolicFactorGraph* joint(gtsam::Key key1, gtsam::Key key2) const;
+  gtsam::SymbolicBayesNet* jointBayesNet(gtsam::Key key1, gtsam::Key key2) const;
 
   string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;

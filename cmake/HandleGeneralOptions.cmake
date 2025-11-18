@@ -20,6 +20,10 @@ if (NOT MSVC)
     option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" OFF)
 endif()
 
+if(MSVC)
+    option(GTSAM_BUILD_WITH_PRECOMPILED_HEADERS "Enable/Disable building with precompiled headers" ON)
+endif()
+
 # Configurable Options
 option(BUILD_SHARED_LIBS                     "Build shared libraries" ON)
 if(GTSAM_UNSTABLE_AVAILABLE)

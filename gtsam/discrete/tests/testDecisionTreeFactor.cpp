@@ -32,10 +32,12 @@ using namespace std;
 using namespace gtsam;
 
 /** Convert Signature into CPT */
-DecisionTreeFactor create(const Signature& signature) {
+namespace {
+static DecisionTreeFactor create(const Signature& signature) {
   DecisionTreeFactor p(signature.discreteKeys(), signature.cpt());
   return p;
 }
+}  // namespace
 
 /* ************************************************************************* */
 TEST(DecisionTreeFactor, ConstructorsMatch) {

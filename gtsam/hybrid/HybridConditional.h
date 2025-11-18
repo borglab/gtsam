@@ -182,7 +182,7 @@ class GTSAM_EXPORT HybridConditional
   std::shared_ptr<Factor> inner() const { return inner_; }
 
   /// Return the error of the underlying conditional.
-  double error(const HybridValues& values) const override;
+  double error(const HybridValues& hybridValues) const override;
 
   /**
    * @brief Compute error of the HybridConditional as a tree.
@@ -192,7 +192,7 @@ class GTSAM_EXPORT HybridConditional
    * as the conditionals involved, and leaf values as the error.
    */
   AlgebraicDecisionTree<Key> errorTree(
-      const VectorValues& values) const override;
+      const VectorValues& continuousValues) const override;
 
   /// Return the log-probability (or density) of the underlying conditional.
   double logProbability(const HybridValues& values) const override;

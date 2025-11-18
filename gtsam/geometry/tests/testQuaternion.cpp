@@ -27,6 +27,9 @@ using namespace gtsam;
 typedef Quaternion Q; // Typedef
 typedef traits<Q>::ChartJacobian QuaternionJacobian;
 
+GTSAM_CONCEPT_TESTABLE_INST(Quaternion)
+GTSAM_CONCEPT_MATRIX_LIE_GROUP_INST(Quaternion)
+
 //******************************************************************************
 TEST(Quaternion , Concept) {
   GTSAM_CONCEPT_ASSERT(IsGroup<Quaternion >);

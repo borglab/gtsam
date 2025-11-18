@@ -6,8 +6,8 @@ on:
       - '**.md'
       - '**.ipynb' 
       - 'myst.yml'
-# Every time you make a push to your PR, it cancel immediately the previous checks, 
-# and start a new one. The other runner will be available more quickly to your PR. 
+# Cancels any in-progress workflow runs for the same PR when a new push is made,
+# allowing the runner to become available more quickly for the latest changes.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -22,6 +22,7 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+      GTSAM_ALLOW_DEPRECATED_SINCE_V43: OFF
 
     strategy:
       fail-fast: true
@@ -31,6 +32,8 @@ jobs:
         name: [
           macos-13-xcode-14.2,
           macos-14-xcode-15.4,
+          macos-14-xcode-15.4-boost,
+          macos-14-xcode-15.4-geographiclib,
         ]
 
         build_type: [Debug, Release]
@@ -46,16 +49,46 @@ jobs:
             compiler: xcode
             version: "15.4"
 
+          - name: macos-14-xcode-15.4-boost
+            os: macos-14
+            compiler: xcode
+            version: "15.4"
+
+          - name: macos-14-xcode-15.4-geographiclib
+            os: macos-14
+            compiler: xcode
+            version: "15.4"
+
+        exclude:
+          - name: macos-14-xcode-15.4-boost
+            build_type: Debug
+          - name: macos-14-xcode-15.4-geographiclib
+            build_type: Debug
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install Dependencies
         run: |
-          brew install cmake ninja
-          brew install boost
+          brew upgrade cmake --quiet || brew install cmake --quiet
+          brew upgrade ninja --quiet || brew install ninja --quiet
           sudo xcode-select -switch /Applications/Xcode.app
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
+
+      - name: Install Boost
+        if: contains(matrix.name, 'boost') && matrix.build_type == 'Release'
+        run: |
+          brew upgrade boost --quiet || brew install boost --quiet
+          echo "GTSAM_USE_BOOST_FEATURES=ON" >> $GITHUB_ENV
+          echo "GTSAM_ENABLE_BOOST_SERIALIZATION=ON" >> $GITHUB_ENV
+
+      - name: Install GeographicLib
+        if: contains(matrix.name, 'geographiclib') && matrix.build_type == 'Release'
+        run: |
+          brew upgrade geographiclib --quiet || brew install geographiclib --quiet
+          echo "GTSAM_ENABLE_GEOGRAPHICLIB=ON" >> $GITHUB_ENV
+
       - name: Build and Test
         run: bash .github/scripts/unix.sh -t

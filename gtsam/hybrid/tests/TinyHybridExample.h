@@ -28,7 +28,7 @@ using symbol_shorthand::X;
 using symbol_shorthand::Z;
 
 // Create mode key: 0 is low-noise, 1 is high-noise.
-const DiscreteKey mode{M(0), 2};
+[[maybe_unused]] static const DiscreteKey mode{M(0), 2};
 
 /**
  * Create a tiny two variable hybrid model which represents
@@ -36,8 +36,8 @@ const DiscreteKey mode{M(0), 2};
  * num_measurements is the number of measurements of the continuous variable x0.
  * If manyModes is true, then we introduce one mode per measurement.
  */
-inline HybridBayesNet createHybridBayesNet(size_t num_measurements = 1,
-                                           bool manyModes = false) {
+[[maybe_unused]] static HybridBayesNet createHybridBayesNet(
+    size_t num_measurements = 1, bool manyModes = false) {
   HybridBayesNet bayesNet;
 
   // Create hybrid Gaussian factor z_i = x0 + noise for each measurement.
@@ -67,9 +67,10 @@ inline HybridBayesNet createHybridBayesNet(size_t num_measurements = 1,
  * continuous variable x0. If no measurements are given, they are sampled from
  * the generative Bayes net model HybridBayesNet::Example(num_measurements)
  */
-inline HybridGaussianFactorGraph createHybridGaussianFactorGraph(
-    size_t num_measurements = 1, std::optional<VectorValues> measurements = {},
-    bool manyModes = false) {
+[[maybe_unused]] static HybridGaussianFactorGraph
+createHybridGaussianFactorGraph(size_t num_measurements = 1,
+                                std::optional<VectorValues> measurements = {},
+                                bool manyModes = false) {
   auto bayesNet = createHybridBayesNet(num_measurements, manyModes);
   if (measurements) {
     // Use the measurements to create a hybrid factor graph.

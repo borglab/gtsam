@@ -57,6 +57,9 @@ TEST(Lie, ProductLieGroup) {
   Product pair2 = pair1.expmap(d);
   EXPECT(assert_equal(expected, pair2, 1e-9));
   EXPECT(assert_equal(d, pair1.logmap(pair2), 1e-9));
+  const auto adj = pair1.AdjointMap();
+  EXPECT_LONGS_EQUAL(5, adj.rows());
+  EXPECT_LONGS_EQUAL(5, adj.cols());
 }
 
 /* ************************************************************************* */

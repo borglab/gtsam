@@ -7,7 +7,7 @@ endif()
 set (GTSAM_VERSION_MAJOR 4)
 set (GTSAM_VERSION_MINOR 3)
 set (GTSAM_VERSION_PATCH 0)
-set (GTSAM_PRERELEASE_VERSION "a0")
+set (GTSAM_PRERELEASE_VERSION "a1")
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 
 # Set the version string for the library. 
@@ -39,6 +39,37 @@ set (CMAKE_PROJECT_VERSION_PATCH ${GTSAM_VERSION_PATCH})
 
 ###############################################################################
 # Gather information, perform checks, set defaults
+
+# Option to enable AddressSanitizer
+option(GTSAM_ENABLE_ASAN "Enable AddressSanitizer for memory error detection" OFF)
+
+if (GTSAM_ENABLE_ASAN)
+    message(STATUS "Enabling AddressSanitizer (ASan)")
+    if (MSVC)
+        # MSVC-specific ASan flags
+        # /fsanitize=address enables ASan
+        # /Zi is for debug information (PDB files)
+        # /Od is for disabling optimization (Debug builds)
+        # /MD is for linking with the DLL version of the C runtime library
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address /Zi /Od")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fsanitize=address /Zi /Od")
+
+        # Linker flags for MSVC ASan
+        # /fsanitize=address enables ASan linking
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /fsanitize=address")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /fsanitize=address")
+        set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /fsanitize=address")
+    else()
+        # Clang/GCC ASan flags (already there)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+
+        # Linker flags
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
+        set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fsanitize=address")
+    endif()
+endif()
 
 if(MSVC)
   set(MSVC_LINKER_FLAGS "/FORCE:MULTIPLE")
@@ -75,6 +106,15 @@ if(GTSAM_ENABLE_BOOST_SERIALIZATION OR GTSAM_USE_BOOST_FEATURES)
 include(cmake/HandleBoost.cmake)
 endif()
 ######################################################################
+
+# ############## Decide on GeographicLib ######################################
+# Enable or disable GeographicLib integration with GTSAM_ENABLE_GEOGRAPHICLIB
+option(GTSAM_ENABLE_GEOGRAPHICLIB "Enable Features that use GeographicLib" OFF)
+
+if (GTSAM_ENABLE_GEOGRAPHICLIB)
+  include(cmake/HandleGeographicLib.cmake)
+endif()
+# ##############################################################################
 
 # Other Libraries:
 include(cmake/HandleCCache.cmake)           # ccache

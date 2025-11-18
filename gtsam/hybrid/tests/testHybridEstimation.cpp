@@ -16,9 +16,11 @@
  */
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
+#include <gtsam/discrete/DiscreteMarginals.h>
 #include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/hybrid/DiscreteBoundaryFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
@@ -31,6 +33,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -40,6 +43,7 @@
 
 #include <string>
 
+#include "DiscreteFixture.h"
 #include "Switching.h"
 
 using namespace std;
@@ -47,33 +51,6 @@ using namespace gtsam;
 
 using symbol_shorthand::X;
 using symbol_shorthand::Z;
-
-namespace estimation_fixture {
-std::vector<double> measurements = {0, 1, 2, 2, 2, 2,  3,  4,  5,  6, 6,
-                                    7, 8, 9, 9, 9, 10, 11, 11, 11, 11};
-// Ground truth discrete seq
-std::vector<size_t> discrete_seq = {1, 1, 0, 0, 0, 1, 1, 1, 1, 0,
-                                    1, 1, 1, 0, 0, 1, 1, 0, 0, 0};
-
-Switching InitializeEstimationProblem(
-    const size_t K, const double between_sigma, const double measurement_sigma,
-    const std::vector<double>& measurements,
-    const std::string& transitionProbabilityTable,
-    HybridNonlinearFactorGraph& graph, Values& initial) {
-  Switching switching(K, between_sigma, measurement_sigma, measurements,
-                      transitionProbabilityTable);
-
-  // Add prior on M(0)
-  graph.push_back(switching.modeChain.at(0));
-
-  // Add the X(0) prior
-  graph.push_back(switching.unaryFactors.at(0));
-  initial.insert(X(0), switching.linearizationPoint.at<double>(X(0)));
-
-  return switching;
-}
-
-}  // namespace estimation_fixture
 
 TEST(HybridEstimation, Full) {
   size_t K = 6;
@@ -126,8 +103,8 @@ TEST(HybridEstimation, ISAM) {
   // with given measurements and equal mode priors.
   HybridNonlinearFactorGraph graph;
   Values initial;
-  Switching switching = InitializeEstimationProblem(K, 1.0, 0.1, measurements,
-                                                    "1/1 1/1", graph, initial);
+  Switching switching = InitializeEstimationProblem(
+      K, 1.0, 0.1, measurements, "1/1 1/1", &graph, &initial);
   HybridNonlinearISAM isam;
 
   HybridGaussianFactorGraph linearized;
@@ -545,6 +522,198 @@ TEST(HybridEstimation, ModeSelection2) {
   HybridBayesNet::shared_ptr bayesNet = gfg->eliminateSequential();
 
   EXPECT(assert_equal(*expected_posterior, *bayesNet, 1e-6));
+}
+
+/****************************************************************************/
+/*
+ * Test discrete optimization using a simple mixture.
+ *
+ * Construct a single factor (for a single variable) consisting of a
+ * discrete-conditional mixture.
+ * Here we have a "null hypothesis" consisting of
+ * a Gaussian with large variance and an "alternative hypothesis"
+ * consisting of a Gaussian with smaller variance.
+ * After initializing the continuous variable far away from
+ * the ground-truth solution (x1 = 0), the discrete hypothesis selector
+ * will initially choose the null hypothesis.
+ */
+TEST(HybridEstimation, DiscreteMixture) {
+  using namespace discrete_mixture_fixture;
+
+  // Make an empty hybrid factor graph
+  HybridNonlinearFactorGraph dcfg;
+
+  // Make a symbol for a single continuous variable and add to KeyVector
+  KeyVector keys;
+  keys.push_back(x1);
+
+  std::vector<NoiseModelFactor::shared_ptr> factorComponents{f1(), fNullHypo()};
+
+  HybridNonlinearFactor dcMixture(dk, factorComponents);
+  dcfg.push_back(dcMixture);
+
+  DiscreteKey dkTest = dcMixture.discreteKeys()[0];
+  std::cout << "DK 1st: " << DefaultKeyFormatter(dkTest.first) << std::endl;
+  std::cout << "DK 2nd: " << dkTest.second << std::endl;
+
+  // Let's make an initial guess for the continuous values
+  Values initialGuess;
+  double initVal = -2.5;
+  initialGuess.insert(x1, initVal);
+
+  // We also need an initial guess for the discrete variables (this will only be
+  // used if it is needed by your factors), here it is ignored.
+  DiscreteValues initialGuessDiscrete;
+  initialGuessDiscrete[dk.first] = 0;
+
+  // Let's make a discrete factor graph
+  DiscreteFactorGraph dfg;
+
+  auto calculateError = [&](const NonlinearFactorValuePair& pair) -> double {
+    if (pair.first) {
+      auto gaussianNoiseModel = std::dynamic_pointer_cast<noiseModel::Gaussian>(
+          pair.first->noiseModel());
+      // `error` has the following contributions:
+      // - the scalar is the sum of all mode-dependent constants
+      // - factor->error(initial) is the error on the initial values
+      // - negLogK is log normalization constant from the noise model
+      return pair.second + pair.first->error(initialGuess) +
+             gaussianNoiseModel->negLogConstant();
+    } else {
+      // If the factor has been pruned, return infinite error
+      return std::numeric_limits<double>::infinity();
+    }
+  };
+  AlgebraicDecisionTree<Key> errors(dcMixture.factors(), calculateError);
+  DecisionTreeFactor dtf =
+      DiscreteFactorFromErrors(dcMixture.discreteKeys(), errors);
+
+  dfg.push_back(dtf);
+
+  // Solve for discrete given continuous
+  DiscreteValues mostProbableEstimate = dfg.optimize();
+
+  // Get the most probable estimate
+  const size_t mpeD = mostProbableEstimate.at(dk.first);
+
+  // Get the marginals
+  DiscreteMarginals newDiscreteMarginals(dfg);
+  Vector newMargProbs = newDiscreteMarginals.marginalProbabilities(dk);
+
+  // Ensure that the prediction is correct
+  EXPECT_LONGS_EQUAL(mpeD, 1);
+}
+
+/* ************************************************************************* */
+/*
+ * Test continuous optimization using a simple mixture
+ *
+ * Construct a single factor (for a single variable) consisting of a
+ * discrete-conditional mixture. Here we have a "null hypothesis" consisting
+ of
+ * a Gaussian with large variance and an "alternative hypothesis" consisting
+ of
+ * a Gaussian with smaller variance. After initializing the continuous
+ variable
+ * far away from the ground-truth solution (x1 = 0), the discrete hypothesis
+ * selector will initially choose the null hypothesis.
+ *
+ * After a step of continuous optimization, the continuous solution will move
+ to
+ * x1 = 0 (since the problem is linear, we have convergence in one step).
+ * Finally, updating the discrete value will show that the correct discrete
+ * hypothesis will shift to the "alternative hypothesis."
+ */
+TEST(HybridEstimation, ContinuousMixture) {
+  using namespace discrete_mixture_fixture;
+
+  // Make an empty hybrid factor graph
+  HybridNonlinearFactorGraph dcfg;
+
+  // Make a symbol for a single continuous variable and add to KeyVector
+  KeyVector keys;
+  keys.push_back(x1);
+
+  std::vector<NonlinearFactorValuePair> factorComponents{
+      {f1(), priorNoise1()->negLogConstant()},
+      {fNullHypo(), priorNoiseNullHypo()->negLogConstant()}};
+
+  HybridNonlinearFactor dcMixture(dk, factorComponents);
+  dcfg.push_back(dcMixture);
+
+  // Test calculation of negative log probability
+  DiscreteValues dv1, dvNH;
+  dv1[dk.first] = 0;
+  dvNH[dk.first] = 1;
+  Values xvals;
+  xvals.insert(x1, 0.0);
+  const double negLogProb_1 = dcMixture.error(xvals, dv1);
+  const double negLogProb_NH = dcMixture.error(xvals, dvNH);
+
+  // As calculated in MATLAB using -log(normpdf(0,0,1)), -log(normpdf(0,0,8))
+  EXPECT_DOUBLES_EQUAL(0.9189, negLogProb_1, 1e-3);
+  EXPECT_DOUBLES_EQUAL(2.9984, negLogProb_NH, 1e-3);
+
+  // Let's make an initial guess for the continuous values
+  Values values;
+  double initVal = -2.5;
+  values.insert(x1, initVal);
+
+  // We also need an initial guess for the discrete variables (this will only be
+  // used if it is needed by your factors), here it is ignored.
+  DiscreteValues initialGuessDiscrete;
+  initialGuessDiscrete[dk.first] = 0;
+
+  // Let's make some factor graphs
+  DiscreteFactorGraph dfg;
+  NonlinearFactorGraph nfg;
+
+  // Create DiscreteFactor from initial guess
+  DiscreteBoundaryFactor dtf(dcMixture.discreteKeys(), dcMixture.factors(),
+                             values);
+
+  dfg.push_back(dtf);
+
+  // Solve for discrete given continuous
+  DiscreteValues mostProbableEstimate = dfg.optimize();
+
+  // Get the most probable estimate
+  size_t mpeD = mostProbableEstimate.at(dk.first);
+
+  // From previous test we know this is == 1
+  EXPECT_LONGS_EQUAL(1, mpeD);
+
+  // Get the marginals
+  DiscreteMarginals newDiscreteMarginals(dfg);
+  Vector newMargProbs = newDiscreteMarginals.marginalProbabilities(dk);
+
+  // Use discrete info to get nonlinear factors
+  nfg.push_back(dcMixture.factors()(mostProbableEstimate).first);
+
+  // Setup isam
+  ISAM2Params isam_params;
+  isam_params.relinearizeThreshold = 0.01;
+  isam_params.relinearizeSkip = 1;
+  isam_params.setOptimizationParams(ISAM2DoglegParams());
+  ISAM2 isam(isam_params);
+  isam.update(nfg, values);
+
+  // Solve for updated continuous value
+  values = isam.calculateEstimate();
+
+  // Now update the continuous info in the discrete solver
+  dtf = DiscreteBoundaryFactor(dcMixture.discreteKeys(), dcMixture.factors(),
+                               values);
+
+  dfg.resize(0);
+  dfg.push_back(dtf);
+
+  // Re-solve discrete to verify that output has switched
+  mostProbableEstimate = dfg.optimize();
+  mpeD = mostProbableEstimate.at(dk.first);
+
+  // Ensure that the prediction is correct
+  EXPECT_LONGS_EQUAL(0, mpeD);
 }
 
 /* ************************************************************************* */

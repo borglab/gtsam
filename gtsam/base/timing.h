@@ -23,6 +23,9 @@
 
 #if GTSAM_USE_BOOST_FEATURES
 #include <boost/version.hpp>
+#else
+#include <chrono>
+#include <ctime>
 #endif
 
 #include <memory>
@@ -175,6 +178,10 @@ namespace gtsam {
 #ifdef GTSAM_USE_TBB
       tbb::tick_count tbbTimer_;
 #endif
+#else
+      std::chrono::time_point<std::chrono::steady_clock> wall_timer_start_;
+      std::clock_t cpu_timer_start_;
+      bool timer_active_ = false;
 #endif
       void add(size_t usecs, size_t usecsWall);
 
@@ -191,11 +198,11 @@ namespace gtsam {
       double mean() const { return self() / double(n_); } ///< mean self time, in seconds
 #else
       // make them no-ops if not using boost
-      double self() const { return -1.; } ///< self time only, in seconds
-      double wall() const { return -1.; } ///< wall time, in seconds
-      double min()  const { return -1.; } ///< min time, in seconds
-      double max()  const { return -1.; } ///< max time, in seconds
-      double mean() const { return -1.; } ///< mean self time, in seconds
+      double self() const { return double(t_)     / 1000000.0;} ///< self time only, in seconds
+      double wall() const { return double(tWall_) / 1000000.0;} ///< wall time, in seconds
+      double min()  const { return double(tMin_)  / 1000000.0;} ///< min time, in seconds
+      double max()  const { return double(tMax_)  / 1000000.0;} ///< max time, in seconds
+      double mean() const { return n_ > 0 ? self() / double(n_) : 0.0; } ///< mean self time, in seconds
 #endif
       GTSAM_EXPORT void print(const std::string& outline = "") const;
       GTSAM_EXPORT void print2(const std::string& outline = "", const double parentTotal = -1.0) const;

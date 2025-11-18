@@ -31,7 +31,7 @@ using namespace gtsam;
 using namespace std;
 
 GTSAM_CONCEPT_TESTABLE_INST(Pose2)
-GTSAM_CONCEPT_LIE_INST(Pose2)
+GTSAM_CONCEPT_MATRIX_LIE_GROUP_INST(Pose2)
 
 //******************************************************************************
 TEST(Pose2 , Concept) {
@@ -959,7 +959,7 @@ TEST(Pose2, Print) {
 }
 
 /* ************************************************************************* */
-TEST(Pose2, vec) {
+TEST(Pose2, Vec) {
   // Test a simple pose
   Pose2 pose(Rot2::fromAngle(M_PI / 4), Point2(1, 2));
 
@@ -973,6 +973,22 @@ TEST(Pose2, vec) {
   std::function<Vector9(const Pose2&)> f = [](const Pose2& p) { return p.vec(); };
   Matrix93 numericalH = numericalDerivative11<Vector9, Pose2>(f, pose);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
+}
+
+/* ************************************************************************* */
+
+TEST(Pose2, AdjointMap) {
+  // Create a non-trivial Pose2 object
+  const Pose2 pose(Rot2::fromAngle(0.5), Point2(1.0, 2.0));
+
+  // Call the specialized AdjointMap
+  Matrix3 specialized_Adj = pose.AdjointMap();
+
+  // Call the generic AdjointMap from the base class
+  Matrix3 generic_Adj = static_cast<const MatrixLieGroup<Pose2, 3, 3>*>(&pose)->AdjointMap();
+
+  // Assert that they are equal
+  EXPECT(assert_equal(specialized_Adj, generic_Adj, 1e-9));
 }
 
 /* ************************************************************************* */

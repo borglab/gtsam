@@ -28,9 +28,9 @@ namespace gtsam {
  */
 class GTSAM_EXPORT NonlinearEqualityConstraint : public NonlinearConstraint {
  public:
-  typedef NonlinearConstraint Base;
-  typedef NonlinearEqualityConstraint This;
-  typedef std::shared_ptr<This> shared_ptr;
+  using Base = NonlinearConstraint;
+  using This = NonlinearEqualityConstraint;
+  using shared_ptr = std::shared_ptr<This>;
 
   /** Default constructor. */
   using Base::Base;
@@ -54,9 +54,9 @@ class GTSAM_EXPORT NonlinearEqualityConstraint : public NonlinearConstraint {
 template <typename T>
 class ExpressionEqualityConstraint : public NonlinearEqualityConstraint {
  public:
-  typedef NonlinearEqualityConstraint Base;
-  typedef ExpressionEqualityConstraint This;
-  typedef std::shared_ptr<This> shared_ptr;
+  using Base = NonlinearEqualityConstraint;
+  using This = ExpressionEqualityConstraint;
+  using shared_ptr = std::shared_ptr<This>;
 
  protected:
   Expression<T> expression_;
@@ -105,9 +105,9 @@ class ExpressionEqualityConstraint : public NonlinearEqualityConstraint {
  */
 class GTSAM_EXPORT ZeroCostConstraint : public NonlinearEqualityConstraint {
  public:
-  typedef NonlinearEqualityConstraint Base;
-  typedef ZeroCostConstraint This;
-  typedef std::shared_ptr<This> shared_ptr;
+  using Base = NonlinearEqualityConstraint;
+  using This = ZeroCostConstraint;
+  using shared_ptr = std::shared_ptr<This>;
 
  protected:
   NoiseModelFactor::shared_ptr factor_;
@@ -146,8 +146,8 @@ class GTSAM_EXPORT ZeroCostConstraint : public NonlinearEqualityConstraint {
 /// Container of NonlinearEqualityConstraint.
 class GTSAM_EXPORT NonlinearEqualityConstraints : public FactorGraph<NonlinearEqualityConstraint> {
  public:
-  typedef std::shared_ptr<NonlinearEqualityConstraints> shared_ptr;
-  typedef FactorGraph<NonlinearEqualityConstraint> Base;
+  using shared_ptr = std::shared_ptr<NonlinearEqualityConstraints>;
+  using Base = FactorGraph<NonlinearEqualityConstraint>;
 
  public:
   using Base::Base;

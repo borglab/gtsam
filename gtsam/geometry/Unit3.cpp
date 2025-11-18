@@ -196,16 +196,6 @@ double Unit3::dot(const Unit3& q, OptionalJacobian<1, 2> H_p,
 }
 
 /* ************************************************************************* */
-Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2, 2> H_q) const {
-  // 2D error is equal to B'*q, as B is 3x2 matrix and q is 3x1
-  const Vector2 xi = basis().transpose() * q.p_;
-  if (H_q) {
-    *H_q = basis().transpose() * q.basis();
-  }
-  return xi;
-}
-
-/* ************************************************************************* */
 Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p,
                            OptionalJacobian<2, 2> H_q) const {
   // Get the point3 of this, and the derivative.
@@ -222,20 +212,14 @@ Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p,
     const Matrix32& H_b1_p = H_B_p.block<3, 2>(0, 0);
     const Matrix32& H_b2_p = H_B_p.block<3, 2>(3, 0);
 
-    // Derivatives of the two entries of xi wrt the basis vectors.
-    const Matrix13 H_xi1_b1 = qn.transpose();
-    const Matrix13 H_xi2_b2 = qn.transpose();
-
+    // dxi/dB = qn.transpose();
     // Assemble dxi/dp = dxi/dB * dB/dp.
-    const Matrix12 H_xi1_p = H_xi1_b1 * H_b1_p;
-    const Matrix12 H_xi2_p = H_xi2_b2 * H_b2_p;
-    *H_p << H_xi1_p, H_xi2_p;
+    *H_p << qn.transpose() * H_b1_p, qn.transpose() * H_b2_p;
   }
 
   if (H_q) {
     // dxi/dq is given by dxi/dqu * dqu/dq, where qu is the unit vector of q.
-    const Matrix23 H_xi_qu = Bt;
-    *H_q = H_xi_qu * H_qn_q;
+    *H_q = Bt * H_qn_q;
   }
 
   return xi;
@@ -244,7 +228,7 @@ Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p,
 /* ************************************************************************* */
 double Unit3::distance(const Unit3& q, OptionalJacobian<1, 2> H) const {
   Matrix2 H_xi_q;
-  const Vector2 xi = error(q, H ? &H_xi_q : nullptr);
+  const Vector2 xi = errorVector(q, {}, H ? &H_xi_q : nullptr);
   const double theta = xi.norm();
   if (H)
     *H = (xi.transpose() / theta) * H_xi_q;

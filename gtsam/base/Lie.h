@@ -26,6 +26,8 @@
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/Group.h>
 
+#include <type_traits>
+
 namespace gtsam {
 
 /// A CRTP helper class that implements Lie group methods
@@ -40,6 +42,15 @@ struct LieGroup {
   typedef OptionalJacobian<N, N> ChartJacobian;
   typedef Eigen::Matrix<double, N, N> Jacobian;
   typedef Eigen::Matrix<double, N, 1> TangentVector;
+
+  /// Static method to get the dimension (compile-time or dynamic)
+  static constexpr int Dim() { return N; }
+
+  /// Provided fixed dimension in dim() if needed
+  template <int M = N>
+  std::enable_if_t<M != Eigen::Dynamic, int> dim() const {
+    return N;
+  }
 
   const Class & derived() const {
     return static_cast<const Class&>(*this);
@@ -56,7 +67,7 @@ struct LieGroup {
   Class compose(const Class& g, ChartJacobian H1,
       ChartJacobian H2 = {}) const {
     if (H1) *H1 = g.inverse().AdjointMap();
-    if (H2) *H2 = Eigen::Matrix<double, N, N>::Identity();
+    if (H2) *H2 = identityMatrix();
     return derived() * g;
   }
 
@@ -64,7 +75,7 @@ struct LieGroup {
       ChartJacobian H2 = {}) const {
     Class result = derived().inverse() * g;
     if (H1) *H1 = - result.inverse().AdjointMap();
-    if (H2) *H2 = Eigen::Matrix<double, N, N>::Identity();
+    if (H2) *H2 = identityMatrix();
     return result;
   }
 
@@ -158,6 +169,17 @@ struct LieGroup {
     if (H2) *H2 = D_v_h;
     return v;
   }
+
+ private:
+
+  // Helper to get identity matrix of correct size for static or dynamic N
+  Jacobian identityMatrix() const {
+    if constexpr (N == Eigen::Dynamic) {
+      return Jacobian::Identity(derived().dim(), derived().dim());
+    } else {
+      return Jacobian::Identity();
+    }
+  }
 };
 
 /// tag to assert a type is a Lie group
@@ -238,23 +260,6 @@ struct LieGroupTraits : public GetDimensionImpl<Class, Class::dimension> {
 /// Both LieGroupTraits and Testable
 template<class Class> struct LieGroup: LieGroupTraits<Class>, Testable<Class> {};
 
-/// Adds LieAlgebra, Hat, and Vee to LieGroupTraits
-template<class Class> struct MatrixLieGroupTraits: LieGroupTraits<Class> {
-  using LieAlgebra = typename Class::LieAlgebra;
-  using TangentVector = typename LieGroupTraits<Class>::TangentVector;
-
-  static LieAlgebra Hat(const TangentVector& v) {
-    return Class::Hat(v);
-  }
-
-  static TangentVector Vee(const LieAlgebra& X) {
-    return Class::Vee(X);
-  }
-};
-
-/// Both LieGroupTraits and Testable
-template<class Class> struct MatrixLieGroup: MatrixLieGroupTraits<Class>, Testable<Class> {};
-
 } // \ namespace internal
 
 /**
@@ -288,12 +293,12 @@ class IsLieGroup: public IsGroup<T>, public IsManifold<T> {
 public:
   // Concept marker: allows checking IsLieGroup<T>::value in templates
   static constexpr bool value =
-    std::is_base_of<lie_group_tag, typename traits<T>::structure_category>::value;
+    std::is_base_of_v<lie_group_tag, typename traits<T>::structure_category>;
 
-  typedef typename traits<T>::structure_category structure_category_tag;
-  typedef typename traits<T>::ManifoldType ManifoldType;
-  typedef typename traits<T>::TangentVector TangentVector;
-  typedef typename traits<T>::ChartJacobian ChartJacobian;
+  using structure_category_tag = typename traits<T>::structure_category;
+  using ManifoldType = typename traits<T>::ManifoldType;
+  using TangentVector = typename traits<T>::TangentVector;
+  using ChartJacobian = typename traits<T>::ChartJacobian;
 
   GTSAM_CONCEPT_USAGE(IsLieGroup) {
     static_assert(
@@ -310,63 +315,14 @@ public:
     // log and exponential map with Jacobians
     g = traits<T>::Expmap(v, Hg);
     v = traits<T>::Logmap(g, Hg);
+    // AdjointMap
+    *Hg = traits<T>::AdjointMap(g);
   }
 private:
   T g, h;
   TangentVector v;
   ChartJacobian Hg, Hh;
 };
-
-/**
- * Matrix Lie Group Concept
- */
-template<typename T>
-class IsMatrixLieGroup: public IsLieGroup<T> {
-public:
-typedef typename traits<T>::LieAlgebra LieAlgebra;
-typedef typename traits<T>::TangentVector TangentVector;
-
-  GTSAM_CONCEPT_USAGE(IsMatrixLieGroup) {
-    // hat and vee
-    X = traits<T>::Hat(xi);
-    xi = traits<T>::Vee(X);
-  }
-private:
-  LieAlgebra X;
-  TangentVector xi;
-};
-
-/**
- *  Three term approximation of the Baker-Campbell-Hausdorff formula
- *  In non-commutative Lie groups, when composing exp(Z) = exp(X)exp(Y)
- *  it is not true that Z = X+Y. Instead, Z can be calculated using the BCH
- *  formula: Z = X + Y + [X,Y]/2 + [X-Y,[X,Y]]/12 - [Y,[X,[X,Y]]]/24
- *  http://en.wikipedia.org/wiki/Baker-Campbell-Hausdorff_formula
- */
-/// AGC: bracket() only appears in Rot3 tests, should this be used elsewhere?
-template<class T>
-T BCH(const T& X, const T& Y) {
-  static const double _2 = 1. / 2., _12 = 1. / 12., _24 = 1. / 24.;
-  T X_Y = bracket(X, Y);
-  return T(X + Y + _2 * X_Y + _12 * bracket(X - Y, X_Y) - _24 * bracket(Y, bracket(X, X_Y)));
-}
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
-/// @deprecated: use T::Hat
-template <class T> Matrix wedge(const Vector& x);
-#endif
-
-/**
- * Exponential map given exponential coordinates
- * class T needs a constructor from Matrix.
- * @param x exponential coordinates, vector of size n
- * @ return a T
- */
-template <class T>
-T expm(const Vector& x, int K = 7) {
-  const Matrix xhat = T::Hat(x);
-  return T(expm(xhat, K));
-}
 
 /**
  * Linear interpolation between X and Y by coefficient t. Typically t \in [0,1],

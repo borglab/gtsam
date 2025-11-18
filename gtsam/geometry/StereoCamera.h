@@ -52,8 +52,8 @@ public:
    *  Some classes template on either PinholeCamera or StereoCamera,
    *  and this typedef informs those classes what "project" returns.
    */
-  typedef StereoPoint2 Measurement;
-  typedef StereoPoint2Vector MeasurementVector;
+  using Measurement = StereoPoint2;
+  using MeasurementVector = StereoPoint2Vector;
 
 private:
   Pose3 leftCamPose_;

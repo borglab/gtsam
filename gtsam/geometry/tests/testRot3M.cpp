@@ -26,7 +26,7 @@ using namespace std;
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(Rot3)
-GTSAM_CONCEPT_LIE_INST(Rot3)
+GTSAM_CONCEPT_MATRIX_LIE_GROUP_INST(Rot3)
 
 static Rot3 R = Rot3::Rodrigues(0.1, 0.4, 0.2);
 static Point3 P(0.2, 0.7, -2.0);

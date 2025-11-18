@@ -14,7 +14,7 @@
 macro(gtsamAddPch precompiledHeader precompiledSource sources)
     get_filename_component(pchBasename ${precompiledHeader} NAME_WE)
     SET(precompiledBinary "${CMAKE_CURRENT_BINARY_DIR}/${pchBasename}.pch")
-	IF(MSVC)
+	if(MSVC AND GTSAM_BUILD_WITH_PRECOMPILED_HEADERS)
 		message(STATUS "Adding precompiled header for MSVC")
 		set_source_files_properties(${precompiledSource}
 									PROPERTIES COMPILE_FLAGS "/Yc\"${precompiledHeader}\" /Fp\"${precompiledBinary}\""
@@ -22,6 +22,6 @@ macro(gtsamAddPch precompiledHeader precompiledSource sources)
 		set_source_files_properties(${sources}
 									PROPERTIES COMPILE_FLAGS "/Yu\"${precompiledHeader}\" /FI\"${precompiledHeader}\" /Fp\"${precompiledBinary}\""
 											   OBJECT_DEPENDS "${precompiledBinary}")  
-	ENDIF(MSVC)
+	endif()
 endmacro(gtsamAddPch)
 

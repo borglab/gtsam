@@ -123,6 +123,36 @@ TEST(DiscreteBayesNet, Sugar) {
 }
 
 /* ************************************************************************* */
+// Test that pruning a DiscreteBayesNet results in a conditional whose leaves sum to 1.
+TEST(DiscreteBayesNet, PruneSumToOne) {
+  using namespace asia_example;
+  const DiscreteBayesNet asiaBn = createAsiaExample();
+
+  // Test with various numbers of max leaves.
+  // Asia network has 8 binary variables, so 2^8 = 256 possible assignments in the full joint.
+  std::vector<size_t> maxLeavesToTest = { 1, 2, 5, 10, 50, 100, 256, 500 };
+
+  for (size_t maxLeaves : maxLeavesToTest) {
+    // We expect maxLeaves >= 1 for the sum-to-one property to hold meaningfully.
+
+    DiscreteBayesNet prunedBn = asiaBn.prune(maxLeaves);
+
+    // If the original BN was not empty and maxLeaves >= 1,
+    // the prunedBN should contain one conditional (the pruned joint).
+    EXPECT(prunedBn.size() > 0);
+    if (prunedBn.size() > 0) {
+      EXPECT_LONGS_EQUAL(1, prunedBn.size());
+
+      DiscreteConditional::shared_ptr prunedConditional = prunedBn.front();
+      CHECK(prunedConditional); // Ensure it's not null
+
+      double sumOfProbs = prunedConditional->sum();
+      EXPECT_DOUBLES_EQUAL(1.0, sumOfProbs, 1e-8);
+    }
+  }
+}
+
+/* ************************************************************************* */
 TEST(DiscreteBayesNet, Dot) {
   using namespace asia_example;
   const DiscreteBayesNet fragment = createFragment();

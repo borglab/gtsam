@@ -34,7 +34,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT Cal3f : public Cal3 {
  public:
-  inline constexpr static auto dimension = 1;
+  constexpr static auto dimension = 1;
   using shared_ptr = std::shared_ptr<Cal3f>;
 
   /// @name Constructors
@@ -71,7 +71,7 @@ class GTSAM_EXPORT Cal3f : public Cal3 {
   /// @{
 
   /// focal length
-  inline double f() const { return fx_; }
+  double f() const { return fx_; }
 
   /// vectorized form (column-wise)
   Vector1 vector() const;
@@ -102,10 +102,10 @@ class GTSAM_EXPORT Cal3f : public Cal3 {
   /// @{
 
   /// Return DOF, dimensionality of tangent space
-  size_t dim() const override { return Dim(); }
+  size_t dim() const { return Dim(); }
 
   /// Return DOF, dimensionality of tangent space
-  inline static size_t Dim() { return dimension; }
+  static size_t Dim() { return dimension; }
 
   /// Update calibration with tangent space delta
   Cal3f retract(const Vector& d) const { return Cal3f(fx_ + d(0), u0_, v0_); }

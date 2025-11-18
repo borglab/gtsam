@@ -17,6 +17,12 @@
 
 #define BOOST_SPIRIT_USE_PHOENIX_V3 1
 
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ == 13)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overread"
+#endif
+
+#include <Eigen/Dense>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/Symbol.h>
@@ -30,6 +36,11 @@
 #include <boost/phoenix/bind.hpp>
 #include <boost/spirit/include/classic.hpp>
 #include <boost/spirit/include/qi.hpp>
+
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ == 13)
+#pragma GCC diagnostic pop
+#endif
+
 
 #include <algorithm>
 #include <iostream>

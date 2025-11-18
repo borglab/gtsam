@@ -20,13 +20,14 @@
 
 #pragma once
 
-#include <gtsam/geometry/SOn.h>
-
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/dllexport.h>
+#include <gtsam/geometry/Kernel.h>
+#include <gtsam/geometry/SOn.h>
 
 #include <vector>
+#include <optional>
 
 namespace gtsam {
 
@@ -57,7 +58,7 @@ Vector3 SO3::Vee(const Matrix3& X);  ///< inverse of Hat
 
 /// Adjoint map
 template <>
-Matrix3 SO3::AdjointMap() const;
+inline Matrix3 SO3::AdjointMap() const{ return matrix_; }
 
 /**
  * Exponential map at identity - create a rotation from canonical coordinates
@@ -127,17 +128,18 @@ GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
 /// (constant) Jacobian of compose wrpt M
 GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
 
-// Below are two functors that allow for saving computation when exponential map
-// and its derivatives are needed at the same location in so<3>. The second
-// functor also implements dedicated methods to apply dexp and/or inv(dexp).
-
-/// Functor implementing Exponential map
-/// Math is based on Ethan Eade's elegant Lie group document, at
-/// https://www.ethaneade.org/lie.pdf.
+/**
+ * Opaque evaluation context at ω: caches Ω, Ω², θ, θ², nearZero/nearPi,
+ * Lazily computes C, D, E, dA, dB, dC, dE on demand.
+ * Math is based on Ethan Eade's elegant Lie group document, at
+ * https://www.ethaneade.org/lie.pdf, and the Kernel idea in doc/Jacobians.md
+ */
 struct GTSAM_EXPORT ExpmapFunctor {
-  const double theta2, theta;
-  const Matrix3 W, WW;
-  bool nearZero{ false };
+  double theta2;  ///< The squared norm of the rotation vector (θ²).
+  double theta;   ///< The norm of the rotation vector (θ).
+  Matrix3 W;      ///< The skew-symmetric matrix Ω for the rotation vector.
+  Matrix3 WW;     ///< The square of the skew-symmetric matrix (Ω²).
+  bool nearZero{false};  ///< Flag indicating if theta is near zero.
 
   // Ethan Eade's constants:
   double A;  // A = sin(theta) / theta
@@ -163,17 +165,8 @@ protected:
 /// Math extends Ethan theme of elegant I + aW + bWW expressions.
 /// See https://www.ethaneade.org/lie.pdf expmap (82) and left Jacobian (83).
 struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
-  const Vector3 omega;
-
-  // Ethan's C constant used in Jacobians
-  double C;  // (1 - A) / theta^2
-
-  // Constant used in inverse Jacobians
-  double D;  // (1 - A/2B) / theta2
-
-  // Constants used in cross and doubleCross
-  double E;  // (2B - A) / theta2
-  double F;  // (3C - B) / theta2
+  const Vector3 omega;  ///< The rotation vector.
+  bool nearPi{false};   ///< Flag indicating if theta is near pi.
 
   /// Constructor with element of Lie algebra so(3)
   explicit DexpFunctor(const Vector3& omega);
@@ -181,48 +174,71 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   /// Constructor with custom thresholds (advanced)
   explicit DexpFunctor(const Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq);
 
-  // NOTE(luca): Right Jacobian for Exponential map in SO(3) - equation
-  // (10.86) and following equations in G.S. Chirikjian, "Stochastic Models,
-  // Information Theory, and Lie Groups", Volume 2, 2008.
-  //   Expmap(xi + dxi) \approx Expmap(xi) * Expmap(dexp * dxi)
+  // Rodrigues kernel: R_[l/r](ω) = I + A(θ) Ω + B(θ) Ω² (left).
+  Kernel Rodrigues() const&;
+
+  // Jacobian kernel J_[l/r](ω) = I +/0 B Ω + C Ω²  (left/right).
+  Kernel Jacobian() const&;
+
+  // Specialized kernel for inverse Jacobian, stable even for |ω| > π
+  InvJKernel InvJacobian() const&;  // I +/- 1/2 Ω + D Ω²
+
+  // Gamma kernel: Γ_[l/r](ω) = 0.5 I ± C Ω + E Ω² (left/right).
+  Kernel Gamma() const&;
+
+  // NOTE(luca): Right Jacobian for Exponential map in SO(3)
   // This maps a perturbation dxi=(w,v) in the tangent space to
   // a perturbation on the manifold Expmap(dexp * xi)
-  Matrix3 rightJacobian() const { return I_3x3 - B * W + C * WW; }
+  Matrix3 rightJacobian() const;
 
   // Compute the left Jacobian for Exponential map in SO(3)
-  Matrix3 leftJacobian() const { return I_3x3 + B * W + C * WW; }
+  Matrix3 leftJacobian() const;
 
-  /// Inverse of right Jacobian
-  /// For |omega|>pi uses rightJacobian().inverse(), as unstable beyond pi!
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated: use InvJacobian().right()
   Matrix3 rightJacobianInverse() const;
 
-  // Inverse of left Jacobian
-  /// For |omega|>pi uses leftJacobian().inverse(), as unstable beyond pi!
+  /// @deprecated: use InvJacobian().left()
   Matrix3 leftJacobianInverse() const;
 
-  /// Multiplies with rightJacobian(), with optional derivatives
+  /// @deprecated: use Jacobian().applyRight()
   Vector3 applyRightJacobian(const Vector3& v,
     OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
 
-  /// Multiplies with rightJacobian().inverse(), with optional derivatives
+  /// @deprecated: use InvJacobian().applyRight()
   Vector3 applyRightJacobianInverse(const Vector3& v,
     OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
 
-  /// Multiplies with leftJacobian(), with optional derivatives
+  /// @deprecated: use Jacobian().applyLeft()
   Vector3 applyLeftJacobian(const Vector3& v,
     OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
 
-  /// Multiplies with leftJacobianInverse(), with optional derivatives
+  /// @deprecated: use InvJacobian().applyLeft()
   Vector3 applyLeftJacobianInverse(const Vector3& v,
     OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) const;
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
-  /// @deprecated: use rightJacobian
+  /// @deprecated: use rightJacobian()
   inline Matrix3 dexp() const { return rightJacobian(); }
 
-  /// @deprecated: use rightJacobianInverse
+  /// @deprecated: use InvJacobian().right()
   inline Matrix3 invDexp() const { return rightJacobianInverse(); }
 #endif
+
+  // access to (lazily evaluated) coefficients
+  double C() const;
+  double D() const;
+  double E() const;
+
+  // access to (lazily evaluated) radial derivatives c'(θ)/θ
+  double dA() const;
+  double dB() const;
+  double dC() const;
+  double dE() const;
+
+ protected:
+  // Lazy caches stored as std::optional
+  mutable std::optional<double> C_, D_, E_;  ///< C, D and E lazily computed.
+  mutable std::optional<double> dA_, dB_, dC_, dE_;  ///< lazy c(θ)′/θ
 };
 }  //  namespace so3
 
@@ -231,9 +247,9 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
  */
 
 template <>
-struct traits<SO3> : public internal::MatrixLieGroup<SO3> {};
+struct traits<SO3> : public internal::MatrixLieGroup<SO3, 3> {};
 
 template <>
-struct traits<const SO3> : public internal::MatrixLieGroup<SO3> {};
+struct traits<const SO3> : public internal::MatrixLieGroup<SO3, 3> {};
 
 }  // end namespace gtsam

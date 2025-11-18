@@ -319,8 +319,9 @@ TEST(DogLegOptimizer, VariableUpdate) {
   // this should break the system
   isam2.update(graph, initialEstimate);
   result = isam2.calculateEstimate();
-  EXPECT(std::find(result.keys().begin(), result.keys().end(), pose_idx) !=
-         result.keys().end());
+  auto resultKeys = result.keys();
+  EXPECT(std::find(resultKeys.begin(), resultKeys.end(), pose_idx) !=
+         resultKeys.end());
 }
 
 /* ************************************************************************* */

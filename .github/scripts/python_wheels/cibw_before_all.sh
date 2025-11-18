@@ -16,7 +16,7 @@ if [ "$(uname)" == "Linux" ]; then
     # manylinux2014 is based on CentOS 7, so use yum to install dependencies
     yum install -y wget doxygen
 elif [ "$(uname)" == "Darwin" ]; then
-    brew install cmake doxygen
+    brew install doxygen
 
     # If MACOSX_DEPLOYMENT_TARGET is not explicitly set, default to the version of the host system.
     if [[ -z "${MACOSX_DEPLOYMENT_TARGET}" ]]; then

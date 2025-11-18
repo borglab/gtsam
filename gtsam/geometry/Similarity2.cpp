@@ -197,27 +197,48 @@ Similarity2 Similarity2::Align(const Pose2Pairs& abPosePairs) {
 Matrix2 Similarity2::GetV(double theta, double lambda) {
   // Derivation from https://ethaneade.com/lie_groups.pdf page 6
   const double lambda2 = lambda * lambda, theta2 = theta * theta;
+
+  // SE(2) or near-SE(2) case  (|λ| tiny)
+  if (std::abs(lambda) < 1e-9) {
+    double A, B;
+    if (theta2 > 1e-9) {
+      A = sin(theta) / theta;
+      B = (1 - cos(theta)) / theta2;
+    }
+    else {                    // θ ≈ 0  →  series
+      A = 1.0 - theta2 / 6.0;
+      B = 0.5 - theta2 / 24.0;
+    }
+    Matrix2 V;
+    V << A, -theta * B,
+      theta* B, A;
+    return V;
+  }
+
+  // general Sim(2) case
+  const double d2 = lambda2 + theta2;
+  if (d2 < 1e-15)               // both tiny → identity
+    return Matrix2::Identity();
+
+  // rotation scalars (unchanged)
   double A, B, C;
   if (theta2 > 1e-9) {
     A = sin(theta) / theta;
     B = (1 - cos(theta)) / theta2;
     C = (1 - A) / theta2;
-  } else {
-    // Taylor series expansion for theta=0
-    A = 1.0;
+  } else {  // θ series
+    A = 1.0 - theta2 / 6.0;
     B = 0.5 - theta2 / 24.0;
     C = 1.0 / 6.0 - theta2 / 120.0;
   }
-  double alpha = 1.0 / (1.0 + theta2 / lambda2);
-  const double s = exp(lambda);
 
-  double s_inv = 1.0 / s;
-  double X = alpha * (1 - s_inv) / lambda + (1 - alpha) * (A - lambda * B);
-  double Y =
-      alpha * (s_inv - 1 + lambda) / lambda2 + (1 - alpha) * (B - lambda * C);
+  const double alpha = lambda2 / (lambda2 + theta2);
+  const double s_inv = exp(-lambda);
+  const double X = alpha * (1 - s_inv) / lambda + (1 - alpha) * (A - lambda * B);
+  const double Y = alpha * (s_inv - 1 + lambda) / lambda2 + (1 - alpha) * (B - lambda * C);
 
   Matrix2 V;
-  V << X, -theta * Y, theta * Y, X;
+  V << X, -theta * Y, theta* Y, X;
   return V;
 }
 
@@ -247,7 +268,25 @@ Similarity2 Similarity2::Expmap(const Vector4& v,  //
 }
 
 Matrix4 Similarity2::AdjointMap() const {
-  throw std::runtime_error("Similarity2::AdjointMap not implemented");
+  const Matrix2& R = R_.matrix();
+  const Point2& t = t_;
+  const double& s = s_;
+
+  Matrix4 Adj = Matrix4::Identity(); // Start with Identity
+
+  // Top-left 2x2 block: s * R
+  Adj.block<2, 2>(0, 0) = s * R;
+
+  // Top-right coupling terms, derived from T*Hat(xi)*T_inv
+  // Column w.r.t 'w': maps to [-s*J*t]
+  Adj(0, 2) = s * t.y();
+  Adj(1, 2) = -s * t.x();
+
+  // Column w.r.t 'lambda': maps to [-s*t]
+  Adj(0, 3) = -s * t.x();
+  Adj(1, 3) = -s * t.y();
+
+  return Adj;
 }
 
 Matrix3 Similarity2::Hat(const Vector4 &xi) {
@@ -268,6 +307,7 @@ Vector4 Similarity2::Vee(const Matrix3 &Xi) {
   xi[3] = -Xi(2, 2);
   return xi;
 }
+
 std::ostream& operator<<(std::ostream& os, const Similarity2& p) {
   os << "[" << p.rotation().theta() << " " << p.translation().transpose() << " "
      << p.scale() << "]\';";

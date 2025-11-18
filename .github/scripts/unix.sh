@@ -8,32 +8,12 @@
 set -e   # Make sure any error makes the script to return an error code
 set -x   # echo
 
-# install TBB with _debug.so files
-function install_tbb()
-{
-  echo install_tbb  
-  if [ "$(uname)" == "Linux" ]; then
-    sudo apt-get -y install libtbb-dev
-
-  elif [ "$(uname)" == "Darwin" ]; then
-    brew install tbb
-  fi
-}
 
 # common tasks before either build or test
 function configure()
 {
   # delete old build
   rm -rf build
-
-  if [ "${GTSAM_WITH_TBB:-OFF}" == "ON" ]; then
-    install_tbb
-  fi
-
-  if [ ! -z "$GCC_VERSION" ]; then
-    export CC=gcc-$GCC_VERSION
-    export CXX=g++-$GCC_VERSION
-  fi
 
   # GTSAM_BUILD_WITH_MARCH_NATIVE=OFF: to avoid crashes in builder VMs
   # CMAKE_CXX_FLAGS="-w": Suppress warnings to avoid IO latency in CI logs
@@ -52,10 +32,11 @@ function configure()
       -DGTSAM_POSE3_EXPMAP=${GTSAM_POSE3_EXPMAP:-ON} \
       -DGTSAM_USE_SYSTEM_EIGEN=${GTSAM_USE_SYSTEM_EIGEN:-OFF} \
       -DGTSAM_USE_SYSTEM_METIS=${GTSAM_USE_SYSTEM_METIS:-OFF} \
-      -DGTSAM_USE_BOOST_FEATURES=${GTSAM_USE_BOOST_FEATURES:-ON} \
-      -DGTSAM_ENABLE_BOOST_SERIALIZATION=${GTSAM_ENABLE_BOOST_SERIALIZATION:-ON} \
+      -DGTSAM_USE_BOOST_FEATURES=${GTSAM_USE_BOOST_FEATURES:-OFF} \
+      -DGTSAM_ENABLE_BOOST_SERIALIZATION=${GTSAM_ENABLE_BOOST_SERIALIZATION:-OFF} \
       -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
-      -DGTSAM_SINGLE_TEST_EXE=OFF
+      -DGTSAM_SINGLE_TEST_EXE=${GTSAM_SINGLE_TEST_EXE:-OFF} \
+      -DGTSAM_ENABLE_GEOGRAPHICLIB=${GTSAM_ENABLE_GEOGRAPHICLIB:-OFF}
 }
 
 

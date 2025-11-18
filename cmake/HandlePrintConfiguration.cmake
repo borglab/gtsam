@@ -22,6 +22,10 @@ if(GTSAM_UNSTABLE_AVAILABLE)
     print_enabled_config(${GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX} "Build MATLAB Toolbox for unstable")
 endif()
 
+if(MSVC)
+    print_enabled_config(${GTSAM_BUILD_WITH_PRECOMPILED_HEADERS} "Build with precompiled headers")
+endif()
+
 if(NOT MSVC AND NOT XCODE_VERSION AND NOT QNX)
     print_enabled_config(${GTSAM_BUILD_WITH_MARCH_NATIVE}     "Build for native architecture  ")
     print_config("Build type" "${CMAKE_BUILD_TYPE}")
@@ -107,5 +111,9 @@ print_enabled_config(${GTSAM_BUILD_PYTHON}                "Build Python module w
 if(GTSAM_BUILD_PYTHON)
     print_config("Python version" ${GTSAM_PYTHON_VERSION})
 endif()
+
+message(STATUS "Extra test flags")
+print_config("CTEST_EXTRA_ARGS" "${CTEST_EXTRA_ARGS}")
+print_config("PYTEST_EXTRA_ARGS" "${PYTEST_EXTRA_ARGS}")
 
 message(STATUS "===============================================================")

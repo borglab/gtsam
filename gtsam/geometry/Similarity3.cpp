@@ -24,8 +24,6 @@
 
 namespace gtsam {
 
-using std::vector;
-
 namespace internal {
 /// Subtract centroids from point pairs.
 static Point3Pairs subtractCentroids(const Point3Pairs &abPointPairs,
@@ -176,7 +174,7 @@ Similarity3 Similarity3::Align(const Pose3Pairs &abPosePairs) {
     throw std::runtime_error("input should have at least 2 pairs of poses");
 
   // calculate rotation
-  vector<Rot3> rotations;
+  std::vector<Rot3> rotations;
   Point3Pairs abPointPairs;
   rotations.reserve(n);
   abPointPairs.reserve(n);
@@ -222,42 +220,63 @@ Matrix7 Similarity3::AdjointMap() const {
   return adj;
 }
 
-Matrix3 Similarity3::GetV(Vector3 w, double lambda) {
-  // http://www.ethaneade.org/latex2html/lie/node29.html
-  const double theta2 = w.transpose() * w;
-  double Y, Z, W;
-  if (theta2 > 1e-9) {
-    const double theta = sqrt(theta2);
-    const double X = sin(theta) / theta;
-    Y = (1 - cos(theta)) / theta2;
-    Z = (1 - X) / theta2;
-    W = (0.5 - Y) / theta2;
-  } else {
-    // Taylor series expansion for theta=0, X not needed (as is 1)
-    Y = 0.5 - theta2 / 24.0;
-    Z = 1.0 / 6.0 - theta2 / 120.0;
-    W = 1.0 / 24.0 - theta2 / 720.0;
-  }
-  const double lambda2 = lambda * lambda, lambda3 = lambda2 * lambda;
-  const double expMinLambda = exp(-lambda);
-  double A, alpha = 0.0, beta, mu;
-  if (lambda2 > 1e-9) {
-    A = (1.0 - expMinLambda) / lambda;
-    alpha = 1.0 / (1.0 + theta2 / lambda2);
-    beta = (expMinLambda - 1 + lambda) / lambda2;
-    mu = (1 - lambda + (0.5 * lambda2) - expMinLambda) / lambda3;
-  } else {
-    A = 1.0 - lambda / 2.0 + lambda2 / 6.0;
-    beta = 0.5 - lambda / 6.0 + lambda2 / 24.0 - lambda3 / 120.0;
-    mu = 1.0 / 6.0 - lambda / 24.0 + lambda2 / 120.0 - lambda3 / 720.0;
-  }
-  const double gamma = Y - (lambda * Z), upsilon = Z - (lambda * W);
-  const double B = alpha * (beta - gamma) + gamma;
-  const double C = alpha * (mu - upsilon) + upsilon;
-  const Matrix3 Wx = skewSymmetric(w[0], w[1], w[2]);
-  return A * I_3x3 + B * Wx + C * Wx * Wx;
-}
+namespace {
+// Functor that implements the Similarity3 V(ω, λ) kernel:
+// See http://www.ethaneade.org/latex2html/lie/node29.html
+struct LocalV : public so3::DexpFunctor {
+  double lambda;  ///< scale log parameter
+  double alpha{0}, beta{0}, mu{0};
+  double P{0}, Q{0}, R{0};
 
+  explicit LocalV(const Vector3& omega, double lambda,
+                  double nearZeroThresholdSq, double nearPiThresholdSq)
+      : so3::DexpFunctor(omega, nearZeroThresholdSq, nearPiThresholdSq),
+        lambda(lambda) {
+    compute_();
+  }
+
+  explicit LocalV(const Vector3& omega, double lambda)
+      : so3::DexpFunctor(omega), lambda(lambda) {
+    compute_();
+  }
+
+  void compute_() {
+    const double lambda2 = lambda * lambda, lambda3 = lambda2 * lambda;
+    if (lambda2 > 1e-9) {
+      const double e = std::exp(-lambda);
+      P = (1.0 - e) / lambda;
+      alpha = 1.0 / (1.0 + (theta2 / lambda2));  // = λ²/(λ²+θ²)
+      beta = (e - 1.0 + lambda) / lambda2;
+      mu = (1.0 - lambda + 0.5 * lambda2 - e) / lambda3;
+    } else {
+      P = 1.0 - lambda / 2.0 + lambda2 / 6.0;
+      alpha = 0.0;
+      beta = 0.5 - lambda / 6.0 + lambda2 / 24.0 - lambda3 / 120.0;
+      mu = 1.0 / 6.0 - lambda / 24.0 + lambda2 / 120.0 - lambda3 / 720.0;
+    }
+    const double one_minus_alpha = 1.0 - alpha;
+    Q = alpha * beta + one_minus_alpha * (B - lambda * C());
+    R = alpha * mu + one_minus_alpha * (C() - lambda * E());
+  }
+
+  Matrix3 V() const { return P * I_3x3 + Q * W + R * WW; }
+
+  so3::Kernel kernel() const {
+    const double lambda2 = lambda * lambda;
+    const double dalpha =
+        (lambda2 > 1e-9) ? (-2.0 * alpha * alpha / lambda2) : 0.0;
+    const double dQ = (beta - (B - lambda * C())) * dalpha +
+                      (1.0 - alpha) * (dB() - lambda * dC());
+    const double dR = (mu - (C() - lambda * E())) * dalpha +
+                      (1.0 - alpha) * (dC() - lambda * dE());
+    return so3::Kernel{this, P, Q, R, dQ, dR};
+  }
+};
+}  // namespace
+
+Matrix3 Similarity3::GetV(Vector3 w, double lambda) {
+  return LocalV(w, lambda).V();
+}
 Vector7 Similarity3::Logmap(const Similarity3& T, OptionalJacobian<7, 7> Hm) {
   // To get the logmap, calculate w and lambda, then solve for u as shown by Ethan at
   // www.ethaneade.org/latex2html/lie/node29.html
@@ -273,13 +292,13 @@ Vector7 Similarity3::Logmap(const Similarity3& T, OptionalJacobian<7, 7> Hm) {
 
 Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
   const auto w = v.head<3>();
-  const auto u = v.segment<3>(3);
+  const auto rho = v.segment<3>(3);
   const double lambda = v[6];
   if (Hm) {
     throw std::runtime_error("Similarity3::Expmap: derivative not implemented");
   }
   const Matrix3 V = GetV(w, lambda);
-  return Similarity3(Rot3::Expmap(w), Point3(V * u), exp(lambda));
+  return Similarity3(Rot3::Expmap(w), Point3(V * rho), exp(lambda));
 }
 
 std::ostream &operator<<(std::ostream &os, const Similarity3& p) {
@@ -294,5 +313,8 @@ Matrix4 Similarity3::matrix() const {
   T.bottomRows<1>() << 0, 0, 0, 1.0 / s_;
   return T;
 }
+
+
+
 
 } // namespace gtsam

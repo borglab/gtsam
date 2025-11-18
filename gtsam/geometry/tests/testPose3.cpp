@@ -31,7 +31,7 @@ using namespace gtsam;
 using namespace std::placeholders;
 
 GTSAM_CONCEPT_TESTABLE_INST(Pose3)
-GTSAM_CONCEPT_LIE_INST(Pose3)
+GTSAM_CONCEPT_MATRIX_LIE_GROUP_INST(Pose3)
 
 static const Point3 P(0.2,0.7,-2);
 static const Rot3 R = Rot3::Rodrigues(0.3,0,0);
@@ -936,9 +936,7 @@ TEST(Pose3, Logmap) {
 TEST(Pose3, LogmapDerivatives) {
   for (bool nearZero : {true, false}) {
     for (const Vector3& w : test_cases::omegas(nearZero)) {
-      std::cout << "w: " << w.transpose() << std::endl;
       for (Vector3 v : test_cases::vs) {
-        std::cout << "v: " << v.transpose() << std::endl;
         const Vector6 xi = (Vector6() << w, v).finished();
         Pose3 pose = Pose3::Expmap(xi);
         const Matrix6 expectedH =
@@ -1457,7 +1455,7 @@ TEST(Pose3, ExpmapChainRule) {
 }
 
 /* ************************************************************************* */
-TEST(Pose3, vec) {
+TEST(Pose3, Vec) {
   // Test the 'vec' method
   using Vector16 = Eigen::Matrix<double, 16, 1>;
   Vector16 expected_vec = Eigen::Map<Vector16>(T.matrix().data());
@@ -1469,6 +1467,21 @@ TEST(Pose3, vec) {
   std::function<Vector16(const Pose3&)> f = [](const Pose3& p) { return p.vec(); };
   Matrix numericalH = numericalDerivative11<Vector16, Pose3>(f, T);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(Pose3, AdjointMap) {
+  // Create a non-trivial Pose3 object
+  const Pose3 pose(Rot3::Rodrigues(0.1, 0.2, 0.3), Point3(1.0, 2.0, 3.0));
+
+  // Call the specialized AdjointMap
+  Matrix6 specialized_Adj = pose.AdjointMap();
+
+  // Call the generic AdjointMap from the base class
+  Matrix6 generic_Adj = static_cast<const MatrixLieGroup<Pose3, 6, 4>*>(&pose)->AdjointMap();
+
+  // Assert that they are equal
+  EXPECT(assert_equal(specialized_Adj, generic_Adj, 1e-9));
 }
 
 /* ************************************************************************* */

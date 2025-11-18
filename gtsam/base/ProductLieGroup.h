@@ -67,12 +67,12 @@ public:
 
   /// @name Manifold
   /// @{
-  inline constexpr static auto dimension = dimension1 + dimension2;
+  inline constexpr static size_t dimension = dimension1 + dimension2;
   inline static size_t Dim() { return dimension; }
   inline size_t dim() const { return dimension; }
 
-  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
-  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+  using TangentVector = Eigen::Matrix<double, static_cast<int>(dimension), 1>;
+  using ChartJacobian = OptionalJacobian<dimension, dimension>;
 
   ProductLieGroup retract(const TangentVector& v, //
       ChartJacobian H1 = {}, ChartJacobian H2 = {}) const {
@@ -95,9 +95,9 @@ public:
   /// @name Lie Group
   /// @{
 protected:
-  typedef Eigen::Matrix<double, dimension, dimension> Jacobian;
-  typedef Eigen::Matrix<double, dimension1, dimension1> Jacobian1;
-  typedef Eigen::Matrix<double, dimension2, dimension2> Jacobian2;
+  using Jacobian = Eigen::Matrix<double, static_cast<int>(dimension), static_cast<int>(dimension)>;
+  using Jacobian1 = Eigen::Matrix<double, static_cast<int>(dimension1), static_cast<int>(dimension1)>;
+  using Jacobian2 = Eigen::Matrix<double, static_cast<int>(dimension2), static_cast<int>(dimension2)>;
 
 public:
   ProductLieGroup compose(const ProductLieGroup& other, ChartJacobian H1,
@@ -169,6 +169,15 @@ public:
   }
   TangentVector logmap(const ProductLieGroup& g) const {
     return ProductLieGroup::Logmap(between(g));
+  }
+  Jacobian AdjointMap() const {
+    const auto& adjG = traits<G>::AdjointMap(this->first);
+    const auto& adjH = traits<H>::AdjointMap(this->second);
+    size_t d1 = adjG.rows(), d2 = adjH.rows();
+    Matrix adj = Matrix::Zero(d1 + d2, d1 + d2);
+    adj.block(0, 0, d1, d1) = adjG;
+    adj.block(d1, d1, d2, d2) = adjH;
+    return adj;
   }
   /// @}
 

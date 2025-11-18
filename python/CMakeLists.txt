@@ -41,8 +41,15 @@ if(POLICY CMP0057)
     cmake_policy(SET CMP0057 NEW)
 endif()
 
-# Use bundled pybind11 version
-add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
+option(GTSAM_USE_SYSTEM_PYBIND "Find and use system-installed Pybind. If 'off', use the one bundled with GTSAM" OFF)
+
+if(GTSAM_USE_SYSTEM_PYBIND)
+    # try to find pybind11 on system
+    find_package(pybind11 REQUIRED)
+else()
+    # Use bundled pybind11 version
+    add_subdirectory(${PROJECT_SOURCE_DIR}/wrap/pybind11 pybind11)
+endif()
 
 # Set the wrapping script variable
 set(PYBIND_WRAP_SCRIPT "${PROJECT_SOURCE_DIR}/wrap/scripts/pybind_wrap.py")
@@ -63,6 +70,7 @@ set(ignore
     gtsam::IndexPairVector
     gtsam::BetweenFactorPose2s
     gtsam::BetweenFactorPose3s
+    gtsam::BetweenFactorSL4s
     gtsam::FixedLagSmootherKeyTimestampMap
     gtsam::FixedLagSmootherKeyTimestampMapValue
     gtsam::Point2Vector
@@ -183,6 +191,8 @@ set(GTSAM_PYTHON_DEPENDENCIES ${GTSAM_PYTHON_TARGET})
 
 set(GTSAM_PYTHON_INSTALL_EXTRA "")
 
+separate_arguments(PYTEST_EXTRA_ARGS_LIST UNIX_COMMAND "${PYTEST_EXTRA_ARGS}")
+
 if(GTSAM_UNSTABLE_BUILD_PYTHON)
     set(ignore
             gtsam::Point2
@@ -191,6 +201,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::FactorIndices
             gtsam::FactorIndexSet
             gtsam::BetweenFactorPose3s
+            gtsam::BetweenFactorSL4s
             gtsam::Point2Vector
             gtsam::Pose3Vector
             gtsam::KeyVector
@@ -275,7 +286,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
         COMMAND
           ${CMAKE_COMMAND} -E env # add package to python path so no need to install
           "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
-        ${PYTHON_EXECUTABLE} -m unittest discover -v -s .
+        ${PYTHON_EXECUTABLE} -m pytest -v . ${PYTEST_EXTRA_ARGS_LIST}
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES}
         WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable/tests"
     )
@@ -312,6 +323,6 @@ add_custom_target(
         COMMAND
           ${CMAKE_COMMAND} -E env # add package to python path so no need to install
           "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
-          ${PYTHON_EXECUTABLE} -m unittest discover -v -s .
+          ${PYTHON_EXECUTABLE} -m pytest -v . ${PYTEST_EXTRA_ARGS_LIST}
           DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES}
           WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/tests")

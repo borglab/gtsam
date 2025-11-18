@@ -123,6 +123,8 @@ class GTSAM_EXPORT DiscreteConditional
                       const DecisionTreeFactor& marginal,
                       const Ordering& orderedKeys);
 
+  using DecisionTreeFactor::operator*;
+
   /**
    * @brief Combine two conditionals, yielding a new conditional with the union
    * of the frontal keys, ordered by gtsam::Key.

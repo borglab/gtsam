@@ -108,9 +108,9 @@ static Eigen::SparseVector<double> ComputeSparseTable(
    *
    */
   auto op = [&](const Assignment<Key>& assignment, double p) {
-    // Check if greater than 1e-11 because we consider
+    // Check if greater than a threshold because we consider
     // smaller than that as numerically 0
-    if (p > 1e-11) {
+    if (p > 1e-150) {
       // Get all the keys involved in this assignment
       KeySet assignmentKeys;
       for (auto&& [k, _] : assignment) {

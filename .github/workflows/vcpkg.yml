@@ -1,0 +1,199 @@
+name: vcpkg
+on:
+  pull_request:
+  push:
+    # Runs on pushes targeting the develop branch
+    branches: [develop]
+
+# Cancels any in-progress workflow runs for the same PR when a new push is made,
+# allowing the runner to become available more quickly for the latest changes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            triplet: x64-windows-release
+            build_type: Release
+            test_target: RUN_TESTS
+            binary_cache: C:\Users\runneradmin\AppData\Local\vcpkg\archives
+            python: python
+          - os: ubuntu-latest
+            triplet: x64-linux-release
+            build_type: Release
+            test_target: test
+            binary_cache: /home/runner/.cache/vcpkg/archives
+            python: python3
+          - os: macos-latest
+            triplet: arm64-osx-release
+            build_type: Release
+            test_target: test
+            binary_cache: /Users/runner/.cache/vcpkg/archives
+            python: python3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore cache dependencies
+        id: cache-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: ${{ matrix.binary_cache }}
+          key: ${{ matrix.os }}
+          restore-keys: ${{ matrix.os }}
+
+      - name: Setup msbuild
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          toolset: 14.40
+
+      - name: Install sccache
+        if: runner.os == 'Windows'
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Use sccache
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          echo "SCCACHE_GHA_ENABLED=ON" >> "$GITHUB_ENV"
+          echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> "$GITHUB_ENV"
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> "$GITHUB_ENV"
+
+      - name: cl version
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: cl
+
+      - name: Install vcpkg python dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get install autoconf automake autoconf-archive
+
+      - name: Install vcpkg python dependencies
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install autoconf autoconf-archive automake libtool
+
+      - name: Set vcpkg installtion root env
+        shell: bash
+        run: |
+          VCPKG_BASH_PATH=${VCPKG_INSTALLATION_ROOT//\\//}
+          echo "VCPKG_INSTALLATION_ROOT=$VCPKG_BASH_PATH" >> "$GITHUB_ENV"
+
+      - name: "Install dependencies"
+        run: >
+          vcpkg x-set-installed --triplet ${{ matrix.triplet }} --host-triplet ${{ matrix.triplet }}
+          boost-assign
+          boost-bimap
+          boost-chrono
+          boost-date-time
+          boost-filesystem
+          boost-format
+          boost-graph
+          boost-math
+          boost-program-options
+          boost-regex
+          boost-serialization
+          boost-system
+          boost-thread
+          boost-timer
+          tbb
+          pybind11
+          geographiclib
+
+      - name: On Failure, upload vcpkg logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs_${{ matrix.os }}_${{ github.event.pull_request.head.sha }}
+          path: |
+            ${{ env.VCPKG_INSTALLATION_ROOT }}/buildtrees/**/*.log
+
+      - name: copy files for hash
+        shell: bash
+        run: |
+          echo $VCPKG_INSTALLATION_ROOT
+          mkdir -p vcpkg-info
+          find $VCPKG_INSTALLATION_ROOT/installed/ -type f -name 'vcpkg_abi_info.txt' | \
+          while read filepath; do
+            triplet=$(echo "$filepath" | awk -F/ '{print $(NF-3)}')
+            port=$(echo "$filepath" | awk -F/ '{print $(NF-1)}')
+            cp "$filepath" "vcpkg-info/${triplet}_${port}.txt"
+          done
+
+      - name: Save cache dependencies
+        # Don't save if it's the exact same
+        if: steps.cache-restore.outputs.cache-matched-key != format('{0}-{1}', matrix.os, hashFiles('vcpkg-info/*'))
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ matrix.binary_cache }}
+          key: ${{ matrix.os }}-${{ hashFiles('vcpkg-info/*') }}
+
+      - name: Install python packages
+        shell: bash
+        run: |
+          $VCPKG_INSTALLATION_ROOT/installed/${{ matrix.triplet }}/tools/python3/${{ matrix.python }} -m ensurepip --upgrade
+          $VCPKG_INSTALLATION_ROOT/installed/${{ matrix.triplet }}/tools/python3/${{ matrix.python }} -m pip install -r python/dev_requirements.txt
+
+      - name: Set Swap Space (Linux)
+        if: runner.os == 'Linux'
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 6
+
+      - name: cmake config
+        if: success()
+        shell: bash
+        run: |
+          export CL=-openmp
+
+          cmake . -B build -G Ninja \
+              -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake \
+              -DVCPKG_INSTALLED_DIR=$VCPKG_INSTALLATION_ROOT/installed \
+              -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} \
+              -DVCPKG_HOST_TRIPLET=${{ matrix.triplet }} \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
+              -DGTSAM_BUILD_WITH_PRECOMPILED_HEADERS=OFF \
+              -DGTSAM_ROT3_EXPMAP=ON \
+              -DGTSAM_POSE3_EXPMAP=ON \
+              -DGTSAM_BUILD_PYTHON=ON \
+              -DGTSAM_BUILD_TESTS=ON \
+              -DGTSAM_BUILD_UNSTABLE=ON \
+              -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+              -DGTSAM_USE_SYSTEM_EIGEN=OFF \
+              -DGTSAM_USE_SYSTEM_METIS=OFF \
+              -DGTSAM_USE_SYSTEM_PYBIND=ON \
+              -DGTSAM_ENABLE_GEOGRAPHICLIB=ON \
+              -DGTSAM_SUPPORT_NESTED_DISSECTION=ON \
+              -DCTEST_EXTRA_ARGS='${{ matrix.ctest_extra_flags }}' \
+              -DPYTEST_EXTRA_ARGS='${{ matrix.pytest_extra_flags }}'
+
+      - name: cmake build
+        shell: bash
+        run: |
+          cmake --build build --config ${{ matrix.build_type }}
+
+      - name: Run Python tests
+        shell: bash
+        run: |
+          export PATH="$PATH:$VCPKG_INSTALLATION_ROOT/installed/${{ matrix.triplet }}/bin"
+          cmake --build build --target python-install
+          cmake --build build --target python-test
+          cmake --build build --target python-test-unstable
+
+      - name: Run tests
+        shell: bash
+        run: |
+          cmake --build build --config ${{ matrix.build_type }} --target check

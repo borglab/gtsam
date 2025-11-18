@@ -20,9 +20,9 @@
 
 using namespace std;
 using namespace gtsam;
-using symbol_shorthand::X;
-using symbol_shorthand::V;
 using symbol_shorthand::B;
+using symbol_shorthand::V;
+using symbol_shorthand::X;
 
 struct IMUHelper {
   IMUHelper() {
@@ -57,11 +57,13 @@ struct IMUHelper {
     p->biasAccCovariance = I_3x3 * pow(0.00002, 2.0);  // acc bias in continuous
     p->biasOmegaCovariance =
         I_3x3 * pow(0.001, 2.0);  // gyro bias in continuous
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
     p->biasAccOmegaInt = Matrix::Identity(6, 6) * 1e-5;
+#endif
 
     // body to IMU rotation
-    Rot3 iRb(0.036129, -0.998727, 0.035207,
-             0.045417, -0.033553, -0.998404,
+    Rot3 iRb(0.036129, -0.998727, 0.035207, 0.045417, -0.033553, -0.998404,
              0.998315, 0.037670, 0.044147);
 
     // body to IMU translation (meters)
@@ -133,8 +135,7 @@ int main(int argc, char* argv[]) {
   initialEstimate.insert(X(0), Pose3::Identity());
 
   // Bias prior
-  graph.addPrior(B(1), imu.priorImuBias,
-                                               imu.biasNoiseModel);
+  graph.addPrior(B(1), imu.priorImuBias, imu.biasNoiseModel);
   initialEstimate.insert(B(0), imu.priorImuBias);
 
   // Velocity prior - assume stationary

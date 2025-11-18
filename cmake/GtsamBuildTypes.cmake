@@ -98,6 +98,7 @@ if(MSVC)
   # Avoid literally hundreds to thousands of warnings:
   list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC
     /wd4267 # warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+    /permissive- # Need to enforce standards compliance or else weird behavior will show up. See https://github.com/borglab/gtsam/pull/2268
   )
 
   add_compile_options(/wd4005)

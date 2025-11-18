@@ -73,16 +73,17 @@ public:
   /// Unit3(p,1) can be viewed as normalized homogeneous coordinates of 2D point
   explicit Unit3(const Point2& p, double f);
 
-  /// Copy constructor
-  Unit3(const Unit3& u) {
-    p_ = u.p_;
-  }
+  /// Copy constructor: copies essential data and discards caches.
+  Unit3(const Unit3& u) : p_(u.p_) {}
 
-  /// Copy assignment
-  Unit3& operator=(const Unit3 & u) {
+  /// Copy assignment: copies essential data and invalidates local caches.
+  Unit3& operator=(const Unit3& u) {
+    if (this == &u) return *this;
     p_ = u.p_;
-    B_ = u.B_;
-    H_B_ = u.H_B_;
+
+    // Since p_ has changed, the old cached basis is no longer valid.
+    B_.reset();
+    H_B_.reset();
     return *this;
   }
 
@@ -145,10 +146,6 @@ public:
                              OptionalJacobian<1,2> H2 = {}) const;
 
   /// Signed, vector-valued error between two directions
-  /// @deprecated, errorVector has the proper derivatives, this confusingly has only the second.
-  Vector2 error(const Unit3& q, OptionalJacobian<2, 2> H_q = {}) const;
-
-  /// Signed, vector-valued error between two directions
   /// NOTE(hayk): This method has zero derivatives if this (p) and q are orthogonal.
   Vector2 errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p = {}, //
                       OptionalJacobian<2, 2> H_q = {}) const;
@@ -167,7 +164,6 @@ public:
   }
 
   /// @}
-
   /// @name Manifold
   /// @{
 
@@ -193,6 +189,13 @@ public:
   Vector2 localCoordinates(const Unit3& s) const;
 
   /// @}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated, errorVector has the proper derivatives, this confusingly has only the second.
+  Vector2 error(const Unit3& q, OptionalJacobian<2, 2> H_q = {}) const {
+    return errorVector(q, {}, H_q);
+  }
+#endif
 
 private:
 

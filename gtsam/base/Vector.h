@@ -43,14 +43,14 @@ typedef Eigen::Matrix<double, 1, 1> Vector1;
 typedef Eigen::Vector2d Vector2;
 typedef Eigen::Vector3d Vector3;
 
-static const Eigen::MatrixBase<Vector2>::ConstantReturnType Z_2x1 = Vector2::Zero();
-static const Eigen::MatrixBase<Vector3>::ConstantReturnType Z_3x1 = Vector3::Zero();
+static const Eigen::MatrixBase<Vector2>::ConstantReturnType Z_2x1 = Vector2::Constant(0.0);
+static const Eigen::MatrixBase<Vector3>::ConstantReturnType Z_3x1 = Vector3::Constant(0.0);
 
 // Create handy typedefs and constants for vectors with N>3
 // VectorN and Z_Nx1, for N=1..9
 #define GTSAM_MAKE_VECTOR_DEFS(N)                \
   using Vector##N = Eigen::Matrix<double, N, 1>; \
-  static const Eigen::MatrixBase<Vector##N>::ConstantReturnType Z_##N##x1 = Vector##N::Zero();
+  static const Eigen::MatrixBase<Vector##N>::ConstantReturnType Z_##N##x1 = Vector##N::Constant(0.0);
 
 GTSAM_MAKE_VECTOR_DEFS(4)
 GTSAM_MAKE_VECTOR_DEFS(5)

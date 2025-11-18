@@ -135,50 +135,26 @@ SO4 SO4::Expmap(const Vector6& xi, ChartJacobian H) {
 }
 
 //******************************************************************************
-// local vectorize
-static SO4::VectorN2 vec4(const Matrix4& Q) {
-  return Eigen::Map<const SO4::VectorN2>(Q.data());
-}
-
-// so<4> generators
-static std::vector<Matrix4, Eigen::aligned_allocator<Matrix4> > G4(
-    {SO4::Hat(Vector6::Unit(0)), SO4::Hat(Vector6::Unit(1)),
-     SO4::Hat(Vector6::Unit(2)), SO4::Hat(Vector6::Unit(3)),
-     SO4::Hat(Vector6::Unit(4)), SO4::Hat(Vector6::Unit(5))});
-
-// vectorized generators
-static const Eigen::Matrix<double, 16, 6> P4 =
-    (Eigen::Matrix<double, 16, 6>() << vec4(G4[0]), vec4(G4[1]), vec4(G4[2]),
-     vec4(G4[3]), vec4(G4[4]), vec4(G4[5]))
-        .finished();
-
-//******************************************************************************
-template <>
-GTSAM_EXPORT
-Matrix6 SO4::AdjointMap() const {
-  // Elaborate way of calculating the AdjointMap
-  // TODO(frank): find a closed form solution. In SO(3) is just R :-/
-  const Matrix4& Q = matrix_;
-  const Matrix4 Qt = Q.transpose();
-  Matrix6 A;
-  for (size_t i = 0; i < 6; i++) {
-    // Calculate column i of linear map for coeffcient of Gi
-    A.col(i) = SO4::Vee(Q * G4[i] * Qt);
-  }
-  return A;
-}
-
-//******************************************************************************
 template <>
 GTSAM_EXPORT
 SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const {
   const Matrix& Q = matrix_;
   if (H) {
-    // As Luca calculated, this is (I4 \oplus Q) * P4
-    *H << Q * P4.block<4, 6>(0, 0), Q * P4.block<4, 6>(4, 0),
-        Q * P4.block<4, 6>(8, 0), Q * P4.block<4, 6>(12, 0);
+    H->setZero();
+    H->block<4, 1>(0, 2) = -Q.col(3);
+    H->block<4, 1>(0, 4) = -Q.col(2);
+    H->block<4, 1>(0, 5) = Q.col(1);
+    H->block<4, 1>(4, 1) = Q.col(3);
+    H->block<4, 1>(4, 3) = Q.col(2);
+    H->block<4, 1>(4, 5) = -Q.col(0);
+    H->block<4, 1>(8, 0) = -Q.col(3);
+    H->block<4, 1>(8, 3) = -Q.col(1);
+    H->block<4, 1>(8, 4) = Q.col(0);
+    H->block<4, 1>(12, 0) = Q.col(2);
+    H->block<4, 1>(12, 1) = -Q.col(1);
+    H->block<4, 1>(12, 2) = Q.col(0);
   }
-  return gtsam::vec4(Q);
+  return Eigen::Map<const SO4::VectorN2>(Q.data());
 }
 
 ///******************************************************************************

@@ -1,4 +1,4 @@
-GTSAM is released under the simplified BSD license, reproduced in the file 
+GTSAM is released under the simplified BSD license, reproduced in the file
 LICENSE.BSD in this directory.
 
 GTSAM contains several third party libraries, with documentation of licensing
@@ -14,11 +14,8 @@ ordering library
     - Includes only auto-diff/jet code, with minor modifications to includes
     - http://ceres-solver.org/license.html
 - Eigen 3.3.7:  General C++ matrix and linear algebra library
-    - Licenced under MPL2, provided in gtsam/3rdparty/Eigen/COPYING.README 
+    - Licenced under MPL2, provided in gtsam/3rdparty/Eigen/COPYING.README
     - Some code that is 3rd-party to Eigen is BSD and LGPL
-- GeographicLib 1.35: Charles Karney's geographic conversion utility library
-    - Included unmodified in gtsam/3rdparty/GeographicLib
-    - Licenced under MIT, provided in gtsam/3rdparty/GeographicLib/LICENSE.txt
 - METIS 5.1.0: Graph partitioning and fill-reducing matrix ordering library
     - Included unmodified in gtsam/3rdparty/metis
     - Licenced under Apache License v 2.0, provided in

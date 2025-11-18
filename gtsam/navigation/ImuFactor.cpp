@@ -20,6 +20,8 @@
  **/
 
 #include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/ManifoldPreintegration.h>
+#include <gtsam/navigation/TangentPreintegration.h>
 
 /* External or standard includes */
 #include <ostream>
@@ -30,28 +32,32 @@ namespace gtsam {
 using namespace std;
 
 //------------------------------------------------------------------------------
-// Inner class PreintegratedImuMeasurements
+// Inner class PreintegratedImuMeasurementsT
 //------------------------------------------------------------------------------
-void PreintegratedImuMeasurements::print(const string& s) const {
+template <class PreintegrationType>
+void PreintegratedImuMeasurementsT<PreintegrationType>::print(const string& s) const {
   PreintegrationType::print(s);
   cout << "    preintMeasCov \n[" << preintMeasCov_ << "]" << endl;
 }
 
 //------------------------------------------------------------------------------
-bool PreintegratedImuMeasurements::equals(
-    const PreintegratedImuMeasurements& other, double tol) const {
+template <class PreintegrationType>
+bool PreintegratedImuMeasurementsT<PreintegrationType>::equals(
+    const PreintegratedImuMeasurementsT<PreintegrationType>& other, double tol) const {
   return PreintegrationType::equals(other, tol)
       && equal_with_abs_tol(preintMeasCov_, other.preintMeasCov_, tol);
 }
 
 //------------------------------------------------------------------------------
-void PreintegratedImuMeasurements::resetIntegration() {
+template <class PreintegrationType>
+void PreintegratedImuMeasurementsT<PreintegrationType>::resetIntegration() {
   PreintegrationType::resetIntegration();
   preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
-void PreintegratedImuMeasurements::integrateMeasurement(
+template <class PreintegrationType>
+void PreintegratedImuMeasurementsT<PreintegrationType>::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
   if (dt <= 0) {
     throw std::runtime_error(
@@ -69,9 +75,9 @@ void PreintegratedImuMeasurements::integrateMeasurement(
 
   // propagate uncertainty
   // TODO(frank): use noiseModel routine so we can have arbitrary noise models.
-  const Matrix3& aCov = p().accelerometerCovariance;
-  const Matrix3& wCov = p().gyroscopeCovariance;
-  const Matrix3& iCov = p().integrationCovariance;
+  const Matrix3& aCov = this->p().accelerometerCovariance;
+  const Matrix3& wCov = this->p().gyroscopeCovariance;
+  const Matrix3& iCov = this->p().integrationCovariance;
 
   // (1/dt) allows to pass from continuous time noise to discrete time noise
   // Update the uncertainty on the state (matrix A in [4]).
@@ -85,7 +91,8 @@ void PreintegratedImuMeasurements::integrateMeasurement(
 }
 
 //------------------------------------------------------------------------------
-void PreintegratedImuMeasurements::integrateMeasurements(
+template <class PreintegrationType>
+void PreintegratedImuMeasurementsT<PreintegrationType>::integrateMeasurements(
     const Matrix& measuredAccs, const Matrix& measuredOmegas,
     const Matrix& dts) {
   assert(
@@ -100,160 +107,108 @@ void PreintegratedImuMeasurements::integrateMeasurements(
 }
 
 //------------------------------------------------------------------------------
-#ifdef GTSAM_TANGENT_PREINTEGRATION
-void PreintegratedImuMeasurements::mergeWith(const PreintegratedImuMeasurements& pim12, //
-    Matrix9* H1, Matrix9* H2) {
-  PreintegrationType::mergeWith(pim12, H1, H2);
-  // NOTE(gareth): Temporary P is needed as of Eigen 3.3
-  const Matrix9 P = *H1 * preintMeasCov_ * H1->transpose();
-  preintMeasCov_ = P + *H2 * pim12.preintMeasCov_ * H2->transpose();
-}
-#endif
-
+// ImuFactorT methods
 //------------------------------------------------------------------------------
-// ImuFactor methods
-//------------------------------------------------------------------------------
-ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
-    const PreintegratedImuMeasurements& pim) :
-    Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
-        pose_j, vel_j, bias), _PIM_(pim) {
-}
-
-//------------------------------------------------------------------------------
-NonlinearFactor::shared_ptr ImuFactor::clone() const {
-  return std::static_pointer_cast<NonlinearFactor>(
-      NonlinearFactor::shared_ptr(new This(*this)));
-}
-
-//------------------------------------------------------------------------------
-std::ostream& operator<<(std::ostream& os, const ImuFactor& f) {
-  f._PIM_.print("preintegrated measurements:\n");
-  os << "  noise model sigmas: " << f.noiseModel_->sigmas().transpose();
+template <class PIM>
+std::ostream& operator<<(std::ostream& os, const ImuFactorT<PIM>& f) {
+  f.preintegratedMeasurements().print("preintegrated measurements:\n");
+  os << "  noise model sigmas: " << f.noiseModel()->sigmas().transpose();
   return os;
 }
 
 //------------------------------------------------------------------------------
-void ImuFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
-  cout << (s.empty() ? s : s + "\n") << "ImuFactor(" << keyFormatter(this->key<1>())
-       << "," << keyFormatter(this->key<2>()) << "," << keyFormatter(this->key<3>())
-       << "," << keyFormatter(this->key<4>()) << "," << keyFormatter(this->key<5>())
+template <class PIM>
+void ImuFactorT<PIM>::print(const string& s, const KeyFormatter& keyFormatter) const {
+  cout << (s.empty() ? s : s + "\n") << "ImuFactor(" << keyFormatter(this->template key<1>())
+       << "," << keyFormatter(this->template key<2>()) << "," << keyFormatter(this->template key<3>())
+       << "," << keyFormatter(this->template key<4>()) << "," << keyFormatter(this->template key<5>())
        << ")\n";
   cout << *this << endl;
 }
 
 //------------------------------------------------------------------------------
-bool ImuFactor::equals(const NonlinearFactor& other, double tol) const {
+template <class PIM>
+bool ImuFactorT<PIM>::equals(const NonlinearFactor& other, double tol) const {
   const This *e = dynamic_cast<const This*>(&other);
   const bool base = Base::equals(*e, tol);
-  const bool pim = _PIM_.equals(e->_PIM_, tol);
+  const bool pim = pim_.equals(e->pim_, tol);
   return e != nullptr && base && pim;
 }
 
 //------------------------------------------------------------------------------
-Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
+template <class PIM>
+Vector ImuFactorT<PIM>::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
     const Pose3& pose_j, const Vector3& vel_j,
     const imuBias::ConstantBias& bias_i, OptionalMatrixType H1,
     OptionalMatrixType H2, OptionalMatrixType H3,
     OptionalMatrixType H4, OptionalMatrixType H5) const {
-  return _PIM_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
+  return pim_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
       H1, H2, H3, H4, H5);
 }
 
 //------------------------------------------------------------------------------
-#ifdef GTSAM_TANGENT_PREINTEGRATION
-PreintegratedImuMeasurements ImuFactor::Merge(
-    const PreintegratedImuMeasurements& pim01,
-    const PreintegratedImuMeasurements& pim12) {
-  if (!pim01.matchesParamsWith(pim12))
-  throw std::domain_error(
-      "Cannot merge PreintegratedImuMeasurements with different params");
-
-  if (pim01.params()->body_P_sensor)
-  throw std::domain_error(
-      "Cannot merge PreintegratedImuMeasurements with sensor pose yet");
-
-  // the bias for the merged factor will be the bias from 01
-  PreintegratedImuMeasurements pim02 = pim01;
-
-  Matrix9 H1, H2;
-  pim02.mergeWith(pim12, &H1, &H2);
-
-  return pim02;
-}
-
+// ImuFactor2T methods
 //------------------------------------------------------------------------------
-ImuFactor::shared_ptr ImuFactor::Merge(const shared_ptr& f01,
-    const shared_ptr& f12) {
-  // IMU bias keys must be the same.
-  if (f01->key<5>() != f12->key<5>())
-  throw std::domain_error("ImuFactor::Merge: IMU bias keys must be the same");
-
-  // expect intermediate pose, velocity keys to matchup.
-  if (f01->key<3>() != f12->key<1>() || f01->key<4>() != f12->key<2>())
-  throw std::domain_error(
-      "ImuFactor::Merge: intermediate pose, velocity keys need to match up");
-
-  // return new factor
-  auto pim02 =
-  Merge(f01->preintegratedMeasurements(), f12->preintegratedMeasurements());
-  return std::make_shared<ImuFactor>(f01->key<1>(),  // P0
-      f01->key<2>(),  // V0
-      f12->key<3>(),  // P2
-      f12->key<4>(),  // V2
-      f01->key<5>(),  // B
-      pim02);
-}
-#endif
-
-//------------------------------------------------------------------------------
-// ImuFactor2 methods
-//------------------------------------------------------------------------------
-ImuFactor2::ImuFactor2(Key state_i, Key state_j, Key bias,
-    const PreintegratedImuMeasurements& pim) :
-    Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), state_i, state_j,
-        bias), _PIM_(pim) {
-}
-
-//------------------------------------------------------------------------------
-NonlinearFactor::shared_ptr ImuFactor2::clone() const {
-  return std::static_pointer_cast<NonlinearFactor>(
-      NonlinearFactor::shared_ptr(new This(*this)));
-}
-
-//------------------------------------------------------------------------------
-std::ostream& operator<<(std::ostream& os, const ImuFactor2& f) {
-  f._PIM_.print("preintegrated measurements:\n");
-  os << "  noise model sigmas: " << f.noiseModel_->sigmas().transpose();
+template <class PIM>
+std::ostream& operator<<(std::ostream& os, const ImuFactor2T<PIM>& f) {
+  f.preintegratedMeasurements().print("preintegrated measurements:\n");
+  os << "  noise model sigmas: " << f.noiseModel()->sigmas().transpose();
   return os;
 }
 
 //------------------------------------------------------------------------------
-void ImuFactor2::print(const string& s,
+template <class PIM>
+void ImuFactor2T<PIM>::print(const string& s,
     const KeyFormatter& keyFormatter) const {
   cout << (s.empty() ? s : s + "\n") << "ImuFactor2("
-       << keyFormatter(this->key<1>()) << "," << keyFormatter(this->key<2>()) << ","
+       << keyFormatter(this->template key<1>()) << "," << keyFormatter(this->template key<2>()) << ","
        << keyFormatter(this->key<3>()) << ")\n";
   cout << *this << endl;
 }
 
 //------------------------------------------------------------------------------
-bool ImuFactor2::equals(const NonlinearFactor& other, double tol) const {
+template <class PIM>
+bool ImuFactor2T<PIM>::equals(const NonlinearFactor& other, double tol) const {
   const This *e = dynamic_cast<const This*>(&other);
   const bool base = Base::equals(*e, tol);
-  const bool pim = _PIM_.equals(e->_PIM_, tol);
+  const bool pim = pim_.equals(e->pim_, tol);
   return e != nullptr && base && pim;
 }
 
 //------------------------------------------------------------------------------
-Vector ImuFactor2::evaluateError(const NavState& state_i,
+template <class PIM>
+Vector ImuFactor2T<PIM>::evaluateError(const NavState& state_i,
     const NavState& state_j,
     const imuBias::ConstantBias& bias_i, //
     OptionalMatrixType H1, OptionalMatrixType H2,
     OptionalMatrixType H3) const {
-  return _PIM_.computeError(state_i, state_j, bias_i, H1, H2, H3);
+  return pim_.computeError(state_i, state_j, bias_i, H1, H2, H3);
 }
 
 //------------------------------------------------------------------------------
+// Explicit instantiations
+//------------------------------------------------------------------------------
+template class GTSAM_EXPORT PreintegratedImuMeasurementsT<ManifoldPreintegration>;
+template class GTSAM_EXPORT PreintegratedImuMeasurementsT<TangentPreintegration>;
+
+// ImuFactorT instantiations
+template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsT<ManifoldPreintegration>>;
+template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsT<TangentPreintegration>>;
+
+// ImuFactor2T instantiations
+template class GTSAM_EXPORT ImuFactor2T<PreintegratedImuMeasurementsT<ManifoldPreintegration>>;
+template class GTSAM_EXPORT ImuFactor2T<PreintegratedImuMeasurementsT<TangentPreintegration>>;
+
+// operator<< instantiations
+template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<ManifoldPreintegration>>(
+    std::ostream& os, const ImuFactorT<PreintegratedImuMeasurementsT<ManifoldPreintegration>>& f);
+template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<TangentPreintegration>>(
+    std::ostream& os, const ImuFactorT<PreintegratedImuMeasurementsT<TangentPreintegration>>& f);
+
+template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<ManifoldPreintegration>>(
+    std::ostream& os, const ImuFactor2T<PreintegratedImuMeasurementsT<ManifoldPreintegration>>& f);
+template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<TangentPreintegration>>(
+    std::ostream& os, const ImuFactor2T<PreintegratedImuMeasurementsT<TangentPreintegration>>& f);
 
 }
 // namespace gtsam

@@ -141,6 +141,7 @@ TEST(ADT, example3) {
 // Asia Bayes Network
 /* ************************************************************************** */
 
+namespace {
 /** Convert Signature into CPT */
 ADT create(const Signature& signature) {
   ADT p(signature.discreteKeys(), signature.cpt());
@@ -153,6 +154,7 @@ ADT create(const Signature& signature) {
   dot(p, DOTfile);
   return p;
 }
+}  // namespace
 
 /* ************************************************************************* */
 namespace asiaCPTs {
