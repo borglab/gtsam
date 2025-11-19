@@ -89,7 +89,6 @@ bool SL4::equals(const SL4& sl4, double tol) const {
 }
 /* ************************************************************************* */
 SL4 SL4::ChartAtOrigin::Retract(const Vector15& v, ChartJacobian H) {
-  assert(v.size() == 15);
   SL4 retracted(I_4x4 + Hat(v));
   if (H) throw std::runtime_error("SL4::Retract: Jacobian not implemented.");
   return retracted;
@@ -104,7 +103,11 @@ Vector15 SL4::ChartAtOrigin::Local(const SL4& sl4, ChartJacobian H) {
 
 /* ************************************************************************* */
 SL4 SL4::Expmap(const Vector& xi, SL4Jacobian H) {
-  assert(xi.size() == 15);
+  if (xi.size() != 15) {
+    throw std::runtime_error(
+        "SL4::Expmap: xi must be a vector of size 15. Got size " +
+        std::to_string(xi.size()));
+  }
   const auto& A = Hat(xi);
 
   if (H) throw std::runtime_error("SL4::Expmap: Jacobian not implemented.");
@@ -139,7 +142,11 @@ Matrix15x15 SL4::AdjointMap() const {
 
 /* ************************************************************************* */
 Matrix44 SL4::Hat(const Vector& xi) {
-  assert(xi.size() == 15);
+  if (xi.size() != 15) {
+    throw std::runtime_error(
+        "SL4::Hat: xi must be a vector of size 15. Got size " +
+        std::to_string(xi.size()));
+  }
   Matrix44 A;
   const double d11 = xi(12);
   const double d22 = -xi(12) + xi(13);

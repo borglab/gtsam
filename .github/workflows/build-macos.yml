@@ -30,8 +30,8 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          macos-13-xcode-14.2,
           macos-14-xcode-15.4,
+          macos-15-xcode-16,
           macos-14-xcode-15.4-boost,
           macos-14-xcode-15.4-geographiclib,
         ]
@@ -39,15 +39,15 @@ jobs:
         build_type: [Debug, Release]
         build_unstable: [ON]
         include:
-          - name: macos-13-xcode-14.2
-            os: macos-13
-            compiler: xcode
-            version: "14.2"
-
           - name: macos-14-xcode-15.4
             os: macos-14
             compiler: xcode
             version: "15.4"
+
+          - name: macos-15-xcode-16
+            os: macos-15
+            compiler: xcode
+            version: "16"
 
           - name: macos-14-xcode-15.4-boost
             os: macos-14

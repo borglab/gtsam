@@ -64,7 +64,7 @@ public:
 
   /// Default constructor
   TriangulationFactor() :
-      throwCheirality_(false), verboseCheirality_(false) {
+      throwCheirality_(false), verboseCheirality_(false), measured_() {
   }
 
   /**
