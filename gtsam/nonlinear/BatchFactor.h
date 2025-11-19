@@ -30,6 +30,43 @@
 
 namespace gtsam {
 
+namespace detail {
+
+/**
+ * @brief Helper to construct a factor by trying common signature patterns.
+ *
+ * Tries the following constructor signatures for FactorType:
+ * 1. (Key1, Key2, Measurement, Model, Args...)  [Standard]
+ * 2. (Measurement, Model, Key1, Key2, Args...)  [Projection/SFM]
+ * 3. (Key1, Key2, Measurement, Args..., Model)  [MagFactor style]
+ */
+template <typename FactorType, typename K1, typename K2, typename Meas,
+          typename Model, typename... Args>
+static FactorType createFactor(K1 k1, K2 k2, const Meas& z, const Model& model,
+                               Args&&... args) {
+  if constexpr (std::is_constructible_v<FactorType, K1, K2, Meas, Model,
+                                        Args...>) {
+    return FactorType(k1, k2, z, model, std::forward<Args>(args)...);
+  } else if constexpr (std::is_constructible_v<FactorType, Meas, Model, K1, K2,
+                                               Args...>) {
+    return FactorType(z, model, k1, k2, std::forward<Args>(args)...);
+  } else if constexpr (std::is_constructible_v<FactorType, K1, K2, Meas,
+                                               Args..., Model>) {
+    return FactorType(k1, k2, z, std::forward<Args>(args)..., model);
+  } else {
+    // This static_assert will trigger if none of the above match.
+    // We repeat the check to produce a readable error message.
+    static_assert(
+        std::is_constructible_v<FactorType, K1, K2, Meas, Model, Args...>,
+        "BatchFactor: Could not find a matching constructor for FactorType. "
+        "Tried: (K1, K2, Z, Model, Args...), (Z, Model, K1, K2, Args...), (K1, "
+        "K2, Z, Args..., Model)");
+    return FactorType(k1, k2, z, model, std::forward<Args>(args)...);
+  }
+}
+
+}  // namespace detail
+
 /**
  * BatchFactor is a NonlinearFactor that wraps a collection of identical
  * factors. It linearizes them all at once into a single JacobianFactor.
@@ -61,7 +98,7 @@ class BatchFactor : public NonlinearFactor {
   /// @{
 
   /** Default constructor */
-  BatchFactor() {}
+  BatchFactor() = default;
 
   /** Constructor from a vector of factors (moves the vector) */
   explicit BatchFactor(std::vector<FactorType>&& factors)
@@ -75,40 +112,6 @@ class BatchFactor : public NonlinearFactor {
     updateKeys();
   }
 
-  /**
-   * @brief Helper to construct a factor by trying common signature patterns.
-   *
-   * Tries the following constructor signatures for FactorType:
-   * 1. (Key1, Key2, Measurement, Model, Args...)  [Standard]
-   * 2. (Measurement, Model, Key1, Key2, Args...)  [Projection/SFM]
-   * 3. (Key1, Key2, Measurement, Args..., Model)  [MagFactor style]
-   */
-  template <typename K1, typename K2, typename Meas, typename Model,
-            typename... Args>
-  static FactorType createFactor(K1 k1, K2 k2, const Meas& z,
-                                 const Model& model, Args&&... args) {
-    if constexpr (std::is_constructible_v<FactorType, K1, K2, Meas, Model,
-                                          Args...>) {
-      return FactorType(k1, k2, z, model, std::forward<Args>(args)...);
-    } else if constexpr (std::is_constructible_v<FactorType, Meas, Model, K1,
-                                                 K2, Args...>) {
-      return FactorType(z, model, k1, k2, std::forward<Args>(args)...);
-    } else if constexpr (std::is_constructible_v<FactorType, K1, K2, Meas,
-                                                 Args..., Model>) {
-      return FactorType(k1, k2, z, std::forward<Args>(args)..., model);
-    } else {
-      // This static_assert will trigger if none of the above match.
-      // We repeat the check to produce a readable error message.
-      static_assert(
-          std::is_constructible_v<FactorType, K1, K2, Meas, Model, Args...>,
-          "BatchFactor: Could not find a matching constructor for FactorType. "
-          "Tried: (K1, K2, Z, Model, Args...), (Z, Model, K1, K2, Args...), "
-          "(K1, K2, Z, Args..., Model)");
-      return FactorType(k1, k2, z, model, std::forward<Args>(args)...);
-    }
-  }
-
- public:
   /**
    * @brief Map-based Constructor (Varying Key2).
    * Constructs factors from a map of measurements, where the map key is the
@@ -124,7 +127,8 @@ class BatchFactor : public NonlinearFactor {
               const SharedNoiseModel& model, Args&&... args) {
     factors_.reserve(measurements.size());
     for (const auto& [key2, z] : measurements) {
-      factors_.push_back(createFactor(key1, key2, z, model, args...));
+      factors_.push_back(detail::createFactor<FactorType>(
+          key1, key2, z, model, std::forward<Args>(args)...));
     }
     updateKeys();
   }
@@ -144,72 +148,8 @@ class BatchFactor : public NonlinearFactor {
               const SharedNoiseModel& model, Args&&... args) {
     factors_.reserve(measurements.size());
     for (const auto& [key1, z] : measurements) {
-      factors_.push_back(createFactor(key1, key2, z, model, args...));
-    }
-    updateKeys();
-  }
-
-  /**
-   * @brief Generic Constructor using a Factory function.
-   * Allows constructing a BatchFactor from any container and a lambda that
-   * creates the factors. This resolves issues with varying constructor
-   * signatures (argument order, extra parameters).
-   *
-   * Example:
-   * \code
-   * std::map<Key, Point2> measurements;
-   * auto batch = std::make_shared<BatchFactor<ProjectionFactor, 2>>(
-   *    measurements,
-   *    [&](const std::pair<Key, Point2>& item) {
-   *        return ProjectionFactor(item.second, model, poseKey, item.first, K);
-   *    });
-   * \endcode
-   *
-   * @tparam Container Any iterable container (std::vector, std::map, etc.)
-   * @tparam Factory A callable that takes an element of Container and returns a
-   * FactorType
-   */
-  template <typename Container, typename Factory>
-  BatchFactor(const Container& container, Factory factory) {
-    factors_.reserve(container.size());
-    for (const auto& item : container) {
-      factors_.push_back(factory(item));
-    }
-    updateKeys();
-  }
-
-  /**
-   * Simplified batch constructor for binary factors (N=2).
-   * Broadcasts keys if one of the key vectors has size 1.
-   *
-   * @param keys1 Keys for the first variable
-   * @param keys2 Keys for the second variable
-   * @param measurements Vector of measurements
-   * @param model Shared noise model
-   */
-  template <typename Measurement>
-  BatchFactor(const std::vector<Key>& keys1, const std::vector<Key>& keys2,
-              const std::vector<Measurement>& measurements,
-              const SharedNoiseModel& model) {
-    static_assert(FactorType::N == 2,
-                  "Helper constructor only available for binary factors (N=2)");
-
-    size_t n = measurements.size();
-    bool broadcast1 = (keys1.size() == 1);
-    bool broadcast2 = (keys2.size() == 1);
-
-    if (!broadcast1 && keys1.size() != n) {
-      throw std::invalid_argument("BatchFactor: keys1 size mismatch");
-    }
-    if (!broadcast2 && keys2.size() != n) {
-      throw std::invalid_argument("BatchFactor: keys2 size mismatch");
-    }
-
-    factors_.reserve(n);
-    for (size_t i = 0; i < n; ++i) {
-      Key k1 = broadcast1 ? keys1[0] : keys1[i];
-      Key k2 = broadcast2 ? keys2[0] : keys2[i];
-      factors_.emplace_back(k1, k2, measurements[i], model);
+      factors_.push_back(detail::createFactor<FactorType>(
+          key1, key2, z, model, std::forward<Args>(args)...));
     }
     updateKeys();
   }
