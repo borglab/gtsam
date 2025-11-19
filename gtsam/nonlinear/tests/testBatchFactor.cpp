@@ -32,7 +32,20 @@ using namespace gtsam;
 using namespace std;
 
 // Define a specific projection factor type for testing
-using MyProjectionFactor = GenericProjectionFactor<Pose3, Point3, Cal3_S2>;
+// Define a wrapper to match the constructor signature expected by BatchFactor helper
+class TestProjectionFactor : public GenericProjectionFactor<Pose3, Point3, Cal3_S2> {
+public:
+  using Base = GenericProjectionFactor<Pose3, Point3, Cal3_S2>;
+  static std::shared_ptr<Cal3_S2> sharedK;
+
+  TestProjectionFactor() : Base() {}
+
+  // The constructor expected by BatchFactor helper: (Key, Key, Measurement, Model)
+  TestProjectionFactor(Key poseKey, Key pointKey, const Point2& measured, const SharedNoiseModel& model)
+      : Base(measured, model, poseKey, pointKey, sharedK) {}
+};
+
+std::shared_ptr<Cal3_S2> TestProjectionFactor::sharedK = std::make_shared<Cal3_S2>();
 
 /* ************************************************************************* */
 TEST(BatchFactor, ConstructorAndLinearize) {
@@ -48,16 +61,15 @@ TEST(BatchFactor, ConstructorAndLinearize) {
   }
 
   auto noise = noiseModel::Isotropic::Sigma(2, 1.0);
-  auto K = std::make_shared<Cal3_S2>();
-
+  
   // 2. Create factors manually
-  std::vector<MyProjectionFactor> factors;
+  std::vector<TestProjectionFactor> factors;
   for (size_t i = 0; i < points.size(); ++i) {
-    factors.emplace_back(measurements[i], noise, poses[0], points[i], K);
+    factors.emplace_back(poses[0], points[i], measurements[i], noise);
   }
 
   // 3. Construct BatchFactor
-  auto batch = std::make_shared<BatchFactor<MyProjectionFactor, 2>>(std::move(factors));
+  auto batch = std::make_shared<BatchFactor<TestProjectionFactor, 2>>(std::move(factors));
 
   // 4. Linearize
   Values values;
@@ -72,11 +84,47 @@ TEST(BatchFactor, ConstructorAndLinearize) {
   // 5. Verify
   CHECK(jacobian);
   LONGS_EQUAL(20, (long)jacobian->rows());
-  // Cols depends on the number of variables and their dimensions.
-  // 1 Pose3 (6) + 10 Point3 (3*10) = 36 columns.
-  // However, JacobianFactor might store them in a block structure.
-  // Let's check the variable count or just existence.
   LONGS_EQUAL(11, (long)jacobian->size()); // 1 pose + 10 points
+}
+
+/* ************************************************************************* */
+TEST(BatchFactor, ConvenienceConstructor) {
+  // 1. Setup data
+  std::vector<Key> poses = {Symbol('x', 0)};
+  std::vector<Key> points;
+  std::vector<Point2> measurements;
+  
+  for (int i = 0; i < 10; ++i) {
+    points.push_back(Symbol('l', i));
+    measurements.push_back(Point2(double(i), double(i)));
+  }
+
+  auto noise = noiseModel::Isotropic::Sigma(2, 1.0);
+
+  // 2. Construct using Convenience Constructor (1 camera, 10 points)
+  // The helper broadcasts the single pose key against the 10 point keys.
+  auto batchConvenience = std::make_shared<BatchFactor<TestProjectionFactor, 2>>(
+      poses, points, measurements, noise);
+
+  // 3. Construct Manually for comparison
+  std::vector<TestProjectionFactor> factors;
+  for (size_t i = 0; i < points.size(); ++i) {
+    factors.emplace_back(poses[0], points[i], measurements[i], noise);
+  }
+  auto batchManual = std::make_shared<BatchFactor<TestProjectionFactor, 2>>(std::move(factors));
+
+  // 4. Linearize both
+  Values values;
+  values.insert(Symbol('x', 0), Pose3());
+  for (int i = 0; i < 10; ++i) {
+    values.insert(Symbol('l', i), Point3(0, 0, 10));
+  }
+
+  auto gaussianConvenience = batchConvenience->linearize(values);
+  auto gaussianManual = batchManual->linearize(values);
+
+  // 5. Verify they are equal
+  CHECK(gaussianConvenience->equals(*gaussianManual, 1e-9));
 }
 
 /* ************************************************************************* */
