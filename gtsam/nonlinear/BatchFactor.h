@@ -111,7 +111,7 @@ static FactorType createFactor(K1 k1, K2 k2, const Meas& z, const Model& model,
  * @tparam ErrorDim The dimension of the error vector for a single factor
  */
 template <typename FactorType, int ErrorDim>
-class GTSAM_EXPORT BatchFactor : public NonlinearFactor {
+class BatchFactor : public NonlinearFactor {
  public:
   // Static assertion to ensure FactorType derives from NoiseModelFactor
   static_assert(std::is_base_of<NoiseModelFactor, FactorType>::value,
