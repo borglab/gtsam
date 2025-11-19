@@ -23,6 +23,7 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
+#include <Eigen/StdVector>
 #include <algorithm>
 #include <map>
 #include <type_traits>
@@ -91,7 +92,8 @@ class BatchFactor : public NonlinearFactor {
   using shared_ptr = std::shared_ptr<This>;
 
  private:
-  std::vector<FactorType> factors_;  ///< Contiguous storage for factors
+  using Allocator = Eigen::aligned_allocator<FactorType>;
+  std::vector<FactorType, Allocator> factors_;  ///< Contiguous storage
 
  public:
   /// @name Constructors
@@ -101,13 +103,13 @@ class BatchFactor : public NonlinearFactor {
   BatchFactor() = default;
 
   /** Constructor from a vector of factors (moves the vector) */
-  explicit BatchFactor(std::vector<FactorType>&& factors)
+  explicit BatchFactor(std::vector<FactorType, Allocator>&& factors)
       : factors_(std::move(factors)) {
     updateKeys();
   }
 
   /** Constructor from a vector of factors (copies the vector) */
-  explicit BatchFactor(const std::vector<FactorType>& factors)
+  explicit BatchFactor(const std::vector<FactorType, Allocator>& factors)
       : factors_(factors) {
     updateKeys();
   }
@@ -162,7 +164,8 @@ class BatchFactor : public NonlinearFactor {
   void print(
       const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
-    std::cout << s << "BatchFactor with " << factors_.size()
+    Base::print(s, keyFormatter);
+    std::cout << "BatchFactor with " << factors_.size()
               << " factors:" << std::endl;
     for (const auto& f : factors_) {
       f.print("", keyFormatter);
@@ -217,13 +220,14 @@ class BatchFactor : public NonlinearFactor {
     }
 
     // 2. Prepare keys and dimensions for JacobianFactor construction
-    std::vector<Key> keys;
+    const size_t numKeys = key_dims.size();
     std::vector<size_t> dims;
-    keys.reserve(key_dims.size());
-    dims.reserve(key_dims.size());
-    for (const auto& [key, dim] : key_dims) {
-      keys.push_back(key);
-      dims.push_back(dim);
+    dims.reserve(numKeys);
+    std::map<Key, DenseIndex> indices;
+    DenseIndex index = 0;
+    for (const auto& key : keys()) {
+      dims.push_back(key_dims.at(key));
+      indices[key] = index++;
     }
 
     // 3. Allocate JacobianFactor
@@ -262,31 +266,24 @@ class BatchFactor : public NonlinearFactor {
       }
 
       // Place Jacobians into the large matrix
-      for (size_t j = 0; j < FactorType::N; ++j) {
-        Key key = factor.keys()[j];
+      for (size_t k = 0; k < FactorType::N; ++k) {
+        Key key = factor.keys()[k];
         // Find the block column index for this key.
-        // Since 'keys' vector is sorted (from map), we could use binary search
-        // or map lookup. But VerticalBlockMatrix access by Key is not O(1)
-        // unless we know the index. Ab(key) does a linear search or similar. To
-        // optimize, we could pre-calculate the block index for each key in the
-        // map. But for now, we use Ab(key) which is convenient.
-
-        // Ab(key) returns a block corresponding to the key.
-        // We write into the segment corresponding to this factor.
-        Ab(key).block(row_start, 0, ErrorDim, H[j].cols()) = H[j];
+        DenseIndex index = indices.at(key);
+        Ab(index).block(row_start, 0, ErrorDim, H[k].cols()) = H[k];
       }
 
       // Place the negative error into the RHS (last column)
       // JacobianFactor stores Ax - b, so b = -error.
       // Ab(size) gives the last block which is the RHS vector b.
       // We use block() to access the segment as a matrix block.
-      Ab(keys.size()).block(row_start, 0, ErrorDim, 1) = -raw_error;
+      Ab(indices.size()).block(row_start, 0, ErrorDim, 1) = -raw_error;
     }
 
     // 5. Create and return the JacobianFactor
     // We pass a Unit noise model because we have already whitened the system.
     return std::make_shared<JacobianFactor>(
-        keys, std::move(Ab), noiseModel::Unit::Create(total_rows));
+        keys(), std::move(Ab), noiseModel::Unit::Create(total_rows));
   }
 
  private:
