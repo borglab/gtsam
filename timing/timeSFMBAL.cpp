@@ -49,15 +49,23 @@ int main(int argc, char* argv[]) {
   for (const SfmTrack& track : db.tracks) initial.insert(P(j++), track.p);
 
   {
+    tictoc_reset_();
     gttic_(regular);
     cout << "Optimizing Regular Graph..." << endl;
     optimize(db, graph, initial);
+  }
+  {
+    tictoc_reset_();
+    gttic_(regular_metis);
+    cout << "Optimizing Regular Graph (METIS ordering)..." << endl;
+    optimize(db, graph, initial, false, true);
   }
 
   // 2. Build graph using BatchFactor
   // We batch by Point (Track). Each batch contains measurements from multiple
   // cameras for one point.
   NonlinearFactorGraph graphBatch;
+  NonlinearFactorGraph graphBatchHessian;
   for (size_t j = 0; j < db.numberTracks(); j++) {
     std::map<Key, Point2> measurements;
     for (const SfmMeasurement& m : db.tracks[j].measurements) {
@@ -66,24 +74,38 @@ int main(int argc, char* argv[]) {
 
     // BatchFactor(Vector)
     std::vector<SfmFactor, Eigen::aligned_allocator<SfmFactor>> factors;
+    std::vector<SfmFactor, Eigen::aligned_allocator<SfmFactor>> hessianFactors;
     for (const auto& [key, z] : measurements) {
       // Correct order: (Camera, Point)
       factors.emplace_back(z, gNoiseModel, key, P(j));
+      hessianFactors.emplace_back(z, gNoiseModel, key, P(j));
     }
     auto batch =
         std::make_shared<BatchFactor<SfmFactor, 2>>(std::move(factors));
+    auto batchHessian =
+        std::make_shared<BatchFactor<SfmFactor, 2>>(std::move(hessianFactors));
+    batchHessian->setUseHessianFactor(true);
     // GTSAM_PRINT(*batch);
     // auto linearized = batch->linearize(initial);
     // cout << "Linearized batch factor " << j << endl;
     // GTSAM_PRINT(*linearized);
 
     graphBatch.add(batch);
+    graphBatchHessian.add(batchHessian);
   }
 
   {
+    tictoc_reset_();
     gttic_(batch);
     cout << "Optimizing Batch Graph..." << endl;
     optimize(db, graphBatch, initial);
+  }
+
+  {
+    tictoc_reset_();
+    gttic_(batch_hessian);
+    cout << "Optimizing Batch (Hessian) Graph..." << endl;
+    optimize(db, graphBatchHessian, initial);
   }
   return 0;
 }

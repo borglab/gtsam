@@ -19,10 +19,14 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 
 #include <vector>
@@ -109,9 +113,6 @@ TEST(BatchFactor, Constructor_Projection) {
   LONGS_EQUAL(11, (long)jacobian->size());
 }
 
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/slam/BetweenFactor.h>
-
 /* ************************************************************************* */
 TEST(BatchFactor, Constructor_Between) {
   // 1. Setup data
@@ -143,6 +144,115 @@ TEST(BatchFactor, Constructor_Between) {
   CHECK(jacobian);
   LONGS_EQUAL(30, (long)jacobian->rows());  // 10 factors * 3 dim
   LONGS_EQUAL(11, (long)jacobian->size());  // 11 poses
+}
+
+/* ************************************************************************* */
+TEST(BatchFactor, MultipleCamerasPerPoint) {
+  // Create a batch factor with 2 factors:
+  // Factor 1: cam1, point
+  // Factor 2: cam2, point
+  // This mimics the timeSFMBAL scenario where we batch by point.
+
+  using Factor = GeneralSFMFactor<PinholeCamera<Cal3_S2>, Point3>;
+
+  std::vector<Factor> factors;
+  Key c1 = Symbol('c', 1);
+  Key c2 = Symbol('c', 2);
+  Key p0 = Symbol('p', 1);
+
+  Point2 measurement(0, 0);
+  auto noise = noiseModel::Unit::Create(2);
+  auto K = std::make_shared<Cal3_S2>();
+
+  factors.emplace_back(measurement, noise, c1, p0);
+  factors.emplace_back(measurement, noise, c2, p0);
+
+  BatchFactor<Factor, 2> batch(factors);
+
+  // Create values
+  Values values;
+  values.insert(c1, PinholeCamera<Cal3_S2>(Pose3(), *K));
+  values.insert(c2, PinholeCamera<Cal3_S2>(Pose3(Rot3(), Point3(1, 0, 0)), *K));
+  values.insert(p0, Point3(0, 0, 10));
+
+  auto gaussian = batch.linearize(values);
+  auto jacobian = std::dynamic_pointer_cast<JacobianFactor>(gaussian);
+
+  // Verify sparsity
+  // keys_ should be {c1, c2, p1} (sorted)
+  // Indices: c1->0, c2->1, p1->2
+
+  // Jacobian has 4 rows (2 factors * 2 dim)
+  // Block 0 (c1): Should be non-zero in rows 0-1, ZERO in rows 2-3
+  // Block 1 (c2): Should be ZERO in rows 0-1, non-zero in rows 2-3
+  // Block 2 (p1): Should be non-zero in all rows
+
+  Matrix A_c1 = jacobian->getA(jacobian->begin());
+  Matrix A_c2 = jacobian->getA(jacobian->begin() + 1);
+  Matrix A_p1 = jacobian->getA(jacobian->begin() + 2);
+
+  // Check dimensions
+  EXPECT_LONGS_EQUAL(4, A_c1.rows());
+  EXPECT_LONGS_EQUAL(11, A_c1.cols());
+  EXPECT_LONGS_EQUAL(4, A_c2.rows());
+  EXPECT_LONGS_EQUAL(11, A_c2.cols());
+  EXPECT_LONGS_EQUAL(4, A_p1.rows());
+  EXPECT_LONGS_EQUAL(3, A_p1.cols());
+
+  // Check zeros
+  // A_c1 (c1) should be zero in rows 2-3 (Factor 2)
+  EXPECT(assert_equal(Matrix::Zero(2, 11), Matrix(A_c1.block(2, 0, 2, 11))));
+  // A_c2 (c2) should be zero in rows 0-1 (Factor 1)
+  EXPECT(assert_equal(Matrix::Zero(2, 11), Matrix(A_c2.block(0, 0, 2, 11))));
+}
+
+/* ************************************************************************* */
+TEST(BatchFactor, JacobianVsHessian) {
+  std::vector<ProjectionFactor> factors;
+  Key poseKey = Symbol('x', 0);
+  Key l1 = Symbol('l', 1);
+  Key l2 = Symbol('l', 2);
+  auto noise = noiseModel::Isotropic::Sigma(2, 1.0);
+  factors.emplace_back(Point2(0, 0), noise, poseKey, l1, sharedK);
+  factors.emplace_back(Point2(1, 1), noise, poseKey, l2, sharedK);
+  BatchFactor<ProjectionFactor, 2> batch(factors);
+
+  Values values;
+  values.insert(poseKey, Pose3());
+  values.insert(l1, Point3(0, 0, 10));
+  values.insert(l2, Point3(0, 0, 10));
+
+  auto jacobian =
+      std::dynamic_pointer_cast<JacobianFactor>(batch.linearize(values));
+  CHECK(jacobian);
+
+  batch.setUseHessianFactor(true);
+  auto hessian =
+      std::dynamic_pointer_cast<HessianFactor>(batch.linearize(values));
+  CHECK(hessian);
+
+  const size_t n = jacobian->size();
+  const Vector& b = jacobian->getb();
+  double expectedF = b.squaredNorm();
+  EXPECT_DOUBLES_EQUAL(expectedF, hessian->constantTerm(), 1e-9);
+
+  for (size_t i = 0; i < n; ++i) {
+    auto itI = jacobian->begin() + i;
+    const Matrix& Ai = jacobian->getA(itI);
+    Matrix expectedDiag = Ai.transpose() * Ai;
+    EXPECT(assert_equal(expectedDiag, hessian->info().block(i, i), 1e-9));
+
+    Vector expectedGi = Ai.transpose() * b;
+    Matrix actualGiMat = hessian->linearTerm(hessian->begin() + i);
+    EXPECT(assert_equal(expectedGi, actualGiMat.col(0), 1e-9));
+
+    for (size_t j = i + 1; j < n; ++j) {
+      auto itJ = jacobian->begin() + j;
+      const Matrix& Aj = jacobian->getA(itJ);
+      Matrix expectedOff = Ai.transpose() * Aj;
+      EXPECT(assert_equal(expectedOff, hessian->info().block(i, j), 1e-9));
+    }
+  }
 }
 
 /* ************************************************************************* */

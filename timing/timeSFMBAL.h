@@ -62,16 +62,19 @@ SfmData preamble(int argc, char* argv[]) {
 
 // Create ordering and optimize
 int optimize(const SfmData& db, const NonlinearFactorGraph& graph,
-             const Values& initial, bool separateCalibration = false) {
+             const Values& initial, bool separateCalibration = false,
+             bool useMetisOrdering = false) {
   using symbol_shorthand::P;
 
   // Set parameters to be similar to ceres
   LevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
-//  params.setLinearSolverType("SEQUENTIAL_CHOLESKY");
-//  params.setVerbosityLM("SUMMARY");
+ params.setLinearSolverType("SEQUENTIAL_CHOLESKY");
+ params.setVerbosityLM("SUMMARY");
 
-  if (gUseSchur) {
+  if (useMetisOrdering) {
+    params.setOrderingType("METIS");
+  } else if (gUseSchur) {
     // Create Schur-complement ordering
     Ordering ordering;
     for (size_t j = 0; j < db.numberTracks(); j++) ordering.push_back(P(j));
