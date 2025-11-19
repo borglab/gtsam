@@ -48,16 +48,17 @@ int main(int argc, char* argv[]) {
   for (const SfmCamera& camera : db.cameras) initial.insert(C(i++), camera);
   for (const SfmTrack& track : db.tracks) initial.insert(P(j++), track.p);
 
-  cout << "Optimizing Regular Graph..." << endl;
-  optimize(db, graph, initial);
+  {
+    gttic_(regular);
+    cout << "Optimizing Regular Graph..." << endl;
+    optimize(db, graph, initial);
+  }
 
   // 2. Build graph using BatchFactor
   // We batch by Point (Track). Each batch contains measurements from multiple
   // cameras for one point.
   NonlinearFactorGraph graphBatch;
-  // Limit to 10 tracks for debugging
-  size_t num_tracks = std::min((size_t)10, db.numberTracks());
-  for (size_t j = 0; j < num_tracks; j++) {
+  for (size_t j = 0; j < db.numberTracks(); j++) {
     std::map<Key, Point2> measurements;
     for (const SfmMeasurement& m : db.tracks[j].measurements) {
       measurements[C(m.first)] = m.second;
@@ -79,8 +80,10 @@ int main(int argc, char* argv[]) {
     graphBatch.add(batch);
   }
 
-  cout << "Optimizing Batch Graph..." << endl;
-  optimize(db, graphBatch, initial);
-
+  {
+    gttic_(batch);
+    cout << "Optimizing Batch Graph..." << endl;
+    optimize(db, graphBatch, initial);
+  }
   return 0;
 }
