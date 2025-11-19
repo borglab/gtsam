@@ -76,6 +76,80 @@ class BatchFactor : public NonlinearFactor {
   }
 
   /**
+   * @brief Helper to construct a factor by trying common signature patterns.
+   *
+   * Tries the following constructor signatures for FactorType:
+   * 1. (Key1, Key2, Measurement, Model, Args...)  [Standard]
+   * 2. (Measurement, Model, Key1, Key2, Args...)  [Projection/SFM]
+   * 3. (Key1, Key2, Measurement, Args..., Model)  [MagFactor style]
+   */
+  template <typename K1, typename K2, typename Meas, typename Model,
+            typename... Args>
+  static FactorType createFactor(K1 k1, K2 k2, const Meas& z,
+                                 const Model& model, Args&&... args) {
+    if constexpr (std::is_constructible_v<FactorType, K1, K2, Meas, Model,
+                                          Args...>) {
+      return FactorType(k1, k2, z, model, std::forward<Args>(args)...);
+    } else if constexpr (std::is_constructible_v<FactorType, Meas, Model, K1,
+                                                 K2, Args...>) {
+      return FactorType(z, model, k1, k2, std::forward<Args>(args)...);
+    } else if constexpr (std::is_constructible_v<FactorType, K1, K2, Meas,
+                                                 Args..., Model>) {
+      return FactorType(k1, k2, z, std::forward<Args>(args)..., model);
+    } else {
+      // This static_assert will trigger if none of the above match.
+      // We repeat the check to produce a readable error message.
+      static_assert(
+          std::is_constructible_v<FactorType, K1, K2, Meas, Model, Args...>,
+          "BatchFactor: Could not find a matching constructor for FactorType. "
+          "Tried: (K1, K2, Z, Model, Args...), (Z, Model, K1, K2, Args...), "
+          "(K1, K2, Z, Args..., Model)");
+      return FactorType(k1, k2, z, model, std::forward<Args>(args)...);
+    }
+  }
+
+ public:
+  /**
+   * @brief Map-based Constructor (Varying Key2).
+   * Constructs factors from a map of measurements, where the map key is the
+   * second factor key.
+   *
+   * @param key1 The fixed first key (e.g., camera pose).
+   * @param measurements Map from Key (2nd key) to Measurement.
+   * @param model Noise model.
+   * @param args Extra arguments passed to the factor constructor.
+   */
+  template <typename Measurement, typename... Args>
+  BatchFactor(Key key1, const std::map<Key, Measurement>& measurements,
+              const SharedNoiseModel& model, Args&&... args) {
+    factors_.reserve(measurements.size());
+    for (const auto& [key2, z] : measurements) {
+      factors_.push_back(createFactor(key1, key2, z, model, args...));
+    }
+    updateKeys();
+  }
+
+  /**
+   * @brief Map-based Constructor (Varying Key1).
+   * Constructs factors from a map of measurements, where the map key is the
+   * first factor key.
+   *
+   * @param measurements Map from Key (1st key) to Measurement.
+   * @param key2 The fixed second key (e.g., landmark).
+   * @param model Noise model.
+   * @param args Extra arguments passed to the factor constructor.
+   */
+  template <typename Measurement, typename... Args>
+  BatchFactor(const std::map<Key, Measurement>& measurements, Key key2,
+              const SharedNoiseModel& model, Args&&... args) {
+    factors_.reserve(measurements.size());
+    for (const auto& [key1, z] : measurements) {
+      factors_.push_back(createFactor(key1, key2, z, model, args...));
+    }
+    updateKeys();
+  }
+
+  /**
    * @brief Generic Constructor using a Factory function.
    * Allows constructing a BatchFactor from any container and a lambda that
    * creates the factors. This resolves issues with varying constructor
