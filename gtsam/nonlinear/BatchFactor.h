@@ -1,0 +1,306 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    BatchFactor.h
+ * @brief   A batch of factors that linearizes to a single JacobianFactor
+ * @author  Frank Dellaert
+ * @date    Nov 2023
+ */
+
+#pragma once
+
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/Testable.h>
+
+#include <vector>
+#include <map>
+#include <algorithm>
+#include <type_traits>
+
+namespace gtsam {
+
+/**
+ * BatchFactor is a NonlinearFactor that wraps a collection of identical factors.
+ * It linearizes them all at once into a single JacobianFactor.
+ * 
+ * This is useful for optimizing Structure-from-Motion (SfM) and SLAM graphs where
+ * we have many factors of the same type (e.g., projection factors) that can be
+ * grouped together to reduce overhead.
+ * 
+ * @tparam FactorType The type of the individual factors (must derive from NoiseModelFactor)
+ * @tparam ErrorDim The dimension of the error vector for a single factor
+ */
+template <typename FactorType, int ErrorDim>
+class BatchFactor : public NonlinearFactor {
+ public:
+  // Static assertion to ensure FactorType derives from NoiseModelFactor
+  static_assert(std::is_base_of<NoiseModelFactor, FactorType>::value,
+                "FactorType must derive from NoiseModelFactor");
+
+  using Base = NonlinearFactor;
+  using This = BatchFactor<FactorType, ErrorDim>;
+  using shared_ptr = std::shared_ptr<This>;
+
+ private:
+  std::vector<FactorType> factors_;  ///< Contiguous storage for factors
+
+ public:
+  /// @name Constructors
+  /// @{
+
+  /** Default constructor */
+  BatchFactor() {}
+
+  /** Constructor from a vector of factors (moves the vector) */
+  explicit BatchFactor(std::vector<FactorType>&& factors)
+      : factors_(std::move(factors)) {
+    updateKeys();
+  }
+
+  /** Constructor from a vector of factors (copies the vector) */
+  explicit BatchFactor(const std::vector<FactorType>& factors)
+      : factors_(factors) {
+    updateKeys();
+  }
+
+  /**
+   * Simplified batch constructor for binary factors (N=2).
+   * Broadcasts keys if one of the key vectors has size 1.
+   * 
+   * @param keys1 Keys for the first variable
+   * @param keys2 Keys for the second variable
+   * @param measurements Vector of measurements
+   * @param model Shared noise model
+   */
+  template <typename Measurement>
+  BatchFactor(const std::vector<Key>& keys1, const std::vector<Key>& keys2,
+              const std::vector<Measurement>& measurements,
+              const SharedNoiseModel& model) {
+    static_assert(FactorType::N == 2,
+                  "Helper constructor only available for binary factors (N=2)");
+
+    size_t n = measurements.size();
+    bool broadcast1 = (keys1.size() == 1);
+    bool broadcast2 = (keys2.size() == 1);
+
+    if (!broadcast1 && keys1.size() != n) {
+      throw std::invalid_argument("BatchFactor: keys1 size mismatch");
+    }
+    if (!broadcast2 && keys2.size() != n) {
+      throw std::invalid_argument("BatchFactor: keys2 size mismatch");
+    }
+
+    factors_.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+      Key k1 = broadcast1 ? keys1[0] : keys1[i];
+      Key k2 = broadcast2 ? keys2[0] : keys2[i];
+      factors_.emplace_back(k1, k2, measurements[i], model);
+    }
+    updateKeys();
+  }
+
+  /// @}
+  /// @name Testable
+  /// @{
+
+  /** print */
+  void print(const std::string& s = "",
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
+    std::cout << s << "BatchFactor with " << factors_.size() << " factors:" << std::endl;
+    for (const auto& f : factors_) {
+      f.print("", keyFormatter);
+    }
+  }
+
+  /** equals */
+  bool equals(const NonlinearFactor& f, double tol = 1e-9) const override {
+    const This* p = dynamic_cast<const This*>(&f);
+    if (!p || factors_.size() != p->factors_.size()) return false;
+    for (size_t i = 0; i < factors_.size(); ++i) {
+      if (!factors_[i].equals(p->factors_[i], tol)) return false;
+    }
+    return true;
+  }
+
+  /// @}
+  /// @name Standard Interface
+  /// @{
+
+  /**
+   * Calculate the error of the factor.
+   * This is the sum of the errors of all internal factors.
+   */
+  double error(const Values& c) const override {
+    double total_error = 0.0;
+    for (const auto& f : factors_) {
+      total_error += f.error(c);
+    }
+    return total_error;
+  }
+
+  /** get the dimension of the factor (number of rows on linearization) */
+  size_t dim() const override {
+    return factors_.size() * ErrorDim;
+  }
+
+  /**
+   * Linearize to a single JacobianFactor.
+   * 
+   * Optimization:
+   * - Pre-calculates the total size required for the JacobianFactor.
+   * - Collects all unique Keys involved across all sub-factors.
+   * - Iterates linearly over factors_ (cache-friendly) to compute Jacobians.
+   * - Fills the pre-allocated JacobianFactor directly.
+   */
+  std::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
+    if (factors_.empty()) return std::make_shared<JacobianFactor>();
+
+    // 1. Collect all unique keys and their dimensions
+    std::map<Key, size_t> key_dims;
+    for (const auto& factor : factors_) {
+      collectKeyDims<1>(factor, key_dims);
+    }
+
+    // 2. Prepare keys and dimensions for JacobianFactor construction
+    std::vector<Key> keys;
+    std::vector<size_t> dims;
+    keys.reserve(key_dims.size());
+    dims.reserve(key_dims.size());
+    for (const auto& [key, dim] : key_dims) {
+      keys.push_back(key);
+      dims.push_back(dim);
+    }
+
+    // 3. Allocate JacobianFactor
+    // We create a VerticalBlockMatrix with the correct dimensions.
+    // The total number of rows is the sum of the error dimensions of all factors.
+    size_t total_rows = factors_.size() * ErrorDim;
+    VerticalBlockMatrix Ab(dims, total_rows, true);
+    Ab.matrix().setZero(); // Important: Initialize to zero as we will fill blocks
+
+    // 4. Fill the JacobianFactor
+    // We reuse a vector of matrices for the Jacobians to avoid repeated allocations.
+    std::vector<Matrix> H(FactorType::N);
+    
+    // Optimization: Allocate Eigen::Matrix<double, ErrorDim, 1> on the stack 
+    // for the error vector computation to avoid heap fragmentation.
+    // Note: unwhitenedError returns a dynamic Vector, but we can use a fixed-size
+    // vector for intermediate storage if needed, or just rely on the fact that
+    // we are writing directly into the large matrix block.
+    // Here we use the return value of unwhitenedError directly to whiten.
+
+    for (size_t i = 0; i < factors_.size(); ++i) {
+      const auto& factor = factors_[i];
+      size_t row_start = i * ErrorDim;
+
+      // Compute unwhitened error and Jacobians
+      // We use the factor's unwhitenedError method which fills H.
+      Vector raw_error = factor.unwhitenedError(c, H);
+
+      // Apply noise model (whitening)
+      // This modifies H and raw_error in place.
+      if (factor.noiseModel()) {
+        factor.noiseModel()->WhitenSystem(H, raw_error);
+      }
+
+      // Place Jacobians into the large matrix
+      for (size_t j = 0; j < FactorType::N; ++j) {
+        Key key = factor.keys()[j]; 
+        // Find the block column index for this key. 
+        // Since 'keys' vector is sorted (from map), we could use binary search or map lookup.
+        // But VerticalBlockMatrix access by Key is not O(1) unless we know the index.
+        // Ab(key) does a linear search or similar. 
+        // To optimize, we could pre-calculate the block index for each key in the map.
+        // But for now, we use Ab(key) which is convenient.
+        
+        // Ab(key) returns a block corresponding to the key.
+        // We write into the segment corresponding to this factor.
+        Ab(key).block(row_start, 0, ErrorDim, H[j].cols()) = H[j];
+      }
+
+      // Place the negative error into the RHS (last column)
+      // JacobianFactor stores Ax - b, so b = -error.
+      // Ab(size) gives the last block which is the RHS vector b.
+      // We use block() to access the segment as a matrix block.
+      Ab(keys.size()).block(row_start, 0, ErrorDim, 1) = -raw_error;
+    }
+
+    // 5. Create and return the JacobianFactor
+    // We pass a Unit noise model because we have already whitened the system.
+    return std::make_shared<JacobianFactor>(keys, std::move(Ab), 
+                                            noiseModel::Unit::Create(total_rows));
+  }
+
+ private:
+  /** Helper to collect keys from factors */
+  void updateKeys() {
+    std::set<Key> unique_keys;
+    for (const auto& f : factors_) {
+      for (size_t i = 0; i < FactorType::N; ++i) {
+        // Access keys via the base NoiseModelFactor keys_ array if possible,
+        // or use the key() method. NoiseModelFactorN exposes key<I>().
+        // We can also access the public keys() method from NonlinearFactor.
+        unique_keys.insert(f.keys()[i]);
+      }
+    }
+    this->keys_.assign(unique_keys.begin(), unique_keys.end());
+  }
+
+  /** Helper to collect key dimensions recursively */
+  template <int I>
+  void collectKeyDims(const FactorType& f, std::map<Key, size_t>& key_dims) const {
+    if constexpr (I <= FactorType::N) {
+      // Get key and dimension for the I-th variable
+      Key k = f.template key<I>();
+      // Use traits to get dimension of the ValueType
+      using V = typename FactorType::template ValueType<I>;
+      key_dims[k] = traits<V>::dimension;
+      
+      // Recurse
+      collectKeyDims<I + 1>(f, key_dims);
+    }
+  }
+};
+
+} // namespace gtsam
+
+/*
+ * Usage Example:
+ * 
+ * // Assume we have GenericProjectionFactor<Pose3, Point3>
+ * using ProjectionFactor = GenericProjectionFactor<Pose3, Point3>;
+ * 
+ * // Create a batch factor
+ * std::vector<Key> poses = {Symbol('x', 1)};
+ * std::vector<Key> points;
+ * std::vector<Point2> measurements;
+ * for (int i = 0; i < 100; ++i) {
+ *   points.push_back(Symbol('l', i));
+ *   measurements.push_back(Point2(10, 10)); // Dummy measurement
+ * }
+ * 
+ * auto noise = noiseModel::Isotropic::Sigma(2, 1.0);
+ * 
+ * // Construct using the helper (1 camera, 100 points)
+ * auto batch = std::make_shared<BatchFactor<ProjectionFactor, 2>>(
+ *     poses, points, measurements, noise);
+ * 
+ * // Add to graph
+ * NonlinearFactorGraph graph;
+ * graph.add(batch);
+ * 
+ * // Optimize as usual
+ * LevenbergMarquardtOptimizer optimizer(graph, initial_values);
+ * Values result = optimizer.optimize();
+ */
