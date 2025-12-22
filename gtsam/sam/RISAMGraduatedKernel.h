@@ -15,15 +15,15 @@
 #pragma once
 #include <gtsam/base/FastVector.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/nonlinear/internal/ChiSquaredInverse.h>
 
-#include <boost/math/distributions/chi_squared.hpp>
 #include <optional>
 
-namespace risam {
+namespace gtsam {
 class GraduatedKernel {
   /** TYPES **/
  public:
-  typedef boost::shared_ptr<GraduatedKernel> shared_ptr;
+  typedef std::shared_ptr<GraduatedKernel> shared_ptr;
 
   /** FIELDS **/
  protected:
@@ -100,7 +100,7 @@ class SIGKernel : public GraduatedKernel {
   /** TYPES **/
  public:
   /// @brief Shortcut for shared pointer
-  typedef boost::shared_ptr<SIGKernel> shared_ptr;
+  typedef std::shared_ptr<SIGKernel> shared_ptr;
 
   /// @brief Strategies for updating Mu between GNC iterations of riSAM
   enum class MuUpdateStrategy {
@@ -229,4 +229,4 @@ class SIGKernel : public GraduatedKernel {
   /// @brief Second derivative of the SIG Kernel wrt r
   double secondDerivative(const double& r, const double& mu) const;
 };
-}  // namespace risam
+}  // namespace gtsam

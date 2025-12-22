@@ -9,9 +9,9 @@
 
  * -------------------------------------------------------------------------- */
 
-#include "risam/GraduatedFactor.h"
+#include <gtsam/sam/RISAMGraduatedFactor.h>
 
-namespace risam {
+namespace gtsam {
 /* ************************************************************************* */
 GraduatedFactor::GraduatedFactor(GraduatedKernel::shared_ptr kernel)
     : kernel_(kernel) {

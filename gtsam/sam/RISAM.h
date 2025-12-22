@@ -10,16 +10,14 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file RISAM.h
- *  @brief Robust Incremental Smoothing and Mapping (riSAM)
- *  @date October 2025
+ *  @file   RISAM.h
+ *  @brief  Robust Incremental Smoothing and Mapping (riSAM)
  *  @author Dan McGann
+ *  @date   October 2025
  */
 #pragma once
 #include <gtsam/nonlinear/ISAM2.h>
-
-#include "risam/DoglegLineSearch.h"
-#include "risam/ExtendedISAM2.h"
+#include <gtsam/nonlinear/internal/ChiSquaredInverse.h>
 
 namespace gtsam {
 
@@ -36,8 +34,9 @@ class RISAM {
     /// are overriden in RISAM::RISAM()
     ISAM2Params isam2_params;
     /// @brief Optional params for custom incremental trust region methods
-    std::optional<ExtendedISAM2::ExtendedOptimizationParams>
-        optimization_params = DoglegLineSearch::Parameters();
+    // std::optional<ExtendedISAM2::ExtendedOptimizationParams>
+    //     optimization_params = DoglegLineSearch::Parameters();
+    //  TODO (dan) replace a method to configure DLLS
 
     /// @brief Flag to increment mu_init when we converge in values for outlier
     /// factors
@@ -74,9 +73,8 @@ class RISAM {
  protected:
   /// @brief Configuration parameters for the riSAM algorithm
   Parameters params_;
-  /// @brief The encapsulated iSAM2 algorithm. We use ExtendedISAM2 to get some
-  /// additional functionality see ExtendedISAM2 for details
-  std::unique_ptr<ExtendedISAM2> solver_;
+  /// @brief The encapsulated iSAM2 algorithm.
+  std::unique_ptr<ISAM2> solver_;
   /// @brief The current control parameter values for all factors. If factor i
   /// is a GraduatedFactor mu_[i] is a reference to that factors internal state.
   /// If factor i is not Graduated mu_[i] is a pointer to a value of Zero
@@ -127,8 +125,7 @@ class RISAM {
      */
 
     // Construct the encapsulated solver using the modified parameters.
-    solver_ = std::make_unique<ExtendedISAM2>(params_.isam2_params,
-                                              params_.optimization_params);
+    solver_ = std::make_unique<ISAM2>(params_.isam2_params);
   }
 
   /// @brief Update Interface. See ISAM2 docs for details as parameters match
@@ -139,12 +136,11 @@ class RISAM {
   UpdateResult update(
       const NonlinearFactorGraph& new_factors = NonlinearFactorGraph(),
       const Values& new_theta = Values(),
-      const boost::optional<std::set<Key>> extra_gnc_involved_keys =
-          boost::none,
+      const std::optional<std::set<Key>> extra_gnc_involved_keys = std::nullopt,
       const FactorIndices& remove_factor_indices = FactorIndices(),
-      const boost::optional<FastMap<Key, int>>& constrained_keys = boost::none,
-      const boost::optional<FastList<Key>>& no_relin_keys = boost::none,
-      const boost::optional<FastList<Key>>& extra_reelim_keys = boost::none,
+      const std::optional<FastMap<Key, int>>& constrained_keys = std::nullopt,
+      const std::optional<FastList<Key>>& no_relin_keys = std::nullopt,
+      const std::optional<FastList<Key>>& extra_reelim_keys = std::nullopt,
       bool force_relinearize = false);
 
   /// @brief Update Interface. See ISAM2 docs for details as parameters match
@@ -153,7 +149,7 @@ class RISAM {
   /// robust update
   UpdateResult update(
       const NonlinearFactorGraph& new_factors, const Values& new_theta,
-      const boost::optional<std::set<Key>> extra_gnc_involved_keys,
+      const std::optional<std::set<Key>> extra_gnc_involved_keys,
       const ISAM2UpdateParams& update_params);
 
   /// @brief Returns the current estimate from the solver
@@ -161,17 +157,6 @@ class RISAM {
 
   /// @brief Returns the underlying factors of the system
   NonlinearFactorGraph getFactorsUnsafe() { return factors_; }
-
-  /** @brief Permits manual modification of the solver's linearization point.
-   * This function can be used for forcefully set the linearization point used
-   * by the solver to a specific value. The variable that is modified should be
-   * marked for re-elimination during the next update to see effects. WARN: This
-   * function can have strange effects and should only be used by developers who
-   * know what they are doing.
-   * @param key: The variable for which to modify the linearization point
-   * @param value: The new linearization point
-   */
-  void forceSetLinearization(const Key& key, const Value& value);
 
   /** @brief Returns the set of measurements (identified by their factor index)
    * that have been deems outliers. riSAM defines a measurement as an outlier if
@@ -192,7 +177,7 @@ class RISAM {
    */
   UpdateResult updateRobust(
       const NonlinearFactorGraph& new_factors, const Values& new_theta,
-      const boost::optional<std::set<Key>> extra_gnc_involved_keys,
+      const std::optional<std::set<Key>> extra_gnc_involved_keys,
       const ISAM2UpdateParams& update_params);
 
   /** @brief Update housekeeping information for riSAM this involved:
@@ -233,7 +218,7 @@ class RISAM {
    */
   std::set<FactorIndex> convexifyInvolvedFactors(
       const NonlinearFactorGraph& new_factors, const Values& new_theta,
-      const boost::optional<std::set<Key>> extra_gnc_involved_keys,
+      const std::optional<std::set<Key>> extra_gnc_involved_keys,
       ISAM2UpdateParams& internal_update_params, UpdateResult& update_result);
 };
 

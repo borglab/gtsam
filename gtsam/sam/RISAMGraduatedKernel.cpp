@@ -1,17 +1,18 @@
+
+#include <gtsam/sam/RISAMGraduatedKernel.h>
+
 #include <limits>
 
-#include "risam/GraduatedKernel.h"
-#include "risam/Utilities.h"
-namespace risam {
+namespace gtsam {
 
-/*********************************************************************************************************************/
+/* ************************************************************************* */
 double SIGKernel::error(const double& residual, const double& mu) const {
   double r2 = residual * residual;
   double c2 = params_.shape_param * params_.shape_param;
   return 0.5 * (c2 * r2) / (c2 + pow(r2, mu));
 }
 
-/*********************************************************************************************************************/
+/* ************************************************************************* */
 double SIGKernel::weight(const double& residual, const double& mu) const {
   double r2 = residual * residual;
   double c2 = params_.shape_param * params_.shape_param;
@@ -19,7 +20,7 @@ double SIGKernel::weight(const double& residual, const double& mu) const {
   return (c2 * (c2 + pow(r2, mu) * (1 - mu))) / (sqrt_denom * sqrt_denom);
 }
 
-/*********************************************************************************************************************/
+/* ************************************************************************* */
 double SIGKernel::updateMu(const double& mu, const double& residual,
                            const size_t& update_count) const {
   if (params_.mu_update_strat == MuUpdateStrategy::MCGANN_2023) {
@@ -39,11 +40,13 @@ double SIGKernel::updateMu(const double& mu, const double& residual,
     }
     if (update_count == 0 && residual > params_.shape_param / std::sqrt(3) &&
         residual < (*params_.kang_residual_threshold)) {
-      double mu_inflection = bisectionMuSearch(
-          [residual, this](double new_mu) {
-            return secondDerivative(residual, new_mu);
-          },
-          0.5, 1.0, 1e-9);
+      // TODO (dan) remove
+      double mu_inflection = 0.5;
+      // bisectionMuSearch(
+      // [residual, this](double new_mu) {
+      //   return secondDerivative(residual, new_mu);
+      // },
+      // 0.5, 1.0, 1e-9);
       // If the inflection point is less than the current mu_init skip to
       // mu_final
       return mu_inflection <= mu ? 1.0 : mu_inflection;
@@ -60,13 +63,15 @@ double SIGKernel::updateMu(const double& mu, const double& residual,
     // 3 Step process [mu_init, mu*, 1] where mu* is the inflection point for
     // the current residual
     if (update_count == 0 && residual > params_.shape_param / std::sqrt(3)) {
-      double mu_inflection = bisectionMuSearch(
-          [residual, this](double new_mu) {
-            return secondDerivative(residual, new_mu);
-          },
-          0.5, 1.0, 1e-9);
-      // If the inflection point is less than the current mu_init skip to
-      // mu_final
+      // TODO (dan) remove
+      double mu_inflection = 0.5;
+      // bisectionMuSearch(
+      //     [residual, this](double new_mu) {
+      //       return secondDerivative(residual, new_mu);
+      //     },
+      //     0.5, 1.0, 1e-9);
+      //  If the inflection point is less than the current mu_init skip to
+      //  mu_final
       return mu_inflection <= mu ? 1.0 : mu_inflection;
     } else {
       // If update_count > 0 then we have already run the mu* update, so
@@ -109,7 +114,7 @@ double SIGKernel::updateMu(const double& mu, const double& residual,
   }
 }
 
-/*********************************************************************************************************************/
+/* ************************************************************************* */
 double SIGKernel::incrementMuInit(const double& mu) const {
   if (params_.mu_init_inc_strat == MuInitIncrementStrategy::MCGANN_2023) {
     // Mu init update Empirically discovered and presented in the orig riSAM
@@ -140,7 +145,7 @@ double SIGKernel::incrementMuInit(const double& mu) const {
   }
 }
 
-/*********************************************************************************************************************/
+/* ************************************************************************* */
 double SIGKernel::incrementMuInitInv(const double& mu) const {
   if (params_.mu_init_inc_strat == MuInitIncrementStrategy::MCGANN_2023) {
     // Mu init update Empirically discovered and presented in the orig riSAM
@@ -171,16 +176,16 @@ double SIGKernel::incrementMuInitInv(const double& mu) const {
   }
 }
 
-/*********************************************************************************************************************/
+/* ************************************************************************* */
 bool SIGKernel::isMuConverged(const double& mu) const {
   return mu >= convergence_thresh_;
 }
 
-/*********************************************************************************************************************/
+/* ************************************************************************* */
 double SIGKernel::shapeParamFromInfThresh(double influence_thresh, size_t dof,
                                           double chi2_outlier_thresh) {
-  const double outlier_residual_thresh = boost::math::quantile(
-      boost::math::chi_squared_distribution<double>(dof), chi2_outlier_thresh);
+  double outlier_residual_thresh =
+      internal::chi_squared_quantile(dof, chi2_outlier_thresh);
   // Equation from taking derivative of SIGKernel setting equal to
   // influence_thresh and solving for mu=1
   const double t1 =
@@ -190,13 +195,12 @@ double SIGKernel::shapeParamFromInfThresh(double influence_thresh, size_t dof,
   return std::sqrt(-((t1 + t2) / t3));
 }
 
-/*********************************************************************************************************************/
+/* ************************************************************************* */
 double SIGKernel::shapeParamFromChi2(size_t dof, double chi2_threshold) {
-  return boost::math::quantile(
-      boost::math::chi_squared_distribution<double>(dof), chi2_threshold);
+  return internal::chi_squared_quantile(dof, chi2_threshold);
 }
 
-/*********************************************************************************************************************/
+/* ************************************************************************* */
 double SIGKernel::secondDerivative(const double& r, const double& mu) const {
   // Setup helpful values
   double c2 = params_.shape_param * params_.shape_param;
@@ -212,4 +216,4 @@ double SIGKernel::secondDerivative(const double& r, const double& mu) const {
 
   return numerator / denominator;
 }
-}  // namespace risam
+}  // namespace gtsam
