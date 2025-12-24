@@ -46,8 +46,7 @@ RISAM::UpdateResult RISAM::update(
     const gtsam::Values& new_theta,
     const std::optional<std::set<gtsam::Key>> extra_gnc_involved_keys,
     const gtsam::ISAM2UpdateParams& update_params) {
-  // Determine if the update includes any graduated factors (i.e. potential
-  // outliers)
+  // Determine if the update includes any graduated factors
   bool update_includes_potential_outliers = false;
   for (auto& factor : new_factors) {
     auto grad_factor = std::dynamic_pointer_cast<GraduatedFactor>(factor);
@@ -58,7 +57,7 @@ RISAM::UpdateResult RISAM::update(
   updateHouseKeeping(new_factors, update_params);
 
   // Run the update: robust if we have potential outliers (or if requested)
-  // otherwise standard iSAM2
+  // otherwise standard iSAM2 to improve efficiency
   UpdateResult result;
   if (extra_gnc_involved_keys || update_includes_potential_outliers) {
     result = updateRobust(new_factors, new_theta, extra_gnc_involved_keys,
@@ -84,8 +83,8 @@ RISAM::UpdateResult RISAM::updateRobust(
   // Setup the result structure
   UpdateResult update_result;
 
-  // Create params for the initial update, note these may be modified by
-  // convexifyInvolvedFactors
+  // Create params for the initial update
+  // NOTE: These may be modified by convexifyInvolvedFactors
   gtsam::ISAM2UpdateParams initial_update_params = update_params;
 
   // Convexify involved factors
@@ -106,9 +105,8 @@ RISAM::UpdateResult RISAM::updateRobust(
   // Run GNC iterations until all convex factors have converged w.r.t. mu_
   gtsam::FactorIndices remaining_convex_factors(convex_factors.begin(),
                                                 convex_factors.end());
-  gtsam::ISAM2UpdateParams
-      update_params_internal;  // Used to force updates convex factors + ensure
-                               // better ordering
+  // Internal params force update convex factors + ensure better ordering
+  gtsam::ISAM2UpdateParams update_params_internal;
   while (remaining_convex_factors.size() > 0) {
     // Get the current solution
     gtsam::Values current_est = solver_->calculateEstimate();
@@ -125,12 +123,13 @@ RISAM::UpdateResult RISAM::updateRobust(
       mu_update_count[fidx]++;
     }
 
+    // Setup Internal Update Parameters
+    // Force update to convex factors
+    update_params_internal.extraReelimKeys = convexKeys;
+    // Prevent iSAM2 from ordering convex factors first
+    update_params_internal.constrainedKeys = gtsam::FastMap<gtsam::Key, int>();
+
     // Run the Update, re-eliminating the subproblem defined at this time-step
-    update_params_internal.extraReelimKeys =
-        convexKeys;  // Force update to convex factors
-    update_params_internal.constrainedKeys =
-        gtsam::FastMap<gtsam::Key, int>();  // Prevent iSAM2 from ordering
-                                            // convex factors first
     solver_->update(gtsam::NonlinearFactorGraph(), gtsam::Values(),
                     update_params_internal);
     solver_->calculateEstimate();
@@ -146,8 +145,8 @@ RISAM::UpdateResult RISAM::updateRobust(
     remaining_convex_factors = new_remaining_convex_factors;
   }
 
+  // Orig RISAM preformed 1 extra iteration for better convergence
   for (size_t i = 0; i < params_.number_extra_iters; i++) {
-    // Orig RISAM preformed 1 extra iteration
     solver_->update(gtsam::NonlinearFactorGraph(), gtsam::Values(),
                     gtsam::ISAM2UpdateParams());
     solver_->calculateEstimate();
@@ -194,8 +193,7 @@ void RISAM::updateHouseKeeping(const gtsam::NonlinearFactorGraph& new_factors,
   // Add a mu and mu_init entry for each factor
   augmentMu(new_factors, new_factor_indices);
 
-  // Once we have added new factors we can remove any factors and corresponding
-  // info
+  // Once we add new factors we can remove any factors and corresponding info
   gtsam::NonlinearFactorGraph removed_factors;
   removed_factors.reserve(update_params.removeFactorIndices.size());
   for (const auto fidx : update_params.removeFactorIndices) {
@@ -240,13 +238,18 @@ void RISAM::augmentMu(const gtsam::NonlinearFactorGraph& new_factors,
 
 /* ************************************************************************* */
 void RISAM::incrementMuInits() {
+  // Compute Average Delta
   gtsam::VectorValues delta = solver_->getDelta();
-  if (delta.norm() / delta.size() <
-      params_.outlier_mu_avg_var_convergence_thresh) {
+  bool is_sufficient_delta = delta.norm() / delta.size() <
+                             params_.outlier_mu_avg_var_convergence_thresh;
+
+  // Evaluate All Graduated factors if sufficient average delta
+  if (is_sufficient_delta) {
     gtsam::Values theta = solver_->calculateEstimate();
     for (auto fidx : factors_to_check_status_) {
       auto grad_factor =
           std::dynamic_pointer_cast<GraduatedFactor>(factors_[fidx]);
+
       double mahdist = grad_factor->residual(theta);
       const double mah_upper_bound = internal::chi_squared_quantile(
           factors_[fidx]->dim(), params_.outlier_mu_chisq_upper_bound);
@@ -261,6 +264,7 @@ void RISAM::incrementMuInits() {
             grad_factor->kernel()->incrementMuInitInv(*(mu_inits_[fidx]));
       }
     }
+    // Reset accumulator
     factors_to_check_status_.clear();
   }
 }
@@ -271,8 +275,7 @@ std::set<gtsam::FactorIndex> RISAM::convexifyInvolvedFactors(
     const gtsam::Values& new_theta,
     const std::optional<std::set<gtsam::Key>> extra_gnc_involved_keys,
     gtsam::ISAM2UpdateParams& update_params, UpdateResult& update_result) {
-  // Gather all involved keys - Involved keys are directly induced by the new
-  // factors
+  // Gather all involved keys - Directly induced by the new factors
   gtsam::KeySet new_factor_keys = new_factors.keys();
   gtsam::KeySet involved_keys = solver_->traverseTop(new_factors.keyVector());
   involved_keys.insert(new_factor_keys.begin(), new_factor_keys.end());
@@ -283,8 +286,8 @@ std::set<gtsam::FactorIndex> RISAM::convexifyInvolvedFactors(
                          extra_gnc_involved_keys->end());
     // For any user specified involved keys also add them to the extra-reelim
     if (!update_params.extraReelimKeys) {
-      update_params.extraReelimKeys =
-          gtsam::FastList<gtsam::Key>();  // create if it does not exist
+      // Create container if it does not exist
+      update_params.extraReelimKeys = gtsam::FastList<gtsam::Key>();
     }
     update_params.extraReelimKeys->insert(update_params.extraReelimKeys->end(),
                                           extra_gnc_involved_keys->begin(),
@@ -303,10 +306,11 @@ std::set<gtsam::FactorIndex> RISAM::convexifyInvolvedFactors(
       auto grad_factor =
           std::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
       if (grad_factor) {
-        bool inside = true;  // indicates that all variables touched by this
-                             // factor are in the affected set
-        bool update_involved = false;  // indicates a factor touches at least
-                                       // one variable in the involved set
+        // Indicates that all variables in this factor are in the affected set
+        bool inside = true;
+        // Indicates a factor touches at least one variable in the involved set
+        bool update_involved = false;
+        // Compute inside and update involved
         for (gtsam::Key factor_key : factors_.at(fidx)->keys()) {
           inside = inside && affected_keys.count(factor_key);
           update_involved = update_involved || involved_keys.count(factor_key);

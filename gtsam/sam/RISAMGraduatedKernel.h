@@ -4,10 +4,6 @@
  * towards \mu_{final}
  *
  *
- * Citations:
- * [2] - W. Kang et al. "Efficient Graduated Non-Convexity for Pose Graph
- * Optimization", International Conference on Control, Automation and Systems
- * (ICCAS), 2024
  *
  *  @author Dan McGann
  *  @date Mar 2022

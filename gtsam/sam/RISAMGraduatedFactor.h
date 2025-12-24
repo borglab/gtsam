@@ -18,9 +18,8 @@
  */
 #pragma once
 #include <gtsam/nonlinear/NonlinearFactor.h>
-
-#include <gtsam/sam/RISAMGraduatedKernel.h>
 #include <gtsam/sam/RISAM.h>
+#include <gtsam/sam/RISAMGraduatedKernel.h>
 
 namespace gtsam {
 class GraduatedFactor {
@@ -49,14 +48,11 @@ class GraduatedFactor {
   /// @brief Copy constructor
   GraduatedFactor(const GraduatedFactor& other);
 
-  /** @brief Linearize this factor at a specific point, using the specified
-   * convexification parameter mu
-   *  @param current_estimate: the variable estimate at which to linearize the
-   * Factor
-   *  @param mu: the current value of the convexification parameter for this
-   * factor
+  /** @brief Linearize this factor using the convexification parameter mu
+   *  @param current_estimate: the estimate at which to linearize the factor
+   *  @param mu: the current value of the convexification parameter
    */
-  virtual gtsam::GaussianFactor::shared_ptr linearizeRobust(
+  virtual gtsam::GaussianFactor::shared_ptr linearizeGraduated(
       const gtsam::Values& current_estimate) const = 0;
 
   /// @brief returns the residual of the factor
@@ -66,7 +62,7 @@ class GraduatedFactor {
   virtual double robustResidual(
       const gtsam::Values& current_estimate) const = 0;
 
-  /// @brief Returns the value of \mu_{init} for this graduated kernel
+  /// @brief Returns the kernel for this graduated factor
   const GraduatedKernel::shared_ptr kernel() const;
 
   /// @brief Updates the Kernel of this Graduated Factor
@@ -110,7 +106,7 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
 
   gtsam::GaussianFactor::shared_ptr linearize(
       const gtsam::Values& current_estimate) const override {
-    return linearizeRobust(current_estimate);
+    return linearizeGraduated(current_estimate);
   }
 
   /// @brief For graduated factors return 0.5 \rho(r)^2
@@ -119,7 +115,7 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
   }
 
   /** GRADUATED INTERFACE **/
-  gtsam::GaussianFactor::shared_ptr linearizeRobust(
+  gtsam::GaussianFactor::shared_ptr linearizeGraduated(
       const gtsam::Values& current_estimate) const override {
     double r = residual(current_estimate);
 
@@ -182,4 +178,4 @@ typename GenericGraduatedFactor<FACTOR_TYPE>::shared_ptr make_shared_graduated(
   return std::make_shared<GenericGraduatedFactor<FACTOR_TYPE>>(
       std::forward<Args>(args)...);
 }
-}  // namespace risam
+}  // namespace gtsam
