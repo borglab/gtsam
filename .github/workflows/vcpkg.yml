@@ -91,6 +91,12 @@ jobs:
           VCPKG_BASH_PATH=${VCPKG_INSTALLATION_ROOT//\\//}
           echo "VCPKG_INSTALLATION_ROOT=$VCPKG_BASH_PATH" >> "$GITHUB_ENV"
 
+      - name: Set vcpkg installtion root env
+        shell: bash
+        run: |
+          git -C ${VCPKG_INSTALLATION_ROOT} checkout .
+          git -C ${VCPKG_INSTALLATION_ROOT} pull
+
       - name: "Install dependencies"
         run: >
           vcpkg x-set-installed --triplet ${{ matrix.triplet }} --host-triplet ${{ matrix.triplet }}
@@ -111,6 +117,7 @@ jobs:
           tbb
           pybind11
           geographiclib
+          eigen3
 
       - name: On Failure, upload vcpkg logs
         if: failure()
@@ -172,7 +179,7 @@ jobs:
               -DGTSAM_BUILD_TESTS=ON \
               -DGTSAM_BUILD_UNSTABLE=ON \
               -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
-              -DGTSAM_USE_SYSTEM_EIGEN=OFF \
+              -DGTSAM_USE_SYSTEM_EIGEN=ON \
               -DGTSAM_USE_SYSTEM_METIS=OFF \
               -DGTSAM_USE_SYSTEM_PYBIND=ON \
               -DGTSAM_ENABLE_GEOGRAPHICLIB=ON \
