@@ -357,19 +357,7 @@ void HessianFactor::updateHessian(const KeyVector& infoKeys,
     slots[j] = Slot(infoKeys, keys_[j]);
   slots[nrVariablesInThisFactor] = info->nBlocks() - 1;
 
-  // Apply updates to the upper triangle
-  // Loop over this factor's blocks with indices (i,j)
-  // For every block (i,j), we determine the block (I,J) in info.
-  for (DenseIndex j = 0; j <= nrVariablesInThisFactor; ++j) {
-    const DenseIndex J = slots[j];
-    info->updateDiagonalBlock(J, info_.diagonalBlock(j));
-    for (DenseIndex i = 0; i < j; ++i) {
-      const DenseIndex I = slots[i];
-      assert(i < j);
-      assert(I != J);
-      info->updateOffDiagonalBlock(I, J, info_.aboveDiagonalBlock(i, j));
-    }
-  }
+  info->updateFromMappedBlocks(info_, slots);
 }
 
 /* ************************************************************************* */

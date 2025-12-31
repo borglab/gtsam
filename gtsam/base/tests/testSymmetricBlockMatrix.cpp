@@ -32,6 +32,7 @@ static SymmetricBlockMatrix testBlockMatrix(
   6, 12, 18, 24, 30, 36).finished());
 
 /* ************************************************************************* */
+// Read block accessors.
 TEST(SymmetricBlockMatrix, ReadBlocks)
 {
   // On the diagonal
@@ -51,6 +52,7 @@ TEST(SymmetricBlockMatrix, ReadBlocks)
 }
 
 /* ************************************************************************* */
+// Write block setters.
 TEST(SymmetricBlockMatrix, WriteBlocks)
 {
   // On the diagonal
@@ -77,6 +79,7 @@ TEST(SymmetricBlockMatrix, WriteBlocks)
 }
 
 /* ************************************************************************* */
+// Verify block range access.
 TEST(SymmetricBlockMatrix, Ranges)
 {
   // On the diagonal
@@ -97,6 +100,7 @@ TEST(SymmetricBlockMatrix, Ranges)
 }
 
 /* ************************************************************************* */
+// Exercise block expression helpers.
 TEST(SymmetricBlockMatrix, expressions)
 {
   const std::vector<size_t> dimensions{2, 3, 1};
@@ -151,6 +155,40 @@ TEST(SymmetricBlockMatrix, expressions)
 }
 
 /* ************************************************************************* */
+// Update via block mapping.
+TEST(SymmetricBlockMatrix, UpdateFromMappedBlocks)
+{
+  const std::vector<size_t> destDims{1, 3, 2};
+  const std::vector<size_t> mapping{1, 2, 0};
+
+  SymmetricBlockMatrix actual(destDims);
+  actual.setZero();
+  actual.updateFromMappedBlocks(testBlockMatrix, mapping);
+
+  SymmetricBlockMatrix expected(destDims);
+  expected.setZero();
+  for (DenseIndex i = 0; i < testBlockMatrix.nBlocks(); ++i) {
+    const DenseIndex I = static_cast<DenseIndex>(mapping[i]);
+    expected.updateDiagonalBlock(I, testBlockMatrix.diagonalBlock(i));
+    for (DenseIndex j = i + 1; j < testBlockMatrix.nBlocks(); ++j) {
+      const DenseIndex J = static_cast<DenseIndex>(mapping[j]);
+      expected.setOffDiagonalBlock(I, J,
+                                   testBlockMatrix.aboveDiagonalBlock(i, j));
+    }
+  }
+  EXPECT(assert_equal(Matrix(expected.selfadjointView()),
+                      actual.selfadjointView()));
+
+  SymmetricBlockMatrix doubled(destDims);
+  doubled.setZero();
+  doubled.updateFromMappedBlocks(testBlockMatrix, mapping);
+  doubled.updateFromMappedBlocks(testBlockMatrix, mapping);
+  EXPECT(assert_equal(2.0 * Matrix(expected.selfadjointView()),
+                      Matrix(doubled.selfadjointView())));
+}
+
+/* ************************************************************************* */
+// In-place inversion path.
 TEST(SymmetricBlockMatrix, inverseInPlace) {
   // generate an invertible matrix
   const Vector3 a(1.0, 0.2, 2.0), b(0.3, 0.8, -1.0), c(0.1, 0.2, 0.7);
@@ -171,4 +209,3 @@ TEST(SymmetricBlockMatrix, inverseInPlace) {
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
-
