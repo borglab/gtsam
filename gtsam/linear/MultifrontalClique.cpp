@@ -79,6 +79,18 @@ void MultifrontalClique::finalize(const std::map<Key, size_t>& dims,
                                   VectorValues* solution) {
   calculateSeparatorKeys();
 
+  // Cache the mapping from key to Ab block index for fast fills.
+  blockIndex_.clear();
+  size_t blockIdx = 0;
+  for (Key key : frontals()) {
+    blockIndex_[key] = blockIdx;
+    ++blockIdx;
+  }
+  for (Key key : separatorKeys_) {
+    blockIndex_[key] = blockIdx;
+    ++blockIdx;
+  }
+
   size_t dim = 0;
   for (Key key : frontals()) {
     auto it = dims.find(key);
@@ -93,9 +105,10 @@ void MultifrontalClique::finalize(const std::map<Key, size_t>& dims,
   }
   separatorDim = dim;
 
+  // Cache pointers into the solution for fast back-substitution.
   cacheSolutionPointers(solution);
 
-  /// Compute parent indices for all children
+  // Compute parent indices for all children.
   for (const auto& child : children) {
     if (!child) continue;
     child->setParentIndices(child->parentIndicesFor(*this));
@@ -193,6 +206,7 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
   // We only overwrite the fixed sparsity pattern, so Ab must be zeroed once in
   // initializeMatrices and then kept consistent across loads.
   size_t rowOffset = 0;
+  const size_t rhsBlockIdx = Ab_.nBlocks() - 1;
   for (const auto& factor : cluster_->factors) {
     assert(factor);
     auto indexed =
@@ -201,27 +215,22 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
         std::dynamic_pointer_cast<JacobianFactor>(graph[indexed->index_]);
     if (!jacobianFactor) continue;
 
+    const size_t rows = jacobianFactor->rows();
     for (auto it = jacobianFactor->begin(); it != jacobianFactor->end(); ++it) {
       Key k = *it;
-      auto fIt = std::find(frontals().begin(), frontals().end(), k);
-      size_t blockIdx = 0;
-      if (fIt != frontals().end()) {
-        blockIdx = std::distance(frontals().begin(), fIt);
-      } else {
-        auto sIt = std::find(separatorKeys_.begin(), separatorKeys_.end(), k);
-        if (sIt != separatorKeys_.end()) {
-          blockIdx =
-              frontals().size() + std::distance(separatorKeys_.begin(), sIt);
-        } else
-          continue;
-      }
+      auto blockIt = blockIndex_.find(k);
+      if (blockIt == blockIndex_.end()) continue;
+      const size_t blockIdx = blockIt->second;
       Ab_(blockIdx).middleRows(rowOffset, jacobianFactor->rows()) =
           jacobianFactor->getA(it);
     }
-    size_t rhsBlockIdx = Ab_.nBlocks() - 1;  // RHS block is appended by VBM.
-    Ab_(rhsBlockIdx).middleRows(rowOffset, jacobianFactor->rows()) =
-        jacobianFactor->getb();
-    rowOffset += jacobianFactor->rows();
+    Ab_(rhsBlockIdx).middleRows(rowOffset, rows) = jacobianFactor->getb();
+
+    if (auto model = jacobianFactor->get_model()) {
+      model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
+    }
+
+    rowOffset += rows;
   }
 }
 

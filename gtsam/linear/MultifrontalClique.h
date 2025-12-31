@@ -186,14 +186,17 @@ class GTSAM_EXPORT MultifrontalClique {
   }
   VerticalBlockMatrix Ab_;
   mutable SymmetricBlockMatrix sbm_;
-  mutable Vector rhsScratch_;
-  mutable Vector separatorScratch_;
+  mutable Vector rhsScratch_;  ///< Cached RHS workspace for back-substitution.
+  mutable Vector
+      separatorScratch_;  ///< Cached separator stack for back-substitution.
 
   SymbolicJunctionTree::sharedNode cluster_;
   KeyVector separatorKeys_;
-  std::vector<size_t> parentIndices_;
-  std::vector<Vector*> frontalPtrs_;
-  std::vector<const Vector*> separatorPtrs_;
+  std::map<Key, size_t> blockIndex_;   ///< Key->block index for fast Ab fills.
+  std::vector<size_t> parentIndices_;  ///< Parent block indices for separators.
+  std::vector<Vector*> frontalPtrs_;   ///< Pointers into solution frontals.
+  std::vector<const Vector*>
+      separatorPtrs_;  ///< Pointers into solution separator.
 };
 
 std::ostream& operator<<(std::ostream& os, const MultifrontalClique& clique);
