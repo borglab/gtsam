@@ -224,7 +224,7 @@ TEST( testBoundingConstraint, MaxDistance_simple_optimization) {
   Symbol x1('x',1), x2('x',2);
 
   NonlinearFactorGraph graph;
-  graph.emplace_shared<simulated2D::equality_constraints::UnaryEqualityConstraint>(pt1, x1);
+  graph.emplace_shared<simulated2D::equality_constraints::UnaryEqualityConstraint>(x1, pt1);
   graph.emplace_shared<simulated2D::Prior>(pt2_init, soft_model2_alt, x2);
   graph.emplace_shared<iq2D::PoseMaxDistConstraint>(x1, x2, 2.0);
 
@@ -250,12 +250,12 @@ TEST( testBoundingConstraint, avoid_demo) {
   Point2 odo(2.0, 0.0);
 
   NonlinearFactorGraph graph;
-  graph.emplace_shared<simulated2D::equality_constraints::UnaryEqualityConstraint>(x1_pt, x1);
+  graph.emplace_shared<simulated2D::equality_constraints::UnaryEqualityConstraint>(x1, x1_pt);
   graph.emplace_shared<simulated2D::Odometry>(odo, soft_model2_alt, x1, x2);
   graph.emplace_shared<iq2D::LandmarkAvoid>(x2, l1, radius);
-  graph.emplace_shared<simulated2D::equality_constraints::UnaryEqualityPointConstraint>(l1_pt, l1);
+  graph.emplace_shared<simulated2D::equality_constraints::UnaryEqualityPointConstraint>(l1, l1_pt);
   graph.emplace_shared<simulated2D::Odometry>(odo, soft_model2_alt, x2, x3);
-  graph.emplace_shared<simulated2D::equality_constraints::UnaryEqualityConstraint>(x3_pt, x3);
+  graph.emplace_shared<simulated2D::equality_constraints::UnaryEqualityConstraint>(x3, x3_pt);
 
   Values init, expected;
   init.insert(x1, x1_pt);

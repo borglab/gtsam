@@ -52,7 +52,7 @@ TEST ( NonlinearEquality, linearization ) {
   linearize.insert(key, value);
 
   // create a nonlinear equality constraint
-  shared_poseNLE nle(new PoseNLE(key, value));
+  auto nle = std::make_shared<PoseNLE>(key, value);
 
   // check linearize
   SharedDiagonal constraintModel = noiseModel::Constrained::All(3);
@@ -64,13 +64,12 @@ TEST ( NonlinearEquality, linearization ) {
 //******************************************************************************
 TEST ( NonlinearEquality, linearization_pose ) {
 
-  Symbol key('x', 1);
   Pose2 value;
   Values config;
   config.insert(key, value);
 
   // create a nonlinear equality constraint
-  shared_poseNLE nle(new PoseNLE(key, value));
+  auto nle = std::make_shared<PoseNLE>(key, value);
 
   GaussianFactor::shared_ptr actualLF = nle->linearize(config);
   EXPECT(true);
@@ -84,7 +83,7 @@ TEST ( NonlinearEquality, linearization_fail ) {
   bad_linearize.insert(key, wrong);
 
   // create a nonlinear equality constraint
-  shared_poseNLE nle(new PoseNLE(key, value));
+  auto nle = std::make_shared<PoseNLE>(key, value);
 
   // check linearize to ensure that it fails for bad linearization points
   CHECK_EXCEPTION(nle->linearize(bad_linearize), std::invalid_argument);
@@ -93,13 +92,12 @@ TEST ( NonlinearEquality, linearization_fail ) {
 //******************************************************************************
 TEST ( NonlinearEquality, linearization_fail_pose ) {
 
-  Symbol key('x', 1);
   Pose2 value(2.0, 1.0, 2.0), wrong(2.0, 3.0, 4.0);
   Values bad_linearize;
   bad_linearize.insert(key, wrong);
 
   // create a nonlinear equality constraint
-  shared_poseNLE nle(new PoseNLE(key, value));
+  auto nle = std::make_shared<PoseNLE>(key, value);
 
   // check linearize to ensure that it fails for bad linearization points
   CHECK_EXCEPTION(nle->linearize(bad_linearize), std::invalid_argument);
@@ -108,13 +106,12 @@ TEST ( NonlinearEquality, linearization_fail_pose ) {
 //******************************************************************************
 TEST ( NonlinearEquality, linearization_fail_pose_origin ) {
 
-  Symbol key('x', 1);
   Pose2 value, wrong(2.0, 3.0, 4.0);
   Values bad_linearize;
   bad_linearize.insert(key, wrong);
 
   // create a nonlinear equality constraint
-  shared_poseNLE nle(new PoseNLE(key, value));
+  auto nle = std::make_shared<PoseNLE>(key, value);
 
   // check linearize to ensure that it fails for bad linearization points
   CHECK_EXCEPTION(nle->linearize(bad_linearize), std::invalid_argument);
@@ -129,7 +126,7 @@ TEST ( NonlinearEquality, error ) {
   bad_linearize.insert(key, wrong);
 
   // create a nonlinear equality constraint
-  shared_poseNLE nle(new PoseNLE(key, value));
+  auto nle = std::make_shared<PoseNLE>(key, value);
 
   // check error function outputs
   Vector actual = nle->unwhitenedError(feasible);
@@ -146,9 +143,9 @@ TEST ( NonlinearEquality, equals ) {
   Pose2 value2 = Pose2(2.1, 3.0, 4.0);
 
   // create some constraints to compare
-  shared_poseNLE nle1(new PoseNLE(key, value1));
-  shared_poseNLE nle2(new PoseNLE(key, value1));
-  shared_poseNLE nle3(new PoseNLE(key, value2));
+  auto nle1 = std::make_shared<PoseNLE>(key, value1);
+  auto nle2 = std::make_shared<PoseNLE>(key, value1);
+  auto nle3 = std::make_shared<PoseNLE>(key, value2);
 
   // verify
   EXPECT(nle1->equals(*nle2));
@@ -183,8 +180,8 @@ TEST ( NonlinearEquality, allow_error_pose ) {
   Matrix A1 = I_3x3;
   Vector b = expVec;
   SharedDiagonal model = noiseModel::Constrained::All(3);
-  GaussianFactor::shared_ptr expLinFactor(
-      new JacobianFactor(key1, A1, b, model));
+  GaussianFactor::shared_ptr expLinFactor =
+      std::make_shared<JacobianFactor>(key1, A1, b, model);
   EXPECT(assert_equal(*expLinFactor, *actLinFactor, 1e-5));
 }
 
@@ -204,9 +201,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
   init.insert(key1, initPose);
 
   // optimize
-  Ordering ordering;
-  ordering.push_back(key1);
-  Values result = LevenbergMarquardtOptimizer(graph, init, ordering).optimize();
+  Values result = LevenbergMarquardtOptimizer(graph, init).optimize();
 
   // verify
   Values expected;
@@ -235,9 +230,7 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
   graph.emplace_shared<PosePrior>(key1, initPose, noiseModel::Isotropic::Sigma(3, 0.1));
 
   // optimize
-  Ordering ordering;
-  ordering.push_back(key1);
-  Values actual = LevenbergMarquardtOptimizer(graph, init, ordering).optimize();
+  Values actual = LevenbergMarquardtOptimizer(graph, init).optimize();
 
   // verify
   Values expected;
@@ -252,9 +245,8 @@ static SharedDiagonal soft_model = noiseModel::Isotropic::Sigma(2, 1.0);
 //******************************************************************************
 TEST( testNonlinearEqualityConstraint, unary_basics ) {
   Point2 pt(1.0, 2.0);
-  Symbol key1('x', 1);
-  double mu = 1000.0;
-  eq2D::UnaryEqualityConstraint constraint(pt, key, mu);
+  double gain = 1000.0;
+  eq2D::UnaryEqualityConstraint constraint(key, pt, gain);
 
   Values config1;
   config1.insert(key, pt);
@@ -267,33 +259,31 @@ TEST( testNonlinearEqualityConstraint, unary_basics ) {
   Point2 ptBad1(2.0, 2.0);
   config2.insert(key, ptBad1);
   EXPECT(constraint.active(config2));
-  EXPECT(
-      assert_equal(Vector2(1.0, 0.0), constraint.evaluateError(ptBad1), tol));
-  EXPECT(
-      assert_equal(Vector2(1.0, 0.0), constraint.unwhitenedError(config2), tol));
-  EXPECT_DOUBLES_EQUAL(500.0, constraint.error(config2), tol);
+  Vector2 expected(-1.0, 0.0);
+  EXPECT(assert_equal(expected, constraint.evaluateError(ptBad1), tol));
+  EXPECT(assert_equal(expected, constraint.unwhitenedError(config2), tol));
+  EXPECT_DOUBLES_EQUAL(1000.0, constraint.error(config2), tol);
 }
 
 //******************************************************************************
 TEST( testNonlinearEqualityConstraint, unary_linearization ) {
   Point2 pt(1.0, 2.0);
-  Symbol key1('x', 1);
-  double mu = 1000.0;
-  eq2D::UnaryEqualityConstraint constraint(pt, key, mu);
+  double gain = 1000.0;
+  eq2D::UnaryEqualityConstraint constraint(key, pt, gain);
 
   Values config1;
   config1.insert(key, pt);
   GaussianFactor::shared_ptr actual1 = constraint.linearize(config1);
-  GaussianFactor::shared_ptr expected1(
-      new JacobianFactor(key, I_2x2, Z_2x1, hard_model));
+  GaussianFactor::shared_ptr expected1 =
+      std::make_shared<JacobianFactor>(key, I_2x2, Z_2x1, hard_model);
   EXPECT(assert_equal(*expected1, *actual1, tol));
 
   Values config2;
   Point2 ptBad(2.0, 2.0);
   config2.insert(key, ptBad);
   GaussianFactor::shared_ptr actual2 = constraint.linearize(config2);
-  GaussianFactor::shared_ptr expected2(
-      new JacobianFactor(key, I_2x2, Vector2(-1.0, 0.0), hard_model));
+  GaussianFactor::shared_ptr expected2 = std::make_shared<JacobianFactor>(
+      key, I_2x2, Vector2(-1.0, 0.0), hard_model);
   EXPECT(assert_equal(*expected2, *actual2, tol));
 }
 
@@ -301,19 +291,15 @@ TEST( testNonlinearEqualityConstraint, unary_linearization ) {
 TEST( testNonlinearEqualityConstraint, unary_simple_optimization ) {
   // create a single-node graph with a soft and hard constraint to
   // ensure that the hard constraint overrides the soft constraint
+  NonlinearFactorGraph graph;
   Point2 truth_pt(1.0, 2.0);
-  Symbol key('x', 1);
-  double mu = 10.0;
-  eq2D::UnaryEqualityConstraint::shared_ptr constraint(
-      new eq2D::UnaryEqualityConstraint(truth_pt, key, mu));
+  double gain = 10.0;
+  auto constraint =
+      std::make_shared<eq2D::UnaryEqualityConstraint>(key, truth_pt, gain);
+  graph.push_back(constraint);
 
   Point2 badPt(100.0, -200.0);
-  simulated2D::Prior::shared_ptr factor(
-      new simulated2D::Prior(badPt, soft_model, key));
-
-  NonlinearFactorGraph graph;
-  graph.push_back(constraint);
-  graph.push_back(factor);
+  graph.emplace_shared<simulated2D::Prior>(badPt, soft_model, key);
 
   Values initValues;
   initValues.insert(key, badPt);
@@ -333,9 +319,9 @@ TEST( testNonlinearEqualityConstraint, unary_simple_optimization ) {
 //******************************************************************************
 TEST( testNonlinearEqualityConstraint, odo_basics ) {
   Point2 x1(1.0, 2.0), x2(2.0, 3.0), odom(1.0, 1.0);
-  Symbol key1('x', 1), key2('x', 2);
-  double mu = 1000.0;
-  eq2D::OdoEqualityConstraint constraint(odom, key1, key2, mu);
+  Symbol key1('l', 1), key2('x', 2);
+  double gain = 1000.0;
+  eq2D::OdoEqualityConstraint constraint(odom, key1, key2, gain);
 
   Values config1;
   config1.insert(key1, x1);
@@ -369,9 +355,8 @@ TEST( testNonlinearEqualityConstraint, odo_linearization ) {
   config1.insert(key1, x1);
   config1.insert(key2, x2);
   GaussianFactor::shared_ptr actual1 = constraint.linearize(config1);
-  GaussianFactor::shared_ptr expected1(
-      new JacobianFactor(key1, -I_2x2, key2, I_2x2, Z_2x1,
-          hard_model));
+  GaussianFactor::shared_ptr expected1 = std::make_shared<JacobianFactor>(
+      key1, -I_2x2, key2, I_2x2, Z_2x1, hard_model);
   EXPECT(assert_equal(*expected1, *actual1, tol));
 
   Values config2;
@@ -380,9 +365,8 @@ TEST( testNonlinearEqualityConstraint, odo_linearization ) {
   config2.insert(key1, x1bad);
   config2.insert(key2, x2bad);
   GaussianFactor::shared_ptr actual2 = constraint.linearize(config2);
-  GaussianFactor::shared_ptr expected2(
-      new JacobianFactor(key1, -I_2x2, key2, I_2x2, Vector2(1.0, 1.0),
-          hard_model));
+  GaussianFactor::shared_ptr expected2 = std::make_shared<JacobianFactor>(
+      key1, -I_2x2, key2, I_2x2, Vector2(1.0, 1.0), hard_model);
   EXPECT(assert_equal(*expected2, *actual2, tol));
 }
 
@@ -391,26 +375,20 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
   // create a two-node graph, connected by an odometry constraint, with
   // a hard prior on one variable, and a conflicting soft prior
   // on the other variable - the constraints should override the soft constraint
+  NonlinearFactorGraph graph;
   Point2 truth_pt1(1.0, 2.0), truth_pt2(3.0, 2.0);
-  Symbol key1('x', 1), key2('x', 2);
+  Symbol key1('l', 1), key2('x', 2);
 
-  // hard prior on x1
-  eq2D::UnaryEqualityConstraint::shared_ptr constraint1(
-      new eq2D::UnaryEqualityConstraint(truth_pt1, key1));
+  // hard prior on l1
+  graph.emplace_shared<eq2D::UnaryEqualityConstraint>(key1, truth_pt1, 1000);
 
   // soft prior on x2
   Point2 badPt(100.0, -200.0);
-  simulated2D::Prior::shared_ptr factor(
-      new simulated2D::Prior(badPt, soft_model, key2));
+  graph.emplace_shared<simulated2D::Prior>(badPt, soft_model, key2);
 
   // odometry constraint
-  eq2D::OdoEqualityConstraint::shared_ptr constraint2(
-      new eq2D::OdoEqualityConstraint(truth_pt2-truth_pt1, key1, key2));
-
-  NonlinearFactorGraph graph;
-  graph.push_back(constraint1);
-  graph.push_back(constraint2);
-  graph.push_back(factor);
+  graph.emplace_shared<eq2D::OdoEqualityConstraint>(truth_pt2 - truth_pt1, key1,
+                                                    key2);
 
   Values initValues;
   initValues.insert(key1, Point2(0,0));
@@ -436,8 +414,8 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
   Symbol x1('x', 1), x2('x', 2);
   Symbol l1('l', 1), l2('l', 2);
   Point2 pt_x1(1.0, 1.0), pt_x2(5.0, 6.0);
-  graph.emplace_shared<eq2D::UnaryEqualityConstraint>(pt_x1, x1);
-  graph.emplace_shared<eq2D::UnaryEqualityConstraint>(pt_x2, x2);
+  graph.emplace_shared<eq2D::UnaryEqualityConstraint>(x1, pt_x1);
+  graph.emplace_shared<eq2D::UnaryEqualityConstraint>(x2, pt_x2, 1000);
 
   Point2 z1(0.0, 5.0);
   SharedNoiseModel sigma(noiseModel::Isotropic::Sigma(2, 0.1));
@@ -476,7 +454,7 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
 
   // constant constraint on x1
   Point2 pose1(1.0, 1.0);
-  graph.emplace_shared<eq2D::UnaryEqualityConstraint>(pose1, x1);
+  graph.emplace_shared<eq2D::UnaryEqualityConstraint>(x1, pose1);
 
   SharedDiagonal sigma = noiseModel::Isotropic::Sigma(2, 0.1);
 
