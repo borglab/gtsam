@@ -47,6 +47,7 @@ const Ordering chainOrdering{x2, x1, x3, x4};
 }  // namespace
 
 /* ************************************************************************* */
+// Build the solver and validate initial structure and load.
 TEST(MultifrontalSolver, Constructor) {
   MultifrontalSolver solver(chain, chainOrdering);
 
@@ -81,6 +82,7 @@ TEST(MultifrontalSolver, Constructor) {
 }
 
 /* ************************************************************************* */
+// Reload numerical values and ensure Ab updates match whitening.
 TEST(MultifrontalSolver, Load) {
   MultifrontalSolver solver(chain, chainOrdering);
 
@@ -108,6 +110,7 @@ TEST(MultifrontalSolver, Load) {
 }
 
 /* ************************************************************************* */
+// Compare solver output against multifrontal elimination baseline.
 TEST(MultifrontalSolver, Eliminate) {
   MultifrontalSolver solver(chain, chainOrdering);
   solver.eliminateInPlace();
@@ -123,7 +126,29 @@ TEST(MultifrontalSolver, Eliminate) {
 }
 
 /* ************************************************************************* */
-TEST(MultifrontalSolver, ConstrainedNoiseIgnored) {
+// Verify feasible unary constrained factor clamps the update to zero.
+TEST(MultifrontalSolver, ConstrainedNoiseFeasible) {
+  const SharedDiagonal hardConstraint =
+      noiseModel::Constrained::MixedSigmas((Vector(1) << 0.0).finished());
+  const SharedDiagonal softNoise = noiseModel::Isotropic::Sigma(1, 10.0);
+  GaussianFactorGraph graph;
+  // Same setup as ConstrainedNoiseUnsupported, but feasible (b == 0).
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 0.0).finished(),
+                                       hardConstraint);
+  graph.emplace_shared<JacobianFactor>(
+      x1, I_1x1, (Vector(1) << 100.0).finished(), softNoise);
+  const Ordering ordering{x1};
+
+  MultifrontalSolver solver(graph, ordering);
+  solver.eliminateInPlace();
+  const VectorValues& actual = solver.updateSolution();
+
+  EXPECT_DOUBLES_EQUAL(0.0, actual.at(x1)(0), 1e-9);
+}
+
+/* ************************************************************************* */
+// Infeasible unary constrained factor is rejected.
+TEST(MultifrontalSolver, ConstrainedNoiseUnsupported) {
   const SharedDiagonal hardConstraint =
       noiseModel::Constrained::MixedSigmas((Vector(1) << 0.0).finished());
   const SharedDiagonal softNoise = noiseModel::Isotropic::Sigma(1, 10.0);
@@ -134,17 +159,44 @@ TEST(MultifrontalSolver, ConstrainedNoiseIgnored) {
       x1, I_1x1, (Vector(1) << 100.0).finished(), softNoise);
   const Ordering ordering{x1};
 
+  CHECK_EXCEPTION(
+      { MultifrontalSolver solver(graph, ordering); }, std::runtime_error);
+}
+
+/* ************************************************************************* */
+// Fully constrained unary factor with All() keeps delta fixed at zero.
+TEST(MultifrontalSolver, ConstrainedNoiseUnaryFeasible) {
+  const SharedDiagonal hardConstraint = noiseModel::Constrained::All(1);
+  const SharedDiagonal softNoise = noiseModel::Isotropic::Sigma(1, 1.0);
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 0.0).finished(),
+                                       hardConstraint);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 5.0).finished(),
+                                       softNoise);
+  const Ordering ordering{x1};
+
   MultifrontalSolver solver(graph, ordering);
   solver.eliminateInPlace();
   const VectorValues& actual = solver.updateSolution();
 
-  GaussianBayesTree expectedBT = *graph.eliminateMultifrontal(ordering);
-  VectorValues expected = expectedBT.optimize();
-
-  EXPECT(!assert_equal(expected, actual, 1e-9));
+  EXPECT_DOUBLES_EQUAL(0.0, actual.at(x1)(0), 1e-9);
 }
 
 /* ************************************************************************* */
+// Mixed-key constrained factor is not supported.
+TEST(MultifrontalSolver, ConstrainedNoiseMixedKeysUnsupported) {
+  const SharedDiagonal hardConstraint = noiseModel::Constrained::All(1);
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(
+      x1, I_1x1, x2, I_1x1, (Vector(1) << 0.0).finished(), hardConstraint);
+  const Ordering ordering{x1, x2};
+
+  CHECK_EXCEPTION(
+      { MultifrontalSolver solver(graph, ordering); }, std::runtime_error);
+}
+
+/* ************************************************************************* */
+// Weighted scalar measurements produce the expected weighted estimate.
 TEST(MultifrontalSolver, WeightedScalarMeasurements) {
   const double w1 = 0.2;
   const double w2 = 0.8;
@@ -167,6 +219,7 @@ TEST(MultifrontalSolver, WeightedScalarMeasurements) {
 }
 
 /* ************************************************************************* */
+// Merge threshold changes the clique count.
 TEST(MultifrontalSolver, MergeDimCap) {
   MultifrontalSolver solverNoMerge(chain, chainOrdering, 0);
   EXPECT_LONGS_EQUAL(2, solverNoMerge.cliqueCount());
@@ -176,6 +229,7 @@ TEST(MultifrontalSolver, MergeDimCap) {
 }
 
 /* ************************************************************************* */
+// End-to-end balanced smoother test with reload.
 TEST(MultifrontalSolver, BalancedSmoother) {
   // Create smoother with 7 nodes
   auto [nlfg, poses] = example::createNonlinearSmoother(7);

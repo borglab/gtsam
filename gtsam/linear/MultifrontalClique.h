@@ -32,6 +32,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace gtsam {
@@ -193,6 +194,7 @@ class GTSAM_EXPORT MultifrontalClique {
   SymbolicJunctionTree::sharedNode cluster_;
   KeyVector separatorKeys_;
   std::map<Key, size_t> blockIndex_;   ///< Key->block index for fast Ab fills.
+  std::unordered_set<size_t> fixedFrontals_;  ///< Frontal block indices fixed by constraints.
   std::vector<size_t> parentIndices_;  ///< Parent block indices for separators.
   std::vector<Vector*> frontalPtrs_;   ///< Pointers into solution frontals.
   std::vector<const Vector*>

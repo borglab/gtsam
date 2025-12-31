@@ -28,6 +28,32 @@ namespace gtsam {
 
 namespace {
 
+constexpr double kConstraintSigmaTol = 1e-12;
+constexpr double kConstraintFeasibleTol = 1e-9;
+
+// Mark frontal variables that are fixed by the given constrained factor.
+void markFixedFrontals(const JacobianFactor& factor,
+                       const std::map<Key, size_t>& blockIndex,
+                       std::unordered_set<size_t>* fixedFrontals) {
+  if (factor.size() != 1) {
+    throw std::runtime_error(
+        "MultifrontalSolver: only unary constrained factors are supported.");
+  }
+  const auto model = factor.get_model();
+  const Vector sigmas = model->sigmas();
+  if (!(sigmas.array().abs() <= kConstraintSigmaTol).all()) {
+    throw std::runtime_error(
+        "MultifrontalSolver: only fully constrained factors are supported.");
+  }
+  if (factor.getb().array().abs().maxCoeff() > kConstraintFeasibleTol) {
+    throw std::runtime_error(
+        "MultifrontalSolver: constrained factor is not feasible.");
+  }
+  const Key key = *factor.begin();
+  const size_t blockIndexValue = blockIndex.at(key);
+  fixedFrontals->insert(blockIndexValue);
+}
+
 // Build a stacked separator vector x_sep in the provided scratch buffer.
 Vector& buildSeparatorVector(const std::vector<const Vector*>& separatorPtrs,
                              Vector* scratch) {
@@ -107,6 +133,7 @@ void MultifrontalClique::finalize(const std::map<Key, size_t>& dims,
 
   // Cache pointers into the solution for fast back-substitution.
   cacheSolutionPointers(solution);
+  fixedFrontals_.clear();
 
   // Compute parent indices for all children.
   for (const auto& child : children) {
@@ -202,6 +229,7 @@ void MultifrontalClique::initializeMatrices(
 
 void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
   sbm_.setZero();
+  fixedFrontals_.clear();
 
   // We only overwrite the fixed sparsity pattern, so Ab must be zeroed once in
   // initializeMatrices and then kept consistent across loads.
@@ -227,7 +255,11 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
     Ab_(rhsBlockIdx).middleRows(rowOffset, rows) = jacobianFactor->getb();
 
     if (auto model = jacobianFactor->get_model()) {
-      model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
+      if (model->isConstrained()) {
+        markFixedFrontals(*jacobianFactor, blockIndex_, &fixedFrontals_);
+      } else {
+        model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
+      }
     }
 
     rowOffset += rows;
@@ -241,6 +273,20 @@ void MultifrontalClique::eliminateInPlace() {
   for (const auto& child : children) {
     if (!child) continue;
     child->updateParent(*this);
+  }
+
+  if (!fixedFrontals_.empty()) {
+    const DenseIndex nBlocks = sbm_.nBlocks();
+    for (size_t fixedBlock : fixedFrontals_) {
+      const DenseIndex i = static_cast<DenseIndex>(fixedBlock);
+      const DenseIndex dimI = sbm_.getDim(i);
+      sbm_.setDiagonalBlock(i, Matrix::Identity(dimI, dimI));
+      for (DenseIndex j = 0; j < nBlocks; ++j) {
+        if (j == i) continue;
+        const DenseIndex dimJ = sbm_.getDim(j);
+        sbm_.setOffDiagonalBlock(i, j, Matrix::Zero(dimI, dimJ));
+      }
+    }
   }
 
   // Form normal equations and factor the frontal block (Schur complement step).
