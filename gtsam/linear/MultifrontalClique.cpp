@@ -16,6 +16,7 @@
  * @date   December 2025
  */
 
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
 
@@ -201,6 +202,7 @@ size_t MultifrontalClique::countRows(const GaussianFactorGraph& graph) const {
 std::vector<size_t> MultifrontalClique::parentIndicesFor(
     const MultifrontalClique& parent) const {
   std::vector<size_t> indices;
+  indices.reserve(separatorKeys_.size() + 1);
   for (Key k : separatorKeys_) {
     auto fIt = std::find(parent.frontals().begin(), parent.frontals().end(), k);
     if (fIt != parent.frontals().end()) {
@@ -217,6 +219,7 @@ std::vector<size_t> MultifrontalClique::parentIndicesFor(
     throw std::runtime_error(
         "MultifrontalSolver: separator key not found in parent clique");
   }
+  indices.push_back(parent.frontals().size() + parent.separatorKeys_.size());
   return indices;
 }
 
@@ -227,42 +230,60 @@ void MultifrontalClique::initializeMatrices(
   Ab_.matrix().setZero();
 }
 
+void MultifrontalClique::addJacobianFactor(const JacobianFactor& jacobianFactor,
+                                           size_t rowOffset) {
+  // We only overwrite the fixed sparsity pattern, so Ab must be zeroed once in
+  // initializeMatrices and then kept consistent across loads.
+  const size_t rows = jacobianFactor.rows();
+  const size_t rhsBlockIdx = Ab_.nBlocks() - 1;
+  for (auto it = jacobianFactor.begin(); it != jacobianFactor.end(); ++it) {
+    Key k = *it;
+    const size_t blockIdx = blockIndex_.at(k);
+    Ab_(blockIdx).middleRows(rowOffset, rows) = jacobianFactor.getA(it);
+  }
+  Ab_(rhsBlockIdx).middleRows(rowOffset, rows) = jacobianFactor.getb();
+
+  if (auto model = jacobianFactor.get_model()) {
+    if (model->isConstrained()) {
+      markFixedFrontals(jacobianFactor, blockIndex_, &fixedFrontals_);
+    } else {
+      model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
+    }
+  }
+}
+
+void MultifrontalClique::addHessianFactor(const HessianFactor& hessianFactor) {
+  const SymmetricBlockMatrix& info = hessianFactor.info();
+  const size_t factorBlocks = hessianFactor.size();
+
+  std::vector<DenseIndex> blockIndices(factorBlocks + 1);
+  size_t slot = 0;
+  for (auto it = hessianFactor.begin(); it != hessianFactor.end();
+       ++it, ++slot) {
+    blockIndices[slot] = static_cast<DenseIndex>(blockIndex_.at(*it));
+  }
+  blockIndices[factorBlocks] = static_cast<DenseIndex>(sbm_.nBlocks() - 1);
+  sbm_.updateFromMappedBlocks(info, blockIndices);
+}
+
 void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
   sbm_.setZero();
   fixedFrontals_.clear();
 
-  // We only overwrite the fixed sparsity pattern, so Ab must be zeroed once in
-  // initializeMatrices and then kept consistent across loads.
   size_t rowOffset = 0;
-  const size_t rhsBlockIdx = Ab_.nBlocks() - 1;
   for (const auto& factor : cluster_->factors) {
     assert(factor);
     auto indexed =
         std::static_pointer_cast<internal::IndexedSymbolicFactor>(factor);
-    auto jacobianFactor =
-        std::dynamic_pointer_cast<JacobianFactor>(graph[indexed->index_]);
-    if (!jacobianFactor) continue;
-
-    const size_t rows = jacobianFactor->rows();
-    for (auto it = jacobianFactor->begin(); it != jacobianFactor->end(); ++it) {
-      Key k = *it;
-      auto blockIt = blockIndex_.find(k);
-      if (blockIt == blockIndex_.end()) continue;
-      const size_t blockIdx = blockIt->second;
-      Ab_(blockIdx).middleRows(rowOffset, jacobianFactor->rows()) =
-          jacobianFactor->getA(it);
+    const GaussianFactor::shared_ptr& gf = graph[indexed->index_];
+    if (auto jacobianFactor = std::dynamic_pointer_cast<JacobianFactor>(gf)) {
+      addJacobianFactor(*jacobianFactor, rowOffset);
+      rowOffset += jacobianFactor->rows();
+      continue;
+    } else if (auto hessianFactor =
+                   std::dynamic_pointer_cast<HessianFactor>(gf)) {
+      addHessianFactor(*hessianFactor);
     }
-    Ab_(rhsBlockIdx).middleRows(rowOffset, rows) = jacobianFactor->getb();
-
-    if (auto model = jacobianFactor->get_model()) {
-      if (model->isConstrained()) {
-        markFixedFrontals(*jacobianFactor, blockIndex_, &fixedFrontals_);
-      } else {
-        model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
-      }
-    }
-
-    rowOffset += rows;
   }
 }
 
@@ -296,19 +317,8 @@ void MultifrontalClique::eliminateInPlace() {
 void MultifrontalClique::updateParent(MultifrontalClique& parent) const {
   // Expose only the separator+RHS view when contributing to the parent.
   sbm_.blockStart() = frontals().size();
-  const size_t numBlocks = parentIndices_.size();
-  assert(sbm_.nBlocks() == numBlocks + 1);
-  const size_t rhsBlock = parent.sbm_.nBlocks() - 1;
-
-  for (size_t i = 0; i <= numBlocks; ++i) {
-    const size_t p_i = (i < numBlocks) ? parentIndices_[i] : rhsBlock;
-    parent.sbm_.updateDiagonalBlock(p_i, sbm_.diagonalBlock(i));
-    for (size_t j = i + 1; j <= numBlocks; ++j) {
-      const size_t p_j = (j < numBlocks) ? parentIndices_[j] : rhsBlock;
-      parent.sbm_.updateOffDiagonalBlock(p_i, p_j,
-                                         sbm_.aboveDiagonalBlock(i, j));
-    }
-  }
+  assert(sbm_.nBlocks() == parentIndices_.size());
+  parent.sbm_.updateFromMappedBlocks(sbm_, parentIndices_);
   sbm_.blockStart() = 0;
 }
 

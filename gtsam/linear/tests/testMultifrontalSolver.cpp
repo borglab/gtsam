@@ -20,6 +20,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
 #include <gtsam/linear/MultifrontalSolver.h>
 #include <tests/smallExample.h>
@@ -216,6 +217,22 @@ TEST(MultifrontalSolver, WeightedScalarMeasurements) {
   const VectorValues& actual = solver.updateSolution();
 
   EXPECT_DOUBLES_EQUAL(8.0, actual.at(x1)(0), 1e-9);
+}
+
+/* ************************************************************************* */
+// Hessian factors contribute directly to the augmented normal equations.
+TEST(MultifrontalSolver, HessianFactors) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<HessianFactor>(
+      x1, (Matrix(1, 1) << 4.0).finished(),
+      (Vector(1) << 8.0).finished(), 0.0);
+
+  const Ordering ordering{x1};
+  MultifrontalSolver solver(graph, ordering);
+  solver.eliminateInPlace();
+  const VectorValues& actual = solver.updateSolution();
+
+  EXPECT_DOUBLES_EQUAL(2.0, actual.at(x1)(0), 1e-9);
 }
 
 /* ************************************************************************* */
