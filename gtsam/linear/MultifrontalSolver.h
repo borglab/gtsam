@@ -30,6 +30,7 @@
 
 namespace gtsam {
 
+class GaussianBayesTree;
 class MultifrontalClique;
 
 /**
@@ -80,6 +81,12 @@ class GTSAM_EXPORT MultifrontalSolver {
    * This operates in-place on the pre-allocated matrices.
    */
   void eliminateInPlace();
+
+  /**
+   * Compute a Bayes tree from the in-place Cholesky factorization.
+   * Requires eliminateInPlace() to have been called.
+   */
+  GaussianBayesTree computeBayesTree() const;
 
   /**
    * Solve for the update vector.

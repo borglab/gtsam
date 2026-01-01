@@ -36,6 +36,8 @@
 
 namespace gtsam {
 
+class GaussianConditional;
+
 namespace internal {
 
 /// Helper class to track original factor indices.
@@ -97,6 +99,12 @@ class GTSAM_EXPORT MultifrontalClique {
 
   /// Get the number of factors in this clique.
   size_t factorCount() const;
+
+  /// Return the number of frontal keys in this clique.
+  size_t numFrontals() const { return numFrontals_; }
+
+  /// Build a GaussianConditional from the in-place factorization.
+  std::shared_ptr<GaussianConditional> conditional() const;
 
   /// Get the vertical block matrix Ab.
   const VerticalBlockMatrix& Ab() const { return Ab_; }

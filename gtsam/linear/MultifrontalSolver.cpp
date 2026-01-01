@@ -19,6 +19,7 @@
 #include <gtsam/base/treeTraversal-inst.h>
 #include <gtsam/base/types.h>
 #include <gtsam/inference/Key.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
@@ -364,6 +365,29 @@ void MultifrontalSolver::eliminateInPlace() {
   EliminatePostVisitor visitorPost;
   TbbOpenMPMixedScope threadLimiter;
   treeTraversal::PostOrderForestParallel(*this, visitorPost, 10);
+}
+
+/* ************************************************************************* */
+GaussianBayesTree MultifrontalSolver::computeBayesTree() const {
+  GaussianBayesTree bayesTree;
+  using Clique = GaussianBayesTreeClique;
+  using BayesCliquePtr = GaussianBayesTree::sharedClique;
+
+  std::function<void(const CliquePtr&, const BayesCliquePtr&)> buildClique =
+      [&](const CliquePtr& clique, const BayesCliquePtr& parent) {
+        if (!clique) return;
+        auto conditional = clique->conditional();
+        auto bayesClique = std::make_shared<Clique>(conditional);
+        bayesTree.addClique(bayesClique, parent);
+        for (const auto& child : clique->children) {
+          buildClique(child, bayesClique);
+        }
+      };
+
+  for (const auto& root : roots_) {
+    buildClique(root, BayesCliquePtr());
+  }
+  return bayesTree;
 }
 
 /* ************************************************************************* */

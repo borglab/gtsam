@@ -79,6 +79,18 @@ Marginals::Marginals(const GaussianFactorGraph& graph, const VectorValues& solut
 }
 
 /* ************************************************************************* */
+Marginals::Marginals(GaussianBayesTree&& bayesTree,
+                     const VectorValues& solution,
+                     Factorization factorization)
+    : factorization_(factorization), bayesTree_(std::move(bayesTree)) {
+  gttic(MarginalsConstructor);
+  for (const auto& keyValue: solution) {
+    values_.insert(keyValue.first, keyValue.second);
+  }
+  bayesTree_.addFactorsToGraph(&graph_);
+}
+
+/* ************************************************************************* */
 void Marginals::computeBayesTree() {
   // The default ordering to use.
   const Ordering::OrderingType defaultOrderingType = Ordering::COLAMD;

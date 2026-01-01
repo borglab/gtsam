@@ -100,6 +100,10 @@ public:
   Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, const Ordering& ordering,
               Factorization factorization = CHOLESKY);
 
+  /** Construct a marginals class from a precomputed Bayes tree. */
+  Marginals(GaussianBayesTree&& bayesTree, const VectorValues& solution,
+            Factorization factorization = CHOLESKY);
+
   /** print */
   void print(const std::string& str = "Marginals: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 

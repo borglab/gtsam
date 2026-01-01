@@ -16,6 +16,7 @@
  * @date   December 2025
  */
 
+#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
@@ -105,6 +106,16 @@ MultifrontalClique::MultifrontalClique(
 
 size_t MultifrontalClique::factorCount() const { return factorIndices_.size(); }
 
+std::shared_ptr<GaussianConditional> MultifrontalClique::conditional() const {
+  const KeyVector keys = orderedKeysFromBlockIndex(blockIndex_);
+  SymmetricBlockMatrix& sbm = sbm_;
+  const DenseIndex oldBlockStart = sbm.blockStart();
+  VerticalBlockMatrix Ab = sbm.split(numFrontals_);
+  sbm.blockStart() = oldBlockStart;
+  return std::make_shared<GaussianConditional>(keys, numFrontals_,
+                                               std::move(Ab));
+}
+
 void MultifrontalClique::finalize(const KeyVector& frontals,
                                   const KeyVector& separatorKeys,
                                   const std::map<Key, size_t>& dims,
@@ -169,7 +180,8 @@ void MultifrontalClique::finalize(const KeyVector& frontals,
   }
 
   // Pre-allocate matrices and cache constraints once per structure.
-  std::vector<size_t> blockDims = this->blockDims(dims, frontals, separatorKeys);
+  std::vector<size_t> blockDims =
+      this->blockDims(dims, frontals, separatorKeys);
   size_t vbmRows = countRows(graph);
   initializeMatrices(blockDims, vbmRows);
   cacheConstraintInfo(graph);
@@ -192,9 +204,9 @@ void MultifrontalClique::cacheConstraintInfo(const GaussianFactorGraph& graph) {
   }
 }
 
-void MultifrontalClique::cacheSolutionPointers(
-    VectorValues* solution, const KeyVector& frontals,
-    const KeyVector& separatorKeys) {
+void MultifrontalClique::cacheSolutionPointers(VectorValues* solution,
+                                               const KeyVector& frontals,
+                                               const KeyVector& separatorKeys) {
   frontalPtrs_.clear();
   separatorPtrs_.clear();
   frontalPtrs_.reserve(frontals.size());
@@ -370,8 +382,8 @@ void MultifrontalClique::print(const std::string& s,
                 std::min(numFrontals_, orderedKeys.size()), keyFormatter);
   std::cout << "], separators=[";
   printKeyRange(std::cout, orderedKeys,
-                std::min(numFrontals_, orderedKeys.size()),
-                orderedKeys.size(), keyFormatter);
+                std::min(numFrontals_, orderedKeys.size()), orderedKeys.size(),
+                keyFormatter);
   std::cout << "], factors=" << factorIndices_.size()
             << ", children=" << children.size()
             << ", sbmBlocks=" << sbm_.nBlocks()

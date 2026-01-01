@@ -23,6 +23,7 @@
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
 #include <gtsam/linear/MultifrontalSolver.h>
+#include <gtsam/nonlinear/Marginals.h>
 #include <tests/smallExample.h>
 
 #include <cmath>
@@ -119,6 +120,58 @@ TEST(MultifrontalSolver, Eliminate) {
   VectorValues expected = expectedBT.optimize();
 
   EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+/* ************************************************************************* */
+// Compare marginals from in-place Bayes tree against standard elimination.
+TEST(MultifrontalSolver, ComputeBayesTreeMarginals) {
+  MultifrontalSolver solver(chain, chainOrdering);
+  solver.eliminateInPlace();
+
+  GaussianBayesTree actualBT = solver.computeBayesTree();
+  GaussianBayesTree expectedBT = *chain.eliminateMultifrontal(chainOrdering);
+
+  EXPECT(assert_equal(expectedBT.marginalCovariance(x2),
+                      actualBT.marginalCovariance(x2), 1e-9));
+  EXPECT(assert_equal(expectedBT.marginalCovariance(x3),
+                      actualBT.marginalCovariance(x3), 1e-9));
+
+  Marginals actualMarginals(std::move(actualBT), solver.updateSolution());
+  Marginals expectedMarginals(chain, solver.updateSolution());
+
+  EXPECT(assert_equal(expectedMarginals.marginalCovariance(x2),
+                      actualMarginals.marginalCovariance(x2), 1e-9));
+
+  const KeyVector jointKeys{x2, x3};
+  const JointMarginal expectedJoint =
+      expectedMarginals.jointMarginalCovariance(jointKeys);
+  const JointMarginal actualJoint =
+      actualMarginals.jointMarginalCovariance(jointKeys);
+  EXPECT(assert_equal(expectedJoint.fullMatrix(), actualJoint.fullMatrix(),
+                      1e-9));
+}
+
+/* ************************************************************************* */
+// Compare marginals on a constrained chain against legacy marginals.
+TEST(MultifrontalSolver, ComputeBayesTreeMarginalsConstrainedChain) {
+  const SharedDiagonal hardConstraint =
+      noiseModel::Constrained::MixedSigmas((Vector(1) << 0.0).finished());
+  GaussianFactorGraph constrainedChain = chain;
+  constrainedChain.emplace_shared<JacobianFactor>(
+      x2, I_1x1, (Vector(1) << 0.0).finished(), hardConstraint);
+
+  MultifrontalSolver solver(constrainedChain, chainOrdering);
+  solver.eliminateInPlace();
+
+  GaussianBayesTree actualBT = solver.computeBayesTree();
+  Marginals actualMarginals(std::move(actualBT), solver.updateSolution());
+  Marginals expectedMarginals(constrainedChain, solver.updateSolution());
+
+  const KeyVector keys{x1, x2, x3, x4};
+  for (Key key : keys) {
+    EXPECT(assert_equal(expectedMarginals.marginalCovariance(key),
+                        actualMarginals.marginalCovariance(key), 1e-9));
+  }
 }
 
 /* ************************************************************************* */
