@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include <functional>
+#include <limits>
 
 using namespace std;
 using namespace gtsam;
@@ -56,12 +57,6 @@ TEST(MultifrontalSolver, Constructor) {
   EXPECT(solver.roots().size() == 1);
   auto root = solver.roots()[0];
   EXPECT(root != nullptr);
-
-  // Root should be {x3, x4} (merged)
-  // Frontals: x3, x4
-  EXPECT_LONGS_EQUAL(2, root->frontals().size());
-  EXPECT_LONGS_EQUAL(x3, root->frontals()[0]);
-  EXPECT_LONGS_EQUAL(x4, root->frontals()[1]);
 
   // Root should have 1 child {x2, x1}
   EXPECT_LONGS_EQUAL(1, root->children.size());
@@ -262,21 +257,27 @@ TEST(MultifrontalSolver, BalancedSmoother) {
   EXPECT(solver.roots().size() == 1);
   auto root = solver.roots()[0];
 
-  EXPECT_LONGS_EQUAL(root->frontals().size() + root->separatorKeys().size() + 1,
-                     root->sbm().nBlocks());
+  EXPECT_LONGS_EQUAL(root->Ab().nBlocks(), root->sbm().nBlocks());
 
-  // Check a leaf clique (for X(1))
-  MultifrontalSolver::CliquePtr cX1 = nullptr;
-  std::function<void(MultifrontalSolver::CliquePtr)> findX1 =
+  // Check a leaf clique block structure.
+  MultifrontalSolver::CliquePtr leaf = nullptr;
+  size_t minBlocks = std::numeric_limits<size_t>::max();
+  std::function<void(MultifrontalSolver::CliquePtr)> findLeaf =
       [&](MultifrontalSolver::CliquePtr c) {
-        for (Key k : c->frontals())
-          if (k == X(1)) cX1 = c;
-        for (auto child : c->children) findX1(child);
+        if (!c) return;
+        if (c->children.empty()) {
+          const size_t blocks = c->sbm().nBlocks();
+          if (blocks < minBlocks) {
+            minBlocks = blocks;
+            leaf = c;
+          }
+        }
+        for (auto child : c->children) findLeaf(child);
       };
-  findX1(root);
+  findLeaf(root);
 
-  EXPECT(cX1 != nullptr);
-  EXPECT_LONGS_EQUAL(3, cX1->sbm().nBlocks());
+  EXPECT(leaf != nullptr);
+  EXPECT_LONGS_EQUAL(3, minBlocks);
 
   // Eliminate and solve
   solver.eliminateInPlace();

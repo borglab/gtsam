@@ -32,6 +32,27 @@ namespace {
 constexpr double kConstraintSigmaTol = 1e-12;
 constexpr double kConstraintFeasibleTol = 1e-9;
 
+KeyVector orderedKeysFromBlockIndex(const std::map<Key, size_t>& blockIndex) {
+  const size_t totalKeys = blockIndex.size();
+  KeyVector orderedKeys(totalKeys);
+  for (const auto& entry : blockIndex) {
+    if (entry.second < totalKeys) {
+      orderedKeys[entry.second] = entry.first;
+    }
+  }
+  return orderedKeys;
+}
+
+void printKeyRange(std::ostream& os, const KeyVector& keys, size_t start,
+                   size_t end, const KeyFormatter& formatter) {
+  os << "[";
+  for (size_t i = start; i < end; ++i) {
+    os << formatter(keys[i]);
+    if (i + 1 < end) os << ", ";
+  }
+  os << "]";
+}
+
 // Mark frontal variables that are fixed by the given constrained factor.
 void markFixedFrontals(const JacobianFactor& factor,
                        const std::map<Key, size_t>& blockIndex,
@@ -76,74 +97,79 @@ Vector& buildSeparatorVector(const std::vector<const Vector*>& separatorPtrs,
 }  // namespace
 
 MultifrontalClique::MultifrontalClique(
-    const SymbolicJunctionTree::sharedNode& cluster,
+    std::vector<size_t> factorIndices,
     const std::weak_ptr<MultifrontalClique>& parent) {
-  if (!cluster) {
-    throw std::runtime_error("MultifrontalSolver: null cluster.");
-  }
-  cluster_ = cluster;
+  factorIndices_ = std::move(factorIndices);
   this->parent = parent;
-  const auto& frontals = cluster_->orderedFrontalKeys;
+}
+
+size_t MultifrontalClique::factorCount() const { return factorIndices_.size(); }
+
+void MultifrontalClique::finalize(const KeyVector& frontals,
+                                  const KeyVector& separatorKeys,
+                                  const std::map<Key, size_t>& dims,
+                                  const GaussianFactorGraph& graph,
+                                  VectorValues* solution,
+                                  std::vector<ChildInfo> children) {
   if (frontals.empty()) {
     throw std::runtime_error(
         "MultifrontalSolver: cluster has no frontal keys.");
   }
-}
-
-void MultifrontalClique::addChild(const shared_ptr& child) {
-  children.push_back(child);
-}
-
-const KeyVector& MultifrontalClique::frontals() const {
-  return cluster_->orderedFrontalKeys;
-}
-
-size_t MultifrontalClique::factorCount() const {
-  return cluster_->factors.size();
-}
-
-void MultifrontalClique::finalize(const std::map<Key, size_t>& dims,
-                                  const GaussianFactorGraph& graph,
-                                  VectorValues* solution) {
-  calculateSeparatorKeys();
+  numFrontals_ = frontals.size();
+  this->children.clear();
+  this->children.reserve(children.size());
+  for (const auto& child : children) {
+    this->children.push_back(child.clique);
+  }
 
   // Cache the mapping from key to Ab block index for fast fills.
   blockIndex_.clear();
   size_t blockIdx = 0;
-  for (Key key : frontals()) {
+  for (Key key : frontals) {
     blockIndex_[key] = blockIdx;
     ++blockIdx;
   }
-  for (Key key : separatorKeys_) {
+  for (Key key : separatorKeys) {
     blockIndex_[key] = blockIdx;
     ++blockIdx;
   }
 
   size_t dim = 0;
-  for (Key key : frontals()) {
+  for (Key key : frontals) {
     auto it = dims.find(key);
     if (it != dims.end()) dim += it->second;
   }
   frontalDim = dim;
 
   dim = 0;
-  for (Key key : separatorKeys_) {
+  for (Key key : separatorKeys) {
     auto it = dims.find(key);
     if (it != dims.end()) dim += it->second;
   }
   separatorDim = dim;
 
   // Cache pointers into the solution for fast back-substitution.
-  cacheSolutionPointers(solution);
+  cacheSolutionPointers(solution, frontals, separatorKeys);
 
   // Compute parent indices for all children.
   for (const auto& child : children) {
-    if (!child) continue;
-    child->setParentIndices(child->parentIndicesFor(*this));
+    if (!child.clique) continue;
+    std::vector<size_t> indices;
+    indices.reserve(child.separatorKeys.size() + 1);
+    for (Key key : child.separatorKeys) {
+      auto it = blockIndex_.find(key);
+      if (it == blockIndex_.end()) {
+        throw std::runtime_error(
+            "MultifrontalSolver: separator key not found in parent clique");
+      }
+      indices.push_back(it->second);
+    }
+    indices.push_back(blockIndex_.size());
+    child.clique->setParentIndices(indices);
   }
 
   // Pre-allocate matrices and cache constraints once per structure.
-  std::vector<size_t> blockDims = this->blockDims(dims);
+  std::vector<size_t> blockDims = this->blockDims(dims, frontals, separatorKeys);
   size_t vbmRows = countRows(graph);
   initializeMatrices(blockDims, vbmRows);
   cacheConstraintInfo(graph);
@@ -152,11 +178,10 @@ void MultifrontalClique::finalize(const std::map<Key, size_t>& dims,
 void MultifrontalClique::cacheConstraintInfo(const GaussianFactorGraph& graph) {
   fixedFrontals_.clear();
 
-  for (const auto& factor : cluster_->factors) {
-    assert(factor);
-    auto indexed =
-        std::static_pointer_cast<internal::IndexedSymbolicFactor>(factor);
-    const GaussianFactor::shared_ptr& gf = graph[indexed->index_];
+  for (size_t index : factorIndices_) {
+    assert(index < graph.size());
+    const GaussianFactor::shared_ptr& gf = graph[index];
+    if (!gf) continue;
     if (auto jacobianFactor = std::dynamic_pointer_cast<JacobianFactor>(gf)) {
       if (auto model = jacobianFactor->get_model()) {
         if (model->isConstrained()) {
@@ -167,84 +192,40 @@ void MultifrontalClique::cacheConstraintInfo(const GaussianFactorGraph& graph) {
   }
 }
 
-void MultifrontalClique::calculateSeparatorKeys() {
-  // Separator keys are computed from local factor keys and child separators.
-  KeySet allKeys;
-  for (const auto& factor : cluster_->factors) {
-    assert(factor);
-    allKeys.insert(factor->begin(), factor->end());
-  }
-  for (const auto& child : children) {
-    if (!child) continue;
-    allKeys.insert(child->separatorKeys_.begin(), child->separatorKeys_.end());
-  }
-  for (Key k : frontals()) {
-    allKeys.erase(k);
-  }
-  separatorKeys_.assign(allKeys.begin(), allKeys.end());
-}
-
-void MultifrontalClique::cacheSolutionPointers(VectorValues* solution) {
+void MultifrontalClique::cacheSolutionPointers(
+    VectorValues* solution, const KeyVector& frontals,
+    const KeyVector& separatorKeys) {
   frontalPtrs_.clear();
   separatorPtrs_.clear();
-  frontalPtrs_.reserve(frontals().size());
-  separatorPtrs_.reserve(separatorKeys_.size());
-  for (Key key : frontals()) {
+  frontalPtrs_.reserve(frontals.size());
+  separatorPtrs_.reserve(separatorKeys.size());
+  for (Key key : frontals) {
     frontalPtrs_.push_back(&solution->at(key));
   }
-  for (Key key : separatorKeys_) {
+  for (Key key : separatorKeys) {
     separatorPtrs_.push_back(&solution->at(key));
   }
 }
 
-const KeyVector& MultifrontalClique::separatorKeys() const {
-  return separatorKeys_;
-}
-
 std::vector<size_t> MultifrontalClique::blockDims(
-    const std::map<Key, size_t>& dims) const {
+    const std::map<Key, size_t>& dims, const KeyVector& frontals,
+    const KeyVector& separatorKeys) const {
   std::vector<size_t> blockDims;
-  for (Key k : frontals()) blockDims.push_back(dims.at(k));
-  for (Key k : separatorKeys_) blockDims.push_back(dims.at(k));
+  for (Key k : frontals) blockDims.push_back(dims.at(k));
+  for (Key k : separatorKeys) blockDims.push_back(dims.at(k));
   return blockDims;
 }
 
 size_t MultifrontalClique::countRows(const GaussianFactorGraph& graph) const {
   size_t vbmRows = 0;
-  for (const auto& factor : cluster_->factors) {
-    assert(factor);
-    auto indexed =
-        std::static_pointer_cast<internal::IndexedSymbolicFactor>(factor);
+  for (size_t index : factorIndices_) {
+    assert(index < graph.size());
     if (auto jacobianFactor =
-            std::dynamic_pointer_cast<JacobianFactor>(graph[indexed->index_])) {
+            std::dynamic_pointer_cast<JacobianFactor>(graph[index])) {
       vbmRows += jacobianFactor->rows();
     }
   }
   return vbmRows;
-}
-
-std::vector<size_t> MultifrontalClique::parentIndicesFor(
-    const MultifrontalClique& parent) const {
-  std::vector<size_t> indices;
-  indices.reserve(separatorKeys_.size() + 1);
-  for (Key k : separatorKeys_) {
-    auto fIt = std::find(parent.frontals().begin(), parent.frontals().end(), k);
-    if (fIt != parent.frontals().end()) {
-      indices.push_back(std::distance(parent.frontals().begin(), fIt));
-      continue;
-    }
-    auto sIt = std::find(parent.separatorKeys_.begin(),
-                         parent.separatorKeys_.end(), k);
-    if (sIt != parent.separatorKeys_.end()) {
-      indices.push_back(parent.frontals().size() +
-                        std::distance(parent.separatorKeys_.begin(), sIt));
-      continue;
-    }
-    throw std::runtime_error(
-        "MultifrontalSolver: separator key not found in parent clique");
-  }
-  indices.push_back(parent.frontals().size() + parent.separatorKeys_.size());
-  return indices;
 }
 
 void MultifrontalClique::initializeMatrices(
@@ -292,11 +273,10 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
   sbm_.setZero();
 
   size_t rowOffset = 0;
-  for (const auto& factor : cluster_->factors) {
-    assert(factor);
-    auto indexed =
-        std::static_pointer_cast<internal::IndexedSymbolicFactor>(factor);
-    const GaussianFactor::shared_ptr& gf = graph[indexed->index_];
+  for (size_t index : factorIndices_) {
+    assert(index < graph.size());
+    const GaussianFactor::shared_ptr& gf = graph[index];
+    if (!gf) continue;
     if (auto jacobianFactor = std::dynamic_pointer_cast<JacobianFactor>(gf)) {
       addJacobianFactor(*jacobianFactor, rowOffset);
       rowOffset += jacobianFactor->rows();
@@ -331,12 +311,12 @@ void MultifrontalClique::eliminateInPlace() {
   }
 
   // Form normal equations and factor the frontal block (Schur complement step).
-  sbm_.choleskyPartial(frontals().size());
+  sbm_.choleskyPartial(numFrontals_);
 }
 
 void MultifrontalClique::updateParent(MultifrontalClique& parent) const {
   // Expose only the separator+RHS view when contributing to the parent.
-  sbm_.blockStart() = frontals().size();
+  sbm_.blockStart() = numFrontals_;
   assert(sbm_.nBlocks() == parentIndices_.size());
   parent.sbm_.updateFromMappedBlocks(sbm_, parentIndices_);
   sbm_.blockStart() = 0;
@@ -384,17 +364,15 @@ void MultifrontalClique::updateSolution() const {
 void MultifrontalClique::print(const std::string& s,
                                const KeyFormatter& keyFormatter) const {
   if (!s.empty()) std::cout << s;
+  const KeyVector orderedKeys = orderedKeysFromBlockIndex(blockIndex_);
   std::cout << "Clique(frontals=[";
-  for (size_t i = 0; i < frontals().size(); ++i) {
-    std::cout << keyFormatter(frontals()[i]);
-    if (i + 1 < frontals().size()) std::cout << ", ";
-  }
+  printKeyRange(std::cout, orderedKeys, 0,
+                std::min(numFrontals_, orderedKeys.size()), keyFormatter);
   std::cout << "], separators=[";
-  for (size_t i = 0; i < separatorKeys_.size(); ++i) {
-    std::cout << keyFormatter(separatorKeys_[i]);
-    if (i + 1 < separatorKeys_.size()) std::cout << ", ";
-  }
-  std::cout << "], factors=" << cluster_->factors.size()
+  printKeyRange(std::cout, orderedKeys,
+                std::min(numFrontals_, orderedKeys.size()),
+                orderedKeys.size(), keyFormatter);
+  std::cout << "], factors=" << factorIndices_.size()
             << ", children=" << children.size()
             << ", sbmBlocks=" << sbm_.nBlocks()
             << ", AbRows=" << Ab_.matrix().rows() << ")\n";
@@ -420,20 +398,15 @@ void MultifrontalClique::print(const std::string& s,
 }
 
 std::ostream& operator<<(std::ostream& os, const MultifrontalClique& clique) {
+  const KeyVector orderedKeys = orderedKeysFromBlockIndex(clique.blockIndex_);
   const KeyFormatter formatter = DefaultKeyFormatter;
-  auto printKeys = [&](const KeyVector& keys) {
-    os << "[";
-    for (size_t i = 0; i < keys.size(); ++i) {
-      os << formatter(keys[i]);
-      if (i + 1 < keys.size()) os << ", ";
-    }
-    os << "]";
-  };
-
   os << "Clique(frontals=";
-  printKeys(clique.frontals());
+  printKeyRange(os, orderedKeys, 0,
+                std::min(clique.numFrontals_, orderedKeys.size()), formatter);
   os << ", separators=";
-  printKeys(clique.separatorKeys());
+  printKeyRange(os, orderedKeys,
+                std::min(clique.numFrontals_, orderedKeys.size()),
+                orderedKeys.size(), formatter);
   os << ", factors=" << clique.factorCount();
   os << ", children=" << clique.children.size();
   os << ", sbmBlocks=" << clique.sbm().nBlocks();

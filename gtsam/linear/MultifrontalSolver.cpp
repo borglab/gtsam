@@ -26,6 +26,7 @@
 #include <gtsam/linear/MultifrontalSolver.h>
 #include <gtsam/symbolic/SymbolicEliminationTree.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
+#include <gtsam/symbolic/SymbolicJunctionTree.h>
 
 #include <algorithm>
 #include <cassert>
@@ -258,37 +259,70 @@ MultifrontalSolver::MultifrontalSolver(const GaussianFactorGraph& graph,
     reportStructure("Clique structure after merge");
   }
 
+  std::map<const SymbolicJunctionTree::Node*, KeySet> separatorCache;
+
+  struct BuiltClique {
+    CliquePtr clique;
+    KeyVector separatorKeys;
+  };
+
   // 3. Recursive function to build Clique hierarchy (independent of traversal).
-  std::function<CliquePtr(const SymbolicJunctionTree::sharedNode&,
-                          std::weak_ptr<MultifrontalClique>)>
+  std::function<BuiltClique(const SymbolicJunctionTree::sharedNode&,
+                            std::weak_ptr<MultifrontalClique>)>
       buildRecursive =
           [&](const SymbolicJunctionTree::sharedNode& cluster,
-              std::weak_ptr<MultifrontalClique> parent) -> CliquePtr {
-    if (!cluster) return nullptr;
+              std::weak_ptr<MultifrontalClique> parent) -> BuiltClique {
+    if (!cluster) return {nullptr, KeyVector()};
 
-    // Create Clique
-    auto clique = std::make_shared<MultifrontalClique>(cluster, parent);
-
-    // Process children
-    for (const auto& childCluster : cluster->children) {
-      auto childClique = buildRecursive(childCluster, clique);
-      clique->addChild(childClique);
+    const KeyVector frontals = cluster->orderedFrontalKeys;
+    std::vector<size_t> factorIndices;
+    factorIndices.reserve(cluster->factors.size());
+    for (const auto& factor : cluster->factors) {
+      assert(factor);
+      auto indexed =
+          std::static_pointer_cast<internal::IndexedSymbolicFactor>(factor);
+      factorIndices.push_back(indexed->index_);
     }
 
-    clique->finalize(dims_, graph, &solution_);
+    KeyVector separatorKeys;
+    {
+      const KeySet separators =
+          separatorKeysForSymbolicCluster(cluster, &separatorCache);
+      separatorKeys.assign(separators.begin(), separators.end());
+    }
+
+    // Create Clique
+    auto clique = std::make_shared<MultifrontalClique>(std::move(factorIndices),
+                                                       parent);
+
+    // Process children
+    std::vector<MultifrontalClique::ChildInfo> childInfos;
+    childInfos.reserve(cluster->children.size());
+    for (const auto& childCluster : cluster->children) {
+      BuiltClique child = buildRecursive(childCluster, clique);
+      if (child.clique) {
+        childInfos.push_back(
+            MultifrontalClique::ChildInfo{child.clique,
+                                          std::move(child.separatorKeys)});
+      }
+    }
+
+    clique->finalize(frontals, separatorKeys, dims_, graph, &solution_,
+                     std::move(childInfos));
     cliques_.push_back(clique);
 
     // Initial load
     clique->fillAb(graph);
 
-    return clique;
+    return {clique, std::move(separatorKeys)};
   };
 
   // 4. Start traversal from roots
   for (const auto& rootCluster : junctionTree.roots()) {
     if (rootCluster) {
-      roots_.push_back(
-          buildRecursive(rootCluster, std::weak_ptr<MultifrontalClique>()));
+      roots_.push_back(buildRecursive(rootCluster,
+                                      std::weak_ptr<MultifrontalClique>())
+                           .clique);
     }
   }
 }

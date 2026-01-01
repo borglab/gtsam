@@ -26,7 +26,6 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/symbolic/SymbolicFactor.h>
-#include <gtsam/symbolic/SymbolicJunctionTree.h>
 
 #include <iosfwd>
 #include <map>
@@ -56,29 +55,31 @@ class GTSAM_EXPORT MultifrontalClique {
  public:
   using shared_ptr = std::shared_ptr<MultifrontalClique>;
   using Children = std::vector<shared_ptr>;
+  struct ChildInfo {
+    shared_ptr clique;
+    KeyVector separatorKeys;
+  };
 
   std::weak_ptr<MultifrontalClique> parent;  ///< Parent clique.
   Children children;        ///< Child cliques used for traversal.
   size_t frontalDim = 0;    ///< Frontal dimension.
   size_t separatorDim = 0;  ///< Separator dimension.
 
-  /// Construct a clique from a symbolic junction tree node.
-  /// @param cluster The symbolic junction tree node.
+  /// Construct a clique from factor indices.
+  /// @param factorIndices Indices of factors associated with this clique.
   /// @param parent Weak pointer to the parent clique.
-  explicit MultifrontalClique(const SymbolicJunctionTree::sharedNode& cluster,
+  explicit MultifrontalClique(std::vector<size_t> factorIndices,
                               const std::weak_ptr<MultifrontalClique>& parent);
 
   /// @name Setup (non-const)
   /// @{
 
-  /// Add a child clique.
-  /// @param child Shared pointer to the child clique.
-  void addChild(const shared_ptr& child);
-
-  /// Compute separator keys, cache dimensions, cache value pointers,
-  /// pre-allocate matrices, and cache constraint metadata.
-  void finalize(const std::map<Key, size_t>& dims,
-                const GaussianFactorGraph& graph, VectorValues* solution);
+  /// Cache dimensions, cache value pointers, pre-allocate matrices,
+  /// and cache constraint metadata.
+  void finalize(const KeyVector& frontals, const KeyVector& separatorKeys,
+                const std::map<Key, size_t>& dims,
+                const GaussianFactorGraph& graph, VectorValues* solution,
+                std::vector<ChildInfo> children);
 
   /// Load factor values into the pre-allocated Ab matrix and Hessians into
   /// sbm_.
@@ -88,12 +89,6 @@ class GTSAM_EXPORT MultifrontalClique {
 
   /// @name Read-only methods
   /// @{
-
-  /// Get the frontal keys for this clique.
-  const KeyVector& frontals() const;
-
-  /// Get the separator keys for this clique.
-  const KeyVector& separatorKeys() const;
 
   /// Get the cached problem size for traversal scheduling.
   int problemSize() const {
@@ -113,13 +108,6 @@ class GTSAM_EXPORT MultifrontalClique {
   const SymmetricBlockMatrix& sbm() const { return sbm_; }
 
   /**
-   * Compute block dimensions from variable dimensions (excluding RHS).
-   * @param dims Variable dimensions.
-   * @return Block dimensions for this clique.
-   */
-  std::vector<size_t> blockDims(const std::map<Key, size_t>& dims) const;
-
-  /**
    * Count rows needed for the vertical block matrix.
    * @param graph The factor graph.
    * @return Total number of rows.
@@ -127,16 +115,9 @@ class GTSAM_EXPORT MultifrontalClique {
   size_t countRows(const GaussianFactorGraph& graph) const;
 
   /**
-   * Compute parent scatter indices for this clique.
-   * @param parent The parent clique.
-   * @return Parent indices for separator blocks and RHS.
-   */
-  std::vector<size_t> parentIndicesFor(const MultifrontalClique& parent) const;
-
-  /**
    * Print this clique.
    * @param s Optional string prefix.
-   * @param keyFormatter Key formatter for printing.
+   * @param keyFormatter Ignored; retained for API compatibility.
    */
   void print(const std::string& s = "",
              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
@@ -172,14 +153,17 @@ class GTSAM_EXPORT MultifrontalClique {
   /// @}
 
  private:
-  /// Calculate separator keys from children's frontals.
-  void calculateSeparatorKeys();
-
   /// Cache pointers to frontal and separator update vectors.
-  void cacheSolutionPointers(VectorValues* delta);
+  void cacheSolutionPointers(VectorValues* delta, const KeyVector& frontals,
+                             const KeyVector& separatorKeys);
 
   /// Cache constraint metadata (fixed frontals, constrained factors).
   void cacheConstraintInfo(const GaussianFactorGraph& graph);
+
+  /// Compute block dimensions from variable dimensions (excluding RHS).
+  std::vector<size_t> blockDims(const std::map<Key, size_t>& dims,
+                                const KeyVector& frontals,
+                                const KeyVector& separatorKeys) const;
 
   /// Pre-allocate matrices for this clique.
   /// @param blockDims Block dimensions (excluding RHS).
@@ -203,9 +187,9 @@ class GTSAM_EXPORT MultifrontalClique {
   mutable Vector
       separatorScratch_;  ///< Cached separator stack for back-substitution.
 
-  SymbolicJunctionTree::sharedNode cluster_;
-  KeyVector separatorKeys_;
+  std::vector<size_t> factorIndices_;
   std::map<Key, size_t> blockIndex_;  ///< Key->block index for fast Ab fills.
+  size_t numFrontals_ = 0;
   std::unordered_set<size_t>
       fixedFrontals_;  ///< Frontal block indices fixed by constraints.
   std::vector<size_t> parentIndices_;  ///< Parent block indices for separators and RHS.
