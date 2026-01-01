@@ -152,6 +152,9 @@ class GTSAM_EXPORT MultifrontalClique {
   void updateSolution() const;
   /// @}
 
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const MultifrontalClique& clique);
+
  private:
   /// Cache pointers to frontal and separator update vectors.
   void cacheSolutionPointers(VectorValues* delta, const KeyVector& frontals,
