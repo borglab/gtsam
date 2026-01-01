@@ -75,15 +75,10 @@ class GTSAM_EXPORT MultifrontalClique {
   /// @param child Shared pointer to the child clique.
   void addChild(const shared_ptr& child);
 
-  /// Compute separator keys, cache dimensions, and cache value pointers.
-  void finalize(const std::map<Key, size_t>& dims, VectorValues* solution);
-
-  /// Pre-allocate matrices for this clique.
-  /// @param blockDims Block dimensions (excluding RHS).
-  /// @param verticalBlockMatrixRows Number of rows for the vertical block
-  /// matrix.
-  void initializeMatrices(const std::vector<size_t>& blockDims,
-                          size_t verticalBlockMatrixRows);
+  /// Compute separator keys, cache dimensions, cache value pointers,
+  /// pre-allocate matrices, and cache constraint metadata.
+  void finalize(const std::map<Key, size_t>& dims,
+                const GaussianFactorGraph& graph, VectorValues* solution);
 
   /// Load factor values into the pre-allocated Ab matrix and Hessians into
   /// sbm_.
@@ -182,6 +177,16 @@ class GTSAM_EXPORT MultifrontalClique {
 
   /// Cache pointers to frontal and separator update vectors.
   void cacheSolutionPointers(VectorValues* delta);
+
+  /// Cache constraint metadata (fixed frontals, constrained factors).
+  void cacheConstraintInfo(const GaussianFactorGraph& graph);
+
+  /// Pre-allocate matrices for this clique.
+  /// @param blockDims Block dimensions (excluding RHS).
+  /// @param verticalBlockMatrixRows Number of rows for the vertical block
+  /// matrix.
+  void initializeMatrices(const std::vector<size_t>& blockDims,
+                          size_t verticalBlockMatrixRows);
 
   /// Add a Jacobian factor's contributions into the Ab matrix.
   void addJacobianFactor(const JacobianFactor& factor, size_t rowOffset);

@@ -103,6 +103,7 @@ size_t MultifrontalClique::factorCount() const {
 }
 
 void MultifrontalClique::finalize(const std::map<Key, size_t>& dims,
+                                  const GaussianFactorGraph& graph,
                                   VectorValues* solution) {
   calculateSeparatorKeys();
 
@@ -134,12 +135,35 @@ void MultifrontalClique::finalize(const std::map<Key, size_t>& dims,
 
   // Cache pointers into the solution for fast back-substitution.
   cacheSolutionPointers(solution);
-  fixedFrontals_.clear();
 
   // Compute parent indices for all children.
   for (const auto& child : children) {
     if (!child) continue;
     child->setParentIndices(child->parentIndicesFor(*this));
+  }
+
+  // Pre-allocate matrices and cache constraints once per structure.
+  std::vector<size_t> blockDims = this->blockDims(dims);
+  size_t vbmRows = countRows(graph);
+  initializeMatrices(blockDims, vbmRows);
+  cacheConstraintInfo(graph);
+}
+
+void MultifrontalClique::cacheConstraintInfo(const GaussianFactorGraph& graph) {
+  fixedFrontals_.clear();
+
+  for (const auto& factor : cluster_->factors) {
+    assert(factor);
+    auto indexed =
+        std::static_pointer_cast<internal::IndexedSymbolicFactor>(factor);
+    const GaussianFactor::shared_ptr& gf = graph[indexed->index_];
+    if (auto jacobianFactor = std::dynamic_pointer_cast<JacobianFactor>(gf)) {
+      if (auto model = jacobianFactor->get_model()) {
+        if (model->isConstrained()) {
+          markFixedFrontals(*jacobianFactor, blockIndex_, &fixedFrontals_);
+        }
+      }
+    }
   }
 }
 
@@ -244,9 +268,7 @@ void MultifrontalClique::addJacobianFactor(const JacobianFactor& jacobianFactor,
   Ab_(rhsBlockIdx).middleRows(rowOffset, rows) = jacobianFactor.getb();
 
   if (auto model = jacobianFactor.get_model()) {
-    if (model->isConstrained()) {
-      markFixedFrontals(jacobianFactor, blockIndex_, &fixedFrontals_);
-    } else {
+    if (!model->isConstrained()) {
       model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
     }
   }
@@ -268,7 +290,6 @@ void MultifrontalClique::addHessianFactor(const HessianFactor& hessianFactor) {
 
 void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
   sbm_.setZero();
-  fixedFrontals_.clear();
 
   size_t rowOffset = 0;
   for (const auto& factor : cluster_->factors) {
@@ -279,7 +300,6 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
     if (auto jacobianFactor = std::dynamic_pointer_cast<JacobianFactor>(gf)) {
       addJacobianFactor(*jacobianFactor, rowOffset);
       rowOffset += jacobianFactor->rows();
-      continue;
     } else if (auto hessianFactor =
                    std::dynamic_pointer_cast<HessianFactor>(gf)) {
       addHessianFactor(*hessianFactor);

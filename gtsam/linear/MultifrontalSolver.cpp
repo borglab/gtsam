@@ -275,13 +275,8 @@ MultifrontalSolver::MultifrontalSolver(const GaussianFactorGraph& graph,
       clique->addChild(childClique);
     }
 
-    clique->finalize(dims_, &solution_);
+    clique->finalize(dims_, graph, &solution_);
     cliques_.push_back(clique);
-
-    // Initialize matrices
-    std::vector<size_t> blockDims = clique->blockDims(dims_);
-    size_t vbmRows = clique->countRows(graph);
-    clique->initializeMatrices(blockDims, vbmRows);
 
     // Initial load
     clique->fillAb(graph);
