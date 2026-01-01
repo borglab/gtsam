@@ -20,6 +20,7 @@
 #include <gtsam/base/types.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
 #include <gtsam/linear/MultifrontalSolver.h>
@@ -93,8 +94,9 @@ std::map<Key, size_t> computeDims(const GaussianFactorGraph& graph) {
       }
     } else if (auto hessianFactor =
                    std::dynamic_pointer_cast<HessianFactor>(factor)) {
-      throw std::runtime_error(
-          "MultifrontalSolver: HessianFactors not supported.");
+      for (auto it = hessianFactor->begin(); it != hessianFactor->end(); ++it) {
+        dims[*it] = hessianFactor->getDim(it);
+      }
     }
   }
   return dims;

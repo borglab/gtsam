@@ -85,7 +85,8 @@ class GTSAM_EXPORT MultifrontalClique {
   void initializeMatrices(const std::vector<size_t>& blockDims,
                           size_t verticalBlockMatrixRows);
 
-  /// Load factor values into the pre-allocated Ab matrix.
+  /// Load factor values into the pre-allocated Ab matrix and Hessians into
+  /// sbm_.
   /// @param graph The factor graph with updated values.
   void fillAb(const GaussianFactorGraph& graph);
   /// @}
@@ -133,7 +134,7 @@ class GTSAM_EXPORT MultifrontalClique {
   /**
    * Compute parent scatter indices for this clique.
    * @param parent The parent clique.
-   * @return Parent indices for separator blocks (excluding RHS).
+   * @return Parent indices for separator blocks and RHS.
    */
   std::vector<size_t> parentIndicesFor(const MultifrontalClique& parent) const;
 
@@ -182,6 +183,12 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Cache pointers to frontal and separator update vectors.
   void cacheSolutionPointers(VectorValues* delta);
 
+  /// Add a Jacobian factor's contributions into the Ab matrix.
+  void addJacobianFactor(const JacobianFactor& factor, size_t rowOffset);
+
+  /// Add a Hessian factor's contributions into the sbm_ matrix.
+  void addHessianFactor(const HessianFactor& factor);
+
   void setParentIndices(const std::vector<size_t>& indices) {
     parentIndices_ = indices;
   }
@@ -193,9 +200,10 @@ class GTSAM_EXPORT MultifrontalClique {
 
   SymbolicJunctionTree::sharedNode cluster_;
   KeyVector separatorKeys_;
-  std::map<Key, size_t> blockIndex_;   ///< Key->block index for fast Ab fills.
-  std::unordered_set<size_t> fixedFrontals_;  ///< Frontal block indices fixed by constraints.
-  std::vector<size_t> parentIndices_;  ///< Parent block indices for separators.
+  std::map<Key, size_t> blockIndex_;  ///< Key->block index for fast Ab fills.
+  std::unordered_set<size_t>
+      fixedFrontals_;  ///< Frontal block indices fixed by constraints.
+  std::vector<size_t> parentIndices_;  ///< Parent block indices for separators and RHS.
   std::vector<Vector*> frontalPtrs_;   ///< Pointers into solution frontals.
   std::vector<const Vector*>
       separatorPtrs_;  ///< Pointers into solution separator.
