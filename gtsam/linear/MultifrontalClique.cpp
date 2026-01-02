@@ -80,13 +80,6 @@ void markFixedFrontals(const JacobianFactor& factor,
 // Build a stacked separator vector x_sep in the provided scratch buffer.
 Vector& buildSeparatorVector(const std::vector<const Vector*>& separatorPtrs,
                              Vector* scratch) {
-  size_t separatorDim = 0;
-  for (const Vector* values : separatorPtrs) {
-    separatorDim += values->size();
-  }
-  if (static_cast<size_t>(scratch->size()) != separatorDim) {
-    scratch->resize(separatorDim);
-  }
   size_t offset = 0;
   for (const Vector* values : separatorPtrs) {
     scratch->segment(offset, values->size()) = *values;
@@ -158,6 +151,9 @@ void MultifrontalClique::finalize(const KeyVector& frontals,
     if (it != dims.end()) dim += it->second;
   }
   separatorDim = dim;
+
+  rhsScratch_.resize(frontalDim);
+  separatorScratch_.resize(separatorDim);
 
   // Cache pointers into the solution for fast back-substitution.
   cacheSolutionPointers(solution, frontals, separatorKeys);
@@ -313,6 +309,8 @@ void MultifrontalClique::eliminateInPlace() {
     for (size_t fixedBlock : fixedFrontals_) {
       const DenseIndex i = static_cast<DenseIndex>(fixedBlock);
       const DenseIndex dimI = sbm_.getDim(i);
+      // Enforce hard constraints by clamping the frontal block to identity
+      // and zeroing cross-terms, so the variable is fixed at zero in the solve.
       sbm_.setDiagonalBlock(i, Matrix::Identity(dimI, dimI));
       for (DenseIndex j = 0; j < nBlocks; ++j) {
         if (j == i) continue;
@@ -334,41 +332,36 @@ void MultifrontalClique::updateParent(MultifrontalClique& parent) const {
   sbm_.blockStart() = 0;
 }
 
+// Solve with block back-substitution on the Cholesky-stored SBM.
 void MultifrontalClique::updateSolution() const {
-  // Solve with block back-substitution on the Cholesky-stored SBM, avoiding
-  // materializing an explicit R matrix or split representation.
   const size_t nFrontals = frontalPtrs_.size();
-  const size_t nSeparators = separatorPtrs_.size();
+  const size_t rhsBlock = sbm_.nBlocks() - 1;  // # frontals + # separators
 
-  const size_t rhsBlock = nFrontals + nSeparators;
+  // The in-place factorization yields an upper-triangular system [R S d]:
+  //   R * x_f + S * x_s = d,
+  // with x_f the frontals and x_s the separators.
+  const auto R = sbm_.triangularView(0, nFrontals);
+  const auto S = sbm_.aboveDiagonalRange(0, nFrontals, nFrontals, rhsBlock);
+  const auto d = sbm_.aboveDiagonalRange(0, nFrontals, rhsBlock, rhsBlock + 1);
 
-  size_t frontalDim = 0;
-  for (const Vector* values : frontalPtrs_) {
-    frontalDim += values->size();
-  }
-  if (static_cast<size_t>(rhsScratch_.size()) != frontalDim) {
-    rhsScratch_.resize(frontalDim);
-  }
-  rhsScratch_.noalias() =
-      sbm_.aboveDiagonalRange(0, nFrontals, rhsBlock, rhsBlock + 1);
-
-  // Eliminate separator contributions: b -= S * x_sep.
-  if (nSeparators > 0) {
-    const Vector& xSep =
+  // We first solve rhs = d - S * x_s
+  rhsScratch_.noalias() = d;
+  if (rhsBlock > nFrontals) {
+    const Vector& x_s =
         buildSeparatorVector(separatorPtrs_, &separatorScratch_);
-    rhsScratch_.noalias() -= sbm_.aboveDiagonalRange(0, nFrontals, nFrontals,
-                                                     nFrontals + nSeparators) *
-                             xSep;
+    rhsScratch_.noalias() -= S * x_s;
   }
 
-  // Solve the contiguous frontal system in one triangular solve.
-  sbm_.triangularView(0, nFrontals).solveInPlace(rhsScratch_);
+  // Then solve for x_f, our solution, via R * x_f = rhs
+  // We solve the contiguous frontal system in one triangular solve.
+  R.solveInPlace(rhsScratch_);
+  auto& x_f = rhsScratch_;
 
   // Write solved frontal blocks back into the global solution.
   size_t offset = 0;
   for (Vector* values : frontalPtrs_) {
     const size_t dim = values->size();
-    values->noalias() = rhsScratch_.segment(offset, dim);
+    values->noalias() = x_f.segment(offset, dim);
     offset += dim;
   }
 }
