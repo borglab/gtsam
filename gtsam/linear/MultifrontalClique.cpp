@@ -102,10 +102,9 @@ size_t MultifrontalClique::factorCount() const { return factorIndices_.size(); }
 std::shared_ptr<GaussianConditional> MultifrontalClique::conditional() const {
   const KeyVector keys = orderedKeysFromBlockIndex(blockIndex_);
   SymmetricBlockMatrix& sbm = sbm_;
-  const DenseIndex oldBlockStart = sbm.blockStart();
-  VerticalBlockMatrix Ab = sbm.split(numFrontals_);
-  sbm.blockStart() = oldBlockStart;
-  return std::make_shared<GaussianConditional>(keys, numFrontals_,
+  VerticalBlockMatrix Ab = sbm.split(numFrontals());
+  sbm.blockStart() = 0;  // Split sets it to numFrontals(), reset to 0.
+  return std::make_shared<GaussianConditional>(keys, numFrontals(),
                                                std::move(Ab));
 }
 
@@ -119,7 +118,6 @@ void MultifrontalClique::finalize(const KeyVector& frontals,
     throw std::runtime_error(
         "MultifrontalSolver: cluster has no frontal keys.");
   }
-  numFrontals_ = frontals.size();
   this->children.clear();
   this->children.reserve(children.size());
   for (const auto& child : children) {
@@ -321,12 +319,12 @@ void MultifrontalClique::eliminateInPlace() {
   }
 
   // Form normal equations and factor the frontal block (Schur complement step).
-  sbm_.choleskyPartial(numFrontals_);
+  sbm_.choleskyPartial(numFrontals());
 }
 
 void MultifrontalClique::updateParent(MultifrontalClique& parent) const {
   // Expose only the separator+RHS view when contributing to the parent.
-  sbm_.blockStart() = numFrontals_;
+  sbm_.blockStart() = numFrontals();
   assert(sbm_.nBlocks() == parentIndices_.size());
   parent.sbm_.updateFromMappedBlocks(sbm_, parentIndices_);
   sbm_.blockStart() = 0;
@@ -334,19 +332,19 @@ void MultifrontalClique::updateParent(MultifrontalClique& parent) const {
 
 // Solve with block back-substitution on the Cholesky-stored SBM.
 void MultifrontalClique::updateSolution() const {
-  const size_t nFrontals = frontalPtrs_.size();
-  const size_t rhsBlock = sbm_.nBlocks() - 1;  // # frontals + # separators
+  const size_t nf = numFrontals();
+  const size_t n = sbm_.nBlocks() - 1;  // # frontals + # separators
 
   // The in-place factorization yields an upper-triangular system [R S d]:
   //   R * x_f + S * x_s = d,
   // with x_f the frontals and x_s the separators.
-  const auto R = sbm_.triangularView(0, nFrontals);
-  const auto S = sbm_.aboveDiagonalRange(0, nFrontals, nFrontals, rhsBlock);
-  const auto d = sbm_.aboveDiagonalRange(0, nFrontals, rhsBlock, rhsBlock + 1);
+  const auto R = sbm_.triangularView(0, nf);
+  const auto S = sbm_.aboveDiagonalRange(0, nf, nf, n);
+  const auto d = sbm_.aboveDiagonalRange(0, nf, n, n + 1);
 
   // We first solve rhs = d - S * x_s
   rhsScratch_.noalias() = d;
-  if (rhsBlock > nFrontals) {
+  if (n > nf) {
     const Vector& x_s =
         buildSeparatorVector(separatorPtrs_, &separatorScratch_);
     rhsScratch_.noalias() -= S * x_s;
@@ -372,10 +370,10 @@ void MultifrontalClique::print(const std::string& s,
   const KeyVector orderedKeys = orderedKeysFromBlockIndex(blockIndex_);
   std::cout << "Clique(frontals=[";
   printKeyRange(std::cout, orderedKeys, 0,
-                std::min(numFrontals_, orderedKeys.size()), keyFormatter);
+                std::min(numFrontals(), orderedKeys.size()), keyFormatter);
   std::cout << "], separators=[";
   printKeyRange(std::cout, orderedKeys,
-                std::min(numFrontals_, orderedKeys.size()), orderedKeys.size(),
+                std::min(numFrontals(), orderedKeys.size()), orderedKeys.size(),
                 keyFormatter);
   std::cout << "], factors=" << factorIndices_.size()
             << ", children=" << children.size()
@@ -407,10 +405,10 @@ std::ostream& operator<<(std::ostream& os, const MultifrontalClique& clique) {
   const KeyFormatter formatter = DefaultKeyFormatter;
   os << "Clique(frontals=";
   printKeyRange(os, orderedKeys, 0,
-                std::min(clique.numFrontals_, orderedKeys.size()), formatter);
+                std::min(clique.numFrontals(), orderedKeys.size()), formatter);
   os << ", separators=";
   printKeyRange(os, orderedKeys,
-                std::min(clique.numFrontals_, orderedKeys.size()),
+                std::min(clique.numFrontals(), orderedKeys.size()),
                 orderedKeys.size(), formatter);
   os << ", factors=" << clique.factorCount();
   os << ", children=" << clique.children.size();

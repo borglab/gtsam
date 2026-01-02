@@ -101,7 +101,7 @@ class GTSAM_EXPORT MultifrontalClique {
   size_t factorCount() const;
 
   /// Return the number of frontal keys in this clique.
-  size_t numFrontals() const { return numFrontals_; }
+  size_t numFrontals() const { return frontalPtrs_.size(); }
 
   /// Build a GaussianConditional from the in-place factorization.
   std::shared_ptr<GaussianConditional> conditional() const;
@@ -200,11 +200,11 @@ class GTSAM_EXPORT MultifrontalClique {
 
   std::vector<size_t> factorIndices_;
   std::map<Key, size_t> blockIndex_;  ///< Key->block index for fast Ab fills.
-  size_t numFrontals_ = 0;
   std::unordered_set<size_t>
       fixedFrontals_;  ///< Frontal block indices fixed by constraints.
-  std::vector<size_t> parentIndices_;  ///< Parent block indices for separators and RHS.
-  std::vector<Vector*> frontalPtrs_;   ///< Pointers into solution frontals.
+  std::vector<size_t>
+      parentIndices_;  ///< Parent block indices for separators and RHS.
+  std::vector<Vector*> frontalPtrs_;  ///< Pointers into solution frontals.
   std::vector<const Vector*>
       separatorPtrs_;  ///< Pointers into solution separator.
 };

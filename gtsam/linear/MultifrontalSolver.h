@@ -51,7 +51,7 @@ class GTSAM_EXPORT MultifrontalSolver {
   std::vector<CliquePtr> roots_;    ///< Roots of the elimination tree.
   std::vector<CliquePtr> cliques_;  ///< All cliques in the solver.
   std::map<Key, size_t> dims_;      ///< Map from variable key to dimension.
-  mutable VectorValues solution_;  ///< Cached solution vector.
+  mutable VectorValues solution_;   ///< Cached solution vector.
 
  public:
   /**
@@ -84,7 +84,9 @@ class GTSAM_EXPORT MultifrontalSolver {
 
   /**
    * Compute a Bayes tree from the in-place Cholesky factorization.
-   * Requires eliminateInPlace() to have been called.
+   * Requires eliminateInPlace() to have been called beforehand.
+   * @return A GaussianBayesTree representing the eliminated factor graph
+   * encoded by the current multifrontal factorization.
    */
   GaussianBayesTree computeBayesTree() const;
 

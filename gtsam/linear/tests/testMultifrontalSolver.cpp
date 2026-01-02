@@ -147,8 +147,8 @@ TEST(MultifrontalSolver, ComputeBayesTreeMarginals) {
       expectedMarginals.jointMarginalCovariance(jointKeys);
   const JointMarginal actualJoint =
       actualMarginals.jointMarginalCovariance(jointKeys);
-  EXPECT(assert_equal(expectedJoint.fullMatrix(), actualJoint.fullMatrix(),
-                      1e-9));
+  EXPECT(
+      assert_equal(expectedJoint.fullMatrix(), actualJoint.fullMatrix(), 1e-9));
 }
 
 /* ************************************************************************* */
@@ -271,9 +271,8 @@ TEST(MultifrontalSolver, WeightedScalarMeasurements) {
 // Hessian factors contribute directly to the augmented normal equations.
 TEST(MultifrontalSolver, HessianFactors) {
   GaussianFactorGraph graph;
-  graph.emplace_shared<HessianFactor>(
-      x1, (Matrix(1, 1) << 4.0).finished(),
-      (Vector(1) << 8.0).finished(), 0.0);
+  graph.emplace_shared<HessianFactor>(x1, (Matrix(1, 1) << 4.0).finished(),
+                                      (Vector(1) << 8.0).finished(), 0.0);
 
   const Ordering ordering{x1};
   MultifrontalSolver solver(graph, ordering);
