@@ -63,7 +63,7 @@ int main() {
   cout << "Merging dim cap " << kMergeDimCap << std::endl;
 
   {
-    const size_t bal_iterations = 10;
+    const size_t bal_iterations = 5;
     const string bal16 = findExampleDataFile("dubrovnik-16-22106-pre");
     const string bal88 = findExampleDataFile("dubrovnik-88-64298-pre");
     for (const auto& filename : {bal16, bal88}) {
@@ -74,6 +74,7 @@ int main() {
       const GaussianFactorGraph linear = *graph.linearize(initial);
 
       const std::vector<std::pair<string, Ordering>> orderings = {
+          {"Burn", createSchurOrdering(db, false)},
           {"Metis", Ordering::Metis(linear)},
           {"Schur", createSchurOrdering(db, false)},
           {"Colamd", Ordering::Colamd(linear)},

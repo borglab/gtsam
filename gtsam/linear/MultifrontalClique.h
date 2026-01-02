@@ -67,21 +67,27 @@ class GTSAM_EXPORT MultifrontalClique {
   size_t frontalDim = 0;    ///< Frontal dimension.
   size_t separatorDim = 0;  ///< Separator dimension.
 
-  /// Construct a clique from factor indices.
+  /// Construct a clique from factor indices and cache static structure.
   /// @param factorIndices Indices of factors associated with this clique.
   /// @param parent Weak pointer to the parent clique.
+  /// @param frontals Frontal keys for this clique.
+  /// @param separatorKeys Separator keys for this clique.
+  /// @param dims Key->dimension map.
+  /// @param graph Factor graph for sizing and constraints.
+  /// @param solution Solution storage for cached pointers.
   explicit MultifrontalClique(std::vector<size_t> factorIndices,
-                              const std::weak_ptr<MultifrontalClique>& parent);
+                              const std::weak_ptr<MultifrontalClique>& parent,
+                              const KeyVector& frontals,
+                              const KeyVector& separatorKeys,
+                              const std::map<Key, size_t>& dims,
+                              const GaussianFactorGraph& graph,
+                              VectorValues* solution);
 
   /// @name Setup (non-const)
   /// @{
 
-  /// Cache dimensions, cache value pointers, pre-allocate matrices,
-  /// and cache constraint metadata.
-  void finalize(const KeyVector& frontals, const KeyVector& separatorKeys,
-                const std::map<Key, size_t>& dims,
-                const GaussianFactorGraph& graph, VectorValues* solution,
-                std::vector<ChildInfo> children);
+  /// Cache the children list and compute parent indices.
+  void finalize(std::vector<ChildInfo> children);
 
   /// Load factor values into the pre-allocated Ab matrix and Hessians into
   /// sbm_.
@@ -96,9 +102,6 @@ class GTSAM_EXPORT MultifrontalClique {
   int problemSize() const {
     return static_cast<int>(frontalDim + separatorDim);
   }
-
-  /// Get the number of factors in this clique.
-  size_t factorCount() const;
 
   /// Return the number of frontal keys in this clique.
   size_t numFrontals() const { return frontalPtrs_.size(); }

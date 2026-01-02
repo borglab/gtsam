@@ -276,9 +276,10 @@ struct CliqueBuilder {
     KeyVector separatorKeys = keyVectorFromKeySet(
         separatorKeysForSymbolicCluster(cluster, &separatorCache));
 
-    // Create the clique node.
+    // Create the clique node and cache static structure.
     auto clique = std::make_shared<MultifrontalClique>(
-        factorIndicesForSymbolicCluster(cluster), parent);
+        factorIndicesForSymbolicCluster(cluster), parent, frontals,
+        separatorKeys, dims, graph, solution);
 
     // Build children and collect separator keys.
     std::vector<MultifrontalClique::ChildInfo> childInfos;
@@ -291,9 +292,8 @@ struct CliqueBuilder {
       }
     }
 
-    // Finalize cached structure and register clique.
-    clique->finalize(frontals, separatorKeys, dims, graph, solution,
-                     std::move(childInfos));
+    // Finalize children metadata and register clique.
+    clique->finalize(std::move(childInfos));
     cliques->push_back(clique);
     return {clique, std::move(separatorKeys)};
   }

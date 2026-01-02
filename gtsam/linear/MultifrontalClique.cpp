@@ -92,36 +92,15 @@ Vector& buildSeparatorVector(const std::vector<const Vector*>& separatorPtrs,
 
 MultifrontalClique::MultifrontalClique(
     std::vector<size_t> factorIndices,
-    const std::weak_ptr<MultifrontalClique>& parent) {
+    const std::weak_ptr<MultifrontalClique>& parent, const KeyVector& frontals,
+    const KeyVector& separatorKeys, const std::map<Key, size_t>& dims,
+    const GaussianFactorGraph& graph, VectorValues* solution) {
   factorIndices_ = std::move(factorIndices);
   this->parent = parent;
-}
 
-size_t MultifrontalClique::factorCount() const { return factorIndices_.size(); }
-
-std::shared_ptr<GaussianConditional> MultifrontalClique::conditional() const {
-  const KeyVector keys = orderedKeysFromBlockIndex(blockIndex_);
-  SymmetricBlockMatrix& sbm = sbm_;
-  VerticalBlockMatrix Ab = sbm.split(numFrontals());
-  sbm.blockStart() = 0;  // Split sets it to numFrontals(), reset to 0.
-  return std::make_shared<GaussianConditional>(keys, numFrontals(),
-                                               std::move(Ab));
-}
-
-void MultifrontalClique::finalize(const KeyVector& frontals,
-                                  const KeyVector& separatorKeys,
-                                  const std::map<Key, size_t>& dims,
-                                  const GaussianFactorGraph& graph,
-                                  VectorValues* solution,
-                                  std::vector<ChildInfo> children) {
   if (frontals.empty()) {
     throw std::runtime_error(
         "MultifrontalSolver: cluster has no frontal keys.");
-  }
-  this->children.clear();
-  this->children.reserve(children.size());
-  for (const auto& child : children) {
-    this->children.push_back(child.clique);
   }
 
   // Cache the mapping from key to Ab block index for fast fills.
@@ -156,6 +135,21 @@ void MultifrontalClique::finalize(const KeyVector& frontals,
   // Cache pointers into the solution for fast back-substitution.
   cacheSolutionPointers(solution, frontals, separatorKeys);
 
+  // Pre-allocate matrices and cache constraints once per structure.
+  std::vector<size_t> blockDims =
+      this->blockDims(dims, frontals, separatorKeys);
+  size_t vbmRows = countRows(graph);
+  initializeMatrices(blockDims, vbmRows);
+  cacheConstraintInfo(graph);
+}
+
+void MultifrontalClique::finalize(std::vector<ChildInfo> children) {
+  this->children.clear();
+  this->children.reserve(children.size());
+  for (const auto& child : children) {
+    this->children.push_back(child.clique);
+  }
+
   // Compute parent indices for all children.
   for (const auto& child : children) {
     if (!child.clique) continue;
@@ -172,13 +166,6 @@ void MultifrontalClique::finalize(const KeyVector& frontals,
     indices.push_back(blockIndex_.size());
     child.clique->setParentIndices(indices);
   }
-
-  // Pre-allocate matrices and cache constraints once per structure.
-  std::vector<size_t> blockDims =
-      this->blockDims(dims, frontals, separatorKeys);
-  size_t vbmRows = countRows(graph);
-  initializeMatrices(blockDims, vbmRows);
-  cacheConstraintInfo(graph);
 }
 
 void MultifrontalClique::cacheConstraintInfo(const GaussianFactorGraph& graph) {
@@ -330,6 +317,15 @@ void MultifrontalClique::updateParent(MultifrontalClique& parent) const {
   sbm_.blockStart() = 0;
 }
 
+std::shared_ptr<GaussianConditional> MultifrontalClique::conditional() const {
+  const KeyVector keys = orderedKeysFromBlockIndex(blockIndex_);
+  SymmetricBlockMatrix& sbm = sbm_;
+  VerticalBlockMatrix Ab = sbm.split(numFrontals());
+  sbm.blockStart() = 0;  // Split sets it to numFrontals(), reset to 0.
+  return std::make_shared<GaussianConditional>(keys, numFrontals(),
+                                               std::move(Ab));
+}
+
 // Solve with block back-substitution on the Cholesky-stored SBM.
 void MultifrontalClique::updateSolution() const {
   const size_t nf = numFrontals();
@@ -410,7 +406,7 @@ std::ostream& operator<<(std::ostream& os, const MultifrontalClique& clique) {
   printKeyRange(os, orderedKeys,
                 std::min(clique.numFrontals(), orderedKeys.size()),
                 orderedKeys.size(), formatter);
-  os << ", factors=" << clique.factorCount();
+  os << ", factors=" << clique.factorIndices_.size();
   os << ", children=" << clique.children.size();
   os << ", sbmBlocks=" << clique.sbm().nBlocks();
   os << ", AbRows=" << clique.Ab().matrix().rows() << ")";
