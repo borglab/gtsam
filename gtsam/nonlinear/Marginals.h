@@ -31,22 +31,22 @@ class JointMarginal;
  */
 class GTSAM_EXPORT Marginals {
 
-public:
-
-  /** The linear factorization mode - either CHOLESKY (faster and suitable for most problems) or QR (slower but more numerically stable for poorly-conditioned problems). */
+ public:
+  /** The linear factorization mode - either CHOLESKY (faster and suitable for
+   * most problems) or QR (slower but more numerically stable for
+   * poorly-conditioned problems). */
   enum Factorization {
     CHOLESKY,
     QR
   };
 
-protected:
-
+ protected:
   GaussianFactorGraph graph_;
   Values values_;
   Factorization factorization_;
   GaussianBayesTree bayesTree_;
 
-public:
+ public:
 
   /// Default constructor only for wrappers
   Marginals(){}
@@ -54,14 +54,15 @@ public:
   /** Construct a marginals class from a nonlinear factor graph.
    * @param graph The factor graph defining the full joint density on all variables.
    * @param solution The linearization point about which to compute Gaussian marginals (usually the MLE as obtained from a NonlinearOptimizer).
-   * @param factorization The linear decomposition mode - either Marginals::CHOLESKY (faster and suitable for most problems) or Marginals::QR (slower but more numerically stable for poorly-conditioned problems).
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
    */
-  Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization = CHOLESKY);
+  Marginals(const NonlinearFactorGraph& graph, const Values& solution,
+            Factorization factorization = CHOLESKY);
 
   /** Construct a marginals class from a nonlinear factor graph.
    * @param graph The factor graph defining the full joint density on all variables.
    * @param solution The linearization point about which to compute Gaussian marginals (usually the MLE as obtained from a NonlinearOptimizer).
-   * @param factorization The linear decomposition mode - either Marginals::CHOLESKY (faster and suitable for most problems) or Marginals::QR (slower but more numerically stable for poorly-conditioned problems).
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
    * @param ordering The ordering for elimination.
    */
   Marginals(const NonlinearFactorGraph& graph, const Values& solution, const Ordering& ordering,
@@ -70,37 +71,43 @@ public:
   /** Construct a marginals class from a linear factor graph.
    * @param graph The factor graph defining the full joint density on all variables.
    * @param solution The solution point to compute Gaussian marginals.
-   * @param factorization The linear decomposition mode - either Marginals::CHOLESKY (faster and suitable for most problems) or Marginals::QR (slower but more numerically stable for poorly-conditioned problems).
-   */          
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
+   */
   Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization = CHOLESKY);
 
   /** Construct a marginals class from a linear factor graph.
    * @param graph The factor graph defining the full joint density on all variables.
    * @param solution The solution point to compute Gaussian marginals.
-   * @param factorization The linear decomposition mode - either Marginals::CHOLESKY (faster and suitable for most problems) or Marginals::QR (slower but more numerically stable for poorly-conditioned problems).
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
    * @param ordering The ordering for elimination.
-   */          
+   */
   Marginals(const GaussianFactorGraph& graph, const Values& solution, const Ordering& ordering,
               Factorization factorization = CHOLESKY);
 
   /** Construct a marginals class from a linear factor graph.
    * @param graph The factor graph defining the full joint density on all variables.
    * @param solution The solution point to compute Gaussian marginals.
-   * @param factorization The linear decomposition mode - either Marginals::CHOLESKY (faster and suitable for most problems) or Marginals::QR (slower but more numerically stable for poorly-conditioned problems).
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
    * @param ordering An optional variable ordering for elimination.
-   */          
+   */
   Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization = CHOLESKY);
 
   /** Construct a marginals class from a linear factor graph.
    * @param graph The factor graph defining the full joint density on all variables.
    * @param solution The solution point to compute Gaussian marginals.
-   * @param factorization The linear decomposition mode - either Marginals::CHOLESKY (faster and suitable for most problems) or Marginals::QR (slower but more numerically stable for poorly-conditioned problems).
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
    * @param ordering An optional variable ordering for elimination.
-   */          
+   */
   Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, const Ordering& ordering,
               Factorization factorization = CHOLESKY);
 
-  /** Construct a marginals class from a precomputed Bayes tree. */
+  /**
+   * Construct a marginals class from a precomputed Bayes tree.
+   * @param bayesTree The precomputed Gaussian Bayes tree representing the
+   * factorization of the linear system.
+   * @param solution The solution point at which to compute Gaussian marginals.
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
+   */
   Marginals(GaussianBayesTree&& bayesTree, const VectorValues& solution,
             Factorization factorization = CHOLESKY);
 
@@ -129,7 +136,7 @@ public:
   /** Optimize the bayes tree */
   VectorValues optimize() const;
 
-protected:
+ protected:
   
   /** Compute the Bayes Tree as a helper function to the constructor */
   void computeBayesTree();
@@ -143,12 +150,12 @@ protected:
  */
 class GTSAM_EXPORT JointMarginal {
 
-protected:
+ protected:
   SymmetricBlockMatrix blockMatrix_;
   KeyVector keys_;
   FastMap<Key, size_t> indices_;
 
-public:
+ public:
   /// Default constructor only for wrappers
   JointMarginal() {}
 
@@ -184,7 +191,7 @@ public:
   /** Print */
   void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
-protected:
+ protected:
   JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const KeyVector& keys) :
     blockMatrix_(dims, fullMatrix), keys_(keys), indices_(Ordering(keys).invert()) {}
 
