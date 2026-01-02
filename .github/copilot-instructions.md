@@ -1,5 +1,5 @@
 For reviewing PRs:
-* All functions in header files should have doxygen-style API docs
+* All functions in header files should have doxygen-style API docs, /** */ style, except small functions like getters which can have single line /// comments, no need for @brief, @params etc
 * Use /// for single-line comments rather than /** */
 * Use meaningful variable names, e.g. `measurement` not `msm`, avoid abbreviations.
 * Flag overly complex or long/functions: break up in smaller functions
