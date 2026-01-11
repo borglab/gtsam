@@ -62,7 +62,7 @@ class GTSAM_EXPORT MultifrontalSolver
     size_t leafMergeDimCap = 256;           ///< Leaf-merge cap (0 disables).
     size_t mergeDimCap = 32;                ///< Merge threshold (0 disables).
     std::ostream* reportStream = nullptr;   ///< Optional structure reporting.
-    int eliminationParallelThreshold = 10;  ///< Post-order task threshold.
+    int eliminationParallelThreshold = 32;  ///< Post-order task threshold.
     int solutionParallelThreshold = 4096;   ///< Pre-order task threshold.
     size_t numThreads = 0;  ///< Worker count (0 uses 0.75 * hw threads).
   };
