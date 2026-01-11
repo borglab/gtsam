@@ -113,7 +113,8 @@ class GTSAM_EXPORT MultifrontalClique {
   ///              numerical values). Only JacobianFactor inputs are supported.
   void fillAb(const GaussianFactorGraph& graph);
 
-  /// Zero out sbm, re-add Hessians, accumulate Jacobians and children.
+  /// Zero out the info matrix, re-add Hessians, accumulate Jacobians and
+  /// children.
   void prepareForElimination();
 
   /// Perform Cholesky factorization on the frontal block.
@@ -153,8 +154,8 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Get the vertical block matrix Ab.
   const VerticalBlockMatrix& Ab() const { return Ab_; }
 
-  /// Get the symmetric block matrix (const).
-  const SymmetricBlockMatrix& sbm() const { return sbm_; }
+  /// Get the information matrix (const).
+  const SymmetricBlockMatrix& info() const { return info_; }
 
   /// Check if this clique is using QR elimination.
   bool useQR() const { return solveMode_ == SolveMode::QrLeaf; }
@@ -175,7 +176,7 @@ class GTSAM_EXPORT MultifrontalClique {
   /**
    * Eliminate this clique and propagate its separator contribution upward.
    *
-   * Computes the local normal equations (SBM) from the stacked Jacobian (Ab),
+   * Computes the local information matrix from the stacked Jacobian (Ab),
    * incorporates child separator contributions, and performs partial Cholesky
    * on the frontal blocks. Requires parent indices to be precomputed.
    */
@@ -192,7 +193,8 @@ class GTSAM_EXPORT MultifrontalClique {
    * cached solution vectors.
    *
    * Uses block back-substitution using the upper triangular-part of the
-   * Cholesky-stored SBM, solving the triangular system for the frontal blocks.
+   * Cholesky-stored information matrix, solving the triangular system for the
+   * frontal blocks.
    */
   void updateSolution() const;
   /// @}
@@ -210,13 +212,16 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Linear lookup for block index in small cliques.
   DenseIndex blockIndex(Key key) const;
 
-  /// Update a parent SBM with this clique's separator contribution.
-  void updateParentSbm(SymmetricBlockMatrix& parentSbm) const;
+  /// Update a parent information matrix with this clique's separator
+  /// contribution.
+  void updateParentInfo(SymmetricBlockMatrix& parentInfo) const;
 
-  /// Accumulate children separator updates into this clique's SBM (single-threaded).
+  /// Accumulate children separator updates into this clique's info matrix
+  /// (single-threaded).
   void gatherUpdatesSequential();
 
-  /// Accumulate children separator updates into this clique's SBM (multi-threaded).
+  /// Accumulate children separator updates into this clique's info matrix
+  /// (multi-threaded).
   void gatherUpdatesParallel(size_t numThreads);
 
   /// Compute block dimensions from variable dimensions (excluding RHS).
@@ -232,8 +237,8 @@ class GTSAM_EXPORT MultifrontalClique {
   void initializeMatrices(const std::vector<size_t>& blockDims,
                           size_t totalNumRows);
 
-  /// Allocate the symmetric block matrix if needed.
-  void allocateSbm();
+  /// Allocate the information matrix if needed.
+  void allocateInfo();
 
   /**
    * Add a Jacobian factor's contributions into the Ab matrix.
@@ -260,7 +265,7 @@ class GTSAM_EXPORT MultifrontalClique {
   SolveMode solveMode_ = SolveMode::Cholesky;
 
   // Elimination-time state.
-  mutable SymmetricBlockMatrix sbm_;
+  mutable SymmetricBlockMatrix info_;
   mutable VerticalBlockMatrix RSd_;  ///< Cached [R S d] from elimination.
   mutable bool RSdReady_ = false;
 

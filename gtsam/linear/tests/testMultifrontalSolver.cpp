@@ -72,7 +72,7 @@ TEST(MultifrontalSolver, Constructor) {
   auto childClique = root->children[0];
 
   // Verify matrices in leaf (childClique)
-  EXPECT_LONGS_EQUAL(4, childClique->sbm().nBlocks());
+  EXPECT_LONGS_EQUAL(4, childClique->info().nBlocks());
   EXPECT_LONGS_EQUAL(2, childClique->Ab().rows());
   EXPECT_LONGS_EQUAL(4, childClique->Ab().nBlocks());
 
@@ -104,7 +104,7 @@ TEST(MultifrontalSolver, ConstructorPrecomputed) {
 
   // Verify matrices in leaf (childClique)
   CHECK(childClique->useQR() == false);
-  EXPECT_LONGS_EQUAL(4, childClique->sbm().nBlocks());
+  EXPECT_LONGS_EQUAL(4, childClique->info().nBlocks());
   EXPECT_LONGS_EQUAL(2, childClique->Ab().rows());
   EXPECT_LONGS_EQUAL(4, childClique->Ab().nBlocks());
 
@@ -368,7 +368,7 @@ TEST(MultifrontalSolver, BalancedSmoother) {
   EXPECT(solver.roots().size() == 1);
   auto root = solver.roots()[0];
 
-  EXPECT_LONGS_EQUAL(root->Ab().nBlocks(), root->sbm().nBlocks());
+  EXPECT_LONGS_EQUAL(root->Ab().nBlocks(), root->info().nBlocks());
 
   // Check a leaf clique block structure.
   MultifrontalSolver::CliquePtr leaf = nullptr;
@@ -377,7 +377,7 @@ TEST(MultifrontalSolver, BalancedSmoother) {
       [&](MultifrontalSolver::CliquePtr c) {
         if (!c) return;
         if (c->children.empty()) {
-          const size_t blocks = c->sbm().nBlocks();
+          const size_t blocks = c->info().nBlocks();
           if (blocks < minBlocks) {
             minBlocks = blocks;
             leaf = c;

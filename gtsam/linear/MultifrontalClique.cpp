@@ -92,7 +92,7 @@ size_t hardwareThreads() {
   return kHardwareThreads;
 }
 
-SymmetricBlockMatrix makeZeroLocalSbm(const std::vector<size_t>& blockDims) {
+SymmetricBlockMatrix makeZeroLocalInfo(const std::vector<size_t>& blockDims) {
   SymmetricBlockMatrix local(blockDims, true);
   local.setZero();
   return local;
@@ -151,7 +151,7 @@ void MultifrontalClique::finalize(std::vector<ChildInfo> children) {
     for (Key key : child.separatorKeys) {
       indices.push_back(blockIndex(key));
     }
-    // The RHS block is always the last block in Ab/SBM.
+    // The RHS block is always the last block in Ab/info.
     indices.push_back(static_cast<DenseIndex>(orderedKeys_.size()));
     child.clique->setParentIndices(indices);
   }
@@ -199,9 +199,9 @@ void MultifrontalClique::initializeMatrices(
       VerticalBlockMatrix(blockDims, static_cast<DenseIndex>(frontalDim), true);
 }
 
-void MultifrontalClique::allocateSbm() {
-  if (sbm_.nBlocks() > 0) return;
-  sbm_ = SymmetricBlockMatrix(blockDims_, true);
+void MultifrontalClique::allocateInfo() {
+  if (info_.nBlocks() > 0) return;
+  info_ = SymmetricBlockMatrix(blockDims_, true);
 }
 
 size_t MultifrontalClique::addJacobianFactor(
@@ -256,21 +256,21 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
   assert((useQR && RSd_.matrix().rows() ==
                        static_cast<DenseIndex>(Ab_.matrix().rows()) ||
           RSd_.matrix().rows() == static_cast<DenseIndex>(frontalDim)));
-  allocateSbm();
+  allocateInfo();
 }
 
 void MultifrontalClique::prepareForElimination() {
-  // QR leaf cliques skip SBM assembly entirely.
+  // QR leaf cliques skip info matrix assembly entirely.
   if (useQR()) return;
-  assert(sbm_.nBlocks() > 0);
-  sbm_.setZero();
+  assert(info_.nBlocks() > 0);
+  info_.setZero();
   if (Ab_.matrix().rows() > 0) {
-    sbm_.selfadjointView().rankUpdate(Ab_.matrix().transpose());
+    info_.selfadjointView().rankUpdate(Ab_.matrix().transpose());
   }
 
   // Heuristic: avoid parallel overhead on small cliques.
   const size_t minChildren =
-      std::max<size_t>(1024, 4 * static_cast<size_t>(sbm_.rows()));
+      std::max<size_t>(1024, 4 * static_cast<size_t>(info_.rows()));
   const size_t numChildren = children.size();
   if (numChildren < minChildren) {  // Typical for chains: many small cliques.
     gatherUpdatesSequential();
@@ -293,9 +293,9 @@ void MultifrontalClique::factorize() {
     RSd_.matrix() = Ab_.matrix();
     inplace_QR(RSd_.matrix());
   } else {
-    sbm_.choleskyPartial(numFrontals());
-    sbm_.split(numFrontals(), &RSd_);
-    sbm_.blockStart() = 0;
+    info_.choleskyPartial(numFrontals());
+    info_.split(numFrontals(), &RSd_);
+    info_.blockStart() = 0;
   }
   RSdReady_ = true;
 }
@@ -303,7 +303,7 @@ void MultifrontalClique::factorize() {
 void MultifrontalClique::addIdentityDamping(double lambda) {
   const size_t nf = numFrontals();
   for (size_t j = 0; j < nf; ++j) {
-    sbm_.addScaledIdentity(j, lambda);
+    info_.addScaledIdentity(j, lambda);
   }
 }
 
@@ -312,8 +312,8 @@ void MultifrontalClique::addDiagonalDamping(double lambda, double minDiagonal,
   const size_t nf = numFrontals();
   for (size_t j = 0; j < nf; ++j) {
     const Vector scaled =
-        lambda * sbm_.diagonal(j).cwiseMax(minDiagonal).cwiseMin(maxDiagonal);
-    sbm_.addToDiagonalBlock(j, scaled);
+        lambda * info_.diagonal(j).cwiseMax(minDiagonal).cwiseMin(maxDiagonal);
+    info_.addToDiagonalBlock(j, scaled);
   }
 }
 
@@ -322,32 +322,32 @@ void MultifrontalClique::eliminateInPlace() {
   factorize();
 }
 
-void MultifrontalClique::updateParentSbm(
-    SymmetricBlockMatrix& parentSbm) const {
+void MultifrontalClique::updateParentInfo(
+    SymmetricBlockMatrix& parentInfo) const {
   if (useQR()) {
     // Accumulate separator (and RHS) normal equations (S^T S) into the parent.
     assert(RSdReady_ && RSd_.firstBlock() == 0);
     const DenseIndex nfBlocks = static_cast<DenseIndex>(numFrontals());
     RSd_.firstBlock() = nfBlocks;
-    parentSbm.updateFromOuterProductBlocks(RSd_, parentIndices_);
+    parentInfo.updateFromOuterProductBlocks(RSd_, parentIndices_);
     RSd_.firstBlock() = 0;
   } else {
-    // Accumulate the S^T S part from this clique's SBM into the parent.
-    assert(sbm_.nBlocks() > 0 && sbm_.blockStart() == 0);
-    sbm_.blockStart() = numFrontals();
-    parentSbm.updateFromMappedBlocks(sbm_, parentIndices_);
-    sbm_.blockStart() = 0;
+    // Accumulate the S^T S part from this clique's info matrix into the parent.
+    assert(info_.nBlocks() > 0 && info_.blockStart() == 0);
+    info_.blockStart() = numFrontals();
+    parentInfo.updateFromMappedBlocks(info_, parentIndices_);
+    info_.blockStart() = 0;
   }
 }
 
 void MultifrontalClique::updateParent(MultifrontalClique& parent) const {
-  updateParentSbm(parent.sbm_);
+  updateParentInfo(parent.info_);
 }
 
 void MultifrontalClique::gatherUpdatesSequential() {
   for (const auto& child : children) {
     assert(child);
-    child->updateParentSbm(sbm_);
+    child->updateParentInfo(info_);
   }
 }
 
@@ -355,28 +355,28 @@ void MultifrontalClique::gatherUpdatesParallel(size_t numThreads) {
 #ifdef GTSAM_USE_TBB
   (void)numThreads;  // TBB controls the effective worker count.
   tbb::enumerable_thread_specific<SymmetricBlockMatrix> locals([this]() {
-    return makeZeroLocalSbm(blockDims_);
+    return makeZeroLocalInfo(blockDims_);
   });  // Per-thread accumulators.
   tbb::parallel_for(
       tbb::blocked_range<size_t>(0, children.size()),
       [&](const tbb::blocked_range<size_t>& range) {
-        auto& local = locals.local();  // Thread-local SBM.
+        auto& local = locals.local();  // Thread-local info matrix.
         for (size_t i = range.begin(); i < range.end(); ++i) {
           const auto& child = children[i];
           assert(child);
-          child->updateParentSbm(
-              local);  // No locking: each thread writes its own SBM.
+          child->updateParentInfo(
+              local);  // No locking: each thread writes its own info matrix.
         }
       });
   locals.combine_each([this](const SymmetricBlockMatrix& local) {
-    sbm_.addUpperTriangular(
-        local);  // Merge per-thread partial SBMs into this clique SBM.
+    info_.addUpperTriangular(
+        local);  // Merge per-thread partial info matrices into this clique.
   });
 #else
   std::vector<SymmetricBlockMatrix> locals;
   locals.reserve(numThreads);  // Fixed-size per-thread accumulators.
   for (size_t i = 0; i < numThreads; ++i) {
-    locals.push_back(makeZeroLocalSbm(blockDims_));
+    locals.push_back(makeZeroLocalInfo(blockDims_));
   }
   std::vector<std::thread> threads;
   threads.reserve(numThreads);
@@ -391,8 +391,8 @@ void MultifrontalClique::gatherUpdatesParallel(size_t numThreads) {
       for (size_t i = start; i < end; ++i) {
         const auto& child = children[i];
         assert(child);
-        child->updateParentSbm(
-            local);  // No locking: each thread writes its own SBM.
+        child->updateParentInfo(
+            local);  // No locking: each thread writes its own info matrix.
       }
     });
   }
@@ -400,8 +400,8 @@ void MultifrontalClique::gatherUpdatesParallel(size_t numThreads) {
     thread.join();  // Ensure all locals are complete before merge.
   }
   for (const auto& local : locals) {
-    sbm_.addUpperTriangular(
-        local);  // Merge per-thread partial SBMs into this clique SBM.
+    info_.addUpperTriangular(
+        local);  // Merge per-thread partial info matrices into this clique.
   }
 #endif
 }
@@ -413,7 +413,7 @@ std::shared_ptr<GaussianConditional> MultifrontalClique::conditional() const {
                                                RSd_);
 }
 
-// Solve with block back-substitution on the Cholesky-stored SBM.
+// Solve with block back-substitution on the Cholesky-stored info matrix.
 void MultifrontalClique::updateSolution() const {
   assert(RSdReady_);
   // Use cached [R S d] for fast back-substitution.
@@ -462,19 +462,19 @@ void MultifrontalClique::print(const std::string& s,
                 keyFormatter);
   std::cout << "], factors=" << factorIndices_.size()
             << ", children=" << children.size()
-            << ", sbmBlocks=" << sbm_.nBlocks()
+            << ", infoBlocks=" << info_.nBlocks()
             << ", AbRows=" << Ab_.matrix().rows() << ")\n";
 
-  auto assembleSbm = [](const SymmetricBlockMatrix& sbm) {
-    const size_t nBlocks = sbm.nBlocks();
+  auto assembleInfo = [](const SymmetricBlockMatrix& info) {
+    const size_t nBlocks = info.nBlocks();
     std::vector<size_t> offsets(nBlocks + 1, 0);
     for (size_t i = 0; i < nBlocks; ++i) {
-      offsets[i + 1] = offsets[i] + sbm.getDim(i);
+      offsets[i + 1] = offsets[i] + info.getDim(i);
     }
     Matrix full = Matrix::Zero(offsets.back(), offsets.back());
     for (size_t i = 0; i < nBlocks; ++i) {
       for (size_t j = 0; j < nBlocks; ++j) {
-        Matrix block = sbm.block(i, j);
+        Matrix block = info.block(i, j);
         full.block(offsets[i], offsets[j], block.rows(), block.cols()) = block;
       }
     }
@@ -482,7 +482,7 @@ void MultifrontalClique::print(const std::string& s,
   };
 
   std::cout << "  Ab:\n" << Ab_.matrix() << "\n";
-  std::cout << "  SBM:\n" << assembleSbm(sbm_) << "\n";
+  std::cout << "  info:\n" << assembleInfo(info_) << "\n";
 }
 
 std::ostream& operator<<(std::ostream& os, const MultifrontalClique& clique) {
@@ -497,7 +497,7 @@ std::ostream& operator<<(std::ostream& os, const MultifrontalClique& clique) {
                 orderedKeys.size(), formatter);
   os << ", factors=" << clique.factorIndices_.size();
   os << ", children=" << clique.children.size();
-  os << ", sbmBlocks=" << clique.sbm().nBlocks();
+  os << ", infoBlocks=" << clique.info().nBlocks();
   os << ", AbRows=" << clique.Ab().matrix().rows() << ")";
   return os;
 }
