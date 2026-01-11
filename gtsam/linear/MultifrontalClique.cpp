@@ -122,11 +122,12 @@ MultifrontalClique::MultifrontalClique(
                       separatorKeys.end());
 
   // Cache total frontal/separator dimensions for scheduling and sizing.
-  frontalDim = internal::sumDims(dims, frontals);
-  separatorDim = internal::sumDims(dims, separatorKeys);
-
+  const size_t frontalDim = internal::sumDims(dims, frontals);
+  const size_t separatorDim = internal::sumDims(dims, separatorKeys);
   rhsScratch_.resize(frontalDim);
   separatorScratch_.resize(separatorDim);
+  localWork_ = frontalDim + separatorDim;
+  subtreeWork_ = localWork_;
 
   // Cache pointers into the solution for fast back-substitution.
   cacheSolutionPointers(solution, frontals, separatorKeys);
@@ -141,6 +142,13 @@ void MultifrontalClique::finalize(std::vector<ChildInfo> children) {
   this->children.reserve(children.size());
   for (const auto& child : children) {
     this->children.push_back(child.clique);
+  }
+
+  // Cache subtree max work proxy for traversal scheduling.
+  subtreeWork_ = localWork_;
+  for (const auto& child : this->children) {
+    if (!child) continue;
+    subtreeWork_ = std::max(subtreeWork_, child->subtreeWork_);
   }
 
   // Compute parent indices for all children (separator blocks + RHS block).
@@ -195,8 +203,8 @@ void MultifrontalClique::initializeMatrices(
   Ab_ = VerticalBlockMatrix(blockDims, verticalBlockMatrixRows, true);
   // Ab's structure is fixed; clear it once and reuse across loads.
   Ab_.matrix().setZero();
-  RSd_ =
-      VerticalBlockMatrix(blockDims, static_cast<DenseIndex>(frontalDim), true);
+  RSd_ = VerticalBlockMatrix(blockDims, static_cast<DenseIndex>(frontalDim()),
+                             true);
 }
 
 void MultifrontalClique::allocateInfo() {
@@ -247,6 +255,8 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
 
   // Lock in QR only for leaf cliques.
   const bool isLeaf = children.empty();
+  const size_t frontalDim = this->frontalDim();
+  const size_t separatorDim = this->separatorDim();
   const bool useQR =
       isLeaf && (frontalDim > 0) &&
       (frontalDim + separatorDim > kQrAspectRatio * frontalDim) &&

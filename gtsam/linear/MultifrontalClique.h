@@ -28,6 +28,7 @@
 #include <gtsam/symbolic/SymbolicFactor.h>
 
 #include <iosfwd>
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -79,10 +80,8 @@ class GTSAM_EXPORT MultifrontalClique {
     KeySet separatorKeys;
   };
 
-  std::weak_ptr<MultifrontalClique> parent;  ///< Parent clique.
-  Children children;        ///< Child cliques used for traversal.
-  size_t frontalDim = 0;    ///< Frontal dimension.
-  size_t separatorDim = 0;  ///< Separator dimension.
+  std::weak_ptr<MultifrontalClique> parent;  /// < Parent clique.
+  Children children;  /// < Child cliques used for traversal.
 
   /// Construct a clique from factor indices and cache static structure.
   /// @param factorIndices Indices of factors associated with this clique.
@@ -140,9 +139,23 @@ class GTSAM_EXPORT MultifrontalClique {
   /// @name Read-only methods
   /// @{
 
+  /// Return the total frontal dimension for this clique.
+  size_t frontalDim() const { return static_cast<size_t>(rhsScratch_.size()); }
+
+  /// Return the total separator dimension for this clique.
+  size_t separatorDim() const {
+    return static_cast<size_t>(separatorScratch_.size());
+  }
+
   /// Get the cached problem size for traversal scheduling.
+  ///
+  /// This is a proxy for the work in the subtree rooted at this clique, used
+  /// only to decide whether to spawn parallel traversal tasks.
   int problemSize() const {
-    return static_cast<int>(frontalDim + separatorDim);
+    constexpr size_t kMaxInt =
+        static_cast<size_t>(std::numeric_limits<int>::max());
+    const size_t clamped = subtreeWork_ > kMaxInt ? kMaxInt : subtreeWork_;
+    return static_cast<int>(clamped);
   }
 
   /// Return the number of frontal keys in this clique.
@@ -270,9 +283,12 @@ class GTSAM_EXPORT MultifrontalClique {
   mutable bool RSdReady_ = false;
 
   // Solve-time scratch space.
-  mutable Vector rhsScratch_;  ///< Cached RHS workspace for back-substitution.
+  mutable Vector rhsScratch_;  /// < Cached RHS workspace for back-substitution.
   mutable Vector
-      separatorScratch_;  ///< Cached separator stack for back-substitution.
+      separatorScratch_;  /// < Cached separator stack for back-substitution.
+
+  size_t localWork_ = 0;    /// < Local work proxy (dimension-based).
+  size_t subtreeWork_ = 0;  /// < Subtree-max work proxy for task scheduling.
 
   static constexpr double kQrAspectRatio = 2.0;
 };
