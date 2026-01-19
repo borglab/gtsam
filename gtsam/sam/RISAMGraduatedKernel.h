@@ -16,6 +16,10 @@
 #include <optional>
 
 namespace gtsam {
+
+/** @brief Base class for graduated kernels for riSAM
+ * Advanced users can write their own kernels by inheriting from this class
+ */
 class GraduatedKernel {
   /** TYPES **/
  public:
@@ -90,92 +94,42 @@ class GraduatedKernel {
 };
 
 /* ************************************************************************* */
+/** @brief Implementation of the Scale Invariant Graduated Kernel
+ * Based on the Geman-McClure Kernel this kernel has the mathematical form:
+ *
+ * \rho(r) = 0.5 * \frac{c^2 * r^2}{c^2 + (r^2)^\mu}
+ *
+ * where c is the shape parameter and r is the residual of the factor
+ */
 class SIGKernel : public GraduatedKernel {
-  /** My version of the Graduated version of the Geman-McClure kernel */
-
   /** TYPES **/
  public:
   /// @brief Shortcut for shared pointer
   typedef std::shared_ptr<SIGKernel> shared_ptr;
-
-  /// @brief Strategies for updating Mu between GNC iterations of riSAM
-  enum class MuUpdateStrategy {
-    MCGANN_2023,     // Geometric Series:  mu[t+1] = mu[t] + (mu[t] + 0.1) * 1.2
-    SIMPLE_HUBER,    // Fixed Pattern [mu_init, 0.5, 1.0]
-    KANG_CODE_2023,  // Sequence: [mu_init, mu*, 1.0] with early outlier
-                     // rejection for r > kang_residual_threshold [2]
-    KANG_PAPER_2023,  // Sequence: [mu_init, mu*, 1.0] (no early outlier
-                      // rejection was presented in paper) [2]
-    ONESTEP,          // Jump to mu=1.0 after initial convex step
-    HALVES,           // Arithmetic Series: mu[t+1] = mu[t] + (1/2)
-    THIRDS,           // Arithmetic Series: mu[t+1] = mu[t] + (1/3)
-    FOURTHS,          // Arithmetic Series: mu[t+1] = mu[t] + (1/4)
-    ASYM_FOURTHS,     // Conditional Arithmetic Series: mu[t+1] = mu[t] + 0.5 if
-                      // (t==0) else mu[t] + 0.25
-    NONCONVEX,        // Conditional Arithmetic Series: mu[t+1] = mu[t] + 0.7 if
-                      // (t==0) else mu[t] + 0.2
-    STABLE  // Conditional Arithmetic Series: mu[t+1] = mu[t] + 0.5 if (t==0),
-            // mu[t] + 0.4 if (t==1), else mu[t] + 0.05
-  };
-  /// @brief Strategies for update Mu_init after convergence
-  enum class MuInitIncrementStrategy {
-    MCGANN_2023,
-    EQUAL_3,
-    EQUAL_4,
-    EQUAL_5,
-    EQUAL_10,
-    EQUAL_20,
-    EQUAL_50
-  };
-
-  struct Parameters {
-    /// @brief The shape parameter of the GM kernel.
-    double shape_param{1};
-    /// @brief The update strategy to use for mu updates
-    MuUpdateStrategy mu_update_strat{MuUpdateStrategy::MCGANN_2023};
-    /// @brief The update strategy to use for mu_init increments
-    MuInitIncrementStrategy mu_init_inc_strat{
-        MuInitIncrementStrategy::MCGANN_2023};
-
-    /// @brief The residual threshold use to skip to mu=1.0 in the provided for
-    /// [2] Required only if mu_update_strat == KANG_CODE_2023
-    std::optional<double> kang_residual_threshold{std::nullopt};
-
-    /// @brief Default Constructor
-    explicit Parameters() = default;
-    /// @brief Parameterized Constructor
-    Parameters(double shape_param, MuUpdateStrategy mu_update_strat,
-               MuInitIncrementStrategy mu_init_inc_strat,
-               std::optional<double> kang_residual_threshold = std::nullopt)
-        : shape_param(shape_param),
-          mu_update_strat(mu_update_strat),
-          mu_init_inc_strat(mu_init_inc_strat),
-          kang_residual_threshold(kang_residual_threshold) {}
-    /// @brief Static Constructor to work around GCC Bug
-    static Parameters Default() { return Parameters(); };
-  };
+  /// @brief Function type for mu update sequence
+  typedef std::function<double(double, double, size_t)> MuUpdateStrategy;
 
   /** FIELDS **/
  public:
-  const Parameters params_;
-
-  /** @brief Params Constructor
-   * @param params: The parameters to configure the kernel
-   */
-  SIGKernel(const Parameters params = Parameters::Default())
-      : GraduatedKernel(0.0, 1.0), params_(params) {};
+  /// @brief The shape parameter of the SIG kernel 'c'
+  double shape_param;
+  /// @brief The update strategy for the sequence mu_ values
+  MuUpdateStrategy mu_update_strat;
+  /// @brief The amount to increment/decrement mu init if the factor is a strong
+  /// inlier/outlier when values converge
+  double mu_init_increment;
 
   /** @brief Individual Parameter Constructor
    * @param shape_param: The shape parameter for the kernel
    * @param mu_update_strat: The update strategy to use for mu updates
-   * @param mu_init_inc_strat: The update strategy to use for mu_init increments
+   * @param mu_init_increment: The amount to increment/decrement mu init
    */
-  SIGKernel(double shape_param, MuUpdateStrategy mu_update_strat,
-            MuInitIncrementStrategy mu_init_inc_strat,
-            std::optional<double> kang_residual_threshold = std::nullopt)
+  SIGKernel(double shape_param, MuUpdateStrategy mu_update_strat=muUpdateStable,
+            double mu_init_increment=0.2)
       : GraduatedKernel(0.0, 1.0),
-        params_(Parameters(shape_param, mu_update_strat, mu_init_inc_strat,
-                           kang_residual_threshold)) {};
+        shape_param(shape_param),
+        mu_update_strat(mu_update_strat),
+        mu_init_increment(mu_init_increment) {}
 
   /** Interface **/
  public:
@@ -193,6 +147,8 @@ class SIGKernel : public GraduatedKernel {
   /// @brief @see GraduatedKernel
   bool isMuConverged(const double& mu) const override;
 
+  /** STATIC HELPERS **/
+ public:
   /** @brief Computes a shape param based on an an influence threshold for
    * outliers Computes a shape param such that an outlier (any measurement with
    * residual equal to or greater than the chi2_outlier_threshold) will have an
@@ -220,9 +176,14 @@ class SIGKernel : public GraduatedKernel {
    */
   static double shapeParamFromChi2(size_t dof, double chi2_threshold);
 
-  /** HELPERS **/
- protected:
-  /// @brief Second derivative of the SIG Kernel wrt r
-  double secondDerivative(const double& r, const double& mu) const;
+  /** Default Mu Update Strategies **/
+  /// @brief Mu Update sequence empirically discovered and presented in the orig
+  /// riSAM paper
+  static double muUpdateMcGann2023(const double& mu, const double& residual,
+                                   const size_t& update_count);
+  /// @brief More stable Mu Update sequence developed empirically since
+  /// algorithm was published
+  static double muUpdateStable(const double& mu, const double& residual,
+                               const size_t& update_count);
 };
 }  // namespace gtsam

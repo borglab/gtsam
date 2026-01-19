@@ -18,10 +18,11 @@
  */
 #pragma once
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/sam/RISAM.h>
 #include <gtsam/sam/RISAMGraduatedKernel.h>
 
 namespace gtsam {
+
+/// @brief Graduated Factor for riSAM base class
 class GraduatedFactor {
   /** TYPES **/
  public:
@@ -34,7 +35,7 @@ class GraduatedFactor {
   /// @brief The unique mu control parameter for this factor
   std::shared_ptr<double> mu_;
 
-  /// befriend RISAM to give access to these protected values
+  /// Befriend RISAM to give access to these protected values
   friend class RISAM;
 
   /**INTERFACE**/
@@ -74,6 +75,7 @@ class GraduatedFactor {
   virtual gtsam::NonlinearFactor::shared_ptr cloneUngraduated() const = 0;
 };
 
+/// @brief Instantiation of Graduated Factor wrapping any Nonlinear Factor
 template <class FACTOR_TYPE>
 class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
   static_assert(std::is_base_of<gtsam::NonlinearFactor, FACTOR_TYPE>::value,
@@ -87,38 +89,30 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
   /**INTERFACE**/
  public:
   /** @brief Constructor
+   * @param kernel: The graduated kernel to use for this factor
    * @param args: The arguments required to construct the FACTOR_TYPE
    */
   template <class... Args>
   GenericGraduatedFactor(GraduatedKernel::shared_ptr kernel, Args&&... args)
       : FACTOR_TYPE(std::forward<Args>(args)...), GraduatedFactor(kernel) {}
 
-  /// @brief Copy constructor
+  /// @brief Copy Constructor
   GenericGraduatedFactor(const GenericGraduatedFactor<FACTOR_TYPE>& other)
       : FACTOR_TYPE(other), GraduatedFactor(other.kernel_) {}
 
-  /// @brief makes a deep copy
+  /// @brief Makes a deep copy of the factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
     return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(
             new GenericGraduatedFactor<FACTOR_TYPE>(*this)));
   }
 
-  gtsam::GaussianFactor::shared_ptr linearize(
-      const gtsam::Values& current_estimate) const override {
-    return linearizeGraduated(current_estimate);
-  }
-
-  /// @brief For graduated factors return 0.5 \rho(r)^2
-  double error(const gtsam::Values& values) const override {
-    return 0.5 * std::pow(robustResidual(values), 2);
-  }
-
-  /** GRADUATED INTERFACE **/
+  /// @brief Linearizes the factor using the current value of mu
   gtsam::GaussianFactor::shared_ptr linearizeGraduated(
       const gtsam::Values& current_estimate) const override {
     double r = residual(current_estimate);
 
+    // Use base factor to linearize
     gtsam::Matrix A;
     gtsam::Vector b;
     auto whitened_linear_system = FACTOR_TYPE::linearize(current_estimate);
@@ -147,35 +141,33 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
     return std::make_shared<gtsam::JacobianFactor>(Ablock_map, b);
   }
 
-  /* *************************************************************************
-   */
+  /// @brief Linearize the System @see NonlinearFactor::linearize
+  GaussianFactor::shared_ptr linearize(
+      const gtsam::Values& current_estimate) const override {
+    // Delegate to linearizeGraduated which is required by the GraduatedFactor
+    // Interface
+    return linearizeGraduated(current_estimate);
+  }
+
+  /// @brief Returns 0.5 \rho(r)^2
+  double error(const gtsam::Values& values) const override {
+    return 0.5 * std::pow(robustResidual(values), 2);
+  }
+
+  /** GRADUATED INTERFACE **/
+  /// @brief See GraduatedFactor::residual
   double residual(const gtsam::Values& current_estimate) const override {
     return sqrt(2.0 * FACTOR_TYPE::error(current_estimate));
   }
 
-  /* *************************************************************************
-   */
+  /// @brief See GraduatedFactor::robustResidual
   double robustResidual(const gtsam::Values& current_estimate) const override {
     return kernel_->error(residual(current_estimate), *mu_);
   }
 
-  /* *************************************************************************
-   */
+  /// @brief See GraduatedFactor::cloneUngraduated
   gtsam::NonlinearFactor::shared_ptr cloneUngraduated() const override {
     return FACTOR_TYPE::clone();
   }
 };
-
-/** HELPERS **/
-template <class FACTOR_TYPE, class... Args>
-GenericGraduatedFactor<FACTOR_TYPE> make_graduated(Args&&... args) {
-  return GenericGraduatedFactor<FACTOR_TYPE>(std::forward<Args>(args)...);
-}
-
-template <class FACTOR_TYPE, class... Args>
-typename GenericGraduatedFactor<FACTOR_TYPE>::shared_ptr make_shared_graduated(
-    Args&&... args) {
-  return std::make_shared<GenericGraduatedFactor<FACTOR_TYPE>>(
-      std::forward<Args>(args)...);
-}
 }  // namespace gtsam

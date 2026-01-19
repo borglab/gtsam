@@ -35,5 +35,4 @@ void GraduatedFactor::updateKernel(
   kernel_ = new_kernel;
   *mu_ = new_kernel->muInit();
 }
-
-}  // namespace risam
+}  // namespace gtsam

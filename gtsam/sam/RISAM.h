@@ -18,6 +18,8 @@
 #pragma once
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/internal/ChiSquaredInverse.h>
+#include <gtsam/sam/RISAMGraduatedFactor.h>
+#include <gtsam/sam/RISAMGraduatedKernel.h>
 
 namespace gtsam {
 
@@ -151,8 +153,8 @@ class RISAM {
   NonlinearFactorGraph getFactorsUnsafe() { return factors_; }
 
   /** @brief Returns the set of measurements (identified by their factor index)
-   * that have been deemed outliers. riSAM defines a measurement as an outlier if
-   * its current residual is greater than the chi2_threshold provided
+   * that have been deemed outliers. riSAM defines a measurement as an outlier
+   * if its current residual is greater than the chi2_threshold provided
    * @param chi2_outlier_thresh - The chi2 threshold used to define outliers
    * WARN: Potentially slow since we iterate over all factors
    * @returns The set of factors that are considered outliers by the RISAM
@@ -174,8 +176,9 @@ class RISAM {
 
   /** @brief Update housekeeping information for riSAM this involves:
    * 1. Determining the indicies for new_factors
-   * 2. Update the riSAM fields: factors_ and variable_index_ 
-   * NOTE: they will be ahead of those in solver_ until solver.update() is called
+   * 2. Update the riSAM fields: factors_ and variable_index_
+   * NOTE: they will be ahead of those in solver_ until solver.update() is
+   * called
    * 3. Update mu_ and mu_init_ for the new factors
    * @param new_factors: The new factors for the current update
    * @param update_params: The update parameters for the current update
@@ -211,6 +214,22 @@ class RISAM {
       const NonlinearFactorGraph& new_factors, const Values& new_theta,
       const std::optional<std::set<Key>> extra_gnc_involved_keys,
       ISAM2UpdateParams& internal_update_params, UpdateResult& update_result);
+
+ public:
+  /** STATIC HELPERS **/
+  /** @brief Constructs a shared_ptr of FACTOR_TYPE graduated factor for riSAM
+   * This identifies a factor as a potential outlier measurement.
+   * @param kernel: The graduated kernel to use for this factor
+   * @param args: The arguments required to construct the FACTOR_TYPE
+   */
+  template <class FACTOR_TYPE, class... Args>
+  static
+      typename GenericGraduatedFactor<FACTOR_TYPE>::shared_ptr
+      make_graduated(Args&&... args) {
+    return std::make_shared<
+        GenericGraduatedFactor<FACTOR_TYPE>>(
+        std::forward<Args>(args)...);
+  }
 };
 
 }  // namespace gtsam
