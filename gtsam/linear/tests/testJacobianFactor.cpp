@@ -24,6 +24,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/base/SymmetricBlockMatrix.h>
 
 using namespace std;
 using namespace gtsam;
@@ -791,6 +792,76 @@ TEST(JacobianFactor, OverdeterminedEliminate) {
                                           noiseModel::Unit::Create(3));
   EXPECT(assert_equal(expectedConditional, *actual.first, 1e-4));
   EXPECT(actual.second->empty());
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, updateHessianWithColumnRangeOnlyUpdatesSpecifiedBlocks) {
+  const double tol = 0;
+
+  // Create a simple 2x2 JacobianFactor on keys 0 and 1
+  // A0 is 2x2 matrix for key 0, A1 is 2x2 matrix for key 1, b is 2x1 vector
+  Matrix A0 = (Matrix(2, 2) << 1, 2, 3, 4).finished();
+  Matrix A1 = (Matrix(2, 2) << 5, 6, 7, 8).finished();
+  Vector b = Vector2(1, 2);
+
+  JacobianFactor factor(0, A0, 1, A1, b);
+
+  // Destination matrix: 3 blocks (key 0: size 2, key 1: size 2, RHS: size 1)
+  KeyVector infoKeys{0, 1};
+  Dims dims{2, 2, 1};
+
+  // Initialize to zero
+  SymmetricBlockMatrix info(dims);
+  info.setZero();
+
+  // Update only block column 0 (first variable)
+  factor.updateHessian(infoKeys, &info, 0, 1);
+
+  // Block 0 (diagonal for key 0) should be updated (non-zero)
+  // The diagonal block should be A0'*A0
+  Matrix expected_G00 = A0.transpose() * A0;
+  Matrix block0 = info.diagonalBlock(0);
+  EXPECT(assert_equal(expected_G00, block0, tol));
+
+  // Block 1 (diagonal for key 1) should still be zero
+  Matrix block1 = info.diagonalBlock(1);
+  Matrix expected_zero_2x2 = Matrix::Zero(2, 2);
+  EXPECT(assert_equal(expected_zero_2x2, block1, tol));
+
+  // Block 2 (RHS) should still be zero
+  Matrix block2 = info.diagonalBlock(2);
+  Matrix expected_zero_1x1 = Matrix::Zero(1, 1);
+  EXPECT(assert_equal(expected_zero_1x1, block2, tol));
+
+  // Off-diagonal block (0,1) should still be zero
+  // Note: aboveDiagonalBlock gets the upper triangular part
+  Matrix block01 = info.aboveDiagonalBlock(0, 1);
+  EXPECT(assert_equal(expected_zero_2x2, block01, tol));
+
+  // Now update block column 1
+  factor.updateHessian(infoKeys, &info, 1, 2);
+
+  // Block 1 should now be updated (A1'*A1)
+  Matrix expected_G11 = A1.transpose() * A1;
+  EXPECT(assert_equal(expected_G11, info.diagonalBlock(1), tol));
+
+  // Off-diagonal block (0,1) should now be updated (A0'*A1)
+  Matrix expected_G01 = A0.transpose() * A1;
+  EXPECT(assert_equal(expected_G01, info.aboveDiagonalBlock(0, 1), tol));
+
+  // Block 2 (RHS) should still be zero (not updated yet)
+  EXPECT(assert_equal(expected_zero_1x1, info.diagonalBlock(2), tol));
+
+  // Finally update the RHS column
+  factor.updateHessian(infoKeys, &info, 2, 3);
+
+  // Now verify the full matrix matches what we'd get from a full update
+  SymmetricBlockMatrix infoFull(dims);
+  infoFull.setZero();
+  factor.updateHessian(infoKeys, &infoFull);
+
+  EXPECT(assert_equal(Matrix(infoFull.selfadjointView()),
+                      Matrix(info.selfadjointView()), tol));
 }
 
 /* ************************************************************************* */

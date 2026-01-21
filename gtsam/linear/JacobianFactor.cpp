@@ -705,6 +705,72 @@ void JacobianFactor::updateHessian(const KeyVector& infoKeys,
 }
 
 /* ************************************************************************* */
+static void whitenedUpdateHessian(SymmetricBlockMatrix* info, std::vector<DenseIndex> slots, 
+  const VerticalBlockMatrix& Ab_, DenseIndex beginCol, DenseIndex endCol) {
+  const DenseIndex n = Ab_.nBlocks() - 1;
+
+  for (DenseIndex j = 0; j <= n; ++j) {
+    const DenseIndex J = slots[j];
+    Eigen::Block<const Matrix> Ab_j = Ab_(j);
+    
+    // Update diagonal block if J is in range
+    if (J >= beginCol && J < endCol) {
+      info->diagonalBlock(J).rankUpdate(Ab_j.transpose());
+    }
+    
+    // Fill off-diagonal blocks with Ai'*Aj where column max(I, J) is in range
+    for (DenseIndex i = 0; i < j; ++i) {
+      const DenseIndex I = slots[i];
+      
+      // The physical column index in the symmetric matrix is max(I, J)
+      const DenseIndex maxCol = std::max(I, J);
+      if (maxCol >= beginCol && maxCol < endCol) {
+        // Pass original indices - updateOffDiagonalBlock handles swapping internally
+        info->updateOffDiagonalBlock(I, J, Ab_(i).transpose() * Ab_j);
+      }
+    }
+  }
+}
+
+void JacobianFactor::updateHessian(const KeyVector& infoKeys,
+                                   SymmetricBlockMatrix* info,
+                                   DenseIndex beginCol, DenseIndex endCol) const {
+  if (rows() == 0) return;
+
+  // Ab_ is the augmented Jacobian matrix A, and we perform I += A'*A below.
+  DenseIndex n = Ab_.nBlocks() - 1;
+
+  // Pre-calculate slots
+  vector<DenseIndex> slots;
+  slots.reserve(n + 1);
+  bool foundCol = false;
+  for (DenseIndex j = 0; j < n; ++j) {
+    slots.push_back(Slot(infoKeys, keys_[j]));
+    if (slots[j] >= beginCol && slots[j] < endCol) {
+      foundCol = true;
+    }
+  }
+  slots.push_back(info->nBlocks() - 1);
+  if (slots[n] >= beginCol && slots[n] < endCol) {
+    foundCol = true;
+  }
+  if (!foundCol) return;
+
+  // Whiten the factor if it has a noise model
+  const SharedDiagonal& model = get_model();
+  if (model && !model->isUnit()) {
+    if (model->isConstrained())
+      throw invalid_argument(
+          "JacobianFactor::updateHessian: cannot update information with "
+          "constrained noise model");
+    JacobianFactor whitenedFactor = whiten();
+    whitenedUpdateHessian(info, std::move(slots), whitenedFactor.Ab_, beginCol, endCol);
+  } else {
+    whitenedUpdateHessian(info, std::move(slots), Ab_, beginCol, endCol);
+  }
+}
+
+/* ************************************************************************* */
 Vector JacobianFactor::operator*(const VectorValues& x) const {
   Vector Ax(Ab_.rows());
   Ax.setZero();

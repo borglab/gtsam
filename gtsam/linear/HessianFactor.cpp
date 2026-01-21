@@ -34,6 +34,14 @@
 #include <cassert>
 #include <limits>
 
+#ifdef GTSAM_USE_TBB
+  #include <tbb/blocked_range.h>
+  #include <tbb/parallel_for.h>
+  #include <oneapi/tbb/global_control.h>
+  #include <oneapi/tbb/task_arena.h>
+  #include <algorithm>
+#endif
+
 using namespace std;
 
 namespace gtsam {
@@ -241,16 +249,64 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
     const Scatter& scatter) {
   gttic(HessianFactor_MergeConstructor);
 
+  gttic(Allocate);
   Allocate(scatter);
+  gttoc(Allocate);
+
+  // Only parallelize the inner loop if GTSAM_TBB_BOUNDED_MEMORY_GROWTH_FLAG is
+  // defined. Without this flag, multiple HessianFactor constructions are
+  // already running in parallel (e.g., when constructing multiple factors
+  // concurrently), so there's no need to parallelize the inner
+  // updateHessian loop here as well.
+#if defined(GTSAM_USE_TBB) && defined(GTSAM_TBB_BOUNDED_MEMORY_GROWTH_FLAG)
+  constexpr DenseIndex kParallelThresholdHeuristic = 50;
+  if (info_.rows() > kParallelThresholdHeuristic) {
+    gttic(updateHessian_TBB);
+
+    const DenseIndex M = info_.nBlocks();
+
+    auto numThreads = std::min(
+        static_cast<int>(oneapi::tbb::global_control::active_value(
+            oneapi::tbb::global_control::max_allowed_parallelism)),
+        static_cast<int>(oneapi::tbb::this_task_arena::max_concurrency()));
+
+    if (numThreads > 1) {
+      DenseIndex grain = std::max<DenseIndex>(1, M / (2 * numThreads));
+      tbb::parallel_for(tbb::blocked_range<DenseIndex>(0, M, grain),
+                        [&, M](const tbb::blocked_range<DenseIndex>& range) {
+                          // reverse the range to start from the end because
+                          // matrix is upper triangular and therefore end is
+                          // larger than begin so we would like to start with
+                          // the last column that is the most work and go to the
+                          // first column that is least.
+                          DenseIndex beginCol = M - range.end();
+                          DenseIndex endCol = M - range.begin();
+                          info_.setZeroColumns(beginCol, endCol);
+                          for (const auto& factor : factors) {
+                            if (factor) {
+                              factor->updateHessian(keys_, &info_, beginCol,
+                                                    endCol);
+                            }
+                          }
+                        });
+      return;
+    }
+  }
+#endif
+  gttic(setAllZero);
+  info_.setAllZero();
+  gttoc(setAllZero);
+
+  gttic(updateHessian);
 
   // Form A' * A
-  gttic(update);
-  info_.setAllZero();
-  for(const auto& factor: factors)
-    if (factor)
+  for (const auto& factor : factors) {
+    if (factor) {
       factor->updateHessian(keys_, &info_);
-  gttoc(update);
+    }
+  }
 }
+
 
 /* ************************************************************************* */
 void HessianFactor::print(const std::string& s,
@@ -362,12 +418,56 @@ void HessianFactor::updateHessian(const KeyVector& infoKeys,
   gttic(updateHessian_HessianFactor);
   const DenseIndex nrVariablesInThisFactor = size();
 
+  gttic(slots);
   vector<DenseIndex> slots(nrVariablesInThisFactor + 1);
   for (DenseIndex j = 0; j < nrVariablesInThisFactor; ++j)
     slots[j] = Slot(infoKeys, keys_[j]);
+  
   slots[nrVariablesInThisFactor] = info->nBlocks() - 1;
+  gttoc(slots);
 
   info->updateFromMappedBlocks(info_, slots);
+}
+
+/* ************************************************************************* */
+void HessianFactor::updateHessian(const KeyVector& infoKeys,
+                                  SymmetricBlockMatrix* info,
+                                  DenseIndex beginCol,
+                                  DenseIndex endCol) const {
+  assert(info);
+  const DenseIndex nrVariablesInThisFactor = size();
+
+  vector<DenseIndex> slots;
+  slots.reserve(nrVariablesInThisFactor + 1);
+
+  for (DenseIndex j = 0; j < nrVariablesInThisFactor; ++j) {
+    slots.push_back(Slot(infoKeys, keys_[j]));
+  }
+  slots.push_back(info->nBlocks() - 1);
+
+  for (DenseIndex j = 0; j <= nrVariablesInThisFactor; ++j) {
+    const DenseIndex J = slots[j];
+    // Update diagonal block if J is in range
+    if (J >= beginCol && J < endCol) {
+      info->updateDiagonalBlock(J, info_.diagonalBlock(j));
+    }
+
+    // Update off-diagonal blocks where column max(I, J) is in range
+    // Note: We process all blocks and let the maxCol check filter them,
+    // because I and J may be in different orders (slots are not necessarily sorted)
+    for (DenseIndex i = 0; i < j; ++i) {
+      const DenseIndex I = slots[i];
+      assert(i < j);
+      assert(I != J);
+
+      // The physical column index in the symmetric matrix is max(I, J)
+      const DenseIndex maxCol = std::max(I, J);
+
+      if (maxCol >= beginCol && maxCol < endCol) {
+        info->updateOffDiagonalBlock(I, J, info_.aboveDiagonalBlock(i, j));
+      }
+    }
+  }
 }
 
 /* ************************************************************************* */

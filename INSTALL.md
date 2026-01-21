@@ -239,6 +239,10 @@ Here are some tips to get the best possible performance out of GTSAM.
     optimization by 30-50%. Please note that this may not be true for very small
     problems where the overhead of dispatching work to multiple threads outweighs
     the benefit. We recommend that you benchmark your problem with/without TBB.
+    Note: TBB's parallel tree traversal can significantly increase memory usage
+    (e.g., from ~4GB to ~12GB in tested scenarios). If memory is a concern, you
+    can set `-DGTSAM_TBB_BOUNDED_MEMORY_GROWTH=ON` to disable parallel tree
+    traversal while keeping other TBB benefits.
 3. Use `GTSAM_BUILD_WITH_MARCH_NATIVE`. A performance gain of
     25-30% can be expected on modern processors. Note that this affects the portability
     of your executable. It may not run when copied to another system with older/different

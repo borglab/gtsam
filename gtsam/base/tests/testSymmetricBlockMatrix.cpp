@@ -80,6 +80,28 @@ TEST(SymmetricBlockMatrix, WriteBlocks)
 }
 
 /* ************************************************************************* */
+TEST(SymmetricBlockMatrix, setZeroColumns) {
+  // Expected: columns 3 and 4 are zero
+  Matrix expected = testBlockMatrix.selfadjointView().toDenseMatrix().eval();
+  expected.col(3).setZero();
+  expected.col(4).setZero();
+  expected = expected.triangularView<Eigen::Upper>().toDenseMatrix().eval();
+
+  SymmetricBlockMatrix bm = testBlockMatrix;
+
+  // Zero out the middle block (block 1, columns 3-4)
+  bm.setZeroColumns(1, 2);
+
+  Matrix result = bm.selfadjointView()
+                      .toDenseMatrix()
+                      .triangularView<Eigen::Upper>()
+                      .toDenseMatrix()
+                      .eval();
+
+  EXPECT(assert_equal(expected, result));
+}
+
+/* ************************************************************************* */
 // Verify block range access.
 TEST(SymmetricBlockMatrix, Ranges)
 {

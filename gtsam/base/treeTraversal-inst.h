@@ -181,8 +181,11 @@ template<class FOREST, typename DATA, typename VISITOR_PRE,
 void DepthFirstForestParallel(FOREST& forest, DATA& rootData,
     VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost,
     int problemSizeThreshold = 10) {
-#ifdef GTSAM_USE_TBB
-  // Typedefs
+
+#if defined(GTSAM_USE_TBB) && !defined(GTSAM_TBB_BOUNDED_MEMORY_GROWTH_FLAG)
+  // Note: Parallel tree traversal (the default) causes a large increase in memory footprint.
+  // In a tested use case, memory grew from approximately 4 GB to 12 GB.
+
   typedef typename FOREST::Node Node;
 
   internal::CreateRootTask<Node>(forest.roots(), rootData, visitorPre,
@@ -203,7 +206,9 @@ void DepthFirstForestParallel(FOREST& forest, DATA& rootData,
 template<class FOREST, typename VISITOR_POST>
 void PostOrderForestParallel(FOREST& forest, VISITOR_POST& visitorPost,
                              int problemSizeThreshold = 10) {
-#ifdef GTSAM_USE_TBB
+#if defined(GTSAM_USE_TBB) && !defined(GTSAM_TBB_BOUNDED_MEMORY_GROWTH_FLAG)
+  // Note: Parallel tree traversal (the default) causes a large increase in memory footprint.
+
   typedef typename FOREST::Node Node;
   internal::CreateRootPostOrderTask<Node>(forest.roots(), visitorPost,
                                           problemSizeThreshold);

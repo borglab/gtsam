@@ -25,6 +25,7 @@
 #include <boost/serialization/nvp.hpp>
 #endif
 #include <cassert>
+#include <cstring>
 #include <stdexcept>
 #include <array>
 #include <vector>
@@ -304,6 +305,25 @@ namespace gtsam {
     /// Set entire matrix zero.
     void setAllZero() {
       matrix_.setZero();
+    }
+
+    /// Set the block columns between beginCol (inclusive) and endCol (exclusive) to zero. 
+    void setZeroColumns(DenseIndex beginCol, DenseIndex endCol) {
+      assert(beginCol < endCol);
+      assert(beginCol >= 0);
+      assert(endCol >= 0);
+      assert(beginCol < nBlocks());
+      assert(endCol <= nBlocks());
+      static_assert(Matrix::IsRowMajor == 0, "setZeroColumns requires column-major storage.");
+
+      const DenseIndex denseBeginCol = offset(beginCol);
+      const DenseIndex denseEndCol = offset(endCol);
+
+      double *begin = matrix_.data() + denseBeginCol * matrix_.rows();
+      double *end = matrix_.data() + denseEndCol * matrix_.rows();
+
+      // Using memset for maximal compiler optimization.
+      memset(begin, 0, (end - begin) * sizeof(*begin));
     }
 
     /// Negate the entire active matrix.

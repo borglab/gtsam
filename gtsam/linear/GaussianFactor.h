@@ -157,6 +157,18 @@ namespace gtsam {
     virtual void updateHessian(const KeyVector& keys,
                            SymmetricBlockMatrix* info) const = 0;
 
+    /** Update an information matrix by adding the information corresponding to this factor
+     * (used internally during elimination), restricted to a range of block columns,
+     * useful for parallelization.
+     * @param keys The ordered vector of keys for the information matrix to be updated
+     * @param info The information matrix to be updated
+     * @param beginCol First block column index (inclusive) in the range to update
+     * @param endCol Last block column index (exclusive) in the range to update
+     */
+    virtual void updateHessian(const KeyVector& keys,
+                           SymmetricBlockMatrix* info,
+                           DenseIndex beginCol, DenseIndex endCol) const = 0;
+
     /// @}
     /// @name Operator interface
     /// @{
