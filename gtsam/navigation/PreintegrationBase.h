@@ -55,10 +55,10 @@ class GTSAM_EXPORT PreintegrationBase {
   /// Default constructor for serialization
   PreintegrationBase() {}
 
+ public:
   /// Virtual destructor for serialization
   virtual ~PreintegrationBase() {}
 
- public:
   /// @name Constructors
   /// @{
 

@@ -159,9 +159,58 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   void serialize() const;
 };
 
+#include <gtsam/navigation/PreintegrationBase.h>
+virtual class PreintegrationBase {
+  // Basic utilities
+  void resetIntegration();
+  void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
+  bool matchesParamsWith(const gtsam::PreintegrationBase& other) const;
+
+  // Access
+  gtsam::imuBias::ConstantBias biasHat() const;
+  double deltaTij() const;
+  gtsam::Vector deltaPij() const;
+  gtsam::Vector deltaVij() const;
+  gtsam::Rot3 deltaRij() const;
+  gtsam::NavState deltaXij() const;
+  gtsam::Vector biasHatVector() const;
+
+  // Standard Interface
+  void integrateMeasurement(gtsam::Vector measuredAcc, gtsam::Vector measuredOmega,
+                            double deltaT);
+  gtsam::Vector biasCorrectedDelta(const gtsam::imuBias::ConstantBias& bias_i) const;
+  gtsam::Vector biasCorrectedDelta(const gtsam::imuBias::ConstantBias& bias_i,
+                                   Eigen::Ref<Eigen::MatrixXd> H) const;
+  gtsam::NavState predict(const gtsam::NavState& state_i,
+                          const gtsam::imuBias::ConstantBias& bias_i) const;
+  gtsam::NavState predict(const gtsam::NavState& state_i,
+                          const gtsam::imuBias::ConstantBias& bias_i,
+                          Eigen::Ref<Eigen::MatrixXd> H1,
+                          Eigen::Ref<Eigen::MatrixXd> H2) const;
+  gtsam::Vector computeError(const gtsam::NavState& state_i,
+                             const gtsam::NavState& state_j,
+                             const gtsam::imuBias::ConstantBias& bias_i,
+                             Eigen::Ref<Eigen::MatrixXd> H1,
+                             Eigen::Ref<Eigen::MatrixXd> H2,
+                             Eigen::Ref<Eigen::MatrixXd> H3) const;
+  gtsam::Vector computeErrorAndJacobians(const gtsam::Pose3& pose_i,
+                                         gtsam::Vector vel_i,
+                                         const gtsam::Pose3& pose_j,
+                                         gtsam::Vector vel_j,
+                                         const gtsam::imuBias::ConstantBias& bias_i,
+                                         Eigen::Ref<Eigen::MatrixXd> H1,
+                                         Eigen::Ref<Eigen::MatrixXd> H2,
+                                         Eigen::Ref<Eigen::MatrixXd> H3,
+                                         Eigen::Ref<Eigen::MatrixXd> H4,
+                                         Eigen::Ref<Eigen::MatrixXd> H5) const;
+
+  // Testable
+  void print(string s = "") const;
+};
+
 #include <gtsam/navigation/ImuFactor.h>
 template <PreintegrationType>
-class PreintegratedImuMeasurementsT {
+class PreintegratedImuMeasurementsT : gtsam::PreintegrationBase {
   // Constructors
   PreintegratedImuMeasurementsT(const gtsam::PreintegrationParams* params);
   PreintegratedImuMeasurementsT(const gtsam::PreintegrationParams* params,
@@ -172,21 +221,8 @@ class PreintegratedImuMeasurementsT {
   bool equals(const gtsam::PreintegratedImuMeasurementsT<PreintegrationType>& expected, double tol);
 
   // Standard Interface
-  void integrateMeasurement(gtsam::Vector measuredAcc, gtsam::Vector measuredOmega,
-      double deltaT);
-  void resetIntegration();
-  void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
-
   gtsam::Matrix preintMeasCov() const;
   // gtsam::Vector preintegrated() const; only define for TangentPreintegration
-  double deltaTij() const;
-  gtsam::Rot3 deltaRij() const;
-  gtsam::Vector deltaPij() const;
-  gtsam::Vector deltaVij() const;
-  gtsam::imuBias::ConstantBias biasHat() const;
-  gtsam::Vector biasHatVector() const;
-  gtsam::NavState predict(const gtsam::NavState& state_i,
-      const gtsam::imuBias::ConstantBias& bias) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -251,7 +287,7 @@ virtual class PreintegrationCombinedParams : gtsam::PreintegrationParams {
   void serialize() const;
 };
 
-class PreintegratedCombinedMeasurements {
+class PreintegratedCombinedMeasurements : gtsam::PreintegrationBase {
   // Constructors
   PreintegratedCombinedMeasurements(
       const gtsam::PreintegrationCombinedParams* params);
@@ -264,20 +300,7 @@ class PreintegratedCombinedMeasurements {
               double tol);
 
   // Standard Interface
-  void integrateMeasurement(gtsam::Vector measuredAcc,
-                            gtsam::Vector measuredOmega, double deltaT);
-  void resetIntegration();
-  void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
-
   gtsam::Matrix preintMeasCov() const;
-  double deltaTij() const;
-  gtsam::Rot3 deltaRij() const;
-  gtsam::Vector deltaPij() const;
-  gtsam::Vector deltaVij() const;
-  gtsam::imuBias::ConstantBias biasHat() const;
-  gtsam::Vector biasHatVector() const;
-  gtsam::NavState predict(const gtsam::NavState& state_i,
-                          const gtsam::imuBias::ConstantBias& bias) const;
 
   // enable serialization functionality
   void serialize() const;
