@@ -160,15 +160,16 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
 };
 
 #include <gtsam/navigation/ImuFactor.h>
-class PreintegratedImuMeasurements {
+template <PreintegrationType>
+class PreintegratedImuMeasurementsT {
   // Constructors
-  PreintegratedImuMeasurements(const gtsam::PreintegrationParams* params);
-  PreintegratedImuMeasurements(const gtsam::PreintegrationParams* params,
+  PreintegratedImuMeasurementsT(const gtsam::PreintegrationParams* params);
+  PreintegratedImuMeasurementsT(const gtsam::PreintegrationParams* params,
       const gtsam::imuBias::ConstantBias& bias);
 
   // Testable
   void print(string s = "") const;
-  bool equals(const gtsam::PreintegratedImuMeasurements& expected, double tol);
+  bool equals(const gtsam::PreintegratedImuMeasurementsT<PreintegrationType>& expected, double tol);
 
   // Standard Interface
   void integrateMeasurement(gtsam::Vector measuredAcc, gtsam::Vector measuredOmega,
@@ -177,7 +178,7 @@ class PreintegratedImuMeasurements {
   void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
 
   gtsam::Matrix preintMeasCov() const;
-  gtsam::Vector preintegrated() const;
+  // gtsam::Vector preintegrated() const; only define for TangentPreintegration
   double deltaTij() const;
   gtsam::Rot3 deltaRij() const;
   gtsam::Vector deltaPij() const;
@@ -190,6 +191,11 @@ class PreintegratedImuMeasurements {
   // enabling serialization functionality
   void serialize() const;
 };
+
+typedef gtsam::PreintegratedImuMeasurementsT<gtsam::DefaultPreintegrationType> PreintegratedImuMeasurements;
+typedef gtsam::PreintegratedImuMeasurementsT<gtsam::ManifoldPreintegration> PreintegratedImuMeasurementsManifold;
+// Defining below leads to multiply defined errors: as Tangent is default, use PreintegratedImuMeasurements
+// typedef gtsam::PreintegratedImuMeasurementsT<gtsam::TangentPreintegration> PreintegratedImuMeasurementsTangent;
 
 virtual class ImuFactor: gtsam::NonlinearFactor {
   ImuFactor(gtsam::Key pose_i, gtsam::Key vel_i, gtsam::Key pose_j, gtsam::Key vel_j,
