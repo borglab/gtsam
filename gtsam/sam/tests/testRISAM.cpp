@@ -17,8 +17,15 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/sam/RISAM.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 using namespace std;
 using namespace gtsam;
@@ -101,11 +108,10 @@ TEST(RISAMGraduatedKernel, isMuConverged) {
 /* ************************************************************************* */
 TEST(RISAMGraduatedKernel, muUpdateMcGann2023) {
   // Standard Sequence
-  CHECK(assert_equal(0.12, SIGKernel::muUpdateMcGann2023(0.0, 0.0, 0), 1e-9));
-  CHECK(assert_equal(0.384, SIGKernel::muUpdateMcGann2023(0.12, 0.0, 1), 1e-9));
-  CHECK(
-      assert_equal(0.9648, SIGKernel::muUpdateMcGann2023(0.384, 0.0, 2), 1e-9));
-  CHECK(assert_equal(1.0, SIGKernel::muUpdateMcGann2023(0.9648, 0.0, 3), 1e-9));
+  CHECK(assert_equal(0.12, SIGKernel::muUpdateMcGann2023(0.0, 0, 0), 1e-9));
+  CHECK(assert_equal(0.384, SIGKernel::muUpdateMcGann2023(0.12, 0, 1), 1e-9));
+  CHECK(assert_equal(0.9648, SIGKernel::muUpdateMcGann2023(0.384, 0, 2), 1e-9));
+  CHECK(assert_equal(1.0, SIGKernel::muUpdateMcGann2023(0.9648, 0, 3), 1e-9));
 }
 
 /* ************************************************************************* */
@@ -157,8 +163,138 @@ TEST(RISAMGraduatedFactor, error) {
 }
 
 /* ************************************************************************* */
+TEST(RISAM, GaussianRISAMNoOutliers) {
+  SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas(
+      (Vector(3) << 0.1, 0.1, M_PI / 100.0).finished());
+  SharedDiagonal brNoise =
+      noiseModel::Diagonal::Sigmas((Vector(2) << M_PI / 100.0, 0.1).finished());
+
+  // These variables will be reused and accumulate factors and values
+  SIGKernel::shared_ptr kernel = std::make_shared<SIGKernel>(
+      SIGKernel::shapeParamFromInfThresh(0.1, 3, 0.95));
+  RISAM::Parameters params;
+  ISAM2DoglegParams dlparams;
+  dlparams.verbose = true;
+  dlparams.initialDelta = 0.01;
+  params.isam2_params = ISAM2Params(dlparams);  // ISAM2DoglegLineSearchParams(0.02,
+                                                // 1.0, 1.5, 1e-3, 1e-4, true));
+  ISAM2 risam(params.isam2_params);
+  Values fullinit;
+  NonlinearFactorGraph fullgraph;
+
+  // i keeps track of the time step
+  size_t i = 0;
+
+  // Add a prior at time 0 and update risam
+  {
+    NonlinearFactorGraph newfactors;
+    newfactors.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+    fullgraph.push_back(newfactors);
+
+    Values init;
+    init.insert((0), Pose2(0.01, 0.01, 0.01));
+    fullinit.insert((0), Pose2(0.01, 0.01, 0.01));
+
+    risam.update(newfactors, init);
+  }
+
+  // Add odometry from time 0 to time 5
+  for (; i < 5; ++i) {
+    NonlinearFactorGraph newfactors;
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(
+        i, i + 1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    fullgraph.push_back(newfactors);
+
+    Values init;
+    init.insert((i + 1), Pose2(double(i + 1) + 0.1, -0.1, 0.01));
+    fullinit.insert((i + 1), Pose2(double(i + 1) + 0.1, -0.1, 0.01));
+
+    risam.update(newfactors, init);
+  }
+
+  // Add odometry from time 5 to 6 and landmark measurement at time 5
+  {
+    NonlinearFactorGraph newfactors;
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(
+        i, i + 1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.push_back(std::make_shared<BearingRangeFactor<Pose2, Point2>>(
+        i, 100, Rot2::fromAngle(M_PI / 2.0), 5.0, brNoise));
+    newfactors.push_back(std::make_shared<BearingRangeFactor<Pose2, Point2>>(
+        i, 101, Rot2::fromAngle(-M_PI / 2.0), 5.0, brNoise));
+    fullgraph.push_back(newfactors);
+
+    Values init;
+    init.insert((i + 1), Pose2(1.01, 0.01, 0.01));
+    init.insert(100, Point2(5.0 / sqrt(2.0), 5.0 / sqrt(2.0)));
+    init.insert(101, Point2(5.0 / sqrt(2.0), -5.0 / sqrt(2.0)));
+    fullinit.insert((i + 1), Pose2(1.01, 0.01, 0.01));
+    fullinit.insert(100, Point2(5.0 / sqrt(2.0), 5.0 / sqrt(2.0)));
+    fullinit.insert(101, Point2(5.0 / sqrt(2.0), -5.0 / sqrt(2.0)));
+
+    risam.update(newfactors, init);
+    ++i;
+  }
+
+  // Add odometry from time 6 to time 10
+  for (; i < 10; ++i) {
+    NonlinearFactorGraph newfactors;
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(
+        i, i + 1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    fullgraph.push_back(newfactors);
+
+    Values init;
+    init.insert((i + 1), Pose2(double(i + 1) + 0.1, -0.1, 0.01));
+    fullinit.insert((i + 1), Pose2(double(i + 1) + 0.1, -0.1, 0.01));
+
+    risam.update(newfactors, init);
+  }
+
+  // Add odometry from time 10 to 11 and landmark measurement at time 10
+  {
+    NonlinearFactorGraph newfactors;
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(
+        i, i + 1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.push_back(std::make_shared<BearingRangeFactor<Pose2, Point2>>(
+        i, 100, Rot2::fromAngle((3 * M_PI) / 4.0), 7.07106, brNoise));
+    newfactors.push_back(std::make_shared<BearingRangeFactor<Pose2, Point2>>(
+        i, 101, Rot2::fromAngle(-(3 * M_PI) / 4.0), 7.07106, brNoise));
+    fullgraph.push_back(newfactors);
+
+    // Add an Outlier Measurement at 8 [Is not added to fullGraph]
+    // newfactors.push_back(
+    //    RISAM::make_graduated<BearingRangeFactor<Pose2, Point2>>(
+    //        kernel, i, 100, Rot2::fromAngle(0.4), 300, brNoise));
+
+    Values init;
+    init.insert((i + 1), Pose2(double(i + 1) + 0.1, 0.1, 0.01));
+    fullinit.insert((i + 1), Pose2(double(i + 1) + 0.1, 0.1, 0.01));
+
+    risam.update(newfactors, init);
+    ++i;
+  }
+
+  /** Compare Results **/
+  // Compute Actual
+  risam.update();
+  Values actual = risam.calculateEstimate();
+  // Compute Expected
+  LevenbergMarquardtParams parameters;
+  Values expected =
+      LevenbergMarquardtOptimizer(fullgraph, fullinit, parameters).optimize();
+
+  std::cout << "Expected Error:" << fullgraph.error(expected) << std::endl;
+  std::cout << "Actual Error:" << fullgraph.error(actual) << std::endl;
+
+  // Test
+  CHECK(assert_equal(expected, actual, 0.1));
+  CHECK(false);
+}
+
+/* *************************************************************************
+ */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
-/* ************************************************************************* */
+/* *************************************************************************
+ */
